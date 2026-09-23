@@ -637,3 +637,14 @@ the management-facing incrementality proof.
 ## Repository
 GitHub: https://github.com/austinmwhaley/wonderland (main). Initial commit 7e98ad8.
 Data/artifacts/venvs git-ignored; code/docs committed. See AGENTS.md "Repository & git workflow".
+
+## Per-customer response model + management incrementality report (DONE)
+`red_queen/response_model.py`: y ~ state + treatment + state:treatment on the
+randomized persistent-holdout data. Outputs per-customer uplift + ATE + CI +
+quintile calibration + targeting gain; report -> red_queen/artifacts/incrementality_report.json.
+Run (7602 customers / 91224 customer-periods):
+  ATE +11.62, 95% CI [11.19,12.08] (significant);
+  realised uplift by predicted-uplift quintile: [-8.3,-6.6,13.8,17.0,27.6] (MONOTONE);
+  targeting top-20% gain +18.95; holdout rho 0.18.
+=> PER-CUSTOMER VALUES delivered (who responds), plus the management proof of
+   incrementality -- no live action required.
