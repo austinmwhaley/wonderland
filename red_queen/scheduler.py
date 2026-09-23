@@ -15,14 +15,14 @@ from pathlib import Path
 
 import numpy as np
 
-LOG = Path(__file__).resolve().parents[1] / "artifacts" / "decision_log_weekly.npz"
-OUT = Path(__file__).resolve().parents[1] / "artifacts" / "touch_schedule.json"
+LOG = Path(__file__).resolve().parents[0] / "artifacts" / "decision_log_weekly.npz"
+OUT = Path(__file__).resolve().parents[0] / "artifacts" / "touch_schedule.json"
 CADENCE = np.array([0.2, 0.6, 1.2, 2.0])
 WEEK = 7 * 86400.0
 
 
 def run(max_rows=20000, per_epoch_cap=8):
-	from red_queen.red_queen.engine import _validated_arm_effects
+	from red_queen.engine import _validated_arm_effects
 	eff = _validated_arm_effects()
 	# action MIX: softmax over the validated causal effect -> proportional touches
 	z = eff - eff.max()

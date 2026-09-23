@@ -116,7 +116,7 @@ def real(seed=0):
 	import duckdb
 	import polars as pl
 	from scipy.stats import spearmanr
-	WORK = Path(__file__).resolve().parents[2]
+	WORK = Path(__file__).resolve().parents[1]
 	CFM = WORK / "looking_glass" / "artifacts" / "cfm" / "cfm_products.duckdb"
 	STREAM = WORK / "rabbit_hole" / "data" / "duckdb" / "customer_event_stream.duckdb"
 	sc = duckdb.connect(str(STREAM), read_only=True)
@@ -146,7 +146,7 @@ def real(seed=0):
 	nA = int(a.max()) + 1
 	ipw = np.array([float((g[a == x] / e[a == x]).sum() / max((1 / e[a == x]).sum(), 1e-9))
 					for x in range(nA)])
-	from red_king.red_king.rssm import rollout_arm_values
+	from red_king.rssm import rollout_arm_values
 	states = np.stack(df["embedding"].to_list()).astype(np.float32)
 	V, SD = rollout_arm_values(states)
 	# CALIBRATION (offline, legitimate): scale imagined values so the imagined

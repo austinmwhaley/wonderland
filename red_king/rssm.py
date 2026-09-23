@@ -13,10 +13,10 @@ from pathlib import Path
 
 import numpy as np
 
-WORK = Path(__file__).resolve().parents[2]
+WORK = Path(__file__).resolve().parents[1]
 CFM = WORK / "looking_glass" / "artifacts" / "cfm" / "cfm_products.duckdb"
 STREAM = WORK / "rabbit_hole" / "data" / "duckdb" / "customer_event_stream.duckdb"
-OUT = Path(__file__).resolve().parents[1] / "artifacts" / "red_king_rssm.pt"
+OUT = Path(__file__).resolve().parents[0] / "artifacts" / "red_king_rssm.pt"
 GAMMA_DAY = 0.999
 
 

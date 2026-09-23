@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from red_king.red_king.effect_model import build
+from red_king.effect_model import build
 
 
 def _features(S, A, nA):

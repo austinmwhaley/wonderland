@@ -11,7 +11,7 @@ from pathlib import Path
 
 import numpy as np
 
-DATA = Path(__file__).resolve().parents[1] / "data" / "seq_email.npz"
+DATA = Path(__file__).resolve().parents[0] / "data" / "seq_email.npz"
 
 
 def main(n_max=8000, seed=0):
@@ -32,7 +32,7 @@ def main(n_max=8000, seed=0):
 			if k in rep:
 				print(f"  without red_king {k}: {rep[k]}")
 	# WITH red_king: multi-step rollout value of the greedy policy
-	from red_king.red_king.multistep import run as ms
+	from red_king.multistep import run as ms
 	r = ms(seed=seed)
 	print(f"  WITH red_king multi-step value spearman: {r['rho_mb']:+.3f} (vs model-free {r['rho_mf']:+.3f})")
 	return rep

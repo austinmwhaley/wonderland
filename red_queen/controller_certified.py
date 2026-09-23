@@ -15,8 +15,8 @@ from pathlib import Path
 import numpy as np
 
 import os
-LOG = Path(os.environ.get("DECISION_LOG", Path(__file__).resolve().parents[1] / "artifacts" / "decision_log.npz"))
-OUT = Path(__file__).resolve().parents[1] / "artifacts" / "nba_schedule_certified.json"
+LOG = Path(os.environ.get("DECISION_LOG", Path(__file__).resolve().parents[0] / "artifacts" / "decision_log.npz"))
+OUT = Path(__file__).resolve().parents[0] / "artifacts" / "nba_schedule_certified.json"
 GAMMA = 0.99
 PER_EPOCH_CAP = 8
 

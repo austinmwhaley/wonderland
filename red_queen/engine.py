@@ -16,10 +16,10 @@ from pathlib import Path
 
 import numpy as np
 
-WORK = Path(__file__).resolve().parents[2]
+WORK = Path(__file__).resolve().parents[1]
 DATA = WORK / "red_king" / "data" / "seq_email.npz"
 CFM_PRODUCTS = WORK / "looking_glass" / "artifacts" / "cfm" / "cfm_products.duckdb"
-OUT = Path(__file__).resolve().parents[1] / "artifacts"
+OUT = Path(__file__).resolve().parents[0] / "artifacts"
 CADENCE = np.array([0.2, 0.6, 1.2, 2.0])       # sends/week per arm
 PER_CUSTOMER_CAP = 2.0                          # hard max sends/week
 
@@ -116,7 +116,7 @@ def run(weekly_budget=None, risk_z=0.0, use_red_king=False):
 	if use_red_king:
 		# CERTIFIED values: imagine discounted incremental GP per arm with the
 		# red_king RSSM world model (+ ensemble uncertainty).
-		from red_king.red_king.rssm import rollout_arm_values
+		from red_king.rssm import rollout_arm_values
 		V, SD = rollout_arm_values(E)
 		nA = V.shape[1]
 		# CALIBRATION (offline anchor to reality): scale imagined values so the

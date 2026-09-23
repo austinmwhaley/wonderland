@@ -11,7 +11,7 @@ from pathlib import Path
 
 import numpy as np
 
-WORK = Path(__file__).resolve().parents[2]
+WORK = Path(__file__).resolve().parents[1]
 CFM = WORK / "looking_glass" / "artifacts" / "cfm" / "cfm_products.duckdb"
 STREAM = WORK / "rabbit_hole" / "data" / "duckdb" / "customer_event_stream.duckdb"
 
@@ -47,7 +47,7 @@ def _facts():
 
 def main():
 	import polars as pl
-	from red_king.red_king.rssm import rollout_arm_values
+	from red_king.rssm import rollout_arm_values
 	df = _facts()
 	arm = df["arm"].to_numpy(); prop = df["propensity"].to_numpy(); g = df["g"].to_numpy()
 	states = np.stack(df["embedding"].to_list()).astype(np.float32)

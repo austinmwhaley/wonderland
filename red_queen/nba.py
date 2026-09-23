@@ -16,7 +16,7 @@ from pathlib import Path
 
 import numpy as np
 
-WORK = Path(__file__).resolve().parents[2]
+WORK = Path(__file__).resolve().parents[1]
 DATA = WORK / "red_king" / "data" / "seq_email.npz"
 CFM_PRODUCTS = WORK / "looking_glass" / "artifacts" / "cfm" / "cfm_products.duckdb"
 CADENCE = np.array([0.2, 0.6, 1.2, 2.0])     # sends/week per arm (known schedule)
@@ -84,7 +84,7 @@ def run(weekly_send_budget=None, seed=0):
 	plan = {"customer_key": keys, "arm": np.where(served, arm, -1).tolist(),
 			"weekly_sends": weekly.tolist(), "expected_gp": exp_value.tolist()}
 	import json
-	out = Path(__file__).resolve().parents[1] / "artifacts"
+	out = Path(__file__).resolve().parents[0] / "artifacts"
 	out.mkdir(parents=True, exist_ok=True)
 	(out / "nba_plan.json").write_text(json.dumps(plan))
 	rec = {"customers": len(keys), "budget_sends_wk": round(weekly_send_budget, 1),

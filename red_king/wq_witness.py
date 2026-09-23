@@ -13,7 +13,7 @@ from pathlib import Path
 
 import numpy as np
 
-DATA = Path(__file__).resolve().parents[1] / "data" / "seq_email.npz"
+DATA = Path(__file__).resolve().parents[0] / "data" / "seq_email.npz"
 
 
 def main(n_max=4000, seed=0):
@@ -31,7 +31,7 @@ def main(n_max=4000, seed=0):
 		dep_summary = dep
 	else:
 		dep_summary = {k: rep[k] for k in ("deployed", "bar", "behavior_mean") if k in rep}
-	from red_king.red_king.multistep import run as ms
+	from red_king.multistep import run as ms
 	r = ms(seed=seed)
 	corroborates = bool(r["rho_mb"] > r["rho_mf"])
 	dep0 = dep_summary.get("deployed")

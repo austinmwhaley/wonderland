@@ -19,9 +19,9 @@ from pathlib import Path
 
 import numpy as np
 
-WORK = Path(__file__).resolve().parents[2]
-LOG = Path(__file__).resolve().parents[1] / "artifacts" / "decision_log.npz"
-OUT = Path(__file__).resolve().parents[1] / "artifacts" / "nba_schedule.json"
+WORK = Path(__file__).resolve().parents[1]
+LOG = Path(__file__).resolve().parents[0] / "artifacts" / "decision_log.npz"
+OUT = Path(__file__).resolve().parents[0] / "artifacts" / "nba_schedule.json"
 GAMMA = 0.999
 PER_EPOCH_CAP = 8          # max touches per epoch (hard business cap)
 N_GRID = 16                # candidate action frequencies

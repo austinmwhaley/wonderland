@@ -11,7 +11,7 @@ from pathlib import Path
 
 import numpy as np
 
-LOG = Path(__file__).resolve().parents[1] / "artifacts" / "decision_log.npz"
+LOG = Path(__file__).resolve().parents[0] / "artifacts" / "decision_log.npz"
 
 
 def _discretize(n, nA=4):

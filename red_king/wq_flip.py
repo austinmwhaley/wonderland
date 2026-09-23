@@ -6,7 +6,7 @@ from pathlib import Path
 
 import numpy as np
 
-DATA = Path(__file__).resolve().parents[1] / "data" / "seq_email.npz"
+DATA = Path(__file__).resolve().parents[0] / "data" / "seq_email.npz"
 GAMMA = 0.99
 
 

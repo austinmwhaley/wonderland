@@ -21,10 +21,10 @@ from pathlib import Path
 
 import numpy as np
 
-WORK = Path(__file__).resolve().parents[2]
+WORK = Path(__file__).resolve().parents[1]
 CFM = WORK / "looking_glass" / "artifacts" / "cfm" / "cfm_products.duckdb"
 STREAM = WORK / "rabbit_hole" / "data" / "duckdb" / "customer_event_stream.duckdb"
-OUT = Path(__file__).resolve().parents[1] / "artifacts" / "decision_log.npz"
+OUT = Path(__file__).resolve().parents[0] / "artifacts" / "decision_log.npz"
 ACTION_DIM = 5            # [n_sends, n_arm0, n_arm1, n_arm2, n_arm3]
 
 

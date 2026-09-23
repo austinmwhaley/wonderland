@@ -7,14 +7,14 @@ from pathlib import Path
 
 import numpy as np
 
-DATA = Path(__file__).resolve().parents[1] / "data" / "seq_email.npz"
+DATA = Path(__file__).resolve().parents[0] / "data" / "seq_email.npz"
 GAMMA = 0.99
 
 
 def main(seed=0):
 	from white_queen.tribunal.ope import data as _data, estimators as _E, gate as _gate, judge as _judge
 	from white_queen.tribunal.ope.receipts import behavior_stats
-	from red_king.red_king.rssm import rollout_arm_values
+	from red_king.rssm import rollout_arm_values
 	z = np.load(DATA)
 	S, A, R, S2, D = z["S"], z["A"], z["R"], z["S2"], z["D"]
 	nA = int(A.max()) + 1

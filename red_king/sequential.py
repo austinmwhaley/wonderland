@@ -17,8 +17,8 @@ from pathlib import Path
 
 import numpy as np
 
-WORK = Path(__file__).resolve().parents[2]
-OUT = Path(__file__).resolve().parents[1] / "data" / "seq_email.npz"
+WORK = Path(__file__).resolve().parents[1]
+OUT = Path(__file__).resolve().parents[0] / "data" / "seq_email.npz"
 CFM_PRODUCTS = WORK / "looking_glass" / "artifacts" / "cfm" / "cfm_products.duckdb"
 STREAM_DB = WORK / "rabbit_hole" / "data" / "duckdb" / "customer_event_stream.duckdb"
 GAMMA_DAY = 0.999          # per-day discount (long-term)
