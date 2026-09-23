@@ -1,3 +1,29 @@
+# STATUS — wonderland
+
+**Macro status (read this first).** Offline-first system, git-versioned at
+github.com/austinmwhaley/wonderland. One-way flow: rabbit_hole (stream) ->
+looking_glass (frozen self-supervised donor) -> plugins -> red_king (RSSM world
+model) -> red_queen (multi-cadence NBA), with white_queen (OPE certification) and
+caterpillar (interpretability). eighth_square owns algorithms/ + environments/.
+
+**Working:** stream + persistent-holdout measurement design; universal donor
+(gate 15/15; battery PASS: unique 75%, beats raw 6/8); plugins (6/6, 4/4, 5/5);
+white_queen (hardened, 99 tests); red_king population counterfactual (ordering 1.0,
+calib 0.99; optional); red_queen multi-cadence + multi-action + certification-gated
++ uplift-targeted; incrementality ATE +11.62 CI[11.19,12.08] with per-customer
+uplift (monotone quintiles, top-20% gain +18.95).
+
+**Robustness:** the system stays conservative on realistic (confounded, sparse,
+non-stationary) data — deconfounds via IPW, HOLDs uncorroborated policies, no fake
+lift. Honest limit: observational-only data cannot give per-customer CAUSAL effects;
+identification comes from the persistent hold-out.
+
+**Open/next:** 2) fuller management incrementality report (segments, CIs, receipt);
+3) validation harness + CI (requirements, test runner); optional: red_king
+enablement when its scorecard passes; caterpillar NL Q&A; broader experimentation.
+
+---
+
 # STATUS — Unified Customer Decisioning System
 
 Living state. Update after every phase. If resuming in a NEW session, read this

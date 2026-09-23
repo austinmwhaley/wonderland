@@ -1,167 +1,135 @@
-# The Work — Unified Customer Decisioning System
+# wonderland — Unified Customer Decisioning System
 
-A single, end-to-end platform that turns **raw customer data** into **next-best-action
-decisions**, learned entirely **offline-first** (no live exploration until a small
-controlled holdout is justified). Built for a large omni-channel retailer; designed
-to optimize total company gross margin / LTV.
+An **offline-first** platform that turns historical customer data into
+**next-best-action decisions** aimed at **long-term *incremental* gross margin**.
 
-Everything here is one system with a **strict one-way flow**. Each layer freezes
-its output and hands a versioned artifact to the next; nothing reaches backward.
+Deployment is **not assumed**. The system's job is to **train offline, analyze
+offline, and prove — with randomized persistent holdouts — that it has earned the
+right to act** (and to keep proving it). Nothing here requires live operation to
+make the case.
+
+Everything is one system with a **strict one-way flow**; each layer freezes a
+versioned artifact and hands it downstream. Nothing reaches backward.
 
 ```
-        rabbit_hole            looking_glass          white_queen
-  wide customer tables  ->  customer foundation  ->  offline policy learning
-  -> unified event stream     model (embeddings)       + OPE certification
-                                                            |
-                                                            v
-        red_queen         <-         red_king        <-  (policy candidates)
-  next-best-action engine    counterfactual world model
-  (hourly/daily/weekly)      (simulator)
+rabbit_hole ──▶ looking_glass ──▶ plugins ──▶ red_king ──▶ red_queen
+ (A: stream)    (B: donor)        (C: heads)   (world model)  (NBA engine)
+                                        └──▶ white_queen  (OPE certification)
+                                        └──▶ caterpillar  (explain, read-only)
 ```
 
 ---
 
 ## The layers
 
-### 1. `rabbit_hole` — Unified Customer Event Stream (Layer A / ingestion)
-Transforms **hundreds of wide customer tables** into **one unified customer event
-stream**:
+### A. `rabbit_hole` — Unified Customer Event Stream (ingestion)
+Turns wide customer tables into one append-only event stream:
+`[customer_key, event_ts, brand, event_type, event_attributes]` (+ entity, value).
 
-```
-[customer_key, event_ts, brand, event_type, event_attributes]
-```
+- **Storage: Apache Arrow** (`.arrow`/`.feather`, uncompressed IPC) primary,
+  memory-mapped/zero-copy; **DuckDB** for SQL; **Parquet** for archival. No SQLite,
+  no pandas.
+- Order economics (`revenue`, `cogs`, `gross_margin`) and email send/open/click.
+- **Measurement design:** a **persistent holdout** — 5% of customer-periods receive
+  **no marketing** — the randomized control that makes **incrementality
+  identifiable offline**.
+- Status: **implemented**; acceptance 25/25.
 
-- Faithful raw, append-only, one row per event, ordered per customer by time.
-- Identity resolution, canonical taxonomy, source QC (landing checks only — no
-  cleaning here; cleaning lives downstream and is versioned).
-- **Data layer: Apache Arrow** (`.arrow`/`.feather`, uncompressed IPC) is the
-  primary stream — memory-mapped and zero-copy into Polars/DuckDB; **DuckDB** is
-  the SQL query engine over it and **Parquet** is for compressed archival. No
-  SQLite, no pandas.
-- Storage + serving with **snapshot pinning** so any downstream version can
-  recreate exactly the rows it trained on.
-- Status: **implemented** — `rabbit_hole/` holds `schema.py`, `stream.py`, the
-  generators, and the event-stream data (`data/arrow/`, `data/duckdb/`).
-  rabbit_hole *ends* at the event stream; everything downstream lives in
-  looking_glass.
+### B. `looking_glass` — Customer Foundation Model (representation)
+A **frozen, self-supervised, action-free** sequence encoder (selective SSM) that
+produces a per-customer state. Horizon-free successor features + JEPA + multi-task
+objectives; company actions are **exogenous covariates** (never predicted).
 
-### 2. `looking_glass` — Customer Foundation Model (Layer B)
-Builds a **customer foundation model** over the rabbit_hole event stream: a
-sequence encoder (SSM / Mamba-2) that produces a customer state embedding
+- **Universal donor**: on the sufficiency battery it adds **unique** signal beyond
+  raw features (signal 100 / standalone 100 / unique 75% at 50k customers) and
+  **beats raw on 6/8 targets**.
+- Publishes **state tables only**: `encoder_samples` (strict A/B split),
+  `anchor_embeddings` (sample-B past-anchor states), `customer_state` (`h`+`as_of`
+  for `fade()`/`absorb()` inference), `state_dense` (weekly states).
+- Version = `vNrN` (`v` code, `r` data-revision hash); derived config; deterministic;
+  vectorized training.
+- Status: **implemented**; gate 15/15.
 
-```
-S_c(t) = embedding(customer, history <= t)      # 128-d, frozen, versioned
-```
+### C. `plugins` — Task heads (independent)
+Each plugin reads the frozen state and computes its **own** target against
+rabbit_hole. All pass their gates:
+- **supervised** (CLV: point/two-part/quantile/baseline) 6/6,
+- **unsupervised** (value-aware segmentation) 4/4,
+- **white_queen policy** plugin 5/5.
 
-- Pre-trained (masked-event + contrastive), frozen after release, served daily as
-  `customer_embedding_daily` (+ a private wide state cache).
-- Includes automated **HVA mining** (high-value-action discovery) beside the model.
-- Downstream consumers read **versioned embeddings via API only** — the foundation
-  is bit-identical for every consumer; no fine-tuning, no backward edges.
-- Status: **implemented** at `wonderland/looking_glass/` (specs preserved in
-  `wonderland/looking_glass/specs/`). It **points at rabbit_hole** for the event stream:
-  `data/{arrow,duckdb,logs}` and the generator are symlinks into `rabbit_hole/`,
-  and it reads the **Arrow** stream (`data/arrow/customer_event_stream.feather`)
-  zero-copy by default. Tokenization and all model code live here, not in
-  rabbit_hole.
+### `white_queen` — Offline RL + OPE certification
+Given logs, learns candidate policies and returns a **DEPLOY/HOLD** verdict with a
+certificate `(value,[lo,hi],behavior)`; ships only if it can **reject
+"not-better-than-logging"**. Hardened: **corroboration is required** (≥1 witness) —
+no certificate-only deploys. 99 tests.
 
-### 3. `white_queen` — Offline RL + Off-Policy Evaluation (learning layer)
-Given a **bucket of logs**, trains offline RL policies and returns **models plus a
-trustworthy DEPLOY / HOLD verdict with confidence intervals**. The product is one
-line:
+### `red_king` — Counterfactual world model
+A latent **RSSM** ("what happens if we act?") over frozen donor states, trained
+causally (clipped-IPW) and **validated against the known effect**. Robust as a
+**population** counterfactual estimator (ordering 1.0, calibration 0.99). Kept
+**optional** — per-customer personalization is handled by the holdout uplift model.
 
-```
-(value, [lo, hi], behavior_value)  ->  ship iff lo > behavior_value
-```
+### `red_queen` — Next-Best-Action engine (the product)
+Consumes the donor (+ optional red_king/white_queen) and emits decisions:
+- **multi-cadence** (daily/weekly/monthly) and **multi-action** (counts + composition,
+  spread within epochs);
+- **constraint middleware** (send budget, per-customer caps — reject, not clamp);
+- **fail-safe** (act only on positive incremental value);
+- **certification-gated** (HOLD when nothing is certified);
+- **uplift-targeted** (per-customer response model decides *whom* to market).
+- Status: **implemented**; validated mode beats the logging policy.
 
-- Ingests any log format (dict / Arrow / Polars / pandas / DuckDB / Parquet / CSV /
-  DB); discrete or continuous; bandit or sequential.
-- Trains IQL / CQL / BC (and continuous IQL), evaluates with an OPE panel
-  (FQE, model-based rollouts, DR/WIS, LSTDQ, ensembles), and certifies each
-  candidate — **never ships a model worse than the logging policy**.
-- Measured against a frozen, reproducible **acceptance contract + scorecard**
-  (coverage, safety, precision/recall, ranking).
-- **Generalizable by design**: works on any logs. Intended to optionally consume
-  `looking_glass` embeddings as the state representation, while remaining usable
-  standalone on arbitrary logs.
-- Status: **working** (99 tests; deterministic benchmark). See `white_queen/README.md`.
+### `caterpillar` — Interpretability (read-only)
+Answers "why" from artifacts: recommended action, nearest customers in donor space,
+provenance. v1.
 
-### 4. `red_king` — Counterfactual World Model (simulator)
-A learned **dynamics + reward model** of the customer world: given state and
-action, predict next state and outcome. Bootstrap-ensemble, uncertainty-aware,
-used for **counterfactual evaluation** ("what would have happened if…") and
-**model-based offline RL** (MOPO-style pessimistic rollouts).
-
-- Enables learning and comparing policies where logged action coverage is thin and
-  confounded — the core reason this platform is model-based first.
-- Status: **planned / empty**.
-
-### 5. `red_queen` — Next-Best-Action Engine (tip of the pyramid)
-The decision engine that consumes the learned value/world models and emits the
-**next best action per customer**, handling **multiple decision cadences**
-(hourly, daily, weekly) and hard business constraints.
-
-- Orchestrates policy heads (HVA selection first; personalization and delivery
-  after), enforces constraint middleware, and produces the deployable decision.
-- Status: **planned / empty**.
-
-### 6. `caterpillar` — Interpretability Engine
-A **plain-language interface over the whole system**. You ask questions in
-natural language and it answers them using the parts we have built — the event
-stream, the foundation-model embeddings, the learned policies, the world model,
-and the OPE results.
-
-- Examples: *"Why was this customer sent this action?"*, *"What drove the lift
-  for this segment?"*, *"What happens if we raise the email cap?"*, *"Why did the
-  model HOLD this policy?"*
-- Answers are grounded in the platform's own artifacts and receipts (estimates,
-  intervals, certificates, embeddings, counterfactuals) — not invented.
-- Sits **beside** the pipeline (reads everything, changes nothing).
-- Status: **planned / empty**.
+### `eighth_square` — Standalone RL library
+Owns the shared **`algorithms/`** and **`environments/`** (`wonderland/algorithms`
+and `wonderland/environments` are symlinks into it). Single source of truth.
 
 ---
 
-## Shared principles (from the specs)
+## The measurement that matters
+- **Persistent holdout** ⇒ randomized control ⇒ **causal incrementality offline**.
+- Current result: **ATE +11.62/period, 95% CI [11.19, 12.08]** (significant);
+  per-customer uplift is **predictable** and monotone across predicted quintiles
+  (−8.3 → +27.6); top-20% targeting gain **+18.95**.
+- Every claim carries a CI; where evidence is weak we **fall back to population or
+  HOLD**.
 
-- **One-way flow:** data → representation → policy → world model → decisions.
-  Downstream never reaches upstream; new needs become new upstream versions.
-- **Frozen foundation:** the base encoder is immutable per release and consumed
-  via a versioned API. Consumers add small heads, never fine-tune the base.
-- **Defensive by default:** assume NaN/Inf/out-of-distribution; fail safe.
-- **No ML fallback:** neural failure triggers infrastructure rollback to
-  business-as-usual, never heuristic degradation.
-- **Split train vs. evaluation rewards:** train on de-biased observed margin;
-  evaluate on **incremental counterfactual margin**.
-- **Offline-first:** prove value offline (temporal replay + rollouts + OPE +
-  sensitivity + constraint audits) before any live pilot.
-- **Everything is versioned and measured:** data snapshots, model versions,
-  embeddings, and the acceptance scorecard are all pinned and reproducible.
+## Principles
+See `AGENTS.md` (16 principles + v1 definition of done + repository/git workflow).
+In short: no magic numbers, learn don't teach, adapt by construction, fail safe
+(reject not clamp), uncertainty first, gate on ground truth, versioning = identity,
+speed-first, and **honesty on unkind real-world data**.
 
-## How the pieces connect
-
-- `rabbit_hole` produces the **event stream** (the ground truth of behavior).
-- `looking_glass` turns it into **frozen embeddings** (the state).
-- `white_queen` learns and certifies **offline policies** from logs — consuming
-  embeddings when available, generic logs otherwise.
-- `red_king` provides the **counterfactual simulator** for model-based learning
-  and evaluation.
-- `red_queen` composes the final **next-best actions** across cadences and
-  constraints.
-
-## Shared libraries
-
-`algorithms/`, `environments/`, `OFFSET/`, and `scripts/` are shared runtime
-dependencies used by `white_queen` (and later `red_king`/`red_queen`). They live
-at the `wonderland/` root so any component can import them (`from environments.registry
-import make_env`, `from algorithms....`).
+## Repository & workflow
+Source of truth: **https://github.com/austinmwhaley/wonderland** (`main`).
+Code/specs/docs are committed; **data, checkpoints, artifacts, and venvs are
+git-ignored** (regenerable). Workflow: `git pull --rebase` → change → `git add -A`
+→ `git commit` → `git push`. No nested `.git`.
 
 ## Status at a glance
+| Layer | Role | Status |
+|---|---|---|
+| rabbit_hole | stream + holdout design | ✅ |
+| looking_glass | universal donor | ✅ |
+| plugins | supervised / unsupervised / white_queen | ✅ |
+| white_queen | OPE certification (hardened) | ✅ |
+| red_king | counterfactual world model | ✅ (population; optional) |
+| red_queen | multi-cadence NBA + uplift targeting | ✅ |
+| caterpillar | interpretability | 🟡 v1 |
 
-| component   | role                          | status              |
-|-------------|-------------------------------|---------------------|
-| rabbit_hole | wide tables → event stream    | implemented         |
-| looking_glass | customer foundation model   | implemented (CFM validated) |
-| white_queen | offline RL + OPE certification | working (99 tests) |
-| red_king    | counterfactual world model    | planned (empty)     |
-| red_queen   | next-best-action engine       | planned (empty)     |
-| caterpillar | interpretability engine       | planned (empty)     |
+## How to run (offline)
+```bash
+# generate the stream
+PYTHONPATH=. python -m rabbit_hole.generators.generate_data --num-customers 25000 ...
+# train the donor + state tables
+PYTHONPATH=. python -m looking_glass.customer_foundation_model all --customers 25000 --anchors 6
+# donor gate / sufficiency battery
+PYTHONPATH=. python -m looking_glass.sufficiency_battery
+# plugins
+PYTHONPATH=. python -m plugins.run --window 365
+# incrementality + per-customer targeting
+PYTHONPATH=. python -m red_queen.response_model
+```
