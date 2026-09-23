@@ -55,6 +55,7 @@ def _ipw_effects(channel, action):
 
 
 def build_plan(cadence="weekly", budget=None, seed=0):
+	rng = np.random.default_rng(seed)
 	# per-channel best cadence arm + best discount (causal)
 	best_arm, best_disc, effects = {}, {}, {}
 	for ch in CHANNEL_CADENCE:
@@ -84,8 +85,9 @@ def build_plan(cadence="weekly", budget=None, seed=0):
 			break
 		contacts = []
 		for ch, cad in CHANNEL_CADENCE.items():
-			per_week = cad[int(best_arm[ch])]
-			n = int(round(per_week * (period_days / 7.0)))
+			r = cad[int(best_arm[ch])] * (period_days / 7.0)
+			# unbiased fractional-rate allocation (keeps low cadences alive)
+			n = int(r) + (1 if rng.random() < (r - int(r)) else 0)
 			n = int(min(n, max(0, budget - used)))
 			# (2) timing: spread within the window, respecting business hours
 			for j in range(n):
