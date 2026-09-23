@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "eighth_square"
+version = "0.1.0"
+description = "Standalone PyTorch reinforcement-learning library: tabular, deep, approximate, offline, bandits, multi-agent, and search algorithms."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = [
+    "numpy>=1.24",
+    "torch>=2.0",
+    "gymnasium>=1.0",
+    "matplotlib>=3.7",
+    "tqdm>=4.65",
+    "markdown>=3.4",
+]
+
+[project.optional-dependencies]
+box2d = ["gymnasium[box2d]", "swig"]
+dev = ["pytest>=7.0"]
+
+[project.scripts]
+eighth-square = "main:main"
+
+[tool.setuptools]
+py-modules = ["main", "benchmark", "visualize",
+              "run_experiment", "generate_docs"]
+
+[tool.setuptools.packages.find]
+include = [
+    "eighth_square*",
+    "algorithms*",
+    "environments*",
+    "core*",
+    "runners*",
+    "plotting*",
+    "tracking*",
+    "visualization*",
+    "experiments*",
+]
+exclude = ["tests*", "*__pycache__*"]

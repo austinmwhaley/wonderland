@@ -1,0 +1,84 @@
+{
+ "wis": 21.57479481034596,
+ "dr": 293.8779733942407,
+ "fqe_dm": 18.569456680615744,
+ "mb": {
+  "mb": 93.30319972521353,
+  "se": 0.0,
+  "sims": 200,
+  "cfg": {
+   "se_frac": 0.07071067811865475,
+   "sim_min": 200,
+   "sim_max": 800
+  }
+ },
+ "dyn_info": {
+  "val_mse": 0.01304,
+  "steps": 4860,
+  "n_evals": 20,
+  "stopped": "patience",
+  "lr_final": 0.0007757,
+  "y_sd": [
+   0.01582,
+   0.19246,
+   0.01082,
+   0.28898,
+   0.0
+  ],
+  "rew_range": [
+   1.0,
+   1.0
+  ]
+ },
+ "anchor": 24.9,
+ "magic": 18.569456712404886,
+ "wdr": 3724.692058029877,
+ "slope_pick": "anchor",
+ "mis": 36.70400858678025,
+ "blended": 18.569456680615744,
+ "lambda_dr": 0.0,
+ "ess_frac": 0.11680212379770286,
+ "temperature": 1.0,
+ "rho_cap": 6.666666401757145,
+ "fqe_info": {
+  "steps": 8991,
+  "n_evals": 37,
+  "val_bellman": 0.09268,
+  "stopped": "patience",
+  "lr_final": 3.732e-05,
+  "target": "periodic-eval-hard-sync",
+  "target_syncs": 37,
+  "device": "cuda",
+  "cfg": {
+   "hidden": 96,
+   "batch": 512,
+   "steps_max": 9752,
+   "eval_every": 243,
+   "patience": 4,
+   "lr": 0.0014142135623730952,
+   "holdout": 1950,
+   "seed": 0,
+   "device": "cuda"
+  }
+ },
+ "timing": {
+  "temp_select": 0.148,
+  "weights": 0.027,
+  "fqe": 15.486,
+  "dr": 0.196,
+  "mis": 116.588,
+  "wdr": 0.207,
+  "magic": 0.233,
+  "ensemble": 76.433,
+  "lstdq": 0.265,
+  "fve": 2.137,
+  "dynamics": 5.302,
+  "rollout": 1.633,
+  "gdice": 118.454,
+  "cis_slope": 0.056,
+  "total": 337.165
+ },
+ "mu_source": "logged",
+ "truth": 9.05843988203259,
+ "proxy_truth": 20.810992928040456
+}

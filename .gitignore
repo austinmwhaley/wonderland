@@ -1,0 +1,44 @@
+# ---- large / regenerable: NEVER commit ----
+# data stores
+data/
+**/data/
+*.duckdb
+*.ddb
+*.sqlite
+*.feather
+*.arrow
+*.parquet
+*.npz
+
+# model checkpoints / artifacts
+artifacts/
+**/artifacts/
+checkpoints/
+**/checkpoints/
+results/
+**/results/
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.onnx
+
+# envs / caches / logs
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+*.log
+logs/
+**/logs/
+
+# os / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp

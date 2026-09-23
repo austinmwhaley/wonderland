@@ -1,0 +1,822 @@
+<html><head><meta charset="utf-8"><title>ALGORITHM_CARDS.html</title><style>
+body { font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 950px; margin: 40px auto; padding: 0 24px; line-height: 1.55; color: #1a1a1a; }
+pre { background: #f6f8fa; padding: 14px; border-radius: 6px; overflow-x: auto; font-size: 13px; }
+code { background: #f6f8fa; padding: 1px 4px; border-radius: 3px; font-size: 13px; }
+pre code { background: none; padding: 0; }
+h1 { border-bottom: 2px solid #eaeef2; padding-bottom: 8px; }
+h2 { margin-top: 40px; border-bottom: 1px solid #eaeef2; padding-bottom: 4px; }
+h3 { margin-top: 28px; }
+table { border-collapse: collapse; margin: 14px 0; width: 100%; font-size: 14px; }
+th, td { border: 1px solid #d0d7de; padding: 6px 10px; text-align: left; }
+th { background: #f6f8fa; }
+a { color: #0969da; text-decoration: none; }
+a:hover { text-decoration: underline; }
+hr { border: none; border-top: 1px solid #d0d7de; margin: 22px 0; }
+blockquote { border-left: 4px solid #d0d7de; margin: 0; padding: 2px 16px; color: #57606a; }
+ul, ol { margin: 4px 0; }
+</style>
+<script>
+window.MathJax = {
+  options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea'] },
+  tex: {
+    inlineMath: [['\\(', '\\)'], ['$', '$']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']]
+  }
+};
+</script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head><body><h1>Algorithm Summary Cards</h1>
+<p>One card per algorithm: generation, lineage (edge in the family tree), the idea
+it adds, and the core equations in LaTeX (rendered with MathJax in the HTML
+preview). See <code>FAMILY_TREE.html</code> for the full tree; <code>ALGORITHMS.html</code> for the
+registry table.</p>
+<hr />
+<h2>Generation 0 — Roots</h2>
+<hr />
+<h3><code>epsilon_greedy_bandit</code></h3>
+<ul>
+<li><strong>Lineage:</strong> root (bandits)</li>
+<li><strong>Concept:</strong> Pull the arm with the best average reward so far, except with probability ε.</li>
+<li><strong>Idea added:</strong> learn action values from rewards; explore by random ε.</li>
+</ul>
+<pre><code class="language-latex">$$
+Q(a) \leftarrow Q(a) + \alpha\big(r - Q(a)\big), \qquad
+\pi(a) = \begin{cases} 1 - \varepsilon + \varepsilon/n &amp; a = \arg\max_{a'} Q(a') \\ \varepsilon/n &amp; \text{otherwise} \end{cases}
+$$
+</code></pre>
+<hr />
+<h3><code>policy_evaluation</code></h3>
+<ul>
+<li><strong>Lineage:</strong> root (DP)</li>
+<li><strong>Concept:</strong> Compute a fixed policy's value by iterating the Bellman backup over a known model.</li>
+<li><strong>Idea added:</strong> repeated Bellman backup over the model's transition table.</li>
+</ul>
+<pre><code class="language-latex">$$
+V_{k+1}(s) = \sum_a \pi(a|s) \sum_{s'} p(s'|s,a)\big[r + \gamma V_k(s')\big]
+$$
+</code></pre>
+<hr />
+<h3><code>mc_prediction</code></h3>
+<ul>
+<li><strong>Lineage:</strong> root (MC)</li>
+<li><strong>Concept:</strong> Estimate values by averaging the full returns of complete episodes.</li>
+<li><strong>Idea added:</strong> average full-episode returns for visited states.</li>
+</ul>
+<pre><code class="language-latex">$$
+V(s) \leftarrow V(s) + \alpha\big(G_t - V(s)\big), \qquad
+G_t = \sum_{k=0}^{\infty} \gamma^k R_{t+k+1}
+$$
+</code></pre>
+<hr />
+<h3><code>td0_prediction</code></h3>
+<ul>
+<li><strong>Lineage:</strong> root (TD)</li>
+<li><strong>Concept:</strong> Learn values from single transitions by bootstrapping off the next state's estimate.</li>
+<li><strong>Idea added:</strong> bootstrap the value from the next state's estimate.</li>
+</ul>
+<pre><code class="language-latex">$$
+V(s) \leftarrow V(s) + \alpha\big(r + \gamma V(s') - V(s)\big)
+$$
+</code></pre>
+<hr />
+<h3><code>reinforce</code></h3>
+<ul>
+<li><strong>Lineage:</strong> root (policy gradient)</li>
+<li><strong>Concept:</strong> A direct policy gradient: nudge the actions that led to good returns.</li>
+<li><strong>Idea added:</strong> the policy gradient theorem — ascend \(\nabla J\) directly.</li>
+</ul>
+<pre><code class="language-latex">$$
+\nabla_\theta J(\theta) = \mathbb{E}_\pi\big[\nabla_\theta \log \pi_\theta(a|s)\, G_t\big]
+$$
+</code></pre>
+<hr />
+<h2>Generation 1 — First Children</h2>
+<hr />
+<h3><code>optimistic_bandit</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>epsilon_greedy_bandit → optimistic_bandit</code></li>
+<li><strong>Concept:</strong> Start every arm optimistically high so the agent explores until proven wrong.</li>
+<li><strong>Idea added:</strong> optimistic initialization — explore by being wrong.</li>
+</ul>
+<pre><code class="language-latex">$$
+Q_0(a) \gg 0 \ \forall a, \qquad Q(a) \leftarrow Q(a) + \alpha\big(r - Q(a)\big)
+$$
+</code></pre>
+<hr />
+<h3><code>ucb_bandit</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>epsilon_greedy_bandit → ucb_bandit</code></li>
+<li><strong>Concept:</strong> Score arms by value plus uncertainty — the undercounted get explored automatically.</li>
+<li><strong>Idea added:</strong> uncertainty bonus instead of ε.</li>
+</ul>
+<pre><code class="language-latex">$$
+a_t = \arg\max_a\Big[Q(a) + c\sqrt{\frac{\ln t}{N(a)}}\Big]
+$$
+</code></pre>
+<hr />
+<h3><code>gradient_bandit</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>epsilon_greedy_bandit → gradient_bandit</code></li>
+<li><strong>Concept:</strong> Learn softmax action preferences by gradient ascent instead of storing values.</li>
+<li><strong>Idea added:</strong> softmax preferences + baseline — the policy-gradient idea in miniature.</li>
+</ul>
+<pre><code class="language-latex">$$
+H(a) \leftarrow H(a) + \alpha (r - \bar r)\big(\mathbb{1}\{a = A_t\} - \pi(a)\big), \qquad
+\pi(a) = \frac{e^{H(a)}}{\sum_{a'} e^{H(a')}}
+$$
+</code></pre>
+<hr />
+<h3><code>thompson_sampling</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>epsilon_greedy_bandit → thompson_sampling</code></li>
+<li><strong>Concept:</strong> Treat each arm's mean as a posterior distribution and sample from it — explore by random draw.</li>
+<li><strong>Idea added:</strong> sample actions from a Bayesian posterior.</li>
+</ul>
+<pre><code class="language-latex">$$
+\theta_a \sim \mathrm{Beta}(\alpha_a, \beta_a) \ \text{per arm}, \qquad a_t = \arg\max_a \theta_a
+$$
+</code></pre>
+<hr />
+<h3><code>policy_iteration</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>policy_evaluation → policy_iteration</code></li>
+<li><strong>Concept:</strong> Alternate full policy evaluation with greedy improvement until the policy stops changing.</li>
+<li><strong>Idea added:</strong> greedy improvement after each evaluation pass.</li>
+</ul>
+<pre><code class="language-latex">$$
+\pi'(s) = \arg\max_a \sum_{s'} p(s'|s,a)\big[r + \gamma V^{\pi}(s')\big]
+$$
+</code></pre>
+<hr />
+<h3><code>value_iteration</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>policy_iteration → value_iteration</code></li>
+<li><strong>Concept:</strong> Squeeze evaluation and improvement into a single in-place max-backup.</li>
+<li><strong>Idea added:</strong> fuse evaluation + improvement into one Bellman <em>optimality</em> backup.</li>
+</ul>
+<pre><code class="language-latex">$$
+V(s) \leftarrow \max_a \sum_{s'} p(s'|s,a)\big[r + \gamma V(s')\big]
+$$
+</code></pre>
+<hr />
+<h3><code>mc_control_onpolicy</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>mc_prediction → mc_control_onpolicy</code></li>
+<li><strong>Concept:</strong> Learn action values from episode returns, improving an ε-soft policy between episodes.</li>
+<li><strong>Idea added:</strong> learn Q under an ε-soft policy, improve between episodes.</li>
+</ul>
+<pre><code class="language-latex">$$
+Q(s,a) \leftarrow Q(s,a) + \alpha\big(G_t - Q(s,a)\big), \qquad \text{ε-soft improvement: } \pi \leftarrow \varepsilon\text{-greedy}(Q)
+$$
+</code></pre>
+<hr />
+<h3><code>mc_control_offpolicy</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>mc_prediction → mc_control_offpolicy</code></li>
+<li><strong>Concept:</strong> Learn the greedy policy from episodes played by another policy, reweighted by importance sampling.</li>
+<li><strong>Idea added:</strong> importance sampling to the greedy target policy.</li>
+</ul>
+<pre><code class="language-latex">$$
+Q(s,a) \leftarrow Q(s,a) + \alpha\,\rho_{t+1}\big(G_t - Q(s,a)\big), \qquad
+\rho = \frac{\pi(a|s)}{b(a|s)}
+$$
+</code></pre>
+<hr />
+<h3><code>sarsa</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>td0_prediction → sarsa</code></li>
+<li><strong>Concept:</strong> Learn on-policy action values by bootstrapping from the next state-action pair.</li>
+<li><strong>Idea added:</strong> on-policy control — bootstrap with the next action actually taken.</li>
+</ul>
+<pre><code class="language-latex">$$
+Q(s,a) \leftarrow Q(s,a) + \alpha\big(r + \gamma Q(s',a') - Q(s,a)\big)
+$$
+</code></pre>
+<hr />
+<h3><code>qlearning</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>td0_prediction → qlearning</code></li>
+<li><strong>Concept:</strong> Learn the optimal action values directly by bootstrapping from the best next action.</li>
+<li><strong>Idea added:</strong> off-policy control — bootstrap with the max next action.</li>
+</ul>
+<pre><code class="language-latex">$$
+Q(s,a) \leftarrow Q(s,a) + \alpha\big(r + \gamma \max_{a'} Q(s',a') - Q(s,a)\big)
+$$
+</code></pre>
+<hr />
+<h2>Generation 2 — Refinements of TD Control</h2>
+<hr />
+<h3><code>expected_sarsa</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>sarsa → expected_sarsa</code></li>
+<li><strong>Concept:</strong> SARSA with the expected next value instead of the sampled one — variance reduction for free.</li>
+<li><strong>Idea added:</strong> expectation target — variance reduction.</li>
+</ul>
+<pre><code class="language-latex">$$
+Q(s,a) \leftarrow Q(s,a) + \alpha\Big(r + \gamma \sum_{a'} \pi(a'|s') Q(s',a') - Q(s,a)\Big)
+$$
+</code></pre>
+<hr />
+<h3><code>nstep_sarsa</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>sarsa → nstep_sarsa</code></li>
+<li><strong>Concept:</strong> Dial the bootstrap horizon: wait n steps before trusting the estimate.</li>
+<li><strong>Idea added:</strong> wait n steps before bootstrapping.</li>
+</ul>
+<pre><code class="language-latex">$$
+G_t^{(n)} = R_{t+1} + \gamma R_{t+2} + \dots + \gamma^{n-1} R_{t+n} + \gamma^n Q(S_{t+n}, A_{t+n})
+$$
+</code></pre>
+<hr />
+<h3><code>nstep_expected_sarsa</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>nstep_sarsa → nstep_expected_sarsa</code></li>
+<li><strong>Concept:</strong> n-step returns with an expectation bootstrap at the end.</li>
+<li><strong>Idea added:</strong> n-step returns with expected-value bootstrapping.</li>
+</ul>
+<pre><code class="language-latex">$$
+G_t^{(n)} = \sum_{k=1}^{n} \gamma^{k-1} R_{t+k} + \gamma^n \sum_{a'} \pi(a'|S_{t+n}) Q(S_{t+n}, a')
+$$
+</code></pre>
+<hr />
+<h3><code>tree_backup</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>nstep_sarsa → tree_backup</code></li>
+<li><strong>Concept:</strong> Off-policy control without importance sampling, blending n-step returns with target-policy expectations.</li>
+<li><strong>Idea added:</strong> off-policy without importance sampling — target-policy expectations.</li>
+</ul>
+<pre><code class="language-latex">$$
+G_{t:t+n} = \sum_{k=1}^{n} \gamma^{k-1} \Big(\prod_{i=1}^{k-1} \pi(A_{t+i}|S_{t+i})\Big) R_{t+k}
++ \gamma^n \Big(\prod_{i=1}^{n-1} \pi(A_{t+i}|S_{t+i})\Big) \sum_{a'} \pi(a'|S_{t+n}) Q(S_{t+n}, a')
+$$
+</code></pre>
+<hr />
+<h3><code>nstep_off_policy</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>nstep_sarsa → nstep_off_policy</code></li>
+<li><strong>Concept:</strong> n-step control with per-decision importance ratios correcting the behavior policy.</li>
+<li><strong>Idea added:</strong> per-decision importance ratios.</li>
+</ul>
+<pre><code class="language-latex">$$
+Q \leftarrow Q + \alpha\, \rho_{t+1:t+n}\big(G_t^{(n)} - Q(s,a)\big), \qquad
+\rho_{t+1:t+n} = \prod_{k=1}^{n} \frac{\pi(A_{t+k}|S_{t+k})}{b(A_{t+k}|S_{t+k})}
+$$
+</code></pre>
+<hr />
+<h3><code>double_qlearning</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>qlearning → double_qlearning</code></li>
+<li><strong>Concept:</strong> Two value tables, so the max of one can't inflate the other.</li>
+<li><strong>Idea added:</strong> twin tables remove maximization bias.</li>
+</ul>
+<pre><code class="language-latex">$$
+Q_1(s,a) \leftarrow Q_1(s,a) + \alpha\Big(r + \gamma Q_2\big(s', \arg\max_{a'} Q_1(s',a')\big) - Q_1(s,a)\Big)
+$$
+</code></pre>
+<hr />
+<h3><code>td_lambda_prediction</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>td0_prediction → td_lambda_prediction</code></li>
+<li><strong>Concept:</strong> Blend all n-step returns into one λ-weighted return — the MC↔TD dial.</li>
+<li><strong>Idea added:</strong> λ-weighted returns — the MC ↔ TD bridge.</li>
+</ul>
+<pre><code class="language-latex">$$
+G_t^{\lambda} = (1-\lambda) \sum_{n=1}^{\infty} \lambda^{n-1} G_t^{(n)}
+$$
+</code></pre>
+<hr />
+<h3><code>sarsa_lambda</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>sarsa → sarsa_lambda</code></li>
+<li><strong>Concept:</strong> Spread one step's TD error backward through eligibility traces, on-policy.</li>
+<li><strong>Idea added:</strong> eligibility traces for on-policy control.</li>
+</ul>
+<pre><code class="language-latex">$$
+Q \leftarrow Q + \alpha \delta_t e_t, \qquad
+\delta_t = r + \gamma Q(s',a') - Q(s,a), \qquad
+e_t \leftarrow \gamma\lambda e_{t-1} + \mathbb{1}\{S_t = s,\, A_t = a\}
+$$
+</code></pre>
+<hr />
+<h3><code>q_lambda</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>qlearning → q_lambda</code></li>
+<li><strong>Concept:</strong> Off-policy traces cut wherever the behavior action was not greedy.</li>
+<li><strong>Idea added:</strong> traces for off-policy control, cut at non-greedy actions.</li>
+</ul>
+<pre><code class="language-latex">$$
+e_t \leftarrow \begin{cases} \gamma\lambda e_{t-1} + 1 &amp; A_t \text{ greedy w.r.t. } Q \\ 0 &amp; \text{otherwise} \end{cases}
+$$
+</code></pre>
+<hr />
+<h3><code>dyna_q</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>qlearning → dyna_q</code></li>
+<li><strong>Concept:</strong> Learn a model on the side and plan by replaying simulated Q-learning backups.</li>
+<li><strong>Idea added:</strong> learn a model, then plan with simulated backups between real steps.</li>
+</ul>
+<pre><code class="language-latex">$$
+\text{model: } (S_t, A_t) \to (R_{t+1}, S_{t+1}); \qquad \text{repeat } n \text{ times per step: Q-learning on sampled model transitions}
+$$
+</code></pre>
+<hr />
+<h3><code>dyna_q_plus</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>dyna_q → dyna_q_plus</code></li>
+<li><strong>Concept:</strong> Plan with a small optimism bonus for pairs the real world stopped visiting.</li>
+<li><strong>Idea added:</strong> optimism bonus for stale pairs — optimism from UCB.</li>
+</ul>
+<pre><code class="language-latex">$$
+r + \kappa\sqrt{\tau} \ \text{where } \tau \text{ = steps since } (s,a) \text{ last visited}
+$$
+</code></pre>
+<hr />
+<h3><code>prioritized_sweeping</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>dyna_q → prioritized_sweeping</code></li>
+<li><strong>Concept:</strong> Plan only where the TD error is big — a priority queue of surprise.</li>
+<li><strong>Idea added:</strong> order planning by TD-error magnitude — ancestor of prioritized replay.</li>
+</ul>
+<pre><code class="language-latex">$$
+p = \big|r + \gamma \max_{a'} Q(s',a') - Q(s,a)\big|
+$$
+</code></pre>
+<hr />
+<h2>Generation 3 — Function Approximation (and its dangers)</h2>
+<hr />
+<h3><code>semi_gradient_sarsa</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>sarsa → semi_gradient_sarsa</code></li>
+<li><strong>Concept:</strong> SARSA with the value table replaced by a function approximator.</li>
+<li><strong>Idea added:</strong> replace the table with a function approximator; semi-gradient update.</li>
+</ul>
+<pre><code class="language-latex">$$
+w \leftarrow w + \alpha\big(r + \gamma \hat{Q}(s',a',w) - \hat{Q}(s,a,w)\big)\nabla_w \hat{Q}(s,a,w)
+$$
+</code></pre>
+<hr />
+<h3><code>naive_qlearning</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>qlearning → naive_qlearning</code></li>
+<li><strong>Concept:</strong> Q-learning with a neural net and no stabilizers — the textbook way to diverge.</li>
+<li><strong>Idea added:</strong> neural Q + max bootstrap, no stabilizers — the deadly-triad anti-pattern.</li>
+</ul>
+<pre><code class="language-latex">$$
+w \leftarrow w + \alpha\big(r + \gamma \max_{a'} \hat{Q}(s',a',w) - \hat{Q}(s,a,w)\big)\nabla_w \hat{Q}(s,a,w) \quad \text{(diverges)}
+$$
+</code></pre>
+<hr />
+<h3><code>gtd</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>td0_prediction → gtd</code></li>
+<li><strong>Concept:</strong> Off-policy TD as true gradient descent, so it converges where naive TD diverges.</li>
+<li><strong>Idea added:</strong> true gradient off-policy TD with a second weight vector (GTD2).</li>
+</ul>
+<pre><code class="language-latex">$$
+\delta_t = r_t + \gamma w_t^{\top}\phi_{t+1} - w_t^{\top}\phi_t, \qquad
+w_{t+1} = w_t + \alpha_t \rho_t\big(\delta_t \phi_t - \gamma \phi_{t+1}(h_t^{\top}\phi_t)\big), \qquad
+h_{t+1} = h_t + \beta_t \rho_t\big(\delta_t \phi_t - (h_t^{\top}\phi_t)\phi_t\big)
+$$
+</code></pre>
+<hr />
+<h3><code>tde</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>td0_prediction → tde</code></li>
+<li><strong>Concept:</strong> TD(λ) made exact per step with the dutch eligibility trace.</li>
+<li><strong>Idea added:</strong> True Online TD(λ) — the dutch trace makes the per-step update exact.</li>
+</ul>
+<pre><code class="language-latex">$$
+\delta_t = r_t + \gamma w_t^{\top}\phi_{t+1} - w_t^{\top}\phi_t, \qquad
+e_t = \gamma\lambda e_{t-1} + \phi_t - \alpha\gamma\lambda (e_{t-1}^{\top}\phi_t)\phi_t, \qquad
+w_{t+1} = w_t + \alpha \delta_t e_t
+$$
+</code></pre>
+<hr />
+<h3><code>emphatic_td</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>td0_prediction → emphatic_td</code></li>
+<li><strong>Concept:</strong> Re-weight off-policy TD updates by emphasis so they match the target policy's visit distribution.</li>
+<li><strong>Idea added:</strong> re-weight the update by an emphasis that grows where the target policy visits more.</li>
+</ul>
+<pre><code class="language-latex">$$
+M_t = \lambda \rho_{t-1} M_{t-1} + 1, \qquad
+w_{t+1} = w_t + \alpha M_t \rho_t \delta_t \phi_t
+$$
+</code></pre>
+<hr />
+<h2>Generation 4a — Deep Q-Learning</h2>
+<hr />
+<h3><code>dqn</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>naive_qlearning → dqn</code></li>
+<li><strong>Concept:</strong> Deep Q-learning stabilized by experience replay and a target network.</li>
+<li><strong>Idea added:</strong> experience replay + target network — the fix for the deadly triad.</li>
+</ul>
+<pre><code class="language-latex">$$
+\mathcal{L}(\theta) = \mathbb{E}_{(s,a,r,s') \sim D}\Big[\big(r + \gamma \max_{a'} Q(s',a';\theta^{-}) - Q(s,a;\theta)\big)^2\Big]
+$$
+</code></pre>
+<hr />
+<h3><code>double_dqn</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>dqn → double_dqn</code></li>
+<li><strong>Concept:</strong> DQN that selects with the online net and evaluates with the target — an unbiased max.</li>
+<li><strong>Idea added:</strong> select with the online net, evaluate with the target net.</li>
+</ul>
+<pre><code class="language-latex">$$
+y = r + \gamma Q\big(s', \arg\max_{a'} Q(s',a';\theta); \theta^{-}\big)
+$$
+</code></pre>
+<hr />
+<h3><code>dueling_dqn</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>dqn → dueling_dqn</code></li>
+<li><strong>Concept:</strong> Split Q into value plus advantage streams so the network learns state value directly.</li>
+<li><strong>Idea added:</strong> split the head into V and advantage streams.</li>
+</ul>
+<pre><code class="language-latex">$$
+Q(s,a) = V(s) + A(s,a) - \frac{1}{|\mathcal{A}|}\sum_{a'} A(s,a')
+$$
+</code></pre>
+<hr />
+<h3><code>prioritized_dqn</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>dqn → prioritized_dqn</code></li>
+<li><strong>Concept:</strong> Replay that samples the transitions with the biggest TD errors.</li>
+<li><strong>Idea added:</strong> sample replay by TD-error magnitude.</li>
+</ul>
+<pre><code class="language-latex">$$
+p_i \propto |\delta_i|^{\alpha}, \qquad w_i = (N \cdot p_i)^{-\beta}
+$$
+</code></pre>
+<hr />
+<h3><code>c51</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>dqn → c51</code></li>
+<li><strong>Concept:</strong> Predict the whole distribution of returns, not just the mean.</li>
+<li><strong>Idea added:</strong> predict the distribution over returns (51 atoms).</li>
+</ul>
+<pre><code class="language-latex">$$
+\mathcal{L} = \mathrm{KL}\big(\Phi(\mathcal{T} d)\;\|\; d(s,a)\big), \qquad
+z_j = V_{\min} + j\,\Delta \ (j = 0, \dots, 50)
+$$
+</code></pre>
+<hr />
+<h3><code>qr_dqn</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>c51 → qr_dqn</code></li>
+<li><strong>Concept:</strong> The distributional idea with quantiles instead of a fixed atom grid.</li>
+<li><strong>Idea added:</strong> quantile regression instead of a fixed atom grid.</li>
+</ul>
+<pre><code class="language-latex">$$
+\mathcal{L} = \sum_{i,j} \rho_{\tau_i}\big(z_j^{\text{target}} - Z_\theta(s,a)_i\big), \qquad
+\rho_\tau(u) = u\big(\tau - \mathbb{1}\{u &lt; 0\}\big)
+$$
+</code></pre>
+<hr />
+<h3><code>rainbow</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>double_dqn + dueling_dqn + prioritized_dqn + c51 + n-step + noisy → rainbow</code></li>
+<li><strong>Concept:</strong> The sum of every DQN improvement, in one agent.</li>
+<li><strong>Idea added:</strong> every DQN improvement in one agent.</li>
+</ul>
+<pre><code class="language-latex">$$
+\mathcal{L} = \text{double Q target} + \text{dueling architecture} + \text{prioritized sampling} + \text{categorical distribution} + \text{n-step returns} + \text{noisy nets}
+$$
+</code></pre>
+<hr />
+<h2>Generation 4b — The Policy-Gradient Lineage's First Children</h2>
+<hr />
+<h3><code>reinforce_baseline</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>reinforce → reinforce_baseline</code></li>
+<li><strong>Concept:</strong> REINFORCE with a value baseline that removes variance, not bias.</li>
+<li><strong>Idea added:</strong> subtract a learned baseline — variance reduction without bias.</li>
+</ul>
+<pre><code class="language-latex">$$
+\nabla_\theta J = \mathbb{E}\big[\nabla_\theta \log \pi_\theta(a|s)\big(G_t - b(s)\big)\big]
+$$
+</code></pre>
+<hr />
+<h3><code>actor_critic</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>reinforce_baseline → actor_critic</code></li>
+<li><strong>Concept:</strong> An actor that moves the policy and a critic that grades each step.</li>
+<li><strong>Idea added:</strong> bootstrapped critic instead of the full return.</li>
+</ul>
+<pre><code class="language-latex">$$
+\delta = r + \gamma V(s') - V(s), \qquad
+\theta \leftarrow \theta + \alpha \nabla_\theta \log \pi_\theta(a|s)\, \delta, \qquad
+w \leftarrow w + \beta\, \delta\, \nabla_w V(s)
+$$
+</code></pre>
+<hr />
+<h3><code>a2c</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>actor_critic → a2c</code></li>
+<li><strong>Concept:</strong> Many parallel actors reporting to one critic for lower-variance updates.</li>
+<li><strong>Idea added:</strong> synchronous parallel actors + n-step advantages.</li>
+</ul>
+<pre><code class="language-latex">$$
+A_t = \sum_{k=1}^{n} \gamma^{k-1} R_{t+k} + \gamma^n V(S_{t+n}) - V(S_t)
+$$
+</code></pre>
+<hr />
+<h3><code>trpo</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>a2c → trpo</code></li>
+<li><strong>Concept:</strong> Update the policy only inside a KL trust region where the change is provably safe.</li>
+<li><strong>Idea added:</strong> constrain updates to a KL trust region.</li>
+</ul>
+<pre><code class="language-latex">$$
+\max_\theta \mathbb{E}\Big[\frac{\pi_\theta(a|s)}{\pi_{\text{old}}(a|s)} A\Big] \quad \text{s.t.} \quad D_{\mathrm{KL}}\big(\pi_{\text{old}}\,\|\,\pi_\theta\big) \le \delta
+$$
+</code></pre>
+<hr />
+<h3><code>ppo</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>trpo → ppo</code></li>
+<li><strong>Concept:</strong> The same safety via a clipped surrogate objective — cheap and stable.</li>
+<li><strong>Idea added:</strong> clipped surrogate — same stability, much cheaper.</li>
+</ul>
+<pre><code class="language-latex">$$
+\mathcal{L} = \mathbb{E}\Big[\min\big(r_t(\theta) A_t,\ \mathrm{clip}\big(r_t(\theta), 1\pm\varepsilon\big) A_t\big)\Big], \qquad
+r_t(\theta) = \frac{\pi_\theta(a_t|s_t)}{\pi_{\text{old}}(a_t|s_t)}
+$$
+</code></pre>
+<hr />
+<h2>Generation 5 — Continuous Control</h2>
+<hr />
+<h3><code>ddpg</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>dqn + actor_critic → ddpg</code></li>
+<li><strong>Concept:</strong> An actor that learns by backprop through a critic's Q, for continuous actions.</li>
+<li><strong>Idea added:</strong> deterministic policy gradient — train an actor by backprop through the critic.</li>
+</ul>
+<pre><code class="language-latex">$$
+\nabla_\theta J = \mathbb{E}_D\big[\nabla_a Q(s,a;\phi)\big|_{a=\mu_\theta(s)} \nabla_\theta \mu_\theta(s)\big], \qquad
+y = r + \gamma Q'\big(s', \mu'(s')\big)
+$$
+</code></pre>
+<hr />
+<h3><code>td3</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>ddpg → td3</code></li>
+<li><strong>Concept:</strong> DDPG with twin critics, delayed updates, and smoothed targets to stop overestimation.</li>
+<li><strong>Idea added:</strong> twin critics (min), delayed updates, target-policy smoothing.</li>
+</ul>
+<pre><code class="language-latex">$$
+y = r + \gamma \min_{i=1,2} Q_i'\big(s', \mu'(s') + \mathrm{clip}(\epsilon, -c, c)\big), \qquad
+\epsilon \sim \mathcal{N}(0, \sigma)
+$$
+</code></pre>
+<hr />
+<h3><code>sac</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>td3 → sac</code></li>
+<li><strong>Concept:</strong> Maximize reward and entropy at once, with an auto-tuned temperature.</li>
+<li><strong>Idea added:</strong> maximum entropy — exploration as a first-class objective, auto-tuned temperature.</li>
+</ul>
+<pre><code class="language-latex">$$
+J(\pi) = \sum_t \mathbb{E}\big[R_t + \alpha \mathcal{H}\big(\pi(\cdot|s_t)\big)\big], \qquad
+\alpha \text{ tuned to a target entropy}
+$$
+</code></pre>
+<hr />
+<h2>Generation 6 — Off-Policy &amp; Distributed Actor-Critics</h2>
+<hr />
+<h3><code>impala</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>a2c → impala</code></li>
+<li><strong>Concept:</strong> A central learner correcting many actors' stale trajectories with V-trace.</li>
+<li><strong>Idea added:</strong> V-trace — per-step importance correction for learning from parallel actors.</li>
+</ul>
+<pre><code class="language-latex">$$
+\rho_t = \min\Big(\bar\rho, \frac{\pi(a_t|s_t)}{\mu(a_t|s_t)}\Big), \quad
+c_i = \min\Big(\bar c, \frac{\pi(a_i|s_i)}{\mu(a_i|s_i)}\Big), \qquad
+v_s = V(s) + \sum_{t \ge s} \gamma^{t-s} \Big(\prod_{i=s}^{t-1} c_i\Big) \rho_t \big(r_t + \gamma V(s_{t+1}) - V(s_t)\big)
+$$
+</code></pre>
+<hr />
+<h3><code>acer</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>impala → acer</code></li>
+<li><strong>Concept:</strong> Off-policy actor-critic with truncated importance ratios and a trust-region gradient.</li>
+<li><strong>Idea added:</strong> truncated IS actor update + retrace critic target + trust-region gradient.</li>
+</ul>
+<pre><code class="language-latex">$$
+g = \rho_t \nabla_\theta \log \pi_\theta(a_t|s_t)\, A_t + \underbrace{\mathbb{E}_{a \sim \mu}\big[\rho(a) \hat{Q}_{\text{retrace}}(s,a) \nabla_\theta \log\pi_\theta\big] - \mathbb{E}_{a \sim \pi}\big[\rho(a) \hat{Q}(s,a) \nabla_\theta \log\pi_\theta\big]}_{\text{bias correction}}
+$$
+</code></pre>
+<hr />
+<h3><code>acktr</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>impala → acktr</code></li>
+<li><strong>Concept:</strong> A2C with a Kronecker-factored natural gradient instead of Adam.</li>
+<li><strong>Idea added:</strong> Kronecker-factored natural gradient — trust region at Adam's cost.</li>
+</ul>
+<pre><code class="language-latex">$$
+F \approx G \otimes A \quad \text{(Kronecker product of input and gradient covariances)}, \qquad
+\Delta\theta = -F^{-1}\nabla_\theta \mathcal{L}
+$$
+</code></pre>
+<hr />
+<h2>Generation 7 — Model-Based &amp; Learned World Models</h2>
+<hr />
+<h3><code>mcts</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>dyna_q → mcts</code></li>
+<li><strong>Concept:</strong> Plan by building a search tree, balancing exploration with UCB1.</li>
+<li><strong>Idea added:</strong> tree search over the true model — UCB1 selection, rollout evaluation.</li>
+</ul>
+<pre><code class="language-latex">$$
+a = \arg\max_a\Big[Q(s,a) + c\sqrt{\frac{\ln N(s)}{N(s,a)}}\Big], \qquad
+Q(s,a) = \frac{\text{returns through } (s,a)}{N(s,a)}
+$$
+</code></pre>
+<hr />
+<h3><code>alphazero</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>mcts → alphazero</code></li>
+<li><strong>Concept:</strong> MCTS whose rollouts are replaced by a learned policy-value network trained by self-play.</li>
+<li><strong>Idea added:</strong> PUCT search guided by learned policy/value networks; self-play data.</li>
+</ul>
+<pre><code class="language-latex">$$
+a = \arg\max_a\Big[Q(s,a) + c_{\text{puct}} P(s,a)\frac{\sqrt{N(s)}}{1+N(s,a)}\Big], \qquad
+\mathcal{L} = (z - v)^2 - \pi^{\top}\log p + c\|\theta\|^2
+$$
+</code></pre>
+<hr />
+<h3><code>muzero</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>alphazero → muzero</code></li>
+<li><strong>Concept:</strong> The same planning, but the model itself is learned in a latent space.</li>
+<li><strong>Idea added:</strong> learn the model in latent space — representation, dynamics, prediction.</li>
+</ul>
+<pre><code class="language-latex">$$
+h = f_\theta(s), \quad (h', r, d) = g_\theta(h, a), \quad (p, v) = l_\theta(h), \qquad
+\mathcal{L} = \mathcal{L}_{\text{value}} + \mathcal{L}_{\text{reward}} + \mathcal{L}_{\text{policy}} + \big\|h_2 - f_\theta(s')\big\|^2
+$$
+</code></pre>
+<hr />
+<h3><code>world_models</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>mcts → world_models</code></li>
+<li><strong>Concept:</strong> Compress the world (VAE), predict it (MDN-RNN), evolve a controller inside dreams (CEM).</li>
+<li><strong>Idea added:</strong> generative latent model (VAE + MDN-RNN) and evolutionary control (CEM) in dreams.</li>
+</ul>
+<pre><code class="language-latex">$$
+\mathcal{L}_{\text{VAE}} = \mathbb{E}_{q(z|x)}\big[-\log p(x|z)\big] + \mathrm{KL}\big(q(z|x)\,\|\,p(z)\big), \qquad
+p(z_{t+1}|z_t, h_t) = \sum_k \pi_k \mathcal{N}(\mu_k, \sigma_k)
+$$
+</code></pre>
+<hr />
+<h3><code>dreamer</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>world_models → dreamer</code></li>
+<li><strong>Concept:</strong> Learn an RSSM of the world, then train an actor-critic purely in imagination.</li>
+<li><strong>Idea added:</strong> RSSM world model + actor-critic trained purely in imagination.</li>
+</ul>
+<pre><code class="language-latex">$$
+h_t = \mathrm{GRU}(h_{t-1}, z_{t-1}, a_{t-1}), \quad z_t \sim q(z_t|h_t, x_t), \qquad
+\mathcal{L} = \underbrace{\text{reconstruction} + \text{reward} + \text{continuation} + \text{free-bits KL}}_{\text{world model}}
+$$
+</code></pre>
+<pre><code class="language-latex">$$
+\text{actor: } \nabla_\theta J \approx \mathbb{E}\big[\nabla_\theta \log \pi_\theta(a|z)\big(V_\lambda - V\big)\big] + \beta\, \mathcal{H}\big(\pi(\cdot|z)\big)
+$$
+</code></pre>
+<hr />
+<h2>Generation 8 — Multi-Agent &amp; Goal-Conditioned RL</h2>
+<hr />
+<h3><code>maddpg</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>ddpg → maddpg</code></li>
+<li><strong>Concept:</strong> Independent actors, centralized critics that see everyone's observations and actions.</li>
+<li><strong>Idea added:</strong> per-agent actors + centralized critics over the joint observation/action (CTDE).</li>
+</ul>
+<pre><code class="language-latex">$$
+y_i = r + \gamma Q_i'\big(o', \mu_1'(o_1'), \dots, \mu_n'(o_n')\big), \qquad
+\nabla_{\theta_i} J_i = \mathbb{E}\big[\nabla_{\theta_i} \mu_i(o_i)\, \nabla_{a_i} Q_i(o, a)\big]
+$$
+</code></pre>
+<hr />
+<h3><code>mappo</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>ppo → mappo</code></li>
+<li><strong>Concept:</strong> Independent PPO policies sharing one joint-state critic's advantage.</li>
+<li><strong>Idea added:</strong> independent PPO policies sharing one centralized critic's advantage.</li>
+</ul>
+<pre><code class="language-latex">$$
+\mathcal{L}_i = \mathbb{E}\Big[\min\big(r_i A,\ \mathrm{clip}(r_i, 1\pm\varepsilon) A\big)\Big], \qquad
+A \text{ from the joint-state critic via GAE}
+$$
+</code></pre>
+<hr />
+<h3><code>qmix</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>dqn → qmix</code></li>
+<li><strong>Concept:</strong> Per-agent Qs mixed into a joint Q that each agent's argmax can execute.</li>
+<li><strong>Idea added:</strong> decompose the joint Q into per-agent Qs mixed by a nonnegative hypernetwork (IGM).</li>
+</ul>
+<pre><code class="language-latex">$$
+Q_{\text{tot}}(\tau, u) = f_{\text{mix}}\big(s, Q_1, \dots, Q_n\big), \quad
+\frac{\partial Q_{\text{tot}}}{\partial Q_i} \ge 0, \qquad
+\arg\max_u Q_{\text{tot}} = \big(\arg\max_{u_1} Q_1, \dots, \arg\max_{u_n} Q_n\big)
+$$
+</code></pre>
+<hr />
+<h3><code>her</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>ddpg → her</code></li>
+<li><strong>Concept:</strong> Replay failed episodes with the goal replaced by where you actually ended up.</li>
+<li><strong>Idea added:</strong> hindsight relabeling — replay failed episodes under goals actually achieved.</li>
+</ul>
+<pre><code class="language-latex">$$
+g \leftarrow s_{t_f} \ \text{(a future state)}, \qquad
+r' = \mathbb{1}\big\{\|s_{t+1} - g'\| &lt; \varepsilon\big\}
+$$
+</code></pre>
+<hr />
+<h2>DQN-Family Extras</h2>
+<hr />
+<h3><code>icm</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>dqn → icm</code></li>
+<li><strong>Concept:</strong> Reward curiosity: the error of predicting your own next state.</li>
+<li><strong>Idea added:</strong> intrinsic reward from forward-model prediction error, features pinned by an inverse model.</li>
+</ul>
+<pre><code class="language-latex">$$
+r^i = \big\|\phi(s_{t+1}) - \hat\phi(s_{t+1})\big\|^2, \qquad
+\mathcal{L}_{\text{inv}} = \mathrm{CE}\big(\hat a_t, a_t\big)
+$$
+</code></pre>
+<hr />
+<h3><code>rnd</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>dqn → rnd</code></li>
+<li><strong>Concept:</strong> Reward novelty: how far a predictor is from a frozen random target.</li>
+<li><strong>Idea added:</strong> intrinsic reward from distilling a frozen random network — novelty without an inverse model.</li>
+</ul>
+<pre><code class="language-latex">$$
+r^i = \big\|f(s') - \hat f(s')\big\|^2, \qquad f \text{ fixed random network}
+$$
+</code></pre>
+<hr />
+<h3><code>r2d2</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>rainbow → r2d2</code></li>
+<li><strong>Concept:</strong> Recurrent Q-learning over replayed sequences with burn-in and value rescaling.</li>
+<li><strong>Idea added:</strong> recurrent LSTM Q with burn-in, prioritized sequence replay, value rescaling.</li>
+</ul>
+<pre><code class="language-latex">$$
+h(x) = \mathrm{sign}(x)\big(\sqrt{|x| + 1} - 1\big) + \varepsilon x
+$$
+</code></pre>
+<hr />
+<h3><code>agent57</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>r2d2 → agent57</code></li>
+<li><strong>Concept:</strong> A bandit over (γ, β) decides which exploration/credit dials each training run uses.</li>
+<li><strong>Idea added:</strong> a UCB bandit over (γ, β) parameterizations — meta-control of credit and exploration.</li>
+</ul>
+<pre><code class="language-latex">$$
+\text{arm } k: \ \text{score}_k = \mu_k + c\sqrt{\frac{\ln t}{N_k}}, \qquad
+r^{\text{total}} = r^{\text{extrinsic}} + \beta \cdot r^{\text{intrinsic}}
+$$
+</code></pre>
+<hr />
+<h3><code>cql</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>dqn → cql</code></li>
+<li><strong>Concept:</strong> Offline Q-learning that pushes Q down on actions the data never chose.</li>
+<li><strong>Idea added:</strong> offline — penalize Q on out-of-distribution actions.</li>
+</ul>
+<pre><code class="language-latex">$$
+\mathcal{L} = \alpha\Big(\mathbb{E}_{s \sim D,\, a \sim \mu}\big[\log \textstyle\sum_{a'} e^{Q(s,a')}\big] - \mathbb{E}_{D}\big[Q(s,a)\big]\Big) + \mathcal{L}_{\text{TD}}
+$$
+</code></pre>
+<hr />
+<h3><code>iql</code></h3>
+<ul>
+<li><strong>Lineage:</strong> <code>dqn → iql</code></li>
+<li><strong>Concept:</strong> Learn only from in-data actions: expectile value, then imitate the good ones.</li>
+<li><strong>Idea added:</strong> offline — expectile regression of V, advantage-weighted behavioral cloning of π.</li>
+</ul>
+<pre><code class="language-latex">$$
+V = \arg\min_V \mathbb{E}\big[L_2^{\tau}\big(Q - V\big)\big], \qquad
+\pi = \arg\max_\pi \mathbb{E}\big[\log \pi(a|s)\, \exp\big(\beta (Q - V)\big)\big]
+$$
+</code></pre>
+<hr />
+<h3><code>decision_transformer</code></h3>
+<ul>
+<li><strong>Lineage:</strong> off-tree</li>
+<li><strong>Concept:</strong> Frame RL as next-token prediction over return-to-go, state, and action sequences.</li>
+<li><strong>Idea added:</strong> RL as sequence modeling — a causal transformer over (return-to-go, state, action) tokens.</li>
+</ul>
+<pre><code class="language-latex">$$
+a_t \sim \mathrm{GPT}_\theta\big(\hat R_{t-n:t},\ s_{t-n:t},\ a_{t-n-1:t-1}\big), \qquad
+\mathcal{L} = \mathrm{CE}\big(a_t, \hat a_t\big)
+$$
+</code></pre></body></html>

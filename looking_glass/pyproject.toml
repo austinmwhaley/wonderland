@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "looking_glass"
+version = "0.1.0"
+description = "sklearn for the new paradigm: embedding models, state-space sequence models, and task heads over business event streams."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "torch>=2.1.0",
+    "lancedb>=0.9.0",
+    "pyarrow>=14.0.0",
+    "tqdm>=4.66.0",
+    "numpy>=1.24.0",
+]
+
+[project.optional-dependencies]
+baseline = ["xgboost>=2.0.0"]
+kernels = ["mamba-ssm>=2.0.0", "bitsandbytes>=0.43.0"]
+dev = ["pytest>=8.0.0"]
+
+[tool.setuptools]
+packages = ["looking_glass"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

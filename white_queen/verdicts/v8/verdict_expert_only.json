@@ -1,0 +1,229 @@
+{
+  "diet": "expert_only",
+  "behavior_mean": 68.9,
+  "gate_cfg": {
+    "configured": null,
+    "resolved": {
+      "bar": 73.88,
+      "min_ess_frac": 0.02,
+      "rel_edge_std": 0.2
+    },
+    "ope_meta_configured": null,
+    "ground_truth_episodes": 20
+  },
+  "rows": {
+    "iql": {
+      "blended": 73.1,
+      "dr": 73.4,
+      "dr_ci": [
+        71.9,
+        75.4
+      ],
+      "wis": 15.0,
+      "is": 9.3,
+      "wdr": 205.0,
+      "magic": 73.1,
+      "magic_w": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "fqe_dm": 73.1,
+      "efqe": {
+        "mean": 74.7,
+        "disagreement": 1.9,
+        "members": [
+          77.0,
+          72.5,
+          75.0,
+          72.5,
+          76.5
+        ],
+        "K": 5
+      },
+      "lstdq": 64.4,
+      "lstdq_cond": 2195.9428791683586,
+      "fve_dm": 70.7,
+      "mb": 87.3,
+      "mb_se": 0.41,
+      "mb_sims": 200,
+      "gdice_mis": 86.9,
+      "anchor": 68.9,
+      "slope_pick": "magic",
+      "slope_val": 73.1,
+      "below_anchor": [
+        "is",
+        "wis"
+      ],
+      "mis": 103.6,
+      "mis_ess_frac": 0.137,
+      "lambda_dr": 0.0,
+      "ess_frac": 0.027,
+      "temperature": 1.0,
+      "rho_cap": 8.7,
+      "truth": 98.9,
+      "deploy": false,
+      "vetoes": [
+        "DR lower-CI 71.9 <= bar 73.9",
+        "WIS disagrees (-53.9)"
+      ],
+      "gate": {
+        "bar": 73.88,
+        "min_ess_frac": 0.02,
+        "rel_edge_std": 0.2
+      },
+      "bootstrap": {
+        "B": 1000,
+        "alpha": 0.05
+      }
+    },
+    "bc": {
+      "blended": 64.1,
+      "dr": 65.8,
+      "dr_ci": [
+        64.0,
+        67.1
+      ],
+      "wis": 15.9,
+      "is": 12.7,
+      "wdr": 126.0,
+      "magic": 64.1,
+      "magic_w": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "fqe_dm": 64.1,
+      "efqe": {
+        "mean": 65.9,
+        "disagreement": 2.8,
+        "members": [
+          64.2,
+          63.0,
+          71.0,
+          65.1,
+          66.2
+        ],
+        "K": 5
+      },
+      "lstdq": 60.5,
+      "lstdq_cond": 2963.382947507508,
+      "fve_dm": 75.9,
+      "mb": 98.7,
+      "mb_se": 0.08,
+      "mb_sims": 200,
+      "gdice_mis": 78.7,
+      "anchor": 68.9,
+      "slope_pick": "is",
+      "slope_val": 12.7,
+      "below_anchor": [
+        "dr",
+        "fqe_dm",
+        "is",
+        "magic",
+        "wis"
+      ],
+      "mis": 104.3,
+      "mis_ess_frac": 0.076,
+      "lambda_dr": 0.0,
+      "ess_frac": 0.02,
+      "temperature": 1.0,
+      "rho_cap": 8.65,
+      "truth": 97.5,
+      "deploy": false,
+      "vetoes": [
+        "DR lower-CI 64.0 <= bar 73.9",
+        "WIS disagrees (-53.0)"
+      ],
+      "gate": {
+        "bar": 73.88,
+        "min_ess_frac": 0.02,
+        "rel_edge_std": 0.2
+      },
+      "bootstrap": {
+        "B": 1000,
+        "alpha": 0.05
+      }
+    },
+    "cql": {
+      "blended": 68.3,
+      "dr": 71.6,
+      "dr_ci": [
+        70.0,
+        74.1
+      ],
+      "wis": 15.3,
+      "is": 14.6,
+      "wdr": 390.8,
+      "magic": 68.3,
+      "magic_w": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "fqe_dm": 68.3,
+      "efqe": {
+        "mean": 70.1,
+        "disagreement": 1.3,
+        "members": [
+          68.5,
+          70.3,
+          72.4,
+          69.5,
+          69.6
+        ],
+        "K": 5
+      },
+      "lstdq": 63.9,
+      "lstdq_cond": 2997.9088330210698,
+      "fve_dm": 80.4,
+      "mb": 99.3,
+      "mb_se": 0.0,
+      "mb_sims": 200,
+      "gdice_mis": 81.2,
+      "anchor": 68.9,
+      "slope_pick": "wis",
+      "slope_val": 15.3,
+      "below_anchor": [
+        "fqe_dm",
+        "is",
+        "magic",
+        "wis"
+      ],
+      "mis": 89.1,
+      "mis_ess_frac": 0.126,
+      "lambda_dr": 0.0,
+      "ess_frac": 0.021,
+      "temperature": 0.5,
+      "rho_cap": 9.13,
+      "truth": 98.9,
+      "deploy": false,
+      "vetoes": [
+        "DR lower-CI 70.0 <= bar 73.9",
+        "WIS disagrees (-53.6)"
+      ],
+      "gate": {
+        "bar": 73.88,
+        "min_ess_frac": 0.02,
+        "rel_edge_std": 0.2
+      },
+      "bootstrap": {
+        "B": 1000,
+        "alpha": 0.05
+      }
+    }
+  },
+  "spearman_blended_truth": 0.5,
+  "deployed": [],
+  "true_best": "cql",
+  "gate_picked_best": false
+}

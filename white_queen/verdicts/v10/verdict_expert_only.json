@@ -1,0 +1,495 @@
+{
+  "diet": "expert_only",
+  "behavior_mean": 68.9,
+  "gate_cfg": {
+    "configured": null,
+    "resolved": {
+      "bar": 73.88,
+      "min_ess_frac": 0.02,
+      "rel_edge_std": 0.2
+    },
+    "ope_meta_configured": null,
+    "ground_truth_episodes": 20,
+    "mode": "ope-only (loaded candidates, no retraining)"
+  },
+  "rows": {
+    "iql": {
+      "blended": 51.4,
+      "dr": 53.0,
+      "dr_ci": [
+        52.3,
+        54.0
+      ],
+      "wis": 15.0,
+      "is": 9.3,
+      "wdr": 114.1,
+      "magic": 51.4,
+      "magic_w": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "fqe_dm": 51.4,
+      "efqe": {
+        "mean": 53.2,
+        "disagreement": 1.8,
+        "members": [
+          51.5,
+          53.7,
+          51.3,
+          56.2,
+          53.1
+        ],
+        "K": 5
+      },
+      "lstdq": 64.4,
+      "lstdq_cond": 2195.9428791683586,
+      "fve_dm": 54.1,
+      "mb": 87.9,
+      "mb_se": 0.74,
+      "mb_sims": 200,
+      "gdice_mis": 68.9,
+      "anchor": 68.9,
+      "slope_pick": "anchor",
+      "slope_val": 68.9,
+      "below_anchor": [
+        "dr",
+        "fqe_dm",
+        "is",
+        "magic",
+        "wis"
+      ],
+      "mis": 126.3,
+      "mis_ess_frac": 0.012,
+      "lambda_dr": 0.0,
+      "ess_frac": 0.027,
+      "temperature": 1.0,
+      "rho_cap": 8.7,
+      "truth": 98.9,
+      "deploy": false,
+      "vetoes": [
+        "DR lower-CI 52.3 <= bar 73.9"
+      ],
+      "advisories": [
+        "WIS disagrees (-53.9, advisory only)"
+      ],
+      "gate": {
+        "bar": 73.88,
+        "min_ess_frac": 0.02,
+        "rel_edge_std": 0.2
+      },
+      "bootstrap": {
+        "B": 1000,
+        "alpha": 0.05
+      }
+    },
+    "bc": {
+      "blended": 52.4,
+      "dr": 57.4,
+      "dr_ci": [
+        55.7,
+        59.7
+      ],
+      "wis": 15.9,
+      "is": 12.7,
+      "wdr": 255.0,
+      "magic": 53.6,
+      "magic_w": [
+        0.049,
+        0.049,
+        0.049,
+        0.049,
+        0.049,
+        0.756
+      ],
+      "fqe_dm": 52.4,
+      "efqe": {
+        "mean": 55.3,
+        "disagreement": 1.8,
+        "members": [
+          54.2,
+          52.9,
+          56.0,
+          55.1,
+          58.1
+        ],
+        "K": 5
+      },
+      "lstdq": 60.5,
+      "lstdq_cond": 2963.382947507508,
+      "fve_dm": 70.7,
+      "mb": 99.0,
+      "mb_se": 0.06,
+      "mb_sims": 200,
+      "gdice_mis": 74.4,
+      "anchor": 68.9,
+      "slope_pick": "anchor",
+      "slope_val": 68.9,
+      "below_anchor": [
+        "dr",
+        "fqe_dm",
+        "is",
+        "magic",
+        "wis"
+      ],
+      "mis": 124.3,
+      "mis_ess_frac": 0.001,
+      "lambda_dr": 0.0,
+      "ess_frac": 0.02,
+      "temperature": 1.0,
+      "rho_cap": 8.65,
+      "truth": 97.5,
+      "deploy": false,
+      "vetoes": [
+        "DR lower-CI 55.7 <= bar 73.9"
+      ],
+      "advisories": [
+        "WIS disagrees (-53.0, advisory only)"
+      ],
+      "gate": {
+        "bar": 73.88,
+        "min_ess_frac": 0.02,
+        "rel_edge_std": 0.2
+      },
+      "bootstrap": {
+        "B": 1000,
+        "alpha": 0.05
+      }
+    },
+    "cql": {
+      "blended": 60.6,
+      "dr": 66.5,
+      "dr_ci": [
+        64.3,
+        69.3
+      ],
+      "wis": 15.3,
+      "is": 14.6,
+      "wdr": 364.7,
+      "magic": 60.6,
+      "magic_w": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "fqe_dm": 60.6,
+      "efqe": {
+        "mean": 61.4,
+        "disagreement": 0.4,
+        "members": [
+          61.3,
+          60.9,
+          61.5,
+          61.9,
+          61.0
+        ],
+        "K": 5
+      },
+      "lstdq": 63.9,
+      "lstdq_cond": 2997.9088330210698,
+      "fve_dm": 75.8,
+      "mb": 99.3,
+      "mb_se": 0.0,
+      "mb_sims": 200,
+      "gdice_mis": 68.9,
+      "anchor": 68.9,
+      "slope_pick": "anchor",
+      "slope_val": 68.9,
+      "below_anchor": [
+        "dr",
+        "fqe_dm",
+        "is",
+        "magic",
+        "wis"
+      ],
+      "mis": 99.2,
+      "mis_ess_frac": 0.105,
+      "lambda_dr": 0.0,
+      "ess_frac": 0.021,
+      "temperature": 0.5,
+      "rho_cap": 9.13,
+      "truth": 98.9,
+      "deploy": false,
+      "vetoes": [
+        "DR lower-CI 64.3 <= bar 73.9"
+      ],
+      "advisories": [
+        "WIS disagrees (-53.6, advisory only)"
+      ],
+      "gate": {
+        "bar": 73.88,
+        "min_ess_frac": 0.02,
+        "rel_edge_std": 0.2
+      },
+      "bootstrap": {
+        "B": 1000,
+        "alpha": 0.05
+      }
+    }
+  },
+  "spearman_blended_truth": 0.5,
+  "deployed": [],
+  "true_best": "cql",
+  "gate_picked_best": false,
+  "judge": {
+    "decisions": {
+      "iql": {
+        "deploy": false,
+        "reasons": [
+          "rule=standard: ESS + any 1 witness + top-2 by FQE",
+          "rank #3 by FQE (51.4)",
+          "fail DR lower-CI 52.3 vs bar 73.9",
+          "fail FQE lower 49.6 (mean 53.2\u00b11.8) vs bar 73.9",
+          "PASS ESS 0.027 vs floor 0.020"
+        ],
+        "witnesses": 0,
+        "rank": 3,
+        "dr_pass": false,
+        "fqe_pass": false,
+        "ess_pass": true
+      },
+      "bc": {
+        "deploy": false,
+        "reasons": [
+          "rule=standard: ESS + any 1 witness + top-2 by FQE",
+          "rank #2 by FQE (52.4)",
+          "fail DR lower-CI 55.7 vs bar 73.9",
+          "fail FQE lower 51.7 (mean 55.3\u00b11.8) vs bar 73.9",
+          "PASS ESS 0.020 vs floor 0.020"
+        ],
+        "witnesses": 0,
+        "rank": 2,
+        "dr_pass": false,
+        "fqe_pass": false,
+        "ess_pass": true
+      },
+      "cql": {
+        "deploy": false,
+        "reasons": [
+          "rule=standard: ESS + any 1 witness + top-2 by FQE",
+          "rank #1 by FQE (60.6)",
+          "fail DR lower-CI 64.3 vs bar 73.9",
+          "fail FQE lower 60.6 (mean 61.4\u00b10.4) vs bar 73.9",
+          "PASS ESS 0.021 vs floor 0.020"
+        ],
+        "witnesses": 0,
+        "rank": 1,
+        "dr_pass": false,
+        "fqe_pass": false,
+        "ess_pass": true
+      }
+    },
+    "deployed": [],
+    "rank": [
+      "cql",
+      "bc",
+      "iql"
+    ],
+    "bar": 73.88,
+    "gate": {
+      "bar": 73.88,
+      "min_ess_frac": 0.02,
+      "rel_edge_std": 0.2
+    },
+    "risk_aversion": 0.5
+  },
+  "judge_all_risks": {
+    "0.0": {
+      "decisions": {
+        "iql": {
+          "deploy": false,
+          "reasons": [
+            "rule=aggressive: ESS + any 1 witness",
+            "rank #3 by FQE (51.4)",
+            "fail DR lower-CI 52.3 vs bar 73.9",
+            "fail FQE lower 49.6 (mean 53.2\u00b11.8) vs bar 73.9",
+            "PASS ESS 0.027 vs floor 0.020"
+          ],
+          "witnesses": 0,
+          "rank": 3,
+          "dr_pass": false,
+          "fqe_pass": false,
+          "ess_pass": true
+        },
+        "bc": {
+          "deploy": false,
+          "reasons": [
+            "rule=aggressive: ESS + any 1 witness",
+            "rank #2 by FQE (52.4)",
+            "fail DR lower-CI 55.7 vs bar 73.9",
+            "fail FQE lower 51.7 (mean 55.3\u00b11.8) vs bar 73.9",
+            "PASS ESS 0.020 vs floor 0.020"
+          ],
+          "witnesses": 0,
+          "rank": 2,
+          "dr_pass": false,
+          "fqe_pass": false,
+          "ess_pass": true
+        },
+        "cql": {
+          "deploy": false,
+          "reasons": [
+            "rule=aggressive: ESS + any 1 witness",
+            "rank #1 by FQE (60.6)",
+            "fail DR lower-CI 64.3 vs bar 73.9",
+            "fail FQE lower 60.6 (mean 61.4\u00b10.4) vs bar 73.9",
+            "PASS ESS 0.021 vs floor 0.020"
+          ],
+          "witnesses": 0,
+          "rank": 1,
+          "dr_pass": false,
+          "fqe_pass": false,
+          "ess_pass": true
+        }
+      },
+      "deployed": [],
+      "rank": [
+        "cql",
+        "bc",
+        "iql"
+      ],
+      "bar": 73.88,
+      "gate": {
+        "bar": 73.88,
+        "min_ess_frac": 0.02,
+        "rel_edge_std": 0.2
+      },
+      "risk_aversion": 0.0
+    },
+    "0.5": {
+      "decisions": {
+        "iql": {
+          "deploy": false,
+          "reasons": [
+            "rule=standard: ESS + any 1 witness + top-2 by FQE",
+            "rank #3 by FQE (51.4)",
+            "fail DR lower-CI 52.3 vs bar 73.9",
+            "fail FQE lower 49.6 (mean 53.2\u00b11.8) vs bar 73.9",
+            "PASS ESS 0.027 vs floor 0.020"
+          ],
+          "witnesses": 0,
+          "rank": 3,
+          "dr_pass": false,
+          "fqe_pass": false,
+          "ess_pass": true
+        },
+        "bc": {
+          "deploy": false,
+          "reasons": [
+            "rule=standard: ESS + any 1 witness + top-2 by FQE",
+            "rank #2 by FQE (52.4)",
+            "fail DR lower-CI 55.7 vs bar 73.9",
+            "fail FQE lower 51.7 (mean 55.3\u00b11.8) vs bar 73.9",
+            "PASS ESS 0.020 vs floor 0.020"
+          ],
+          "witnesses": 0,
+          "rank": 2,
+          "dr_pass": false,
+          "fqe_pass": false,
+          "ess_pass": true
+        },
+        "cql": {
+          "deploy": false,
+          "reasons": [
+            "rule=standard: ESS + any 1 witness + top-2 by FQE",
+            "rank #1 by FQE (60.6)",
+            "fail DR lower-CI 64.3 vs bar 73.9",
+            "fail FQE lower 60.6 (mean 61.4\u00b10.4) vs bar 73.9",
+            "PASS ESS 0.021 vs floor 0.020"
+          ],
+          "witnesses": 0,
+          "rank": 1,
+          "dr_pass": false,
+          "fqe_pass": false,
+          "ess_pass": true
+        }
+      },
+      "deployed": [],
+      "rank": [
+        "cql",
+        "bc",
+        "iql"
+      ],
+      "bar": 73.88,
+      "gate": {
+        "bar": 73.88,
+        "min_ess_frac": 0.02,
+        "rel_edge_std": 0.2
+      },
+      "risk_aversion": 0.5
+    },
+    "1.0": {
+      "decisions": {
+        "iql": {
+          "deploy": false,
+          "reasons": [
+            "rule=conservative: ESS + both witnesses + top-1 + agreement",
+            "rank #3 by FQE (51.4)",
+            "fail DR lower-CI 52.3 vs bar 73.9",
+            "fail FQE lower 49.6 (mean 53.2\u00b11.8) vs bar 73.9",
+            "PASS ESS 0.027 vs floor 0.020",
+            "PASS ensemble disagreement 1.8"
+          ],
+          "witnesses": 0,
+          "rank": 3,
+          "dr_pass": false,
+          "fqe_pass": false,
+          "ess_pass": true
+        },
+        "bc": {
+          "deploy": false,
+          "reasons": [
+            "rule=conservative: ESS + both witnesses + top-1 + agreement",
+            "rank #2 by FQE (52.4)",
+            "fail DR lower-CI 55.7 vs bar 73.9",
+            "fail FQE lower 51.7 (mean 55.3\u00b11.8) vs bar 73.9",
+            "PASS ESS 0.020 vs floor 0.020",
+            "PASS ensemble disagreement 1.8"
+          ],
+          "witnesses": 0,
+          "rank": 2,
+          "dr_pass": false,
+          "fqe_pass": false,
+          "ess_pass": true
+        },
+        "cql": {
+          "deploy": false,
+          "reasons": [
+            "rule=conservative: ESS + both witnesses + top-1 + agreement",
+            "rank #1 by FQE (60.6)",
+            "fail DR lower-CI 64.3 vs bar 73.9",
+            "fail FQE lower 60.6 (mean 61.4\u00b10.4) vs bar 73.9",
+            "PASS ESS 0.021 vs floor 0.020",
+            "PASS ensemble disagreement 0.4"
+          ],
+          "witnesses": 0,
+          "rank": 1,
+          "dr_pass": false,
+          "fqe_pass": false,
+          "ess_pass": true
+        }
+      },
+      "deployed": [],
+      "rank": [
+        "cql",
+        "bc",
+        "iql"
+      ],
+      "bar": 73.88,
+      "gate": {
+        "bar": 73.88,
+        "min_ess_frac": 0.02,
+        "rel_edge_std": 0.2
+      },
+      "risk_aversion": 1.0
+    }
+  },
+  "judge_rationale": "Diet expert_only (behavior 68.9, bar 73.9, risk 0.5): rank cql > bc > iql.\n- cql: HOLD (truth 98.9, FQE 60.6, DR 66.5). rule=standard: ESS + any 1 witness + top-2 by FQE; rank #1 by FQE (60.6); fail DR lower-CI 64.3 vs bar 73.9; fail FQE lower 60.6 (mean 61.4\u00b10.4) vs bar 73.9; PASS ESS 0.021 vs floor 0.020.\n- bc: HOLD (truth 97.5, FQE 52.4, DR 57.4). rule=standard: ESS + any 1 witness + top-2 by FQE; rank #2 by FQE (52.4); fail DR lower-CI 55.7 vs bar 73.9; fail FQE lower 51.7 (mean 55.3\u00b11.8) vs bar 73.9; PASS ESS 0.020 vs floor 0.020.\n- iql: HOLD (truth 98.9, FQE 51.4, DR 53.0). rule=standard: ESS + any 1 witness + top-2 by FQE; rank #3 by FQE (51.4); fail DR lower-CI 52.3 vs bar 73.9; fail FQE lower 49.6 (mean 53.2\u00b11.8) vs bar 73.9; PASS ESS 0.027 vs floor 0.020.\nShip nothing: no candidate earned two-sided confidence.",
+  "decided_by": "judge"
+}
