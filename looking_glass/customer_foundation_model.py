@@ -85,7 +85,7 @@ class CFMConfig:
 	n_anchors: int = 6                 # exact number of sample-B anchor days per customer
 	# Company actions are EXOGENOUS (interventions/treatments), not customer
 	# behavior: they are covariates and are never predicted as tokens.
-	company_actions: tuple = ("email_send",)
+	company_actions: tuple = ("email_send", "sms_send", "push_send")
 	dim: int = EMBED_DIM
 	n_experts: int = 1                 # K=1: M1 multi-timescale gave no gain (speed)
 	epochs: int = 3

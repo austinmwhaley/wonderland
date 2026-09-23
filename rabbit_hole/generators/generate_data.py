@@ -197,6 +197,20 @@ def _flush_order_items(conn, rows) -> int:
     )
 
 
+def _flush_contact(conn, rows) -> int:
+    """Bulk-insert multi-channel contacts (no-op when empty)."""
+    return _bulk_insert(
+        conn,
+        """
+        INSERT INTO contact_sends (channel, send_id, customer_id, period, campaign_id,
+            send_ts, opened, clicked, open_ts, click_ts, click_session_id,
+            converted_order_id, arm, propensity, discount_pct)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        rows,
+    )
+
+
 def _flush_email(conn, rows) -> int:
     """Bulk-insert email sends (no-op when empty)."""
     return _bulk_insert(
@@ -335,36 +349,43 @@ def create_business_tables(conn: duckdb.DuckDBPyConnection) -> None:
             FOREIGN KEY (product_id) REFERENCES products(product_id)
         );
 
-        CREATE TABLE email_sends (
-            send_id TEXT PRIMARY KEY,
+        CREATE TABLE contact_sends (
+            channel TEXT NOT NULL,
+            send_id TEXT NOT NULL,
             customer_id TEXT NOT NULL,
+            period INTEGER,
             campaign_id TEXT,
             send_ts TEXT NOT NULL,
             opened INTEGER NOT NULL DEFAULT 0,
             clicked INTEGER NOT NULL DEFAULT 0,
             open_ts TEXT,
             click_ts TEXT,
-            click_session_id TEXT,        -- web session the click landed in
-            converted_order_id TEXT,      -- order in that session, if any
-            arm INTEGER,                  -- randomized cadence arm active at send time
-            propensity REAL,              -- logged P(arm | activity) for that period
-            FOREIGN KEY (customer_id) REFERENCES customers(customer_id)
+            click_session_id TEXT,
+            converted_order_id TEXT,
+            arm INTEGER,
+            propensity REAL,
+            discount_pct REAL DEFAULT 0,
+            PRIMARY KEY (channel, send_id)
         );
 
-        CREATE TABLE email_holdout (
-            customer_id TEXT NOT NULL,
-            period INTEGER NOT NULL,
-            holdout INTEGER NOT NULL,     -- 1 = held out (NO marketing this period)
-            PRIMARY KEY (customer_id, period)
+        CREATE TABLE contact_holdout (
+            channel TEXT NOT NULL, customer_id TEXT NOT NULL, period INTEGER NOT NULL,
+            holdout INTEGER NOT NULL, PRIMARY KEY (channel, customer_id, period)
         );
 
-        CREATE TABLE email_arm (
-            customer_id TEXT PRIMARY KEY,
-            arm INTEGER NOT NULL,         -- randomized cadence arm (0..3)
-            propensity REAL NOT NULL,     -- P(arm | activity): logged, with overlap
-            optimal_arm INTEGER,          -- TRUE best arm (ground truth for scoring)
-            FOREIGN KEY (customer_id) REFERENCES customers(customer_id)
+        CREATE TABLE contact_arm (
+            channel TEXT NOT NULL, customer_id TEXT NOT NULL, period INTEGER NOT NULL,
+            arm INTEGER NOT NULL, propensity REAL NOT NULL, optimal_arm INTEGER,
+            PRIMARY KEY (channel, customer_id, period)
         );
+
+        CREATE VIEW email_sends AS SELECT send_id, customer_id, campaign_id, send_ts,
+            opened, clicked, open_ts, click_ts, click_session_id, converted_order_id,
+            arm, propensity, discount_pct FROM contact_sends WHERE channel = 'email';
+        CREATE VIEW email_holdout AS SELECT customer_id, period, holdout
+            FROM contact_holdout WHERE channel = 'email';
+        CREATE VIEW email_arm AS SELECT customer_id, period, arm, propensity, optimal_arm
+            FROM contact_arm WHERE channel = 'email';
 
         CREATE SEQUENCE IF NOT EXISTS customer_events_seq START 1;
         CREATE TABLE customer_events (
@@ -1098,134 +1119,127 @@ def seed_business_data(
         s = sum(e)
         return [x / s for x in e]
 
-    # Per-PERIOD randomized cadence: within-customer action variation makes the
-    # per-customer dose-response identifiable (enables personalization).
+    # MULTI-CHANNEL contacts (email/sms/push): per-period cadence arm (observational,
+    # confounded by latent `intent`), 5% persistent holdout, and a DISCOUNT action.
     N_PERIODS = 12
     period_days = max(total_days / N_PERIODS, 1.0)
     period_weeks = period_days / 7.0
-    HOLD = 0.0                               # NO experiments: purely observational
-    intents: dict[str, float] = {}           # LATENT unobserved confounder
-    parms: dict[str, list[tuple[int, float]]] = {}
-    arm_rows: list[tuple[str, int, float]] = []
-    hold_rows: list[tuple[str, int, int]] = []
-    for cid in customer_ids:
-        activity = customer_activity[cid]
-        intent = rng.gauss(0.0, 1.0)         # drives BOTH targeting and outcomes
-        intents[cid] = intent
-        seq = []
-        # Purely OBSERVATIONAL: no experiments. Actions are the company's logged
-        # choices, confounded by the latent intent. (No switchback, no holdout.)
-        # PERSISTENT HOLDOUT: 5% of customers per period are held out of ALL
-        # marketing (realistic; the randomized control that measures incrementality).
-        HOLD_FRAC = 0.05
-        for _p in range(N_PERIODS):
-            if rng.random() < HOLD_FRAC:
-                seq.append((-1, 0.0)); hold_rows.append((cid, _p, 1))
-                continue
-            hold_rows.append((cid, _p, 0))
-            util = [(activity + 0.6 * intent) * k + rng.gauss(0.0, 0.8) for k in range(4)]
-            pp = _softmax(util)
-            a = int(rng.choices(range(4), weights=pp)[0]); pr = float(pp[a])
-            seq.append((a, pr))
-        parms[cid] = seq
-        x0c = CADENCE[0] + (CADENCE[-1] - CADENCE[0]) * max(0.0, min(1.0, activity))
-        opt = max(range(4), key=lambda a: CADENCE[a] * math.exp(-CADENCE[a] / x0c))
-        arm_rows.append((cid, seq[0][0], seq[0][1], int(opt)))
-    if arm_rows:
-        _bulk_insert(conn, "INSERT INTO email_arm (customer_id, arm, propensity, optimal_arm) "
-                           "VALUES (?, ?, ?, ?)", arm_rows)
-    if hold_rows:
-        _bulk_insert(conn, "INSERT INTO email_holdout (customer_id, period, holdout) "
-                           "VALUES (?, ?, ?)", hold_rows)
-
-    email_rows: list[tuple[str, str, str | None, str, int, int, str | None, str | None, str | None, str | None]] = []
-    email_order_rows: list[tuple] = []
-    email_item_rows: list[tuple] = []
-    send_counter = 0
-    weeks = max(total_days / 7.0, 1.0)
+    HOLD_FRAC = 0.05
+    CHANNELS = {
+        "email": dict(cadence=(0.2, 0.6, 1.2, 2.0), peak=0.10, o0=0.12, oa=0.55, c0=0.06, ca=0.45),
+        "sms":   dict(cadence=(0.1, 0.3, 0.8, 1.5), peak=0.07, o0=0.25, oa=0.35, c0=0.12, ca=0.35),
+        "push":  dict(cadence=(0.5, 1.5, 3.0, 5.0), peak=0.05, o0=0.10, oa=0.40, c0=0.05, ca=0.30),
+    }
+    DISCOUNTS = (0.0, 5.0, 10.0, 15.0)
     payments = ["credit_card", "debit_card", "paypal", "wallet", "gift_card"]
     payment_w = [0.49, 0.23, 0.16, 0.09, 0.03]
-    if reporter is not None:
-        reporter.start("generate email", num_customers)
-    for cid in customer_ids:
-        activity = customer_activity[cid]
-        act = max(0.0, min(1.0, activity))
-        x0 = CADENCE[0] + (CADENCE[-1] - CADENCE[0]) * act   # optimal cadence
-        seq = parms[cid]
-        wts = [(0.0 if a < 0 else CADENCE[a] * period_weeks) for a, _ in seq]
-        tot = sum(wts)
-        n_sends = max(0, min(int(rng.gauss(tot, max(tot, 1.0) ** 0.5)), 1500))
-        sess_list = sessions_by_customer.get(cid, [])
-        for _ in range(n_sends):
-            p = rng.choices(range(N_PERIODS), weights=wts)[0]
-            arm, prop = seq[p]
-            send_ts = start_ts + timedelta(days=p * period_days + rng.uniform(0.0, period_days))
-            campaign = promotion_rows[rng.randrange(0, len(promotion_rows))][0] if promotion_rows else None
-            opened = 1 if rng.random() < min(0.9, 0.12 + 0.55 * activity) else 0
-            open_ts = click_ts = click_sid = conv_txn = None
-            clicked = 0
-            if opened:
-                open_dt = send_ts + timedelta(minutes=rng.randint(3, 2880))
-                open_ts = open_dt.isoformat()
-                if rng.random() < min(0.8, 0.06 + 0.45 * activity):
-                    clicked = 1
-                    click_ts = (open_dt + timedelta(minutes=rng.randint(1, 120))).isoformat()
-                    if sess_list:
-                        weights = [1.0 + 2.0 * activity * ((cid, s) in converted) for s in sess_list]
-                        running = 0.0
-                        cum: list[float] = []
-                        for w in weights:
-                            running += w
-                            cum.append(running)
-                        click_sid = sess_list[_sample_weighted_index(rng, cum)]
-                        conv_txn = converted.get((cid, click_sid))
-                    # KNOWN causal effect: unimodal in cadence, peaked at the
-                    # customer's x0 -> heterogeneous optimal arm (personalization).
-                    x = CADENCE[arm]
-                    season = 1.0 + 0.25 * math.sin(2 * math.pi * (send_ts.timetuple().tm_yday / 365.0))
-                    p_conv = (PEAK_CONV * math.exp(1.0 - x / x0)
-                              * math.exp(0.5 * intents.get(cid, 0.0)) * season)
-                    if rng.random() < p_conv:
-                        pref = customer_pref_category[cid]
-                        prod = products_by_category[pref][rng.randrange(0, len(products_by_category[pref]))]
-                        price = product_price[prod]; cost = product_cost[prod]
-                        txn = f"TXN_{order_counter:012d}"; order_counter += 1
-                        ots = datetime.fromisoformat(click_ts) + timedelta(minutes=rng.randint(5, 180))
-                        subtotal = round(price, 2)
-                        tax = round(subtotal * rng.uniform(0.06, 0.095), 2)
-                        ship = 0.0 if subtotal >= 75.0 else round(rng.uniform(3.49, 8.99), 2)
-                        total = round(subtotal + tax + ship, 2)
-                        ship_c, ship_s = customer_country_state[cid]
-                        email_order_rows.append((
-                            txn, cid, click_sid, ots.isoformat(), "completed",
-                            _weighted_choice(rng, payments, payment_w), ship_c, ship_s, None,
-                            subtotal, tax, ship, 0.0, total,
-                            subtotal, round(cost, 2), round(subtotal - cost, 2),
-                            0, None, 0.0, None))
-                        email_item_rows.append((txn, prod, 1, round(price, 2),
-                                                round(cost, 2), round(price, 2), round(cost, 2)))
-                        conv_txn = txn
-            email_rows.append((f"EMAIL_{send_counter:012d}", cid, campaign, send_ts.isoformat(),
-                               opened, clicked, open_ts, click_ts, click_sid, conv_txn,
-                               arm, prop))
-            send_counter += 1
-            if len(email_rows) >= 20_000:
-                _flush_email(conn, email_rows)
-                email_rows.clear()
+    intents: dict[str, float] = {cid: rng.gauss(0.0, 1.0) for cid in customer_ids}
+
+    def _gen_channel(chan, ccfg):
+        nonlocal order_counter
+        CAD = ccfg["cadence"]
+        arm_rows, hold_rows, parms = [], [], {}
+        for cid in customer_ids:
+            activity = customer_activity[cid]; intent = intents[cid]; seq = []
+            for _p in range(N_PERIODS):
+                if rng.random() < HOLD_FRAC:
+                    seq.append((-1, 0.0)); hold_rows.append((chan, cid, _p, 1)); continue
+                hold_rows.append((chan, cid, _p, 0))
+                util = [(activity + 0.6 * intent) * k + rng.gauss(0.0, 0.8) for k in range(4)]
+                pp = _softmax(util); a = int(rng.choices(range(4), weights=pp)[0])
+                seq.append((a, float(pp[a])))
+            parms[cid] = seq
+            x0c = CAD[0] + (CAD[-1] - CAD[0]) * max(0.0, min(1.0, activity))
+            opt = max(range(4), key=lambda a: CAD[a] * math.exp(-CAD[a] / x0c))
+            for _p, (a, pr) in enumerate(seq):
+                if a >= 0:
+                    arm_rows.append((chan, cid, _p, a, pr, int(opt)))
+        if arm_rows:
+            _bulk_insert(conn, "INSERT INTO contact_arm (channel, customer_id, period, arm, propensity, optimal_arm) VALUES (?,?,?,?,?,?)", arm_rows)
+        if hold_rows:
+            _bulk_insert(conn, "INSERT INTO contact_holdout (channel, customer_id, period, holdout) VALUES (?,?,?,?)", hold_rows)
+        send_rows, order_rows, item_rows = [], [], []
+        send_counter = 0
         if reporter is not None:
-            reporter.advance(1)
-    if email_rows:
-        _flush_email(conn, email_rows)
-    if email_order_rows:
+            reporter.start(f"generate {chan}", num_customers)
+        for cid in customer_ids:
+            activity = customer_activity[cid]; intent = intents[cid]
+            act = max(0.0, min(1.0, activity))
+            x0 = CAD[0] + (CAD[-1] - CAD[0]) * act
+            seq = parms[cid]
+            wts = [(0.0 if a < 0 else CAD[a] * period_weeks) for a, _ in seq]
+            tot = sum(wts)
+            n_sends = max(0, min(int(rng.gauss(tot, max(tot, 1.0) ** 0.5)), 1500))
+            sess_list = sessions_by_customer.get(cid, [])
+            for _ in range(n_sends):
+                pidx = rng.choices(range(N_PERIODS), weights=wts)[0]
+                arm, prop = seq[pidx]
+                send_ts = start_ts + timedelta(days=pidx * period_days + rng.uniform(0.0, period_days))
+                du = [(activity + 0.3 * intent) * (d / 15.0) + rng.gauss(0.0, 0.7) for d in DISCOUNTS]
+                dp = _softmax(du); disc = float(rng.choices(DISCOUNTS, weights=dp)[0])
+                campaign = promotion_rows[rng.randrange(0, len(promotion_rows))][0] if promotion_rows else None
+                opened = 1 if rng.random() < min(0.9, ccfg["o0"] + ccfg["oa"] * activity) else 0
+                open_ts = click_ts = click_sid = conv_txn = None; clicked = 0
+                if opened:
+                    open_dt = send_ts + timedelta(minutes=rng.randint(3, 2880)); open_ts = open_dt.isoformat()
+                    if rng.random() < min(0.8, ccfg["c0"] + ccfg["ca"] * activity):
+                        clicked = 1
+                        click_ts = (open_dt + timedelta(minutes=rng.randint(1, 120))).isoformat()
+                        if sess_list:
+                            weights = [1.0 + 2.0 * activity * ((cid, s) in converted) for s in sess_list]
+                            running = 0.0; cum = []
+                            for w in weights:
+                                running += w; cum.append(running)
+                            click_sid = sess_list[_sample_weighted_index(rng, cum)]
+                            conv_txn = converted.get((cid, click_sid))
+                        x = CAD[arm]
+                        season = 1.0 + 0.25 * math.sin(2 * math.pi * (send_ts.timetuple().tm_yday / 365.0))
+                        p_conv = (ccfg["peak"] * math.exp(1.0 - x / x0) * math.exp(0.5 * intent)
+                                  * season * (1.0 + 0.04 * disc))
+                        if rng.random() < p_conv:
+                            pref = customer_pref_category[cid]
+                            prod = products_by_category[pref][rng.randrange(0, len(products_by_category[pref]))]
+                            price = product_price[prod]; cost = product_cost[prod]
+                            txn = f"TXN_{order_counter:012d}"; order_counter += 1
+                            ots = datetime.fromisoformat(click_ts) + timedelta(minutes=rng.randint(5, 180))
+                            disc_amt = round(price * disc / 100.0, 2)
+                            subtotal = round(price - disc_amt, 2)
+                            tax = round(subtotal * rng.uniform(0.06, 0.095), 2)
+                            ship = 0.0 if subtotal >= 75.0 else round(rng.uniform(3.49, 8.99), 2)
+                            total = round(subtotal + tax + ship, 2)
+                            ship_c, ship_s = customer_country_state[cid]
+                            order_rows.append((txn, cid, click_sid, ots.isoformat(), "completed",
+                                _weighted_choice(rng, payments, payment_w), ship_c, ship_s, None,
+                                subtotal, tax, ship, disc_amt, total, subtotal, round(cost, 2),
+                                round(subtotal - cost, 2), 0, None, 0.0, None))
+                            item_rows.append((txn, prod, 1, round(price, 2), round(cost, 2),
+                                              round(price, 2), round(cost, 2)))
+                            conv_txn = txn
+                send_rows.append((chan, f"{chan.upper()}_{send_counter:012d}", cid, pidx, campaign,
+                                  send_ts.isoformat(), opened, clicked, open_ts, click_ts,
+                                  click_sid, conv_txn, arm, prop, disc))
+                send_counter += 1
+                if len(send_rows) >= 20_000:
+                    _flush_contact(conn, send_rows); send_rows.clear()
+            if reporter is not None:
+                reporter.advance(1)
+        if send_rows:
+            _flush_contact(conn, send_rows)
+        if reporter is not None:
+            reporter.finish(f"rows={send_counter:,}")
+        return order_rows, item_rows
+
+    _all_orders, _all_items = [], []
+    for _chan, _ccfg in CHANNELS.items():
+        _o, _i = _gen_channel(_chan, _ccfg)
+        _all_orders += _o; _all_items += _i
+    if _all_orders:
         _bulk_insert(conn, """INSERT INTO orders (transaction_id, customer_id, session_id,
             order_ts, order_status, payment_method, shipping_country, shipping_state,
             promotion_id, subtotal, tax, shipping_fee, discount_amount, order_total,
             revenue, cogs, gross_margin, return_flag, return_ts, return_amount, cancelled_ts)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            email_order_rows)
-        _flush_order_items(conn, email_item_rows)
-    if reporter is not None:
-        reporter.finish(f"rows={send_counter:,}")
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""", _all_orders)
+        _flush_order_items(conn, _all_items)
 
     # DuckDB autocommits.
     if reporter is not None:
@@ -1421,9 +1435,9 @@ def materialize_customer_event_stream(
             source_table, value, event_attributes
         )
         SELECT
-            customer_id, send_ts, 'email_send', 'email', send_id, 'email_sends', 0,
+            customer_id, send_ts, channel || '_send', channel, send_id, 'contact_sends', 0,
             json_object('campaign_id', campaign_id, 'opened', opened, 'clicked', clicked)
-        FROM email_sends
+        FROM contact_sends
         """
     )
     if reporter is not None:
@@ -1435,9 +1449,9 @@ def materialize_customer_event_stream(
             source_table, value, event_attributes
         )
         SELECT
-            customer_id, open_ts, 'email_open', 'email', send_id, 'email_sends', 0,
+            customer_id, open_ts, channel || '_open', channel, send_id, 'contact_sends', 0,
             json_object('campaign_id', campaign_id)
-        FROM email_sends
+        FROM contact_sends
         WHERE opened = 1 AND open_ts IS NOT NULL
         """
     )
@@ -1450,14 +1464,14 @@ def materialize_customer_event_stream(
             source_table, value, event_attributes
         )
         SELECT
-            customer_id, click_ts, 'email_click', 'session',
-            COALESCE(click_session_id, send_id), 'email_sends', 0,
+            customer_id, click_ts, channel || '_click', 'session',
+            COALESCE(click_session_id, send_id), 'contact_sends', 0,
             json_object(
                 'campaign_id', campaign_id,
                 'click_session_id', click_session_id,
                 'converted_order_id', converted_order_id
             )
-        FROM email_sends
+        FROM contact_sends
         WHERE clicked = 1 AND click_ts IS NOT NULL
         """
     )
