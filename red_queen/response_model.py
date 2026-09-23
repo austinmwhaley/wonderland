@@ -127,3 +127,70 @@ if __name__ == "__main__":
 	print("== PER-CUSTOMER RESPONSE MODEL + INCREMENTALITY REPORT ==")
 	for kk, v in run().items():
 		print(f"  {kk:28s}: {v}")
+
+
+# ---------------------------------------------------------------------------
+# TARGETING: use the per-customer uplift to choose WHOM to market
+# ---------------------------------------------------------------------------
+def fit_uplift(seed=0):
+	"""Fit the uplift model and return (per-customer predicted uplift, best arm)."""
+	from sklearn.linear_model import Ridge
+	from sklearn.preprocessing import StandardScaler
+	gr = build()
+	S = np.stack(gr["embedding"].to_list()).astype(np.float32)
+	t = (1.0 - gr["holdout"].to_numpy().astype(np.float64))
+	y = gr["gm"].to_numpy().astype(np.float64)
+	k = gr["k"].to_numpy()
+
+	def feats(S_, t_):
+		return np.hstack([S_, t_[:, None], S_ * t_[:, None]]).astype(np.float32)
+	sc = StandardScaler().fit(feats(S, t))
+	m = Ridge(alpha=1.0).fit(sc.transform(feats(S, t)), y)
+
+	def uplift(S_):
+		f1 = feats(S_, np.ones(len(S_))); f0 = feats(S_, np.zeros(len(S_)))
+		return m.predict(sc.transform(f1)) - m.predict(sc.transform(f0))
+	# one representative state per customer (first occurrence)
+	seen, idx, keys = set(), [], []
+	for i, kk in enumerate(k):
+		if kk not in seen:
+			seen.add(kk); idx.append(i); keys.append(kk)
+	up = uplift(S[idx])
+	best_arm = 0
+	try:
+		from red_queen.engine import _validated_arm_effects
+		best_arm = int(np.argmax(_validated_arm_effects()))
+	except Exception:
+		pass
+	return keys, up, best_arm
+
+
+def target_plan(budget=None, min_uplift=0.0):
+	"""Rank customers by predicted uplift; allocate marketing budget to responders.
+	Non-responders (uplift <= min_uplift) get NO action (fail-safe)."""
+	keys, up, best_arm = fit_uplift()
+	order = np.argsort(-up)
+	pos = up[order] > min_uplift
+	if budget is None:
+		budget = float(pos.sum())          # one weekly touch per responding customer
+	chosen = []
+	for j in order:
+		if up[j] <= min_uplift or budget <= 0:
+			break
+		chosen.append(j); budget -= 1.0
+	plan = {"customer_key": [keys[j] for j in chosen],
+			"uplift": [round(float(up[j]), 2) for j in chosen],
+			"arm": [best_arm] * len(chosen)}
+	report = {"customers_total": len(keys),
+			  "responders": int((up > min_uplift).sum()),
+			  "targeted": len(chosen),
+			  "expected_incremental_margin": round(float(up[chosen].sum()), 1) if chosen else 0.0,
+			  "population_fallback": "non-responders -> no action (fail-safe)",
+			  "best_arm": best_arm}
+	OUT.parent.mkdir(parents=True, exist_ok=True)
+	(Path(OUT).parent / "target_plan.json").write_text(json.dumps({"report": report, "plan": plan}))
+	return report
+
+
+if __name__ == "__main__" and False:
+	pass

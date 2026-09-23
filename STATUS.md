@@ -648,3 +648,10 @@ Run (7602 customers / 91224 customer-periods):
   targeting top-20% gain +18.95; holdout rho 0.18.
 => PER-CUSTOMER VALUES delivered (who responds), plus the management proof of
    incrementality -- no live action required.
+
+## red_queen uplift targeting (DONE)
+`response_model.target_plan()`: ranks customers by predicted per-customer uplift
+(from the holdout model) and allocates marketing to RESPONDERS; non-responders get
+no action (fail-safe). Run: 7602 customers, 4697 responders targeted, expected
+incremental margin 141892, plan -> red_queen/artifacts/target_plan.json.
+=> red_queen now chooses WHOM to market per customer (uplift), not a population arm.
