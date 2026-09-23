@@ -633,3 +633,7 @@ measurement design, not an experiment we run on demand.
 NEXT: build a per-customer response model (state -> incrementality) with validation;
 use it in red_queen to TARGET responsive customers (personalization) and to produce
 the management-facing incrementality proof.
+
+## Repository
+GitHub: https://github.com/austinmwhaley/wonderland (main). Initial commit 7e98ad8.
+Data/artifacts/venvs git-ignored; code/docs committed. See AGENTS.md "Repository & git workflow".

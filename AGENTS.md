@@ -216,3 +216,20 @@ Work **autonomously and continuously**: chain the task list within a turn, updat
 `STATUS.md` after each phase, stop only for genuine decisions/blockers. Prefer
 doing over asking. Maintain the ladder (small → scale) and the battery gate on
 every change.
+
+---
+
+## Repository & git workflow
+
+Source of truth: **https://github.com/austinmwhaley/wonderland** (branch `main`).
+
+- **What is committed:** source code, specs, docs, small configs.
+- **What is NEVER committed** (see `.gitignore`): data (`*.duckdb`, `*.feather`,
+  `*.arrow`, `*.parquet`, `*.npz`), model checkpoints/artifacts (`*.pt`, `artifacts/`,
+  `checkpoints/`, `results/`), virtualenvs (`.venv/`), caches (`__pycache__/`), logs.
+  These are **regenerable** (rabbit_hole generates the stream; runs produce artifacts).
+- **eighth_square owns** the shared `algorithms/` and `environments/`
+  (`wonderland/algorithms` and `wonderland/environments` are symlinks into it).
+- **Workflow:** `git pull --rebase` -> make changes -> `git add -A` -> `git commit`
+  -> `git push`. One repo, one history; do not create nested `.git` directories.
+- **Large data lives only locally** (or a separate storage/DVC), never in this repo.
