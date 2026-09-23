@@ -183,7 +183,7 @@ def check(seed=17):
 
 def check_no_duplication():
     """looking_glass must POINT at rabbit_hole, not duplicate it."""
-    lg = Path(__file__).resolve().parents[2] / "looking_glass" / "scripts"
+    lg = Path(__file__).resolve().parents[1] / "looking_glass" / "scripts"
     out = []
     for name in ("duckdb", "logs"):
         p = lg / "data" / name

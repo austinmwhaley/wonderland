@@ -16,7 +16,7 @@ from pathlib import Path
 
 import numpy as np
 
-WORK = Path(__file__).resolve().parents[2]
+WORK = Path(__file__).resolve().parents[1]
 CFM_PRODUCTS = WORK / "looking_glass" / "artifacts" / "cfm" / "cfm_products.duckdb"
 NBA_PLAN = WORK / "red_queen" / "artifacts" / "nba_plan.json"
 

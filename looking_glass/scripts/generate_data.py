@@ -1,1 +1,1 @@
-../../rabbit_hole/rabbit_hole/generators/generate_data.py
+../../rabbit_hole/generators/generate_data.py

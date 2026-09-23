@@ -27,7 +27,7 @@ from sklearn.model_selection import GroupShuffleSplit
 from sklearn.preprocessing import StandardScaler
 from scipy.stats import spearmanr
 
-CFM_DIR = Path(__file__).resolve().parents[1] / "artifacts" / "cfm"
+CFM_DIR = Path(__file__).resolve().parents[0] / "artifacts" / "cfm"
 
 
 def _company_actions(tag):

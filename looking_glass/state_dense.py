@@ -15,8 +15,8 @@ from pathlib import Path
 
 import numpy as np
 
-WORK = Path(__file__).resolve().parents[2]
-CFM_DIR = Path(__file__).resolve().parents[1] / "artifacts" / "cfm"
+WORK = Path(__file__).resolve().parents[1]
+CFM_DIR = Path(__file__).resolve().parents[0] / "artifacts" / "cfm"
 OUT = CFM_DIR / "state_dense.feather"
 
 
