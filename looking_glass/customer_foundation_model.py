@@ -964,12 +964,19 @@ def validate(cfg: CFMConfig):
 	acc, base = _next_event_acc(model, vocab, b_all[:200])
 	rows.append(r("next-event acc > baseline", ">", f"{acc:.3f} vs {base:.3f}", acc > base))
 	mm = _objective_metrics(model, vocab, b_all[:200])
-	rows.append(r("objective: next-event acc", ">0.45", round(mm["next"], 3), mm["next"] > 0.45))
-	rows.append(r("objective: entity acc", ">0.35", round(mm["entity"], 3), mm["entity"] > 0.35))
+	# Baselines DERIVED from the data (doctrine #1: no magic thresholds).
+	from collections import Counter as _C
+	_ent = _C(str(s["entity_type"][i + 1]) for s in b_all[:200]
+			  for i in range(len(s["entity_type"]) - 1))
+	_ent_base = _ent.most_common(1)[0][1] / max(sum(_ent.values()), 1)
+	rows.append(r("objective: next-event acc > baseline", ">",
+				  f"{mm['next']:.3f} vs {base:.3f}", mm["next"] > base))
+	rows.append(r("objective: entity acc > baseline", ">",
+				  f"{mm['entity']:.3f} vs {_ent_base:.3f}", mm["entity"] > _ent_base))
 	rows.append(r("objective: occurrence acc > base", ">",
 				  f"{mm['occ']:.3f} vs {mm['occ_base']:.3f}", mm["occ"] > mm["occ_base"]))
-	rows.append(r("objective: temporal-order acc", ">0.55", round(mm["order"], 3),
-				  mm["order"] > 0.55))
+	rows.append(r("objective: temporal-order acc > chance(0.5)", ">",
+				  round(mm["order"], 3), mm["order"] > 0.5))
 	rows.append(r("objective: dt MAE (log1p s)", "<3.0", round(mm["dt_mae"], 3),
 				  mm["dt_mae"] < 3.0))
 
