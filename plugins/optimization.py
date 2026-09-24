@@ -71,8 +71,10 @@ def optimize(channel, action="arm", max_rows=15000, seed=0):
 		idx = np.random.default_rng(seed).choice(n, max_rows, replace=False)
 		obs, act, rew = obs[idx], act[idx], rew[idx]
 	from white_queen.tribunal.ope.pipeline import run as wq_run
-	rep = wq_run({"obs": obs, "act": act, "rew": rew}, algorithms=("iql", "cql", "bc"),
-				 nA=nA, fast=True, ensemble_K=2, offline_steps=1500, seed=seed)
+	rep = wq_run({"obs": obs, "act": act, "rew": rew, "next_obs": obs,
+				  "done": np.ones(len(obs), dtype=np.float32)},
+				 algorithms=("iql", "cql", "bc"), nA=nA, fast=True,
+				 ensemble_K=2, offline_steps=1500, seed=seed)
 	return {"channel": channel, "action": action, "rows": int(n) if n <= max_rows else max_rows,
 			"nA": nA, "deployed": rep.get("deployed"), "behavior": rep.get("behavior_mean"),
 			"bar": rep.get("bar"), "n_candidates": rep.get("n_candidates")}
