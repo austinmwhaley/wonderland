@@ -1,0 +1,32 @@
+[
+ {
+  "channel": "email",
+  "action": "arm",
+  "rows": 800,
+  "nA": 4,
+  "deploy": true,
+  "behavior": 2.69,
+  "bar": 5.64,
+  "provenance": "estimated"
+ },
+ {
+  "channel": "sms",
+  "action": "arm",
+  "rows": 800,
+  "nA": 4,
+  "deploy": true,
+  "behavior": 2.13,
+  "bar": 4.87,
+  "provenance": "estimated"
+ },
+ {
+  "channel": "email",
+  "action": "discount",
+  "rows": 800,
+  "nA": 4,
+  "deploy": true,
+  "behavior": 3.02,
+  "bar": 7.01,
+  "provenance": "estimated"
+ }
+]

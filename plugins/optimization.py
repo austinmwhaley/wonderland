@@ -68,7 +68,7 @@ class _Greedy:
 		return int(np.argmax(o @ self.W.T))
 
 
-def optimize(channel, action="arm", max_rows=8000, seed=0):
+def optimize(channel, action="arm", max_rows=800, seed=0):
 	from sklearn.linear_model import Ridge
 	from white_queen.tribunal.ope.api import evaluate
 	df = _logs(channel, action)
@@ -97,8 +97,10 @@ def optimize(channel, action="arm", max_rows=8000, seed=0):
 		m = A == arm
 		W[arm] = (Ridge(alpha=1.0).fit(Z[m], R[m]).coef_ if m.sum() > 30
 				  else np.zeros(k))
+	_FAST = {"steps_max": 400, "eval_every": 100, "patience": 3, "batch": 128,
+			 "hidden": 32, "allow_under_budget": True}
 	rep = evaluate({"obs": Z, "act": A, "rew": rew[idx]},
-				   _Greedy(W, nA), nA=nA, fast=True, ensemble_K=2,
+				   _Greedy(W, nA), nA=nA, fast=True, ensemble_K=1, fqe_cfg=_FAST,
 				   candidate_name=f"{channel}_{action}")
 	return {"channel": channel, "action": action, "rows": int(len(idx)), "nA": nA,
 			"deploy": bool(rep.get("deploy")), "behavior": round(rep.get("behavior_mean", 0), 2),
@@ -114,7 +116,7 @@ def main(argv=None):
 	res = [optimize(chan, "arm", a.max_rows) for chan in ("email", "sms", "push")]
 	res.append(optimize("email", "discount", a.max_rows))
 	import json
-	out = WORK / "red_queen" / "artifacts" / "channel_certification.json"
+	out = WORK / "red_queen" / "certification" / "channel_certification.json"
 	out.parent.mkdir(parents=True, exist_ok=True)
 	out.write_text(json.dumps(res, indent=1))
 	for r in res:

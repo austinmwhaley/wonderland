@@ -57,7 +57,7 @@ def _ipw_effects(channel, action):
 def build_plan(cadence="weekly", budget=None, seed=0):
 	rng = np.random.default_rng(seed)
 	# CERTIFICATION GATE: only schedule channels certified DEPLOY; else HOLD.
-	cert_path = Path(__file__).resolve().parents[0] / "artifacts" / "channel_certification.json"
+	cert_path = Path(__file__).resolve().parents[0] / "certification" / "channel_certification.json"
 	certified = {}
 	if cert_path.exists():
 		for r in json.loads(cert_path.read_text()):
