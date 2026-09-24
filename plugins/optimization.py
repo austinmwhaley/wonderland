@@ -42,12 +42,12 @@ def _logs(channel, action):
 			df = con.execute("""
 				SELECT cs.customer_id k, cs.arm a, COALESCE(o.gross_margin,0) r
 				FROM contact_sends cs LEFT JOIN orders o ON o.transaction_id = cs.converted_order_id
-				WHERE cs.channel = ? AND cs.arm IS NOT NULL""", [channel]).pl()
+				WHERE cs.channel = ? AND cs.arm IS NOT NULL LIMIT 300000""", [channel]).pl()
 		else:  # discount
 			df = con.execute("""
 				SELECT cs.customer_id k, cs.discount_pct a, COALESCE(o.gross_margin,0) r
 				FROM contact_sends cs LEFT JOIN orders o ON o.transaction_id = cs.converted_order_id
-				WHERE cs.channel = ? AND cs.discount_pct IS NOT NULL""", [channel]).pl()
+				WHERE cs.channel = ? AND cs.discount_pct IS NOT NULL LIMIT 300000""", [channel]).pl()
 	finally:
 		con.close()
 	emb = _state()

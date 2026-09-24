@@ -28,5 +28,15 @@
   "behavior": 3.02,
   "bar": 7.01,
   "provenance": "estimated"
+ },
+ {
+  "channel": "push",
+  "action": "arm",
+  "rows": 800,
+  "nA": 4,
+  "deploy": false,
+  "behavior": 0.02,
+  "bar": 0.16,
+  "provenance": "estimated"
  }
 ]

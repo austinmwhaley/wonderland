@@ -54,6 +54,45 @@ def _ipw_effects(channel, action):
 	return out
 
 
+
+def _best_joint(channel):
+	"""Joint (frequency arm x discount) selection from the data (mean reward)."""
+	import duckdb
+	con = duckdb.connect(str(STREAM), read_only=True)
+	try:
+		df = con.execute("""
+			SELECT cs.arm a, cs.discount_pct d, COALESCE(o.gross_margin,0) r
+			FROM contact_sends cs LEFT JOIN orders o ON o.transaction_id=cs.converted_order_id
+			WHERE cs.channel=? AND cs.arm IS NOT NULL""", [channel]).pl()
+	finally:
+		con.close()
+	a = df["a"].to_numpy(); d = df["d"].to_numpy(); r = df["r"].to_numpy()
+	best, bv = (None, None), -1e18
+	tab = {}
+	for aa in sorted(set(a.tolist())):
+		for dd in sorted(set(d.tolist())):
+			m = (a == aa) & (d == dd)
+			if m.sum() < 30:
+				continue
+			tab[(aa, dd)] = float(r[m].mean())
+			if tab[(aa, dd)] > bv:
+				bv, best = tab[(aa, dd)], (int(aa), float(dd))
+	return best, bv
+
+
+def _best_hour(channel):
+	"""Learned send hour: the hour-of-day with the most conversions."""
+	import duckdb
+	con = duckdb.connect(str(STREAM), read_only=True)
+	try:
+		rows = con.execute("""
+			SELECT extract(hour FROM CAST(click_ts AS TIMESTAMPTZ)) h, count(*) c
+			FROM contact_sends WHERE channel=? AND clicked=1 AND click_ts IS NOT NULL
+			GROUP BY 1 ORDER BY 2 DESC LIMIT 1""", [channel]).fetchone()
+	finally:
+		con.close()
+	return int(rows[0]) if rows else 12
+
 def build_plan(cadence="weekly", budget=None, seed=0):
 	rng = np.random.default_rng(seed)
 	# CERTIFICATION GATE: only schedule channels certified DEPLOY; else HOLD.
@@ -64,13 +103,12 @@ def build_plan(cadence="weekly", budget=None, seed=0):
 			if r.get("action") == "arm":
 				certified[r["channel"]] = bool(r.get("deploy"))
 	# per-channel best cadence arm + best discount (causal)
-	best_arm, best_disc, effects = {}, {}, {}
+	best_arm, best_disc, effects, hours = {}, {}, {}, {}
 	for ch in CHANNEL_CADENCE:
-		ea = _ipw_effects(ch, "arm")
-		best_arm[ch] = max(ea, key=ea.get)
-		effects[ch] = ea
-		ed = _ipw_effects(ch, "discount")
-		best_disc[ch] = max(ed, key=ed.get)
+		ja, _jv = _best_joint(ch)
+		best_arm[ch], best_disc[ch] = ja
+		effects[ch] = _ipw_effects(ch, "arm")
+		hours[ch] = _best_hour(ch)
 	# WHO: per-customer uplift responders
 	try:
 		from red_queen.response_model import fit_uplift
@@ -102,7 +140,7 @@ def build_plan(cadence="weekly", budget=None, seed=0):
 			for j in range(n):
 				frac = (j + 0.5) / max(n, 1)
 				day = min(period_days - 1, int(frac * period_days))
-				hour = CAPPED_HOURS[0] + (j * 3) % (CAPPED_HOURS[1] - CAPPED_HOURS[0])
+				hour = hours.get(ch, CAPPED_HOURS[0])
 				ts = (start + timedelta(days=day, hours=hour)).isoformat()
 				contacts.append({"channel": ch, "ts": ts,
 								 "discount_pct": float(best_disc[ch])})
@@ -114,6 +152,8 @@ def build_plan(cadence="weekly", budget=None, seed=0):
 			  "best_arm": {k: int(v) for k, v in best_arm.items()},
 			  "best_discount": {k: float(v) for k, v in best_disc.items()},
 			  "effects_arm": {k: {str(a): round(v, 2) for a, v in e.items()} for k, e in effects.items()},
+			  "included_channels": [ch for ch in CHANNEL_CADENCE if (not cert_path.exists() or certified.get(ch, False))],
+			  "send_hour": hours,
 			  "fail_safe": "non-responders and uncertified channels -> no action"}
 	OUT.parent.mkdir(parents=True, exist_ok=True)
 	OUT.write_text(json.dumps({"report": report, "plan": plan[:2000]}))
