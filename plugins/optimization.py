@@ -85,18 +85,19 @@ def optimize(channel, action="arm", max_rows=8000, seed=0):
 	idx = np.arange(n)
 	if n > max_rows:
 		idx = np.random.default_rng(seed).choice(n, max_rows, replace=False)
-	X, A, R = obs[idx].astype(np.float64), act[idx], rew[idx].astype(np.float64)
-	W = np.zeros((nA, X.shape[1]))
-	for arm in range(nA):
-		m = A == arm
-		W[arm] = (Ridge(alpha=1.0).fit(X[m], R[m]).coef_ if m.sum() > 30
-				  else np.zeros(X.shape[1]))
-	# speed: PCA the 512-d donor state to 64-d (keeps signal, ~x cheaper panel)
+	# speed: PCA the 512-d donor state to 64-d on the SAME (sampled) rows, fit the
+	# candidate on that reduced space so it matches what the OPE panel queries.
 	from sklearn.decomposition import PCA
 	k = min(64, obs.shape[1], len(idx) - 1)
 	Z = PCA(n_components=k, random_state=seed).fit_transform(
 		obs[idx].astype(np.float64)).astype(np.float32)
-	rep = evaluate({"obs": Z, "act": act[idx], "rew": rew[idx]},
+	A, R = act[idx], rew[idx].astype(np.float64)
+	W = np.zeros((nA, k))
+	for arm in range(nA):
+		m = A == arm
+		W[arm] = (Ridge(alpha=1.0).fit(Z[m], R[m]).coef_ if m.sum() > 30
+				  else np.zeros(k))
+	rep = evaluate({"obs": Z, "act": A, "rew": rew[idx]},
 				   _Greedy(W, nA), nA=nA, fast=True, ensemble_K=2,
 				   candidate_name=f"{channel}_{action}")
 	return {"channel": channel, "action": action, "rows": int(len(idx)), "nA": nA,
