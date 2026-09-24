@@ -54,30 +54,55 @@ def _logs(channel, action):
 	return df.join(emb, left_on="k", right_on="customer_key", how="inner")
 
 
-def optimize(channel, action="arm", max_rows=15000, seed=0):
-	import polars as pl
+class _Greedy:
+	"""Reward-greedy candidate policy (per-arm linear reward model)."""
+	def __init__(self, W, nA):
+		self.W = W; self.nA = nA
+	def action_probs(self, obs, temperature=1.0):
+		o = np.atleast_2d(np.asarray(obs, dtype=np.float64))
+		s = o @ self.W.T
+		z = (s - s.max(-1, keepdims=True)) / max(temperature, 1e-9)
+		e = np.exp(z); return (e / e.sum(-1, keepdims=True)).astype(np.float32)
+	def act(self, state, eval=True):
+		o = np.atleast_2d(np.asarray(state, dtype=np.float64))
+		return int(np.argmax(o @ self.W.T))
+
+
+def optimize(channel, action="arm", max_rows=8000, seed=0):
+	from sklearn.linear_model import Ridge
+	from white_queen.tribunal.ope.api import evaluate
 	df = _logs(channel, action)
-	# action -> discrete bucket
 	a = df["a"].to_numpy().astype(np.float64)
 	if action == "discount":
 		edges = np.unique(np.quantile(a, np.linspace(0, 1, 5)[1:-1]))
-		act = np.digitize(a, edges).astype(np.int64); nA = int(act.max()) + 1
+		act = np.digitize(a, edges).astype(np.int64)
 	else:
-		act = a.astype(np.int64); nA = int(act.max()) + 1
+		act = a.astype(np.int64)
+	nA = int(act.max()) + 1
 	obs = np.stack(df["embedding"].to_list()).astype(np.float32)
 	rew = df["r"].to_numpy().astype(np.float32)
 	n = len(obs)
+	idx = np.arange(n)
 	if n > max_rows:
 		idx = np.random.default_rng(seed).choice(n, max_rows, replace=False)
-		obs, act, rew = obs[idx], act[idx], rew[idx]
-	from white_queen.tribunal.ope.pipeline import run as wq_run
-	rep = wq_run({"obs": obs, "act": act, "rew": rew, "next_obs": obs,
-				  "done": np.ones(len(obs), dtype=np.float32)},
-				 algorithms=("iql", "cql", "bc"), nA=nA, fast=True,
-				 ensemble_K=2, offline_steps=1500, seed=seed)
-	return {"channel": channel, "action": action, "rows": int(n) if n <= max_rows else max_rows,
-			"nA": nA, "deployed": rep.get("deployed"), "behavior": rep.get("behavior_mean"),
-			"bar": rep.get("bar"), "n_candidates": rep.get("n_candidates")}
+	X, A, R = obs[idx].astype(np.float64), act[idx], rew[idx].astype(np.float64)
+	W = np.zeros((nA, X.shape[1]))
+	for arm in range(nA):
+		m = A == arm
+		W[arm] = (Ridge(alpha=1.0).fit(X[m], R[m]).coef_ if m.sum() > 30
+				  else np.zeros(X.shape[1]))
+	# speed: PCA the 512-d donor state to 64-d (keeps signal, ~x cheaper panel)
+	from sklearn.decomposition import PCA
+	k = min(64, obs.shape[1], len(idx) - 1)
+	Z = PCA(n_components=k, random_state=seed).fit_transform(
+		obs[idx].astype(np.float64)).astype(np.float32)
+	rep = evaluate({"obs": Z, "act": act[idx], "rew": rew[idx]},
+				   _Greedy(W, nA), nA=nA, fast=True, ensemble_K=2,
+				   candidate_name=f"{channel}_{action}")
+	return {"channel": channel, "action": action, "rows": int(len(idx)), "nA": nA,
+			"deploy": bool(rep.get("deploy")), "behavior": round(rep.get("behavior_mean", 0), 2),
+			"bar": round(rep.get("bar", 0), 2),
+			"provenance": rep.get("provenance", {}).get("propensity")}
 
 
 def main(argv=None):
