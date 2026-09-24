@@ -56,6 +56,13 @@ def _ipw_effects(channel, action):
 
 def build_plan(cadence="weekly", budget=None, seed=0):
 	rng = np.random.default_rng(seed)
+	# CERTIFICATION GATE: only schedule channels certified DEPLOY; else HOLD.
+	cert_path = Path(__file__).resolve().parents[0] / "artifacts" / "channel_certification.json"
+	certified = {}
+	if cert_path.exists():
+		for r in json.loads(cert_path.read_text()):
+			if r.get("action") == "arm":
+				certified[r["channel"]] = bool(r.get("deploy"))
 	# per-channel best cadence arm + best discount (causal)
 	best_arm, best_disc, effects = {}, {}, {}
 	for ch in CHANNEL_CADENCE:
@@ -85,6 +92,8 @@ def build_plan(cadence="weekly", budget=None, seed=0):
 			break
 		contacts = []
 		for ch, cad in CHANNEL_CADENCE.items():
+			if cert_path.exists() and not certified.get(ch, False):
+				continue   # HOLD: channel not certified
 			r = cad[int(best_arm[ch])] * (period_days / 7.0)
 			# unbiased fractional-rate allocation (keeps low cadences alive)
 			n = int(r) + (1 if rng.random() < (r - int(r)) else 0)

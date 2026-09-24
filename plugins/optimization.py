@@ -110,9 +110,15 @@ def main(argv=None):
 	ap.add_argument("--max_rows", type=int, default=15000)
 	a = ap.parse_args(argv)
 	print("== CHANNEL / DISCOUNT OPTIMIZATION (white_queen) ==")
-	for chan in ("email", "sms", "push"):
-		print("  ", optimize(chan, "arm", a.max_rows))
-	print("  ", optimize("email", "discount", a.max_rows))
+	res = [optimize(chan, "arm", a.max_rows) for chan in ("email", "sms", "push")]
+	res.append(optimize("email", "discount", a.max_rows))
+	import json
+	out = WORK / "red_queen" / "artifacts" / "channel_certification.json"
+	out.parent.mkdir(parents=True, exist_ok=True)
+	out.write_text(json.dumps(res, indent=1))
+	for r in res:
+		print("  ", r)
+	print("  wrote", out)
 
 
 if __name__ == "__main__":
