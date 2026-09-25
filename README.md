@@ -137,13 +137,13 @@ pip users). Indentation is **spaces** everywhere; `ruff format` is authoritative
 ## How to run (offline)
 ```bash
 # generate the stream
-PYTHONPATH=. python -m rabbit_hole.generators.generate_data --num-customers 25000 ...
+python -m rabbit_hole.generators.generate_data --num-customers 25000 ...
 # train the donor + state tables
-PYTHONPATH=. python -m looking_glass.customer_foundation_model all --customers 25000 --anchors 6
+python -m looking_glass.customer_foundation_model all --customers 25000 --anchors 6
 # donor gate / sufficiency battery
-PYTHONPATH=. python -m looking_glass.sufficiency_battery
+python -m looking_glass.sufficiency_battery
 # plugins
-PYTHONPATH=. python -m plugins.run --window 365
+python -m plugins.run --window 365
 # incrementality + per-customer targeting
-PYTHONPATH=. python -m red_queen.response_model
+python -m red_queen.response_model
 ```

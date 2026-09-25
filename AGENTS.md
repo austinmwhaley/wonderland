@@ -29,8 +29,11 @@ over it; **Parquet** is for compressed archival. No SQLite, no pandas. Read via
 dict materialization).
 
 Known tolerated SQLite (non-canonical, local-only — never the stream of record,
-migrate when touched): `white_queen/db.py` (colony run-cache) and the
-looking_glass standalone reference-app ddl (`scripts/generate_full.py`).
+migrate when touched): `white_queen/db.py` (colony run-cache) and looking_glass's
+SQLite loaders (`looking_glass/embeddings.py::load_records_from_sqlite`,
+`looking_glass/scripts/smoke_config.py::SQLITE_PATH` ->
+`scripts/data/sqlite/events.db`; that db's generator was retired — rabbit_hole is
+the canonical source).
 
 Style: **spaces** (4) everywhere — `ruff format` is authoritative; no tabs.
 

@@ -47,7 +47,7 @@ eighth_square/
 ├── environments/
 │   └── base.py                 # EnvWrapper, DiscretizedWrapper, OneHotWrapper
 ├── algorithms/                 # 20 algorithm implementations
-│   ├── tabular.py              # Q-Learning, SARSA, Expected SARSA
+│   ├── tabular/                # Q-Learning, SARSA, Expected SARSA (+ tabular_es.py)
 │   ├── dyna_q.py               # Dyna-Q (model-based planning)
 │   ├── vanilla_dqn.py          # Vanilla DQN (no target, no replay)
 │   ├── dqn.py                  # DQN, Double DQN, Dueling DQN

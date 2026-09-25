@@ -364,10 +364,13 @@ looking_glass/
     robustness.py     — RejectionSampler (batch-level data quality filtering)
 ```
 
-The `scripts/` directory contains the omnichannel retail simulacrum (``generate_full.py`` — a
-synthetic data generator with 24 causal event types, persona-driven behaviour,
-and session-based purchase funnels) and the full-pipeline benchmark runner
-(``run_full.py``). These are not part of the installable package.
+The `scripts/` directory holds runnable examples against looking_glass: the
+full-pipeline smoke test (``smoke_test.py`` — entry façade over
+``smoke_pipeline.py`` / ``smoke_support.py`` / ``smoke_config.py``), the example
+demo (``example.py``), toy training and sweep helpers, and the legacy benchmark
+runner ``run_full.py`` (requires the retired ``simulacrum.db`` — its generator
+was removed; rabbit_hole is the canonical data source). These are not part of
+the installable package.
 
 ---
 
@@ -509,4 +512,5 @@ The model gets the learned backbone vectors plus a handful of generic aggregates
 
 Total wall time from raw events to trained predictors: approximately 2.5 minutes on a single GPU.
 
-See `scripts/smoke_test.py` for the full pipeline source.
+See `scripts/smoke_test.py` (entry façade; pipeline implementation in
+`scripts/smoke_pipeline.py`) for the full pipeline source.

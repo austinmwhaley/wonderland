@@ -68,8 +68,8 @@ disagreement).
 - Python 3.12
 - PyTorch (CUDA optional; GPU used when available)
 - NumPy, DuckDB, PyArrow
-- Gymnasium environments (`environments/`), plus the vendored `OFFSET` world
-  for the OFFSET ladder.
+- Gymnasium environments (`environments/`), plus the optional external OFFSET
+  package for the OFFSET ladder (not vendored in this repo).
 
 Tests need only CPU (a GPU is used automatically if present).
 
@@ -136,17 +136,15 @@ python -m white_queen.tribunal.bench.scorecard --print --tests <N>
 ```
 
 Run / refresh an environment (writes results under
-`/tmp/opencode/wq_matrix/bench_results/`):
+`white_queen/tribunal/bench/results/`; override with `WQ_BENCH_RESULTS`):
 
 ```bash
 python -m white_queen.tribunal.bench.scorecard --run cartpole --seed 0 --force
 ```
 
-Environment cost knobs for large environments (full FQE budget is slow):
-
-```bash
-WQ_ENSEMBLE_K=1 WQ_DYN_K=1 python -m ...scorecard --run lunar --seed 0 --force
-```
+Cost control: select cases with `--tests` / `--seed`, reuse cached results
+between runs, and let the library's autotune derive FQE budgets (no magic step
+counts). The scorecard reads no other environment knobs.
 
 The scorecard is the project's instrument: every estimator change is judged by
 whether coverage stays at target and recall rises while false deploys stay 0.
@@ -156,7 +154,8 @@ whether coverage stays at target and recall rises while false deploys stay 0.
 ## Tests
 
 ```bash
-PYTHONPATH=. python3 -m pytest white_queen/tribunal/ope/tests -q
+python3 -m pytest white_queen/tribunal/ope/tests -q   # from the repo root
+# or bare `pytest` to run the whole repository suite
 ```
 
 Covers: estimator contract, decision inference, certificate, judge, gate
@@ -194,11 +193,11 @@ white_queen/
       acceptance.py    the acceptance contract
       harness.py       ground-truth scoring (FP/FN/precision/recall/CIs)
       scorecard.py     run/reprint the contract table
-  verdicts/            frozen artifacts per version
+  verdicts/            frozen artifacts per version (gitignored, regenerable)
 algorithms/            online + offline algorithms (DQN, PPO, IQL, CQL, ...)
-environments/          gym + custom env registry
+environments/          gym + custom env registry (OFFSET ladder envs need the
+                       external OFFSET package — not vendored in this repo)
 scripts/               surveys, benchmarks, frozen reruns
-OFFSET/                vendored urban-world ladder environment
 ```
 
 ---

@@ -11,16 +11,21 @@ caterpillar (interpretability). eighth_square owns algorithms/ + environments/.
 white_queen (hardened, 99 tests); red_king population counterfactual (ordering 1.0,
 calib 0.99; optional); red_queen multi-cadence + multi-action + certification-gated
 + uplift-targeted; incrementality ATE +11.62 CI[11.19,12.08] with per-customer
-uplift (monotone quintiles, top-20% gain +18.95).
+uplift (monotone quintiles, top-20% gain +18.95). Engineering: CI + ruff gates +
+226-test suite (222 passed / 1 skipped / 3 xfailed) — see "Infrastructure overhaul".
 
 **Robustness:** the system stays conservative on realistic (confounded, sparse,
 non-stationary) data — deconfounds via IPW, HOLDs uncorroborated policies, no fake
 lift. Honest limit: observational-only data cannot give per-customer CAUSAL effects;
 identification comes from the persistent hold-out.
 
-**Open/next:** 2) fuller management incrementality report (segments, CIs, receipt);
-3) validation harness + CI (requirements, test runner); optional: red_king
-enablement when its scorecard passes; caterpillar NL Q&A; broader experimentation.
+**Open/next:** fix the 4 xfail'd bugs found by the new test suite (decision_log
+arm packing, caterpillar plan-schema mismatch, RSSM zero-prior rollout,
+empty-input error clarity); wire per-customer (switchback-identified) HTE values
+into red_queen with population fallback + shrinkage; management incrementality
+report per-segment; vectorize generator (50k+ stream); caterpillar NL Q&A;
+broader experimentation. (CI/test-runner item DONE; population scorecard PASSES —
+red_king stays optional until the with-vs-without white_queen A/B proves value.)
 
 ---
 
@@ -59,23 +64,31 @@ observability, prefer deletion, best tool, cost-aware, **speed-first (16)**.
 - white_queen OPE library (99 tests).
 - red_king validated as counterfactual evaluator (synthetic + known-effect stream).
 - Speed: vectorized scan; 500cust=45s, 10k=10:48, 30k~29min.
+- Engineering: root packaging + CI + ruff gates; full suite runs as pytest
+  (226 collected: 161 legacy + 63 unit + 2 acceptance wrappers).
 
 ## Doesn't ❌
-- Unsupervised segmentation: clusters don't stratify GP (eta^2~0).
+- Unsupervised segmentation: gate passes (4/4) but its eta^2 k-search is
+  non-decreasing under refinement (drifts to kmax on noisy labels) — the
+  silhouette `_choose_k` path is the reliable selector.
 - red_king -> white_queen improvement UNPROVEN (different reward/action; red_king
   optimistic, white_queen HOLDs).
 - Short-horizon targets (gp_30/90) raw-dominated (acceptable per contract).
 - Generator still per-event Python (offline); MoE/multi-entity (M3/M5) rejected.
 
 ## Next tasks (priority order)
-1. **Same-estimand experiment**: white_queen action = randomized **arm**,
-   reward = **incremental GP**; add red_king as MB witness with calibrated
-   pessimism; A/B with/without (does HOLD->DEPLOY flip correctly?).
-2. red_king **multi-step rollouts**; calibrate pessimism against known effect.
-3. Fix unsupervised segmentation (validate on behavior, or value-aware k).
-4. **Sequential** email dataset (not bandit) for true offline RL.
+1. Fix the 4 test-flagged bugs (xfail list under "Infrastructure overhaul"):
+   decision_log arm packing, caterpillar plan schema, RSSM zero-prior rollout,
+   build_transitions empty-input error.
+2. Wire per-customer HTE values into red_queen: personalize the
+   switchback-identified, population fallback elsewhere (+ hierarchical
+   shrinkage); expand the switchback experiment.
+3. **Same-estimand A/B** (v1 DoD #4): white_queen action = randomized arm,
+   reward = incremental GP; red_king as MB witness — does HOLD->DEPLOY flip
+   correctly with vs without? (still unproven)
+4. Management incrementality report: per-segment CIs + receipts.
 5. Vectorize generator; generate 50k+ stream; ladder; re-run battery.
-6. red_queen, caterpillar.
+6. caterpillar: schema fix (bug #2 above), then NL Q&A.
 
 ## Known-effect validation (how to reproduce)
 Incremental orders = orders in same click session within 3h after click. Group by
@@ -696,13 +709,14 @@ Repo-wide quality pass (all gates green afterwards):
 - Duplicates/dead code pruned: `eighth_square/scripts/` byte-identical copy of
   `scripts/` deleted (26 files); 10 one-off `fqe_*.py` consolidated into
   `scripts/fqe_panel.py <exp>` (history stays here); `effect_model2.py` ->
-  `hte_model.py`; `.bak` + empty `eighth_square/eighth_square/` stub removed.
+  `hte_model.py`; `.bak` removed (`eighth_square/eighth_square/__init__.py` was
+  NOT empty — a real facade — so it was kept).
 - All 27 hardcoded `/home/austin-whaley/wq` paths replaced with
   `Path(__file__)`-relative resolution (scripts + white_queen scorecard +
   test_hardening). scorecard BENCH_RESULTS moved to
   white_queen/tribunal/bench/results (override: WQ_BENCH_RESULTS).
-- .gitignore tightened; 77 leaky artifacts untracked (kept on disk): 67 verdict
-  JSONs, generated HTML/result JSONs, looking_glass/data symlink.
+- .gitignore tightened; 76 leaky artifacts untracked (kept on disk): 67 verdict
+  JSONs, 5 generated HTML, 3 result JSONs, looking_glass/data symlink.
 - Docs: stale red_king/red_king + red_queen/red_queen paths fixed; flow diagram
   in AGENTS aligned with README; SQLite tolerance documented (white_queen db +
   looking_glass reference ddl) instead of hidden.
@@ -711,8 +725,9 @@ Repo-wide quality pass (all gates green afterwards):
   (+6), supervised 1236->193 (+4), temporal_core 996->367 (+2),
   smoke_test 1520->535 (+3). rabbit_hole + looking_glass suites re-verified green.
 - NEW TEST LAYER: root tests/ — 63 unit tests over red_king/red_queen/
-  plugins/caterpillar (previously 0) + acceptance-gate wrappers; full suite
-  = 161 legacy + 63 new + plugins gate (9/9, 224s) runs as pytest.
+  plugins/caterpillar (previously 0) + acceptance-gate wrappers; full suite =
+  226 collected (161 legacy + 63 unit + 2 wrappers) = 222 passed, 1 skipped,
+  3 xfailed; the plugins gate runs inside it (9/9, ~224s; skips without data).
 => fresh clone can provision (requirements), test (pytest), and lint (ruff);
    CI enforces all three.
 
@@ -725,3 +740,23 @@ Repo-wide quality pass (all gates green afterwards):
    -> V identical across customer states; weakens engine.run(use_red_king=True).
 4. `world_model.build_transitions([])` raises bare IndexError from np.quantile
    instead of a clear rejection error.
+
+## Docs currency audit + script bootstrap fixes (DONE)
+Full-doc audit after the infra pass; fixed:
+- STATUS macro header rewritten to current state (Open/next, Works, Doesn't,
+  Next tasks; suite math 226 = 161 legacy + 63 unit + 2 wrappers; 76 untracked
+  artifacts; the "empty eighth_square stub" claim corrected — it's a real facade).
+- AGENTS SQLite touchpoints corrected (generate_full.py was retired and is
+  asserted ABSENT by rabbit_hole acceptance).
+- looking_glass AGENTS/README: 3 broken commands fixed (tests/example/benchmark
+  now documented from the repo root), legacy run_full noted, smoke_test pointer
+  updated to the façade+smoke_pipeline split.
+- rabbit_hole README storage doctrine: Arrow primary (was still DuckDB-primary).
+- eighth_square READMEs: bench results path (was a /tmp path), scorecard env
+  knobs it never read, OFFSET not vendored here, verdicts gitignored in repo map,
+  tabular.py -> tabular/ package; README PYTHONPATH=. prefixes dropped
+  (`python -m` puts cwd on sys.path).
+CODE: 9 `looking_glass/scripts/*.py` had an off-by-one sys.path bootstrap
+(`parent.parent` = looking_glass/ instead of the repo root — broken by the
+package flatten) -> now `parents[2]`; `python looking_glass/scripts/example.py`
+runs directly again.

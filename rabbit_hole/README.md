@@ -23,12 +23,13 @@ rabbit_hole/
   schema.py       canonical fields, COLUMN_ALIASES, EventRecord,
                   canonicalize_row, validate_event, parse_attributes
   stream.py       read_events / write_events / CustomerEventStream
-                  (DuckDB + Parquet)
+                  (Arrow IPC primary + DuckDB + Parquet)
   generators/
     generate_data.py   THE generator: builds the wide customer tables, then
                        materializes them into the unified event stream
 data/
-  duckdb/customer_event_stream.duckdb the canonical stream (primary store)
+  arrow/customer_event_stream.feather   the canonical stream (Arrow primary)
+  duckdb/customer_event_stream.duckdb   query-engine copy over the Arrow stream
   logs/
 ```
 
@@ -40,8 +41,9 @@ Every backend and every read carries the **five canonical fields**:
 
 Extra columns are allowed and preserved (`event_id, entity_type, entity_id,
 source_table, value`), but the five are always present. Backends by extension:
-`.duckdb`/`.ddb` -> DuckDB (primary, Arrow-native), `.parquet`/`.pq` -> Parquet
-(Polars/Arrow). No SQLite, no pandas.
+`.arrow`/`.feather`/`.ipc` -> Arrow (primary data layer), `.duckdb`/`.ddb` ->
+DuckDB (query engine over the Arrow stream), `.parquet`/`.pq` -> Parquet
+(archival). No SQLite, no pandas.
 
 ## Boundary
 

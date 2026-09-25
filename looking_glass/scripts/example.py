@@ -28,8 +28,8 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 # Ensure the repository root is importable when this file is run directly.
-if str(Path(__file__).parent.parent) not in sys.path:
-    sys.path.insert(0, str(Path(__file__).parent.parent))
+if str(Path(__file__).resolve().parents[2]) not in sys.path:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 
 from looking_glass import (

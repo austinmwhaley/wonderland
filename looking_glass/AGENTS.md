@@ -10,16 +10,27 @@ looking_glass is a **sklearn-for-event-streams** Python library. Three factory f
 
 ## Commands
 
-- Install: `python3 -m pip install -r requirements.txt`
-- Run tests: `.venv/bin/python -m pytest tests/ -q`
-- Run example demo (CPU, ~2 min): `.venv/bin/python scripts/example.py`
-- Run full benchmark (needs generated db): `.venv/bin/python scripts/run_full.py`
+Run everything from the **repo root** (`wonderland/`) — the package is the
+top-level `looking_glass/` directory and the root `pyproject.toml` puts it on
+`sys.path` (no install needed).
+
+- Install deps: `python3 -m pip install -r looking_glass/requirements.txt` (or the root `requirements.txt`)
+- Tests: `pytest looking_glass/tests` (bare `pytest` runs the whole repo)
+- Example demo (CPU, ~2 min): `python looking_glass/scripts/example.py`
+- Full pipeline smoke: `python looking_glass/scripts/smoke_test.py`
+- Full benchmark (`run_full.py`) is **legacy**: it needs the retired
+  `simulacrum.db` whose generator was removed — rabbit_hole is the canonical
+  data source now.
 
 ## Code conventions
 
 - **Spaces** (4) in all files — `ruff format` from the repo root is authoritative (older files were tab-indented; they were converted).
 - Type annotations using `from __future__ import annotations` everywhere.
 - Public API surfaces go through `looking_glass/__init__.py`.
-- Tests live in `tests/` and are installed-runnable (`from looking_glass import …`).
-- Scripts in `scripts/` are not part of the installable package; they import `looking_glass` as a dependency.
-- The reference-app `ddl` uses `scripts/generate_full.py`, which still produces a SQLite database (products, customers, stores, campaigns, events). This is local-only reference-app storage — SQLite is never the canonical stream (root doctrine: Arrow/DuckDB).
+- Tests live in `tests/` and run from the repo root (root `pyproject.toml` sets `pythonpath`; no install required).
+- Scripts in `scripts/` are not part of the package; they bootstrap the repo root onto `sys.path` and import `looking_glass`.
+- SQLite touchpoints (`embeddings.py::load_records_from_sqlite`,
+  `scripts/smoke_config.py::SQLITE_PATH` -> `scripts/data/sqlite/events.db`) are
+  local-only reference storage — SQLite is never the canonical stream (root
+  doctrine: Arrow/DuckDB; the old `generate_full.py` generator was retired and
+  rabbit_hole's acceptance asserts its absence).
