@@ -17,7 +17,7 @@ from white_queen.tribunal import adjudicate
 cfg = PRESETS["quick"]
 reps = adjudicate.run_ope_only(
     cfg,
-    str(ROOT / "white_queen/data/white_queen_quick.db"),
+    str(ROOT / "white_queen/data/white_queen_quick.duckdb"),
     str(ROOT / "white_queen/verdicts/v18ind"),
     str(ROOT / "white_queen/verdicts/v15"),
     mu_source="estimated",

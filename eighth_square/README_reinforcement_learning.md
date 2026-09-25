@@ -18,7 +18,7 @@ better than the policy that produced the logs, and never ships one that is worse
 ## What it does
 
 1. **Ingest** any log format — a dict of arrays, Arrow, Polars, pandas, a
-   DuckDB relation, Parquet/CSV, or a SQLite/colony DB. Discrete or continuous
+   DuckDB relation, Parquet/CSV, or a colony DuckDB file. Discrete or continuous
    actions; bandit or sequential.
 2. **Train offline-RL candidates** on the pool: IQL, CQL, BC (and a
    continuous-action IQL for continuous logs). No live environment is needed.
@@ -83,7 +83,7 @@ Tests need only CPU (a GPU is used automatically if present).
 from white_queen.tribunal.ope import pipeline
 
 report = pipeline.run(
-    "path/to/logs.db",  # any accepted source
+    "path/to/logs.duckdb",  # any accepted source
     algorithms=("iql", "cql", "bc"),
     gamma=0.99,
     fast=True,

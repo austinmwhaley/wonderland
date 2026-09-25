@@ -20,7 +20,7 @@ from white_queen.tribunal.candidates import load_candidate
 
 cfg = dict(PRESETS["quick"])
 cfg["device"] = "cpu"
-data = db.load_diet(str(ROOT / "white_queen/data/white_queen_quick.db"), "novice_only")
+data = db.load_diet(str(ROOT / "white_queen/data/white_queen_quick.duckdb"), "novice_only")
 env = make_env("cartpole", seed=999)
 tiny = {
     "steps_max": 400,

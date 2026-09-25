@@ -22,7 +22,7 @@ cfg["device"] = "cpu"
 env = make_env("cartpole", seed=999)
 
 for diet in ["mixed", "novice_only", "expert_only"]:
-    data = db.load_diet(str(ROOT / "white_queen/data/white_queen_quick.db"), diet)
+    data = db.load_diet(str(ROOT / "white_queen/data/white_queen_quick.duckdb"), diet)
     eplen = {e: 0 for e in np.unique(data["episode"])}
     for e in np.unique(data["episode"]):
         eplen[e] = int((data["episode"] == e).sum())

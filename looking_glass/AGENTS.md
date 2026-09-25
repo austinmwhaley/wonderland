@@ -17,10 +17,9 @@ top-level `looking_glass/` directory and the root `pyproject.toml` puts it on
 - Install deps: `python3 -m pip install -r looking_glass/requirements.txt` (or the root `requirements.txt`)
 - Tests: `pytest looking_glass/tests` (bare `pytest` runs the whole repo)
 - Example demo (CPU, ~2 min): `python looking_glass/scripts/example.py`
-- Full pipeline smoke: `python looking_glass/scripts/smoke_test.py`
-- Full benchmark (`run_full.py`) is **legacy**: it needs the retired
-  `simulacrum.db` whose generator was removed — rabbit_hole is the canonical
-  data source now.
+- Full pipeline smoke: `python looking_glass/scripts/smoke_test.py` (requires the
+  reference dataset at `scripts/data/events.duckdb` — generate it first via
+  rabbit_hole; it is not committed)
 
 ## Code conventions
 
@@ -29,8 +28,8 @@ top-level `looking_glass/` directory and the root `pyproject.toml` puts it on
 - Public API surfaces go through `looking_glass/__init__.py`.
 - Tests live in `tests/` and run from the repo root (root `pyproject.toml` sets `pythonpath`; no install required).
 - Scripts in `scripts/` are not part of the package; they bootstrap the repo root onto `sys.path` and import `looking_glass`.
-- SQLite touchpoints (`embeddings.py::load_records_from_sqlite`,
-  `scripts/smoke_config.py::SQLITE_PATH` -> `scripts/data/sqlite/events.db`) are
-  local-only reference storage — SQLite is never the canonical stream (root
-  doctrine: Arrow/DuckDB; the old `generate_full.py` generator was retired and
-  rabbit_hole's acceptance asserts its absence).
+- Reference data access goes through `embeddings.py::load_records_from_duckdb`
+  over `scripts/smoke_config.py::DUCKDB_PATH` -> `scripts/data/events.duckdb`
+  (local-only, generated, never committed). DuckDB is the only query engine here
+  (root doctrine: Arrow/DuckDB/Parquet — no pandas); rabbit_hole is
+  the canonical data source.

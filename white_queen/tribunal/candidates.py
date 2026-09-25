@@ -1,4 +1,4 @@
-"""Offline candidates on SQLite diets. Reuses lab IQL/CQL untouched via the
+"""Offline candidates on DuckDB diets. Reuses lab IQL/CQL untouched via the
 buffer-injection seam (fill lab OfflineBuffer from the diet, assign
 agent.buffer, drive agent._update()). BC is implemented here on the lab's
 DiscretePolicy net — the supervised-template analog: same inputs, same pins,

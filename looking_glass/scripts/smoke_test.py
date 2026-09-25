@@ -24,7 +24,7 @@ from looking_glass import (
     get_sequence_backend_name,
     get_sequence_implementation_name,
     load_vectors_from_lancedb,
-    load_records_from_sqlite,
+    load_records_from_duckdb,
     QDoRAConfig,
     save_embeddings_to_lancedb,
     validate_classification_success,
@@ -37,7 +37,7 @@ from looking_glass import (
 )
 
 from looking_glass.scripts.smoke_config import (
-    SQLITE_PATH,
+    DUCKDB_PATH,
     LANCEDB_DIR,
     HIDDEN_DIM,
     SEED,

@@ -11,8 +11,8 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import duckdb
 import json
-import sqlite3
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -35,12 +35,19 @@ HORIZON_DAYS = 30
 HIDDEN_DIM = 64
 
 
+def _iso(value):
+    """Coerce timestamp values to ISO-8601 text for stable string comparisons."""
+
+    return value.isoformat() if hasattr(value, "isoformat") else value
+
+
 def load_events(db: Path) -> list[dict]:
-    conn = sqlite3.connect(str(db))
-    conn.row_factory = sqlite3.Row
-    rows = conn.execute(
+    conn = duckdb.connect(str(db), read_only=True)
+    cursor = conn.execute(
         "SELECT customer_key, event_ts, brand, event_type, event_attributes FROM events"
-    ).fetchall()
+    )
+    col_names = [desc[0] for desc in cursor.description]
+    rows = [dict(zip(col_names, row)) for row in cursor.fetchall()]
     conn.close()
     events = []
     for i, r in enumerate(rows):
@@ -60,7 +67,7 @@ def load_events(db: Path) -> list[dict]:
             {
                 "event_id": f"ev_{i:08d}",
                 "customer_id": r["customer_key"],
-                "event_ts": r["event_ts"],
+                "event_ts": _iso(r["event_ts"]),
                 "event_type": r["event_type"],
                 "event_payload_json": payload,
                 "value": val,

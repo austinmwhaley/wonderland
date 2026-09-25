@@ -367,10 +367,9 @@ looking_glass/
 The `scripts/` directory holds runnable examples against looking_glass: the
 full-pipeline smoke test (``smoke_test.py`` — entry façade over
 ``smoke_pipeline.py`` / ``smoke_support.py`` / ``smoke_config.py``), the example
-demo (``example.py``), toy training and sweep helpers, and the legacy benchmark
-runner ``run_full.py`` (requires the retired ``simulacrum.db`` — its generator
-was removed; rabbit_hole is the canonical data source). These are not part of
-the installable package.
+demo (``example.py``), and toy training, probe, and sweep helpers
+(``train_toy.py``, ``probe_churn.py``, ``sweep_*.py``, ``compare_*.py``). These
+are not part of the installable package.
 
 ---
 
@@ -465,7 +464,7 @@ The `scripts/` directory contains a runnable reference application of looking_gl
 
 **Input:** 32,159 customers — with the temporal summary vector, the customer profile vector, and baseline aggregate features (event count, recency, etc.) as a lightweight tabular complement.
 
-The benchmark report (`run_full.py`) now prints a three-way ablation — vectors-only, aggregates-only, combined — alongside the xgboost baseline on aggregates.  This lets you see exactly what the learned representation contributes *on top of* and *instead of* hand-crafted features:
+The reference run prints a three-way ablation — vectors-only, aggregates-only, combined — alongside the xgboost baseline on aggregates.  This lets you see exactly what the learned representation contributes *on top of* and *instead of* hand-crafted features:
 
 | Variant | Features | Purpose |
 |---|---|---|
@@ -481,7 +480,7 @@ The benchmark report (`run_full.py`) now prints a three-way ablation — vectors
 | F1 | 80.8% |
 | Threshold | 0.42 |
 
-The model gets the learned backbone vectors plus a handful of generic aggregates (event count, recency days, etc.).  The ablation table in the benchmark report (`run_full.py`) breaks out how much the vectors contribute independently of those aggregates.
+The model gets the learned backbone vectors plus a handful of generic aggregates (event count, recency days, etc.).  The ablation table breaks out how much the vectors contribute independently of those aggregates.
 
 ---
 

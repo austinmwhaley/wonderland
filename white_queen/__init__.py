@@ -1,7 +1,7 @@
 """White Queen: toy Offline RL + OPE loop on CartPole.
 
 Stage 1 "Behavior Colony" (colony/): online agents of many families train on
-CartPole; checkpoints from birth to mastery roll out trajectories into SQLite.
+CartPole; checkpoints from birth to mastery roll out trajectories into DuckDB.
 Stage 2 "The Tribunal" (tribunal/): offline candidates train on that data and
 a full OPE validation suite delivers a go/no-go verdict, scored against live
 ground truth.

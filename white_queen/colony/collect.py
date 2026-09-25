@@ -1,6 +1,6 @@
 """Behavior Colony collector. Trains each roster policy (scaled budgets), rolls
 out episodes under a colony-level epsilon mixture with EXACT analytic behavior
-probs, and writes everything to SQLite. Reuses lab agents untouched through
+probs, and writes everything to DuckDB. Reuses lab agents untouched through
 the BaseAgent duck API (act/train/save/load); collection epsilon lives here,
 not in the agents, so mu is exact for every family uniformly."""
 

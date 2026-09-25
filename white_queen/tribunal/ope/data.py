@@ -102,28 +102,34 @@ def _as_columns(source):
 def _duckdb_to_columns(source):
     import duckdb
 
-    con = duckdb.connect()
     if isinstance(source, (str, bytes)):
         p = source if isinstance(source, str) else source.decode()
         low = p.lower()
-        if low.endswith(".db") or low.endswith(".sqlite") or low.endswith(".sqlite3"):
-            con.execute(f"ATTACH '{p}' AS s (TYPE sqlite, READ_ONLY)")
-            tables = [r[0] for r in con.execute("SHOW TABLES FROM s").fetchall()]
-            if not tables:
-                raise ValueError(f"no tables in {p}")
-            q = f'SELECT * FROM s."{tables[0]}"'
-        elif low.endswith(".parquet"):
-            q = f"SELECT * FROM read_parquet('{p}')"
-        elif low.endswith(".csv"):
-            q = f"SELECT * FROM read_csv_auto('{p}')"
-        elif low.endswith(".json") or low.endswith(".jsonl") or low.endswith(".ndjson"):
-            q = f"SELECT * FROM read_json_auto('{p}')"
-        else:
-            raise ValueError(f"unrecognized file type: {p}")
-        rel = con.execute(q)
-    else:
-        rel = source
-    return {k: np.asarray(v) for k, v in rel.fetchnumpy().items()}
+        if low.endswith(".duckdb") or low.endswith(".ddb"):
+            con = duckdb.connect(p, read_only=True)
+            try:
+                tables = [r[0] for r in con.execute("SHOW TABLES").fetchall()]
+                if not tables:
+                    raise ValueError(f"no tables in {p}")
+                rel = con.execute(f'SELECT * FROM "{tables[0]}"')
+                return {k: np.asarray(v) for k, v in rel.fetchnumpy().items()}
+            finally:
+                con.close()
+        con = duckdb.connect()
+        try:
+            if low.endswith(".parquet"):
+                q = f"SELECT * FROM read_parquet('{p}')"
+            elif low.endswith(".csv"):
+                q = f"SELECT * FROM read_csv_auto('{p}')"
+            elif low.endswith(".json") or low.endswith(".jsonl") or low.endswith(".ndjson"):
+                q = f"SELECT * FROM read_json_auto('{p}')"
+            else:
+                raise ValueError(f"unrecognized file type: {p}")
+            rel = con.execute(q)
+            return {k: np.asarray(v) for k, v in rel.fetchnumpy().items()}
+        finally:
+            con.close()
+    return {k: np.asarray(v) for k, v in source.fetchnumpy().items()}
 
 
 def _pick(cols, names, required=True, role=""):

@@ -2,9 +2,6 @@ __pycache__/
 *.py[cod]
 
 # Local smoke-test data artifacts
-scripts/data/sqlite/*.db
-scripts/data/sqlite/*.sqlite
 scripts/data/lancedb/**
 !scripts/data/lancedb/.gitkeep
 scripts/data/logs/*.log
-scripts/data/full/*.db

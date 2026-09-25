@@ -33,7 +33,7 @@ class U:
 
 
 for diet in ["mixed", "novice_only", "expert_only"]:
-    data = db.load_diet(str(ROOT / "white_queen/data/white_queen_quick.db"), diet)
+    data = db.load_diet(str(ROOT / "white_queen/data/white_queen_quick.duckdb"), diet)
     bs = behavior_stats(data, 0.99)
     bar = bs["mean"] + 0.2 * max(bs["std"], 0.05 * abs(bs["mean"]))
     print("== %s behavior=%.1f bar=%.1f ==" % (diet, bs["mean"], bar), flush=True)

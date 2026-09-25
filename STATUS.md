@@ -753,10 +753,34 @@ Repo-wide quality pass (all gates green afterwards):
   looking_glass/` builds again (verified: `pip --dry-run -e` -> "Would install
   looking_glass-0.1.0").
 - README: eighth_square standalone-install note (`pip install -e eighth_square/`).
-- SQLite migration stays deliberate debt (AGENTS: "migrate when touched"):
-  `white_queen/db.py` + the looking_glass loaders are local, regenerable
-  run-caches; converting them would invalidate local colony dbs — do it the
-  next time that code is edited.
+- SQLite migration was deferred here — completed immediately after in the next
+  section ("No SQLite anywhere").
+
+## No SQLite anywhere — DuckDB migration + run_full deletion (DONE)
+Storage is Polars+DuckDB end to end; `grep -ri sqlite` over project source and
+docs = zero (doctrine lines saying "No SQLite" remain).
+- `white_queen/db.py` rewritten as a native DuckDB store (sequences instead of
+  AUTOINCREMENT, `INSERT ... RETURNING` for episode ids, diet views preserved);
+  the sqlite fallback loader is gone. Writers (`colony/collect`) and readers
+  (`load_diet`, `diet_stats`, `run_colony`) keep their exact APIs/outputs.
+- Colony data converted once: `white_queen_quick.db` (sqlite, 18.7MB, 153,064
+  transitions) -> `white_queen_quick.duckdb` (13.6MB) — verified BIT-IDENTICAL:
+  `load_diet` on all 4 diets `np.array_equal` vs the old store; `diet_stats`
+  identical; writer roundtrip + sequence continuity across reopen verified.
+  The sqlite files are deleted; `python -m white_queen.run_colony` regenerates
+  natively if ever needed.
+- `white_queen/config.py` + 12 scripts now point at `white_queen_quick.duckdb`.
+- `tribunal/ope/data.py` path adapter: the `.db`/`.sqlite` ATTACH branch ->
+  direct `.duckdb` open (parquet/csv/json unchanged; connections now closed).
+- looking_glass: `load_records_from_sqlite` -> `load_records_from_duckdb`
+  (public API rename); smoke_* + toy/sweep scripts read DuckDB
+  (`scripts/data/events.duckdb` — generator still absent, now fails with a
+  clear FileNotFoundError); iso-timestamp coercion keeps string-compare
+  semantics identical to sqlite's text timestamps.
+- Deleted: `looking_glass/scripts/run_full.py` (legacy benchmark; its input
+  db's generator was retired) + all doc references.
+- Docs: AGENTS data layer now states "no SQLite anywhere in this project";
+  colony/candidates/config docstrings updated; pipeline examples use `.duckdb`.
 
 ## Docs currency audit + script bootstrap fixes (DONE)
 Full-doc audit after the infra pass; fixed:

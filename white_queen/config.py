@@ -26,7 +26,7 @@ QUICK_LOOK = {
     "env": "cartpole",
     "gamma": 0.99,
     "seeds": [0, 1],
-    "db_path": str(DATA / "white_queen_quick.db"),
+    "db_path": str(DATA / "white_queen_quick.duckdb"),
     "ckpt_dir": str(CKPT / "quick"),
     "verdict_dir": str(VERDICTS / "quick"),
     # Colony: {roster_key: episodes_per_seed} — roster rows live in colony/roster.py.
@@ -39,7 +39,7 @@ QUICK_LOOK = {
     "offline_steps": 10_000,
     "ope_fqe_steps": 3_000,
     "ground_truth_episodes": 20,
-    # Coverage diets (SQLite views over the same rows): headline + two stresses.
+    # Coverage diets (DuckDB views over the same rows): headline + two stresses.
     "diets": ("mixed", "novice_only", "expert_only"),
     # Gate / OPE: None = autotune from data at runtime (recommended).
     # Legacy literals kept as comment for reproducibility:

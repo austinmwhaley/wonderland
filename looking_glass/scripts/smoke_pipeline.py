@@ -6,7 +6,7 @@ from looking_glass import (
     attach_vector_feature,
     create_embedding_model,
     create_temporal_core_model,
-    load_records_from_sqlite,
+    load_records_from_duckdb,
     load_vectors_from_lancedb,
     QDoRAConfig,
     save_embeddings_to_lancedb,
@@ -44,7 +44,7 @@ from looking_glass.scripts.smoke_config import (
     PRODUCT_GOOD_MIN_NORM_STD,
     SEED,
     SMOKE_EVENT_LIMIT,
-    SQLITE_PATH,
+    DUCKDB_PATH,
 )
 from looking_glass.scripts.smoke_support import (
     _assert_ok,
@@ -58,9 +58,9 @@ from looking_glass.scripts.smoke_support import (
 
 
 def run_product_embedding_stage(sequence_backend: str):
-    # 1) Load raw entity records from SQLite.
-    records = load_records_from_sqlite(
-        sqlite_path=SQLITE_PATH,
+    # 1) Load raw entity records from DuckDB.
+    records = load_records_from_duckdb(
+        db_path=DUCKDB_PATH,
         source_table="products",
         columns=["product_id", "category", "base_price"],
     )
@@ -108,8 +108,8 @@ def run_product_embedding_stage(sequence_backend: str):
 
 def run_customer_embedding_stage(sequence_backend: str):
     # Use all customers (no row cap) so the customer silo sees full coverage.
-    customer_dimension_rows = load_records_from_sqlite(
-        sqlite_path=SQLITE_PATH,
+    customer_dimension_rows = load_records_from_duckdb(
+        db_path=DUCKDB_PATH,
         source_table="customers",
         columns=[
             "customer_id",
@@ -131,8 +131,8 @@ def run_customer_embedding_stage(sequence_backend: str):
         raise RuntimeError("No customer rows loaded for customer embedding run")
 
     # Anchor tenure to latest observed event time in the dataset.
-    latest_event_row = load_records_from_sqlite(
-        sqlite_path=SQLITE_PATH,
+    latest_event_row = load_records_from_duckdb(
+        db_path=DUCKDB_PATH,
         source_table="customer_events",
         columns=["event_ts"],
         order_by="event_ts DESC",
@@ -200,8 +200,8 @@ def run_customer_embedding_stage(sequence_backend: str):
 
 
 def run_event_enrichment_stage(customer_embeddings, logger):
-    latest_order_row = load_records_from_sqlite(
-        sqlite_path=SQLITE_PATH,
+    latest_order_row = load_records_from_duckdb(
+        db_path=DUCKDB_PATH,
         source_table="orders",
         columns=["order_ts"],
         order_by="order_ts DESC",
@@ -217,8 +217,8 @@ def run_event_enrichment_stage(customer_embeddings, logger):
     outcome_cutoff_iso = outcome_cutoff_ts.isoformat()
 
     logger.info("event enrichment: load customer events")
-    customer_event_records = load_records_from_sqlite(
-        sqlite_path=SQLITE_PATH,
+    customer_event_records = load_records_from_duckdb(
+        db_path=DUCKDB_PATH,
         source_table="customer_events",
         where="event_ts <= ?",
         params=(outcome_cutoff_iso,),
@@ -394,8 +394,8 @@ def run_outcome_stage(core_outputs, outcome_cutoff_ts, customer_embeddings, logg
 
     def _build_outcomes_for_mode(mode: str) -> list[dict[str, object]]:
         if mode == "order":
-            order_records = load_records_from_sqlite(
-                sqlite_path=SQLITE_PATH,
+            order_records = load_records_from_duckdb(
+                db_path=DUCKDB_PATH,
                 source_table="orders",
                 columns=[
                     "customer_id",
@@ -416,8 +416,8 @@ def run_outcome_stage(core_outputs, outcome_cutoff_ts, customer_embeddings, logg
                 min_recent_orders=OUTCOME_MIN_RECENT_ORDERS,
             )
 
-        event_value_records = load_records_from_sqlite(
-            sqlite_path=SQLITE_PATH,
+        event_value_records = load_records_from_duckdb(
+            db_path=DUCKDB_PATH,
             source_table="customer_events",
             columns=[
                 "customer_id",

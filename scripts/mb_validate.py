@@ -32,7 +32,7 @@ class U:
 
 
 for diet in ["mixed", "novice_only", "expert_only"]:
-    data = db.load_diet(str(ROOT / "white_queen/data/white_queen_quick.db"), diet)
+    data = db.load_diet(str(ROOT / "white_queen/data/white_queen_quick.duckdb"), diet)
     step_fn, info = learn_dynamics(
         data,
         cfg={"steps_max": 8000, "eval_every": 1000, "patience": 3, "batch": 512},

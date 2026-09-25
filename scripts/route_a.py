@@ -22,7 +22,7 @@ from white_queen.tribunal.ope.receipts import behavior_stats
 
 cfg = dict(PRESETS["quick"])
 env = make_env("cartpole", seed=999)
-data = db.load_diet(str(ROOT / "white_queen/data/white_queen_quick.db"), "mixed")
+data = db.load_diet(str(ROOT / "white_queen/data/white_queen_quick.duckdb"), "mixed")
 bs = behavior_stats(data, 0.99)
 print("behavior mean", round(bs["mean"], 1), "std", round(bs["std"], 1), flush=True)
 

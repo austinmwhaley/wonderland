@@ -34,7 +34,7 @@ from white_queen.config import PRESETS
 from white_queen.tribunal.candidates import load_candidate
 from white_queen.tribunal.ope import estimators as E
 
-DB = ROOT / "white_queen" / "data" / "white_queen_quick.db"
+DB = ROOT / "white_queen" / "data" / "white_queen_quick.duckdb"
 VERDICTS_V15 = ROOT / "white_queen" / "verdicts" / "v15"
 DIETS = ["novice_only", "mixed", "expert_only"]
 

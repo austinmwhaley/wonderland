@@ -3,7 +3,7 @@
 import os
 from pathlib import Path
 
-SQLITE_PATH = Path("scripts/data/sqlite/events.db")
+DUCKDB_PATH = Path("scripts/data/events.duckdb")
 LANCEDB_DIR = Path("scripts/data/lancedb")
 HIDDEN_DIM = 128
 SEED = 17

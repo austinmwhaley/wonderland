@@ -69,7 +69,7 @@ for row in stream:  # canonical rows
     attrs = rh.parse_attributes(row["event_attributes"])
     ...
 
-rh.write_events("out.db", rows)  # producer -> canonical stream
+rh.write_events("out.duckdb", rows)  # producer -> canonical stream
 ```
 
 Column names vary across sources; incoming rows are canonicalized through

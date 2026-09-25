@@ -24,16 +24,11 @@ of truth.
 
 The canonical stream is **Apache Arrow** (`.arrow`/`.feather`, uncompressed IPC)
 — memory-mapped and zero-copy into Polars/DuckDB. **DuckDB** is the query engine
-over it; **Parquet** is for compressed archival. No SQLite, no pandas. Read via
-`rabbit_hole.stream.read_frame`; keep consumers DataFrame-native (no row-wise
-dict materialization).
-
-Known tolerated SQLite (non-canonical, local-only — never the stream of record,
-migrate when touched): `white_queen/db.py` (colony run-cache) and looking_glass's
-SQLite loaders (`looking_glass/embeddings.py::load_records_from_sqlite`,
-`looking_glass/scripts/smoke_config.py::SQLITE_PATH` ->
-`scripts/data/sqlite/events.db`; that db's generator was retired — rabbit_hole is
-the canonical source).
+over it; **Parquet** is for compressed archival. **No SQLite, no pandas — there
+is no SQLite anywhere in this project** (the colony store migrated to native
+DuckDB; looking_glass loaders read DuckDB; `white_queen/tribunal/ope` ingests
+`.duckdb`/Parquet/CSV/JSON). Read via `rabbit_hole.stream.read_frame`; keep
+consumers DataFrame-native (no row-wise dict materialization).
 
 Style: **spaces** (4) everywhere — `ruff format` is authoritative; no tabs.
 

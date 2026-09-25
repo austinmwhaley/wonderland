@@ -23,7 +23,7 @@ cfg["ope_fqe_cfg"] = {"steps_max": 50000, "batch": 2048, "eval_every": 2500, "pa
 t0 = time.perf_counter()
 adjudicate.run_ope_only(
     cfg,
-    str(ROOT / "white_queen/data/white_queen_quick.db"),
+    str(ROOT / "white_queen/data/white_queen_quick.duckdb"),
     str(ROOT / "white_queen/verdicts/v20"),
     str(ROOT / "white_queen/verdicts/v15"),
     mu_source="logged",

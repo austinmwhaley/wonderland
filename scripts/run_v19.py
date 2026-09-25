@@ -16,7 +16,7 @@ from white_queen.tribunal import adjudicate
 
 reps = adjudicate.run_ope_only(
     PRESETS["quick"],
-    str(ROOT / "white_queen/data/white_queen_quick.db"),
+    str(ROOT / "white_queen/data/white_queen_quick.duckdb"),
     str(ROOT / "white_queen/verdicts/v19"),
     str(ROOT / "white_queen/verdicts/v15"),
     mu_source="logged",

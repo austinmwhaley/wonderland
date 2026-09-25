@@ -15,8 +15,8 @@ Usage:
 from __future__ import annotations
 
 import copy
+import duckdb
 import json
-import sqlite3
 import sys
 import time
 from datetime import datetime, timezone
@@ -39,16 +39,24 @@ HID = 64
 EPOCHS = 4
 
 
+def _iso(value):
+    """Coerce timestamp values to ISO-8601 text for stable string comparisons."""
+
+    return value.isoformat() if hasattr(value, "isoformat") else value
+
+
 def load_events():
-    conn = sqlite3.connect(str(DB))
-    rows = conn.execute(
+    conn = duckdb.connect(str(DB), read_only=True)
+    cursor = conn.execute(
         "SELECT customer_key, event_ts, brand, event_type, event_attributes FROM events"
-    ).fetchall()
+    )
+    col_names = [desc[0] for desc in cursor.description]
+    rows = [dict(zip(col_names, row)) for row in cursor.fetchall()]
     conn.close()
     evs = []
     for i, r in enumerate(rows):
         try:
-            p = json.loads(r[4] or "{}")
+            p = json.loads(r["event_attributes"] or "{}")
         except json.JSONDecodeError:
             p = {}
         if not isinstance(p, dict):
@@ -61,9 +69,9 @@ def load_events():
         evs.append(
             {
                 "event_id": f"ev_{i:08d}",
-                "customer_id": r[0],
-                "event_ts": r[1],
-                "event_type": r[3],
+                "customer_id": r["customer_key"],
+                "event_ts": _iso(r["event_ts"]),
+                "event_type": r["event_type"],
                 "event_payload_json": p,
                 "value": v,
             }
