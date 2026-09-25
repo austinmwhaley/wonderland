@@ -4,8 +4,9 @@ This file governs every change to the system. It is a **doctrine**, not a
 checklist of values. Where an example implies a constant or a procedure, treat
 it as an *intent* and implement the mechanism that achieves it **adaptively**.
 
-The system (one-way): `rabbit_hole → looking_glass → white_queen → red_king →
-red_queen`, with `caterpillar` as the read-only interpretability layer.
+The system (one-way): `rabbit_hole → looking_glass → plugins → red_king →
+red_queen`, with `white_queen` (OPE certification) and `caterpillar` (read-only
+interpretability) hanging off `plugins`.
 
 ---
 
@@ -26,6 +27,12 @@ The canonical stream is **Apache Arrow** (`.arrow`/`.feather`, uncompressed IPC)
 over it; **Parquet** is for compressed archival. No SQLite, no pandas. Read via
 `rabbit_hole.stream.read_frame`; keep consumers DataFrame-native (no row-wise
 dict materialization).
+
+Known tolerated SQLite (non-canonical, local-only — never the stream of record,
+migrate when touched): `white_queen/db.py` (colony run-cache) and the
+looking_glass standalone reference-app ddl (`scripts/generate_full.py`).
+
+Style: **spaces** (4) everywhere — `ruff format` is authoritative; no tabs.
 
 ---
 
@@ -230,6 +237,10 @@ Source of truth: **https://github.com/austinmwhaley/wonderland** (branch `main`)
   These are **regenerable** (rabbit_hole generates the stream; runs produce artifacts).
 - **eighth_square owns** the shared `algorithms/` and `environments/`
   (`wonderland/algorithms` and `wonderland/environments` are symlinks into it).
+- **Quality gates (run before every commit):** `pytest` (full suite; acceptance
+  tests skip when generated data is absent), `ruff check .`, `ruff format --check .`.
+  CI runs the same gates on push/PR. Dependencies live in `pyproject.toml`
+  (mirrored by `requirements*.txt` for pip).
 - **Workflow:** `git pull --rebase` -> make changes -> `git add -A` -> `git commit`
   -> `git push`. One repo, one history; do not create nested `.git` directories.
 - **Large data lives only locally** (or a separate storage/DVC), never in this repo.

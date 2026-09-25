@@ -11,8 +11,9 @@ from environments.base import DiscretizedEnvWrapper, EnvWrapper
 
 
 def train_dyna_q(env: EnvWrapper, config: AlgorithmConfig) -> Result:
-    assert env.is_discrete or isinstance(env, DiscretizedEnvWrapper), \
+    assert env.is_discrete or isinstance(env, DiscretizedEnvWrapper), (
         "Dyna-Q requires discrete actions and discretized states"
+    )
 
     n_planning_steps = 50
     q_table = defaultdict(lambda: np.zeros(env.action_dim))
@@ -25,7 +26,9 @@ def train_dyna_q(env: EnvWrapper, config: AlgorithmConfig) -> Result:
     total_steps = 0
     converged = False
     episodes_to_solve = None
-    tracker = PlateauTracker(config.early_stop_patience, config.early_stop_min_delta, config.solve_window)
+    tracker = PlateauTracker(
+        config.early_stop_patience, config.early_stop_min_delta, config.solve_window
+    )
 
     pbar = tqdm(range(config.max_episodes), desc=config.algo_name, unit="ep", leave=False)
     for episode in pbar:
@@ -49,8 +52,9 @@ def train_dyna_q(env: EnvWrapper, config: AlgorithmConfig) -> Result:
             else:
                 next_state = next_state_raw
 
-            best_next = np.max([q_table[next_state][a] for a in range(env.action_dim)]) \
-                if not done else 0.0
+            best_next = (
+                np.max([q_table[next_state][a] for a in range(env.action_dim)]) if not done else 0.0
+            )
             td_error = reward + config.gamma * best_next - q_table[state][action]
             q_table[state][action] += config.lr * td_error
 
@@ -68,7 +72,9 @@ def train_dyna_q(env: EnvWrapper, config: AlgorithmConfig) -> Result:
             idx = np.random.randint(len(model))
             (s_plan, a_plan), (r_plan, s_next_plan, d_plan) = list(model.items())[idx]
 
-            best = 0.0 if d_plan else np.max([q_table[s_next_plan][a] for a in range(env.action_dim)])
+            best = (
+                0.0 if d_plan else np.max([q_table[s_next_plan][a] for a in range(env.action_dim)])
+            )
             td_error_plan = r_plan + config.gamma * best - q_table[s_plan][a_plan]
             q_table[s_plan][a_plan] += config.lr * td_error_plan
 
@@ -77,7 +83,7 @@ def train_dyna_q(env: EnvWrapper, config: AlgorithmConfig) -> Result:
         losses.append(float(abs(td_error)))
 
         if len(rewards_history) >= config.solve_window:
-            avg = np.mean(rewards_history[-config.solve_window:])
+            avg = np.mean(rewards_history[-config.solve_window :])
             pbar.set_postfix({"avg100": f"{avg:.1f}", "eps": f"{epsilon:.3f}"})
             if config.is_solved(avg) and not converged:
                 converged = True

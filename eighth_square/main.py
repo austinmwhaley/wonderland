@@ -27,25 +27,44 @@ def load_results(output_dir):
 
 def main():
     parser = argparse.ArgumentParser(description="Eighth Square — RL Algorithm Comparison")
-    parser.add_argument("--envs", nargs="+", default=["CartPole-v1"],
-                        help="Environments to run (default: CartPole-v1)")
-    parser.add_argument("--algos", nargs="+", default=None,
-                        help="Algorithms to run (default: all)")
-    parser.add_argument("--variants", type=str, default=None,
-                        help='Parameter variants, e.g. "dqn:lr=1e-3,3e-4;ppo:ppo_epochs=4,10"')
-    parser.add_argument("--sweep", type=str, default=None,
-                        help='Grid sweep, e.g. "dqn:lr=[1e-4,3e-4,1e-3],eps_decay=[0.99,0.995]"')
-    parser.add_argument("--workers", type=int, default=0,
-                        help="Number of parallel workers (0 = serial)")
-    parser.add_argument("--output", default="results", help="Output directory for plots and reports")
+    parser.add_argument(
+        "--envs",
+        nargs="+",
+        default=["CartPole-v1"],
+        help="Environments to run (default: CartPole-v1)",
+    )
+    parser.add_argument("--algos", nargs="+", default=None, help="Algorithms to run (default: all)")
+    parser.add_argument(
+        "--variants",
+        type=str,
+        default=None,
+        help='Parameter variants, e.g. "dqn:lr=1e-3,3e-4;ppo:ppo_epochs=4,10"',
+    )
+    parser.add_argument(
+        "--sweep",
+        type=str,
+        default=None,
+        help='Grid sweep, e.g. "dqn:lr=[1e-4,3e-4,1e-3],eps_decay=[0.99,0.995]"',
+    )
+    parser.add_argument(
+        "--workers", type=int, default=0, help="Number of parallel workers (0 = serial)"
+    )
+    parser.add_argument(
+        "--output", default="results", help="Output directory for plots and reports"
+    )
     parser.add_argument("--list-algos", action="store_true", help="List available algorithms")
-    parser.add_argument("--max-episodes", type=int, default=None,
-                        help="Limit training episodes per algorithm")
+    parser.add_argument(
+        "--max-episodes", type=int, default=None, help="Limit training episodes per algorithm"
+    )
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
     parser.add_argument("--no-plot", action="store_true", help="Skip plotting")
     parser.add_argument("--no-report", action="store_true", help="Skip summary report")
     parser.add_argument("--no-save", action="store_true", help="Skip saving results to disk")
-    parser.add_argument("--load", action="store_true", help="Load saved results and re-plot/report without re-running")
+    parser.add_argument(
+        "--load",
+        action="store_true",
+        help="Load saved results and re-plot/report without re-running",
+    )
     args = parser.parse_args()
 
     if args.list_algos:

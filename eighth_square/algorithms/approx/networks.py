@@ -1,5 +1,3 @@
-import math
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -73,9 +71,15 @@ def kl_discrete(p_old_probs, logits_new):
 
 
 def kl_gaussian(mean_old, std_old, mean_new, std_new):
-    return (torch.log(std_new / std_old)
+    return (
+        (
+            torch.log(std_new / std_old)
             + (std_old.pow(2) + (mean_old - mean_new).pow(2)) / (2 * std_new.pow(2))
-            - 0.5).sum(-1).mean()
+            - 0.5
+        )
+        .sum(-1)
+        .mean()
+    )
 
 
 def flat_params(model):
@@ -86,5 +90,5 @@ def set_params(model, flat):
     idx = 0
     for p in model.parameters():
         n = p.numel()
-        p.data.copy_(flat[idx:idx + n].view_as(p))
+        p.data.copy_(flat[idx : idx + n].view_as(p))
         idx += n

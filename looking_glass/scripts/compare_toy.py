@@ -54,22 +54,39 @@ def load_events():
             v = float(v or 0.0)
         except (TypeError, ValueError):
             v = 0.0
-        evs.append({"event_id": f"ev_{i:08d}", "customer_id": r[0],
-                    "event_ts": r[1], "event_type": r[3],
-                    "event_payload_json": p, "value": v})
+        evs.append(
+            {
+                "event_id": f"ev_{i:08d}",
+                "customer_id": r[0],
+                "event_ts": r[1],
+                "event_type": r[3],
+                "event_payload_json": p,
+                "value": v,
+            }
+        )
     evs.sort(key=lambda e: (e["customer_id"], e["event_ts"], e["event_id"]))
     return evs
 
 
 def train_encoder(events, tag, epochs=4):
-    schema = PayloadSchema(categorical_fields=["device"],
-                           numeric_fields=["order_value", "margin_dollars"])
+    schema = PayloadSchema(
+        categorical_fields=["device"], numeric_fields=["order_value", "margin_dollars"]
+    )
     m = create_temporal_core_model(
-        sequence_id_field="customer_id", event_id_field="event_id",
-        timestamp_field="event_ts", categorical_fields=[], numeric_fields=[],
-        vector_fields=[], payload_schema=schema, hidden_dim=HID,
-        epochs=epochs, device="cpu", sequence_backend="mamba2",
-        train_batch_size=64, backbone_version=tag)
+        sequence_id_field="customer_id",
+        event_id_field="event_id",
+        timestamp_field="event_ts",
+        categorical_fields=[],
+        numeric_fields=[],
+        vector_fields=[],
+        payload_schema=schema,
+        hidden_dim=HID,
+        epochs=epochs,
+        device="cpu",
+        sequence_backend="mamba2",
+        train_batch_size=64,
+        backbone_version=tag,
+    )
     t0 = time.perf_counter()
     out = m.fit_transform(events)
     dt = time.perf_counter() - t0
@@ -81,15 +98,35 @@ def train_ltv(rows, lookup):
     for r in rows:
         r.update(lookup.get(str(r["customer_id"]), {}))
     rows = [r for r in rows if "core_last_vector" in r]
-    agg = [f for f in rows[0].keys() if f in (
-        "event_count", "total_value", "avg_value", "max_value",
-        "recency_days", "recent_count", "recent_value", "active_count")]
+    agg = [
+        f
+        for f in rows[0].keys()
+        if f
+        in (
+            "event_count",
+            "total_value",
+            "avg_value",
+            "max_value",
+            "recency_days",
+            "recent_count",
+            "recent_value",
+            "active_count",
+        )
+    ]
     m = create_supervised_model(
-        task="regression", id_field="customer_id", target_field="value_label",
-        categorical_fields=[], numeric_fields=agg,
-        vector_fields=["core_last_vector"], hidden_dim=HID,
-        epochs=25, seed=17, validation_fraction=0.25, device="cpu",
-        sequence_backend="mamba2")
+        task="regression",
+        id_field="customer_id",
+        target_field="value_label",
+        categorical_fields=[],
+        numeric_fields=agg,
+        vector_fields=["core_last_vector"],
+        hidden_dim=HID,
+        epochs=25,
+        seed=17,
+        validation_fraction=0.25,
+        device="cpu",
+        sequence_backend="mamba2",
+    )
     res = m.fit_predict(rows)
     return res.report.metrics.get("r2", 0.0), res.report.metrics.get("rmse", 0.0), len(rows)
 
@@ -100,11 +137,18 @@ def main():
     per_d_events = [e for e in events if e["event_ts"] <= d_iso]
     print(f"total={len(events)} per-D(<=Sept1)={len(per_d_events)}")
 
-    spec = LabelSpec(id_field="customer_id", timestamp_field="event_ts",
-                     as_of=D, history_days=180, horizon_days=30,
-                     value_field="value", label_kind="value_sum",
-                     min_history_events=2)
+    spec = LabelSpec(
+        id_field="customer_id",
+        timestamp_field="event_ts",
+        as_of=D,
+        history_days=180,
+        horizon_days=30,
+        value_field="value",
+        label_kind="value_sum",
+        min_history_events=2,
+    )
     import copy
+
     base_rows = build_outcomes(events, spec).rows
     print(f"outcome rows at D={len(base_rows)}")
 

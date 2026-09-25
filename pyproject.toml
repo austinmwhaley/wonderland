@@ -1,0 +1,68 @@
+[project]
+name = "wonderland"
+version = "0.1.0"
+description = "Offline-first unified customer decisioning system (stream -> donor -> heads -> NBA + OPE certification)"
+readme = "README.md"
+requires-python = ">=3.10"
+# Single source of truth for runtime dependencies.
+# pip users: mirror lives in requirements.txt (keep in sync).
+dependencies = [
+    "numpy",
+    "torch",
+    "scipy",
+    "scikit-learn",
+    "polars",
+    "pyarrow",
+    "duckdb",
+    "tqdm",
+    "gymnasium",
+    "matplotlib",
+    "lancedb",
+]
+
+[project.optional-dependencies]
+baseline = ["xgboost"]
+kernels = ["mamba-ssm", "bitsandbytes"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "ruff>=0.6",
+    "pre-commit>=3",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = [
+    "tests",
+    "white_queen/tribunal/ope/tests",
+    "looking_glass/tests",
+    "rabbit_hole/tests",
+]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+extend-exclude = [
+    "OFFSET",
+    "looking_glass/.venv",
+]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]
+
+[tool.ruff.lint.per-file-ignores]
+# E402: structural import-order constraints, not sloppiness.
+# scripts/*        — sys.path bootstrap must run before local imports
+"scripts/*" = ["E402"]
+# merged/legacy section layouts and logger-before-local-import style
+"eighth_square/algorithms/registry.py" = ["E402"]
+"eighth_square/algorithms/base.py" = ["E402"]
+"eighth_square/benchmark.py" = ["E402"]
+"looking_glass/supervised.py" = ["E402"]
+"looking_glass/embeddings.py" = ["E402"]
+# schema adapter import deliberately after canonical-form construction
+"white_queen/tribunal/ope/data.py" = ["E402"]
+"rabbit_hole/generators/generate_data.py" = ["E402"]
+"looking_glass/scripts/generate_data.py" = ["E402"]

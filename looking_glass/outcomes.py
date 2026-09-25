@@ -77,7 +77,9 @@ class OutcomeFrame:
     def __len__(self) -> int:
         return len(self.rows)
 
-    def scores_and_labels(self, score_field: str, label_field: str = "churn_label") -> tuple[list[float], list[float]]:
+    def scores_and_labels(
+        self, score_field: str, label_field: str = "churn_label"
+    ) -> tuple[list[float], list[float]]:
         scores = [float(r.get(score_field, 0.0) or 0.0) for r in self.rows]
         labels = [float(r.get(label_field, 0.0) or 0.0) for r in self.rows]
         return scores, labels
@@ -192,7 +194,9 @@ def build_outcomes(events: list[dict[str, object]], spec: LabelSpec) -> OutcomeF
     return OutcomeFrame(spec=spec, rows=rows, feature_fields=list(FEATURE_FIELDS))
 
 
-def assert_no_leakage(events: list[dict[str, object]], spec: LabelSpec, frame: OutcomeFrame) -> None:
+def assert_no_leakage(
+    events: list[dict[str, object]], spec: LabelSpec, frame: OutcomeFrame
+) -> None:
     """Independently re-derive features from past-only events and confirm a match.
 
     This is a defensive cross-check: it rebuilds ``event_count`` and

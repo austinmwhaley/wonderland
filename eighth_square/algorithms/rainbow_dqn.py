@@ -27,16 +27,24 @@ class NoisyLinear(nn.Module):
         self.in_features = in_features
         self.out_features = out_features
         mu_range = 1.0 / np.sqrt(in_features)
-        self.mu_w = nn.Parameter(torch.empty(out_features, in_features).uniform_(-mu_range, mu_range))
-        self.sigma_w = nn.Parameter(torch.full((out_features, in_features), sigma / np.sqrt(in_features)))
+        self.mu_w = nn.Parameter(
+            torch.empty(out_features, in_features).uniform_(-mu_range, mu_range)
+        )
+        self.sigma_w = nn.Parameter(
+            torch.full((out_features, in_features), sigma / np.sqrt(in_features))
+        )
         self.mu_b = nn.Parameter(torch.empty(out_features).uniform_(-mu_range, mu_range))
         self.sigma_b = nn.Parameter(torch.full((out_features,), sigma / np.sqrt(out_features)))
         self.register_buffer("eps_w", torch.zeros(out_features, in_features))
         self.register_buffer("eps_b", torch.zeros(out_features))
 
     def sample_noise(self):
-        eps_in = torch.sign(torch.randn(self.in_features)) * torch.sqrt(torch.abs(torch.randn(self.in_features)))
-        eps_out = torch.sign(torch.randn(self.out_features)) * torch.sqrt(torch.abs(torch.randn(self.out_features)))
+        eps_in = torch.sign(torch.randn(self.in_features)) * torch.sqrt(
+            torch.abs(torch.randn(self.in_features))
+        )
+        eps_out = torch.sign(torch.randn(self.out_features)) * torch.sqrt(
+            torch.abs(torch.randn(self.out_features))
+        )
         self.eps_w.copy_(eps_out.unsqueeze(1) * eps_in.unsqueeze(0))
         self.eps_b.copy_(eps_out)
 
@@ -47,7 +55,9 @@ class NoisyLinear(nn.Module):
 
 
 class RainbowQNet(nn.Module):
-    def __init__(self, input_dim, n_actions, n_atoms=51, v_min=-10, v_max=10, hidden_dims=(128, 128)):
+    def __init__(
+        self, input_dim, n_actions, n_atoms=51, v_min=-10, v_max=10, hidden_dims=(128, 128)
+    ):
         super().__init__()
         self.n_actions = n_actions
         self.n_atoms = n_atoms
@@ -89,7 +99,9 @@ def train_rainbow_dqn(env: EnvWrapper, config: AlgorithmConfig) -> Result:
     device = torch.device(config.device)
     n_atoms, v_min, v_max = 51, -10.0, 10.0
 
-    q_net = RainbowQNet(env.state_dim, env.action_dim, n_atoms, v_min, v_max, config.hidden_dims).to(device)
+    q_net = RainbowQNet(
+        env.state_dim, env.action_dim, n_atoms, v_min, v_max, config.hidden_dims
+    ).to(device)
     target_net = copy.deepcopy(q_net)
     target_net.eval()
     optimizer = torch.optim.Adam(q_net.parameters(), lr=config.lr)
@@ -105,7 +117,9 @@ def train_rainbow_dqn(env: EnvWrapper, config: AlgorithmConfig) -> Result:
     t0 = time.time()
     total_steps, episode = 0, 0
     converged, episodes_to_solve = False, None
-    tracker = PlateauTracker(config.early_stop_patience, config.early_stop_min_delta, config.solve_window)
+    tracker = PlateauTracker(
+        config.early_stop_patience, config.early_stop_min_delta, config.solve_window
+    )
     max_steps = config.max_steps_per_episode
 
     pbar = tqdm(range(config.max_episodes), desc=config.algo_name, unit="ep", leave=False)
@@ -145,7 +159,9 @@ def train_rainbow_dqn(env: EnvWrapper, config: AlgorithmConfig) -> Result:
             state = next_state
 
             if len(buffer) >= config.min_buffer_size:
-                states, actions, rewards, next_states, dones, weights, indices = buffer.sample(config.batch_size)
+                states, actions, rewards, next_states, dones, weights, indices = buffer.sample(
+                    config.batch_size
+                )
                 B = config.batch_size
 
                 with torch.no_grad():
@@ -155,18 +171,26 @@ def train_rainbow_dqn(env: EnvWrapper, config: AlgorithmConfig) -> Result:
 
                     target_probs = next_probs[range(B), next_acts]
 
-                    Tz = rewards.unsqueeze(1) + (config.gamma ** n_step) * (1 - dones.unsqueeze(1)) * support.unsqueeze(0)
+                    Tz = rewards.unsqueeze(1) + (config.gamma**n_step) * (
+                        1 - dones.unsqueeze(1)
+                    ) * support.unsqueeze(0)
                     Tz = Tz.clamp(v_min, v_max)
                     b_idx = (Tz - v_min) / delta
-                    l = b_idx.floor().long()
+                    lo = b_idx.floor().long()
                     u = b_idx.ceil().long()
 
                     m = torch.zeros(B, n_atoms, device=device)
                     for i in range(n_atoms):
-                        m.scatter_add_(1, l.clamp(0, n_atoms - 1),
-                                        target_probs * (u.float() - b_idx.float()) * (l == i).float())
-                        m.scatter_add_(1, u.clamp(0, n_atoms - 1),
-                                        target_probs * (b_idx.float() - l.float()) * (u == i).float())
+                        m.scatter_add_(
+                            1,
+                            lo.clamp(0, n_atoms - 1),
+                            target_probs * (u.float() - b_idx.float()) * (lo == i).float(),
+                        )
+                        m.scatter_add_(
+                            1,
+                            u.clamp(0, n_atoms - 1),
+                            target_probs * (b_idx.float() - lo.float()) * (u == i).float(),
+                        )
 
                 log_p = torch.log(q_net(states)[range(B), actions.long()] + 1e-8)
                 loss_td = -(m * log_p).sum(dim=1)
@@ -194,7 +218,7 @@ def train_rainbow_dqn(env: EnvWrapper, config: AlgorithmConfig) -> Result:
         losses.append(np.mean(episode_loss) if episode_loss else 0.0)
 
         if len(rewards_history) >= config.solve_window:
-            avg = np.mean(rewards_history[-config.solve_window:])
+            avg = np.mean(rewards_history[-config.solve_window :])
             pbar.set_postfix({"avg100": f"{avg:.1f}", "buf": len(buffer)})
             if config.is_solved(avg) and not converged:
                 converged = True
@@ -206,10 +230,15 @@ def train_rainbow_dqn(env: EnvWrapper, config: AlgorithmConfig) -> Result:
 
     pbar.close()
     result = Result(
-        algo_name=config.algo_name, env_name=env.config.env_name,
-        config=vars(config), episode_rewards=rewards_history, losses=losses,
-        converged=converged, episodes_to_solve=episodes_to_solve,
-        wall_time=time.time() - t0, total_steps=total_steps,
+        algo_name=config.algo_name,
+        env_name=env.config.env_name,
+        config=vars(config),
+        episode_rewards=rewards_history,
+        losses=losses,
+        converged=converged,
+        episodes_to_solve=episodes_to_solve,
+        wall_time=time.time() - t0,
+        total_steps=total_steps,
     )
     result.compute_running_avg()
     return result

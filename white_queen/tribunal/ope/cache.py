@@ -33,6 +33,7 @@ def diet_hash(diet):
     otherwise-identical rows — without mu in the hash, a logged-mu fit would
     wrongly cache-hit for an estimated-mu judgement (and vice versa)."""
     import numpy as _np
+
     h = hashlib.sha1()
     for k in ("obs", "act", "rew", "obs2", "done", "episode", "mu"):
         h.update(_np.ascontiguousarray(diet[k]).tobytes())
@@ -53,6 +54,7 @@ def file_hash(path):
 def _stable(cfg):
     if cfg is None:
         return ""
+
     def _norm(x):
         if isinstance(x, dict):
             return {k: _norm(x[k]) for k in sorted(x)}
@@ -61,12 +63,22 @@ def _stable(cfg):
         if isinstance(x, (list, tuple)):
             return [_norm(v) for v in x]
         return x
+
     return json.dumps(_norm(dict(cfg)), sort_keys=True, default=str)
 
 
 def make_key(tag, diet_h, cand_id, cfg, temperature=None, extra=""):
-    raw = "|".join([OPE_CACHE_VERSION, str(tag), str(diet_h), str(cand_id),
-                    _stable(cfg), str(temperature), str(extra)])
+    raw = "|".join(
+        [
+            OPE_CACHE_VERSION,
+            str(tag),
+            str(diet_h),
+            str(cand_id),
+            _stable(cfg),
+            str(temperature),
+            str(extra),
+        ]
+    )
     return hashlib.sha1(raw.encode()).hexdigest()[:24]
 
 
@@ -81,6 +93,7 @@ def save(cache_dir, key, payload):
         return None
     try:
         import torch
+
         os.makedirs(cache_dir, exist_ok=True)
         p = path_for(cache_dir, key)
         torch.save(payload, p)
@@ -96,6 +109,7 @@ def load(cache_dir, key, map_location="cpu"):
     try:
         import os as _os
         import torch
+
         p = path_for(cache_dir, key)
         if not _os.path.exists(p):
             return None

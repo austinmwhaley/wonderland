@@ -31,16 +31,24 @@ imports keep working::
     from algorithms.registry import ALGORITHMS
     from algorithms.registry import ALGO_REGISTRY   # the comparison trainers
 """
+
 from importlib import import_module
 
 __version__ = "0.1.0"
 
 # The algorithm families exposed at the top level.
-_FAMILIES = ("tabular", "deep", "approx", "offline", "bandits",
-             "multiagent", "search")
+_FAMILIES = ("tabular", "deep", "approx", "offline", "bandits", "multiagent", "search")
 # Other public packages.
-_PACKAGES = ("algorithms", "environments", "core", "runners", "plotting",
-             "tracking", "visualization", "experiments")
+_PACKAGES = (
+    "algorithms",
+    "environments",
+    "core",
+    "runners",
+    "plotting",
+    "tracking",
+    "visualization",
+    "experiments",
+)
 
 
 def families():

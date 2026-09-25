@@ -86,7 +86,7 @@ arm -> conv/click = 0.012/0.0305/0.0603/0.1008 (matches CONV 0.01/0.03/0.06/0.10
 `python -m looking_glass.customer_foundation_model all --customers N --anchors 6`
 `python -m looking_glass.sufficiency_battery`
 `python -m plugins.run --window 365`
-`python -m red_king.red_king.ope`
+`python -m red_king.ope`
 
 ## Latest experiment (same-estimand causal recovery)
 E[incremental GP | do(arm)] via IPW truth vs:
@@ -194,7 +194,7 @@ witness inside white_queen's panel.)
 Needs: a candidate policy object (action_probs/act). Best done in a FRESH session.
 
 ## Native witness — DONE
-`red_king/red_king/wq_native.py`: builds canonical diet, runs
+`red_king/wq_native.py`: builds canonical diet, runs
 `estimators.panel -> gate.adjudicate -> judge.judge_diet`, then overwrites
 `panel["mb"] = {"mb","se","sims"}` with red_king multi-step rollout value.
 Result: red_king mb 47.9 (se 0.4) vs white_queen mb 226.6 on the same candidate
@@ -234,7 +234,7 @@ not override. To flip we need a case where DR/FQE are ALSO weak (hard OPE).
 Moving on to red_queen (v1 item #5).
 
 ## red_queen (v1 item #5) — DONE (v1 engine)
-`red_queen/red_queen/nba.py`: donor embeddings + per-arm ridge value model on
+`red_queen/nba.py`: donor embeddings + per-arm ridge value model on
 seq_email -> greedy value-per-send allocation under a weekly send budget ->
 per-customer NBA plan + receipt. Run: 9126 customers, budget 9126/wk used exactly,
 arm mix [514,378,3047,2570], 2617 unserved, expected weekly incremental GP 431012.
@@ -278,7 +278,7 @@ Training 50k ~48 min; battery ~14 min.
 - continuous actions; wire red_king directly
 
 ## red_queen engine v2 (the product) — DONE (v2)
-`red_queen/red_queen/engine.py`:
+`red_queen/engine.py`:
 - value-per-send allocation under a global weekly send budget
 - per-customer cap + reject-not-clamp constraint middleware
 - fail-safe gate (act only if value lower-bound > 0)
@@ -303,7 +303,7 @@ NOTE: plugins/base.load_dataset is fast (3.9s, 38.5k anchors); the slow part is
 the supervised MODEL (GBR on 512-dim x 38k) -- a plugin-side speed item.
 
 ## red_king RSSM (first cut) — DONE
-`red_king/red_king/rssm.py`: RSSM (GRU deterministic h + stochastic z, prior/posterior,
+`red_king/rssm.py`: RSSM (GRU deterministic h + stochastic z, prior/posterior,
 decoder/reward/continue heads, ensemble K=3), action = randomized email arm,
 reward = incremental GP, on sample-B anchor trajectories (Layer B state table).
 Result: 15067 seqs (T=6), reward R2 0.34 (vs MLP 0.21), next-state cos 0.84.
@@ -425,7 +425,7 @@ NEXT: (1) calibrate/validate the RSSM counterfactual ranking before enabling
 red_king overlay; (2) personalization via a validated heterogeneous-effect model.
 
 ## red_king COUNTERFACTUAL SCORECARD (built) + first optimization
-`red_king/red_king/scorecard.py`: measures red_king vs its PURPOSE.
+`red_king/scorecard.py`: measures red_king vs its PURPOSE.
 Synthetic (known truth): S1 ordering 1.0, S2 calib 1.07, S3 rank 0.92, S4 valerr 0.05,
 S5 low-overlap 0.93, S6 beat-modelfree 0.60 -> SCORE 0.89.
 REAL (deployed RSSM vs IPW truth), BEFORE: ordering -1.0 (INVERTED), calib 0.34,
@@ -630,7 +630,7 @@ red_king(population) all robust; only PER-CUSTOMER personalization remains open.
 ## PER-CUSTOMER VALUES — enabled where identification exists
 Generator: 20% of customers are a SWITCHBACK experiment (cycle through ALL arms) --
 realistic within-customer experimentation.
-HTE model (`effect_model2.py`): linear state x action interaction + clipped IPW.
+HTE model (`hte_model.py`, formerly `effect_model2.py`): linear state x action interaction + clipped IPW.
 RESULT:
   * ALL customers: per-customer rank acc 0.479 < majority 0.533 (no identification).
   * SWITCHBACK customers (observed under all arms): 0.506 vs majority 0.462 -> BEATS.
@@ -681,3 +681,47 @@ Run (7602 customers / 91224 customer-periods):
 no action (fail-safe). Run: 7602 customers, 4697 responders targeted, expected
 incremental margin 141892, plan -> red_queen/artifacts/target_plan.json.
 => red_queen now chooses WHOM to market per customer (uplift), not a population arm.
+
+## Infrastructure overhaul: packaging, CI, lint, dedup, tests, splits (DONE)
+Repo-wide quality pass (all gates green afterwards):
+- Root `pyproject.toml` = single source of truth for deps + pytest + ruff config
+  (`requirements*.txt` mirror it for pip; `uv sync` works). pythonpath="." so a
+  bare `pytest` works from the root.
+- CI added at `.github/workflows/ci.yml` (ruff format/check + full pytest on
+  push/PR); inert `looking_glass/.github/` workflow removed. pre-commit added.
+- **ruff format repo-wide** — indentation unified to SPACES (was tabs in
+  looking_glass/red_king/red_queen/plugins/caterpillar); `ruff check` at 0
+  errors (676 findings triaged: dead locals removed or kept as bare expressions,
+  ambiguous renames, lambda->def). Sub-AGENTS (looking_glass) now defer to root.
+- Duplicates/dead code pruned: `eighth_square/scripts/` byte-identical copy of
+  `scripts/` deleted (26 files); 10 one-off `fqe_*.py` consolidated into
+  `scripts/fqe_panel.py <exp>` (history stays here); `effect_model2.py` ->
+  `hte_model.py`; `.bak` + empty `eighth_square/eighth_square/` stub removed.
+- All 27 hardcoded `/home/austin-whaley/wq` paths replaced with
+  `Path(__file__)`-relative resolution (scripts + white_queen scorecard +
+  test_hardening). scorecard BENCH_RESULTS moved to
+  white_queen/tribunal/bench/results (override: WQ_BENCH_RESULTS).
+- .gitignore tightened; 77 leaky artifacts untracked (kept on disk): 67 verdict
+  JSONs, generated HTML/result JSONs, looking_glass/data symlink.
+- Docs: stale red_king/red_king + red_queen/red_queen paths fixed; flow diagram
+  in AGENTS aligned with README; SQLite tolerance documented (white_queen db +
+  looking_glass reference ddl) instead of hidden.
+- Oversized modules split (APIs preserved via façades/re-exports):
+  generate_data 1872->141 (+7 modules), customer_foundation_model 1399->133
+  (+6), supervised 1236->193 (+4), temporal_core 996->367 (+2),
+  smoke_test 1520->535 (+3). rabbit_hole + looking_glass suites re-verified green.
+- NEW TEST LAYER: root tests/ — 63 unit tests over red_king/red_queen/
+  plugins/caterpillar (previously 0) + acceptance-gate wrappers; full suite
+  = 161 legacy + 63 new + plugins gate (9/9, 224s) runs as pytest.
+=> fresh clone can provision (requirements), test (pytest), and lint (ruff);
+   CI enforces all three.
+
+### Bugs surfaced by the new tests (xfail'd, NOT yet fixed)
+1. `decision_log.build` (and weekly): arm slots pack window timestamps instead
+   of arms -> `action[:,1:]` always 0 (confirmed on real 769k/1.1M-row artifacts).
+2. caterpillar/engine plan-schema mismatch: explain() reads plan["expected_gp"]
+   but engine.run writes "expected_incremental_gp" -> KeyError on current artifact.
+3. `rssm.rollout_arm_values` imagines from a ZERO prior (ignores posterior state)
+   -> V identical across customer states; weakens engine.run(use_red_king=True).
+4. `world_model.build_transitions([])` raises bare IndexError from np.quantile
+   instead of a clear rejection error.

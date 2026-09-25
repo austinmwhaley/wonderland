@@ -27,11 +27,14 @@ class PPO(BaseAgent):
         if self.discrete:
             self.policy = DiscretePolicy(in_dim, hidden, int(env.action_space.n)).to(self.device)
         else:
-            self.policy = GaussianPolicy(in_dim, hidden, int(env.action_space.shape[0])).to(self.device)
+            self.policy = GaussianPolicy(in_dim, hidden, int(env.action_space.shape[0])).to(
+                self.device
+            )
         self.critic = Critic(in_dim, hidden).to(self.device)
         self.optimizer = torch.optim.Adam(
             list(self.policy.parameters()) + list(self.critic.parameters()),
-            lr=config.get("lr", 3e-4))
+            lr=config.get("lr", 3e-4),
+        )
         self.lr0 = config.get("lr", 3e-4)
         self.total_steps = config.get("steps", 1)
         self.entropy_coef = config.get("entropy_coef", 0.0)
@@ -110,12 +113,14 @@ class PPO(BaseAgent):
             act_t = torch.cat(act_buf)
             lp_old = torch.cat(lp_buf).detach()
             ret_t = torch.as_tensor(returns, dtype=torch.float32, device=self.device).unsqueeze(1)
-            adv_t = torch.as_tensor(advantages, dtype=torch.float32, device=self.device).unsqueeze(1)
+            adv_t = torch.as_tensor(advantages, dtype=torch.float32, device=self.device).unsqueeze(
+                1
+            )
             adv_t = (adv_t - adv_t.mean()) / (adv_t.std() + 1e-8)
             for _ in range(self.epochs):
                 idx = torch.randperm(len(obs_t), device=self.device)
                 for start in range(0, len(obs_t), self.minibatch):
-                    i = idx[start:start + self.minibatch]
+                    i = idx[start : start + self.minibatch]
                     if self.discrete:
                         probs = self.policy(obs_t[i])
                         dist = torch.distributions.Categorical(probs)

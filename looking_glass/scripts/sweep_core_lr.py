@@ -36,23 +36,41 @@ def main():
             v = float(v or 0.0)
         except (TypeError, ValueError):
             v = 0.0
-        evs.append({"event_id": f"ev_{i:08d}", "customer_id": r[0],
-                    "event_ts": r[1], "event_type": r[3],
-                    "event_payload_json": p, "value": v})
+        evs.append(
+            {
+                "event_id": f"ev_{i:08d}",
+                "customer_id": r[0],
+                "event_ts": r[1],
+                "event_type": r[3],
+                "event_payload_json": p,
+                "value": v,
+            }
+        )
     evs.sort(key=lambda e: (e["customer_id"], e["event_ts"], e["event_id"]))
     core_events = [e for e in evs if e["event_ts"] <= D.isoformat()]
     print(f"events={len(core_events)}")
 
-    schema = PayloadSchema(categorical_fields=["device"],
-                           numeric_fields=["order_value", "margin_dollars"])
+    schema = PayloadSchema(
+        categorical_fields=["device"], numeric_fields=["order_value", "margin_dollars"]
+    )
     for lr in (1e-2, 3e-3, 1e-3):
         m = create_temporal_core_model(
-            sequence_id_field="customer_id", event_id_field="event_id",
-            timestamp_field="event_ts", categorical_fields=[], numeric_fields=[],
-            vector_fields=[], payload_schema=schema, hidden_dim=128,
-            epochs=3, seed=17, learning_rate=lr, device="cuda",
-            sequence_backend="mamba2", train_batch_size=64,
-            backbone_version="v1")
+            sequence_id_field="customer_id",
+            event_id_field="event_id",
+            timestamp_field="event_ts",
+            categorical_fields=[],
+            numeric_fields=[],
+            vector_fields=[],
+            payload_schema=schema,
+            hidden_dim=128,
+            epochs=3,
+            seed=17,
+            learning_rate=lr,
+            device="cuda",
+            sequence_backend="mamba2",
+            train_batch_size=64,
+            backbone_version="v1",
+        )
         m.fit_transform(core_events)
         print(f"lr={lr:<8} loss={m.loss_:.4f}", flush=True)
 

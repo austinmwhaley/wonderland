@@ -1,5 +1,6 @@
 """Stage 2 entry: run The Tribunal on a colony database. All paths resolve
 inside white_queen/ unless given as absolute paths."""
+
 import argparse
 import os
 import sys

@@ -22,14 +22,14 @@ Requires Python >= 3.10, PyTorch, Gymnasium, NumPy, Matplotlib, tqdm.
 ```python
 import eighth_square as es
 
-es.families()                     # ['tabular', 'deep', 'approx', 'offline',
-                                  #  'bandits', 'multiagent', 'search']
+es.families()  # ['tabular', 'deep', 'approx', 'offline',
+#  'bandits', 'multiagent', 'search']
 from eighth_square import deep, offline, approx, tabular, bandits
 
-agent = deep.DQN(env, config)         # PyTorch implementation
-agent = deep.SAC(env, config)         # continuous control
+agent = deep.DQN(env, config)  # PyTorch implementation
+agent = deep.SAC(env, config)  # continuous control
 agent = approx.PPO(env, config)
-agent = offline.IQL(env, config)      # offline RL
+agent = offline.IQL(env, config)  # offline RL
 agent = tabular.QLearning(env, config)
 ```
 
@@ -39,8 +39,8 @@ Legacy top-level imports also work (the packages are installed directly):
 from algorithms.deep.dqn import DQN
 from algorithms.offline.iql import IQL
 from algorithms.approx.ppo import PPO
-from algorithms.registry import ALGORITHMS        # full class catalogue (69)
-from algorithms.registry import ALGO_REGISTRY     # comparison trainers (20)
+from algorithms.registry import ALGORITHMS  # full class catalogue (69)
+from algorithms.registry import ALGO_REGISTRY  # comparison trainers (20)
 ```
 
 Every agent follows the same protocol: `__init__(env, config)`,

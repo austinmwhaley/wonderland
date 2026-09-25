@@ -30,11 +30,13 @@ class ReplayBuffer:
 
     def _get(self, idx):
         t = torch.from_numpy
-        return (t(self.obs[idx]).to(self.device),
-                t(self.act[idx]).to(self.device),
-                t(self.rew[idx]).to(self.device).unsqueeze(1),
-                t(self.obs2[idx]).to(self.device),
-                t(self.done[idx]).to(self.device).unsqueeze(1))
+        return (
+            t(self.obs[idx]).to(self.device),
+            t(self.act[idx]).to(self.device),
+            t(self.rew[idx]).to(self.device).unsqueeze(1),
+            t(self.obs2[idx]).to(self.device),
+            t(self.done[idx]).to(self.device).unsqueeze(1),
+        )
 
 
 class ContinuousReplayBuffer(ReplayBuffer):
@@ -90,7 +92,9 @@ class SumTree:
 
 
 class PrioritizedReplayBuffer(ReplayBuffer):
-    def __init__(self, capacity, obs_dim, device="cpu", alpha=0.6, beta=0.4, beta_steps=100_000, eps=1e-6):
+    def __init__(
+        self, capacity, obs_dim, device="cpu", alpha=0.6, beta=0.4, beta_steps=100_000, eps=1e-6
+    ):
         super().__init__(capacity, obs_dim, device)
         self.alpha = alpha
         self.beta = beta
@@ -100,9 +104,16 @@ class PrioritizedReplayBuffer(ReplayBuffer):
         self._step = 0
 
     def push(self, s, a, r, s2, done, priority=1.0):
-        self.tree.add(priority ** self.alpha, (np.asarray(s, dtype=np.float32),
-                                               int(a), float(r),
-                                               np.asarray(s2, dtype=np.float32), float(done)))
+        self.tree.add(
+            priority**self.alpha,
+            (
+                np.asarray(s, dtype=np.float32),
+                int(a),
+                float(r),
+                np.asarray(s2, dtype=np.float32),
+                float(done),
+            ),
+        )
         self.size = min(self.size + 1, self.capacity)
 
     def sample(self, batch_size):
@@ -119,16 +130,23 @@ class PrioritizedReplayBuffer(ReplayBuffer):
             data.append(d)
         weights = (np.array(priorities) * self.size) ** (-beta)
         weights /= weights.max()
-        obs, act, rew, obs2, done = (np.stack([d[0] for d in data]),
-                                     np.array([d[1] for d in data]),
-                                     np.array([d[2] for d in data]),
-                                     np.stack([d[3] for d in data]),
-                                     np.array([d[4] for d in data]))
+        obs, act, rew, obs2, done = (
+            np.stack([d[0] for d in data]),
+            np.array([d[1] for d in data]),
+            np.array([d[2] for d in data]),
+            np.stack([d[3] for d in data]),
+            np.array([d[4] for d in data]),
+        )
         t = torch.from_numpy
-        return (t(obs).to(self.device), t(act).to(self.device),
-                t(rew).to(self.device).unsqueeze(1), t(obs2).to(self.device),
-                t(done).to(self.device).unsqueeze(1), idxs,
-                t(weights).to(self.device).unsqueeze(1))
+        return (
+            t(obs).to(self.device),
+            t(act).to(self.device),
+            t(rew).to(self.device).unsqueeze(1),
+            t(obs2).to(self.device),
+            t(done).to(self.device).unsqueeze(1),
+            idxs,
+            t(weights).to(self.device).unsqueeze(1),
+        )
 
     def update_priorities(self, idxs, priorities):
         for idx, p in zip(idxs, priorities):

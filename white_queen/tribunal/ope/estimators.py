@@ -15,6 +15,7 @@ Pass meta=None / fqe_cfg=None for full autotune (recommended). Explicit
 values override per-key. META below is the legacy fallback (frozen v2
 literals, kept for reproducibility of old verdicts only).
 """
+
 import numpy as np
 
 from .autotune import (
@@ -27,16 +28,22 @@ from .autotune import (
     resolve_bootstrap,
     resolve_clip_quantile,
     resolve_fqe_cfg,
-    resolve_magic_horizons,
     resolve_meta,
     resolve_target_ess,
     resolve_temps,
 )
 from .protocols import check_candidate
 
-META = {"target_ess_frac": 0.2, "clip_quantile": 0.99, "ci_alpha": 0.05,
-        "bootstrap_B": 200, "blend_lo": 0.05, "blend_hi": 0.5,
-        "rel_edge_std": 0.5, "temps": (0.05, 0.1, 0.25, 0.5, 1.0)}
+META = {
+    "target_ess_frac": 0.2,
+    "clip_quantile": 0.99,
+    "ci_alpha": 0.05,
+    "bootstrap_B": 200,
+    "blend_lo": 0.05,
+    "blend_hi": 0.5,
+    "rel_edge_std": 0.5,
+    "temps": (0.05, 0.1, 0.25, 0.5, 1.0),
+}
 # DEPRECATED (v12+): frozen v2 literals, kept so old verdicts reproduce
 # bit-identically. New code passes meta=None (full autotune). Passing this
 # exact object emits FutureWarning in _resolve_meta.
@@ -70,8 +77,14 @@ def episodes(diet):
     if _done is None:
         _done = np.zeros(len(diet["rew"]), dtype=np.float32)
     for ii in ids:
-        out.append({"obs": diet["obs"][ii], "act": diet["act"][ii],
-                    "rew": diet["rew"][ii], "done": _done[ii]})
+        out.append(
+            {
+                "obs": diet["obs"][ii],
+                "act": diet["act"][ii],
+                "rew": diet["rew"][ii],
+                "done": _done[ii],
+            }
+        )
         if _mt is not None:
             out[-1]["mu_take"] = _mt[ii]
         else:
@@ -82,6 +95,7 @@ def episodes(diet):
 
 def _taken_probs(cand, obs, act, temperature):
     from .protocols import safe_probs
+
     probs = safe_probs(cand.action_probs(obs, temperature=temperature))
     return probs[np.arange(len(act)), act]
 
@@ -102,10 +116,13 @@ def _resolve_meta(diet, gamma, meta):
     temps grid for hand-made legacy dicts that predate autotune.
     """
     import warnings
+
     if meta is META:
-        warnings.warn("estimators.META is deprecated (frozen v2 literals); "
-                      "pass meta=None for autotune.", FutureWarning,
-                      stacklevel=3)
+        warnings.warn(
+            "estimators.META is deprecated (frozen v2 literals); pass meta=None for autotune.",
+            FutureWarning,
+            stacklevel=3,
+        )
     m, _ = resolve_meta(diet, gamma, meta)
     if m.get("temps") is None:
         fp = diet_fingerprint(diet, gamma)
@@ -138,7 +155,7 @@ def select_temperature(diet, cand, gamma, meta=None):
             cum = np.cumprod(np.clip(pi / np.maximum(ep["mu_take"], PROB_FLOOR), 0, WEIGHT_CEIL))
             ws.append(float(cum[-1] * (gamma ** (len(cum) - 1))))
         ws = np.asarray(ws)
-        ef = float((ws.sum() ** 2) / max((ws ** 2).sum(), VAR_FLOOR)) / n
+        ef = float((ws.sum() ** 2) / max((ws**2).sum(), VAR_FLOOR)) / n
         if ef >= target:
             return {"temperature": t, "ess_frac": ef}
         best = {"temperature": t, "ess_frac": ef}
@@ -153,6 +170,7 @@ def _ep_returns(ep, gamma):
 
 def _ep_disc_returns(diet, gamma):
     from .receipts import _segment_disc_returns
+
     return _segment_disc_returns(diet, gamma).tolist()
 
 
@@ -170,13 +188,24 @@ def plausible_bounds(diet, gamma):
         L = int(np.max(np.unique(diet["episode"], return_counts=True)[1]))
     except Exception:
         L = 1
-    G = (1.0 - gamma ** L) / max(1.0 - gamma, 1e-9)
+    G = (1.0 - gamma**L) / max(1.0 - gamma, 1e-9)
     return min(0.0, rmin * G), max(0.0, rmax * G)
 
 
-def panel(diet, cand, gamma, meta=None, fqe_cfg=None, cand_id=None,
-          cache_dir=None, weights_hash=None, ensemble_K=None,
-          dice_steps=None, magic_B=None, fast=False):
+def panel(
+    diet,
+    cand,
+    gamma,
+    meta=None,
+    fqe_cfg=None,
+    cand_id=None,
+    cache_dir=None,
+    weights_hash=None,
+    ensemble_K=None,
+    dice_steps=None,
+    magic_B=None,
+    fast=False,
+):
     """Full panel for one candidate/diet. Returns estimates + per-episode
     contributions (for bootstrapping) + the adaptive settings actually used.
 
@@ -192,6 +221,7 @@ def panel(diet, cand, gamma, meta=None, fqe_cfg=None, cand_id=None,
     """
     import time as _time
     from .protocols import validate_diet
+
     check_candidate(cand)
     validate_diet(diet)
     _t0 = _time.perf_counter()
@@ -218,8 +248,8 @@ def panel(diet, cand, gamma, meta=None, fqe_cfg=None, cand_id=None,
     cap = max(cap, RHO_CAP_FLOOR)
     T_ep = len(eps)
     from .autotune import capped_cumprod
+
     is_vals, wis_num, wsum, ws = [], 0.0, 0.0, []
-    dr_num_parts, fqe = [], None
     cum_hits = []
     for ep, rho_u in zip(eps, rhos_all):
         rho = np.clip(rho_u, 0.0, cap)
@@ -236,18 +266,34 @@ def panel(diet, cand, gamma, meta=None, fqe_cfg=None, cand_id=None,
     is_est = float(np.mean(is_vals))
     wis_est = float(wis_num / max(wsum, PROB_FLOOR))
     _tick("weights")
-    qnet, _, fqe_info = fit_fqe(diet, cand, gamma, fqe_cfg, temp,
-                                cand_id=cand_id, cache_dir=cache_dir,
-                                weights_hash=weights_hash)
+    qnet, _, fqe_info = fit_fqe(
+        diet,
+        cand,
+        gamma,
+        fqe_cfg,
+        temp,
+        cand_id=cand_id,
+        cache_dir=cache_dir,
+        weights_hash=weights_hash,
+    )
     _tick("fqe_single")
     # DM headline = VAL-WEIGHTED ensemble mean (single-seed DM is lottery
     # debt; plain mean lets one collapsed seed drag it (v15 expert: 2.2 among
     # ~20s). Members earn weight by inverse held-out Bellman error; ties
     # recover the plain mean. qnet (single fit) stays for DR/WDR/MAGIC.
     from .direct import ensemble_fqe as _efqe_fn
-    efqe = _efqe_fn(diet, cand, gamma, fqe_cfg, temp, K=ensemble_K,
-                    cand_id=cand_id, cache_dir=cache_dir,
-                    weights_hash=weights_hash)
+
+    efqe = _efqe_fn(
+        diet,
+        cand,
+        gamma,
+        fqe_cfg,
+        temp,
+        K=ensemble_K,
+        cand_id=cand_id,
+        cache_dir=cache_dir,
+        weights_hash=weights_hash,
+    )
     dm_est = float(efqe["val_weighted_mean"])
     _tick("ensemble")
     dr_vals = doubly_robust_values(diet, cand, gamma, qnet, temp, cap)
@@ -259,7 +305,7 @@ def panel(diet, cand, gamma, meta=None, fqe_cfg=None, cand_id=None,
     step_ess_frac = _step["ess_frac"]
     step_clip = _step["clipped_frac"]
     _tick("dr")
-    ess = float((ws.sum() ** 2) / max((ws ** 2).sum(), VAR_FLOOR))
+    ess = float((ws.sum() ** 2) / max((ws**2).sum(), VAR_FLOOR))
     ess_frac = ess / T_ep
     lo, hi = m.get("blend_lo"), m.get("blend_hi")
     if lo is None or hi is None:
@@ -267,13 +313,13 @@ def panel(diet, cand, gamma, meta=None, fqe_cfg=None, cand_id=None,
         lo_a, hi_a = resolve_blend_range(fp["n_episodes"])
         lo = lo_a if lo is None else lo
         hi = hi_a if hi is None else hi
-    lam = float(np.clip((ess_frac - lo) /
-                        max(hi - lo, VAR_FLOOR), 0.0, 1.0))
+    lam = float(np.clip((ess_frac - lo) / max(hi - lo, VAR_FLOOR), 0.0, 1.0))
     # Robust blend (v4+): never average in a DR the gate would reject.
     # If DR claims below-behavior while DM says above (or DR CI is wider
     # than the DM scale), the weights collapsed — trust DM (lam=0).
     # Receipts record the override; blend can no longer be worse than both.
     from .receipts import behavior_stats as _bstat
+
     _b = _bstat(diet, gamma)
     _dr_std = float(np.std(dr_vals)) if len(dr_vals) > 1 else 0.0
     blend_guard = None
@@ -292,8 +338,8 @@ def panel(diet, cand, gamma, meta=None, fqe_cfg=None, cand_id=None,
     from .receipts import behavior_stats, bootstrap_ci
     from .meta import slope_lite
     from .direct import lstdq
-    from .model_based import (learn_dynamics, learn_dynamics_ensemble,
-                              rollout_estimate)
+    from .model_based import learn_dynamics_ensemble, rollout_estimate
+
     fp = diet_fingerprint(diet, gamma)
     if fast:
         mis_est, mis_diag, support = None, {"skipped": "fast"}, {}
@@ -306,13 +352,22 @@ def panel(diet, cand, gamma, meta=None, fqe_cfg=None, cand_id=None,
         from .trajectory import wdr_values, magic_lite
         from .direct import fve
         from .variants_dice import learn_ratio_gd
+
         mis_steps = fqe_cfg.get("mis_steps")
         if mis_steps is None:
             from .autotune import resolve_mis_cfg
+
             mis_steps = resolve_mis_cfg(diet, fqe_cfg)["steps_max"]
-        w_fn, _ = learn_ratio(diet, cand, gamma, temperature=temp,
-                              steps=mis_steps, cand_id=cand_id,
-                              cache_dir=cache_dir, weights_hash=weights_hash)
+        w_fn, _ = learn_ratio(
+            diet,
+            cand,
+            gamma,
+            temperature=temp,
+            steps=mis_steps,
+            cand_id=cand_id,
+            cache_dir=cache_dir,
+            weights_hash=weights_hash,
+        )
         mis_diag = mis_diagnostics(diet, w_fn, gamma)
         mis_est = mis_diag["mis"]
         _tick("mis")
@@ -322,16 +377,31 @@ def panel(diet, cand, gamma, meta=None, fqe_cfg=None, cand_id=None,
         wdr_est = float(np.mean(wdr_vals))
         _tick("wdr")
         magic_est, magic_w, magic_labels, magic_ci, magic_dropped = magic_lite(
-            diet, cand, gamma, qnet, temp, cap, B=magic_B)
+            diet, cand, gamma, qnet, temp, cap, B=magic_B
+        )
         _tick("magic")
-        fve_r = fve(diet, cand, gamma, fqe_cfg, temp, cand_id=cand_id,
-                    cache_dir=cache_dir, weights_hash=weights_hash)
+        fve_r = fve(
+            diet,
+            cand,
+            gamma,
+            fqe_cfg,
+            temp,
+            cand_id=cand_id,
+            cache_dir=cache_dir,
+            weights_hash=weights_hash,
+        )
         fve_dm = fve_r["dm"]
         _tick("fve")
-        w_fn_g, gd_info = learn_ratio_gd(diet, cand, gamma, temperature=temp,
-                                         steps=dice_steps, cand_id=cand_id,
-                                         cache_dir=cache_dir,
-                                         weights_hash=weights_hash)
+        w_fn_g, gd_info = learn_ratio_gd(
+            diet,
+            cand,
+            gamma,
+            temperature=temp,
+            steps=dice_steps,
+            cand_id=cand_id,
+            cache_dir=cache_dir,
+            weights_hash=weights_hash,
+        )
         gd_est = mis_diagnostics(diet, w_fn_g, gamma)["mis"]
         _tick("gdice")
     lstd = lstdq(diet, cand, gamma, temp)
@@ -344,6 +414,7 @@ def panel(diet, cand, gamma, meta=None, fqe_cfg=None, cand_id=None,
     fqe_behavior = None
     try:
         import torch as _torch
+
         _st = np.unique(np.asarray(diet["episode"]), return_index=True)[1]
         with _torch.no_grad():
             _q = qnet(_torch.as_tensor(diet["obs"][_st]).float()).cpu().numpy()
@@ -364,6 +435,7 @@ def panel(diet, cand, gamma, meta=None, fqe_cfg=None, cand_id=None,
     # the maximum possible discounted return is a numerical blow-up (expert
     # uniform read 88428), not an estimate -> invalidate, fail safe.
     from .protocols import ArgmaxPolicy as _Argmax
+
     sharp_cand = _Argmax(cand)
     # Ensemble the deployable-policy FQE so we have an UNCERTAINTY on the
     # value that actually ships. Without it, a systematically-optimistic FQE
@@ -376,11 +448,21 @@ def panel(diet, cand, gamma, meta=None, fqe_cfg=None, cand_id=None,
     for _k in range(max(1, _Ksh)):
         _cfgk = dict(fqe_cfg) if fqe_cfg else {}
         _cfgk["seed"] = int((fqe_cfg or {}).get("seed", 0)) + 1000 * _k
-        _cidk = (None if cand_id is None else
-                 (f"{cand_id}__sharp" if _k == 0 else f"{cand_id}__sharp{_k}"))
-        _, _dmk, _ik = fit_fqe(diet, sharp_cand, gamma, _cfgk, 1.0,
-                               cand_id=_cidk, cache_dir=cache_dir,
-                               weights_hash=weights_hash)
+        _cidk = (
+            None
+            if cand_id is None
+            else (f"{cand_id}__sharp" if _k == 0 else f"{cand_id}__sharp{_k}")
+        )
+        _, _dmk, _ik = fit_fqe(
+            diet,
+            sharp_cand,
+            gamma,
+            _cfgk,
+            1.0,
+            cand_id=_cidk,
+            cache_dir=cache_dir,
+            weights_hash=weights_hash,
+        )
         _sh_dms.append(float(_dmk))
         sharp_info = _ik
     sharp_dm = float(np.mean(_sh_dms))
@@ -393,19 +475,17 @@ def panel(diet, cand, gamma, meta=None, fqe_cfg=None, cand_id=None,
     _pb_lo, _pb_hi = plausible_bounds(diet, gamma)
     _bound = max(abs(_pb_lo), abs(_pb_hi), 1.0) * 1.5
     if (not np.isfinite(sharp_dm)) or abs(sharp_dm) > _bound:
-        sharp_info = dict(sharp_info, diverged=True, bound=round(_bound, 1),
-                          raw=sharp_dm)
+        sharp_info = dict(sharp_info, diverged=True, bound=round(_bound, 1), raw=sharp_dm)
         sharp_dm = None
     else:
         # Lower confidence bound the contract compares against the bar.
-        sharp_info = dict(sharp_info,
-                          lower=round(float(sharp_dm - 1.96 * sharp_dis), 3))
+        sharp_info = dict(sharp_info, lower=round(float(sharp_dm - 1.96 * sharp_dis), 3))
     _tick("sharp")
     # Dynamics shares the panel budget source (was bare autotune: same rule,
     # now one knob). Cached per diet (see model_based).
     step_fn, dyn_info = learn_dynamics_ensemble(
-        diet, K=int((fqe_cfg or {}).get("dyn_ensemble", 3)),
-        cfg=fqe_cfg, cache_dir=cache_dir)
+        diet, K=int((fqe_cfg or {}).get("dyn_ensemble", 3)), cfg=fqe_cfg, cache_dir=cache_dir
+    )
     _tick("dynamics")
     mb_r = rollout_estimate(diet, cand, gamma, step_fn, temp)
     _tick("rollout")
@@ -422,26 +502,26 @@ def panel(diet, cand, gamma, meta=None, fqe_cfg=None, cand_id=None,
     # ~95% multiplier (z=1.96 rounded), not a tuning dial.
     FQE_Z = 2.0
     B, al = resolve_bootstrap(len(eps), m.get("bootstrap_B"), m.get("ci_alpha"))
-    ci = {"dr": (bootstrap_ci(dr_vals, B, al)[0], bootstrap_ci(dr_vals, B, al)[1]),
-          "is": (bootstrap_ci(is_vals, B, al)[0], bootstrap_ci(is_vals, B, al)[1]),
-          "wis": (bstat["mean"], bstat["mean"]),
-          "fqe_dm": (dm_est - FQE_Z * efqe["disagreement"],
-                     dm_est + FQE_Z * efqe["disagreement"]),
-          "anchor": (bootstrap_ci(_ep_disc_returns(diet, gamma), B, al)[0],
-                     bootstrap_ci(_ep_disc_returns(diet, gamma), B, al)[1])}
+    ci = {
+        "dr": (bootstrap_ci(dr_vals, B, al)[0], bootstrap_ci(dr_vals, B, al)[1]),
+        "is": (bootstrap_ci(is_vals, B, al)[0], bootstrap_ci(is_vals, B, al)[1]),
+        "wis": (bstat["mean"], bstat["mean"]),
+        "fqe_dm": (dm_est - FQE_Z * efqe["disagreement"], dm_est + FQE_Z * efqe["disagreement"]),
+        "anchor": (
+            bootstrap_ci(_ep_disc_returns(diet, gamma), B, al)[0],
+            bootstrap_ci(_ep_disc_returns(diet, gamma), B, al)[1],
+        ),
+    }
     if wdr_vals:
-        ci["wdr"] = (bootstrap_ci(wdr_vals, B, al)[0],
-                     bootstrap_ci(wdr_vals, B, al)[1])
+        ci["wdr"] = (bootstrap_ci(wdr_vals, B, al)[0], bootstrap_ci(wdr_vals, B, al)[1])
     if magic_ci is not None:
         ci["magic"] = magic_ci
-    pts = {"anchor": bstat["mean"], "fqe_dm": dm_est, "wis": wis_est,
-           "dr": dr_est, "is": is_est}
+    pts = {"anchor": bstat["mean"], "fqe_dm": dm_est, "wis": wis_est, "dr": dr_est, "is": is_est}
     for _k, _v in (("mis", mis_est), ("wdr", wdr_est), ("magic", magic_est)):
         if _v is not None:
             pts[_k] = _v
     slope_pick, slope_val = slope_lite(pts, ci)
-    below_anchor = sorted([k for k, v in pts.items()
-                           if k != "anchor" and v < bstat["mean"]])
+    below_anchor = sorted([k for k, v in pts.items() if k != "anchor" and v < bstat["mean"]])
     _tick("cis_slope")
     timing["total"] = round(_time.perf_counter() - _t0, 3)
     # Plausibility bound: any value estimate must lie in the physically
@@ -455,45 +535,78 @@ def panel(diet, cand, gamma, meta=None, fqe_cfg=None, cand_id=None,
     clamp = {}
     for _n, _v in (("fqe", dm_est), ("mb", float(mb_r["mb"]))):
         if not (_lo - 1e-6 <= _v <= _hi + 1e-6):
-            clamp[_n] = {"raw": round(float(_v), 2),
-                         "lo": round(_lo, 2), "hi": round(_hi, 2)}
+            clamp[_n] = {"raw": round(float(_v), 2), "lo": round(_lo, 2), "hi": round(_hi, 2)}
     # Level headline: MEDIAN of {FQE-vwmean, LSTDQ, MB}.
     import statistics as _st
-    level_parts = {"fqe": dm_est, "lstdq": float(lstd["dm"]),
-                   "mb": float(mb_r["mb"])}
+
+    level_parts = {"fqe": dm_est, "lstdq": float(lstd["dm"]), "mb": float(mb_r["mb"])}
     level_est = float(_st.median(level_parts.values()))
-    return {"is": is_est, "wis": wis_est, "dr": dr_est, "fqe_dm": dm_est,
-            "efqe": efqe, "lstdq": lstd, "fve_dm": fve_dm,
-            "mb": mb_r, "mb_sharp": mb_sharp,
-            "gdice_mis": gd_est, "gd_info": gd_info,
-            "dyn_info": dyn_info, "anchor": round(bstat["mean"], 1),
-            "magic": magic_est, "magic_w": magic_w, "wdr": wdr_est,
-            "magic_dropped": magic_dropped,
-            "slope_pick": slope_pick, "slope_val": round(slope_val, 1),
-            "below_anchor": below_anchor,
-            "mis": mis_est, "mis_info": mis_diag, "support": support,
-            "blended": blended, "lambda_dr": lam, "blend_guard": blend_guard,
-            "cum_cap_hit": float(np.mean(cum_hits)) if cum_hits else 0.0,
-            "is_vals": is_vals, "dr_vals": dr_vals, "ep_weights": ws,
-            "ep_returns": [float(x) for x in _ep_disc_returns(diet, gamma)],
-            "ess_frac": ess_frac, "temperature": temp, "rho_cap": cap,
-            "fqe_behavior": fqe_behavior,
-            "fqe_info": fqe_info, "timing": timing,
-            "level_est": level_est, "level_parts": level_parts,
-            "value_clamp": clamp,
-            "dr_step": dr_step_est, "step_ess_frac": step_ess_frac,
-            "step_clip_frac": step_clip, "dr_step_adv": _step["adv"],
-            "dr_step_num": _step["num"], "dr_step_den": _step["den"],
-            "dr_step_adv_num": _step["adv_num"],
-            "dr_step_adv_den": _step["adv_den"],
-            "sharp_dm": sharp_dm,
-            "sharp_info": sharp_info,
-            "mu_source": diet.get("_mu_source", "logged"),
-            "mu_info": diet.get("_mu_info", {})}
+    return {
+        "is": is_est,
+        "wis": wis_est,
+        "dr": dr_est,
+        "fqe_dm": dm_est,
+        "efqe": efqe,
+        "lstdq": lstd,
+        "fve_dm": fve_dm,
+        "mb": mb_r,
+        "mb_sharp": mb_sharp,
+        "gdice_mis": gd_est,
+        "gd_info": gd_info,
+        "dyn_info": dyn_info,
+        "anchor": round(bstat["mean"], 1),
+        "magic": magic_est,
+        "magic_w": magic_w,
+        "wdr": wdr_est,
+        "magic_dropped": magic_dropped,
+        "slope_pick": slope_pick,
+        "slope_val": round(slope_val, 1),
+        "below_anchor": below_anchor,
+        "mis": mis_est,
+        "mis_info": mis_diag,
+        "support": support,
+        "blended": blended,
+        "lambda_dr": lam,
+        "blend_guard": blend_guard,
+        "cum_cap_hit": float(np.mean(cum_hits)) if cum_hits else 0.0,
+        "is_vals": is_vals,
+        "dr_vals": dr_vals,
+        "ep_weights": ws,
+        "ep_returns": [float(x) for x in _ep_disc_returns(diet, gamma)],
+        "ess_frac": ess_frac,
+        "temperature": temp,
+        "rho_cap": cap,
+        "fqe_behavior": fqe_behavior,
+        "fqe_info": fqe_info,
+        "timing": timing,
+        "level_est": level_est,
+        "level_parts": level_parts,
+        "value_clamp": clamp,
+        "dr_step": dr_step_est,
+        "step_ess_frac": step_ess_frac,
+        "step_clip_frac": step_clip,
+        "dr_step_adv": _step["adv"],
+        "dr_step_num": _step["num"],
+        "dr_step_den": _step["den"],
+        "dr_step_adv_num": _step["adv_num"],
+        "dr_step_adv_den": _step["adv_den"],
+        "sharp_dm": sharp_dm,
+        "sharp_info": sharp_info,
+        "mu_source": diet.get("_mu_source", "logged"),
+        "mu_info": diet.get("_mu_info", {}),
+    }
 
 
-def fit_fqe(diet, cand, gamma, fqe_cfg=None, temperature=None,
-            cand_id=None, cache_dir=None, weights_hash=None):
+def fit_fqe(
+    diet,
+    cand,
+    gamma,
+    fqe_cfg=None,
+    temperature=None,
+    cand_id=None,
+    cache_dir=None,
+    weights_hash=None,
+):
     """FQE with validation early-stop. Budget follows difficulty; the curve
     decides, via held-out Bellman error with patience.
 
@@ -506,26 +619,32 @@ def fit_fqe(diet, cand, gamma, fqe_cfg=None, temperature=None,
     import sys
     import torch
     import torch.nn.functional as F
-    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(
-        os.path.dirname(os.path.abspath(__file__))))))
+
+    sys.path.insert(
+        0,
+        os.path.dirname(
+            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        ),
+    )
     from algorithms.deep.networks import QNetwork
+
     check_candidate(cand)
     if temperature is None:
         temperature = select_temperature(diet, cand, gamma)["temperature"]
     cfg = resolve_fqe_cfg(diet, fqe_cfg, gamma)
     steps_max = cfg["steps_max"]
-    patience = cfg["patience"]
-    eval_every = cfg["eval_every"]
     batch = cfg["batch"]
     hidden = cfg["hidden"]
     seed = cfg["seed"]
     lr = cfg["lr"]
     holdout = cfg["holdout"]
     from .autotune import resolve_device
+
     device = resolve_device(cfg.get("device"))
     N, in_dim = len(diet["obs"]), diet["obs"].shape[1]
     nA = diet["nA"]
     from .training import seed_all as _seed_all
+
     _seed_all(seed)
     rng = np.random.default_rng(seed)
     perm = rng.permutation(N)
@@ -540,8 +659,7 @@ def fit_fqe(diet, cand, gamma, fqe_cfg=None, temperature=None,
     # to propagate within budget (toy tau in [0.01,0.1] all read 99-100%).
     # tau derived from budget (no magic constant): smaller step budgets get a
     # faster-tracking target; large budgets a slower one, both in the safe band.
-    tau = float(cfg.get("target_tau",
-                        min(0.02, max(0.005, 1000.0 / max(steps_max, 1)))))
+    tau = float(cfg.get("target_tau", min(0.02, max(0.005, 1000.0 / max(steps_max, 1)))))
     qt = QNetwork(in_dim, hidden, nA).to(device)
     qt.load_state_dict(q.state_dict())
     opt = torch.optim.Adam(q.parameters(), lr=lr, weight_decay=1e-4)
@@ -549,14 +667,16 @@ def fit_fqe(diet, cand, gamma, fqe_cfg=None, temperature=None,
     _ckey = None
     if cand_id is not None and cache_dir:
         from .cache import diet_hash, make_key, load as _cload
-        _ckey = make_key("fqe", diet_hash(diet), cand_id, cfg, temperature,
-                         weights_hash or "noweights")
+
+        _ckey = make_key(
+            "fqe", diet_hash(diet), cand_id, cfg, temperature, weights_hash or "noweights"
+        )
         _hit = _cload(cache_dir, _ckey, map_location=device)
     else:
         _hit = None
     # Force float32 + device: numpy float64 mocks / python-float promotion
     # otherwise yields Double loss vs Float params -> backward RuntimeError.
-    O = torch.as_tensor(diet["obs"]).float().to(device)
+    obs = torch.as_tensor(diet["obs"]).float().to(device)
     A = torch.as_tensor(diet["act"], dtype=torch.long).to(device)
     R = torch.as_tensor(diet["rew"]).float().unsqueeze(1).to(device)
     O2 = torch.as_tensor(diet["obs2"]).float().to(device)
@@ -574,6 +694,7 @@ def fit_fqe(diet, cand, gamma, fqe_cfg=None, temperature=None,
     # The candidate is frozen during OPE: precompute full-diet probs ONCE and
     # index per batch. Bit-identical values (independent per-row softmax).
     from .protocols import safe_probs as _sp
+
     _P = _sp(cand.action_probs(np.asarray(diet["obs"]), temperature=temperature))
     _P2 = _sp(cand.action_probs(np.asarray(diet["obs2"]), temperature=temperature))
     _P_va = _P[va]
@@ -584,7 +705,7 @@ def fit_fqe(diet, cand, gamma, fqe_cfg=None, temperature=None,
             v2 = (pi2 * qt(O2[va])).sum(1, keepdim=True)
             tgt = R[va] + gamma * (1 - D[va]) * v2
             tgt = tgt.clamp(_clip_lo, _clip_hi)
-            return float(F.mse_loss(q(O[va]).gather(1, A[va].unsqueeze(1)), tgt))
+            return float(F.mse_loss(q(obs[va]).gather(1, A[va].unsqueeze(1)), tgt))
 
     from .training import govern
 
@@ -600,7 +721,7 @@ def fit_fqe(diet, cand, gamma, fqe_cfg=None, temperature=None,
                 v2 = (pi2 * qt(O2[ii])).sum(1, keepdim=True)
                 tgt = R[ii] + gamma * (1 - D[ii]) * v2
                 tgt = tgt.clamp(_clip_lo, _clip_hi)
-            pred = q(O[ii]).gather(1, A[ii].unsqueeze(1))
+            pred = q(obs[ii]).gather(1, A[ii].unsqueeze(1))
             loss = F.mse_loss(pred, tgt)
             opt.zero_grad()
             loss.backward()
@@ -625,10 +746,11 @@ def fit_fqe(diet, cand, gamma, fqe_cfg=None, temperature=None,
     # (novice proxy truth ~52). Value-based selection needs a grounded metric;
     # until then, run the budget and keep the final weights. Bellman error is
     # still computed as a receipt. Patience is irrelevant in this mode.
-    _gov = govern({"q": q}, [opt], _step, None, cfg) \
-        if _hit is None else {"steps": 0, "n_evals": 0,
-                              "best_val": None, "stopped": "cache-hit",
-                              "lr_final": lr}
+    _gov = (
+        govern({"q": q}, [opt], _step, None, cfg)
+        if _hit is None
+        else {"steps": 0, "n_evals": 0, "best_val": None, "stopped": "cache-hit", "lr_final": lr}
+    )
     with torch.no_grad():
         _val_receipt = val_err()
     best = _val_receipt
@@ -640,8 +762,8 @@ def fit_fqe(diet, cand, gamma, fqe_cfg=None, temperature=None,
         best = _hit["info"]["val_bellman"]
     elif _ckey is not None:
         from .cache import save as _csave
-        _csave(cache_dir, _ckey,
-               {"q": q.state_dict(), "info": {"val_bellman": best}})
+
+        _csave(cache_dir, _ckey, {"q": q.state_dict(), "info": {"val_bellman": best}})
     # Eval on CPU: training was GPU-accelerated, downstream DR/WDR/MAGIC are
     # cheap forwards — keep them device-agnostic.
     q = q.cpu()
@@ -651,23 +773,42 @@ def fit_fqe(diet, cand, gamma, fqe_cfg=None, temperature=None,
         with torch.no_grad():
             qv = q(torch.as_tensor(ep["obs"][:1]).float()).cpu().numpy()[0]
         dm_vals.append(float(np.dot(pi0, qv)))
-    return q, float(np.mean(dm_vals)), {"steps": _gov["steps"], "n_evals": _gov["n_evals"],
-                                        "val_bellman": best, "stopped": _gov["stopped"],
-                                        "lr_final": _gov["lr_final"],
-                                        "cache_hit": _cache_hit,
-                                        "target": "polyak-soft",
-                                        "target_tau": tau,
-                                        "target_syncs": _syncs[0],
-                                        "device": device,
-                                        "min_steps": int(cfg.get("min_steps", steps_max)),
-                                        "under_budget": bool(
-                                            not cfg.get("allow_under_budget")
-                                            and steps_max < 0.5 * int(
-                                                cfg.get("min_steps", steps_max))),
-                                        "cfg": {k: cfg[k] for k in
-                                                ("hidden", "batch", "steps_max",
-                                                 "eval_every", "patience", "lr",
-                                                 "holdout", "seed", "device") if k in cfg}}
+    return (
+        q,
+        float(np.mean(dm_vals)),
+        {
+            "steps": _gov["steps"],
+            "n_evals": _gov["n_evals"],
+            "val_bellman": best,
+            "stopped": _gov["stopped"],
+            "lr_final": _gov["lr_final"],
+            "cache_hit": _cache_hit,
+            "target": "polyak-soft",
+            "target_tau": tau,
+            "target_syncs": _syncs[0],
+            "device": device,
+            "min_steps": int(cfg.get("min_steps", steps_max)),
+            "under_budget": bool(
+                not cfg.get("allow_under_budget")
+                and steps_max < 0.5 * int(cfg.get("min_steps", steps_max))
+            ),
+            "cfg": {
+                k: cfg[k]
+                for k in (
+                    "hidden",
+                    "batch",
+                    "steps_max",
+                    "eval_every",
+                    "patience",
+                    "lr",
+                    "holdout",
+                    "seed",
+                    "device",
+                )
+                if k in cfg
+            },
+        },
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -707,6 +848,7 @@ def dr_terms(ep, cand, gamma, qnet, temperature, cap):
     import torch
     from .autotune import capped_cumprod
     from .protocols import safe_probs
+
     try:
         dev = next(qnet.parameters()).device
     except Exception:
@@ -767,8 +909,9 @@ def step_dr_values(diet, cand, gamma, qnet, temperature, cap):
     adv_num/adv_den are the per-episode numerator/denominator pieces."""
     import torch
     from .protocols import safe_probs
+
     N = len(diet["obs"])
-    O = torch.as_tensor(diet["obs"]).float()
+    obs = torch.as_tensor(diet["obs"]).float()
     O2 = torch.as_tensor(diet["obs2"]).float()
     mu_take = diet.get("mu_take")
     if mu_take is None:
@@ -785,14 +928,15 @@ def step_dr_values(diet, cand, gamma, qnet, temperature, cap):
     except Exception:
         dev = torch.device("cpu")
     with torch.no_grad():
-        q = qnet(O.to(dev)).cpu().numpy()
+        q = qnet(obs.to(dev)).cpu().numpy()
         q2 = qnet(O2.to(dev)).cpu().numpy()
     qa = q[np.arange(N), diet["act"]]
     v = (p * q).sum(1)
     v2 = (p2 * q2).sum(1)
     rew = np.asarray(diet["rew"], dtype=np.float64)
-    done = np.asarray(diet.get("done") if diet.get("done") is not None
-                      else np.zeros(N), dtype=np.float64)
+    done = np.asarray(
+        diet.get("done") if diet.get("done") is not None else np.zeros(N), dtype=np.float64
+    )
     # A_t = candidate Bellman residual at the LOGGED (behavior) action, i.e.
     # the candidate's advantage estimate at behavior actions. The matched
     # candidate-minus-behavior estimand on the same behavior states is then the
@@ -802,8 +946,7 @@ def step_dr_values(diet, cand, gamma, qnet, temperature, cap):
     d = v + rho * A
     wsum = max(rho.sum(), PROB_FLOOR)
     est = float(np.sum(rho * d) / wsum)
-    ess_frac = float((rho.sum() ** 2) /
-                     max((rho ** 2).sum(), VAR_FLOOR) / max(N, 1))
+    ess_frac = float((rho.sum() ** 2) / max((rho**2).sum(), VAR_FLOOR) / max(N, 1))
     adv = (rho - 1.0) * A
     # Per-episode pieces so the judge can bootstrap a p-value over EPISODES
     # (correct for the ratio) for the matched advantage.
@@ -817,6 +960,13 @@ def step_dr_values(diet, cand, gamma, qnet, temperature, cap):
         adv_num.append(float(np.sum(adv[seg])))
         adv_den.append(float(len(seg)))
     adv_est = float(np.sum(adv_num) / max(np.sum(adv_den), 1e-12))
-    return {"est": est, "ess_frac": ess_frac, "clipped_frac": clipped_frac,
-            "num": num, "den": den, "adv": adv_est,
-            "adv_num": adv_num, "adv_den": adv_den}
+    return {
+        "est": est,
+        "ess_frac": ess_frac,
+        "clipped_frac": clipped_frac,
+        "num": num,
+        "den": den,
+        "adv": adv_est,
+        "adv_num": adv_num,
+        "adv_den": adv_den,
+    }

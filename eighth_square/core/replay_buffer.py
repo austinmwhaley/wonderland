@@ -1,6 +1,5 @@
 import random
 from collections import deque
-from typing import Optional
 
 import numpy as np
 import torch
@@ -30,8 +29,14 @@ class ReplayBuffer:
 
 
 class PrioritizedReplayBuffer:
-    def __init__(self, capacity: int, alpha: float = 0.6, beta: float = 0.4,
-                 beta_increment: float = 0.001, device: str = "cpu"):
+    def __init__(
+        self,
+        capacity: int,
+        alpha: float = 0.6,
+        beta: float = 0.4,
+        beta_increment: float = 0.001,
+        device: str = "cpu",
+    ):
         self.capacity = capacity
         self.alpha = alpha
         self.beta = beta
@@ -57,7 +62,7 @@ class PrioritizedReplayBuffer:
         if self.size < batch_size:
             batch_size = self.size
 
-        probs = self.priorities[:self.size] ** self.alpha
+        probs = self.priorities[: self.size] ** self.alpha
         probs /= probs.sum()
 
         indices = np.random.choice(self.size, batch_size, p=probs, replace=False)

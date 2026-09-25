@@ -1,6 +1,6 @@
 import numpy as np
 
-from ..base import BaseAgent, evaluate
+from ..base import BaseAgent
 from ..tabular.common import episode_stats
 
 
@@ -42,8 +42,11 @@ class MCTS:
 
     def _node(self, s):
         if s not in self.root:
-            self.root[s] = {"N": np.zeros(self.model.nA), "W": np.zeros(self.model.nA),
-                            "children": [None] * self.model.nA}
+            self.root[s] = {
+                "N": np.zeros(self.model.nA),
+                "W": np.zeros(self.model.nA),
+                "children": [None] * self.model.nA,
+            }
         return self.root[s]
 
     def search(self, s):
@@ -121,8 +124,9 @@ class MCTSAgent(BaseAgent):
 
     def act(self, state, eval=True):
         s = tuple(np.asarray(state, dtype=np.float32))
-        best, _ = MCTS(self.model, self.gamma, self.c, self.iterations,
-                       self.max_depth, self.rng).search(s)
+        best, _ = MCTS(
+            self.model, self.gamma, self.c, self.iterations, self.max_depth, self.rng
+        ).search(s)
         return best
 
     def train(self, env, config, tracker):

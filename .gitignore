@@ -23,6 +23,18 @@ results/
 *.safetensors
 *.onnx
 
+# run outputs / certificates (regenerable from scripts)
+verdicts/
+**/verdicts/
+
+# generated docs / scratch results
+*.html
+*.bak
+neg*.json
+
+# symlink to local-only data
+/looking_glass/data
+
 # envs / caches / logs
 .venv/
 venv/

@@ -12,6 +12,7 @@ Canonical fields:
 per the system spec). `event_attributes` is a schema-evolved JSON/attribute map
 for all remaining context.
 """
+
 from __future__ import annotations
 
 import json
@@ -34,8 +35,14 @@ COLUMN_ALIASES = {
     "event_ts": ("event_ts", "timestamp", "ts", "event_time", "event_timestamp"),
     "brand": ("brand", "brand_id"),
     "event_type": ("event_type", "type", "event_name"),
-    "event_attributes": ("event_attributes", "event_payload_json", "payload_json",
-                         "payload", "attributes", "event_payload"),
+    "event_attributes": (
+        "event_attributes",
+        "event_payload_json",
+        "payload_json",
+        "payload",
+        "attributes",
+        "event_payload",
+    ),
 }
 
 

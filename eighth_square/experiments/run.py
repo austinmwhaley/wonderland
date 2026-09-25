@@ -1,7 +1,6 @@
 import os
 import time
 
-from algorithms.base import BaseAgent
 from algorithms.registry import ALGORITHMS, check_compat
 from environments.registry import make_env
 from tracking.tracker import MetricTracker
@@ -46,6 +45,7 @@ def run_experiment(algo_name, env_name, config, run_dir, quiet=False):
 def detect_device():
     try:
         import torch
+
         return "cuda" if torch.cuda.is_available() else "cpu"
     except ImportError:
         return "cpu"

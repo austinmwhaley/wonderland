@@ -76,7 +76,6 @@ def _threshold_metrics(probs: np.ndarray, labels: np.ndarray) -> dict[str, float
     tp = float(((preds == 1) & (labels == 1)).sum())
     fp = float(((preds == 1) & (labels == 0)).sum())
     fn = float(((preds == 0) & (labels == 1)).sum())
-    tn = float(((preds == 0) & (labels == 0)).sum())
     precision = tp / max(tp + fp, 1.0)
     recall = tp / max(tp + fn, 1.0)
     f1 = (2 * precision * recall / (precision + recall)) if (precision + recall) > 0 else 0.0
@@ -179,7 +178,9 @@ class GBTBaseline:
         if len(rows) < 2:
             raise ValueError("Need at least 2 rows")
         x = _feature_matrix(rows, self.feature_fields)
-        y = np.asarray([float(r.get(self.target_field, 0.0) or 0.0) for r in rows], dtype=np.float64)
+        y = np.asarray(
+            [float(r.get(self.target_field, 0.0) or 0.0) for r in rows], dtype=np.float64
+        )
         train_idx, val_idx = _split(len(rows), self.seed, self.validation_fraction)
 
         if self.task == "classification":
@@ -202,7 +203,9 @@ class GBTBaseline:
         )
 
 
-def compare(model_metrics: dict[str, float], baseline_metrics: dict[str, float], keys: list[str]) -> dict[str, dict]:
+def compare(
+    model_metrics: dict[str, float], baseline_metrics: dict[str, float], keys: list[str]
+) -> dict[str, dict]:
     """Build a side-by-side comparison table for the headline metrics."""
 
     table: dict[str, dict] = {}

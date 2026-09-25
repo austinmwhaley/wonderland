@@ -17,11 +17,15 @@ class ACERBuffer:
 
     def push_episode(self, ep):
         obs, act, rew, done, mu = ep
-        self.episodes.append((np.asarray(obs, dtype=np.float32),
-                              np.asarray(act, dtype=np.int64),
-                              np.asarray(rew, dtype=np.float32),
-                              np.asarray(done, dtype=np.float32),
-                              np.asarray(mu, dtype=np.float32)))
+        self.episodes.append(
+            (
+                np.asarray(obs, dtype=np.float32),
+                np.asarray(act, dtype=np.int64),
+                np.asarray(rew, dtype=np.float32),
+                np.asarray(done, dtype=np.float32),
+                np.asarray(mu, dtype=np.float32),
+            )
+        )
         if len(self.episodes) > self.capacity:
             self.episodes.pop(0)
 
@@ -30,14 +34,21 @@ class ACERBuffer:
         n = len(rew)
         if n > max_len:
             start = np.random.randint(0, n - max_len + 1)
-            obs, act, rew, done, mu = (obs[start:start + max_len],
-                                       act[start:start + max_len],
-                                       rew[start:start + max_len],
-                                       done[start:start + max_len],
-                                       mu[start:start + max_len])
+            obs, act, rew, done, mu = (
+                obs[start : start + max_len],
+                act[start : start + max_len],
+                rew[start : start + max_len],
+                done[start : start + max_len],
+                mu[start : start + max_len],
+            )
         t = torch.from_numpy
-        return (t(obs).to(device), t(act).to(device), t(rew).to(device).unsqueeze(1),
-                t(done).to(device).unsqueeze(1), t(mu).to(device))
+        return (
+            t(obs).to(device),
+            t(act).to(device),
+            t(rew).to(device).unsqueeze(1),
+            t(done).to(device).unsqueeze(1),
+            t(mu).to(device),
+        )
 
     def __len__(self):
         return len(self.episodes)
@@ -82,7 +93,8 @@ class ACER(BaseAgent):
         self.target_policy.load_state_dict(self.policy.state_dict())
         self.target_q.load_state_dict(self.q.state_dict())
         self.optimizer = torch.optim.Adam(
-            list(self.policy.parameters()) + list(self.q.parameters()), lr=self.lr)
+            list(self.policy.parameters()) + list(self.q.parameters()), lr=self.lr
+        )
         self.avg_policy = DiscretePolicy(in_dim, self.hidden, self.nA).to(self.device)
         self.avg_policy.load_state_dict(self.policy.state_dict())
         self.use_trust_region = config.get("use_trust_region", True)
@@ -113,8 +125,11 @@ class ACER(BaseAgent):
         params = [p for p in self.policy.parameters() if p.requires_grad]
         g = torch.autograd.grad(policy_loss, params, retain_graph=True, allow_unused=True)
         g = [gp if gp is not None else torch.zeros_like(p) for gp, p in zip(g, params)]
-        kl = (probs_avg * (probs_avg.clamp(min=1e-8).log()
-                           - probs.clamp(min=1e-8).log())).sum(-1).mean()
+        kl = (
+            (probs_avg * (probs_avg.clamp(min=1e-8).log() - probs.clamp(min=1e-8).log()))
+            .sum(-1)
+            .mean()
+        )
         k = torch.autograd.grad(-kl, params, retain_graph=True, allow_unused=True)
         k = [kp if kp is not None else torch.zeros_like(p) for kp, p in zip(k, params)]
         kg_dot = sum((kp * gp).sum() for kp, gp in zip(k, g))
@@ -152,8 +167,9 @@ class ACER(BaseAgent):
         if self.use_trust_region:
             with torch.no_grad():
                 probs_avg = self.avg_policy(obs)
-            policy_loss, _ = self._trust_region_loss(g_loss, probs, probs_avg,
-                                                     self.trust_region_delta)
+            policy_loss, _ = self._trust_region_loss(
+                g_loss, probs, probs_avg, self.trust_region_delta
+            )
         elif self.beta_kl > 0:
             policy_loss = g_loss + self.beta_kl * self._kl(mu.detach(), probs)
         else:
@@ -195,8 +211,12 @@ class ACER(BaseAgent):
                     break
             self.buffer.push_episode((ep_obs, ep_act, ep_rew, ep_done, ep_mu))
             ep += 1
-            tracker.log(timestep=self.t, episode=ep, ret=float(sum(ep_rew)),
-                        loss=float(np.mean(losses)) if losses else None)
+            tracker.log(
+                timestep=self.t,
+                episode=ep,
+                ret=float(sum(ep_rew)),
+                loss=float(np.mean(losses)) if losses else None,
+            )
             losses = []
             for _ in range(self.n_times_replay):
                 losses.append(self._update())
@@ -204,9 +224,15 @@ class ACER(BaseAgent):
         self.episodes = ep
 
     def save(self, path):
-        torch.save({"policy": self.policy.state_dict(), "q": self.q.state_dict(),
-                    "target_policy": self.target_policy.state_dict(),
-                    "target_q": self.target_q.state_dict()}, path)
+        torch.save(
+            {
+                "policy": self.policy.state_dict(),
+                "q": self.q.state_dict(),
+                "target_policy": self.target_policy.state_dict(),
+                "target_q": self.target_q.state_dict(),
+            },
+            path,
+        )
 
     def load(self, path):
         data = torch.load(path, map_location=self.device)

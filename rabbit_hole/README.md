@@ -63,11 +63,11 @@ source_table, value`), but the five are always present. Backends by extension:
 import rabbit_hole as rh
 
 stream = rh.CustomerEventStream.load("data/duckdb/customer_event_stream.duckdb")
-for row in stream:                       # canonical rows
+for row in stream:  # canonical rows
     attrs = rh.parse_attributes(row["event_attributes"])
     ...
 
-rh.write_events("out.db", rows)          # producer -> canonical stream
+rh.write_events("out.db", rows)  # producer -> canonical stream
 ```
 
 Column names vary across sources; incoming rows are canonicalized through

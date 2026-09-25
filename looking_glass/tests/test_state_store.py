@@ -11,11 +11,13 @@ T3 = datetime(2024, 3, 1, tzinfo=timezone.utc)
 
 def _store():
     s = InMemoryStateStore(default_version="v1")
-    s.write_states([
-        StateRecord("a", T1, [1.0, 1.0], "v1"),
-        StateRecord("a", T2, [2.0, 2.0], "v1"),
-        StateRecord("a", T3, [3.0, 3.0], "v1"),
-    ])
+    s.write_states(
+        [
+            StateRecord("a", T1, [1.0, 1.0], "v1"),
+            StateRecord("a", T2, [2.0, 2.0], "v1"),
+            StateRecord("a", T3, [3.0, 3.0], "v1"),
+        ]
+    )
     return s
 
 
@@ -58,7 +60,7 @@ def test_batch_lookup():
 
 
 def test_lancedb_store_roundtrip(tmp_path):
-    lancedb = pytest.importorskip("lancedb")
+    pytest.importorskip("lancedb")
     from looking_glass import LanceDBStateStore
 
     s = LanceDBStateStore(tmp_path / "states", default_version="v1")

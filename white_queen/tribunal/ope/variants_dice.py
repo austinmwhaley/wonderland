@@ -4,6 +4,7 @@ in marginalized.mis_diagnostics — ratio learners are interchangeable parts.
 GradientDICE (Zhang et al. 2020): single-timescale saddle objective with an
 f-divergence-flavored regularizer; in practice: different stability profile,
 same contract. Earns standing the same way: diagnostics + truth proximity."""
+
 import os
 import sys
 
@@ -11,13 +12,27 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(
-    os.path.dirname(os.path.abspath(__file__))))))
+sys.path.insert(
+    0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+)
 
 
-def learn_ratio_gd(diet, cand, gamma, temperature=1.0, hidden=None, steps=None,
-                   batch=None, seed=1, lr=None, reg=None, cfg=None,
-                   cand_id=None, cache_dir=None, weights_hash=None):
+def learn_ratio_gd(
+    diet,
+    cand,
+    gamma,
+    temperature=1.0,
+    hidden=None,
+    steps=None,
+    batch=None,
+    seed=1,
+    lr=None,
+    reg=None,
+    cfg=None,
+    cand_id=None,
+    cache_dir=None,
+    weights_hash=None,
+):
     """GradientDICE-flavored: min_w max_f E[(w - g w' - (1-g)) f] - .5 f^2
     + reg * E[(w-1)^2 /2-ish anchor toward uniform]. The anchor is the
     honesty feature: ratios start at 'trust behavior' and move only on
@@ -26,6 +41,7 @@ def learn_ratio_gd(diet, cand, gamma, temperature=1.0, hidden=None, steps=None,
     from algorithms.approx.networks import MLP
     from .autotune import resolve_mis_cfg
     from .protocols import check_candidate
+
     check_candidate(cand)
     base = dict(cfg) if cfg else {}
     for k, v in (("hidden", hidden), ("batch", batch), ("seed", seed)):
@@ -41,14 +57,20 @@ def learn_ratio_gd(diet, cand, gamma, temperature=1.0, hidden=None, steps=None,
     steps, lr = ac["steps_max"], ac["lr"]
     if reg is None:
         import numpy as _np
+
         reg = 1.0 / _np.sqrt(max(len(diet["obs"]), 100))
     from .training import seed_all as _seed_all
+
     _seed_all(seed)
     rng = np.random.default_rng(seed)
     mu, sd = diet["obs"].mean(0), diet["obs"].std(0) + 1e-6
     nA = diet["nA"]
-    Z = lambda x: (np.asarray(x, dtype=np.float32) - mu) / sd
+
+    def Z(x):
+        return (np.asarray(x, dtype=np.float32) - mu) / sd
+
     from .autotune import resolve_device
+
     dev = resolve_device(ac.get("device"))
 
     def onehot(a):
@@ -64,18 +86,19 @@ def learn_ratio_gd(diet, cand, gamma, temperature=1.0, hidden=None, steps=None,
     opt_w = torch.optim.Adam(w_net.parameters(), lr=lr)
     opt_f = torch.optim.Adam(f_net.parameters(), lr=lr)
     N = len(diet["obs"])
-    s0_pool = np.stack([diet["obs"][i] for i in
-                        np.unique(diet["episode"], return_index=True)[1]])
+    s0_pool = np.stack([diet["obs"][i] for i in np.unique(diet["episode"], return_index=True)[1]])
     from .protocols import sample_actions, safe_probs
     from .training import govern
-    _P2full = safe_probs(cand.action_probs(np.asarray(diet["obs2"]),
-                                           temperature=temperature))
+
+    _P2full = safe_probs(cand.action_probs(np.asarray(diet["obs2"]), temperature=temperature))
     _P0pool = safe_probs(cand.action_probs(s0_pool, temperature=temperature))
     _ckey = None
     if cand_id is not None and cache_dir:
         from .cache import diet_hash, make_key, load as _cload
-        _ckey = make_key("gdice", diet_hash(diet), cand_id, ac, temperature,
-                         weights_hash or "noweights")
+
+        _ckey = make_key(
+            "gdice", diet_hash(diet), cand_id, ac, temperature, weights_hash or "noweights"
+        )
         _hit = _cload(cache_dir, _ckey, map_location=dev)
     else:
         _hit = None
@@ -96,17 +119,24 @@ def learn_ratio_gd(diet, cand, gamma, temperature=1.0, hidden=None, steps=None,
             a0 = sample_actions(rng, _P0pool[j])
             w = F.softplus(w_net(feat(s, a))).squeeze(1)
             with torch.no_grad():
-                w2 = F.softplus(w_net(feat(s2, a2))).squeeze(1) * (1 - torch.as_tensor(d, device=dev))
+                w2 = F.softplus(w_net(feat(s2, a2))).squeeze(1) * (
+                    1 - torch.as_tensor(d, device=dev)
+                )
             f = f_net(feat(s, a)).squeeze(1)
             f0 = f_net(feat(s0_pool[j], a0)).squeeze(1)
-            obj_f = ((w.detach() - gamma * w2) * f).mean() \
-                - (1 - gamma) * f0.mean() - 0.5 * (f ** 2).mean()
+            obj_f = (
+                ((w.detach() - gamma * w2) * f).mean()
+                - (1 - gamma) * f0.mean()
+                - 0.5 * (f**2).mean()
+            )
             opt_f.zero_grad()
             (-obj_f).backward()
             opt_f.step()
             w = F.softplus(w_net(feat(s, a))).squeeze(1)
             with torch.no_grad():
-                w2 = F.softplus(w_net(feat(s2, a2))).squeeze(1) * (1 - torch.as_tensor(d, device=dev))
+                w2 = F.softplus(w_net(feat(s2, a2))).squeeze(1) * (
+                    1 - torch.as_tensor(d, device=dev)
+                )
                 f_d = f_net(feat(s, a)).squeeze(1)
             obj_w = ((w - gamma * w2) * f_d).mean() + reg * ((w - 1.0) ** 2).mean()
             opt_w.zero_grad()
@@ -118,13 +148,17 @@ def learn_ratio_gd(diet, cand, gamma, temperature=1.0, hidden=None, steps=None,
     if _cache_hit:
         _gov = {"steps": 0, "stopped": "cache-hit"}
     else:
-        _gov = govern({"w": w_net, "f": f_net}, [opt_w, opt_f], _step, None,
-                      {"steps_max": steps, "eval_every": max(steps // 20, 100),
-                       "lr": lr, "patience": 0})
+        _gov = govern(
+            {"w": w_net, "f": f_net},
+            [opt_w, opt_f],
+            _step,
+            None,
+            {"steps_max": steps, "eval_every": max(steps // 20, 100), "lr": lr, "patience": 0},
+        )
         if _ckey is not None:
             from .cache import save as _csave
-            _csave(cache_dir, _ckey, {"w": w_net.state_dict(),
-                                      "f": f_net.state_dict()})
+
+            _csave(cache_dir, _ckey, {"w": w_net.state_dict(), "f": f_net.state_dict()})
 
     def w_fn(obs, act):
         with torch.no_grad():
@@ -132,7 +166,10 @@ def learn_ratio_gd(diet, cand, gamma, temperature=1.0, hidden=None, steps=None,
 
     with torch.no_grad():
         wall = F.softplus(w_net(feat(diet["obs"], diet["act"]))).squeeze(1).cpu().numpy()
-    info = {"mean_w": round(float(wall.mean()), 3),
-            "p99_w": round(float(np.quantile(wall, 0.99)), 2), "variant": "gradient",
-            "cache_hit": _cache_hit}
+    info = {
+        "mean_w": round(float(wall.mean()), 3),
+        "p99_w": round(float(np.quantile(wall, 0.99)), 2),
+        "variant": "gradient",
+        "cache_hit": _cache_hit,
+    }
     return w_fn, info

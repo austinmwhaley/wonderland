@@ -1,5 +1,6 @@
 """rabbit_hole acceptance: one unified stream from wide tables, realistic and
 consumable, with looking_glass pointing at rabbit_hole (no duplication)."""
+
 from rabbit_hole.acceptance import check, check_no_duplication
 
 

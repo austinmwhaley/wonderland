@@ -19,8 +19,9 @@ def _choose_action_eps_greedy(q_table, state, n_actions, epsilon):
 
 
 def train_q_learning(env: EnvWrapper, config: AlgorithmConfig) -> Result:
-    assert env.is_discrete or isinstance(env, DiscretizedEnvWrapper), \
+    assert env.is_discrete or isinstance(env, DiscretizedEnvWrapper), (
         "Q-Learning requires discrete actions and discretized states"
+    )
 
     q_table = defaultdict(lambda: np.zeros(env.action_dim))
     rewards_history = []
@@ -30,7 +31,9 @@ def train_q_learning(env: EnvWrapper, config: AlgorithmConfig) -> Result:
     total_steps = 0
     converged = False
     episodes_to_solve = None
-    tracker = PlateauTracker(config.early_stop_patience, config.early_stop_min_delta, config.solve_window)
+    tracker = PlateauTracker(
+        config.early_stop_patience, config.early_stop_min_delta, config.solve_window
+    )
 
     pbar = tqdm(range(config.max_episodes), desc=config.algo_name, unit="ep", leave=False)
     for episode in pbar:
@@ -49,8 +52,11 @@ def train_q_learning(env: EnvWrapper, config: AlgorithmConfig) -> Result:
             else:
                 next_state_disc = next_state
 
-            best_next = np.max([q_table[next_state_disc][a] for a in range(env.action_dim)]) \
-                if not done else 0.0
+            best_next = (
+                np.max([q_table[next_state_disc][a] for a in range(env.action_dim)])
+                if not done
+                else 0.0
+            )
             td_target = reward + config.gamma * best_next
             td_error = td_target - q_table[state][action_idx]
             q_table[state][action_idx] += config.lr * td_error
@@ -67,7 +73,7 @@ def train_q_learning(env: EnvWrapper, config: AlgorithmConfig) -> Result:
         losses.append(float(abs(td_error)))
 
         if len(rewards_history) >= config.solve_window:
-            avg = np.mean(rewards_history[-config.solve_window:])
+            avg = np.mean(rewards_history[-config.solve_window :])
             pbar.set_postfix({"avg100": f"{avg:.1f}", "eps": f"{epsilon:.3f}"})
             if config.is_solved(avg) and not converged:
                 converged = True
@@ -94,8 +100,9 @@ def train_q_learning(env: EnvWrapper, config: AlgorithmConfig) -> Result:
 
 
 def train_sarsa(env: EnvWrapper, config: AlgorithmConfig) -> Result:
-    assert env.is_discrete or isinstance(env, DiscretizedEnvWrapper), \
+    assert env.is_discrete or isinstance(env, DiscretizedEnvWrapper), (
         "SARSA requires discrete actions and discretized states"
+    )
 
     q_table = defaultdict(lambda: np.zeros(env.action_dim))
     rewards_history = []
@@ -105,7 +112,9 @@ def train_sarsa(env: EnvWrapper, config: AlgorithmConfig) -> Result:
     total_steps = 0
     converged = False
     episodes_to_solve = None
-    tracker = PlateauTracker(config.early_stop_patience, config.early_stop_min_delta, config.solve_window)
+    tracker = PlateauTracker(
+        config.early_stop_patience, config.early_stop_min_delta, config.solve_window
+    )
 
     pbar = tqdm(range(config.max_episodes), desc=config.algo_name, unit="ep", leave=False)
     for episode in pbar:
@@ -124,8 +133,12 @@ def train_sarsa(env: EnvWrapper, config: AlgorithmConfig) -> Result:
             else:
                 next_state_disc = next_state
 
-            next_action = _choose_action_eps_greedy(q_table, next_state_disc, env.action_dim, epsilon)
-            td_target = reward + (0.0 if done else config.gamma * q_table[next_state_disc][next_action])
+            next_action = _choose_action_eps_greedy(
+                q_table, next_state_disc, env.action_dim, epsilon
+            )
+            td_target = reward + (
+                0.0 if done else config.gamma * q_table[next_state_disc][next_action]
+            )
             td_error = td_target - q_table[state][action]
             q_table[state][action] += config.lr * td_error
 
@@ -142,7 +155,7 @@ def train_sarsa(env: EnvWrapper, config: AlgorithmConfig) -> Result:
         losses.append(float(abs(td_error)))
 
         if len(rewards_history) >= config.solve_window:
-            avg = np.mean(rewards_history[-config.solve_window:])
+            avg = np.mean(rewards_history[-config.solve_window :])
             pbar.set_postfix({"avg100": f"{avg:.1f}", "eps": f"{epsilon:.3f}"})
             if config.is_solved(avg) and not converged:
                 converged = True
@@ -169,8 +182,9 @@ def train_sarsa(env: EnvWrapper, config: AlgorithmConfig) -> Result:
 
 
 def train_expected_sarsa(env: EnvWrapper, config: AlgorithmConfig) -> Result:
-    assert env.is_discrete or isinstance(env, DiscretizedEnvWrapper), \
+    assert env.is_discrete or isinstance(env, DiscretizedEnvWrapper), (
         "Expected SARSA requires discrete actions and discretized states"
+    )
 
     q_table = defaultdict(lambda: np.zeros(env.action_dim))
     rewards_history = []
@@ -180,7 +194,9 @@ def train_expected_sarsa(env: EnvWrapper, config: AlgorithmConfig) -> Result:
     total_steps = 0
     converged = False
     episodes_to_solve = None
-    tracker = PlateauTracker(config.early_stop_patience, config.early_stop_min_delta, config.solve_window)
+    tracker = PlateauTracker(
+        config.early_stop_patience, config.early_stop_min_delta, config.solve_window
+    )
 
     pbar = tqdm(range(config.max_episodes), desc=config.algo_name, unit="ep", leave=False)
     for episode in pbar:
@@ -227,7 +243,7 @@ def train_expected_sarsa(env: EnvWrapper, config: AlgorithmConfig) -> Result:
         losses.append(float(abs(td_error)))
 
         if len(rewards_history) >= config.solve_window:
-            avg = np.mean(rewards_history[-config.solve_window:])
+            avg = np.mean(rewards_history[-config.solve_window :])
             pbar.set_postfix({"avg100": f"{avg:.1f}", "eps": f"{epsilon:.3f}"})
             if config.is_solved(avg) and not converged:
                 converged = True

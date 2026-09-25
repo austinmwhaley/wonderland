@@ -12,8 +12,10 @@ class AZNet(nn.Module):
     def __init__(self, obs_dim, n_actions, hidden=64):
         super().__init__()
         self.shared = nn.Sequential(
-            nn.Linear(obs_dim, hidden), nn.ReLU(),
-            nn.Linear(hidden, hidden), nn.ReLU(),
+            nn.Linear(obs_dim, hidden),
+            nn.ReLU(),
+            nn.Linear(hidden, hidden),
+            nn.ReLU(),
         )
         self.p_head = nn.Linear(hidden, n_actions)
         self.v_head = nn.Linear(hidden, 1)
@@ -28,8 +30,18 @@ class AlphaZero:
     evaluation by the value net blended with a real model rollout, visit-count
     backup. Operates on an EnvModel (real environment)."""
 
-    def __init__(self, model, net, device, cpuct=2.0, iterations=100, max_depth=60,
-                 tau_horizon=5, rollout_depth=15, rng=None):
+    def __init__(
+        self,
+        model,
+        net,
+        device,
+        cpuct=2.0,
+        iterations=100,
+        max_depth=60,
+        tau_horizon=5,
+        rollout_depth=15,
+        rng=None,
+    ):
         self.model = model
         self.net = net
         self.device = device
@@ -45,10 +57,17 @@ class AlphaZero:
         if s not in self.root:
             with torch.no_grad():
                 logits, v = self.net(
-                    torch.as_tensor(np.asarray(s, dtype=np.float32), device=self.device).unsqueeze(0))
-            node = {"N": np.zeros(self.model.nA), "W": np.zeros(self.model.nA),
-                    "P": torch.softmax(logits, dim=1)[0].cpu().numpy(),
-                    "v": float(v[0, 0]), "children": [None] * self.model.nA}
+                    torch.as_tensor(np.asarray(s, dtype=np.float32), device=self.device).unsqueeze(
+                        0
+                    )
+                )
+            node = {
+                "N": np.zeros(self.model.nA),
+                "W": np.zeros(self.model.nA),
+                "P": torch.softmax(logits, dim=1)[0].cpu().numpy(),
+                "v": float(v[0, 0]),
+                "children": [None] * self.model.nA,
+            }
             self.root[s] = node
         return self.root[s]
 
@@ -157,9 +176,17 @@ class AlphaZeroAgent(BaseAgent):
         self.buffer = []
 
     def act(self, state, eval=True):
-        az = AlphaZero(EnvModel(self.env), self.net, self.device, self.cpuct,
-                       self.iterations, self.max_depth, self.tau_horizon,
-                       self.rollout_depth, self.rng)
+        az = AlphaZero(
+            EnvModel(self.env),
+            self.net,
+            self.device,
+            self.cpuct,
+            self.iterations,
+            self.max_depth,
+            self.tau_horizon,
+            self.rollout_depth,
+            self.rng,
+        )
         az.gamma = self.gamma
         a, _ = az.search(state)
         return a
@@ -194,9 +221,17 @@ class AlphaZeroAgent(BaseAgent):
                 ret = 0.0
                 t = 0
                 done = False
-            az = AlphaZero(model, self.net, self.device, self.cpuct,
-                           self.iterations, self.max_depth, self.tau_horizon,
-                           self.rollout_depth, self.rng)
+            az = AlphaZero(
+                model,
+                self.net,
+                self.device,
+                self.cpuct,
+                self.iterations,
+                self.max_depth,
+                self.tau_horizon,
+                self.rollout_depth,
+                self.rng,
+            )
             az.gamma = self.gamma
             a, pi = az.search(state)
             ns, r, term, trunc, _ = env.step(a)
@@ -214,9 +249,15 @@ class AlphaZeroAgent(BaseAgent):
         self.net.train()
         idx = self.rng.integers(0, len(self.buffer), size=batch_size)
         batch = [self.buffer[i] for i in idx]
-        s = torch.as_tensor(np.stack([b[0] for b in batch]), dtype=torch.float32, device=self.device)
-        pi = torch.as_tensor(np.stack([b[1] for b in batch]), dtype=torch.float32, device=self.device)
-        z = torch.as_tensor(np.array([b[2] for b in batch]), dtype=torch.float32, device=self.device).unsqueeze(1)
+        s = torch.as_tensor(
+            np.stack([b[0] for b in batch]), dtype=torch.float32, device=self.device
+        )
+        pi = torch.as_tensor(
+            np.stack([b[1] for b in batch]), dtype=torch.float32, device=self.device
+        )
+        z = torch.as_tensor(
+            np.array([b[2] for b in batch]), dtype=torch.float32, device=self.device
+        ).unsqueeze(1)
         logits, v = self.net(s)
         self.optimizer.zero_grad()
         loss = -torch.sum(pi * F.log_softmax(logits, dim=1), dim=1).mean() + F.mse_loss(v, z)

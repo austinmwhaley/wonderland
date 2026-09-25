@@ -52,22 +52,28 @@ def test_vector_sum_adds_multiple():
         "product_id": lambda eid: [1.0, 1.0] if eid == "a" else None,
     }
     schema = PayloadSchema(categorical_fields=[], numeric_fields=[], vector_id_keys=["product_id"])
-    parsed = parse_event_payload({"product_id": "a"}, schema, vector_lookups=lookup, default_vector_width=2)
+    parsed = parse_event_payload(
+        {"product_id": "a"}, schema, vector_lookups=lookup, default_vector_width=2
+    )
     assert parsed.combined_vector == [1.0, 1.0]
 
 
 def test_missing_entity_id_is_zero_vector():
     lookup = {"product_id": lambda eid: None}
-    parsed = parse_event_payload(
-        {}, _TEST_SCHEMA, vector_lookups=lookup, default_vector_width=4
-    )
+    parsed = parse_event_payload({}, _TEST_SCHEMA, vector_lookups=lookup, default_vector_width=4)
     assert parsed.combined_vector == [0.0, 0.0, 0.0, 0.0]
 
 
 def test_collect_payload_vocabularies():
     rows = [
-        {"event_type": "purchase", "event_payload_json": {"payment_method": "card", "device": "ios"}},
-        {"event_type": "view", "event_payload_json": {"payment_method": "paypal", "device": "android"}},
+        {
+            "event_type": "purchase",
+            "event_payload_json": {"payment_method": "card", "device": "ios"},
+        },
+        {
+            "event_type": "view",
+            "event_payload_json": {"payment_method": "paypal", "device": "android"},
+        },
     ]
     schema = PayloadSchema(categorical_fields=["payment_method", "device"], numeric_fields=[])
     vocabs = collect_payload_vocabularies(rows, schema)

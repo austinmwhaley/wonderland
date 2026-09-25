@@ -10,13 +10,18 @@ from ..tabular.common import episode_stats
 class VAE(nn.Module):
     def __init__(self, obs_dim, z_dim=8, hidden=64):
         super().__init__()
-        self.encoder = nn.Sequential(nn.Linear(obs_dim, hidden), nn.ReLU(),
-                                     nn.Linear(hidden, hidden), nn.ReLU())
+        self.encoder = nn.Sequential(
+            nn.Linear(obs_dim, hidden), nn.ReLU(), nn.Linear(hidden, hidden), nn.ReLU()
+        )
         self.mu = nn.Linear(hidden, z_dim)
         self.logvar = nn.Linear(hidden, z_dim)
-        self.decoder = nn.Sequential(nn.Linear(z_dim, hidden), nn.ReLU(),
-                                     nn.Linear(hidden, hidden), nn.ReLU(),
-                                     nn.Linear(hidden, obs_dim))
+        self.decoder = nn.Sequential(
+            nn.Linear(z_dim, hidden),
+            nn.ReLU(),
+            nn.Linear(hidden, hidden),
+            nn.ReLU(),
+            nn.Linear(hidden, obs_dim),
+        )
 
     def encode(self, x):
         h = self.encoder(x)
@@ -46,16 +51,17 @@ class MDNRNN(nn.Module):
         self.n_mix = n_mix
         self.rnn = nn.GRUCell(hidden, hidden)
         self.in_proj = nn.Linear(z_dim + n_actions, hidden)
-        self.z_out = nn.Sequential(nn.Linear(hidden, hidden), nn.ReLU(),
-                                   nn.Linear(hidden, n_mix * (2 * z_dim + 1)))
+        self.z_out = nn.Sequential(
+            nn.Linear(hidden, hidden), nn.ReLU(), nn.Linear(hidden, n_mix * (2 * z_dim + 1))
+        )
 
     def forward(self, z, a, h):
         a_oh = F.one_hot(a, self.n_actions).to(z.dtype)
         h = self.rnn(self.in_proj(torch.cat([z, a_oh], dim=1)), h)
         out = self.z_out(h)
-        logits = out[:, :self.n_mix]
-        mus = out[:, self.n_mix:self.n_mix * (self.z_dim + 1)].view(-1, self.n_mix, self.z_dim)
-        logvars = out[:, self.n_mix * (self.z_dim + 1):].view(-1, self.n_mix, self.z_dim)
+        logits = out[:, : self.n_mix]
+        mus = out[:, self.n_mix : self.n_mix * (self.z_dim + 1)].view(-1, self.n_mix, self.z_dim)
+        logvars = out[:, self.n_mix * (self.z_dim + 1) :].view(-1, self.n_mix, self.z_dim)
         return h, logits, mus, logvars
 
     def loss(self, z, a, z_next, h):
@@ -63,7 +69,9 @@ class MDNRNN(nn.Module):
         pi = F.softmax(logits, dim=1)
         logvar = logvars.clamp(-10, 10)
         diff = z_next.unsqueeze(1) - mus
-        log_gauss = (-0.5 * ((diff.pow(2) / logvar.exp()).sum(2) + (logvar.sum(2) + self.z_dim * np.log(2 * np.pi))))
+        log_gauss = -0.5 * (
+            (diff.pow(2) / logvar.exp()).sum(2) + (logvar.sum(2) + self.z_dim * np.log(2 * np.pi))
+        )
         log_mix = torch.logsumexp(torch.log(pi.clamp_min(1e-8)) + log_gauss, dim=1)
         return -log_mix.mean(), h
 
@@ -147,16 +155,17 @@ class WorldModelsAgent(BaseAgent):
             z, acts, z_next = ep
             if len(z) > 30:
                 i = self.rng.integers(0, len(z) - 29)
-                z, acts, z_next = z[i:i + 30], acts[i:i + 30], z_next[i:i + 30]
+                z, acts, z_next = z[i : i + 30], acts[i : i + 30], z_next[i : i + 30]
             z_t = torch.as_tensor(z[:-1], device=self.device)
             a_t = torch.as_tensor(np.array(acts), device=self.device)
             zn = torch.as_tensor(z_next, device=self.device)
             loss = torch.zeros((), device=self.device)
             h = torch.zeros(1, 64, device=self.device)
             for t in range(len(z_t)):
-                l, h = self.mdn.loss(z_t[t].unsqueeze(0), a_t[t].unsqueeze(0),
-                                     zn[t].unsqueeze(0), h)
-                loss = loss + l
+                loss_t, h = self.mdn.loss(
+                    z_t[t].unsqueeze(0), a_t[t].unsqueeze(0), zn[t].unsqueeze(0), h
+                )
+                loss = loss + loss_t
             self.opt_mdn.zero_grad()
             (loss / len(z_t)).backward()
             self.opt_mdn.step()
@@ -179,17 +188,20 @@ class WorldModelsAgent(BaseAgent):
                     ret = 0.0
                     g = 1.0
                     for _ in range(horizon):
-                        logits = torch.as_tensor(z @ torch.as_tensor(W, dtype=z.dtype), device=z.device)
+                        logits = torch.as_tensor(
+                            z @ torch.as_tensor(W, dtype=z.dtype), device=z.device
+                        )
                         a = int(torch.argmax(logits).item())
-                        z, h = self.mdn.sample_next(z, torch.as_tensor([a], device=self.device),
-                                                    h, self.rng)
+                        z, h = self.mdn.sample_next(
+                            z, torch.as_tensor([a], device=self.device), h, self.rng
+                        )
                         ret += g * 1.0
                         g *= 0.99
                         done = float(torch.abs(z[2]).item()) > 0.5
                         if done:
                             break
                     scores[i] = ret
-            elite = np.argsort(scores)[-int(n_samples * elite_frac):]
+            elite = np.argsort(scores)[-int(n_samples * elite_frac) :]
             mean = weights[elite].mean(axis=0)
             cov = np.cov(weights[elite], rowvar=False) + 1e-3 * np.eye(self.z_dim * self.n_actions)
         return mean.reshape(self.z_dim, self.n_actions)
@@ -200,10 +212,12 @@ class WorldModelsAgent(BaseAgent):
         self.dataset = episodes
         obs_all = np.stack([e[0] for ep in episodes for e in ep])
         self._train_vae(obs_all)
-        avg_loss = self._train_mdn(episodes)
-        W = self._cem(n_samples=config.get("wm_cem_samples", 64),
-                      n_iter=config.get("wm_cem_iter", 12),
-                      horizon=config.get("wm_horizon", 40))
+        self._train_mdn(episodes)
+        W = self._cem(
+            n_samples=config.get("wm_cem_samples", 64),
+            n_iter=config.get("wm_cem_iter", 12),
+            horizon=config.get("wm_horizon", 40),
+        )
         self.controller = torch.as_tensor(W, dtype=torch.float32, device=self.device)
         ep = 0
         for _ in range(config.get("eval_episodes", 10)):
@@ -229,8 +243,14 @@ class WorldModelsAgent(BaseAgent):
         return int(torch.argmax(logits).item())
 
     def save(self, path):
-        torch.save({"vae": self.vae.state_dict(), "mdn": self.mdn.state_dict(),
-                    "controller": self.controller.cpu()}, path)
+        torch.save(
+            {
+                "vae": self.vae.state_dict(),
+                "mdn": self.mdn.state_dict(),
+                "controller": self.controller.cpu(),
+            },
+            path,
+        )
 
     def load(self, path):
         ckpt = torch.load(path, map_location=self.device)

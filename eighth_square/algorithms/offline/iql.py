@@ -3,7 +3,7 @@ import torch
 import torch.nn.functional as F
 
 from ..base import BaseAgent, evaluate
-from ..approx.networks import Critic, DiscretePolicy, MLP
+from ..approx.networks import DiscretePolicy, MLP
 from ..deep.networks import QNetwork
 from .common import collect_transitions, train_behavior
 
@@ -38,7 +38,9 @@ class IQL(BaseAgent):
         self.V_target = MLP(in_dim, self.hidden, 1).to(self.device)
         self.V_target.load_state_dict(self.V.state_dict())
         self.policy = DiscretePolicy(in_dim, self.hidden, self.nA).to(self.device)
-        self.q_opt = torch.optim.Adam(list(self.Q.parameters()) + list(self.V.parameters()), lr=self.lr)
+        self.q_opt = torch.optim.Adam(
+            list(self.Q.parameters()) + list(self.V.parameters()), lr=self.lr
+        )
         self.p_opt = torch.optim.Adam(self.policy.parameters(), lr=self.lr)
         self.q_opt_clip = config.get("q_opt_clip", 5.0)
         self.v_clip = config.get("v_clip", 1_000.0)
@@ -46,7 +48,11 @@ class IQL(BaseAgent):
 
     def act(self, state, eval=True):
         with torch.no_grad():
-            logits = self.policy(torch.as_tensor(np.asarray(state, dtype=np.float32), device=self.device).unsqueeze(0))
+            logits = self.policy(
+                torch.as_tensor(np.asarray(state, dtype=np.float32), device=self.device).unsqueeze(
+                    0
+                )
+            )
             return int(logits.argmax().item())
 
     def _update(self):
@@ -54,15 +60,20 @@ class IQL(BaseAgent):
         q = self.Q(obs).gather(1, act.unsqueeze(1))
         v = self.V(obs)
         with torch.no_grad():
-            target = rew + self.gamma * (1 - done) * self.V_target(obs2).clamp(-self.v_clip, self.v_clip)
+            target = rew + self.gamma * (1 - done) * self.V_target(obs2).clamp(
+                -self.v_clip, self.v_clip
+            )
         diff = q.detach() - v
-        w = torch.where(diff > 0, torch.full_like(diff, self.tau),
-                        torch.full_like(diff, 1.0 - self.tau))
+        w = torch.where(
+            diff > 0, torch.full_like(diff, self.tau), torch.full_like(diff, 1.0 - self.tau)
+        )
         l_q = F.smooth_l1_loss(q, target)
-        l_v = (w * diff ** 2).mean()
+        l_v = (w * diff**2).mean()
         self.q_opt.zero_grad()
         (l_q + l_v).backward()
-        torch.nn.utils.clip_grad_norm_(list(self.Q.parameters()) + list(self.V.parameters()), self.q_opt_clip)
+        torch.nn.utils.clip_grad_norm_(
+            list(self.Q.parameters()) + list(self.V.parameters()), self.q_opt_clip
+        )
         self.q_opt.step()
         for ps, pt in zip(self.V.parameters(), self.V_target.parameters()):
             pt.data.mul_(1 - self.v_tau).add_(ps.data, alpha=self.v_tau)
@@ -81,8 +92,14 @@ class IQL(BaseAgent):
 
     def train(self, env, config, tracker):
         behavior = train_behavior(env, config, self.rng)
-        self.buffer = collect_transitions(env, behavior, config.get("dataset_size", 40_000),
-                                          config.get("collect_eps", 0.1), self.rng, self.device)
+        self.buffer = collect_transitions(
+            env,
+            behavior,
+            config.get("dataset_size", 40_000),
+            config.get("collect_eps", 0.1),
+            self.rng,
+            self.device,
+        )
         self.t = 0
         losses = []
         while self.t < config["steps"]:
@@ -92,13 +109,21 @@ class IQL(BaseAgent):
                 tracker.log(timestep=self.t, loss=float(np.mean(losses)))
                 losses = []
             if self.t % self.eval_freq == 0:
-                tracker.log(timestep=self.t, eval_return=float(evaluate(self, env, self.eval_episodes)))
+                tracker.log(
+                    timestep=self.t, eval_return=float(evaluate(self, env, self.eval_episodes))
+                )
         self.episodes = self.t
 
     def save(self, path):
-        torch.save({"Q": self.Q.state_dict(), "V": self.V.state_dict(),
-                    "V_target": self.V_target.state_dict(),
-                    "policy": self.policy.state_dict()}, path)
+        torch.save(
+            {
+                "Q": self.Q.state_dict(),
+                "V": self.V.state_dict(),
+                "V_target": self.V_target.state_dict(),
+                "policy": self.policy.state_dict(),
+            },
+            path,
+        )
 
     def load(self, path):
         data = torch.load(path, map_location=self.device)

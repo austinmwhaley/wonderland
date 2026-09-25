@@ -1,0 +1,13 @@
+# Runtime dependencies for wonderland.
+# GENERATED-STYLE MIRROR of pyproject.toml [project].dependencies — keep in sync.
+numpy
+torch
+scipy
+scikit-learn
+polars
+pyarrow
+duckdb
+tqdm
+gymnasium
+matplotlib
+lancedb

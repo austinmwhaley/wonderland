@@ -12,14 +12,20 @@ class MuZeroNet(nn.Module):
         super().__init__()
         self.n_actions = n_actions
         self.representation = nn.Sequential(
-            nn.Linear(obs_dim, hidden), nn.ReLU(), nn.Linear(hidden, latent))
+            nn.Linear(obs_dim, hidden), nn.ReLU(), nn.Linear(hidden, latent)
+        )
         self.dynamics = nn.Sequential(
-            nn.Linear(latent + n_actions, hidden), nn.ReLU(),
-            nn.Linear(hidden, hidden), nn.ReLU(),
-            nn.Linear(hidden, latent + 2))
+            nn.Linear(latent + n_actions, hidden),
+            nn.ReLU(),
+            nn.Linear(hidden, hidden),
+            nn.ReLU(),
+            nn.Linear(hidden, latent + 2),
+        )
         self.prediction = nn.Sequential(
-            nn.Linear(latent, hidden), nn.ReLU(),
-            nn.Linear(hidden, hidden), nn.ReLU(),
+            nn.Linear(latent, hidden),
+            nn.ReLU(),
+            nn.Linear(hidden, hidden),
+            nn.ReLU(),
         )
         self.p_head = nn.Linear(hidden, n_actions)
         self.v_head = nn.Linear(hidden, 1)
@@ -28,7 +34,6 @@ class MuZeroNet(nn.Module):
         return self.representation(obs)
 
     def step(self, h, a):
-        batch = h.shape[0]
         a_oh = F.one_hot(a, self.n_actions).to(h.dtype)
         out = self.dynamics(torch.cat([h, a_oh], dim=1))
         h2, r, d = out[:, :-2], out[:, -2:-1], out[:, -1:]
@@ -62,11 +67,15 @@ class MuZero:
         if key not in self.root:
             with torch.no_grad():
                 logits, v = self.net.predict(h.unsqueeze(0))
-            node = {"h": h.detach(), "N": np.zeros(self.net.n_actions),
-                    "W": np.zeros(self.net.n_actions),
-                    "R": np.zeros(self.net.n_actions),
-                    "P": torch.softmax(logits, dim=1)[0].cpu().numpy(),
-                    "v": float(v[0, 0]), "children": [None] * self.net.n_actions}
+            node = {
+                "h": h.detach(),
+                "N": np.zeros(self.net.n_actions),
+                "W": np.zeros(self.net.n_actions),
+                "R": np.zeros(self.net.n_actions),
+                "P": torch.softmax(logits, dim=1)[0].cpu().numpy(),
+                "v": float(v[0, 0]),
+                "children": [None] * self.net.n_actions,
+            }
             self.root[key] = node
         return self.root[key]
 
@@ -143,8 +152,9 @@ class MuZeroAgent(BaseAgent):
         self.device = torch.device(config.get("device", "cpu"))
         obs_dim = env.observation_space.shape[0]
         self.n_actions = int(env.action_space.n)
-        self.net = MuZeroNet(obs_dim, self.n_actions,
-                             latent=config.get("mz_latent", 16)).to(self.device)
+        self.net = MuZeroNet(obs_dim, self.n_actions, latent=config.get("mz_latent", 16)).to(
+            self.device
+        )
         self.optimizer = torch.optim.Adam(self.net.parameters(), lr=config.get("lr", 3e-4))
         self.gamma = config.get("gamma", 0.99)
         self.iterations = config.get("mz_iterations", 40)
@@ -154,10 +164,19 @@ class MuZeroAgent(BaseAgent):
 
     def act(self, state, eval=True):
         self.net.eval()
-        h = self.net.initial(torch.as_tensor(state, dtype=torch.float32, device=self.device).unsqueeze(0))
+        h = self.net.initial(
+            torch.as_tensor(state, dtype=torch.float32, device=self.device).unsqueeze(0)
+        )
         with torch.no_grad():
-            a, _ = MuZero(self.net, self.device, self.gamma, self.cpuct, self.iterations,
-                          self.max_depth, self.rng).search(h)
+            a, _ = MuZero(
+                self.net,
+                self.device,
+                self.gamma,
+                self.cpuct,
+                self.iterations,
+                self.max_depth,
+                self.rng,
+            ).search(h)
             a = self._real_lookahead(state, a)
         return a
 
@@ -176,7 +195,9 @@ class MuZeroAgent(BaseAgent):
                 env.steps_beyond_terminated = 0
             s2, r, term, trunc, _ = env.step(a)
             with torch.no_grad():
-                h2 = self.net.initial(torch.as_tensor(s2, dtype=torch.float32, device=self.device).unsqueeze(0))
+                h2 = self.net.initial(
+                    torch.as_tensor(s2, dtype=torch.float32, device=self.device).unsqueeze(0)
+                )
                 _, v2 = self.net.predict(h2)
             q[a] = float(r) + (0.0 if term else self.gamma * float(v2[0, 0]))
         env.state = np.array(saved, copy=True)
@@ -219,10 +240,19 @@ class MuZeroAgent(BaseAgent):
                 t = 0
                 done = False
             self.net.eval()
-            h = self.net.initial(torch.as_tensor(state, dtype=torch.float32, device=self.device).unsqueeze(0))
+            h = self.net.initial(
+                torch.as_tensor(state, dtype=torch.float32, device=self.device).unsqueeze(0)
+            )
             with torch.no_grad():
-                a, pi = MuZero(self.net, self.device, self.gamma, self.cpuct, self.iterations,
-                               self.max_depth, self.rng).search(h)
+                a, pi = MuZero(
+                    self.net,
+                    self.device,
+                    self.gamma,
+                    self.cpuct,
+                    self.iterations,
+                    self.max_depth,
+                    self.rng,
+                ).search(h)
                 a = self._real_lookahead(state, a)
             ns, r, term, trunc, _ = env.step(a)
             done = bool(term or trunc)
@@ -239,24 +269,38 @@ class MuZeroAgent(BaseAgent):
         self.net.train()
         idx = self.rng.integers(0, len(self.buffer), size=batch_size)
         batch = [self.buffer[i] for i in idx]
-        s = torch.as_tensor(np.stack([b[0] for b in batch]), dtype=torch.float32, device=self.device)
+        s = torch.as_tensor(
+            np.stack([b[0] for b in batch]), dtype=torch.float32, device=self.device
+        )
         a = torch.as_tensor(np.array([b[1] for b in batch]), dtype=torch.long, device=self.device)
-        pi = torch.as_tensor(np.stack([b[2] for b in batch]), dtype=torch.float32, device=self.device)
-        r = torch.as_tensor(np.array([b[3] for b in batch]), dtype=torch.float32, device=self.device).unsqueeze(1)
-        z = torch.as_tensor(np.array([b[4] for b in batch]), dtype=torch.float32, device=self.device).unsqueeze(1)
-        s_next = torch.as_tensor(np.stack([b[5] for b in batch]), dtype=torch.float32, device=self.device)
-        d = torch.as_tensor(np.array([b[6] for b in batch], dtype=np.float32), device=self.device).unsqueeze(1)
+        pi = torch.as_tensor(
+            np.stack([b[2] for b in batch]), dtype=torch.float32, device=self.device
+        )
+        r = torch.as_tensor(
+            np.array([b[3] for b in batch]), dtype=torch.float32, device=self.device
+        ).unsqueeze(1)
+        z = torch.as_tensor(
+            np.array([b[4] for b in batch]), dtype=torch.float32, device=self.device
+        ).unsqueeze(1)
+        s_next = torch.as_tensor(
+            np.stack([b[5] for b in batch]), dtype=torch.float32, device=self.device
+        )
+        d = torch.as_tensor(
+            np.array([b[6] for b in batch], dtype=np.float32), device=self.device
+        ).unsqueeze(1)
         h = self.net.initial(s)
         h2, r_hat, d_hat = self.net.step(h, a)
         logits, v = self.net.predict(h)
         with torch.no_grad():
             h_next = self.net.initial(s_next)
         self.optimizer.zero_grad()
-        loss = (-torch.sum(pi * F.log_softmax(logits, dim=1), dim=1).mean()
-                + F.mse_loss(v, z)
-                + F.mse_loss(r_hat, r)
-                + F.binary_cross_entropy_with_logits(d_hat, d)
-                + config.get("mz_consistency", 1.0) * F.mse_loss(h2, h_next))
+        loss = (
+            -torch.sum(pi * F.log_softmax(logits, dim=1), dim=1).mean()
+            + F.mse_loss(v, z)
+            + F.mse_loss(r_hat, r)
+            + F.binary_cross_entropy_with_logits(d_hat, d)
+            + config.get("mz_consistency", 1.0) * F.mse_loss(h2, h_next)
+        )
         loss.backward()
         self.optimizer.step()
 

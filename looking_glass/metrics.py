@@ -16,8 +16,12 @@ import numpy as np
 
 
 def _as_arrays(scores: object, labels: object) -> tuple[np.ndarray, np.ndarray]:
-    score_arr = np.asarray(list(scores) if not isinstance(scores, np.ndarray) else scores, dtype=np.float64)
-    label_arr = np.asarray(list(labels) if not isinstance(labels, np.ndarray) else labels, dtype=np.float64)
+    score_arr = np.asarray(
+        list(scores) if not isinstance(scores, np.ndarray) else scores, dtype=np.float64
+    )
+    label_arr = np.asarray(
+        list(labels) if not isinstance(labels, np.ndarray) else labels, dtype=np.float64
+    )
     if score_arr.shape != label_arr.shape:
         raise ValueError(f"scores and labels must align: {score_arr.shape} vs {label_arr.shape}")
     if score_arr.ndim != 1:

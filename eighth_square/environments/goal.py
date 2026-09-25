@@ -32,7 +32,9 @@ class PointReach:
 
     def step(self, action):
         a = int(action) - 1
-        self.x = np.clip(self.x + self.force * a + self._rng.normal(0.0, self.noise), self.low, self.high)
+        self.x = np.clip(
+            self.x + self.force * a + self._rng.normal(0.0, self.noise), self.low, self.high
+        )
         self._elapsed_steps += 1
         reached = abs(self.x - self.goal) < self.goal_tol
         term = bool(reached)

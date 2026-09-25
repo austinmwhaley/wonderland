@@ -4,8 +4,13 @@ import torch.nn.functional as F
 
 from ..base import BaseAgent
 from .networks import (
-    Critic, DiscretePolicy, GaussianPolicy, kl_discrete, kl_gaussian,
-    flat_params, set_params,
+    Critic,
+    DiscretePolicy,
+    GaussianPolicy,
+    kl_discrete,
+    kl_gaussian,
+    flat_params,
+    set_params,
 )
 
 
@@ -30,9 +35,13 @@ class TRPO(BaseAgent):
         if self.discrete:
             self.policy = DiscretePolicy(in_dim, hidden, int(env.action_space.n)).to(self.device)
         else:
-            self.policy = GaussianPolicy(in_dim, hidden, int(env.action_space.shape[0])).to(self.device)
+            self.policy = GaussianPolicy(in_dim, hidden, int(env.action_space.shape[0])).to(
+                self.device
+            )
         self.critic = Critic(in_dim, hidden).to(self.device)
-        self.critic_opt = torch.optim.Adam(self.critic.parameters(), lr=config.get("critic_lr", 1e-3))
+        self.critic_opt = torch.optim.Adam(
+            self.critic.parameters(), lr=config.get("critic_lr", 1e-3)
+        )
 
     def _batch(self, obs):
         return torch.as_tensor(np.asarray(obs, dtype=np.float32), device=self.device)
@@ -98,9 +107,13 @@ class TRPO(BaseAgent):
             advantages.insert(0, adv)
             returns.insert(0, G)
         self.episodes, self.ep_ret, self.t_global = ep, ep_ret, t_global
-        return (torch.cat(obs_buf), torch.cat(act_buf), torch.cat(lp_buf).detach(),
-                torch.as_tensor(returns, dtype=torch.float32, device=self.device).unsqueeze(1),
-                torch.as_tensor(advantages, dtype=torch.float32, device=self.device).unsqueeze(1))
+        return (
+            torch.cat(obs_buf),
+            torch.cat(act_buf),
+            torch.cat(lp_buf).detach(),
+            torch.as_tensor(returns, dtype=torch.float32, device=self.device).unsqueeze(1),
+            torch.as_tensor(advantages, dtype=torch.float32, device=self.device).unsqueeze(1),
+        )
 
     def _surrogate(self, obs_t, act_t, lp_old, adv_t):
         if self.discrete:
@@ -149,7 +162,7 @@ class TRPO(BaseAgent):
             old_params = flat_params(self.policy)
             loss_old = loss.item()
             for i in range(self.max_backtracks):
-                alpha = 0.5 ** i
+                alpha = 0.5**i
                 set_params(self.policy, old_params + alpha * step_dir)
                 kl_new = self._kl(obs_t).item()
                 loss_new, _ = self._surrogate(obs_t, act_t, lp_old, adv_t)
@@ -163,8 +176,11 @@ class TRPO(BaseAgent):
                 self.critic_opt.zero_grad()
                 F.mse_loss(v, ret_t).backward()
                 self.critic_opt.step()
-            tracker.log(timestep=self.t_global, episode=self.episodes,
-                        loss=float(max(loss_new - loss_old, 0.0)))
+            tracker.log(
+                timestep=self.t_global,
+                episode=self.episodes,
+                loss=float(max(loss_new - loss_old, 0.0)),
+            )
         self.episodes = self.episodes
 
     @staticmethod

@@ -7,6 +7,7 @@ truncation horizons + pure DM, combined by bootstrap-covariance min-variance
 weights (diagonal-shrinkage for stability). Horizons autotuned from episode-
 length quantiles; B/alpha/shrinkage derived from n. Nothing hardcoded.
 """
+
 import numpy as np
 
 from .autotune import VAR_FLOOR, resolve_bootstrap
@@ -49,9 +50,20 @@ def wdr_values(diet, cand, gamma, qnet, temperature, cap, alive_frac=None):
     return vals
 
 
-def magic_lite(diet, cand, gamma, qnet, temperature, cap, horizons=None,
-               B=None, shrink=None, seed=0, ci_alpha=None,
-               spread_factor=None):
+def magic_lite(
+    diet,
+    cand,
+    gamma,
+    qnet,
+    temperature,
+    cap,
+    horizons=None,
+    B=None,
+    shrink=None,
+    seed=0,
+    ci_alpha=None,
+    spread_factor=None,
+):
     """Partial-horizon DR estimates + DM, min-variance combined via bootstrap
     covariance. Returns (est, weights, horizon_labels, ci, dropped).
 
@@ -60,6 +72,7 @@ def magic_lite(diet, cand, gamma, qnet, temperature, cap, horizons=None,
     spread_factor=None -> max(10, sqrt(n)) x healthiest spread.
     """
     from .autotune import resolve_magic_horizons
+
     eps = episodes(diet)
     n = len(eps)
     if horizons is None:
@@ -80,7 +93,7 @@ def magic_lite(diet, cand, gamma, qnet, temperature, cap, horizons=None,
         T = t["T"]
         G[i, -1] = t["v0"]
         for j, h in enumerate(Hs):
-            G[i, j] = t["v0"] + float(np.sum(t["corr"][:min(h, T)]))
+            G[i, j] = t["v0"] + float(np.sum(t["corr"][: min(h, T)]))
     rng = np.random.default_rng(seed)
     n = len(eps)
     boots = np.array([G[rng.integers(0, n, n)].mean(0) for _ in range(B)])
@@ -99,8 +112,7 @@ def magic_lite(diet, cand, gamma, qnet, temperature, cap, horizons=None,
         draws = boots[:, keep_idx[0]]
     else:
         cov1d = np.cov(boots[:, keep].T)
-        cov = cov1d + shrink * np.eye(keep.sum()) * (
-            np.trace(cov1d) / max(keep.sum(), 1))
+        cov = cov1d + shrink * np.eye(keep.sum()) * (np.trace(cov1d) / max(keep.sum(), 1))
         try:
             w = np.linalg.solve(cov, np.ones(keep.sum()))
             w = w / w.sum()
@@ -108,7 +120,13 @@ def magic_lite(diet, cand, gamma, qnet, temperature, cap, horizons=None,
             w = np.full(keep.sum(), 1.0 / max(keep.sum(), 1))
         draws = boots[:, keep] @ w
     lo, hi = np.quantile(draws, [alpha_a / 2, 1 - alpha_a / 2])
-    full_w = [round(float(w[list(keep_idx).index(i)]), 3) if keep[i] else 0.0
-              for i in range(G.shape[1])]
-    return (float(w @ Gs.mean(0)), full_w, labels + ["DM"],
-            (round(float(lo), 1), round(float(hi), 1)), dropped)
+    full_w = [
+        round(float(w[list(keep_idx).index(i)]), 3) if keep[i] else 0.0 for i in range(G.shape[1])
+    ]
+    return (
+        float(w @ Gs.mean(0)),
+        full_w,
+        labels + ["DM"],
+        (round(float(lo), 1), round(float(hi), 1)),
+        dropped,
+    )

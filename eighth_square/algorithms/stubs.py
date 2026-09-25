@@ -12,12 +12,16 @@ STUBS = {}
 
 
 def make_stub(name, description, source, action_space, state_space, family, policy):
-    return type(name, (StubAlgorithm,), {
-        "family": family,
-        "policy": policy,
-        "action_space": action_space,
-        "state_space": state_space,
-        "source": source,
-        "description": description,
-        "name": name,
-    })
+    return type(
+        name,
+        (StubAlgorithm,),
+        {
+            "family": family,
+            "policy": policy,
+            "action_space": action_space,
+            "state_space": state_space,
+            "source": source,
+            "description": description,
+            "name": name,
+        },
+    )

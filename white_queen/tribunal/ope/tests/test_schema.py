@@ -1,4 +1,5 @@
 """Declared source-schema adapter tests."""
+
 import numpy as np
 
 from white_queen.tribunal.ope import schema as S
@@ -37,8 +38,7 @@ def test_unknown_layout_returns_none():
 
 
 def test_register_custom_schema():
-    ad = S.SchemaAdapter("toy", lambda c: "f0" in c,
-                         lambda c: ["f0", "f1"], None, exclude=["meta"])
+    ad = S.SchemaAdapter("toy", lambda c: "f0" in c, lambda c: ["f0", "f1"], None, exclude=["meta"])
     S.register_schema(ad, overwrite=True)
     roles = S.detect_schema({"f0": [1], "f1": [2], "meta": [3]})
     assert roles["context"] == ["f0", "f1"]

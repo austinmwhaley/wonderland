@@ -54,19 +54,22 @@ class CooperativeBalanceDeliver:
     def _obs(self):
         x, x_dot, theta, theta_dot = self.state
         goal_delta = (self.goal_x - x) / self.world_width
-        return np.array([x / self.world_width, x_dot, theta, theta_dot, goal_delta],
-                        dtype=np.float64)
+        return np.array(
+            [x / self.world_width, x_dot, theta, theta_dot, goal_delta], dtype=np.float64
+        )
 
     def step(self, actions):
         a1, a2 = int(actions[0]), int(actions[1])
-        force = (self.force_mag if a1 == 1 else -self.force_mag) + \
-                (self.force_mag if a2 == 1 else -self.force_mag)
+        force = (self.force_mag if a1 == 1 else -self.force_mag) + (
+            self.force_mag if a2 == 1 else -self.force_mag
+        )
         x, x_dot, theta, theta_dot = self.state
         costheta = np.cos(theta)
         sintheta = np.sin(theta)
         temp = (force + self.polemass_length * theta_dot * theta_dot * sintheta) / self.total_mass
         thetaacc = (self.gravity * sintheta - costheta * temp) / (
-            self.length * (4.0 / 3.0 - self.masspole * costheta * costheta / self.total_mass))
+            self.length * (4.0 / 3.0 - self.masspole * costheta * costheta / self.total_mass)
+        )
         xacc = temp - self.polemass_length * thetaacc * costheta / self.total_mass
         x_dot = x_dot + self.tau * xacc
         x = x + self.tau * x_dot
@@ -75,9 +78,12 @@ class CooperativeBalanceDeliver:
         self.state = np.array((x, x_dot, theta, theta_dot), dtype=np.float64)
         self.steps += 1
         delivered = abs(x - self.goal_x) < 0.5 and abs(theta) < self.theta_threshold_radians
-        terminated = bool(x < -self.x_threshold or x > self.x_threshold
-                          or theta < -self.theta_threshold_radians
-                          or theta > self.theta_threshold_radians)
+        terminated = bool(
+            x < -self.x_threshold
+            or x > self.x_threshold
+            or theta < -self.theta_threshold_radians
+            or theta > self.theta_threshold_radians
+        )
         truncated = self.steps >= self.max_episode_steps
         # shared reward: encourage progress toward goal while balanced, speed reward on delivery
         goal_delta = abs(x - self.goal_x)
@@ -87,8 +93,13 @@ class CooperativeBalanceDeliver:
         if delivered:
             r += 5.0
         o = self._obs()
-        return (o.copy(), o.copy()), r, terminated, truncated, \
-            {"goal_delta": goal_delta, "theta": theta, "delivered": delivered}
+        return (
+            (o.copy(), o.copy()),
+            r,
+            terminated,
+            truncated,
+            {"goal_delta": goal_delta, "theta": theta, "delivered": delivered},
+        )
 
     @property
     def unwrapped(self):

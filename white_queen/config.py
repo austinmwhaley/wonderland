@@ -31,9 +31,9 @@ QUICK_LOOK = {
     "verdict_dir": str(VERDICTS / "quick"),
     # Colony: {roster_key: episodes_per_seed} — roster rows live in colony/roster.py.
     "collect_episodes": 40,
-    "collect_eps": 0.15,          # colony-level epsilon mixture (exact analytic probs)
-    "dqn_train_steps": 30_000,    # birth->mastery compressed for quick-look
-    "pg_train_steps": 30_000,     # PPO/A2C budget
+    "collect_eps": 0.15,  # colony-level epsilon mixture (exact analytic probs)
+    "dqn_train_steps": 30_000,  # birth->mastery compressed for quick-look
+    "pg_train_steps": 30_000,  # PPO/A2C budget
     "checkpoint_fracs": (0.05, 0.5, 1.0),  # birth / mid / expert from ONE run each
     # Tribunal
     "offline_steps": 10_000,

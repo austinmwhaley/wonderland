@@ -6,15 +6,19 @@ def _classification_rows(n=200):
     for i in range(n):
         positive = i % 2 == 0
         x = 5.0 + i * 0.01 if positive else -5.0 - i * 0.01
-        rows.append({"customer_id": f"c{i}", "x": x, "noise": (i % 7), "churn_label": 1.0 if positive else 0.0})
+        rows.append(
+            {
+                "customer_id": f"c{i}",
+                "x": x,
+                "noise": (i % 7),
+                "churn_label": 1.0 if positive else 0.0,
+            }
+        )
     return rows
 
 
 def _regression_rows(n=200):
-    return [
-        {"customer_id": f"c{i}", "x": float(i), "value_label": 3.0 * i + 2.0}
-        for i in range(n)
-    ]
+    return [{"customer_id": f"c{i}", "x": float(i), "value_label": 3.0 * i + 2.0} for i in range(n)]
 
 
 def test_baseline_implementation_name():

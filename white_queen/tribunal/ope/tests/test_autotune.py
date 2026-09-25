@@ -2,6 +2,7 @@
 
 No torch needed. Run: pytest white_queen/tribunal/ope/tests -q
 """
+
 import numpy as np
 
 from white_queen.tribunal.ope import autotune as A
@@ -123,6 +124,7 @@ def test_legacy_meta_warns():
     import warnings
     from white_queen.tribunal.ope import estimators as E
     import numpy as np
+
     rng = np.random.default_rng(0)
     d = {"obs": rng.normal(size=(200, 4)).astype(np.float32)}
     with warnings.catch_warnings(record=True) as w:
@@ -136,6 +138,7 @@ def test_legacy_meta_warns():
 
 def test_steps_scale_with_horizon():
     from white_queen.tribunal.ope.autotune import _shared_net_cfg
+
     small = _shared_net_cfg(1500, 4, 2, None, gamma=0.99)
     big = _shared_net_cfg(153064, 4, 2, None, gamma=0.99)
     # Long-horizon toy from the asymptote probe (gamma .9933 -> H=150):

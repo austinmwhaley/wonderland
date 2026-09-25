@@ -37,14 +37,22 @@ class OfflineBuffer:
 
     def sample(self, batch):
         idx = self.rng.integers(0, self.n, size=batch)
-        to = lambda x: torch.as_tensor(x, dtype=torch.float32, device=self.device)
-        return (to(self.obs[idx]), torch.as_tensor(self.act[idx], dtype=torch.long, device=self.device),
-                to(self.rew[idx]).unsqueeze(1), to(self.obs2[idx]),
-                to(self.done[idx]).unsqueeze(1))
+
+        def to(x):
+            return torch.as_tensor(x, dtype=torch.float32, device=self.device)
+
+        return (
+            to(self.obs[idx]),
+            torch.as_tensor(self.act[idx], dtype=torch.long, device=self.device),
+            to(self.rew[idx]).unsqueeze(1),
+            to(self.obs2[idx]),
+            to(self.done[idx]).unsqueeze(1),
+        )
 
 
 def train_behavior(env, config, rng):
     from ..deep.dqn import DQN
+
     cfg = dict(config)
     cfg["steps"] = config.get("behavior_steps", 20_000)
     cfg["buffer_size"] = max(config.get("behavior_steps", 20_000) * 2, 10_000)
@@ -94,7 +102,11 @@ def collect_episodes(env, agent, n_steps, eps=0.1, rng=None):
             state = ns if not done else env.reset()[0]
             step += 1
         if ep_obs:
-            episodes.append((np.asarray(ep_obs, dtype=np.float32),
-                             np.asarray(ep_act, dtype=np.int64),
-                             np.asarray(ep_rew, dtype=np.float32)))
+            episodes.append(
+                (
+                    np.asarray(ep_obs, dtype=np.float32),
+                    np.asarray(ep_act, dtype=np.int64),
+                    np.asarray(ep_rew, dtype=np.float32),
+                )
+            )
     return episodes

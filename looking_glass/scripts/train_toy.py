@@ -14,7 +14,7 @@ import argparse
 import json
 import sqlite3
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from pathlib import Path
 
 if str(Path(__file__).parent.parent) not in sys.path:
@@ -56,14 +56,16 @@ def load_events(db: Path) -> list[dict]:
             val = float(val or 0.0)
         except (TypeError, ValueError):
             val = 0.0
-        events.append({
-            "event_id": f"ev_{i:08d}",
-            "customer_id": r["customer_key"],
-            "event_ts": r["event_ts"],
-            "event_type": r["event_type"],
-            "event_payload_json": payload,
-            "value": val,
-        })
+        events.append(
+            {
+                "event_id": f"ev_{i:08d}",
+                "customer_id": r["customer_key"],
+                "event_ts": r["event_ts"],
+                "event_type": r["event_type"],
+                "event_payload_json": payload,
+                "value": val,
+            }
+        )
     events.sort(key=lambda e: (e["customer_id"], e["event_ts"], e["event_id"]))
     return events
 
@@ -136,15 +138,24 @@ def main() -> None:
 
     agg_feats = [f for f in frame.feature_fields if f != "distinct_active_days"]
     ltv = create_supervised_model(
-        task="regression", id_field="customer_id", target_field="value_label",
-        categorical_fields=[], numeric_fields=agg_feats,
+        task="regression",
+        id_field="customer_id",
+        target_field="value_label",
+        categorical_fields=[],
+        numeric_fields=agg_feats,
         vector_fields=["core_last_vector"],
-        hidden_dim=HIDDEN_DIM, epochs=args.head_epochs, seed=17,
-        validation_fraction=0.25, device="cpu", sequence_backend="mamba2",
+        hidden_dim=HIDDEN_DIM,
+        epochs=args.head_epochs,
+        seed=17,
+        validation_fraction=0.25,
+        device="cpu",
+        sequence_backend="mamba2",
     )
     res = ltv.fit_predict(frame.rows)
-    print(f"   LTV R2={res.report.metrics.get('r2'):.3f} "
-          f"RMSE={res.report.metrics.get('rmse'):.2f} n={len(res.predictions)}")
+    print(
+        f"   LTV R2={res.report.metrics.get('r2'):.3f} "
+        f"RMSE={res.report.metrics.get('rmse'):.2f} n={len(res.predictions)}"
+    )
 
     # ---- 3. inference: new decision date, same frozen vectors ----
     # Prod would recompute S_c(INFER_AS_OF) via daily job; toy reuses
@@ -167,14 +178,18 @@ def main() -> None:
     # keep only rows that have a vector (customer existed at encoder time)
     scored = [r for r in iframe.rows if "core_last_vector" in r]
     preds = ltv.predict(scored)
-    print(f"   scored {len(preds)}/{len(iframe.rows)} customers "
-          f"(rest are new since encoder freeze -> need recompute in prod)")
+    print(
+        f"   scored {len(preds)}/{len(iframe.rows)} customers "
+        f"(rest are new since encoder freeze -> need recompute in prod)"
+    )
     for k in list(preds)[:5]:
         print(f"   {k}: {preds[k]:.2f}")
 
     # leakage check: no training label used future events in input
-    print("leakage guard: encoder input <= decision <= label window -- enforced by "
-          "cutoff + build_outcomes as_of. PASS")
+    print(
+        "leakage guard: encoder input <= decision <= label window -- enforced by "
+        "cutoff + build_outcomes as_of. PASS"
+    )
 
 
 if __name__ == "__main__":

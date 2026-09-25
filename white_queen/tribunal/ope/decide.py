@@ -14,11 +14,12 @@ hand-tuned witness count:
   * Otherwise the trajectory weighting must be covered (ESS floor); the pair
     may then include proxy estimates corroborated by an independent source.
 """
+
 from __future__ import annotations
 
 import math
 
-from .contracts import estimates_from_row, independent_pairs, S_WEIGHTING
+from .contracts import estimates_from_row, independent_pairs
 
 
 def _finite(v, default=None):
@@ -30,9 +31,11 @@ def _finite(v, default=None):
 
 
 def _pair_str(a, b):
-    return (f"{a.name}({a.value:.1f}, lo "
-            f"{(a.lo if a.lo is not None else a.value):.1f}) + "
-            f"{b.name}({b.value:.1f})")
+    return (
+        f"{a.name}({a.value:.1f}, lo "
+        f"{(a.lo if a.lo is not None else a.value):.1f}) + "
+        f"{b.name}({b.value:.1f})"
+    )
 
 
 def coverage(row, min_ess):
@@ -51,16 +54,24 @@ def decide(row, bar, min_ess, behavior_mean=None):
 
     if dep_pairs:
         a, b = dep_pairs[0]
-        rule = ("superiority: independent deployable witnesses agree "
-                f"({a.name} ∥ {b.name})")
-        return {"deploy": True, "rule": rule, "evidence": evidence,
-                "covered": True, "estimates": est}
+        rule = f"superiority: independent deployable witnesses agree ({a.name} ∥ {b.name})"
+        return {
+            "deploy": True,
+            "rule": rule,
+            "evidence": evidence,
+            "covered": True,
+            "estimates": est,
+        }
     if cov_pairs:
         a, b = cov_pairs[0]
-        rule = ("superiority: independent sources agree on covered weights "
-                f"({a.name} ∥ {b.name})")
-        return {"deploy": True, "rule": rule, "evidence": evidence,
-                "covered": True, "estimates": est}
+        rule = f"superiority: independent sources agree on covered weights ({a.name} ∥ {b.name})"
+        return {
+            "deploy": True,
+            "rule": rule,
+            "evidence": evidence,
+            "covered": True,
+            "estimates": est,
+        }
 
     # ---- HOLD, with a reason that says what was missing -------------------
     unreliable = [e for e in est if not e.reliable]
@@ -68,10 +79,11 @@ def decide(row, bar, min_ess, behavior_mean=None):
         why = "; ".join(f"{e.name}: {e.reason}" for e in unreliable[:3])
         rule = f"HOLD: estimate not trustworthy ({why})"
     elif not covered:
-        rule = ("HOLD: insufficient coverage (trajectory ESS "
-                f"{ess if ess is not None else float('nan'):.3f} < {min_ess}) "
-                "and the deployable witnesses disagree")
+        rule = (
+            "HOLD: insufficient coverage (trajectory ESS "
+            f"{ess if ess is not None else float('nan'):.3f} < {min_ess}) "
+            "and the deployable witnesses disagree"
+        )
     else:
         rule = "HOLD: cannot reject 'not better than behaviour'"
-    return {"deploy": False, "rule": rule, "evidence": [], "covered": covered,
-            "estimates": est}
+    return {"deploy": False, "rule": rule, "evidence": [], "covered": covered, "estimates": est}

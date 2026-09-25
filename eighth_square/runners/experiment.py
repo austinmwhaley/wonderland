@@ -1,7 +1,5 @@
 import copy
 import multiprocessing
-import os
-import time
 import traceback
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import asdict
@@ -12,18 +10,42 @@ import gymnasium as gym
 from algorithms.base import Result
 from algorithms.registry import CONTINUOUS_ALGOS, TABULAR_ALGOS, get_algorithm
 from core.config import ALGO_DEFAULTS, ENV_DEFAULTS, AlgorithmConfig, EnvConfig
-from environments.base import DiscretizedEnvWrapper, OneHotEnvWrapper, make_env
+from environments.base import make_env
 
 
-INT_PARAMS = {"early_stop_patience", "early_stop_min_delta", "solve_window",
-              "max_episodes", "max_steps_per_episode", "batch_size",
-              "ppo_epochs", "ppo_mini_batch_size", "rollout_steps",
-              "target_update_freq", "buffer_capacity", "min_buffer_size",
-              "n_discretization_bins", "seed", "log_interval"}
-FLOAT_PARAMS = {"lr", "gamma", "epsilon_start", "epsilon_end", "epsilon_decay",
-                "tau", "ppo_clip", "ppo_entropy_coef", "ppo_value_coef",
-                "gae_lambda", "sac_alpha", "kl_target", "kl_beta",
-                "sac_auto_alpha"}
+INT_PARAMS = {
+    "early_stop_patience",
+    "early_stop_min_delta",
+    "solve_window",
+    "max_episodes",
+    "max_steps_per_episode",
+    "batch_size",
+    "ppo_epochs",
+    "ppo_mini_batch_size",
+    "rollout_steps",
+    "target_update_freq",
+    "buffer_capacity",
+    "min_buffer_size",
+    "n_discretization_bins",
+    "seed",
+    "log_interval",
+}
+FLOAT_PARAMS = {
+    "lr",
+    "gamma",
+    "epsilon_start",
+    "epsilon_end",
+    "epsilon_decay",
+    "tau",
+    "ppo_clip",
+    "ppo_entropy_coef",
+    "ppo_value_coef",
+    "gae_lambda",
+    "sac_alpha",
+    "kl_target",
+    "kl_beta",
+    "sac_auto_alpha",
+}
 
 
 def _is_obs_discrete(env_name: str) -> bool:
@@ -48,7 +70,9 @@ def run_experiment(
 ) -> Result:
     if algo_config is None:
         base_name = algo_name.split(" (")[0]
-        algo_config = copy.deepcopy(ALGO_DEFAULTS.get(base_name, AlgorithmConfig(algo_name=algo_name)))
+        algo_config = copy.deepcopy(
+            ALGO_DEFAULTS.get(base_name, AlgorithmConfig(algo_name=algo_name))
+        )
     else:
         algo_config = copy.deepcopy(algo_config)
         algo_config.algo_name = algo_name
@@ -70,14 +94,18 @@ def run_experiment(
 
     if base_name in CONTINUOUS_ALGOS and not env.is_continuous:
         env.close()
-        raise ValueError(f"{algo_name} requires a continuous action space, but {env_name} is discrete.")
+        raise ValueError(
+            f"{algo_name} requires a continuous action space, but {env_name} is discrete."
+        )
 
     try:
         print(f"  [{algo_name}] running on {env_name}...")
         result = train_fn(env, algo_config)
-        print(f"  [{algo_name}] done. Converged: {result.converged}, "
-              f"Episodes to solve: {result.episodes_to_solve}, "
-              f"Time: {result.wall_time:.1f}s")
+        print(
+            f"  [{algo_name}] done. Converged: {result.converged}, "
+            f"Episodes to solve: {result.episodes_to_solve}, "
+            f"Time: {result.wall_time:.1f}s"
+        )
         return result
     except Exception as e:
         print(f"  [{algo_name}] FAILED: {e}")
@@ -111,8 +139,14 @@ def parse_variants(variant_str: str) -> list[tuple[str, AlgorithmConfig]]:
             continue
         if ":" not in spec:
             algo_name = spec
-            variants.append((algo_name, copy.deepcopy(
-                ALGO_DEFAULTS.get(algo_name, AlgorithmConfig(algo_name=algo_name)))))
+            variants.append(
+                (
+                    algo_name,
+                    copy.deepcopy(
+                        ALGO_DEFAULTS.get(algo_name, AlgorithmConfig(algo_name=algo_name))
+                    ),
+                )
+            )
             continue
         algo_name, params_str = spec.split(":", 1)
         base = copy.deepcopy(ALGO_DEFAULTS.get(algo_name, AlgorithmConfig(algo_name=algo_name)))
@@ -140,19 +174,19 @@ def parse_sweep(sweep_str: str) -> list[tuple[str, AlgorithmConfig]]:
         depth = 0
         current = []
         for ch in params_str:
-            if ch == '[':
+            if ch == "[":
                 depth += 1
                 current.append(ch)
-            elif ch == ']':
+            elif ch == "]":
                 depth -= 1
                 current.append(ch)
-            elif ch == ',' and depth == 0:
-                param_specs.append(''.join(current).strip())
+            elif ch == "," and depth == 0:
+                param_specs.append("".join(current).strip())
                 current = []
             else:
                 current.append(ch)
         if current:
-            param_specs.append(''.join(current).strip())
+            param_specs.append("".join(current).strip())
 
         parsed_params = []
         for ps in param_specs:
@@ -201,10 +235,12 @@ def _build_experiment_list(
             specs = parse_variants(variants_str)
         else:
             specs = []
-            for algo_name in (algo_names or []):
+            for algo_name in algo_names or []:
                 if algo_name in CONTINUOUS_ALGOS and not is_cont:
                     continue
-                cfg = copy.deepcopy(ALGO_DEFAULTS.get(algo_name, AlgorithmConfig(algo_name=algo_name)))
+                cfg = copy.deepcopy(
+                    ALGO_DEFAULTS.get(algo_name, AlgorithmConfig(algo_name=algo_name))
+                )
                 specs.append((algo_name, cfg))
 
         for label, cfg in specs:
@@ -230,6 +266,7 @@ def run_all_algorithms(
 ) -> dict[str, dict[str, Result]]:
     if algo_names is None and variants_str is None and sweep_str is None:
         from algorithms.registry import list_algorithms
+
         algo_names = list_algorithms()
 
     experiments = _build_experiment_list(

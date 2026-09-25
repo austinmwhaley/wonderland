@@ -1,6 +1,7 @@
 """Agnostic data adapter tests: any source -> canonical, both modes.
 CPU, no torch (except the estimation test). Run: pytest .../tests/test_data.py -q
 """
+
 import numpy as np
 import pytest
 
@@ -20,6 +21,7 @@ def _raw_bandit(n=200, d=4, nA=3, seed=0):
 
 def test_dict_bandit_canonicalizes():
     from white_queen.tribunal.ope.data import to_canonical
+
     d = to_canonical(_raw_bandit(), columns={"context": ["c0", "c1", "c2", "c3"]})
     assert d["mode"] == "bandit"
     assert d["N"] == 200 and d["nA"] == 3 and d["obs"].shape == (200, 4)
@@ -31,6 +33,7 @@ def test_dict_bandit_canonicalizes():
 
 def test_alias_and_inference():
     from white_queen.tribunal.ope.data import to_canonical
+
     raw = _raw_bandit()
     raw["a"] = raw.pop("action")
     raw["r"] = raw.pop("reward")
@@ -44,6 +47,7 @@ def test_arrow_polars_pandas_duckdb_equivalent():
     import polars as pl
     import duckdb
     from white_queen.tribunal.ope.data import to_canonical
+
     raw = _raw_bandit()
     ctx = ["c0", "c1", "c2", "c3"]
     cols = {"context": ctx}
@@ -64,16 +68,21 @@ def test_arrow_polars_pandas_duckdb_equivalent():
 
 def test_sequential_mode_infers_episode_and_t():
     from white_queen.tribunal.ope.data import to_canonical
+
     rng = np.random.default_rng(0)
     T, n_ep, d = 5, 40, 3
     N = T * n_ep
     obs = rng.normal(size=(N, d)).astype(np.float32)
     done = np.zeros(N, dtype=np.float32)
-    done[T - 1::T] = 1.0
-    raw = {"obs": obs, "act": rng.integers(0, 2, N),
-           "rew": rng.normal(size=N).astype(np.float32),
-           "next_obs": obs, "done": done,
-           "propensity": rng.uniform(0.2, 0.8, N).astype(np.float32)}
+    done[T - 1 :: T] = 1.0
+    raw = {
+        "obs": obs,
+        "act": rng.integers(0, 2, N),
+        "rew": rng.normal(size=N).astype(np.float32),
+        "next_obs": obs,
+        "done": done,
+        "propensity": rng.uniform(0.2, 0.8, N).astype(np.float32),
+    }
     d = to_canonical(raw)
     assert d["mode"] == "rl"
     assert len(np.unique(d["episode"])) == n_ep
@@ -82,11 +91,14 @@ def test_sequential_mode_infers_episode_and_t():
 
 def test_missing_propensity_estimated():
     from white_queen.tribunal.ope.data import to_canonical
+
     raw = _raw_bandit(n=600)
     raw.pop("propensity")
-    d = to_canonical(raw, columns={"context": ["c0", "c1", "c2", "c3"]},
-                     behavior_cfg={"steps_max": 200, "device": "cpu",
-                                   "hidden": 32, "batch": 64})
+    d = to_canonical(
+        raw,
+        columns={"context": ["c0", "c1", "c2", "c3"]},
+        behavior_cfg={"steps_max": 200, "device": "cpu", "hidden": 32, "batch": 64},
+    )
     assert d["provenance"]["propensity"] == "estimated"
     assert (d["mu_take"] > 0).all() and (d["mu_take"] <= 1).all()
     assert d["mu"] is not None and d["mu"].shape == (600, 3)
@@ -94,11 +106,11 @@ def test_missing_propensity_estimated():
 
 def test_missing_propensity_raises_when_disabled():
     from white_queen.tribunal.ope.data import to_canonical
+
     raw = _raw_bandit()
     raw.pop("propensity")
     with pytest.raises(ValueError, match="propensity"):
-        to_canonical(raw, columns={"context": ["c0", "c1", "c2", "c3"]},
-                     estimate_propensity=False)
+        to_canonical(raw, columns={"context": ["c0", "c1", "c2", "c3"]}, estimate_propensity=False)
 
 
 def test_prefixed_obs_group_and_behavior_metadata_excluded():
@@ -108,6 +120,7 @@ def test_prefixed_obs_group_and_behavior_metadata_excluded():
     # (c) NOT sweep next-state/metadata into the context (which caused an
     # 11-dim context and leaked the next state into training).
     from white_queen.tribunal.ope.data import to_canonical
+
     n = 60
     rng = np.random.default_rng(0)
     raw = {}

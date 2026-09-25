@@ -38,7 +38,9 @@ def train_cem(env: EnvWrapper, config: AlgorithmConfig) -> Result:
     total_steps = 0
     converged = False
     episodes_to_solve = None
-    tracker = PlateauTracker(config.early_stop_patience, config.early_stop_min_delta, config.solve_window)
+    tracker = PlateauTracker(
+        config.early_stop_patience, config.early_stop_min_delta, config.solve_window
+    )
 
     pbar = tqdm(range(config.max_episodes), desc=config.algo_name, unit="ep", leave=False)
     for episode in pbar:
@@ -67,8 +69,13 @@ def train_cem(env: EnvWrapper, config: AlgorithmConfig) -> Result:
                 for step in range(config.max_steps_per_episode):
                     total_steps += 1
                     state_flat = state.flatten()
-                    scores = np.array([action_weights[a] * (state_flat[a % len(state_flat)] if a < len(state_flat) else 0)
-                                       for a in range(param_dim)])
+                    scores = np.array(
+                        [
+                            action_weights[a]
+                            * (state_flat[a % len(state_flat)] if a < len(state_flat) else 0)
+                            for a in range(param_dim)
+                        ]
+                    )
                     action = int(np.argmax(scores)) % min(action_dim, max(1, len(scores)))
                     next_state, reward, terminated, truncated, _ = env.step(action)
                     done = terminated or truncated
@@ -95,7 +102,7 @@ def train_cem(env: EnvWrapper, config: AlgorithmConfig) -> Result:
         losses.append(np.mean(episode_rewards_pop))
 
         if len(rewards_history) >= config.solve_window:
-            avg = np.mean(rewards_history[-config.solve_window:])
+            avg = np.mean(rewards_history[-config.solve_window :])
             pbar.set_postfix({"avg100": f"{avg:.1f}"})
             if config.is_solved(avg) and not converged:
                 converged = True

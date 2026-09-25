@@ -4,21 +4,27 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from ..approx.networks import MLP, GaussianPolicy
+from ..approx.networks import GaussianPolicy
 
 
 class NoisyLinear(nn.Module):
     def __init__(self, in_features, out_features, sigma0=0.5):
         super().__init__()
         self.mu_w = nn.Parameter(torch.empty(out_features, in_features))
-        self.sigma_w = nn.Parameter(torch.full((out_features, in_features), sigma0 / math.sqrt(in_features)))
+        self.sigma_w = nn.Parameter(
+            torch.full((out_features, in_features), sigma0 / math.sqrt(in_features))
+        )
         self.mu_b = nn.Parameter(torch.empty(out_features))
         self.sigma_b = nn.Parameter(torch.full((out_features,), sigma0 / math.sqrt(in_features)))
         self.reset()
 
     def reset(self):
-        nn.init.uniform_(self.mu_w, -1 / math.sqrt(self.mu_w.size(1)), 1 / math.sqrt(self.mu_w.size(1)))
-        nn.init.uniform_(self.mu_b, -1 / math.sqrt(self.mu_w.size(1)), 1 / math.sqrt(self.mu_w.size(1)))
+        nn.init.uniform_(
+            self.mu_w, -1 / math.sqrt(self.mu_w.size(1)), 1 / math.sqrt(self.mu_w.size(1))
+        )
+        nn.init.uniform_(
+            self.mu_b, -1 / math.sqrt(self.mu_w.size(1)), 1 / math.sqrt(self.mu_w.size(1))
+        )
 
     def forward(self, x):
         if self.training:
@@ -39,12 +45,16 @@ class QNetwork(nn.Module):
         self.out_heads = out_heads
         Lin = NoisyLinear if noisy else nn.Linear
         self.features = nn.Sequential(
-            nn.Linear(in_dim, hidden), nn.ReLU(),
-            nn.Linear(hidden, hidden), nn.ReLU(),
+            nn.Linear(in_dim, hidden),
+            nn.ReLU(),
+            nn.Linear(hidden, hidden),
+            nn.ReLU(),
         )
         if dueling:
             self.value = nn.Sequential(Lin(hidden, hidden), nn.ReLU(), Lin(hidden, out_heads))
-            self.advantage = nn.Sequential(Lin(hidden, hidden), nn.ReLU(), Lin(hidden, out_heads * n_actions))
+            self.advantage = nn.Sequential(
+                Lin(hidden, hidden), nn.ReLU(), Lin(hidden, out_heads * n_actions)
+            )
         else:
             self.head = Lin(hidden, out_heads * n_actions)
 
@@ -57,8 +67,11 @@ class QNetwork(nn.Module):
                 return v + a - a.mean(dim=-1, keepdim=True)
             a3 = a.view(x.size(0), self.out_heads, self.n_actions)
             return v.unsqueeze(2) + a3 - a3.mean(dim=-1, keepdim=True)
-        return self.head(h).view(x.size(0), self.out_heads, self.n_actions) if self.out_heads > 1 \
+        return (
+            self.head(h).view(x.size(0), self.out_heads, self.n_actions)
+            if self.out_heads > 1
             else self.head(h)
+        )
 
 
 class DeterministicActor(nn.Module):
@@ -66,9 +79,12 @@ class DeterministicActor(nn.Module):
         super().__init__()
         self.bound = bound
         self.net = nn.Sequential(
-            nn.Linear(in_dim, hidden), nn.ReLU(),
-            nn.Linear(hidden, hidden), nn.ReLU(),
-            nn.Linear(hidden, action_dim), nn.Tanh(),
+            nn.Linear(in_dim, hidden),
+            nn.ReLU(),
+            nn.Linear(hidden, hidden),
+            nn.ReLU(),
+            nn.Linear(hidden, action_dim),
+            nn.Tanh(),
         )
 
     def forward(self, x):

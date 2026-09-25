@@ -22,10 +22,14 @@ class ActorCritic(BaseAgent):
         if self.discrete:
             self.policy = DiscretePolicy(in_dim, hidden, int(env.action_space.n)).to(self.device)
         else:
-            self.policy = GaussianPolicy(in_dim, hidden, int(env.action_space.shape[0])).to(self.device)
+            self.policy = GaussianPolicy(in_dim, hidden, int(env.action_space.shape[0])).to(
+                self.device
+            )
         self.critic = Critic(in_dim, hidden).to(self.device)
         self.actor_opt = torch.optim.Adam(self.policy.parameters(), lr=config.get("lr", 1e-3))
-        self.critic_opt = torch.optim.Adam(self.critic.parameters(), lr=config.get("critic_lr", 1e-3))
+        self.critic_opt = torch.optim.Adam(
+            self.critic.parameters(), lr=config.get("critic_lr", 1e-3)
+        )
         self.entropy_coef = config.get("entropy_coef", 0.01)
 
     def _to_tensor(self, state):
@@ -86,8 +90,12 @@ class ActorCritic(BaseAgent):
                 ret += r
                 t_global += 1
             ep += 1
-            tracker.log(timestep=t_global, episode=ep, ret=ret,
-                        loss=float(np.mean(losses)) if losses else None)
+            tracker.log(
+                timestep=t_global,
+                episode=ep,
+                ret=ret,
+                loss=float(np.mean(losses)) if losses else None,
+            )
             losses = []
         self.episodes = ep
 

@@ -1,6 +1,7 @@
 """Judge tests: decision logic, truth-blindness, simulator operating point,
 v9 anchor backtest. Numpy only, instant. Run: pytest .../tests/test_judge.py -q
 """
+
 import numpy as np
 
 from white_queen.tribunal.ope import judge as J
@@ -9,19 +10,36 @@ BEH, STD = 50.0, 20.0
 GATE = {"rel_edge_std": 0.5, "min_ess_frac": 0.02}
 
 
-def _row(truth=80.0, ess=0.1, dr=70.0, dr_lo=65.0, fqe=70.0, edis=1.0,
-         wis=60.0):
+def _row(truth=80.0, ess=0.1, dr=70.0, dr_lo=65.0, fqe=70.0, edis=1.0, wis=60.0):
     # NOTE: no dr_vals — mirrors real pre-v11 rows (CI-bound fallback path).
     # Tests needing the exact path set row["dr_vals"] explicitly.
-    return {"fqe_dm": fqe, "sharp_dm": fqe,
-            "dr": dr, "dr_ci": [dr_lo, dr + 5.0],
-            "efqe": {"mean": fqe, "disagreement": edis}, "ess_frac": ess,
-            "wis": wis, "is": 0.0, "wdr": 0.0, "magic": 0.0, "magic_w": [],
-            "lstdq": {"dm": 0.0, "cond": 0.0}, "fve_dm": 0.0,
-            "mb": {"mb": 0.0, "se": 0.0, "sims": 0}, "gdice_mis": 0.0,
-            "anchor": 0.0, "slope_pick": "", "slope_val": 0.0,
-            "below_anchor": [], "mis": 0.0, "mis_info": {}, "lambda_dr": 0.0,
-            "temperature": 1.0, "rho_cap": 0.0, "truth": truth}
+    return {
+        "fqe_dm": fqe,
+        "sharp_dm": fqe,
+        "dr": dr,
+        "dr_ci": [dr_lo, dr + 5.0],
+        "efqe": {"mean": fqe, "disagreement": edis},
+        "ess_frac": ess,
+        "wis": wis,
+        "is": 0.0,
+        "wdr": 0.0,
+        "magic": 0.0,
+        "magic_w": [],
+        "lstdq": {"dm": 0.0, "cond": 0.0},
+        "fve_dm": 0.0,
+        "mb": {"mb": 0.0, "se": 0.0, "sims": 0},
+        "gdice_mis": 0.0,
+        "anchor": 0.0,
+        "slope_pick": "",
+        "slope_val": 0.0,
+        "below_anchor": [],
+        "mis": 0.0,
+        "mis_info": {},
+        "lambda_dr": 0.0,
+        "temperature": 1.0,
+        "rho_cap": 0.0,
+        "truth": truth,
+    }
 
 
 def test_witnesses():
@@ -39,15 +57,22 @@ def test_witnesses():
 
 def test_bootstrap_p_and_holm():
     from white_queen.tribunal.ope.receipts import bootstrap_p, holm_reject
+
     rng = np.random.default_rng(0)
     assert bootstrap_p(rng.normal(100, 1, 200), 60.0) == 0.0  # all above
     assert bootstrap_p(rng.normal(0, 1, 200), 60.0) == 1.0  # all below
     p = bootstrap_p(rng.normal(60, 10, 500), 60.0)
     assert 0.3 < p < 0.7  # symmetric-ish straddles
     assert holm_reject({"a": 0.01, "b": 0.02, "c": 0.30}, 0.05) == {
-        "a": True, "b": True, "c": False}  # .02 <= .05/2 rejects; .30 stops
+        "a": True,
+        "b": True,
+        "c": False,
+    }  # .02 <= .05/2 rejects; .30 stops
     assert holm_reject({"a": 0.01, "b": 0.015, "c": 0.04}, 0.05) == {
-        "a": True, "b": True, "c": True}  # .04 <= .05/1: full rejection
+        "a": True,
+        "b": True,
+        "c": True,
+    }  # .04 <= .05/1: full rejection
 
 
 def test_exact_path_uses_holm():
@@ -56,8 +81,7 @@ def test_exact_path_uses_holm():
     good["dr_vals"] = [100.0] * 60  # p=0 exactly
     mid = _row(truth=90.0, dr=100.0, dr_lo=95.0, fqe=95.0)
     mid["dr_vals"] = [100.0] * 58 + [0.0] * 2  # mean 96.7, some mass ≤ bar?
-    rows = {"good": good, "mid": mid,
-            "bad": _row(truth=10.0, dr=30.0, dr_lo=20.0, fqe=30.0)}
+    rows = {"good": good, "mid": mid, "bad": _row(truth=10.0, dr=30.0, dr_lo=20.0, fqe=30.0)}
     rows["bad"]["dr_vals"] = [0.0] * 60
     rows["mid"]["dr_ci"] = [90.0, 110.0]
     # DR (Q-based) must be corroborated by the INDEPENDENT MB family.
@@ -79,19 +103,19 @@ def test_exact_path_uses_holm():
 
 
 def test_truth_blindness_and_determinism():
-    rows = {"a": _row(truth=99.0), "b": _row(truth=10.0, dr=100.0,
-                                             dr_lo=95.0, fqe=95.0)}
+    rows = {"a": _row(truth=99.0), "b": _row(truth=10.0, dr=100.0, dr_lo=95.0, fqe=95.0)}
     v1 = J.judge_diet(rows, BEH, STD, GATE, 0.5)
-    rows2 = {"a": _row(truth=-5.0), "b": _row(truth=500.0, dr=100.0,
-                                              dr_lo=95.0, fqe=95.0)}
+    rows2 = {"a": _row(truth=-5.0), "b": _row(truth=500.0, dr=100.0, dr_lo=95.0, fqe=95.0)}
     v2 = J.judge_diet(rows2, BEH, STD, GATE, 0.5)
     assert v1["deployed"] == v2["deployed"]  # truth shuffled, same call
     assert J.judge_diet(rows, BEH, STD, GATE, 0.5)["deployed"] == v1["deployed"]
 
 
 def test_risk_ladder_monotone():
-    rows = {"a": _row(truth=90.0, dr=100.0, dr_lo=90.0, fqe=90.0),
-            "b": _row(truth=85.0, dr=30.0, dr_lo=20.0, fqe=30.0)}
+    rows = {
+        "a": _row(truth=90.0, dr=100.0, dr_lo=90.0, fqe=90.0),
+        "b": _row(truth=85.0, dr=30.0, dr_lo=20.0, fqe=30.0),
+    }
     rows["a"]["mb"] = {"mb": 95.0, "se": 1.0}  # independent MB corroboration
     d0 = J.judge_diet(rows, BEH, STD, GATE, 0.0)["deployed"]
     d5 = J.judge_diet(rows, BEH, STD, GATE, 0.5)["deployed"]
@@ -123,15 +147,15 @@ def test_simulator_operating_point():
 # efqe_mean, efqe_dis, wis, mb, mb_se). Row shapes mirror REAL gate rows
 # (mb flat + mb_se) so shape bugs like witness_mb-dict-only can't recur.
 ANCHOR = [
-    ('expert', 'iql', 98.9, 0.027, 53.0, [52.3, 54.0], 51.4, 53.2, 1.8, 15.0, 87.9, 0.74),
-    ('expert', 'bc', 97.5, 0.02, 57.4, [55.7, 59.7], 52.4, 55.3, 1.8, 15.9, 99.0, 0.06),
-    ('expert', 'cql', 98.9, 0.021, 66.5, [64.3, 69.3], 60.6, 61.4, 0.4, 15.3, 99.3, 0.0),
-    ('mixed', 'iql', 98.6, 0.037, -1999.6, [-2883.1, -1223.7], 50.7, 47.4, 1.2, 23.4, 98.0, 0.18),
-    ('mixed', 'bc', 96.6, 0.035, -260.7, [-920.3, 380.9], 38.7, 40.0, 0.2, 22.6, 98.2, 0.18),
-    ('mixed', 'cql', 98.5, 0.031, 1108.3, [701.4, 1563.6], 40.5, 41.9, 1.9, 24.4, 96.9, 0.33),
-    ('novice', 'iql', 81.1, 0.095, -3751.6, [-6217.7, -1538.9], 36.4, 34.2, 1.1, 23.2, 93.3, 0.0),
-    ('novice', 'bc', 71.4, 0.102, 787.4, [-562.7, 2178.7], 16.3, 17.3, 0.4, 21.4, 93.3, 0.0),
-    ('novice', 'cql', 77.8, 0.101, 1529.8, [-487.0, 3495.9], 23.7, 24.7, 0.2, 22.0, 93.3, 0.0),
+    ("expert", "iql", 98.9, 0.027, 53.0, [52.3, 54.0], 51.4, 53.2, 1.8, 15.0, 87.9, 0.74),
+    ("expert", "bc", 97.5, 0.02, 57.4, [55.7, 59.7], 52.4, 55.3, 1.8, 15.9, 99.0, 0.06),
+    ("expert", "cql", 98.9, 0.021, 66.5, [64.3, 69.3], 60.6, 61.4, 0.4, 15.3, 99.3, 0.0),
+    ("mixed", "iql", 98.6, 0.037, -1999.6, [-2883.1, -1223.7], 50.7, 47.4, 1.2, 23.4, 98.0, 0.18),
+    ("mixed", "bc", 96.6, 0.035, -260.7, [-920.3, 380.9], 38.7, 40.0, 0.2, 22.6, 98.2, 0.18),
+    ("mixed", "cql", 98.5, 0.031, 1108.3, [701.4, 1563.6], 40.5, 41.9, 1.9, 24.4, 96.9, 0.33),
+    ("novice", "iql", 81.1, 0.095, -3751.6, [-6217.7, -1538.9], 36.4, 34.2, 1.1, 23.2, 93.3, 0.0),
+    ("novice", "bc", 71.4, 0.102, 787.4, [-562.7, 2178.7], 16.3, 17.3, 0.4, 21.4, 93.3, 0.0),
+    ("novice", "cql", 77.8, 0.101, 1529.8, [-487.0, 3495.9], 23.7, 24.7, 0.2, 22.0, 93.3, 0.0),
 ]
 ANCHOR_BEH = {"expert": (68.9, None), "mixed": (52.2, None), "novice": (24.9, None)}
 
@@ -149,8 +173,7 @@ def _anchor_rows(diet):
     rows = {}
     for d, c, t, e, dr, ci, fq, em, ed, w, mb, se in ANCHOR:
         if d == diet:
-            rows[c] = _row(truth=t, ess=e, dr=dr, dr_lo=ci[0], fqe=fq,
-                           wis=w)
+            rows[c] = _row(truth=t, ess=e, dr=dr, dr_lo=ci[0], fqe=fq, wis=w)
             rows[c]["dr_ci"] = list(ci)
             rows[c]["efqe"] = {"mean": em, "disagreement": ed}
             rows[c]["mb"] = mb
@@ -170,8 +193,7 @@ def test_anchor_backtest():
         beh = {"expert": 68.9, "mixed": 52.2, "novice": 24.9}[diet]
         rows = _anchor_rows(diet)
         v = J.judge_diet(rows, beh, ANCHOR_STD[diet], ANCHOR_GATE, 0.5)
-        assert abs(v["bar"] - {"expert": 73.88, "mixed": 58.91,
-                               "novice": 30.03}[diet]) < 0.05, v
+        assert abs(v["bar"] - {"expert": 73.88, "mixed": 58.91, "novice": 30.03}[diet]) < 0.05, v
         for cand in v["deployed"]:
             assert truth_by[(diet, cand)] > v["bar"], (diet, cand, v)
         # every certificate is well-formed
@@ -193,10 +215,8 @@ def test_negative_controls_hold_at_all_risks():
     # The anchor has zero negatives (all 9 truths beat behavior) — these
     # synthetic negatives are the only false-alarm protection in CI.
     rows = {
-        "rand": _row(truth=15.0, ess=0.40, dr=18.0, dr_lo=12.0, fqe=20.0,
-                     wis=18.0),
-        "worse": _row(truth=30.0, ess=0.30, dr=35.0, dr_lo=28.0, fqe=33.0,
-                      wis=30.0),
+        "rand": _row(truth=15.0, ess=0.40, dr=18.0, dr_lo=12.0, fqe=20.0, wis=18.0),
+        "worse": _row(truth=30.0, ess=0.30, dr=35.0, dr_lo=28.0, fqe=33.0, wis=30.0),
     }
     rows["rand"]["efqe"] = {"mean": 20.0, "disagreement": 1.0}
     rows["rand"]["mb"] = {"mb": 22.0, "se": 1.0}
@@ -212,10 +232,8 @@ def test_lone_dr_fluke_cannot_deploy():
     # ~40 and MB would read ~99... here MB FAILS too, isolating the rule:
     # one loud witness must never carry a deploy at any risk level.
     rows = {
-        "fluke": _row(truth=98.0, ess=0.05, dr=1108.0, dr_lo=701.0, fqe=40.0,
-                      wis=24.0),
-        "sane": _row(truth=60.0, ess=0.05, dr=20.0, dr_lo=10.0, fqe=30.0,
-                     wis=20.0),
+        "fluke": _row(truth=98.0, ess=0.05, dr=1108.0, dr_lo=701.0, fqe=40.0, wis=24.0),
+        "sane": _row(truth=60.0, ess=0.05, dr=20.0, dr_lo=10.0, fqe=30.0, wis=20.0),
     }
     rows["fluke"]["efqe"] = {"mean": 40.0, "disagreement": 1.0}
     rows["fluke"]["mb"] = {"mb": 30.0, "se": 1.0}  # below bar 60
@@ -231,14 +249,17 @@ def test_lone_dr_fluke_cannot_deploy():
 
 def test_sharp_witness_shapes():
     from white_queen.tribunal.ope.judge import witness_sharp
+
     # v20: sharp = FQE of the argmax policy; no action-support requirement.
     ok, why = witness_sharp({"sharp_dm": 80.0, "sharp_info": {}}, 60.0, 0.02)
     assert ok and "80.0" in why
     ok, _ = witness_sharp({"sharp_dm": 50.0, "sharp_info": {}}, 60.0, 0.02)
     assert not ok  # below bar
-    ok, why = witness_sharp({"sharp_dm": None,
-                             "sharp_info": {"diverged": True, "raw": 88428.0,
-                                            "bound": 150.0}}, 60.0, 0.02)
+    ok, why = witness_sharp(
+        {"sharp_dm": None, "sharp_info": {"diverged": True, "raw": 88428.0, "bound": 150.0}},
+        60.0,
+        0.02,
+    )
     assert not ok and "diverged" in why
     ok, why = witness_sharp({"sharp_dm": None, "sharp_info": {"skipped": "x"}}, 60.0, 0.02)
     assert not ok and "skipped" in why
@@ -248,8 +269,8 @@ def test_sharp_witness_shapes():
 
 def test_prescription_orders_collection():
     from white_queen.tribunal.ope.judge import prescription
-    row = {"ess_frac": 0.01,
-           "support": {"top_decile_obs_center": [0.2, -1.5, 3.0, 0.0]}}
+
+    row = {"ess_frac": 0.01, "support": {"top_decile_obs_center": [0.2, -1.5, 3.0, 0.0]}}
     p = prescription(row, 0.02, 400)
     assert p is not None and "~800" in p and "collect:" in p
     assert prescription({"ess_frac": 0.5}, 0.02, 400) is None  # healthy: silent
@@ -259,10 +280,10 @@ def test_prescription_orders_collection():
 def test_support_stats_shapes():
     import numpy as np
     from white_queen.tribunal.ope.marginalized import support_stats
+
     rng = np.random.default_rng(0)
     N = 500
-    d = {"obs": rng.normal(size=(N, 4)).astype(np.float32),
-         "act": rng.integers(0, 2, N)}
+    d = {"obs": rng.normal(size=(N, 4)).astype(np.float32), "act": rng.integers(0, 2, N)}
     s = support_stats(d, lambda o, a: np.full((len(np.atleast_1d(a)),), 1.0))
     assert s["top_decile_share"] == 1.0  # flat: ties include every row
     assert len(s["top_decile_obs_center"]) == 4
@@ -285,8 +306,9 @@ def test_lone_candidate_requires_both_argmax_witnesses():
     bad["sharp_dm"] = -25.0
     bad["mb_sharp"] = 12.0
     bad["mb_sharp_se"] = 1.0
-    v = J.judge_diet({"uniform": bad}, 52.2, 33.55,
-                     {"rel_edge_std": 0.2, "min_ess_frac": 0.02}, 0.5)
+    v = J.judge_diet(
+        {"uniform": bad}, 52.2, 33.55, {"rel_edge_std": 0.2, "min_ess_frac": 0.02}, 0.5
+    )
     assert v["lone_candidate"] is True
     assert v["deployed"] == [], v
     # Good policy: both argmax witnesses clear the bar -> DEPLOY solo.
@@ -297,8 +319,7 @@ def test_lone_candidate_requires_both_argmax_witnesses():
     good["sharp_dm"] = 90.0
     good["mb_sharp"] = 92.0
     good["mb_sharp_se"] = 1.5
-    v2 = J.judge_diet({"cand": good}, 52.2, 33.55,
-                      {"rel_edge_std": 0.2, "min_ess_frac": 0.02}, 0.5)
+    v2 = J.judge_diet({"cand": good}, 52.2, 33.55, {"rel_edge_std": 0.2, "min_ess_frac": 0.02}, 0.5)
     assert v2["deployed"] == ["cand"], v2
     assert any("single-candidate" in r for r in v2["decisions"]["cand"]["reasons"])
 
@@ -313,15 +334,14 @@ def test_same_method_family_cannot_double_count():
         "peer": _row(truth=-86.0, ess=0.07, dr=-60.0, dr_lo=-88.0, fqe=-70.0),
     }
     for r in rows.values():
-        r["mb"] = {"mb": -86.0, "se": 1.0}      # MB family disagrees
+        r["mb"] = {"mb": -86.0, "se": 1.0}  # MB family disagrees
         r["mb_se"] = 1.0
-    rows["fluke"]["sharp_dm"] = -30.0           # FQE-argmax also optimistic
+    rows["fluke"]["sharp_dm"] = -30.0  # FQE-argmax also optimistic
     rows["fluke"]["sharp_info"] = {}
     rows["peer"]["sharp_dm"] = -70.0
     rows["peer"]["sharp_info"] = {}
     # Behavior ~ -86.6, tiny std -> bar ~ -86.1.
-    v = J.judge_diet(rows, -86.6, 1.0,
-                     {"rel_edge_std": 0.5, "min_ess_frac": 0.02}, 0.5)
+    v = J.judge_diet(rows, -86.6, 1.0, {"rel_edge_std": 0.5, "min_ess_frac": 0.02}, 0.5)
     assert v["decisions"]["fluke"]["deploy"] is False, v["decisions"]["fluke"]
     assert v["decisions"]["fluke"]["fqe_pass"] is True  # FQE-soft passed
     assert v["decisions"]["fluke"]["sharp_pass"] is True  # FQE-argmax passed

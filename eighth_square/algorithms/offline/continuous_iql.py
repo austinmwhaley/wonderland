@@ -13,6 +13,7 @@ Actions are handled in normalized [-1,1] space internally and mapped to the
 env's [low, high] at the boundary, so density ratios in OPE are computed in a
 single consistent space (log_prob_fn returns the ENV-space density).
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -32,8 +33,8 @@ class _GaussianMLP(nn.Module):
     def __init__(self, in_dim, hidden, a_dim):
         super().__init__()
         self.body = nn.Sequential(
-            nn.Linear(in_dim, hidden), nn.ReLU(),
-            nn.Linear(hidden, hidden), nn.ReLU())
+            nn.Linear(in_dim, hidden), nn.ReLU(), nn.Linear(hidden, hidden), nn.ReLU()
+        )
         self.mu = nn.Linear(hidden, a_dim)
         self.log_std = nn.Parameter(torch.zeros(a_dim))
 
@@ -84,8 +85,9 @@ class ContinuousIQL:
         self.Vt = MLP(d, self.hidden, 1).to(self.device)
         self.Vt.load_state_dict(self.V.state_dict())
         self.pi = _GaussianMLP(d, self.hidden, self.a_dim).to(self.device)
-        self.q_opt = torch.optim.Adam(list(self.Q.parameters()) +
-                                      list(self.V.parameters()), lr=self.lr)
+        self.q_opt = torch.optim.Adam(
+            list(self.Q.parameters()) + list(self.V.parameters()), lr=self.lr
+        )
         self.p_opt = torch.optim.Adam(self.pi.parameters(), lr=self.lr)
         self.O = torch.as_tensor(diet["obs"]).float().to(self.device)
         self.A = torch.as_tensor(self._norm(diet["act"])).float().to(self.device)
@@ -110,17 +112,20 @@ class ContinuousIQL:
             q = self.Q(self.O[i], self.A[i])
             v = self.V(self.O[i])
             with torch.no_grad():
-                tgt = self.R[i] + self.gamma * (1 - self.D[i]) * \
-                    self.Vt(self.O2[i]).clamp(-self.v_clip, self.v_clip)
+                tgt = self.R[i] + self.gamma * (1 - self.D[i]) * self.Vt(self.O2[i]).clamp(
+                    -self.v_clip, self.v_clip
+                )
             diff = q.detach() - v
-            w = torch.where(diff > 0, torch.full_like(diff, self.tau),
-                            torch.full_like(diff, 1.0 - self.tau))
+            w = torch.where(
+                diff > 0, torch.full_like(diff, self.tau), torch.full_like(diff, 1.0 - self.tau)
+            )
             l_q = F.smooth_l1_loss(q, tgt)
-            l_v = (w * diff ** 2).mean()
+            l_v = (w * diff**2).mean()
             self.q_opt.zero_grad()
             (l_q + l_v).backward()
             torch.nn.utils.clip_grad_norm_(
-                list(self.Q.parameters()) + list(self.V.parameters()), 5.0)
+                list(self.Q.parameters()) + list(self.V.parameters()), 5.0
+            )
             self.q_opt.step()
             with torch.no_grad():
                 for ps, pt in zip(self.V.parameters(), self.Vt.parameters()):
@@ -138,15 +143,16 @@ class ContinuousIQL:
             self.p_opt.step()
             losses.append(float(l_q.item()))
             if log_every and (s + 1) % log_every == 0:
-                print(f"  iql_cont step {s+1}/{steps} q={np.mean(losses[-log_every:]):.2f}",
-                      flush=True)
+                print(
+                    f"  iql_cont step {s + 1}/{steps} q={np.mean(losses[-log_every:]):.2f}",
+                    flush=True,
+                )
         return self
 
     # ---- candidate protocol (continuous) ----
     def action_mean(self, obs):
         with torch.no_grad():
-            x = torch.as_tensor(np.asarray(obs, dtype=np.float32),
-                                device=self.device)
+            x = torch.as_tensor(np.asarray(obs, dtype=np.float32), device=self.device)
             a_norm = self.pi.mean_action(x).cpu().numpy()
         return np.clip(self._denorm(a_norm), self.low, self.high)
 
@@ -158,8 +164,7 @@ class ContinuousIQL:
 
     def sample(self, obs, rng):
         with torch.no_grad():
-            x = torch.as_tensor(np.asarray(obs, dtype=np.float32),
-                                device=self.device)
+            x = torch.as_tensor(np.asarray(obs, dtype=np.float32), device=self.device)
             a_norm = self.pi.sample(x)
             a_norm = a_norm.cpu().numpy()
         a = self._denorm(a_norm)
@@ -167,22 +172,30 @@ class ContinuousIQL:
 
     def log_prob_fn(self, obs, act):
         with torch.no_grad():
-            x = torch.as_tensor(np.asarray(obs, dtype=np.float32),
-                                device=self.device)
-            a_norm = torch.as_tensor(self._norm(act), dtype=torch.float32,
-                                     device=self.device)
+            x = torch.as_tensor(np.asarray(obs, dtype=np.float32), device=self.device)
+            a_norm = torch.as_tensor(self._norm(act), dtype=torch.float32, device=self.device)
             lp = self.pi.log_prob(x, a_norm).cpu().numpy().ravel()
         # change of variables: env action = low + span/2 * (a_norm + 1)
         lp = lp - float(np.sum(np.log(self.span / 2.0)))
         return lp
 
     def save(self, path):
-        torch.save({"Q": self.Q.state_dict(), "V": self.V.state_dict(),
-                    "Vt": self.Vt.state_dict(), "pi": self.pi.state_dict(),
-                    "low": self.low, "high": self.high}, path)
+        torch.save(
+            {
+                "Q": self.Q.state_dict(),
+                "V": self.V.state_dict(),
+                "Vt": self.Vt.state_dict(),
+                "pi": self.pi.state_dict(),
+                "low": self.low,
+                "high": self.high,
+            },
+            path,
+        )
 
     def load(self, path):
         d = torch.load(path, map_location=self.device, weights_only=False)
-        self.Q.load_state_dict(d["Q"]); self.V.load_state_dict(d["V"])
-        self.Vt.load_state_dict(d["Vt"]); self.pi.load_state_dict(d["pi"])
+        self.Q.load_state_dict(d["Q"])
+        self.V.load_state_dict(d["V"])
+        self.Vt.load_state_dict(d["Vt"])
+        self.pi.load_state_dict(d["pi"])
         return self

@@ -56,6 +56,7 @@ def witness_dr(row, bar, alpha=0.05, B=None, seed=0):
     vals = row.get("dr_vals")
     if vals:
         from .receipts import bootstrap_p
+
         p = bootstrap_p(vals, bar, B=B, seed=seed)
         return bool(p <= alpha), f"DR p={p:.4f} vs α={alpha}", p
     try:
@@ -65,7 +66,11 @@ def witness_dr(row, bar, alpha=0.05, B=None, seed=0):
     if not math.isfinite(lo):
         return False, "DR CI non-finite", None
     # CI fallback (pre-v11 rows): bound only, Holm handled by caller note.
-    return bool(lo > bar), f"DR lower-CI {lo:.1f} vs bar {bar:.1f} (CI-bound, exact p needs dr_vals)", None
+    return (
+        bool(lo > bar),
+        f"DR lower-CI {lo:.1f} vs bar {bar:.1f} (CI-bound, exact p needs dr_vals)",
+        None,
+    )
 
 
 def witness_fqe(row, bar):
@@ -124,8 +129,7 @@ def witness_step(row, bar, min_ess_frac):
             adv = sum(cn) / max(sum(cd), 1e-12)
     if not math.isfinite(adv):
         return False, "no step-DR advantage"
-    return bool(adv > 0.0), (f"step-DR advantage {adv:+.2f} vs 0 "
-                             f"(step-ESS {e:.3f})")
+    return bool(adv > 0.0), (f"step-DR advantage {adv:+.2f} vs 0 (step-ESS {e:.3f})")
 
 
 def ess_ok(row, min_ess_frac):
@@ -158,8 +162,9 @@ def witness_sharp(row, bar, min_ess_frac):
     if lo is not None:
         lo = _finite(lo)
         if math.isfinite(lo):
-            return bool(lo > bar), (f"sharp(argmax) lower {lo:.1f} "
-                                    f"(point {dm:.1f}) vs bar {bar:.1f}")
+            return bool(lo > bar), (
+                f"sharp(argmax) lower {lo:.1f} (point {dm:.1f}) vs bar {bar:.1f}"
+            )
     return bool(dm > bar), f"sharp(argmax) {dm:.1f} vs bar {bar:.1f}"
 
 
@@ -179,8 +184,9 @@ def prescription(row, min_ess_frac, n_ep):
     if need:
         bits.append(f"~{need} supported episodes to reach ESS floor")
     if where:
-        bits.append("unsupported mass centers at obs " +
-                    "[" + ", ".join(f"{x:+.1f}σ" for x in where) + "]")
+        bits.append(
+            "unsupported mass centers at obs " + "[" + ", ".join(f"{x:+.1f}σ" for x in where) + "]"
+        )
     if not bits:
         return None
     return "collect: " + "; ".join(bits)
@@ -192,18 +198,26 @@ def rank_by_fqe(rows):
     policy, so the rank must be too (ranking by the soft proxy demoted the
     best models: mixed cql truth 98.4 ranked last, expert iql truth 99.3
     ranked last). Falls back to soft FQE for legacy/pre-sharp rows."""
+
     def _key(c):
         r = rows[c]
         s = _finite(r.get("sharp_dm"), float("-inf"))
         if not math.isfinite(s):
             s = _finite(r.get("fqe_dm"), float("-inf"))
         return s
+
     return sorted(rows, key=_key, reverse=True)
 
 
-def judge_diet(rows, behavior_mean, behavior_std, gate_cfg=None,
-               risk_aversion=DEFAULT_RISK_AVERSION, allow_deploy=True,
-               use_rank=True):
+def judge_diet(
+    rows,
+    behavior_mean,
+    behavior_std,
+    gate_cfg=None,
+    risk_aversion=DEFAULT_RISK_AVERSION,
+    allow_deploy=True,
+    use_rank=True,
+):
     """Decide per candidate. rows: {name: report-card row} (gate output).
 
     Reads only offline quantities (estimates, CIs, ESS, disagreement,
@@ -217,14 +231,16 @@ def judge_diet(rows, behavior_mean, behavior_std, gate_cfg=None,
      "rank": [...], "bar": ..., "risk_aversion": ...}.
     """
     from .autotune import resolve_bar, resolve_gate
+
     gate_cfg = dict(gate_cfg) if gate_cfg else {}
     n_ep = None
     try:
         n_ep = len(next(iter(rows.values()))["dr_vals"])
     except Exception:
         n_ep = 30
-    g = resolve_gate(n_ep if isinstance(n_ep, int) else 30,
-                     behavior_std, behavior_mean, gate_cfg or None)
+    g = resolve_gate(
+        n_ep if isinstance(n_ep, int) else 30, behavior_std, behavior_mean, gate_cfg or None
+    )
     # Honest n for the gate: dr_vals length when available.
     bar = resolve_bar(behavior_mean, behavior_std, g["rel_edge_std"])
     rank = rank_by_fqe(rows)
@@ -250,8 +266,10 @@ def judge_diet(rows, behavior_mean, behavior_std, gate_cfg=None,
     # dr_vals evidence (v11+ rows, plausibly-sized: degenerate stubs must not
     # trigger the exact path); else the conservative CI bound for all
     # (pre-v11 rows) so no card is judged by a stricter rule than its peers.
-    exact = all(isinstance(r.get("dr_vals"), (list, tuple)) and
-                len(r["dr_vals"]) >= 10 for r in rows.values())
+    exact = all(
+        isinstance(r.get("dr_vals"), (list, tuple)) and len(r["dr_vals"]) >= 10
+        for r in rows.values()
+    )
     # An explicit per-row alpha (set by autotune for real panels) overrides the
     # risk-derived default; otherwise risk appetite sets the test significance.
     try:
@@ -263,6 +281,7 @@ def judge_diet(rows, behavior_mean, behavior_std, gate_cfg=None,
     holm, pvals = {}, {}
     if exact:
         from .receipts import bootstrap_p, holm_reject
+
         for name, r in rows.items():
             b = r.get("bootstrap", {}).get("B")
             try:
@@ -277,24 +296,26 @@ def judge_diet(rows, behavior_mean, behavior_std, gate_cfg=None,
     # (advantage ~0, directionally wrong for the random floor); it can
     # corroborate but never carries a deploy.
     step_avail = all(
-        isinstance(r.get("dr_step_adv_num"), (list, tuple))
-        and len(r["dr_step_adv_num"]) >= 2
-        for r in rows.values())
+        isinstance(r.get("dr_step_adv_num"), (list, tuple)) and len(r["dr_step_adv_num"]) >= 2
+        for r in rows.values()
+    )
     p_step = {}
     if step_avail:
         from .receipts import bootstrap_p_ratio
+
         # Required edge in value units: the same rel_edge_std the trajectory
         # bar demands (bar - behavior_mean), tested against the advantage.
         edge = max(0.0, float(bar) - float(behavior_mean))
         for name, r in rows.items():
-            p_step[name] = bootstrap_p_ratio(
-                r["dr_step_adv_num"], r["dr_step_adv_den"], edge)
+            p_step[name] = bootstrap_p_ratio(r["dr_step_adv_num"], r["dr_step_adv_den"], edge)
     decisions, deployed = {}, []
     for name, row in rows.items():
         if exact:
             p = pvals[name]
             dr_pass = bool(holm[name])
-            dr_why = f"DR p={p:.4f} Holm-{'reject' if dr_pass else 'hold'} (α={alpha}, m={len(rows)})"
+            dr_why = (
+                f"DR p={p:.4f} Holm-{'reject' if dr_pass else 'hold'} (α={alpha}, m={len(rows)})"
+            )
         else:
             dr_pass, dr_why, _ = witness_dr(row, bar)
             dr_why += "; pre-dr_vals rows: CI-bound (exact p from v11 panels on)"
@@ -326,9 +347,10 @@ def judge_diet(rows, behavior_mean, behavior_std, gate_cfg=None,
         from .certificate import certify_row
         from .contracts import estimates_from_row as _efr
         from .decide import coverage as _cov
-        _cert = certify_row(row, behavior_mean, behavior_std,
-                            min_ess=g["min_ess_frac"])
+
+        _cert = certify_row(row, behavior_mean, behavior_std, min_ess=g["min_ess_frac"])
         from .certificate import advantage_certificate as _adv_cert
+
         _adv = _adv_cert(row, behavior_mean, alpha=ADV_ALPHA)
         _est = _efr(row, bar=bar, min_ess=g["min_ess_frac"])
         # Deploy requires corroboration: the level certificate or the paired
@@ -339,42 +361,45 @@ def judge_diet(rows, behavior_mean, behavior_std, gate_cfg=None,
         # agree. Prevents certificate-only (0-witness) deploys.
         deploy = bool((_cert["deploy"] or _adv["deploy"]) and witnesses >= 1)
         if _adv["deploy"] and not _cert["deploy"]:
-            rule = ("advantage certificate: Delta %s CI [%s, %s] > 0 (n=%d, "
-                    "bias %s)" % (_adv["adv"], _adv["lo"], _adv["hi"],
-                                  _adv["n"], _adv["bias"]))
+            rule = "advantage certificate: Delta %s CI [%s, %s] > 0 (n=%d, bias %s)" % (
+                _adv["adv"],
+                _adv["lo"],
+                _adv["hi"],
+                _adv["n"],
+                _adv["bias"],
+            )
         else:
-            rule = ("certificate: value %s CI [%s, %s] vs behavior %s (%s)"
-                    % (_cert["value"], _cert["lo"], _cert["hi"],
-                       _cert["behavior"], _cert["reason"]))
+            rule = "certificate: value %s CI [%s, %s] vs behavior %s (%s)" % (
+                _cert["value"],
+                _cert["lo"],
+                _cert["hi"],
+                _cert["behavior"],
+                _cert["reason"],
+            )
         covered, _ess = _cov(row, g["min_ess_frac"])
 
         def _fam(names):
-            return any(e.reliable and e.name in names and e.clears(bar)
-                       for e in _est)
+            return any(e.reliable and e.name in names and e.clears(bar) for e in _est)
 
         fqe_fam = _fam(("fqe_soft", "fqe_argmax"))
         mb_fam = _fam(("mb_soft", "mb_argmax"))
-        value_pass = bool(fqe_fam or mb_fam)
-        diverged = any((not e.reliable) and e.name.startswith("fqe")
-                       for e in _est)
-        rank_ok = (place <= 2) if use_rank else True
-        rank_note = "" if use_rank else " (rank skipped: screen tier)"
-        reasons = [f"rule={rule}",
-                   f"rank #{place} by deployable policy "
-                   f"(sharp {_finite(row.get('sharp_dm')):.1f}, "
-                   f"soft {_finite(row.get('fqe_dm')):.1f})",
-                   ("PASS " if dr_pass else "fail ") + dr_why,
-                   ("PASS " if fq_pass else "fail ") + fq_why,
-                   ("PASS " if mb_pass else "fail ") + mb_why,
-                   ("PASS " if sh_pass else "fail ") + sh_why,
-                   ("PASS " if mbs_pass else "fail ") + mbs_why,
-                   ("PASS " if st_pass else "fail ") + "[advisory] " + st_why,
-                   ("PASS " if ok_ess else "fail ") + ess_why]
+        diverged = any((not e.reliable) and e.name.startswith("fqe") for e in _est)
+        reasons = [
+            f"rule={rule}",
+            f"rank #{place} by deployable policy "
+            f"(sharp {_finite(row.get('sharp_dm')):.1f}, "
+            f"soft {_finite(row.get('fqe_dm')):.1f})",
+            ("PASS " if dr_pass else "fail ") + dr_why,
+            ("PASS " if fq_pass else "fail ") + fq_why,
+            ("PASS " if mb_pass else "fail ") + mb_why,
+            ("PASS " if sh_pass else "fail ") + sh_why,
+            ("PASS " if mbs_pass else "fail ") + mbs_why,
+            ("PASS " if st_pass else "fail ") + "[advisory] " + st_why,
+            ("PASS " if ok_ess else "fail ") + ess_why,
+        ]
         if ra >= 1.0:
-            reasons.append(("PASS " if dis_ok else "fail ") +
-                           f"ensemble disagreement {dis:.1f}")
-        _presc = prescription(row, g["min_ess_frac"],
-                             n_ep if isinstance(n_ep, int) else 0)
+            reasons.append(("PASS " if dis_ok else "fail ") + f"ensemble disagreement {dis:.1f}")
+        _presc = prescription(row, g["min_ess_frac"], n_ep if isinstance(n_ep, int) else 0)
         if _presc and not deploy:
             reasons.append(_presc)
         # Shortfall note: a HOLD that isn't coverage-limited is estimator/
@@ -382,8 +407,7 @@ def judge_diet(rows, behavior_mean, behavior_std, gate_cfg=None,
         # refusal is actionable instead of a dead end.
         if not deploy:
             if not covered:
-                reasons.append("shortfall: no covered test (trajectory ESS "
-                               "below floor)")
+                reasons.append("shortfall: no covered test (trajectory ESS below floor)")
             elif diverged:
                 reasons.append("shortfall: value estimate diverged")
             else:
@@ -398,29 +422,48 @@ def judge_diet(rows, behavior_mean, behavior_std, gate_cfg=None,
                     _miss.append("MB-soft")
                 if not mbs_pass:
                     _miss.append("MB-argmax")
-                reasons.append("shortfall: cannot reject 'not-better'; "
-                               "families FQE=%s MB=%s; missing %s" %
-                               (fqe_fam, mb_fam, "/".join(_miss) or "none"))
-        decisions[name] = {"deploy": deploy, "reasons": reasons,
-                           "witnesses": witnesses, "rank": place,
-                           "dr_pass": dr_pass, "fqe_pass": fq_pass,
-                           "mb_pass": mb_pass, "sharp_pass": sh_pass,
-                           "mb_sharp_pass": mbs_pass,
-                           "step_pass": st_pass,
-                           "step_p": (p_step.get(name) if step_avail else None),
-                           "certificate": _cert, "advantage": _adv,
-                           "evidence": list(_cert.get("members", [])),
-                           "estimates": [
-                               {"name": e.name, "estimand": e.estimand,
-                                "sources": sorted(e.sources), "policy": e.policy,
-                                "value": e.value, "lo": e.lo,
-                                "reliable": e.reliable, "reason": e.reason,
-                                "advisory": e.advisory}
-                               for e in _est],
-                           "ess_pass": ok_ess, "prescription": _presc}
+                reasons.append(
+                    "shortfall: cannot reject 'not-better'; "
+                    "families FQE=%s MB=%s; missing %s"
+                    % (fqe_fam, mb_fam, "/".join(_miss) or "none")
+                )
+        decisions[name] = {
+            "deploy": deploy,
+            "reasons": reasons,
+            "witnesses": witnesses,
+            "rank": place,
+            "dr_pass": dr_pass,
+            "fqe_pass": fq_pass,
+            "mb_pass": mb_pass,
+            "sharp_pass": sh_pass,
+            "mb_sharp_pass": mbs_pass,
+            "step_pass": st_pass,
+            "step_p": (p_step.get(name) if step_avail else None),
+            "certificate": _cert,
+            "advantage": _adv,
+            "evidence": list(_cert.get("members", [])),
+            "estimates": [
+                {
+                    "name": e.name,
+                    "estimand": e.estimand,
+                    "sources": sorted(e.sources),
+                    "policy": e.policy,
+                    "value": e.value,
+                    "lo": e.lo,
+                    "reliable": e.reliable,
+                    "reason": e.reason,
+                    "advisory": e.advisory,
+                }
+                for e in _est
+            ],
+            "ess_pass": ok_ess,
+            "prescription": _presc,
+        }
         if lone:
-            reasons.append("single-candidate: rank unavailable; deploy only on "
-                           "a covered, corroborated rejection of 'not-better'")
+            reasons.append(
+                "single-candidate: rank unavailable; deploy only on "
+                "a covered, corroborated rejection of 'not-better'"
+            )
         if deploy:
             deployed.append(name)
     contested = sorted(deployed) if not allow_deploy else []
@@ -428,31 +471,40 @@ def judge_diet(rows, behavior_mean, behavior_std, gate_cfg=None,
         for _d in decisions.values():
             _d["deploy"] = False
         deployed = []
-    return {"decisions": decisions, "deployed": sorted(deployed),
-            "contested": contested,
-            "rank": rank, "bar": round(bar, 2),
-            "gate": {k: (round(v, 4) if isinstance(v, float) else v)
-                     for k, v in g.items()},
-            "risk_aversion": ra, "allow_deploy": bool(allow_deploy),
-            "n_candidates": n_candidates, "lone_candidate": bool(lone)}
+    return {
+        "decisions": decisions,
+        "deployed": sorted(deployed),
+        "contested": contested,
+        "rank": rank,
+        "bar": round(bar, 2),
+        "gate": {k: (round(v, 4) if isinstance(v, float) else v) for k, v in g.items()},
+        "risk_aversion": ra,
+        "allow_deploy": bool(allow_deploy),
+        "n_candidates": n_candidates,
+        "lone_candidate": bool(lone),
+    }
 
 
 def explain_diet(diet, behavior_mean, verdict, rows):
     """Deterministic company-readable rationale (explainer, never decider)."""
-    lines = [f"Diet {diet} (behavior {behavior_mean:.1f}, bar {verdict['bar']:.1f}, "
-             f"risk {verdict['risk_aversion']:.1f}): rank " +
-             " > ".join(verdict["rank"]) + "."]
+    lines = [
+        f"Diet {diet} (behavior {behavior_mean:.1f}, bar {verdict['bar']:.1f}, "
+        f"risk {verdict['risk_aversion']:.1f}): rank " + " > ".join(verdict["rank"]) + "."
+    ]
     for name in verdict["rank"]:
         d = verdict["decisions"][name]
         r = rows[name]
-        lines.append(f"- {name}: {'DEPLOY' if d['deploy'] else 'HOLD'} "
-                     f"(truth {r.get('truth', '?')}, FQE {r.get('fqe_dm')}, "
-                     f"DR {r.get('dr')}). " + "; ".join(d["reasons"]) + ".")
+        lines.append(
+            f"- {name}: {'DEPLOY' if d['deploy'] else 'HOLD'} "
+            f"(truth {r.get('truth', '?')}, FQE {r.get('fqe_dm')}, "
+            f"DR {r.get('dr')}). " + "; ".join(d["reasons"]) + "."
+        )
     if verdict["deployed"]:
         lines.append("Ship: " + ", ".join(verdict["deployed"]) + ".")
     elif verdict.get("contested"):
-        lines.append("Ship nothing yet: contested -> certify tier: " +
-                     ", ".join(verdict["contested"]) + ".")
+        lines.append(
+            "Ship nothing yet: contested -> certify tier: " + ", ".join(verdict["contested"]) + "."
+        )
     else:
         lines.append("Ship nothing: no candidate earned two-sided confidence.")
     return "\n".join(lines)
@@ -482,18 +534,34 @@ def simulate_cards(rng, n_cards=2000, n_ep=100):
         lo = float(drs[i] - 2 * se[i])
         # NOTE: no dr_vals here on purpose — simulator exercises the CI-bound
         # fallback path (exact path covered by test_exact_path_uses_holm).
-        row = {"fqe_dm": float(fqes[i]), "sharp_dm": float(fqes[i]),
-               "mb_sharp": float(mbs[i]), "dr": float(drs[i]),
-               "dr_ci": [lo, float(drs[i] + 2 * se[i])],
-               "mb": {"mb": float(mbs[i]), "se": float(mses[i]), "sims": 200},
-               "efqe": {"mean": float(fqes[i]), "disagreement": float(fdis[i])},
-               "ess_frac": float(ess[i]), "wis": 0.0, "is": 0.0, "wdr": 0.0,
-               "magic": 0.0, "magic_w": [], "lstdq": {"dm": 0.0, "cond": 0.0},
-               "fve_dm": 0.0,
-               "gdice_mis": 0.0, "anchor": 0.0, "slope_pick": "", "slope_val": 0.0,
-               "below_anchor": [], "mis": 0.0, "mis_info": {},
-               "lambda_dr": 0.0, "temperature": 1.0, "rho_cap": 0.0,
-               "truth": float(truths[i])}
+        row = {
+            "fqe_dm": float(fqes[i]),
+            "sharp_dm": float(fqes[i]),
+            "mb_sharp": float(mbs[i]),
+            "dr": float(drs[i]),
+            "dr_ci": [lo, float(drs[i] + 2 * se[i])],
+            "mb": {"mb": float(mbs[i]), "se": float(mses[i]), "sims": 200},
+            "efqe": {"mean": float(fqes[i]), "disagreement": float(fdis[i])},
+            "ess_frac": float(ess[i]),
+            "wis": 0.0,
+            "is": 0.0,
+            "wdr": 0.0,
+            "magic": 0.0,
+            "magic_w": [],
+            "lstdq": {"dm": 0.0, "cond": 0.0},
+            "fve_dm": 0.0,
+            "gdice_mis": 0.0,
+            "anchor": 0.0,
+            "slope_pick": "",
+            "slope_val": 0.0,
+            "below_anchor": [],
+            "mis": 0.0,
+            "mis_info": {},
+            "lambda_dr": 0.0,
+            "temperature": 1.0,
+            "rho_cap": 0.0,
+            "truth": float(truths[i]),
+        }
         worthy = bool(truths[i] > bar + 0.25 * std)
         cards.append((row, worthy))
     return cards, {"behavior_mean": beh, "behavior_std": std, "bar": bar}
@@ -503,16 +571,26 @@ def score_setting(cards, meta, risk_aversion):
     """Precision/recall of a risk setting on simulated cards (diet with a
     weak peer so rank is meaningful and the lone-candidate guard doesn't
     fire — production judges >=2 candidates). Measures witness quality."""
-    weak = {"fqe_dm": -1e9, "dr": -1e9, "dr_ci": [-1e9, -1e9],
-            "efqe": {"mean": -1e9, "disagreement": 0.0}, "ess_frac": 0.5,
-            "wis": -1e9, "mb": {"mb": -1e9, "se": 0.0},
-            "sharp_dm": None, "sharp_info": {"skipped": "peer"}}
+    weak = {
+        "fqe_dm": -1e9,
+        "dr": -1e9,
+        "dr_ci": [-1e9, -1e9],
+        "efqe": {"mean": -1e9, "disagreement": 0.0},
+        "ess_frac": 0.5,
+        "wis": -1e9,
+        "mb": {"mb": -1e9, "se": 0.0},
+        "sharp_dm": None,
+        "sharp_info": {"skipped": "peer"},
+    }
     tp = fp = fn = tn = 0
     for row, worthy in cards:
-        v = judge_diet({"solo": row, "peer": weak}, meta["behavior_mean"],
-                       meta["behavior_std"],
-                       {"rel_edge_std": 0.5, "min_ess_frac": 0.02},
-                       risk_aversion)
+        v = judge_diet(
+            {"solo": row, "peer": weak},
+            meta["behavior_mean"],
+            meta["behavior_std"],
+            {"rel_edge_std": 0.5, "min_ess_frac": 0.02},
+            risk_aversion,
+        )
         dep = v["decisions"]["solo"]["deploy"]
         if dep and worthy:
             tp += 1
@@ -527,7 +605,12 @@ def score_setting(cards, meta, risk_aversion):
     prec = tp / (tp + fp) if (tp + fp) else None
     rec = tp / max(tp + fn, 1)
     f1 = (2 * prec * rec / max(prec + rec, 1e-12)) if prec is not None else None
-    return {"precision": round(prec, 3) if prec is not None else None,
-            "recall": round(rec, 3),
-            "f1": round(f1, 3) if f1 is not None else None,
-            "tp": tp, "fp": fp, "fn": fn, "tn": tn}
+    return {
+        "precision": round(prec, 3) if prec is not None else None,
+        "recall": round(rec, 3),
+        "f1": round(f1, 3) if f1 is not None else None,
+        "tp": tp,
+        "fp": fp,
+        "fn": fn,
+        "tn": tn,
+    }

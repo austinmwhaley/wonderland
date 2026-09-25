@@ -1,6 +1,6 @@
 import numpy as np
 
-from .common import TabularAgent, episode_stats, n_actions, n_states
+from .common import TabularAgent, episode_stats
 
 
 class TDPrediction(TabularAgent):

@@ -102,12 +102,20 @@ def test_temporal_core_save_load():
     torch.manual_seed(42)
     events = _dummy_events()
     model = TemporalCoreModel(
-        sequence_id_field="cid", event_id_field="eid", timestamp_field="ts",
-        categorical_fields=["etype"], numeric_fields=["val"],
-        config=TemporalCoreConfig(hidden_dim=HIDDEN, epochs=1, device="cpu",
-                                  sequence_backend="mamba2", backbone_version="save-test"),
+        sequence_id_field="cid",
+        event_id_field="eid",
+        timestamp_field="ts",
+        categorical_fields=["etype"],
+        numeric_fields=["val"],
+        config=TemporalCoreConfig(
+            hidden_dim=HIDDEN,
+            epochs=1,
+            device="cpu",
+            sequence_backend="mamba2",
+            backbone_version="save-test",
+        ),
     )
-    orig_out = model.fit_transform(events)
+    model.fit_transform(events)
 
     with tempfile.TemporaryDirectory() as tmp:
         path = Path(tmp) / "temporal.pt"

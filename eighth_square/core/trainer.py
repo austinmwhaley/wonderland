@@ -12,7 +12,7 @@ class PlateauTracker:
     def update(self, rewards_history: list) -> bool:
         if len(rewards_history) < self.window:
             return False
-        current_avg = float(np.mean(rewards_history[-self.window:]))
+        current_avg = float(np.mean(rewards_history[-self.window :]))
         if current_avg > self.best + self.min_delta:
             self.best = current_avg
             self.steps_without_improvement = 0

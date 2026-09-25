@@ -25,16 +25,20 @@ class A2C(BaseAgent):
         if self.discrete:
             self.policy = DiscretePolicy(in_dim, hidden, int(env.action_space.n)).to(self.device)
         else:
-            self.policy = GaussianPolicy(in_dim, hidden, int(env.action_space.shape[0])).to(self.device)
+            self.policy = GaussianPolicy(in_dim, hidden, int(env.action_space.shape[0])).to(
+                self.device
+            )
         self.critic = Critic(in_dim, hidden).to(self.device)
         self.optimizer = torch.optim.Adam(
             list(self.policy.parameters()) + list(self.critic.parameters()),
-            lr=config.get("lr", 3e-4))
+            lr=config.get("lr", 3e-4),
+        )
         self.entropy_coef = config.get("entropy_coef", 0.01)
         try:
             gid = env.unwrapped.spec.id
             self.envs = gym.vector.SyncVectorEnv(
-                [lambda: gym.make(gid) for _ in range(self.n_envs)])
+                [lambda: gym.make(gid) for _ in range(self.n_envs)]
+            )
         except AttributeError:
             self.envs = gym.vector.SyncVectorEnv([lambda: env] * self.n_envs)
 
@@ -70,11 +74,10 @@ class A2C(BaseAgent):
                         dist = torch.distributions.Categorical(probs)
                         a = dist.sample()
                         lp = dist.log_prob(a)
-                        ent = dist.entropy()
+                        dist.entropy()
                         actions = a.cpu().numpy()
                     else:
                         a, lp = self.policy.sample(x)
-                        ent = None
                         actions = a.cpu().numpy()
                 obs_buf.append(x)
                 act_buf.append(a)
@@ -104,9 +107,13 @@ class A2C(BaseAgent):
                 adv.insert(0, G - val_buf[t].cpu().numpy().squeeze())
             obs_t = torch.cat(obs_buf)
             act_t = torch.cat(act_buf)
-            lp_t = torch.cat(lp_buf)
-            ret_t = torch.as_tensor(np.concatenate(returns), dtype=torch.float32, device=self.device).unsqueeze(1)
-            adv_t = torch.as_tensor(np.concatenate(adv), dtype=torch.float32, device=self.device).unsqueeze(1)
+            torch.cat(lp_buf)
+            ret_t = torch.as_tensor(
+                np.concatenate(returns), dtype=torch.float32, device=self.device
+            ).unsqueeze(1)
+            adv_t = torch.as_tensor(
+                np.concatenate(adv), dtype=torch.float32, device=self.device
+            ).unsqueeze(1)
             adv_t = (adv_t - adv_t.mean()) / (adv_t.std() + 1e-8)
             if self.discrete:
                 probs_new = self.policy(obs_t)
@@ -126,7 +133,9 @@ class A2C(BaseAgent):
             torch.nn.utils.clip_grad_norm_(self.policy.parameters(), 0.5)
             torch.nn.utils.clip_grad_norm_(self.critic.parameters(), 0.5)
             self.optimizer.step()
-            tracker.log(timestep=t_global, episode=ep, loss=float((policy_loss + value_loss).item()))
+            tracker.log(
+                timestep=t_global, episode=ep, loss=float((policy_loss + value_loss).item())
+            )
         self.episodes = ep
 
     def save(self, path):

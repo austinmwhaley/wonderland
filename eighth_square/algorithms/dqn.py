@@ -46,11 +46,12 @@ def train_dqn(env: EnvWrapper, config: AlgorithmConfig) -> Result:
     buffer = ReplayBuffer(config.buffer_capacity, config.device)
 
     rewards_history, losses = [], []
-    epsilon = config.epsilon_start
     t0 = time.time()
     total_steps, episode = 0, 0
     converged, episodes_to_solve = False, None
-    tracker = PlateauTracker(config.early_stop_patience, config.early_stop_min_delta, config.solve_window)
+    tracker = PlateauTracker(
+        config.early_stop_patience, config.early_stop_min_delta, config.solve_window
+    )
 
     pbar = tqdm(range(config.max_episodes), desc=config.algo_name, unit="ep", leave=False)
 
@@ -60,8 +61,9 @@ def train_dqn(env: EnvWrapper, config: AlgorithmConfig) -> Result:
 
         for step in range(config.max_steps_per_episode):
             total_steps += 1
-            epsilon_val = config.epsilon_end + (config.epsilon_start - config.epsilon_end) * \
-                          np.exp(-total_steps / (config.max_episodes * 25))
+            epsilon_val = config.epsilon_end + (config.epsilon_start - config.epsilon_end) * np.exp(
+                -total_steps / (config.max_episodes * 25)
+            )
 
             if random.random() < epsilon_val:
                 action = env.action_space.sample()
@@ -94,8 +96,10 @@ def train_dqn(env: EnvWrapper, config: AlgorithmConfig) -> Result:
         losses.append(np.mean(episode_loss) if episode_loss else 0.0)
 
         if len(rewards_history) >= config.solve_window:
-            avg = np.mean(rewards_history[-config.solve_window:])
-            pbar.set_postfix({"avg100": f"{avg:.1f}", "eps": f"{epsilon_val:.3f}", "buf": len(buffer)})
+            avg = np.mean(rewards_history[-config.solve_window :])
+            pbar.set_postfix(
+                {"avg100": f"{avg:.1f}", "eps": f"{epsilon_val:.3f}", "buf": len(buffer)}
+            )
             if config.is_solved(avg) and not converged:
                 converged = True
                 episodes_to_solve = episode
@@ -106,10 +110,15 @@ def train_dqn(env: EnvWrapper, config: AlgorithmConfig) -> Result:
 
     pbar.close()
     result = Result(
-        algo_name=config.algo_name, env_name=env.config.env_name,
-        config=vars(config), episode_rewards=rewards_history, losses=losses,
-        converged=converged, episodes_to_solve=episodes_to_solve,
-        wall_time=time.time() - t0, total_steps=total_steps,
+        algo_name=config.algo_name,
+        env_name=env.config.env_name,
+        config=vars(config),
+        episode_rewards=rewards_history,
+        losses=losses,
+        converged=converged,
+        episodes_to_solve=episodes_to_solve,
+        wall_time=time.time() - t0,
+        total_steps=total_steps,
     )
     result.compute_running_avg()
     return result
@@ -126,11 +135,12 @@ def train_double_dqn(env: EnvWrapper, config: AlgorithmConfig) -> Result:
     buffer = ReplayBuffer(config.buffer_capacity, config.device)
 
     rewards_history, losses = [], []
-    epsilon = config.epsilon_start
     t0 = time.time()
     total_steps, episode = 0, 0
     converged, episodes_to_solve = False, None
-    tracker = PlateauTracker(config.early_stop_patience, config.early_stop_min_delta, config.solve_window)
+    tracker = PlateauTracker(
+        config.early_stop_patience, config.early_stop_min_delta, config.solve_window
+    )
 
     pbar = tqdm(range(config.max_episodes), desc=config.algo_name, unit="ep", leave=False)
 
@@ -140,8 +150,9 @@ def train_double_dqn(env: EnvWrapper, config: AlgorithmConfig) -> Result:
 
         for step in range(config.max_steps_per_episode):
             total_steps += 1
-            epsilon_val = config.epsilon_end + (config.epsilon_start - config.epsilon_end) * \
-                          np.exp(-total_steps / (config.max_episodes * 25))
+            epsilon_val = config.epsilon_end + (config.epsilon_start - config.epsilon_end) * np.exp(
+                -total_steps / (config.max_episodes * 25)
+            )
 
             if random.random() < epsilon_val:
                 action = env.action_space.sample()
@@ -186,8 +197,10 @@ def train_double_dqn(env: EnvWrapper, config: AlgorithmConfig) -> Result:
         losses.append(np.mean(episode_loss) if episode_loss else 0.0)
 
         if len(rewards_history) >= config.solve_window:
-            avg = np.mean(rewards_history[-config.solve_window:])
-            pbar.set_postfix({"avg100": f"{avg:.1f}", "eps": f"{epsilon_val:.3f}", "buf": len(buffer)})
+            avg = np.mean(rewards_history[-config.solve_window :])
+            pbar.set_postfix(
+                {"avg100": f"{avg:.1f}", "eps": f"{epsilon_val:.3f}", "buf": len(buffer)}
+            )
             if config.is_solved(avg) and not converged:
                 converged = True
                 episodes_to_solve = episode
@@ -198,10 +211,15 @@ def train_double_dqn(env: EnvWrapper, config: AlgorithmConfig) -> Result:
 
     pbar.close()
     result = Result(
-        algo_name=config.algo_name, env_name=env.config.env_name,
-        config=vars(config), episode_rewards=rewards_history, losses=losses,
-        converged=converged, episodes_to_solve=episodes_to_solve,
-        wall_time=time.time() - t0, total_steps=total_steps,
+        algo_name=config.algo_name,
+        env_name=env.config.env_name,
+        config=vars(config),
+        episode_rewards=rewards_history,
+        losses=losses,
+        converged=converged,
+        episodes_to_solve=episodes_to_solve,
+        wall_time=time.time() - t0,
+        total_steps=total_steps,
     )
     result.compute_running_avg()
     return result
@@ -218,11 +236,12 @@ def train_dueling_dqn(env: EnvWrapper, config: AlgorithmConfig) -> Result:
     buffer = ReplayBuffer(config.buffer_capacity, config.device)
 
     rewards_history, losses = [], []
-    epsilon = config.epsilon_start
     t0 = time.time()
     total_steps, episode = 0, 0
     converged, episodes_to_solve = False, None
-    tracker = PlateauTracker(config.early_stop_patience, config.early_stop_min_delta, config.solve_window)
+    tracker = PlateauTracker(
+        config.early_stop_patience, config.early_stop_min_delta, config.solve_window
+    )
 
     pbar = tqdm(range(config.max_episodes), desc=config.algo_name, unit="ep", leave=False)
 
@@ -232,8 +251,9 @@ def train_dueling_dqn(env: EnvWrapper, config: AlgorithmConfig) -> Result:
 
         for step in range(config.max_steps_per_episode):
             total_steps += 1
-            epsilon_val = config.epsilon_end + (config.epsilon_start - config.epsilon_end) * \
-                          np.exp(-total_steps / (config.max_episodes * 25))
+            epsilon_val = config.epsilon_end + (config.epsilon_start - config.epsilon_end) * np.exp(
+                -total_steps / (config.max_episodes * 25)
+            )
 
             if random.random() < epsilon_val:
                 action = env.action_space.sample()
@@ -278,8 +298,10 @@ def train_dueling_dqn(env: EnvWrapper, config: AlgorithmConfig) -> Result:
         losses.append(np.mean(episode_loss) if episode_loss else 0.0)
 
         if len(rewards_history) >= config.solve_window:
-            avg = np.mean(rewards_history[-config.solve_window:])
-            pbar.set_postfix({"avg100": f"{avg:.1f}", "eps": f"{epsilon_val:.3f}", "buf": len(buffer)})
+            avg = np.mean(rewards_history[-config.solve_window :])
+            pbar.set_postfix(
+                {"avg100": f"{avg:.1f}", "eps": f"{epsilon_val:.3f}", "buf": len(buffer)}
+            )
             if config.is_solved(avg) and not converged:
                 converged = True
                 episodes_to_solve = episode
@@ -290,10 +312,15 @@ def train_dueling_dqn(env: EnvWrapper, config: AlgorithmConfig) -> Result:
 
     pbar.close()
     result = Result(
-        algo_name=config.algo_name, env_name=env.config.env_name,
-        config=vars(config), episode_rewards=rewards_history, losses=losses,
-        converged=converged, episodes_to_solve=episodes_to_solve,
-        wall_time=time.time() - t0, total_steps=total_steps,
+        algo_name=config.algo_name,
+        env_name=env.config.env_name,
+        config=vars(config),
+        episode_rewards=rewards_history,
+        losses=losses,
+        converged=converged,
+        episodes_to_solve=episodes_to_solve,
+        wall_time=time.time() - t0,
+        total_steps=total_steps,
     )
     result.compute_running_avg()
     return result

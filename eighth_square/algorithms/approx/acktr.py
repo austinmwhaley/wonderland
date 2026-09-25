@@ -105,13 +105,14 @@ class ACKTR(BaseAgent):
         self.critic = Critic(in_dim, hidden).to(self.device)
         lr = config.get("lr", 1e-2)
         self.kfac = KFACOptimizer(
-            nn.ModuleList([self.policy, self.critic]),
-            lr=lr, damping=config.get("damping", 1e-2))
+            nn.ModuleList([self.policy, self.critic]), lr=lr, damping=config.get("damping", 1e-2)
+        )
         self.entropy_coef = config.get("entropy_coef", 0.01)
         try:
             gid = env.unwrapped.spec.id
             self.envs = gym.vector.SyncVectorEnv(
-                [lambda: gym.make(gid) for _ in range(self.n_envs)])
+                [lambda: gym.make(gid) for _ in range(self.n_envs)]
+            )
         except AttributeError:
             self.envs = gym.vector.SyncVectorEnv([lambda: env] * self.n_envs)
 
@@ -167,11 +168,13 @@ class ACKTR(BaseAgent):
                 adv.insert(0, G - val_buf[t].cpu().numpy().squeeze())
             obs_t = torch.cat(obs_buf)
             act_t = torch.cat(act_buf)
-            lp_t = torch.cat(lp_buf)
-            ret_t = torch.as_tensor(np.concatenate(returns), dtype=torch.float32,
-                                    device=self.device).unsqueeze(1)
-            adv_t = torch.as_tensor(np.concatenate(adv), dtype=torch.float32,
-                                    device=self.device).unsqueeze(1)
+            torch.cat(lp_buf)
+            ret_t = torch.as_tensor(
+                np.concatenate(returns), dtype=torch.float32, device=self.device
+            ).unsqueeze(1)
+            adv_t = torch.as_tensor(
+                np.concatenate(adv), dtype=torch.float32, device=self.device
+            ).unsqueeze(1)
             adv_t = (adv_t - adv_t.mean()) / (adv_t.std() + 1e-8)
             probs_new = self.policy(obs_t)
             dist_new = torch.distributions.Categorical(probs_new)

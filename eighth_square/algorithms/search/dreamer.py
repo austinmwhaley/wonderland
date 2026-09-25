@@ -17,15 +17,18 @@ class RSSM(nn.Module):
         self.z_dim = z_dim
         self.n_actions = n_actions
         self.free_bits = free_bits
-        self.enc = nn.Sequential(nn.Linear(obs_dim, hidden), nn.ReLU(), nn.Linear(hidden, hidden), nn.ReLU())
+        self.enc = nn.Sequential(
+            nn.Linear(obs_dim, hidden), nn.ReLU(), nn.Linear(hidden, hidden), nn.ReLU()
+        )
         self.z_mu = nn.Linear(hidden, z_dim)
         self.z_logvar = nn.Linear(hidden, z_dim)
         self.in_proj = nn.Sequential(nn.Linear(z_dim + n_actions, hidden), nn.ReLU())
         self.gru = nn.GRUCell(hidden, hidden)
         self.prior_mu = nn.Linear(hidden, z_dim)
         self.prior_logvar = nn.Linear(hidden, z_dim)
-        self.dec = nn.Sequential(nn.Linear(z_dim + hidden, hidden), nn.ReLU(),
-                                 nn.Linear(hidden, hidden), nn.ReLU())
+        self.dec = nn.Sequential(
+            nn.Linear(z_dim + hidden, hidden), nn.ReLU(), nn.Linear(hidden, hidden), nn.ReLU()
+        )
         self.obs_head = nn.Linear(hidden, obs_dim)
         self.rew_head = nn.Linear(hidden, 1)
         self.cont_head = nn.Linear(hidden, 1)
@@ -69,12 +72,20 @@ class DreamerAgent(BaseAgent):
         self.z_dim = config.get("dr_z_dim", 16)
         hidden = config.get("dr_hidden", 64)
         self.rssm = RSSM(obs_dim, self.n_actions, self.z_dim, hidden).to(self.device)
-        self.actor = nn.Sequential(nn.Linear(self.z_dim + hidden, hidden), nn.ReLU(),
-                                   nn.Linear(hidden, hidden), nn.ReLU(),
-                                   nn.Linear(hidden, self.n_actions)).to(self.device)
-        self.critic = nn.Sequential(nn.Linear(self.z_dim + hidden, hidden), nn.ReLU(),
-                                    nn.Linear(hidden, hidden), nn.ReLU(),
-                                    nn.Linear(hidden, 1)).to(self.device)
+        self.actor = nn.Sequential(
+            nn.Linear(self.z_dim + hidden, hidden),
+            nn.ReLU(),
+            nn.Linear(hidden, hidden),
+            nn.ReLU(),
+            nn.Linear(hidden, self.n_actions),
+        ).to(self.device)
+        self.critic = nn.Sequential(
+            nn.Linear(self.z_dim + hidden, hidden),
+            nn.ReLU(),
+            nn.Linear(hidden, hidden),
+            nn.ReLU(),
+            nn.Linear(hidden, 1),
+        ).to(self.device)
         self.opt_rssm = torch.optim.Adam(self.rssm.parameters(), lr=config.get("lr", 3e-4))
         self.opt_actor = torch.optim.Adam(self.actor.parameters(), lr=config.get("lr", 3e-4))
         self.opt_critic = torch.optim.Adam(self.critic.parameters(), lr=config.get("lr", 3e-4))
@@ -91,8 +102,15 @@ class DreamerAgent(BaseAgent):
                 a = int(self.rng.integers(self.n_actions))
                 ns, r, term, trunc, _ = env.step(a)
                 done = bool(term or trunc)
-                ep.append((np.asarray(state, dtype=np.float32), a, float(r), done,
-                           np.asarray(ns, dtype=np.float32)))
+                ep.append(
+                    (
+                        np.asarray(state, dtype=np.float32),
+                        a,
+                        float(r),
+                        done,
+                        np.asarray(ns, dtype=np.float32),
+                    )
+                )
                 state = ns
                 if len(ep) >= env.spec.max_episode_steps:
                     break
@@ -115,11 +133,11 @@ class DreamerAgent(BaseAgent):
             obs, obs_next, acts, rews, conts = seq
             if len(obs) > 20:
                 i = self.rng.integers(0, len(obs) - 19)
-                obs = obs[i:i + 20]
-                obs_next = obs_next[i:i + 20]
-                acts = acts[i:i + 20]
-                rews = rews[i:i + 20]
-                conts = conts[i:i + 20]
+                obs = obs[i : i + 20]
+                obs_next = obs_next[i : i + 20]
+                acts = acts[i : i + 20]
+                rews = rews[i : i + 20]
+                conts = conts[i : i + 20]
             obs_t = torch.as_tensor(obs, device=self.device)
             obs_n = torch.as_tensor(obs_next, device=self.device)
             act_t = torch.as_tensor(acts, device=self.device)
@@ -136,14 +154,26 @@ class DreamerAgent(BaseAgent):
                 o_hat, r_hat, c_hat = self.rssm.heads(h, z)
                 qvar = qlogvar.clamp(-10, 10).exp()
                 pvar = plogvar.clamp(-10, 10).exp()
-                kl = 0.5 * (plogvar.clamp(-10, 10) - qlogvar.clamp(-10, 10)
-                            + (qvar + (qmu - pmu).pow(2)) / (pvar + 1e-6) - 1).sum(1)
+                kl = 0.5 * (
+                    plogvar.clamp(-10, 10)
+                    - qlogvar.clamp(-10, 10)
+                    + (qvar + (qmu - pmu).pow(2)) / (pvar + 1e-6)
+                    - 1
+                ).sum(1)
                 kl = kl.clamp(min=self.rssm.free_bits * self.z_dim)
-                tot = (tot + F.mse_loss(o_hat, obs_n[t].unsqueeze(0))
-                       + F.mse_loss(r_hat, rew_t[t].unsqueeze(0))
-                       + F.binary_cross_entropy_with_logits(c_hat, cont_t[t].unsqueeze(0),
-                                                            pos_weight=torch.tensor(self.config.get("dr_cont_weight", 5.0), device=self.device))
-                       + 0.1 * kl.sum())
+                tot = (
+                    tot
+                    + F.mse_loss(o_hat, obs_n[t].unsqueeze(0))
+                    + F.mse_loss(r_hat, rew_t[t].unsqueeze(0))
+                    + F.binary_cross_entropy_with_logits(
+                        c_hat,
+                        cont_t[t].unsqueeze(0),
+                        pos_weight=torch.tensor(
+                            self.config.get("dr_cont_weight", 5.0), device=self.device
+                        ),
+                    )
+                    + 0.1 * kl.sum()
+                )
             self.opt_rssm.zero_grad()
             (tot / obs_t.shape[0]).backward()
             self.opt_rssm.step()
@@ -157,7 +187,9 @@ class DreamerAgent(BaseAgent):
             obs = starts[self.rng.integers(0, len(starts))]
             i = self.rng.integers(0, len(obs))
             with torch.no_grad():
-                qmu, qlogvar = self.rssm.encode(torch.as_tensor(obs[i], device=self.device).unsqueeze(0))
+                qmu, qlogvar = self.rssm.encode(
+                    torch.as_tensor(obs[i], device=self.device).unsqueeze(0)
+                )
                 z = self.rssm._sample(qmu, qlogvar)
             h = torch.zeros(1, self.rssm.gru.hidden_size, device=self.device)
             states = []
@@ -198,7 +230,9 @@ class DreamerAgent(BaseAgent):
             log_probs = torch.log(probs.gather(1, A) + 1e-8)
             adv = (targets - V[:L]).detach()
             self.opt_actor.zero_grad()
-            actor_loss = -(log_probs * adv).mean() - 0.01 * torch.mean(torch.sum(probs * torch.log(probs + 1e-8), dim=1))
+            actor_loss = -(log_probs * adv).mean() - 0.01 * torch.mean(
+                torch.sum(probs * torch.log(probs + 1e-8), dim=1)
+            )
             actor_loss.backward()
             self.opt_actor.step()
             self.opt_critic.zero_grad()
@@ -209,8 +243,9 @@ class DreamerAgent(BaseAgent):
     def train(self, env, config, tracker):
         episodes = self._collect_data(env, config.get("dr_data_episodes", 60))
         self._train_rssm(episodes, config.get("dr_rssm_steps", 3000))
-        self._imagination(episodes, config.get("dr_dream_steps", 3000),
-                          L=config.get("dr_horizon", 15))
+        self._imagination(
+            episodes, config.get("dr_dream_steps", 3000), L=config.get("dr_horizon", 15)
+        )
         ep = 0
         for _ in range(config.get("eval_episodes", 10)):
             state, _ = env.reset()
@@ -231,15 +266,25 @@ class DreamerAgent(BaseAgent):
 
     def act(self, state, eval=True):
         with torch.no_grad():
-            qmu, qlogvar = self.rssm.encode(torch.as_tensor(np.asarray(state, dtype=np.float32), device=self.device).unsqueeze(0))
+            qmu, qlogvar = self.rssm.encode(
+                torch.as_tensor(np.asarray(state, dtype=np.float32), device=self.device).unsqueeze(
+                    0
+                )
+            )
             z = self.rssm._sample(qmu, qlogvar)
             h = torch.zeros(1, self.rssm.gru.hidden_size, device=self.device)
             logits = self.actor(torch.cat([z, h], dim=1))
             return int(torch.argmax(logits, dim=1).item())
 
     def save(self, path):
-        torch.save({"rssm": self.rssm.state_dict(), "actor": self.actor.state_dict(),
-                    "critic": self.critic.state_dict()}, path)
+        torch.save(
+            {
+                "rssm": self.rssm.state_dict(),
+                "actor": self.actor.state_dict(),
+                "critic": self.critic.state_dict(),
+            },
+            path,
+        )
 
     def load(self, path):
         ckpt = torch.load(path, map_location=self.device)

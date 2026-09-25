@@ -14,12 +14,15 @@ class IntrinsicPredictor(nn.Module):
     def __init__(self, in_dim, hidden, n_actions, feat_dim=64):
         super().__init__()
         self.net = nn.Sequential(
-            nn.Linear(in_dim + n_actions, hidden), nn.ReLU(),
-            nn.Linear(hidden, hidden), nn.ReLU(),
+            nn.Linear(in_dim + n_actions, hidden),
+            nn.ReLU(),
+            nn.Linear(hidden, hidden),
+            nn.ReLU(),
             nn.Linear(hidden, feat_dim),
         )
         self.target = nn.Sequential(
-            nn.Linear(in_dim, hidden), nn.ReLU(),
+            nn.Linear(in_dim, hidden),
+            nn.ReLU(),
             nn.Linear(hidden, feat_dim),
         )
         for p in self.target.parameters():
@@ -29,8 +32,7 @@ class IntrinsicPredictor(nn.Module):
         return self.target(obs2)
 
     def forward(self, obs, act):
-        act_oh = torch.zeros(obs.size(0), self.net[0].in_features - obs.size(1),
-                             device=obs.device)
+        act_oh = torch.zeros(obs.size(0), self.net[0].in_features - obs.size(1), device=obs.device)
         act_oh.scatter_(1, act.unsqueeze(1), 1.0)
         return self.net(torch.cat([obs, act_oh], dim=-1))
 
@@ -66,16 +68,17 @@ class Agent57(R2D2):
         self._int_mean = 0.0
         self._int_std = 1.0
         self._int_count = 0
-        self.online = RecurrentQNetwork(int(np.prod(env.observation_space.shape)),
-                                        self.hidden, self.nA,
-                                        out_heads=self.n_param).to(self.device)
-        self.target = RecurrentQNetwork(int(np.prod(env.observation_space.shape)),
-                                        self.hidden, self.nA,
-                                        out_heads=self.n_param).to(self.device)
+        self.online = RecurrentQNetwork(
+            int(np.prod(env.observation_space.shape)), self.hidden, self.nA, out_heads=self.n_param
+        ).to(self.device)
+        self.target = RecurrentQNetwork(
+            int(np.prod(env.observation_space.shape)), self.hidden, self.nA, out_heads=self.n_param
+        ).to(self.device)
         self.target.load_state_dict(self.online.state_dict())
         self.optimizer = torch.optim.Adam(self.online.parameters(), lr=self.lr)
-        self.predictor = IntrinsicPredictor(int(np.prod(env.observation_space.shape)),
-                                            self.hidden, self.nA).to(self.device)
+        self.predictor = IntrinsicPredictor(
+            int(np.prod(env.observation_space.shape)), self.hidden, self.nA
+        ).to(self.device)
         self.pred_optimizer = torch.optim.Adam(self.predictor.parameters(), lr=1e-3)
 
     def _ucb_scores(self):
@@ -92,7 +95,7 @@ class Agent57(R2D2):
         self.online.eval() if eval else self.online.train()
         with torch.no_grad():
             q, self._state = self.online(self._t(state), self._state)
-            q = q.view(1, -1)[:, self.active_param * self.nA:(self.active_param + 1) * self.nA]
+            q = q.view(1, -1)[:, self.active_param * self.nA : (self.active_param + 1) * self.nA]
             if eval or self.rng.random() >= self.sched.epsilon(self.t):
                 return int(q.argmax().item())
             return int(self.rng.integers(self.nA))
@@ -108,9 +111,13 @@ class Agent57(R2D2):
             ns, r, term, trunc, _ = env.step(a)
             done = bool(term or trunc)
             with torch.no_grad():
-                ri_raw = float(self.predictor.intrinsic(
-                    self._t(state).view(1, -1), torch.as_tensor([a], device=self.device),
-                    self._t(ns).view(1, -1)).item())
+                ri_raw = float(
+                    self.predictor.intrinsic(
+                        self._t(state).view(1, -1),
+                        torch.as_tensor([a], device=self.device),
+                        self._t(ns).view(1, -1),
+                    ).item()
+                )
             self._int_count += 1
             self._int_mean += 0.001 * (ri_raw - self._int_mean)
             self._int_std += 0.001 * (abs(ri_raw - self._int_mean) - self._int_std)
@@ -126,21 +133,28 @@ class Agent57(R2D2):
                 ep += 1
                 beta = self.betas[self.active_param]
                 rew_tot = [r + beta * i for r, i in zip(ep_rew, ep_int)]
-                self.buffer.push_episode(ep_obs, ep_act, rew_tot, ep_done,
-                                         param_idx=self.active_param)
+                self.buffer.push_episode(
+                    ep_obs, ep_act, rew_tot, ep_done, param_idx=self.active_param
+                )
                 self.param_returns[self.active_param].append(float(sum(ep_rew)))
                 self.param_counts[self.active_param] += 1
                 self._in_phase += 1
                 if self._in_phase >= self.switch_interval:
                     self._in_phase = 0
                     if sum(self.param_counts) < 2 * self.n_param * self.switch_interval:
-                        self.active_param = int(sum(self.param_counts) // self.switch_interval) % self.n_param
+                        self.active_param = (
+                            int(sum(self.param_counts) // self.switch_interval) % self.n_param
+                        )
                     else:
                         scores = self._ucb_scores()
                         self.active_param = int(np.argmax(scores))
-                tracker.log(timestep=self.t, episode=ep, ret=float(sum(ep_rew)),
-                            loss=float(np.mean(losses)) if losses else None,
-                            active_param=self.active_param)
+                tracker.log(
+                    timestep=self.t,
+                    episode=ep,
+                    ret=float(sum(ep_rew)),
+                    loss=float(np.mean(losses)) if losses else None,
+                    active_param=self.active_param,
+                )
                 ep_obs, ep_act, ep_rew, ep_int, ep_done = [], [], [], [], []
                 losses = []
                 state, _ = env.reset()
@@ -187,19 +201,20 @@ class Agent57(R2D2):
             target = torch.zeros_like(rew)
             for t in range(T):
                 G = rew[:, t].clone()
-                live = (done[:, t] <= 0.5)
-                gamma = torch.as_tensor([self.gammas[p] for p in param.tolist()],
-                                        device=self.device)
+                live = done[:, t] <= 0.5
+                gamma = torch.as_tensor(
+                    [self.gammas[p] for p in param.tolist()], device=self.device
+                )
                 for k in range(1, self.n_step):
                     if t + k < T:
-                        G = G + (gamma ** k) * rew[:, t + k] * live.float()
+                        G = G + (gamma**k) * rew[:, t + k] * live.float()
                         live = live & (done[:, t + k] <= 0.5)
                 if t + self.n_step < T:
-                    G = G + (gamma ** self.n_step) * unrescale(q2[:, t + self.n_step]) * live.float()
+                    G = G + (gamma**self.n_step) * unrescale(q2[:, t + self.n_step]) * live.float()
                 target[:, t] = G
         td = rescale(target) - q
         td = torch.where(mask, td, torch.zeros_like(td))
-        loss = (td ** 2 * weights).sum() / mask.sum()
+        loss = (td**2 * weights).sum() / mask.sum()
         self.optimizer.zero_grad()
         loss.backward()
         torch.nn.utils.clip_grad_norm_(self.online.parameters(), 40.0)
@@ -207,7 +222,6 @@ class Agent57(R2D2):
         self.buffer.update_priorities(idxs, td.detach().abs().amax(-1).cpu().numpy())
         with torch.no_grad():
             obs_n = obs[:, 1:]
-            act_n = act[:, :-1]
             feat = self.predictor.features(obs_n).detach()
         pred = self.predictor(obs[:, :-1].reshape(-1, D), act[:, :-1].reshape(-1))
         pred = pred.view(B, T - 1, -1)

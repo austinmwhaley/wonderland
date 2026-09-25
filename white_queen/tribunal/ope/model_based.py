@@ -4,14 +4,24 @@ simulates the candidate proxy from real diet starts. Adaptive sim count:
 episodes grow until the standard error clears a fraction of the estimate.
 Same role the beside-B world model will play in retail: one more panelist,
 strongest on sequential claims, never the decider alone."""
+
 import numpy as np
 
 
 _DYN_CACHE = {}
 
 
-def learn_dynamics(diet, hidden=None, batch=None, seed=0, patience=None,
-                   eval_every=None, steps_max=None, cfg=None, cache_dir=None):
+def learn_dynamics(
+    diet,
+    hidden=None,
+    batch=None,
+    seed=0,
+    patience=None,
+    eval_every=None,
+    steps_max=None,
+    cfg=None,
+    cache_dir=None,
+):
     """Dynamics MLP autotuned from diet (same shared net rule as FQE).
     Pass cfg dict or explicit kwargs to override per-key.
 
@@ -23,27 +33,38 @@ def learn_dynamics(diet, hidden=None, batch=None, seed=0, patience=None,
     import sys
     import torch
     import torch.nn.functional as F
-    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(
-        os.path.dirname(os.path.abspath(__file__))))))
+
+    sys.path.insert(
+        0,
+        os.path.dirname(
+            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        ),
+    )
     from algorithms.approx.networks import MLP
     from .autotune import resolve_fqe_cfg
+
     base = dict(cfg) if cfg else {}
-    for k, v in (("hidden", hidden), ("batch", batch), ("seed", seed),
-                 ("patience", patience), ("eval_every", eval_every),
-                 ("steps_max", steps_max)):
+    for k, v in (
+        ("hidden", hidden),
+        ("batch", batch),
+        ("seed", seed),
+        ("patience", patience),
+        ("eval_every", eval_every),
+        ("steps_max", steps_max),
+    ):
         if v is not None:
             base[k] = v
     ac = resolve_fqe_cfg(diet, base)
     # Cache lookup AFTER resolving (key includes resolved budget so explicit
     # overrides still retrain).
-    cache_key = (id(diet), len(diet["obs"]), ac["hidden"], ac["batch"],
-                 ac["steps_max"], ac["seed"])
+    cache_key = (id(diet), len(diet["obs"]), ac["hidden"], ac["batch"], ac["steps_max"], ac["seed"])
     hit = _DYN_CACHE.get(cache_key)
     if hit is not None and hit[0] is diet:
         return hit[1], hit[2]
     _dkey, _dh = None, None
     if cache_dir:
         from .cache import diet_hash, make_key, load as _cload
+
         _dkey = make_key("dyn", diet_hash(diet), "nodiet-cand", ac, None, "")
         _dh = _cload(cache_dir, _dkey, map_location="cpu")
     hidden, batch, seed = ac["hidden"], ac["batch"], ac["seed"]
@@ -52,6 +73,7 @@ def learn_dynamics(diet, hidden=None, batch=None, seed=0, patience=None,
     N, in_dim = len(diet["obs"]), diet["obs"].shape[1]
     nA = diet["nA"]
     from .training import seed_all as _seed_all
+
     _seed_all(seed)
     rng = np.random.default_rng(seed)
     perm = rng.permutation(N)
@@ -68,12 +90,18 @@ def learn_dynamics(diet, hidden=None, batch=None, seed=0, patience=None,
     # rolls every policy to max_len and accrues ~500 reward on CartPole — so
     # MB read ~99 for a random policy (truth ~9) and could not distinguish
     # good from bad. done is what makes survival, hence return, observable.
-    Y = np.concatenate([(diet["obs2"] - diet["obs"]).astype(np.float64),
-                        diet["rew"][:, None].astype(np.float64),
-                        diet["done"][:, None].astype(np.float64)], 1)
+    Y = np.concatenate(
+        [
+            (diet["obs2"] - diet["obs"]).astype(np.float64),
+            diet["rew"][:, None].astype(np.float64),
+            diet["done"][:, None].astype(np.float64),
+        ],
+        1,
+    )
     mu, sd = X.mean(0), X.std(0) + 1e-6  # z-score guard, not tuning.
     y_mu, y_sd = Y.mean(0), Y.std(0) + 1e-6  # normalize targets: reward scale varies by diet.
     from .autotune import resolve_device
+
     dev = resolve_device(ac.get("device"))
     Xn = torch.as_tensor(((X - mu) / sd).astype(np.float32)).to(dev)
     Yn = torch.as_tensor(((Y - y_mu) / y_sd).astype(np.float32)).to(dev)
@@ -113,8 +141,7 @@ def learn_dynamics(diet, hidden=None, batch=None, seed=0, patience=None,
         except Exception:
             _dh, _cache_hit = None, False
     if _cache_hit:
-        _gov = {"steps": 0, "n_evals": 0, "stopped": "cache-hit",
-                "lr_final": ac["lr"]}
+        _gov = {"steps": 0, "n_evals": 0, "stopped": "cache-hit", "lr_final": ac["lr"]}
     else:
         _gov = govern({"net": net}, [opt], _step, val_err, ac)
         best = _gov["best_val"]
@@ -122,7 +149,9 @@ def learn_dynamics(diet, hidden=None, batch=None, seed=0, patience=None,
     def step_fn(obs_batch, act_batch):
         with torch.no_grad():
             o = np.asarray(obs_batch, dtype=np.float64)
-            x = torch.as_tensor(np.concatenate([o, onehot(act_batch)], 1).astype(np.float32)).to(dev)
+            x = torch.as_tensor(np.concatenate([o, onehot(act_batch)], 1).astype(np.float32)).to(
+                dev
+            )
             mu_t = torch.as_tensor(mu.astype(np.float32)).to(dev)
             sd_t = torch.as_tensor(sd.astype(np.float32)).to(dev)
             x = (x - mu_t) / sd_t
@@ -136,22 +165,38 @@ def learn_dynamics(diet, hidden=None, batch=None, seed=0, patience=None,
         # near-zero denormalized done (bias ~1/n_steps).
         done_prob = np.clip(d[:, in_dim + 1], 0.0, 1.0)
         return o + d[:, :in_dim], d[:, in_dim], done_prob
-    info = {"val_mse": best, "steps": _gov.get("steps", 0),
-            "n_evals": _gov.get("n_evals", 0),
-            "stopped": _gov.get("stopped", "?"),
-            "lr_final": _gov.get("lr_final", ac["lr"]),
-            "cache_hit": _cache_hit, "termination_head": True,
-            "y_sd": [round(float(v), 5) for v in y_sd],
-            "rew_range": [rew_min, rew_max]}
+
+    info = {
+        "val_mse": best,
+        "steps": _gov.get("steps", 0),
+        "n_evals": _gov.get("n_evals", 0),
+        "stopped": _gov.get("stopped", "?"),
+        "lr_final": _gov.get("lr_final", ac["lr"]),
+        "cache_hit": _cache_hit,
+        "termination_head": True,
+        "y_sd": [round(float(v), 5) for v in y_sd],
+        "rew_range": [rew_min, rew_max],
+    }
     if _dkey is not None and not _cache_hit:
         from .cache import save as _csave
+
         _csave(cache_dir, _dkey, {"net": net.state_dict(), "info": info})
     _DYN_CACHE[cache_key] = (diet, step_fn, info)
     return step_fn, info
 
 
-def rollout_estimate(diet, cand, gamma, step_fn, temperature=1.0, seed=0,
-                     se_frac=None, sim_min=None, sim_max=None, cfg=None):
+def rollout_estimate(
+    diet,
+    cand,
+    gamma,
+    step_fn,
+    temperature=1.0,
+    seed=0,
+    se_frac=None,
+    sim_min=None,
+    sim_max=None,
+    cfg=None,
+):
     """Simulate the proxy from diet starts; grow sims until SE/estimate is
     small (adaptive compute, capped). sim counts and se_frac autotuned from
     n_episodes unless pinned. Termination: learned done head (survival is the
@@ -159,11 +204,11 @@ def rollout_estimate(diet, cand, gamma, step_fn, temperature=1.0, seed=0,
     import numpy as _np
     from .autotune import diet_fingerprint, resolve_rollout_cfg
     from .protocols import check_candidate
+
     check_candidate(cand)
     fp = diet_fingerprint(diet, gamma)
     base = dict(cfg) if cfg else {}
-    for k, v in (("se_frac", se_frac), ("sim_min", sim_min),
-                 ("sim_max", sim_max), ("seed", seed)):
+    for k, v in (("se_frac", se_frac), ("sim_min", sim_min), ("sim_max", sim_max), ("seed", seed)):
         if v is not None:
             base[k] = v
     rc = resolve_rollout_cfg(fp["n_episodes"], fp["max_len"], base)
@@ -172,6 +217,7 @@ def rollout_estimate(diet, cand, gamma, step_fn, temperature=1.0, seed=0,
     rng = _np.random.default_rng(seed)
     from .estimators import episodes
     from .protocols import sample_actions
+
     starts = _np.stack([ep["obs"][0] for ep in episodes(diet)])
     max_len = rc["max_len"]
     bounds = np.stack([diet["obs"].min(0), diet["obs"].max(0)])
@@ -189,7 +235,9 @@ def rollout_estimate(diet, cand, gamma, step_fn, temperature=1.0, seed=0,
         disc, g = 1.0, np.zeros(len(i))
         alive = np.ones(len(i), dtype=bool)
         for t in range(max_len):
-            p = _np.asarray(cand.action_probs(s.astype(np.float32), temperature=temperature), dtype=float)
+            p = _np.asarray(
+                cand.action_probs(s.astype(np.float32), temperature=temperature), dtype=float
+            )
             if not _np.isfinite(p).all() or (p < 0).any():
                 nan_rows += 1
             a = sample_actions(rng, p)
@@ -207,9 +255,13 @@ def rollout_estimate(diet, cand, gamma, step_fn, temperature=1.0, seed=0,
                 break
         rets.extend(g.tolist())
         n += len(i)
-    out = {"mb": float(_np.mean(rets)), "se": round(_se(rets), 2), "sims": n,
-           "done_hits": int(done_hits),
-           "cfg": {"se_frac": se_frac, "sim_min": sim_min, "sim_max": sim_max}}
+    out = {
+        "mb": float(_np.mean(rets)),
+        "se": round(_se(rets), 2),
+        "sims": n,
+        "done_hits": int(done_hits),
+        "cfg": {"se_frac": se_frac, "sim_min": sim_min, "sim_max": sim_max},
+    }
     if nan_rows:
         out["nan_prob_rows"] = int(nan_rows)  # receipt: how often sanitize fired
     return out
@@ -217,6 +269,7 @@ def rollout_estimate(diet, cand, gamma, step_fn, temperature=1.0, seed=0,
 
 def _se(x):
     import numpy as _np
+
     x = _np.asarray(x, float)
     return float(x.std() / max(len(x) ** 0.5, 1)) if len(x) > 1 else float("inf")
 
@@ -230,6 +283,7 @@ def learn_dynamics_ensemble(diet, K=3, cfg=None, cache_dir=None):
     Returns (step_fn, info); members are individually disk-cached.
     """
     import numpy as _np
+
     K = int(K or 1)
     if K <= 1:
         return learn_dynamics(diet, cfg=cfg, cache_dir=cache_dir)
@@ -257,8 +311,11 @@ def learn_dynamics_ensemble(diet, K=3, cfg=None, cache_dir=None):
     def compat(obs_batch, act_batch):
         ns, r, dp, _ = step_fn(obs_batch, act_batch)
         return ns, r, dp
+
     compat._disagreement = True
-    info = {"ensemble_K": K,
-            "member_val_mse": [i.get("val_mse") for i in infos],
-            "termination_head": True}
+    info = {
+        "ensemble_K": K,
+        "member_val_mse": [i.get("val_mse") for i in infos],
+        "termination_head": True,
+    }
     return compat, info

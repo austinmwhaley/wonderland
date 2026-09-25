@@ -8,7 +8,6 @@ assumption strength; walk up while bootstrap CIs overlap the running
 choice; stop at the sharpest estimate consistent with everything weaker.
 No selection knobs beyond the shared CI alpha. Reported, not yet gate power.
 """
-import numpy as np
 
 ORDER = ("anchor", "fqe_dm", "mis", "wis", "wdr", "dr", "magic", "is")
 

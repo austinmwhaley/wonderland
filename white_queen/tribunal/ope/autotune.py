@@ -40,9 +40,9 @@ import numpy as np
 # ---------------------------------------------------------------------------
 # Numerical guards (not tuning dials — do not "tune" these per diet)
 # ---------------------------------------------------------------------------
-PROB_FLOOR = 1e-8   # max(mu, FLOOR): behavior probs are exact; floor avoids 0/0.
-VAR_FLOOR = 1e-12   # max(var, FLOOR): avoids div-by-zero on degenerate weights.
-WEIGHT_CEIL = 1e6   # clip(uncapped rho, 0, CEIL) in temp search: prevents inf.
+PROB_FLOOR = 1e-8  # max(mu, FLOOR): behavior probs are exact; floor avoids 0/0.
+VAR_FLOOR = 1e-12  # max(var, FLOOR): avoids div-by-zero on degenerate weights.
+WEIGHT_CEIL = 1e6  # clip(uncapped rho, 0, CEIL) in temp search: prevents inf.
 RHO_CAP_FLOOR = 1.0  # data-driven cap never goes below 1 (no down-weighting).
 CUM_CAP = 1e4  # cap(cumprod(rho)): per-step cap ~10 over 500 steps overflows
 # float64 (10^500 = inf). Cumulative cap is an overflow guard; hits are
@@ -59,6 +59,7 @@ def resolve_device(user=None):
         return str(user)
     try:
         import torch
+
         if torch.cuda.is_available():
             return "cuda"
     except Exception:
@@ -73,6 +74,7 @@ def capped_cumprod(rho, cap=None):
     raw cumprod exceeded cap (receipt for truncated-IS bias).
     """
     import numpy as _np
+
     cap = float(cap if cap is not None else CUM_CAP)
     raw = _np.cumprod(_np.asarray(rho, dtype=float))
     hit = raw > cap
@@ -137,7 +139,7 @@ def resolve_temps(max_len, n_temps=None, user_temps=None):
     if n_temps is None:
         n_temps = int(_clip(int(np.ceil(np.log2(ml))), 3, 7))
     n_temps = max(int(n_temps), 2)
-    temps = tuple(float(1.0 / (2.0 ** k)) for k in range(n_temps - 1, -1, -1))
+    temps = tuple(float(1.0 / (2.0**k)) for k in range(n_temps - 1, -1, -1))
     return temps
 
 
@@ -177,8 +179,7 @@ def resolve_blend_range(n_episodes, lo=None, hi=None):
 # ---------------------------------------------------------------------------
 # Gate
 # ---------------------------------------------------------------------------
-def resolve_gate(n_episodes, behavior_std=None, behavior_mean=None,
-                 user_gate=None):
+def resolve_gate(n_episodes, behavior_std=None, behavior_mean=None, user_gate=None):
     """Gate thresholds from data:
     - min_ess_frac: need >=3 effective episodes (stricter than temp-search K=5
       would suggest for deployment; searching is cheap, shipping is not).
@@ -208,11 +209,9 @@ def _shared_net_cfg(N, obs_dim, nA, base=None, gamma=0.99):
     base = dict(base) if base else {}
     out = {}
     # Capacity scales with input size: 16 params per input dim, [32, 256].
-    out["hidden"] = int(base.get("hidden",
-                        _clip(16 * (obs_dim + nA), 32, 256)))
+    out["hidden"] = int(base.get("hidden", _clip(16 * (obs_dim + nA), 32, 256)))
     # Batch is ~5% of data, [64, 512].
-    out["batch"] = int(base.get("batch",
-                       _clip(max(N // 20, 1), 64, 512)))
+    out["batch"] = int(base.get("batch", _clip(max(N // 20, 1), 64, 512)))
     # Budget scales with data AND horizon. v20 receipt: FQE value propagation
     # needs ~H*N/batch MANY updates, not a few — at 3x it read ~40% of truth
     # (toy exact 100 -> 39.5; novice proxy 52 -> 5-16), at ~12x it reads the
@@ -226,12 +225,10 @@ def _shared_net_cfg(N, obs_dim, nA, base=None, gamma=0.99):
     # budgets must announce themselves instead of silently reading 40% of truth.
     out["min_steps"] = int(_clip(max(N // 2, _need), 5000, 300000))
     out["steps_max"] = int(base.get("steps_max", out["min_steps"]))
-    out["eval_every"] = int(base.get("eval_every",
-                             max(100, out["steps_max"] // 40)))
+    out["eval_every"] = int(base.get("eval_every", max(100, out["steps_max"] // 40)))
     # Patience ~ 1/10 of eval rounds, [3, 8].
     n_evals = max(out["steps_max"] // out["eval_every"], 1)
-    out["patience"] = int(base.get("patience",
-                          _clip(n_evals // 10, 3, 8)))
+    out["patience"] = int(base.get("patience", _clip(n_evals // 10, 3, 8)))
     # Holdout ~10% of data, [200, 2000] rows.
     holdout = int(_clip(N // 10, 200, 2000)) if N > 400 else max(N // 5, 10)
     out["holdout"] = int(base.get("holdout", holdout))
@@ -249,8 +246,7 @@ def _shared_net_cfg(N, obs_dim, nA, base=None, gamma=0.99):
 
 def resolve_fqe_cfg(diet, base=None, gamma=None):
     fp = diet_fingerprint(diet, gamma=gamma or 0.99)
-    cfg = _shared_net_cfg(fp["N"], fp["obs_dim"], fp["nA"], base,
-                          gamma=fp["gamma"])
+    cfg = _shared_net_cfg(fp["N"], fp["obs_dim"], fp["nA"], base, gamma=fp["gamma"])
     if base and "steps" in base:  # legacy alias
         cfg["steps_max"] = int(base["steps"])
     return cfg
@@ -304,8 +300,7 @@ def resolve_rollout_cfg(n_episodes, max_len, base=None):
     cfg = {}
     cfg["sim_min"] = int(base.get("sim_min", _clip(2 * n, 30, 200)))
     cfg["sim_max"] = int(base.get("sim_max", _clip(8 * n, 100, 800)))
-    cfg["se_frac"] = float(base.get("se_frac",
-                           _clip(1.0 / np.sqrt(cfg["sim_min"]), 0.02, 0.10)))
+    cfg["se_frac"] = float(base.get("se_frac", _clip(1.0 / np.sqrt(cfg["sim_min"]), 0.02, 0.10)))
     cfg["batch"] = int(base.get("batch", min(25, n)))
     cfg["seed"] = int(base.get("seed", 0))
     cfg["max_len"] = int(base.get("max_len", max_len))
@@ -337,14 +332,20 @@ def resolve_meta(diet, gamma=0.99, user_meta=None):
         "blend_lo": lo,
         "blend_hi": hi,
         "rel_edge_std": resolve_gate(n_ep)["rel_edge_std"]
-        if "rel_edge_std" not in um else float(um["rel_edge_std"]),
+        if "rel_edge_std" not in um
+        else float(um["rel_edge_std"]),
         "temps": resolve_temps(fp["max_len"], um.get("n_temps"), um.get("temps")),
     }
     # Pass through any extra user keys (e.g. n_temps is consumed, rest kept).
     for k, v in um.items():
         if k not in meta and k != "n_temps":
             meta[k] = v
-    info = {"fingerprint": {k: (v.tolist() if isinstance(v, np.ndarray) else v)
-                            for k, v in fp.items() if k != "ep_lens"},
-            "derived": sorted(set(meta) - set(um))}
+    info = {
+        "fingerprint": {
+            k: (v.tolist() if isinstance(v, np.ndarray) else v)
+            for k, v in fp.items()
+            if k != "ep_lens"
+        },
+        "derived": sorted(set(meta) - set(um)),
+    }
     return meta, info

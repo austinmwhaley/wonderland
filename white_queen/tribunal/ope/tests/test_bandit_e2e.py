@@ -9,6 +9,7 @@ so we can assert the decision is *correct*, not just stable:
 
 Run: pytest .../tests/test_bandit_e2e.py -q
 """
+
 import numpy as np
 
 from white_queen.tribunal.ope.synthetic import GreedyPolicy, make_bandit
@@ -28,30 +29,51 @@ class _RandomPolicy:
         return np.full((n, self.nA), 1.0 / self.nA, dtype=np.float32)
 
 
-_TINY = {"steps_max": 2000, "eval_every": 500, "patience": 5,
-         "batch": 256, "hidden": 64,
-         "allow_under_budget": True}
+_TINY = {
+    "steps_max": 2000,
+    "eval_every": 500,
+    "patience": 5,
+    "batch": 256,
+    "hidden": 64,
+    "allow_under_budget": True,
+}
 
 
 def _eval(logs, cand, info, include_prop):
     from white_queen.tribunal.ope.api import evaluate
-    return evaluate(logs, cand, gamma=0.99, nA=info["nA"],
-                    estimate_propensity=include_prop, fast=True,
-                    ensemble_K=2, fqe_cfg=dict(_TINY))
+
+    return evaluate(
+        logs,
+        cand,
+        gamma=0.99,
+        nA=info["nA"],
+        estimate_propensity=include_prop,
+        fast=True,
+        ensemble_K=2,
+        fqe_cfg=dict(_TINY),
+    )
 
 
 def test_bandit_better_policy_deploys_behavior_holds():
     # Scaled-up bandit with a clear reward gap so a good policy is worth more.
-    logs, info = make_bandit(n=3000, d=6, nA=4, seed=1, reward_scale=3.0,
-                             noise=0.3, logging_temp=2.0)
-    ctx = [c for c in logs if c.startswith("c")]
+    logs, info = make_bandit(
+        n=3000, d=6, nA=4, seed=1, reward_scale=3.0, noise=0.3, logging_temp=2.0
+    )
     best = GreedyPolicy(info["reward_W"], info["nA"])
     logging = info["logging_policy"]
     rep_good = _eval(logs, best, info, include_prop=True)
     rep_log = _eval(logs, logging, info, include_prop=True)
     rep_rand = _eval(logs, _RandomPolicy(info["nA"]), info, include_prop=True)
-    print("\nGOOD:", rep_good["deploy"], "wit", rep_good["witnesses"],
-          "bar", rep_good["bar"], "\n", rep_good["rationale"])
+    print(
+        "\nGOOD:",
+        rep_good["deploy"],
+        "wit",
+        rep_good["witnesses"],
+        "bar",
+        rep_good["bar"],
+        "\n",
+        rep_good["rationale"],
+    )
     print("LOGGING:", rep_log["deploy"], "wit", rep_log["witnesses"])
     print("RANDOM:", rep_rand["deploy"], "wit", rep_rand["witnesses"])
     # Ground truth: best policy earns more than logging; random earns less.
@@ -65,9 +87,16 @@ def test_bandit_better_policy_deploys_behavior_holds():
 
 def test_bandit_estimated_propensity_path():
     # Same but with propensities stripped: the library must estimate them.
-    logs, info = make_bandit(n=3000, d=6, nA=4, seed=2, reward_scale=3.0,
-                             noise=0.3, logging_temp=2.0,
-                             include_propensity=False)
+    logs, info = make_bandit(
+        n=3000,
+        d=6,
+        nA=4,
+        seed=2,
+        reward_scale=3.0,
+        noise=0.3,
+        logging_temp=2.0,
+        include_propensity=False,
+    )
     best = GreedyPolicy(info["reward_W"], info["nA"])
     rep = _eval(logs, best, info, include_prop=True)
     assert rep["provenance"]["propensity"] == "estimated"

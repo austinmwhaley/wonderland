@@ -71,7 +71,9 @@ class DynaQPlus(DynaQ):
                 continue
             r, s_next, done = self.model[s][a]
             tau = self.t - self.last_seen.get((s, a), 0)
-            target = r + self.kappa * np.sqrt(tau) + (0.0 if done else self.gamma * self.Q[s_next].max())
+            target = (
+                r + self.kappa * np.sqrt(tau) + (0.0 if done else self.gamma * self.Q[s_next].max())
+            )
             self.Q[s, a] += self.alpha * (target - self.Q[s, a])
 
     def train(self, env, config, tracker):

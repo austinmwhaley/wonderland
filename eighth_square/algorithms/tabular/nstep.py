@@ -19,7 +19,7 @@ class NStepControl(TabularAgent):
     def target(self, buf, s_next, done, a_next):
         G = 0.0
         for i in range(len(buf)):
-            G += self.gamma ** i * buf[i][2]
+            G += self.gamma**i * buf[i][2]
         if not done:
             G += self.gamma ** len(buf) * self.bootstrap(s_next, a_next)
         return G
@@ -90,7 +90,7 @@ class NStepOffPolicy(NStepControl):
             return None
         G = 0.0
         for i in range(len(buf)):
-            G += self.gamma ** i * buf[i][2]
+            G += self.gamma**i * buf[i][2]
         if not done:
             G += self.gamma ** len(buf) * self.Q[s_next].max()
             for _, a, _ in buf[1:]:

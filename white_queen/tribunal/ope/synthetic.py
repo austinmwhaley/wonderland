@@ -51,9 +51,18 @@ class GreedyPolicy(SoftmaxPolicy):
         return out
 
 
-def make_bandit(n=4000, d=6, nA=4, seed=0, reward_scale=1.0,
-                logging_temp=1.0, include_propensity=True, noise=0.5,
-                behavior_W=None, reward_W=None):
+def make_bandit(
+    n=4000,
+    d=6,
+    nA=4,
+    seed=0,
+    reward_scale=1.0,
+    logging_temp=1.0,
+    include_propensity=True,
+    noise=0.5,
+    behavior_W=None,
+    reward_W=None,
+):
     """Contextual-bandit log with a KNOWN logging policy and reward model.
 
     Returns (canonical_dict, info) where info carries the logging policy, the
@@ -61,10 +70,8 @@ def make_bandit(n=4000, d=6, nA=4, seed=0, reward_scale=1.0,
     """
     rng = np.random.default_rng(seed)
     obs = rng.normal(size=(n, d)).astype(np.float32)
-    behavior_W = (rng.normal(size=(nA, d)) * 0.7 if behavior_W is None
-                  else np.asarray(behavior_W))
-    reward_W = (rng.normal(size=(nA, d)) if reward_W is None
-                else np.asarray(reward_W))
+    behavior_W = rng.normal(size=(nA, d)) * 0.7 if behavior_W is None else np.asarray(behavior_W)
+    reward_W = rng.normal(size=(nA, d)) if reward_W is None else np.asarray(reward_W)
     # logging policy: softmax over behavior_W . x, with temperature.
     beh = SoftmaxPolicy(behavior_W / max(logging_temp, 1e-9), nA)
     probs = beh.action_probs(obs)
@@ -77,12 +84,16 @@ def make_bandit(n=4000, d=6, nA=4, seed=0, reward_scale=1.0,
     canon = {"obs": obs, "act": act.astype(np.int64), "rew": rew}
     if include_propensity:
         canon["propensity"] = probs[np.arange(n), act]
-    info = {"logging_W": behavior_W, "reward_W": reward_W,
-            "best_action": best_a, "nA": nA,
-            "best_policy": GreedyPolicy(reward_W, nA),
-            "logging_policy": beh,
-            "mean_reward_behavior": float(rew.mean()),
-            "mean_reward_best": float((obs @ reward_W.T).max(1).mean())}
+    info = {
+        "logging_W": behavior_W,
+        "reward_W": reward_W,
+        "best_action": best_a,
+        "nA": nA,
+        "best_policy": GreedyPolicy(reward_W, nA),
+        "logging_policy": beh,
+        "mean_reward_behavior": float(rew.mean()),
+        "mean_reward_best": float((obs @ reward_W.T).max(1).mean()),
+    }
     return canon, info
 
 
@@ -94,18 +105,17 @@ class OptimalActionPolicy:
         self.nA = int(nA)
 
     def act(self, state, eval=True):
-        return int(np.argmax(np.asarray(state)[:self.nA]))
+        return int(np.argmax(np.asarray(state)[: self.nA]))
 
     def action_probs(self, obs, temperature=1.0):
         o = np.atleast_2d(np.asarray(obs))
-        a = o[:, :self.nA].argmax(1)
+        a = o[:, : self.nA].argmax(1)
         out = np.zeros((len(o), self.nA), dtype=np.float32)
         out[np.arange(len(o)), a] = 1.0
         return out
 
 
-def make_sequential(n=6000, d=6, nA=4, T=15, seed=0, behavior_eps=0.4,
-                    noise=0.05):
+def make_sequential(n=6000, d=6, nA=4, T=15, seed=0, behavior_eps=0.4, noise=0.05):
     """Sequential RL log with a KNOWN better policy (the real target shape).
 
     Optimal action a* = argmax(state[:nA]); reward 1 iff the chosen action is
@@ -130,16 +140,21 @@ def make_sequential(n=6000, d=6, nA=4, T=15, seed=0, behavior_eps=0.4,
             rew.append(r)
             done.append(1.0 if tstep == T - 1 else 0.0)
             s = (s + noise * rng.normal(size=d)).astype(np.float32)
-    canon = {"obs": np.array(obs, dtype=np.float32),
-             "act": np.array(act, dtype=np.int64),
-             "rew": np.array(rew, dtype=np.float32),
-             "done": np.array(done, dtype=np.float32)}
-    info = {"nA": nA, "T": T, "optimal_policy": OptimalActionPolicy(nA),
-            "behavior_eps": behavior_eps,
-            "optimal_step_reward": 1.0,
-            "behavior_step_reward": (1 - behavior_eps) + behavior_eps / nA}
+    canon = {
+        "obs": np.array(obs, dtype=np.float32),
+        "act": np.array(act, dtype=np.int64),
+        "rew": np.array(rew, dtype=np.float32),
+        "done": np.array(done, dtype=np.float32),
+    }
+    info = {
+        "nA": nA,
+        "T": T,
+        "optimal_policy": OptimalActionPolicy(nA),
+        "behavior_eps": behavior_eps,
+        "optimal_step_reward": 1.0,
+        "behavior_step_reward": (1 - behavior_eps) + behavior_eps / nA,
+    }
     return canon, info
-
 
 
 class GaussianPolicy:
@@ -159,18 +174,18 @@ class GaussianPolicy:
         a = np.atleast_2d(np.asarray(act, dtype=np.float64))
         mean = o @ self.W.T
         z = (a - mean) / self.sigma
-        return (-0.5 * z ** 2 - np.log(self.sigma)
-                - 0.5 * float(np.log(2 * np.pi))).sum(1)
+        return (-0.5 * z**2 - np.log(self.sigma) - 0.5 * float(np.log(2 * np.pi))).sum(1)
 
     def act(self, state, eval=True):
-        return (self.action_mean(np.asarray(state)[None, :])[0])
+        return self.action_mean(np.asarray(state)[None, :])[0]
 
     def sample(self, obs, rng):
         return self.action_mean(obs) + self.sigma * rng.normal(size=self.action_mean(obs).shape)
 
 
-def make_continuous(n=4000, d=5, a_dim=2, T=15, seed=0, sigma_behavior=1.0,
-                    include_logp=True, sequential=True):
+def make_continuous(
+    n=4000, d=5, a_dim=2, T=15, seed=0, sigma_behavior=1.0, include_logp=True, sequential=True
+):
     """Sequential continuous-action log with a KNOWN better policy.
 
     Optimal action a* = W* s; reward = -||a - a*||^2 (so a* earns ~0, a
@@ -179,7 +194,7 @@ def make_continuous(n=4000, d=5, a_dim=2, T=15, seed=0, sigma_behavior=1.0,
     """
     rng = np.random.default_rng(seed)
     Wstar = rng.normal(size=(a_dim, d)) * 1.5
-    Wb = rng.normal(size=(a_dim, d)) * 0.5   # suboptimal behavior
+    Wb = rng.normal(size=(a_dim, d)) * 0.5  # suboptimal behavior
     best = GaussianPolicy(Wstar, sigma_behavior)  # same variance: ratios identify the mean shift
     beh = GaussianPolicy(Wb, sigma_behavior)
     obs, act, rew, done, logp = [], [], [], [], []
@@ -191,22 +206,35 @@ def make_continuous(n=4000, d=5, a_dim=2, T=15, seed=0, sigma_behavior=1.0,
             a = mean + sigma_behavior * rng.normal(size=a_dim)
             star = s @ Wstar.T
             r = -float(np.sum((a - star) ** 2))
-            obs.append(s.copy()); act.append(a.astype(np.float32))
-            rew.append(r); done.append(1.0 if tstep == T - 1 else 0.0)
+            obs.append(s.copy())
+            act.append(a.astype(np.float32))
+            rew.append(r)
+            done.append(1.0 if tstep == T - 1 else 0.0)
             if include_logp:
                 z = (a - mean) / sigma_behavior
-                logp.append(float(-0.5 * np.sum(z ** 2) - a_dim *
-                                  np.log(sigma_behavior)
-                                  - 0.5 * a_dim * np.log(2 * np.pi)))
+                logp.append(
+                    float(
+                        -0.5 * np.sum(z**2)
+                        - a_dim * np.log(sigma_behavior)
+                        - 0.5 * a_dim * np.log(2 * np.pi)
+                    )
+                )
             s = (s + 0.05 * rng.normal(size=d)).astype(np.float32)
-    canon = {"obs": np.array(obs, dtype=np.float32),
-             "act": np.array(act, dtype=np.float32),
-             "rew": np.array(rew, dtype=np.float32)}
+    canon = {
+        "obs": np.array(obs, dtype=np.float32),
+        "act": np.array(act, dtype=np.float32),
+        "rew": np.array(rew, dtype=np.float32),
+    }
     if sequential:
         canon["done"] = np.array(done, dtype=np.float32)
     if include_logp:
         canon["log_prob"] = np.array(logp, dtype=np.float32)
-    info = {"Wstar": Wstar, "Wb": Wb, "a_dim": a_dim,
-            "optimal_policy": best, "behavior_policy": beh,
-            "optimal_step_reward": 0.0}
+    info = {
+        "Wstar": Wstar,
+        "Wb": Wb,
+        "a_dim": a_dim,
+        "optimal_policy": best,
+        "behavior_policy": beh,
+        "optimal_step_reward": 0.0,
+    }
     return canon, info

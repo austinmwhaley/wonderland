@@ -23,8 +23,10 @@ def print_algorithms(args):
 
 def print_environments():
     cols = ["env", "gym id", "action", "state", "family", "description"]
-    rows = [[name, e["gym_id"], e["action_space"], e["state_space"], e["family"],
-             e["description"][:60]] for name, e in ENVIRONMENTS.items()]
+    rows = [
+        [name, e["gym_id"], e["action_space"], e["state_space"], e["family"], e["description"][:60]]
+        for name, e in ENVIRONMENTS.items()
+    ]
     widths = [max(len(h), *(len(str(r[i])) for r in rows)) for i, h in enumerate(cols)]
     print(" | ".join(h.ljust(widths[i]) for i, h in enumerate(cols)))
     print("-+-".join("-" * w for w in widths))
@@ -34,7 +36,8 @@ def print_environments():
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Run reinforcement learning experiments (algorithm x environment).")
+        description="Run reinforcement learning experiments (algorithm x environment)."
+    )
     parser.add_argument("--algo", help="algorithm name (see --list)")
     parser.add_argument("--env", help="environment name (see --list)")
     parser.add_argument("--experiment", help="named experiment preset (see experiments/configs.py)")
@@ -44,8 +47,11 @@ def main():
     parser.add_argument("--device", default=None, choices=["cuda", "cpu", "mps", None])
     parser.add_argument("--eval-freq", type=int, default=None, help="override eval frequency")
     parser.add_argument("--list", action="store_true", help="print the algorithm table")
-    parser.add_argument("--implemented-only", action="store_true",
-                        help="with --list, show only implemented algorithms")
+    parser.add_argument(
+        "--implemented-only",
+        action="store_true",
+        help="with --list, show only implemented algorithms",
+    )
     parser.add_argument("--envs", action="store_true", help="print the environment table")
     parser.add_argument("--quiet", action="store_true")
     args = parser.parse_args()

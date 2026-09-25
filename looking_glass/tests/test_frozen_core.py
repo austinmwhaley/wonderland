@@ -3,7 +3,7 @@
 import math
 
 import torch
-from torch import Tensor, nn
+from torch import Tensor
 
 from looking_glass import (
     EntityCore,
@@ -48,10 +48,7 @@ def _collect_weights(module, exclude_keys: set = set()) -> list[float]:
 
 
 def _classification_rows(n=120):
-    return [
-        {"id": f"c{i}", "x": float(i), "label": 1.0 if i < n // 2 else 0.0}
-        for i in range(n)
-    ]
+    return [{"id": f"c{i}", "x": float(i), "label": 1.0 if i < n // 2 else 0.0} for i in range(n)]
 
 
 class TestFrozenCoreTraining:
@@ -61,10 +58,17 @@ class TestFrozenCoreTraining:
         pre = _collect_weights(core, exclude_keys={"lora_a", "lora_b", "magnitude", "qdo"})
 
         model = create_supervised_model(
-            task="classification", id_field="id", target_field="label",
-            categorical_fields=[], numeric_fields=["x"],
-            hidden_dim=HIDDEN, epochs=10, seed=0, device="cpu",
-            sequence_backend="mamba2", pretrained_core=core,
+            task="classification",
+            id_field="id",
+            target_field="label",
+            categorical_fields=[],
+            numeric_fields=["x"],
+            hidden_dim=HIDDEN,
+            epochs=10,
+            seed=0,
+            device="cpu",
+            sequence_backend="mamba2",
+            pretrained_core=core,
         )
         model.fit_predict(_classification_rows())
 
@@ -77,10 +81,17 @@ class TestFrozenCoreTraining:
         """QDoRA adapter params should receive gradients; frozen base should not."""
         core = _build_qdora_core()
         model = create_supervised_model(
-            task="classification", id_field="id", target_field="label",
-            categorical_fields=[], numeric_fields=["x"],
-            hidden_dim=HIDDEN, epochs=1, seed=0, device="cpu",
-            sequence_backend="mamba2", pretrained_core=core,
+            task="classification",
+            id_field="id",
+            target_field="label",
+            categorical_fields=[],
+            numeric_fields=["x"],
+            hidden_dim=HIDDEN,
+            epochs=1,
+            seed=0,
+            device="cpu",
+            sequence_backend="mamba2",
+            pretrained_core=core,
         )
         result = model.fit_predict(_classification_rows())
         assert result.report.metrics["f1"] > 0.5
@@ -108,19 +119,33 @@ class TestMultiTaskDeepcopy:
         core = _build_qdora_core()
 
         m1 = create_supervised_model(
-            task="classification", id_field="id", target_field="label",
-            categorical_fields=[], numeric_fields=["x"],
-            hidden_dim=HIDDEN, epochs=3, seed=1, device="cpu",
-            sequence_backend="mamba2", pretrained_core=core,
+            task="classification",
+            id_field="id",
+            target_field="label",
+            categorical_fields=[],
+            numeric_fields=["x"],
+            hidden_dim=HIDDEN,
+            epochs=3,
+            seed=1,
+            device="cpu",
+            sequence_backend="mamba2",
+            pretrained_core=core,
         )
         r1 = m1.fit_predict(_classification_rows(100))
         assert r1.report.metrics["f1"] > 0.0
 
         m2 = create_supervised_model(
-            task="regression", id_field="id", target_field="label",
-            categorical_fields=[], numeric_fields=["x"],
-            hidden_dim=HIDDEN, epochs=3, seed=42, device="cpu",
-            sequence_backend="mamba2", pretrained_core=core,
+            task="regression",
+            id_field="id",
+            target_field="label",
+            categorical_fields=[],
+            numeric_fields=["x"],
+            hidden_dim=HIDDEN,
+            epochs=3,
+            seed=42,
+            device="cpu",
+            sequence_backend="mamba2",
+            pretrained_core=core,
         )
         r2 = m2.fit_predict(_classification_rows(100))
         assert r2.report.metrics["r2"] > -1.0

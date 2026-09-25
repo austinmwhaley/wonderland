@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
 import torch
 
@@ -8,7 +8,6 @@ from looking_glass import (
     SequenceEngine,
     StateRecord,
     TemporalStack,
-    extract_final_states,
     incremental_state_update,
 )
 from looking_glass.interfaces import TaskHeadBase
@@ -28,7 +27,9 @@ class _NoopHead(TaskHeadBase):
 def _core():
     return EntityCore(
         temporal_encoder=TemporalStack(hidden_dim=HIDDEN),
-        sequence_engine=SequenceEngine(hidden_dim=HIDDEN, recurrent_steps=1, num_heads=4, backend="mamba2"),
+        sequence_engine=SequenceEngine(
+            hidden_dim=HIDDEN, recurrent_steps=1, num_heads=4, backend="mamba2"
+        ),
         task_head=_NoopHead(),
     )
 
@@ -38,10 +39,12 @@ def test_incremental_state_update():
     store = InMemoryStateStore(default_version="v1")
 
     # Write initial states for two entities at T1.
-    store.write_states([
-        StateRecord("a", T1, [1.0] * HIDDEN, "v1"),
-        StateRecord("b", T1, [5.0] * HIDDEN, "v1"),
-    ])
+    store.write_states(
+        [
+            StateRecord("a", T1, [1.0] * HIDDEN, "v1"),
+            StateRecord("b", T1, [5.0] * HIDDEN, "v1"),
+        ]
+    )
 
     # New event window: one event per entity with dummy hidden states.
     new_hidden = torch.randn(2, 1, HIDDEN)
@@ -49,7 +52,8 @@ def test_incremental_state_update():
     new_mask = torch.ones(2, 1, dtype=torch.bool)
 
     written = incremental_state_update(
-        core, store,
+        core,
+        store,
         entity_ids=["a", "b"],
         new_hidden_states=new_hidden,
         new_delta_t=new_dt,
@@ -80,7 +84,8 @@ def test_cold_start_entity_gets_zero_seed():
     new_mask = torch.ones(1, 1, dtype=torch.bool)
 
     incremental_state_update(
-        core, store,
+        core,
+        store,
         entity_ids=["new_entity"],
         new_hidden_states=new_hidden,
         new_delta_t=new_dt,

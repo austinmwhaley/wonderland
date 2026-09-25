@@ -34,12 +34,14 @@ def seed_all(seed):
         return
     try:
         import torch as _torch
+
         _torch.manual_seed(int(seed))
     except Exception:
         pass
     try:
         import numpy as _np
-        _np.random.seed(int(seed) % (2 ** 32))
+
+        _np.random.seed(int(seed) % (2**32))
     except Exception:
         pass
 
@@ -112,6 +114,7 @@ def govern(modules, optims, step_fn, val_fn, cfg):
     if seed is not None:
         try:
             import torch as _torch
+
             _torch.manual_seed(int(seed))
         except Exception:
             pass
@@ -160,9 +163,13 @@ def govern(modules, optims, step_fn, val_fn, cfg):
         pass  # ran out of budget with patience unexhausted
     if not saddle and best_snap is not None:
         _restore(modules, best_snap)
-    return {"steps": steps, "n_evals": n_evals,
-            "best_val": None if saddle else round(float(best), 5),
-            "stopped": stopped, "lr_final": round(cosine_lr(
-                min(steps, steps_max), steps_max, lr_base,
-                lr_min_ratio, warmup_frac), 8),
-            "lr_base": lr_base}
+    return {
+        "steps": steps,
+        "n_evals": n_evals,
+        "best_val": None if saddle else round(float(best), 5),
+        "stopped": stopped,
+        "lr_final": round(
+            cosine_lr(min(steps, steps_max), steps_max, lr_base, lr_min_ratio, warmup_frac), 8
+        ),
+        "lr_base": lr_base,
+    }

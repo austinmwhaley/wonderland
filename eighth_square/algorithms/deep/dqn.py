@@ -37,24 +37,38 @@ class DQN(BaseAgent):
         self.warmup = config.get("warmup", 1000)
         self.eval_freq = config.get("eval_freq", 5_000)
         self.eval_episodes = config.get("eval_episodes", 5)
-        in_dim = int(getattr(env.observation_space, "n", None) or np.prod(env.observation_space.shape))
+        in_dim = int(
+            getattr(env.observation_space, "n", None) or np.prod(env.observation_space.shape)
+        )
         self.nA = int(env.action_space.n)
         out_heads = max(self.n_atoms, self.n_quantiles, 1)
-        self.online = QNetwork(in_dim, self.hidden, self.nA, self.dueling, self.noisy, out_heads).to(self.device)
-        self.target = QNetwork(in_dim, self.hidden, self.nA, self.dueling, self.noisy, out_heads).to(self.device)
+        self.online = QNetwork(
+            in_dim, self.hidden, self.nA, self.dueling, self.noisy, out_heads
+        ).to(self.device)
+        self.target = QNetwork(
+            in_dim, self.hidden, self.nA, self.dueling, self.noisy, out_heads
+        ).to(self.device)
         self.target.load_state_dict(self.online.state_dict())
         self.optimizer = torch.optim.Adam(self.online.parameters(), lr=self.lr)
         capacity = config.get("buffer_size", 100_000)
         if self.prioritized:
-            self.buffer = PrioritizedReplayBuffer(capacity, in_dim, self.device,
-                                                  alpha=config.get("p_alpha", 0.6),
-                                                  beta=config.get("p_beta", 0.4),
-                                                  beta_steps=config.get("steps", 100_000))
+            self.buffer = PrioritizedReplayBuffer(
+                capacity,
+                in_dim,
+                self.device,
+                alpha=config.get("p_alpha", 0.6),
+                beta=config.get("p_beta", 0.4),
+                beta_steps=config.get("steps", 100_000),
+            )
         else:
             self.buffer = ReplayBuffer(capacity, in_dim, self.device)
-        self.sched = EpsilonScheduler(config.get("eps_start", 1.0), config.get("eps_end", 0.01),
-                                      config.get("eps_decay_steps", config.get("steps", 100_000)), self.rng)
-        self.gamma_n = self.gamma ** self.n_step
+        self.sched = EpsilonScheduler(
+            config.get("eps_start", 1.0),
+            config.get("eps_end", 0.01),
+            config.get("eps_decay_steps", config.get("steps", 100_000)),
+            self.rng,
+        )
+        self.gamma_n = self.gamma**self.n_step
         self.t = 0
 
     def _t(self, state):
@@ -88,7 +102,7 @@ class DQN(BaseAgent):
         G = 0.0
         done_at = None
         for i in range(n):
-            G += self.gamma ** i * ring[i][2]
+            G += self.gamma**i * ring[i][2]
             if ring[i][3]:
                 done_at = i
                 break
@@ -159,12 +173,20 @@ class DQN(BaseAgent):
         tz = rew + self.gamma_n * (1 - done) * z.unsqueeze(0)
         tz = tz.clamp(self.v_min, self.v_max)
         b = (tz - self.v_min) / delta
-        l = b.floor().long()
+        lo = b.floor().long()
         u = b.ceil().long()
         m = torch.zeros_like(p_next)
         for i in range(self.n_atoms):
-            m.scatter_add_(1, l[:, i:i + 1], p_next[:, i:i + 1] * (u[:, i:i + 1] - b[:, i:i + 1]).float())
-            m.scatter_add_(1, u[:, i:i + 1], p_next[:, i:i + 1] * (b[:, i:i + 1] - l[:, i:i + 1]).float())
+            m.scatter_add_(
+                1,
+                lo[:, i : i + 1],
+                p_next[:, i : i + 1] * (u[:, i : i + 1] - b[:, i : i + 1]).float(),
+            )
+            m.scatter_add_(
+                1,
+                u[:, i : i + 1],
+                p_next[:, i : i + 1] * (b[:, i : i + 1] - lo[:, i : i + 1]).float(),
+            )
         return m
 
     def _quantile_loss(self, obs, act, rew, obs2, done, weights):
@@ -185,7 +207,7 @@ class DQN(BaseAgent):
                 z_next = q2.gather(1, a2).squeeze(1)
             target = rew + self.gamma_n * (1 - done) * z_next
         delta = target.unsqueeze(1) - q_online.unsqueeze(2)
-        huber = torch.where(delta.abs() <= 1.0, 0.5 * delta ** 2, delta.abs() - 0.5)
+        huber = torch.where(delta.abs() <= 1.0, 0.5 * delta**2, delta.abs() - 0.5)
         loss = (torch.abs(tau.unsqueeze(0).unsqueeze(-1) - (delta < 0).float()) * huber).mean(-1)
         td = delta.mean(-1).abs()
         return (loss * weights).mean(), td.squeeze(1)
@@ -222,8 +244,12 @@ class DQN(BaseAgent):
             self.t += 1
             if done:
                 ep += 1
-                tracker.log(timestep=self.t, episode=ep, ret=float(ep_ret),
-                            loss=float(np.mean(losses)) if losses else None)
+                tracker.log(
+                    timestep=self.t,
+                    episode=ep,
+                    ret=float(ep_ret),
+                    loss=float(np.mean(losses)) if losses else None,
+                )
                 ep_ret = 0.0
                 losses = []
                 state, _ = env.reset()
@@ -343,8 +369,12 @@ class HERDQN(DQN):
                 elif np.random.random() < self.her_frac:
                     self._her(ep_obs, ep_act, ep_pos)
                 ep_obs, ep_act, ep_pos = [], [], []
-                tracker.log(timestep=self.t, episode=ep, ret=float(ep_ret),
-                            loss=float(np.mean(losses)) if losses else None)
+                tracker.log(
+                    timestep=self.t,
+                    episode=ep,
+                    ret=float(ep_ret),
+                    loss=float(np.mean(losses)) if losses else None,
+                )
                 ep_ret = 0.0
                 losses = []
                 state, _ = env.reset()

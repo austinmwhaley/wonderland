@@ -35,14 +35,16 @@ class CooperativeCartPole:
 
     def step(self, actions):
         a1, a2 = int(actions[0]), int(actions[1])
-        force = (self.force_mag if a1 == 1 else -self.force_mag) + \
-                (self.force_mag if a2 == 1 else -self.force_mag)
+        force = (self.force_mag if a1 == 1 else -self.force_mag) + (
+            self.force_mag if a2 == 1 else -self.force_mag
+        )
         x, x_dot, theta, theta_dot = self.state
         costheta = np.cos(theta)
         sintheta = np.sin(theta)
         temp = (force + self.polemass_length * theta_dot * theta_dot * sintheta) / self.total_mass
         thetaacc = (self.gravity * sintheta - costheta * temp) / (
-            self.length * (4.0 / 3.0 - self.masspole * costheta * costheta / self.total_mass))
+            self.length * (4.0 / 3.0 - self.masspole * costheta * costheta / self.total_mass)
+        )
         xacc = temp - self.polemass_length * thetaacc * costheta / self.total_mass
         x_dot = x_dot + self.tau * xacc
         x = x + self.tau * x_dot
@@ -50,9 +52,12 @@ class CooperativeCartPole:
         theta = theta + self.tau * theta_dot
         self.state = np.array((x, x_dot, theta, theta_dot), dtype=np.float64)
         self.steps += 1
-        terminated = bool(x < -self.x_threshold or x > self.x_threshold
-                          or theta < -self.theta_threshold_radians
-                          or theta > self.theta_threshold_radians)
+        terminated = bool(
+            x < -self.x_threshold
+            or x > self.x_threshold
+            or theta < -self.theta_threshold_radians
+            or theta > self.theta_threshold_radians
+        )
         truncated = self.steps >= self.max_episode_steps
         reward = 1.0
         return (self.state.copy(), self.state.copy()), reward, terminated, truncated, {}

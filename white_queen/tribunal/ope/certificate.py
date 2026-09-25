@@ -20,6 +20,7 @@ we genuinely do not know, the interval is wide, and we HOLD. Safety is a
 CONSEQUENCE of coverage: if the truth is in [lo, hi] and lo > behavior, the
 candidate is truly better. Recall is tightness. Abstention is a wide interval.
 """
+
 from __future__ import annotations
 
 import math
@@ -45,11 +46,16 @@ def _source_members(row):
     variant. Soft and argmax of the same family are ONE member (shared model).
     Unreliable (diverged/under-budget/out-of-range) sources are dropped."""
     from .contracts import estimates_from_row
+
     est = estimates_from_row(row)
-    fam_rank = {"fqe_argmax": 3, "fqe_soft": 2, "mb_argmax": 3, "mb_soft": 2,
-                "lstdq": 2}
-    fam_of = {"fqe_argmax": "qnet", "fqe_soft": "qnet",
-              "mb_argmax": "dynamics", "mb_soft": "dynamics", "lstdq": "td"}
+    fam_rank = {"fqe_argmax": 3, "fqe_soft": 2, "mb_argmax": 3, "mb_soft": 2, "lstdq": 2}
+    fam_of = {
+        "fqe_argmax": "qnet",
+        "fqe_soft": "qnet",
+        "mb_argmax": "dynamics",
+        "mb_soft": "dynamics",
+        "lstdq": "td",
+    }
     best = {}
     for e in est:
         fam = fam_of.get(e.name)
@@ -64,8 +70,16 @@ def _source_members(row):
     return {f: v for f, (v, _) in best.items()}
 
 
-def certify_row(row, behavior_mean, behavior_std=None, z=Z_DEFAULT,
-                width_floor=0.0, min_ess=0.02, overlap_gain=1.0, k=None):
+def certify_row(
+    row,
+    behavior_mean,
+    behavior_std=None,
+    z=Z_DEFAULT,
+    width_floor=0.0,
+    min_ess=0.02,
+    overlap_gain=1.0,
+    k=None,
+):
     """Return the certificate for one candidate.
 
     Interval = corrected value +/- (z*sqrt(source_var + ensemble_var)
@@ -88,15 +102,22 @@ def certify_row(row, behavior_mean, behavior_std=None, z=Z_DEFAULT,
         dis = _finite((row.get("sharp_info") or {}).get("disagreement")) or 0.0
         scale = abs(behavior_mean) + 1.0
         half = (z * dis + 0.5 * scale) if v is not None else None
-        return {"value": (None if v is None else round(v, 3)),
-                "lo": (None if v is None else round(v - half, 3)),
-                "hi": (None if v is None else round(v + half, 3)),
-                "width": (None if half is None else round(half, 3)),
-                "behavior": behavior_mean, "deploy": False,
-                "members": list(members), "s_family": 0.0, "s_ens": round(dis, 3),
-                "anchor_bias": None, "overlap_pen": None, "abstain": True,
-                "reason": f"single source (have {len(vals)}); false confidence, "
-                          "wide interval, never deploys"}
+        return {
+            "value": (None if v is None else round(v, 3)),
+            "lo": (None if v is None else round(v - half, 3)),
+            "hi": (None if v is None else round(v + half, 3)),
+            "width": (None if half is None else round(half, 3)),
+            "behavior": behavior_mean,
+            "deploy": False,
+            "members": list(members),
+            "s_family": 0.0,
+            "s_ens": round(dis, 3),
+            "anchor_bias": None,
+            "overlap_pen": None,
+            "abstain": True,
+            "reason": f"single source (have {len(vals)}); false confidence, "
+            "wide interval, never deploys",
+        }
     # ---- anchor calibration ----
     # NOTE: the Q-probe of the behavior policy (sum_a mu(a|s) Q(s,a)) is NOT a
     # valid estimate of V(mu) when Q is fit for the candidate policy -- measured
@@ -106,8 +127,9 @@ def certify_row(row, behavior_mean, behavior_std=None, z=Z_DEFAULT,
     b = None
     vals_c = [v - b for v in vals] if b is not None else list(vals)
     m = sum(vals_c) / len(vals_c)
-    s_family = (math.sqrt(sum((v - m) ** 2 for v in vals_c) / (len(vals_c) - 1))
-                if len(vals_c) > 1 else 0.0)
+    s_family = (
+        math.sqrt(sum((v - m) ** 2 for v in vals_c) / (len(vals_c) - 1)) if len(vals_c) > 1 else 0.0
+    )
     # Conservative point estimate: shift DOWN by half the inter-source spread,
     # so a single optimistic source cannot lift the value past the behavior
     # reference. (The weight-based analog of a pessimistic ensemble / CQL.)
@@ -125,9 +147,8 @@ def certify_row(row, behavior_mean, behavior_std=None, z=Z_DEFAULT,
     _support_floor = max(0.25 * float(min_ess), 1e-4)
     if ov is not None:
         deficit = max(0.0, 1.0 - min(ov / _support_floor, 1.0))
-        overlap_pen = overlap_gain * scale * deficit ** 2
-    half = (z * math.sqrt(s_family ** 2 + s_ens ** 2)
-            + (abs(b) if b is not None else 0.0) + overlap_pen)
+        overlap_pen = overlap_gain * scale * deficit**2
+    half = z * math.sqrt(s_family**2 + s_ens**2) + (abs(b) if b is not None else 0.0) + overlap_pen
     k = CONFORMAL_K if k is None else k
     half = k * half
     if half < width_floor:
@@ -136,19 +157,26 @@ def certify_row(row, behavior_mean, behavior_std=None, z=Z_DEFAULT,
     bstd = _finite(behavior_std) or scale
     abstain = bool(half > 0.5 * max(bstd, 1.0))
     deploy = bool(lo > behavior_mean)
-    reason = ("lo > behavior" if deploy else "lo <= behavior")
-    return {"value": round(value, 3), "lo": round(lo, 3), "hi": round(hi, 3),
-            "width": round(half, 3), "behavior": round(behavior_mean, 3),
-            "deploy": deploy, "members": list(members),
-            "s_family": round(s_family, 3), "s_ens": round(s_ens, 3),
-            "anchor_bias": (None if b is None else round(b, 3)),
-            "overlap_pen": round(overlap_pen, 3),
-            "abstain": abstain, "reason": reason}
+    reason = "lo > behavior" if deploy else "lo <= behavior"
+    return {
+        "value": round(value, 3),
+        "lo": round(lo, 3),
+        "hi": round(hi, 3),
+        "width": round(half, 3),
+        "behavior": round(behavior_mean, 3),
+        "deploy": deploy,
+        "members": list(members),
+        "s_family": round(s_family, 3),
+        "s_ens": round(s_ens, 3),
+        "anchor_bias": (None if b is None else round(b, 3)),
+        "overlap_pen": round(overlap_pen, 3),
+        "abstain": abstain,
+        "reason": reason,
+    }
 
 
 def certify_rows(rows, behavior_mean, behavior_std=None, z=Z_DEFAULT):
-    return {n: certify_row(r, behavior_mean, behavior_std, z=z)
-            for n, r in rows.items()}
+    return {n: certify_row(r, behavior_mean, behavior_std, z=z) for n, r in rows.items()}
 
 
 def calibrate_k(cases, alpha=0.1, ks=None):
@@ -156,15 +184,16 @@ def calibrate_k(cases, alpha=0.1, ks=None):
     (1-alpha) of the labelled cells (conformal calibration on the suite).
     `cases` is a list of dicts with {value, half, truth}."""
     ks = ks or [round(1.0 + 0.25 * i, 2) for i in range(0, 17)]
-    cells = [c for c in cases
-             if c.get("half") is not None and c.get("truth") is not None
-             and c.get("value") is not None]
+    cells = [
+        c
+        for c in cases
+        if c.get("half") is not None and c.get("truth") is not None and c.get("value") is not None
+    ]
     if not cells:
         return 1.0
     need = math.ceil((1.0 - alpha) * len(cells))
     for k in ks:
-        hit = sum(1 for c in cells
-                  if abs(c["truth"] - c["value"]) <= k * c["half"])
+        hit = sum(1 for c in cells if abs(c["truth"] - c["value"]) <= k * c["half"])
         if hit >= need:
             return k
     return ks[-1]
@@ -180,12 +209,19 @@ def advantage_certificate(row, behavior_mean, alpha=0.05, B=2000, seed=0):
     Decision: deploy iff the (one-sided) lower bound of Delta exceeds 0.
     """
     import numpy as np
+
     drv = row.get("dr_vals")
     epr = row.get("ep_returns")
     if not drv or not epr or len(drv) != len(epr) or len(drv) < 5:
-        return {"deploy": False, "adv": None, "lo": None, "hi": None,
-                "bias": None, "n": (0 if not drv else len(drv)),
-                "reason": "no paired advantage evidence"}
+        return {
+            "deploy": False,
+            "adv": None,
+            "lo": None,
+            "hi": None,
+            "bias": None,
+            "n": (0 if not drv else len(drv)),
+            "reason": "no paired advantage evidence",
+        }
     d = np.asarray(drv, dtype=np.float64) - np.asarray(epr, dtype=np.float64)
     fb = _finite(row.get("fqe_behavior"))
     b = (fb - float(behavior_mean)) if fb is not None else 0.0
@@ -204,9 +240,15 @@ def advantage_certificate(row, behavior_mean, alpha=0.05, B=2000, seed=0):
     lo = float(np.quantile(boot, alpha))
     hi = float(np.quantile(boot, 1.0 - alpha))
     deploy = bool(lo > 0.0)
-    return {"deploy": deploy, "adv": round(est, 3), "lo": round(lo, 3),
-            "hi": round(hi, 3), "bias": round(b, 3), "n": n,
-            "reason": ("advantage lo > 0" if deploy else "advantage lo <= 0")}
+    return {
+        "deploy": deploy,
+        "adv": round(est, 3),
+        "lo": round(lo, 3),
+        "hi": round(hi, 3),
+        "bias": round(b, 3),
+        "n": n,
+        "reason": ("advantage lo > 0" if deploy else "advantage lo <= 0"),
+    }
 
 
 def fqe_value_certificate(row, behavior_mean, z=Z_DEFAULT):
@@ -222,8 +264,14 @@ def fqe_value_certificate(row, behavior_mean, z=Z_DEFAULT):
     if v is None:
         v = _finite(row.get("fqe_dm"))
     if v is None:
-        return {"deploy": False, "adv": None, "lo": None, "bias": None,
-                "dis": None, "reason": "no FQE value"}
+        return {
+            "deploy": False,
+            "adv": None,
+            "lo": None,
+            "bias": None,
+            "dis": None,
+            "reason": "no FQE value",
+        }
     dis = _finite((row.get("sharp_info") or {}).get("disagreement")) or 0.0
     fb = _finite(row.get("fqe_behavior"))
     b = (fb - float(behavior_mean)) if fb is not None else 0.0
@@ -231,7 +279,11 @@ def fqe_value_certificate(row, behavior_mean, z=Z_DEFAULT):
     half = z * dis + abs(b)
     adv = est - float(behavior_mean)
     lo = adv - half
-    return {"deploy": bool(lo > 0.0), "adv": round(adv, 3),
-            "lo": round(lo, 3), "bias": round(b, 3), "dis": round(dis, 3),
-            "reason": ("calibrated FQE adv lo > 0" if lo > 0
-                       else "calibrated FQE adv lo <= 0")}
+    return {
+        "deploy": bool(lo > 0.0),
+        "adv": round(adv, 3),
+        "lo": round(lo, 3),
+        "bias": round(b, 3),
+        "dis": round(dis, 3),
+        "reason": ("calibrated FQE adv lo > 0" if lo > 0 else "calibrated FQE adv lo <= 0"),
+    }

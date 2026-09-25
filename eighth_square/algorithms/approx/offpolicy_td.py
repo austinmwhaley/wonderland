@@ -65,8 +65,12 @@ class LinearPrediction(BaseAgent):
                 ret += r
                 self.t += 1
             ep += 1
-            tracker.log(timestep=self.t, episode=ep, ret=ret,
-                        loss=float(np.mean(losses)) if losses else None)
+            tracker.log(
+                timestep=self.t,
+                episode=ep,
+                ret=ret,
+                loss=float(np.mean(losses)) if losses else None,
+            )
             losses = []
 
     def save(self, path):
@@ -84,7 +88,7 @@ class GTD(LinearPrediction):
         self.alpha2 = config.get("alpha2", self.alpha)
 
     def update(self, s, a, r, s_next, done):
-        rho = self.target_prob(s, a) / self.behavior_prob(s, a)
+        self.target_prob(s, a) / self.behavior_prob(s, a)
         phi = self._features(s)
         phi2 = np.zeros(self.nS) if done else self._features(s_next)
         delta = r + self.gamma * self.theta @ phi2 - self.theta @ phi

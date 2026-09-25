@@ -16,27 +16,28 @@ the dynamics model.
 Nothing else in the codebase should compare estimates across estimands or
 count witnesses by name.
 """
+
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional
 
 # ---- estimands (WHAT is estimated) ----------------------------------------
-V_START = "V(s0)"            # value at the episode's initial state(s)
-V_MARGINAL = "V(d_mu)"       # behavior-state-weighted (marginalized) value
+V_START = "V(s0)"  # value at the episode's initial state(s)
+V_MARGINAL = "V(d_mu)"  # behavior-state-weighted (marginalized) value
 V_ADVANTAGE = "E[(rho-1)A]"  # candidate-minus-behavior marginalized advantage
 
 # ---- sources (WHERE the information comes from) ---------------------------
-S_QNET = "qnet"          # fitted action-value function (FQE / DR control variate)
+S_QNET = "qnet"  # fitted action-value function (FQE / DR control variate)
 S_DYNAMICS = "dynamics"  # learned world model, rolled out
 S_WEIGHTING = "weighting"  # importance weights applied to logged returns
-S_TD = "td"              # linear TD / LSTDQ
+S_TD = "td"  # linear TD / LSTDQ
 S_EMPIRICAL = "empirical"  # a logged-return statistic (behavior anchor)
 
 # ---- policies (on WHAT policy the estimand is evaluated) ------------------
 POL_DEPLOY = "deployable"  # the policy we would actually ship (argmax/greedy)
-POL_PROXY = "proxy"        # a softer proxy policy (soft/weighted)
+POL_PROXY = "proxy"  # a softer proxy policy (soft/weighted)
 
 
 @dataclass(frozen=True)
@@ -46,10 +47,10 @@ class EstimatorSpec:
     sources: frozenset
     policy: str
     value_key: str
-    lo_key: Optional[str] = None      # explicit interval-lower key in the row
+    lo_key: Optional[str] = None  # explicit interval-lower key in the row
     hi_key: Optional[str] = None
     support_key: Optional[str] = None  # ESS-like support key (weights-based)
-    advisory: bool = False             # may corroborate, never gate alone
+    advisory: bool = False  # may corroborate, never gate alone
 
     @property
     def deployable(self) -> bool:
@@ -60,35 +61,45 @@ class EstimatorSpec:
 # decision layer picks it up automatically. Values are read from the gate row.
 ESTIMATOR_CONTRACT = {
     # FQE family (one Q net -> one source). Soft and argmax are the SAME source.
-    "fqe_soft": EstimatorSpec("fqe_soft", V_START, frozenset({S_QNET}),
-                              POL_PROXY, "fqe_dm", support_key="ess_frac"),
-    "fqe_argmax": EstimatorSpec("fqe_argmax", V_START, frozenset({S_QNET}),
-                                POL_DEPLOY, "sharp_dm"),
+    "fqe_soft": EstimatorSpec(
+        "fqe_soft", V_START, frozenset({S_QNET}), POL_PROXY, "fqe_dm", support_key="ess_frac"
+    ),
+    "fqe_argmax": EstimatorSpec("fqe_argmax", V_START, frozenset({S_QNET}), POL_DEPLOY, "sharp_dm"),
     # Model-based family (one dynamics model -> one source).
-    "mb_soft": EstimatorSpec("mb_soft", V_START, frozenset({S_DYNAMICS}),
-                             POL_PROXY, "mb", support_key="ess_frac"),
-    "mb_argmax": EstimatorSpec("mb_argmax", V_START, frozenset({S_DYNAMICS}),
-                               POL_DEPLOY, "mb_sharp"),
+    "mb_soft": EstimatorSpec(
+        "mb_soft", V_START, frozenset({S_DYNAMICS}), POL_PROXY, "mb", support_key="ess_frac"
+    ),
+    "mb_argmax": EstimatorSpec(
+        "mb_argmax", V_START, frozenset({S_DYNAMICS}), POL_DEPLOY, "mb_sharp"
+    ),
     # Weighting family. DR reuses the Q net, so its sources are {weights, qnet}.
-    "dr": EstimatorSpec("dr", V_START, frozenset({S_WEIGHTING, S_QNET}),
-                        POL_PROXY, "dr", lo_key="dr_ci"),
+    "dr": EstimatorSpec(
+        "dr", V_START, frozenset({S_WEIGHTING, S_QNET}), POL_PROXY, "dr", lo_key="dr_ci"
+    ),
     # Diagnostics: displayed and recorded, but NOT vetted to gate a deploy
     # (advisory). WIS/IS are high-variance point estimates; LSTDQ is a linear
     # approximation; level is a median composite of several sources it cannot
     # claim independence from.
-    "wis": EstimatorSpec("wis", V_START, frozenset({S_WEIGHTING}),
-                         POL_PROXY, "wis", advisory=True),
-    "is": EstimatorSpec("is", V_START, frozenset({S_WEIGHTING}),
-                        POL_PROXY, "is", advisory=True),
-    "lstdq": EstimatorSpec("lstdq", V_START, frozenset({S_TD}),
-                           POL_PROXY, "lstdq", advisory=True),
-    "level": EstimatorSpec("level", V_START,
-                           frozenset({S_QNET, S_TD, S_DYNAMICS}),
-                           POL_PROXY, "level_est", advisory=True),
+    "wis": EstimatorSpec("wis", V_START, frozenset({S_WEIGHTING}), POL_PROXY, "wis", advisory=True),
+    "is": EstimatorSpec("is", V_START, frozenset({S_WEIGHTING}), POL_PROXY, "is", advisory=True),
+    "lstdq": EstimatorSpec("lstdq", V_START, frozenset({S_TD}), POL_PROXY, "lstdq", advisory=True),
+    "level": EstimatorSpec(
+        "level",
+        V_START,
+        frozenset({S_QNET, S_TD, S_DYNAMICS}),
+        POL_PROXY,
+        "level_est",
+        advisory=True,
+    ),
     # Horizon-free step-DR: a DIFFERENT estimand (marginalized advantage).
-    "step_dr": EstimatorSpec("step_dr", V_ADVANTAGE,
-                             frozenset({S_WEIGHTING, S_QNET}),
-                             POL_PROXY, "dr_step_adv", advisory=True),
+    "step_dr": EstimatorSpec(
+        "step_dr",
+        V_ADVANTAGE,
+        frozenset({S_WEIGHTING, S_QNET}),
+        POL_PROXY,
+        "dr_step_adv",
+        advisory=True,
+    ),
 }
 
 
@@ -136,9 +147,19 @@ class Estimate:
         return bool(bound is not None and bound > bar)
 
     def with_sources(self, sources):
-        return Estimate(self.name, self.estimand, frozenset(sources),
-                        self.policy, self.value, self.lo, self.hi, self.support,
-                        self.reliable, self.reason, self.advisory)
+        return Estimate(
+            self.name,
+            self.estimand,
+            frozenset(sources),
+            self.policy,
+            self.value,
+            self.lo,
+            self.hi,
+            self.support,
+            self.reliable,
+            self.reason,
+            self.advisory,
+        )
 
 
 def estimates_from_row(row, bar=None, min_ess=None, z=1.96):
@@ -162,9 +183,18 @@ def estimates_from_row(row, bar=None, min_ess=None, z=1.96):
             v = _row_value(row, spec.value_key)
             if v is None:
                 continue
-            out.append(Estimate(name, spec.estimand, spec.sources, spec.policy,
-                                v, reliable=True, advisory=True,
-                                reason="advisory (different estimand)"))
+            out.append(
+                Estimate(
+                    name,
+                    spec.estimand,
+                    spec.sources,
+                    spec.policy,
+                    v,
+                    reliable=True,
+                    advisory=True,
+                    reason="advisory (different estimand)",
+                )
+            )
             continue
         v = _row_value(row, spec.value_key)
         if v is None:
@@ -176,33 +206,49 @@ def estimates_from_row(row, bar=None, min_ess=None, z=1.96):
             ci = row[spec.lo_key]
             if isinstance(ci, (list, tuple)) and len(ci) == 2:
                 lo, hi = _finite(ci[0]), _finite(ci[1])
-        elif "sharp_info" in row and name == "fqe_argmax" and \
-                sharp_info.get("lower") is not None:
+        elif "sharp_info" in row and name == "fqe_argmax" and sharp_info.get("lower") is not None:
             lo = _finite(sharp_info.get("lower"))
             hi = v
         elif name in ("fqe_soft",) and efqe_dis is not None:
             lo, hi = v - z * efqe_dis, v + z * efqe_dis
         elif name in ("mb_soft", "mb_argmax"):
-            se = _finite(row.get("mb_sharp_se") if name == "mb_argmax"
-                         else row.get("mb_se"))
+            se = _finite(row.get("mb_sharp_se") if name == "mb_argmax" else row.get("mb_se"))
             if se is not None:
                 lo, hi = v - z * se, v + z * se
         # support
         support = _finite(row.get(spec.support_key)) if spec.support_key else None
         # reliability rules
-        _clamped = (("fqe" in clamp and name in ("fqe_soft", "fqe_argmax"))
-                    or ("mb" in clamp and name in ("mb_soft", "mb_argmax")))
+        _clamped = ("fqe" in clamp and name in ("fqe_soft", "fqe_argmax")) or (
+            "mb" in clamp and name in ("mb_soft", "mb_argmax")
+        )
         if _clamped:
             reliable, reason = False, "out of plausible range"
         elif diverged and name in ("fqe_soft", "fqe_argmax"):
             reliable, reason = False, "FQE diverged/uncalibrated"
         elif under_budget and name in ("fqe_soft", "fqe_argmax"):
             reliable, reason = False, "FQE under-budget"
-        elif spec.sources == frozenset({S_WEIGHTING}) and support is not None \
-                and min_ess is not None and support < min_ess:
+        elif (
+            spec.sources == frozenset({S_WEIGHTING})
+            and support is not None
+            and min_ess is not None
+            and support < min_ess
+        ):
             reliable, reason = False, f"low weighting support {support:.3f}"
-        out.append(Estimate(name, spec.estimand, spec.sources, spec.policy,
-                            v, lo, hi, support, reliable, reason, spec.advisory))
+        out.append(
+            Estimate(
+                name,
+                spec.estimand,
+                spec.sources,
+                spec.policy,
+                v,
+                lo,
+                hi,
+                support,
+                reliable,
+                reason,
+                spec.advisory,
+            )
+        )
     return out
 
 

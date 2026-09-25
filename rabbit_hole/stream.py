@@ -14,14 +14,14 @@ Storage backends (chosen by file extension):
 
 No SQLite, no pandas.
 """
+
 from __future__ import annotations
 
 import json
 from pathlib import Path
 from typing import Iterable, Iterator, Mapping
 
-from .schema import (CANONICAL_FIELDS, EVENT_STREAM_TABLE, canonicalize_row,
-                     parse_attributes)
+from .schema import CANONICAL_FIELDS, EVENT_STREAM_TABLE, canonicalize_row, parse_attributes
 
 # Non-canonical columns we carry through when present (contract extras).
 EXTRA_FIELDS = ("event_id", "entity_type", "entity_id", "source_table", "value")
@@ -98,8 +98,9 @@ class CustomerEventStream:
 # ---------------------------------------------------------------------------
 # read / write, dispatched by engine
 # ---------------------------------------------------------------------------
-def read_events(path: str, table: str = EVENT_STREAM_TABLE,
-                where: str | None = None, limit: int | None = None) -> list[dict]:
+def read_events(
+    path: str, table: str = EVENT_STREAM_TABLE, where: str | None = None, limit: int | None = None
+) -> list[dict]:
     eng = engine_of(path)
     if eng == "arrow":
         raw = _read_arrow(path)
@@ -111,8 +112,7 @@ def read_events(path: str, table: str = EVENT_STREAM_TABLE,
     return rows[:limit] if limit else rows
 
 
-def write_events(path: str, rows: Iterable[Mapping],
-                 table: str = EVENT_STREAM_TABLE) -> int:
+def write_events(path: str, rows: Iterable[Mapping], table: str = EVENT_STREAM_TABLE) -> int:
     rows = _canon_all(rows)
     eng = engine_of(path)
     if eng == "arrow":
@@ -150,12 +150,14 @@ def read_frame(path: str, table: str = EVENT_STREAM_TABLE):
     back via Arrow without a row-wise round trip.
     """
     import polars as pl
+
     eng = engine_of(path)
     if eng == "arrow":
         return pl.read_ipc(str(path), memory_map=True)
     if eng == "parquet":
         return pl.read_parquet(str(path))
     import duckdb
+
     con = duckdb.connect(str(path), read_only=True)
     try:
         return con.execute(f"SELECT * FROM {table}").pl()
@@ -173,6 +175,7 @@ def write_frame(path: str, df, table: str = EVENT_STREAM_TABLE) -> int:
         df.write_parquet(str(path))
     else:
         import duckdb
+
         con = duckdb.connect(str(path))
         try:
             con.register("rh_df", df)
@@ -195,6 +198,7 @@ def _as_text(v):
 # ---------------------------------------------------------------------------
 def _to_polars(rows):
     import polars as pl
+
     cols = _columns(rows)
     data = {c: [_as_text(r.get(c)) for r in rows] for c in cols}
     return pl.DataFrame(data)
@@ -206,6 +210,7 @@ def _from_polars(df):
 
 def _write_duckdb(path, rows, table):
     import duckdb
+
     Path(path).parent.mkdir(parents=True, exist_ok=True)
     df = _to_polars(rows)
     con = duckdb.connect(str(path))
@@ -219,6 +224,7 @@ def _write_duckdb(path, rows, table):
 
 def _read_duckdb(path, table, where):
     import duckdb
+
     con = duckdb.connect(str(path), read_only=True)
     try:
         sql = f"SELECT * FROM {table}"
@@ -238,6 +244,7 @@ def _write_parquet(path, rows):
 
 def _read_parquet(path):
     import polars as pl
+
     return _from_polars(pl.read_parquet(str(path)))
 
 
@@ -253,4 +260,5 @@ def _write_arrow(path, rows):
 
 def _read_arrow(path):
     import polars as pl
+
     return _from_polars(pl.read_ipc(str(path), memory_map=True))

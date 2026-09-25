@@ -32,7 +32,9 @@ class TD3(BaseAgent):
         self.action_dim = int(env.action_space.shape[0])
         bound = float(env.action_space.high[0])
         self.actor = DeterministicActor(in_dim, self.hidden, self.action_dim, bound).to(self.device)
-        self.actor_target = DeterministicActor(in_dim, self.hidden, self.action_dim, bound).to(self.device)
+        self.actor_target = DeterministicActor(in_dim, self.hidden, self.action_dim, bound).to(
+            self.device
+        )
         self.critic1 = ContinuousCritic(in_dim, self.action_dim, self.hidden).to(self.device)
         self.critic2 = ContinuousCritic(in_dim, self.action_dim, self.hidden).to(self.device)
         self.critic1_target = ContinuousCritic(in_dim, self.action_dim, self.hidden).to(self.device)
@@ -42,8 +44,11 @@ class TD3(BaseAgent):
         self.critic2_target.load_state_dict(self.critic2.state_dict())
         self.actor_opt = torch.optim.Adam(self.actor.parameters(), lr=self.lr)
         self.critic_opt = torch.optim.Adam(
-            list(self.critic1.parameters()) + list(self.critic2.parameters()), lr=self.lr)
-        self.buffer = ContinuousReplayBuffer(config.get("buffer_size", 100_000), in_dim, self.action_dim, self.device)
+            list(self.critic1.parameters()) + list(self.critic2.parameters()), lr=self.lr
+        )
+        self.buffer = ContinuousReplayBuffer(
+            config.get("buffer_size", 100_000), in_dim, self.action_dim, self.device
+        )
         self.t = 0
 
     def _t(self, state):
@@ -59,7 +64,9 @@ class TD3(BaseAgent):
     def _update(self):
         obs, act, rew, obs2, done = self.buffer.sample(self.batch_size)
         with torch.no_grad():
-            noise = (torch.randn_like(act) * self.policy_noise).clamp(-self.noise_clip, self.noise_clip)
+            noise = (torch.randn_like(act) * self.policy_noise).clamp(
+                -self.noise_clip, self.noise_clip
+            )
             a2 = (self.actor_target(obs2) + noise).clamp(-1.0, 1.0)
             q1 = self.critic1_target(obs2, a2)
             q2 = self.critic2_target(obs2, a2)
@@ -97,8 +104,12 @@ class TD3(BaseAgent):
             self.t += 1
             if done:
                 ep += 1
-                tracker.log(timestep=self.t, episode=ep, ret=float(ep_ret),
-                            loss=float(np.mean(losses)) if losses else None)
+                tracker.log(
+                    timestep=self.t,
+                    episode=ep,
+                    ret=float(ep_ret),
+                    loss=float(np.mean(losses)) if losses else None,
+                )
                 ep_ret = 0.0
                 losses = []
                 state, _ = env.reset()
@@ -110,8 +121,14 @@ class TD3(BaseAgent):
         self.episodes = ep
 
     def save(self, path):
-        torch.save({"actor": self.actor.state_dict(),
-                    "critic1": self.critic1.state_dict(), "critic2": self.critic2.state_dict()}, path)
+        torch.save(
+            {
+                "actor": self.actor.state_dict(),
+                "critic1": self.critic1.state_dict(),
+                "critic2": self.critic2.state_dict(),
+            },
+            path,
+        )
 
     def load(self, path):
         data = torch.load(path, map_location=self.device)

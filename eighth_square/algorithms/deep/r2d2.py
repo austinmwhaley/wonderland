@@ -13,7 +13,8 @@ def rescale(x, eps=1e-3):
 
 def unrescale(y, eps=1e-3):
     return torch.sign(y) * (
-        ((torch.sqrt(1.0 + 4.0 * eps * (torch.abs(y) + 1.0 + eps)) - 1.0) / (2.0 * eps)) ** 2 - 1.0)
+        ((torch.sqrt(1.0 + 4.0 * eps * (torch.abs(y) + 1.0 + eps)) - 1.0) / (2.0 * eps)) ** 2 - 1.0
+    )
 
 
 class RecurrentQNetwork(nn.Module):
@@ -22,12 +23,15 @@ class RecurrentQNetwork(nn.Module):
         self.n_actions = n_actions
         self.out_heads = out_heads
         self.features = nn.Sequential(
-            nn.Linear(in_dim, hidden), nn.ReLU(),
-            nn.Linear(hidden, hidden), nn.ReLU(),
+            nn.Linear(in_dim, hidden),
+            nn.ReLU(),
+            nn.Linear(hidden, hidden),
+            nn.ReLU(),
         )
         self.lstm = nn.LSTM(hidden, hidden, batch_first=True)
-        self.head = nn.Sequential(nn.Linear(hidden, hidden), nn.ReLU(),
-                                  nn.Linear(hidden, out_heads * n_actions))
+        self.head = nn.Sequential(
+            nn.Linear(hidden, hidden), nn.ReLU(), nn.Linear(hidden, out_heads * n_actions)
+        )
 
     def forward(self, x, state=None):
         h = self.features(x)
@@ -42,8 +46,19 @@ class SequenceReplayBuffer:
     """Stores episodes; every position yields a replay sequence of
     burn_in + seq_len + n_step steps (clipped at the episode boundary)."""
 
-    def __init__(self, capacity, obs_dim, device, seq_len, burn_in, n_step,
-                 alpha=0.6, beta=0.4, beta_steps=100_000, eps=1e-6):
+    def __init__(
+        self,
+        capacity,
+        obs_dim,
+        device,
+        seq_len,
+        burn_in,
+        n_step,
+        alpha=0.6,
+        beta=0.4,
+        beta_steps=100_000,
+        eps=1e-6,
+    ):
         self.device = device
         self.seq_len = seq_len
         self.burn_in = burn_in
@@ -60,14 +75,18 @@ class SequenceReplayBuffer:
 
     def push_episode(self, obs, act, rew, done, param_idx=0):
         ep_idx = len(self.episodes)
-        self.episodes.append((np.asarray(obs, dtype=np.float32),
-                              np.asarray(act, dtype=np.int64),
-                              np.asarray(rew, dtype=np.float32),
-                              np.asarray(done, dtype=np.float32),
-                              int(param_idx)))
+        self.episodes.append(
+            (
+                np.asarray(obs, dtype=np.float32),
+                np.asarray(act, dtype=np.int64),
+                np.asarray(rew, dtype=np.float32),
+                np.asarray(done, dtype=np.float32),
+                int(param_idx),
+            )
+        )
         p = max(1.0, float(max(abs(r) for r in rew) if len(rew) else 1.0))
         for start in range(len(rew)):
-            self.tree.add(p ** self.alpha, (ep_idx, start))
+            self.tree.add(p**self.alpha, (ep_idx, start))
             self.replay_counts[(ep_idx, start)] = 0
 
     def _window(self, ep_idx, start):
@@ -82,7 +101,7 @@ class SequenceReplayBuffer:
         rew_w = t(rew[lo:hi]).to(self.device)
         done_w = t(done[lo:hi]).to(self.device)
         mask = torch.zeros(hi - lo, dtype=torch.bool, device=self.device)
-        mask[burn:burn + self.seq_len] = True
+        mask[burn : burn + self.seq_len] = True
         return obs_w, act_w, rew_w, done_w, mask, param_idx
 
     def sample(self, batch_size):
@@ -148,14 +167,24 @@ class R2D2(BaseAgent):
         self.target.load_state_dict(self.online.state_dict())
         self.optimizer = torch.optim.Adam(self.online.parameters(), lr=self.lr)
         capacity = config.get("buffer_size", 100_000)
-        self.buffer = SequenceReplayBuffer(capacity, in_dim, self.device,
-                                           self.seq_len, self.burn_in, self.n_step,
-                                           alpha=config.get("p_alpha", 0.6),
-                                           beta=config.get("p_beta", 0.4),
-                                           beta_steps=config.get("steps", 100_000))
-        self.sched = EpsilonScheduler(config.get("eps_start", 1.0), config.get("eps_end", 0.01),
-                                      config.get("eps_decay_steps", config.get("steps", 100_000)), self.rng)
-        self.gamma_n = self.gamma ** self.n_step
+        self.buffer = SequenceReplayBuffer(
+            capacity,
+            in_dim,
+            self.device,
+            self.seq_len,
+            self.burn_in,
+            self.n_step,
+            alpha=config.get("p_alpha", 0.6),
+            beta=config.get("p_beta", 0.4),
+            beta_steps=config.get("steps", 100_000),
+        )
+        self.sched = EpsilonScheduler(
+            config.get("eps_start", 1.0),
+            config.get("eps_end", 0.01),
+            config.get("eps_decay_steps", config.get("steps", 100_000)),
+            self.rng,
+        )
+        self.gamma_n = self.gamma**self.n_step
         self.t = 0
         self._state = None
 
@@ -190,8 +219,12 @@ class R2D2(BaseAgent):
             if done:
                 ep += 1
                 self.buffer.push_episode(ep_obs, ep_act, ep_rew, ep_done)
-                tracker.log(timestep=self.t, episode=ep, ret=float(sum(ep_rew)),
-                            loss=float(np.mean(losses)) if losses else None)
+                tracker.log(
+                    timestep=self.t,
+                    episode=ep,
+                    ret=float(sum(ep_rew)),
+                    loss=float(np.mean(losses)) if losses else None,
+                )
                 ep_obs, ep_act, ep_rew, ep_done = [], [], [], []
                 losses = []
                 state, _ = env.reset()
@@ -230,11 +263,11 @@ class R2D2(BaseAgent):
             q2_all, _ = self.target(obs)
             a2 = self.online(obs)[0].argmax(-1)
             q2 = q2_all.gather(2, a2.unsqueeze(2)).squeeze(2)
-            gammas = [self.gamma ** k for k in range(self.n_step)]
+            gammas = [self.gamma**k for k in range(self.n_step)]
             target = torch.zeros_like(rew)
             for t in range(T):
                 G = rew[:, t].clone()
-                live = (done[:, t] <= 0.5)
+                live = done[:, t] <= 0.5
                 for k in range(1, self.n_step):
                     if t + k < T:
                         G = G + gammas[k] * rew[:, t + k] * live.float()
@@ -244,7 +277,7 @@ class R2D2(BaseAgent):
                 target[:, t] = G
         td = rescale(target) - q
         td = torch.where(mask, td, torch.zeros_like(td))
-        loss = (td ** 2 * weights).sum() / mask.sum()
+        loss = (td**2 * weights).sum() / mask.sum()
         self.optimizer.zero_grad()
         loss.backward()
         torch.nn.utils.clip_grad_norm_(self.online.parameters(), 40.0)

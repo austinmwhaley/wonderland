@@ -19,7 +19,9 @@ def train_trpo(env: EnvWrapper, config: AlgorithmConfig) -> Result:
     policy = CategoricalPolicy(env.state_dim, env.action_dim, config.hidden_dims).to(device)
     value_net = MLP(env.state_dim, 1, config.hidden_dims).to(device)
 
-    optimizer = torch.optim.Adam(list(policy.parameters()) + list(value_net.parameters()), lr=config.lr)
+    optimizer = torch.optim.Adam(
+        list(policy.parameters()) + list(value_net.parameters()), lr=config.lr
+    )
     rollout_size = config.rollout_steps
     max_steps = config.max_steps_per_episode
     kl_beta = config.kl_beta
@@ -31,7 +33,9 @@ def train_trpo(env: EnvWrapper, config: AlgorithmConfig) -> Result:
     total_steps = 0
     converged = False
     episodes_to_solve = None
-    tracker = PlateauTracker(config.early_stop_patience, config.early_stop_min_delta, config.solve_window)
+    tracker = PlateauTracker(
+        config.early_stop_patience, config.early_stop_min_delta, config.solve_window
+    )
     episode_count = 0
 
     pbar = tqdm(range(config.max_episodes), desc=config.algo_name, unit="ep", leave=False)
@@ -86,7 +90,7 @@ def train_trpo(env: EnvWrapper, config: AlgorithmConfig) -> Result:
             pbar.update(1)
 
             if len(rewards_history) >= config.solve_window:
-                avg = np.mean(rewards_history[-config.solve_window:])
+                avg = np.mean(rewards_history[-config.solve_window :])
                 pbar.set_postfix({"avg100": f"{avg:.1f}", "kl_beta": f"{kl_beta:.3f}"})
                 if config.is_solved(avg) and not converged:
                     converged = True
@@ -131,7 +135,6 @@ def train_trpo(env: EnvWrapper, config: AlgorithmConfig) -> Result:
 
         advantages_t = (advantages_t - advantages_t.mean()) / (advantages_t.std() + 1e-8)
 
-        n_batches = max(1, T // config.ppo_mini_batch_size)
         idx = np.arange(T)
 
         # TRPO: KL-penalty with adaptive beta
@@ -153,7 +156,12 @@ def train_trpo(env: EnvWrapper, config: AlgorithmConfig) -> Result:
 
                 policy_loss = -(ratio * advantages_t[mb_idx]).mean()
                 value_loss = F.mse_loss(value_net(states_t[mb_idx]).squeeze(), returns_t[mb_idx])
-                loss = policy_loss + kl_beta * kl + config.ppo_value_coef * value_loss + config.ppo_entropy_coef * (-entropy.mean())
+                loss = (
+                    policy_loss
+                    + kl_beta * kl
+                    + config.ppo_value_coef * value_loss
+                    + config.ppo_entropy_coef * (-entropy.mean())
+                )
 
                 optimizer.zero_grad()
                 loss.backward()

@@ -20,8 +20,7 @@ class CooperativeTug:
     n_actions = 5
     max_episode_steps = 200
 
-    def __init__(self, seed=None, world_size=10.0, buildings=None, comm_radius=6.0,
-                 max_steps=200):
+    def __init__(self, seed=None, world_size=10.0, buildings=None, comm_radius=6.0, max_steps=200):
         self.world_size = float(world_size)
         self.buildings = buildings if buildings is not None else []
         self.comm_radius = float(comm_radius)
@@ -79,10 +78,16 @@ class CooperativeTug:
         dxs = np.cos(angles)
         dys = np.sin(angles)
         W = self.world_size
-        tx = np.where(dxs > 0, (W - origin[0]) / np.maximum(dxs, 1e-9),
-                      np.where(dxs < 0, (0 - origin[0]) / np.minimum(dxs, -1e-9), np.inf))
-        ty = np.where(dys > 0, (W - origin[1]) / np.maximum(dys, 1e-9),
-                      np.where(dys < 0, (0 - origin[1]) / np.minimum(dys, -1e-9), np.inf))
+        tx = np.where(
+            dxs > 0,
+            (W - origin[0]) / np.maximum(dxs, 1e-9),
+            np.where(dxs < 0, (0 - origin[0]) / np.minimum(dxs, -1e-9), np.inf),
+        )
+        ty = np.where(
+            dys > 0,
+            (W - origin[1]) / np.maximum(dys, 1e-9),
+            np.where(dys < 0, (0 - origin[1]) / np.minimum(dys, -1e-9), np.inf),
+        )
         t_border = np.minimum(tx, ty)
         t = np.clip(t_border, 0.0, max_range)
         return (t / max_range).astype(np.float64)
@@ -118,13 +123,17 @@ class CooperativeTug:
         self.pos[1] = d1
         self.pkg_v = np.zeros(2, dtype=np.float64)
         self.steps = 0
-        return (self._agent_obs(0).astype(np.float32),
-                self._agent_obs(1).astype(np.float32)), {}
+        return (self._agent_obs(0).astype(np.float32), self._agent_obs(1).astype(np.float32)), {}
 
     def step(self, actions):
         a0, a1 = int(actions[0]), int(actions[1])
-        dirs = {0: np.array([0, 0]), 1: np.array([0, 1]), 2: np.array([0, -1]),
-                3: np.array([-1, 0]), 4: np.array([1, 0])}
+        dirs = {
+            0: np.array([0, 0]),
+            1: np.array([0, 1]),
+            2: np.array([0, -1]),
+            3: np.array([-1, 0]),
+            4: np.array([1, 0]),
+        }
         self._step_agent(0, dirs.get(a0, np.array([0, 0])) * self.move)
         self._step_agent(1, dirs.get(a1, np.array([0, 0])) * self.move)
         prev_pkg_dist = float(np.linalg.norm(self.goal - self.pkg))
@@ -160,10 +169,13 @@ class CooperativeTug:
             r += 25.0
         terminated = bool(delivered)
         truncated = bool(self.steps >= self.max_episode_steps)
-        return ((self._agent_obs(0).astype(np.float32),
-                 self._agent_obs(1).astype(np.float32)),
-                float(r), terminated, truncated,
-                {"pkg_dist": pkg_dist, "speed": speed, "moved": progress > 0})
+        return (
+            (self._agent_obs(0).astype(np.float32), self._agent_obs(1).astype(np.float32)),
+            float(r),
+            terminated,
+            truncated,
+            {"pkg_dist": pkg_dist, "speed": speed, "moved": progress > 0},
+        )
 
     def _step_agent(self, idx, move):
         new_pos = self.pos[idx] + move

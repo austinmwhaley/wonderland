@@ -1,6 +1,6 @@
 import numpy as np
 
-from .common import TabularAgent, episode_stats, greedy_action, n_actions, n_states
+from .common import TabularAgent, episode_stats, greedy_action
 
 
 class MCPrediction(TabularAgent):

@@ -36,12 +36,18 @@ def estimate_behavior(diet, cfg=None, seed=0):
     import sys
     import torch
     import torch.nn.functional as F
-    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(
-        os.path.dirname(os.path.abspath(__file__))))))
+
+    sys.path.insert(
+        0,
+        os.path.dirname(
+            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        ),
+    )
     from algorithms.approx.networks import DiscretePolicy
     from .autotune import resolve_device, resolve_fqe_cfg
     from .protocols import validate_diet
     from .training import govern
+
     validate_diet(diet)
     base = dict(cfg) if cfg else {}
     base.setdefault("seed", int(seed))
@@ -52,6 +58,7 @@ def estimate_behavior(diet, cfg=None, seed=0):
     N, in_dim = len(diet["obs"]), diet["obs"].shape[1]
     nA = diet["nA"]
     from .training import seed_all as _seed_all
+
     _seed_all(seed)
     rng = np.random.default_rng(seed)
     perm = rng.permutation(N)
@@ -59,18 +66,18 @@ def estimate_behavior(diet, cfg=None, seed=0):
     tr, va = perm[:cut], perm[cut:]
     net = DiscretePolicy(in_dim, hidden, nA).to(device)
     opt = torch.optim.Adam(net.parameters(), lr=lr)
-    O = torch.as_tensor(np.asarray(diet["obs"], dtype=np.float32)).to(device)
+    obs = torch.as_tensor(np.asarray(diet["obs"], dtype=np.float32)).to(device)
     A = torch.as_tensor(np.asarray(diet["act"], dtype=np.int64)).to(device)
 
     def val_err():
         with torch.no_grad():
-            return float(F.nll_loss(net(O[va]).clamp(min=1e-8).log(), A[va]))
+            return float(F.nll_loss(net(obs[va]).clamp(min=1e-8).log(), A[va]))
 
     def _step(n, lr_):
         last = None
         for _ in range(n):
             idx = tr[rng.integers(0, cut, batch)]
-            loss = F.nll_loss(net(O[idx]).clamp(min=1e-8).log(), A[idx])
+            loss = F.nll_loss(net(obs[idx]).clamp(min=1e-8).log(), A[idx])
             opt.zero_grad()
             loss.backward()
             opt.step()
@@ -84,8 +91,11 @@ def estimate_behavior(diet, cfg=None, seed=0):
     # ESS collapse came from sharp-but-wrong μ-hat making extreme ratios.
     with torch.no_grad():
         # Raw pre-softmax scores (DiscretePolicy.forward already softmaxes).
-        _all_logits = net.net(torch.as_tensor(
-            np.asarray(diet["obs"], dtype=np.float32))).numpy().astype(np.float64)
+        _all_logits = (
+            net.net(torch.as_tensor(np.asarray(diet["obs"], dtype=np.float32)))
+            .numpy()
+            .astype(np.float64)
+        )
         _va_logits = _all_logits[va]
         _tgt = np.asarray(diet["act"])[va]
     _best_T, _best_nll = 1.0, float("inf")
@@ -110,10 +120,16 @@ def estimate_behavior(diet, cfg=None, seed=0):
         pred = probs.argmax(1)
     acc = float((pred == np.asarray(diet["act"])).mean())
     return probs.astype(np.float32), {
-        "val_nll": gov["best_val"], "accuracy": round(acc, 4),
-        "steps": gov["steps"], "stopped": gov["stopped"],
-        "device": device, "hidden": hidden, "track": "industry",
-        "cal_temperature": round(_best_T, 3), "cal_holdout_nll": round(_best_nll, 4)}
+        "val_nll": gov["best_val"],
+        "accuracy": round(acc, 4),
+        "steps": gov["steps"],
+        "stopped": gov["stopped"],
+        "device": device,
+        "hidden": hidden,
+        "track": "industry",
+        "cal_temperature": round(_best_T, 3),
+        "cal_holdout_nll": round(_best_nll, 4),
+    }
 
 
 def with_estimated_propensities(diet, cfg=None, seed=0, floor_frac=0.05):
@@ -121,6 +137,7 @@ def with_estimated_propensities(diet, cfg=None, seed=0, floor_frac=0.05):
     (default 5% of chance: nA=2 -> 0.025). Returns (new_diet, info) with
     clipped_frac + behavior accuracy receipts. Original diet untouched."""
     from .protocols import validate_diet
+
     validate_diet(diet)
     probs, binfo = estimate_behavior(diet, cfg, seed)
     nA = int(diet["nA"])
@@ -131,11 +148,15 @@ def with_estimated_propensities(diet, cfg=None, seed=0, floor_frac=0.05):
     new = dict(diet)
     new["mu"] = mu
     new["_mu_source"] = "estimated"
-    new["_mu_info"] = dict(binfo, floor=round(floor, 5),
-                           clipped_frac=round(float(clipped.mean()), 4))
-    return new, {"mu_source": "estimated", "behavior": binfo,
-                 "floor": round(floor, 5),
-                 "clipped_frac": round(float(clipped.mean()), 4)}
+    new["_mu_info"] = dict(
+        binfo, floor=round(floor, 5), clipped_frac=round(float(clipped.mean()), 4)
+    )
+    return new, {
+        "mu_source": "estimated",
+        "behavior": binfo,
+        "floor": round(floor, 5),
+        "clipped_frac": round(float(clipped.mean()), 4),
+    }
 
 
 def estimate_behavior_continuous(obs, act, cfg=None, seed=0):
@@ -149,20 +170,32 @@ def estimate_behavior_continuous(obs, act, cfg=None, seed=0):
     import os
     import sys
     import torch
-    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(
-        os.path.dirname(os.path.abspath(__file__))))))
+
+    sys.path.insert(
+        0,
+        os.path.dirname(
+            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        ),
+    )
     from algorithms.approx.networks import MLP
     from .autotune import resolve_device, resolve_fqe_cfg
+
     obs = np.asarray(obs, dtype=np.float32)
     act = np.asarray(act, dtype=np.float32)
     N, d = obs.shape
     a_dim = act.shape[1] if act.ndim > 1 else 1
     act = act.reshape(N, a_dim)
-    stub = {"obs": obs, "act": act[:, 0].astype(np.int64),
-            "rew": np.zeros(N, dtype=np.float32),
-            "done": np.zeros(N, dtype=np.float32),
-            "mu": np.full((N, 2), 0.5, dtype=np.float32),
-            "episode": np.arange(N), "t": np.zeros(N), "nA": 2, "N": N}
+    stub = {
+        "obs": obs,
+        "act": act[:, 0].astype(np.int64),
+        "rew": np.zeros(N, dtype=np.float32),
+        "done": np.zeros(N, dtype=np.float32),
+        "mu": np.full((N, 2), 0.5, dtype=np.float32),
+        "episode": np.arange(N),
+        "t": np.zeros(N),
+        "nA": 2,
+        "N": N,
+    }
     base = dict(cfg) if cfg else {}
     base.setdefault("seed", int(seed))
     ac = resolve_fqe_cfg(stub, base)
@@ -175,14 +208,14 @@ def estimate_behavior_continuous(obs, act, cfg=None, seed=0):
     tr, va = perm[:cut], perm[cut:]
     net = MLP(d, hidden, 2 * a_dim).to(dev)
     opt = torch.optim.Adam(net.parameters(), lr=lr)
-    O = torch.as_tensor(obs).to(dev)
+    obs_t = torch.as_tensor(obs).to(dev)
     A = torch.as_tensor(act).to(dev)
 
     def nll(idx):
-        out = net(O[idx])
+        out = net(obs_t[idx])
         mean, logstd = out[:, :a_dim], out[:, a_dim:].clamp(-5, 2)
         z = (A[idx] - mean) / logstd.exp()
-        return (0.5 * z ** 2 + logstd - 0.5 * np.log(2 * np.pi)).sum(1).mean()
+        return (0.5 * z**2 + logstd - 0.5 * np.log(2 * np.pi)).sum(1).mean()
 
     best, bad, steps, eval_every, patience = None, 0, 0, max(50, cut // 20), 5
     with torch.no_grad():
@@ -191,7 +224,10 @@ def estimate_behavior_continuous(obs, act, cfg=None, seed=0):
         for _ in range(eval_every):
             i = torch.as_tensor(tr[rng.integers(0, cut, batch)]).to(dev)
             loss = nll(i)
-            opt.zero_grad(); loss.backward(); opt.step(); steps += 1
+            opt.zero_grad()
+            loss.backward()
+            opt.step()
+            steps += 1
         with torch.no_grad():
             ve = float(nll(va))
         bad = bad + 1 if ve >= best - 1e-6 else 0
@@ -201,6 +237,11 @@ def estimate_behavior_continuous(obs, act, cfg=None, seed=0):
         out = net(torch.as_tensor(obs))
         mean, logstd = out[:, :a_dim], out[:, a_dim:].clamp(-5, 2)
         z = (torch.as_tensor(act) - mean) / logstd.exp()
-        logp = (-0.5 * z ** 2 - logstd - 0.5 * float(np.log(2 * np.pi))).sum(1)
-    return logp.numpy(), {"val_nll": round(float(best), 4), "steps": steps,
-                          "a_dim": a_dim, "device": dev, "track": "continuous"}
+        logp = (-0.5 * z**2 - logstd - 0.5 * float(np.log(2 * np.pi))).sum(1)
+    return logp.numpy(), {
+        "val_nll": round(float(best), 4),
+        "steps": steps,
+        "a_dim": a_dim,
+        "device": dev,
+        "track": "continuous",
+    }

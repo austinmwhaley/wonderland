@@ -1,14 +1,16 @@
 import numpy as np
 
-from .common import TabularAgent, episode_stats, n_actions, n_states
+from .common import TabularAgent, episode_stats
 
 
 class ModelBasedAgent(TabularAgent):
     def __init__(self, env, config):
         super().__init__(env, config)
         if not hasattr(env.unwrapped, "P"):
-            raise ValueError(f"{type(self).__name__} needs an environment with explicit transition model (.P); "
-                             f"use frozenlake or cliffwalking")
+            raise ValueError(
+                f"{type(self).__name__} needs an environment with explicit transition model (.P); "
+                f"use frozenlake or cliffwalking"
+            )
         self.P = env.unwrapped.P
         self.gamma = self.config.get("gamma", 0.99)
         self.policy = np.full((self.nS, self.nA), 1.0 / self.nA)

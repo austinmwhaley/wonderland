@@ -41,7 +41,8 @@ class SemiGradientSarsa(BaseAgent):
     def _target(self, q_next, done, a_next):
         return torch.as_tensor(
             self._r + (0.0 if done else self.gamma * q_next[a_next]),
-            dtype=self._q_dtype, device=self.device,
+            dtype=self._q_dtype,
+            device=self.device,
         )
 
     def train(self, env, config, tracker):
@@ -71,8 +72,12 @@ class SemiGradientSarsa(BaseAgent):
                 ret += r
                 self.t += 1
             ep += 1
-            tracker.log(timestep=self.t, episode=ep, ret=ret,
-                        loss=float(np.mean(losses)) if losses else None)
+            tracker.log(
+                timestep=self.t,
+                episode=ep,
+                ret=ret,
+                loss=float(np.mean(losses)) if losses else None,
+            )
             losses = []
         self.episodes = ep
 
@@ -90,5 +95,6 @@ class NaiveQLearning(SemiGradientSarsa):
     def _target(self, q_next, done, a_next):
         return torch.as_tensor(
             self._r + (0.0 if done else self.gamma * q_next.max()),
-            dtype=self._q_dtype, device=self.device,
+            dtype=self._q_dtype,
+            device=self.device,
         )

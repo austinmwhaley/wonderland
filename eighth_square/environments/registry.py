@@ -3,8 +3,6 @@ import gymnasium as gym
 from .bandit import BanditEnv
 from .goal import PointReach
 from .multiagent import CooperativeCartPole
-from .multi_urban import CooperativeUrban
-from .coop_tug import CooperativeTug
 from .coop_balance import CooperativeBalanceDeliver
 from .wrappers import Tabularize
 
@@ -198,27 +196,76 @@ def make_env(name, seed=None):
         return env
     if name == "offset_l0":
         from OFFSET.environments.urban_world import UrbanWorld
-        env = UrbanWorld(n_agents=1, buildings=[], world_size=10, world_height=10, max_episode_steps=meta["episode_length"], seed=seed, discrete=False)
+
+        env = UrbanWorld(
+            n_agents=1,
+            buildings=[],
+            world_size=10,
+            world_height=10,
+            max_episode_steps=meta["episode_length"],
+            seed=seed,
+            discrete=False,
+        )
         env.reset(seed=seed)
         return env
     if name == "offset_l0_discrete":
         from OFFSET.environments.urban_world import UrbanWorld
-        env = UrbanWorld(n_agents=1, buildings=[], world_size=10, world_height=10, max_episode_steps=meta["episode_length"], seed=seed, discrete=True)
+
+        env = UrbanWorld(
+            n_agents=1,
+            buildings=[],
+            world_size=10,
+            world_height=10,
+            max_episode_steps=meta["episode_length"],
+            seed=seed,
+            discrete=True,
+        )
         env.reset(seed=seed)
         return env
     if name == "offset_l1":
         from OFFSET.environments.urban_world import L1_BUILDINGS
-        env = UrbanWorld(n_agents=1, buildings=L1_BUILDINGS, world_size=10, world_height=10, max_episode_steps=meta["episode_length"], seed=seed, discrete=False, obs_mode="lidar8")
+
+        env = UrbanWorld(
+            n_agents=1,
+            buildings=L1_BUILDINGS,
+            world_size=10,
+            world_height=10,
+            max_episode_steps=meta["episode_length"],
+            seed=seed,
+            discrete=False,
+            obs_mode="lidar8",
+        )
         env.reset(seed=seed)
         return env
     if name == "offset_l1_discrete":
         from OFFSET.environments.urban_world import L1_BUILDINGS
-        env = UrbanWorld(n_agents=1, buildings=L1_BUILDINGS, world_size=10, world_height=10, max_episode_steps=meta["episode_length"], seed=seed, discrete=True, obs_mode="lidar8")
+
+        env = UrbanWorld(
+            n_agents=1,
+            buildings=L1_BUILDINGS,
+            world_size=10,
+            world_height=10,
+            max_episode_steps=meta["episode_length"],
+            seed=seed,
+            discrete=True,
+            obs_mode="lidar8",
+        )
         env.reset(seed=seed)
         return env
     if name == "offset_l2_discrete":
         from OFFSET.environments.urban_world import L1_BUILDINGS
-        env = UrbanWorld(n_agents=1, buildings=L1_BUILDINGS, world_size=10, world_height=10, max_episode_steps=meta["episode_length"], seed=seed, discrete=True, obs_mode="lidar8", reward_mode="sparse")
+
+        env = UrbanWorld(
+            n_agents=1,
+            buildings=L1_BUILDINGS,
+            world_size=10,
+            world_height=10,
+            max_episode_steps=meta["episode_length"],
+            seed=seed,
+            discrete=True,
+            obs_mode="lidar8",
+            reward_mode="sparse",
+        )
         env.reset(seed=seed)
         return env
     if name == "offset_l3":
@@ -227,7 +274,7 @@ def make_env(name, seed=None):
         return env
     try:
         env = gym.make(meta["gym_id"])
-    except gym.error.DeprecatedEnv as e:
+    except gym.error.DeprecatedEnv:
         alt = meta["gym_id"].rsplit("-", 1)[0] + "-v1"
         env = gym.make(alt)
     if name == "blackjack":

@@ -25,7 +25,9 @@ def train_reinforce(env: EnvWrapper, config: AlgorithmConfig) -> Result:
     total_steps = 0
     converged = False
     episodes_to_solve = None
-    tracker = PlateauTracker(config.early_stop_patience, config.early_stop_min_delta, config.solve_window)
+    tracker = PlateauTracker(
+        config.early_stop_patience, config.early_stop_min_delta, config.solve_window
+    )
 
     pbar = tqdm(range(config.max_episodes), desc=config.algo_name, unit="ep", leave=False)
     for episode in pbar:
@@ -68,7 +70,7 @@ def train_reinforce(env: EnvWrapper, config: AlgorithmConfig) -> Result:
         losses.append(loss.item())
 
         if len(rewards_history) >= config.solve_window:
-            avg = np.mean(rewards_history[-config.solve_window:])
+            avg = np.mean(rewards_history[-config.solve_window :])
             pbar.set_postfix({"avg100": f"{avg:.1f}"})
             if config.is_solved(avg) and not converged:
                 converged = True
@@ -101,7 +103,9 @@ def train_a2c(env: EnvWrapper, config: AlgorithmConfig) -> Result:
     policy = CategoricalPolicy(env.state_dim, env.action_dim, config.hidden_dims).to(device)
     value_net = MLP(env.state_dim, 1, config.hidden_dims).to(device)
 
-    optimizer = torch.optim.Adam(list(policy.parameters()) + list(value_net.parameters()), lr=config.lr)
+    optimizer = torch.optim.Adam(
+        list(policy.parameters()) + list(value_net.parameters()), lr=config.lr
+    )
 
     rewards_history = []
     losses = []
@@ -109,7 +113,9 @@ def train_a2c(env: EnvWrapper, config: AlgorithmConfig) -> Result:
     total_steps = 0
     converged = False
     episodes_to_solve = None
-    tracker = PlateauTracker(config.early_stop_patience, config.early_stop_min_delta, config.solve_window)
+    tracker = PlateauTracker(
+        config.early_stop_patience, config.early_stop_min_delta, config.solve_window
+    )
 
     pbar = tqdm(range(config.max_episodes), desc=config.algo_name, unit="ep", leave=False)
     for episode in pbar:
@@ -153,7 +159,11 @@ def train_a2c(env: EnvWrapper, config: AlgorithmConfig) -> Result:
         policy_loss = torch.stack([-lp * adv for lp, adv in zip(log_probs, advantages)]).mean()
         value_loss = F.mse_loss(values, returns)
         entropy_loss = -torch.stack(entropies).mean()
-        loss = policy_loss + config.ppo_value_coef * value_loss + config.ppo_entropy_coef * entropy_loss
+        loss = (
+            policy_loss
+            + config.ppo_value_coef * value_loss
+            + config.ppo_entropy_coef * entropy_loss
+        )
 
         optimizer.zero_grad()
         loss.backward()
@@ -163,7 +173,7 @@ def train_a2c(env: EnvWrapper, config: AlgorithmConfig) -> Result:
         losses.append(loss.item())
 
         if len(rewards_history) >= config.solve_window:
-            avg = np.mean(rewards_history[-config.solve_window:])
+            avg = np.mean(rewards_history[-config.solve_window :])
             pbar.set_postfix({"avg100": f"{avg:.1f}"})
             if config.is_solved(avg) and not converged:
                 converged = True
@@ -196,7 +206,9 @@ def train_ppo(env: EnvWrapper, config: AlgorithmConfig) -> Result:
     policy = CategoricalPolicy(env.state_dim, env.action_dim, config.hidden_dims).to(device)
     value_net = MLP(env.state_dim, 1, config.hidden_dims).to(device)
 
-    optimizer = torch.optim.Adam(list(policy.parameters()) + list(value_net.parameters()), lr=config.lr)
+    optimizer = torch.optim.Adam(
+        list(policy.parameters()) + list(value_net.parameters()), lr=config.lr
+    )
     rollout_size = config.rollout_steps
     max_steps = config.max_steps_per_episode
 
@@ -206,7 +218,9 @@ def train_ppo(env: EnvWrapper, config: AlgorithmConfig) -> Result:
     total_steps = 0
     converged = False
     episodes_to_solve = None
-    tracker = PlateauTracker(config.early_stop_patience, config.early_stop_min_delta, config.solve_window)
+    tracker = PlateauTracker(
+        config.early_stop_patience, config.early_stop_min_delta, config.solve_window
+    )
     episode_count = 0
 
     pbar = tqdm(range(config.max_episodes), desc=config.algo_name, unit="ep", leave=False)
@@ -263,7 +277,7 @@ def train_ppo(env: EnvWrapper, config: AlgorithmConfig) -> Result:
             pbar.update(1)
 
             if len(rewards_history) >= config.solve_window:
-                avg = np.mean(rewards_history[-config.solve_window:])
+                avg = np.mean(rewards_history[-config.solve_window :])
                 pbar.set_postfix({"avg100": f"{avg:.1f}"})
                 if config.is_solved(avg) and not converged:
                     converged = True
@@ -312,7 +326,6 @@ def train_ppo(env: EnvWrapper, config: AlgorithmConfig) -> Result:
 
         advantages_t = (advantages_t - advantages_t.mean()) / (advantages_t.std() + 1e-8)
 
-        n_batches = max(1, T // config.ppo_mini_batch_size)
         idx = np.arange(T)
 
         for _ in range(config.ppo_epochs):
@@ -324,12 +337,19 @@ def train_ppo(env: EnvWrapper, config: AlgorithmConfig) -> Result:
                 log_probs_new, entropy = policy.evaluate(states_t[mb_idx], actions_t[mb_idx])
                 ratio = torch.exp(log_probs_new.squeeze() - old_log_probs_t[mb_idx])
                 surr1 = ratio * advantages_t[mb_idx]
-                surr2 = torch.clamp(ratio, 1 - config.ppo_clip, 1 + config.ppo_clip) * advantages_t[mb_idx]
+                surr2 = (
+                    torch.clamp(ratio, 1 - config.ppo_clip, 1 + config.ppo_clip)
+                    * advantages_t[mb_idx]
+                )
                 policy_loss = -torch.min(surr1, surr2).mean()
 
                 value_loss = F.mse_loss(value_net(states_t[mb_idx]).squeeze(), returns_t[mb_idx])
                 entropy_loss = -entropy.mean()
-                loss = policy_loss + config.ppo_value_coef * value_loss + config.ppo_entropy_coef * entropy_loss
+                loss = (
+                    policy_loss
+                    + config.ppo_value_coef * value_loss
+                    + config.ppo_entropy_coef * entropy_loss
+                )
 
                 optimizer.zero_grad()
                 loss.backward()

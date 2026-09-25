@@ -30,14 +30,18 @@ class DDPG(BaseAgent):
         self.action_dim = int(env.action_space.shape[0])
         bound = float(env.action_space.high[0])
         self.actor = DeterministicActor(in_dim, self.hidden, self.action_dim, bound).to(self.device)
-        self.actor_target = DeterministicActor(in_dim, self.hidden, self.action_dim, bound).to(self.device)
+        self.actor_target = DeterministicActor(in_dim, self.hidden, self.action_dim, bound).to(
+            self.device
+        )
         self.critic = ContinuousCritic(in_dim, self.action_dim, self.hidden).to(self.device)
         self.critic_target = ContinuousCritic(in_dim, self.action_dim, self.hidden).to(self.device)
         self.actor_target.load_state_dict(self.actor.state_dict())
         self.critic_target.load_state_dict(self.critic.state_dict())
         self.actor_opt = torch.optim.Adam(self.actor.parameters(), lr=self.lr)
         self.critic_opt = torch.optim.Adam(self.critic.parameters(), lr=self.lr)
-        self.buffer = ContinuousReplayBuffer(config.get("buffer_size", 100_000), in_dim, self.action_dim, self.device)
+        self.buffer = ContinuousReplayBuffer(
+            config.get("buffer_size", 100_000), in_dim, self.action_dim, self.device
+        )
         self.t = 0
 
     def _t(self, state):
@@ -53,7 +57,9 @@ class DDPG(BaseAgent):
     def _update(self):
         obs, act, rew, obs2, done = self.buffer.sample(self.batch_size)
         with torch.no_grad():
-            target_q = rew + self.gamma * (1 - done) * self.critic_target(obs2, self.actor_target(obs2))
+            target_q = rew + self.gamma * (1 - done) * self.critic_target(
+                obs2, self.actor_target(obs2)
+            )
         critic_loss = F.mse_loss(self.critic(obs, act), target_q)
         self.critic_opt.zero_grad()
         critic_loss.backward()
@@ -82,8 +88,12 @@ class DDPG(BaseAgent):
             self.t += 1
             if done:
                 ep += 1
-                tracker.log(timestep=self.t, episode=ep, ret=float(ep_ret),
-                            loss=float(np.mean(losses)) if losses else None)
+                tracker.log(
+                    timestep=self.t,
+                    episode=ep,
+                    ret=float(ep_ret),
+                    loss=float(np.mean(losses)) if losses else None,
+                )
                 ep_ret = 0.0
                 losses = []
                 state, _ = env.reset()

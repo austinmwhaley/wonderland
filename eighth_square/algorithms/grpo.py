@@ -2,7 +2,6 @@ import time
 
 import numpy as np
 import torch
-import torch.nn.functional as F
 from tqdm import tqdm
 
 from algorithms.base import Result
@@ -29,7 +28,9 @@ def train_grpo(env: EnvWrapper, config: AlgorithmConfig) -> Result:
     total_steps = 0
     converged = False
     episodes_to_solve = None
-    tracker = PlateauTracker(config.early_stop_patience, config.early_stop_min_delta, config.solve_window)
+    tracker = PlateauTracker(
+        config.early_stop_patience, config.early_stop_min_delta, config.solve_window
+    )
     episode_count = 0
 
     pbar = tqdm(range(config.max_episodes), desc=config.algo_name, unit="ep", leave=False)
@@ -64,10 +65,14 @@ def train_grpo(env: EnvWrapper, config: AlgorithmConfig) -> Result:
                 if done:
                     break
 
-            group_trajectories.append({
-                "states": states, "actions": actions,
-                "log_probs": log_probs, "return_val": episode_reward,
-            })
+            group_trajectories.append(
+                {
+                    "states": states,
+                    "actions": actions,
+                    "log_probs": log_probs,
+                    "return_val": episode_reward,
+                }
+            )
             total_transitions += len(states)
             episode_count += 1
 
@@ -75,11 +80,16 @@ def train_grpo(env: EnvWrapper, config: AlgorithmConfig) -> Result:
             pbar.update(1)
 
             if len(rewards_history) >= config.solve_window:
-                avg = np.mean(rewards_history[-config.solve_window:])
+                avg = np.mean(rewards_history[-config.solve_window :])
                 pbar.set_postfix({"avg100": f"{avg:.1f}"})
 
-            if config.is_solved(np.mean(rewards_history[-min(config.solve_window, len(rewards_history)):])) \
-                    and not converged and len(rewards_history) >= config.solve_window:
+            if (
+                config.is_solved(
+                    np.mean(rewards_history[-min(config.solve_window, len(rewards_history)) :])
+                )
+                and not converged
+                and len(rewards_history) >= config.solve_window
+            ):
                 converged = True
                 episodes_to_solve = episode_count
 
@@ -117,7 +127,6 @@ def train_grpo(env: EnvWrapper, config: AlgorithmConfig) -> Result:
         advantages_t = torch.FloatTensor(np.array(all_advantages)).to(device)
         advantages_t = (advantages_t - advantages_t.mean()) / (advantages_t.std() + 1e-8)
 
-        n_batches = max(1, T // config.ppo_mini_batch_size)
         idx = np.arange(T)
 
         for _ in range(config.ppo_epochs):
@@ -129,7 +138,10 @@ def train_grpo(env: EnvWrapper, config: AlgorithmConfig) -> Result:
                 log_probs_new, entropy = policy.evaluate(states_t[mb_idx], actions_t[mb_idx])
                 ratio = torch.exp(log_probs_new.squeeze() - old_log_probs_t[mb_idx])
                 surr1 = ratio * advantages_t[mb_idx]
-                surr2 = torch.clamp(ratio, 1 - config.ppo_clip, 1 + config.ppo_clip) * advantages_t[mb_idx]
+                surr2 = (
+                    torch.clamp(ratio, 1 - config.ppo_clip, 1 + config.ppo_clip)
+                    * advantages_t[mb_idx]
+                )
                 loss = -torch.min(surr1, surr2).mean() + config.ppo_entropy_coef * (-entropy.mean())
 
                 optimizer.zero_grad()

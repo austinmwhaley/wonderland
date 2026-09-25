@@ -1,23 +1,27 @@
 """Ground-truth benchmark harness tests: FP/FN/precision/recall + intervals."""
-from white_queen.tribunal.bench import (
-    Case, Cell, score_case, summarize, wilson_interval)
+
+from white_queen.tribunal.bench import Case, Cell, score_case, summarize, wilson_interval
 
 
 def _case(name, rows):
     # rows: (cand, deploy, truth, anchor, bar, rank)
-    return Case(name, [Cell(c, dep, truth, anchor, bar, rk)
-                       for c, dep, truth, anchor, bar, rk in rows])
+    return Case(
+        name, [Cell(c, dep, truth, anchor, bar, rk) for c, dep, truth, anchor, bar, rk in rows]
+    )
 
 
 def test_score_counts_fp_fn():
     # bar=60: good (truth 90) deployed = TP; bad (truth 10) deployed = FP;
     # good held = FN; bad held = TN.
-    case = _case("toy", [
-        ("good_dep", True, 90.0, 50.0, 60.0, 1),
-        ("bad_dep", True, 10.0, 50.0, 60.0, 2),
-        ("good_hold", False, 90.0, 50.0, 60.0, 3),
-        ("bad_hold", False, 10.0, 50.0, 60.0, 4),
-    ])
+    case = _case(
+        "toy",
+        [
+            ("good_dep", True, 90.0, 50.0, 60.0, 1),
+            ("bad_dep", True, 10.0, 50.0, 60.0, 2),
+            ("good_hold", False, 90.0, 50.0, 60.0, 3),
+            ("bad_hold", False, 10.0, 50.0, 60.0, 4),
+        ],
+    )
     s = score_case(case)
     assert (s["tp"], s["fp"], s["fn"], s["tn"]) == (1, 1, 1, 1)
     assert s["false_positive"] == ["bad_dep"]
@@ -27,10 +31,8 @@ def test_score_counts_fp_fn():
 
 def test_summarize_precision_recall_and_ci():
     cases = [
-        _case("a", [("x", True, 90.0, 50.0, 60.0, 1),
-                    ("y", False, 10.0, 50.0, 60.0, 2)]),
-        _case("b", [("p", True, 90.0, 50.0, 60.0, 1),
-                    ("q", True, 10.0, 50.0, 60.0, 2)]),
+        _case("a", [("x", True, 90.0, 50.0, 60.0, 1), ("y", False, 10.0, 50.0, 60.0, 2)]),
+        _case("b", [("p", True, 90.0, 50.0, 60.0, 1), ("q", True, 10.0, 50.0, 60.0, 2)]),
     ]
     out = summarize(cases)
     ov = out["overall"]

@@ -8,6 +8,7 @@ for discrete actions from (greedy_action, eps):
 mu[greedy] = 1-eps+eps/nA else eps/nA. No estimation anywhere in Stage 1 —
 the lab analog of exact propensity logs.
 """
+
 import sqlite3
 
 import numpy as np
@@ -56,6 +57,7 @@ CREATE INDEX IF NOT EXISTS idx_ep_pol ON episodes(policy_id);
 """
     )
 
+
 # Coverage diets: same rows, different lenses. novice_only ~= thin/poor coverage
 # stress; expert_only ~= imitation-ceiling check; low_coverage ~= sparse support.
 VIEWS = {
@@ -83,8 +85,10 @@ def connect(path):
 def init_db(path, obs_dim=4, nA=2, gamma=0.99):
     con = connect(path)
     con.executescript(_schema(int(obs_dim)))
-    con.executemany("INSERT OR REPLACE INTO meta VALUES (?,?)",
-                    [("obs_dim", str(obs_dim)), ("nA", str(nA)), ("gamma", str(gamma))])
+    con.executemany(
+        "INSERT OR REPLACE INTO meta VALUES (?,?)",
+        [("obs_dim", str(obs_dim)), ("nA", str(nA)), ("gamma", str(gamma))],
+    )
     for name, sql in VIEWS.items():
         con.execute(f"DROP VIEW IF EXISTS diet_{name}")
         con.execute(f"CREATE VIEW diet_{name} AS {sql}")
@@ -95,29 +99,44 @@ def init_db(path, obs_dim=4, nA=2, gamma=0.99):
 def register_policy(con, policy_id, family, algo, checkpoint_frac, seed, train_steps, collect_eps):
     con.execute(
         "INSERT OR REPLACE INTO policies VALUES (?,?,?,?,?,?,?)",
-        (policy_id, family, algo, checkpoint_frac, seed, train_steps, collect_eps))
+        (policy_id, family, algo, checkpoint_frac, seed, train_steps, collect_eps),
+    )
     con.commit()
 
 
-def insert_episode(con, policy_id, seed, obs_seq, act_seq, rew_seq, done_seq,
-                   greedy_seq, eps_seq, prob_seq):
+def insert_episode(
+    con, policy_id, seed, obs_seq, act_seq, rew_seq, done_seq, greedy_seq, eps_seq, prob_seq
+):
     cur = con.execute(
         "INSERT INTO episodes (policy_id, seed, ret, length) VALUES (?,?,?,?)",
-        (policy_id, seed, float(np.sum(rew_seq)), len(act_seq)))
+        (policy_id, seed, float(np.sum(rew_seq)), len(act_seq)),
+    )
     eid = cur.lastrowid
     obs2 = np.vstack([obs_seq[1:], obs_seq[-1:]])  # next-obs implicit in rollout order
     d = int(np.asarray(obs_seq).shape[1])
     ocols = ",".join(f"o{i}" for i in range(d))
     ncols = ",".join(f"n{i}" for i in range(d))
     ph = ",".join(["?"] * (2 * d + 8))
-    rows = [(eid, t,
-             *map(float, obs_seq[t]), int(act_seq[t]), float(rew_seq[t]),
-             *map(float, obs2[t]), float(done_seq[t]),
-             int(greedy_seq[t]), float(eps_seq[t]), float(prob_seq[t]))
-            for t in range(len(act_seq))]
+    rows = [
+        (
+            eid,
+            t,
+            *map(float, obs_seq[t]),
+            int(act_seq[t]),
+            float(rew_seq[t]),
+            *map(float, obs2[t]),
+            float(done_seq[t]),
+            int(greedy_seq[t]),
+            float(eps_seq[t]),
+            float(prob_seq[t]),
+        )
+        for t in range(len(act_seq))
+    ]
     con.executemany(
         f"INSERT INTO transitions (episode_id,t,{ocols},action,reward,"
-        f"{ncols},done,greedy_action,eps,prob_taken) VALUES ({ph})", rows)
+        f"{ncols},done,greedy_action,eps,prob_taken) VALUES ({ph})",
+        rows,
+    )
     con.commit()
     return eid
 
@@ -132,19 +151,19 @@ def load_diet(path, diet):
     """
     try:
         import duckdb
+
         con = duckdb.connect()
         con.execute(f"ATTACH '{path}' AS wq (TYPE sqlite, READ_ONLY)")
-        nA = int(con.execute(
-            "SELECT value FROM wq.meta WHERE key='nA'").fetchone()[0])
-        d = int(con.execute(
-            "SELECT value FROM wq.meta WHERE key='obs_dim'").fetchone()[0])
+        nA = int(con.execute("SELECT value FROM wq.meta WHERE key='nA'").fetchone()[0])
+        d = int(con.execute("SELECT value FROM wq.meta WHERE key='obs_dim'").fetchone()[0])
         oc = ",".join(f"o{i}" for i in range(d))
         nc = ",".join(f"n{i}" for i in range(d))
         q = (
             f"SELECT {oc},action,reward,{nc},done,"
             f"greedy_action,eps,prob_taken,episode_id,"
             f"ROW_NUMBER() OVER (PARTITION BY episode_id ORDER BY tid) - 1 AS t "
-            f"FROM wq.diet_{diet} ORDER BY tid")
+            f"FROM wq.diet_{diet} ORDER BY tid"
+        )
         cols = con.execute(q).fetchnumpy()  # numpy arrays via Arrow
         con.close()
     except Exception:
@@ -165,9 +184,20 @@ def load_diet(path, diet):
     mu[np.arange(N), greedy] = 1.0 - eps
     mu += (eps / nA)[:, None]
     mu_take = mu[np.arange(N), act]
-    return {"obs": obs, "act": act, "rew": rew, "obs2": obs2, "done": done,
-            "mu": mu, "mu_take": mu_take, "episode": ep, "t": t,
-            "nA": nA, "N": N, "mode": "rl"}
+    return {
+        "obs": obs,
+        "act": act,
+        "rew": rew,
+        "obs2": obs2,
+        "done": done,
+        "mu": mu,
+        "mu_take": mu_take,
+        "episode": ep,
+        "t": t,
+        "nA": nA,
+        "N": N,
+        "mode": "rl",
+    }
 
 
 def _load_diet_sqlite(path, diet):
@@ -179,7 +209,8 @@ def _load_diet_sqlite(path, diet):
     nc = ",".join(f"n{i}" for i in range(d))
     rows = con.execute(
         f"SELECT {oc},action,reward,{nc},done,"
-        f"greedy_action,eps,prob_taken,episode_id FROM diet_{diet} ORDER BY tid").fetchall()
+        f"greedy_action,eps,prob_taken,episode_id FROM diet_{diet} ORDER BY tid"
+    ).fetchall()
     con.close()
     a = np.asarray(rows, dtype=np.float64)
     if len(a) == 0:
@@ -187,7 +218,7 @@ def _load_diet_sqlite(path, diet):
     obs = a[:, 0:d].astype(np.float32)
     act = a[:, d].astype(np.int64)
     rew = a[:, d + 1].astype(np.float32)
-    obs2 = a[:, d + 2:d + 2 + d].astype(np.float32)
+    obs2 = a[:, d + 2 : d + 2 + d].astype(np.float32)
     done = a[:, d + 2 + d].astype(np.float32)
     greedy = a[:, d + 3 + d].astype(np.int64)
     eps = a[:, d + 4 + d].astype(np.float32)
@@ -199,9 +230,20 @@ def _load_diet_sqlite(path, diet):
     seg_id = np.cumsum(np.concatenate([[0], np.diff(ep) != 0]))
     t = (np.arange(len(ep)) - starts[seg_id]).astype(np.int64)
     mu_take = mu[np.arange(len(a)), act]
-    return {"obs": obs, "act": act, "rew": rew, "obs2": obs2, "done": done,
-            "mu": mu, "mu_take": mu_take, "episode": ep, "t": t,
-            "nA": nA, "N": len(a), "mode": "rl"}
+    return {
+        "obs": obs,
+        "act": act,
+        "rew": rew,
+        "obs2": obs2,
+        "done": done,
+        "mu": mu,
+        "mu_take": mu_take,
+        "episode": ep,
+        "t": t,
+        "nA": nA,
+        "N": len(a),
+        "mode": "rl",
+    }
 
 
 def diet_stats(path):
@@ -211,11 +253,11 @@ def diet_stats(path):
         rows = con.execute(
             f"SELECT e.episode_id, AVG(e.ret) FROM diet_{name} t "
             f"JOIN episodes e ON t.episode_id=e.episode_id "
-            f"GROUP BY e.episode_id").fetchall()
+            f"GROUP BY e.episode_id"
+        ).fetchall()
         n_eps = len(rows)
         n_tr = con.execute(f"SELECT COUNT(*) FROM diet_{name}").fetchone()[0]
         mean_ret = float(sum(r[1] for r in rows) / n_eps) if n_eps else 0.0
-        out[name] = {"transitions": n_tr, "episodes": n_eps,
-                     "mean_ep_return": mean_ret}
+        out[name] = {"transitions": n_tr, "episodes": n_eps, "mean_ep_return": mean_ret}
     con.close()
     return out

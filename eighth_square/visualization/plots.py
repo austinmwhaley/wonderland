@@ -60,8 +60,16 @@ def filter_runs(runs, filters):
     return out
 
 
-def plot_runs(runs, metric="return", ema_window=20, out_path=None, show_loss=False,
-              title=None, xlabel="timestep", ylabel=None):
+def plot_runs(
+    runs,
+    metric="return",
+    ema_window=20,
+    out_path=None,
+    show_loss=False,
+    title=None,
+    xlabel="timestep",
+    ylabel=None,
+):
     if not runs:
         raise ValueError("no runs matched the filters")
     fig, ax = plt.subplots(1, 2 if show_loss else 1, figsize=(12, 4.5))
@@ -73,10 +81,10 @@ def plot_runs(runs, metric="return", ema_window=20, out_path=None, show_loss=Fal
         if len(ys) == 0:
             continue
         if ema_window and len(ys) > ema_window:
-            xs, ys = xs[ema_window - 1:], ema(ys, ema_window)
+            xs, ys = xs[ema_window - 1 :], ema(ys, ema_window)
         label = run["name"]
         if run["meta"].get("tag"):
-            label = f'{run["meta"]["algo"]}_{run["meta"]["env"]}_{run["meta"]["tag"]}'
+            label = f"{run['meta']['algo']}_{run['meta']['env']}_{run['meta']['tag']}"
         axes[0].plot(xs, ys, label=label, linewidth=1.2)
     axes[0].set_xlabel(xlabel)
     axes[0].set_ylabel(ylabel or metric)
@@ -89,7 +97,7 @@ def plot_runs(runs, metric="return", ema_window=20, out_path=None, show_loss=Fal
             if len(ys) == 0:
                 continue
             if ema_window and len(ys) > ema_window:
-                xs, ys = xs[ema_window - 1:], ema(ys, ema_window)
+                xs, ys = xs[ema_window - 1 :], ema(ys, ema_window)
             axes[1].plot(xs, ys, linewidth=1.0)
         axes[1].set_xlabel(xlabel)
         axes[1].set_ylabel("loss")

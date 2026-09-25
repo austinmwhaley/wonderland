@@ -10,9 +10,13 @@ from ..tabular.common import episode_stats
 class HERNet(nn.Module):
     def __init__(self, obs_dim, n_actions, hidden=128):
         super().__init__()
-        self.net = nn.Sequential(nn.Linear(obs_dim, hidden), nn.ReLU(),
-                                 nn.Linear(hidden, hidden), nn.ReLU(),
-                                 nn.Linear(hidden, n_actions))
+        self.net = nn.Sequential(
+            nn.Linear(obs_dim, hidden),
+            nn.ReLU(),
+            nn.Linear(hidden, hidden),
+            nn.ReLU(),
+            nn.Linear(hidden, n_actions),
+        )
 
     def forward(self, x):
         return self.net(x)
@@ -49,7 +53,9 @@ class HERAgent(BaseAgent):
     def act(self, state, eval=True, eps=None):
         eps = self.eps_end if eval else (eps if eps is not None else self.eps_start)
         with torch.no_grad():
-            q = self.online(torch.as_tensor(state, dtype=torch.float32, device=self.device).unsqueeze(0))[0]
+            q = self.online(
+                torch.as_tensor(state, dtype=torch.float32, device=self.device).unsqueeze(0)
+            )[0]
         if self.rng.random() > eps:
             return int(torch.argmax(q).item())
         return int(self.rng.integers(self.n_actions))
@@ -106,16 +112,27 @@ class HERAgent(BaseAgent):
                 tol = 0.4
                 rr = float(abs(ns[0] - g) < tol)
                 nd = bool(rr)
-                self.buffer.append((np.array([s[0], g], dtype=np.float32), a, rr, nd,
-                                    np.array([ns[0], g], dtype=np.float32)))
+                self.buffer.append(
+                    (
+                        np.array([s[0], g], dtype=np.float32),
+                        a,
+                        rr,
+                        nd,
+                        np.array([ns[0], g], dtype=np.float32),
+                    )
+                )
 
     def _learn(self, config, batch_size):
         idx = self.rng.integers(0, len(self.buffer), size=batch_size)
         b = [self.buffer[i] for i in idx]
         s = torch.as_tensor(np.stack([x[0] for x in b]), dtype=torch.float32, device=self.device)
         a = torch.as_tensor(np.array([x[1] for x in b]), dtype=torch.long, device=self.device)
-        r = torch.as_tensor(np.array([x[2] for x in b]), dtype=torch.float32, device=self.device).unsqueeze(1)
-        done = torch.as_tensor(np.array([x[3] for x in b]), dtype=torch.float32, device=self.device).unsqueeze(1)
+        r = torch.as_tensor(
+            np.array([x[2] for x in b]), dtype=torch.float32, device=self.device
+        ).unsqueeze(1)
+        done = torch.as_tensor(
+            np.array([x[3] for x in b]), dtype=torch.float32, device=self.device
+        ).unsqueeze(1)
         ns = torch.as_tensor(np.stack([x[4] for x in b]), dtype=torch.float32, device=self.device)
         q = self.online(s).gather(1, a.unsqueeze(1))
         with torch.no_grad():

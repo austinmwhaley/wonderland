@@ -2,6 +2,7 @@
 floor = automatic no-go no matter what the lift says (the retail doctrine,
 in miniature). All sample-size dials autotune from n; pass explicit B/alpha
 to override."""
+
 import numpy as np
 
 from .autotune import resolve_bootstrap
@@ -9,7 +10,7 @@ from .autotune import resolve_bootstrap
 
 def ess(episode_weights):
     w = np.asarray(episode_weights, dtype=np.float64)
-    return float((w.sum() ** 2) / max((w ** 2).sum(), 1e-12))
+    return float((w.sum() ** 2) / max((w**2).sum(), 1e-12))
 
 
 def ess_frac(episode_weights, n_episodes=None):
@@ -30,7 +31,7 @@ def _segment_disc_returns(diet, gamma):
     ends = np.concatenate([change, [len(rew)]])
     out = np.empty(len(starts), dtype=np.float64)
     for i in range(len(starts)):
-        r = rew[starts[i]:ends[i]]
+        r = rew[starts[i] : ends[i]]
         out[i] = float(np.sum(r * gamma ** np.arange(len(r))))
     return out
 
@@ -40,9 +41,11 @@ def behavior_stats(diet, gamma=0.99):
     Comparing discounted estimates against undiscounted means is a scale
     bug; this function makes it unrepresentable."""
     vals = _segment_disc_returns(diet, gamma)
-    return {"mean": float(vals.mean()) if len(vals) else 0.0,
-            "std": float(vals.std()) if len(vals) else 0.0,
-            "n_episodes": len(vals)}
+    return {
+        "mean": float(vals.mean()) if len(vals) else 0.0,
+        "std": float(vals.std()) if len(vals) else 0.0,
+        "n_episodes": len(vals),
+    }
 
 
 def bootstrap_ci(values, B=None, alpha=None, seed=0):
@@ -99,7 +102,7 @@ def spearman(x, y):
     rx = np.argsort(np.argsort(x))
     ry = np.argsort(np.argsort(y))
     rx, ry = rx - rx.mean(), ry - ry.mean()
-    return float((rx * ry).sum() / max(np.sqrt((rx ** 2).sum() * (ry ** 2).sum()), 1e-12))
+    return float((rx * ry).sum() / max(np.sqrt((rx**2).sum() * (ry**2).sum()), 1e-12))
 
 
 def bootstrap_p_ratio(num, den, threshold, B=None, seed=0):
@@ -118,8 +121,7 @@ def bootstrap_p_ratio(num, den, threshold, B=None, seed=0):
     return float((stats <= threshold).mean())
 
 
-def bootstrap_p_advantage(c_num, c_den, b_num, b_den, threshold=0.0,
-                          B=None, seed=0):
+def bootstrap_p_advantage(c_num, c_den, b_num, b_den, threshold=0.0, B=None, seed=0):
     """One-sided bootstrap p-value for the matched-estimand step-DR advantage
 
         Delta = sum(c_num)/sum(c_den) - sum(b_num)/sum(b_den)
@@ -139,4 +141,3 @@ def bootstrap_p_advantage(c_num, c_den, b_num, b_den, threshold=0.0,
     c = c_num[idx].sum(axis=1) / np.maximum(c_den[idx].sum(axis=1), 1e-12)
     b = b_num[idx].sum(axis=1) / np.maximum(b_den[idx].sum(axis=1), 1e-12)
     return float(((c - b) <= threshold).mean())
-

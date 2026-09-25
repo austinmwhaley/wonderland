@@ -2,6 +2,7 @@
 
 Fast CPU only. Run: pytest .../tests/test_behavior.py -q
 """
+
 import numpy as np
 
 
@@ -10,20 +11,26 @@ def _logged(N=2000, n_ep=20, noise=0.15, seed=0):
     ep = np.repeat(np.arange(n_ep), N // n_ep)
     N = len(ep)
     obs = rng.normal(size=(N, 4)).astype(np.float32)
-    act = (obs @ np.array([1., -1., .5, 0.], dtype=np.float32) > 0).astype(int)
+    act = (obs @ np.array([1.0, -1.0, 0.5, 0.0], dtype=np.float32) > 0).astype(int)
     flip = rng.random(N) < noise
     act[flip] = 1 - act[flip]
     return {
-        "obs": obs, "obs2": obs, "act": act,
-        "rew": np.ones(N, dtype=np.float32), "done": np.zeros(N, dtype=np.float32),
+        "obs": obs,
+        "obs2": obs,
+        "act": act,
+        "rew": np.ones(N, dtype=np.float32),
+        "done": np.zeros(N, dtype=np.float32),
         "mu": np.full((N, 2), 0.5, dtype=np.float32),
-        "episode": ep, "t": np.tile(np.arange(N // n_ep), n_ep)[:N],
-        "nA": 2, "N": N,
+        "episode": ep,
+        "t": np.tile(np.arange(N // n_ep), n_ep)[:N],
+        "nA": 2,
+        "N": N,
     }
 
 
 def test_recovers_learnable_behavior():
     from white_queen.tribunal.ope import behavior as B
+
     d = _logged()
     tiny = {"steps_max": 400, "device": "cpu", "hidden": 32, "batch": 64}
     probs, info = B.estimate_behavior(d, tiny)
@@ -35,6 +42,7 @@ def test_recovers_learnable_behavior():
 
 def test_floor_and_immutability():
     from white_queen.tribunal.ope import behavior as B
+
     d = _logged()
     tiny = {"steps_max": 200, "device": "cpu", "hidden": 16, "batch": 64}
     d2, mi = B.with_estimated_propensities(d, tiny)
@@ -48,24 +56,30 @@ def test_floor_and_immutability():
 
 def test_random_behavior_gets_chance_probs():
     from white_queen.tribunal.ope import behavior as B
+
     rng = np.random.default_rng(1)
     N = 1200
     obs = rng.normal(size=(N, 4)).astype(np.float32)
-    d = {"obs": obs, "obs2": obs, "act": rng.integers(0, 2, N),
-         "rew": np.ones(N, dtype=np.float32), "done": np.zeros(N, dtype=np.float32),
-         "mu": np.full((N, 2), 0.5, dtype=np.float32),
-         "episode": np.repeat(np.arange(12), N // 12)[:N],
-         "t": np.zeros(N), "nA": 2, "N": N}
+    d = {
+        "obs": obs,
+        "obs2": obs,
+        "act": rng.integers(0, 2, N),
+        "rew": np.ones(N, dtype=np.float32),
+        "done": np.zeros(N, dtype=np.float32),
+        "mu": np.full((N, 2), 0.5, dtype=np.float32),
+        "episode": np.repeat(np.arange(12), N // 12)[:N],
+        "t": np.zeros(N),
+        "nA": 2,
+        "N": N,
+    }
     d["episode"] = np.repeat(np.arange(12), 100)
-    _, info = B.estimate_behavior(
-        d, {"steps_max": 200, "device": "cpu", "hidden": 16, "batch": 64})
+    _, info = B.estimate_behavior(d, {"steps_max": 200, "device": "cpu", "hidden": 16, "batch": 64})
     assert 0.40 < info["accuracy"] < 0.62  # unlearnable -> chance
 
 
 def test_calibration_improves_holdout_nll():
     from white_queen.tribunal.ope import behavior as B
-    import torch
-    import torch.nn.functional as F
+
     d = _logged()
     tiny = {"steps_max": 400, "device": "cpu", "hidden": 32, "batch": 64}
     d2, mi = B.with_estimated_propensities(d, tiny)
@@ -78,6 +92,7 @@ def test_calibration_improves_holdout_nll():
 
 def test_estimate_is_deterministic_given_seed():
     from white_queen.tribunal.ope import behavior as B
+
     d = _logged()
     tiny = {"steps_max": 200, "device": "cpu", "hidden": 16, "batch": 64}
     p1, _ = B.estimate_behavior(d, tiny, seed=0)

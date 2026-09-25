@@ -38,12 +38,14 @@ class IMPALA(BaseAgent):
         self.critic = Critic(in_dim, hidden).to(self.device)
         self.optimizer = torch.optim.Adam(
             list(self.policy.parameters()) + list(self.critic.parameters()),
-            lr=config.get("lr", 3e-4))
+            lr=config.get("lr", 3e-4),
+        )
         self.entropy_coef = config.get("entropy_coef", 0.01)
         try:
             gid = env.unwrapped.spec.id
             self.envs = gym.vector.SyncVectorEnv(
-                [lambda: gym.make(gid) for _ in range(self.n_envs)])
+                [lambda: gym.make(gid) for _ in range(self.n_envs)]
+            )
         except AttributeError:
             self.envs = gym.vector.SyncVectorEnv([lambda: env] * self.n_envs)
 
@@ -114,9 +116,14 @@ class IMPALA(BaseAgent):
             v_trace = np.zeros((n_steps, n_envs))
             v_trace[n_steps - 1] = val[n_steps - 1] + delta[n_steps - 1]
             for t in reversed(range(n_steps - 1)):
-                v_trace[t] = (val[t] + delta[t]
-                              + self.gamma * rho_trace_np[t + 1] * (1 - done[t])
-                              * (v_trace[t + 1] - val[t + 1]))
+                v_trace[t] = (
+                    val[t]
+                    + delta[t]
+                    + self.gamma
+                    * rho_trace_np[t + 1]
+                    * (1 - done[t])
+                    * (v_trace[t + 1] - val[t + 1])
+                )
             adv = np.zeros((n_steps, n_envs))
             for t in range(n_steps):
                 v_next = v_last if t == n_steps - 1 else v_trace[t + 1]
@@ -132,7 +139,9 @@ class IMPALA(BaseAgent):
             torch.nn.utils.clip_grad_norm_(self.policy.parameters(), 0.5)
             torch.nn.utils.clip_grad_norm_(self.critic.parameters(), 0.5)
             self.optimizer.step()
-            tracker.log(timestep=t_global, episode=ep, loss=float((policy_loss + value_loss).item()))
+            tracker.log(
+                timestep=t_global, episode=ep, loss=float((policy_loss + value_loss).item())
+            )
         self.episodes = ep
 
     def save(self, path):

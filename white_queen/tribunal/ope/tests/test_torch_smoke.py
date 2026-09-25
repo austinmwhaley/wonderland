@@ -4,6 +4,7 @@ Exercises fit_fqe + ensemble_fqe + learn_dynamics on a tiny synthetic diet
 with a uniform mock candidate. Catches import breaks, NaN crashes, schema
 drift. Run: pytest white_queen/tribunal/ope/tests/test_torch_smoke.py -q
 """
+
 import numpy as np
 
 
@@ -40,14 +41,18 @@ def _diet(N=800, n_ep=10, seed=0):
 
 
 def test_fit_fqe_tiny():
-    torch = __import__("torch")
+    __import__("torch")
     from white_queen.tribunal.ope import estimators as E
+
     d = _diet()
     cand = UniformCandidate()
-    q, dm, info = E.fit_fqe(d, cand, 0.99,
-                            {"steps_max": 200, "eval_every": 50,
-                             "patience": 2, "batch": 64, "hidden": 32},
-                            temperature=1.0)
+    q, dm, info = E.fit_fqe(
+        d,
+        cand,
+        0.99,
+        {"steps_max": 200, "eval_every": 50, "patience": 2, "batch": 64, "hidden": 32},
+        temperature=1.0,
+    )
     assert np.isfinite(dm), f"FQE DM not finite: {dm}"
     assert info["steps"] <= 200
 
@@ -55,15 +60,19 @@ def test_fit_fqe_tiny():
 def test_ensemble_and_dynamics_tiny():
     from white_queen.tribunal.ope.direct import ensemble_fqe
     from white_queen.tribunal.ope.model_based import learn_dynamics, rollout_estimate
+
     d = _diet()
     cand = UniformCandidate()
-    ef = ensemble_fqe(d, cand, 0.99,
-                      {"steps_max": 200, "eval_every": 50, "patience": 2,
-                       "batch": 64, "hidden": 32}, temperature=1.0, K=2)
+    ef = ensemble_fqe(
+        d,
+        cand,
+        0.99,
+        {"steps_max": 200, "eval_every": 50, "patience": 2, "batch": 64, "hidden": 32},
+        temperature=1.0,
+        K=2,
+    )
     assert np.isfinite(ef["mean"])
-    step_fn, info = learn_dynamics(d, hidden=32, batch=64, steps_max=200,
-                                   eval_every=50, patience=2)
+    step_fn, info = learn_dynamics(d, hidden=32, batch=64, steps_max=200, eval_every=50, patience=2)
     assert np.isfinite(info["val_mse"])
-    mb = rollout_estimate(d, cand, 0.99, step_fn, temperature=1.0,
-                          sim_min=10, sim_max=20)
+    mb = rollout_estimate(d, cand, 0.99, step_fn, temperature=1.0, sim_min=10, sim_max=20)
     assert np.isfinite(mb["mb"]), f"MB not finite: {mb}"

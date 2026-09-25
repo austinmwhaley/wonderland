@@ -10,9 +10,13 @@ from ..tabular.common import episode_stats
 class Actor(nn.Module):
     def __init__(self, obs_dim, n_actions, hidden=128):
         super().__init__()
-        self.net = nn.Sequential(nn.Linear(obs_dim, hidden), nn.ReLU(),
-                                 nn.Linear(hidden, hidden), nn.ReLU(),
-                                 nn.Linear(hidden, n_actions))
+        self.net = nn.Sequential(
+            nn.Linear(obs_dim, hidden),
+            nn.ReLU(),
+            nn.Linear(hidden, hidden),
+            nn.ReLU(),
+            nn.Linear(hidden, n_actions),
+        )
 
     def forward(self, x):
         return torch.softmax(self.net(x), dim=1)
@@ -21,9 +25,13 @@ class Actor(nn.Module):
 class Critic(nn.Module):
     def __init__(self, obs_dim, n_actions, n_agents, hidden=128):
         super().__init__()
-        self.net = nn.Sequential(nn.Linear(obs_dim * n_agents + n_actions * n_agents, hidden),
-                                 nn.ReLU(), nn.Linear(hidden, hidden), nn.ReLU(),
-                                 nn.Linear(hidden, 1))
+        self.net = nn.Sequential(
+            nn.Linear(obs_dim * n_agents + n_actions * n_agents, hidden),
+            nn.ReLU(),
+            nn.Linear(hidden, hidden),
+            nn.ReLU(),
+            nn.Linear(hidden, 1),
+        )
 
     def forward(self, obs_all, act_all):
         return self.net(torch.cat([obs_all, act_all], dim=1))
@@ -47,16 +55,30 @@ class MADDPGAgent(BaseAgent):
         self.n_agents = getattr(env, "n_agents", 2)
         self.n_actions = getattr(env, "n_actions", 2)
         hidden = config.get("hidden", 128)
-        self.actors = [Actor(obs_dim, self.n_actions, hidden).to(self.device) for _ in range(self.n_agents)]
-        self.actors_t = [Actor(obs_dim, self.n_actions, hidden).to(self.device) for _ in range(self.n_agents)]
-        self.critics = [Critic(obs_dim, self.n_actions, self.n_agents, hidden).to(self.device) for _ in range(self.n_agents)]
-        self.critics_t = [Critic(obs_dim, self.n_actions, self.n_agents, hidden).to(self.device) for _ in range(self.n_agents)]
+        self.actors = [
+            Actor(obs_dim, self.n_actions, hidden).to(self.device) for _ in range(self.n_agents)
+        ]
+        self.actors_t = [
+            Actor(obs_dim, self.n_actions, hidden).to(self.device) for _ in range(self.n_agents)
+        ]
+        self.critics = [
+            Critic(obs_dim, self.n_actions, self.n_agents, hidden).to(self.device)
+            for _ in range(self.n_agents)
+        ]
+        self.critics_t = [
+            Critic(obs_dim, self.n_actions, self.n_agents, hidden).to(self.device)
+            for _ in range(self.n_agents)
+        ]
         for a, at in zip(self.actors_t, self.actors):
             at.load_state_dict(a.state_dict())
         for c, ct in zip(self.critics_t, self.critics):
             ct.load_state_dict(c.state_dict())
-        self.opt_actors = [torch.optim.Adam(a.parameters(), lr=config.get("actor_lr", 1e-4)) for a in self.actors]
-        self.opt_critics = [torch.optim.Adam(c.parameters(), lr=config.get("lr", 1e-3)) for c in self.critics]
+        self.opt_actors = [
+            torch.optim.Adam(a.parameters(), lr=config.get("actor_lr", 1e-4)) for a in self.actors
+        ]
+        self.opt_critics = [
+            torch.optim.Adam(c.parameters(), lr=config.get("lr", 1e-3)) for c in self.critics
+        ]
         self.gamma = config.get("gamma", 0.99)
         self.tau = config.get("tau", 0.005)
         self.buffer = []
@@ -67,7 +89,11 @@ class MADDPGAgent(BaseAgent):
         actions = []
         for a in self.actors:
             with torch.no_grad():
-                probs = a(torch.as_tensor(np.stack(state), dtype=torch.float32, device=self.device).unsqueeze(0))[0]
+                probs = a(
+                    torch.as_tensor(
+                        np.stack(state), dtype=torch.float32, device=self.device
+                    ).unsqueeze(0)
+                )[0]
             if eval or self.rng.random() > self.eps:
                 actions.append(int(torch.argmax(probs).item()))
             else:
@@ -94,12 +120,25 @@ class MADDPGAgent(BaseAgent):
                 t = 0
                 done = False
             with torch.no_grad():
-                probs = [a(torch.as_tensor(np.stack([s1, s2]), dtype=torch.float32, device=self.device)) for a in self.actors]
-            a1 = int(torch.argmax(probs[0][0]).item()) if self.rng.random() > self.eps else int(torch.multinomial(probs[0][0], 1).item())
-            a2 = int(torch.argmax(probs[1][1]).item()) if self.rng.random() > self.eps else int(torch.multinomial(probs[1][1], 1).item())
+                probs = [
+                    a(torch.as_tensor(np.stack([s1, s2]), dtype=torch.float32, device=self.device))
+                    for a in self.actors
+                ]
+            a1 = (
+                int(torch.argmax(probs[0][0]).item())
+                if self.rng.random() > self.eps
+                else int(torch.multinomial(probs[0][0], 1).item())
+            )
+            a2 = (
+                int(torch.argmax(probs[1][1]).item())
+                if self.rng.random() > self.eps
+                else int(torch.multinomial(probs[1][1], 1).item())
+            )
             (ns1, ns2), r, term, trunc, _ = env.step((a1, a2))
             done = bool(term or trunc)
-            self.buffer.append((s1.copy(), s2.copy(), a1, a2, float(r), done, ns1.copy(), ns2.copy()))
+            self.buffer.append(
+                (s1.copy(), s2.copy(), a1, a2, float(r), done, ns1.copy(), ns2.copy())
+            )
             if len(self.buffer) > buf_size:
                 self.buffer = self.buffer[-buf_size:]
             if len(self.buffer) >= batch_size:
@@ -117,8 +156,12 @@ class MADDPGAgent(BaseAgent):
         s2 = torch.as_tensor(np.stack([x[1] for x in b]), dtype=torch.float32, device=self.device)
         a1 = torch.as_tensor(np.array([x[2] for x in b]), dtype=torch.long, device=self.device)
         a2 = torch.as_tensor(np.array([x[3] for x in b]), dtype=torch.long, device=self.device)
-        r = torch.as_tensor(np.array([x[4] for x in b]), dtype=torch.float32, device=self.device).unsqueeze(1)
-        done = torch.as_tensor(np.array([x[5] for x in b]), dtype=torch.float32, device=self.device).unsqueeze(1)
+        r = torch.as_tensor(
+            np.array([x[4] for x in b]), dtype=torch.float32, device=self.device
+        ).unsqueeze(1)
+        done = torch.as_tensor(
+            np.array([x[5] for x in b]), dtype=torch.float32, device=self.device
+        ).unsqueeze(1)
         ns1 = torch.as_tensor(np.stack([x[6] for x in b]), dtype=torch.float32, device=self.device)
         ns2 = torch.as_tensor(np.stack([x[7] for x in b]), dtype=torch.float32, device=self.device)
         s_all = torch.cat([s1, s2], dim=1)
@@ -136,9 +179,13 @@ class MADDPGAgent(BaseAgent):
                     oh[0, self.n_actions + a2] = 1.0
                     combos.append(oh)
             combos = torch.cat(combos, dim=0).repeat(batch_size, 1)
-            q_current = self.critics[0](ns_all_rep, combos).view(batch_size, self.n_actions * self.n_actions)
+            q_current = self.critics[0](ns_all_rep, combos).view(
+                batch_size, self.n_actions * self.n_actions
+            )
             best = q_current.argmax(dim=1, keepdim=True)
-            q_best = self.critics_t[0](ns_all_rep, combos).view(batch_size, self.n_actions * self.n_actions)
+            q_best = self.critics_t[0](ns_all_rep, combos).view(
+                batch_size, self.n_actions * self.n_actions
+            )
             q_next_max = q_best.gather(1, best)
             target = r + self.gamma * (1 - done) * q_next_max
         q1 = self.critics[0](s_all, a_all)
@@ -154,7 +201,10 @@ class MADDPGAgent(BaseAgent):
             other_oh = a1_oh if other == 0 else a2_oh
             q_all = []
             for a_i in range(self.n_actions):
-                a_i_oh = F.one_hot(torch.full((batch_size,), a_i, dtype=torch.long, device=self.device), self.n_actions).to(s1.dtype)
+                a_i_oh = F.one_hot(
+                    torch.full((batch_size,), a_i, dtype=torch.long, device=self.device),
+                    self.n_actions,
+                ).to(s1.dtype)
                 if i == 0:
                     q_all.append(self.critics[i](s_all, torch.cat([a_i_oh, other_oh], dim=1)))
                 else:
@@ -174,8 +224,13 @@ class MADDPGAgent(BaseAgent):
                 pt.data.mul_(1 - self.tau).add_(self.tau * p.data)
 
     def save(self, path):
-        torch.save({"actors": [a.state_dict() for a in self.actors],
-                    "critics": [c.state_dict() for c in self.critics]}, path)
+        torch.save(
+            {
+                "actors": [a.state_dict() for a in self.actors],
+                "critics": [c.state_dict() for c in self.critics],
+            },
+            path,
+        )
 
     def load(self, path):
         ckpt = torch.load(path, map_location=self.device)

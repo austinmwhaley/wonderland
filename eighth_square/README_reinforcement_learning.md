@@ -83,14 +83,14 @@ Tests need only CPU (a GPU is used automatically if present).
 from white_queen.tribunal.ope import pipeline
 
 report = pipeline.run(
-    "path/to/logs.db",          # any accepted source
+    "path/to/logs.db",  # any accepted source
     algorithms=("iql", "cql", "bc"),
     gamma=0.99,
     fast=True,
 )
 
-print(report["deployed"])           # candidates certified safe to ship
-print(report["rank"])               # best-first by deployable value
+print(report["deployed"])  # candidates certified safe to ship
+print(report["rank"])  # best-first by deployable value
 for name, dec in report["decisions"].items():
     print(name, dec["deploy"], dec["certificate"])
 ```
@@ -100,7 +100,7 @@ for name, dec in report["decisions"].items():
 ```python
 from white_queen.tribunal.ope.api import evaluate
 
-rep = evaluate(logs, my_policy, nA=4)   # logs: dict/Arrow/etc.
+rep = evaluate(logs, my_policy, nA=4)  # logs: dict/Arrow/etc.
 print(rep["deploy"], rep["bar"])
 ```
 
@@ -111,6 +111,7 @@ Register/point at a continuous policy object (with `action_mean` and
 
 ```python
 from white_queen.tribunal.ope import pipeline
+
 pipeline.run(continuous_logs, algorithms=("iql_cont",))
 ```
 

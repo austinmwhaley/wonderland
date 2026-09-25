@@ -1,12 +1,25 @@
 import sys
-sys.path.insert(0, "/home/austin-whaley/wq")
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+import sys
+
+sys.path.insert(0, str(ROOT))
 import torch
+
 print("cuda:", torch.cuda.is_available(), flush=True)
 from white_queen.config import PRESETS
 from white_queen.tribunal import adjudicate
+
 cfg = PRESETS["quick"]
-reps = adjudicate.run_ope_only(cfg, "/home/austin-whaley/wq/white_queen/data/white_queen_quick.db",
-                               "/home/austin-whaley/wq/white_queen/verdicts/v18ind",
-                               "/home/austin-whaley/wq/white_queen/verdicts/v15",
-                               mu_source="estimated")
+reps = adjudicate.run_ope_only(
+    cfg,
+    str(ROOT / "white_queen/data/white_queen_quick.db"),
+    str(ROOT / "white_queen/verdicts/v18ind"),
+    str(ROOT / "white_queen/verdicts/v15"),
+    mu_source="estimated",
+)
 print("V18IND ALL DONE", flush=True)

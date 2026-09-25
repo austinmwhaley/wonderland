@@ -29,8 +29,11 @@ def _spec(**kw):
 
 def test_churn_and_value_labels():
     events = [
-        _ev("a", -100), _ev("a", -50), _ev("a", 30, value=25.0),   # has future -> churn 0
-        _ev("b", -100), _ev("b", -20),                              # no future  -> churn 1
+        _ev("a", -100),
+        _ev("a", -50),
+        _ev("a", 30, value=25.0),  # has future -> churn 0
+        _ev("b", -100),
+        _ev("b", -20),  # no future  -> churn 1
     ]
     frame = build_outcomes(events, _spec())
     by_id = {str(r["customer_id"]): r for r in frame.rows}
@@ -51,8 +54,10 @@ def test_eligibility_filter_drops_thin_entities():
 
 def test_events_outside_windows_ignored():
     events = [
-        _ev("a", -400), _ev("a", -100), _ev("a", -50),  # -400 outside history window
-        _ev("a", 200),                                   # outside horizon window
+        _ev("a", -400),
+        _ev("a", -100),
+        _ev("a", -50),  # -400 outside history window
+        _ev("a", 200),  # outside horizon window
     ]
     frame = build_outcomes(events, _spec())
     row = frame.rows[0]

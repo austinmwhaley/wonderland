@@ -1,6 +1,10 @@
 import numpy as np
 
-from .common import TabularAgent, episode_stats, eps_greedy_action, greedy_action, n_states, n_actions
+from .common import (
+    TabularAgent,
+    episode_stats,
+    greedy_action,
+)
 
 
 class TDControl(TabularAgent):
@@ -51,8 +55,7 @@ class ExpectedSarsa(TDControl):
         else:
             eps = self.eps_sched.epsilon(self.t)
             target = r + self.gamma * (
-                eps / self.nA * self.Q[s_next].sum()
-                + (1 - eps) * self.Q[s_next].max()
+                eps / self.nA * self.Q[s_next].sum() + (1 - eps) * self.Q[s_next].max()
             )
         self.Q[s, a] += self.alpha * (target - self.Q[s, a])
         return abs(target - self.Q[s, a])

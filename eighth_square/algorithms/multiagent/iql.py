@@ -10,9 +10,13 @@ from ..tabular.common import episode_stats
 class IQNet(nn.Module):
     def __init__(self, obs_dim, n_actions, hidden=128):
         super().__init__()
-        self.net = nn.Sequential(nn.Linear(obs_dim, hidden), nn.ReLU(),
-                                 nn.Linear(hidden, hidden), nn.ReLU(),
-                                 nn.Linear(hidden, n_actions))
+        self.net = nn.Sequential(
+            nn.Linear(obs_dim, hidden),
+            nn.ReLU(),
+            nn.Linear(hidden, hidden),
+            nn.ReLU(),
+            nn.Linear(hidden, n_actions),
+        )
 
     def forward(self, x):
         return self.net(x)
@@ -35,11 +39,17 @@ class IQLAgent(BaseAgent):
         self.n_agents = getattr(env, "n_agents", 2)
         self.n_actions = getattr(env, "n_actions", 2)
         hidden = config.get("hidden", 128)
-        self.qnets = [IQNet(obs_dim, self.n_actions, hidden).to(self.device) for _ in range(self.n_agents)]
-        self.qnets_t = [IQNet(obs_dim, self.n_actions, hidden).to(self.device) for _ in range(self.n_agents)]
+        self.qnets = [
+            IQNet(obs_dim, self.n_actions, hidden).to(self.device) for _ in range(self.n_agents)
+        ]
+        self.qnets_t = [
+            IQNet(obs_dim, self.n_actions, hidden).to(self.device) for _ in range(self.n_agents)
+        ]
         for q, qt in zip(self.qnets, self.qnets_t):
             qt.load_state_dict(q.state_dict())
-        self.opts = [torch.optim.Adam(q.parameters(), lr=config.get("lr", 1e-3)) for q in self.qnets]
+        self.opts = [
+            torch.optim.Adam(q.parameters(), lr=config.get("lr", 1e-3)) for q in self.qnets
+        ]
         self.gamma = config.get("gamma", 0.99)
         self.tau = config.get("tau", 0.005)
         self.buffer = []
@@ -80,13 +90,27 @@ class IQLAgent(BaseAgent):
                 t = 0
                 done = False
             with torch.no_grad():
-                qv1 = self.qnets[0](torch.as_tensor(s1, dtype=torch.float32, device=self.device).unsqueeze(0))[0]
-                qv2 = self.qnets[1](torch.as_tensor(s2, dtype=torch.float32, device=self.device).unsqueeze(0))[0]
-            a1 = int(torch.argmax(qv1).item()) if self.rng.random() > eps else int(self.rng.integers(self.n_actions))
-            a2 = int(torch.argmax(qv2).item()) if self.rng.random() > eps else int(self.rng.integers(self.n_actions))
+                qv1 = self.qnets[0](
+                    torch.as_tensor(s1, dtype=torch.float32, device=self.device).unsqueeze(0)
+                )[0]
+                qv2 = self.qnets[1](
+                    torch.as_tensor(s2, dtype=torch.float32, device=self.device).unsqueeze(0)
+                )[0]
+            a1 = (
+                int(torch.argmax(qv1).item())
+                if self.rng.random() > eps
+                else int(self.rng.integers(self.n_actions))
+            )
+            a2 = (
+                int(torch.argmax(qv2).item())
+                if self.rng.random() > eps
+                else int(self.rng.integers(self.n_actions))
+            )
             (ns1, ns2), r, term, trunc, _ = env.step((a1, a2))
             done = bool(term or trunc)
-            self.buffer.append((s1.copy(), s2.copy(), a1, a2, float(r), done, ns1.copy(), ns2.copy()))
+            self.buffer.append(
+                (s1.copy(), s2.copy(), a1, a2, float(r), done, ns1.copy(), ns2.copy())
+            )
             if len(self.buffer) > buf_size:
                 self.buffer = self.buffer[-buf_size:]
             if len(self.buffer) >= batch_size:
@@ -105,13 +129,19 @@ class IQLAgent(BaseAgent):
         s2 = torch.as_tensor(np.stack([x[1] for x in b]), dtype=torch.float32, device=self.device)
         a1 = torch.as_tensor(np.array([x[2] for x in b]), dtype=torch.long, device=self.device)
         a2 = torch.as_tensor(np.array([x[3] for x in b]), dtype=torch.long, device=self.device)
-        r = torch.as_tensor(np.array([x[4] for x in b]), dtype=torch.float32, device=self.device).unsqueeze(1)
-        done = torch.as_tensor(np.array([x[5] for x in b]), dtype=torch.float32, device=self.device).unsqueeze(1)
+        r = torch.as_tensor(
+            np.array([x[4] for x in b]), dtype=torch.float32, device=self.device
+        ).unsqueeze(1)
+        done = torch.as_tensor(
+            np.array([x[5] for x in b]), dtype=torch.float32, device=self.device
+        ).unsqueeze(1)
         ns1 = torch.as_tensor(np.stack([x[6] for x in b]), dtype=torch.float32, device=self.device)
         ns2 = torch.as_tensor(np.stack([x[7] for x in b]), dtype=torch.float32, device=self.device)
         # independent TD per agent (no centralized mixing)
-        for (s, a, ns, q, qt, opt, si) in ((s1, a1, ns1, self.qnets[0], self.qnets_t[0], self.opts[0], 0),
-                                           (s2, a2, ns2, self.qnets[1], self.qnets_t[1], self.opts[1], 1)):
+        for s, a, ns, q, qt, opt, si in (
+            (s1, a1, ns1, self.qnets[0], self.qnets_t[0], self.opts[0], 0),
+            (s2, a2, ns2, self.qnets[1], self.qnets_t[1], self.opts[1], 1),
+        ):
             qv = q(s).gather(1, a.unsqueeze(1))
             with torch.no_grad():
                 q_next = qt(ns).max(1, keepdim=True).values

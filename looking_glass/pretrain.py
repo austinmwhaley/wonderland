@@ -106,7 +106,9 @@ def incremental_forward(
         if extra > 0:
             pad = torch.zeros(batch, 1, extra, dtype=attention_mask.dtype, device=device)
             attention_mask = torch.cat([pad, attention_mask], dim=2)
-        prefix = torch.ones(batch, 1, attention_mask.size(-1), dtype=attention_mask.dtype, device=device)
+        prefix = torch.ones(
+            batch, 1, attention_mask.size(-1), dtype=attention_mask.dtype, device=device
+        )
         attention_mask = torch.cat([prefix, attention_mask], dim=1)
 
     return extract_final_states(core, combined_states, combined_dt, combined_mask, attention_mask)
@@ -125,9 +127,11 @@ def save_history_to_store(
 ) -> int:
     """Extract final states per entity and persist them to the store."""
 
-    vectors = extract_final_states(
-        core, hidden_states, delta_t, valid_mask, attention_mask
-    ).cpu().tolist()
+    vectors = (
+        extract_final_states(core, hidden_states, delta_t, valid_mask, attention_mask)
+        .cpu()
+        .tolist()
+    )
     records = [
         StateRecord(
             entity_id=eid,
@@ -211,15 +215,23 @@ def incremental_state_update(
         seed_as_of,
         backbone_version=backbone_version,
     )
-    seed = torch.stack([
-        torch.tensor(prior[eid], dtype=new_hidden_states.dtype, device=device)
-        if prior.get(eid) is not None
-        else torch.zeros(dim, dtype=new_hidden_states.dtype, device=device)
-        for eid in entity_ids
-    ], dim=0)
+    seed = torch.stack(
+        [
+            torch.tensor(prior[eid], dtype=new_hidden_states.dtype, device=device)
+            if prior.get(eid) is not None
+            else torch.zeros(dim, dtype=new_hidden_states.dtype, device=device)
+            for eid in entity_ids
+        ],
+        dim=0,
+    )
 
     updated = incremental_forward(
-        core, seed, new_hidden_states, new_delta_t, new_valid_mask, attention_mask,
+        core,
+        seed,
+        new_hidden_states,
+        new_delta_t,
+        new_valid_mask,
+        attention_mask,
     )
 
     records = [

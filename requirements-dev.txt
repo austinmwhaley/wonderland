@@ -1,0 +1,4 @@
+# Development / test tooling. Mirror of pyproject.toml [dependency-groups].dev — keep in sync.
+pytest>=8
+ruff>=0.6
+pre-commit>=3

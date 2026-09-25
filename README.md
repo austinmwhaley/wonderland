@@ -109,6 +109,20 @@ Code/specs/docs are committed; **data, checkpoints, artifacts, and venvs are
 git-ignored** (regenerable). Workflow: `git pull --rebase` → change → `git add -A`
 → `git commit` → `git push`. No nested `.git`.
 
+## Development
+```bash
+# provision (pip)
+pip install -r requirements.txt -r requirements-dev.txt
+# or with uv
+uv sync
+# quality gates (also enforced by CI on every push/PR)
+pytest                     # full suite (acceptance gates skip without data)
+ruff format . && ruff check .
+pre-commit install         # format + lint on commit
+```
+Dependency source of truth: `pyproject.toml` (`requirements*.txt` mirror it for
+pip users). Indentation is **spaces** everywhere; `ruff format` is authoritative.
+
 ## Status at a glance
 | Layer | Role | Status |
 |---|---|---|

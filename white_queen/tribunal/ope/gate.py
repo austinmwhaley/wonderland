@@ -7,9 +7,9 @@ reported, never averaged away.
 gate_cfg=None and meta=None both mean autotune (recommended). Explicit keys
 override per-rule.
 """
+
 from .autotune import resolve_bar, resolve_bootstrap, resolve_gate
 from .receipts import bootstrap_ci
-import numpy as _np
 
 
 def _json_num(x):
@@ -22,8 +22,7 @@ def _json_num(x):
     return round(float(x), 1)
 
 
-def adjudicate(panels, behavior_mean, behavior_std, gate_cfg=None, meta=None,
-               n_episodes=None):
+def adjudicate(panels, behavior_mean, behavior_std, gate_cfg=None, meta=None, n_episodes=None):
     """panels: {candidate: panel-dict from estimators.panel}.
     Returns {candidate: row} with deploy flags + reasoning.
 
@@ -46,9 +45,9 @@ def adjudicate(panels, behavior_mean, behavior_std, gate_cfg=None, meta=None,
         # IS CI kept as a diagnostic receipt only (deploy decision uses DR).
         # Tolerate panels without per-episode IS values (e.g. unit tests).
         try:
-            blo, _ = bootstrap_ci(p["is_vals"], B=B, alpha=al)
+            bootstrap_ci(p["is_vals"], B=B, alpha=al)
         except KeyError:
-            blo = None
+            pass
         vetoes = []
         ess_ok = p["ess_frac"] >= g["min_ess_frac"]
         if not ess_ok:
@@ -67,22 +66,25 @@ def adjudicate(panels, behavior_mean, behavior_std, gate_cfg=None, meta=None,
         try:
             _soft, _sharp = float(p["fqe_dm"]), float(p.get("sharp_dm"))
             import math as _math
+
             if _math.isfinite(_soft) and _math.isfinite(_sharp):
                 advisories.append(
                     f"soft-vs-sharp gap {abs(_sharp - _soft):.1f} "
-                    f"(soft {_soft:.1f}, sharp {_sharp:.1f})")
+                    f"(soft {_soft:.1f}, sharp {_sharp:.1f})"
+                )
         except (TypeError, ValueError):
             pass
         # Level-vs-FQE gap: the median composite disagreeing with the ranker
         # flags single-estimator dominance (collapsed FQE or ecstatic MB).
         try:
             import math as _math2
+
             _lv, _fq = float(p.get("level_est")), float(p["fqe_dm"])
             _sc = max(float(behavior_std), 0.05 * abs(float(behavior_mean)) + 1e-9)
             if _math2.isfinite(_lv) and _math2.isfinite(_fq) and abs(_lv - _fq) > _sc:
                 advisories.append(
-                    f"level/FQE disagree by {abs(_lv - _fq):.1f} "
-                    f"(level {_lv:.1f}, FQE {_fq:.1f})")
+                    f"level/FQE disagree by {abs(_lv - _fq):.1f} (level {_lv:.1f}, FQE {_fq:.1f})"
+                )
         except (TypeError, ValueError):
             pass
         # Hidden-confounding sensitivity (Rosenbaum/MSM): smallest odds-
@@ -93,44 +95,61 @@ def adjudicate(panels, behavior_mean, behavior_std, gate_cfg=None, meta=None,
         sens = None
         try:
             from .sensitivity import gamma_star as _gstar
+
             _dv = p.get("dr_vals")
             if _dv:
                 _w = p.get("ep_weights")
                 if _w is None:
                     _w = [1.0] * len(_dv)
                 gs, frontier = _gstar(_dv, _w, bar)
-                _kw = ("already_below_bar" if gs is None else
-                       ("inf" if gs == float("inf") else round(float(gs), 2)))
-                sens = {"gamma_star": _kw,
-                        "frontier": [(float(g), _json_num(m)) for g, m in frontier[:5]],
-                        "target": "dr", "bar": round(bar, 2)}
+                _kw = (
+                    "already_below_bar"
+                    if gs is None
+                    else ("inf" if gs == float("inf") else round(float(gs), 2))
+                )
+                sens = {
+                    "gamma_star": _kw,
+                    "frontier": [(float(g), _json_num(m)) for g, m in frontier[:5]],
+                    "target": "dr",
+                    "bar": round(bar, 2),
+                }
                 if isinstance(gs, float) and gs < 1.25:
                     advisories.append(
                         f"fragile to hidden confounding (Gamma*={gs:.2f}); "
-                        f"unobserved context could flip the call")
+                        f"unobserved context could flip the call"
+                    )
         except Exception:
             sens = None
         rows[name] = {
-            "blended": round(p["blended"], 1), "dr": round(p["dr"], 1),
+            "blended": round(p["blended"], 1),
+            "dr": round(p["dr"], 1),
             "dr_ci": [round(lo, 1), round(hi, 1)],
-            "wis": round(p["wis"], 1), "is": round(p["is"], 1),
-            "wdr": _json_num(p.get("wdr")), "magic": _json_num(p.get("magic")),
+            "wis": round(p["wis"], 1),
+            "is": round(p["is"], 1),
+            "wdr": _json_num(p.get("wdr")),
+            "magic": _json_num(p.get("magic")),
             "magic_w": p.get("magic_w", []),
             "fqe_dm": _json_num(p["fqe_dm"]),
             "level_est": _json_num(p.get("level_est")),
             "sharp_dm": _json_num(p.get("sharp_dm")),
-            "efqe": {k: (round(v, 1) if isinstance(v, float) else v)
-                     for k, v in p["efqe"].items() if k != "nets"},
+            "efqe": {
+                k: (round(v, 1) if isinstance(v, float) else v)
+                for k, v in p["efqe"].items()
+                if k != "nets"
+            },
             "lstdq": _json_num(p["lstdq"]["dm"]),
             "lstdq_cond": p["lstdq"]["cond"],
             "fve_dm": _json_num(p.get("fve_dm")),
             "mb": _json_num(p["mb"]["mb"]),
-            "mb_se": p["mb"]["se"], "mb_sims": p["mb"]["sims"],
+            "mb_se": p["mb"]["se"],
+            "mb_sims": p["mb"]["sims"],
             "mb_sharp": _json_num((p.get("mb_sharp") or {}).get("mb")),
             "mb_sharp_se": (p.get("mb_sharp") or {}).get("se"),
             "gdice_mis": _json_num(p.get("gdice_mis")),
-            "anchor": p["anchor"], "slope_pick": p["slope_pick"],
-            "slope_val": p["slope_val"], "below_anchor": p["below_anchor"],
+            "anchor": p["anchor"],
+            "slope_pick": p["slope_pick"],
+            "slope_val": p["slope_val"],
+            "below_anchor": p["below_anchor"],
             "mis": _json_num(p.get("mis", float("nan"))),
             "support": p.get("support", {}),
             "sharp_info": p.get("sharp_info", {}),
@@ -139,9 +158,12 @@ def adjudicate(panels, behavior_mean, behavior_std, gate_cfg=None, meta=None,
             "mis_ess_frac": round(p.get("mis_info", {}).get("mis_ess_frac", 0.0), 3),
             "lambda_dr": round(p["lambda_dr"], 2),
             "ess_frac": round(p["ess_frac"], 3),
-            "temperature": p["temperature"], "rho_cap": round(p["rho_cap"], 2),
+            "temperature": p["temperature"],
+            "rho_cap": round(p["rho_cap"], 2),
             "truth": _json_num(p.get("truth")),
-            "deploy": not vetoes, "vetoes": vetoes, "advisories": advisories,
+            "deploy": not vetoes,
+            "vetoes": vetoes,
+            "advisories": advisories,
             # Evidence passthrough: per-episode DR contributions let the judge
             # compute exact bootstrap p-values + Holm (v11+). ~10KB/candidate.
             "dr_vals": [float(x) for x in p.get("dr_vals", [])],
@@ -155,8 +177,10 @@ def adjudicate(panels, behavior_mean, behavior_std, gate_cfg=None, meta=None,
             "dr_step_adv_den": p.get("dr_step_adv_den", []),
             "sensitivity": sens,
             "timing": dict(p.get("timing", {})),
-            "gate": {"bar": round(bar, 2), **{k: round(v, 4) if isinstance(v, float) else v
-                                             for k, v in g.items()}},
+            "gate": {
+                "bar": round(bar, 2),
+                **{k: round(v, 4) if isinstance(v, float) else v for k, v in g.items()},
+            },
             "bootstrap": {"B": B, "alpha": al},
         }
     return rows

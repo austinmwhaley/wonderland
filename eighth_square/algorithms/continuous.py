@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 from algorithms.base import Result
 from core.config import AlgorithmConfig
-from core.networks import DeterministicPolicy, GaussianPolicy, MLP, TwinQNetwork
+from core.networks import DeterministicPolicy, GaussianPolicy, TwinQNetwork
 from core.replay_buffer import ReplayBuffer
 from core.trainer import PlateauTracker
 from environments.base import EnvWrapper
@@ -21,7 +21,9 @@ def train_ddpg(env: EnvWrapper, config: AlgorithmConfig) -> Result:
     action_dim = env.action_dim
     action_scale = float(env.action_space.high[0])
 
-    actor = DeterministicPolicy(env.state_dim, action_dim, config.hidden_dims, action_scale).to(device)
+    actor = DeterministicPolicy(env.state_dim, action_dim, config.hidden_dims, action_scale).to(
+        device
+    )
     critic = TwinQNetwork(env.state_dim, action_dim, config.hidden_dims).to(device)
 
     target_actor = copy.deepcopy(actor)
@@ -38,7 +40,9 @@ def train_ddpg(env: EnvWrapper, config: AlgorithmConfig) -> Result:
     total_steps = 0
     converged = False
     episodes_to_solve = None
-    tracker = PlateauTracker(config.early_stop_patience, config.early_stop_min_delta, config.solve_window)
+    tracker = PlateauTracker(
+        config.early_stop_patience, config.early_stop_min_delta, config.solve_window
+    )
 
     pbar = tqdm(range(config.max_episodes), desc=config.algo_name, unit="ep", leave=False)
     for episode in pbar:
@@ -85,9 +89,13 @@ def train_ddpg(env: EnvWrapper, config: AlgorithmConfig) -> Result:
                 actor_optimizer.step()
 
                 for target_param, param in zip(target_critic.parameters(), critic.parameters()):
-                    target_param.data.copy_(config.tau * param.data + (1 - config.tau) * target_param.data)
+                    target_param.data.copy_(
+                        config.tau * param.data + (1 - config.tau) * target_param.data
+                    )
                 for target_param, param in zip(target_actor.parameters(), actor.parameters()):
-                    target_param.data.copy_(config.tau * param.data + (1 - config.tau) * target_param.data)
+                    target_param.data.copy_(
+                        config.tau * param.data + (1 - config.tau) * target_param.data
+                    )
 
                 episode_loss.append(critic_loss.item())
 
@@ -98,7 +106,7 @@ def train_ddpg(env: EnvWrapper, config: AlgorithmConfig) -> Result:
         losses.append(np.mean(episode_loss) if episode_loss else 0.0)
 
         if len(rewards_history) >= config.solve_window:
-            avg = np.mean(rewards_history[-config.solve_window:])
+            avg = np.mean(rewards_history[-config.solve_window :])
             pbar.set_postfix({"avg100": f"{avg:.1f}", "buf": len(buffer)})
             if config.is_solved(avg) and not converged:
                 converged = True
@@ -131,7 +139,9 @@ def train_td3(env: EnvWrapper, config: AlgorithmConfig) -> Result:
     action_dim = env.action_dim
     action_scale = float(env.action_space.high[0])
 
-    actor = DeterministicPolicy(env.state_dim, action_dim, config.hidden_dims, action_scale).to(device)
+    actor = DeterministicPolicy(env.state_dim, action_dim, config.hidden_dims, action_scale).to(
+        device
+    )
     critic = TwinQNetwork(env.state_dim, action_dim, config.hidden_dims).to(device)
 
     target_actor = copy.deepcopy(actor)
@@ -149,7 +159,9 @@ def train_td3(env: EnvWrapper, config: AlgorithmConfig) -> Result:
     total_steps = 0
     converged = False
     episodes_to_solve = None
-    tracker = PlateauTracker(config.early_stop_patience, config.early_stop_min_delta, config.solve_window)
+    tracker = PlateauTracker(
+        config.early_stop_patience, config.early_stop_min_delta, config.solve_window
+    )
 
     pbar = tqdm(range(config.max_episodes), desc=config.algo_name, unit="ep", leave=False)
     for episode in pbar:
@@ -178,7 +190,9 @@ def train_td3(env: EnvWrapper, config: AlgorithmConfig) -> Result:
 
                 with torch.no_grad():
                     noise_td = (torch.randn_like(actions) * 0.2).clamp(-0.5, 0.5)
-                    next_actions = (target_actor(next_states) + noise_td).clamp(-action_scale, action_scale)
+                    next_actions = (target_actor(next_states) + noise_td).clamp(
+                        -action_scale, action_scale
+                    )
                     target_q1, target_q2 = target_critic(next_states, next_actions)
                     target_q = torch.min(target_q1, target_q2)
                     target = rewards + config.gamma * target_q * (1 - dones)
@@ -199,9 +213,13 @@ def train_td3(env: EnvWrapper, config: AlgorithmConfig) -> Result:
                     actor_optimizer.step()
 
                     for target_param, param in zip(target_critic.parameters(), critic.parameters()):
-                        target_param.data.copy_(config.tau * param.data + (1 - config.tau) * target_param.data)
+                        target_param.data.copy_(
+                            config.tau * param.data + (1 - config.tau) * target_param.data
+                        )
                     for target_param, param in zip(target_actor.parameters(), actor.parameters()):
-                        target_param.data.copy_(config.tau * param.data + (1 - config.tau) * target_param.data)
+                        target_param.data.copy_(
+                            config.tau * param.data + (1 - config.tau) * target_param.data
+                        )
 
             if done:
                 break
@@ -210,7 +228,7 @@ def train_td3(env: EnvWrapper, config: AlgorithmConfig) -> Result:
         losses.append(np.mean(episode_loss) if episode_loss else 0.0)
 
         if len(rewards_history) >= config.solve_window:
-            avg = np.mean(rewards_history[-config.solve_window:])
+            avg = np.mean(rewards_history[-config.solve_window :])
             pbar.set_postfix({"avg100": f"{avg:.1f}", "buf": len(buffer)})
             if config.is_solved(avg) and not converged:
                 converged = True
@@ -266,7 +284,9 @@ def train_sac(env: EnvWrapper, config: AlgorithmConfig) -> Result:
     total_steps = 0
     converged = False
     episodes_to_solve = None
-    tracker = PlateauTracker(config.early_stop_patience, config.early_stop_min_delta, config.solve_window)
+    tracker = PlateauTracker(
+        config.early_stop_patience, config.early_stop_min_delta, config.solve_window
+    )
 
     pbar = tqdm(range(config.max_episodes), desc=config.algo_name, unit="ep", leave=False)
     for episode in pbar:
@@ -322,7 +342,9 @@ def train_sac(env: EnvWrapper, config: AlgorithmConfig) -> Result:
                     alpha = log_alpha.exp()
 
                 for target_param, param in zip(target_critic.parameters(), critic.parameters()):
-                    target_param.data.copy_(config.tau * param.data + (1 - config.tau) * target_param.data)
+                    target_param.data.copy_(
+                        config.tau * param.data + (1 - config.tau) * target_param.data
+                    )
 
                 episode_loss.append(critic_loss.item())
 
@@ -333,7 +355,7 @@ def train_sac(env: EnvWrapper, config: AlgorithmConfig) -> Result:
         losses.append(np.mean(episode_loss) if episode_loss else 0.0)
 
         if len(rewards_history) >= config.solve_window:
-            avg = np.mean(rewards_history[-config.solve_window:])
+            avg = np.mean(rewards_history[-config.solve_window :])
             pbar.set_postfix({"avg100": f"{avg:.1f}", "buf": len(buffer)})
             if config.is_solved(avg) and not converged:
                 converged = True

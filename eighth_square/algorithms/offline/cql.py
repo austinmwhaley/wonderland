@@ -2,9 +2,9 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-from ..base import BaseAgent, evaluate
+from ..base import evaluate
 from ..deep.dqn import DQN
-from ..deep.networks import QNetwork, polyak_copy
+from ..deep.networks import polyak_copy
 from .common import collect_transitions, train_behavior
 
 
@@ -51,8 +51,9 @@ class CQL(DQN):
 
     def train(self, env, config, tracker):
         behavior = train_behavior(env, config, self.rng)
-        self.buffer = collect_transitions(env, behavior, self.dataset_size,
-                                          self.collect_eps, self.rng, self.device)
+        self.buffer = collect_transitions(
+            env, behavior, self.dataset_size, self.collect_eps, self.rng, self.device
+        )
         self.t = 0
         losses = []
         while self.t < config["steps"]:
@@ -62,7 +63,9 @@ class CQL(DQN):
                 tracker.log(timestep=self.t, loss=float(np.mean(losses)))
                 losses = []
             if self.t % self.eval_freq == 0:
-                tracker.log(timestep=self.t, eval_return=float(evaluate(self, env, self.eval_episodes)))
+                tracker.log(
+                    timestep=self.t, eval_return=float(evaluate(self, env, self.eval_episodes))
+                )
         self.episodes = self.t
 
     def save(self, path):

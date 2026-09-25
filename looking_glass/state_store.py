@@ -118,7 +118,9 @@ class InMemoryStateStore(PointInTimeStateStore):
             by_entity.setdefault(rec.entity_id, []).append((_epoch(rec.as_of_ts), list(rec.vector)))
         return len(records)
 
-    def _all_for_entity(self, entity_id: str, backbone_version: str) -> list[tuple[float, list[float]]]:
+    def _all_for_entity(
+        self, entity_id: str, backbone_version: str
+    ) -> list[tuple[float, list[float]]]:
         return list(self._data.get(backbone_version, {}).get(entity_id, []))
 
     def versions(self) -> set[str]:
@@ -139,7 +141,9 @@ class LanceDBStateStore(PointInTimeStateStore):
     pushdown is part of the streaming work item.
     """
 
-    def __init__(self, lancedb_dir, table_name: str = "entity_states", default_version: str = "v0") -> None:
+    def __init__(
+        self, lancedb_dir, table_name: str = "entity_states", default_version: str = "v0"
+    ) -> None:
         super().__init__(default_version=default_version)
         from pathlib import Path
 
@@ -150,7 +154,9 @@ class LanceDBStateStore(PointInTimeStateStore):
         try:
             import lancedb
         except ImportError as exc:  # pragma: no cover - env dependent
-            raise RuntimeError("lancedb is not installed. Install with: pip install lancedb pyarrow") from exc
+            raise RuntimeError(
+                "lancedb is not installed. Install with: pip install lancedb pyarrow"
+            ) from exc
         self.lancedb_dir.mkdir(parents=True, exist_ok=True)
         return lancedb.connect(str(self.lancedb_dir))
 
@@ -180,7 +186,9 @@ class LanceDBStateStore(PointInTimeStateStore):
         table = db.open_table(self.table_name)
         return table.to_pylist() if hasattr(table, "to_pylist") else table.to_arrow().to_pylist()
 
-    def _all_for_entity(self, entity_id: str, backbone_version: str) -> list[tuple[float, list[float]]]:
+    def _all_for_entity(
+        self, entity_id: str, backbone_version: str
+    ) -> list[tuple[float, list[float]]]:
         return [
             (float(r["as_of_epoch"]), list(r["vector"]))
             for r in self._rows()

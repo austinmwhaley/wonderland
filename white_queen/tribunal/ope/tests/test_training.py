@@ -2,7 +2,6 @@
 
 CPU-only, torch tiny. Run: pytest white_queen/tribunal/ope/tests/test_training.py -q
 """
-import math
 
 import numpy as np
 
@@ -18,6 +17,7 @@ def _linear_problem(seed=0, n=200, noise=0.1):
 
 def test_cosine_decays_with_warmup():
     from white_queen.tribunal.ope.training import cosine_lr
+
     base, T = 1e-3, 1000
     lrs = [cosine_lr(s, T, base) for s in (0, 51, 500, 999, 1000)]
     assert lrs[0] < base  # warming up
@@ -29,6 +29,7 @@ def test_cosine_decays_with_warmup():
 def test_supervised_early_stops_and_restores_best():
     torch = __import__("torch")
     from white_queen.tribunal.ope.training import govern
+
     Xtr, ytr, Xva, yva = _linear_problem()
     net = torch.nn.Linear(4, 1)
     opt = torch.optim.Adam(net.parameters(), lr=1e-2)
@@ -53,9 +54,13 @@ def test_supervised_early_stops_and_restores_best():
             return float(torch.nn.functional.mse_loss(net(Xv), yv))
 
     before = val()
-    info = govern({"net": net}, [opt], step, val,
-                  {"steps_max": 2000, "eval_every": 50, "patience": 3,
-                   "lr": 1e-2})
+    info = govern(
+        {"net": net},
+        [opt],
+        step,
+        val,
+        {"steps_max": 2000, "eval_every": 50, "patience": 3, "lr": 1e-2},
+    )
     # Convex problem: must improve massively and stop before budget.
     assert info["best_val"] < before * 0.2, (before, info)
     assert info["steps"] < 2000 and info["stopped"] == "patience"
@@ -65,6 +70,7 @@ def test_supervised_early_stops_and_restores_best():
 def test_nan_train_loss_stops_with_receipt():
     torch = __import__("torch")
     from white_queen.tribunal.ope.training import govern
+
     net = torch.nn.Linear(2, 1)
     opt = torch.optim.Adam(net.parameters(), lr=1e-3)
 
@@ -74,22 +80,26 @@ def test_nan_train_loss_stops_with_receipt():
     def val():
         return 1.0
 
-    info = govern({"net": net}, [opt], step, val,
-                  {"steps_max": 1000, "eval_every": 10, "patience": 5,
-                   "lr": 1e-3})
+    info = govern(
+        {"net": net},
+        [opt],
+        step,
+        val,
+        {"steps_max": 1000, "eval_every": 10, "patience": 5, "lr": 1e-3},
+    )
     assert info["stopped"] == "nan"
 
 
 def test_saddle_mode_runs_budget_without_val():
     from white_queen.tribunal.ope.training import govern
+
     calls = []
 
     def step(n, lr):
         calls.append((n, lr))
         return 0.5
 
-    info = govern({}, [], step, None,
-                  {"steps_max": 1000, "eval_every": 250, "lr": 1e-3})
+    info = govern({}, [], step, None, {"steps_max": 1000, "eval_every": 250, "lr": 1e-3})
     assert info["stopped"] == "saddle_budget" and info["steps"] == 1000
     assert info["best_val"] is None
     lrs = [c[1] for c in calls]
@@ -102,10 +112,12 @@ def test_fqe_target_net_engaged_and_positive():
     Pre-target-net this returned ~0 to negative across seeds; the periodic
     hard-sync target must engage (receipt) and lift DM firmly positive."""
     import torch
+
     torch.manual_seed(0)
     torch.set_num_threads(1)
     import numpy as np
     from white_queen.tribunal.ope import estimators as E
+
     rng = np.random.default_rng(0)
     N, n_ep = 1500, 10
     ep = np.repeat(np.arange(n_ep), N // n_ep)
@@ -119,15 +131,32 @@ def test_fqe_target_net_engaged_and_positive():
             o = np.asarray(o)
             return np.full((len(o), 2), 0.5, dtype=np.float32)
 
-    diet = {"obs": obs, "obs2": obs, "act": rng.integers(0, 2, N),
-            "rew": np.ones(N, dtype=np.float32), "done": np.zeros(N, dtype=np.float32),
-            "mu": np.full((N, 2), 0.5, dtype=np.float32),
-            "episode": ep, "t": np.zeros(N), "nA": 2, "N": N}
+    diet = {
+        "obs": obs,
+        "obs2": obs,
+        "act": rng.integers(0, 2, N),
+        "rew": np.ones(N, dtype=np.float32),
+        "done": np.zeros(N, dtype=np.float32),
+        "mu": np.full((N, 2), 0.5, dtype=np.float32),
+        "episode": ep,
+        "t": np.zeros(N),
+        "nA": 2,
+        "N": N,
+    }
     _, dm, info = E.fit_fqe(
-        diet, U(), 0.99,
-        {"steps_max": 300, "eval_every": 100, "patience": 5, "batch": 64,
-         "hidden": 32, "device": "cpu"},
-        temperature=1.0)
+        diet,
+        U(),
+        0.99,
+        {
+            "steps_max": 300,
+            "eval_every": 100,
+            "patience": 5,
+            "batch": 64,
+            "hidden": 32,
+            "device": "cpu",
+        },
+        temperature=1.0,
+    )
     assert info.get("target") == "polyak-soft"
     assert info.get("target_syncs", 0) >= 1
     assert dm > 0.5, dm  # pre-fix seeds read -0.23..0.1 here

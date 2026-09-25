@@ -17,8 +17,7 @@ class CooperativeUrban:
     n_actions = 5
     max_episode_steps = 150
 
-    def __init__(self, seed=None, world_size=10.0, buildings=None, comm_radius=5.0,
-                 max_steps=150):
+    def __init__(self, seed=None, world_size=10.0, buildings=None, comm_radius=5.0, max_steps=150):
         self.world_size = float(world_size)
         self.buildings = buildings if buildings is not None else []
         self.comm_radius = float(comm_radius)
@@ -93,32 +92,38 @@ class CooperativeUrban:
         while np.linalg.norm(self.pos[1] - self.pos[0]) < 3.0:
             self.pos[1] = self._free_point()
         goal = self._free_point()
-        while (np.linalg.norm(goal - self.pos[0]) < 3.0
-               or np.linalg.norm(goal - self.pos[1]) < 3.0):
+        while np.linalg.norm(goal - self.pos[0]) < 3.0 or np.linalg.norm(goal - self.pos[1]) < 3.0:
             goal = self._free_point()
         self.goal = goal
         self.steps = 0
-        return (self._agent_obs(0).astype(np.float32),
-                self._agent_obs(1).astype(np.float32)), {}
+        return (self._agent_obs(0).astype(np.float32), self._agent_obs(1).astype(np.float32)), {}
 
     def step(self, actions):
         a0, a1 = int(actions[0]), int(actions[1])
-        dirs = {0: np.array([0, 0]), 1: np.array([0, 1]), 2: np.array([0, -1]),
-                3: np.array([-1, 0]), 4: np.array([1, 0])}
+        dirs = {
+            0: np.array([0, 0]),
+            1: np.array([0, 1]),
+            2: np.array([0, -1]),
+            3: np.array([-1, 0]),
+            4: np.array([1, 0]),
+        }
         self._step_agent(0, dirs.get(a0, np.array([0, 0])) * 0.9)
         self._step_agent(1, dirs.get(a1, np.array([0, 0])) * 0.9)
         self.steps += 1
         d0 = float(np.linalg.norm(self.goal - self.pos[0]))
         d1 = float(np.linalg.norm(self.goal - self.pos[1]))
-        both_reached = (d0 < self.reach_radius and d1 < self.reach_radius)
+        both_reached = d0 < self.reach_radius and d1 < self.reach_radius
         # team reward: sparse success + mild combined progress shaping
         r = 1.0 if both_reached else 0.0
         terminated = bool(both_reached)
         truncated = bool(self.steps >= self.max_episode_steps)
-        return ((self._agent_obs(0).astype(np.float32),
-                 self._agent_obs(1).astype(np.float32)),
-                float(r), terminated, truncated,
-                {"dist0": d0, "dist1": d1, "both": both_reached})
+        return (
+            (self._agent_obs(0).astype(np.float32), self._agent_obs(1).astype(np.float32)),
+            float(r),
+            terminated,
+            truncated,
+            {"dist0": d0, "dist1": d1, "both": both_reached},
+        )
 
     def _step_agent(self, idx, move):
         new_pos = self.pos[idx] + move

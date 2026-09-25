@@ -38,12 +38,17 @@ class SAC(BaseAgent):
         self.critic2_target.load_state_dict(self.critic2.state_dict())
         self.policy_opt = torch.optim.Adam(self.policy.parameters(), lr=self.lr)
         self.critic_opt = torch.optim.Adam(
-            list(self.critic1.parameters()) + list(self.critic2.parameters()), lr=self.lr)
+            list(self.critic1.parameters()) + list(self.critic2.parameters()), lr=self.lr
+        )
         if self.auto_tune:
-            self.log_alpha = torch.tensor(np.log(self.alpha), requires_grad=True, device=self.device)
+            self.log_alpha = torch.tensor(
+                np.log(self.alpha), requires_grad=True, device=self.device
+            )
             self.alpha_opt = torch.optim.Adam([self.log_alpha], lr=self.lr)
             self.target_entropy = -self.action_dim
-        self.buffer = ContinuousReplayBuffer(config.get("buffer_size", 100_000), in_dim, self.action_dim, self.device)
+        self.buffer = ContinuousReplayBuffer(
+            config.get("buffer_size", 100_000), in_dim, self.action_dim, self.device
+        )
         self.t = 0
 
     def _t(self, state):
@@ -51,7 +56,9 @@ class SAC(BaseAgent):
 
     @property
     def alpha_val(self):
-        return self.log_alpha.exp() if self.auto_tune else torch.tensor(self.alpha, device=self.device)
+        return (
+            self.log_alpha.exp() if self.auto_tune else torch.tensor(self.alpha, device=self.device)
+        )
 
     def act(self, state, eval=False):
         with torch.no_grad():
@@ -106,8 +113,12 @@ class SAC(BaseAgent):
             self.t += 1
             if done:
                 ep += 1
-                tracker.log(timestep=self.t, episode=ep, ret=float(ep_ret),
-                            loss=float(np.mean(losses)) if losses else None)
+                tracker.log(
+                    timestep=self.t,
+                    episode=ep,
+                    ret=float(ep_ret),
+                    loss=float(np.mean(losses)) if losses else None,
+                )
                 ep_ret = 0.0
                 losses = []
                 state, _ = env.reset()
@@ -119,8 +130,14 @@ class SAC(BaseAgent):
         self.episodes = ep
 
     def save(self, path):
-        torch.save({"policy": self.policy.state_dict(),
-                    "critic1": self.critic1.state_dict(), "critic2": self.critic2.state_dict()}, path)
+        torch.save(
+            {
+                "policy": self.policy.state_dict(),
+                "critic1": self.critic1.state_dict(),
+                "critic2": self.critic2.state_dict(),
+            },
+            path,
+        )
 
     def load(self, path):
         data = torch.load(path, map_location=self.device)

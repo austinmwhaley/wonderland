@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from typing import Any
 
 import numpy as np
 
@@ -23,7 +22,7 @@ class Result:
             self.avg_rewards = [float(rewards[: i + 1].mean()) for i in range(len(rewards))]
         else:
             self.avg_rewards = [
-                float(rewards[i - window + 1: i + 1].mean())
+                float(rewards[i - window + 1 : i + 1].mean())
                 for i in range(window - 1, len(rewards))
             ]
         return self.avg_rewards
@@ -33,8 +32,6 @@ class Result:
 
 import os
 import time
-
-import numpy as np
 
 
 class BaseAgent:

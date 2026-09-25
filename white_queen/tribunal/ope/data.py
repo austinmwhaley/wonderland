@@ -30,7 +30,6 @@ ratios.
 
 from __future__ import annotations
 
-import re
 
 import numpy as np
 
@@ -45,17 +44,25 @@ _T_NAMES = ("t", "step", "timestep", "time_step")
 _TS_NAMES = ("timestamp", "time", "date", "datetime")
 _OBS_NAMES = ("obs", "observation", "state", "context", "features", "x")
 _MU_NAMES = ("mu", "behavior_probs", "propensities")
-_LOGPROB_NAMES = ("log_prob", "logp", "behavior_logp", "log_prob_take",
-                  "logprob", "log_density")
+_LOGPROB_NAMES = ("log_prob", "logp", "behavior_logp", "log_prob_take", "logprob", "log_density")
 
-_RESERVED = set(_ACTION_NAMES + _REWARD_NAMES + _PROP_NAMES + _NEXT_NAMES +
-                _DONE_NAMES + _EP_NAMES + _T_NAMES + _TS_NAMES + _MU_NAMES +
-                _LOGPROB_NAMES + ("greedy_action", "greedy", "eps", "epsilon"))
+_RESERVED = set(
+    _ACTION_NAMES
+    + _REWARD_NAMES
+    + _PROP_NAMES
+    + _NEXT_NAMES
+    + _DONE_NAMES
+    + _EP_NAMES
+    + _T_NAMES
+    + _TS_NAMES
+    + _MU_NAMES
+    + _LOGPROB_NAMES
+    + ("greedy_action", "greedy", "eps", "epsilon")
+)
 
 # Declared source-schema adapters (schema.py) own the role detection for known
 # log layouts (e.g. colony o0../n0..). This module no longer guesses in-line.
 from .schema import detect_schema as _detect_schema
-
 
 
 def _as_columns(source):
@@ -71,10 +78,14 @@ def _as_columns(source):
         t = source.to_arrow()
         return {n: np.asarray(t.column(n)) for n in t.column_names}
     # pandas DataFrame (converted via Arrow; pandas never used natively)
-    if hasattr(source, "to_dict") and hasattr(source, "columns") \
-            and not hasattr(source, "num_rows"):
+    if (
+        hasattr(source, "to_dict")
+        and hasattr(source, "columns")
+        and not hasattr(source, "num_rows")
+    ):
         try:
             import pyarrow as pa
+
             t = pa.Table.from_pandas(source)
             return {n: np.asarray(t.column(n)) for n in t.column_names}
         except Exception:
@@ -90,6 +101,7 @@ def _as_columns(source):
 
 def _duckdb_to_columns(source):
     import duckdb
+
     con = duckdb.connect()
     if isinstance(source, (str, bytes)):
         p = source if isinstance(source, str) else source.decode()
@@ -119,8 +131,7 @@ def _pick(cols, names, required=True, role=""):
         if n in cols:
             return n
     if required:
-        raise ValueError(f"no column found for {role or names[0]} "
-                         f"(looked for {names})")
+        raise ValueError(f"no column found for {role or names[0]} (looked for {names})")
     return None
 
 
@@ -142,14 +153,21 @@ def _context_matrix(cols, context_cols=None):
             if np.asarray(v).dtype.kind in "fiub":
                 context_cols.append(c)
     if not context_cols:
-        raise ValueError("no context features found (provide 'obs' or "
-                         "context_cols)")
+        raise ValueError("no context features found (provide 'obs' or context_cols)")
     mat = np.stack([np.asarray(cols[c], dtype=np.float32) for c in context_cols], 1)
     return mat, list(context_cols)
 
 
-def to_canonical(source, *, columns=None, nA=None, estimate_propensity=True,
-                 behavior_cfg=None, behavior_seed=0, source_name=None):
+def to_canonical(
+    source,
+    *,
+    columns=None,
+    nA=None,
+    estimate_propensity=True,
+    behavior_cfg=None,
+    behavior_seed=0,
+    source_name=None,
+):
     """Normalize any accepted source into the canonical dataset dict.
 
     columns: optional overrides mapping role -> column name, e.g.
@@ -175,8 +193,7 @@ def to_canonical(source, *, columns=None, nA=None, estimate_propensity=True,
     ctx_cols = columns.get("context")
 
     act_raw = np.asarray(cols[a_name])
-    continuous = (act_raw.dtype.kind == "f") or (
-        act_raw.ndim == 2 and act_raw.shape[1] > 1)
+    continuous = (act_raw.dtype.kind == "f") or (act_raw.ndim == 2 and act_raw.shape[1] > 1)
     if continuous:
         act = act_raw.astype(np.float32)
         if act.ndim == 1:
@@ -192,8 +209,8 @@ def to_canonical(source, *, columns=None, nA=None, estimate_propensity=True,
     # explicitly masked. Drop those ROWS from every column (aligned), receipt
     # the fraction. A drop here is honest: unobserved rewards carry no signal.
     rm_name = columns.get("reward_mask") or _pick(
-        cols, ("reward_observed", "reward_mask", "observed", "converted"),
-        required=False)
+        cols, ("reward_observed", "reward_mask", "observed", "converted"), required=False
+    )
     if rm_name is not None:
         mask = np.asarray(cols[rm_name]).astype(bool).ravel()
         if mask.shape[0] != N:
@@ -212,8 +229,11 @@ def to_canonical(source, *, columns=None, nA=None, estimate_propensity=True,
                 new_cols[k] = a
         cols = new_cols
         N = N - dropped
-    act = (np.asarray(cols[a_name]).astype(np.float32) if continuous
-           else np.asarray(cols[a_name]).astype(np.int64).ravel())
+    act = (
+        np.asarray(cols[a_name]).astype(np.float32)
+        if continuous
+        else np.asarray(cols[a_name]).astype(np.int64).ravel()
+    )
     if continuous and act.ndim == 1:
         act = act.reshape(-1, 1)
     rew = np.asarray(cols[r_name]).astype(np.float32).ravel()
@@ -245,12 +265,14 @@ def to_canonical(source, *, columns=None, nA=None, estimate_propensity=True,
             obs2 = np.asarray(cols[n_name]).astype(np.float32)
         elif _schema is not None and _schema.get("next_context"):
             _ngrp = _schema["next_context"]
-            obs2 = np.stack([np.asarray(cols[c], dtype=np.float32)
-                             for c in _ngrp], 1)
+            obs2 = np.stack([np.asarray(cols[c], dtype=np.float32) for c in _ngrp], 1)
         else:
             obs2 = obs.copy()
-        done = (np.asarray(cols[d_name]).astype(np.float32) if d_name is not None
-                else np.zeros(N, dtype=np.float32))
+        done = (
+            np.asarray(cols[d_name]).astype(np.float32)
+            if d_name is not None
+            else np.zeros(N, dtype=np.float32)
+        )
         if e_name is not None:
             episode = np.asarray(cols[e_name]).astype(np.int64).ravel()
         else:
@@ -272,25 +294,30 @@ def to_canonical(source, *, columns=None, nA=None, estimate_propensity=True,
         t = np.zeros(N, dtype=np.int64)
 
     canon = {
-        "obs": obs.astype(np.float32), "act": act, "rew": rew,
-        "obs2": np.asarray(obs2, dtype=np.float32), "done": done,
-        "episode": episode, "t": t, "nA": nA, "N": N,
-        "mode": mode, "continuous": bool(continuous),
+        "obs": obs.astype(np.float32),
+        "act": act,
+        "rew": rew,
+        "obs2": np.asarray(obs2, dtype=np.float32),
+        "done": done,
+        "episode": episode,
+        "t": t,
+        "nA": nA,
+        "N": N,
+        "mode": mode,
+        "continuous": bool(continuous),
     }
     provenance = "provided"
     if continuous:
         # behavior DENSITY at the taken action (log p(a|s)).
-        lp_name = columns.get("log_prob") or _pick(cols, _LOGPROB_NAMES,
-                                                   required=False)
+        lp_name = columns.get("log_prob") or _pick(cols, _LOGPROB_NAMES, required=False)
         if lp_name is not None:
             logp_take = np.asarray(cols[lp_name]).astype(np.float64).ravel()
         else:
             if not estimate_propensity:
-                raise ValueError("no behavior log_prob provided and "
-                                 "estimate_propensity=False")
+                raise ValueError("no behavior log_prob provided and estimate_propensity=False")
             from .behavior import estimate_behavior_continuous
-            logp_take, _info = estimate_behavior_continuous(
-                obs, act, behavior_cfg, behavior_seed)
+
+            logp_take, _info = estimate_behavior_continuous(obs, act, behavior_cfg, behavior_seed)
             provenance = "estimated"
         canon["logp_take"] = logp_take.astype(np.float32)
     else:
@@ -308,11 +335,8 @@ def to_canonical(source, *, columns=None, nA=None, estimate_propensity=True,
             mu_take = mu[np.arange(N), act]
         else:
             if not estimate_propensity:
-                raise ValueError(
-                    "no behavior propensity provided and "
-                    "estimate_propensity=False")
-            mu_take, mu = _estimate_propensity(obs, act, nA, behavior_cfg,
-                                               behavior_seed)
+                raise ValueError("no behavior propensity provided and estimate_propensity=False")
+            mu_take, mu = _estimate_propensity(obs, act, nA, behavior_cfg, behavior_seed)
             provenance = "estimated"
         canon["mu_take"] = mu_take.astype(np.float32)
         if mu is not None:
@@ -334,12 +358,19 @@ def _estimate_propensity(obs, act, nA, behavior_cfg, seed):
     """Supervised behavior model over (context -> action). Returns
     (mu_take (N,), mu (N,nA)). Reuses the governed estimator in behavior.py."""
     from .behavior import estimate_behavior
-    stub = {"obs": obs, "obs2": obs, "act": act,
-            "rew": np.ones(len(act), dtype=np.float32),
-            "done": np.zeros(len(act), dtype=np.float32),
-            "mu": np.full((len(act), nA), 1.0 / nA, dtype=np.float32),
-            "episode": np.arange(len(act)), "t": np.zeros(len(act)),
-            "nA": nA, "N": len(act)}
+
+    stub = {
+        "obs": obs,
+        "obs2": obs,
+        "act": act,
+        "rew": np.ones(len(act), dtype=np.float32),
+        "done": np.zeros(len(act), dtype=np.float32),
+        "mu": np.full((len(act), nA), 1.0 / nA, dtype=np.float32),
+        "episode": np.arange(len(act)),
+        "t": np.zeros(len(act)),
+        "nA": nA,
+        "N": len(act),
+    }
     probs, _info = estimate_behavior(stub, behavior_cfg, seed)
     mu_take = probs[np.arange(len(act)), act]
     return mu_take, probs

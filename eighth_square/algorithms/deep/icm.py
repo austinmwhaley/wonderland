@@ -4,7 +4,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from .dqn import DQN
-from .networks import QNetwork, polyak_copy
 
 
 class ICMNet(nn.Module):
@@ -14,15 +13,18 @@ class ICMNet(nn.Module):
     def __init__(self, in_dim, n_actions, hidden=128, feat=64):
         super().__init__()
         self.encoder = nn.Sequential(
-            nn.Linear(in_dim, hidden), nn.ReLU(),
+            nn.Linear(in_dim, hidden),
+            nn.ReLU(),
             nn.Linear(hidden, feat),
         )
         self.forward_model = nn.Sequential(
-            nn.Linear(feat + n_actions, hidden), nn.ReLU(),
+            nn.Linear(feat + n_actions, hidden),
+            nn.ReLU(),
             nn.Linear(hidden, feat),
         )
         self.inverse = nn.Sequential(
-            nn.Linear(2 * feat, hidden), nn.ReLU(),
+            nn.Linear(2 * feat, hidden),
+            nn.ReLU(),
             nn.Linear(hidden, n_actions),
         )
 
@@ -40,7 +42,9 @@ class ICM(DQN):
 
     def __init__(self, env, config):
         super().__init__(env, config)
-        in_dim = int(getattr(env.observation_space, "n", None) or np.prod(env.observation_space.shape))
+        in_dim = int(
+            getattr(env.observation_space, "n", None) or np.prod(env.observation_space.shape)
+        )
         self.beta = config.get("beta", 0.2)
         feat = config.get("icm_feat", 64)
         self.icm = ICMNet(in_dim, self.nA, config.get("hidden", 128), feat).to(self.device)
@@ -91,8 +95,14 @@ class ICM(DQN):
         return loss
 
     def save(self, path):
-        torch.save({"online": self.online.state_dict(), "target": self.target.state_dict(),
-                    "icm": self.icm.state_dict()}, path)
+        torch.save(
+            {
+                "online": self.online.state_dict(),
+                "target": self.target.state_dict(),
+                "icm": self.icm.state_dict(),
+            },
+            path,
+        )
 
     def load(self, path):
         data = torch.load(path, map_location=self.device)

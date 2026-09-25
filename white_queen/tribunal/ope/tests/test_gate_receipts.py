@@ -1,4 +1,5 @@
 """Receipts + gate + protocol tests (numpy only, no torch)."""
+
 import numpy as np
 
 from white_queen.tribunal.ope import gate as G
@@ -48,28 +49,44 @@ def test_behavior_stats_discounted_units():
 
 def test_gate_vetoes_low_ess_and_deploys_healthy():
     good = {
-        "blended": 80.0, "dr": 80.0, "dr_vals": list(np.full(50, 80.0)),
+        "blended": 80.0,
+        "dr": 80.0,
+        "dr_vals": list(np.full(50, 80.0)),
         "is_vals": list(np.full(50, 80.0)),
-        "wis": 75.0, "is": 80.0, "wdr": 80.0, "magic": 80.0,
-        "magic_w": [], "fqe_dm": 79.0,
+        "wis": 75.0,
+        "is": 80.0,
+        "wdr": 80.0,
+        "magic": 80.0,
+        "magic_w": [],
+        "fqe_dm": 79.0,
         "efqe": {"mean": 79.0, "disagreement": 0.5},
-        "lstdq": {"dm": 79.0, "cond": 10.0}, "fve_dm": 79.0,
+        "lstdq": {"dm": 79.0, "cond": 10.0},
+        "fve_dm": 79.0,
         "mb": {"mb": 79.0, "se": 1.0, "sims": 100},
-        "gdice_mis": 79.0, "anchor": 60.0,
-        "slope_pick": "dr", "slope_val": 80.0, "below_anchor": [],
-        "mis": 79.0, "mis_info": {"mis_ess_frac": 0.5},
-        "lambda_dr": 0.8, "ess_frac": 0.40, "temperature": 1.0,
-        "rho_cap": 5.0, "truth": 80.0,
+        "gdice_mis": 79.0,
+        "anchor": 60.0,
+        "slope_pick": "dr",
+        "slope_val": 80.0,
+        "below_anchor": [],
+        "mis": 79.0,
+        "mis_info": {"mis_ess_frac": 0.5},
+        "lambda_dr": 0.8,
+        "ess_frac": 0.40,
+        "temperature": 1.0,
+        "rho_cap": 5.0,
+        "truth": 80.0,
     }
-    rows = G.adjudicate({"a": good}, behavior_mean=60.0, behavior_std=5.0,
-                        gate_cfg=None, meta=None, n_episodes=50)
+    rows = G.adjudicate(
+        {"a": good}, behavior_mean=60.0, behavior_std=5.0, gate_cfg=None, meta=None, n_episodes=50
+    )
     assert rows["a"]["deploy"] is True
     assert rows["a"]["vetoes"] == []
     assert "gate" in rows["a"] and "bootstrap" in rows["a"]
 
     bad = dict(good, ess_frac=0.001)
-    rows2 = G.adjudicate({"a": bad}, behavior_mean=60.0, behavior_std=5.0,
-                         gate_cfg=None, meta=None, n_episodes=50)
+    rows2 = G.adjudicate(
+        {"a": bad}, behavior_mean=60.0, behavior_std=5.0, gate_cfg=None, meta=None, n_episodes=50
+    )
     assert rows2["a"]["deploy"] is False
     assert any("ESS" in v for v in rows2["a"]["vetoes"])
 
@@ -92,6 +109,7 @@ def test_check_candidate_rejects_broken():
 
         def action_probs(self, obs, temperature=1.0):
             import numpy as _np
+
             o = _np.asarray(obs)
             return _np.full((len(o), 2), 0.5)
 

@@ -94,22 +94,23 @@ def parse_event_payload(
     """
 
     cat_values: dict[str, str] = {}
-    for field in schema.categorical_fields:
-        raw = payload.get(field)
-        cat_values[field] = str(raw) if raw is not None else ""
+    for fld in schema.categorical_fields:
+        raw = payload.get(fld)
+        cat_values[fld] = str(raw) if raw is not None else ""
 
     num_values: dict[str, float] = {}
-    for field in schema.numeric_fields:
-        raw = payload.get(field)
+    for fld in schema.numeric_fields:
+        raw = payload.get(fld)
         try:
-            num_values[field] = float(raw) if raw is not None else 0.0
+            num_values[fld] = float(raw) if raw is not None else 0.0
         except (ValueError, TypeError):
-            num_values[field] = 0.0
+            num_values[fld] = 0.0
 
     # Sum all resolved entity vectors element-wise.
     combined_vec: list[float] = [0.0] * default_vector_width
     if vector_lookups is not None and default_vector_width > 0:
         import numpy as np  # local import — lightweight, already a dep
+
         vec_arr = np.zeros(default_vector_width, dtype=np.float64)
         for key in schema.vector_id_keys:
             lookup = vector_lookups.get(key)
@@ -142,19 +143,23 @@ def collect_payload_vocabularies(
     """
 
     vocabs: dict[str, dict[str, int]] = {}
-    for field in schema.categorical_fields:
-        vocabs[field] = {}
+    for fld in schema.categorical_fields:
+        vocabs[fld] = {}
     if "event_type" not in vocabs:
         vocabs["event_type"] = {}
 
     for row in event_rows:
-        for field in schema.categorical_fields:
-            raw = (row.get("event_payload_json") or {}).get(field) if isinstance(row.get("event_payload_json"), dict) else row.get(field)
-            vocabs[field][str(raw) if raw is not None else ""] = 0
+        for fld in schema.categorical_fields:
+            raw = (
+                (row.get("event_payload_json") or {}).get(fld)
+                if isinstance(row.get("event_payload_json"), dict)
+                else row.get(fld)
+            )
+            vocabs[fld][str(raw) if raw is not None else ""] = 0
         et = str(row.get("event_type", "") or "")
         vocabs["event_type"][et] = 0
 
     return {
-        field: {val: idx for idx, val in enumerate(sorted(values.keys()))}
-        for field, values in vocabs.items()
+        fld: {val: idx for idx, val in enumerate(sorted(values.keys()))}
+        for fld, values in vocabs.items()
     }

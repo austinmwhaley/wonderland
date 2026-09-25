@@ -1,5 +1,6 @@
 """Stage 1 entry: fill the colony database. All paths resolve inside
 white_queen/ unless given as absolute paths."""
+
 import argparse
 import os
 import sys

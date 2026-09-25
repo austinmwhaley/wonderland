@@ -32,7 +32,13 @@ def full_analysis(
     for env_name, env_results in all_results.items():
         for algo_name, result in env_results.items():
             if algo_name not in mastery:
-                mastery[algo_name] = {"solved": 0, "attempted": 0, "total_avg": 0, "count": 0, "best_rank": 99}
+                mastery[algo_name] = {
+                    "solved": 0,
+                    "attempted": 0,
+                    "total_avg": 0,
+                    "count": 0,
+                    "best_rank": 99,
+                }
             mastery[algo_name]["attempted"] += 1
             if result.converged:
                 mastery[algo_name]["solved"] += 1
@@ -48,7 +54,9 @@ def full_analysis(
     lines.append(f"{'Algorithm':<20} {'Solved':>8} {'Attempted':>10}  Verdict")
     lines.append("-" * 90)
     for name, stats in ranked:
-        verdict = "ELITE" if stats["solved"] >= 2 else ("SOLID" if stats["solved"] >= 1 else "STRUGGLING")
+        verdict = (
+            "ELITE" if stats["solved"] >= 2 else ("SOLID" if stats["solved"] >= 1 else "STRUGGLING")
+        )
         lines.append(f"{name:<20} {stats['solved']}/{stats['attempted']:>7} {'':>5}  {verdict}")
     lines.append("")
 
@@ -60,17 +68,30 @@ def full_analysis(
 
     families = {
         "Tabular": ["q_learning", "sarsa", "expected_sarsa", "dyna_q"],
-        "Value-Based (DQN)": ["vanilla_dqn", "dqn", "double_dqn", "dueling_dqn",
-                               "prioritized_dqn", "qr_dqn", "rainbow_dqn"],
+        "Value-Based (DQN)": [
+            "vanilla_dqn",
+            "dqn",
+            "double_dqn",
+            "dueling_dqn",
+            "prioritized_dqn",
+            "qr_dqn",
+            "rainbow_dqn",
+        ],
         "Policy Gradient": ["reinforce", "a2c", "ppo", "grpo", "trpo"],
         "Actor-Critic (Continuous)": ["ddpg", "td3", "sac"],
         "Black-Box": ["cem"],
     }
 
     for family, members in families.items():
-        solved = sum(1 for m in members for env_results in all_results.values()
-                     if m in env_results and env_results[m].converged)
-        attempted = sum(1 for m in members for env_results in all_results.values() if m in env_results)
+        solved = sum(
+            1
+            for m in members
+            for env_results in all_results.values()
+            if m in env_results and env_results[m].converged
+        )
+        attempted = sum(
+            1 for m in members for env_results in all_results.values() if m in env_results
+        )
         lines.append(f"  {family}: {solved}/{attempted} converged across all environments")
     lines.append("")
 
@@ -85,22 +106,35 @@ def full_analysis(
         lines.append("  " + "-" * 80)
 
         solved_list = [(n, r) for n, r in env_results.items() if r.converged]
-        unsolved_list = [(n, r) for n, r in env_results.items() if not r.converged and r.avg_rewards]
         failed_list = [(n, r) for n, r in env_results.items() if not r.avg_rewards]
 
-        lines.append(f"  Converged: {len(solved_list)}/{len(env_results)} | "
-                     f"Failed: {len(failed_list)}/{len(env_results)}")
+        lines.append(
+            f"  Converged: {len(solved_list)}/{len(env_results)} | "
+            f"Failed: {len(failed_list)}/{len(env_results)}"
+        )
         lines.append("")
 
         # Best performers
-        all_sorted = sorted(env_results.items(), key=lambda x: x[1].avg_rewards[-1] if x[1].avg_rewards else -99999, reverse=True)
-        lines.append(f"  {'Rank':<5} {'Algorithm':<20} {'Final Avg':>10} {'Episodes':>10} {'Time':>8}  Status")
+        all_sorted = sorted(
+            env_results.items(),
+            key=lambda x: x[1].avg_rewards[-1] if x[1].avg_rewards else -99999,
+            reverse=True,
+        )
+        lines.append(
+            f"  {'Rank':<5} {'Algorithm':<20} {'Final Avg':>10} {'Episodes':>10} {'Time':>8}  Status"
+        )
         lines.append("  " + "-" * 75)
         for rank, (name, result) in enumerate(all_sorted[:10], 1):
             avg = result.avg_rewards[-1] if result.avg_rewards else 0
             eps = len(result.episode_rewards)
-            status = "SOLVED" if result.converged else ("FAILED" if not result.avg_rewards else "plateaued")
-            lines.append(f"  {rank:<5} {name:<20} {avg:>10.1f} {eps:>10} {result.wall_time:>7.1f}s  {status}")
+            status = (
+                "SOLVED"
+                if result.converged
+                else ("FAILED" if not result.avg_rewards else "plateaued")
+            )
+            lines.append(
+                f"  {rank:<5} {name:<20} {avg:>10.1f} {eps:>10} {result.wall_time:>7.1f}s  {status}"
+            )
 
         if solved_list:
             lines.append("")
@@ -115,7 +149,10 @@ def full_analysis(
         for family, members in families.items():
             present = [m for m in members if m in env_results]
             if present:
-                avgs = [env_results[m].avg_rewards[-1] if env_results[m].avg_rewards else -9999 for m in present]
+                avgs = [
+                    env_results[m].avg_rewards[-1] if env_results[m].avg_rewards else -9999
+                    for m in present
+                ]
                 best = present[np.argmax(avgs)]
                 lines.append(f"    {family}: best = {best}")
 
@@ -124,8 +161,10 @@ def full_analysis(
         if times:
             fastest_n, fastest_t = min(times, key=lambda x: x[1])
             slowest_n, slowest_t = max(times, key=lambda x: x[1])
-            lines.append(f"    Time: fastest = {fastest_n} ({fastest_t:.1f}s), "
-                         f"slowest = {slowest_n} ({slowest_t:.1f}s)")
+            lines.append(
+                f"    Time: fastest = {fastest_n} ({fastest_t:.1f}s), "
+                f"slowest = {slowest_n} ({slowest_t:.1f}s)"
+            )
 
     # === KEY FINDINGS ===
     lines.append("")
@@ -161,7 +200,9 @@ def full_analysis(
     lines.append("")
     lines.append("  6. ALGORITHM COVERAGE IS COMPREHENSIVE")
     lines.append("     20 algorithms spanning tabular, value-based, policy gradient, actor-critic,")
-    lines.append("     distributional, model-based, and black-box families. This covers essentially")
+    lines.append(
+        "     distributional, model-based, and black-box families. This covers essentially"
+    )
     lines.append("     all major RL paradigms through 2020. Notable omissions: MuZero, Dreamer,")
     lines.append("     Decision Transformer (all require fundamentally different architectures).")
     lines.append("")
@@ -171,7 +212,9 @@ def full_analysis(
 
     report = "\n".join(lines)
     if output_path:
-        os.makedirs(os.path.dirname(output_path) if os.path.dirname(output_path) else ".", exist_ok=True)
+        os.makedirs(
+            os.path.dirname(output_path) if os.path.dirname(output_path) else ".", exist_ok=True
+        )
         with open(output_path, "w") as f:
             f.write(report)
         print(f"Analysis saved to {output_path}")

@@ -6,6 +6,7 @@ the receipts (bootstrap CI, behavior stats). Heavy learners (FQE/MIS/etc.)
 are NOT invoked here — they need torch + the lab. See test_autotune for
 config resolution and test_gate_receipts for the gate.
 """
+
 import numpy as np
 
 from white_queen.tribunal.ope import estimators as E

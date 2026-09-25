@@ -7,13 +7,21 @@ policy beat the logging (behavior) policy's true return, and does OPE agree?
 Usage: python survey_continuous.py [env ...]   (default: mountaincar_continuous pendulum)
 Writes /tmp/opencode/wq_matrix/continuous.json
 """
+
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 import json
 import os
 import sys
 
 import numpy as np
 
-sys.path.insert(0, "/home/austin-whaley/wq")
+sys.path.insert(0, str(ROOT))
 
 from environments.registry import make_env
 from white_queen.tribunal.ope import data as odata
@@ -55,9 +63,18 @@ def _rollout(env, act_fn, episodes, max_steps=1200):
             s = ns
             if d:
                 break
-    return {k: np.asarray(v) for k, v in
-            {"obs": obs, "action": act, "reward": rew, "next_obs": obs2,
-             "done": done, "episode": ep_id, "t": t}.items()}
+    return {
+        k: np.asarray(v)
+        for k, v in {
+            "obs": obs,
+            "action": act,
+            "reward": rew,
+            "next_obs": obs2,
+            "done": done,
+            "episode": ep_id,
+            "t": t,
+        }.items()
+    }
 
 
 def _disc_return(env, cand, episodes, gamma=GAMMA, max_steps=1200):
@@ -69,9 +86,12 @@ def _disc_return(env, cand, episodes, gamma=GAMMA, max_steps=1200):
             s, _ = env.reset()
         disc, g = 1.0, 0.0
         for _ in range(max_steps):
-            a = np.asarray(cand.action_mean(np.asarray(s)[None, :])[0]
-                           if hasattr(cand, "action_mean")
-                           else cand.act(s, eval=True), dtype=np.float32).ravel()
+            a = np.asarray(
+                cand.action_mean(np.asarray(s)[None, :])[0]
+                if hasattr(cand, "action_mean")
+                else cand.act(s, eval=True),
+                dtype=np.float32,
+            ).ravel()
             s, r, term, trunc, _ = env.step(a)
             g += disc * float(r)
             disc *= gamma
@@ -81,11 +101,22 @@ def _disc_return(env, cand, episodes, gamma=GAMMA, max_steps=1200):
     return float(np.mean(rets))
 
 
-def survey_env(env_name, seed=0, online_steps=8000, n_ep_rand=15,
-               n_ep_online=15, offline_steps=6000, gt_episodes=10):
+def survey_env(
+    env_name,
+    seed=0,
+    online_steps=8000,
+    n_ep_rand=15,
+    n_ep_online=15,
+    offline_steps=6000,
+    gt_episodes=10,
+):
     try:
         from white_queen.tribunal.ope.training import seed_all as _sa
-        import torch as _t; _sa(seed if 'seed' in locals() else 0); np.random.seed(seed if 'seed' in locals() else 0); _t.manual_seed(seed if 'seed' in locals() else 0)
+        import torch as _t
+
+        _sa(seed if "seed" in locals() else 0)
+        np.random.seed(seed if "seed" in locals() else 0)
+        _t.manual_seed(seed if "seed" in locals() else 0)
     except Exception:
         pass
     env = make_env(env_name, seed=0)
@@ -100,10 +131,22 @@ def survey_env(env_name, seed=0, online_steps=8000, n_ep_rand=15,
     on_logs = None
     try:
         from algorithms.deep.ddpg import DDPG
-        agent = DDPG(env, {"device": "cuda", "gamma": GAMMA, "batch_size": 128,
-                           "hidden": 128, "lr": 3e-4, "buffer_size": 100000,
-                           "warmup": 1000, "update_freq": 1, "seed": 0,
-                           "eval_freq": 10**9})
+
+        agent = DDPG(
+            env,
+            {
+                "device": "cuda",
+                "gamma": GAMMA,
+                "batch_size": 128,
+                "hidden": 128,
+                "lr": 3e-4,
+                "buffer_size": 100000,
+                "warmup": 1000,
+                "update_freq": 1,
+                "seed": 0,
+                "eval_freq": 10**9,
+            },
+        )
         agent.train(env, {"steps": online_steps}, _Tracker())
         on_logs = _rollout(env, lambda s: agent.act(s, eval=True), n_ep_online)
     except Exception as ex:
@@ -115,20 +158,28 @@ def survey_env(env_name, seed=0, online_steps=8000, n_ep_rand=15,
         merged[k] = np.concatenate([s[k] for s in srcs], 0)
     # unique episode ids across sources
     merged["episode"] = np.concatenate(
-        [np.asarray(s["episode"]) + i * 10000 for i, s in enumerate(srcs)])
+        [np.asarray(s["episode"]) + i * 10000 for i, s in enumerate(srcs)]
+    )
 
-    canon = odata.to_canonical(merged, nA=int(low.size),
-                               estimate_propensity=True, source_name=env_name)
+    canon = odata.to_canonical(
+        merged, nA=int(low.size), estimate_propensity=True, source_name=env_name
+    )
     b = behavior_stats(canon, GAMMA)
 
     # --- offline continuous IQL ---
     a_dim = int(canon["act"].shape[1])
-    stub = EnvStub(int(canon["obs"].shape[1]), a_dim, a_dim=a_dim,
-                   continuous=True)
-    cfg = {"gamma": GAMMA, "hidden": 128, "batch_size": 256, "seed": 0,
-           "offline_steps": offline_steps, "device": "cuda"}
-    iql = train_candidate("iql_cont", stub, canon, cfg,
-                          os.path.join(OUT, f"{env_name}_iql_cont.pt"))
+    stub = EnvStub(int(canon["obs"].shape[1]), a_dim, a_dim=a_dim, continuous=True)
+    cfg = {
+        "gamma": GAMMA,
+        "hidden": 128,
+        "batch_size": 256,
+        "seed": 0,
+        "offline_steps": offline_steps,
+        "device": "cuda",
+    }
+    iql = train_candidate(
+        "iql_cont", stub, canon, cfg, os.path.join(OUT, f"{env_name}_iql_cont.pt")
+    )
     iql.name = "iql_cont"
 
     # --- truth: live discounted return of the offline policy vs behavior ---
@@ -137,24 +188,42 @@ def survey_env(env_name, seed=0, online_steps=8000, n_ep_rand=15,
     anchor = float(b["mean"])
 
     # --- OPE ---
-    panels = {"iql_cont": C.panel_continuous(
-        canon, iql, gamma=GAMMA, fast=True, cand_id="iql_cont",
-        fqe_cfg={"steps_max": 20000, "eval_every": 2500, "patience": 8,
-                 "batch": 512, "hidden": 96})}
-    rows = G.adjudicate(panels, b["mean"], b["std"], None, None,
-                        n_episodes=len(np.unique(canon["episode"])))
+    panels = {
+        "iql_cont": C.panel_continuous(
+            canon,
+            iql,
+            gamma=GAMMA,
+            fast=True,
+            cand_id="iql_cont",
+            fqe_cfg={
+                "steps_max": 20000,
+                "eval_every": 2500,
+                "patience": 8,
+                "batch": 512,
+                "hidden": 96,
+            },
+        )
+    }
+    rows = G.adjudicate(
+        panels, b["mean"], b["std"], None, None, n_episodes=len(np.unique(canon["episode"]))
+    )
     v = J.judge_diet(rows, b["mean"], b["std"], None, 0.5)
     dec = v["decisions"]["iql_cont"]
     return {
-        "env": env_name, "obs_dim": int(canon["obs"].shape[1]), "a_dim": a_dim,
-        "N": int(canon["N"]), "behavior_mean": round(anchor, 2),
-        "bar": v["bar"], "iql_truth": round(truth_iql, 2),
+        "env": env_name,
+        "obs_dim": int(canon["obs"].shape[1]),
+        "a_dim": a_dim,
+        "N": int(canon["N"]),
+        "behavior_mean": round(anchor, 2),
+        "bar": v["bar"],
+        "iql_truth": round(truth_iql, 2),
         "improved": bool(truth_iql > anchor),
         "fqe": panels["iql_cont"]["fqe_dm"],
         "dr": panels["iql_cont"]["dr"],
         "sharp": panels["iql_cont"]["sharp_dm"],
         "ess": panels["iql_cont"]["ess_frac"],
-        "deploy": bool(dec["deploy"]), "rule": dec["reasons"][0],
+        "deploy": bool(dec["deploy"]),
+        "rule": dec["reasons"][0],
         "cert_lo": (dec.get("certificate") or {}).get("lo"),
         "cert_hi": (dec.get("certificate") or {}).get("hi"),
     }
@@ -169,12 +238,17 @@ if __name__ == "__main__":
             r = survey_env(e)
             res.append(r)
             print(f"\n=== {e} === obs={r['obs_dim']} a_dim={r['a_dim']} N={r['N']}")
-            print(f"  behavior(anchor)={r['behavior_mean']} bar={r['bar']} "
-                  f"iql_truth={r['iql_truth']} improved={r['improved']}")
-            print(f"  OPE: FQE={r['fqe']} DR={r['dr']} sharp={r['sharp']} "
-                  f"ess={r['ess']} deploy={r['deploy']} :: {r['rule'][:60]}")
+            print(
+                f"  behavior(anchor)={r['behavior_mean']} bar={r['bar']} "
+                f"iql_truth={r['iql_truth']} improved={r['improved']}"
+            )
+            print(
+                f"  OPE: FQE={r['fqe']} DR={r['dr']} sharp={r['sharp']} "
+                f"ess={r['ess']} deploy={r['deploy']} :: {r['rule'][:60]}"
+            )
         except Exception as ex:
             import traceback
+
             print(f"\n=== {e} FAILED: {type(ex).__name__}: {ex}")
             traceback.print_exc()
     with open(os.path.join(OUT, "continuous.json"), "w") as f:

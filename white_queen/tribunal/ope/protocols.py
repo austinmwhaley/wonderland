@@ -31,8 +31,11 @@ class CandidateProtocol(Protocol):
 @runtime_checkable
 class EstimatorProtocol(Protocol):
     def estimate(
-        self, diet: Dict[str, Any], candidate: CandidateProtocol,
-        gamma: float, cfg: Dict[str, Any],
+        self,
+        diet: Dict[str, Any],
+        candidate: CandidateProtocol,
+        gamma: float,
+        cfg: Dict[str, Any],
     ) -> Dict[str, Any]: ...  # noqa: D102
 
 
@@ -42,8 +45,11 @@ RatioFn = Callable[[Any, Any], Any]
 @runtime_checkable
 class RatioProtocol(Protocol):
     def learn(
-        self, diet: Dict[str, Any], candidate: CandidateProtocol,
-        gamma: float, cfg: Dict[str, Any],
+        self,
+        diet: Dict[str, Any],
+        candidate: CandidateProtocol,
+        gamma: float,
+        cfg: Dict[str, Any],
     ) -> Tuple[RatioFn, Dict[str, Any]]: ...  # noqa: D102
 
 
@@ -70,6 +76,7 @@ def safe_probs(p: Any) -> Any:
     via low ESS downstream. Pure numpy, no tuning.
     """
     import numpy as _np
+
     q = _np.asarray(p, dtype=float)
     if q.ndim == 1:
         q = q[None, :]
@@ -87,12 +94,12 @@ def safe_probs(p: Any) -> Any:
 def sample_actions(rng: Any, probs: Any) -> Any:
     """Sample one action per row with NaN-safe normalization."""
     import numpy as _np
+
     q = safe_probs(probs)
     return _np.array([rng.choice(q.shape[1], p=row) for row in q])
 
 
-REQUIRED_DIET_KEYS = ("obs", "obs2", "act", "rew", "done", "mu",
-                      "episode", "t", "nA", "N")
+REQUIRED_DIET_KEYS = ("obs", "obs2", "act", "rew", "done", "mu", "episode", "t", "nA", "N")
 
 
 def validate_diet(diet: Any) -> dict:
@@ -104,6 +111,7 @@ def validate_diet(diet: Any) -> dict:
     row is its own episode (n_episodes == N) and single-episode RL.
     """
     import numpy as _np
+
     if not isinstance(diet, dict):
         raise TypeError(f"diet must be dict, got {type(diet).__name__}")
     for k in ("obs", "act", "rew", "nA", "N"):
@@ -112,11 +120,9 @@ def validate_diet(diet: Any) -> dict:
     continuous = bool(diet.get("continuous"))
     if continuous:
         if "logp_take" not in diet:
-            raise ValueError("continuous diet needs 'logp_take' (N,) behavior "
-                             "log-density")
+            raise ValueError("continuous diet needs 'logp_take' (N,) behavior log-density")
     elif "mu_take" not in diet and "mu" not in diet:
-        raise ValueError("diet needs a behavior propensity: 'mu_take' (N,) "
-                         "or 'mu' (N,nA)")
+        raise ValueError("diet needs a behavior propensity: 'mu_take' (N,) or 'mu' (N,nA)")
     N = int(diet["N"])
     obs = _np.asarray(diet["obs"])
     if obs.ndim != 2 or obs.shape[0] != N:
@@ -168,8 +174,7 @@ def validate_diet(diet: Any) -> dict:
             if a.shape[0] != N:
                 raise ValueError(f"diet[{k!r}] len {a.shape[0]} vs N={N}")
     n_ep = len(_np.unique(_np.asarray(diet["episode"]))) if diet.get("episode") is not None else N
-    return {"N": N, "n_episodes": n_ep, "obs_dim": int(obs.shape[1]),
-            "nA": nA}
+    return {"N": N, "n_episodes": n_ep, "obs_dim": int(obs.shape[1]), "nA": nA}
 
 
 class ArgmaxPolicy:
@@ -187,8 +192,8 @@ class ArgmaxPolicy:
 
     def action_probs(self, obs, temperature=1.0):
         import numpy as _np
-        p = _np.asarray(self.inner.action_probs(obs, temperature=1.0),
-                        dtype=_np.float64)
+
+        p = _np.asarray(self.inner.action_probs(obs, temperature=1.0), dtype=_np.float64)
         out = _np.zeros_like(p)
         out[_np.arange(len(p)), p.argmax(1)] = 1.0
         return out
@@ -207,11 +212,16 @@ class EnvStub:
         self.observation_space = type("_Space", (), {"shape": shape})()
         if continuous or a_dim is not None:
             a = int(a_dim if a_dim is not None else nA)
-            self.action_space = type("_Space", (), {
-                "shape": (a,), "n": a,
-                "low": np.full(a, -1.0, dtype=np.float32),
-                "high": np.full(a, 1.0, dtype=np.float32),
-                "continuous": True})()
+            self.action_space = type(
+                "_Space",
+                (),
+                {
+                    "shape": (a,),
+                    "n": a,
+                    "low": np.full(a, -1.0, dtype=np.float32),
+                    "high": np.full(a, 1.0, dtype=np.float32),
+                    "continuous": True,
+                },
+            )()
         else:
-            self.action_space = type("_Space", (), {"n": int(nA),
-                                                     "continuous": False})()
+            self.action_space = type("_Space", (), {"n": int(nA), "continuous": False})()

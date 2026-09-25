@@ -3,27 +3,66 @@
 training budgets (fraction of the family budget): a 0.05-frac policy is a
 genuinely undertrained agent — birth, honestly, with no checkpoint surgery.
 """
+
 # (key, family, lab_module, lab_class, budget_key, fracs, extra_config)
 ROSTER = [
     # Floor: uniform random. checkpoint_frac None -> novice_only diet by algo.
-    {"key": "random", "family": "random", "module": None, "class": None,
-     "budget": None, "fracs": (None,), "extra": {}},
+    {
+        "key": "random",
+        "family": "random",
+        "module": None,
+        "class": None,
+        "budget": None,
+        "fracs": (None,),
+        "extra": {},
+    },
     # Value-based DQN family: Dueling and Double variants ride DQN flags.
-    {"key": "dqn", "family": "value-based", "module": "algorithms.deep.dqn",
-     "class": "DQN", "budget": "dqn_train_steps",
-     "fracs": None,  # filled from cfg["checkpoint_fracs"] at build time
-     "extra": {}},
-    {"key": "dueling", "family": "value-based", "module": "algorithms.deep.dqn",
-     "class": "DQN", "budget": "dqn_train_steps", "fracs": None,
-     "extra": {"dueling": True}},
-    {"key": "double", "family": "value-based", "module": "algorithms.deep.dqn",
-     "class": "DQN", "budget": "dqn_train_steps", "fracs": None,
-     "extra": {"double": True}},
+    {
+        "key": "dqn",
+        "family": "value-based",
+        "module": "algorithms.deep.dqn",
+        "class": "DQN",
+        "budget": "dqn_train_steps",
+        "fracs": None,  # filled from cfg["checkpoint_fracs"] at build time
+        "extra": {},
+    },
+    {
+        "key": "dueling",
+        "family": "value-based",
+        "module": "algorithms.deep.dqn",
+        "class": "DQN",
+        "budget": "dqn_train_steps",
+        "fracs": None,
+        "extra": {"dueling": True},
+    },
+    {
+        "key": "double",
+        "family": "value-based",
+        "module": "algorithms.deep.dqn",
+        "class": "DQN",
+        "budget": "dqn_train_steps",
+        "fracs": None,
+        "extra": {"double": True},
+    },
     # Policy-gradient family: different coverage footprint from value methods.
-    {"key": "ppo", "family": "policy-gradient", "module": "algorithms.approx.ppo",
-     "class": "PPO", "budget": "pg_train_steps", "fracs": None, "extra": {}},
-    {"key": "a2c", "family": "policy-gradient", "module": "algorithms.approx.a2c",
-     "class": "A2C", "budget": "pg_train_steps", "fracs": None, "extra": {}},
+    {
+        "key": "ppo",
+        "family": "policy-gradient",
+        "module": "algorithms.approx.ppo",
+        "class": "PPO",
+        "budget": "pg_train_steps",
+        "fracs": None,
+        "extra": {},
+    },
+    {
+        "key": "a2c",
+        "family": "policy-gradient",
+        "module": "algorithms.approx.a2c",
+        "class": "A2C",
+        "budget": "pg_train_steps",
+        "fracs": None,
+        "extra": {},
+    },
 ]
 
 

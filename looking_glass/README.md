@@ -40,9 +40,9 @@ The analogy to sklearn is deliberate. Just as sklearn gives you `fit` / `transfo
 
 ```python
 from looking_glass import (
-    create_embedding_model
-   ,create_temporal_core_model
-   ,create_supervised_model
+    create_embedding_model,
+    create_temporal_core_model,
+    create_supervised_model,
 )
 ```
 
@@ -62,11 +62,11 @@ Before you can read event sequences meaningfully, every entity in those sequence
 
 ```python
 embedding_model = create_embedding_model(
-    id_field="product_id"
-   ,categorical_fields=["category", "brand"]
-   ,numeric_fields=["base_price", "unit_cost"]
-    ,hidden_dim=128
-   ,epochs=4
+    id_field="product_id",
+    categorical_fields=["category", "brand"],
+    numeric_fields=["base_price", "unit_cost"],
+    hidden_dim=128,
+    epochs=4,
 )
 
 result = embedding_model.fit_transform(product_records)
@@ -87,14 +87,14 @@ The training objective is next-event prediction with causal masking: given the f
 
 ```python
 temporal_model = create_temporal_core_model(
-    sequence_id_field="customer_id"
-   ,event_id_field="event_id"
-   ,timestamp_field="event_ts"
-    ,categorical_fields=["event_type", "entity_type", "source_table"]
-    ,numeric_fields=["value"]
-    ,vector_fields=["customer_vector", "product_vector"]
-    ,hidden_dim=128
-   ,epochs=6
+    sequence_id_field="customer_id",
+    event_id_field="event_id",
+    timestamp_field="event_ts",
+    categorical_fields=["event_type", "entity_type", "source_table"],
+    numeric_fields=["value"],
+    vector_fields=["customer_vector", "product_vector"],
+    hidden_dim=128,
+    epochs=6,
 )
 
 result = temporal_model.fit_transform(enriched_event_records)
@@ -114,13 +114,13 @@ The train/validation split is deterministic from `seed`, and categorical vocabul
 
 ```python
 churn_model = create_supervised_model(
-    task="classification"
-   ,id_field="customer_id"
-    ,target_field="churn_label"
-    ,categorical_fields=[]
-    ,numeric_fields=["order_count", "recency_days", "core_event_count"]
-    ,vector_fields=["customer_vector", "core_last_vector"]
-   ,epochs=30
+    task="classification",
+    id_field="customer_id",
+    target_field="churn_label",
+    categorical_fields=[],
+    numeric_fields=["order_count", "recency_days", "core_event_count"],
+    vector_fields=["customer_vector", "core_last_vector"],
+    epochs=30,
 )
 
 result = churn_model.fit_predict(outcome_records)
@@ -209,20 +209,12 @@ One dict per sequence (e.g., one per customer). Required fields:
 `EntityCore` is the low-level wiring primitive for users who want to construct and train models directly rather than through the factory functions. All three components are defined by strict abstract base classes (`TemporalEncoderBase`, `SequenceEngineBase`, `TaskHeadBase`) — any component can be replaced with a custom implementation as long as it satisfies the interface contract.
 
 ```python
-from looking_glass import (
-    EntityCore
-   ,TemporalStack
-   ,SequenceEngine
-   ,MultiTaskBusinessHead
-)
+from looking_glass import EntityCore, TemporalStack, SequenceEngine, MultiTaskBusinessHead
 
 model = EntityCore(
-    temporal_encoder=TemporalStack(hidden_dim=256)
-    ,sequence_engine=SequenceEngine(hidden_dim=256, recurrent_steps=4, backend="samba")
-   ,task_head=MultiTaskBusinessHead(
-        hidden_dim=256
-       ,task_output_dims={"churn": 1, "ltv": 1}
-    )
+    temporal_encoder=TemporalStack(hidden_dim=256),
+    sequence_engine=SequenceEngine(hidden_dim=256, recurrent_steps=4, backend="samba"),
+    task_head=MultiTaskBusinessHead(hidden_dim=256, task_output_dims={"churn": 1, "ltv": 1}),
 )
 
 out = model(hydrated_events, delta_t)
@@ -329,8 +321,10 @@ The pretrained backbone processes new events without weight changes.  ``incremen
 
 ```python
 from looking_glass import incremental_state_update
+
 incremental_state_update(
-    core, store,
+    core,
+    store,
     entity_ids=["cust_1", "cust_2"],
     new_hidden_states=today_tensor,
     new_delta_t=today_deltas,
@@ -503,13 +497,13 @@ The model gets the learned backbone vectors plus a handful of generic aggregates
 
 ```python
 {
-    'ok': True
-   ,'product_embeddings': True
-   ,'customer_embeddings': True
-   ,'temporal_event_embeddings': True
-   ,'temporal_core': True
-   ,'churn_head': True
-   ,'ltv_head': True
+    "ok": True,
+    "product_embeddings": True,
+    "customer_embeddings": True,
+    "temporal_event_embeddings": True,
+    "temporal_core": True,
+    "churn_head": True,
+    "ltv_head": True,
 }
 ```
 

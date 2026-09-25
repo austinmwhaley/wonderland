@@ -202,7 +202,11 @@ class EmbeddingModel:
             # Missing or mismatched vectors become zeros so batch shapes remain valid.
             vec = torch.tensor(
                 [
-                    (r.get(field) if isinstance(r.get(field), list) and len(r.get(field)) == dim else [0.0] * dim)
+                    (
+                        r.get(field)
+                        if isinstance(r.get(field), list) and len(r.get(field)) == dim
+                        else [0.0] * dim
+                    )
                     for r in records
                 ],
                 dtype=torch.float32,
@@ -218,7 +222,9 @@ class EmbeddingModel:
         combined_numeric = torch.cat([numeric_norm, vector_features], dim=1)
         if combined_numeric.size(1) == 0:
             # Keep at least one input channel so the projection layer is always well-defined.
-            combined_numeric = torch.zeros(len(records), 1, dtype=torch.float32, device=self.device_)
+            combined_numeric = torch.zeros(
+                len(records), 1, dtype=torch.float32, device=self.device_
+            )
 
         cat_embeddings = nn.ModuleDict(
             {
@@ -283,7 +289,9 @@ class EmbeddingModel:
             for start in range(0, n, batch_size):
                 idx = perm[start : start + batch_size]
 
-                cat_sum = torch.zeros(len(idx), self.config.hidden_dim, dtype=torch.float32, device=self.device_)
+                cat_sum = torch.zeros(
+                    len(idx), self.config.hidden_dim, dtype=torch.float32, device=self.device_
+                )
                 for field, embedding in cat_embeddings.items():
                     cat_sum = cat_sum + embedding(cat_idx_tensors[field][idx])
                 x = (cat_sum + numeric_projection(combined_numeric[idx])).unsqueeze(1)
@@ -292,7 +300,9 @@ class EmbeddingModel:
 
                 losses: list[Tensor] = []
                 for field in self.categorical_fields:
-                    losses.append(F.cross_entropy(cat_heads[field](encoded), cat_idx_tensors[field][idx]))
+                    losses.append(
+                        F.cross_entropy(cat_heads[field](encoded), cat_idx_tensors[field][idx])
+                    )
                 numeric_pred = numeric_head(encoded)
                 if numeric_pred.ndim == 1:
                     losses.append(F.mse_loss(numeric_pred, combined_numeric[idx].squeeze(-1)))
@@ -307,7 +317,9 @@ class EmbeddingModel:
                 num_batches += 1
             last_loss = epoch_loss / max(num_batches, 1)
             if (ep_idx + 1) % 10 == 0 or ep_idx == self.config.epochs - 1:
-                logger.debug("%s  epoch %d/%d  loss=%.6f", _label, ep_idx + 1, self.config.epochs, last_loss)
+                logger.debug(
+                    "%s  epoch %d/%d  loss=%.6f", _label, ep_idx + 1, self.config.epochs, last_loss
+                )
 
         # Inference pass: also chunked to stay under the FlashAttention limit.
         core.eval()
@@ -349,7 +361,9 @@ class EmbeddingModel:
             if len(values) == 1:
                 agg_vectors[entity_id] = values[0]
             else:
-                agg_vectors[entity_id] = torch.tensor(values, dtype=torch.float32).mean(dim=0).tolist()
+                agg_vectors[entity_id] = (
+                    torch.tensor(values, dtype=torch.float32).mean(dim=0).tolist()
+                )
 
         return Embeddings(
             id_field=self.id_field,
@@ -409,7 +423,11 @@ class EmbeddingModel:
             vec_tensors.append(
                 torch.tensor(
                     [
-                        (r.get(field) if isinstance(r.get(field), list) and len(r.get(field)) == dim else [0.0] * dim)
+                        (
+                            r.get(field)
+                            if isinstance(r.get(field), list) and len(r.get(field)) == dim
+                            else [0.0] * dim
+                        )
                         for r in records
                     ],
                     dtype=torch.float32,
@@ -417,7 +435,11 @@ class EmbeddingModel:
                 )
             )
 
-        vec_features = torch.cat(vec_tensors, dim=1) if vec_tensors else torch.zeros(len(records), 0, dtype=torch.float32, device=device)
+        vec_features = (
+            torch.cat(vec_tensors, dim=1)
+            if vec_tensors
+            else torch.zeros(len(records), 0, dtype=torch.float32, device=device)
+        )
         combined_numeric = torch.cat([numeric_norm, vec_features], dim=1)
         if combined_numeric.size(1) == 0:
             combined_numeric = torch.zeros(len(records), 1, dtype=torch.float32, device=device)
@@ -434,7 +456,12 @@ class EmbeddingModel:
             vector_chunks: list[Tensor] = []
             for start in range(0, n, batch_size):
                 idx = slice(start, start + batch_size)
-                cat_sum = torch.zeros(combined_numeric[idx].size(0), self.config.hidden_dim, dtype=torch.float32, device=device)
+                cat_sum = torch.zeros(
+                    combined_numeric[idx].size(0),
+                    self.config.hidden_dim,
+                    dtype=torch.float32,
+                    device=device,
+                )
                 for field, emb in cat_embs.items():
                     cat_sum = cat_sum + emb(cat_idx_tensors[field][idx])
                 x = (cat_sum + num_proj(combined_numeric[idx])).unsqueeze(1)
@@ -450,7 +477,9 @@ class EmbeddingModel:
             if len(values) == 1:
                 agg_vectors[entity_id] = values[0]
             else:
-                agg_vectors[entity_id] = torch.tensor(values, dtype=torch.float32).mean(dim=0).tolist()
+                agg_vectors[entity_id] = (
+                    torch.tensor(values, dtype=torch.float32).mean(dim=0).tolist()
+                )
 
         return Embeddings(id_field=self.id_field, vectors=agg_vectors, records=records)
 
@@ -477,13 +506,19 @@ class EmbeddingModel:
             "hidden_dim": self.config.hidden_dim,
             "sequence_backend": self.config.sequence_backend,
             "cat_vocab": self._cat_vocab,
-            "numeric_mean": art["numeric_mean"].detach().cpu() if art["numeric_mean"] is not None else None,
-            "numeric_std": art["numeric_std"].detach().cpu() if art["numeric_std"] is not None else None,
+            "numeric_mean": art["numeric_mean"].detach().cpu()
+            if art["numeric_mean"] is not None
+            else None,
+            "numeric_std": art["numeric_std"].detach().cpu()
+            if art["numeric_std"] is not None
+            else None,
             "vector_dims": dict(art["vector_dims"]),
             "in_dim": int(art["in_dim"]),
             "core_config": core_config_from_core(art["core"]),
             "core_state": {k: v.detach().cpu() for k, v in art["core"].state_dict().items()},
-            "cat_embeddings_state": {k: v.detach().cpu() for k, v in art["cat_embeddings"].state_dict().items()},  # type: ignore[union-attr]
+            "cat_embeddings_state": {
+                k: v.detach().cpu() for k, v in art["cat_embeddings"].state_dict().items()
+            },  # type: ignore[union-attr]
             "numeric_projection_state": art["numeric_projection"].state_dict(),  # type: ignore[union-attr]
         }
         for k, v in list(payload.items()):
@@ -518,16 +553,20 @@ class EmbeddingModel:
             vector_fields=list(payload["vector_fields"]),
             config=config,
         )
-        model._cat_vocab = {k: {kk: int(vv) for kk, vv in v.items()} for k, v in payload["cat_vocab"].items()}
+        model._cat_vocab = {
+            k: {kk: int(vv) for kk, vv in v.items()} for k, v in payload["cat_vocab"].items()
+        }
 
         core = build_core_from_config(payload["core_config"])
         core.load_state_dict(payload["core_state"])
         core = core.to(model.device_)
 
-        cat_embs = nn.ModuleDict({
-            field: nn.Embedding(max(1, len(vocab)), config.hidden_dim)
-            for field, vocab in model._cat_vocab.items()
-        }).to(model.device_)
+        cat_embs = nn.ModuleDict(
+            {
+                field: nn.Embedding(max(1, len(vocab)), config.hidden_dim)
+                for field, vocab in model._cat_vocab.items()
+            }
+        ).to(model.device_)
         cat_embs.load_state_dict(payload["cat_embeddings_state"])
 
         in_dim = int(payload["in_dim"])
@@ -538,8 +577,12 @@ class EmbeddingModel:
             "cat_embeddings": cat_embs,
             "numeric_projection": num_proj,
             "core": core,
-            "numeric_mean": payload["numeric_mean"].to(model.device_) if payload["numeric_mean"] is not None else None,
-            "numeric_std": payload["numeric_std"].to(model.device_) if payload["numeric_std"] is not None else None,
+            "numeric_mean": payload["numeric_mean"].to(model.device_)
+            if payload["numeric_mean"] is not None
+            else None,
+            "numeric_std": payload["numeric_std"].to(model.device_)
+            if payload["numeric_std"] is not None
+            else None,
             "vector_dims": {k: int(v) for k, v in payload["vector_dims"].items()},
             "in_dim": in_dim,
         }

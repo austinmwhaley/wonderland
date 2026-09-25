@@ -9,18 +9,24 @@ Adapters are pure functions `matches(cols) -> bool` plus `roles(cols) ->
 dict(context=[...], next_context=[...], exclude=[...])`. Register a new source
 with `register_schema(...)`.
 """
+
 from __future__ import annotations
 
 import re
 
 _CTX_PREFIX_PATTERNS = (
-    re.compile(r"^o(\d+)$"), re.compile(r"^obs[_]?(\d+)$"),
-    re.compile(r"^state[_]?(\d+)$"), re.compile(r"^x[_]?(\d+)$"),
-    re.compile(r"^feature[_]?(\d+)$"), re.compile(r"^context[_]?(\d+)$"),
+    re.compile(r"^o(\d+)$"),
+    re.compile(r"^obs[_]?(\d+)$"),
+    re.compile(r"^state[_]?(\d+)$"),
+    re.compile(r"^x[_]?(\d+)$"),
+    re.compile(r"^feature[_]?(\d+)$"),
+    re.compile(r"^context[_]?(\d+)$"),
 )
 _NEXT_PREFIX_PATTERNS = (
-    re.compile(r"^n(\d+)$"), re.compile(r"^next[_]?(\d+)$"),
-    re.compile(r"^next_obs[_]?(\d+)$"), re.compile(r"^obs2[_]?(\d+)$"),
+    re.compile(r"^n(\d+)$"),
+    re.compile(r"^next[_]?(\d+)$"),
+    re.compile(r"^next_obs[_]?(\d+)$"),
+    re.compile(r"^obs2[_]?(\d+)$"),
     re.compile(r"^next_context[_]?(\d+)$"),
 )
 
@@ -54,12 +60,13 @@ class SchemaAdapter:
         return bool(self._match(cols))
 
     def roles(self, cols):
-        ctx = (self._context(cols) if callable(self._context)
-               else self._context)
-        nxt = (self._next(cols) if callable(self._next) else self._next) \
-            if self._next is not None else None
-        return {"context": ctx, "next_context": nxt,
-                "exclude": list(self._exclude)}
+        ctx = self._context(cols) if callable(self._context) else self._context
+        nxt = (
+            (self._next(cols) if callable(self._next) else self._next)
+            if self._next is not None
+            else None
+        )
+        return {"context": ctx, "next_context": nxt, "exclude": list(self._exclude)}
 
 
 SCHEMA_ADAPTERS = []
@@ -77,8 +84,10 @@ def register_schema(adapter, overwrite=False):
 
 
 def _colony_match(cols):
-    return (_prefixed_group(cols, _CTX_PREFIX_PATTERNS) is not None
-            and _prefixed_group(cols, _NEXT_PREFIX_PATTERNS) is not None)
+    return (
+        _prefixed_group(cols, _CTX_PREFIX_PATTERNS) is not None
+        and _prefixed_group(cols, _NEXT_PREFIX_PATTERNS) is not None
+    )
 
 
 def _colony_context(cols):
@@ -93,9 +102,11 @@ def _colony_next(cols):
     return nxt
 
 
-register_schema(SchemaAdapter("colony_prefixed", _colony_match,
-                              _colony_context, _colony_next,
-                              exclude=_METADATA))
+register_schema(
+    SchemaAdapter(
+        "colony_prefixed", _colony_match, _colony_context, _colony_next, exclude=_METADATA
+    )
+)
 
 
 def detect_schema(cols, explicit=None):

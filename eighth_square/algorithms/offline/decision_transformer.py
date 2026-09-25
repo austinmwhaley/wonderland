@@ -1,4 +1,3 @@
-import math
 from collections import deque
 
 import numpy as np
@@ -40,9 +39,13 @@ class DecisionTransformer(BaseAgent, nn.Module):
         self.rtg_emb = nn.Linear(1, self.d_model)
         self.act_emb = nn.Linear(self.nA, self.d_model)
         self.pos_emb = nn.Parameter(torch.zeros(1, self.max_len, self.d_model))
-        layer = nn.TransformerEncoderLayer(d_model=self.d_model, nhead=self.n_head,
-                                          dim_feedforward=4 * self.d_model,
-                                          batch_first=True, dropout=0.0)
+        layer = nn.TransformerEncoderLayer(
+            d_model=self.d_model,
+            nhead=self.n_head,
+            dim_feedforward=4 * self.d_model,
+            batch_first=True,
+            dropout=0.0,
+        )
         self.transformer = nn.TransformerEncoder(layer, num_layers=self.n_layer)
         self.head = nn.Linear(self.d_model, self.nA)
         self.optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
@@ -80,9 +83,9 @@ class DecisionTransformer(BaseAgent, nn.Module):
             obs, act, rew = self.episodes[int(j)]
             n = min(len(obs), self.context)
             start = int(self.rng.integers(0, len(obs) - n + 1))
-            ob[i, -n:] = obs[start:start + n]
-            ac[i, -n:] = np.eye(self.nA)[act[start:start + n]]
-            G = np.cumsum(rew[start:start + n][::-1])[::-1]
+            ob[i, -n:] = obs[start : start + n]
+            ac[i, -n:] = np.eye(self.nA)[act[start : start + n]]
+            G = np.cumsum(rew[start : start + n][::-1])[::-1]
             rt[i, -n:, 0] = G
         obs_t = torch.as_tensor(ob, device=self.device)
         rtg_t = torch.as_tensor(rt, device=self.device)
@@ -112,17 +115,24 @@ class DecisionTransformer(BaseAgent, nn.Module):
                 rt[0, j, 0] = g
                 if a is not None:
                     ac[0, j] = np.eye(self.nA)[a]
-            logits = self._forward(torch.as_tensor(ob, device=self.device),
-                                   torch.as_tensor(rt, device=self.device),
-                                   torch.as_tensor(ac, device=self.device))
+            logits = self._forward(
+                torch.as_tensor(ob, device=self.device),
+                torch.as_tensor(rt, device=self.device),
+                torch.as_tensor(ac, device=self.device),
+            )
             a = int(logits[0, -1].argmax().item())
             self._last_act = a
             return a
 
     def train(self, env, config, tracker):
         behavior = train_behavior(env, config, self.rng)
-        self.episodes = collect_episodes(env, behavior, config.get("dataset_size", 40_000),
-                                         config.get("collect_eps", 0.1), self.rng)
+        self.episodes = collect_episodes(
+            env,
+            behavior,
+            config.get("dataset_size", 40_000),
+            config.get("collect_eps", 0.1),
+            self.rng,
+        )
         self._rtg = max(float(np.sum(ep[2])) for ep in self.episodes)
         self.t = 0
         losses = []
@@ -133,7 +143,9 @@ class DecisionTransformer(BaseAgent, nn.Module):
                 tracker.log(timestep=self.t, loss=float(np.mean(losses)))
                 losses = []
             if self.t % self.eval_freq == 0:
-                tracker.log(timestep=self.t, eval_return=float(evaluate(self, env, self.eval_episodes)))
+                tracker.log(
+                    timestep=self.t, eval_return=float(evaluate(self, env, self.eval_episodes))
+                )
         self.episodes = self.t
 
     def save(self, path):

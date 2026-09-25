@@ -23,11 +23,15 @@ class Reinforce(BaseAgent):
             self.policy = DiscretePolicy(in_dim, hidden, int(env.action_space.n)).to(self.device)
             self.act_space_dim = None
         else:
-            self.policy = GaussianPolicy(in_dim, hidden, int(env.action_space.shape[0])).to(self.device)
+            self.policy = GaussianPolicy(in_dim, hidden, int(env.action_space.shape[0])).to(
+                self.device
+            )
         self.use_baseline = config.get("baseline", True)
         if self.use_baseline:
             self.critic = Critic(in_dim, hidden).to(self.device)
-            self.critic_opt = torch.optim.Adam(self.critic.parameters(), lr=config.get("critic_lr", 1e-3))
+            self.critic_opt = torch.optim.Adam(
+                self.critic.parameters(), lr=config.get("critic_lr", 1e-3)
+            )
         self.optimizer = torch.optim.Adam(self.policy.parameters(), lr=config.get("lr", 1e-3))
         self.entropy_coef = config.get("entropy_coef", 0.0)
 
@@ -99,13 +103,19 @@ class Reinforce(BaseAgent):
             policy_loss.mean().backward()
             self.optimizer.step()
             ep += 1
-            tracker.log(timestep=t_global, episode=ep, ret=ret,
-                        loss=float(policy_loss.mean().item()))
+            tracker.log(
+                timestep=t_global, episode=ep, ret=ret, loss=float(policy_loss.mean().item())
+            )
         self.episodes = ep
 
     def save(self, path):
-        torch.save({"policy": self.policy.state_dict(),
-                    "critic": self.critic.state_dict() if self.use_baseline else None}, path)
+        torch.save(
+            {
+                "policy": self.policy.state_dict(),
+                "critic": self.critic.state_dict() if self.use_baseline else None,
+            },
+            path,
+        )
 
     def load(self, path):
         data = torch.load(path, map_location=self.device)

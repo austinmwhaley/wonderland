@@ -1,5 +1,6 @@
 """Sensitivity tests: exactness vs brute force, monotonicity, calibration.
 CPU only, instant."""
+
 import itertools
 
 import numpy as np
@@ -7,6 +8,7 @@ import numpy as np
 
 def test_worst_case_exact_vs_brute_force():
     from white_queen.tribunal.ope.sensitivity import worst_case_mean
+
     rng = np.random.default_rng(0)
     for trial in range(20):
         n = int(rng.integers(2, 9))
@@ -23,8 +25,8 @@ def test_worst_case_exact_vs_brute_force():
 
 
 def test_frontier_properties():
-    from white_queen.tribunal.ope.sensitivity import (
-        breakdown_frontier, gamma_star)
+    from white_queen.tribunal.ope.sensitivity import breakdown_frontier, gamma_star
+
     rng = np.random.default_rng(1)
     v = rng.normal(80, 15, 300)
     w = rng.uniform(0.5, 2.0, 300)
@@ -42,4 +44,5 @@ def test_frontier_properties():
 
 def worst_case_mean(v, w, g):
     from white_queen.tribunal.ope.sensitivity import worst_case_mean as f
+
     return f(v, w, g)

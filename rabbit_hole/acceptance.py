@@ -9,6 +9,7 @@ Pipeline under test: ``generate_data.py`` builds the wide tables, then
 
     python -m rabbit_hole.acceptance
 """
+
 from __future__ import annotations
 
 import importlib.util
@@ -35,7 +36,7 @@ def _load_generator():
     path = Path(__file__).parent / "generators" / "generate_data.py"
     spec = importlib.util.spec_from_file_location("rh_generate_data", path)
     mod = importlib.util.module_from_spec(spec)
-    sys.modules["rh_generate_data"] = mod   # dataclass needs it registered
+    sys.modules["rh_generate_data"] = mod  # dataclass needs it registered
     spec.loader.exec_module(mod)
     return mod
 
@@ -51,10 +52,16 @@ def build_stream_db(seed=17, customers=300, products=150, events=8000):
     conn = duckdb.connect(str(db))
     try:
         gen.create_business_tables(conn)
-        gen.seed_business_data(conn, num_customers=customers,
-                               num_products=products, years=1,
-                               event_count=events, order_ratio=0.20,
-                               min_orders_per_customer=2, seed=seed)
+        gen.seed_business_data(
+            conn,
+            num_customers=customers,
+            num_products=products,
+            years=1,
+            event_count=events,
+            order_ratio=0.20,
+            min_orders_per_customer=2,
+            seed=seed,
+        )
         gen.materialize_customer_event_stream(conn)
     finally:
         conn.close()
@@ -82,10 +89,13 @@ def check(seed=17):
     checks.append(r("produced events", ">0", n, n > 0))
     checks.append(r("distinct customers", ">0", nc, nc > 0))
 
-    schema_ok = all(all(f in x for f in CANONICAL_FIELDS) and
-                    x["customer_key"] not in (None, "") and
-                    x["event_ts"] not in (None, "") and
-                    x["event_type"] not in (None, "") for x in rows)
+    schema_ok = all(
+        all(f in x for f in CANONICAL_FIELDS)
+        and x["customer_key"] not in (None, "")
+        and x["event_ts"] not in (None, "")
+        and x["event_type"] not in (None, "")
+        for x in rows
+    )
     checks.append(r("canonical schema", "all rows", schema_ok, schema_ok))
 
     per, ts_ok = {}, True
@@ -122,10 +132,12 @@ def check(seed=17):
                     with_view += 1
     cart_frac = with_cart / purchases if purchases else 0.0
     view_frac = with_view / purchases if purchases else 0.0
-    checks.append(r("orders preceded by add_to_cart", ">=0.2",
-                    round(cart_frac, 3), cart_frac >= 0.2))
-    checks.append(r("orders preceded by product_view", ">=0.2",
-                    round(view_frac, 3), view_frac >= 0.2))
+    checks.append(
+        r("orders preceded by add_to_cart", ">=0.2", round(cart_frac, 3), cart_frac >= 0.2)
+    )
+    checks.append(
+        r("orders preceded by product_view", ">=0.2", round(view_frac, 3), view_frac >= 0.2)
+    )
 
     # customer attribute diversity on signup events
     attrs = {a: set() for a in CUSTOMER_ATTRS}
@@ -136,8 +148,7 @@ def check(seed=17):
                 if p.get(a) is not None:
                     attrs[a].add(p[a])
     for a, vals in attrs.items():
-        checks.append(r(f"signup attr diversity: {a}", ">=2", len(vals),
-                        len(vals) >= 2))
+        checks.append(r(f"signup attr diversity: {a}", ">=2", len(vals), len(vals) >= 2))
 
     # payload richness
     payload_ok, products_seen = True, set()
@@ -152,8 +163,9 @@ def check(seed=17):
         elif p.get("product_id"):
             products_seen.add(p["product_id"])
     checks.append(r("payloads parse (JSON)", "all", payload_ok, payload_ok))
-    checks.append(r("distinct products referenced", ">=10", len(products_seen),
-                    len(products_seen) >= 10))
+    checks.append(
+        r("distinct products referenced", ">=10", len(products_seen), len(products_seen) >= 10)
+    )
 
     # determinism
     outdir = Path(db).parent
@@ -162,22 +174,27 @@ def check(seed=17):
         write_events(str(pth), rows)
         back = read_events(str(pth))
         fields_ok = all(all(f in r for f in CANONICAL_FIELDS) for r in back[:200])
-        same = len(back) == n and fields_ok and             [r["event_ts"] for r in back] == [r["event_ts"] for r in rows]
-        checks.append(r(f"{eng} round-trip (5-field)", "equal+5 fields",
-                        f"{len(back)} rows", same))
+        same = (
+            len(back) == n
+            and fields_ok
+            and [r["event_ts"] for r in back] == [r["event_ts"] for r in rows]
+        )
+        checks.append(r(f"{eng} round-trip (5-field)", "equal+5 fields", f"{len(back)} rows", same))
 
     import hashlib
+
     def digest(rs):
         h = hashlib.sha256()
-        for x in sorted((str(x["customer_key"]), str(x["event_ts"]),
-                         str(x["event_type"])) for x in rs):
+        for x in sorted(
+            (str(x["customer_key"]), str(x["event_ts"]), str(x["event_type"])) for x in rs
+        ):
             h.update(("|".join(x)).encode())
         return h.hexdigest()
+
     db2 = build_stream_db(seed=seed)
     rows2 = read_events(db2, table="customer_events")
-    same = (len(rows2) == n and digest(rows2) == digest(rows))
-    checks.append(r("deterministic (same seed)", "equal",
-                    f"{n} vs {len(rows2)}", same))
+    same = len(rows2) == n and digest(rows2) == digest(rows)
+    checks.append(r("deterministic (same seed)", "equal", f"{n} vs {len(rows2)}", same))
     return rows, checks
 
 
@@ -188,18 +205,40 @@ def check_no_duplication():
     for name in ("duckdb", "logs"):
         p = lg / "data" / name
         ok = p.is_symlink() and "rabbit_hole" in os.readlink(p)
-        out.append({"check": f"no-dup: looking_glass data/{name}",
-                    "target": "symlink", "achieved": p.is_symlink(), "ok": ok})
+        out.append(
+            {
+                "check": f"no-dup: looking_glass data/{name}",
+                "target": "symlink",
+                "achieved": p.is_symlink(),
+                "ok": ok,
+            }
+        )
     p = lg / "generate_data.py"
     ok = p.is_symlink() and "rabbit_hole" in os.readlink(p)
-    out.append({"check": "no-dup: looking_glass generate_data.py",
-                "target": "symlink", "achieved": p.is_symlink(), "ok": ok})
+    out.append(
+        {
+            "check": "no-dup: looking_glass generate_data.py",
+            "target": "symlink",
+            "achieved": p.is_symlink(),
+            "ok": ok,
+        }
+    )
     # retired generators and their datasets must be gone (one unified thing)
-    for gone in (lg / "generate_full.py", lg / "gen_toy.py",
-                 lg / "data" / "full", lg / "data" / "toy"):
+    for gone in (
+        lg / "generate_full.py",
+        lg / "gen_toy.py",
+        lg / "data" / "full",
+        lg / "data" / "toy",
+    ):
         ok = not gone.exists()
-        out.append({"check": f"retired: {gone.name} absent",
-                    "target": "absent", "achieved": gone.exists(), "ok": ok})
+        out.append(
+            {
+                "check": f"retired: {gone.name} absent",
+                "target": "absent",
+                "achieved": gone.exists(),
+                "ok": ok,
+            }
+        )
     return out
 
 
@@ -209,10 +248,12 @@ def run():
     print("== RABBIT_HOLE ACCEPTANCE SCORECARD ==")
     print(f"{'check':46s} {'target':>10s} {'achieved':>12s}  status")
     for c in checks:
-        print(f"{c['check']:46s} {str(c['target']):>10s} "
-              f"{str(c['achieved']):>12s}  {'PASS' if c['ok'] else 'FAIL'}")
+        print(
+            f"{c['check']:46s} {str(c['target']):>10s} "
+            f"{str(c['achieved']):>12s}  {'PASS' if c['ok'] else 'FAIL'}"
+        )
     n_pass = sum(1 for c in checks if c["ok"])
-    print(f"completion: {n_pass}/{len(checks)} ({100*n_pass/len(checks):.0f}%)")
+    print(f"completion: {n_pass}/{len(checks)} ({100 * n_pass / len(checks):.0f}%)")
     return checks
 
 

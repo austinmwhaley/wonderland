@@ -9,11 +9,12 @@ false negatives, precision/recall (with Wilson intervals) and rank quality.
 
 Wire a new environment in by producing a `Case`; the aggregation is generic.
 """
+
 from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 
 @dataclass
@@ -57,6 +58,7 @@ def _spearman(x, y):
     n = len(x)
     if n < 2:
         return None
+
     def ranks(v):
         order = sorted(range(n), key=lambda i: v[i])
         r = [0.0] * n
@@ -70,12 +72,12 @@ def _spearman(x, y):
                 r[order[t]] = avg
             i = j + 1
         return r
+
     rx, ry = ranks(x), ranks(y)
     mx = sum(rx) / n
     my = sum(ry) / n
     num = sum((a - mx) * (b - my) for a, b in zip(rx, ry))
-    den = math.sqrt(sum((a - mx) ** 2 for a in rx) *
-                    sum((b - my) ** 2 for b in ry))
+    den = math.sqrt(sum((a - mx) ** 2 for a in rx) * sum((b - my) ** 2 for b in ry))
     return num / den if den > 0 else None
 
 
@@ -93,13 +95,17 @@ def score_case(case: Case):
     values = [c.truth for c in case.cells]
     scores = [-(c.rank or 1e9) for c in case.cells]  # rank 1 == best
     rho = _spearman(scores, values) if len(case.cells) > 1 else None
-    return {"case": case.name, "tp": tp, "fp": fp, "fn": fn, "tn": tn,
-            "deployed": [c.candidate for c in case.cells if c.deploy],
-            "false_positive": [c.candidate for c in case.cells
-                               if c.deploy and not c.worthy],
-            "false_negative": [c.candidate for c in case.cells
-                               if (not c.deploy) and c.worthy],
-            "rank_rho": None if rho is None else round(rho, 3)}
+    return {
+        "case": case.name,
+        "tp": tp,
+        "fp": fp,
+        "fn": fn,
+        "tn": tn,
+        "deployed": [c.candidate for c in case.cells if c.deploy],
+        "false_positive": [c.candidate for c in case.cells if c.deploy and not c.worthy],
+        "false_negative": [c.candidate for c in case.cells if (not c.deploy) and c.worthy],
+        "rank_rho": None if rho is None else round(rho, 3),
+    }
 
 
 def summarize(cases: List[Case]):
@@ -112,10 +118,8 @@ def summarize(cases: List[Case]):
     rec = tp / (tp + fn) if (tp + fn) else None
     pi = wilson_interval(tp, tp + fp) if (tp + fp) else (float("nan"),) * 2
     ri = wilson_interval(tp, tp + fn) if (tp + fn) else (float("nan"),) * 2
-    iv = [c for case in cases for c in case.cells
-          if c.lo is not None and c.hi is not None]
-    cover = (sum(1 for c in iv if c.lo <= c.truth <= c.hi) / len(iv)
-             if iv else None)
+    iv = [c for case in cases for c in case.cells if c.lo is not None and c.hi is not None]
+    cover = sum(1 for c in iv if c.lo <= c.truth <= c.hi) / len(iv) if iv else None
     mean_width = (sum(c.hi - c.lo for c in iv) / len(iv)) if iv else None
     mean_width_rel = None
     if iv:
@@ -123,30 +127,38 @@ def summarize(cases: List[Case]):
         mean_width_rel = sum(rels) / len(rels)
     return {
         "per_case": per,
-        "overall": {"tp": tp, "fp": fp, "fn": fn, "tn": tn,
-                    "precision": None if prec is None else round(prec, 3),
-                    "precision_ci": [round(pi[0], 3), round(pi[1], 3)],
-                    "recall": None if rec is None else round(rec, 3),
-                    "recall_ci": [round(ri[0], 3), round(ri[1], 3)],
-                    "n_deploy_wrong": fp,
-                    "n_missed": fn,
-                    "coverage": None if cover is None else round(cover, 3),
-                    "n_intervals": len(iv),
-                    "mean_width": (None if mean_width is None
-                                   else round(mean_width, 3)),
-                    "mean_width_rel": (None if mean_width_rel is None
-                                       else round(mean_width_rel, 3))},
+        "overall": {
+            "tp": tp,
+            "fp": fp,
+            "fn": fn,
+            "tn": tn,
+            "precision": None if prec is None else round(prec, 3),
+            "precision_ci": [round(pi[0], 3), round(pi[1], 3)],
+            "recall": None if rec is None else round(rec, 3),
+            "recall_ci": [round(ri[0], 3), round(ri[1], 3)],
+            "n_deploy_wrong": fp,
+            "n_missed": fn,
+            "coverage": None if cover is None else round(cover, 3),
+            "n_intervals": len(iv),
+            "mean_width": (None if mean_width is None else round(mean_width, 3)),
+            "mean_width_rel": (None if mean_width_rel is None else round(mean_width_rel, 3)),
+        },
     }
 
 
-def case_from_pipeline(env_name, decisions, estimates, truths, anchor, bar,
-                       rank=None):
+def case_from_pipeline(env_name, decisions, estimates, truths, anchor, bar, rank=None):
     """Adapter: build a Case from a pipeline report + live truths."""
     rank = rank or list(estimates)
     cells = []
     for i, cand in enumerate(rank):
-        cells.append(Cell(candidate=cand,
-                          deploy=bool(decisions[cand]["deploy"]),
-                          truth=float(truths[cand]), anchor=float(anchor),
-                          bar=float(bar), rank=i + 1))
+        cells.append(
+            Cell(
+                candidate=cand,
+                deploy=bool(decisions[cand]["deploy"]),
+                truth=float(truths[cand]),
+                anchor=float(anchor),
+                bar=float(bar),
+                rank=i + 1,
+            )
+        )
     return Case(env_name, cells)

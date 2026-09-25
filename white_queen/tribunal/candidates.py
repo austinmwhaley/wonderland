@@ -5,14 +5,14 @@ DiscretePolicy net — the supervised-template analog: same inputs, same pins,
 only the loss differs. Candidate net sizes autotune from the diet; the
 CandidateProtocol lives in tribunal.ope.protocols (imported here for compat).
 """
+
 import os
 import sys
 
 import numpy as np
 import torch
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(
-    os.path.abspath(__file__)))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from algorithms.offline.common import OfflineBuffer  # noqa: E402
 from algorithms.offline.iql import IQL  # noqa: E402
@@ -46,6 +46,8 @@ class _RandomCandidate:
         o = np.asarray(obs)
         n = len(o) if o.ndim > 1 else 1
         return np.full((n, self.nA), 1.0 / self.nA, dtype=np.float32)
+
+
 # Pluggable candidate registry. The library evaluates ANY protocol-compliant
 # policy; these trainers are conveniences. register_candidate("mypolicy", fn)
 # where fn(name, env, diet, cfg, out_path) -> handle with act/action_probs.
@@ -64,8 +66,13 @@ def _fill_buffer(diet, device, seed=0):
     n, d = len(diet["obs"]), diet["obs"].shape[1]
     buf = OfflineBuffer(n, d, device, rng=np.random.default_rng(seed))
     for i in range(n):
-        buf.push(diet["obs"][i], int(diet["act"][i]), float(diet["rew"][i]),
-                 diet["obs2"][i], float(diet["done"][i]))
+        buf.push(
+            diet["obs"][i],
+            int(diet["act"][i]),
+            float(diet["rew"][i]),
+            diet["obs2"][i],
+            float(diet["done"][i]),
+        )
     return buf
 
 
@@ -85,25 +92,30 @@ class _BCWrapper:
     def __init__(self, env, config, diet=None):
         import numpy as _np  # noqa
         from white_queen.tribunal.ope.autotune import resolve_device
+
         self.device = resolve_device(config.get("device"))
         in_dim = int(_np.prod(env.observation_space.shape))
         self.nA = int(env.action_space.n)
         hidden = config.get("hidden")
         if hidden is None and diet is not None:
             from white_queen.tribunal.ope.autotune import resolve_fqe_cfg
+
             hidden = resolve_fqe_cfg(diet, config)["hidden"]
         hidden = int(hidden or 128)
         from white_queen.tribunal.ope.training import seed_all as _seed_all
+
         _seed_all(config.get("seed", 0))
         self.net = DiscretePolicy(in_dim, hidden, self.nA).to(self.device)
         lr = config.get("lr")
         if lr is None and diet is not None:
             from white_queen.tribunal.ope.autotune import resolve_fqe_cfg
+
             lr = resolve_fqe_cfg(diet, config)["lr"]
         self.opt = torch.optim.Adam(self.net.parameters(), lr=float(lr or 1e-3))
         self.batch = config.get("batch_size")
         if self.batch is None and diet is not None:
             from white_queen.tribunal.ope.autotune import resolve_fqe_cfg
+
             self.batch = resolve_fqe_cfg(diet, config)["batch"]
         self.batch = int(self.batch or 256)
 
@@ -114,6 +126,7 @@ class _BCWrapper:
         import torch.nn.functional as F
         from white_queen.tribunal.ope.autotune import resolve_fqe_cfg
         from white_queen.tribunal.ope.training import govern
+
         ac = resolve_fqe_cfg(diet, {})
         if steps is not None:
             ac = dict(ac, steps_max=int(steps))
@@ -123,10 +136,8 @@ class _BCWrapper:
         holdout = min(2000, max(200, N // 10))
         cut = max(N - holdout, 1)
         tr, va = perm[:cut], perm[cut:]
-        obs = torch.as_tensor(np.asarray(diet["obs"], dtype=np.float32),
-                              device=self.device)
-        act = torch.as_tensor(np.asarray(diet["act"], dtype=np.int64),
-                              device=self.device)
+        obs = torch.as_tensor(np.asarray(diet["obs"], dtype=np.float32), device=self.device)
+        act = torch.as_tensor(np.asarray(diet["act"], dtype=np.int64), device=self.device)
 
         def val_err():
             with torch.no_grad():
@@ -146,25 +157,36 @@ class _BCWrapper:
             return last
 
         _gov = govern({"net": self.net}, [self.opt], _step, val_err, ac)
-        self.val_info = {"val_nll": _gov["best_val"], "steps": _gov["steps"],
-                         "stopped": _gov["stopped"]}
+        self.val_info = {
+            "val_nll": _gov["best_val"],
+            "steps": _gov["steps"],
+            "stopped": _gov["stopped"],
+        }
         return self
 
     def act(self, state, eval=True):
         import numpy as _np
+
         with torch.no_grad():
-            p = self.net(torch.as_tensor(_np.asarray(state, dtype=_np.float32),
-                                         device=self.device).unsqueeze(0))
+            p = self.net(
+                torch.as_tensor(
+                    _np.asarray(state, dtype=_np.float32), device=self.device
+                ).unsqueeze(0)
+            )
         return int(p.argmax().item())
 
     def action_probs(self, obs, temperature=1.0):
         with torch.no_grad():
-            out = self.net(torch.as_tensor(np.asarray(obs, dtype=np.float32),
-                                           device=self.device)).log().clamp(max=0)
+            out = (
+                self.net(torch.as_tensor(np.asarray(obs, dtype=np.float32), device=self.device))
+                .log()
+                .clamp(max=0)
+            )
             tempered = (out / max(float(temperature), 1e-3)).softmax(dim=1)
             probs = tempered.cpu().numpy()
         # Sanitize: dead nets emit 0/NaN -> uniform (panel degrades to veto).
         import numpy as _np
+
         probs = _np.nan_to_num(probs, nan=0.0, posinf=0.0, neginf=0.0)
         probs = _np.maximum(probs, 0.0)
         s = probs.sum(1, keepdims=True)
@@ -178,12 +200,16 @@ def train_candidate(name, env, diet, cfg, out_path):
     if name in CANDIDATE_TRAINERS:
         return CANDIDATE_TRAINERS[name](name, env, diet, cfg, out_path)
     from white_queen.tribunal.ope.autotune import resolve_device, resolve_fqe_cfg
+
     ac = resolve_fqe_cfg(diet, cfg.get("candidate_cfg"))
     device = resolve_device(cfg.get("device", ac.get("device")))
-    config = {"seed": int(cfg.get("seed", 0)), "device": device,
-              "gamma": cfg["gamma"],
-              "hidden": int(cfg.get("hidden", ac["hidden"])),
-              "batch_size": int(cfg.get("batch_size", ac["batch"]))}
+    config = {
+        "seed": int(cfg.get("seed", 0)),
+        "device": device,
+        "gamma": cfg["gamma"],
+        "hidden": int(cfg.get("hidden", ac["hidden"])),
+        "batch_size": int(cfg.get("batch_size", ac["batch"])),
+    }
     steps = cfg.get("offline_steps")
     if steps is None:
         steps = ac["steps_max"]
@@ -191,6 +217,7 @@ def train_candidate(name, env, diet, cfg, out_path):
         return _RandomCandidate(int(diet["nA"]), seed=config["seed"])
     if name in ("iql_cont", "bc_cont"):
         from algorithms.offline.continuous_iql import ContinuousIQL
+
         low = high = None
         try:
             low = np.asarray(env.action_space.low, dtype=float).ravel()
@@ -200,9 +227,13 @@ def train_candidate(name, env, diet, cfg, out_path):
         if low is None:
             a_dim = int(diet["act"].shape[1])
             low, high = -np.ones(a_dim), np.ones(a_dim)
-        cfgc = dict(config, action_low=low, action_high=high,
-                    expectile=cfg.get("expectile", 0.7),
-                    beta=cfg.get("beta", 3.0))
+        cfgc = dict(
+            config,
+            action_low=low,
+            action_high=high,
+            expectile=cfg.get("expectile", 0.7),
+            beta=cfg.get("beta", 3.0),
+        )
         cand = ContinuousIQL(diet, cfgc).fit(int(steps))
         cand.save(out_path)
         return cand
@@ -228,14 +259,14 @@ def _handle(agent, name):
 
         def action_probs(self, obs, temperature=1.0):
             import torch.nn.functional as F
+
             net = self._a.policy if self._n == "iql" else self._a.online
             with torch.no_grad():
-                x = torch.as_tensor(np.asarray(obs, dtype=np.float32),
-                                    device=self._a.device)
+                x = torch.as_tensor(np.asarray(obs, dtype=np.float32), device=self._a.device)
                 logits = net(x)
-                probs = F.softmax(logits / max(float(temperature), 1e-3),
-                                  dim=1).cpu().numpy()
+                probs = F.softmax(logits / max(float(temperature), 1e-3), dim=1).cpu().numpy()
             import numpy as _np
+
             probs = _np.nan_to_num(probs, nan=0.0, posinf=0.0, neginf=0.0)
             probs = _np.maximum(probs, 0.0)
             s = probs.sum(1, keepdims=True)
@@ -252,22 +283,26 @@ def load_candidate(name, env, diet, cfg, ckpt_path):
     and loads weights with map_location. Raises FileNotFoundError if missing.
     """
     import os
+
     if name == "random":
         # Floor baseline: no training, no checkpoint to look for.
         return _RandomCandidate(int(diet["nA"]), seed=int(cfg.get("seed", 0)))
     if not os.path.exists(ckpt_path):
         raise FileNotFoundError(f"candidate checkpoint missing: {ckpt_path}")
     from white_queen.tribunal.ope.autotune import resolve_device, resolve_fqe_cfg
+
     ac = resolve_fqe_cfg(diet, cfg.get("candidate_cfg"))
     device = resolve_device(cfg.get("device", ac.get("device")))
-    config = {"seed": int(cfg.get("seed", 0)), "device": device,
-              "gamma": cfg["gamma"],
-              "hidden": int(cfg.get("hidden", ac["hidden"])),
-              "batch_size": int(cfg.get("batch_size", ac["batch"]))}
+    config = {
+        "seed": int(cfg.get("seed", 0)),
+        "device": device,
+        "gamma": cfg["gamma"],
+        "hidden": int(cfg.get("hidden", ac["hidden"])),
+        "batch_size": int(cfg.get("batch_size", ac["batch"])),
+    }
     if name == "bc":
         cand = _BCWrapper(env, config, diet)
-        cand.net.load_state_dict(torch.load(ckpt_path, map_location=device,
-                                            weights_only=True))
+        cand.net.load_state_dict(torch.load(ckpt_path, map_location=device, weights_only=True))
         cand.net.to(device).eval()
         return cand
     cls = {"iql": IQL, "cql": CQL}[name]

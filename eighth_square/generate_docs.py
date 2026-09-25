@@ -42,8 +42,10 @@ window.MathJax = {
 
 def to_html(title, markdown_text):
     body = markdown.markdown(markdown_text, extensions=["tables", "fenced_code"])
-    return (f"<html><head><meta charset=\"utf-8\"><title>{title}</title><style>\n{CSS}"
-            f"</style>\n{MATHJAX}</head><body>{body}</body></html>")
+    return (
+        f'<html><head><meta charset="utf-8"><title>{title}</title><style>\n{CSS}'
+        f"</style>\n{MATHJAX}</head><body>{body}</body></html>"
+    )
 
 
 def md_escape(text):
@@ -51,14 +53,20 @@ def md_escape(text):
 
 
 def generate_algorithms_md():
-    lines = ["# Algorithm Table", "",
-             "Every algorithm in the registry: what it is, where it comes from, and where it can run. "
-             "`implemented` means you can train it today; `stub` means it is planned but not yet written.",
-             ""]
+    lines = [
+        "# Algorithm Table",
+        "",
+        "Every algorithm in the registry: what it is, where it comes from, and where it can run. "
+        "`implemented` means you can train it today; `stub` means it is planned but not yet written.",
+        "",
+    ]
     for status in ("implemented", "stub"):
-        lines += [f"## {status.capitalize()}", "",
-                  "| name | family | policy | action space | state space | source | paper | description | notes | compatible environments |",
-                  "|---|---|---|---|---|---|---|---|---|---|"]
+        lines += [
+            f"## {status.capitalize()}",
+            "",
+            "| name | family | policy | action space | state space | source | paper | description | notes | compatible environments |",
+            "|---|---|---|---|---|---|---|---|---|---|",
+        ]
         for name, a in sorted(ALGORITHMS.items()):
             if a["status"] != status:
                 continue
@@ -67,7 +75,8 @@ def generate_algorithms_md():
             lines.append(
                 f"| {name} | {a['family']} | {a['policy']} | {a['action_space']} | {a['state_space']} "
                 f"| {md_escape(a['source'])} | {paper_cell} | {md_escape(a['description'])} | {md_escape(a['notes'])} "
-                f"| {', '.join(a['compatible_envs']) or '—'} |")
+                f"| {', '.join(a['compatible_envs']) or '—'} |"
+            )
         lines.append("")
     lines += ["## Use cases", ""]
     for name, a in sorted(ALGORITHMS.items()):
@@ -80,18 +89,26 @@ def generate_algorithms_md():
 
 
 def generate_environments_md():
-    lines = ["# Environment Table", "",
-             "| name | gym id | action space | state space | family | description | use cases |",
-             "|---|---|---|---|---|---|---|"]
+    lines = [
+        "# Environment Table",
+        "",
+        "| name | gym id | action space | state space | family | description | use cases |",
+        "|---|---|---|---|---|---|---|",
+    ]
     for name, e in sorted(ENVIRONMENTS.items()):
-        lines.append(f"| {name} | {e['gym_id'] or 'custom'} | {e['action_space']} | {e['state_space']} "
-                     f"| {e['family']} | {md_escape(e['description'])} | {', '.join(e['use_cases'])} |")
+        lines.append(
+            f"| {name} | {e['gym_id'] or 'custom'} | {e['action_space']} | {e['state_space']} "
+            f"| {e['family']} | {md_escape(e['description'])} | {', '.join(e['use_cases'])} |"
+        )
     lines.append("")
-    lines += ["## Compatibility rules", "",
-              "- An algorithm's `action_space` / `state_space` tags must match the environment's.",
-              "- `both` accepts either kind.",
-              "- The `compatible_envs` list in ALGORITHMS.html is the final word; "
-              "`run_experiment.py` refuses mismatches with a clear error."]
+    lines += [
+        "## Compatibility rules",
+        "",
+        "- An algorithm's `action_space` / `state_space` tags must match the environment's.",
+        "- `both` accepts either kind.",
+        "- The `compatible_envs` list in ALGORITHMS.html is the final word; "
+        "`run_experiment.py` refuses mismatches with a clear error.",
+    ]
     path = os.path.join(HERE, "ENVIRONMENTS.html")
     with open(path, "w") as f:
         f.write(to_html("Environment Table", "\n".join(lines)))

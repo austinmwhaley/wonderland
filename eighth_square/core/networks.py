@@ -17,8 +17,12 @@ class NoisyLinear(nn.Module):
         self.out_features = out_features
 
         mu_range = 1.0 / np.sqrt(in_features)
-        self.mu_w = nn.Parameter(torch.FloatTensor(out_features, in_features).uniform_(-mu_range, mu_range))
-        self.sigma_w = nn.Parameter(torch.full((out_features, in_features), sigma_init / np.sqrt(in_features)))
+        self.mu_w = nn.Parameter(
+            torch.FloatTensor(out_features, in_features).uniform_(-mu_range, mu_range)
+        )
+        self.sigma_w = nn.Parameter(
+            torch.full((out_features, in_features), sigma_init / np.sqrt(in_features))
+        )
         self.mu_b = nn.Parameter(torch.FloatTensor(out_features).uniform_(-mu_range, mu_range))
         self.sigma_b = nn.Parameter(torch.full((out_features,), sigma_init / np.sqrt(out_features)))
 
@@ -80,8 +84,14 @@ class NoisyDuelingMLP(nn.Module):
 
 
 class MLP(nn.Module):
-    def __init__(self, input_dim: int, output_dim: int, hidden_dims: tuple = (128, 128),
-                 activation=nn.ReLU, final_activation=None):
+    def __init__(
+        self,
+        input_dim: int,
+        output_dim: int,
+        hidden_dims: tuple = (128, 128),
+        activation=nn.ReLU,
+        final_activation=None,
+    ):
         super().__init__()
         layers = []
         dims = (input_dim,) + hidden_dims
@@ -127,8 +137,14 @@ class DuelingMLP(nn.Module):
 
 
 class GaussianPolicy(nn.Module):
-    def __init__(self, input_dim: int, action_dim: int, hidden_dims: tuple = (256, 256),
-                 log_std_min: float = -20, log_std_max: float = 2):
+    def __init__(
+        self,
+        input_dim: int,
+        action_dim: int,
+        hidden_dims: tuple = (256, 256),
+        log_std_min: float = -20,
+        log_std_max: float = 2,
+    ):
         super().__init__()
         dims = (input_dim,) + hidden_dims
         layers = []
@@ -161,8 +177,13 @@ class GaussianPolicy(nn.Module):
 
 
 class DeterministicPolicy(nn.Module):
-    def __init__(self, input_dim: int, action_dim: int, hidden_dims: tuple = (256, 256),
-                 action_scale: float = 1.0):
+    def __init__(
+        self,
+        input_dim: int,
+        action_dim: int,
+        hidden_dims: tuple = (256, 256),
+        action_scale: float = 1.0,
+    ):
         super().__init__()
         dims = (input_dim,) + hidden_dims
         layers = []

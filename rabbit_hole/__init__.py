@@ -12,6 +12,7 @@ and nothing downstream: tokenization, embeddings, and every model live in
 - stream.py  : read/write helpers for the customer event stream
 - generators : synthetic omnichannel simulacrum + toy data generators
 """
+
 from .schema import (
     CANONICAL_FIELDS,
     EVENT_STREAM_TABLE,
@@ -21,12 +22,20 @@ from .schema import (
     canonicalize_row,
     parse_attributes,
 )
-from .stream import (read_events, write_events, CustomerEventStream,
-                     to_duckdb, to_parquet, engine_of)
+from .stream import read_events, write_events, CustomerEventStream, to_duckdb, to_parquet, engine_of
 
 __all__ = [
-    "CANONICAL_FIELDS", "EVENT_STREAM_TABLE", "EventRecord", "SchemaError",
-    "validate_event", "canonicalize_row", "parse_attributes",
-    "read_events", "write_events", "CustomerEventStream",
-    "to_duckdb", "to_parquet", "engine_of",
+    "CANONICAL_FIELDS",
+    "EVENT_STREAM_TABLE",
+    "EventRecord",
+    "SchemaError",
+    "validate_event",
+    "canonicalize_row",
+    "parse_attributes",
+    "read_events",
+    "write_events",
+    "CustomerEventStream",
+    "to_duckdb",
+    "to_parquet",
+    "engine_of",
 ]
