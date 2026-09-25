@@ -12,20 +12,20 @@ white_queen (hardened, 99 tests); red_king population counterfactual (ordering 1
 calib 0.99; optional); red_queen multi-cadence + multi-action + certification-gated
 + uplift-targeted; incrementality ATE +11.62 CI[11.19,12.08] with per-customer
 uplift (monotone quintiles, top-20% gain +18.95). Engineering: CI + ruff gates +
-226-test suite (222 passed / 1 skipped / 3 xfailed) — see "Infrastructure overhaul".
+226-test suite (226 passed / 0 skipped / 0 xfailed — all bugs fixed; see
+"Infrastructure overhaul" and "Bug-fix + debt resolution phase").
 
 **Robustness:** the system stays conservative on realistic (confounded, sparse,
 non-stationary) data — deconfounds via IPW, HOLDs uncorroborated policies, no fake
 lift. Honest limit: observational-only data cannot give per-customer CAUSAL effects;
 identification comes from the persistent hold-out.
 
-**Open/next:** fix the 4 xfail'd bugs found by the new test suite (decision_log
-arm packing, caterpillar plan-schema mismatch, RSSM zero-prior rollout,
-empty-input error clarity); wire per-customer (switchback-identified) HTE values
-into red_queen with population fallback + shrinkage; management incrementality
-report per-segment; vectorize generator (50k+ stream); caterpillar NL Q&A;
-broader experimentation. (CI/test-runner item DONE; population scorecard PASSES —
-red_king stays optional until the with-vs-without white_queen A/B proves value.)
+**Open/next:** management incrementality report per-segment; wire per-customer
+(switchback-identified) HTE values into red_queen with population fallback +
+shrinkage; vectorize generator (50k+ stream); caterpillar NL Q&A; broader
+experimentation. (CI/test-runner DONE; population scorecard PASSES; the 4
+test-flagged bugs FIXED — see below. red_king stays optional until the
+with-vs-without white_queen A/B proves value.)
 
 ---
 
@@ -77,9 +77,7 @@ observability, prefer deletion, best tool, cost-aware, **speed-first (16)**.
 - Generator still per-event Python (offline); MoE/multi-entity (M3/M5) rejected.
 
 ## Next tasks (priority order)
-1. Fix the 4 test-flagged bugs (xfail list under "Infrastructure overhaul"):
-   decision_log arm packing, caterpillar plan schema, RSSM zero-prior rollout,
-   build_transitions empty-input error.
+1. ~~Fix the 4 test-flagged bugs~~ DONE (see "Bugs surfaced by the new tests").
 2. Wire per-customer HTE values into red_queen: personalize the
    switchback-identified, population fallback elsewhere (+ hierarchical
    shrinkage); expand the switchback experiment.
@@ -88,7 +86,7 @@ observability, prefer deletion, best tool, cost-aware, **speed-first (16)**.
    correctly with vs without? (still unproven)
 4. Management incrementality report: per-segment CIs + receipts.
 5. Vectorize generator; generate 50k+ stream; ladder; re-run battery.
-6. caterpillar: schema fix (bug #2 above), then NL Q&A.
+6. caterpillar: NL Q&A.
 
 ## Known-effect validation (how to reproduce)
 Incremental orders = orders in same click session within 3h after click. Group by
@@ -731,15 +729,34 @@ Repo-wide quality pass (all gates green afterwards):
 => fresh clone can provision (requirements), test (pytest), and lint (ruff);
    CI enforces all three.
 
-### Bugs surfaced by the new tests (xfail'd, NOT yet fixed)
-1. `decision_log.build` (and weekly): arm slots pack window timestamps instead
+### Bugs surfaced by the new tests (ALL FIXED — xfail markers removed)
+1. `decision_log.build` (and weekly): arm slots packed window timestamps instead
    of arms -> `action[:,1:]` always 0 (confirmed on real 769k/1.1M-row artifacts).
-2. caterpillar/engine plan-schema mismatch: explain() reads plan["expected_gp"]
+   FIX: unpack the arm (`[b for (a, b) in sm ...]`) at `decision_log.py:91` +
+   `decision_log_weekly.py:58`; test asserts exact per-arm counts.
+2. caterpillar/engine plan-schema mismatch: explain() read plan["expected_gp"]
    but engine.run writes "expected_incremental_gp" -> KeyError on current artifact.
-3. `rssm.rollout_arm_values` imagines from a ZERO prior (ignores posterior state)
-   -> V identical across customer states; weakens engine.run(use_red_king=True).
-4. `world_model.build_transitions([])` raises bare IndexError from np.quantile
-   instead of a clear rejection error.
+   FIX: explain() accepts either key (clear ValueError naming both if neither).
+3. `rssm.rollout_arm_values` imagined from a ZERO prior (posterior branch
+   discarded) -> V identical across customer states; weakened
+   engine.run(use_red_king=True). FIX: one action-neutral posterior burn-in
+   step seeds (h, z) from the state before imagination -> V state-dependent.
+4. `world_model.build_transitions([])` raised bare IndexError from np.quantile.
+   FIX: early `EmptyInputError(ValueError)` guards ("no anchor rows loaded" /
+   "no transitions between consecutive anchors").
+
+## Bug-fix + debt resolution phase (DONE)
+- All 4 test-flagged bugs fixed (above); 3 xfail markers removed -> the suite
+  runs with zero xfail.
+- `looking_glass/pyproject.toml` packaging repaired post-flatten:
+  `package-dir {"" = ".."} + packages ["looking_glass"]` -> `pip install -e
+  looking_glass/` builds again (verified: `pip --dry-run -e` -> "Would install
+  looking_glass-0.1.0").
+- README: eighth_square standalone-install note (`pip install -e eighth_square/`).
+- SQLite migration stays deliberate debt (AGENTS: "migrate when touched"):
+  `white_queen/db.py` + the looking_glass loaders are local, regenerable
+  run-caches; converting them would invalidate local colony dbs — do it the
+  next time that code is edited.
 
 ## Docs currency audit + script bootstrap fixes (DONE)
 Full-doc audit after the infra pass; fixed:

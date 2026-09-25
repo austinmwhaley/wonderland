@@ -266,12 +266,6 @@ def test_rssm_rollout_ensemble_uncertainty_and_determinism(tmp_path):
     assert not np.allclose(Vh1, V1)
 
 
-@pytest.mark.xfail(
-    reason="rollout_arm_values imagines from a zero prior and discards the "
-    "posterior branch, so V comes out identical for every input state",
-    raises=AssertionError,
-    strict=False,
-)
 def test_rssm_rollout_values_depend_on_state(tmp_path):
     ckpt = _write_checkpoint(tmp_path / "ens2.pt", members=2)
     states = np.stack([np.zeros(5, np.float32), np.ones(5, np.float32) * 10.0])
@@ -393,5 +387,5 @@ def test_world_model_empty_transition_set_is_rejected(monkeypatch):
     orders = pl.DataFrame({"customer_key": ["A"], "t": [50.0], "gm": [1.0]})
     monkeypatch.setattr(world_model, "_load_anchors", lambda: anchors)
     monkeypatch.setattr(world_model, "_load_facts", lambda: (sends, orders))
-    with pytest.raises(IndexError):
+    with pytest.raises(ValueError):
         world_model.build_transitions(nA=2)

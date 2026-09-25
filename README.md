@@ -122,6 +122,8 @@ pre-commit install         # format + lint on commit
 ```
 Dependency source of truth: `pyproject.toml` (`requirements*.txt` mirror it for
 pip users). Indentation is **spaces** everywhere; `ruff format` is authoritative.
+`eighth_square` is standalone: `pip install -e eighth_square/` before importing
+it as a package from outside its directory.
 
 ## Status at a glance
 | Layer | Role | Status |

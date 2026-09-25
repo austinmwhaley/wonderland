@@ -10,7 +10,7 @@ Contracts covered:
   * scheduler: target clipped by per-epoch cap, within-epoch spread, softmax arm
     mix, max_rows bound.
   * decision_log: cadence boundaries, action-set log built from synthetic frames,
-    plus an xfail pinning the arm-slot counting bug.
+    plus per-arm slot counting of sends by arm.
   * controller_certified: bucket discretisation, certification-gated HOLD
     (no deploy / no witness), and budget-capped DEPLOY.
 
@@ -536,13 +536,6 @@ def test_decision_log_build_action_set_contract(decision_log_env):
         assert z["action"][i, 1:].sum() <= z["action"][i, 0]
 
 
-@pytest.mark.xfail(
-    reason="decision_log.build packs window timestamps into `win` "
-    "(`[a for (a, b) in sm ...]` takes the time, not the arm), so the per-arm "
-    "slots action[:,1:] are never incremented and stay 0",
-    raises=AssertionError,
-    strict=False,
-)
 def test_decision_log_arm_slots_count_sends_by_arm(decision_log_env):
     decision_log.build()
     z = np.load(decision_log_env)

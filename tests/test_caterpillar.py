@@ -2,8 +2,8 @@
 
 Contracts covered: the render formatter (error + full record), nearest-neighbour
 ranking in frozen-donor space (cosine similarity, self excluded, k bounded,
-plan-membership filter), provenance fields, the CLI entry point, and an xfail
-pinning the plan-schema mismatch between engine.run and explain().
+plan-membership filter), provenance fields, the CLI entry point, and both plan
+schema shapes (nba's `expected_gp`, engine's `expected_incremental_gp`).
 """
 
 from __future__ import annotations
@@ -140,12 +140,6 @@ def test_explain_provenance_and_main(explain_env, capsys):
     assert "Provenance" in out
 
 
-@pytest.mark.xfail(
-    reason="caterpillar.explain reads plan['expected_gp'] but engine.run "
-    "writes 'expected_incremental_gp' into the same nba_plan.json",
-    raises=KeyError,
-    strict=False,
-)
 def test_explain_rejects_engine_shaped_plan(explain_env):
     engine_plan = {
         "customer_key": list(explain_env.keys),

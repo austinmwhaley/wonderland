@@ -245,7 +245,13 @@ def train(seed=0, K=3, zdim=32, hdim=256, steps=4000):
 
 
 def rollout_arm_values(states, horizon=6, gamma=GAMMA_DAY, path=OUT, batch=512):
-    """Imagine discounted incremental GP under each arm; return (mean, std) per arm."""
+    """Imagine discounted incremental GP under each arm; return (mean, std) per arm.
+
+    Before imagining, a posterior burn-in step seeds the latent (h, z) from each
+    input state, so V is state-dependent. The burn-in uses a fixed action-neutral
+    convention (arm 0, the imagination dt) applied uniformly to every arm, so
+    arm comparisons stay fair; it accrues no reward.
+    """
     import torch
 
     blob = torch.load(path, map_location="cpu", weights_only=False)
@@ -270,6 +276,9 @@ def rollout_arm_values(states, horizon=6, gamma=GAMMA_DAY, path=OUT, batch=512):
                 h = torch.zeros(Bt, hdim)
                 z = torch.zeros(Bt, zdim)
                 s = torch.tensor(sb)
+                dt = torch.ones(Bt, 1) * 30.0
+                for m in ens:
+                    h, _, (z, _) = m.step(h, z, torch.zeros(Bt, dtype=torch.long), dt, s)
                 disc = 1.0
                 ret = [torch.zeros(Bt) for _ in ens]
                 for t in range(horizon):
@@ -278,7 +287,7 @@ def rollout_arm_values(states, horizon=6, gamma=GAMMA_DAY, path=OUT, batch=512):
                             h,
                             z,
                             torch.full((Bt,), a, dtype=torch.long),
-                            torch.ones(Bt, 1) * 30.0,
+                            dt,
                             s,
                         )
                         _, r_hat, _ = m.obs(hh, pmu)

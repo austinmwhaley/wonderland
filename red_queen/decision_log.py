@@ -88,7 +88,7 @@ def build():
                 t1 = float(grp[m + 1]["anchor_epoch"])
                 if t1 <= t0:
                     continue
-                win = [a for (a, b) in sm if t0 < a <= t1]
+                win = [b for (a, b) in sm if t0 < a <= t1]
                 act = np.zeros(ACTION_DIM, np.float32)
                 act[0] = len(win)
                 for b in win:

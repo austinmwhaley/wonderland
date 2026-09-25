@@ -23,6 +23,15 @@ CFM_PRODUCTS = WORK / "looking_glass" / "artifacts" / "cfm" / "cfm_products.duck
 STREAM_DB = WORK / "rabbit_hole" / "data" / "duckdb" / "customer_event_stream.duckdb"
 
 
+class EmptyInputError(ValueError):
+    """``build_transitions`` rejection: no anchor rows / no transitions.
+
+    A ValueError by fail-safe doctrine: reject empty input early with a clear
+    message, never crash inside a later reduction (np.quantile on an empty
+    array) with a bare IndexError.
+    """
+
+
 def _load_anchors():
     import duckdb
 
@@ -64,8 +73,11 @@ def build_transitions(nA=4):
     for r in orders.iter_rows(named=True):
         orders_by.setdefault(r["customer_key"], []).append((float(r["t"]), float(r["gm"])))
     rows = list(anch.iter_rows(named=True))
+    if not rows:
+        raise EmptyInputError("build_transitions: no anchor rows loaded")
+    if not len(rows[0]["embedding"]):
+        raise EmptyInputError("build_transitions: anchor embeddings have empty dimension")
     S, A, R, S2, D, C = [], [], [], [], [], []
-    len(rows[0]["embedding"])
     i = 0
     n = len(rows)
     while i < n:
@@ -92,6 +104,8 @@ def build_transitions(nA=4):
             D.append(0.0)
             C.append(k)
         i = j
+    if not A:
+        raise EmptyInputError("build_transitions: no transitions between consecutive anchors")
     # bucket actions by quantiles (derived)
     av = np.array(A)
     edges = np.unique(np.quantile(av, np.linspace(0, 1, nA + 1)[1:-1]))

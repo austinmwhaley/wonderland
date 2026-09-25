@@ -22,6 +22,10 @@ kernels = ["mamba-ssm>=2.0.0", "bitsandbytes>=0.43.0"]
 dev = ["pytest>=8.0.0"]
 
 [tool.setuptools]
+# The package lives one level UP (repo root) since the package-flatten:
+# <repo>/looking_glass/ IS the package. This makes `pip install -e looking_glass/`
+# (from the repo root) work again.
+package-dir = {"" = ".."}
 packages = ["looking_glass"]
 
 [tool.pytest.ini_options]

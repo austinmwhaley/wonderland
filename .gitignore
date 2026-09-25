@@ -39,6 +39,7 @@ neg*.json
 .venv/
 venv/
 env/
+*.egg-info/
 __pycache__/
 *.pyc
 *.pyo

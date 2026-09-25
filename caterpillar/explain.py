@@ -41,6 +41,12 @@ def _load():
 def explain(customer: str, k: int = 5):
     version, keys, E = _load()
     plan = json.loads(NBA_PLAN.read_text())
+    gp_key = next((k for k in ("expected_gp", "expected_incremental_gp") if k in plan), None)
+    if gp_key is None:
+        raise ValueError(
+            "plan has no expected-value column; accepted keys: "
+            "'expected_gp' (nba.run) or 'expected_incremental_gp' (engine.run)"
+        )
     idx = {c: i for i, c in enumerate(plan["customer_key"])}
     if customer not in idx:
         return {"error": "customer not in plan", "customer": customer}
@@ -56,13 +62,13 @@ def explain(customer: str, k: int = 5):
         "donor_version": version,
         "recommended_arm": int(plan["arm"][i]),
         "weekly_sends": float(plan["weekly_sends"][i]),
-        "expected_weekly_incremental_gp": float(plan["expected_gp"][i]),
+        "expected_weekly_incremental_gp": float(plan[gp_key][i]),
         "similar_customers": [
             {
                 "customer": keys[int(j)],
                 "similarity": round(float(sims[int(j)]), 3),
                 "recommended_arm": int(plan["arm"][plan["customer_key"].index(keys[int(j)])]),
-                "expected_gp": float(plan["expected_gp"][plan["customer_key"].index(keys[int(j)])]),
+                "expected_gp": float(plan[gp_key][plan["customer_key"].index(keys[int(j)])]),
             }
             for j in nn
             if keys[int(j)] in idx
