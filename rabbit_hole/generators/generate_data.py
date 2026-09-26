@@ -8,19 +8,10 @@ It's not a reusable library component—it's specific to this smoke test scenari
 from __future__ import annotations
 
 import argparse
-import bisect
-from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
-import math
-import random
-import duckdb
 from pathlib import Path
 import shutil
-import sys
-import time
 
-import torch
-from datetime import timezone as _tz
+import duckdb
 from rabbit_hole.generators.business_tables import (
     _bulk_insert,
     _exec_script,
@@ -33,16 +24,7 @@ from rabbit_hole.generators.event_stream import (
     load_customer_event_stream,
     materialize_customer_event_stream,
 )
-from rabbit_hole.generators.generate_support import (
-    CustomerEventRow,
-    ProgressReporter,
-    _REFERENCE_NOW,
-    _browse_distribution,
-    _sample_event_ts,
-    _sample_weighted_index,
-    _seasonal_wave,
-    _weighted_choice,
-)
+from rabbit_hole.generators.generate_support import ProgressReporter
 from rabbit_hole.generators.seed_data import seed_business_data
 
 
@@ -112,7 +94,7 @@ def main() -> None:
             web_count = conn.execute("SELECT COUNT(*) FROM website_browse").fetchone()[0]
             promotion_count = conn.execute("SELECT COUNT(*) FROM promotions").fetchone()[0]
             inventory_count = conn.execute("SELECT COUNT(*) FROM inventory_daily").fetchone()[0]
-            first_rows = load_customer_event_stream(conn)[:5]
+            first_rows = load_customer_event_stream(conn, limit=5)
         finally:
             conn.close()
         # Primary data layer: Arrow IPC (zero-copy, memory-mappable).

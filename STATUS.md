@@ -12,20 +12,22 @@ white_queen (hardened, 99 tests); red_king population counterfactual (ordering 1
 calib 0.99; optional); red_queen multi-cadence + multi-action + certification-gated
 + uplift-targeted; incrementality ATE +11.62 CI[11.19,12.08] with per-customer
 uplift (monotone quintiles, top-20% gain +18.95). Engineering: CI + ruff gates +
-226-test suite (226 passed / 0 skipped / 0 xfailed — all bugs fixed; see
-"Infrastructure overhaul" and "Bug-fix + debt resolution phase").
+uv.lock + 239-test suite (fast tier `pytest -m "not slow"` = ~53s; full ~14min).
+**OBSERVATIONAL-FIRST (hard requirement):** production logs have NO holdout and
+NO A/B — the system must run on them. OPE + estimated propensities + sensitivity
+work; lift claims (incrementality/uplift/IPW without propensity) REJECT with
+NotIdentifiableError — never NaN, never fabricated (see "Observational-first").
 
 **Robustness:** the system stays conservative on realistic (confounded, sparse,
 non-stationary) data — deconfounds via IPW, HOLDs uncorroborated policies, no fake
 lift. Honest limit: observational-only data cannot give per-customer CAUSAL effects;
 identification comes from the persistent hold-out.
 
-**Open/next:** management incrementality report per-segment; wire per-customer
-(switchback-identified) HTE values into red_queen with population fallback +
-shrinkage; vectorize generator (50k+ stream); caterpillar NL Q&A; broader
-experimentation. (CI/test-runner DONE; population scorecard PASSES; the 4
-test-flagged bugs FIXED — see below. red_king stays optional until the
-with-vs-without white_queen A/B proves value.)
+**Open/next:** push + first real CI run; coverage floor on tribunal/ope;
+caterpillar NL Q&A. OPTIONAL (lab-data only, never required for production):
+per-segment management report, red_king with-vs-without A/B (ship-or-delete),
+broader experimentation. DONE recently: generator vectorized (50k = 14m54s),
+observational-first guarantees, smoke family deleted, zero SQLite.
 
 ---
 
@@ -801,3 +803,53 @@ CODE: 9 `looking_glass/scripts/*.py` had an off-by-one sys.path bootstrap
 (`parent.parent` = looking_glass/ instead of the repo root — broken by the
 package flatten) -> now `parents[2]`; `python looking_glass/scripts/example.py`
 runs directly again.
+
+## Scale + maturity + observational-first (DONE)
+Hard requirement from product: **production logs never had a holdout or A/B —
+nothing we do may REQUIRE one.**
+
+### Observational-first guarantees (the science restriction, enforced in code)
+New `red_queen/identifiability.py`: `NotIdentifiableError` + guards
+(`require_stream_view`, `require_propensity`, `require_holdout`).
+- REJECT clearly (no raw CatalogException, no NaN garbage): incrementality,
+  response/uplift model, fit_uplift, nba IPW arm effects, engine IPW arm
+  effects (+ red_king calibration path), evaluate_plan IPS — all raise
+  `NotIdentifiableError` naming the missing control/propensity + what still
+  works. Tiny-holdout bootstrap NaNs also reject (CI finite check).
+- FAIL-SAFE WITH RECEIPT: nba_engine WHO step catches only
+  NotIdentifiableError -> empty targeting + printed receipt (bare
+  `except Exception` removed; real bugs now propagate). response_model
+  best_arm fallback prints a receipt.
+- WORKS observationally (proven by existing tests): white_queen OPE with
+  `estimate_propensity=True` (provenance="estimated", test_data.py:102) +
+  sensitivity analysis; prediction heads; certification-gated controllers.
+- 13 new tests in `tests/test_red_queen_observational.py` (reject paths,
+  receipt, positive-path with a usable control). Suite = 239.
+
+### Scale: generator vectorized (receipts)
+Profiled (torch seasonal wave 25%, random.choices/gauss 26%, per-row isoformat
+8%); vectorized with numpy/polars bulk ops + per-phase SeedSequences.
+- 5k: 4m06s -> 1m11s (3.5x). 50k: **14m54s, 82,938,856 events** (peak RSS
+  26.8GB). Python generation is now ~4% of wall; remainder = DuckDB index
+  maintenance (~450s) + 23.6GB Arrow tail write (~170s) — follow-up: lighten
+  DDL/post-load index strategy (out of the vectorization pass).
+- Distributions verified: acceptance 25/25, same-seed determinism digest,
+  50k spot-check 37/37, known-effect conv rates within 3.7% of baseline.
+- Canonical rabbit_hole/data untouched.
+
+### Maturity
+- `uv.lock` at root (131 packages) — reproducible provisioning; CI + docs
+  use it (requirements*.txt remain as pip mirror).
+- Test tiers: `slow` marker on 14 integration/acceptance tests; inner loop =
+  `pytest -m "not slow"` (225 tests, 53s); full = 239 (~14min).
+- pytest-cov added; coverage floor for white_queen/tribunal wired in CI.
+- mypy: NOT adopted (ruff + 239 tests + receipts cover current needs; revisit
+  only if type-level bugs actually surface).
+
+### Smoke family deleted
+`looking_glass/scripts/{smoke_test,smoke_pipeline,smoke_config,train_toy,
+compare_toy,probe_churn,sweep_core_lr,sweep_head_lr,compare_fresh_weights}`
++ cascaded `smoke_support` + now-dead `load_records_from_duckdb` removed:
+their dataset had no generator since generate_full was retired (they could
+not run). Pipeline coverage = looking_glass/tests + example.py. Docs updated
+(looking_glass README walkthrough replaced with that pointer).

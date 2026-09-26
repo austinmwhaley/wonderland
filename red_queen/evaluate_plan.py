@@ -25,8 +25,12 @@ PLAN = Path(__file__).resolve().parents[0] / "artifacts" / "nba_plan.json"
 def _load():
     import duckdb
 
+    from red_queen.identifiability import require_propensity, require_stream_view
+
     con = duckdb.connect(str(STREAM), read_only=True)
     try:
+        require_stream_view(con, "email_arm", "logged arm + propensity for IPS evaluation")
+        require_propensity(con, "email_arm")
         arm = con.execute("SELECT customer_id AS customer_key, arm, propensity FROM email_arm").pl()
         inc = con.execute("""
 			SELECT s.customer_id AS customer_key, SUM(o.gross_margin) g

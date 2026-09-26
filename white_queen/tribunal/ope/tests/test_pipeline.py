@@ -10,6 +10,10 @@ Run: pytest .../tests/test_pipeline.py -q  (slower: trains 3 candidates)
 
 from white_queen.tribunal.ope.synthetic import make_sequential
 
+import pytest
+
+pytestmark = pytest.mark.slow  # integration: full pipeline train+decide (~300s)
+
 
 _TINY_FQE = {
     "steps_max": 8000,

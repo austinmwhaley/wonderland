@@ -110,7 +110,7 @@ The output is two things: a vector for every individual event (its meaning in se
 
 With a per-customer behavioral representation in hand, any supervised task becomes straightforward. You supply records annotated with outcome labels — churned yes/no, LTV amount, propensity score — plus whatever scalar fields and vector fields you want the head to consume. A task-specific head is trained on top.
 
-The train/validation split is deterministic from `seed`, and categorical vocabularies plus normalization statistics are fit on the training rows only. Leakage control for time-dependent targets is handled by how you construct outcome rows upstream; the reference smoke pipeline does this with fixed history and future windows before calling `create_supervised_model`. For classification, the decision threshold is optimized on the training split to maximize F1, then evaluated on held-out rows.
+The train/validation split is deterministic from `seed`, and categorical vocabularies plus normalization statistics are fit on the training rows only. Leakage control for time-dependent targets is handled by how you construct outcome rows upstream — build fixed history and future windows before calling `create_supervised_model`. For classification, the decision threshold is optimized on the training split to maximize F1, then evaluated on held-out rows.
 
 ```python
 churn_model = create_supervised_model(
@@ -365,11 +365,9 @@ looking_glass/
 ```
 
 The `scripts/` directory holds runnable examples against looking_glass: the
-full-pipeline smoke test (``smoke_test.py`` — entry façade over
-``smoke_pipeline.py`` / ``smoke_support.py`` / ``smoke_config.py``), the example
-demo (``example.py``), and toy training, probe, and sweep helpers
-(``train_toy.py``, ``probe_churn.py``, ``sweep_*.py``, ``compare_*.py``). These
-are not part of the installable package.
+end-to-end demo (``example.py``) and ``generate_data.py`` (a symlink into
+rabbit_hole, the canonical data generator). These are not part of the
+installable package.
 
 ---
 
@@ -400,116 +398,8 @@ Device selection is automatic: CUDA → MPS → CPU.
 
 ---
 
-## Example: End-to-End Run
+## Example: End-to-end Run
 
-The `scripts/` directory contains a runnable reference application of looking_glass against a synthetic retail dataset: 120,000 customers, 1,200 products, and 2,000,000 events spanning 3 years. The following is a stage-by-stage walkthrough of an actual run.
-
-### Stage 1: Product Embedding
-
-**Input:** 1,200 product records — id, category, brand, base price, unit cost.
-
-**What happens:** The model compresses 1,200 products into 128-dimensional vectors via self-supervised reconstruction. Products in the same category and price bracket end up near each other in the vector space — not because you told it to cluster them, but because the reconstruction objective forces it to preserve that information.
-
-**Output:** 1,200 vectors × 128 dimensions, one per product.
-**Time:** 2.5 seconds on CUDA.
-**Quality:** `mean_abs_cosine=0.714` — well-distributed, not collapsed.
-
----
-
-### Stage 2: Customer Embedding
-
-**Input:** 120,000 customer profile records — demographic fields, loyalty tier, income band, lifecycle stage, acquisition channel.
-
-**What happens:** The same embedding architecture applied to the customer entity. The model learns a 128-dimensional representation for each customer from their profile attributes alone, before any behavioral data is considered. This becomes the "who is this person" signal that gets attached to every event they touch.
-
-**Output:** 120,000 vectors × 128 dimensions, one per customer.
-**Time:** 11.3 seconds on CUDA.
-**Quality:** `mean_abs_cosine=0.207` — well-separated across 120K entities.
-
----
-
-### Stage 3: Event Enrichment
-
-**Input:** 300,000 raw event records from the unified event stream, with a cutoff timestamp to prevent label leakage.
-
-**What happens:** Every event is augmented with two vectors: the customer's 128-dim profile vector and the product's 128-dim vector (on product-related events). This is a pure lookup — no model runs here.
-
-**Output:** 300,000 enriched records carrying original fields plus pre-embedded entity context.
-**Coverage:** 100% customer vector coverage, 100% product vector coverage.
-
----
-
-### Stage 4: Temporal Core Training
-
-**Input:** 300,000 enriched events grouped into 32,849 distinct customer timelines. Longest sequence: 57 events. Mean: 9.1 events per customer.
-
-**What happens:** The model reads each customer's event history as a time-ordered sequence with explicit inter-event time deltas. TemporalStack encodes the time dimension across three parallel tracks (Time2Vec, TAPE, NeuralODE latent drift). SequenceEngine refines the representation through recurrent shared-weight passes. The loss is next-event prediction with causal masking.
-
-**Output:** 300,000 per-event context vectors + 32,849 per-customer summary vectors.
-**Time:** 91.7 seconds on CUDA. Training loss: 2.478. Quality gate: passed.
-
----
-
-### Stage 5: Outcome Construction
-
-**Input:** The 32,849 customer timelines and their temporal summary vectors.
-
-**What happens:** A cutoff date splits behavioral history (before) from the outcome window (after). A customer is labeled churned if they had no qualifying activity after the cutoff within the label window. Target mode is `auto` — the pipeline detected that order-based churn labels were degenerate (98.4% churned; the outcome window post-dated most orders in a 3-year dataset) and automatically switched to event-mode targets.
-
-**Output:** 32,159 eligible customers. Churn rate: 48.2% — a balanced, learnable split.
-
----
-
-### Stage 6: Churn Head
-
-**Input:** 32,159 customers — with the temporal summary vector, the customer profile vector, and baseline aggregate features (event count, recency, etc.) as a lightweight tabular complement.
-
-The reference run prints a three-way ablation — vectors-only, aggregates-only, combined — alongside the xgboost baseline on aggregates.  This lets you see exactly what the learned representation contributes *on top of* and *instead of* hand-crafted features:
-
-| Variant | Features | Purpose |
-|---|---|---|
-| vectors-only | `core_last_vector`, `customer_vector` | Test the core thesis — can the backbone replace feature engineering? |
-| aggregates-only | RFM-style count/value/recency columns | Same information as the xgboost baseline; measures head quality when vectors are unavailable |
-| combined | vectors + aggregates | The pragmatic production setting — the model gets everything and the xgboost serves as a lower bound |
-
-| Metric | Value |
-|---|---:|
-| Accuracy | 79.1% |
-| Precision | 73.1% |
-| Recall | 90.2% |
-| F1 | 80.8% |
-| Threshold | 0.42 |
-
-The model gets the learned backbone vectors plus a handful of generic aggregates (event count, recency days, etc.).  The ablation table breaks out how much the vectors contribute independently of those aggregates.
-
----
-
-### Stage 7: LTV Head
-
-**Input:** Same 32,159 customers, same vectors, continuous LTV labels.
-
-| Metric | Value |
-|---|---:|
-| R² | 0.534 |
-| RMSE | $764.60 |
-
----
-
-### Overall Quality Determination
-
-```python
-{
-    "ok": True,
-    "product_embeddings": True,
-    "customer_embeddings": True,
-    "temporal_event_embeddings": True,
-    "temporal_core": True,
-    "churn_head": True,
-    "ltv_head": True,
-}
-```
-
-Total wall time from raw events to trained predictors: approximately 2.5 minutes on a single GPU.
-
-See `scripts/smoke_test.py` (entry façade; pipeline implementation in
-`scripts/smoke_pipeline.py`) for the full pipeline source.
+The end-to-end pipeline (entity embeddings → temporal core → supervised churn
+and LTV heads) is covered by `looking_glass/tests` and the runnable demo
+`scripts/example.py`.

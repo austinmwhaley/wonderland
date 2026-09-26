@@ -12,7 +12,11 @@ Run: pytest .../tests/test_bandit_e2e.py -q
 
 import numpy as np
 
+import pytest
+
 from white_queen.tribunal.ope.synthetic import GreedyPolicy, make_bandit
+
+pytestmark = pytest.mark.slow  # integration: bandit E2E suites
 
 
 class _RandomPolicy:

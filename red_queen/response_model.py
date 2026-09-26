@@ -21,6 +21,8 @@ from pathlib import Path
 
 import numpy as np
 
+from red_queen.identifiability import require_holdout, require_stream_view
+
 WORK = Path(__file__).resolve().parents[1]
 STREAM = WORK / "rabbit_hole" / "data" / "duckdb" / "customer_event_stream.duckdb"
 CFM = WORK / "looking_glass" / "artifacts" / "cfm" / "cfm_products.duckdb"
@@ -45,9 +47,11 @@ def build():
 			         floor((epoch(CAST(order_ts AS TIMESTAMPTZ)) - {min_t}) / {pdays})::int)) p,
 			       SUM(gross_margin) gm
 			FROM orders GROUP BY 1,2""").pl()
+        require_stream_view(con, "email_holdout", "randomized control for uplift identification")
         hold = con.execute("SELECT customer_id k, period p, holdout FROM email_holdout").pl()
     finally:
         con.close()
+    require_holdout(hold)
     cp = duckdb.connect(str(CFM), read_only=True)
     try:
         emb = cp.execute("""
@@ -184,7 +188,8 @@ def fit_uplift(seed=0):
         from red_queen.engine import _validated_arm_effects
 
         best_arm = int(np.argmax(_validated_arm_effects()))
-    except Exception:
+    except Exception as e:
+        print(f"red_queen/best_arm receipt: defaulting to arm 0: {e}", flush=True)
         pass
     return keys, up, best_arm
 

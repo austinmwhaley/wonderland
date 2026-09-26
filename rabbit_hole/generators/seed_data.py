@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 from datetime import timedelta
-import random
 
 import duckdb
 
 from rabbit_hole.generators.business_tables import _exec_script
-from rabbit_hole.generators.generate_support import ProgressReporter, _REFERENCE_NOW
+from rabbit_hole.generators.generate_support import ProgressReporter, _REFERENCE_NOW, phase_rng
 from rabbit_hole.generators.seed_contacts import _seed_contacts
 from rabbit_hole.generators.seed_dimensions import _seed_dimensions
 from rabbit_hole.generators.seed_events import _seed_events
@@ -35,7 +34,8 @@ def seed_business_data(
     - Preserve temporal consistency per customer.
     """
 
-    rng = random.Random(seed)
+    # One deterministic np.random.Generator per phase (dimensions/events/contacts)
+    # so phases are reproducible yet mutually independent.
     order_ratio = min(max(float(order_ratio), 0.01), 0.50)
     min_orders_per_customer = max(int(min_orders_per_customer), 1)
     activity_sampling_power = max(float(activity_sampling_power), 0.10)
@@ -78,7 +78,7 @@ def seed_business_data(
         categories,
     ) = _seed_dimensions(
         conn,
-        rng,
+        phase_rng(seed, 0),
         now,
         start_ts,
         total_days,
@@ -89,7 +89,7 @@ def seed_business_data(
     )
     order_counter = _seed_events(
         conn,
-        rng,
+        phase_rng(seed, 1),
         start_ts,
         total_days,
         reporter,
@@ -110,7 +110,7 @@ def seed_business_data(
     )
     _seed_contacts(
         conn,
-        rng,
+        phase_rng(seed, 2),
         start_ts,
         total_days,
         num_customers,

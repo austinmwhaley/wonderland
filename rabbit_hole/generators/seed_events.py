@@ -1,25 +1,51 @@
-"""Browse and order activity generation for the synthetic commerce world."""
+"""Browse and order activity generation for the synthetic commerce world (vectorized)."""
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
-import random
+from datetime import datetime
 
 import duckdb
+import numpy as np
+import polars as pl
 
 from rabbit_hole.generators.business_tables import _bulk_insert, _flush_order_items
 from rabbit_hole.generators.generate_support import (
     ProgressReporter,
-    _browse_distribution,
-    _sample_event_ts,
-    _sample_weighted_index,
-    _weighted_choice,
+    browse_probs,
+    customer_arrays,
+    iso_expr,
+    product_arrays,
+    sample_categorical,
+    sample_event_ts,
+    sample_from_cum,
 )
+
+_DEVICE_TYPES = ["mobile", "desktop", "tablet"]
+_DEVICE_WEIGHTS = [0.58, 0.36, 0.06]
+_TRAFFIC_SOURCES = ["direct", "organic", "paid_search", "email", "social", "affiliate"]
+_TRAFFIC_WEIGHTS = [0.17, 0.31, 0.18, 0.12, 0.15, 0.07]
+_PAGE_TYPES = ["home", "category", "campaign", "help"]  # page_view destinations
+_EVENT_NAMES = ["page_view", "search", "product_view", "add_to_cart"]
+_PAGE_TYPE_CODES = {
+    0: "home",
+    1: "category",
+    2: "campaign",
+    3: "help",
+    4: "search",
+    5: "product",
+    6: "cart",
+}
+_ORDER_STATUS = ["completed", "cancelled", "refunded"]
+_ORDER_STATUS_WEIGHTS = [0.935, 0.038, 0.027]
+_PAYMENTS = ["credit_card", "debit_card", "paypal", "wallet", "gift_card"]
+_PAYMENT_WEIGHTS = [0.49, 0.23, 0.16, 0.09, 0.03]
+
+_BROWSE_CHUNK = 4_000_000
 
 
 def _seed_events(
     conn: duckdb.DuckDBPyConnection,
-    rng: random.Random,
+    rng: np.random.Generator,
     start_ts: datetime,
     total_days: int,
     reporter: ProgressReporter | None,
@@ -39,412 +65,360 @@ def _seed_events(
     categories: list,
 ):
     """Generate website browse events and orders; return the running order counter."""
-    customer_sampling_weights = [
-        max(customer_activity[customer_id], 0.05) ** activity_sampling_power
-        for customer_id in customer_ids
-    ]
-    cumulative_customer_weights: list[float] = []
-    running_weight = 0.0
-    for weight in customer_sampling_weights:
-        running_weight += weight
-        cumulative_customer_weights.append(running_weight)
+    activity, pref_idx, ship_country, ship_state = customer_arrays(
+        customer_ids, customer_activity, customer_pref_category, customer_country_state, categories
+    )
+    flat_products, prod_offsets, prod_prices, prod_costs = product_arrays(
+        products_by_category, categories, product_price, product_cost
+    )
+    prod_sizes = np.diff(prod_offsets)
+    customer_col = np.array(customer_ids, dtype=object)
+    promo_ids = np.array([r[0] for r in promotion_rows], dtype=object)
+    n_promo = len(promo_ids)
 
     # Enforce enough order activity to support downstream outcome labels.
     target_orders = max(int(event_count * order_ratio), num_customers * min_orders_per_customer, 1)
     target_browse = max(event_count - target_orders, num_customers)
 
-    browse_event_rows: list[
-        tuple[str, str, str, str, str, str, str | None, str | None, str, str, int, int | None]
-    ] = []
-    order_rows: list[
-        tuple[
-            str,
-            str,
-            str,
-            str,
-            str,
-            str,
-            str,
-            str,
-            str | None,
-            float,
-            float,
-            float,
-            float,
-            float,
-            float,
-            float,
-            float,
-            int,
-            str | None,
-            float,
-            str | None,
-        ]
-    ] = []
-    order_item_rows: list[tuple[str, str, int, float, float, float, float]] = []
+    sampling_weights = np.maximum(activity, 0.05) ** activity_sampling_power
+    cum_weights = np.cumsum(sampling_weights)
 
-    event_counter = 0
-    session_counter = 0
-    order_counter = 0
-    last_session_for_customer: dict[str, str] = {}
-    last_ts_for_customer: dict[str, datetime] = {}
-    first_ts_for_customer: dict[str, datetime] = {}
+    n_cats = len(categories)
+    apparel = categories.index("apparel") if "apparel" in categories else -1
+    electronics = categories.index("electronics") if "electronics" in categories else -1
 
-    traffic_sources = ["direct", "organic", "paid_search", "email", "social", "affiliate"]
-    traffic_weights = [0.17, 0.31, 0.18, 0.12, 0.15, 0.07]
-    devices = ["mobile", "desktop", "tablet"]
-    device_weights = [0.58, 0.36, 0.06]
+    # ---------------------------------------------------------------- browse
+    b_total = target_browse
+    if reporter is not None:
+        reporter.start("generate browse events", b_total)
+    cust = sample_from_cum(rng, cum_weights, b_total)
+    base_ts = sample_event_ts(rng, start_ts, total_days, b_total)
 
+    # Per-customer generation-order segments: first event of a customer is a new
+    # session, later events open a new session with an activity-dependent chance.
+    sidx = np.argsort(cust, kind="stable")
+    sorted_cust = cust[sidx]
+    change = np.empty(b_total, dtype=bool)
+    change[0] = True
+    change[1:] = sorted_cust[1:] != sorted_cust[:-1]
+    seg_end_change = np.empty(b_total, dtype=bool)
+    seg_end_change[:-1] = sorted_cust[1:] != sorted_cust[:-1]
+    seg_end_change[-1] = True
+    seg_cust = sorted_cust[change]
+
+    is_first = np.zeros(b_total, dtype=bool)
+    is_first[sidx[change]] = True
+    p_new = np.clip(0.22 + (1.0 - activity[cust]) * 0.08, 0.08, 0.34)
+    new_session = is_first | (rng.random(b_total) < p_new)
+    # Globally unique session labels: sessions belong to exactly one customer
+    # (segmented cumsum), never shared across interleaved customers.
+    csum_sorted = np.cumsum(new_session[sidx], dtype=np.int64)
+    sess_num = np.empty(b_total, dtype=np.int64)
+    sess_num[sidx] = csum_sorted - 1
+    total_sessions = int(csum_sorted[-1])
+
+    # Per-customer first timestamp and last session (generation order).
+    first_ts = np.full(num_customers, np.datetime64("NaT", "ms"))
+    first_ts[seg_cust] = base_ts[sidx[change]]
+    last_sess = np.full(num_customers, -1, dtype=np.int64)
+    last_sess[seg_cust] = sess_num[sidx[seg_end_change]]
+
+    # Event type from the activity-driven browse distribution.
+    event_code = sample_categorical(rng, browse_probs(activity[cust]))
+    page_draw = rng.integers(0, len(_PAGE_TYPES), b_total)
+    page_code = np.where(
+        event_code == 0, page_draw, np.where(event_code == 1, 4, np.where(event_code == 2, 5, 6))
+    )
+    want_pref = np.where(
+        event_code == 2,
+        rng.random(b_total) < 0.62,
+        np.where(event_code == 3, rng.random(b_total) < 0.74, False),
+    )
+    cat_sel = np.where(want_pref, pref_idx[cust], rng.integers(0, n_cats, b_total))
+    prod_pos = prod_offsets[cat_sel] + np.minimum(
+        (rng.random(b_total) * prod_sizes[cat_sel]).astype(np.int64), prod_sizes[cat_sel] - 1
+    )
+    product_col = flat_products[prod_pos]
+    has_product = (event_code == 2) | (event_code == 3)
+    quantity = rng.integers(1, 4, b_total)  # add_to_cart basket size
+    has_promo = rng.random(b_total) < 0.09
+    promo_sel = rng.integers(0, max(n_promo, 1), b_total)
+    device = np.array(_DEVICE_TYPES, dtype=object)[
+        sample_categorical(rng, _DEVICE_WEIGHTS, b_total)
+    ]
+    traffic = np.array(_TRAFFIC_SOURCES, dtype=object)[
+        sample_categorical(rng, _TRAFFIC_WEIGHTS, b_total)
+    ]
+    dwell = np.maximum(rng.gamma(2.3, 18.0, b_total).astype(np.int64), 2)
+
+    browse_insert = """
+        INSERT INTO website_browse (
+            browse_event_id,
+            session_id,
+            customer_id,
+            event_ts,
+            event_name,
+            page_type,
+            product_id,
+            promotion_id,
+            device_type,
+            traffic_source,
+            dwell_seconds,
+            quantity
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """
     browse_written = 0
-    if reporter is not None:
-        reporter.start("generate browse events", target_browse)
-    for _ in range(target_browse):
-        customer_id = customer_ids[_sample_weighted_index(rng, cumulative_customer_weights)]
-        activity = customer_activity[customer_id]
-
-        new_session_prob = max(0.08, min(0.34, 0.22 + (1.0 - activity) * 0.08))
-        if customer_id not in last_session_for_customer or rng.random() < new_session_prob:
-            session_id = f"SESS_{session_counter:010d}"
-            session_counter += 1
-            last_session_for_customer[customer_id] = session_id
-        else:
-            session_id = last_session_for_customer[customer_id]
-
-        event_ts = _sample_event_ts(rng=rng, start_ts=start_ts, total_days=total_days)
-        prev_ts = last_ts_for_customer.get(customer_id)
-        if prev_ts is not None and event_ts < prev_ts:
-            event_ts = prev_ts + timedelta(minutes=rng.randint(1, 90))
-        last_ts_for_customer[customer_id] = event_ts
-        first_ts_for_customer.setdefault(customer_id, event_ts)
-
-        browse_probs = _browse_distribution(activity)
-        event_name = _weighted_choice(
-            rng,
-            ["page_view", "search", "product_view", "add_to_cart"],
-            browse_probs,
-        )
-
-        if event_name == "page_view":
-            page_type = rng.choice(["home", "category", "campaign", "help"])
-            product_id = None
-            quantity = None
-        elif event_name == "search":
-            page_type = "search"
-            product_id = None
-            quantity = None
-        elif event_name == "product_view":
-            page_type = "product"
-            preferred = customer_pref_category[customer_id]
-            category = (
-                preferred if rng.random() < 0.62 else categories[rng.randrange(0, len(categories))]
+    for i0 in range(0, b_total, _BROWSE_CHUNK):
+        i1 = min(i0 + _BROWSE_CHUNK, b_total)
+        df = (
+            pl.DataFrame(
+                {
+                    "browse_idx": np.arange(i0, i1, dtype=np.int64),
+                    "sess_num": sess_num[i0:i1],
+                    "customer_id": customer_col[cust[i0:i1]],
+                    "event_ts": base_ts[i0:i1],
+                    "event_code": event_code[i0:i1],
+                    "page_code": page_code[i0:i1],
+                    "product_id": product_col[i0:i1],
+                    "has_product": has_product[i0:i1],
+                    "promotion_id": promo_ids[promo_sel[i0:i1]],
+                    "has_promo": has_promo[i0:i1],
+                    "device": device[i0:i1],
+                    "traffic": traffic[i0:i1],
+                    "dwell": dwell[i0:i1],
+                    "quantity": quantity[i0:i1],
+                }
             )
-            product_id = products_by_category[category][
-                rng.randrange(0, len(products_by_category[category]))
-            ]
-            quantity = None
-        else:
-            page_type = "cart"
-            preferred = customer_pref_category[customer_id]
-            category = (
-                preferred if rng.random() < 0.74 else categories[rng.randrange(0, len(categories))]
+            .with_columns(
+                (pl.lit("BROWSE_") + pl.col("browse_idx").cast(pl.String).str.zfill(12)).alias(
+                    "browse_event_id"
+                ),
+                (pl.lit("SESS_") + pl.col("sess_num").cast(pl.String).str.zfill(10)).alias(
+                    "session_id"
+                ),
+                iso_expr("event_ts"),
+                pl.col("event_code")
+                .replace_strict({i: n for i, n in enumerate(_EVENT_NAMES)}, default=None)
+                .alias("event_name"),
+                pl.col("page_code")
+                .replace_strict(_PAGE_TYPE_CODES, default=None)
+                .alias("page_type"),
+                pl.when(pl.col("has_product"))
+                .then(pl.col("product_id"))
+                .otherwise(None)
+                .alias("product_id"),
+                pl.when(pl.col("has_promo"))
+                .then(pl.col("promotion_id"))
+                .otherwise(None)
+                .alias("promotion_id"),
+                pl.when(pl.col("event_code") == 3)
+                .then(pl.col("quantity"))
+                .otherwise(None)
+                .alias("quantity"),
             )
-            product_id = products_by_category[category][
-                rng.randrange(0, len(products_by_category[category]))
-            ]
-            quantity = rng.randint(1, 3)
-
-        promotion_id = None
-        if rng.random() < 0.09:
-            promotion_id = promotion_rows[rng.randrange(0, len(promotion_rows))][0]
-
-        browse_event_rows.append(
-            (
-                f"BROWSE_{event_counter:012d}",
-                session_id,
-                customer_id,
-                event_ts.isoformat(),
-                event_name,
-                page_type,
-                product_id,
-                promotion_id,
-                _weighted_choice(rng, devices, device_weights),
-                _weighted_choice(rng, traffic_sources, traffic_weights),
-                max(int(rng.gammavariate(alpha=2.3, beta=18.0)), 2),
-                quantity,
+            .select(
+                "browse_event_id",
+                "session_id",
+                "customer_id",
+                "event_ts",
+                "event_name",
+                "page_type",
+                "product_id",
+                "promotion_id",
+                "device",
+                "traffic",
+                "dwell",
+                "quantity",
             )
         )
-        event_counter += 1
-
-        if len(browse_event_rows) >= 20_000:
-            _bulk_insert(
-                conn,
-                """
-                INSERT INTO website_browse (
-                    browse_event_id,
-                    session_id,
-                    customer_id,
-                    event_ts,
-                    event_name,
-                    page_type,
-                    product_id,
-                    promotion_id,
-                    device_type,
-                    traffic_source,
-                    dwell_seconds,
-                    quantity
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                browse_event_rows,
-            )
-            browse_written += len(browse_event_rows)
-            if reporter is not None:
-                reporter.advance(len(browse_event_rows))
-            browse_event_rows.clear()
-    if browse_event_rows:
-        _bulk_insert(
-            conn,
-            """
-            INSERT INTO website_browse (
-                browse_event_id,
-                session_id,
-                customer_id,
-                event_ts,
-                event_name,
-                page_type,
-                product_id,
-                promotion_id,
-                device_type,
-                traffic_source,
-                dwell_seconds,
-                quantity
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            browse_event_rows,
+        df = df.rename(
+            {"device": "device_type", "traffic": "traffic_source", "dwell": "dwell_seconds"}
         )
-        browse_written += len(browse_event_rows)
+        _bulk_insert(conn, browse_insert, df)
+        browse_written += i1 - i0
         if reporter is not None:
-            reporter.advance(len(browse_event_rows))
+            reporter.advance(i1 - i0)
     if reporter is not None:
-        reporter.finish(f"rows={browse_written:,} sessions={session_counter:,}")
+        reporter.finish(f"rows={browse_written:,} sessions={total_sessions:,}")
 
-    order_written = 0
+    # --------------------------------------------------------------- orders
+    o_total = target_orders
     if reporter is not None:
-        reporter.start("generate orders", target_orders)
-    for _ in range(target_orders):
-        customer_id = customer_ids[_sample_weighted_index(rng, cumulative_customer_weights)]
-        session_id = last_session_for_customer.get(customer_id)
-        if session_id is None:
-            session_id = f"SESS_{session_counter:010d}"
-            session_counter += 1
-            last_session_for_customer[customer_id] = session_id
+        reporter.start("generate orders", o_total)
+    ocust = sample_from_cum(rng, cum_weights, o_total)
 
-        # Orders are sampled across the customer's active history (not appended
-        # after their last browse event), so value is realized throughout time.
-        order_ts = _sample_event_ts(rng=rng, start_ts=start_ts, total_days=total_days)
-        first = first_ts_for_customer.get(customer_id)
-        if first is not None and order_ts < first:
-            order_ts = first + timedelta(minutes=rng.randint(1, 1440))
-        order_ts = order_ts + timedelta(minutes=rng.randint(5, 420))
-
-        line_count = 1 if rng.random() < 0.65 else 2 if rng.random() < 0.9 else 3
-        subtotal = 0.0
-        line_cogs = 0.0
-        basket_categories: list[str] = []
-        line_items: list[tuple[str, int, float, float]] = []  # (product_id, units, price, cost)
-        for _line in range(line_count):
-            pref_category = customer_pref_category[customer_id]
-            category = (
-                pref_category
-                if rng.random() < 0.58
-                else categories[rng.randrange(0, len(categories))]
-            )
-            basket_categories.append(category)
-            product_id = products_by_category[category][
-                rng.randrange(0, len(products_by_category[category]))
-            ]
-            units = 1 if rng.random() < 0.74 else rng.randint(2, 4)
-            unit_price = product_price[product_id]
-            unit_cost = product_cost[product_id]
-            subtotal += unit_price * units
-            line_cogs += unit_cost * units
-            line_items.append((product_id, units, unit_price, unit_cost))
-
-        promo_id = None
-        discount = 0.0
-        if rng.random() < 0.19:
-            promo = promotion_rows[rng.randrange(0, len(promotion_rows))]
-            promo_id = promo[0]
-            promo_discount_pct = float(promo[5])
-            promo_min_value = float(promo[6])
-            if subtotal >= promo_min_value:
-                discount = round(subtotal * promo_discount_pct, 2)
-
-        tax = round(max(subtotal - discount, 0.0) * rng.uniform(0.06, 0.095), 2)
-        shipping_fee = 0.0 if subtotal >= 75.0 else round(rng.uniform(3.49, 8.99), 2)
-        gross_total = round(max(subtotal - discount, 0.0) + tax + shipping_fee, 2)
-
-        order_status = _weighted_choice(
-            rng,
-            ["completed", "cancelled", "refunded"],
-            [0.935, 0.038, 0.027],
+    # Orders reuse the customer's last browse session; customers without browse
+    # history get a fresh session.
+    last = last_sess[ocust]
+    need_session = last < 0
+    if need_session.any():
+        miss_cust = np.unique(ocust[need_session])
+        new_ids = total_sessions + np.arange(len(miss_cust), dtype=np.int64)
+        last = np.where(
+            need_session, new_ids[np.searchsorted(miss_cust, ocust[need_session])], last
         )
+        total_sessions += len(miss_cust)
 
-        return_flag = 0
-        return_ts = None
-        return_amount = 0.0
-        cancelled_ts = None
+    base_order_ts = sample_event_ts(rng, start_ts, total_days, o_total)
+    first = first_ts[ocust]
+    need_floor = (~np.isnat(first)) & (base_order_ts < first)
+    floored = first + rng.integers(1, 1441, o_total).astype("timedelta64[m]")
+    order_ts = np.where(need_floor, floored, base_order_ts)
+    order_ts = order_ts + rng.integers(5, 421, o_total).astype("timedelta64[m]")
 
-        if order_status == "cancelled":
-            cancelled_ts = (order_ts + timedelta(minutes=rng.randint(2, 90))).isoformat()
-        elif order_status in {"completed", "refunded"}:
-            category_return_bias = 0.08
-            if "apparel" in basket_categories:
-                category_return_bias += 0.10
-            if "electronics" in basket_categories:
-                category_return_bias += 0.03
-            if rng.random() < min(0.35, category_return_bias):
-                return_flag = 1
-                return_ts_dt = order_ts + timedelta(days=rng.randint(2, 65))
-                return_ts = return_ts_dt.isoformat()
-                if rng.random() < 0.64:
-                    return_amount = round(gross_total, 2)
-                    order_status = "refunded"
-                else:
-                    return_amount = round(gross_total * rng.uniform(0.15, 0.55), 2)
+    u1 = rng.random(o_total)
+    u2 = rng.random(o_total)
+    n_lines = 1 + (u1 >= 0.65) + ((u1 >= 0.65) & (u2 >= 0.9))
+    line_order = np.repeat(np.arange(o_total, dtype=np.int64), n_lines)
+    n_line_total = int(n_lines.sum())
+    line_cust = ocust[line_order]
+    line_pref = np.where(
+        rng.random(n_line_total) < 0.58,
+        pref_idx[line_cust],
+        rng.integers(0, n_cats, n_line_total),
+    )
+    line_pos = prod_offsets[line_pref] + np.minimum(
+        (rng.random(n_line_total) * prod_sizes[line_pref]).astype(np.int64),
+        prod_sizes[line_pref] - 1,
+    )
+    line_pid = flat_products[line_pos]
+    line_price = prod_prices[line_pos]
+    line_cost = prod_costs[line_pos]
+    line_units = np.where(rng.random(n_line_total) < 0.74, 1, rng.integers(2, 5, n_line_total))
+    line_rev = line_price * line_units
+    line_cogs_raw = line_cost * line_units
 
-        payment_method = _weighted_choice(
-            rng,
-            ["credit_card", "debit_card", "paypal", "wallet", "gift_card"],
-            [0.49, 0.23, 0.16, 0.09, 0.03],
-        )
-        ship_country, ship_state = customer_country_state[customer_id]
+    starts = np.zeros(o_total, dtype=np.int64)
+    np.cumsum(n_lines[:-1], out=starts[1:])
+    subtotal = np.add.reduceat(line_rev, starts)
+    line_cogs = np.add.reduceat(line_cogs_raw, starts)
+    has_apparel = np.maximum.reduceat((line_pref == apparel).astype(np.int8), starts).astype(bool)
+    has_electronics = np.maximum.reduceat(
+        (line_pref == electronics).astype(np.int8), starts
+    ).astype(bool)
 
-        # Revenue = net merchandise (subtotal - discount), realized net of
-        # returns; COGS reversed proportionally with the return. Cancelled
-        # orders contribute nothing.
-        gross_rev = max(subtotal - discount, 0.0)
-        eff_return = min(return_amount, gross_rev) if return_amount > 0 else 0.0
-        if order_status == "cancelled":
-            revenue, cogs = 0.0, 0.0
-        else:
-            revenue = round(gross_rev - eff_return, 2)
-            cogs = (
-                round(line_cogs * (1 - eff_return / gross_rev), 2)
-                if gross_rev > 0
-                else round(line_cogs, 2)
-            )
-        gross_margin = round(revenue - cogs, 2)
-        txn_id = f"TXN_{order_counter:012d}"
+    has_promo_o = rng.random(o_total) < 0.19
+    promo_sel_o = rng.integers(0, max(n_promo, 1), o_total)
+    promo_pct = np.array([float(r[5]) for r in promotion_rows])
+    promo_min = np.array([float(r[6]) for r in promotion_rows])
+    pct = promo_pct[promo_sel_o]
+    min_cart = promo_min[promo_sel_o]
+    discount = np.where(has_promo_o & (subtotal >= min_cart), np.round(subtotal * pct, 2), 0.0)
+    tax = np.round(np.maximum(subtotal - discount, 0.0) * rng.uniform(0.06, 0.095, o_total), 2)
+    shipping_fee = np.where(subtotal >= 75.0, 0.0, np.round(rng.uniform(3.49, 8.99, o_total), 2))
+    order_total = np.round(np.maximum(subtotal - discount, 0.0) + tax + shipping_fee, 2)
 
-        order_rows.append(
-            (
-                txn_id,
-                customer_id,
-                session_id,
-                order_ts.isoformat(),
-                order_status,
-                payment_method,
-                ship_country,
-                ship_state,
-                promo_id,
-                round(subtotal, 2),
-                tax,
-                shipping_fee,
-                round(discount, 2),
-                gross_total,
-                revenue,
-                cogs,
-                gross_margin,
-                return_flag,
-                return_ts,
-                return_amount,
-                cancelled_ts,
-            )
-        )
-        for product_id, units, unit_price, unit_cost in line_items:
-            order_item_rows.append(
-                (
-                    txn_id,
-                    product_id,
-                    units,
-                    round(unit_price, 2),
-                    round(unit_cost, 2),
-                    round(unit_price * units, 2),
-                    round(unit_cost * units, 2),
-                )
-            )
-        order_counter += 1
+    order_status = np.array(_ORDER_STATUS, dtype=object)[
+        sample_categorical(rng, _ORDER_STATUS_WEIGHTS, o_total)
+    ]
+    is_cancelled = order_status == "cancelled"
+    cancelled_ts = np.where(
+        is_cancelled,
+        order_ts + rng.integers(2, 91, o_total).astype("timedelta64[m]"),
+        np.datetime64("NaT", "ms"),
+    ).astype("datetime64[ms]")
 
-        if len(order_rows) >= 15_000:
-            _bulk_insert(
-                conn,
-                """
-                INSERT INTO orders (
-                    transaction_id,
-                    customer_id,
-                    session_id,
-                    order_ts,
-                    order_status,
-                    payment_method,
-                    shipping_country,
-                    shipping_state,
-                    promotion_id,
-                    subtotal,
-                    tax,
-                    shipping_fee,
-                    discount_amount,
-                    order_total,
-                    revenue,
-                    cogs,
-                    gross_margin,
-                    return_flag,
-                    return_ts,
-                    return_amount,
-                    cancelled_ts
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                order_rows,
-            )
-            _flush_order_items(conn, order_item_rows)
-            order_written += len(order_rows)
-            if reporter is not None:
-                reporter.advance(len(order_rows))
-            order_rows.clear()
-            order_item_rows.clear()
+    in_return_window = (order_status == "completed") | (order_status == "refunded")
+    bias = 0.08 + 0.10 * has_apparel + 0.03 * has_electronics
+    return_flag = in_return_window & (rng.random(o_total) < np.minimum(0.35, bias))
+    return_ts = np.where(
+        return_flag,
+        order_ts + rng.integers(2, 66, o_total).astype("timedelta64[D]"),
+        np.datetime64("NaT", "ms"),
+    ).astype("datetime64[ms]")
+    full_refund = rng.random(o_total) < 0.64
+    return_amount = np.where(
+        return_flag & full_refund,
+        order_total,
+        np.where(return_flag, np.round(order_total * rng.uniform(0.15, 0.55, o_total), 2), 0.0),
+    )
+    order_status = np.where(return_flag & full_refund, "refunded", order_status)
 
-    if order_rows:
-        _bulk_insert(
-            conn,
-            """
-            INSERT INTO orders (
-                transaction_id,
-                customer_id,
-                session_id,
-                order_ts,
-                order_status,
-                payment_method,
-                shipping_country,
-                shipping_state,
-                promotion_id,
-                subtotal,
-                tax,
-                shipping_fee,
-                discount_amount,
-                order_total,
-                revenue,
-                cogs,
-                gross_margin,
-                return_flag,
-                return_ts,
-                return_amount,
-                cancelled_ts
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            order_rows,
-        )
-        _flush_order_items(conn, order_item_rows)
-        order_written += len(order_rows)
-        if reporter is not None:
-            reporter.advance(len(order_rows))
+    payment = np.array(_PAYMENTS, dtype=object)[sample_categorical(rng, _PAYMENT_WEIGHTS, o_total)]
+    gross_rev = np.maximum(subtotal - discount, 0.0)
+    eff_return = np.where(return_amount > 0, np.minimum(return_amount, gross_rev), 0.0)
+    revenue = np.where(is_cancelled, 0.0, np.round(gross_rev - eff_return, 2))
+    eff_ratio = np.divide(eff_return, gross_rev, out=np.zeros(o_total), where=gross_rev > 0)
+    cogs_full = np.round(line_cogs * (1.0 - eff_ratio), 2)
+    cogs = np.where(is_cancelled, 0.0, np.where(gross_rev > 0, cogs_full, np.round(line_cogs, 2)))
+    gross_margin = np.round(revenue - cogs, 2)
 
-    return order_counter
+    txn = np.arange(o_total, dtype=np.int64)  # first order counter value is 0
+    orders_df = pl.DataFrame(
+        {
+            "txn_idx": txn,
+            "customer_id": customer_col[ocust],
+            "session_idx": last,
+            "order_ts": order_ts,
+            "order_status": order_status,
+            "payment_method": payment,
+            "shipping_country": ship_country[ocust],
+            "shipping_state": ship_state[ocust],
+            "promotion_id": np.where(has_promo_o, promo_ids[promo_sel_o], None).tolist(),
+            "subtotal": np.round(subtotal, 2),
+            "tax": tax,
+            "shipping_fee": shipping_fee,
+            "discount_amount": np.round(discount, 2),
+            "order_total": order_total,
+            "revenue": revenue,
+            "cogs": cogs,
+            "gross_margin": gross_margin,
+            "return_flag": return_flag.astype(np.int64),
+            "return_ts": return_ts,
+            "return_amount": return_amount,
+            "cancelled_ts": cancelled_ts,
+        }
+    ).with_columns(
+        (pl.lit("TXN_") + pl.col("txn_idx").cast(pl.String).str.zfill(12)).alias("transaction_id"),
+        (pl.lit("SESS_") + pl.col("session_idx").cast(pl.String).str.zfill(10)).alias("session_id"),
+        iso_expr("order_ts"),
+        iso_expr("return_ts"),
+        iso_expr("cancelled_ts"),
+    )
+    txn_col = orders_df["transaction_id"].to_numpy()
+    _bulk_insert(
+        conn,
+        """
+        INSERT INTO orders (
+            transaction_id,
+            customer_id,
+            session_id,
+            order_ts,
+            order_status,
+            payment_method,
+            shipping_country,
+            shipping_state,
+            promotion_id,
+            subtotal,
+            tax,
+            shipping_fee,
+            discount_amount,
+            order_total,
+            revenue,
+            cogs,
+            gross_margin,
+            return_flag,
+            return_ts,
+            return_amount,
+            cancelled_ts
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        orders_df,
+    )
+    _flush_order_items(
+        conn,
+        {
+            "transaction_id": txn_col[line_order],
+            "product_id": line_pid,
+            "quantity": line_units,
+            "unit_price": np.round(line_price, 2),
+            "unit_cost": np.round(line_cost, 2),
+            "line_revenue": np.round(line_rev, 2),
+            "line_cogs": np.round(line_cogs_raw, 2),
+        },
+    )
+    if reporter is not None:
+        reporter.advance(o_total)
+        reporter.finish(f"rows={o_total:,}")
+
+    return o_total

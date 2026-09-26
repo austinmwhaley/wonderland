@@ -16,6 +16,13 @@ from pathlib import Path
 
 import numpy as np
 
+from red_queen.identifiability import (
+    NotIdentifiableError,
+    OBSERVATIONAL_HINT,
+    require_holdout,
+    require_stream_view,
+)
+
 WORK = Path(__file__).resolve().parents[1]
 STREAM = WORK / "rabbit_hole" / "data" / "duckdb" / "customer_event_stream.duckdb"
 CFM = WORK / "looking_glass" / "artifacts" / "cfm" / "cfm_products.duckdb"
@@ -39,9 +46,11 @@ def load():
 			         floor((epoch(CAST(order_ts AS TIMESTAMPTZ)) - {min_t}) / {pdays})::int)) p,
 			       SUM(gross_margin) gm
 			FROM orders GROUP BY 1, 2""").pl()
+        require_stream_view(con, "email_holdout", "randomized control for incrementality")
         hold = con.execute("SELECT customer_id k, period p, holdout FROM email_holdout").pl()
     finally:
         con.close()
+    require_holdout(hold)
     grid = hold.join(orders, on=["k", "p"], how="left").with_columns(pl.col("gm").fill_null(0.0))
     return grid
 
@@ -62,6 +71,11 @@ def run(seed=0):
         hh = h[j]
         boot.append(float(yy[~hh].mean() - yy[hh].mean()))
     lo, hi = np.percentile(boot, [2.5, 97.5])
+    if not (np.isfinite(lo) and np.isfinite(hi)):
+        raise NotIdentifiableError(
+            f"incrementality CI is non-finite (held periods too few for the "
+            f"bootstrap: held={int(held.sum())}). {OBSERVATIONAL_HINT}"
+        )
     # per-customer incrementality (both states observed)
     incr = {}
     for t in np.unique(k):

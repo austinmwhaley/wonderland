@@ -18,6 +18,7 @@ from pathlib import Path
 import numpy as np
 
 WORK = Path(__file__).resolve().parents[1]
+STREAM = WORK / "rabbit_hole" / "data" / "duckdb" / "customer_event_stream.duckdb"
 DATA = WORK / "red_king" / "data" / "seq_email.npz"
 CFM_PRODUCTS = WORK / "looking_glass" / "artifacts" / "cfm" / "cfm_products.duckdb"
 OUT = Path(__file__).resolve().parents[0] / "artifacts"
@@ -69,11 +70,12 @@ def _validated_arm_effects():
     import duckdb
     import polars as pl
 
-    con = duckdb.connect(
-        str(WORK / "rabbit_hole" / "data" / "duckdb" / "customer_event_stream.duckdb"),
-        read_only=True,
-    )
+    from red_queen.identifiability import require_propensity, require_stream_view
+
+    con = duckdb.connect(str(STREAM), read_only=True)
     try:
+        require_stream_view(con, "email_arm", "logged arm + propensity for IPW arm effects")
+        require_propensity(con, "email_arm")
         arm = con.execute("SELECT customer_id k, arm, propensity FROM email_arm").pl()
         inc = con.execute("""
 			SELECT s.customer_id k, SUM(o.gross_margin) g
@@ -102,10 +104,7 @@ def _donor_value(keys):
     from sklearn.linear_model import Ridge
     from sklearn.preprocessing import StandardScaler
 
-    con = duckdb.connect(
-        str(WORK / "rabbit_hole" / "data" / "duckdb" / "customer_event_stream.duckdb"),
-        read_only=True,
-    )
+    con = duckdb.connect(str(STREAM), read_only=True)
     try:
         inc = con.execute("""
 			SELECT s.customer_id k, SUM(o.gross_margin) g
@@ -139,11 +138,11 @@ def run(weekly_budget=None, risk_z=0.0, use_red_king=False):
         # imagined value of the LOGGED behavior arms matches observed behavior.
         import duckdb
 
-        con = duckdb.connect(
-            str(WORK / "rabbit_hole" / "data" / "duckdb" / "customer_event_stream.duckdb"),
-            read_only=True,
-        )
+        from red_queen.identifiability import require_stream_view
+
+        con = duckdb.connect(str(STREAM), read_only=True)
         try:
+            require_stream_view(con, "email_arm", "logged arm for red_king calibration")
             armdf = con.execute("SELECT customer_id, arm FROM email_arm").pl()
             inc = con.execute("""
 				SELECT s.customer_id k, SUM(o.gross_margin) g

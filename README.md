@@ -113,10 +113,12 @@ git-ignored** (regenerable). Workflow: `git pull --rebase` → change → `git a
 ```bash
 # provision (pip)
 pip install -r requirements.txt -r requirements-dev.txt
-# or with uv
+# or with uv (lockfile: uv.lock)
 uv sync
 # quality gates (also enforced by CI on every push/PR)
-pytest                     # full suite (acceptance gates skip without data)
+pytest -m "not slow"       # inner loop: 225 tests in ~1 min
+pytest                     # full suite (slow gates + acceptance included)
+pytest --cov=white_queen.tribunal --cov-fail-under=80   # CI gate (85% today)
 ruff format . && ruff check .
 pre-commit install         # format + lint on commit
 ```

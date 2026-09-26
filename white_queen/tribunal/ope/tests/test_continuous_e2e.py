@@ -15,7 +15,11 @@ Run: pytest .../tests/test_continuous_e2e.py -q
 
 import numpy as np
 
+import pytest
+
 from white_queen.tribunal.ope.synthetic import make_continuous
+
+pytestmark = pytest.mark.slow  # integration: continuous E2E suites
 
 _TINY = {
     "steps_max": 2000,

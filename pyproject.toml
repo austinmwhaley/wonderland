@@ -27,6 +27,7 @@ kernels = ["mamba-ssm", "bitsandbytes"]
 [dependency-groups]
 dev = [
     "pytest>=8",
+    "pytest-cov>=5",
     "ruff>=0.6",
     "pre-commit>=3",
 ]
@@ -40,6 +41,9 @@ testpaths = [
     "rabbit_hole/tests",
 ]
 addopts = "-q"
+markers = [
+    "slow: integration/acceptance tests >~20s (inner loop: pytest -m 'not slow')",
+]
 
 [tool.ruff]
 line-length = 100

@@ -17,17 +17,24 @@ def _bulk_insert(conn, insert_sql: str, rows) -> int:
     """Bulk-load rows for an INSERT statement via a Polars/Arrow frame.
 
     DuckDB's executemany runs row-by-row and is extremely slow; loading a
-    registered DataFrame in one shot is seconds instead of minutes."""
+    registered DataFrame in one shot is seconds instead of minutes.
+    ``rows`` may be a Polars DataFrame, a column ``dict`` of arrays (fast,
+    zero-copy path), or a sequence of row tuples (legacy)."""
     import re
     import polars as pl
 
-    if not rows:
+    if rows is None or (not isinstance(rows, (dict, pl.DataFrame)) and not rows):
         return 0
     m = re.search(r"INSERT\s+INTO\s+(\w+)\s*\(([^)]*)\)", insert_sql, re.S | re.I)
     if m is None:
         raise ValueError("cannot parse INSERT statement")
     table, cols = m.group(1), [c.strip() for c in m.group(2).split(",")]
-    df = pl.DataFrame({c: [r[i] for r in rows] for i, c in enumerate(cols)})
+    if isinstance(rows, pl.DataFrame):
+        df = rows.select(cols)
+    elif isinstance(rows, dict):
+        df = pl.DataFrame({c: rows[c] for c in cols})
+    else:
+        df = pl.DataFrame({c: [r[i] for r in rows] for i, c in enumerate(cols)})
     conn.register("_rh_bulk", df)
     try:
         conn.execute(
@@ -35,7 +42,7 @@ def _bulk_insert(conn, insert_sql: str, rows) -> int:
         )
     finally:
         conn.unregister("_rh_bulk")
-    return len(rows)
+    return df.height
 
 
 def _flush_order_items(conn, rows) -> int:

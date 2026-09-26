@@ -2,7 +2,7 @@
 
 looking_glass is a reusable toolkit for building neural entity models.
 It does NOT contain application-specific logic like data generation or
-smoke test workflows—those live in scripts/.
+runnable demos—those live in scripts/.
 
 Users import from this package to build their own applications.
 """
@@ -22,7 +22,6 @@ from .embeddings import (
     EmbeddingModel,
     EmbeddingModelConfig,
     load_vectors_from_lancedb,
-    load_records_from_duckdb,
     save_embeddings_to_lancedb,
 )
 from .entity_core import EntityCore, EntityCoreOutput
@@ -147,7 +146,6 @@ __all__ = [
     "LiftBucket",
     "lift_table",
     "load_core_checkpoint",
-    "load_records_from_duckdb",
     "load_vectors_from_lancedb",
     "log_scaled_delta_t",
     "Mamba2SequenceLayer",

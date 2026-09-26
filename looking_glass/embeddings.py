@@ -21,7 +21,6 @@ from dataclasses import dataclass
 import logging
 from pathlib import Path
 
-import duckdb
 import torch
 import torch.nn.functional as F
 from torch import Tensor, nn
@@ -621,41 +620,6 @@ def create_embedding_model(
             progress_label=progress_label,
         ),
     )
-
-
-def load_records_from_duckdb(
-    db_path: Path,
-    source_table: str,
-    columns: list[str],
-    where: str | None = None,
-    params: tuple[object, ...] | None = None,
-    order_by: str | None = None,
-    limit: int | None = None,
-) -> list[dict[str, object]]:
-    """Load rows from a DuckDB database into dictionary records.
-
-    The query is intentionally simple and explicit so callers control filtering,
-    ordering, and limits from one place in pipeline code. Positional ``?``
-    placeholders in ``where`` are bound against ``params``.
-    """
-
-    if not db_path.exists():
-        raise FileNotFoundError(
-            f"Reference dataset not found: {db_path}. "
-            "The reference dataset must be generated first (it is not committed; "
-            "see rabbit_hole for data generation)."
-        )
-    select_cols = ", ".join(columns)
-    query = f"SELECT {select_cols} FROM {source_table}"
-    if where:
-        query += f" WHERE {where}"
-    if order_by:
-        query += f" ORDER BY {order_by}"
-    if limit is not None:
-        query += f" LIMIT {int(limit)}"
-    with duckdb.connect(str(db_path), read_only=True) as conn:
-        rows = conn.execute(query, params or ()).fetchall()
-    return [dict(zip(columns, row)) for row in rows]
 
 
 def save_embeddings_to_lancedb(

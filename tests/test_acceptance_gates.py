@@ -12,6 +12,7 @@ from __future__ import annotations
 import pytest
 
 
+@pytest.mark.slow  # end-to-end plugin gates (~4 min, needs generated data)
 def test_plugins_layer_acceptance():
     from plugins.base import CFM_PRODUCTS
 

@@ -1,7 +1,11 @@
 """rabbit_hole acceptance: one unified stream from wide tables, realistic and
 consumable, with looking_glass pointing at rabbit_hole (no duplication)."""
 
+import pytest
+
 from rabbit_hole.acceptance import check, check_no_duplication
+
+pytestmark = pytest.mark.slow  # acceptance gate: generator acceptance
 
 
 def test_all_acceptance_checks_pass():

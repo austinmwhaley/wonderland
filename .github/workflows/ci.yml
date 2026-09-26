@@ -31,4 +31,5 @@ jobs:
       - name: Install CPU torch (small wheel)
         run: pip install torch --index-url https://download.pytorch.org/whl/cpu
       - run: pip install -r requirements.txt -r requirements-dev.txt
-      - run: pytest
+      - name: Full suite + coverage floor (tribunal/ope = money code)
+        run: pytest --cov=white_queen.tribunal --cov-report=term --cov-fail-under=80

@@ -6,6 +6,20 @@ import duckdb
 
 from rabbit_hole.generators.generate_support import CustomerEventRow, ProgressReporter
 
+# Columns of the canonical stream insert (brand is filled inline per source so
+# no post-hoc full-table UPDATE pass is needed over tens of millions of rows).
+_INSERT_COLS = """
+    customer_key,
+    event_ts,
+    event_type,
+    entity_type,
+    entity_id,
+    source_table,
+    value,
+    event_attributes,
+    brand
+"""
+
 
 def materialize_customer_event_stream(
     conn: duckdb.DuckDBPyConnection,
@@ -20,22 +34,13 @@ def materialize_customer_event_stream(
 
     conn.execute("DELETE FROM customer_events")
 
-    total_stages = 5
+    total_stages = 8
     if reporter is not None:
         reporter.start("materialize customer events", total_stages)
 
     conn.execute(
-        """
-        INSERT INTO customer_events (
-            customer_key,
-            event_ts,
-            event_type,
-            entity_type,
-            entity_id,
-            source_table,
-            value,
-            event_attributes
-        )
+        f"""
+        INSERT INTO customer_events ({_INSERT_COLS})
         SELECT
             c.customer_id,
             c.signup_ts,
@@ -50,7 +55,8 @@ def materialize_customer_event_stream(
                 'cardholder_status', c.cardholder_status,
                 'income_band', c.income_band,
                 'lifecycle_stage', c.lifecycle_stage
-            )
+            ),
+            ''
         FROM customers c
         """
     )
@@ -58,17 +64,8 @@ def materialize_customer_event_stream(
         reporter.advance(1)
 
     conn.execute(
-        """
-        INSERT INTO customer_events (
-            customer_key,
-            event_ts,
-            event_type,
-            entity_type,
-            entity_id,
-            source_table,
-            value,
-            event_attributes
-        )
+        f"""
+        INSERT INTO customer_events ({_INSERT_COLS})
         SELECT
             wb.customer_id,
             wb.event_ts,
@@ -86,25 +83,18 @@ def materialize_customer_event_stream(
                 'traffic_source', wb.traffic_source,
                 'dwell_seconds', wb.dwell_seconds,
                 'quantity', wb.quantity
-            )
+            ),
+            COALESCE(p.brand, '')
         FROM website_browse wb
+        LEFT JOIN products p ON p.product_id = wb.product_id
         """
     )
     if reporter is not None:
         reporter.advance(1)
 
     conn.execute(
-        """
-        INSERT INTO customer_events (
-            customer_key,
-            event_ts,
-            event_type,
-            entity_type,
-            entity_id,
-            source_table,
-            value,
-            event_attributes
-        )
+        f"""
+        INSERT INTO customer_events ({_INSERT_COLS})
         SELECT
             o.customer_id,
             o.order_ts,
@@ -125,7 +115,8 @@ def materialize_customer_event_stream(
                 'revenue', o.revenue,
                 'cogs', o.cogs,
                 'gross_margin', o.gross_margin
-            )
+            ),
+            ''
         FROM orders o
         """
     )
@@ -133,17 +124,8 @@ def materialize_customer_event_stream(
         reporter.advance(1)
 
     conn.execute(
-        """
-        INSERT INTO customer_events (
-            customer_key,
-            event_ts,
-            event_type,
-            entity_type,
-            entity_id,
-            source_table,
-            value,
-            event_attributes
-        )
+        f"""
+        INSERT INTO customer_events ({_INSERT_COLS})
         SELECT
             o.customer_id,
             o.cancelled_ts,
@@ -152,7 +134,8 @@ def materialize_customer_event_stream(
             o.transaction_id,
             'orders',
             o.order_total,
-            json_object('order_status', o.order_status)
+            json_object('order_status', o.order_status),
+            ''
         FROM orders o
         WHERE o.cancelled_ts IS NOT NULL
         """
@@ -161,17 +144,8 @@ def materialize_customer_event_stream(
         reporter.advance(1)
 
     conn.execute(
-        """
-        INSERT INTO customer_events (
-            customer_key,
-            event_ts,
-            event_type,
-            entity_type,
-            entity_id,
-            source_table,
-            value,
-            event_attributes
-        )
+        f"""
+        INSERT INTO customer_events ({_INSERT_COLS})
         SELECT
             o.customer_id,
             o.return_ts,
@@ -180,7 +154,8 @@ def materialize_customer_event_stream(
             o.transaction_id,
             'orders',
             o.return_amount,
-            json_object('return_flag', o.return_flag, 'order_status', o.order_status)
+            json_object('return_flag', o.return_flag, 'order_status', o.order_status),
+            ''
         FROM orders o
         WHERE o.return_flag = 1 AND o.return_ts IS NOT NULL
         """
@@ -190,28 +165,24 @@ def materialize_customer_event_stream(
 
     # --- email action events: send -> open -> click ---
     conn.execute(
-        """
-        INSERT INTO customer_events (
-            customer_key, event_ts, event_type, entity_type, entity_id,
-            source_table, value, event_attributes
-        )
+        f"""
+        INSERT INTO customer_events ({_INSERT_COLS})
         SELECT
             customer_id, send_ts, channel || '_send', channel, send_id, 'contact_sends', 0,
-            json_object('campaign_id', campaign_id, 'opened', opened, 'clicked', clicked)
+            json_object('campaign_id', campaign_id, 'opened', opened, 'clicked', clicked),
+            ''
         FROM contact_sends
         """
     )
     if reporter is not None:
         reporter.advance(1)
     conn.execute(
-        """
-        INSERT INTO customer_events (
-            customer_key, event_ts, event_type, entity_type, entity_id,
-            source_table, value, event_attributes
-        )
+        f"""
+        INSERT INTO customer_events ({_INSERT_COLS})
         SELECT
             customer_id, open_ts, channel || '_open', channel, send_id, 'contact_sends', 0,
-            json_object('campaign_id', campaign_id)
+            json_object('campaign_id', campaign_id),
+            ''
         FROM contact_sends
         WHERE opened = 1 AND open_ts IS NOT NULL
         """
@@ -219,11 +190,8 @@ def materialize_customer_event_stream(
     if reporter is not None:
         reporter.advance(1)
     conn.execute(
-        """
-        INSERT INTO customer_events (
-            customer_key, event_ts, event_type, entity_type, entity_id,
-            source_table, value, event_attributes
-        )
+        f"""
+        INSERT INTO customer_events ({_INSERT_COLS})
         SELECT
             customer_id, click_ts, channel || '_click', 'session',
             COALESCE(click_session_id, send_id), 'contact_sends', 0,
@@ -231,26 +199,14 @@ def materialize_customer_event_stream(
                 'campaign_id', campaign_id,
                 'click_session_id', click_session_id,
                 'converted_order_id', converted_order_id
-            )
+            ),
+            ''
         FROM contact_sends
         WHERE clicked = 1 AND click_ts IS NOT NULL
         """
     )
     if reporter is not None:
         reporter.advance(1)
-
-    # Fill the canonical `brand` field: product events inherit the product's
-    # brand; everything else gets an empty brand (contract: brand present).
-    conn.execute(
-        """
-        UPDATE customer_events
-        SET brand = COALESCE(
-            (SELECT p.brand FROM products p
-             WHERE p.product_id = customer_events.entity_id), '')
-        WHERE entity_type = 'product'
-        """
-    )
-    conn.execute("UPDATE customer_events SET brand = '' WHERE brand IS NULL")
 
     # DuckDB autocommits.
     event_count = int(conn.execute("SELECT COUNT(*) FROM customer_events").fetchone()[0])
@@ -262,9 +218,15 @@ def materialize_customer_event_stream(
 def load_customer_event_stream(
     conn: duckdb.DuckDBPyConnection,
     customer_ids: list[str] | None = None,
+    limit: int | None = None,
 ) -> list[CustomerEventRow]:
-    """Load event stream rows ordered for deterministic per-customer playback."""
+    """Load event stream rows ordered for deterministic per-customer playback.
 
+    ``limit`` bounds the scan (used by the CLI receipt, which only prints the
+    first few rows); ``None`` loads the full stream.
+    """
+
+    limit_sql = f" LIMIT {int(limit)}" if limit is not None else ""
     if customer_ids is not None:
         placeholders = ",".join("?" * len(customer_ids))
         rows = conn.execute(
@@ -282,13 +244,13 @@ def load_customer_event_stream(
                 value
             FROM customer_events
             WHERE customer_key IN ({placeholders})
-            ORDER BY customer_key, event_ts, event_id
+            ORDER BY customer_key, event_ts, event_id{limit_sql}
             """,
             customer_ids,
         ).fetchall()
     else:
         rows = conn.execute(
-            """
+            f"""
             SELECT
                 event_id,
                 customer_key,
@@ -301,7 +263,7 @@ def load_customer_event_stream(
                 source_table,
                 value
             FROM customer_events
-            ORDER BY customer_key, event_ts, event_id
+            ORDER BY customer_key, event_ts, event_id{limit_sql}
             """
         ).fetchall()
     return [CustomerEventRow(*row) for row in rows]

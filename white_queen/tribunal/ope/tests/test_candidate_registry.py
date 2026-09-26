@@ -9,8 +9,11 @@ Run: pytest .../tests/test_candidate_registry.py -q
 import numpy as np
 import pytest
 
+
 from white_queen.tribunal.ope.synthetic import make_sequential, OptimalActionPolicy
 from white_queen.tribunal.ope.protocols import check_candidate
+
+pytestmark = pytest.mark.slow  # integration: registry training paths (~110s)
 
 _TINY_FQE = {
     "steps_max": 2000,

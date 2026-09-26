@@ -1,7 +1,8 @@
 __pycache__/
 *.py[cod]
 
-# Local smoke-test data artifacts
+# Local generated data artifacts (rabbit_hole generate_data defaults:
+# scripts/data/lancedb, scripts/data/logs/*.log)
 scripts/data/lancedb/**
 !scripts/data/lancedb/.gitkeep
 scripts/data/logs/*.log

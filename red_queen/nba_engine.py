@@ -35,8 +35,12 @@ def _ipw_effects(channel, action):
     """IPW causal mean reward per action level from randomized holdout-free logs."""
     import duckdb
 
+    from red_queen.identifiability import require_propensity, require_stream_view
+
     con = duckdb.connect(str(STREAM), read_only=True)
     try:
+        require_stream_view(con, "contact_sends", "logged sends for IPW arm effects")
+        require_propensity(con, "contact_sends")
         col = "arm" if action == "arm" else "discount_pct"
         df = con.execute(
             f"""
@@ -125,13 +129,16 @@ def build_plan(cadence="weekly", budget=None, seed=0):
         best_arm[ch], best_disc[ch] = ja
         effects[ch] = _ipw_effects(ch, "arm")
         hours[ch] = _best_hour(ch)
-    # WHO: per-customer uplift responders
+    # WHO: per-customer uplift responders (fail-safe: identifiable only with a
+    # randomized control; otherwise empty targeting WITH a receipt, never fake)
     try:
+        from red_queen.identifiability import NotIdentifiableError
         from red_queen.response_model import fit_uplift
 
         keys, up, _ = fit_uplift()
         responders = [keys[i] for i in np.argsort(-up) if up[i] > 0]
-    except Exception:
+    except NotIdentifiableError as e:
+        print(f"red_queen/WHO receipt: uplift not identifiable -> empty targeting: {e}", flush=True)
         responders = []
         if budget is None:
             budget = 0
