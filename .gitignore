@@ -2,6 +2,10 @@
 # data stores
 data/
 **/data/
+# ...except the tracked symlink farm: looking_glass POINTS at rabbit_hole
+# (single source of truth; rabbit_hole acceptance asserts these exist).
+!looking_glass/scripts/data/
+!looking_glass/scripts/data/**
 *.duckdb
 *.ddb
 *.sqlite
