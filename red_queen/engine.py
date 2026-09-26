@@ -123,54 +123,22 @@ def _donor_value(keys):
     return m.predict(sc.transform(E))
 
 
-def run(weekly_budget=None, risk_z=0.0, use_red_king=False):
+def run(weekly_budget=None, risk_z=0.0):
     # risk_z=0: act on calibrated positive expected value; uncertainty penalty
-    # pending proper calibration of the RSSM ensemble variance.
+    # pending proper calibration of the value ensemble.
+    # DECISION-PATH PURITY (see red_king/ab_witness.py): the red_king RSSM was
+    # A/B'd against known truth (25 candidates x 5 cells, WITH/WITHOUT) and
+    # changed ZERO certified decisions -> it is analyst-tool only and must
+    # never route decisions. This is the validated configuration: rank arms by
+    # the IPW causal effect from the randomized logs; choose WHO by donor value.
     keys, E = _embeddings()
-    if use_red_king:
-        # CERTIFIED values: imagine discounted incremental GP per arm with the
-        # red_king RSSM world model (+ ensemble uncertainty).
-        from red_king.rssm import rollout_arm_values
-
-        V, SD = rollout_arm_values(E)
-        nA = V.shape[1]
-        # CALIBRATION (offline anchor to reality): scale imagined values so the
-        # imagined value of the LOGGED behavior arms matches observed behavior.
-        import duckdb
-
-        from red_queen.identifiability import require_stream_view
-
-        con = duckdb.connect(str(STREAM), read_only=True)
-        try:
-            require_stream_view(con, "email_arm", "logged arm for red_king calibration")
-            armdf = con.execute("SELECT customer_id, arm FROM email_arm").pl()
-            inc = con.execute("""
-				SELECT s.customer_id k, SUM(o.gross_margin) g
-				FROM email_sends s JOIN orders o
-				  ON o.customer_id=s.customer_id AND o.session_id=s.click_session_id
-				 AND epoch(CAST(o.order_ts AS TIMESTAMPTZ)) >  epoch(CAST(s.click_ts AS TIMESTAMPTZ))
-				 AND epoch(CAST(o.order_ts AS TIMESTAMPTZ)) <= epoch(CAST(s.click_ts AS TIMESTAMPTZ)) + 10800
-				WHERE s.clicked=1 GROUP BY 1""").pl()
-        finally:
-            con.close()
-        amap = dict(zip(armdf["customer_id"].to_list(), armdf["arm"].to_list()))
-        gmap = dict(zip(inc["k"].to_list(), inc["g"].to_list()))
-        logged = np.array([amap.get(k, 0) for k in keys])
-        obs = np.array([float(gmap.get(k, 0.0)) for k in keys])
-        v_beh = float(V[np.arange(len(keys)), logged].mean())
-        alpha = float(obs.mean() / max(v_beh, 1e-6))
-        V = V * alpha
-        SD = SD * alpha
-    else:
-        # VALIDATED configuration: rank arms by the IPW causal effect from the
-        # randomized logs (trustworthy); choose WHO to serve by donor value.
-        eff = _validated_arm_effects()
-        nA = len(eff)
-        best_a = int(np.argmax(eff))
-        who = _donor_value(keys)
-        V = np.zeros((len(keys), nA))
-        V[:, best_a] = who
-        SD = np.zeros_like(V)
+    eff = _validated_arm_effects()
+    nA = len(eff)
+    best_a = int(np.argmax(eff))
+    who = _donor_value(keys)
+    V = np.zeros((len(keys), nA))
+    V[:, best_a] = who
+    SD = np.zeros_like(V)
     LB = V - risk_z * SD  # fail-safe bound
     feasible = CADENCE[None, :] <= PER_CUSTOMER_CAP
     # maximise TOTAL expected value subject to the budget (not value-per-send):

@@ -227,3 +227,32 @@ def test_require_holdout_and_propensity_contracts():
     with pytest.raises(NotIdentifiableError, match="missing_view"):
         require_stream_view(con, "missing_view", "unit test")
     con.close()
+
+
+# --------------------------------------------------------------------------
+# decision-path purity (post-A/B removal of red_king — see red_king/ab_witness.py)
+# --------------------------------------------------------------------------
+def test_red_queen_decision_path_never_imports_red_king():
+    """The decisive A/B (25 candidates x 5 cells, known truth) changed ZERO
+    certified decisions with red_king as an MB witness -> pre-committed rule:
+    red_king is analyst-tool only. Lock it: no red_queen module may import it."""
+    import re
+    from pathlib import Path
+
+    rq = Path(__file__).resolve().parents[1] / "red_queen"
+    offenders = []
+    for f in sorted(rq.glob("*.py")):
+        src = f.read_text()
+        # strip comments/strings conservatively: match only import statements
+        if re.search(r"^\s*(from red_king\b|import red_king\b)", src, re.M):
+            offenders.append(f.name)
+    assert not offenders, f"red_king leaked into red_queen decision code: {offenders}"
+
+
+def test_engine_run_has_no_red_king_switch():
+    import inspect
+
+    import red_queen.engine as engine
+
+    sig = inspect.signature(engine.run)
+    assert "use_red_king" not in sig.parameters

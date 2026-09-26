@@ -18,12 +18,14 @@ import hashlib
 import json
 import os
 
-OPE_CACHE_VERSION = "v4"  # BUMP when any estimator's math changes.
+OPE_CACHE_VERSION = "v5"  # BUMP when any estimator's math changes.
 # v2: dynamics gained a termination head (in_dim+2).
 # v3: FQE target net switched from once-per-eval hard sync to per-step Polyak
 #     soft updates (propagation was ~40% of truth).
 # v4: FQE runs budget-mode (no self-referential best-restore); sharp witness
 #     is now FQE of the ARGMAX policy (not a low-temperature proxy).
+# v5: diet_hash tolerates logged-propensity diets that carry only mu_take
+#     (industry track: a single propensity column, no full mu matrix).
 
 
 def diet_hash(diet):
@@ -35,8 +37,19 @@ def diet_hash(diet):
     import numpy as _np
 
     h = hashlib.sha1()
-    for k in ("obs", "act", "rew", "obs2", "done", "episode", "mu"):
+    for k in ("obs", "act", "rew", "obs2", "done", "episode"):
         h.update(_np.ascontiguousarray(diet[k]).tobytes())
+    mu = diet.get("mu")
+    if mu is not None:
+        h.update(b"mu_full:")
+        h.update(_np.ascontiguousarray(mu).tobytes())
+    else:
+        # logged single-propensity diet: mu_take only (no full matrix). Hash
+        # it so a logged-mu fit never cache-hits an estimated-mu judgement.
+        h.update(b"mu_take:")
+        mt = diet.get("mu_take")
+        if mt is not None:
+            h.update(_np.ascontiguousarray(mt).tobytes())
     h.update(str(int(diet["nA"])).encode())
     h.update(str(diet.get("_mu_source", "logged")).encode())
     return h.hexdigest()[:16]

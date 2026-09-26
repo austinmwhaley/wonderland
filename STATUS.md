@@ -8,8 +8,9 @@ caterpillar (interpretability). eighth_square owns algorithms/ + environments/.
 
 **Working:** stream + persistent-holdout measurement design; universal donor
 (gate 15/15; battery PASS: unique 75%, beats raw 6/8); plugins (6/6, 4/4, 5/5);
-white_queen (hardened, 99 tests); red_king population counterfactual (ordering 1.0,
-calib 0.99; optional); red_queen multi-cadence + multi-action + certification-gated
+white_queen (hardened, 99 tests); red_king = ANALYST TOOL ONLY (decisive A/B:
+0/25 decision changes -> removed from decision path, locked by tests);
+red_queen multi-cadence + multi-action + certification-gated
 + uplift-targeted; incrementality ATE +11.62 CI[11.19,12.08] with per-customer
 uplift (monotone quintiles, top-20% gain +18.95). Engineering: CI + ruff gates +
 uv.lock + 239-test suite (fast tier `pytest -m "not slow"` = ~53s; full ~14min).
@@ -23,11 +24,11 @@ non-stationary) data — deconfounds via IPW, HOLDs uncorroborated policies, no 
 lift. Honest limit: observational-only data cannot give per-customer CAUSAL effects;
 identification comes from the persistent hold-out.
 
-**Open/next:** push + first real CI run; coverage floor on tribunal/ope;
+**Open/next:** white_queen hardening (7/25 errors on the known-truth battery);
 caterpillar NL Q&A. OPTIONAL (lab-data only, never required for production):
-per-segment management report, red_king with-vs-without A/B (ship-or-delete),
-broader experimentation. DONE recently: generator vectorized (50k = 14m54s),
-observational-first guarantees, smoke family deleted, zero SQLite.
+per-segment management report, broader experimentation. DONE recently: red_king
+A/B -> REMOVE from decision path; generator vectorized (50k = 14m54s);
+observational-first guarantees; smoke family deleted; zero SQLite; CI green.
 
 ---
 
@@ -73,8 +74,9 @@ observability, prefer deletion, best tool, cost-aware, **speed-first (16)**.
 - Unsupervised segmentation: gate passes (4/4) but its eta^2 k-search is
   non-decreasing under refinement (drifts to kmax on noisy labels) — the
   silhouette `_choose_k` path is the reliable selector.
-- red_king -> white_queen improvement UNPROVEN (different reward/action; red_king
-  optimistic, white_queen HOLDs).
+- white_queen errs in 7/25 on the decisive battery (3 missed deploys + 4 false
+  deploys incl. behavior-clones under low overlap); red_king fixed NONE of them
+  -> white_queen hardening is the live gap (not red_king).
 - Short-horizon targets (gp_30/90) raw-dominated (acceptable per contract).
 - Generator still per-event Python (offline); MoE/multi-entity (M3/M5) rejected.
 
@@ -83,9 +85,8 @@ observability, prefer deletion, best tool, cost-aware, **speed-first (16)**.
 2. Wire per-customer HTE values into red_queen: personalize the
    switchback-identified, population fallback elsewhere (+ hierarchical
    shrinkage); expand the switchback experiment.
-3. **Same-estimand A/B** (v1 DoD #4): white_queen action = randomized arm,
-   reward = incremental GP; red_king as MB witness — does HOLD->DEPLOY flip
-   correctly with vs without? (still unproven)
+3. ~~Same-estimand A/B (v1 DoD #4)~~ DONE — REMOVE verdict (see
+   "DECISIVE A/B"); follow-up = white_queen hardening on its 7/25 errors.
 4. Management incrementality report: per-segment CIs + receipts.
 5. Vectorize generator; generate 50k+ stream; ladder; re-run battery.
 6. caterpillar: NL Q&A.
@@ -853,3 +854,37 @@ compare_toy,probe_churn,sweep_core_lr,sweep_head_lr,compare_fresh_weights}`
 their dataset had no generator since generate_full was retired (they could
 not run). Pipeline coverage = looking_glass/tests + example.py. Docs updated
 (looking_glass README walkthrough replaced with that pointer).
+
+## DECISIVE A/B: red_king as a white_queen witness — REMOVE from decision path
+`red_king/ab_witness.py` — the pre-committed rule is in the module docstring
+(recorded BEFORE running): SHIP iff WITH fixes >=1 decision toward truth AND
+breaks 0. Battery: `make_sequential` with EXACT truth (Monte-Carlo under the
+true generator, 20k episodes), cells T in {5,20,50} x behavior_eps in
+{0.4, 0.15, 0.05} (long-horizon + hard-overlap = red_king's claimed niche),
+5 candidates (optimal / near / mimic-behavior / uniform / anti) = **25 cases**;
+arms WITHOUT (stock panel) | WITH (panel["mb"] <- red_king ensemble rollout)
+| WITH_BOTH (+ mb_sharp).
+
+RESULT: errors WITHOUT 7 | WITH 7 | WITH_BOTH 7; fixed=[] broken=[] —
+**ZERO certified decisions changed in 25/25** (witness counts identical too).
+VERDICT (mechanical, both integration variants): **REMOVE red_king from the
+decision path.**
+
+=> red_king is ANALYST TOOL ONLY: effect models / scorecard / rssm stay
+   runnable offline (`python -m red_king.*`); `red_queen.engine.run`'s
+   `use_red_king` switch DELETED (validated population path is the only path);
+   5 superseded `wq_*` wrapper scripts deleted (their results live in this
+   notebook); decision-path purity LOCKED by tests (no red_king imports in
+   red_queen; no switch on engine.run).
+
+Secondary finding (honest): white_queen itself errs in 7/25 (3 missed deploys
++ 4 false deploys, incl. deploying the behavior-clone under low overlap);
+red_king fixed none — this pattern is now the live white_queen-hardening gap.
+
+Harness receipts: the TRUE logged propensity must be injected (the generator's
+behavior policy is known) — ESTIMATING it on this generator wrecks IS/DR
+(ESS ~5%, certificates can never clear, nothing can deploy -> vacuous
+battery). Bug found & fixed en route: `cache.diet_hash` crashed on
+logged-propensity diets without a full mu matrix (production weights-cache
+bug) -> OPE_CACHE v5.
+Receipt: red_king/artifacts/ab_witness.json.

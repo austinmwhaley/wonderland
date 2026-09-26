@@ -32,7 +32,7 @@ production dependency.
 | 1 stream + identifiable design | ✅ (identification available **in lab data**; production = observational by constraint) |
 | 2 universal donor | ✅ |
 | 3 plugin gates | ✅ |
-| 4 red_king improves white_queen with-vs-without | ⚠️ optional lab experiment (see decisions) |
+| 4 red_king improves white_queen with-vs-without | ✅ **resolved by decisive A/B**: 0/25 decision changes -> red_king REMOVED from decision path (analyst tool; locked by tests) |
 | 5 red_queen multi-cadence NBA | ✅ + observational guards |
 | 6 caterpillar "why" | 🟡 v1 (schema fixed; no NL surface) |
 | 7 versioned artifacts + receipts | ✅ |
@@ -50,21 +50,26 @@ test tiers, observational-first identifiability guards (13 new tests).
 3. ~~Coverage floor~~ ✅ measured **85%** on `white_queen/tribunal`; CI enforces
    `--cov-fail-under=80` (5pt headroom).
 4. **caterpillar NL Q&A** — the only untouched product surface.
+5. **white_queen hardening** — 7/25 errors on the known-truth battery
+   (see STATUS "DECISIVE A/B"); red_king proved it cannot help there.
 5. Optional lab science: per-segment management report (lab data only);
    red_king with-vs-without A/B with a pre-committed ship-or-delete rule;
    donor 50k ladder re-run (generator can now produce it).
 
 ## Phase status
 
-- **Phase 0 — land it**: 🟡 push + CI = the only remaining step
-- **Phase 1 — science (reframed)**: ✅ observational-first implemented; remaining items are *optional lab validations*, not production blockers
+- **Phase 0 — land it**: ✅ pushed; CI green (lint + full suite + coverage 85%/80)
+- **Phase 1 — science (reframed)**: ✅ observational-first implemented; ✅ red_king A/B run -> REMOVE verdict; remaining items are *optional lab validations*, not production blockers
 - **Phase 2 — scale**: ✅ vectorized; DDL-tail optimization = optional follow-up
 - **Phase 3 — product**: smoke family resolved by deletion; caterpillar NL Q&A remains
 - **Phase 4 — maturity**: ✅ uv.lock, test tiers, coverage floor (85% measured / 80 enforced); mypy = **decided against** (ruff + 239 tests + receipts are the enforcement; revisit only if type-level bugs actually appear)
 
 ## Open decisions
 
-1. **red_king DoD#4 A/B** — run the lab experiment (ship-or-delete rule) or
-   declare red_king analyst-tool-only now? (No production impact either way.)
+1. ~~red_king DoD#4 A/B~~ **DONE — REMOVE**: ran the pre-committed battery
+   (25 candidates, known truth): red_king changed 0 certified decisions ->
+   analyst-tool only (`red_king/ab_witness.py` + receipt).
 2. **DDL/index tail** — invest to get 50k under 10min, or accept 14m54s?
-3. **caterpillar NL Q&A** — build it next, or leave v1?
+3. **white_queen hardening** — the battery found 7/25 errors of white_queen's
+   own (3 missed deploys, 4 false deploys under low overlap). New top gap.
+4. **caterpillar NL Q&A** — build it next, or leave v1?

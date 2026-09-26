@@ -63,11 +63,15 @@ certificate `(value,[lo,hi],behavior)`; ships only if it can **reject
 "not-better-than-logging"**. Hardened: **corroboration is required** (≥1 witness) —
 no certificate-only deploys. 99 tests.
 
-### `red_king` — Counterfactual world model
+### `red_king` — Counterfactual world model (analyst tool)
 A latent **RSSM** ("what happens if we act?") over frozen donor states, trained
-causally (clipped-IPW) and **validated against the known effect**. Robust as a
-**population** counterfactual estimator (ordering 1.0, calibration 0.99). Kept
-**optional** — per-customer personalization is handled by the holdout uplift model.
+causally (clipped-IPW) and **validated as a population estimator** (ordering
+1.0, calibration 0.99). **Not in the decision path**: the decisive A/B
+(`red_king/ab_witness.py`, 25 candidates against exact truth, with/without as
+a white_queen MB witness) changed **zero** certified decisions — under the
+pre-committed ship-or-delete rule it was removed from decisions and is kept
+for offline analysis only (locked by tests). red_queen runs the validated
+population path.
 
 ### `red_queen` — Next-Best-Action engine (the product)
 Consumes the donor (+ optional red_king/white_queen) and emits decisions:
@@ -134,7 +138,7 @@ it as a package from outside its directory.
 | looking_glass | universal donor | ✅ |
 | plugins | supervised / unsupervised / white_queen | ✅ |
 | white_queen | OPE certification (hardened) | ✅ |
-| red_king | counterfactual world model | ✅ (population; optional) |
+| red_king | counterfactual world model (analyst) | 🧰 analyst-only (A/B: 0 decision changes) |
 | red_queen | multi-cadence NBA + uplift targeting | ✅ |
 | caterpillar | interpretability | 🟡 v1 |
 
