@@ -13,7 +13,8 @@ The runbook, executable (per calendar month):
                      close labels at D, fit/gate/persist head pinned to vN.rM
     (3) INFERENCE    training day counts as a run; read-only score from
                      state_embeddings -> DuckDB
-  Every remaining day of the month:
+  For --days days from the 1st (default 8 = month-start + the next 7 days;
+  pass 31 for the full month):
     (1b) daily state job (GPU absorbs) — states + embeddings advance one day
     (3)  on the plugin's weekday (Monday) + one mid-week day: read-only score
   Next 1st: new A/B rotation, new tag, refreshed tables, plugin re-pinned.
@@ -52,6 +53,15 @@ def _mondays(start: date, end: date) -> list[date]:
             days.append(d)
         d += timedelta(days=1)
     return days
+
+
+def _inference_days(start: date, days: int, midweek: date | None = None) -> list[date]:
+    """Training day + Mondays within the --days window (+ midweek if inside)."""
+    end = start + timedelta(days=days - 1)
+    out = {start, *_mondays(start, end)}
+    if midweek and start <= midweek <= end:
+        out.add(midweek)
+    return sorted(out)
 
 
 def _ab_signature(tag: str) -> dict:
@@ -105,15 +115,20 @@ def train_encoder(as_of: str, customers: int, anchors: int, log: Path) -> str:
     return tag
 
 
-def cycle(
-    as_of: date, next_first: date, customers: int, anchors: int, seed: int, inference_days
-) -> dict:
+def cycle(as_of: date, days: int, customers: int, anchors: int, seed: int, inference_days) -> dict:
     from looking_glass.daily_states import update_day
 
     from .head_template import run_target
 
     day = as_of.isoformat()
-    print(f"\n=== CYCLE as-of {day} ===", flush=True)
+    # daily-job window: [as_of, window_end); inference days must fall inside it
+    next_first = (as_of.replace(day=28) + timedelta(days=4)).replace(day=1)
+    window_end = min(next_first, as_of + timedelta(days=days))
+    inference_days = {d for d in inference_days if d < window_end}
+    print(
+        f"\n=== CYCLE as-of {day} (window {as_of}..{window_end - timedelta(days=1)}) ===",
+        flush=True,
+    )
 
     # (1) encoder
     tag = train_encoder(day, customers, anchors, OUT / f"rehearsal_encoder_{day}.log")
@@ -134,10 +149,10 @@ def cycle(
     inferences = [score_as_of(PURCHASE_PROPENSITY_30D, day)]
     n_daily = 1
 
-    # every remaining day: layer B closes the day (GPU absorbs), layer C reads
-    # on its weekday(s)
+    # daily chain over the --days window: layer B closes each day (GPU absorbs),
+    # layer C reads on its weekday(s)
     d = as_of + timedelta(days=1)
-    while d < next_first:
+    while d < window_end:
         update_day(d.isoformat())
         n_daily += 1
         if d in inference_days:
@@ -174,31 +189,29 @@ def main(argv=None):
     ap.add_argument("--anchors", type=int, default=6)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--midweek", default="2025-11-05", help="extra non-Monday inference day")
+    ap.add_argument(
+        "--days",
+        type=int,
+        default=8,
+        help="daily-state days per cycle from the 1st: 8 = month-start + the next "
+        "7 days (default); 31 = full month",
+    )
     a = ap.parse_args(argv)
 
     start = date.fromisoformat(a.start)
     nxt = (start.replace(day=28) + timedelta(days=4)).replace(day=1)  # next 1st
-    end = nxt - timedelta(days=1)
-    # training day + Mondays + one mid-week day (daily capability proof)
-    nov_days = sorted({start, date.fromisoformat(a.midweek), *_mondays(start, end)})
-    dec_end = (nxt.replace(day=28) + timedelta(days=4)).replace(day=1) - timedelta(days=1)
-    dec_days = sorted({nxt, *_mondays(nxt, dec_end)})
+    mid = date.fromisoformat(a.midweek) if a.midweek else None
+    c1_days = _inference_days(start, a.days, mid)
+    c2_days = _inference_days(nxt, a.days, mid)
 
     t0 = time.perf_counter()
     print(
-        f"REHEARSAL {start} -> {nxt}: daily state jobs every day; "
-        f"inference days month1={nov_days} month2={dec_days}",
+        f"REHEARSAL {start} + {a.days} days/cycle: daily state jobs daily; "
+        f"inference days cycle1={c1_days} cycle2={c2_days}",
         flush=True,
     )
-    c1 = cycle(start, nxt, a.customers, a.anchors, a.seed, set(nov_days))
-    c2 = cycle(
-        nxt,
-        (nxt.replace(day=28) + timedelta(days=4)).replace(day=1),
-        a.customers,
-        a.anchors,
-        a.seed,
-        set(dec_days),
-    )
+    c1 = cycle(start, a.days, a.customers, a.anchors, a.seed, set(c1_days))
+    c2 = cycle(nxt, a.days, a.customers, a.anchors, a.seed, set(c2_days))
 
     receipt = {
         "start": start.isoformat(),

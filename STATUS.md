@@ -914,6 +914,24 @@ monthly; flip happens automatically if data/dims favor MLP — `family="mlp"` pi
 Ladders: chosen rung Nov=8k rows, Dec=4k rows, no falloff. Gates 4/4 both months
 (AUC .746 vs .633 / .738 vs .627, lift 1.79/1.77, calibration ≤0.014).
 Rehearsal: cycle 1 COMPLETE (encoder 2222.9s, 30/30 daily jobs, 6 read-only
-inferences); cycle 2 complete through Dec-7 daily job (paused on request; final
-timeline receipt pending a resume). Batch gates: **full suite 256 passed
+inferences); cycle 2 later resumed and COMPLETED (final receipt below). Batch gates: **full suite 256 passed
 (15:46), ruff clean**. Knob cost model + sweep commands in RUNBOOK.
+
+### Rehearsal COMPLETE — full 2-month receipt + per-step timings
+`plugins/artifacts/rehearsal_2025-11-01.json`: split_rotated=**True**, 61 daily
+jobs, 11 read-only inferences, **total wall 16,348s (4.5h)**.
+- cycle Nov-1: encoder r458134 **37.3min**, A/B = 17,531/7,469, plugin **PASS**
+  (auc 0.7227, lift 1.70, head=logistic, rung 4000), 30 daily jobs, 6 inferences
+  (mean 1.3s each).
+- cycle Dec-1: encoder r90061 **36.8min**, A/B = 17,530/7,470 with split_seed
+  47637951487206 -> 53238582942684 (**rotation proof**), plugin **PASS**
+  (auc 0.7290, lift 1.74, rung 4005), 31 daily jobs, 5 inferences (mean 1.2s).
+- per-step timings (25k, RTX 2080): encoder ~37min · day-1 job 87-103s ·
+  steady daily job **mean 193s** (87-235) · ladder ~35s · plugin bake-off ~20s ·
+  **read-only inference 1.2-1.5s** (older 83-442s rows in scores.db are the
+  historical mutating-era receipts). ~65min per 8-day cycle.
+- bake-off: logistic won all four runs (Nov/Dec x2: 0.723-0.746 vs mlp
+  0.689-0.726 vs hgb 0.689-0.723).
+**Future runs: `--days 8` default = month-start + next 7 days** (your standing
+cadence; `--days 31` = full month). Inference days are clamped to the daily-job
+window so a day can never be scored before its embeddings exist.

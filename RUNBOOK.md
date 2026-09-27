@@ -118,12 +118,31 @@ keeping a setting, re-run the day-1 daily state job.)
 ## Rehearsal (dry-run the whole loop)
 
 ```bash
+# standing cadence: month-start + the next 7 days (default --days 8)
 python -m plugins.rehearsal --customers 25000 --anchors 6 --start 2025-11-01
+# full month instead:
+python -m plugins.rehearsal --customers 25000 --anchors 6 --start 2025-11-01 --days 31
 ```
-Two full months: cycle 1 (Nov 1 → Nov 30) then cycle 2 (Dec 1 → Dec 31): daily
-state jobs **every day** (GPU), inference on the training day + each Monday +
-one mid-week day, new A/B rotation and re-pin at each 1st. Emits the timeline
-receipt including the month-over-month split-rotation proof.
+Each cycle: (1) encoder on the 1st → (1b) day-1 state job → ladder → (2) plugin
+→ then a **daily state job each day** of the `--days` window with read-only
+inferences on the training day, the Mondays inside the window, and one
+mid-week day. New A/B rotation + re-pin at each 1st. Inference days are
+clamped to the daily-job window (a day can never be scored before its
+embeddings exist). Emits the timeline receipt (`rehearsal_<start>.json`) with
+the month-over-month split-rotation proof.
+
+### Measured timings (25k customers, RTX 2080)
+
+| Step | Time |
+|---|---|
+| (1) encoder train | **~37 min/cycle** (the dominant cost) |
+| (1b) day-1 state job (states scattered → partial absorbs) | 87–103 s |
+| (1b) steady daily job (≈8.5k absorbs + fade + materialize 25k) | **mean 193 s** (range 87–235 s) |
+| training-size ladder (9 rungs) | ~35 s |
+| (2) plugin train — 3-family bake-off incl. MLP + HGB | ~20 s + data load |
+| (3) inference, read-only (25k scores) | **1.2–1.5 s** |
+| **per cycle, default --days 8** | **≈ 65 min** |
+| **full 2-month run, --days 31 (measured)** | **4.5 h (16,348 s)** |
 
 ## Adding another supervised plugin
 
