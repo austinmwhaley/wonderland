@@ -58,7 +58,7 @@ def _discounted_rollout(cand, env, episodes, gamma, proxy_temp=None, seed=0, max
     import numpy as _np
 
     rng = _np.random.default_rng(seed)
-    env_seed = getattr(env, "_wq_seed", 0)
+    env_seed = getattr(env, "_white_queen_seed", 0)
     max_steps = int(max_steps or 10_000)
     rets = []
     for e in range(episodes):

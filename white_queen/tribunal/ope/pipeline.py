@@ -63,7 +63,7 @@ def train_candidates(
     base = _default_train_cfg(gamma, offline_steps, seed)
     if cfg:
         base.update(cfg)
-    out_dir = out_dir or tempfile.mkdtemp(prefix="wq_cands_")
+    out_dir = out_dir or tempfile.mkdtemp(prefix="white_queen_cands_")
     os.makedirs(out_dir, exist_ok=True)
     handles = {}
     for i, entry in enumerate(algorithms):

@@ -38,7 +38,7 @@ def test_pipeline_trains_and_decides():
         fast=True,
         ensemble_K=2,
         fqe_cfg=dict(_TINY_FQE),
-        out_dir="/tmp/opencode/wq_pipe",
+        out_dir="/tmp/opencode/white_queen_pipe",
     )
     # Structure of a decision report.
     assert rep["n_candidates"] == 3

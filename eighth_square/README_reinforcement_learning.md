@@ -136,7 +136,7 @@ python -m white_queen.tribunal.bench.scorecard --print --tests <N>
 ```
 
 Run / refresh an environment (writes results under
-`white_queen/tribunal/bench/results/`; override with `WQ_BENCH_RESULTS`):
+`white_queen/tribunal/bench/results/`; override with `WHITE_QUEEN_BENCH_RESULTS`):
 
 ```bash
 python -m white_queen.tribunal.bench.scorecard --run cartpole --seed 0 --force

@@ -54,7 +54,7 @@ OBS_NOISE = 0.25
 RK_K = 3
 RK_EPOCHS = 60
 RK_SIMS = 8
-WQ_FQE = {
+WHITE_QUEEN_FQE = {
     "device": "cpu",
     "steps_max": 8000,
     "eval_every": 500,
@@ -357,7 +357,7 @@ def run_cell(T, eps, seed=0):
 
     records = []
     for name, cand in candidates(eps).items():
-        panel = _E.panel(diet, cand, GAMMA, fast=True, ensemble_K=2, fqe_cfg=dict(WQ_FQE))
+        panel = _E.panel(diet, cand, GAMMA, fast=True, ensemble_K=2, fqe_cfg=dict(WHITE_QUEEN_FQE))
         rk_mb, rk_se = rk_rollout(ens, starts_obs[:150], cand, T, seed=seed + 3)
 
         class _Sharp:
@@ -395,7 +395,7 @@ def run_cell(T, eps, seed=0):
             "truth_se": round(v_se, 3),
             "bar_true": round(bar_true, 3),
             "should_deploy": should,
-            "wq_mb": panel["mb"].get("mb") if isinstance(panel["mb"], dict) else None,
+            "white_queen_mb": panel["mb"].get("mb") if isinstance(panel["mb"], dict) else None,
             "rk_mb": round(rk_mb, 3),
             "rk_se": round(rk_se, 3),
             **{f"{a}_{k}": v for a, arm in arms.items() for k, v in arm.items()},

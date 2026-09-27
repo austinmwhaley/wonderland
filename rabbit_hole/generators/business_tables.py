@@ -267,5 +267,6 @@ def create_business_tables(conn: duckdb.DuckDBPyConnection) -> None:
         CREATE INDEX idx_browse_customer_ts ON website_browse (customer_id, event_ts);
         CREATE INDEX idx_orders_customer_ts ON orders (customer_id, order_ts);
         CREATE INDEX idx_customer_events_customer_ts ON customer_events (customer_key, event_ts);
+        CREATE INDEX IF NOT EXISTS idx_contact_sends_customer ON contact_sends (customer_id);
         """,
     )

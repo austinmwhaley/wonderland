@@ -64,7 +64,7 @@ def test_register_custom_trainer():
         fast=True,
         ensemble_K=2,
         fqe_cfg=dict(_TINY_FQE),
-        out_dir="/tmp/opencode/wq_reg",
+        out_dir="/tmp/opencode/white_queen_reg",
     )
     assert set(rep["decisions"]) == {"iql", "const0"}
     assert "const0" in rep["rank"]
@@ -85,7 +85,7 @@ def test_external_policy_object_directly():
         fast=True,
         ensemble_K=2,
         fqe_cfg=dict(_TINY_FQE),
-        out_dir="/tmp/opencode/wq_ext",
+        out_dir="/tmp/opencode/white_queen_ext",
     )
     assert "oracle" in rep["decisions"]
     # The oracle (true optimal) should be ranked at or near the top.

@@ -208,7 +208,7 @@ witness inside white_queen's panel.)
 Needs: a candidate policy object (action_probs/act). Best done in a FRESH session.
 
 ## Native witness — DONE
-`red_king/wq_native.py`: builds canonical diet, runs
+The native witness script (red_king, since deleted): builds canonical diet, runs
 `estimators.panel -> gate.adjudicate -> judge.judge_diet`, then overwrites
 `panel["mb"] = {"mb","se","sims"}` with red_king multi-step rollout value.
 Result: red_king mb 47.9 (se 0.4) vs white_queen mb 226.6 on the same candidate
@@ -265,7 +265,7 @@ recommendations, and provenance (artifacts + CFM version). Read-only.
 ## v1 DEFINITION OF DONE — STATUS
 1. identifiable stream            DONE
 2. universal donor                DONE (battery PASS on large data)
-3. all plugins pass own gate      DONE (supervised 6/6, unsup 4/4, wq 5/5)
+3. all plugins pass own gate      DONE (supervised 6/6, unsup 4/4, white_queen 5/5)
 4. red_king improves white_queen  PARTIAL (value est YES, decision flip NO)
 5. red_queen NBA engine           DONE (budget-constrained plan)
 6. caterpillar interpretability   DONE
@@ -340,7 +340,7 @@ red_king imagined arm values vs IPW truth: arm 0/1/2/3 = 2.94/12.93/19.47/51.57 
 for ranking). It is a credible causal world model.
 
 ## white_queen x validated red_king: still no flip
-Candidate arm3: wq mb 226.57 vs red_king mb 51.57 (se 26.78).
+Candidate arm3: white_queen mb 226.57 vs red_king mb 51.57 (se 26.78).
 WITHOUT deploy=False w=5; WITH deploy=False w=4. Same verdict.
 CONCLUSION: red_king is validated and conservative, but does not (yet) change
 white_queen's DEPLOY/HOLD on tested candidates. To flip we need a case where the
@@ -712,10 +712,10 @@ Repo-wide quality pass (all gates green afterwards):
   `scripts/fqe_panel.py <exp>` (history stays here); `effect_model2.py` ->
   `hte_model.py`; `.bak` removed (`eighth_square/eighth_square/__init__.py` was
   NOT empty — a real facade — so it was kept).
-- All 27 hardcoded `/home/austin-whaley/wq` paths replaced with
+- All 27 hardcoded absolute paths to the old pre-rename checkout replaced with
   `Path(__file__)`-relative resolution (scripts + white_queen scorecard +
   test_hardening). scorecard BENCH_RESULTS moved to
-  white_queen/tribunal/bench/results (override: WQ_BENCH_RESULTS).
+  white_queen/tribunal/bench/results (override: WHITE_QUEEN_BENCH_RESULTS).
 - .gitignore tightened; 76 leaky artifacts untracked (kept on disk): 67 verdict
   JSONs, 5 generated HTML, 3 result JSONs, looking_glass/data symlink.
 - Docs: stale red_king/red_king + red_queen/red_queen paths fixed; flow diagram
@@ -873,7 +873,7 @@ decision path.**
 => red_king is ANALYST TOOL ONLY: effect models / scorecard / rssm stay
    runnable offline (`python -m red_king.*`); `red_queen.engine.run`'s
    `use_red_king` switch DELETED (validated population path is the only path);
-   5 superseded `wq_*` wrapper scripts deleted (their results live in this
+   5 superseded native-witness wrapper scripts deleted (their results live in this
    notebook); decision-path purity LOCKED by tests (no red_king imports in
    red_queen; no switch on engine.run).
 

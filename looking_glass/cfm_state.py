@@ -362,6 +362,34 @@ class StateStore:
             self.con.unregister("_se")
         return len(keys)
 
+    def bulk_states(self, rows) -> None:
+        """Initial-build fast path: write many customer_state rows in ONE insert
+        (single-row commits dominated the build: ~15-20min -> seconds)."""
+        import polars as pl
+
+        if not rows:
+            return
+        df = pl.DataFrame(rows)
+        self.con.register("_bs", df)
+        try:
+            self.con.execute("INSERT INTO customer_state SELECT * FROM _bs")
+        finally:
+            self.con.unregister("_bs")
+
+    def bulk_anchor_rows(self, anchor_rows, donor_rows) -> None:
+        """Initial-build fast path for anchor_embeddings + donor_embeddings."""
+        import polars as pl
+
+        for table, rows in (("anchor_embeddings", anchor_rows), ("donor_embeddings", donor_rows)):
+            if not rows:
+                continue
+            df = pl.DataFrame(rows)
+            self.con.register("_br", df)
+            try:
+                self.con.execute(f"INSERT INTO {table} SELECT * FROM _br")
+            finally:
+                self.con.unregister("_br")
+
     def count(self):
         s = self.con.execute("SELECT count(*) FROM customer_state").fetchone()[0]
         t = self.con.execute("SELECT count(*) FROM anchor_embeddings").fetchone()[0]
@@ -378,8 +406,27 @@ def build_products(cfg, model, vocab, df, keys, split):
         pdb.unlink()
     store = StateStore(pdb, cfg, model)
     store.write_splits(keys, split)  # persist the POPULATIONS (the truth)
-    # inference states for every customer (full history, as_of = last event)
-    store.advance(build_sequences(df, keys, cfg, split, with_anchors=False), incremental=False)
+    # inference states for every customer (full history, as_of = last event):
+    # run the recurrence per customer, WRITE IN BULK (row-at-a-time commits
+    # dominated this phase; identical rows, one insert)
+    state_rows = []
+    for seq in build_sequences(df, keys, cfg, split, with_anchors=False):
+        with torch.no_grad():
+            _y, h = model(seq)
+            emb = model.embed(h)
+        last_ts = seq["event_ts"][-1]
+        state_rows.append(
+            {
+                "customer_key": seq["customer"],
+                "as_of_epoch": float(_to_epoch(last_ts)),
+                "version": cfg.tag,
+                "dim": int(h.shape[0]),
+                "state": h.tolist(),
+                "embedding": emb.tolist(),
+                "last_event_ts": str(last_ts),
+            }
+        )
+    store.bulk_states(state_rows)
     # training embeddings: Population B SAMPLE at anchors (states stay for everyone)
     anchor_split = split
     if cfg.sample_b_customers is not None:
@@ -388,13 +435,32 @@ def build_products(cfg, model, vocab, df, keys, split):
         b_sample = set(draw_sample(keys, split, "B", cfg.sample_b_customers, cfg.split_seed))
         anchor_split = {k: ("B" if (split[k] == "B" and k in b_sample) else "A") for k in keys}
         print(f"[sample] plugins train on {len(b_sample)} of population B", flush=True)
+    anchor_rows, donor_rows = [], []
     for seq in build_sequences(df, keys, cfg, anchor_split, with_anchors=True):
         if seq["group"] == "B" and seq["anchor_epoch"] is not None:
             with torch.no_grad():
                 y, h = model(seq)
-                store.add_training(seq["customer"], seq["anchor_epoch"], model.donor_seq(y, h, seq))
-                # state-consistent readout: reproducible later from a live state
-                store.add_donor(seq["customer"], seq["anchor_epoch"], model.donor(h))
+                dsq = model.donor_seq(y, h, seq)  # legacy entity-pooled readout
+                dnr = model.donor(h)  # state-consistent readout (inference)
+            anchor_rows.append(
+                {
+                    "customer_key": seq["customer"],
+                    "anchor_epoch": float(seq["anchor_epoch"]),
+                    "version": cfg.tag,
+                    "dim": int(dsq.shape[0]),
+                    "embedding": dsq.tolist(),
+                }
+            )
+            donor_rows.append(
+                {
+                    "customer_key": seq["customer"],
+                    "anchor_epoch": float(seq["anchor_epoch"]),
+                    "version": cfg.tag,
+                    "dim": int(dnr.shape[0]),
+                    "embedding": dnr.tolist(),
+                }
+            )
+    store.bulk_anchor_rows(anchor_rows, donor_rows)
     s, t = store.count()
     store.close()
     return s, t

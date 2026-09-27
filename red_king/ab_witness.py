@@ -19,7 +19,7 @@ This script builds that missing test:
   * arms: WITHOUT (stock panel->adjudicate->judge) |
           WITH (panel["mb"] <- red_king ensemble multi-step rollout, pessimistic se) |
           WITH_BOTH (also mb_sharp <- red_king argmax rollout).
-    Integration point identical to prior art (red_king/wq_native.py).
+    Integration point identical to the prior-art native panel-witness scripts (since deleted).
 
 PRE-COMMITTED SCORING RULE (recorded before running — receipts doctrine):
   SHIP red_king into the decision path iff the WITH arm, vs WITHOUT:
@@ -49,7 +49,7 @@ CELLS = [(5, 0.4), (20, 0.4), (50, 0.4), (20, 0.15), (50, 0.05)]
 N_MC = 20_000
 RK_K = 3
 RK_STEPS = 2500
-WQ_FQE = {
+WHITE_QUEEN_FQE = {
     "device": "cpu",
     "steps_max": 8000,
     "eval_every": 500,
@@ -289,7 +289,7 @@ def run_cell(T, eps, nA=4, d=6, seed=0):
 
     records = []
     for name, cand in candidates(nA, eps).items():
-        panel = _E.panel(diet, cand, GAMMA, fast=True, ensemble_K=2, fqe_cfg=dict(WQ_FQE))
+        panel = _E.panel(diet, cand, GAMMA, fast=True, ensemble_K=2, fqe_cfg=dict(WHITE_QUEEN_FQE))
         rk_mb, rk_se = rk_rollout(rk, starts, cand, T, nA)
 
         class _Sharp:
@@ -329,7 +329,7 @@ def run_cell(T, eps, nA=4, d=6, seed=0):
             "truth_se": round(v_se, 3),
             "bar_true": round(bar_true, 3),
             "should_deploy": should,
-            "wq_mb": panel["mb"].get("mb") if isinstance(panel["mb"], dict) else None,
+            "white_queen_mb": panel["mb"].get("mb") if isinstance(panel["mb"], dict) else None,
             "rk_mb": round(rk_mb, 3),
             "rk_se": round(rk_se, 3),
             **{f"{a}_{k}": v for a, arm in arms.items() for k, v in arm.items()},

@@ -5,7 +5,7 @@ environment's decisions against LIVE ground-truth returns through the bench
 harness (FP/FN/precision/recall + Wilson intervals), and writes a report.
 
 Usage: python benchmark_ope.py [env ...]
-Writes /tmp/opencode/wq_matrix/benchmark.json and prints the summary.
+Writes /tmp/opencode/white_queen_matrix/benchmark.json and prints the summary.
 """
 
 import sys
@@ -24,7 +24,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 from white_queen.tribunal.bench import Case, Cell, summarize
 
-OUT = "/tmp/opencode/wq_matrix"
+OUT = "/tmp/opencode/white_queen_matrix"
 DISCRETE = ["cartpole", "mountaincar", "acrobot", "lunar"]
 CONTINUOUS = ["mountaincar_continuous", "pendulum"]
 

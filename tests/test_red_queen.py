@@ -572,7 +572,7 @@ def test_controller_certified_discretize_degenerate_collapses_to_one_bucket():
 
 @pytest.fixture
 def certified_env(monkeypatch, tmp_path):
-    import white_queen.tribunal.ope.data as wq_data
+    import white_queen.tribunal.ope.data as white_queen_data
     import white_queen.tribunal.ope.pipeline as pl_mod
 
     class _Policy:
@@ -591,7 +591,7 @@ def certified_env(monkeypatch, tmp_path):
 
     monkeypatch.setattr(pl_mod, "train_candidates", fake_train)
     monkeypatch.setattr(pl_mod, "evaluate_pool", fake_eval)
-    monkeypatch.setattr(wq_data, "to_canonical", lambda *args, **kwargs: {})
+    monkeypatch.setattr(white_queen_data, "to_canonical", lambda *args, **kwargs: {})
     n = 24
     counts = np.tile(np.arange(6, dtype=np.float32), 4)
     path = tmp_path / "decision_log.npz"

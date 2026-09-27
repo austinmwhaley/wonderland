@@ -63,7 +63,16 @@ def train_cfm(cfg: CFMConfig):
     _apply_data_revision(cfg, df)
     keys = _customer_keys(df, cfg)
     split = assign_split(keys, cfg)
+    a_keys = [k for k in keys if split[k] == "A"]
+    if cfg.sample_a_customers is not None:
+        a_keys = draw_sample(keys, split, "A", cfg.sample_a_customers, cfg.split_seed)
+        print(f"[sample] encoder trains on {len(a_keys)} of population A", flush=True)
     # ---- derive configuration from the data (no fixed values) ----
+    # Architecture identity (dim / seq_len / half-life) derives from the FULL
+    # working base, so the same tag always means the same architecture; the
+    # training budget and batch derive from the ACTUAL sample_A (compute
+    # proportional to data) — which is exactly what makes the sample_A ladder
+    # scale honestly (small samples train cheaply and stop at convergence).
     AT.sequence_lengths(df, keys)
     all_ts = [_to_epoch(x) for x in df["event_ts"].to_list()]
     vocab_sizes = (
@@ -71,13 +80,11 @@ def train_cfm(cfg: CFMConfig):
         df["brand"].n_unique(),
         df["entity_type"].n_unique(),
     )
-    res = AT.resolve_cfm(cfg, df, keys, vocab_sizes, all_ts)
-    cfg.seq_len, cfg.dim, cfg.batch = res.seq_len, res.dim, res.batch
-    cfg.state_half_life_days = res.half_life_days
-    a_keys = [k for k in keys if split[k] == "A"]
-    if cfg.sample_a_customers is not None:
-        a_keys = draw_sample(keys, split, "A", cfg.sample_a_customers, cfg.split_seed)
-        print(f"[sample] encoder trains on {len(a_keys)} of population A", flush=True)
+    res_all = AT.resolve_cfm(cfg, df, keys, vocab_sizes, all_ts)
+    res = AT.resolve_cfm(cfg, df, a_keys, vocab_sizes, all_ts)
+    cfg.seq_len, cfg.dim = res_all.seq_len, res_all.dim
+    cfg.batch = res.batch
+    cfg.state_half_life_days = res_all.half_life_days
     a_seqs = build_sequences(df, a_keys, cfg, split, with_anchors=False)
     vocab = EventVocab.build(a_seqs)
     device = torch.device(cfg.device)
@@ -142,6 +149,9 @@ def train_cfm(cfg: CFMConfig):
             "dim": cfg.dim,
             "batch": cfg.batch,
             "half_life_days": cfg.state_half_life_days,
+            "budget_steps": res.budget_steps,
+            "eval_every": res.eval_every,
+            "patience": res.patience,
         },
     )
     return model, vocab, df, keys, split

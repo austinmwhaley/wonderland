@@ -5,7 +5,7 @@ IQL (continuous) on those logs and ask the simple question: does the offline
 policy beat the logging (behavior) policy's true return, and does OPE agree?
 
 Usage: python survey_continuous.py [env ...]   (default: mountaincar_continuous pendulum)
-Writes /tmp/opencode/wq_matrix/continuous.json
+Writes /tmp/opencode/white_queen_matrix/continuous.json
 """
 
 import sys
@@ -32,7 +32,7 @@ from white_queen.tribunal.ope.receipts import behavior_stats
 from white_queen.tribunal.candidates import train_candidate
 from white_queen.tribunal.ope.protocols import EnvStub
 
-OUT = "/tmp/opencode/wq_matrix"
+OUT = "/tmp/opencode/white_queen_matrix"
 GAMMA = 0.99
 
 

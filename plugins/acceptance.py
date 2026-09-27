@@ -52,18 +52,18 @@ def main(argv=None):
 
     sup_ok = supervised.run(a.window, a.seed)[0]
     uns_ok = segmentation.run(a.window, a.seed)[0]
-    wq_ok = white_queen_plugin.run(a.window, a.seed)[0]
+    white_queen_ok = white_queen_plugin.run(a.window, a.seed)[0]
     chk("supervised plugin independent gate", sup_ok, sup_ok)
     chk("unsupervised plugin independent gate", uns_ok, uns_ok)
-    chk("white_queen plugin independent gate", wq_ok, wq_ok)
+    chk("white_queen plugin independent gate", white_queen_ok, white_queen_ok)
 
     # whole
     artifacts = sorted((WORK / "plugins" / "artifacts").glob("*.json"))
     chk("all plugin artifacts written", len(artifacts), len(artifacts) >= 3)
     chk(
         "end-to-end: all plugin kinds share one frozen table",
-        all([sup_ok, uns_ok, wq_ok]),
-        all([sup_ok, uns_ok, wq_ok]),
+        all([sup_ok, uns_ok, white_queen_ok]),
+        all([sup_ok, uns_ok, white_queen_ok]),
     )
 
     from .base import gate

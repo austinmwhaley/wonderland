@@ -35,9 +35,9 @@ def run(seed=0, max_steps=12000):
         rng = np.random.default_rng(seed)
         idx = rng.choice(idx, max_steps, replace=False)
     src = {"obs": S[idx], "act": act[idx], "rew": R[idx], "next_obs": S2[idx], "done": D[idx]}
-    from white_queen.tribunal.ope.pipeline import run as wq_run
+    from white_queen.tribunal.ope.pipeline import run as white_queen_run
 
-    rep = wq_run(
+    rep = white_queen_run(
         src,
         algorithms=("iql", "cql", "bc"),
         nA=nA,

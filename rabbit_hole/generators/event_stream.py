@@ -1,4 +1,11 @@
-"""Customer event stream materialization and deterministic playback."""
+"""Customer event stream materialization and deterministic playback.
+
+Inserts are PARTITIONED by event_type: each stage deletes exactly its own
+partition and re-inserts it (upsert semantics) — re-running a stage (or the
+whole materialization) replaces rows in place instead of duplicating or wiping
+other types. Per-customer indexes (customer_key / customer_id) are ensured at
+the end so customer-scoped reads (sequences, anchors, labels) are index-served.
+"""
 
 from __future__ import annotations
 
@@ -21,6 +28,29 @@ _INSERT_COLS = """
 """
 
 
+def _ensure_indexes(conn) -> None:
+    """Per-customer traversal indexes (sequences / anchors / labels by customer).
+
+    The customer_events/orders/website_browse indexes ship in the DDL; this
+    makes them idempotent for DBs built by older DDLs and adds the contact
+    index behind the email_sends view.
+    """
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_customer_events_customer_ts "
+        "ON customer_events (customer_key, event_ts)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_orders_customer_ts ON orders (customer_id, order_ts)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_browse_customer_ts "
+        "ON website_browse (customer_id, event_ts)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_contact_sends_customer ON contact_sends (customer_id)"
+    )
+
+
 def materialize_customer_event_stream(
     conn: duckdb.DuckDBPyConnection,
     reporter: ProgressReporter | None = None,
@@ -32,12 +62,16 @@ def materialize_customer_event_stream(
     temporal core can learn cross-domain dependencies.
     """
 
-    conn.execute("DELETE FROM customer_events")
+    # No global wipe: every stage below upserts its own event_type partition
+    # (DELETE that partition, then INSERT) so reruns replace instead of duplicate.
 
     total_stages = 8
     if reporter is not None:
         reporter.start("materialize customer events", total_stages)
 
+    conn.execute(
+        "DELETE FROM customer_events WHERE event_type = 'customer_signup'"
+    )  # upsert: replace this partition
     conn.execute(
         f"""
         INSERT INTO customer_events ({_INSERT_COLS})
@@ -63,6 +97,9 @@ def materialize_customer_event_stream(
     if reporter is not None:
         reporter.advance(1)
 
+    conn.execute(
+        "DELETE FROM customer_events WHERE source_table = 'website_browse'"
+    )  # upsert: replace this partition
     conn.execute(
         f"""
         INSERT INTO customer_events ({_INSERT_COLS})
@@ -92,6 +129,9 @@ def materialize_customer_event_stream(
     if reporter is not None:
         reporter.advance(1)
 
+    conn.execute(
+        "DELETE FROM customer_events WHERE event_type = 'order_placed'"
+    )  # upsert: replace this partition
     conn.execute(
         f"""
         INSERT INTO customer_events ({_INSERT_COLS})
@@ -124,6 +164,9 @@ def materialize_customer_event_stream(
         reporter.advance(1)
 
     conn.execute(
+        "DELETE FROM customer_events WHERE event_type = 'order_cancelled'"
+    )  # upsert: replace this partition
+    conn.execute(
         f"""
         INSERT INTO customer_events ({_INSERT_COLS})
         SELECT
@@ -143,6 +186,9 @@ def materialize_customer_event_stream(
     if reporter is not None:
         reporter.advance(1)
 
+    conn.execute(
+        "DELETE FROM customer_events WHERE event_type = 'order_returned'"
+    )  # upsert: replace this partition
     conn.execute(
         f"""
         INSERT INTO customer_events ({_INSERT_COLS})
@@ -165,6 +211,9 @@ def materialize_customer_event_stream(
 
     # --- email action events: send -> open -> click ---
     conn.execute(
+        "DELETE FROM customer_events WHERE source_table = 'contact_sends' AND ends_with(event_type, '_send')"
+    )  # upsert: replace this partition
+    conn.execute(
         f"""
         INSERT INTO customer_events ({_INSERT_COLS})
         SELECT
@@ -176,6 +225,9 @@ def materialize_customer_event_stream(
     )
     if reporter is not None:
         reporter.advance(1)
+    conn.execute(
+        "DELETE FROM customer_events WHERE source_table = 'contact_sends' AND ends_with(event_type, '_open')"
+    )  # upsert: replace this partition
     conn.execute(
         f"""
         INSERT INTO customer_events ({_INSERT_COLS})
@@ -189,6 +241,9 @@ def materialize_customer_event_stream(
     )
     if reporter is not None:
         reporter.advance(1)
+    conn.execute(
+        "DELETE FROM customer_events WHERE source_table = 'contact_sends' AND ends_with(event_type, '_click')"
+    )  # upsert: replace this partition
     conn.execute(
         f"""
         INSERT INTO customer_events ({_INSERT_COLS})
@@ -207,6 +262,8 @@ def materialize_customer_event_stream(
     )
     if reporter is not None:
         reporter.advance(1)
+
+    _ensure_indexes(conn)
 
     # DuckDB autocommits.
     event_count = int(conn.execute("SELECT COUNT(*) FROM customer_events").fetchone()[0])

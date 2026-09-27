@@ -25,7 +25,7 @@ from white_queen.colony.collect import run as colony_run
 from white_queen.tribunal.ope import pipeline
 
 
-def survey_env(env_name, seed=0, out_dir="/tmp/opencode/wq_survey"):
+def survey_env(env_name, seed=0, out_dir="/tmp/opencode/white_queen_survey"):
     os.makedirs(out_dir, exist_ok=True)
     db_path = os.path.join(out_dir, f"{env_name}.db")
     ckpt = os.path.join(out_dir, f"{env_name}_ckpt")

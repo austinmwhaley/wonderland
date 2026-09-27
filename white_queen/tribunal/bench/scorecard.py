@@ -23,7 +23,7 @@ from .harness import Case, Cell
 _ROOT = str(Path(__file__).resolve().parents[3])
 _SCRIPTS = str(Path(_ROOT) / "scripts")
 BENCH_RESULTS = os.environ.get(
-    "WQ_BENCH_RESULTS", str(Path(_ROOT) / "white_queen/tribunal/bench/results")
+    "WHITE_QUEEN_BENCH_RESULTS", str(Path(_ROOT) / "white_queen/tribunal/bench/results")
 )
 FAMILY = {}
 for _fam, _envs in CONTRACT["suite"].items():

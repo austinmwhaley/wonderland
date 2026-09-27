@@ -8,7 +8,7 @@ For each env:
      DEPLOY/HOLD decisions match truth
 
 Usage: python survey_matrix.py [env ...]
-Writes /tmp/opencode/wq_matrix/summary.json and prints a table.
+Writes /tmp/opencode/white_queen_matrix/summary.json and prints a table.
 """
 
 import sys
@@ -35,7 +35,7 @@ from white_queen.tribunal.adjudicate import _discounted_rollout
 from environments.registry import make_env
 from white_queen.tribunal.ope.receipts import spearman
 
-OUT = "/tmp/opencode/wq_matrix"
+OUT = "/tmp/opencode/white_queen_matrix"
 ALGOS = ("iql", "cql", "bc")  # random is an input/logging policy, not an output
 
 
@@ -73,7 +73,7 @@ def survey(
     # noise (GPU colony training is not bit-reproducible). regen=True rebuilds.
     db_path = os.path.join(OUT, f"{env_name}#s{seed}.db")
     ckpt = os.path.join(OUT, f"{env_name}#s{seed}_ckpt")
-    _regen = os.environ.get("WQ_REGEN_LOGS") == "1"
+    _regen = os.environ.get("WHITE_QUEEN_REGEN_LOGS") == "1"
     if _regen and os.path.exists(db_path):
         os.remove(db_path)
     cfg = dict(QUICK_LOOK)
@@ -107,11 +107,11 @@ def survey(
     import os as _os
 
     _fqe = {}
-    if _os.environ.get("WQ_FQE_STEPS"):
-        _fqe["steps_max"] = int(_os.environ["WQ_FQE_STEPS"])
-    if _os.environ.get("WQ_DYN_K"):
-        _fqe["dyn_ensemble"] = int(_os.environ["WQ_DYN_K"])
-    _ek = int(_os.environ.get("WQ_ENSEMBLE_K", "3"))
+    if _os.environ.get("WHITE_QUEEN_FQE_STEPS"):
+        _fqe["steps_max"] = int(_os.environ["WHITE_QUEEN_FQE_STEPS"])
+    if _os.environ.get("WHITE_QUEEN_DYN_K"):
+        _fqe["dyn_ensemble"] = int(_os.environ["WHITE_QUEEN_DYN_K"])
+    _ek = int(_os.environ.get("WHITE_QUEEN_ENSEMBLE_K", "3"))
     rep = pipeline.evaluate_pool(
         d, handles, gamma=cfg["gamma"], fast=True, ensemble_K=_ek, fqe_cfg=(_fqe or None)
     )
