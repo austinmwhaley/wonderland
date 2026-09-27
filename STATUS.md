@@ -888,3 +888,32 @@ battery). Bug found & fixed en route: `cache.diet_hash` crashed on
 logged-propensity diets without a full mu matrix (production weights-cache
 bug) -> OPE_CACHE v5.
 Receipt: red_king/artifacts/ab_witness.json.
+
+## Supervised plugin operating loop (purchase_propensity_30d) — BUILT + REHEARSED
+Operating model is codified in **RUNBOOK.md** (cadence, tables, knobs, hard rules).
+- **(1) encoder** `--as-of` (always passed; = the 1st in production): one monthly
+  draw makes disjoint POPULATIONS A/B (gated "A/B disjoint: 0 overlap", persisted
+  in encoder_samples); SAMPLES are drawn from each (`--sample-a/--sample-b`) for
+  compute; `--anchors` = random anchor dates per sample-B customer. New `products`
+  cmd rebuilds tables from an existing checkpoint (anchors/sample_b sweeps cost
+  minutes, no retrain). Registry records {as_of, split_seed}.
+- **(1b) daily state job** (`looking_glass.daily_states`): the ONLY writer of
+  `customer_state` (fade+absorb the day's events) + `state_embeddings`
+  (materialized donor(h) per day; receipts in state_job_receipts). GPU absorbs;
+  ~200s/day for 25k; forward-only (refuses to relabel states into the past).
+- **(2) per-plugin** on the frozen sample-B table via HeadTemplate: Target owns
+  only the label; template does split/fit/gates/artifact/persisted head. Binary =
+  MODEL BAKE-OFF each run (winner = best held-out AUC, recorded; `family=` pins).
+- **(3) read-only inference**: reads that day's state_embeddings -> head ->
+  DuckDB scores (1.5s/25k; was 300-430s when it mutated state). Rejects missing/
+  stale/partial days and encoder-pin mismatches — never writes state.
+
+Evidence (real 25k data): bake-off Nov logistic=0.746 > mlp=0.726 > hgb=0.723 >
+baseline 0.633; Dec rerun 0.745/0.721/0.699 -> logistic wins twice (re-checked
+monthly; flip happens automatically if data/dims favor MLP — `family="mlp"` pins).
+Ladders: chosen rung Nov=8k rows, Dec=4k rows, no falloff. Gates 4/4 both months
+(AUC .746 vs .633 / .738 vs .627, lift 1.79/1.77, calibration ≤0.014).
+Rehearsal: cycle 1 COMPLETE (encoder 2222.9s, 30/30 daily jobs, 6 read-only
+inferences); cycle 2 complete through Dec-7 daily job (paused on request; final
+timeline receipt pending a resume). Batch gates: **full suite 256 passed
+(15:46), ruff clean**. Knob cost model + sweep commands in RUNBOOK.

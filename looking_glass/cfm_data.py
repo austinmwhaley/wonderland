@@ -25,21 +25,101 @@ def _read_stream(cfg: CFMConfig):
     if str(cfg.db).endswith((".arrow", ".feather", ".ipc")):
         import polars as pl
 
-        return (
+        df = (
             pl.read_ipc(cfg.db, memory_map=True)
             .select(list(cols))
             .sort(["customer_key", "event_ts"])
         )
+    else:
+        import duckdb
+
+        con = duckdb.connect(cfg.db, read_only=True)
+        try:
+            df = con.execute(
+                f"SELECT {', '.join(cols)} FROM {cfg.table} ORDER BY customer_key, event_ts"
+            ).pl()
+        finally:
+            con.close()
+    return _cut_as_of(df, cfg)
+
+
+def _cut_as_of(df, cfg: CFMConfig):
+    """Point-in-time cutoff: keep only events with ts <= cfg.as_of (ISO).
+
+    Applied to the RAW stream so every downstream step (keys, A/B split,
+    anchors, sequences, products) is leak-free with respect to the cutoff.
+    """
+    if not getattr(cfg, "as_of", None):
+        return df
+    import polars as pl
+
+    from datetime import datetime, timezone
+
+    try:
+        d = datetime.fromisoformat(str(cfg.as_of))
+    except ValueError as e:
+        raise ValueError(f"--as-of must be an ISO date/datetime, got {cfg.as_of!r}") from e
+    if d.tzinfo is None:
+        d = d.replace(tzinfo=timezone.utc)
+    cut = d.timestamp()
+    return (
+        df.with_columns(
+            pl.col("event_ts")
+            .str.to_datetime(time_zone="UTC", strict=False)
+            .dt.epoch("s")
+            .alias("_asof")
+        )
+        .filter(pl.col("_asof") <= cut)
+        .drop("_asof")
+    )
+
+
+def read_stream_window(cfg: CFMConfig, lo_epoch: float | None, hi_epoch: float | None):
+    """Read ONLY events in ``(lo_epoch, hi_epoch]`` (the inference window).
+
+    DuckDB sources push the time filter into SQL so live inference never
+    materialises the full stream; IPC sources read then filter in Polars.
+    """
+    import polars as pl
+
+    cols = (
+        "customer_key",
+        "event_ts",
+        "brand",
+        "event_type",
+        "event_attributes",
+        "entity_type",
+        "entity_id",
+        "value",
+    )
+    if str(cfg.db).endswith((".arrow", ".feather", ".ipc")):
+        df = _read_stream(cfg)
+        if hi_epoch is not None:
+            df = df.filter(
+                pl.col("event_ts").str.to_datetime(time_zone="UTC", strict=False).dt.epoch("s")
+                <= float(hi_epoch)
+            )
+        if lo_epoch is not None:
+            df = df.filter(
+                pl.col("event_ts").str.to_datetime(time_zone="UTC", strict=False).dt.epoch("s")
+                > float(lo_epoch)
+            )
+        return df
     import duckdb
 
+    where = []
+    if hi_epoch is not None:
+        where.append(f"CAST(event_ts AS TIMESTAMPTZ) <= to_timestamp({float(hi_epoch)})")
+    if lo_epoch is not None:
+        where.append(f"CAST(event_ts AS TIMESTAMPTZ) > to_timestamp({float(lo_epoch)})")
+    w = ("WHERE " + " AND ".join(where)) if where else ""
     con = duckdb.connect(cfg.db, read_only=True)
     try:
-        df = con.execute(
-            f"SELECT {', '.join(cols)} FROM {cfg.table} ORDER BY customer_key, event_ts"
+        return con.execute(
+            f"SELECT {', '.join(cols)} FROM {cfg.table} {w} ORDER BY customer_key, event_ts"
         ).pl()
     finally:
         con.close()
-    return df
 
 
 def _customer_keys(df, cfg):
@@ -54,6 +134,25 @@ def assign_split(keys, cfg: CFMConfig) -> dict[str, str]:
         k: ("A" if (_h(k, cfg.split_seed) % 1000) < int(cfg.split_a_frac * 1000) else "B")
         for k in keys
     }
+
+
+def draw_sample(keys, split, side, n, seed):
+    """Deterministic SAMPLE drawn from Population {side} of the monthly split.
+
+    The populations (assign_split) are disjoint by construction; a sample of A
+    and a sample of B can therefore never overlap. Sample size is a compute/signal
+    knob (the ladders pick it): as small as possible for speed, large enough for
+    the training signal. Seeded, so the draw is reproducible and re-rolls with the
+    month's split_seed.
+    """
+    pop = [k for k in keys if split.get(k) == side]
+    if n is None or n >= len(pop):
+        return pop
+    rng = np.random.default_rng(_h(f"sample:{side}", int(seed)))
+    idx = np.arange(len(pop))
+    rng.shuffle(idx)
+    keep = set(idx[: int(n)].tolist())
+    return [k for i, k in enumerate(pop) if i in keep]
 
 
 def _apply_data_revision(cfg: CFMConfig, df) -> str:

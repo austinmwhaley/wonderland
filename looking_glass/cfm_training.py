@@ -31,6 +31,7 @@ from looking_glass.cfm_data import (
     _read_stream,
     assign_split,
     build_sequences,
+    draw_sample,
 )
 from looking_glass.cfm_model import CFM, EventVocab, _scan
 
@@ -74,6 +75,9 @@ def train_cfm(cfg: CFMConfig):
     cfg.seq_len, cfg.dim, cfg.batch = res.seq_len, res.dim, res.batch
     cfg.state_half_life_days = res.half_life_days
     a_keys = [k for k in keys if split[k] == "A"]
+    if cfg.sample_a_customers is not None:
+        a_keys = draw_sample(keys, split, "A", cfg.sample_a_customers, cfg.split_seed)
+        print(f"[sample] encoder trains on {len(a_keys)} of population A", flush=True)
     a_seqs = build_sequences(df, a_keys, cfg, split, with_anchors=False)
     vocab = EventVocab.build(a_seqs)
     device = torch.device(cfg.device)
@@ -367,6 +371,8 @@ def _registry(cfg, vocab, n_train, n_keys, derived=None, governor=None, cfg_reso
                 "revision": cfg.revision,
                 "tag": cfg.tag,
                 "data_signature": getattr(cfg, "_data_signature", ""),
+                "as_of": getattr(cfg, "as_of", None),
+                "split_seed": cfg.split_seed,
                 "db": cfg.db,
                 "table": cfg.table,
                 "n_customers": n_keys,

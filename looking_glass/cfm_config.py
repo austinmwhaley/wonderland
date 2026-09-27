@@ -44,9 +44,19 @@ class CFMConfig:
     out_dir: str = "artifacts/cfm"
     version: str = "v2.0.0"  # encoder code version
     revision: int = 1  # data/score revision (r)
-    sample_customers: int | None = 500
+    sample_customers: int | None = 500  # working base: first N customers (populations live here)
     split_a_frac: float = 0.7
+    # Populations (assign_split): disjoint monthly pools A and B.
+    # Samples: drawn FROM each population for compute efficiency — as small as
+    # possible, large enough for signal (sizes come from the ladders). None = use
+    # the whole population (previous behavior).
+    sample_a_customers: int | None = None  # encoder training sample from population A
+    sample_b_customers: int | None = None  # plugin-training sample from population B
     split_seed: int = 7
+    # Point-in-time training: when set (ISO date/datetime), the stream is cut to
+    # events <= as_of before keys/split/anchors/training. Production monthly runs
+    # pass the 1st of the month. None = full stream (backward compatible).
+    as_of: str | None = None
     seq_len: int = 128
     n_anchors: int = 6  # exact number of sample-B anchor days per customer
     # Company actions are EXOGENOUS (interventions/treatments), not customer
@@ -97,6 +107,19 @@ def sample_a(n_customers: int, n_anchors: int, **kw):
 
 def _h(key: str, seed: int) -> int:
     return int(hashlib.md5(f"{seed}:{key}".encode()).hexdigest(), 16)
+
+
+def monthly_split_seed(base_seed: int, as_of: str) -> int:
+    """Monthly re-randomization of the sample-A/B membership.
+
+    The split seed is derived from (base_seed, calendar month of as_of), so it
+    rotates every month and is fully reproducible: same month -> same split,
+    next month -> a new disjoint A/B assignment. Anchors follow the same seed
+    (`_random_anchor_epochs`), so both member lists and anchor dates refresh
+    on each monthly encoder rebuild.
+    """
+    d = datetime.fromisoformat(str(as_of))
+    return int(hashlib.md5(f"{base_seed}:{d.year:04d}-{d.month:02d}".encode()).hexdigest()[:12], 16)
 
 
 def _f(v):

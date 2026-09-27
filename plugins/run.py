@@ -12,21 +12,41 @@ def main(argv=None):
     ap.add_argument(
         "--only", default="all", choices=["all", "supervised", "unsupervised", "white_queen"]
     )
+    ap.add_argument(
+        "--target",
+        default=None,
+        help="run ONE supervised target by name (see plugins/targets.py REGISTRY), "
+        "e.g. supervised_purchase_propensity_30d",
+    )
+    ap.add_argument(
+        "--as-of",
+        default=None,
+        help="ISO date: labels closed at this date (point-in-time monthly training)",
+    )
     a = ap.parse_args(argv)
     results = {}
-    if a.only in ("all", "supervised"):
-        from . import supervised
+    if a.target:
+        from .head_template import run_target
+        from .targets import REGISTRY
 
-        results["supervised"] = supervised.run(a.window, a.seed)[0]
-    if a.only in ("all", "unsupervised"):
-        from . import segmentation
+        if a.target not in REGISTRY:
+            ap.error(f"unknown target {a.target!r}; known: {sorted(REGISTRY)}")
+        results[a.target] = run_target(REGISTRY[a.target], seed=a.seed, as_of=a.as_of)[0]
+    else:
+        if a.only in ("all", "supervised"):
+            from . import supervised
 
-        results["unsupervised"] = segmentation.run(a.window, a.seed)[0]
-    if a.only in ("all", "white_queen"):
-        from . import white_queen_plugin
+            results["supervised"] = supervised.run(a.window, a.seed)[0]
+        if a.only in ("all", "unsupervised"):
+            from . import segmentation
 
-        results["white_queen"] = white_queen_plugin.run(a.window, a.seed)[0]
-    print("\n== PLUGIN SUITE (%dd) ==" % a.window)
+            results["unsupervised"] = segmentation.run(a.window, a.seed)[0]
+        if a.only in ("all", "white_queen"):
+            from . import white_queen_plugin
+
+            results["white_queen"] = white_queen_plugin.run(a.window, a.seed)[0]
+    label = a.target if a.target else f"{a.window}d suite"
+    print(f"\n== PLUGIN SUITE ({label}) ==")
     for k, v in results.items():
         print(f"{k:16s} {'PASS' if v else 'FAIL'}")
     ok = all(results.values())

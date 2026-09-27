@@ -31,6 +31,8 @@ def absorb(model: CFM, seq, h0: torch.Tensor | None = None, as_of_epoch: float |
     """
     with torch.no_grad():
         h = h0
+        if h is not None:
+            h = h.to(next(model.parameters()).device)  # store rows are CPU
         if h is not None and as_of_epoch is not None and len(seq["event_ts"]):
             h = fade(
                 h,
@@ -41,8 +43,149 @@ def absorb(model: CFM, seq, h0: torch.Tensor | None = None, as_of_epoch: float |
         return h, model.embed(h)
 
 
+def new_event_sequences(df, as_of_by_key, upto_epoch, company, seq_len):
+    """Sequences of ONLY the events in ``(as_of_by_key[k], upto_epoch]``.
+
+    The live-advance primitive: the stored state already covers each customer's
+    history up to its ``as_of_epoch``, so only that new tail may be absorbed —
+    feeding full history would double-count it. Company actions ride along as
+    covariates and are never tokens (same rule as build_sequences).
+    """
+    import numpy as np
+    import polars as pl
+
+    from looking_glass.cfm_data import _covariates
+
+    if not as_of_by_key:
+        return []
+    company = set(map(str, company))
+    d = (
+        df.with_columns(
+            pl.col("event_ts")
+            .str.to_datetime(time_zone="UTC", strict=False)
+            .dt.epoch("s")
+            .alias("_ts")
+        )
+        .filter(pl.col("_ts") <= float(upto_epoch))
+        .join(
+            pl.DataFrame(
+                {
+                    "customer_key": list(as_of_by_key),
+                    "as_of_epoch": [float(v) for v in as_of_by_key.values()],
+                }
+            ),
+            on="customer_key",
+            how="inner",
+        )
+        .filter(pl.col("_ts") > pl.col("as_of_epoch"))
+        .sort(["customer_key", "_ts"])
+    )
+    seqs = []
+    for g in d.partition_by("customer_key", maintain_order=True):
+        et_arr = g["event_type"].to_numpy()
+        ts_all = g["_ts"].to_numpy()
+        val = g["value"].cast(pl.Float64, strict=False).fill_null(0.0).to_numpy()
+        co = _covariates(et_arr, ts_all, company)
+        ki = np.flatnonzero(~np.isin(et_arr, list(company)))
+        if ki.size < 1:
+            continue
+        ki = ki[max(0, ki.size - int(seq_len)) :]
+        seqs.append(
+            {
+                "customer": g["customer_key"][0],
+                "group": "B",
+                "anchor_epoch": None,
+                "event_type": et_arr[ki],
+                "brand": g["brand"].to_numpy()[ki],
+                "entity_type": g["entity_type"].to_numpy()[ki],
+                "entity_id": g["entity_id"].to_numpy()[ki],
+                "value": val[ki],
+                "event_ts": g["event_ts"].to_numpy()[ki],
+                "ts": ts_all[ki].tolist(),
+                "co": co[ki].tolist(),
+            }
+        )
+    return seqs
+
+
+def advance_to_date(store, cfg, df, upto_epoch):
+    """Advance every stored state to ``upto_epoch`` (the daily-inference step).
+
+    Customers with new events get fade->absorb; the remainder are faded
+    (decay-only). Returns ``(n_with_events, n_idle)``.
+    """
+    rows = store.con.execute("SELECT customer_key, as_of_epoch FROM customer_state").fetchall()
+    as_of_by_key = {k: a for k, a in rows}
+    seqs = new_event_sequences(df, as_of_by_key, upto_epoch, cfg.company_actions, cfg.seq_len)
+    if seqs:
+        store.advance(seqs, incremental=True)
+    with_events = {s["customer"] for s in seqs}
+    store.fade_idle(float(upto_epoch))
+    return len(with_events), len(as_of_by_key) - len(with_events)
+
+
+def donor_states(model: CFM, states):
+    """Batched ``donor(h) = proj(h)`` for live states (the exact readout written
+    into ``donor_embeddings`` at training time, so heads transfer). Device-safe:
+    follows wherever the model lives (cuda when the job moved it there)."""
+    with torch.no_grad():
+        t = torch.as_tensor(states, dtype=torch.float32)
+        return model.proj(t.to(next(model.parameters()).device)).cpu().numpy()
+
+
+def load_frozen_encoder(tag: str, cfm_dir):
+    """Load a frozen CFM checkpoint + its registry-resolved config (Layer B)."""
+    import json
+    from pathlib import Path as _P
+
+    from looking_glass.cfm_config import CFMConfig
+    from looking_glass.cfm_model import CFM, EventVocab
+
+    cfm_dir = _P(cfm_dir)
+    ckpt = cfm_dir / f"cfm_{tag.replace('.', '_')}.pt"
+    if not ckpt.exists():
+        raise FileNotFoundError(f"encoder checkpoint for pin {tag} not found: {ckpt}")
+    blob = torch.load(ckpt, map_location="cpu", weights_only=False)
+    vocab = EventVocab(blob["vocab"]["et"], blob["vocab"]["brand"], blob["vocab"]["ent"])
+    model = CFM(vocab, blob["dim"], n_experts=blob.get("n_experts", 1))
+    model.load_state_dict(blob["state"])
+    model.eval()
+    cfg = CFMConfig()
+    reg = cfm_dir / f"registry_{tag.replace('.', '_')}.json"
+    if reg.exists():
+        meta = json.loads(reg.read_text())
+        cfg.version = meta.get("version", cfg.version)
+        cfg.revision = int(meta.get("revision", cfg.revision))
+        resolved = meta.get("resolved", {})
+        cfg.seq_len = int(resolved.get("seq_len", cfg.seq_len))
+        cfg.state_half_life_days = float(resolved.get("half_life_days", cfg.state_half_life_days))
+        db = meta.get("db")
+        if db and _P(db).exists():
+            cfg.db = db
+        else:
+            from looking_glass.cfm_config import STREAM_TABLE  # noqa: F401
+
+            cfg.db = str(
+                _P(__file__).resolve().parents[2]
+                / "rabbit_hole"
+                / "data"
+                / "duckdb"
+                / "customer_event_stream.duckdb"
+            )
+    else:
+        cfg.db = str(
+            _P(__file__).resolve().parents[2]
+            / "rabbit_hole"
+            / "data"
+            / "duckdb"
+            / "customer_event_stream.duckdb"
+        )
+    model.half_life_days = cfg.state_half_life_days
+    return model, cfg
+
+
 # ---------------------------------------------------------------------------
-# state store (DuckDB): customer_state + anchor_embeddings
+# state store (DuckDB): customer_state + anchor_embeddings + donor_embeddings
 # ---------------------------------------------------------------------------
 class StateStore:
     def __init__(self, path, cfg: CFMConfig, model: CFM):
@@ -62,9 +205,28 @@ class StateStore:
             "CREATE TABLE IF NOT EXISTS anchor_embeddings ("
             "customer_key TEXT, anchor_epoch DOUBLE, version TEXT, dim INT, embedding FLOAT[])"
         )
+        # state-consistent readout: donor(h) = proj(h) (no entity pooling, no
+        # normalization). It is a PURE FUNCTION OF THE STATE, so a head trained
+        # on this table can be scored against live advanced states.
+        self.con.execute(
+            "CREATE TABLE IF NOT EXISTS donor_embeddings ("
+            "customer_key TEXT, anchor_epoch DOUBLE, version TEXT, dim INT, embedding FLOAT[])"
+        )
         self.con.execute(
             "CREATE TABLE IF NOT EXISTS encoder_samples ("
             "customer_key TEXT, split TEXT, version TEXT)"
+        )
+        # DAILY INFERENCE EMBEDDINGS: materialized by the Layer-B daily state
+        # job from customer_state (donor(h)). Plugin inference (Layer C) is a
+        # pure READ of this table — it never writes state or embeddings.
+        self.con.execute(
+            "CREATE TABLE IF NOT EXISTS state_embeddings ("
+            "customer_key TEXT, as_of_epoch DOUBLE, version TEXT, dim INT, embedding FLOAT[])"
+        )
+        self.con.execute(
+            "CREATE TABLE IF NOT EXISTS state_job_receipts ("
+            "as_of_epoch DOUBLE, version TEXT, n_absorbed BIGINT, n_idle BIGINT, "
+            "n_embeddings BIGINT, device TEXT, wall_seconds DOUBLE, ran_at TIMESTAMP)"
         )
 
     def write_splits(self, keys, split):
@@ -121,19 +283,84 @@ class StateStore:
             [key, anchor_epoch, self.cfg.tag, len(emb), emb.tolist()],
         )
 
+    def add_donor(self, key, anchor_epoch, emb):
+        self.con.execute(
+            "INSERT INTO donor_embeddings VALUES (?,?,?,?,?)",
+            [key, anchor_epoch, self.cfg.tag, len(emb), emb.tolist()],
+        )
+
     def fade_idle(self, now_epoch):
-        """Lazily advance as_of of idle states (decay only; no events)."""
+        """Advance every idle state to now_epoch (decay only; no events).
+
+        Batched: one projection over all states + a bulk rewrite, so a 25k-customer
+        store advances in seconds rather than per-row round-trips.
+        """
+        import polars as pl
+
         rows = self.con.execute(
             "SELECT customer_key, as_of_epoch, state FROM customer_state"
         ).fetchall()
-        for key, as_of, state in rows:
-            h = fade(
-                torch.tensor(state, dtype=torch.float32),
-                now_epoch - as_of,
-                self.cfg.state_half_life_days,
-            )
-            emb = self.model.embed(h)
-            self.upsert(key, h, emb, now_epoch, None)
+        if not rows:
+            return
+        keys = [r[0] for r in rows]
+        H = torch.tensor([r[2] for r in rows], dtype=torch.float32)
+        dt = torch.tensor(
+            [float(now_epoch) - float(r[1]) for r in rows], dtype=torch.float32
+        ).unsqueeze(1)
+        decay = torch.exp(-LN2 * dt / max(self.cfg.state_half_life_days * 86400.0, 1.0)).clamp(
+            max=1.0
+        )  # dt <= 0 -> identity, matching fade()
+        dev = next(self.model.parameters()).device
+        with torch.no_grad():
+            H = H * decay
+            E = torch.nn.functional.normalize(self.model.proj(H.to(dev)), dim=1).cpu()
+        df = pl.DataFrame(
+            {
+                "customer_key": keys,
+                "as_of_epoch": [float(now_epoch)] * len(keys),
+                "version": [self.cfg.tag] * len(keys),
+                "dim": [int(H.shape[1])] * len(keys),
+                "state": H.tolist(),
+                "embedding": E.tolist(),
+                "last_event_ts": [None] * len(keys),
+            }
+        )
+        self.con.execute("DELETE FROM customer_state")
+        self.con.register("_idle", df)
+        try:
+            self.con.execute("INSERT INTO customer_state SELECT * FROM _idle")
+        finally:
+            self.con.unregister("_idle")
+
+    def materialize_state_embeddings(self, model, as_of_epoch):
+        """Project every live state to its inference embedding for this day.
+
+        Idempotent per day (delete + rewrite), so the daily job is re-runnable.
+        Returns the number of rows written.
+        """
+        import polars as pl
+
+        rows = self.con.execute("SELECT customer_key, state FROM customer_state").fetchall()
+        if not rows:
+            return 0
+        keys = [r[0] for r in rows]
+        E = donor_states(model, [r[1] for r in rows])
+        self.con.execute("DELETE FROM state_embeddings WHERE as_of_epoch = ?", [float(as_of_epoch)])
+        df = pl.DataFrame(
+            {
+                "customer_key": keys,
+                "as_of_epoch": [float(as_of_epoch)] * len(keys),
+                "version": [self.cfg.tag] * len(keys),
+                "dim": [int(E.shape[1])] * len(keys),
+                "embedding": E.tolist(),
+            }
+        )
+        self.con.register("_se", df)
+        try:
+            self.con.execute("INSERT INTO state_embeddings SELECT * FROM _se")
+        finally:
+            self.con.unregister("_se")
+        return len(keys)
 
     def count(self):
         s = self.con.execute("SELECT count(*) FROM customer_state").fetchone()[0]
@@ -150,15 +377,24 @@ def build_products(cfg, model, vocab, df, keys, split):
     if pdb.exists():
         pdb.unlink()
     store = StateStore(pdb, cfg, model)
-    store.write_splits(keys, split)
+    store.write_splits(keys, split)  # persist the POPULATIONS (the truth)
     # inference states for every customer (full history, as_of = last event)
     store.advance(build_sequences(df, keys, cfg, split, with_anchors=False), incremental=False)
-    # training embeddings for B at anchors
-    for seq in build_sequences(df, keys, cfg, split, with_anchors=True):
+    # training embeddings: Population B SAMPLE at anchors (states stay for everyone)
+    anchor_split = split
+    if cfg.sample_b_customers is not None:
+        from looking_glass.cfm_data import draw_sample
+
+        b_sample = set(draw_sample(keys, split, "B", cfg.sample_b_customers, cfg.split_seed))
+        anchor_split = {k: ("B" if (split[k] == "B" and k in b_sample) else "A") for k in keys}
+        print(f"[sample] plugins train on {len(b_sample)} of population B", flush=True)
+    for seq in build_sequences(df, keys, cfg, anchor_split, with_anchors=True):
         if seq["group"] == "B" and seq["anchor_epoch"] is not None:
             with torch.no_grad():
                 y, h = model(seq)
                 store.add_training(seq["customer"], seq["anchor_epoch"], model.donor_seq(y, h, seq))
+                # state-consistent readout: reproducible later from a live state
+                store.add_donor(seq["customer"], seq["anchor_epoch"], model.donor(h))
     s, t = store.count()
     store.close()
     return s, t
