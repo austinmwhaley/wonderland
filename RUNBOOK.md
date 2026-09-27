@@ -23,7 +23,7 @@ is the only writer of state/embeddings.
 
 | When | Step | Command |
 |---|---|---|
-| **1st of month** | (1) encoder retrain on sample A, as-of the 1st (event cutoff + re-randomized A/B) → products rebuilt: split, monthly embeddings, states at the 1st | `python -m looking_glass.customer_foundation_model train --customers 25000 --anchors 6 --as-of YYYY-MM-01 --db rabbit_hole/data/duckdb/customer_event_stream.duckdb --out-dir looking_glass/artifacts/cfm` |
+| **1st of month** | (0) size **Sample A** from the encoder-ladder receipt (first run of a new as_of runs the ladder first) → (1) encoder retrain on that Sample A, as-of the 1st (event cutoff + re-randomized A/B + **warm-start** from the previous compatible month) → products rebuilt: split, monthly embeddings, states at the 1st | `python -m looking_glass.customer_foundation_model train --customers 25000 --anchors 6 --as-of YYYY-MM-01 --db rabbit_hole/data/duckdb/customer_event_stream.duckdb --out-dir looking_glass/artifacts/cfm` |
 | 1st (after 1) | (1b) close day 1: states → `state_embeddings` at the 1st | `python -m looking_glass.daily_states --as-of YYYY-MM-01` |
 | 1st (after 1b) | (2) **per supervised plugin**: fit/gate/persist head on the frozen table, labels closed at the 1st, pinned to the encoder tag | `python -m plugins.head_template supervised_purchase_propensity_30d --as-of YYYY-MM-01` |
 | 1st | (3) inference (training day counts as a run) | `python -m plugins.inference supervised_purchase_propensity_30d --as-of YYYY-MM-01` |
@@ -61,7 +61,8 @@ family instead of re-baking, set `family=` on the Target (e.g. `family="mlp"`).
 | Knob | Tunes | Retrain encoder? | Products rebuild? | Sizing evidence |
 |---|---|---|---|---|
 | `--customers N` | working base (the population cap) | yes | yes | donor battery ladder |
-| `--sample-a N` | encoder training sample from population A | **yes** | yes | donor ladder (~2k min signal, ~20k for donor PASS) |
+| `--sample-a N` | encoder training sample from population A | **yes** | yes | **auto**: the as_of ladder receipt's chosen rung (explicit N overrides; no receipt → all-of-A + warning) |
+| `--warm-start auto\|none\|tag` | continue from an earlier compatible checkpoint (as_of' ≤ current — never future-trained; vocab/arch guarded) | no | no | governor receipts (`warm_from`, steps) — same objective as scratch, so quality is governed, not assumed |
 | `--sample-b M` | plugin-training sample from population B | no | yes | `plugins.ladder` (training rows) |
 | `--anchors K` | random anchor dates **per sample-B customer** (more dates = more temporal views per customer, same encoder) | no | yes | cheap sweep (below) |
 | `--epochs` | encoder budget (governed: trains to convergence under the cap) | yes | yes | autotune governor |
@@ -80,6 +81,19 @@ done
 populations, cutoff and samples from its registry. It resets states — after
 keeping a setting, re-run the day-1 daily state job.)
 
+### Cost design — measured receipts (capability up, cost down)
+
+| Lever | Receipt |
+|---|---|
+| Sample-A ladder (capability/cost sizing) | chosen **12k of 17.5k** A rows: AUC 0.7281 within 2·SE (0.0106) of full-sample 0.7348 — ~31% fewer training rows, budget 5,640 vs 8,220 steps |
+| Sample-scaled training budget | rung250 converges at 240/480 steps in minutes — cost ∝ sample, never a fixed count |
+| Warm-start / continual (`--warm-start auto`) | continues from the previous compatible month (leak-guarded: as_of' ≤ as_of); same objective ⇒ governor still decides convergence; fewer steps to the same plateau (receipt: `warm_from` + governor steps) |
+| Bulk product IO | single-row inserts → 3 Arrow writes: products rebuild cut ~3.3× (comparable rung totals 1,448s → 435s); every monthly rebuild benefits |
+| Batched daily state job | same-length bucketed forwards + bulk upsert: **86.5s → 4.1s (20.6×)** for 8.6k customers, numerically identical (equivalence tests) |
+| Read-only inference | **1.2–1.5s** per day for 25k scores (state work lives in the daily job) |
+| Architecture identity | dim/seq_len derive from the full base ⇒ same tag = same architecture ⇒ warm-start safe; only batch/budget follow the sample |
+
+---
 ## Hard rules
 
 1. **No peeking.** Encoder trains with `--as-of D` (events ≤ D only) — always
@@ -93,8 +107,11 @@ keeping a setting, re-run the day-1 daily state job.)
    each population** (`--sample-a`, `--sample-b`) for compute efficiency: as
    small as possible, large enough for signal (sizes from the ladders).
    Sample disjointness is inherited from the populations — a sample of A and a
-   sample of B can never overlap. Draws re-roll monthly (reproducible within
-   the month).
+   sample of B can never overlap. This is exactly "draw A from the stream and
+   draw B from the stream minus A": the split is just the mechanism that makes
+   the exclusion structural rather than something to check. Draws re-roll
+   monthly (reproducible within the month). The encoder never trains on
+   anything but Sample A; plugins never train on anything but Sample B.
 3. **Forward-only states.** The daily job refuses to run for a day earlier than
    the store's current `as_of` (no relabeling backwards).
 4. **Read-only inference.** (3) rejects if the day's `state_embeddings` are

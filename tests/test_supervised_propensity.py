@@ -449,3 +449,40 @@ def test_target_family_pin_contract():
     # pinning is just a Target field (e.g. "mlp" once evidence favors it)
     pinned = Target(name="t", kind="binary", window_days=30, spec_target="x", family="mlp")
     assert pinned.family == "mlp"
+
+
+# ---------------------------------------------------------------------------
+# sample-A sizing receipt + warm-start checkpoint picker (cost/capability)
+# ---------------------------------------------------------------------------
+def test_ladder_chosen_rung_reads_receipt(monkeypatch, tmp_path):
+    import json as _json
+
+    import plugins.ladder_sample_a as L
+
+    monkeypatch.setattr(L, "LADDER_DIR", tmp_path)
+    assert L.chosen_rung("2025-11-01") is None  # not sized yet
+    (tmp_path / "summary_2025-11-01.json").write_text(_json.dumps({"chosen_rung": 12000}))
+    assert L.chosen_rung("2025-11-01") == 12000
+
+
+def test_warm_checkpoint_never_uses_future(tmp_path):
+    import json as _json
+    import time as _t
+
+    from looking_glass.cfm_training import _pick_warm_checkpoint
+
+    def reg(name, tag, as_of):
+        payload = {"tag": tag, "as_of": as_of}
+        (tmp_path / name).write_text(_json.dumps(payload))
+
+    reg("registry_future.json", "ck_future", "2025-12-01")  # FUTURE vs current 11-01
+    _t.sleep(0.02)
+    reg("registry_ok.json", "ck_ok", "2025-11-01")  # eligible (as_of <= current)
+    _t.sleep(0.02)
+    reg("registry_noasof.json", "ck_noasof", None)  # no point-in-time info
+
+    # newest mtime first: no-asof skipped, future skipped -> ck_ok wins
+    tag, meta = _pick_warm_checkpoint(tmp_path, "2025-11-01")
+    assert tag == "ck_ok" and meta["as_of"] == "2025-11-01"
+    # current run older than every eligible checkpoint -> none
+    assert _pick_warm_checkpoint(tmp_path, "2025-10-01") == (None, None)

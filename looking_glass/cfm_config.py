@@ -52,6 +52,13 @@ class CFMConfig:
     # the whole population (previous behavior).
     sample_a_customers: int | None = None  # encoder training sample from population A
     sample_b_customers: int | None = None  # plugin-training sample from population B
+    # Warm-start / continual: "auto" continues from the most recent COMPATIBLE
+    # checkpoint with as_of <= this run's as_of (never future-trained data),
+    # "none" trains from scratch, or name a tag explicitly. Same objective as
+    # scratch (all data <= as_of), so the governor still decides convergence —
+    # warm init just gets there in fewer steps (no quality sacrifice by design).
+    warm_start: str = "auto"
+    warm_from: str | None = None  # recorded: which checkpoint we continued from
     split_seed: int = 7
     # Point-in-time training: when set (ISO date/datetime), the stream is cut to
     # events <= as_of before keys/split/anchors/training. Production monthly runs

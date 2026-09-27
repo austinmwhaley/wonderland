@@ -3,7 +3,11 @@
 The runbook, executable (per calendar month):
 
   Day 1 (as-of D):
-    (1) ENCODER      train_cfm(events <= D) on sample A (re-randomized split)
+    (0) LADDER       if this as_of was never laddered: size Sample A first
+                     (smallest rung within noise of best downstream AUC)
+    (1) ENCODER      train_cfm(events <= D) on SAMPLE A (receipt-sized; the
+                     split re-randomizes monthly; warm-starts from the previous
+                     compatible checkpoint when one exists)
                      -> new tag vN.rM; build_products writes the sample-B
                         embedding tables + every customer's state at D
     (1b) DAILY STATE Layer B closes day D: absorbs day D's events into
@@ -37,6 +41,8 @@ from pathlib import Path
 
 from .inference import score_as_of
 from .ladder import run as run_ladder
+from .ladder_sample_a import chosen_rung as encoder_sample_rung
+from .ladder_sample_a import run as run_encoder_ladder
 from .targets import PURCHASE_PROPENSITY_30D
 
 WORK = Path(__file__).resolve().parents[1]
@@ -130,7 +136,14 @@ def cycle(as_of: date, days: int, customers: int, anchors: int, seed: int, infer
         flush=True,
     )
 
-    # (1) encoder
+    # (0) size Sample A first when this as_of has never been laddered —
+    # the encoder trains on Sample A (chosen rung), never on all of population A
+    if encoder_sample_rung(day) is None:
+        print(f"[ladder] {day}: sizing Sample A first (no receipt for this as_of)", flush=True)
+        run_encoder_ladder(day, customers=customers, anchors=anchors, skip_done=True)
+
+    # (1) encoder (sample-sized via the receipt; warm-starts from the previous
+    # compatible month when available)
     tag = train_encoder(day, customers, anchors, OUT / f"rehearsal_encoder_{day}.log")
     ab = _ab_signature(tag)
 

@@ -57,6 +57,47 @@ def _val_loss(model, vocab, seqs, cfg):
     return tot / max(n, 1)
 
 
+def _pick_warm_checkpoint(out_dir, as_of):
+    """Most-recent compatible checkpoint trained at as_of' <= as_of.
+
+    Leak guard: a checkpoint trained on FUTURE events (as_of' > as_of) is never
+    eligible; checkpoints without point-in-time info are skipped too. Returns
+    (tag, meta) or (None, None).
+    """
+    import glob as _glob
+    import json as _json
+
+    def _epoch(s):
+        try:
+            from datetime import datetime
+
+            d = datetime.fromisoformat(str(s))
+            from datetime import timezone
+
+            return d.replace(tzinfo=timezone.utc).timestamp() if d.tzinfo is None else d.timestamp()
+        except Exception:
+            return -1.0
+
+    now = _epoch(as_of) if as_of else float("inf")
+    regs = sorted(
+        _glob.glob(str(Path(out_dir) / "registry_*.json")),
+        key=lambda q: Path(q).stat().st_mtime,
+        reverse=True,
+    )
+    for rp in regs:
+        try:
+            meta = _json.loads(Path(rp).read_text())
+        except Exception:
+            continue
+        ra = meta.get("as_of")
+        if ra is None:
+            continue  # no point-in-time info — cannot prove it isn't future-trained
+        if _epoch(ra) > now + 1.0:  # 1s tolerance
+            continue  # FUTURE-trained checkpoint — leak guard
+        return meta.get("tag"), meta
+    return None, None
+
+
 def train_cfm(cfg: CFMConfig):
     _seed_everything(cfg.seed)
     df = _read_stream(cfg)
@@ -94,6 +135,43 @@ def train_cfm(cfg: CFMConfig):
         vocab, cfg.dim, n_experts=K, delta_biases=_expert_biases(K, cfg.state_half_life_days)
     ).to(device)
     model.half_life_days = cfg.state_half_life_days
+    # ---- warm-start / continual (same objective as scratch: data <= as_of) ----
+    cfg.warm_from = None
+    if str(cfg.warm_start).lower() not in ("none", "", "0"):
+        out_w = Path(cfg.out_dir)
+        cand_tag = cfg.warm_start if cfg.warm_start != "auto" else None
+        meta = None
+        if cand_tag is None:
+            cand_tag, meta = _pick_warm_checkpoint(out_w, cfg.as_of)
+        else:
+            rp = out_w / f"registry_{cand_tag.replace('.', '_')}.json"
+            if rp.exists():
+                import json as _json
+
+                meta = _json.loads(rp.read_text())
+        if cand_tag is None:
+            print("[warm-start] none: no compatible earlier checkpoint (scratch)", flush=True)
+        else:
+            ckpt = out_w / f"cfm_{cand_tag.replace('.', '_')}.pt"
+            sizes_ok = meta.get("vocab_sizes") == {
+                "et": len(vocab.et),
+                "brand": len(vocab.brand),
+                "ent": len(vocab.ent),
+            }
+            blob = (
+                torch.load(ckpt, map_location="cpu", weights_only=False) if ckpt.exists() else None
+            )
+            if blob is None or blob.get("dim") != cfg.dim or not sizes_ok:
+                why = (
+                    "vocab/arch mismatch"
+                    if (blob and (blob.get("dim") != cfg.dim or not sizes_ok))
+                    else "checkpoint missing"
+                )
+                print(f"[warm-start] {cand_tag} rejected ({why}) -> scratch", flush=True)
+            else:
+                model.load_state_dict(blob["state"])
+                cfg.warm_from = cand_tag
+                print(f"[warm-start] from {cand_tag} (as_of={meta.get('as_of')})", flush=True)
     params = [q for q in model.parameters() if q.requires_grad]
     opt = torch.optim.Adam(params, lr=cfg.lr, weight_decay=1e-4)
     tau = 0.99  # EMA of the JEPA target encoder (documented fallback)
@@ -339,6 +417,24 @@ def _combine(model, T, cfg):
     return sum(T[k] for k in keys)
 
 
+def forward_states(model, seqs, h0s=None):
+    """Batched recurrence for state advance — same math as absorb()/model(seq),
+    one padded forward over a same-length bucket.
+
+    Returns final h per sequence (B, dim) on the model's device; the caller
+    handles per-sequence pre-fades (fade-to-first-event) before stacking h0s.
+    """
+    dev = model._dev()
+    t = _collate(seqs, model.vocab, dev)
+    tok = model.tokens_batch(t)
+    h0 = None
+    if h0s is not None:
+        h0 = torch.stack([torch.as_tensor(h, dtype=torch.float32, device=dev) for h in h0s])
+    with torch.no_grad():
+        _y, h = model.ssm(tok, h0=h0, mask=t["mask"])
+    return h
+
+
 def _loss(model, vocab, items, cfg):
     return _combine(model, _task_losses(model, vocab, items, cfg), cfg)
 
@@ -383,6 +479,7 @@ def _registry(cfg, vocab, n_train, n_keys, derived=None, governor=None, cfg_reso
                 "data_signature": getattr(cfg, "_data_signature", ""),
                 "as_of": getattr(cfg, "as_of", None),
                 "split_seed": cfg.split_seed,
+                "warm_from": getattr(cfg, "warm_from", None),
                 "db": cfg.db,
                 "table": cfg.table,
                 "n_customers": n_keys,

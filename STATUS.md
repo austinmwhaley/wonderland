@@ -935,3 +935,32 @@ jobs, 11 read-only inferences, **total wall 16,348s (4.5h)**.
 **Future runs: `--days 8` default = month-start + next 7 days** (your standing
 cadence; `--days 31` = full month). Inference days are clamped to the daily-job
 window so a day can never be scored before its embeddings exist.
+
+## Cost pass: sample_A ladder + batched daily job + warm-start (DONE)
+Directives: encoder trains ONLY on Sample A (never all of A); daily job must
+be batched/parallel; incremental/continual updates without quality loss.
+- **Sample-A ladder** (`plugins/ladder_sample_a.py`, as_of=2025-11-01, 8 rungs,
+  fixed arch/populations/anchors, identical test set, only sample size varies):
+  250:.651 | 500:.689 | 1000:.691 | 2000:.716 | 4000:.696 | 8000:.671 |
+  12000:.728 | 17531(full):.7348, 2SE=0.0106 -> **CHOSEN sample_A = 12,000**
+  (within noise of full; ~31% fewer training rows, budget 5,640 vs 8,220;
+  CE monotonically improves with data while AUC plateaus/wobbles — single-seed
+  per rung, the 8k dip is one training draw; the 2SE rule absorbs it).
+- **CLI auto-sizing**: `--sample-a` defaults to this as_of's ladder receipt;
+  no receipt -> trains all-of-A with an explicit warning. The rehearsal now
+  runs the ladder FIRST for a new as_of (step 0), so the canonical encoder is
+  always sample-sized.
+- **Warm-start / continual** (`--warm-start auto` default): continues from the
+  most recent compatible checkpoint with as_of' <= as_of (FUTURE-trained
+  checkpoints rejected; vocab/arch guarded); same objective as scratch (all
+  data <= as_of) so the governor still decides convergence; recorded as
+  `warm_from` in the registry. Cycle 2 of a month naturally warms from cycle 1.
+- **Batched daily job**: advance() now groups same-length buckets into one
+  padded forward (forward_states) + bulk state fetch (1 query) + bulk upsert.
+  Bench (8.6k customers, dim=256): **86.5s -> 4.1s = 20.6x**, numerically
+  identical to the per-customer fade->absorb path (equivalence tests:
+  tests/test_state_advance_batched.py, initial + incremental cases).
+- Bulk product IO (prior in this pass): ~3.3x faster rebuilds (rung totals
+  1448s -> 435s) — monthly encoder rebuilds benefit too.
+Gates: targeted tests 19 passed; batched-advance equivalence 2/2; ruff clean.
+RUNBOOK has the measured cost-design receipt table.

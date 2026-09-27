@@ -269,13 +269,106 @@ class StateStore:
         )
 
     def advance(self, seqs, incremental=True):
-        """fade to the first new event, absorb the events, persist."""
+        """fade to each customer's first new event, absorb the events, persist.
+
+        BATCHED: sequences are grouped into same-length buckets (zero padding)
+        and each bucket runs ONE padded forward — the daily job is built for
+        this scale. Upserts are bulk DELETE+INSERT. Same math as the per-customer
+        fade->absorb path (covered by an equivalence test).
+        """
+        from looking_glass.cfm_training import forward_states
+
+        if not seqs:
+            return
+        # ONE query for all stored states (no per-customer round-trips)
+        state_by_key = {}
+        if incremental:
+            keys = [s["customer"] for s in seqs]
+            for k0 in range(0, len(keys), 4000):
+                chunk = keys[k0 : k0 + 4000]
+                ph = ",".join("?" * len(chunk))
+                for ck, as_of, st in self.con.execute(
+                    f"SELECT customer_key, as_of_epoch, state FROM customer_state "
+                    f"WHERE customer_key IN ({ph})",
+                    chunk,
+                ).fetchall():
+                    state_by_key[ck] = (
+                        torch.tensor(st, dtype=torch.float32) if st is not None else None,
+                        float(as_of) if as_of is not None else None,
+                    )
+        prepared = []  # (key, seq, h0_or_None, as_of_epoch, last_event_ts)
         for seq in seqs:
-            h0, as_of = self.get_state(seq["customer"]) if incremental else (None, None)
-            h, emb = absorb(self.model, seq, h0=h0, as_of_epoch=as_of if h0 is not None else None)
-            self.upsert(
-                seq["customer"], h, emb, _to_epoch(seq["event_ts"][-1]), seq["event_ts"][-1]
+            if incremental:
+                h0, as_of = state_by_key.get(seq["customer"], (None, None))
+            else:
+                h0, as_of = None, None
+            if h0 is not None:
+                # absorb()'s pre-fade: decay h0 to the first new event
+                h0 = fade(h0, _to_epoch(seq["event_ts"][0]) - as_of, self.cfg.state_half_life_days)
+            prepared.append(
+                (
+                    seq["customer"],
+                    seq,
+                    h0,
+                    _to_epoch(seq["event_ts"][-1]),
+                    seq["event_ts"][-1],
+                )
             )
+        # same-length buckets -> no padding waste; one forward per bucket
+        prepared.sort(key=lambda x: len(x[1]["event_type"]))
+        rows = []
+        i = 0
+        while i < len(prepared):
+            j = i
+            L = len(prepared[i][1]["event_type"])
+            while j < len(prepared) and len(prepared[j][1]["event_type"]) == L:
+                j += 1
+            bucket = prepared[i:j]
+            with_state = [b for b in bucket if b[2] is not None]
+            without = [b for b in bucket if b[2] is None]
+            for part, use_h0 in ((with_state, True), (without, False)):
+                if not part:
+                    continue
+                H = forward_states(
+                    self.model,
+                    [b[1] for b in part],
+                    [b[2] for b in part] if use_h0 else None,
+                )
+                with torch.no_grad():
+                    E = torch.nn.functional.normalize(self.model.proj(H), dim=1).cpu()
+                for k, (key, _seq, _h0, as_of_e, last_ts) in enumerate(part):
+                    h = H[k].cpu()
+                    rows.append(
+                        {
+                            "customer_key": key,
+                            "as_of_epoch": as_of_e,
+                            "version": self.cfg.tag,
+                            "dim": int(h.shape[0]),
+                            "state": h.tolist(),
+                            "embedding": E[k].tolist(),
+                            "last_event_ts": str(last_ts),
+                        }
+                    )
+            i = j
+        self.replace_states(rows)
+
+    def replace_states(self, rows) -> None:
+        """Bulk upsert: DELETE the touched keys, INSERT the new rows."""
+        if not rows:
+            return
+        import polars as pl
+
+        keys = sorted({r["customer_key"] for r in rows})
+        for k0 in range(0, len(keys), 500):
+            chunk = keys[k0 : k0 + 500]
+            ph = ",".join("?" * len(chunk))
+            self.con.execute(f"DELETE FROM customer_state WHERE customer_key IN ({ph})", chunk)
+        df = pl.DataFrame(rows)
+        self.con.register("_rs", df)
+        try:
+            self.con.execute("INSERT INTO customer_state SELECT * FROM _rs")
+        finally:
+            self.con.unregister("_rs")
 
     def add_training(self, key, anchor_epoch, emb):
         self.con.execute(

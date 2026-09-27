@@ -166,6 +166,16 @@ def _rebuild_products(
     return tag
 
 
+def _ladder_chosen_rung(as_of: str | None) -> int | None:
+    """Sample-A size chosen by this as_of's encoder ladder receipt (if any)."""
+    if not as_of:
+        return None
+    path = Path(__file__).resolve().parent / "artifacts" / "cfm_ladder" / f"summary_{as_of}.json"
+    if not path.exists():
+        return None
+    return int(json.loads(path.read_text())["chosen_rung"])
+
+
 def main(argv=None):
     import argparse
 
@@ -196,7 +206,14 @@ def main(argv=None):
         "--sample-a",
         type=int,
         default=None,
-        help="encoder training sample size drawn from population A (default: all of A)",
+        help="encoder training sample size drawn from population A "
+        "(default: the as_of ladder receipt's chosen rung; all of A if no receipt)",
+    )
+    ap.add_argument(
+        "--warm-start",
+        default=CFMConfig.warm_start,
+        help='continue from an earlier compatible checkpoint: "auto" (default; '
+        'never future-trained), "none" (scratch), or an explicit tag',
     )
     ap.add_argument(
         "--sample-b",
@@ -214,9 +231,28 @@ def main(argv=None):
     anchors = a.anchors if a.anchors is not None else CFMConfig.n_anchors
     cfg = sample_a(a.customers, anchors, db=a.db, epochs=a.epochs, device=a.device)
     cfg.out_dir = a.out_dir
-    cfg.sample_a_customers = a.sample_a
     cfg.sample_b_customers = a.sample_b
+    cfg.warm_start = a.warm_start
     cfg.as_of = a.as_of
+    cfg.sample_a_customers = a.sample_a
+    if a.sample_a is None and a.cmd in ("train", "all"):
+        # Sample A is SIZED by the encoder ladder for this as_of (capability
+        # vs cost, measured); no receipt -> fall back to all of population A
+        # with an explicit warning (run plugins.ladder_sample_a first).
+        rung = _ladder_chosen_rung(cfg.as_of)
+        if rung is not None:
+            cfg.sample_a_customers = rung
+            print(
+                f"[sample] Sample A = {rung} rows (ladder receipt for as_of={cfg.as_of})",
+                flush=True,
+            )
+        elif cfg.as_of:
+            print(
+                f"WARNING: no sample-A ladder receipt for as_of={cfg.as_of} — training on ALL of "
+                f"population A. Run `python -m plugins.ladder_sample_a --as-of {cfg.as_of}` first "
+                f"to size Sample A.",
+                flush=True,
+            )
     if a.as_of:
         cfg.split_seed = monthly_split_seed(cfg.split_seed, a.as_of)
         print(f"point-in-time as_of={a.as_of}  split_seed={cfg.split_seed}")

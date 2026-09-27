@@ -101,6 +101,14 @@ def _downstream_auc(as_of: str, out: Path) -> dict:
     }
 
 
+def chosen_rung(as_of: str) -> int | None:
+    """Sample-A size from this as_of's ladder receipt (None = not sized yet)."""
+    path = LADDER_DIR / f"summary_{as_of}.json"
+    if not path.exists():
+        return None
+    return int(json.loads(path.read_text())["chosen_rung"])
+
+
 def run(as_of: str, rungs=RUNGS, customers: int = 25000, anchors: int = 6, skip_done: bool = False):
     print(f"== SAMPLE-A LADDER (as_of={as_of}, base={customers}, anchors={anchors}) ==")
     print("architecture + populations + anchors are FIXED; only sample_A size varies\n")
