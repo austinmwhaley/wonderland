@@ -486,3 +486,22 @@ def test_warm_checkpoint_never_uses_future(tmp_path):
     assert tag == "ck_ok" and meta["as_of"] == "2025-11-01"
     # current run older than every eligible checkpoint -> none
     assert _pick_warm_checkpoint(tmp_path, "2025-10-01") == (None, None)
+
+
+def test_ladder_receipt_cache_is_as_of_keyed(tmp_path):
+    import json as _json
+
+    import plugins.ladder_sample_a as L
+
+    rp = tmp_path / "ladder_receipt.json"
+    # pre-stamp receipts (no as_of field) are stale for any as_of
+    rp.write_text(_json.dumps({"rung": 250, "auc": 0.5}))
+    assert L._cached_receipt(rp, "2025-11-01") is None
+    # stamped receipt counts only for its own as_of
+    rp.write_text(_json.dumps({"rung": 250, "as_of": "2025-11-01", "auc": 0.5}))
+    assert L._cached_receipt(rp, "2025-11-01") is not None
+    assert L._cached_receipt(rp, "2025-12-01") is None
+    # missing file / corrupt json -> miss
+    assert L._cached_receipt(tmp_path / "nope.json", "2025-11-01") is None
+    rp.write_text("{not json")
+    assert L._cached_receipt(rp, "2025-11-01") is None

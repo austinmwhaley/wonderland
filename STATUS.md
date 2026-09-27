@@ -964,3 +964,27 @@ be batched/parallel; incremental/continual updates without quality loss.
   1448s -> 435s) — monthly encoder rebuilds benefit too.
 Gates: targeted tests 19 passed; batched-advance equivalence 2/2; ruff clean.
 RUNBOOK has the measured cost-design receipt table.
+
+## CERTIFICATION RUN: rabbit_hole + looking_glass + plugins/supervised (DONE)
+Full rehearsal at the standing cadence (`--days 8`, 25k customers) exercising
+every mechanism end-to-end: ladder-first sizing, sample-sized encoder,
+warm-start, re-randomized A/B, batched daily jobs, read-only inferences.
+Receipt: `plugins/artifacts/rehearsal_2025-11-01.json` — **total wall
+1,611.8s (26.9 min for both cycles)**; prior full-month runs took 4.5h:
+- cycle 2025-11-01: encoder r458134 — Sample A = **12,000** (ladder receipt),
+  warm-started, 595s; plugin **PASS auc 0.727** (head-rung 4,000 rows); 8 daily
+  jobs; 3 read-only inferences (Nov 1, 3, 5).
+- cycle 2025-12-01: encoder r90061 — Sample A = 12,000, warm from Nov;
+  plugin **PASS auc 0.734** (head-rung 8,003); 8 daily jobs; 2 inferences
+  (Dec 1, Dec 8). **split_rotated=True** (populations re-drawn).
+- batched daily job in production shape: **mean 17.9s/day** (16.3-20.8s) for
+  ~8.6k absorbs + fade + 25k embeddings rematerialized — was 193-240s
+  (~11x); 16 days in 4.8 min total. Read-only inference 1.2-1.5s/day.
+- encoder cost: 595s (Sample-A sized + warm-started) vs 37min full-scratch.
+**Bug found & fixed during the run:** the ladder receipt cache was not
+as_of-stamped, so cycle 2 sized Sample A from November's measurements
+(mechanism correct, freshness wrong). Fixed — receipts now stamped, stale
+receipts auto-invalidate (tests added); a fresh December ladder is re-measuring
+now to replace the carried sizing with measured evidence.
+Gates: fast tier 248 passed; ruff clean; full suite 261 passed (pre-run);
+CI runs on push.

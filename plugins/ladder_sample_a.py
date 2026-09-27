@@ -101,6 +101,18 @@ def _downstream_auc(as_of: str, out: Path) -> dict:
     }
 
 
+def _cached_receipt(receipt_p: Path, as_of: str):
+    """A ladder receipt only counts for the as_of it measured; anything else
+    (missing field = written before receipts were as_of-stamped) is stale."""
+    if not receipt_p.exists():
+        return None
+    try:
+        rec = json.loads(receipt_p.read_text())
+    except Exception:
+        return None
+    return rec if rec.get("as_of") == as_of else None
+
+
 def chosen_rung(as_of: str) -> int | None:
     """Sample-A size from this as_of's ladder receipt (None = not sized yet)."""
     path = LADDER_DIR / f"summary_{as_of}.json"
@@ -116,8 +128,9 @@ def run(as_of: str, rungs=RUNGS, customers: int = 25000, anchors: int = 6, skip_
     for rung in rungs:
         out = LADDER_DIR / f"r{rung}"
         receipt_p = out / "ladder_receipt.json"
-        if skip_done and receipt_p.exists():
-            rec = json.loads(receipt_p.read_text())
+        cached = _cached_receipt(receipt_p, as_of) if skip_done else None
+        if cached is not None:
+            rec = cached
             rows.append(rec)
             print(
                 f"  r{rung:>6} (cached) auc={rec['auc']:.4f} +/-{2 * rec['auc_se']:.4f} "
@@ -132,6 +145,7 @@ def run(as_of: str, rungs=RUNGS, customers: int = 25000, anchors: int = 6, skip_
         auc = _downstream_auc(as_of, out)
         rec = {
             "rung": rung,
+            "as_of": as_of,
             "tag": tr_info["tag"],
             "train_wall_s": tr_info["train_wall_s"],
             "n_train_sequences": tr_info["registry"].get("n_train_sequences"),
