@@ -988,3 +988,15 @@ receipts auto-invalidate (tests added); a fresh December ladder is re-measuring
 now to replace the carried sizing with measured evidence.
 Gates: fast tier 248 passed; ruff clean; full suite 261 passed (pre-run);
 CI runs on push.
+
+### Fresh December sample-A ladder (post-fix) — CHOSEN 20000 (full A)
+Re-measured with as_of-keyed receipts: 250:.691 | 1000:.695 | 2000:.687 |
+4000:.674 | 8000:.683 | 12000:.733 | 17530/full:.7425 (ce monotonically
+improves: 1.91 -> 1.50), tol 2xSE=0.0085 -> **CHOSEN sample_A = 20000**
+(effective 17,530 = all of population A; 12,000 missed by 0.0014 — outside
+the rule, so the ladder takes MORE data when unsure). The certification
+cycle-2 had used the carried (Nov) sizing of 12,000 (the cache bug) — the
+plugin PASSed regardless (auc .734); next monthly run sizes fresh from its own
+receipt. Honest note: adjacent-rung gaps (12k vs full: 0.0014 inside the
+noise band of single-seed runs) make boundary choices fragile — Nov chose 12k,
+Dec chose full; multi-seed rungs would firm this up if it matters operationally.
