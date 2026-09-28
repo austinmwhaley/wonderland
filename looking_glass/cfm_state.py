@@ -7,7 +7,7 @@ from pathlib import Path
 
 import torch
 
-from looking_glass.cfm_config import CFMConfig, LN2, _to_epoch
+from looking_glass.cfm_config import CFMConfig, LN2, _to_epoch, as_of_epoch
 from looking_glass.cfm_data import build_sequences
 from looking_glass.cfm_model import CFM
 
@@ -227,6 +227,25 @@ class StateStore:
             "CREATE TABLE IF NOT EXISTS state_job_receipts ("
             "as_of_epoch DOUBLE, version TEXT, n_absorbed BIGINT, n_idle BIGINT, "
             "n_embeddings BIGINT, device TEXT, wall_seconds DOUBLE, ran_at TIMESTAMP)"
+        )
+
+    def record_receipt(self, epoch, n_absorbed, n_idle, n_embeddings, device, wall_seconds):
+        """One insert path for state_job_receipts (daily job AND the encoder's
+        day-1 close both land here — single source of truth for the schema)."""
+        from datetime import datetime, timezone
+
+        self.con.execute(
+            "INSERT INTO state_job_receipts VALUES (?,?,?,?,?,?,?,?)",
+            [
+                float(epoch),
+                self.cfg.tag,
+                int(n_absorbed),
+                int(n_idle),
+                int(n_embeddings),
+                device,
+                round(float(wall_seconds), 2),
+                datetime.now(timezone.utc),
+            ],
         )
 
     def write_splits(self, keys, split):
@@ -520,6 +539,26 @@ def build_products(cfg, model, vocab, df, keys, split):
             }
         )
     store.bulk_states(state_rows)
+    # (1) also CLOSES day 1: fade every state to the as_of boundary (UTC day
+    # start = all of yesterday absorbed, today excluded) and materialize that
+    # day's inference embeddings. The daily job therefore only handles days >= 2
+    # — no redundant day-1 absorb/fade/materialize work.
+    if state_rows:
+        import time as _time
+
+        t_close = _time.perf_counter()
+        close_at = (
+            as_of_epoch(cfg.as_of)
+            if getattr(cfg, "as_of", None)
+            else float(
+                store.con.execute("SELECT max(as_of_epoch) FROM customer_state").fetchone()[0]
+            )
+        )
+        store.fade_idle(close_at)
+        n_emb = store.materialize_state_embeddings(model, close_at)
+        # no absorbs (states were just built from full history); every customer
+        # was faded idly to the boundary, so idle == embeddings
+        store.record_receipt(close_at, 0, n_emb, n_emb, "encoder", _time.perf_counter() - t_close)
     # training embeddings: Population B SAMPLE at anchors (states stay for everyone)
     anchor_split = split
     if cfg.sample_b_customers is not None:

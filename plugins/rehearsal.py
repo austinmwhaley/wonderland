@@ -147,9 +147,6 @@ def cycle(as_of: date, days: int, customers: int, anchors: int, seed: int, infer
     tag = train_encoder(day, customers, anchors, OUT / f"rehearsal_encoder_{day}.log")
     ab = _ab_signature(tag)
 
-    # (1b) close day 1: states -> embeddings at D (layer B)
-    daily0 = update_day(day)
-
     print(f"[ladder] {day}: choosing the training-size rung", flush=True)
     ladder = run_ladder(PURCHASE_PROPENSITY_30D, as_of=day, seed=seed)
 
@@ -158,9 +155,10 @@ def cycle(as_of: date, days: int, customers: int, anchors: int, seed: int, infer
     ok, payload = run_target(PURCHASE_PROPENSITY_30D, seed=seed, as_of=day)
     primary = next(h for h in payload["heads"] if h["name"] == payload["head_name"])
 
-    # (3) training day counts as an inference day (read-only)
+    # (3) training day counts as an inference day (read-only) — day-1
+    # states/embeddings were materialized by (1) itself
     inferences = [score_as_of(PURCHASE_PROPENSITY_30D, day)]
-    n_daily = 1
+    n_daily = 0
 
     # daily chain over the --days window: layer B closes each day (GPU absorbs),
     # layer C reads on its weekday(s)
@@ -177,7 +175,7 @@ def cycle(as_of: date, days: int, customers: int, anchors: int, seed: int, infer
         "encoder_tag": tag,
         "ab": ab,
         "daily_jobs": n_daily,
-        "daily_first": daily0,
+        "day1_materialized_by_encoder": True,
         "ladder": {
             "chosen_n_train": ladder["chosen_n_train"],
             "best": ladder["best"],

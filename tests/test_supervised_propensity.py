@@ -339,7 +339,7 @@ def test_score_rejects_missing_daily_state_job(tmp_path, monkeypatch):
 
 
 def test_score_reads_materialized_embeddings(tmp_path, monkeypatch):
-    from looking_glass.cfm_config import _to_epoch
+    from looking_glass.cfm_config import as_of_epoch
 
     ds = _binary_ds(n=90, dim=8)
     tpl = HeadTemplate(PURCHASE_PROPENSITY_30D)
@@ -359,7 +359,7 @@ def test_score_reads_materialized_embeddings(tmp_path, monkeypatch):
     )
 
     day = "2025-11-08"
-    ep = _to_epoch(day)
+    ep = as_of_epoch(day)
     products = tmp_path / "products.duckdb"
     con = duckdb.connect(str(products))
     con.execute(

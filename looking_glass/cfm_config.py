@@ -136,6 +136,19 @@ def _f(v):
         return 0.0
 
 
+def as_of_epoch(s) -> float:
+    """Day-boundary helper for as_of DATES: naive ISO dates are UTC midnight —
+    the same interpretation as the point-in-time stream cut (_cut_as_of), so
+    the encoder cut, the daily job window, and inference lookups share ONE
+    boundary (no local-timezone skew). Aware datetimes pass through."""
+    from datetime import datetime, timezone
+
+    d = datetime.fromisoformat(str(s))
+    if d.tzinfo is None:
+        return d.replace(tzinfo=timezone.utc).timestamp()
+    return d.timestamp()
+
+
 def _to_epoch(s) -> float:
     try:
         return datetime.fromisoformat(str(s)).timestamp()

@@ -24,10 +24,10 @@ is the only writer of state/embeddings.
 | When | Step | Command |
 |---|---|---|
 | **1st of month** | (0) size **Sample A** from the encoder-ladder receipt (first run of a new as_of runs the ladder first) → (1) encoder retrain on that Sample A, as-of the 1st (event cutoff + re-randomized A/B + **warm-start** from the previous compatible month) → products rebuilt: split, monthly embeddings, states at the 1st | `python -m looking_glass.customer_foundation_model train --customers 25000 --anchors 6 --as-of YYYY-MM-01 --db rabbit_hole/data/duckdb/customer_event_stream.duckdb --out-dir looking_glass/artifacts/cfm` |
-| 1st (after 1) | (1b) close day 1: states → `state_embeddings` at the 1st | `python -m looking_glass.daily_states --as-of YYYY-MM-01` |
-| 1st (after 1b) | (2) **per supervised plugin**: fit/gate/persist head on the frozen table, labels closed at the 1st, pinned to the encoder tag | `python -m plugins.head_template supervised_purchase_propensity_30d --as-of YYYY-MM-01` |
+| 1st (after 1) | (1b) day-1 close — **shipped with (1)** (build_products fades to the 1st and materializes its `state_embeddings`; receipt `device=encoder`) | *(no separate command)* |
+| 1st (after 1) | (2) **per supervised plugin**: fit/gate/persist head on the frozen table, labels closed at the 1st, pinned to the encoder tag | `python -m plugins.head_template supervised_purchase_propensity_30d --as-of YYYY-MM-01` |
 | 1st | (3) inference (training day counts as a run) | `python -m plugins.inference supervised_purchase_propensity_30d --as-of YYYY-MM-01` |
-| **every day** | (1b) daily state job (GPU absorbs) — states + embeddings advance one day | `python -m looking_glass.daily_states --as-of YYYY-MM-DD` |
+| **days 2..N** | (1b) daily state job (GPU absorbs): closes **yesterday** (window stops at midnight UTC — today's events excluded) then rematerializes embeddings. Day 1 ships with (1) | `python -m looking_glass.daily_states --as-of YYYY-MM-DD` |
 | **Mondays** | (3) inference — the plugin's weekday (read-only) | `python -m plugins.inference ... --as-of <monday>` |
 
 Any day can infer (inference is possible daily); the standing contract is
@@ -79,7 +79,7 @@ done
 ```
 (~minutes per try instead of a ~40-min retrain; the rebuild preserves the run's
 populations, cutoff and samples from its registry. It resets states — after
-keeping a setting, re-run the day-1 daily state job.)
+keeping a setting, just rebuild products — the day-1 close ships with it.)
 
 ### Cost design — measured receipts (capability up, cost down)
 
@@ -89,7 +89,8 @@ keeping a setting, re-run the day-1 daily state job.)
 | Sample-scaled training budget | rung250 converges at 240/480 steps in minutes — cost ∝ sample, never a fixed count |
 | Warm-start / continual (`--warm-start auto`) | continues from the previous compatible month (leak-guarded: as_of' ≤ as_of); same objective ⇒ governor still decides convergence; fewer steps to the same plateau (receipt: `warm_from` + governor steps) |
 | Bulk product IO | single-row inserts → 3 Arrow writes: products rebuild cut ~3.3× (comparable rung totals 1,448s → 435s); every monthly rebuild benefits |
-| Batched daily state job | same-length bucketed forwards + bulk upsert: **86.5s → 4.1s (20.6×)** for 8.6k customers, numerically identical (equivalence tests) |
+| Batched daily state job | same-length bucketed forwards + bulk upsert: **86.5s → 4.1s (20.6×)** bench; **17.9s/day in production shape** (was 193–240s) |
+| Warm-start (`--warm-start auto`) | same cut + sample: scratch 698s → warm 600s (**−14% wall**), steps 1,692→1,410, better CE; Nov≈Dec warm (595s/600s) |
 | Read-only inference | **1.2–1.5s** per day for 25k scores (state work lives in the daily job) |
 | Architecture identity | dim/seq_len derive from the full base ⇒ same tag = same architecture ⇒ warm-start safe; only batch/budget follow the sample |
 
@@ -122,6 +123,10 @@ keeping a setting, re-run the day-1 daily state job.)
    tag"). The monthly (1) rebuild invalidates every head → (2) same day.
 6. **Fail safe, never silent.** Gate FAIL ⇒ do not ship. Any missing input ⇒
    hard error naming the command that fixes it.
+7. **One day boundary.** `as_of` dates are **UTC midnight** everywhere —
+   encoder cut, daily-job window, and inference lookups share it (helper:
+   `as_of_epoch`). The daily job closes through **yesterday**; today's events
+   are never absorbed until tomorrow's run (a time-carrying `as_of` warns).
 
 ## What a cycle produces
 
@@ -140,9 +145,10 @@ python -m plugins.rehearsal --customers 25000 --anchors 6 --start 2025-11-01
 # full month instead:
 python -m plugins.rehearsal --customers 25000 --anchors 6 --start 2025-11-01 --days 31
 ```
-Each cycle: (1) encoder on the 1st → (1b) day-1 state job → ladder → (2) plugin
-→ then a **daily state job each day** of the `--days` window with read-only
-inferences on the training day, the Mondays inside the window, and one
+Each cycle: (1) encoder on the 1st (also closes day 1: fades states to the
+1st + materializes its embeddings) → ladder → (2) plugin
+→ then a **daily state job for days 2..N** of the `--days` window with read-only
+inferences (day 1 came with (1)) on the training day, the Mondays inside the window, and one
 mid-week day. New A/B rotation + re-pin at each 1st. Inference days are
 clamped to the daily-job window (a day can never be scored before its
 embeddings exist). Emits the timeline receipt (`rehearsal_<start>.json`) with
@@ -153,7 +159,7 @@ the month-over-month split-rotation proof.
 | Step | Time |
 |---|---|
 | (1) encoder train | **~37 min/cycle** (the dominant cost) |
-| (1b) day-1 state job (states scattered → partial absorbs) | 87–103 s |
+| (1b) day-1 close | **folded into (1)** — fade to the 1st + materialize (receipt row: device=encoder) |
 | (1b) steady daily job (≈8.5k absorbs + fade + materialize 25k) | **mean 193 s** (range 87–235 s) |
 | training-size ladder (9 rungs) | ~35 s |
 | (2) plugin train — 3-family bake-off incl. MLP + HGB | ~20 s + data load |

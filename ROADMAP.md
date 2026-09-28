@@ -56,6 +56,33 @@ test tiers, observational-first identifiability guards (13 new tests).
    red_king with-vs-without A/B with a pre-committed ship-or-delete rule;
    donor 50k ladder re-run (generator can now produce it).
 
+## Scale path: 100M customers (what it would take)
+Measured at 25k today, scaled linearly (×4,000 customer count):
+
+| Asset | Now (25k) | At 100M |
+|---|---|---|
+| event stream (duckdb, ~107 B/row avg) | 5.0 GB / 47M rows | **~20 TB** (107B events) |
+| whole-stream feather copy | 7.5 GB | ~30 TB → **drop it**; parquet partitions (~4–8 TB) |
+| customer_state + state_embeddings (fp32, ~2.1 KB/cust) | ~168 MB | **~210 GB** (fp16 ≈ 105) |
+| donor/anchor tables | sample-capped | **unchanged** (sample_B stays capped) |
+| encoder compute | ~10 min | **unchanged** — sample_A is ladder-capped (cost isolated from N) |
+| plugin compute | seconds | **unchanged** (sample_B capped) |
+
+What breaks first, in order:
+1. **Generation**: ~17 ms/customer → 100M ≈ **21 days single-node** → shard by
+   customer-key ranges (64-way ≈ 8h). This is the real bottleneck.
+2. **Daily job**: ~34% active/day ≈ 34M absorbs → batched rate 2.1k/s ≈
+   **4.5 h/day on one GPU** (8× GPU ≈ 35 min); fade+materialize = 2×~210 GB
+   passes → **shard the state store** (~100×1M partitions, RAM-safe, parallel).
+3. **state_embeddings**: ~210 GB rewritten daily → fp16, replace-per-shard, or
+   model-at-scoring for segments instead of materializing everyone.
+4. **Warehouse**: one 20 TB file is unwieldy → range-shard by customer_key.
+5. Inference stays cheap (model-free read + 512-dim linear + Arrow insert).
+
+Key point: layers B/C training cost is **already decoupled from N** by the
+sample design — only storage, generation, and the daily job scale with
+customers, and all three are shardable.
+
 ## Phase status
 
 - **Phase 0 — land it**: ✅ pushed; CI green (lint + full suite + coverage 85%/80)

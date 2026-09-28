@@ -1000,3 +1000,30 @@ plugin PASSed regardless (auc .734); next monthly run sizes fresh from its own
 receipt. Honest note: adjacent-rung gaps (12k vs full: 0.0014 inside the
 noise band of single-seed runs) make boundary choices fragile — Nov chose 12k,
 Dec chose full; multi-seed rungs would firm this up if it matters operationally.
+
+## Pass: day-1 folded into (1), ONE UTC day boundary, warm-start measured (DONE)
+- **(1)+(1b) merged**: build_products now closes day 1 itself — fades every
+  state to the as_of boundary and materializes day-1 `state_embeddings`
+  (receipt row: device=encoder). The daily job handles **days >= 2 only**;
+  the rehearsal drops the redundant day-1 run
+  (receipt: day1_materialized_by_encoder=true). Nothing is absorbed twice.
+- **UTC day boundary + yesterday-close**: new `as_of_epoch()` helper (naive ISO
+  date -> UTC midnight, identical to the stream cut). Found & fixed a real
+  skew: the old `_to_epoch` read dates as LOCAL midnight (Nov 1 -> Nov 1
+  07:00 UTC on this box) while the encoder cut at Nov 1 00:00 UTC — encoder
+  cut, daily window and inference lookups could disagree by 7h. All three now
+  share one boundary. The daily job closes through YESTERDAY (midnight-UTC
+  window; today's events excluded — warning if as_of carries a time).
+- **Warm-start vs scratch (same Dec cut, same 12k sample)**: ladder receipt
+  (scratch) 698.2s / 1,692 steps / CE 1.5671 vs certification (warm) 600.5s /
+  1,410 steps / CE 1.5585 → **−14% wall, −17% steps, better loss**. Nov-vs-Dec
+  warm runs are effectively equal (595.3s / 600.5s). Honest attribution:
+  savings are bounded by the governor's eval-boundary cadence and fixed
+  prep/products time — the earlier 37min→10min drop was mostly sample-sizing
+  + bulk products, not warm-start alone.
+- Gates: full suite (`-m "not slow"`) green, `ruff check`/`ruff format` clean;
+  end-to-end smoke of the merged `products` rebuild: 25k states → 25k embeddings
+  all stamped `2025-12-01 00:00 UTC`, one `state_job_receipts` row with
+  `device=encoder` (inserted via the shared `StateStore.record_receipt`).
+  Receipt writing is no longer duplicated: the daily job and the encoder's
+  day-1 close share one insert path.

@@ -37,7 +37,7 @@ def score_as_of(
     import duckdb
     import polars as pl
 
-    from looking_glass.cfm_config import _to_epoch  # same epoch semantics as the daily job
+    from looking_glass.cfm_config import as_of_epoch  # same UTC boundary as the daily job
 
     t0 = time.perf_counter()
     manifest_p = OUT / f"{target.tag}.json"
@@ -56,7 +56,7 @@ def score_as_of(
             f"readout cannot be reproduced from a live advanced state"
         )
 
-    day = _to_epoch(as_of)
+    day = as_of_epoch(as_of)
     con = duckdb.connect(str(products), read_only=True)
     try:
         # pin check: training embeddings must be the encoder the head learned on

@@ -1,8 +1,11 @@
 """Daily state job (Layer B) — the ONLY writer of state/embedding tables.
 
-Runs once per calendar day D:
-  1. cut the stream at D (window SQL-push; only events since the earliest
-     live state are read),
+Runs once per calendar day D — D is the day being CLOSED: the window stops at
+**midnight D (UTC)**, i.e. all of YESTERDAY is absorbed and today's events are
+excluded (they have not happened yet at run time); states/embeddings are
+stamped at that boundary. The encoder's point-in-time cut uses the same UTC
+boundary, so (1) and this job can never disagree.
+  1. read the window since the earliest live state (SQL-pushed),
   2. advance every customer's state: absorb the day's new events (fade to the
      first one), fade the remainder (no events),
   3. MATERIALIZE the inference embeddings: donor(h) for every customer into
@@ -46,8 +49,6 @@ def assert_forward_only(products: Path, day: float) -> None:
     """
     import duckdb
 
-    from datetime import datetime, timezone
-
     con = duckdb.connect(str(products), read_only=True)
     try:
         hi = con.execute("SELECT max(as_of_epoch) FROM customer_state").fetchone()[0]
@@ -66,15 +67,21 @@ def update_day(as_of: str, products=None, cfm_dir=None, device: str | None = Non
     import duckdb
     import torch
 
-    from looking_glass.cfm_config import _to_epoch
+    from looking_glass.cfm_config import as_of_epoch
     from looking_glass.cfm_data import read_stream_window
     from looking_glass.cfm_state import StateStore, advance_to_date, load_frozen_encoder
 
     t0 = time.perf_counter()
+    if "T" in str(as_of) and not str(as_of).endswith("T00:00:00+00:00"):
+        print(
+            f"WARNING: as_of={as_of} has a time component — absorbing PARTIAL-day "
+            f"events. Pass a date to close through yesterday only.",
+            flush=True,
+        )
     products = Path(products or (CFM_DIR / "cfm_products.duckdb"))
     cfm_dir = Path(cfm_dir or CFM_DIR)
     tag = _products_tag(products)
-    day = _to_epoch(as_of)
+    day = as_of_epoch(as_of)
     assert_forward_only(products, day)  # fail fast, before any work
     model, cfg = load_frozen_encoder(tag, cfm_dir)
     dev = device or ("cuda" if torch.cuda.is_available() else "cpu")
@@ -94,11 +101,7 @@ def update_day(as_of: str, products=None, cfm_dir=None, device: str | None = Non
         n_abs, n_idle = advance_to_date(store, cfg, df, day)
         n_emb = store.materialize_state_embeddings(model, day)
         wall = round(time.perf_counter() - t0, 2)
-        now = datetime.now(timezone.utc)
-        store.con.execute(
-            "INSERT INTO state_job_receipts VALUES (?,?,?,?,?,?,?,?)",
-            [float(day), tag, int(n_abs), int(n_idle), int(n_emb), dev, wall, now],
-        )
+        store.record_receipt(day, n_abs, n_idle, n_emb, dev, wall)
     finally:
         store.close()
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import polars as pl
 
-from looking_glass.cfm_config import AT, CFMConfig, _h
+from looking_glass.cfm_config import AT, CFMConfig, _h, as_of_epoch
 
 
 # ---------------------------------------------------------------------------
@@ -53,15 +53,10 @@ def _cut_as_of(df, cfg: CFMConfig):
         return df
     import polars as pl
 
-    from datetime import datetime, timezone
-
     try:
-        d = datetime.fromisoformat(str(cfg.as_of))
+        cut = as_of_epoch(cfg.as_of)
     except ValueError as e:
         raise ValueError(f"--as-of must be an ISO date/datetime, got {cfg.as_of!r}") from e
-    if d.tzinfo is None:
-        d = d.replace(tzinfo=timezone.utc)
-    cut = d.timestamp()
     return (
         df.with_columns(
             pl.col("event_ts")

@@ -116,7 +116,9 @@ def _rebuild_products(
     so they can be swept in minutes instead of a ~40-min retrain per try.
     Populations/cutoff/samples are recovered from the run's registry, so the
     rebuild reproduces the same A/B; only the overrides change.
-    NOTE: rebuilding resets states -> re-run the day-1 daily state job after.
+    NOTE: rebuilding resets states -> day-1 states/embeddings are re-closed
+    inside build_products (same as the encoder path), so no separate day-1
+    daily-state run is needed.
     """
     import glob as _glob
     import json as _json
@@ -159,8 +161,9 @@ def _rebuild_products(
         flush=True,
     )
     print(
-        "NOTE: rebuilding resets states -> re-run the day-1 daily state job "
-        "(python -m looking_glass.daily_states) after tuning.",
+        "NOTE: states reset and day-1 re-closed through "
+        f"as_of={rcfg.as_of} (UTC midnight) by build_products; "
+        "days 2..N start with `python -m looking_glass.daily_states`.",
         flush=True,
     )
     return tag
