@@ -193,9 +193,10 @@ def load_dataset(
     )
 
 
-def save_artifact(spec: PluginSpec, payload: dict) -> Path:
-    OUT.mkdir(parents=True, exist_ok=True)
-    p = OUT / f"{spec.tag}.json"
+def save_artifact(spec: PluginSpec, payload: dict, out: Path | None = None) -> Path:
+    out = Path(out) if out is not None else OUT
+    out.mkdir(parents=True, exist_ok=True)
+    p = out / f"{spec.tag}.json"
     p.write_text(
         json.dumps(
             {"spec": asdict(spec), "tag": spec.tag, "payload": payload}, indent=1, default=float

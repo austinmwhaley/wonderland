@@ -446,12 +446,23 @@ def run_target(
     as_of: str | None = None,
     max_train: int | None = None,
     cfm_products=None,
+    stream_db=None,
+    out_dir=None,
 ):
-    """Train/gate/persist one supervised Target. Plugins differ only by Target."""
+    """Train/gate/persist one supervised Target. Plugins differ only by Target.
+
+    ``stream_db`` / ``out_dir`` default to the canonical rabbit_hole stream and
+    ``plugins/artifacts``; pass them to run a fixture (e.g. the Instacart
+    stream) without touching certified receipts.
+    """
     from . import base
     from .base import load_dataset
 
-    kw = {} if cfm_products is None else {"cfm_products": cfm_products}
+    kw = {}
+    if cfm_products is not None:
+        kw["cfm_products"] = cfm_products
+    if stream_db is not None:
+        kw["stream_db"] = stream_db
     if as_of is None and target.kind == "continuous":
         # legacy shape kept for the classic loader path (identical behavior)
         ds = load_dataset(target.window_days, **kw)
@@ -471,7 +482,8 @@ def run_target(
     rows = tpl.gate_rows(heads)
     ok = gate(rows, f"SUPERVISED {target.kind.upper()} PLUGIN {target.name}")
 
-    head_path = base.OUT / "heads" / f"{target.tag}.joblib"
+    out = Path(out_dir) if out_dir is not None else base.OUT
+    head_path = out / "heads" / f"{target.tag}.joblib"
     tpl.persist(fitted, head_path)
 
     payload = {
@@ -504,7 +516,7 @@ def run_target(
         "head_name": tpl.primary_head,
         "verdict": bool(ok),
     }
-    save_artifact(target.spec(), payload)
+    save_artifact(target.spec(), payload, out=out)
     return ok, payload
 
 
@@ -517,8 +529,20 @@ def main(argv=None):
     ap.add_argument("target", choices=sorted(REGISTRY))
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--as-of", default=None, help="ISO date: labels closed at this date")
+    ap.add_argument("--products", default=None, help="cfm_products.duckdb path (fixture override)")
+    ap.add_argument(
+        "--stream", default=None, help="canonical stream duckdb path (fixture override)"
+    )
+    ap.add_argument("--out-dir", default=None, help="artifact dir (default: plugins/artifacts)")
     a = ap.parse_args(argv)
-    ok, payload = run_target(REGISTRY[a.target], seed=a.seed, as_of=a.as_of)
+    ok, payload = run_target(
+        REGISTRY[a.target],
+        seed=a.seed,
+        as_of=a.as_of,
+        cfm_products=a.products,
+        stream_db=a.stream,
+        out_dir=a.out_dir,
+    )
     return 0 if ok else 1
 
 

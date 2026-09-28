@@ -1048,3 +1048,37 @@ Kept: `state_dense.py` (feeds red_queen's decision log), `sufficiency_battery`
 / `layer_b_proof` (CFM-measured), specs/ (marked historical in README).
 Gates: 188 passed (248 − 60 deleted), ruff/format clean; CI coverage floor is
 tribunal-only so the test-count drop is expected.
+
+## Pass: Instacart public-data fixture — full A→B→C on real data (DONE)
+Added `rabbit_hole/generators/instacart_stream.py`: the six public CSVs
+(kaggle `psparks/instacart-market-basket-analysis`, 197MB, fetched WITHOUT
+auth) joined wide (products/aisles/departments per item) into the exact
+canonical stream + the `orders` contract table plugins label from.
+- **Build receipt**: 37,446,398 events / 206,209 customers in **155s**,
+  7.8GB duckdb, sha256 per input, `instacart_receipt.json`. First attempt was
+  **OOM-killed at 24GB** (polars materializes 37M JSON rows; 31GB box) —
+  rebuilt out-of-core in DuckDB (memory_limit 12GB + spill; narrow-key
+  window for event ids; `preserve_insertion_order=false`).
+- **Timeline**: source has NO absolute dates. Gaps from
+  `days_since_prior_order` (RIGHT-CENSORED at 30 — measured max gap = 30,
+  median 7), hours from `order_hour_of_day`, deterministic per-user end
+  stagger `OFFSET_WINDOW=180d` before 2026-01-01. `order_dow` is 14.3%
+  consistent with gaps -> attribute only, receipted. First cut used 90d ->
+  **y_mean=1.0 at as_of=2025-11-01** (everyone active through early Oct, gaps
+  <=30 => forward-30d label degenerate); 180d fixes it: **y_mean=0.879**
+  (0.813 at 12-01). All timeline choices are in the receipt config.
+- **End-to-end on the fixture** (500-customer smoke, /tmp out-dirs — certified
+  receipts untouched): encoder train 2m9s -> day-1 close receipt
+  `device=encoder` (500/500) -> daily job 2025-11-02 absorbs 31 real orders in
+  5.3s -> **plugin bake-off ran: logistic 0.716 / mlp 0.589 / hgb 0.667,
+  gate 3/4** — lift 1.118 PASS, calibration 0.018 PASS, honest FAIL on
+  "beats trailing baseline" (0.716 vs 0.789): on real grocery data with
+  inactivity-based negatives, trailing recency is structurally strong (and
+  this is 500 customers vs the 12-20k production ladder).
+- New plugin CLI: `--products/--stream/--out-dir` (fixture overrides;
+  defaults = certified paths, behavior unchanged).
+- CI: `rabbit_hole/tests/test_instacart_stream.py` (schema, chronology,
+  signup ordering, wide-join attrs, orders contract, NULL margin,
+  determinism) — 2 tests.
+- Docs: rabbit_hole/README "Instacart fixture" (download/build/commands +
+  known properties); stale `tokenizer.py` reference dropped.
