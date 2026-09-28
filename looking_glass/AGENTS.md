@@ -6,7 +6,13 @@
 
 ## Project overview
 
-looking_glass is a **sklearn-for-event-streams** Python library. Three factory functions (`create_embedding_model`, `create_temporal_core_model`, `create_supervised_model`) turn business event streams into predictive models: train one state-space backbone, then attach cheap task heads for every downstream prediction.
+looking_glass is **Layer B: the frozen customer-foundation donor.** One
+production stack — the `CFM` selective multi-scale SSM (`cfm_model.py`), trained
+self-supervised and frozen; plugins consume its `donor_embeddings` /
+`state_embeddings` tables read-only. There are no factory functions and no
+alternate backends (the old `create_*` / Mamba-2 `SequenceEngine` stack was
+deleted as dead code; see README "History"). Import submodules directly
+(`looking_glass.cfm_*`, `looking_glass.daily_states`, ...).
 
 ## Commands
 
@@ -15,14 +21,14 @@ top-level `looking_glass/` directory and the root `pyproject.toml` puts it on
 `sys.path` (no install needed).
 
 - Install deps: `python3 -m pip install -r looking_glass/requirements.txt` (or the root `requirements.txt`)
-- Tests: `pytest looking_glass/tests` (bare `pytest` runs the whole repo)
-- Example demo (CPU, ~2 min): `python looking_glass/scripts/example.py`
+- Tests: `python3 -m pytest` (the CFM/plugin tests live in the repo-root `tests/`; fast tier `-m "not slow"`)
+- Train + products: `python3 -m looking_glass.customer_foundation_model train --customers 25000 --anchors 6 --as-of YYYY-MM-01 --db rabbit_hole/data/duckdb/customer_event_stream.duckdb --out-dir looking_glass/artifacts/cfm`
 
 ## Code conventions
 
 - **Spaces** (4) in all files — `ruff format` from the repo root is authoritative (older files were tab-indented; they were converted).
 - Type annotations using `from __future__ import annotations` everywhere.
-- Public API surfaces go through `looking_glass/__init__.py`.
+- No package-root re-exports: consumers import submodules (`looking_glass.cfm_state`, ...).
 - Tests live in `tests/` and run from the repo root (root `pyproject.toml` sets `pythonpath`; no install required).
 - Scripts in `scripts/` are not part of the package; they bootstrap the repo root onto `sys.path` and import `looking_glass`.
 - SQLite is fully gone from the project — root doctrine (`../AGENTS.md`):

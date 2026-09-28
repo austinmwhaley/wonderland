@@ -17,12 +17,7 @@ dependencies = [
     "tqdm",
     "gymnasium",
     "matplotlib",
-    "lancedb",
 ]
-
-[project.optional-dependencies]
-baseline = ["xgboost"]
-kernels = ["mamba-ssm", "bitsandbytes"]
 
 [dependency-groups]
 dev = [
@@ -37,7 +32,6 @@ pythonpath = ["."]
 testpaths = [
     "tests",
     "white_queen/tribunal/ope/tests",
-    "looking_glass/tests",
     "rabbit_hole/tests",
 ]
 addopts = "-q"
@@ -64,8 +58,6 @@ select = ["E4", "E7", "E9", "F"]
 "eighth_square/algorithms/registry.py" = ["E402"]
 "eighth_square/algorithms/base.py" = ["E402"]
 "eighth_square/benchmark.py" = ["E402"]
-"looking_glass/supervised.py" = ["E402"]
-"looking_glass/embeddings.py" = ["E402"]
 # schema adapter import deliberately after canonical-form construction
 "white_queen/tribunal/ope/data.py" = ["E402"]
 "rabbit_hole/generators/generate_data.py" = ["E402"]

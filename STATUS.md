@@ -1027,3 +1027,24 @@ Dec chose full; multi-seed rungs would firm this up if it matters operationally.
   `device=encoder` (inserted via the shared `StateStore.record_receipt`).
   Receipt writing is no longer duplicated: the daily job and the encoder's
   day-1 close share one insert path.
+
+## Pass: deleted the non-production (2) stack — one looking_glass (DONE)
+The package had TWO stacks: the production CFM path (used by everything
+downstream — plugins/red_*/white_queen import only `cfm_*`/`daily_states`) and
+an orphaned factory-function library (`create_embedding_model` /
+`create_temporal_core_model` / `create_supervised_model` = EntityCore +
+SequenceEngine Mamba-2/Samba + TemporalStack + QDoRA/LanceDB/PIT-store). A
+repo-wide import graph showed **zero external consumers and zero CFM-core edges**
+into it — closed island, maintained at the cost of two whole test families.
+Deleted (doctrine: prefer deletion over accretion):
+- 23 modules (~10k LOC incl. the 629-line demo `example.py`), all 12
+  `looking_glass/tests/*` (60 tests), package-root `__init__` re-exports
+  (now docstring-only), `looking_glass/tests` testpath entry.
+- deps: `lancedb`, extras `kernels` (mamba-ssm, bitsandbytes) + `baseline`
+  (xgboost) — no remaining importers; requirements mirrors synced.
+- docs rewritten to the production surface: `looking_glass/README.md`
+  (was 405 lines of factory-API marketing), `looking_glass/AGENTS.md`.
+Kept: `state_dense.py` (feeds red_queen's decision log), `sufficiency_battery`
+/ `layer_b_proof` (CFM-measured), specs/ (marked historical in README).
+Gates: 188 passed (248 − 60 deleted), ruff/format clean; CI coverage floor is
+tribunal-only so the test-count drop is expected.

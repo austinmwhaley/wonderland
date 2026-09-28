@@ -10,4 +10,3 @@ duckdb
 tqdm
 gymnasium
 matplotlib
-lancedb
