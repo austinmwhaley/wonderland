@@ -1082,3 +1082,29 @@ canonical stream + the `orders` contract table plugins label from.
   determinism) — 2 tests.
 - Docs: rabbit_hole/README "Instacart fixture" (download/build/commands +
   known properties); stale `tokenizer.py` reference dropped.
+
+## Pass: production-scale run on the Instacart fixture (DONE, gate 4/4)
+The 500-customer smoke left the headline question open (donor vs recency on
+real data). Ran the production config against the fixture: population 25,000,
+`--sample-a 20000` (explicit — production Dec's rung; NOT borrowed from
+rabbit_hole's ladder receipt for this stream; clipped to full A = 17,455 for
+this month), as_of 2025-11-01, scratch.
+- **Encoder train + products: ~12.5 min** (tag v2.0.0r682246),
+  `customer_state=25000`, `training_embeddings=45,222` (rabbit_hole production
+  shape: 44,427). Day-1 close receipt `device=encoder`, 25,000 embeddings.
+- **Week of daily jobs (11-02..11-08)**: 630–730 real order absorbs/day,
+  **11–13 s each** (production mean 17.9 s) — batched job scales to the 25k
+  state store on this stream unchanged.
+- **Gate 4/4 PASS** (as_of 2025-11-01): bake-off logistic **0.7960** / mlp
+  0.7708 / hgb 0.7873 -> logistic winner; **AUC 0.796 beats trailing baseline
+  0.699**; top-decile lift 1.15; calibration gap 0.002. Compare: rabbit_hole
+  production gate 0.734 vs 0.627; the 500-cust Instacart smoke FAILED this
+  same check (0.716 vs 0.789) — at production sample size the donor beats
+  recency on real public data too. Artifacts in /tmp (certified receipts
+  untouched).
+- Artifacts: /tmp/opencode/insta_prod/{cfm_products.duckdb, registry_*.json,
+  plugin/supervised_purchase_propensity_30d_v1.0.0r1.json}.
+- NOT run: Instacart-specific sample-A ladder (9 rungs x ~7-25 min each —
+  hours); sizing used the production-proven rung instead. Run
+  `plugins.ladder_sample_a --as-of <date> --db <fixture>` (needs a --ladder-dir
+  override first) if per-stream sizing receipts are wanted.
