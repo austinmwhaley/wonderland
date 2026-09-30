@@ -35,8 +35,21 @@ def _read_stream(cfg: CFMConfig):
 
         con = duckdb.connect(cfg.db, read_only=True)
         try:
+            # push the point-in-time cut into SQL (before materializing): the
+            # polars filter below is now a no-op for duckdb sources, and loads
+            # stop growing with the future tail of the stream.
+            where = ""
+            if getattr(cfg, "as_of", None):
+                try:
+                    where = (
+                        f" WHERE epoch(CAST(event_ts AS TIMESTAMPTZ)) <= {as_of_epoch(cfg.as_of)}"
+                    )
+                except ValueError as e:
+                    raise ValueError(
+                        f"--as-of must be an ISO date/datetime, got {cfg.as_of!r}"
+                    ) from e
             df = con.execute(
-                f"SELECT {', '.join(cols)} FROM {cfg.table} ORDER BY customer_key, event_ts"
+                f"SELECT {', '.join(cols)} FROM {cfg.table}{where} ORDER BY customer_key, event_ts"
             ).pl()
         finally:
             con.close()
@@ -180,15 +193,22 @@ def _random_anchor_epochs(ts, data_end, cfg, key):
     return sorted(float(x) for x in rng.uniform(lo, hi, size=n))
 
 
-def build_sequences(df, keys, cfg: CFMConfig, split, with_anchors: bool):
+def build_sequences(df, keys, cfg: CFMConfig, split, with_anchors: bool, min_events: int = 3):
     """Polars-first: partition once in Rust, then slice per group. Anchors are
-    random uniform days; company actions ride along as exogenous covariates."""
+    random uniform days; company actions ride along as exogenous covariates.
+
+    ``min_events`` gates who gets a sequence at all: training (self-supervised
+    spans, anchor spans) needs >= 3 events to learn from; STATE rows pass 1 —
+    the blanket 3 silently left every 1-2 event customer with no state (20% of
+    a real long-tail stream; rabbit_hole/Instacart are dense enough to hide it).
+    """
     want = list(set(keys))
     d = df.filter(pl.col("customer_key").is_in(want)).with_columns(
         pl.col("event_ts").str.to_datetime(time_zone="UTC", strict=False).dt.epoch("s").alias("_ts")
     )
     data_end = float(d["_ts"].max()) if d.height else 0.0
     company = set(map(str, cfg.company_actions))
+    min_events = max(1, int(min_events))
     seqs = []
     for g in d.partition_by("customer_key", maintain_order=True):
         k = g["customer_key"][0]
@@ -200,7 +220,7 @@ def build_sequences(df, keys, cfg: CFMConfig, split, with_anchors: bool):
         # the full stream (sends visible) while tokens keep only customer events.
         co_full = _covariates(et_arr, ts_full, company)
         ki = np.flatnonzero(~np.isin(et_arr, list(company)))
-        if ki.size < 3:
+        if ki.size < min_events:
             continue
         ts = ts_full[ki]
         et = et_arr[ki]
@@ -215,13 +235,13 @@ def build_sequences(df, keys, cfg: CFMConfig, split, with_anchors: bool):
         if with_anchors and split.get(k) == "B":
             for a in _random_anchor_epochs(ts, data_end, cfg, k):
                 end = int(np.searchsorted(ts, a, side="right"))
-                if end >= 3:
+                if end >= min_events:
                     spans.append((end, a))
         else:
             spans.append((n, None))
         for end, anchor_epoch in spans:
             start = max(0, end - cfg.seq_len)
-            if end - start >= 3:
+            if end - start >= min_events:
                 seqs.append(
                     {
                         "customer": k,

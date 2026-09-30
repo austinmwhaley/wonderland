@@ -87,12 +87,12 @@ keeping a setting, just rebuild products — the day-1 close ships with it.)
 |---|---|
 | Sample-A ladder (capability/cost sizing) | chosen **12k of 17.5k** A rows: AUC 0.7281 within 2·SE (0.0106) of full-sample 0.7348 — ~31% fewer training rows, budget 5,640 vs 8,220 steps |
 | Sample-scaled training budget | rung250 converges at 240/480 steps in minutes — cost ∝ sample, never a fixed count |
-| Warm-start / continual (`--warm-start auto`) | continues from the previous compatible month (leak-guarded: as_of' ≤ as_of); same objective ⇒ governor still decides convergence; fewer steps to the same plateau (receipt: `warm_from` + governor steps) |
+| Warm-start / continual (`--warm-start auto`) | continues from the previous compatible month (leak-guarded: as_of' ≤ as_of; **behavior-guarded**: same encoder version + resolved seq_len/dim/half-life, else scratch); same objective ⇒ governor still decides convergence; fewer steps to the same plateau (receipt: `warm_from` + governor steps) |
 | Bulk product IO | single-row inserts → 3 Arrow writes: products rebuild cut ~3.3× (comparable rung totals 1,448s → 435s); every monthly rebuild benefits |
 | Batched daily state job | same-length bucketed forwards + bulk upsert: **86.5s → 4.1s (20.6×)** bench; **17.9s/day in production shape** (was 193–240s) |
 | Warm-start (`--warm-start auto`) | same cut + sample: scratch 698s → warm 600s (**−14% wall**), steps 1,692→1,410, better CE; Nov≈Dec warm (595s/600s) |
 | Read-only inference | **1.2–1.5s** per day for 25k scores (state work lives in the daily job) |
-| Architecture identity | dim/seq_len derive from the full base ⇒ same tag = same architecture ⇒ warm-start safe; only batch/budget follow the sample |
+| Architecture identity | dim/seq_len/half-life derive from the full base (receipt in registry `derived`) and are re-checked at warm-start; only batch/budget follow the sample; explicit `--set` overrides always win and are recorded |
 
 ---
 ## Hard rules
@@ -127,6 +127,13 @@ keeping a setting, just rebuild products — the day-1 close ships with it.)
    encoder cut, daily-job window, and inference lookups share it (helper:
    `as_of_epoch`). The daily job closes through **yesterday**; today's events
    are never absorbed until tomorrow's run (a time-carrying `as_of` warns).
+8. **One readout rule (v2.1.0).** Training-anchor embeddings and serving
+   embeddings apply the SAME fade: `donor(fade(state, boundary − last_event))`
+   — anchors fade to the anchor, serving to the scoring boundary. Half-life
+   derives from the **p95 of within-customer gaps** (registry receipt), never a
+   merged timeline (that pinned it at the 1-hour floor and silently separated
+   train from serve). Explicit `--set` config overrides are applied AFTER
+   derivation and recorded — derivation never overwrites them.
 
 ## What a cycle produces
 

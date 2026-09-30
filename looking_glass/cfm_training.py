@@ -18,6 +18,7 @@ from looking_glass.cfm_config import (
     CFMConfig,
     GAMMA_MAX,
     SF_PHI,
+    apply_set_overrides,
     TIME_UNIT_SECONDS,
     _expert_biases,
     _f,
@@ -57,12 +58,16 @@ def _val_loss(model, vocab, seqs, cfg):
     return tot / max(n, 1)
 
 
-def _pick_warm_checkpoint(out_dir, as_of):
+def _pick_warm_checkpoint(out_dir, as_of, cfg=None):
     """Most-recent compatible checkpoint trained at as_of' <= as_of.
 
     Leak guard: a checkpoint trained on FUTURE events (as_of' > as_of) is never
-    eligible; checkpoints without point-in-time info are skipped too. Returns
-    (tag, meta) or (None, None).
+    eligible; checkpoints without point-in-time info are skipped too.
+    Behavior guard: checkpoints from a different encoder *version* (a behavior
+    change that alters trained weights) or a different resolved architecture
+    (seq_len / dim / half-life) are skipped when that info is present —
+    continuing across semantics silently mixes models. Returns (tag, meta) or
+    (None, None).
     """
     import glob as _glob
     import json as _json
@@ -94,6 +99,17 @@ def _pick_warm_checkpoint(out_dir, as_of):
             continue  # no point-in-time info — cannot prove it isn't future-trained
         if _epoch(ra) > now + 1.0:  # 1s tolerance
             continue  # FUTURE-trained checkpoint — leak guard
+        if cfg is not None:
+            ver = getattr(cfg, "version", None)
+            if ver and meta.get("version") not in (None, ver):
+                continue  # different behavior version — not compatible
+            rc = meta.get("config") or {}
+            mismatched = any(
+                f in rc and rc[f] != getattr(cfg, f, None)
+                for f in ("seq_len", "dim", "state_half_life_days")
+            )
+            if mismatched:
+                continue  # different resolved architecture — not compatible
         return meta.get("tag"), meta
     return None, None
 
@@ -114,18 +130,19 @@ def train_cfm(cfg: CFMConfig):
     # training budget and batch derive from the ACTUAL sample_A (compute
     # proportional to data) — which is exactly what makes the sample_A ladder
     # scale honestly (small samples train cheaply and stop at convergence).
-    AT.sequence_lengths(df, keys)
-    all_ts = [_to_epoch(x) for x in df["event_ts"].to_list()]
+    apply_set_overrides(cfg)  # explicit --set wins; resolve records the rest
     vocab_sizes = (
         df["event_type"].n_unique(),
         df["brand"].n_unique(),
         df["entity_type"].n_unique(),
     )
-    res_all = AT.resolve_cfm(cfg, df, keys, vocab_sizes, all_ts)
-    res = AT.resolve_cfm(cfg, df, a_keys, vocab_sizes, all_ts)
+    res_all = AT.resolve_cfm(cfg, df, keys, vocab_sizes)
+    res = AT.resolve_cfm(cfg, df, a_keys, vocab_sizes)
     cfg.seq_len, cfg.dim = res_all.seq_len, res_all.dim
     cfg.batch = res.batch
     cfg.state_half_life_days = res_all.half_life_days
+    apply_set_overrides(cfg, res.receipt)  # record every --set key in receipts
+    apply_set_overrides(cfg, res_all.receipt)
     a_seqs = build_sequences(df, a_keys, cfg, split, with_anchors=False)
     vocab = EventVocab.build(a_seqs)
     device = torch.device(cfg.device)
@@ -142,7 +159,7 @@ def train_cfm(cfg: CFMConfig):
         cand_tag = cfg.warm_start if cfg.warm_start != "auto" else None
         meta = None
         if cand_tag is None:
-            cand_tag, meta = _pick_warm_checkpoint(out_w, cfg.as_of)
+            cand_tag, meta = _pick_warm_checkpoint(out_w, cfg.as_of, cfg)
         else:
             rp = out_w / f"registry_{cand_tag.replace('.', '_')}.json"
             if rp.exists():
@@ -383,7 +400,7 @@ def _task_losses(model, vocab, items, cfg):
     GAMS = 4
     gamma = (torch.rand(B, GAMS, device=dev) * GAMMA_MAX).clamp(min=1e-3)  # (B,S)
     dt_days = torch.expm1(t["dt"]) / TIME_UNIT_SECONDS  # (B,T,1)
-    oid = model.vocab.et.get("order_placed", -1)
+    oid = model.vocab.et.get(cfg.order_event, -1)
     is_order = (t["et"] == oid).float().unsqueeze(-1)  # (B,T,1)
     v = torch.log1p(t["val"].abs())
     phi = torch.cat([v, torch.ones_like(v), is_order, v * is_order], dim=-1)  # (B,T,4)

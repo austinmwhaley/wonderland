@@ -522,7 +522,9 @@ def build_products(cfg, model, vocab, df, keys, split):
     # run the recurrence per customer, WRITE IN BULK (row-at-a-time commits
     # dominated this phase; identical rows, one insert)
     state_rows = []
-    for seq in build_sequences(df, keys, cfg, split, with_anchors=False):
+    # min_events=1: states exist for every customer with at least one customer
+    # event (the blanket 3 silently starved long-tail customers of states).
+    for seq in build_sequences(df, keys, cfg, split, with_anchors=False, min_events=1):
         with torch.no_grad():
             _y, h = model(seq)
             emb = model.embed(h)
@@ -572,8 +574,15 @@ def build_products(cfg, model, vocab, df, keys, split):
         if seq["group"] == "B" and seq["anchor_epoch"] is not None:
             with torch.no_grad():
                 y, h = model(seq)
-                dsq = model.donor_seq(y, h, seq)  # legacy entity-pooled readout
-                dnr = model.donor(h)  # state-consistent readout (inference)
+                # train/serve parity — ONE readout rule: serving fades the
+                # stored state from its last event to the scoring boundary, so
+                # the training-anchor readout must fade the same way to the
+                # anchor. (Un-faded-in-training / faded-in-serving is a silent
+                # train/serve skew; on real data it cost served AUC.)
+                gap = float(seq["anchor_epoch"]) - float(seq["ts"][-1])
+                h_read = fade(h, gap, cfg.state_half_life_days)
+                dsq = model.donor_seq(y, h_read, seq)  # legacy entity-pooled readout
+                dnr = model.donor(h_read)  # state-consistent readout (inference)
             anchor_rows.append(
                 {
                     "customer_key": seq["customer"],

@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import math
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 
@@ -27,11 +27,42 @@ except Exception:  # run as a standalone script
 STREAM_TABLE = "customer_events"
 EMBED_DIM = 64
 LN2 = math.log(2.0)
+# Registry defaults for event vocabulary: the ORDER event name and the company
+# action (send) names. Sources with different vocabularies override via config
+# (`order_event`, `company_actions`) / `--set`, never by editing call sites.
+ORDER_EVENT = "order_placed"
 # Successor features: predict the DISCOUNTED future at a continuously-sampled
 # discount gamma. No human-chosen horizons — the model learns all timescales.
 TIME_UNIT_SECONDS = 86400.0  # a day (unit scaling only, not a horizon)
 SF_PHI = 4  # discounted [value, count, is_order, order*value]
 GAMMA_MAX = 0.999
+
+
+def apply_set_overrides(cfg, receipt: dict | None = None) -> dict:
+    """Apply explicit ``--set key=value`` overrides AFTER data-derivation.
+
+    Derived values must never silently overwrite an explicit user setting
+    (recorded-then-clobbered). Unknown fields fail safe. Returns what was set.
+    """
+    import ast
+
+    applied = {}
+    for raw in getattr(cfg, "set_overrides", None) or {}:
+        k, _, v = str(raw).partition("=")
+        k = k.strip()
+        if not hasattr(cfg, k) or k in ("set_overrides", "tag"):
+            raise SystemExit(f"--set: unknown or reserved config field: {k!r}")
+        try:
+            val = ast.literal_eval(v.strip())
+        except (ValueError, SyntaxError):
+            val = v.strip()
+        setattr(cfg, k, val)
+        applied[k] = val
+        if receipt is not None:
+            receipt.setdefault("overrides", {})[k] = val
+    if applied:
+        print(f"[set] explicit overrides applied: {applied}", flush=True)
+    return applied
 
 
 # ---------------------------------------------------------------------------
@@ -42,7 +73,11 @@ class CFMConfig:
     db: str = "data/arrow/customer_event_stream.feather"
     table: str = STREAM_TABLE
     out_dir: str = "artifacts/cfm"
-    version: str = "v2.0.0"  # encoder code version
+    # v2.1.0: behavior changes that alter trained weights — half-life derives
+    # from within-customer gaps (was: merged timeline pinned at the 1h floor),
+    # training-anchor readouts fade to the anchor (train/serve parity), and the
+    # governor returns the true lowest-loss state. Old artifacts stay v2.0.0.
+    version: str = "v2.1.0"  # encoder code version
     revision: int = 1  # data/score revision (r)
     sample_customers: int | None = 500  # working base: first N customers (populations live here)
     split_a_frac: float = 0.7
@@ -69,6 +104,13 @@ class CFMConfig:
     # Company actions are EXOGENOUS (interventions/treatments), not customer
     # behavior: they are covariates and are never predicted as tokens.
     company_actions: tuple = ("email_send", "sms_send", "push_send")
+    # The ORDER event name (registry default; override per source via config /
+    # --set). Objectives, evaluation probes and battery raw-features read THIS,
+    # never a literal.
+    order_event: str = ORDER_EVENT
+    # Explicit CLI overrides (`--set key=value`, repeatable), applied AFTER
+    # derivation and recorded in the registry receipt.
+    set_overrides: list = field(default_factory=list)
     dim: int = EMBED_DIM
     n_experts: int = 1  # K=1: M1 multi-timescale gave no gain (speed)
     epochs: int = 3

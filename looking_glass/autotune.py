@@ -94,21 +94,35 @@ def derive_batch(n_seqs) -> tuple[int, dict]:
     return val, {"batch": f"n_seqs={n_seqs} hw_cap={cap} -> {val}"}
 
 
-def derive_half_life(event_ts) -> tuple[float, dict]:
-    """State persistence timescale from the data's inter-event gaps: a state
-    should fade over the typical gap between events, not a fixed duration."""
-    import numpy as np
+def derive_half_life(df) -> tuple[float, dict]:
+    """State persistence timescale from WITHIN-customer inter-event gaps.
 
-    ts = np.sort(np.asarray([t for t in event_ts if t], dtype=np.float64))
-    if ts.size < 3:
-        return 30.0, {"state_half_life_days": "fallback (too few events)"}
-    gaps = np.diff(ts)
-    gaps = gaps[gaps > 0]
-    if gaps.size == 0:
-        return 30.0, {"state_half_life_days": "fallback (no positive gaps)"}
-    med_days = float(np.median(gaps)) / 86400.0
-    val = float(clip(med_days, 1.0 / 24.0, 365.0))
-    return val, {"state_half_life_days": f"median inter-event {med_days:.2f}d -> {val:.2f}"}
+    The p95 (not median): serving fades a state from its last event to the
+    scoring boundary, so the half-life must outlast a typical quiet stretch or
+    the readout forgets everything between events.
+
+    Gaps are computed per customer — pooling every customer into one merged,
+    re-sorted timeline measures *interleaving* (sub-second gaps across
+    customers), which pinned the half-life at the 1-hour floor on every
+    multi-customer dataset.
+    """
+    import numpy as np
+    import polars as pl
+
+    d = df.select(
+        pl.col("customer_key"),
+        pl.col("event_ts").str.to_datetime(time_zone="UTC", strict=False).dt.epoch("s"),
+    ).sort(["customer_key", "event_ts"])
+    gaps = d.select(pl.col("event_ts").diff().over("customer_key").alias("g"))
+    g = gaps.filter(pl.col("g").is_not_null() & (pl.col("g") > 0))["g"].to_numpy()
+    if g.size < 3:
+        return 30.0, {"state_half_life_days": "fallback (too few within-customer gaps)"}
+    p95_days = float(np.quantile(g, 0.95)) / 86400.0
+    val = float(clip(p95_days, 1.0 / 24.0, 365.0))
+    receipt = {"state_half_life_days": f"p95 within-customer gap {p95_days:.2f}d -> {val:.2f}"}
+    if val != p95_days:
+        receipt["state_half_life_days"] += " (clipped)"
+    return val, receipt
 
 
 def derive_budget(n_seqs, batch, dim) -> tuple[int, dict]:
@@ -133,15 +147,16 @@ class ResolvedCFM:
     receipt: dict = field(default_factory=dict)
 
 
-def resolve_cfm(base, df, keys, vocab_sizes, event_ts) -> ResolvedCFM:
+def resolve_cfm(base, df, keys, vocab_sizes) -> ResolvedCFM:
     """Resolve all config from data + hardware. `base` is the raw config; any
-    explicit override wins but is recorded."""
+    explicit override wins and is recorded (recording alone never applied it —
+    the derived value overwrote the override downstream)."""
     lengths = sequence_lengths(df, keys)
     seq_len, r1 = derive_seq_len(lengths)
     total = int(sum(lengths)) if lengths else 0
     dim, r2 = derive_dim(len(keys), total, vocab_sizes)
     batch, r3 = derive_batch(len(keys))
-    hl, r4 = derive_half_life(event_ts)
+    hl, r4 = derive_half_life(df)
     budget, r5 = derive_budget(len(keys), batch, dim)
     # eval cadence: enough evals to detect a plateau inside the budget.
     eval_every = int(clip(round(budget / 20.0), 5, 5000))
@@ -149,6 +164,7 @@ def resolve_cfm(base, df, keys, vocab_sizes, event_ts) -> ResolvedCFM:
     # what stops training. Overridable.
     patience = int(clip(round(budget / eval_every / 5.0), 3, 20))
     rec = {"derived": {}, "overrides": {}}
+    out = {}
     for name, (val, rr) in (
         ("seq_len", (seq_len, r1)),
         ("dim", (dim, r2)),
@@ -166,13 +182,16 @@ def resolve_cfm(base, df, keys, vocab_sizes, event_ts) -> ResolvedCFM:
         }[name]
         if user is not None and user != default and user != 0:
             rec["overrides"][name] = user
+            out[name] = user
+        else:
+            out[name] = val
         rec["derived"][name] = rr
     return ResolvedCFM(
-        seq_len=seq_len,
-        dim=dim,
-        batch=batch,
-        half_life_days=hl,
-        budget_steps=budget,
+        seq_len=out["seq_len"],
+        dim=out["dim"],
+        batch=out["batch"],
+        half_life_days=out["half_life_days"],
+        budget_steps=out["budget_steps"],
         eval_every=eval_every,
         patience=patience,
         seed=int(getattr(base, "seed", 0)),
@@ -190,6 +209,14 @@ def govern(train_step, val_metric, budget_steps, eval_every, patience, seed=0):
     flag) where LOWER is better for a loss (set val_metric lower-is-better). The
     noise floor (tol) is estimated from the metric's own variation, so 'plateau'
     is measured, not assumed. Returns a receipt; the caller keeps the best state.
+
+    Receipts:
+      * best_state = the LOWEST-LOSS state ever evaluated (strict) — the old
+        rule only recorded a new best when it beat the old one by more than the
+        noise tol, so training returned an older, worse model.
+      * patience is only counted once the noise floor is measurable (>= 3 evals):
+        calling a run "converged" off one or two points is not a measurement.
+      * progress prints per eval (what/when/how good).
     """
     import numpy as np
 
@@ -205,16 +232,26 @@ def govern(train_step, val_metric, budget_steps, eval_every, patience, seed=0):
         if not math.isfinite(v):
             break
         hist.append(v)
-        # measured noise floor from recent variation
-        tol = 0.0
-        if len(hist) >= 3:
-            tol = float(np.std(hist[-3:])) * 0.5
-        if v < best - tol:
+        prev_best = best
+        # measured noise floor from recent variation (needs >= 3 points)
+        tol = float(np.std(hist[-3:])) * 0.5 if len(hist) >= 3 else None
+        if v < best:  # strict: keep the lowest-loss model ever seen
             best = v
             best_state = state
+        if tol is None:
+            print(
+                f"[govern] step {steps}/{budget_steps}  val {v:.4f}  eval {len(hist)}", flush=True
+            )
+            continue  # plateau not measurable yet — patience does not start
+        if v < prev_best - tol:
             no_improve = 0
         else:
             no_improve += 1
+        print(
+            f"[govern] step {steps}/{budget_steps}  val {v:.4f}  best {best:.4f}  "
+            f"tol {tol:.4f}  no_improve {no_improve}/{patience}",
+            flush=True,
+        )
         if no_improve >= patience:
             break
     return {

@@ -1108,3 +1108,53 @@ this month), as_of 2025-11-01, scratch.
   hours); sizing used the production-proven rung instead. Run
   `plugins.ladder_sample_a --as-of <date> --db <fixture>` (needs a --ladder-dir
   override first) if per-stream sizing receipts are wanted.
+
+## Pass: v2.1.0 — real-data bugs from the vendored fork, fixed upstream (DONE)
+Triaged the fork report (vendored wonderland cd1d0cf -> now) against canonical
+code; everything verifiable and fixable without their diff landed here as
+**v2.1.0** (behavior changes that alter trained weights — doctrine #10).
+What landed, with receipts:
+- **Half-life was pinned at the 1-hour floor on EVERY multi-customer dataset**
+  (worse than reported): `derive_half_life` received a merged, globally
+  re-sorted timeline, so gaps measured interleaving, not behavior
+  (`autotune.py`). Now: **p95 of within-customer gaps**; real-data receipt on
+  Instacart = `p95 within-customer gap 30.00d -> 30.00` (was 0.0417).
+- **Train/serve readout parity**: training-anchor donor rows are now
+  `donor(fade(h, anchor − last_event))` (`cfm_state.py`) — serving fades to the
+  scoring boundary with the same closed form. v2.0.0 gates measured UN-faded
+  donor rows while live serving faded them (the fork's served-AUC-0.538 class);
+  re-cert of v2.0.0 receipts is therefore pending.
+- **Governor**: best_state = strict lowest-loss ever seen (old
+  `v < best - tol` record rule returned older/worse states), patience only
+  counts once the noise floor is measurable (>= 3 evals), progress prints
+  (`[govern] step i/N val ...`). Real run: converged 138/456, 6 evals, best
+  0.4170. Stopping rule itself unchanged.
+- **min_events split**: state rows accept >= 1 event (blanket 3 hid 1-2-event
+  customers — 196k/965k on the fork's real stream); training keeps >= 3.
+- **Event names from config**: `order_event` config field + shared
+  `ORDER_EVENT` default (loss objective, eval probe, battery/layer_b raw
+  features — no more literals); sends already config (`company_actions`) with
+  registry fallback now reading config defaults. **`--set KEY=VALUE`** applies
+  explicit overrides AFTER derivation (resolve used to record them and then
+  return the derived value anyway) and records them in the registry receipt —
+  proven end-to-end: `--set state_half_life_days=14` → resolved/overrides
+  receipts = 14 in train AND products rebuild.
+- **Warm-start behavior guard**: skips checkpoints with a different encoder
+  version or resolved architecture (seq_len/dim/half-life) — not just as_of.
+- **Sample-A ladder noise**: paired customer-cluster bootstrap of AUC-diff vs
+  best (rows aligned by (customer, anchor), preds saved to `preds.npz`),
+  unconverged rungs excluded from selection; legacy receipts fall back to the
+  unpaired rule (`tol_mode` in summary). The old unpaired 2x max(SE) was the
+  "always the smallest rung" failure the fork reported (and our own STATUS
+  had flagged rung boundaries as fragile).
+- **Load**: as_of cut pushed into SQL for duckdb sources (bounded memory; the
+  merged-timeline epoch list over every event is also gone).
+- Independent oracles added (the fork's "test compared the model with itself"
+  critique): fade closed-form + semigroup, `fade_idle` vs closed-form,
+  pushdown equivalence — plus 10 more regression tests (**202 total, green**;
+  ruff clean). RUNBOOK gained hard rule #8 (one readout rule).
+NOT ported (need the fork's diff or a battery pass): replay-exact state
+semantics rewrite (~600 lines; ours keeps boundary-stamped states with
+fade/absorb equivalence + new oracles), lazy/chunked EventSource (only the
+SQL pushdown landed), and the off-by-default model additions (joint token =
+their biggest lever; landing it needs a sufficiency-battery run first).

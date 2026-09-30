@@ -62,6 +62,7 @@ from looking_glass.cfm_config import (
     _h,
     _seed_everything,
     _to_epoch,
+    apply_set_overrides,
     monthly_split_seed,
     sample_a,
 )
@@ -149,6 +150,8 @@ def _rebuild_products(
         sample_b if sample_b is not None else run_cfg.get("sample_b_customers")
     )
     rcfg.n_anchors = anchors if anchors is not None else run_cfg.get("n_anchors", rcfg.n_anchors)
+    rcfg.set_overrides = getattr(cfg, "set_overrides", [])
+    apply_set_overrides(rcfg)  # explicit --set wins over registry-derived config
     if rcfg.as_of is None:
         print(f"WARNING: registry for {tag} has no as_of; rebuilding on the FULL stream")
     df = _read_stream(rcfg)
@@ -230,6 +233,15 @@ def main(argv=None):
         help="artifact directory (default: artifacts/cfm relative to cwd; pass an "
         "explicit path to avoid cwd ambiguity, e.g. looking_glass/artifacts/cfm)",
     )
+    ap.add_argument(
+        "--set",
+        action="append",
+        default=None,
+        metavar="KEY=VALUE",
+        help="explicit config override, applied AFTER data-derivation and "
+        "recorded in the registry receipt (repeatable), e.g. "
+        "--set state_half_life_days=7 --set order_event=purchase",
+    )
     a = ap.parse_args(argv)
     anchors = a.anchors if a.anchors is not None else CFMConfig.n_anchors
     cfg = sample_a(a.customers, anchors, db=a.db, epochs=a.epochs, device=a.device)
@@ -238,6 +250,7 @@ def main(argv=None):
     cfg.warm_start = a.warm_start
     cfg.as_of = a.as_of
     cfg.sample_a_customers = a.sample_a
+    cfg.set_overrides = list(a.set or [])
     if a.sample_a is None and a.cmd in ("train", "all"):
         # Sample A is SIZED by the encoder ladder for this as_of (capability
         # vs cost, measured); no receipt -> fall back to all of population A

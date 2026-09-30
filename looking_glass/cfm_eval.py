@@ -28,14 +28,24 @@ from sklearn.model_selection import GroupShuffleSplit
 from sklearn.preprocessing import StandardScaler
 from scipy.stats import spearmanr
 
+from looking_glass.cfm_config import CFMConfig
+
 CFM_DIR = Path(__file__).resolve().parents[0] / "artifacts" / "cfm"
 
 
 def _company_actions(tag):
     for p in CFM_DIR.glob(f"registry_{tag.replace('.', '_')}.json"):
         cfg = json.loads(p.read_text()).get("config", {})
-        return tuple(cfg.get("company_actions", ("email_send",)))
-    return ("email_send",)
+        return tuple(cfg.get("company_actions", list(CFMConfig.company_actions)))
+    return tuple(CFMConfig.company_actions)
+
+
+def _order_event(tag):
+    """Order-event name from the run's registry config (default: config)."""
+    for p in CFM_DIR.glob(f"registry_{tag.replace('.', '_')}.json"):
+        cfg = json.loads(p.read_text()).get("config", {})
+        return str(cfg.get("order_event", CFMConfig.order_event))
+    return CFMConfig.order_event
 
 
 def _read_stream(db):
@@ -81,7 +91,8 @@ def _v(x):
         return 0.0
 
 
-def build_rows(df, anchors, company):
+def build_rows(df, anchors, company, order_event: str | None = None):
+    order_event = order_event or CFMConfig.order_event
     cols = {c: df[c].to_list() for c in df.columns}
     n = df.height
     by, i = {}, 0
@@ -125,7 +136,7 @@ def build_rows(df, anchors, company):
         Xr.append(feats)
         Xc.append(list(row["embedding"]))
         y_type.append(etypes.index(str(et[nn])) if str(et[nn]) in etypes else 0)
-        op = next((j for j in fut if str(et[j]) == "order_placed"), None)
+        op = next((j for j in fut if str(et[j]) == order_event), None)
         y_val.append(_v(val[op]) if op is not None else np.nan)
         y_dt.append(float(np.log1p(max(ts[nn] - a, 0.0))))
         groups.append(k)
@@ -167,7 +178,9 @@ def evaluate(db, products, customers=500):
     keys = df["customer_key"].unique(maintain_order=True).to_list()[:customers]
     df = df.filter(pl.col("customer_key").is_in(keys))
     anchors = anchors.filter(pl.col("customer_key").is_in(keys))
-    Xc, Xr, y_type, y_val, y_dt, groups = build_rows(df, anchors, company)
+    Xc, Xr, y_type, y_val, y_dt, groups = build_rows(
+        df, anchors, company, order_event=_order_event(tag)
+    )
     if len(groups) < 20:
         return {"error": "too few anchors", "n": int(len(groups))}
     Xs = Xc[np.random.default_rng(0).permutation(len(Xc))]

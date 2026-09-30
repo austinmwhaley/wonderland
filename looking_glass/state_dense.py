@@ -38,7 +38,7 @@ def build(cadence="weekly", max_customers=8000):
     keys = C._customer_keys(df, cfg)
     split = C.assign_split(keys, cfg)
     B = [k for k in keys if split[k] == "B"]
-    seqs = C.build_sequences(df, B, cfg, split, with_anchors=False)
+    seqs = C.build_sequences(df, B, cfg, split, with_anchors=False, min_events=1)
     step = 7 * 86400.0 if cadence == "weekly" else 86400.0
     rows_k, rows_e, rows_c, rows_v = [], [], [], []
     with torch.no_grad():

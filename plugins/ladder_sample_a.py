@@ -10,8 +10,12 @@ changes, and draws are nested), into its own archive dir, then measures:
     test set across rungs, so the curve isolates encoder sample size)
   * `ce`  — the encoder's held-out next-event loss (training governor receipt)
 
-Rule (same convention as plugins.ladder): CHOSEN = smallest rung within
-2 x max(fold SE) of the best AUC. `ce` is reported as corroboration.
+Rule: CHOSEN = smallest rung within noise of the best AUC, where the noise is
+the PAIRED difference-vs-best (customer-cluster bootstrap over rows aligned by
+(customer, anchor)) — the unpaired 2 x max(SE) rule was several times too wide
+and always landed on the smallest rung. Rungs whose governor never converged
+are excluded from selection. Legacy receipts without saved predictions fall
+back to the unpaired rule (receipt records `tol_mode`). `ce` is corroborative.
 
 Receipts: <rung_dir>/ladder_receipt.json each + summary_<as_of>.json.
 
@@ -92,6 +96,14 @@ def _downstream_auc(as_of: str, out: Path) -> dict:
     yte = ds.y[te]
     m = _metrics_binary(pred, yte)
     se = _fold_se(pred, yte, np.asarray(ds.keys)[te], _metric("binary"))
+    # paired predictions for the noise-vs-best comparison (aligned by
+    # (customer, anchor): same eligible rows and test split on every rung)
+    np.savez(
+        out / "preds.npz",
+        keys=np.asarray(ds.keys, dtype=str)[te],
+        y=np.asarray(yte),
+        pred=np.asarray(pred),
+    )
     return {
         "auc": m["auc"],
         "auc_se": se,
@@ -99,6 +111,71 @@ def _downstream_auc(as_of: str, out: Path) -> dict:
         "n_rows": int(len(ds.y)),
         "n_customers": int(ds.meta["n_customers"]),
     }
+
+
+def _load_preds(out: Path) -> dict | None:
+    p = Path(out) / "preds.npz"
+    if not p.exists():
+        return None
+    with np.load(p) as z:
+        return {"keys": z["keys"], "y": z["y"], "pred": z["pred"]}
+
+
+def _paired_auc_se(a: dict, b: dict, n_boot: int = 200, seed: int = 0) -> float | None:
+    """Cluster-bootstrap SE of AUC(a) - AUC(b), resampling CUSTOMERS.
+
+    Rows are paired across rungs (same customers/anchors/test split), so the
+    difference's noise is far smaller than either AUC's own SE. None when rows
+    are not aligned (caller falls back to the unpaired rule)."""
+    if len(a["y"]) != len(b["y"]):
+        return None
+    if not np.array_equal(a["keys"], b["keys"]) or not np.array_equal(a["y"], b["y"]):
+        return None
+    metric = _metric("binary")
+    uniq, inv = np.unique(a["keys"], return_inverse=True)
+    groups = [np.flatnonzero(inv == i) for i in range(len(uniq))]
+    rng = np.random.default_rng(seed)
+    diffs = []
+    for _ in range(n_boot):
+        draw = rng.integers(0, len(uniq), size=len(uniq))
+        idx = np.concatenate([groups[i] for i in draw])
+        yb = b["y"][idx]
+        if len(np.unique(yb)) < 2:
+            continue
+        d = metric(a["pred"][idx], yb) - metric(b["pred"][idx], yb)
+        if np.isfinite(d):
+            diffs.append(d)
+    if len(diffs) < max(50, n_boot // 2):
+        return None
+    return float(np.std(diffs, ddof=1))
+
+
+def _choose(rows: list[dict], preds: dict[int, dict]) -> tuple[dict, dict, float, str, list[int]]:
+    """Smallest rung within PAIRED noise of the best; unconverged excluded.
+
+    Returns (chosen_row, best_row, tol_used, tol_mode, excluded_unconverged)."""
+    finite = [r for r in rows if r.get("auc") is not None and np.isfinite(r["auc"])]
+    if not finite:
+        raise SystemExit("no finite rung AUCs to choose from")
+    converged = [r for r in finite if r.get("governor_stopped") == "converged"]
+    excluded = sorted(r["rung"] for r in finite if r.get("governor_stopped") != "converged")
+    pool = sorted(converged or finite, key=lambda r: r["rung"])
+    if not converged:
+        print("WARNING: no rung's governor converged — selecting from unconverged rungs")
+    best = max(pool, key=lambda r: r["auc"])
+    unpaired_tol = 2.0 * float(np.nanmax([r["auc_se"] for r in pool]))
+    mode = "unpaired_fallback" if not preds else "paired"
+    for r in pool:
+        tol = unpaired_tol
+        if r["rung"] in preds and best["rung"] in preds:
+            se = _paired_auc_se(preds[best["rung"]], preds[r["rung"]])
+            if se is not None:
+                tol = 2.0 * se
+        else:
+            mode = "unpaired_fallback"
+        if r["auc"] >= best["auc"] - tol:
+            return r, best, tol, mode, excluded
+    return best, best, unpaired_tol, mode, excluded  # unreachable; keep it total
 
 
 def _cached_receipt(receipt_p: Path, as_of: str):
@@ -166,11 +243,18 @@ def run(as_of: str, rungs=RUNGS, customers: int = 25000, anchors: int = 6, skip_
             flush=True,
         )
 
-    finite = [r for r in rows if r.get("auc") is not None and np.isfinite(r["auc"])]
-    tol = 2.0 * float(np.nanmax([r["auc_se"] for r in finite]))
-    best = max(r["auc"] for r in finite)
-    chosen = next(r for r in rows if r.get("auc") is not None and r["auc"] >= best - tol)
-    print(f"\nmeasured noise 2*SE(AUC) = {tol:.4f}   best AUC = {best:.4f}")
+    preds: dict[int, dict] = {}
+    for r in rows:
+        p = _load_preds(LADDER_DIR / f"r{r['rung']}")
+        if p is not None:
+            preds[r["rung"]] = p
+    chosen, best, tol, tol_mode, excluded = _choose(rows, preds)
+    print(
+        f"\nnoise({tol_mode}) 2*SE(AUC_diff vs best) = {tol:.4f}   "
+        f"best AUC = {best['auc']:.4f} (rung {best['rung']})"
+    )
+    if excluded:
+        print(f"excluded from selection (governor never converged): rungs {excluded}")
     print(
         f"CHOSEN sample_A = {chosen['rung']} "
         f"(effective n_train_seqs={chosen['n_train_sequences']}, auc={chosen['auc']:.4f})"
@@ -180,7 +264,9 @@ def run(as_of: str, rungs=RUNGS, customers: int = 25000, anchors: int = 6, skip_
         "customers_base": customers,
         "anchors": anchors,
         "tol": tol,
-        "best_auc": best,
+        "tol_mode": tol_mode,
+        "excluded_unconverged": excluded,
+        "best_auc": best["auc"],
         "chosen_rung": chosen["rung"],
         "chosen_n_train_sequences": chosen["n_train_sequences"],
         "rungs": rows,
