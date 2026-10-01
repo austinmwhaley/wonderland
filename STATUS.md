@@ -1227,3 +1227,20 @@ Executed the new ROADMAP's first phases in order (evidence trust first):
   recurrent MB witness). WITH_BOTH improved 14 -> 12 (3 mimics fixed, 0 broken);
   verdicts unchanged (WITH=REMOVE, WITH_BOTH=SHIP).
 - Gates: fast tier 210 green, ruff clean; all CI runs green.
+
+## Pass: P1-4 ablation — donor LOSES to raw on the shipped target (DECISION NEEDED)
+`plugins/ablation.py` measures donor-vs-raw under the production bake-off head
+on `donor_embeddings` (paired customer-bootstrap SE); battery's rfm_vector is
+now the single "raw" definition for both. Receipts:
+`plugins/artifacts/ablation_..._20251201.json` + `/tmp/opencode/insta_ablation/`.
+- rabbit_hole (v2.0.0r90061 products, 42,587 rows): **raw 0.7650 > donor
+  0.7343** (d -0.031, 2SE 0.006 — beyond noise); E+R 0.7597 > donor.
+- Instacart (v2.1.0 products, 734 rows): **raw 0.8944 > donor 0.7961**
+  (d -0.098, 2SE 0.025); **E+R 0.9201 = best of all three**.
+For 30-day purchase propensity the frozen state does NOT dominate exact RFM
+aggregates (the battery's 'raw-ish reorder_30" hint, now proven on the shipped
+metric/table). Donor still adds complementary signal (E+R > raw alone on
+rabbit_hole; > both alone on Instacart). DoD#2 status for this target is open:
+either (a) revisit D14's sole-input lock so heads may take [E|R] (the Dataset
+`price_mat` slot exists), or (b) change the encoder so the state carries
+recency/frequency aggregates. NOT decided unilaterally — receipts above.
