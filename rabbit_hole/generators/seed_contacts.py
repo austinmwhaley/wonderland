@@ -21,6 +21,7 @@ from rabbit_hole.generators.business_tables import (
 from rabbit_hole.generators.generate_support import (
     ISO_US,
     ProgressReporter,
+    _REFERENCE_NOW,
     customer_arrays,
     day_of_year,
     iso_expr,
@@ -238,6 +239,20 @@ def _seed_contacts(
                     1, 121, clicked_idx.size
                 ).astype("timedelta64[m]")
 
+            # Right-censor to the observation window: opens/clicks after
+            # _REFERENCE_NOW were never observed (a late click hides its open
+            # too). Sends themselves stay inside the window by construction.
+            ref_us = utc_naive(_REFERENCE_NOW).astype("datetime64[us]")
+            unobs_open = (~np.isnat(open_dt)) & (open_dt > ref_us)
+            unobs_click = (~np.isnat(click_dt)) & (click_dt > ref_us)
+            unobs = unobs_open | unobs_click
+            if unobs.any():
+                open_dt = np.where(unobs, np.datetime64("NaT", "us"), open_dt)
+                click_dt = np.where(unobs, np.datetime64("NaT", "us"), click_dt)
+                opened = ~np.isnat(open_dt)
+                clicked = ~np.isnat(click_dt)
+                clicked_idx = np.flatnonzero(clicked)  # refresh before conv join
+
             click_sid = np.full(m, None, dtype=object)
             conv_txn = np.full(m, None, dtype=object)
             if clicked_idx.size and cum.size:
@@ -276,6 +291,13 @@ def _seed_contacts(
 
             conv_pos = np.flatnonzero(conv_mask)
             if conv_pos.size:
+                # conversion order = click + 5..180m — right-censor past the window
+                ots = click_dt[conv_pos] + rng.integers(5, 181, conv_pos.size).astype(
+                    "timedelta64[m]"
+                )
+                keep_c = ots <= utc_naive(_REFERENCE_NOW)
+                conv_pos, ots = conv_pos[keep_c], ots[keep_c]
+            if conv_pos.size:
                 cc = cs[conv_pos]
                 pcat = pref_idx[cc]
                 ppos = prod_offsets[pcat] + np.minimum(
@@ -286,9 +308,6 @@ def _seed_contacts(
                 price = prod_prices[ppos]
                 cost = prod_costs[ppos]
                 txns = order_counter + np.arange(conv_pos.size, dtype=np.int64)
-                ots = click_dt[conv_pos] + rng.integers(5, 181, conv_pos.size).astype(
-                    "timedelta64[m]"
-                )
                 disc_amt = np.round(price * disc[conv_pos] / 100.0, 2)
                 subtotal = np.round(price - disc_amt, 2)
                 tax = np.round(subtotal * rng.uniform(0.06, 0.095, conv_pos.size), 2)

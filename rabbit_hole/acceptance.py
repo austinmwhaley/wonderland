@@ -13,13 +13,16 @@ Pipeline under test: ``generate_data.py`` builds the wide tables, then
 from __future__ import annotations
 
 import importlib.util
+import math
 import os
 import duckdb
 import sys
 import tempfile
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
+from .generators.generate_support import _REFERENCE_NOW
+from .generators.seed_contacts import _ARMS, _HOLD_FRAC
 from .schema import CANONICAL_FIELDS, parse_attributes
 from .stream import read_events, write_events
 
@@ -169,7 +172,11 @@ def check(seed=17):
 
     # determinism
     outdir = Path(db).parent
-    for eng, name in (("duckdb", "stream.duckdb"), ("parquet", "stream.parquet")):
+    for eng, name in (
+        ("duckdb", "stream.duckdb"),
+        ("parquet", "stream.parquet"),
+        ("arrow", "stream.feather"),  # Arrow round-trip was never checked
+    ):
         pth = outdir / name
         write_events(str(pth), rows)
         back = read_events(str(pth))
@@ -180,6 +187,66 @@ def check(seed=17):
             and [r["event_ts"] for r in back] == [r["event_ts"] for r in rows]
         )
         checks.append(r(f"{eng} round-trip (5-field)", "equal+5 fields", f"{len(back)} rows", same))
+
+    # ---- causal design + window bound (wide tables of the toy build) -------
+    # The standing 25k artifact leaked 15,727 events past _REFERENCE_NOW (max
+    # 2026-03-04); these checks pin the generator code. Checking the standing
+    # artifact itself waits on the regeneration decision (ROADMAP open #4).
+    con = duckdb.connect(db, read_only=True)
+    try:
+        max_ts = con.execute(
+            "SELECT max(epoch(CAST(event_ts AS TIMESTAMPTZ))) FROM customer_events"
+        ).fetchone()[0]
+        checks.append(
+            r(
+                "window: events <= _REFERENCE_NOW",
+                _REFERENCE_NOW.date().isoformat(),
+                datetime.fromtimestamp(float(max_ts), tz=timezone.utc).date().isoformat()
+                if max_ts
+                else "none",
+                max_ts is not None and float(max_ts) <= _REFERENCE_NOW.timestamp(),
+            )
+        )
+        n_sends, channels = con.execute(
+            "SELECT count(*), count(DISTINCT channel) FROM contact_sends"
+        ).fetchone()
+        mix = dict(con.execute("SELECT channel, count(*) FROM contact_sends GROUP BY 1").fetchall())
+        top_share = max(mix.values()) / n_sends if n_sends else 1.0
+        checks.append(r("contact channels in stream", "3", channels, channels >= 3))
+        # conservative bound vs measured production share (push 0.59 of sends)
+        checks.append(r("channel mix: max share", "<=0.8", round(top_share, 3), top_share <= 0.8))
+        for ch in ("email_send", "sms_send", "push_send"):
+            checks.append(r(f"event vocabulary: {ch}", "present", ch in types, ch in types))
+        n_arm, pmin, pmax, n_arms = con.execute(
+            "SELECT count(*), min(propensity), max(propensity), count(DISTINCT arm) "
+            "FROM contact_arm"
+        ).fetchone()
+        checks.append(
+            r("logged arms", f"{_ARMS} arms", int(n_arms or 0), bool(n_arm) and n_arms >= _ARMS)
+        )
+        # conservative floor: no arm may be log-probability-invisible (IPW
+        # explodes); measured production min was 0.00026
+        checks.append(
+            r(
+                "propensity in [1e-4, 1)",
+                "strict",
+                f"{float(pmin):.4g}..{float(pmax):.4g}" if pmin is not None else "none",
+                pmin is not None and float(pmin) >= 1e-4 and float(pmax) < 1.0,
+            )
+        )
+        hold, n_hold = con.execute("SELECT avg(holdout), count(*) FROM contact_holdout").fetchone()
+        hold, n_hold = float(hold or 0.0), int(n_hold or 0)
+        se = math.sqrt(_HOLD_FRAC * (1 - _HOLD_FRAC) / max(n_hold, 1))
+        checks.append(
+            r(
+                "randomized holdout rate",
+                f"~{_HOLD_FRAC} (5*SE)",
+                round(hold, 4),
+                abs(hold - _HOLD_FRAC) <= 5 * se,
+            )
+        )
+    finally:
+        con.close()
 
     import hashlib
 

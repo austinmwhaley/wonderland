@@ -11,6 +11,7 @@ import polars as pl
 from rabbit_hole.generators.business_tables import _bulk_insert, _flush_order_items
 from rabbit_hole.generators.generate_support import (
     ProgressReporter,
+    _REFERENCE_NOW,
     browse_probs,
     customer_arrays,
     iso_expr,
@@ -18,6 +19,7 @@ from rabbit_hole.generators.generate_support import (
     sample_categorical,
     sample_event_ts,
     sample_from_cum,
+    utc_naive,
 )
 
 _DEVICE_TYPES = ["mobile", "desktop", "tablet"]
@@ -247,6 +249,24 @@ def _seed_events(
         reporter.start("generate orders", o_total)
     ocust = sample_from_cum(rng, cum_weights, o_total)
 
+    base_order_ts = sample_event_ts(rng, start_ts, total_days, o_total)
+    first = first_ts[ocust]
+    need_floor = (~np.isnat(first)) & (base_order_ts < first)
+    floored = first + rng.integers(1, 1441, o_total).astype("timedelta64[m]")
+    order_ts = np.where(need_floor, floored, base_order_ts)
+    order_ts = order_ts + rng.integers(5, 421, o_total).astype("timedelta64[m]")
+
+    # Right-censor to the observation window (acceptance: window bound): an
+    # order after _REFERENCE_NOW was never observed — drop it BEFORE session
+    # assignment so ids/counts stay consistent. (The floors + minute offsets
+    # above can push boundary orders past the window; the standing artifact
+    # leaked 15,727 events to 2026-03-04.)
+    late_orders = order_ts > utc_naive(_REFERENCE_NOW)
+    if late_orders.any():
+        ocust = ocust[~late_orders]
+        order_ts = order_ts[~late_orders]
+        o_total = int(order_ts.size)
+
     # Orders reuse the customer's last browse session; customers without browse
     # history get a fresh session.
     last = last_sess[ocust]
@@ -258,13 +278,6 @@ def _seed_events(
             need_session, new_ids[np.searchsorted(miss_cust, ocust[need_session])], last
         )
         total_sessions += len(miss_cust)
-
-    base_order_ts = sample_event_ts(rng, start_ts, total_days, o_total)
-    first = first_ts[ocust]
-    need_floor = (~np.isnat(first)) & (base_order_ts < first)
-    floored = first + rng.integers(1, 1441, o_total).astype("timedelta64[m]")
-    order_ts = np.where(need_floor, floored, base_order_ts)
-    order_ts = order_ts + rng.integers(5, 421, o_total).astype("timedelta64[m]")
 
     u1 = rng.random(o_total)
     u2 = rng.random(o_total)
@@ -333,6 +346,21 @@ def _seed_events(
         np.where(return_flag, np.round(order_total * rng.uniform(0.15, 0.55, o_total), 2), 0.0),
     )
     order_status = np.where(return_flag & full_refund, "refunded", order_status)
+
+    # Right-censor post-window cancels/returns: they happen after the
+    # observation window and were never observed (acceptance: window bound).
+    ref = utc_naive(_REFERENCE_NOW)
+    late_cxl = is_cancelled & (cancelled_ts > ref)
+    if late_cxl.any():
+        cancelled_ts = np.where(late_cxl, np.datetime64("NaT", "ms"), cancelled_ts)
+        is_cancelled = ~np.isnat(cancelled_ts)
+        order_status = np.where(late_cxl, "completed", order_status)
+    late_ret = return_flag & (return_ts > ref)
+    if late_ret.any():
+        return_ts = np.where(late_ret, np.datetime64("NaT", "ms"), return_ts)
+        return_amount = np.where(late_ret, 0.0, return_amount)
+        return_flag = return_flag & ~late_ret
+        order_status = np.where(late_ret & (order_status == "refunded"), "completed", order_status)
 
     payment = np.array(_PAYMENTS, dtype=object)[sample_categorical(rng, _PAYMENT_WEIGHTS, o_total)]
     gross_rev = np.maximum(subtotal - discount, 0.0)
