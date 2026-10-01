@@ -1219,5 +1219,11 @@ Executed the new ROADMAP's first phases in order (evidence trust first):
   — orders/returns/cancels/opens/clicks/conversions now right-censored at
   `_REFERENCE_NOW` in seed_events/seed_contacts. Standing 25k artifact
   regeneration still awaits ROADMAP open decision #4.
-- Gates: fast tier 210 green, ruff clean; v2 battery (`ab_world_engine`,
-  baseline archived) re-running under the same levers — numbers to follow.
+- **v2 battery numbers (hardened)**: 15/20 — UNCHANGED for WITHOUT/WITH
+  (missed 4 × `smart`, false 11 × myopic/mimic/anti at w3-w5). The levers
+  only bite w=1 falses (v1's class); v2's errors are all advantage-certificate
+  (delta>0, bar-blind) + witnesses hallucinating under partial observability —
+  i.e. ROADMAP P2-1 exactly (advantage edge requirement, overlap veto,
+  recurrent MB witness). WITH_BOTH improved 14 -> 12 (3 mimics fixed, 0 broken);
+  verdicts unchanged (WITH=REMOVE, WITH_BOTH=SHIP).
+- Gates: fast tier 210 green, ruff clean; all CI runs green.
