@@ -25,6 +25,8 @@ import numpy as np
 from looking_glass.cfm_config import ORDER_EVENT
 from looking_glass.layer_b_proof import _load, cv_pred, _rho, _partial_ci
 
+D_SEC = 86400.0
+
 
 def _epoch(s):
     from datetime import datetime
@@ -42,6 +44,35 @@ def _v(x):
         return 0.0
 
 
+def rfm_vector(ts, ets, vals, a, o, etypes):
+    """Battery-convention raw (RFM + per-type counts) vector at an anchor.
+
+    SINGLE SOURCE: the sufficiency battery and the plugin E-vs-R ablation
+    (plugins/ablation.py) both build raw rows here, so 'raw' means the same
+    thing in both measurements. `o` = the customer's (t, gross_margin) orders.
+    """
+    ts = np.asarray(ts, dtype=np.float64)
+    m = ts <= a
+    pt = ts[m]
+    pe = np.asarray(ets, dtype=object)[m]
+    pv = np.asarray(vals, dtype=np.float64)[m]
+    ot = np.asarray([x[0] for x in o], dtype=np.float64)
+    og = np.asarray([x[1] for x in o], dtype=np.float64)
+    trail = float(og[(ot > a - 365 * D_SEC) & (ot <= a)].sum()) if len(o) else 0.0
+    gap = np.diff(pt)
+    rfm = [
+        a - pt[-1],
+        a - pt[0],
+        float(m.sum()),
+        float(pv.sum()),
+        float(np.mean(gap)) if len(gap) else 0.0,
+        float((pe == ORDER_EVENT).sum()),
+        trail,
+    ]
+    rfm += [float((pe == t).sum()) for t in etypes]
+    return rfm
+
+
 def build_all(stream, anch, orders, data_end):
     etypes = sorted(set(map(str, stream["event_type"].unique().to_list())))
     sc = {c: stream[c].to_list() for c in stream.columns}
@@ -55,7 +86,7 @@ def build_all(stream, anch, orders, data_end):
         sby[k] = (
             np.array([_epoch(x) for x in sc["event_ts"][i:j]], dtype=np.float64),
             [str(x) for x in sc["event_type"][i:j]],
-            np.array([_v(x) for x in sc["value"][i:j]]),
+            np.array([_v(x) for x in sc["value"][i:j]], dtype=np.float64),
         )
         i = j
     oby = {}
@@ -75,7 +106,7 @@ def build_all(stream, anch, orders, data_end):
             "next_order_value",
         )
     }
-    D = 86400.0
+    D = D_SEC
     for row in anch.iter_rows(named=True):
         k = row["customer_key"]
         a = float(row["anchor_epoch"])
@@ -85,22 +116,10 @@ def build_all(stream, anch, orders, data_end):
         m = ts <= a
         if m.sum() < 3:
             continue
-        pt, pe, pv = ts[m], np.array(et)[m], val[m]
         o = oby.get(k, [])
         ot = np.array([x[0] for x in o])
         og = np.array([x[1] for x in o])
-        trail = float(og[(ot > a - 365 * D) & (ot <= a)].sum()) if len(o) else 0.0
-        gap = np.diff(pt)
-        rfm = [
-            a - pt[-1],
-            a - pt[0],
-            float(m.sum()),
-            float(pv.sum()),
-            float(np.mean(gap)) if len(gap) else 0.0,
-            float((pe == ORDER_EVENT).sum()),
-            trail,
-        ]
-        rfm += [float((pe == t).sum()) for t in etypes]
+        rfm = rfm_vector(ts, et, val, a, o, etypes)
         E.append(list(row["embedding"]))
         R.append(rfm)
         groups.append(k)
