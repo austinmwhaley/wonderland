@@ -537,3 +537,63 @@ def test_ladder_receipt_cache_is_as_of_keyed(tmp_path):
     assert L._cached_receipt(tmp_path / "nope.json", "2025-11-01") is None
     rp.write_text("{not json")
     assert L._cached_receipt(rp, "2025-11-01") is None
+
+
+# ---------------------------------------------------------------------------
+# gate uncertainty (ROADMAP P1-3): derived thresholds, paired noise
+# ---------------------------------------------------------------------------
+def test_binary_gates_use_measured_noise():
+    from plugins.head_template import HeadTemplate, _metrics_binary
+    from plugins.targets import PURCHASE_PROPENSITY_30D
+
+    rng = np.random.default_rng(3)
+    n = 600
+    keys = np.array([f"c{i % 60}" for i in range(n)])
+    y = rng.integers(0, 2, n)
+    good = 0.9 * y + 0.1 * rng.random(n)
+    weak = rng.random(n)
+    heads = [
+        {
+            "name": "logistic",
+            "pred": good,
+            "keys": keys,
+            "y_te": y,
+            "metrics": _metrics_binary(good, y),
+        },
+        {
+            "name": "trailing_baseline",
+            "pred": weak,
+            "keys": keys,
+            "y_te": y,
+            "metrics": _metrics_binary(weak, y),
+        },
+    ]
+    tpl = HeadTemplate(PURCHASE_PROPENSITY_30D)
+    tpl._winner = "logistic"
+    rows = tpl._binary_rows(heads)
+    names = [r["check"] for r in rows]
+    assert any("paired 2*SE" in c for c in names)
+    assert any("3*SE" in c for c in names)
+    assert any("Brier" in c for c in names)
+    assert all(r["ok"] for r in rows)  # clear signal clears every derived bar
+
+    # parity model: nominally >= baseline but INSIDE the noise -> must FAIL
+    # (the old zero-margin `>=` would have shipped it)
+    noisy = weak.copy()
+    heads2 = [dict(heads[0], pred=noisy, metrics=_metrics_binary(noisy, y)), heads[1]]
+    auc_row = next(r for r in tpl._binary_rows(heads2) if "beats baseline" in r["check"])
+    assert auc_row["ok"] is False
+
+
+def test_bakeoff_within_noise_ties_prefer_roster_order(monkeypatch):
+    import plugins.ladder_sample_a as L
+    from plugins.head_template import BINARY_FAMILIES, HeadTemplate
+    from plugins.targets import PURCHASE_PROPENSITY_30D
+
+    ds = _binary_ds(n=180, seed=1)
+    # every candidate statistically tied with the best -> earliest roster wins
+    monkeypatch.setattr(L, "_paired_auc_se", lambda *a, **k: 1.0)
+    tpl = HeadTemplate(PURCHASE_PROPENSITY_30D)
+    heads, _ = tpl.fit(ds, seed=0)
+    assert tpl._winner == BINARY_FAMILIES[0]
+    assert set(tpl._tied_heads) == {h["name"] for h in heads if "fitted" in h}

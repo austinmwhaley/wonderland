@@ -89,6 +89,15 @@ def _metrics_binary(pred, y):
     k = max(1, int(0.1 * len(pred)))
     top = np.argsort(pred)[-k:]
     lift = float(y[top].mean() / max(base, 1e-9))
+    # 10-bin expected calibration error (reported alongside the gap; the gate
+    # uses the gap's SE so the tolerance is derived, not a literal)
+    nb = 10
+    bidx = np.clip((pred * nb).astype(int), 0, nb - 1)
+    ece = 0.0
+    for i in range(nb):
+        msk = bidx == i
+        if msk.any():
+            ece += float(msk.mean()) * abs(float(y[msk].mean()) - float(pred[msk].mean()))
     return {
         "auc": auc,
         "pr_auc": ap,
@@ -96,6 +105,7 @@ def _metrics_binary(pred, y):
         "base_rate": base,
         "top_decile_lift": lift,
         "calibration_gap": float(abs(pred.mean() - base)),
+        "ece": float(ece),
     }
 
 
@@ -226,6 +236,8 @@ def head_binary(ds: Dataset, seed=0, max_train=None, families=BINARY_FAMILIES):
     tr, te = _split(ds.keys, seed, max_train=max_train)
     sc = StandardScaler().fit(ds.X[tr])
     Xtr, Xte = sc.transform(ds.X[tr]), sc.transform(ds.X[te])
+    keys_te = np.asarray(ds.keys)[te]
+    y_te = np.asarray(ds.y)[te]
     heads = []
     for name in families:
         m = _binary_family(name, seed, ds.X.shape[1])
@@ -236,8 +248,10 @@ def head_binary(ds: Dataset, seed=0, max_train=None, families=BINARY_FAMILIES):
                 "name": name,
                 "pred": pred,
                 "idx": te,
+                "keys": keys_te,
+                "y_te": y_te,
                 "n_train": int(len(tr)),
-                "metrics": _metrics_binary(pred, ds.y[te]),
+                "metrics": _metrics_binary(pred, y_te),
                 "fitted": {"kind": "binary", "family": name, "scaler": sc, "model": m},
             }
         )
@@ -246,8 +260,10 @@ def head_binary(ds: Dataset, seed=0, max_train=None, families=BINARY_FAMILIES):
             "name": "trailing_baseline",
             "pred": ds.x_base[te],
             "idx": te,
+            "keys": keys_te,
+            "y_te": y_te,
             "n_train": int(len(tr)),
-            "metrics": _metrics_binary(ds.x_base[te], ds.y[te]),
+            "metrics": _metrics_binary(ds.x_base[te], y_te),
         }
     )
     return heads
@@ -285,6 +301,7 @@ class HeadTemplate:
     def __init__(self, target: Target):
         self.target = target
         self._winner: str | None = None  # set by fit() for binary (bake-off)
+        self._tied_heads: list = []  # within-noise cohort of the winner
 
     @property
     def primary_head(self) -> str | None:
@@ -295,8 +312,10 @@ class HeadTemplate:
 
     def fit(self, ds: Dataset, seed: int = 0, max_train: int | None = None, families=None):
         """Fit the target's heads. Binary targets run the MODEL BAKE-OFF: every
-        family in the roster on the same split, winner = best held-out AUC
-        (evidence, not opinion). `families` narrows the roster (the ladder
+        family in the roster on the same split. The winner is the best held-out
+        AUC, but candidates within PAIRED 2*SE of it are treated as tied and the
+        earliest roster family wins the tie (a single-split argmax selected noise
+        as confidently as signal). `families` narrows the roster (the ladder
         probes a single family)."""
         if self.target.kind == "binary":
             heads = head_binary(
@@ -308,8 +327,29 @@ class HeadTemplate:
                 v = h["metrics"]["auc"]
                 return v if np.isfinite(v) else -np.inf
 
-            win = max(cands, key=_auc)
+            best = max(cands, key=_auc)
+            tied = [best]
+            if all("keys" in h and "y_te" in h for h in cands):
+                from .ladder_sample_a import _paired_auc_se
+
+                a_best = {
+                    "keys": best["keys"],
+                    "y": best["y_te"],
+                    "pred": best["pred"],
+                }
+                for h in cands:
+                    if h is best or not np.isfinite(_auc(h)):
+                        continue
+                    se = _paired_auc_se(
+                        a_best,
+                        {"keys": h["keys"], "y": h["y_te"], "pred": h["pred"]},
+                    )
+                    # no paired estimate -> only exact numeric ties count as tied
+                    if se is not None and _auc(best) - _auc(h) <= 2.0 * se:
+                        tied.append(h)
+            win = next(h for h in cands if h in tied)  # roster order wins ties
             self._winner = win["name"]
+            self._tied_heads = [h["name"] for h in tied]
             return heads, win["fitted"]
         heads = [fn(ds, seed, max_train) for fn in HEADS[self.target.kind]]
         self._winner = None
@@ -401,6 +441,25 @@ class HeadTemplate:
         return rows
 
     def _binary_rows(self, heads):
+        """Gate rows with MEASURED uncertainty (doctrine #1/#8):
+
+        * AUC vs trailing baseline: paired customer-cluster bootstrap of the
+          difference — the model must beat the baseline beyond noise
+          (was: zero-margin `>=`, so +0.0001 shipped).
+        * top-decile lift: threshold is 1 + 2*fold-SE (was bare `> 1.0`).
+        * calibration gap: 3*SE of the mean-probability gap (was literal 0.05).
+        * Brier: must beat the trailing baseline's Brier (was computed, never
+          gated); ECE is reported in metrics.
+        """
+        from .ladder import _fold_se, _metric
+        from .ladder_sample_a import _paired_auc_se
+
+        def _lift_metric(pred, y):
+            base = max(float(np.mean(y)), 1e-9)
+            k = max(1, int(0.1 * len(pred)))
+            top = np.argsort(pred)[-k:]
+            return float(np.asarray(y)[top].mean() / base)
+
         model = next(
             (h for h in heads if h["name"] == self._winner)
             or (h for h in heads if h["name"] != "trailing_baseline"),
@@ -410,6 +469,46 @@ class HeadTemplate:
         if model is None or base is None:
             raise ValueError("binary contract requires a model head and a trailing baseline")
         m, b = model["metrics"], base["metrics"]
+        y_te = np.asarray(model.get("y_te", []))
+        keys_te = np.asarray(model.get("keys", []))
+        n = len(y_te) if y_te.size else 1
+
+        # paired AUC difference vs baseline (fallback: unpaired fold SEs)
+        se_diff = None
+        if keys_te.size and "pred" in model and "pred" in base:
+            se_diff = _paired_auc_se(
+                {"keys": keys_te, "y": y_te, "pred": np.asarray(model["pred"])},
+                {"keys": keys_te, "y": y_te, "pred": np.asarray(base["pred"])},
+            )
+        if se_diff is None:
+            se_m = (
+                _fold_se(np.asarray(model["pred"]), y_te, keys_te, _metric("binary"))
+                if keys_te.size
+                else float("nan")
+            )
+            se_b = (
+                _fold_se(np.asarray(base["pred"]), y_te, keys_te, _metric("binary"))
+                if keys_te.size
+                else float("nan")
+            )
+            se_diff = float(np.sqrt(se_m**2 + se_b**2)) if np.isfinite(se_m + se_b) else 0.0
+        auc_delta = float(m["auc"] - b["auc"]) if np.isfinite(m["auc"] + b["auc"]) else float("nan")
+
+        # lift SE across grouped folds
+        se_lift = (
+            _fold_se(np.asarray(model["pred"]), y_te, keys_te, _lift_metric)
+            if keys_te.size
+            else float("nan")
+        )
+        lift_thr = 1.0 + 2.0 * se_lift if np.isfinite(se_lift) else 1.0
+
+        # calibration-gap SE: mean(pred) - base rate under H0 (perfect
+        # calibration) has se ~ sqrt(max(var(pred), p(1-p)) / n)
+        p = float(m["base_rate"]) if 0.0 < m["base_rate"] < 1.0 else 0.5
+        var_pred = float(np.var(np.asarray(model["pred"]))) if "pred" in model else p * (1 - p)
+        se_gap = float(np.sqrt(max(var_pred, p * (1 - p)) / max(n, 1)))
+        gap_thr = 3.0 * se_gap
+
         rows = [
             {
                 "check": "binary: finite metrics (both classes present)",
@@ -419,22 +518,24 @@ class HeadTemplate:
                 and 0.0 < m["base_rate"] < 1.0,
             },
             {
-                "check": "binary: top-decile lift > 1.0 (better than random)",
-                "achieved": round(m["top_decile_lift"], 3),
-                "ok": m["top_decile_lift"] > 1.0,
+                "check": "binary: top-decile lift > 1 + 2*SE (fold)",
+                "achieved": f"{m['top_decile_lift']:.3f} (thr {lift_thr:.3f})",
+                "ok": bool(np.isfinite(m["top_decile_lift"]) and m["top_decile_lift"] > lift_thr),
             },
             {
-                "check": f"binary: {model['name']} AUC >= trailing baseline AUC",
-                "achieved": f"{m['auc']:.3f} vs {b['auc']:.3f}",
-                "ok": np.isfinite(m["auc"])
-                and m["auc"] >= (b["auc"] if np.isfinite(b["auc"]) else 0.0),
+                "check": f"binary: {model['name']} AUC beats baseline beyond noise (paired 2*SE)",
+                "achieved": f"{m['auc']:.3f} vs {b['auc']:.3f} (d {auc_delta:+.4f}, 2SE {2 * se_diff:.4f})",
+                "ok": bool(np.isfinite(auc_delta) and auc_delta > 2.0 * se_diff),
             },
             {
-                # documented conservative tolerance: mean predicted probability
-                # must track the realized positive rate within 5 points
-                "check": "binary: calibration gap <= 0.05",
-                "achieved": round(m["calibration_gap"], 3),
-                "ok": m["calibration_gap"] <= 0.05,
+                "check": "binary: calibration gap <= 3*SE (derived)",
+                "achieved": f"{m['calibration_gap']:.4f} (thr {gap_thr:.4f})",
+                "ok": bool(m["calibration_gap"] <= gap_thr),
+            },
+            {
+                "check": "binary: Brier beats trailing baseline",
+                "achieved": f"{m['brier']:.3f} vs {b['brier']:.3f}",
+                "ok": bool(np.isfinite(m["brier"]) and m["brier"] < b["brier"]),
             },
         ]
         return rows
