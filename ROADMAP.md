@@ -131,9 +131,9 @@ evidence. Nothing downstream is trustworthy until that's fixed.
    - Overlap as a first-class veto: propagate propensity quantiles /
      `clipped_frac` into `gate.adjudicate` (4/6 v1 false deploys occur under
      ε∈{0.15,0.05}; diagnostics exist, gate on them).
-   - Recall side: v2's 4 missed deploys have w=0 because the internal MB
-     witness is a one-step MLP blind to partial observability
-     (`wq_mb=−51.7` vs truth 16.7) — replace/down-weight it, or admit the
+   - Recall side: v2's 4 missed deploys have w=0 because white_queen's internal
+     MB witness is a one-step MLP blind to partial observability (its MB value
+     −51.7 vs truth 16.7) — replace/down-weight it, or admit the
      currently-dead `decide.decide` independent-pair rule as an alternate
      deploy route (doctrine #13 says wire it or delete it).
 2. **red_queen: make decisions personalized and uncertain.**
