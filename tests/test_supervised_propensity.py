@@ -353,7 +353,17 @@ def test_score_reads_materialized_embeddings(tmp_path, monkeypatch):
             {
                 "spec": {},
                 "tag": PURCHASE_PROPENSITY_30D.tag,
-                "payload": {"encoder_version": "vX", "head_path": str(hp)},
+                "payload": {
+                    "encoder_version": "vX",
+                    "head_path": str(hp),
+                    "head_name": "logistic",
+                    "heads": [
+                        {
+                            "name": "logistic",
+                            "metrics": {"base_rate": 0.4, "calibration_gap": 0.02},
+                        }
+                    ],
+                },
             }
         )
     )
@@ -390,9 +400,31 @@ def test_score_reads_materialized_embeddings(tmp_path, monkeypatch):
     assert rec["n_scored"] == 2
     assert "read-only" in rec["source"]
     assert rec["encoder_version"] == "vX"
+    # serving-calibration receipt: derived tolerance vs the held-out base rate
+    import math as _m
+
+    assert rec["base_rate_ref"] == 0.4
+    assert rec["score_gap"] == pytest.approx(rec["mean_score"] - 0.4)
+    se = _m.sqrt(0.4 * 0.6 / 2)
+    assert rec["score_gap_z"] == pytest.approx((rec["mean_score"] - 0.4) / se)
+    assert rec["score_tolerance"] == pytest.approx(3 * se + 0.02)
+    assert rec["score_calib_ok"] is True
+    assert rec["head_id"].startswith("logistic@")
     sc = duckdb.connect(str(tmp_path / "scores.duckdb"), read_only=True)
     assert sc.execute("SELECT count(*) FROM plugin_scores").fetchone()[0] == 2
     assert sc.execute("SELECT count(*) FROM inference_receipts").fetchone()[0] == 1
+    sc.close()
+
+    # a rerun REPLACES the day (no duplicate stacking — 200k key-groups existed)
+    rec2 = inference_mod.score_as_of(
+        PURCHASE_PROPENSITY_30D, day, products=products, scores_db=tmp_path / "scores.duckdb"
+    )
+    assert rec2["n_scored"] == 2
+    sc = duckdb.connect(str(tmp_path / "scores.duckdb"), read_only=True)
+    assert sc.execute("SELECT count(*) FROM plugin_scores").fetchone()[0] == 2
+    assert sc.execute("SELECT count(*) FROM inference_receipts").fetchone()[0] == 1
+    heads = sc.execute("SELECT DISTINCT head_id FROM plugin_scores").fetchall()
+    assert heads[0][0].startswith("logistic@")
     sc.close()
 
 
