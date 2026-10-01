@@ -41,7 +41,8 @@ produces a per-customer state. Horizon-free successor features + JEPA + multi-ta
 objectives; company actions are **exogenous covariates** (never predicted).
 
 - **Universal donor**: on the sufficiency battery it adds **unique** signal beyond
-  raw features (signal 100 / standalone 100 / unique 75% at 50k customers) and
+  raw features (signal 100 / standalone 100 / unique 62% (20k) and 75% (30k)
+  customers) and
   **beats raw on 6/8 targets**.
 - Publishes **state tables only**: `encoder_samples` (strict A/B split),
   `anchor_embeddings` (sample-B past-anchor states), `customer_state` (`h`+`as_of`
@@ -120,9 +121,9 @@ pip install -r requirements.txt -r requirements-dev.txt
 # or with uv (lockfile: uv.lock)
 uv sync
 # quality gates (also enforced by CI on every push/PR)
-pytest -m "not slow"       # inner loop: 225 tests in ~1 min
+pytest -m "not slow"       # inner loop: 202 tests in ~1 min
 pytest                     # full suite (slow gates + acceptance included)
-pytest --cov=white_queen.tribunal --cov-fail-under=80   # CI gate (85% today)
+pytest --cov=white_queen.tribunal --cov-fail-under=80   # CI gate (80.7% source-only)
 ruff format . && ruff check .
 pre-commit install         # format + lint on commit
 ```

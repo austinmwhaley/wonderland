@@ -31,7 +31,7 @@ rabbit_hole/
                        canonical stream (see "Instacart fixture")
 data/
   arrow/customer_event_stream.feather   the canonical stream (Arrow primary)
-  duckdb/customer_event_stream.duckdb   query-engine copy over the Arrow stream
+  duckdb/customer_event_stream.duckdb   the source DuckDB stream (Arrow feather is derived from it)
   instacart/                            fixture build (local-only, gitignored)
     src/*.csv                           downloaded source tables
     customer_event_stream.duckdb        canonical stream + `orders` contract table

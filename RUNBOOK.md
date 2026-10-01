@@ -167,7 +167,7 @@ the month-over-month split-rotation proof.
 |---|---|
 | (1) encoder train | **~37 min/cycle** (the dominant cost) |
 | (1b) day-1 close | **folded into (1)** — fade to the 1st + materialize (receipt row: device=encoder) |
-| (1b) steady daily job (≈8.5k absorbs + fade + materialize 25k) | **mean 193 s** (range 87–235 s) |
+| (1b) steady daily job (≈8.5k absorbs + fade + materialize 25k) | **mean 17.9 s** batched (was 193 s pre-batching, range 87–235 s) |
 | training-size ladder (9 rungs) | ~35 s |
 | (2) plugin train — 3-family bake-off incl. MLP + HGB | ~20 s + data load |
 | (3) inference, read-only (25k scores) | **1.2–1.5 s** |

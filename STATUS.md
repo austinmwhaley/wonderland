@@ -13,7 +13,8 @@ white_queen (hardened, 99 tests); red_king = ANALYST TOOL ONLY (decisive A/B:
 red_queen multi-cadence + multi-action + certification-gated
 + uplift-targeted; incrementality ATE +11.62 CI[11.19,12.08] with per-customer
 uplift (monotone quintiles, top-20% gain +18.95). Engineering: CI + ruff gates +
-uv.lock + 239-test suite (fast tier `pytest -m "not slow"` = ~53s; full ~14min).
+uv.lock + 216-test suite (fast tier `pytest -m "not slow"` = ~55s; full ~14min;
+counts inside historical pass entries are as-of-their-date).
 **OBSERVATIONAL-FIRST (hard requirement):** production logs have NO holdout and
 NO A/B — the system must run on them. OPE + estimated propensities + sensitivity
 work; lift claims (incrementality/uplift/IPW without propensity) REJECT with
@@ -24,11 +25,13 @@ non-stationary) data — deconfounds via IPW, HOLDs uncorroborated policies, no 
 lift. Honest limit: observational-only data cannot give per-customer CAUSAL effects;
 identification comes from the persistent hold-out.
 
-**Open/next:** white_queen hardening (7/25 errors on the known-truth battery);
-caterpillar NL Q&A. OPTIONAL (lab-data only, never required for production):
-per-segment management report, broader experimentation. DONE recently: red_king
-A/B -> REMOVE from decision path; generator vectorized (50k = 14m54s);
-observational-first guarantees; smoke family deleted; zero SQLite; CI green.
+**Open/next:** see ROADMAP.md (phased plan from the full-project scan). Top:
+white_queen hardening (batteries: v1 = 7/25 errors; **v2 = 15/20, previously
+undocumented** — see ROADMAP P0-2), serving-calibration gate (Dec mean_score
+0.516 vs base 0.435 undetected), receipt identity (ladder/heads overwrite),
+caterpillar artifact Q&A. DONE recently: v2.1.0 real-data fixes (half-life,
+readout parity, governor, ladder paired noise); Instacart fixture at
+production sample size (gate 4/4); ROADMAP full-scan rewrite.
 
 ---
 
@@ -54,31 +57,41 @@ observability, prefer deletion, best tool, cost-aware, **speed-first (16)**.
 - Standard future pipeline: generate a VERY large rabbit_hole, then ladder training.
 
 ## Current artifacts
-- Stream: rabbit_hole, 30k customers / ~11.3M events, **randomized email arms +
-  logged propensity + KNOWN causal effect** (CONV 0.01/0.03/0.06/0.10).
-- Donor: looking_glass CFM `v2.0.0r743620` (30k), gate 15/15; horizon-free
-  successor features; self-supervised; battery unique 62%(20k)/75%(30k).
+- Stream: rabbit_hole, **25,000 customers / 26,800,544 events**, **randomized
+  email arms + logged propensity + known causal effect** (documented CONV ladder
+  0.01/0.03/0.06/0.10 does NOT reproduce on the artifact — measured decreasing;
+  pin-or-fix is ROADMAP P3-4).
+- Donor: looking_glass CFM — certified Dec cycle `v2.0.0r90061` (25k), gate
+  15/15; horizon-free successor features; battery unique 62%(20k)/75%(30k).
+  **Code is now v2.1.0** (half-life, readout parity, governor fixes) — re-cert
+  of v2.0.0 receipts pending.
 - red_king: ensemble world model; synthetic counterfactual within 2% of truth.
 
 ## Works ✅
-- rabbit_hole pipeline + acceptance 25/25 (Arrow, order margin, email, arms).
+- rabbit_hole pipeline + acceptance 25/25 (schema, round-trips, same-seed
+  determinism — arms/known-effect/contact-vocab/window are NOT checked yet,
+  ROADMAP P3-2).
 - looking_glass CFM: universal donor on large data (battery PASS at 20k).
 - plugins: supervised CLV 6/6; white_queen email-freq policy 5/5.
 - white_queen OPE library (99 tests).
 - red_king validated as counterfactual evaluator (synthetic + known-effect stream).
 - Speed: vectorized scan; 500cust=45s, 10k=10:48, 30k~29min.
 - Engineering: root packaging + CI + ruff gates; full suite runs as pytest
-  (226 collected: 161 legacy + 63 unit + 2 acceptance wrappers).
+  (216 collected: 112 root + 99 white_queen/tribunal + 5 rabbit_hole).
 
 ## Doesn't ❌
 - Unsupervised segmentation: gate passes (4/4) but its eta^2 k-search is
   non-decreasing under refinement (drifts to kmax on noisy labels) — the
   silhouette `_choose_k` path is the reliable selector.
-- white_queen errs in 7/25 on the decisive battery (3 missed deploys + 4 false
-  deploys incl. behavior-clones under low overlap); red_king fixed NONE of them
-  -> white_queen hardening is the live gap (not red_king).
+- white_queen errs on the decisive batteries: v1 = 7/25 (measured split:
+  **1 missed + 6 false** deploys incl. behavior-clones under low overlap) and
+  the previously-undocumented **v2 `ab_world_engine.json` = 15/20** (whose
+  WITH_BOTH verdict is ship:true — decision question is ROADMAP open #2).
+  red_king fixed none of v1 -> white_queen hardening is the live gap.
 - Short-horizon targets (gp_30/90) raw-dominated (acceptable per contract).
-- Generator still per-event Python (offline); MoE/multi-entity (M3/M5) rejected.
+- Generator vectorized (residual per-chunk Python only); realism gaps remain
+  (no weekday/hour send seasonality, no churn, push = 32% of events) —
+  ROADMAP P3; MoE/multi-entity (M3/M5) rejected.
 
 ## Next tasks (priority order)
 1. ~~Fix the 4 test-flagged bugs~~ DONE (see "Bugs surfaced by the new tests").
@@ -573,7 +586,7 @@ certification-gated); full dense states in place.
 Generator changes (for REALISM, not to help the project):
   * LATENT unobserved confounder `intent` drives BOTH targeting and outcomes;
   * logging policy is OBSERVATIONAL/confounded by intent (not clean RCT);
-  * only a SMALL 10% randomized holdout (realistic);
+  * only a SMALL 5% randomized holdout (realistic);
   * seasonal non-stationarity in outcomes.
 Effect: naive vs IPW now DIVERGE strongly (naive says arm3 best/overstates; IPW
 deconfounds: [121,157,153,162], arm3 barely best). Behavior is already near-optimal.
@@ -583,7 +596,7 @@ does NOT overclaim. fail-safe triggered for 7.
 => The project is ROBUST to realistic confounding: it does not manufacture lift, it
 uses propensities to deconfound, and it reports honest (marginal) results.
 NEXT robustness steps: run white_queen on this data (expect conservative HOLD/marginal);
-red_king causal scorecard under confounding; use the 10% holdout to VALIDATE.
+red_king causal scorecard under confounding; use the 5% holdout to VALIDATE.
 
 ## Robustness finding: white_queen too lenient under confounding
 On the realistic confounded stream, white_queen certification of the red_queen
@@ -607,7 +620,7 @@ RESULT on realistic confounded data: monthly HOLD, weekly HOLD -> no over-deploy
 Project now ROBUST: validated mode reports marginal/non-significant lift (honest);
 certified mode HOLDs uncorroborated policies.
 NEXT: (optional) contribute the corroboration requirement upstream to white_queen;
-re-run hard-OPE on confounded data; use the 10% holdout as deconfounded validator.
+re-run hard-OPE on confounded data; use the 5% holdout as deconfounded validator.
 
 ## white_queen hardening taken UPSTREAM (done)
 judge.py deploy rule: `deploy = (_cert or _adv) and witnesses >= 1`.
@@ -629,7 +642,7 @@ red_king SCORECARD under confounding:
 => ROBUST: white_queen (hardened), red_queen validated mode, looking_glass donor.
    NOT ROBUST (honestly flagged): red_king under realistic confounding.
 NEXT: improve red_king's causal training under confounding (or keep it off);
-use the 10% holdout as the deconfounded validator for red_queen's claims.
+use the 5% holdout as the deconfounded validator for red_queen's claims.
 
 ## red_king robust to confounding via IPW weight clipping
 Fix: clip IPW weights (1/propensity) at their 95th percentile -> stabilise under
@@ -803,7 +816,7 @@ Full-doc audit after the infra pass; fixed:
 CODE: 9 `looking_glass/scripts/*.py` had an off-by-one sys.path bootstrap
 (`parent.parent` = looking_glass/ instead of the repo root — broken by the
 package flatten) -> now `parents[2]`; `python looking_glass/scripts/example.py`
-runs directly again.
+ran directly again (the example has since been deleted with the create_* stack).
 
 ## Scale + maturity + observational-first (DONE)
 Hard requirement from product: **production logs never had a holdout or A/B —
@@ -834,17 +847,18 @@ Profiled (torch seasonal wave 25%, random.choices/gauss 26%, per-row isoformat
   26.8GB). Python generation is now ~4% of wall; remainder = DuckDB index
   maintenance (~450s) + 23.6GB Arrow tail write (~170s) — follow-up: lighten
   DDL/post-load index strategy (out of the vectorization pass).
-- Distributions verified: acceptance 25/25, same-seed determinism digest,
-  50k spot-check 37/37, known-effect conv rates within 3.7% of baseline.
+- Distributions verified: acceptance 25/25, same-seed determinism digest;
+  the "50k spot-check 37/37 + conv within 3.7%" receipt is LOST (no script in
+  the repo) — ROADMAP P3-2 reinstates it as an acceptance check.
 - Canonical rabbit_hole/data untouched.
 
 ### Maturity
-- `uv.lock` at root (131 packages) — reproducible provisioning; CI + docs
-  use it (requirements*.txt remain as pip mirror).
+- `uv.lock` at root (131 packages) — local provisioning; CI installs via pip
+  (requirements*.txt mirrors); lock freshness is ROADMAP open #3.
 - Test tiers: `slow` marker on 14 integration/acceptance tests; inner loop =
-  `pytest -m "not slow"` (225 tests, 53s); full = 239 (~14min).
+  `pytest -m "not slow"` (202 tests, ~55s); full = 216 (~14min).
 - pytest-cov added; coverage floor for white_queen/tribunal wired in CI.
-- mypy: NOT adopted (ruff + 239 tests + receipts cover current needs; revisit
+- mypy: NOT adopted (ruff + 216 tests + receipts cover current needs; revisit
   only if type-level bugs actually surface).
 
 ### Smoke family deleted
@@ -852,7 +866,8 @@ Profiled (torch seasonal wave 25%, random.choices/gauss 26%, per-row isoformat
 compare_toy,probe_churn,sweep_core_lr,sweep_head_lr,compare_fresh_weights}`
 + cascaded `smoke_support` + now-dead `load_records_from_duckdb` removed:
 their dataset had no generator since generate_full was retired (they could
-not run). Pipeline coverage = looking_glass/tests + example.py. Docs updated
+not run). Pipeline coverage moved to root tests/ (looking_glass/tests +
+example.py were deleted with the create_* stack). Docs updated
 (looking_glass README walkthrough replaced with that pointer).
 
 ## DECISIVE A/B: red_king as a white_queen witness — REMOVE from decision path
@@ -900,7 +915,8 @@ Operating model is codified in **RUNBOOK.md** (cadence, tables, knobs, hard rule
 - **(1b) daily state job** (`looking_glass.daily_states`): the ONLY writer of
   `customer_state` (fade+absorb the day's events) + `state_embeddings`
   (materialized donor(h) per day; receipts in state_job_receipts). GPU absorbs;
-  ~200s/day for 25k; forward-only (refuses to relabel states into the past).
+  17.9s/day for 25k (batched; was ~200s); forward-only (refuses to relabel
+  states into the past).
 - **(2) per-plugin** on the frozen sample-B table via HeadTemplate: Target owns
   only the label; template does split/fit/gates/artifact/persisted head. Binary =
   MODEL BAKE-OFF each run (winner = best held-out AUC, recorded; `family=` pins).
