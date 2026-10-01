@@ -1174,3 +1174,50 @@ semantics rewrite (~600 lines; ours keeps boundary-stamped states with
 fade/absorb equivalence + new oracles), lazy/chunked EventSource (only the
 SQL pushdown landed), and the off-by-default model additions (joint token =
 their biggest lever; landing it needs a sufficiency-battery run first).
+
+## Pass: roadmap execution — Phases 0, 1, 3.2 (DONE; v2 battery in flight)
+Executed the new ROADMAP's first phases in order (evidence trust first):
+- **Phase 0 — doc currency**: ~21 stale claims fixed (stream 25k/26.8M, suite
+  216/202, holdout 5%, acceptance description = actual checks, CONV ladder
+  marked non-reproducing, uv.lock local-only, lost 37/37 spot-check marked
+  LOST, daily job 17.9s, white_queen split corrected to 1-missed/6-false with
+  battery v2 flagged in the macro header).
+- **Phase 0 — receipt identity**: sample-A ladder rung dirs now per-as_of
+  (`cfm_ladder/<date>/r<rung>` — each month used to overwrite the last, Nov's
+  sizing receipt already lost); heads trained per cycle are as-of-stamped and
+  every artifact archived to `archives/<tag>_<as_of>.json`; run_target REJECTS
+  encoder_version=None (mixed-version products used to pass the gate with a
+  null pin); payloads record seed; rehearsal receipts record git SHA.
+- **Phase 0 — rehearsal honesty**: exit code = cycle verdicts (was always 0);
+  ladder chosen_n_train now PASSED to run_target (was recorded, ignored);
+  midweek derived per cycle (the 2025-11-05 literal dropped cycle 2's day).
+- **Phase 0 — battery receipts**: sufficiency_battery persists stamped JSON
+  (first receipt written: UNIVERSAL DONOR, unique 75%, signal/standalone
+  100%), skipped targets recorded, empty portfolio fails safe, module-anchored
+  paths (cwd-relative defaults were broken from repo root), --db/--products/
+  --seed flags. Layer-B proof likewise.
+- **Phase 0 — one dep truth**: uv.lock regenerated (drops removed lancedb/
+  xgboost/mamba-ssm; `uv lock --check` green), looking_glass/pyproject loses
+  dead lancedb+extras+empty testpaths, requirements mirrors synced.
+- **Phase 1.1 — serving-calibration gate**: inference receipt carries
+  base_rate_ref/score_gap/z/tolerance (3*binomial SE + held-out cal gap)/
+  head_id with a loud WARNING on breach (the Dec +8.1pt gap was invisible);
+  scores + receipts idempotent per (plugin, as_of) — reruns replace instead of
+  stacking (200k duplicate key-groups removed by design).
+- **Phase 1.2 — white_queen hardening (round 1)**: witnesses >= 2 AND
+  certificate-vs-derived-bar. Battery v1 re-run: **false 6 -> 3, missed 1 -> 1,
+  total 7 -> 4, broken 0** (receipt `ab_witness.json`; baselines archived as
+  `ab_witness_*_baseline_w1_raw.json`). The 3 survivors all route through the
+  ADVANTAGE certificate (delta>0 ignores the bar) = hardening round 2
+  (ROADMAP P2-1), deliberately not iterated on the same battery. Simulator
+  operating point re-measured (precision 1.0 / recall .213) and the test
+  contract updated with both receipts; the random-card recall cost does NOT
+  appear on known truth.
+- **Phase 3.2 — acceptance 25 -> 35/35**: window bound, Arrow round-trip,
+  contact vocabulary, channel mix, arms + propensity floor, holdout rate.
+  The window check caught a LIVE generator leak (toy max 2026-02-03 > REF)
+  — orders/returns/cancels/opens/clicks/conversions now right-censored at
+  `_REFERENCE_NOW` in seed_events/seed_contacts. Standing 25k artifact
+  regeneration still awaits ROADMAP open decision #4.
+- Gates: fast tier 210 green, ruff clean; v2 battery (`ab_world_engine`,
+  baseline archived) re-running under the same levers — numbers to follow.
