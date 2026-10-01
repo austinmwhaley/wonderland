@@ -67,3 +67,20 @@ def test_raw_matrix_anchor_needs_three_events():
     ds = SimpleNamespace(keys=np.array(["a"]), anchor_epoch=np.array([early]))
     with pytest.raises(SystemExit, match="alignment failed"):
         raw_matrix(ds, _stream(), _orders())
+
+
+def test_component_views_split_the_rfm_contract():
+    import pytest as _pytest
+
+    from plugins.ablation import component_views
+
+    R = np.arange(7 + 5, dtype=np.float64)[None, :]  # 7 RFM + 5 type counts
+    views = component_views(R)
+    assert set(views) == {"recency", "frequency", "monetary", "event_mix"}
+    assert views["recency"].tolist() == [[0.0, 1.0]]  # since-last, since-first
+    assert views["frequency"].tolist() == [[2.0, 4.0, 5.0]]  # count, gap, orders
+    assert views["monetary"].tolist() == [[3.0, 6.0]]  # value sum, trailing GP
+    assert views["event_mix"].tolist() == [[7.0, 8.0, 9.0, 10.0, 11.0]]
+    # a vector with no type columns fails safe
+    with _pytest.raises(SystemExit, match="per-type"):
+        component_views(R[:, :7])

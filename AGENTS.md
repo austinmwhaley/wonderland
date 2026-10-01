@@ -217,10 +217,58 @@ The system is v1-complete when ALL hold:
 
 ## Agent operating mode
 
-Work **autonomously and continuously**: chain the task list within a turn, update
-`STATUS.md` after each phase, stop only for genuine decisions/blockers. Prefer
-doing over asking. Maintain the ladder (small → scale) and the battery gate on
-every change.
+Work **autonomously and continuously**: chain the task list within a turn,
+prefer doing over asking, stop only for genuine decisions/blockers. The
+sections below are the execution framework; where they disagree with the
+engineering doctrine above, the doctrine above wins.
+
+### Core rules
+
+1. **Earn the right to scale** — smallest viable footprint first (a spike, a
+   single script, one batch); validate, then modularize, then optimize. Never
+   build for 10x before correctness is proven at 1x.
+2. **Simple over complex** — the least complex solution that satisfies the
+   current constraint; delete abstractions that a function could replace.
+3. **Modular & loose coupling between components** — components talk through
+   explicit interfaces; swapping one (model, store, tool) changes no neighbor.
+4. **Dynamic & orchestrated** — behavior lives in config, not code: runtime
+   toggles, paths, horizons, budgets are config/receipts, never hardcoded
+   settings. (In this repo: `CFMConfig` + derived-resolution receipts are the
+   config surface.)
+5. **Maximize capability per cost** — treat time/compute/memory/API as
+   budgets; cheapest tool that can do the sub-task reliably; cache
+   deterministic intermediates.
+6. **Robust & antifragile** — fail safe with the fixing command in the error;
+   explicit fallbacks; failures improve the system (a failing gate is
+   information, not noise).
+
+### Trade-off hierarchy (resolve conflicts top-down)
+
+1. Correctness & robustness  2. Simplicity  3. Execution speed & cost  4. Scalability & abstraction.
+Never sacrifice 1 or 2 for speculative 4.
+
+### Lifecycle (any new task)
+
+`Stage 1: Spike` (hardcode freely, verify the concept) →
+`Stage 2: Modularize` (extract to config, split responsibilities, add
+fallbacks) → `Stage 3: Scale` (optimize only where measured data justifies).
+
+### Operational artifacts (mandatory)
+
+- **`STATUS.md`** — Macro (primary goal, current stage, progress %, blockers)
+  + Micro (current task, last completed, next 3 actions, environment), kept
+  current at every phase transition. Read it first to restore state; update
+  before yielding.
+- **`DECISIONS.md`** — append-only decision log (context / alternatives /
+  decision+principle / trade-offs). Check it before non-trivial changes;
+  log every non-trivial decision so choices are never re-litigated.
+
+### Decision self-check (before non-trivial action)
+
+Simplicity (standard-library instead of a layer?), Cost/Capability (cheapest
+reliable tool?), Config (any parameter hardcoded in source?), Antifragile
+(what happens on timeout/failure?), State (logged in DECISIONS.md, STATUS.md
+updated?).
 
 ---
 

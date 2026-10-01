@@ -133,6 +133,23 @@ def _view_summary(heads: list[dict]) -> dict:
     }
 
 
+def component_views(R: np.ndarray, n_rfm: int = 7) -> dict[str, np.ndarray]:
+    """Stage-1 spike (DEC-006 S0): split the raw vector into the statistics
+    raw RFM is MADE of, so we measure WHICH one beats the donor before any
+    encoder change is aimed. Column contract = `rfm_vector`:
+    [recency, tenure, event_count, value_sum, mean_gap, order_count,
+     trailing_GP] + per-event-type counts.
+    """
+    if R.shape[1] <= n_rfm:
+        raise SystemExit("raw vector has no per-type columns to split")
+    return {
+        "recency": R[:, [0, 1]],  # since-last and since-first (timing)
+        "frequency": R[:, [2, 4, 5]],  # event count, mean gap, order count
+        "monetary": R[:, [3, 6]],  # value sum + trailing-365d gross margin
+        "event_mix": R[:, n_rfm:],  # per-event-type counts
+    }
+
+
 def run(
     target: Target,
     as_of: str,
@@ -140,6 +157,7 @@ def run(
     cfm_products=None,
     stream_db=None,
     out_dir=None,
+    components: bool = False,
 ) -> dict:
     from looking_glass.layer_b_proof import _load
 
@@ -167,6 +185,9 @@ def run(
         "raw": R,
         "both": np.hstack([E, R]),
     }
+    if components:
+        # Stage-1 spike: which statistic is raw's advantage?
+        views.update({f"raw_{k}": v for k, v in component_views(R).items()})
     winners, summaries = {}, {}
     for name, X in views.items():
         ds_v = dataclasses.replace(ds, X=X.astype(np.float32))
@@ -196,6 +217,9 @@ def run(
     d_donor_raw = _diff("donor", "raw")
     d_both_donor = _diff("both", "donor")
     d_raw_donor = _diff("raw", "donor")
+    comp_vs_donor = {
+        name.removeprefix("raw_"): _diff(name, "donor") for name in views if name.startswith("raw_")
+    }
 
     receipt = {
         "as_of": as_of,
@@ -212,6 +236,7 @@ def run(
         "donor_vs_raw": d_donor_raw,
         "both_vs_donor": d_both_donor,
         "raw_vs_donor": d_raw_donor,
+        "component_vs_donor": comp_vs_donor,
         "verdicts": {
             # the production claim: donor beats raw BEYOND paired noise
             "donor_beats_raw": bool(d_donor_raw["beyond_noise"]),
@@ -245,6 +270,16 @@ def run(
         f"  raw   - donor: {d_raw_donor['delta_auc']:+.4f} "
         f"-> raw competitive: {receipt['verdicts']['raw_competitive']}"
     )
+    if comp_vs_donor:
+        print("\n== COMPONENT-vs-DONOR (Stage-1 spike: which statistic wins) ==")
+        for cname, cd in sorted(comp_vs_donor.items(), key=lambda kv: -kv[1]["delta_auc"]):
+            print(
+                f"  {cname:10s} - donor: {cd['delta_auc']:+.4f} "
+                f"(2*SE {2 * (cd['se_paired'] or 0.0):.4f}) "
+                f"-> beats donor: {bool(cd['beyond_noise'])}"
+            )
+        best_name = max(comp_vs_donor, key=lambda k: comp_vs_donor[k]["delta_auc"])
+        print(f"  => strongest single statistic: {best_name}")
     print(f"receipt -> {path}")
     return receipt
 
@@ -257,6 +292,12 @@ def main(argv=None):
     ap.add_argument("--products", default=None)
     ap.add_argument("--stream", default=None)
     ap.add_argument("--out-dir", default=None)
+    ap.add_argument(
+        "--components",
+        action="store_true",
+        help="Stage-1 spike: also compare raw components (recency/frequency/"
+        "monetary/event-mix) against the donor",
+    )
     a = ap.parse_args(argv)
     run(
         REGISTRY[a.target],
@@ -265,6 +306,7 @@ def main(argv=None):
         cfm_products=a.products,
         stream_db=a.stream,
         out_dir=a.out_dir,
+        components=a.components,
     )
     return 0
 

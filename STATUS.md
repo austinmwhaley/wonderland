@@ -1,37 +1,51 @@
 # STATUS — wonderland
 
-**Macro status (read this first).** Offline-first system, git-versioned at
-github.com/austinmwhaley/wonderland. One-way flow: rabbit_hole (stream) ->
-looking_glass (frozen self-supervised donor) -> plugins -> red_king (RSSM world
-model) -> red_queen (multi-cadence NBA), with white_queen (OPE certification) and
-caterpillar (interpretability). eighth_square owns algorithms/ + environments/.
+> Operating artifacts: **STATUS.md** (this file — live state), **DECISIONS.md**
+> (append-only ADRs — check before non-trivial changes), **ROADMAP.md**
+> (phased plan), **AGENTS.md** (doctrine + operating mode). Read this header
+> first to restore state; update it before yielding.
 
-**Working:** stream + persistent-holdout measurement design; universal donor
-(gate 15/15; battery PASS: unique 75%, beats raw 6/8); plugins (6/6, 4/4, 5/5);
-white_queen (hardened, 99 tests); red_king = ANALYST TOOL ONLY (decisive A/B:
-0/25 decision changes -> removed from decision path, locked by tests);
-red_queen multi-cadence + multi-action + certification-gated
-+ uplift-targeted; incrementality ATE +11.62 CI[11.19,12.08] with per-customer
-uplift (monotone quintiles, top-20% gain +18.95). Engineering: CI + ruff gates +
-uv.lock + 216-test suite (fast tier `pytest -m "not slow"` = ~55s; full ~14min;
-counts inside historical pass entries are as-of-their-date).
-**OBSERVATIONAL-FIRST (hard requirement):** production logs have NO holdout and
-NO A/B — the system must run on them. OPE + estimated propensities + sensitivity
-work; lift claims (incrementality/uplift/IPW without propensity) REJECT with
-NotIdentifiableError — never NaN, never fabricated (see "Observational-first").
+## Macro
 
-**Robustness:** the system stays conservative on realistic (confounded, sparse,
-non-stationary) data — deconfounds via IPW, HOLDs uncorroborated policies, no fake
-lift. Honest limit: observational-only data cannot give per-customer CAUSAL effects;
-identification comes from the persistent hold-out.
+- **Primary goal:** rabbit_hole -> looking_glass -> plugins must deliver its
+  best: the frozen encoder's state must earn its keep on the shipped target
+  (`supervised_purchase_propensity_30d`) — donor >= raw-RFM quality achieved
+  by **learning** the statistics raw has (no hand-fed features; D14's
+  sole-input lock stands, see DEC-006) — while every decision surface stays
+  honest under the **observational-first** constraint: production logs have no
+  holdout and no A/B; unidentified lift claims reject (never NaN, never fake).
+- **Current execution phase:** Stage 1 (Spike) of DEC-006 — teaching the
+  encoder. Roadmap: Phase 0 done, Phase 1 done, P3.1/P3.2 done.
+- **Overall progress:** ~50% — encoder track at spike; white_queen round 2,
+  red_queen HTE/uncertainty, caterpillar, artifact regeneration (P3.3-3.5),
+  realism (P3.4-3.5), Phase 4 not started.
+- **Active blockers:** none technical. Open decisions: stream regeneration
+  size (#4), known-effect ladder pin-or-fix (#1), D14 fallback trigger
+  (pre-committed in DEC-006).
 
-**Open/next:** see ROADMAP.md (phased plan from the full-project scan). Top:
-white_queen hardening (batteries: v1 = 7/25 errors; **v2 = 15/20, previously
-undocumented** — see ROADMAP P0-2), serving-calibration gate (Dec mean_score
-0.516 vs base 0.435 undetected), receipt identity (ladder/heads overwrite),
-caterpillar artifact Q&A. DONE recently: v2.1.0 real-data fixes (half-life,
-readout parity, governor, ladder paired noise); Instacart fixture at
-production sample size (gate 4/4); ROADMAP full-scan rewrite.
+## Micro
+
+- **Current task:** Stage 2 of DEC-006 — implement S1 (query-time readout:
+  train the fade path serving uses), the Instacart lever.
+- **Last completed:** Stage-1 spike done on BOTH streams (DEC-006a):
+  rabbit_hole → frequency +0.023 / event_mix +0.020 beat the donor (recency
+  worst, −0.124); Instacart → recency +0.065 beats the donor (frequency and
+  event_mix lose). Each stream names a different missing statistic — the
+  S1-then-S2 plan is now data-backed, not assumed.
+- **Immediate next 3 actions:**
+  1. S1: query-time readout — gap-aware learned read + train the path
+     (correctness + Instacart lever); gate = ablation `donor_beats_raw` on
+     Instacart, battery + plugin gate unchanged.
+  2. S2: multi-horizon aggregate targets (rabbit_hole lever); gate = ablation
+     flips on rabbit_hole under the same guards.
+  3. Log the S1 verdict in DECISIONS/STATUS; only then consider S3
+     (integrator dynamics), per DEC-006/006a.
+- **Environment:** repo `~/Documents/wonderland` (main, CI green);
+  `python3 -m pytest -m "not slow"` -> 215 passed; GPU cuda available;
+  standing products `looking_glass/artifacts/cfm/cfm_products.duckdb`
+  (v2.0.0r90061, 25k); v2.1.0 smoke `/tmp/opencode/insta_prod`;
+  Instacart fixture `rabbit_hole/data/instacart/customer_event_stream.duckdb`;
+  battery baselines archived `red_king/artifacts/*_baseline_w1_raw.json`.
 
 ---
 
