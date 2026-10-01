@@ -62,7 +62,14 @@ def _mondays(start: date, end: date) -> list[date]:
 
 
 def _inference_days(start: date, days: int, midweek: date | None = None) -> list[date]:
-    """Training day + Mondays within the --days window (+ midweek if inside)."""
+    """Training day + Mondays within the --days window (+ midweek if inside).
+
+    ``midweek`` defaults to the first Wednesday strictly after ``start`` —
+    derived per cycle, not a shared literal (the old 2025-11-05 default fell
+    outside cycle 2's window and silently dropped its inference day)."""
+    if midweek is None:
+        gap = (2 - start.weekday()) % 7  # Wednesday = weekday2
+        midweek = start + timedelta(days=(gap or 7))
     end = start + timedelta(days=days - 1)
     out = {start, *_mondays(start, end)}
     if midweek and start <= midweek <= end:
@@ -150,9 +157,16 @@ def cycle(as_of: date, days: int, customers: int, anchors: int, seed: int, infer
     print(f"[ladder] {day}: choosing the training-size rung", flush=True)
     ladder = run_ladder(PURCHASE_PROPENSITY_30D, as_of=day, seed=seed)
 
-    # (2) per-plugin training, labels closed at D, pinned to the new tag
+    # (2) per-plugin training, labels closed at D, pinned to the new tag —
+    # the ladder's capacity decision is APPLIED (it used to be recorded and
+    # then ignored: run_target got max_train=None every cycle)
     print(f"[plugin] {day}: training {PURCHASE_PROPENSITY_30D.tag} pinned to {tag}", flush=True)
-    ok, payload = run_target(PURCHASE_PROPENSITY_30D, seed=seed, as_of=day)
+    ok, payload = run_target(
+        PURCHASE_PROPENSITY_30D,
+        seed=seed,
+        as_of=day,
+        max_train=ladder["chosen_n_train"],
+    )
     primary = next(h for h in payload["heads"] if h["name"] == payload["head_name"])
 
     # (3) training day counts as an inference day (read-only) — day-1
@@ -193,13 +207,32 @@ def cycle(as_of: date, days: int, customers: int, anchors: int, seed: int, infer
     }
 
 
+def _git_sha() -> str:
+    """Best-effort code stamp — a receipt must be attributable to code."""
+    try:
+        r = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            cwd=str(Path(__file__).resolve().parents[1]),
+        )
+        return r.stdout.strip() or "unknown"
+    except Exception:
+        return "unknown"
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description="Monthly/weekly production rehearsal")
     ap.add_argument("--start", default="2025-11-01", help="first cycle date (the 1st)")
     ap.add_argument("--customers", type=int, default=25000)
     ap.add_argument("--anchors", type=int, default=6)
     ap.add_argument("--seed", type=int, default=0)
-    ap.add_argument("--midweek", default="2025-11-05", help="extra non-Monday inference day")
+    ap.add_argument(
+        "--midweek",
+        default=None,
+        help="extra non-Monday inference day (default: first Wednesday after each cycle start)",
+    )
     ap.add_argument(
         "--days",
         type=int,
@@ -226,6 +259,7 @@ def main(argv=None):
 
     receipt = {
         "start": start.isoformat(),
+        "git": _git_sha(),
         "next_cycle": nxt.isoformat(),
         "customers": a.customers,
         "anchors": a.anchors,
@@ -259,7 +293,12 @@ def main(argv=None):
     print(f"  daily jobs total: {receipt['daily_jobs_total']}")
     print(f"  wall {receipt['wall_seconds']}s")
     print(f"receipt -> {path}")
-    return 0
+    # exit code reflects the gates: a FAIL cycle must fail any runner
+    # (RUNBOOK hard rule 6 — the old unconditional `return 0` hid FAILs)
+    verdicts = [bool(c["plugin"]["verdict"]) for c in (c1, c2)]
+    all_ok = all(verdicts)
+    print(f"  overall: {'PASS' if all_ok else 'FAIL'}")
+    return 0 if all_ok else 1
 
 
 if __name__ == "__main__":

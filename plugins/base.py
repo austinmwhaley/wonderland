@@ -196,12 +196,17 @@ def load_dataset(
 def save_artifact(spec: PluginSpec, payload: dict, out: Path | None = None) -> Path:
     out = Path(out) if out is not None else OUT
     out.mkdir(parents=True, exist_ok=True)
+    doc = {"spec": asdict(spec), "tag": spec.tag, "payload": payload}
     p = out / f"{spec.tag}.json"
-    p.write_text(
-        json.dumps(
-            {"spec": asdict(spec), "tag": spec.tag, "payload": payload}, indent=1, default=float
+    p.write_text(json.dumps(doc, indent=1, default=float))
+    # per-run archive: the monthly rerun overwrites the tag path by design, but
+    # the evidence for each cycle must survive (the Nov head/artifact did not)
+    if payload.get("as_of"):
+        arch = out / "archives"
+        arch.mkdir(parents=True, exist_ok=True)
+        (arch / f"{spec.tag}_{payload['as_of']}.json").write_text(
+            json.dumps(doc, indent=1, default=float)
         )
-    )
     return p
 
 

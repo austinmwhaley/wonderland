@@ -121,15 +121,19 @@ def build_all(stream, anch, orders, data_end):
     )
 
 
-def run(threshold=0.6, seed=0):
-    stream, anch, orders, data_end, tag = _load()
+def run(threshold=0.6, seed=0, db=None, products=None):
+    stream, anch, orders, data_end, tag = _load(db, products)
     E, R, groups, targets = build_all(stream, anch, orders, data_end)
     n = len(E)
     Scr = E[np.random.default_rng(seed).permutation(n)]
     rows = []
+    skipped = []
     for name, y in targets.items():
         mask = np.isfinite(y)
         if mask.sum() < 100:
+            # record it — silently dropping targets shrinks the denominator
+            # and the portfolio could pass on a fraction of its portfolio
+            skipped.append({"target": name, "n_labeled": int(mask.sum())})
             continue
         Xe, Xr, Xs, yy, gg = E[mask], R[mask], Scr[mask], y[mask], groups[mask]
         rE, rR, rS = (
@@ -152,6 +156,10 @@ def run(threshold=0.6, seed=0):
                 "I": ulo > 0.0,
             }
         )
+    if not rows:
+        raise SystemExit(
+            "sufficiency battery: every target had <100 labeled rows — nothing to gate"
+        )
     sc = np.mean([r["S"] for r in rows])
     cc = np.mean([r["C"] for r in rows])
     ic = np.mean([r["I"] for r in rows])
@@ -159,6 +167,8 @@ def run(threshold=0.6, seed=0):
     return {
         "version": str(tag),
         "rows": rows,
+        "skipped": skipped,
+        "seed": int(seed),
         "n": n,
         "signal_cov": sc,
         "standalone_cov": cc,
@@ -191,11 +201,34 @@ def show(res):
     return res["success"]
 
 
-def main(argv=None):
+def main(argv=None, out_dir=None):
+    import json
+    from datetime import datetime, timezone
+    from pathlib import Path
+
     ap = argparse.ArgumentParser(description="Sufficiency battery for the CFM")
     ap.add_argument("--threshold", type=float, default=0.6)
+    ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--db", default=None, help="stream (default: rabbit_hole duckdb)")
+    ap.add_argument("--products", default=None, help="cfm_products.duckdb path")
     a = ap.parse_args(argv)
-    return 0 if show(run(a.threshold)) else 1
+    res = run(a.threshold, seed=a.seed, db=a.db, products=a.products)
+    show(res)
+    # persist the receipt (doctrine #11): printed prose is not an artifact
+    out = (
+        Path(out_dir)
+        if out_dir
+        else Path(__file__).resolve().parent / "artifacts" / "sufficiency_battery"
+    )
+    out.mkdir(parents=True, exist_ok=True)
+    res["ran_at"] = datetime.now(timezone.utc).isoformat()
+    stamp = res["ran_at"].replace(":", "").replace("-", "").split(".")[0]
+    path = out / f"battery_{res['version'].replace('.', '_')}_{stamp}Z.json"
+    path.write_text(json.dumps(res, indent=1, default=float))
+    if res["skipped"]:
+        print(f"skipped (n<100): {[s['target'] for s in res['skipped']]}")
+    print(f"receipt -> {path}")
+    return 0 if res["success"] else 1
 
 
 if __name__ == "__main__":

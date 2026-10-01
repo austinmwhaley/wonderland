@@ -44,6 +44,13 @@ LADDER_DIR = WORK / "looking_glass" / "artifacts" / "cfm_ladder"
 RUNGS = (250, 500, 1000, 2000, 4000, 8000, 12000, 20000)
 
 
+def _rung_dir(as_of: str, rung: int) -> Path:
+    """Per-as_of rung archive — rungs used to live at r{rung} (NOT as_of-scoped),
+    so each month overwrote the previous month's receipts/preds/products and the
+    receipt for what an earlier cycle actually trained on was lost."""
+    return LADDER_DIR / as_of.replace("-", "_") / f"r{rung}"
+
+
 def _train_rung(rung: int, as_of: str, customers: int, anchors: int, out: Path) -> dict:
     cmd = [
         sys.executable,
@@ -203,7 +210,7 @@ def run(as_of: str, rungs=RUNGS, customers: int = 25000, anchors: int = 6, skip_
     print("architecture + populations + anchors are FIXED; only sample_A size varies\n")
     rows = []
     for rung in rungs:
-        out = LADDER_DIR / f"r{rung}"
+        out = _rung_dir(as_of, rung)
         receipt_p = out / "ladder_receipt.json"
         cached = _cached_receipt(receipt_p, as_of) if skip_done else None
         if cached is not None:
@@ -245,7 +252,7 @@ def run(as_of: str, rungs=RUNGS, customers: int = 25000, anchors: int = 6, skip_
 
     preds: dict[int, dict] = {}
     for r in rows:
-        p = _load_preds(LADDER_DIR / f"r{r['rung']}")
+        p = _load_preds(_rung_dir(as_of, r["rung"]))
         if p is not None:
             preds[r["rung"]] = p
     chosen, best, tol, tol_mode, excluded = _choose(rows, preds)

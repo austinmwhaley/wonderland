@@ -468,6 +468,13 @@ def run_target(
         ds = load_dataset(target.window_days, **kw)
     else:
         ds = load_dataset(target.window_days, target=target, as_of=as_of, **kw)
+    if ds.meta.get("encoder_version") is None:
+        # a mixed-version products table would train a null-pinned head that
+        # PASSES the gate and only fails later at inference — fail here instead
+        raise ValueError(
+            "products table holds multiple encoder versions (encoder_version=None); "
+            "rebuild products so the head pins exactly one encoder"
+        )
 
     tpl = HeadTemplate(target)
     families = (target.family,) if target.family else None
@@ -483,11 +490,15 @@ def run_target(
     ok = gate(rows, f"SUPERVISED {target.kind.upper()} PLUGIN {target.name}")
 
     out = Path(out_dir) if out_dir is not None else base.OUT
-    head_path = out / "heads" / f"{target.tag}.joblib"
+    # as-of-stamped head file: the manifest still points at the current head,
+    # but each cycle's trained head survives its successor (evidence retention)
+    head_stem = f"{target.tag}_{as_of}" if as_of else target.tag
+    head_path = out / "heads" / f"{head_stem}.joblib"
     tpl.persist(fitted, head_path)
 
     payload = {
         "dataset": ds.meta,
+        "seed": seed,
         "heads": [
             {
                 "name": h["name"],

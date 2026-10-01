@@ -55,9 +55,12 @@ def _v(x):
         return 0.0
 
 
-def _load(
-    name="data/arrow/customer_event_stream.feather", products="artifacts/cfm/cfm_products.duckdb"
-):
+def _load(name=None, products=None):
+    # defaults are module-anchored (the old cwd-relative defaults only worked
+    # from looking_glass/scripts and broke from the repo root); stream = the
+    # canonical DuckDB source (4 columns is all build() needs).
+    name = str(name or STREAM)
+    products = str(products or (WORK / "artifacts" / "cfm" / "cfm_products.duckdb"))
     stream = (
         pl.read_ipc(name, memory_map=True)
         if str(name).endswith((".arrow", ".feather", ".ipc"))
@@ -221,8 +224,8 @@ def _partial_ci(pE, pR, y, groups, B=400, seed=0):
     return point, float(np.quantile(d, 0.025)), float(np.quantile(d, 0.975))
 
 
-def run(windows=(365, 90), seed=0):
-    stream, anch, orders, data_end, tag = _load()
+def run(windows=(365, 90), seed=0, name=None, products=None):
+    stream, anch, orders, data_end, tag = _load(name, products)
     rows, ok_all = [], True
     for w in windows:
         E, R, y, groups = build(stream, anch, orders, data_end, w)
@@ -286,10 +289,10 @@ def show(res):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description="Layer B proof")
-    ap.add_argument("--db", default="data/arrow/customer_event_stream.feather")
-    ap.add_argument("--products", default="artifacts/cfm/cfm_products.duckdb")
-    ap.parse_args(argv)
-    return 0 if show(run()) else 1
+    ap.add_argument("--db", default=None, help="stream (default: rabbit_hole duckdb)")
+    ap.add_argument("--products", default=None, help="cfm_products.duckdb path")
+    a = ap.parse_args(argv)
+    return 0 if show(run(name=a.db, products=a.products)) else 1
 
 
 if __name__ == "__main__":

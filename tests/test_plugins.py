@@ -165,7 +165,7 @@ def synthetic_dataset():
         X=X,
         y=y,
         x_base=x_base,
-        meta={},
+        meta={"encoder_version": "vTESTr1"},
     )
 
 
@@ -231,7 +231,7 @@ def segmentation_dataset():
         X=X.astype(np.float32),
         y=y,
         x_base=np.zeros(n_blobs * per_blob),
-        meta={},
+        meta={"encoder_version": "vTESTr1"},
     )
 
 
