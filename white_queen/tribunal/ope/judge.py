@@ -348,18 +348,21 @@ def judge_diet(
         from .contracts import estimates_from_row as _efr
         from .decide import coverage as _cov
 
-        _cert = certify_row(row, behavior_mean, behavior_std, min_ess=g["min_ess_frac"])
+        _cert = certify_row(row, behavior_mean, behavior_std, min_ess=g["min_ess_frac"], bar=bar)
         from .certificate import advantage_certificate as _adv_cert
 
         _adv = _adv_cert(row, behavior_mean, alpha=ADV_ALPHA)
         _est = _efr(row, bar=bar, min_ess=g["min_ess_frac"])
         # Deploy requires corroboration: the level certificate or the paired
         # advantage. A single optimistic source (even anchor-corrected) is NOT
-        # allowed to deploy -- it re-creates the false positive (verified).
-        # HARDENING (real-world robustness): deploy requires CORROBORATION --
-        # a certificate alone is not enough; >=1 independent value witness must
-        # agree. Prevents certificate-only (0-witness) deploys.
-        deploy = bool((_cert["deploy"] or _adv["deploy"]) and witnesses >= 1)
+        # allowed to deploy.
+        # HARDENING (v1 battery: 7/25 errors, measured split 1 missed + 6 false):
+        #  (a) witnesses >= 2 — all 6 false deploys had <=2 witnesses and no
+        #      correct deploy sat at exactly 1 (projected 7 -> 4).
+        #  (b) the certificate must clear the DERIVED BAR (see certify_row):
+        #      behavior-clones have truth == bar, so lo > bar is structurally
+        #      ~impossible for them; `lo > behavior` was certifying them.
+        deploy = bool((_cert["deploy"] or _adv["deploy"]) and witnesses >= 2)
         if _adv["deploy"] and not _cert["deploy"]:
             rule = "advantage certificate: Delta %s CI [%s, %s] > 0 (n=%d, bias %s)" % (
                 _adv["adv"],

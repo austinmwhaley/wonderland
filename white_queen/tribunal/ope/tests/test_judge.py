@@ -132,11 +132,16 @@ def test_simulator_operating_point():
     # Superiority doctrine: the operating point is the fixed rejection rule
     # (deploy when 'not-better' is rejected by a covered, corroborated test),
     # so the point no longer moves with risk; risk tunes only the DR test's
-    # significance. Measured seed 0: precision .98, recall .39.
+    # significance.
+    # Hardened contract (measured seed 0): precision 1.0 (was .98), recall
+    # .213 (was .39) — witnesses>=2 + certificate-vs-derived-bar trades recall
+    # on RANDOM candidates for zero false deploys. On the known-truth battery
+    # (red_king/artifacts/ab_witness*.json) there is no recall cost:
+    # missed stays 1, false 6 -> 3, total errors 7 -> 4, broken 0.
     assert s5["precision"] >= 0.90, s5
-    assert s5["recall"] >= 0.25, s5
+    assert s5["recall"] >= 0.20, s5
     assert s0["recall"] >= s5["recall"] >= s1["recall"], (s0, s5, s1)
-    assert s0["recall"] >= 0.25
+    assert s0["recall"] >= 0.20
     # No single witness type may carry the decision: DR alone (with the value
     # witnesses disagreeing) must not be enough to ship.
     assert s5["precision"] >= 0.90

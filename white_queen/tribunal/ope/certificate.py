@@ -79,6 +79,7 @@ def certify_row(
     min_ess=0.02,
     overlap_gain=1.0,
     k=None,
+    bar=None,
 ):
     """Return the certificate for one candidate.
 
@@ -108,6 +109,7 @@ def certify_row(
             "hi": (None if v is None else round(v + half, 3)),
             "width": (None if half is None else round(half, 3)),
             "behavior": behavior_mean,
+            "ref": behavior_mean if bar is None else float(bar),
             "deploy": False,
             "members": list(members),
             "s_family": 0.0,
@@ -156,14 +158,25 @@ def certify_row(
     lo, hi = value - half, value + half
     bstd = _finite(behavior_std) or scale
     abstain = bool(half > 0.5 * max(bstd, 1.0))
-    deploy = bool(lo > behavior_mean)
-    reason = "lo > behavior" if deploy else "lo <= behavior"
+    # Deploy reference: the DERIVED BAR when one is supplied (behavior + the
+    # autotune materiality edge) instead of the raw behavior mean. A behavior
+    # clone's truth IS the bar, so a lower bound above the bar is structurally
+    # ~impossible for it — while policies that are genuinely better than the
+    # materiality edge keep power. Raw `lo > behavior` certified clones.
+    ref = behavior_mean if bar is None else float(bar)
+    deploy = bool(lo > ref)
+    reason = (
+        ("lo > bar" if bar is not None else "lo > behavior")
+        if deploy
+        else ("lo <= bar" if bar is not None else "lo <= behavior")
+    )
     return {
         "value": round(value, 3),
         "lo": round(lo, 3),
         "hi": round(hi, 3),
         "width": round(half, 3),
         "behavior": round(behavior_mean, 3),
+        "ref": round(ref, 3),
         "deploy": deploy,
         "members": list(members),
         "s_family": round(s_family, 3),
