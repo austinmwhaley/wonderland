@@ -156,3 +156,48 @@ same battery
   work, not a feature list.
 - **Trade-offs accepted:** two-stage encoder work instead of one; each stage
   pays a version bump and re-cert.
+
+## DEC-008 — The goal, stated by the operator: encoder judged on Layer B ONLY
+
+- **Date:** 2026-10-01
+- **Context & problem:** the operator fixed the division of labor:
+  **rabbit_hole's goal = provide the data looking_glass needs; looking_glass's
+  goal = produce the best encoder possible, judged on self-supervision quality
+  ONLY (Layer B).** Audited against that definition, current Layer B has
+  three violations/gaps (receipts):
+  1. **Sample-A ladder sizes encoder training data by DOWNSTREAM
+     purchase-propensity AUC** (`plugins/ladder_sample_a.py` rule; consumed by
+     `customer_foundation_model`) — a Layer C judgment inside a Layer B
+     config decision. (The ladder already records per-rung held-out `ce` as
+     "corroboration" — the self-supervised number is already measured.)
+  2. **Selection/verification is narrower than the objective**: the governor
+     stops and selects on next-event CE ALONE (`cfm_training._val_loss`);
+     `validate()` gates on argmax ACCURACY over the first 200 sequences (8 for
+     causality), with an unseeded `torch.randint` probe — no CE/NLL gate,
+     no uncertainty, no portfolio view.
+  3. **The self-supervised portfolio is local** (next-step type/time/value,
+     occurrence at median gap, near-JEPA) — nothing in the exam demands
+     long-horizon integration or states read at query times. The DEC-006a
+     spike (frequency/event-mix win downstream on rabbit_hole; recency wins
+     on Instacart) is the downstream shadow of that missing exam content.
+- **Alternatives:** (a) keep judging the encoder with downstream AUC (ladder,
+  battery, ablation as primary); (b) strict Layer-B judging — held-out
+  self-supervised portfolio is the ONLY definition of "best encoder";
+  downstream instruments stay as sufficiency GUARDS at the Layer B/C seam;
+  (c) merge everything into one score.
+- **Decision:** (b). The encoder is optimized, stopped, selected, and sized
+  (sample_A) on held-out self-supervised loss only. Consequences:
+  - sample_A ladder re-sizes rungs on paired self-supervised CE (per-row
+    log-loss diff, same machinery as the AUC pairing), downstream AUC demoted
+    to a recorded guard, not the chooser;
+  - `validate()` grows CE/NLL rows over the full held-out set, seeded probes;
+  - S1 (query-time readout) and S2 (multi-horizon aggregate prediction) are
+    re-scoped as **completing the self-supervised portfolio** (self-supervised
+    tasks at derived horizons — no labels, no downstream metric in the loss);
+  - battery + ablation remain sufficiency guards (DoD#2 / DEC-007) — they can
+    VETO a release, never define or optimize the encoder.
+  Principles: *correctness* (a metric that lies about the goal is a bug),
+  *simple over complex* (use the `ce` receipts the ladder already writes).
+- **Trade-offs accepted:** give up downstream-tuned data sizing (product
+  alignment moves to the guards); re-cert must show the portfolio, not just
+  one CE; ladder rework is real work in front of S1/S2.

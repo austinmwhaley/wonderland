@@ -7,13 +7,17 @@
 
 ## Macro
 
-- **Primary goal:** rabbit_hole -> looking_glass -> plugins must deliver its
-  best: the frozen encoder's state must earn its keep on the shipped target
-  (`supervised_purchase_propensity_30d`) — donor >= raw-RFM quality achieved
-  by **learning** the statistics raw has (no hand-fed features; D14's
-  sole-input lock stands, see DEC-006) — while every decision surface stays
-  honest under the **observational-first** constraint: production logs have no
-  holdout and no A/B; unidentified lift claims reject (never NaN, never fake).
+- **Primary goal (operator-defined, DEC-008):** `rabbit_hole` provides the
+  data looking_glass needs; `looking_glass` produces **the best encoder
+  possible, judged on self-supervision quality ONLY (Layer B)** — optimized,
+  stopped, selected, and sized on the held-out self-supervised portfolio
+  (no downstream metric in Layer B decisions). Downstream instruments
+  (battery, ablation, plugin gate) are **sufficiency guards** at the B/C seam
+  — they can veto, never define. Plugins consume the encoder under the
+  **observational-first** constraint: production logs have no holdout and no
+  A/B; unidentified lift claims reject (never NaN, never fake).
+  DEC-006 (teach the state, no hand-fed features; D14 stands) continues, with
+  S1/S2 re-scoped as self-supervised portfolio completion.
 - **Current execution phase:** Stage 1 (Spike) of DEC-006 — teaching the
   encoder. Roadmap: Phase 0 done, Phase 1 done, P3.1/P3.2 done.
 - **Overall progress:** ~50% — encoder track at spike; white_queen round 2,
