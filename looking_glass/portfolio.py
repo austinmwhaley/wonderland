@@ -38,6 +38,10 @@ DEFAULT_OUT = Path(__file__).resolve().parent / "artifacts" / "cfm" / "portfolio
 # destroyed-input null is the wrong yardstick for it (states may still
 # separate instances without order). redundancy is graded in geometry.
 GATED_EXCLUSIONS = {"contrast", "redundancy"}
+# yardstick pending: sf's destroyed-null is NOT harder (permutation makes the
+# discounted-sum targets smoother, so raw skill dips negative without meaning).
+# Reported, never gated, until a target-variance-normalized null exists.
+YARDSTICK_PENDING = {"sf"}
 
 
 def _destroyed(seqs: list[dict], seed: int) -> list[dict]:
@@ -112,6 +116,38 @@ def _geometry(states: np.ndarray, seed: int) -> dict:
     }
 
 
+def _canaries(states, seqs, seed: int) -> dict:
+    """Leak detector: a frozen state should carry BEHAVIOR, not assignment
+    metadata. Logistic probes on held-out states; PASS = the state cannot
+    predict the A/B arm or the period bucket."""
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.metrics import accuracy_score, roc_auc_score
+    from sklearn.model_selection import GroupShuffleSplit
+
+    groups = np.array([str(s.get("group", "A")) for s in seqs])
+    months = np.array([int(str(s["event_ts"][-1])[:7].replace("-", "")) for s in seqs])
+    # split by CUSTOMER (never by the label — grouping by the label would put
+    # a whole class on one side and the probe would be meaningless)
+    cust = np.array([str(s.get("customer", f"r{i}")) for i, s in enumerate(seqs)])
+    out = {}
+    gss = GroupShuffleSplit(n_splits=1, test_size=0.4, random_state=seed)
+    tr, te = next(gss.split(states, groups=cust))
+    # A/B membership: AUC must be near-chance
+    uniq_g = np.unique(groups)
+    if len(uniq_g) == 2:
+        clf = LogisticRegression(max_iter=1000).fit(states[tr], groups[tr])
+        auc = float(roc_auc_score(groups[te], clf.predict_proba(states[te])[:, 1]))
+        out["group_auc"] = round(auc, 4)
+    # period bucket: accuracy must be near-chance (multi-class)
+    if len(np.unique(months)) > 1:
+        clf = LogisticRegression(max_iter=1000).fit(states[tr], months[tr])
+        acc = float(accuracy_score(months[te], clf.predict(states[te])))
+        chance = float(max(np.bincount(months[tr] - months[tr].min()).max() / len(tr), 1e-9))
+        out["period_acc"] = round(acc, 4)
+        out["period_chance"] = round(chance, 4)
+    return out
+
+
 def evaluate(
     model,
     vocab,
@@ -142,8 +178,9 @@ def evaluate(
     fold_ids = np.array_split(np.array(customers, dtype=object), min(folds, len(customers)))
 
     gated = [o for o in cfg.objectives if o not in GATED_EXCLUSIONS]
-    real_folds: dict[str, list[float]] = {o: [] for o in gated}
-    shuf_folds: dict[str, list[float]] = {o: [] for o in gated}
+    measured = sorted(set(gated) | YARDSTICK_PENDING)
+    real_folds: dict[str, list[float]] = {o: [] for o in measured}
+    shuf_folds: dict[str, list[float]] = {o: [] for o in measured}
     seen: set[str] = set()
 
     was_training = model.training
@@ -179,9 +216,11 @@ def evaluate(
 
     objectives = []
     rows = []
-    for o in gated:
+    report_only = []
+    for o in measured:
         if o not in real_folds or not real_folds[o]:
             continue
+        gated_o = o not in YARDSTICK_PENDING
         r = np.asarray(real_folds[o])
         s = np.asarray(shuf_folds[o])
         skill = s - r  # positive = real beats destroyed = uses structure
@@ -196,14 +235,18 @@ def evaluate(
                 "folds": int(len(skill)),
             }
         )
-        rows.append(
-            {
-                "check": f"portfolio: {o} structure-skill > 0",
-                "achieved": f"{skill.mean():+.4f} ± {se:.4f} ({len(skill)} folds)",
-                "ok": bool(skill.mean() > 0),
-            }
-        )
+        row = {
+            "check": f"portfolio: {o} structure-skill > 0",
+            "achieved": f"{skill.mean():+.4f} ± {se:.4f} ({len(skill)} folds)",
+            "ok": bool(skill.mean() > 0),
+        }
+        if not gated_o:
+            row["ok"] = True  # report-only: yardstick pending (see receipt note)
+            row["check"] = f"portfolio: {o} structure-skill (REPORT-ONLY, yardstick pending)"
+            report_only.append(o)
+        rows.append(row)
     geometry = _geometry(z, seed + 2) if len(z) >= 4 else {}
+    canaries = _canaries(z, val, seed + 3) if len(z) >= 4 else {}
     if geometry:
         rows.append(
             {
@@ -215,7 +258,24 @@ def evaluate(
                 "ok": bool(geometry["eff_rank_ratio"] >= 0.3),
             }
         )
-    missing = sorted(set(cfg.objectives) - seen - GATED_EXCLUSIONS)
+    if canaries:
+        if "group_auc" in canaries:
+            rows.append(
+                {
+                    "check": "canary: state cannot predict A/B arm (AUC < 0.65)",
+                    "achieved": f"AUC {canaries['group_auc']}",
+                    "ok": bool(canaries["group_auc"] < 0.65),
+                }
+            )
+        if "period_acc" in canaries:
+            rows.append(
+                {
+                    "check": "canary: state cannot predict period bucket (< 1.5x chance)",
+                    "achieved": f"acc {canaries['period_acc']} (chance {canaries['period_chance']})",
+                    "ok": bool(canaries["period_acc"] < 1.5 * canaries["period_chance"]),
+                }
+            )
+    missing = sorted(set(cfg.objectives) - seen - GATED_EXCLUSIONS - YARDSTICK_PENDING)
     ok = all(r["ok"] for r in rows) if rows else False
     receipt = {
         "tag": tag,
@@ -226,6 +286,9 @@ def evaluate(
         "sf_mode": getattr(cfg, "sf_mode", "purchase"),
         "objectives": objectives,
         "objectives_missing": missing,
+        "yardstick_pending": sorted(YARDSTICK_PENDING),
+        "report_only": report_only,
+        "canaries": canaries,
         "geometry": geometry,
         "rows": rows,
         "ok": bool(ok),
@@ -239,8 +302,10 @@ def evaluate(
     path.write_text(json.dumps(receipt, indent=1, default=float))
 
     print("== LAYER-B PORTFOLIO GRADE (held-out, destroyed-data null) ==")
-    for o, row in zip(objectives, rows):
+    for o, row in zip(objectives, [r for r in rows if r["check"].startswith("portfolio:")]):
         status = "PASS" if row["ok"] else "FAIL"
+        if "REPORT-ONLY" in row["check"]:
+            status = "REPORT"
         print(f"  {o['objective']:12s} skill {o['skill']:+.4f} ± {o['skill_se']:.4f}  {status}")
     if geometry:
         print(

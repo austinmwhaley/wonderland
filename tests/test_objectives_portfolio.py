@@ -139,3 +139,58 @@ def test_masked_forward_causal_and_redacted():
     yb, _, _ = _masked_forward(model, vocab, t3, cfg2, torch.device("cpu"))
     assert torch.allclose(ya[:, :-1], yb[:, :-1], atol=1e-6)  # prefix unaffected
     assert not torch.allclose(ya[:, -1], yb[:, -1], atol=1e-6)  # at the change
+
+
+# ---------------------------------------------------------------------------
+# portfolio grade end-to-end (integration): deterministic, complete, gated
+# ---------------------------------------------------------------------------
+def test_portfolio_evaluate_end_to_end(tmp_path):
+    import json
+
+    from looking_glass.portfolio import evaluate
+
+    seqs = [_seq(f"c{i}", day=f"2025-01-{(i % 28) + 1:02d}") for i in range(40)]
+    # give the canary something to (try to) find: two A/B groups, several months
+    for i, s in enumerate(seqs):
+        s["group"] = "A" if i % 2 else "B"
+    torch.manual_seed(0)
+    vocab = EventVocab.build(seqs)
+    model = CFM(vocab, dim=16, n_experts=1)
+    model.eval()
+    cfg = _cfg()
+    r1 = evaluate(model, vocab, cfg, seqs, seed=0, folds=3, out_dir=tmp_path, tag="t1")
+    assert r1["ok"] in (True, False)  # graded, not crashed
+    assert r1["objectives"], "per-objective readouts present"
+    names = {o["objective"] for o in r1["objectives"]}
+    assert {"next", "dt", "agg", "query", "sf"} <= names  # fielded combo measured
+    assert r1["geometry"]["eff_rank"] > 0
+    assert any("canary" in row["check"] for row in r1["rows"])
+    assert "sf" in r1["yardstick_pending"]  # sf reported, not gated
+    files = list(tmp_path.glob("portfolio_t1_*.json"))
+    assert len(files) == 1
+    saved = json.loads(files[0].read_text())
+    assert saved["ok"] == r1["ok"]
+    # deterministic: same seed -> same skills
+    r2 = evaluate(model, vocab, cfg, seqs, seed=0, folds=3, out_dir=tmp_path, tag="t2")
+    a = {o["objective"]: o["skill"] for o in r1["objectives"]}
+    b = {o["objective"]: o["skill"] for o in r2["objectives"]}
+    for k in a:
+        assert abs(a[k] - b[k]) < 1e-4, k
+
+
+def test_portfolio_canary_catches_leak(tmp_path):
+    # a state that ENCODES the A/B arm must fail the canary row
+    import numpy as _np
+
+    from looking_glass.portfolio import _canaries
+
+    n = 200
+    rng = _np.random.default_rng(0)
+    states = rng.normal(size=(n, 8)).astype(_np.float32)
+    groups = _np.array(["A"] * n, dtype=object)
+    groups[::2] = "B"
+    # leak: group signal planted in dim 0
+    states[:, 0] += _np.where(groups == "A", 3.0, -3.0)
+    seqs = [{"group": g, "event_ts": ["2025-01-05T00:00:00+00:00"]} for g in groups]
+    c = _canaries(states, seqs, seed=0)
+    assert c["group_auc"] > 0.9  # the planted leak is found

@@ -238,6 +238,13 @@ def train_cfm(cfg: CFMConfig):
         "n_pass": sum(1 for r in port["rows"] if r["ok"]),
         "n_rows": len(port["rows"]),
     }
+    # learned uncertainty weights (Kendall): w_k = exp(-s_k), the dynamic
+    # alternative to hand-tuned loss weights — recorded so every run shows
+    # where the objective balance actually landed
+    with torch.no_grad():
+        raw = {k: float(torch.exp(-v).squeeze()) for k, v in model.log_var.items()}
+    tot = sum(raw.values()) or 1.0
+    task_weights = {k: round(v / tot, 4) for k, v in sorted(raw.items())}
     _registry(
         cfg,
         vocab,
@@ -246,6 +253,7 @@ def train_cfm(cfg: CFMConfig):
         derived=res.receipt,
         governor=gov,
         portfolio=port_summary,
+        task_weights=task_weights,
         cfg_resolved={
             "seq_len": cfg.seq_len,
             "dim": cfg.dim,
@@ -572,7 +580,15 @@ def _loss(model, vocab, items, cfg):
 
 
 def _registry(
-    cfg, vocab, n_train, n_keys, derived=None, governor=None, cfg_resolved=None, portfolio=None
+    cfg,
+    vocab,
+    n_train,
+    n_keys,
+    derived=None,
+    governor=None,
+    cfg_resolved=None,
+    portfolio=None,
+    task_weights=None,
 ):
     out = Path(cfg.out_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -597,6 +613,7 @@ def _registry(
                 "resolved": cfg_resolved or {},
                 "governor": governor or {},
                 "portfolio": portfolio or {},
+                "task_weights": task_weights or {},
                 "trained_at": datetime.now(timezone.utc).isoformat(),
             },
             indent=1,
