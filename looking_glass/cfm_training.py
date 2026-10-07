@@ -188,13 +188,16 @@ def train_cfm(cfg: CFMConfig):
 
     use_amp = device.type == "cuda"
     scaler = torch.amp.GradScaler("cuda", enabled=use_amp)
+    balancer = DWA(sorted(cfg.objectives), temp=cfg.dwa_temp)
 
     def train_step(n):
         for _ in range(n):
             b = rng.choice(tr_idx, size=min(cfg.batch, len(tr_idx)), replace=False)
             opt.zero_grad()
             with torch.autocast(device_type=device.type, dtype=torch.float16, enabled=use_amp):
-                loss = _loss(model, vocab, [a_seqs[i] for i in b], cfg)
+                loss = _loss(
+                    model, vocab, [a_seqs[i] for i in b], cfg, weights=balancer.weights()
+                )
             scaler.scale(loss).backward()
             scaler.unscale_(opt)
             torch.nn.utils.clip_grad_norm_(params, 1.0)
@@ -204,10 +207,15 @@ def train_cfm(cfg: CFMConfig):
 
     def val_metric():
         # bound eval cost (speed principle): subsample the validation set;
-        # metric = the SAME uncertainty-weighted objective training optimizes
-        # (DEC-008) — select on the portfolio, not on one term of it
+        # metric = the SAME weighted objective training optimizes (DEC-008).
+        # Per-task held-out losses update the DWA balancer AFTER scoring
+        # (weights come from the past; today's losses are tomorrow's rates).
         vi = val_idx[:256]
-        v = held_out_objective(model, vocab, [a_seqs[i] for i in vi], cfg, seed=cfg.seed)
+        torch.manual_seed(cfg.seed)
+        with torch.no_grad():
+            T_ = _task_losses(model, vocab, [a_seqs[i] for i in vi], cfg)
+        v = float(_combine(model, T_, cfg, weights=balancer.weights()))
+        balancer.update({k: float(x) for k, x in T_.items()})
         return v, copy.deepcopy(model.state_dict())
 
     gov, best_state = AT.govern(
@@ -241,10 +249,11 @@ def train_cfm(cfg: CFMConfig):
     # learned uncertainty weights (Kendall): w_k = exp(-s_k), the dynamic
     # alternative to hand-tuned loss weights — recorded so every run shows
     # where the objective balance actually landed
-    with torch.no_grad():
-        task_weights = {
-            k: round(float(v.detach().reshape(-1)[0]), 4) for k, v in sorted(model.log_var.items())
-        }
+    cfg._weight_trajectory = [
+        {k: round(w, 4) for k, w in snap.items()} for snap in balancer.history
+    ]
+    task_weights = {k: round(w, 4) for k, w in balancer.weights().items()}
+    cfg.final_task_weights = dict(task_weights)
     _registry(
         cfg,
         vocab,
@@ -531,12 +540,58 @@ def _task_losses(model, vocab, items, cfg):
     return T_
 
 
-def _combine(model, T, cfg):
-    """Uncertainty-based adaptive weighting: loss = sum 0.5*exp(-s)*L + 0.5*s.
-    No manual weights; tasks that are noisy/conflicting earn lower weight."""
+class DWA:
+    """Dynamic Weight Average (DEC-014): task weights from the RATE of loss
+    change, not the loss scale — non-bounded geometric losses (redundancy,
+    jepa) cannot exploit it, and a plateauing task is automatically boosted.
+
+        r_k = L_k(prev) / L_k(prev2);  w_k = K * softmax(r_k / T)
+
+    Warmup: the first two measurements keep all weights at 1.0. The weight
+    trajectory is recorded (the frontier readout)."""
+
+    def __init__(self, tasks, temp: float = 2.0):
+        import math
+
+        self._math = math
+        self.tasks = list(tasks)
+        self.temp = float(temp)
+        self.prev = None
+        self.prev2 = None
+        self.w = {k: 1.0 for k in self.tasks}
+        self.history: list[dict] = [dict(self.w)]
+
+    def update(self, losses: dict) -> None:
+        cur = {k: float(losses[k]) for k in self.tasks if k in losses}
+        if self.prev is not None:
+            r = {
+                k: cur[k] / max(self.prev.get(k, cur[k]), 1e-12)
+                for k in cur
+                if k in self.prev
+            }
+            K = len(r)
+            mx = max(r.values())
+            e = {k: self._math.exp((v - mx) / self.temp) for k, v in r.items()}
+            tot = sum(e.values()) or 1.0
+            self.w = {k: K * e[k] / tot for k in r}
+        self.prev2, self.prev = self.prev, cur
+        self.history.append(dict(self.w))
+
+    def weights(self) -> dict:
+        return dict(self.w)
+
+
+def _combine(model, T, cfg, weights: dict | None = None):
+    """Task-balance dispatch (DEC-014). `weights` = current DWA weights."""
     keys = [k for k in cfg.objectives if k in T]
-    if cfg.use_uncertainty_weighting:
-        return sum(0.5 * torch.exp(-model.log_var[k]) * T[k] + 0.5 * model.log_var[k] for k in keys)
+    if cfg.weight_mode == "dwa":
+        if weights is not None:
+            return sum(weights.get(k, 1.0) * T[k] for k in keys)
+        return sum(T[k] for k in keys)  # no history yet -> equal
+    if cfg.weight_mode == "uncertainty" and cfg.use_uncertainty_weighting:
+        return sum(
+            0.5 * torch.exp(-model.log_var[k]) * T[k] + 0.5 * model.log_var[k] for k in keys
+        )
     return sum(T[k] for k in keys)
 
 
@@ -550,14 +605,16 @@ def _val_split(n_seqs: int, seed: int):
     return order[n_val:], order[:n_val]  # (train_idx, val_idx)
 
 
-def held_out_objective(model, vocab, seqs, cfg, seed: int = 0) -> float:
+def held_out_objective(
+    model, vocab, seqs, cfg, seed: int = 0, weights: dict | None = None
+) -> float:
     """Held-out value of the SAME uncertainty-weighted objective training
     optimizes (DEC-008): the governor selects on this, not on one term of it.
     Seeded so fold/real-vs-destroyed comparisons pair exactly."""
     torch.manual_seed(seed)
     with torch.no_grad():
         T_ = _task_losses(model, vocab, seqs, cfg)
-        return float(_combine(model, T_, cfg))
+        return float(_combine(model, T_, cfg, weights))
 
 
 def forward_states(model, seqs, h0s=None):
@@ -578,8 +635,8 @@ def forward_states(model, seqs, h0s=None):
     return h
 
 
-def _loss(model, vocab, items, cfg):
-    return _combine(model, _task_losses(model, vocab, items, cfg), cfg)
+def _loss(model, vocab, items, cfg, weights: dict | None = None):
+    return _combine(model, _task_losses(model, vocab, items, cfg), cfg, weights)
 
 
 def _registry(
@@ -617,6 +674,8 @@ def _registry(
                 "governor": governor or {},
                 "portfolio": portfolio or {},
                 "task_weights": task_weights or {},
+                "weight_mode": cfg.weight_mode,
+                "weight_trajectory": getattr(cfg, "_weight_trajectory", []) or [],
                 "trained_at": datetime.now(timezone.utc).isoformat(),
             },
             indent=1,

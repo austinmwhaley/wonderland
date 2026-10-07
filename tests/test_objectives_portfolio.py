@@ -194,3 +194,51 @@ def test_portfolio_canary_catches_leak(tmp_path):
     seqs = [{"group": g, "event_ts": ["2025-01-05T00:00:00+00:00"]} for g in groups]
     c = _canaries(states, seqs, seed=0)
     assert c["group_auc"] > 0.9  # the planted leak is found
+
+
+# ---------------------------------------------------------------------------
+# DWA balancer (DEC-014): dynamic weights from loss-improvement rates
+# ---------------------------------------------------------------------------
+def test_dwa_warmup_then_plateau_boost():
+    from looking_glass.cfm_training import DWA
+
+    b = DWA(["fast", "plateau"], temp=2.0)
+    assert all(w == 1.0 for w in b.weights().values())  # warmup: equal
+    b.update({"fast": 10.0, "plateau": 5.0})
+    assert all(w == 1.0 for w in b.weights().values())  # still warmup
+    b.update({"fast": 2.0, "plateau": 5.0})  # fast improving (r=0.2), plateau r=1.0
+    assert b.weights()["plateau"] > b.weights()["fast"]  # plateau boosted
+    b.update({"fast": 1.0, "plateau": 5.0})  # plateau keeps stalling
+    assert b.weights()["plateau"] > b.weights()["fast"]
+    assert len(b.history) == 4  # trajectory recorded
+
+
+def test_combine_modes():
+    import torch as _t
+
+    from looking_glass.cfm_training import _combine
+
+    seqs = [_seq("c1"), _seq("c2", day="2025-01-02")]
+    vocab = EventVocab.build(seqs)
+    model = CFM(vocab, dim=16, n_experts=1)
+    cfg = _cfg()
+    T_ = {"next": _t.tensor(2.0), "dt": _t.tensor(4.0)}
+    # dwa with weights = weighted sum
+    v = float(_combine(model, T_, cfg, weights={"next": 1.0, "dt": 0.5}))
+    assert v == pytest.approx(2.0 + 2.0)
+    # dwa without history = equal sum
+    assert float(_combine(model, T_, cfg)) == pytest.approx(6.0)
+    # uncertainty mode = kendall formula (log_var zeros -> 0.5*L each)
+    cfg_u = _cfg(weight_mode="uncertainty")
+    assert float(_combine(model, T_, cfg_u)) == pytest.approx(3.0)
+    # equal mode
+    cfg_e = _cfg(weight_mode="equal")
+    assert float(_combine(model, T_, cfg_e)) == pytest.approx(6.0)
+    # objectives gate applies
+    cfg_g = _cfg(objectives=("next",))
+    assert float(_combine(model, T_, cfg_g, weights={"next": 1.0, "dt": 0.5})) == pytest.approx(2.0)
+
+
+def test_train_uses_dwa_mode_by_default():
+    assert CFMConfig().weight_mode == "dwa"
+    assert CFMConfig().dwa_temp == 2.0

@@ -930,7 +930,9 @@ one dominating or collapsing the shared trunk:</p>
 <table>
 <thead><tr><th>technique</th><th>solves</th><th>status</th></tr></thead>
 <tbody>
-<tr><td>uncertainty weighting (Kendall)</td><td>scale conflicts between losses</td><td>✅ <code>_combine</code></td></tr>
+<tr><td><strong>DWA</strong> (Dynamic Weight Average — rate-of-change weights)</td><td>scale conflicts AND non-bounded geometric losses (scale-free; plateau = boost)</td><td>✅ default (<code>weight_mode=dwa</code>, DEC-014); trajectory recorded per eval</td></tr>
+<tr><td>uncertainty weighting (Kendall)</td><td>likelihood-pure stacks only (measured s-runaway on geometric losses)</td><td>🔧 kept as mode <code>uncertainty</code></td></tr>
+<tr><td>FAMO / CAGrad (gradient-direction)</td><td>direct Pareto-descent when DWA’s equal-rate approx starves an objective</td><td>⏸ trigger: portfolio skill ~0 while weight high</td></tr>
 <tr><td>objective dropout (sample objective subsets per batch)</td><td>memory + conflict; robustness to any single loss</td><td>⏸ S</td></tr>
 <tr><td>PCGrad / CAGrad (gradient surgery)</td><td>conflicting gradients on the trunk</td><td>⏸ M</td></tr>
 <tr><td>GradNorm</td><td>dynamic loss balancing by gradient norm</td><td>⏸ (uncertainty covers v1)</td></tr>

@@ -78,7 +78,11 @@ class CFMConfig:
     # (`query` = read-at-time, `agg` = exact multi-horizon window targets),
     # `sf` phi is event-agnostic by default, and every train emits a portfolio
     # receipt (per-objective structure-skill + geometry, DEC-008/DEC-009).
-    version: str = "v2.2.0"  # encoder code version
+    # v2.3.0: Kendall uncertainty weighting replaced by DWA (rate-of-change
+    # weights) as the default balancer — the production run measured s-runaway
+    # (redundancy s ~ -9, negative combined contributions) and geometry
+    # collapse; DWA is scale-free and works on non-bounded losses (DEC-014).
+    version: str = "v2.3.0"  # encoder code version
     revision: int = 1  # data/score revision (r)
     sample_customers: int | None = 500  # working base: first N customers (populations live here)
     split_a_frac: float = 0.7
@@ -112,6 +116,7 @@ class CFMConfig:
     # Explicit CLI overrides (`--set key=value`, repeatable), applied AFTER
     # derivation and recorded in the registry receipt.
     set_overrides: list = field(default_factory=list)
+    final_task_weights: dict = field(default_factory=dict)  # recorded post-train
     dim: int = EMBED_DIM
     n_experts: int = 1  # K=1: M1 multi-timescale gave no gain (speed)
     epochs: int = 3
@@ -126,7 +131,14 @@ class CFMConfig:
     # Multi-objective control. Adaptive (uncertainty) weighting learns each
     # task's weight, so we can enable many objectives without hand-tuning and
     # with less gradient interference.
-    use_uncertainty_weighting: bool = True
+    # Task-balance mode (DEC-014): "dwa" = Dynamic Weight Average (scale-free,
+    # learned from loss improvement rates — no hyperparameter tuning, works on
+    # non-bounded geometric losses); "uncertainty" = Kendall log-var weights
+    # (kept for likelihood-pure stacks; measured to s-runaway on geometric
+    # losses); "equal" = plain sum. Weights are dynamic either way.
+    weight_mode: str = "dwa"
+    dwa_temp: float = 2.0  # DWA temperature (paper default; the ONLY knob)
+    use_uncertainty_weighting: bool = True  # legacy flag (uncertainty mode)
     # Successor-feature phi shape: "event_types" = agnostic (one discounted
     # component per event type + value — the operator's ruling; no objective
     # may name a purchase event); "purchase" = legacy 4-dim phi.

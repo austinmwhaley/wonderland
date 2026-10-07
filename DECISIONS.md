@@ -320,3 +320,33 @@ same battery
 - **Trade-offs accepted:** several high-value candidates (quantile head,
   hazard) wait on triggers; the fielded set is judged by the portfolio grade
   whose sf yardstick still needs one fix.
+
+## DEC-014 — Balancer: DWA replaces Kendall as default; FAMO/CAGrad = Pareto upgrades
+
+- **Date:** 2026-10-07
+- **Context & problem:** operator proposed DWA/GradNorm/FAMO-CAGrad to replace
+  uncertainty weighting. The production v2.2.0 run CONFIRMED the defect
+  empirically: Kendall's optimum s*=ln(L) sent redundancy's s to ~-9 (tiny
+  geometric loss), giving a NEGATIVE combined contribution (0.5 - 4.5) the
+  optimizer could improve by s-drift, not learning; held-out geometry was
+  collapsing (eff-rank 0.23x null, redundancy 26x null) while the s-terms
+  hid it.
+- **Alternatives:** (a) keep Kendall (bounded-likelihood assumption violated
+  by our geometric losses); (b) DWA (rate-of-change weights; scale-free; few
+  lines); (c) GradNorm (gradient-norm balancing; needs shared-layer choice +
+  aux optimizer); (d) FAMO/CAGrad (gradient-direction; directly Pareto).
+- **Decision:** (b) DWA as DEFAULT (cfg.weight_mode="dwa", temp 2.0 = the only
+  knob, paper default); Kendall kept as "uncertainty" mode for likelihood-pure
+  stacks; "equal" mode for ablations. Weight trajectory recorded per eval
+  (the frontier readout); portfolio per-task contributions are mode-aware.
+  FAMO/CAGrad = catalogued upgrade with trigger: DWA's equal-rate
+  approximation leaves an objective starved (portfolio skill ~0 while its
+  weight is high) -> switch to FAMO. GradNorm declined for now (invasive,
+  same benefit class as DWA at our scale). Principles: *dynamic &
+  orchestrated* (weights learned, zero hand-tuning), *robust* (non-bounded
+  losses can't exploit), *measure everything* (trajectory + per-objective
+  skills = the frontier evidence).
+- **Trade-offs accepted:** DWA approximates equal learning speed, not a true
+  Pareto step (FAMO reserved for that); warmup = 2 evals at equal weights;
+  v2.2.0's grade is superseded (geometry collapse finding stands as the
+  motivation).

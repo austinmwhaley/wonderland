@@ -279,14 +279,19 @@ def evaluate(
                 }
             )
     missing = sorted(set(cfg.objectives) - seen - GATED_EXCLUSIONS - YARDSTICK_PENDING)
-    # learned per-task contribution at the kept state: w_k*L_k with the
-    # LEARNED uncertainty weights (Kendall) — the dynamic balance, recorded
+    # per-task contribution at the kept state, in the CURRENT balance mode
+    # (DEC-014): DWA -> w_k*L_k with the final learned rate-weights; Kendall
+    # (uncertainty mode) -> 0.5*exp(-s_k)*L_k. Recorded either way.
+    mode = getattr(cfg, "weight_mode", "uncertainty")
+    ftw = getattr(cfg, "final_task_weights", None) or {}
     contributions = {}
     lv = {k: float(v.detach().reshape(-1)[0]) for k, v in model.log_var.items()}
     for o in objectives:
         k = o["objective"]
-        if k in lv:
-            contributions[k] = round(0.5 * float(np.exp(-lv[k])) * o["real"], 6)
+        if mode == "dwa" and k in ftw:
+            contributions[k] = float(ftw[k]) * o["real"]
+        elif k in lv:
+            contributions[k] = 0.5 * float(np.exp(-lv[k])) * o["real"]
     tot = sum(abs(v) for v in contributions.values()) or 1.0
     contributions = {k: round(v / tot, 4) for k, v in contributions.items()}
     ok = all(r["ok"] for r in rows) if rows else False
