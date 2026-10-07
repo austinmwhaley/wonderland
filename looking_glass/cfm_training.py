@@ -17,12 +17,11 @@ from looking_glass.cfm_config import (
     AT,
     CFMConfig,
     GAMMA_MAX,
-    SF_PHI,
+    LN2,
     apply_set_overrides,
     TIME_UNIT_SECONDS,
     _expert_biases,
     _f,
-    _h,
     _seed_everything,
     _to_epoch,
 )
@@ -40,24 +39,6 @@ from looking_glass.cfm_model import CFM, EventVocab, _scan
 # ---------------------------------------------------------------------------
 # training (multi-objective)
 # ---------------------------------------------------------------------------
-def _val_loss(model, vocab, seqs, cfg):
-    """Grounded held-out metric (next-event cross-entropy; lower is better)."""
-    dev = model._dev()
-    tot = 0.0
-    n = 0
-    with torch.no_grad():
-        for seq in seqs:
-            y, _ = model(seq)
-            if y.shape[0] < 2:
-                continue
-            tgt = torch.tensor(
-                [vocab.et.get(str(x), vocab.n_et) for x in seq["event_type"][1:]], device=dev
-            )
-            tot += float(F.cross_entropy(model.head_next(y[:-1]), tgt))
-            n += 1
-    return tot / max(n, 1)
-
-
 def _pick_warm_checkpoint(out_dir, as_of, cfg=None):
     """Most-recent compatible checkpoint trained at as_of' <= as_of.
 
@@ -106,8 +87,12 @@ def _pick_warm_checkpoint(out_dir, as_of, cfg=None):
             rc = meta.get("config") or {}
             mismatched = any(
                 f in rc and rc[f] != getattr(cfg, f, None)
-                for f in ("seq_len", "dim", "state_half_life_days")
+                for f in ("seq_len", "dim", "state_half_life_days", "sf_mode")
             )
+            if "objectives" in rc and tuple(rc["objectives"]) != tuple(
+                getattr(cfg, "objectives", ())
+            ):
+                mismatched = True  # objective set changes heads/loss shapes
             if mismatched:
                 continue  # different resolved architecture — not compatible
         return meta.get("tag"), meta
@@ -141,6 +126,7 @@ def train_cfm(cfg: CFMConfig):
     cfg.seq_len, cfg.dim = res_all.seq_len, res_all.dim
     cfg.batch = res.batch
     cfg.state_half_life_days = res_all.half_life_days
+    cfg.agg_horizons_days = list(res_all.agg_horizons_days)
     apply_set_overrides(cfg, res.receipt)  # record every --set key in receipts
     apply_set_overrides(cfg, res_all.receipt)
     a_seqs = build_sequences(df, a_keys, cfg, split, with_anchors=False)
@@ -149,7 +135,11 @@ def train_cfm(cfg: CFMConfig):
     K = max(1, int(cfg.n_experts))
     cfg.dim = max(K, (cfg.dim // K) * K)
     model = CFM(
-        vocab, cfg.dim, n_experts=K, delta_biases=_expert_biases(K, cfg.state_half_life_days)
+        vocab,
+        cfg.dim,
+        n_experts=K,
+        delta_biases=_expert_biases(K, cfg.state_half_life_days),
+        sf_mode=cfg.sf_mode,
     ).to(device)
     model.half_life_days = cfg.state_half_life_days
     # ---- warm-start / continual (same objective as scratch: data <= as_of) ----
@@ -192,11 +182,8 @@ def train_cfm(cfg: CFMConfig):
     params = [q for q in model.parameters() if q.requires_grad]
     opt = torch.optim.Adam(params, lr=cfg.lr, weight_decay=1e-4)
     tau = 0.99  # EMA of the JEPA target encoder (documented fallback)
-    # ---- train/val split of sample A (derived fraction) ----
-    order = np.arange(len(a_seqs))
-    np.random.default_rng(cfg.seed).shuffle(order)
-    n_val = max(1, int(round(0.15 * len(order))))
-    val_idx, tr_idx = order[:n_val], order[n_val:]
+    # ---- train/val split of sample A (shared with the portfolio grade) ----
+    tr_idx, val_idx = _val_split(len(a_seqs), cfg.seed)
     rng = np.random.default_rng(cfg.seed)
 
     use_amp = device.type == "cuda"
@@ -216,9 +203,11 @@ def train_cfm(cfg: CFMConfig):
             model.ema(tau)
 
     def val_metric():
-        # bound eval cost (speed principle): subsample the validation set
+        # bound eval cost (speed principle): subsample the validation set;
+        # metric = the SAME uncertainty-weighted objective training optimizes
+        # (DEC-008) — select on the portfolio, not on one term of it
         vi = val_idx[:256]
-        v = _val_loss(model, vocab, [a_seqs[i] for i in vi], cfg)
+        v = held_out_objective(model, vocab, [a_seqs[i] for i in vi], cfg, seed=cfg.seed)
         return v, copy.deepcopy(model.state_dict())
 
     gov, best_state = AT.govern(
@@ -229,7 +218,13 @@ def train_cfm(cfg: CFMConfig):
     out = Path(cfg.out_dir)
     out.mkdir(parents=True, exist_ok=True)
     torch.save(
-        {"state": model.state_dict(), "vocab": vocab.dumps(), "dim": cfg.dim, "n_experts": K},
+        {
+            "state": model.state_dict(),
+            "vocab": vocab.dumps(),
+            "dim": cfg.dim,
+            "n_experts": K,
+            "sf_mode": cfg.sf_mode,
+        },
         out / f"cfm_{cfg.tag.replace('.', '_')}.pt",
     )
     _registry(
@@ -298,24 +293,66 @@ def _collate(seqs, vocab, device):
     return {"et": et, "br": br, "en": en, "val": val, "dt": dt, "co": cov, "mask": mask, "cut": cut}
 
 
-def _mask_loss_batch(model, vocab, t, dev):
+def _masked_forward(model, vocab, t, cfg, dev):
+    """One masked reconstruction forward. Returns (logits, targets, rand).
+
+    CAUSALITY GUARANTEE (tested): the backbone is a prefix scan, so every
+    masked position is predicted from LEFT context only — true future tokens
+    sit later in the input and cannot influence earlier states. This is not
+    BERT: there is no right context, at training or at serving.
+
+    ALL content channels at the masked position are redacted (type, brand,
+    entity, value) — feeding the true entity/value would let the model
+    shortcut the task from sibling channels instead of learning dynamics.
+    Arrival timing (dt) and exogenous covariates (co) stay: the task is
+    "an event of unknown kind arrives after this gap", which is exactly the
+    serving-relevant shape (missing/sparse events are real at inference).
+    Mask rate comes from config (cfg.mask_frac), never a literal.
+    """
     B, T = t["et"].shape
     mask = t["mask"]
-    rand = (torch.rand(B, T, device=dev) < 0.15) & (mask > 0)
+    rand = (torch.rand(B, T, device=dev) < cfg.mask_frac) & (mask > 0)
     if rand.sum() == 0:
-        return torch.zeros((), device=dev)
+        return None, None, rand
     et2 = t["et"].clone()
     et2[rand] = vocab.n_et
+    br2 = t["br"].clone()
+    br2[rand] = vocab.n_brand
+    en2 = t["en"].clone()
+    en2[rand] = vocab.n_ent
+    v2 = t["val"].clone()
+    v2[rand] = 0.0
     x2 = (
         model.emb_et(et2)
-        + model.emb_brand(t["br"])
-        + model.emb_ent(t["en"])
-        + model.w_val(t["val"])
+        + model.emb_brand(br2)
+        + model.emb_ent(en2)
+        + model.w_val(v2)
         + model.w_dt(t["dt"])
         + model.w_co(t["co"])
     )
     y2, _ = model.ssm(x2, mask=mask)
-    return F.cross_entropy(model.head_next(y2[rand]), t["et"][rand])
+    return y2, t["et"], rand
+
+
+def _mask_loss_batch(model, vocab, t, cfg, dev):
+    y2, tgt, rand = _masked_forward(model, vocab, t, cfg, dev)
+    if y2 is None:
+        return torch.zeros((), device=dev)
+    return F.cross_entropy(model.head_next(y2[rand]), tgt[rand])
+
+
+def agg_window_targets(secs, vals_lp, mask, h_sec):
+    """Exact targets for `agg`: (log1p count, log1p value-sum) of events in
+    (t, t+h] per position. secs: (B,T) cumulative event clock (pads flat);
+    mask: (B,T); h_sec: (B,1). Returns (B,T,2). Pads never count (equal clock
+    fails `cj > ci`, and mask zeroes them)."""
+    ci = secs.unsqueeze(2)  # (B,T,1) query
+    cj = secs.unsqueeze(1)  # (B,1,T) candidate future events
+    win = (cj > ci) & (cj <= ci + h_sec.unsqueeze(-1)) & (mask > 0).unsqueeze(1)
+    wf = win.float()
+    cnt = wf.sum(2)
+    vsum = (wf * vals_lp.unsqueeze(1)).sum(2)
+    return torch.stack([torch.log1p(cnt), torch.log1p(vsum)], dim=-1)
 
 
 def _jepa_loss(model, t, y):
@@ -390,8 +427,47 @@ def _task_losses(model, vocab, items, cfg):
         cov = (zc.t() @ zc) / max(B - 1, 1)
         off = cov - torch.diag(torch.diag(cov))
         T_["redundancy"] = (off**2).mean()
-    T_["mask"] = _mask_loss_batch(model, vocab, t, dev)
+    T_["mask"] = _mask_loss_batch(model, vocab, t, cfg, dev)
     T_["jepa"] = _jepa_loss(model, t, y)
+    # ---- query-time readout (S1 / DEC-006): train the FADED state ---------
+    # Sample a moment strictly between two events, fade the state there, and
+    # grade it on predicting the next event/time — the exact path serving uses
+    # (fade last-event state to the anchor), which previously saw no gradient.
+    if "query" in cfg.objectives:
+        rows = torch.arange(B, device=dev)
+        i = torch.randint(0, max(T - 1, 1), (B,), device=dev)
+        i_next = (i + 1).clamp(max=T - 1)
+        m_i = t["mask"][rows, i] * t["mask"][rows, i_next]
+        gap_s = torch.expm1(t["dt"][rows, i_next]).squeeze(-1)  # seconds to next event
+        u = torch.rand(B, 1, device=dev)
+        off_s = (u * gap_s.unsqueeze(1)).squeeze(-1)  # seconds after event i
+        decay = torch.exp(-LN2 * off_s / max(cfg.state_half_life_days * 86400.0, 1.0))
+        h_q = y[rows, i] * decay.unsqueeze(-1)
+        tgt_next = t["et"][rows, i_next]
+        ce_q = F.cross_entropy(model.head_next(h_q), tgt_next, reduction="none")
+        tgt_dt = t["dt"][rows, i_next].reshape(-1)
+        mse_q = F.mse_loss(model.head_dt(h_q).squeeze(-1), tgt_dt, reduction="none")
+        w = m_i.clamp(min=0)
+        # ignore pad targets (et == n_et) and future company actions
+        w = w * (1.0 - t["co"][rows, i_next, 0])
+        denom = w.sum().clamp(min=1)
+        T_["query"] = ((ce_q + mse_q) * w).sum() / denom
+    # ---- exact multi-horizon window targets (S2 / DEC-006) ----------------
+    # From the state at t, predict log1p(count) and log1p(value-sum) of the
+    # events in (t, t+h] for a horizon sampled from the DERIVED gap-quantile
+    # set — long-horizon integration demanded of the state as self-supervision
+    # (the statistics raw RFM hand-feeds downstream).
+    if "agg" in cfg.objectives and getattr(cfg, "agg_horizons_days", None):
+        secs = torch.cumsum(torch.expm1(t["dt"]).squeeze(-1), dim=1)  # event clock (B,T)
+        vals_lp = torch.log1p(t["val"].abs()).squeeze(-1)
+        hs = torch.tensor(cfg.agg_horizons_days, device=dev, dtype=secs.dtype)
+        pick = torch.randint(0, len(cfg.agg_horizons_days), (B,), device=dev)
+        h_sec = (hs[pick] * 86400.0).unsqueeze(1)  # (B,1)
+        tgt = agg_window_targets(secs, vals_lp, t["mask"], h_sec)  # (B,T,2)
+        hin = torch.log1p(h_sec / 86400.0).unsqueeze(1).expand(B, T, 1)
+        pred_agg = model.head_agg(torch.cat([y, hin], dim=-1))  # (B,T,2)
+        m3 = t["mask"].unsqueeze(-1)
+        T_["agg"] = ((pred_agg - tgt).pow(2) * m3).sum() / (m3.sum() * 2).clamp(min=1)
     # Successor features (self-supervised, horizon-free): from every state,
     # predict the discounted future [log1p value, count] at a continuously
     # sampled discount gamma. No fixed horizons; the model learns all scales.
@@ -400,13 +476,20 @@ def _task_losses(model, vocab, items, cfg):
     GAMS = 4
     gamma = (torch.rand(B, GAMS, device=dev) * GAMMA_MAX).clamp(min=1e-3)  # (B,S)
     dt_days = torch.expm1(t["dt"]) / TIME_UNIT_SECONDS  # (B,T,1)
-    oid = model.vocab.et.get(cfg.order_event, -1)
-    is_order = (t["et"] == oid).float().unsqueeze(-1)  # (B,T,1)
     v = torch.log1p(t["val"].abs())
-    phi = torch.cat([v, torch.ones_like(v), is_order, v * is_order], dim=-1)  # (B,T,4)
+    if getattr(cfg, "sf_mode", "purchase") == "event_types":
+        # Agnostic phi (DEC-009): value + one discounted component per event
+        # type — no objective may name a purchase event.
+        et_oh = F.one_hot(t["et"].clamp(max=vocab.n_et - 1), num_classes=vocab.n_et).float()
+        phi = torch.cat([v, et_oh], dim=-1)  # (B,T,1+E)
+    else:
+        oid = model.vocab.et.get(cfg.order_event, -1)
+        is_order = (t["et"] == oid).float().unsqueeze(-1)  # (B,T,1)
+        phi = torch.cat([v, torch.ones_like(v), is_order, v * is_order], dim=-1)  # (B,T,4)
+    PD = phi.shape[-1]
     de = dt_days.unsqueeze(1).expand(B, GAMS, T, 1).reshape(B * GAMS, T, 1)
     g = gamma.view(B, GAMS, 1, 1).expand(B, GAMS, T, 1).reshape(B * GAMS, T, 1) ** de
-    pe = phi.unsqueeze(1).expand(B, GAMS, T, SF_PHI).reshape(B * GAMS, T, SF_PHI)
+    pe = phi.unsqueeze(1).expand(B, GAMS, T, PD).reshape(B * GAMS, T, PD)
     # Exact reverse affine scan: R_i = sum_{j>i} (prod g) phi_j.
     prev = torch.flip(g, dims=[1])
     dprime = torch.zeros_like(prev)
@@ -415,7 +498,7 @@ def _task_losses(model, vocab, items, cfg):
     bprime = torch.zeros_like(phir)
     bprime[:, 1:] = dprime[:, 1:] * phir[:, :-1]
     _, Sf = _scan(dprime, bprime)
-    R = torch.flip(Sf, dims=[1])  # (B*S,T,4)
+    R = torch.flip(Sf, dims=[1])  # (B*S,T,PD)
     ye = y.unsqueeze(1).expand(B, GAMS, T, y.shape[-1]).reshape(B * GAMS, T, y.shape[-1])
     gcol = gamma.view(B, GAMS, 1, 1).expand(B, GAMS, T, 1).reshape(B * GAMS, T, 1)
     mask_e = t["mask"].unsqueeze(1).expand(B, GAMS, T).reshape(B * GAMS, T)
@@ -432,6 +515,26 @@ def _combine(model, T, cfg):
     if cfg.use_uncertainty_weighting:
         return sum(0.5 * torch.exp(-model.log_var[k]) * T[k] + 0.5 * model.log_var[k] for k in keys)
     return sum(T[k] for k in keys)
+
+
+def _val_split(n_seqs: int, seed: int):
+    """Deterministic 85/15 row split of the training sequences (one row per
+    customer, so rows are customers). Shared by train_cfm's governor AND the
+    portfolio grade — same held-out rows, comparable numbers."""
+    order = np.arange(n_seqs)
+    np.random.default_rng(seed).shuffle(order)
+    n_val = max(1, int(round(0.15 * len(order))))
+    return order[n_val:], order[:n_val]  # (train_idx, val_idx)
+
+
+def held_out_objective(model, vocab, seqs, cfg, seed: int = 0) -> float:
+    """Held-out value of the SAME uncertainty-weighted objective training
+    optimizes (DEC-008): the governor selects on this, not on one term of it.
+    Seeded so fold/real-vs-destroyed comparisons pair exactly."""
+    torch.manual_seed(seed)
+    with torch.no_grad():
+        T_ = _task_losses(model, vocab, seqs, cfg)
+        return float(_combine(model, T_, cfg))
 
 
 def forward_states(model, seqs, h0s=None):
@@ -456,34 +559,6 @@ def _loss(model, vocab, items, cfg):
     return _combine(model, _task_losses(model, vocab, items, cfg), cfg)
 
 
-def _mask_loss(model, vocab, items):
-    """Masked-event reconstruction: hide events, predict them from context."""
-    dev = model._dev()
-    total = 0.0
-    for seq in items:
-        L = len(seq["event_type"])
-        if L < 4:
-            continue
-        k = max(1, int(0.15 * L))
-        rng = np.random.default_rng(_h(seq["customer"], L) % (2**31))
-        mi = list(rng.choice(L, k, replace=False))
-        et = list(map(str, seq["event_type"]))
-        for i in mi:
-            et[i] = "<mask>"
-        y, _ = model({**seq, "event_type": et})
-        mi = [i for i in mi if i < len(y)]
-        if not mi:
-            continue
-        tgt = torch.tensor(
-            [vocab.et.get(str(seq["event_type"][i]), vocab.n_et) for i in mi], device=dev
-        )
-        total = total + F.cross_entropy(model.head_next(y[torch.tensor(mi, device=dev)]), tgt)
-    return total / max(len(items), 1)
-
-
-# ---------------------------------------------------------------------------
-# registry + independent validation
-# ---------------------------------------------------------------------------
 def _registry(cfg, vocab, n_train, n_keys, derived=None, governor=None, cfg_resolved=None):
     out = Path(cfg.out_dir)
     out.mkdir(parents=True, exist_ok=True)

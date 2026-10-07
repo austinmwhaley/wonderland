@@ -29,7 +29,12 @@ def build(cadence="weekly", max_customers=8000):
     ckpt = sorted(glob.glob(str(CFM_DIR / "cfm_v*.pt")))[-1]
     blob = torch.load(ckpt, map_location="cpu", weights_only=False)
     vocab = C.EventVocab(blob["vocab"]["et"], blob["vocab"]["brand"], blob["vocab"]["ent"])
-    model = C.CFM(vocab, blob["dim"], n_experts=blob.get("n_experts", 1))
+    model = C.CFM(
+        vocab,
+        blob["dim"],
+        n_experts=blob.get("n_experts", 1),
+        sf_mode=blob.get("sf_mode", "purchase"),
+    )
     model.load_state_dict(blob["state"])
     model.eval()
     cfg = C.CFMConfig(sample_customers=max_customers)

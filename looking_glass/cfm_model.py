@@ -107,13 +107,24 @@ class MultiScaleSSM(nn.Module):
 
 
 class CFM(nn.Module):
-    def __init__(self, vocab: EventVocab, dim: int, n_experts: int = 1, delta_biases=None):
+    def __init__(
+        self,
+        vocab: EventVocab,
+        dim: int,
+        n_experts: int = 1,
+        delta_biases=None,
+        sf_mode: str = "event_types",
+    ):
         super().__init__()
         self.vocab = vocab
         self.n_experts = max(1, int(n_experts))
         self.chan = max(1, dim // self.n_experts)
         dim = self.chan * self.n_experts
         self.dim = dim
+        # successor-feature phi shape: agnostic per-event-type counts (default,
+        # DEC-009) or the legacy purchase-named 4-dim phi — never both.
+        self.sf_mode = sf_mode
+        self.sf_dim = (1 + vocab.n_et) if sf_mode == "event_types" else SF_PHI
         self.emb_et = nn.Embedding(vocab.n_et + 1, self.chan)
         self.emb_brand = nn.Embedding(vocab.n_brand + 1, self.chan)
         self.emb_ent = nn.Embedding(vocab.n_ent + 1, self.chan)
@@ -129,8 +140,10 @@ class CFM(nn.Module):
         self.head_occ = nn.Linear(dim, 1)  # next event within horizon?
         self.head_val = nn.Linear(dim, 1)  # next event value (monetary)
         self.head_sf = nn.Sequential(
-            nn.Linear(dim + 1, dim), nn.ReLU(), nn.Linear(dim, SF_PHI)
-        )  # successor features
+            nn.Linear(dim + 1, dim), nn.ReLU(), nn.Linear(dim, self.sf_dim)
+        )
+        # exact multi-horizon window targets (count, value-sum) for `agg`
+        self.head_agg = nn.Linear(dim + 1, 2)  # successor features
         self.order_W = nn.Linear(dim, self.chan, bias=False)  # temporal-order scorer
         self.proj = nn.Linear(dim, dim)  # contrastive / public S
         # M3: entity-aware donor — pools step outputs per entity type.
@@ -165,6 +178,8 @@ class CFM(nn.Module):
                     "order",
                     "jepa",
                     "sf",
+                    "query",
+                    "agg",
                 )
             }
         )

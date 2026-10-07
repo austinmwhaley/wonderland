@@ -147,10 +147,16 @@ def load_frozen_encoder(tag: str, cfm_dir):
         raise FileNotFoundError(f"encoder checkpoint for pin {tag} not found: {ckpt}")
     blob = torch.load(ckpt, map_location="cpu", weights_only=False)
     vocab = EventVocab(blob["vocab"]["et"], blob["vocab"]["brand"], blob["vocab"]["ent"])
-    model = CFM(vocab, blob["dim"], n_experts=blob.get("n_experts", 1))
+    model = CFM(
+        vocab,
+        blob["dim"],
+        n_experts=blob.get("n_experts", 1),
+        sf_mode=blob.get("sf_mode", "purchase"),
+    )
     model.load_state_dict(blob["state"])
     model.eval()
     cfg = CFMConfig()
+    cfg.sf_mode = blob.get("sf_mode", "purchase")  # checkpoint truth (phi shape)
     reg = cfm_dir / f"registry_{tag.replace('.', '_')}.json"
     if reg.exists():
         meta = json.loads(reg.read_text())

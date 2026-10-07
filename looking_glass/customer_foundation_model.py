@@ -74,6 +74,7 @@ from looking_glass.cfm_data import (
     _read_stream,
     assign_split,
     build_sequences,
+    draw_sample,
 )
 from looking_glass.cfm_model import CFM, EventVocab, MultiScaleSSM, SelectiveSSM, _scan
 from looking_glass.cfm_state import StateStore, absorb, build_products, fade
@@ -82,11 +83,9 @@ from looking_glass.cfm_training import (
     _combine,
     _jepa_loss,
     _loss,
-    _mask_loss,
     _mask_loss_batch,
     _registry,
     _task_losses,
-    _val_loss,
     train_cfm,
 )
 from looking_glass.cfm_validation import _causal, _next_event_acc, _objective_metrics, validate
@@ -107,6 +106,52 @@ def _print(rows, title):
     print(f"completion: {n}/{len(rows)} ({100 * n / len(rows):.0f}%)")
 
 
+def _resolve_registry(out: Path, tag: str | None):
+    """(tag, registry meta): newest registry unless tag is given. Single
+    resolution rule for every consumer (products rebuild, portfolio grade)."""
+    import glob as _glob
+    import json as _json
+
+    regs = _glob.glob(str(out / "registry_*.json"))
+    if not regs:
+        raise SystemExit(f"no registry found in {out}; train first (or fix --out-dir)")
+    if tag is None:
+        reg_path = max(regs, key=lambda q: Path(q).stat().st_mtime)
+        meta = _json.loads(Path(reg_path).read_text())
+        tag = meta["tag"]
+    else:
+        reg_path = out / f"registry_{tag.replace('.', '_')}.json"
+        if not reg_path.exists():
+            raise SystemExit(f"registry for tag {tag} not found: {reg_path}")
+        meta = _json.loads(reg_path.read_text())
+    return tag, meta
+
+
+def _replay_run_cfg(meta, rcfg, out: Path, cfg, anchors=None, sample_b=None):
+    """Replay a run's registry config onto a freshly loaded encoder config —
+    the ONE place registry -> live config happens (products + portfolio)."""
+    run_cfg = meta.get("config", {})
+    rcfg.out_dir = str(out)  # write artifacts next to the checkpoint
+    rcfg.as_of = run_cfg.get("as_of")
+    rcfg.split_seed = run_cfg.get("split_seed", rcfg.split_seed)
+    rcfg.sample_customers = run_cfg.get("sample_customers")
+    rcfg.sample_a_customers = run_cfg.get("sample_a_customers")
+    rcfg.sample_b_customers = (
+        sample_b if sample_b is not None else run_cfg.get("sample_b_customers")
+    )
+    rcfg.n_anchors = anchors if anchors is not None else run_cfg.get("n_anchors", rcfg.n_anchors)
+    rcfg.agg_horizons_days = list((meta.get("resolved") or {}).get("agg_horizons_days") or [])
+    rcfg.set_overrides = getattr(cfg, "set_overrides", [])
+    apply_set_overrides(rcfg)  # explicit --set wins over registry-derived config
+    if rcfg.as_of is None:
+        print(
+            f"WARNING: registry for {meta.get('tag', '?')} has no as_of; "
+            "operating on the FULL stream",
+            flush=True,
+        )
+    return rcfg
+
+
 def _rebuild_products(
     cfg: CFMConfig, tag: str | None = None, anchors: int | None = None, sample_b: int | None = None
 ):
@@ -121,39 +166,12 @@ def _rebuild_products(
     inside build_products (same as the encoder path), so no separate day-1
     daily-state run is needed.
     """
-    import glob as _glob
-    import json as _json
-
     from looking_glass.cfm_state import build_products, load_frozen_encoder
 
     out = Path(cfg.out_dir)
-    regs = _glob.glob(str(out / "registry_*.json"))
-    if not regs:
-        raise SystemExit(f"no registry found in {out}; train first (or fix --out-dir)")
-    if tag is None:
-        reg_path = max(regs, key=lambda q: Path(q).stat().st_mtime)
-        meta = _json.loads(Path(reg_path).read_text())
-        tag = meta["tag"]
-    else:
-        reg_path = out / f"registry_{tag.replace('.', '_')}.json"
-        if not reg_path.exists():
-            raise SystemExit(f"registry for tag {tag} not found: {reg_path}")
-        meta = _json.loads(reg_path.read_text())
-    run_cfg = meta.get("config", {})
+    tag, meta = _resolve_registry(out, tag)
     model, rcfg = load_frozen_encoder(tag, out)
-    rcfg.out_dir = str(out)  # write products next to the checkpoint
-    rcfg.as_of = run_cfg.get("as_of")
-    rcfg.split_seed = run_cfg.get("split_seed", rcfg.split_seed)
-    rcfg.sample_customers = run_cfg.get("sample_customers")
-    rcfg.sample_a_customers = run_cfg.get("sample_a_customers")
-    rcfg.sample_b_customers = (
-        sample_b if sample_b is not None else run_cfg.get("sample_b_customers")
-    )
-    rcfg.n_anchors = anchors if anchors is not None else run_cfg.get("n_anchors", rcfg.n_anchors)
-    rcfg.set_overrides = getattr(cfg, "set_overrides", [])
-    apply_set_overrides(rcfg)  # explicit --set wins over registry-derived config
-    if rcfg.as_of is None:
-        print(f"WARNING: registry for {tag} has no as_of; rebuilding on the FULL stream")
+    _replay_run_cfg(meta, rcfg, out, cfg, anchors=anchors, sample_b=sample_b)
     df = _read_stream(rcfg)
     keys = _customer_keys(df, rcfg)
     split = assign_split(keys, rcfg)

@@ -30,7 +30,12 @@ def validate(cfg: CFMConfig):
         weights_only=False,
     )
     vocab = EventVocab(blob["vocab"]["et"], blob["vocab"]["brand"], blob["vocab"]["ent"])
-    model = CFM(vocab, blob["dim"], n_experts=blob.get("n_experts", 1)).to(cfg.device)
+    model = CFM(
+        vocab,
+        blob["dim"],
+        n_experts=blob.get("n_experts", 1),
+        sf_mode=blob.get("sf_mode", "purchase"),
+    ).to(cfg.device)
     model.load_state_dict(blob["state"])
     model.eval()
     model.half_life_days = cfg.state_half_life_days

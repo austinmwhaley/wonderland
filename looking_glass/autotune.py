@@ -94,6 +94,32 @@ def derive_batch(n_seqs) -> tuple[int, dict]:
     return val, {"batch": f"n_seqs={n_seqs} hw_cap={cap} -> {val}"}
 
 
+def within_customer_gaps(df):
+    """Positive within-customer inter-event gaps (seconds), pooled -> np.ndarray."""
+    import polars as pl
+
+    d = df.select(
+        pl.col("customer_key"),
+        pl.col("event_ts").str.to_datetime(time_zone="UTC", strict=False).dt.epoch("s"),
+    ).sort(["customer_key", "event_ts"])
+    g = d.select(pl.col("event_ts").diff().over("customer_key").alias("g"))
+    return g.filter(pl.col("g").is_not_null() & (pl.col("g") > 0))["g"].to_numpy()
+
+
+def derive_agg_horizons(df) -> tuple[list[float], dict]:
+    """Exact-window horizons for the `agg` objective, from gap quantiles
+    (p50/p90/p99 — same distribution the half-life derives from). Conservative
+    floor: 1 day (documented fallback), receipted."""
+    import numpy as np
+
+    g = within_customer_gaps(df)
+    if g.size < 3:
+        return [7.0, 30.0], {"agg_horizons_days": "fallback [7,30] (too few gaps)"}
+    qs = np.quantile(g, [0.5, 0.9, 0.99]) / 86400.0
+    horizons = sorted({float(max(round(q, 1), 1.0)) for q in qs})
+    return horizons, {"agg_horizons_days": f"gap quantiles [50,90,99]% -> {horizons}d"}
+
+
 def derive_half_life(df) -> tuple[float, dict]:
     """State persistence timescale from WITHIN-customer inter-event gaps.
 
@@ -107,14 +133,8 @@ def derive_half_life(df) -> tuple[float, dict]:
     multi-customer dataset.
     """
     import numpy as np
-    import polars as pl
 
-    d = df.select(
-        pl.col("customer_key"),
-        pl.col("event_ts").str.to_datetime(time_zone="UTC", strict=False).dt.epoch("s"),
-    ).sort(["customer_key", "event_ts"])
-    gaps = d.select(pl.col("event_ts").diff().over("customer_key").alias("g"))
-    g = gaps.filter(pl.col("g").is_not_null() & (pl.col("g") > 0))["g"].to_numpy()
+    g = within_customer_gaps(df)
     if g.size < 3:
         return 30.0, {"state_half_life_days": "fallback (too few within-customer gaps)"}
     p95_days = float(np.quantile(g, 0.95)) / 86400.0
@@ -144,6 +164,7 @@ class ResolvedCFM:
     eval_every: int
     patience: int
     seed: int
+    agg_horizons_days: list = field(default_factory=list)
     receipt: dict = field(default_factory=dict)
 
 
@@ -186,6 +207,15 @@ def resolve_cfm(base, df, keys, vocab_sizes) -> ResolvedCFM:
         else:
             out[name] = val
         rec["derived"][name] = rr
+    # agg horizons: explicit --set wins (recorded), else derived from gap
+    # quantiles — the same rule as every other resolved field (DEC-008).
+    user_h = list(getattr(base, "agg_horizons_days", None) or [])
+    if user_h:
+        agg_h = [float(h) for h in user_h]
+        rec["overrides"]["agg_horizons_days"] = agg_h
+    else:
+        agg_h, r6 = derive_agg_horizons(df)
+        rec["derived"]["agg_horizons_days"] = r6
     return ResolvedCFM(
         seq_len=out["seq_len"],
         dim=out["dim"],
@@ -195,6 +225,7 @@ def resolve_cfm(base, df, keys, vocab_sizes) -> ResolvedCFM:
         eval_every=eval_every,
         patience=patience,
         seed=int(getattr(base, "seed", 0)),
+        agg_horizons_days=agg_h,
         receipt=rec,
     )
 

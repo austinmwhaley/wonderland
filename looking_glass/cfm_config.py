@@ -73,11 +73,12 @@ class CFMConfig:
     db: str = "data/arrow/customer_event_stream.feather"
     table: str = STREAM_TABLE
     out_dir: str = "artifacts/cfm"
-    # v2.1.0: behavior changes that alter trained weights — half-life derives
-    # from within-customer gaps (was: merged timeline pinned at the 1h floor),
-    # training-anchor readouts fade to the anchor (train/serve parity), and the
-    # governor returns the true lowest-loss state. Old artifacts stay v2.0.0.
-    version: str = "v2.1.0"  # encoder code version
+    # v2.2.0: portfolio-rigorous training — held-out COMBINED objective selects
+    # the kept state (was: next-CE alone), two new self-supervised objectives
+    # (`query` = read-at-time, `agg` = exact multi-horizon window targets),
+    # `sf` phi is event-agnostic by default, and every train emits a portfolio
+    # receipt (per-objective structure-skill + geometry, DEC-008/DEC-009).
+    version: str = "v2.2.0"  # encoder code version
     revision: int = 1  # data/score revision (r)
     sample_customers: int | None = 500  # working base: first N customers (populations live here)
     split_a_frac: float = 0.7
@@ -126,6 +127,14 @@ class CFMConfig:
     # task's weight, so we can enable many objectives without hand-tuning and
     # with less gradient interference.
     use_uncertainty_weighting: bool = True
+    # Successor-feature phi shape: "event_types" = agnostic (one discounted
+    # component per event type + value — the operator's ruling; no objective
+    # may name a purchase event); "purchase" = legacy 4-dim phi.
+    sf_mode: str = "event_types"
+    # Exact window targets (count/value over (t, t+h]) at horizons DERIVED
+    # from within-customer gap quantiles (filled by resolve_cfm; `--set` can
+    # override and it wins over derivation, recorded as an override).
+    agg_horizons_days: list = field(default_factory=list)
     objectives: tuple = (
         "next",
         "entity",
@@ -138,6 +147,8 @@ class CFMConfig:
         "order",
         "jepa",
         "sf",
+        "query",  # read-at-time: grade the FADED state (the serving path)
+        "agg",  # long-horizon integration: exact counts/value per window
     )
     seed: int = 0
     device: str = "cuda" if torch.cuda.is_available() else "cpu"
