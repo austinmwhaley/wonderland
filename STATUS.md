@@ -29,9 +29,17 @@
 
 ## Micro
 
-- **Current task:** Stage 2 of DEC-006 — implement S1 (query-time readout:
-  train the fade path serving uses), the Instacart lever.
-- **Last completed:** Stage-1 spike done on BOTH streams (DEC-006a):
+- **Current task:** finish wiring the v2.2.0 grade — `portfolio` CLI command,
+  train-time emission into the registry, integration tests for
+  `portfolio.evaluate()`; then Stage 2 of DEC-006 continues (S2 validation on
+  real data; both new objectives already train).
+- **Last completed:** objectives catalog published
+  (`looking_glass/specs/objectives_catalog.md` — 13 current objectives with
+  inductive bias/failure modes, the 7-family operator menu, full landscape,
+  universal capability-driven plan) + DEC-009/DEC-010 recorded; v2.2.0 core
+  committed (combined-objective selection, query/agg objectives, portfolio
+  module, mask/contrast/sf_mode audit fixes) — 222 tests green.
+  Stage-1 spike done on BOTH streams (DEC-006a):
   rabbit_hole → frequency +0.023 / event_mix +0.020 beat the donor (recency
   worst, −0.124); Instacart → recency +0.065 beats the donor (frequency and
   event_mix lose). Each stream names a different missing statistic — the

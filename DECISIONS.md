@@ -201,3 +201,55 @@ same battery
 - **Trade-offs accepted:** give up downstream-tuned data sizing (product
   alignment moves to the guards); re-cert must show the portfolio, not just
   one CE; ladder rework is real work in front of S1/S2.
+
+## DEC-009 — Objectives audit: keep 13, fix what's broken, catalog everything
+
+- **Date:** 2026-10-01
+- **Context & problem:** operator asked (1) do we care about each trained
+  capability and (2) train/grade on ALL of them, rigorously (geometry
+  included), defensible/robust/reliable. Audited every objective against the
+  code, not the intent.
+- **Alternatives:** (a) trim to a minimal set; (b) keep all + fix defects +
+  build the missing grade; (c) redesign from scratch.
+- **Decision:** (b), recorded in
+  `looking_glass/specs/objectives_catalog.md` (the operator's 7-family menu
+  + full landscape + status marks). Findings that changed code this cycle:
+  - `mask` claimed bidirectional — actually CAUSAL (prefix scan); worse, the
+    true brand/entity/value leaked into masked positions → redacted; frac
+    from config. Causality now test-locked.
+  - `contrast` has NO second view (uniformity-only; `gamma_contrast` dead) →
+    status 🔧; views/augmentation design is the fix candidate.
+  - `sf` phi named the purchase event → `sf_mode=event_types` (agnostic) is
+    the default; checkpoint truth governs loads.
+  - gaps closed: `query` (read-at-time) + `agg` (exact windows at derived
+    horizons) added as objectives; selection now on the held-out COMBINED
+    objective; portfolio grade (structure-skill vs destroyed data + geometry
+    vs permuted nulls) is the Layer-B receipt.
+- **Trade-offs accepted:** bigger objective set = slower steps (measured,
+  acceptable at current scale); contrast stays ON-but-marked for continuity
+  until views land; a few known defects ship as documented 🔧 not silent.
+- **Guard:** nothing enters the default tuple without passing the §5 entry
+  protocol in the catalog (capability probe → config → grade → guards).
+
+## DEC-010 — Universal encoder: objectives are capability-driven, config-gated
+
+- **Date:** 2026-10-01
+- **Context & problem:** operator goal: "pass ANY event stream and the
+  encoder trains the optimal universal set of objectives." Objectives have
+  hard prerequisites (money fields, side actions, seasonality, vocab size)
+  that differ per stream (rabbit_hole vs Instacart vs future real data).
+- **Alternatives:** (a) one fixed tuple for all streams (breaks or wastes on
+  every mismatch); (b) hand-tuned per stream (doesn't scale, unrecorded);
+  (c) a capability probe derives an **objective plan receipt** per stream,
+  config `--set` overrides win and are recorded, portfolio grades only what's
+  enabled.
+- **Decision:** (c). Design + probe fields + default profiles live in the
+  catalog §5. Core set = anything with a sequence (`next, dt, occur, mask,
+  order, jepa, redundancy, query, agg, sf`); everything else activates on
+  proven capability. Principles: *adapt to the input by construction*,
+  *dynamic & orchestrated* (behavior in config/receipts), *fail safe*
+  (disabled-with-reason, never silent).
+- **Trade-offs accepted:** plan machinery still to build (probe → receipt →
+  wiring into resolve/registry); grades differ across streams (comparisons
+  are per-stream, not cross-stream); until the probe lands, the default tuple
+  is the fallback and is documented as such.
