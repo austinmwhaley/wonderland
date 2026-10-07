@@ -214,6 +214,11 @@ def train_cfm(cfg: CFMConfig):
             T_ = _task_losses(model, vocab, [a_seqs[i] for i in vi], cfg)
         v = float(_combine(model, T_, cfg, weights=balancer.weights()))
         balancer.update({k: float(x) for k, x in T_.items()})
+        if not math.isfinite(v) or v <= 0.0:
+            # a sum of non-negative losses is 0 ONLY when everything collapsed
+            # (fp16 blow-up / dead state) — never a breakthrough. Feed the
+            # governor an invalid value so best_state is never poisoned.
+            return math.inf, None
         return v, copy.deepcopy(model.state_dict())
 
     gov, best_state = AT.govern(
@@ -489,9 +494,11 @@ def _task_losses(model, vocab, items, cfg):
     # which is what eff-rank actually measures. Applied on the UNNORMALIZED
     # projection (per-sample L2 would erase the scale information).
     if "variance" in cfg.objectives:
-        zu = model.proj(h)  # (B, D) unnormalized
+        # fp32 on purpose: std over a fp16-autocast batch overflows with large
+        # activations and the hinge degenerates (measured: combined -> 0.0000)
+        zu = model.proj(h).float()  # (B, D) unnormalized
         std = zu.std(dim=0)  # per-dim std across the batch
-        T_["variance"] = torch.relu(1.0 - std).mean()
+        T_["variance"] = torch.relu(1.0 - std).mean().float()
     # ---- exact multi-horizon window targets (S2 / DEC-006) ----------------
     # From the state at t, predict log1p(count) and log1p(value-sum) of the
     # events in (t, t+h] for a horizon sampled from the DERIVED gap-quantile
