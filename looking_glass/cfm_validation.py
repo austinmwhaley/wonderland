@@ -37,6 +37,8 @@ def validate(cfg: CFMConfig):
         sf_mode=blob.get("sf_mode", "purchase"),
     ).to(cfg.device)
     model.load_state_dict(blob["state"])
+    if blob.get("whiten_W") is not None:
+        model.set_whitening(blob["whiten_mean"], blob["whiten_W"])
     model.eval()
     model.half_life_days = cfg.state_half_life_days
 

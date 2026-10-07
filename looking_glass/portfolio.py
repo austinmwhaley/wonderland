@@ -220,7 +220,11 @@ def evaluate(
         for i in range(0, len(val), 256):
             with torch.no_grad():
                 h = forward_states(model, val[i : i + 256])
-            states.append(h.detach().cpu().numpy())
+            # grade the CONSUMED representation (donor boundary, DEC-022):
+            # whitened when the transform is set — this is what every
+            # downstream head actually reads
+            zc = model.donor_batch(h)
+            states.append(zc.detach().float().cpu().numpy())
         z = np.concatenate(states, axis=0) if states else np.zeros((0, 1))
     finally:
         model.train(was_training)
@@ -342,7 +346,8 @@ def evaluate(
     path.write_text(json.dumps(receipt, indent=1, default=float))
 
     print("== LAYER-B PORTFOLIO GRADE (held-out, destroyed-data null) ==")
-    for o, row in zip(objectives, [r for r in rows if r["check"].startswith("portfolio:")]):
+    obj_rows = [r for r in rows if r["check"].startswith("portfolio:")]
+    for o, row in zip(objectives, obj_rows):
         status = "PASS" if row["ok"] else "FAIL"
         if "REPORT-ONLY" in row["check"]:
             status = "REPORT"

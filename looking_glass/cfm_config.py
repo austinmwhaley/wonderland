@@ -109,7 +109,14 @@ class CFMConfig:
     # population); rank_lambda_max effectively unclamped (1e6) — the closed
     # loop applies real pressure (measured: lambda pinned at 50 the whole
     # run with rank 0.10 vs target 0.32). (DEC-021)
-    version: str = "v2.8.1"  # encoder code version
+    # v2.9.0: whitened donor readout (DEC-022). Conclusive evidence (v2.8.1:
+    # unclamped lambda 1e6 + barrier + full bank, predictive skills at
+    # all-time bests, eff-rank STILL 2.59): collapse is the recurrence's
+    # solution structure — training-side pressure cannot fix it. The donor
+    # boundary whitens the CONSUMED representation (z = (h-mu) Sigma^-1/2,
+    # frozen from held-out states): linear heads span the same class, the
+    # graded geometry becomes full-rank by construction, zero training risk.
+    version: str = "v2.9.0"  # encoder code version
     revision: int = 1  # data/score revision (r)
     sample_customers: int | None = 500  # working base: first N customers (populations live here)
     split_a_frac: float = 0.7
@@ -177,6 +184,7 @@ class CFMConfig:
     tau_eig: float = 0.05  # singular-value floor on the bank covariance
     #    (soft floor; the PRIMARY rank guard is now the log-det barrier)
     pcgrad: bool = True  # grouped PCGrad (DEC-020): geometry vs predictive
+    donor_whiten: bool = True  # whitened readout at the donor boundary
     # Frontier sampler (DEC-017): multiplier on the geometry-family losses
     # (variance, rank, redundancy). 1.0 = the balanced point; >1 trades a bit
     # of predictive skill for state headroom — the explicit Pareto coordinate,

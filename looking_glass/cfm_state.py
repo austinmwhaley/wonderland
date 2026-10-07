@@ -155,6 +155,8 @@ def load_frozen_encoder(tag: str, cfm_dir):
     )
     model.load_state_dict(blob["state"])
     model.eval()
+    if blob.get("whiten_W") is not None:
+        model.set_whitening(blob["whiten_mean"], blob["whiten_W"])  # DEC-022
     cfg = CFMConfig()
     cfg.sf_mode = blob.get("sf_mode", "purchase")  # checkpoint truth (phi shape)
     reg = cfm_dir / f"registry_{tag.replace('.', '_')}.json"

@@ -36,6 +36,8 @@ def build(cadence="weekly", max_customers=8000):
         sf_mode=blob.get("sf_mode", "purchase"),
     )
     model.load_state_dict(blob["state"])
+    if blob.get("whiten_W") is not None:
+        model.set_whitening(blob["whiten_mean"], blob["whiten_W"])
     model.eval()
     cfg = C.CFMConfig(sample_customers=max_customers)
     cfg.seq_len = 8192  # cover full history for dense epochs

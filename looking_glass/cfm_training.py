@@ -190,14 +190,18 @@ def train_cfm(cfg: CFMConfig):
     scaler = torch.amp.GradScaler("cuda", enabled=use_amp)
     balancer = DWA(sorted(cfg.objectives), temp=cfg.dwa_temp)
     loss_scales: dict = {}  # EMA per task — the unit system (DEC-018)
-    bank = GeometryBank(
-        dim=cfg.dim,
-        size=getattr(cfg, "bank_size", 8192),
-        target=getattr(cfg, "rank_target", 0.32),
-        alpha=getattr(cfg, "rank_alpha", 0.25),
-        lam_max=getattr(cfg, "rank_lambda_max", 50.0),
-        tau=getattr(cfg, "tau_eig", 0.05),
-    ) if getattr(cfg, "bank_size", 0) > 0 else None
+    bank = (
+        GeometryBank(
+            dim=cfg.dim,
+            size=getattr(cfg, "bank_size", 8192),
+            target=getattr(cfg, "rank_target", 0.32),
+            alpha=getattr(cfg, "rank_alpha", 0.25),
+            lam_max=getattr(cfg, "rank_lambda_max", 50.0),
+            tau=getattr(cfg, "tau_eig", 0.05),
+        )
+        if getattr(cfg, "bank_size", 0) > 0
+        else None
+    )
 
     def _update_scales(losses: dict) -> None:
         for k, v in losses.items():
@@ -312,6 +316,8 @@ def train_cfm(cfg: CFMConfig):
             "dim": cfg.dim,
             "n_experts": K,
             "sf_mode": cfg.sf_mode,
+            "whiten_mean": (model.whiten_mean if getattr(model, "whiten_on", False) else None),
+            "whiten_W": (model.whiten_W if getattr(model, "whiten_on", False) else None),
         },
         out / f"cfm_{cfg.tag.replace('.', '_')}.pt",
     )
@@ -335,6 +341,14 @@ def train_cfm(cfg: CFMConfig):
     task_weights = {k: round(w, 4) for k, w in balancer.weights().items()}
     cfg.final_task_weights = dict(task_weights)
     cfg.final_loss_scales = {k: round(v, 6) for k, v in loss_scales.items()}
+    if getattr(cfg, "donor_whiten", True):
+        wh = compute_whitening(model, vocab, cfg, a_seqs)
+        cfg._whiten_receipt = wh
+        print(
+            f"[whiten] donor boundary: eff-rank {wh['pr_before']} -> {wh['pr_after']} "
+            f"({wh['rows']} states)",
+            flush=True,
+        )
     if bank is not None:
         st = bank.states()
         cfg.final_bank_stats = {
@@ -716,7 +730,9 @@ class GeometryBank:
     (portfolio geometry gate) and the controlled quantity are the same.
     """
 
-    def __init__(self, dim: int, size: int, target: float, alpha: float, lam_max: float, tau: float):
+    def __init__(
+        self, dim: int, size: int, target: float, alpha: float, lam_max: float, tau: float
+    ):
         self.dim = dim
         self.size = int(size)
         self.target = float(target)
@@ -732,7 +748,7 @@ class GeometryBank:
         self.buf.append(zb)
         rows = sum(c.shape[0] for c in self.buf)
         if rows > self.size:
-            self.buf = [torch.cat(self.buf, dim=0)[-self.size:]]
+            self.buf = [torch.cat(self.buf, dim=0)[-self.size :]]
 
     def states(self) -> "torch.Tensor | None":
         if not self.buf:
@@ -782,6 +798,7 @@ class GeometryBank:
             "bank_rank": bank_rank,
         }
 
+
 GEOMETRY_FAMILY = ("variance", "rank", "redundancy")
 
 
@@ -830,6 +847,51 @@ def held_out_objective(
     with torch.no_grad():
         T_ = _task_losses(model, vocab, seqs, cfg)
         return float(_combine(model, T_, cfg, weights))
+
+
+def compute_whitening(model, vocab, cfg, seqs, n: int = 4096) -> dict:
+    """Donor-boundary whitening (DEC-022): frozen z = (h - mu) Sigma^{-1/2}
+    from a held-out sample of states. Linear heads span the same function
+    class after the transform; the consumed representation gets full-rank
+    headroom BY CONSTRUCTION. Returns the before/after receipt."""
+    import numpy as np
+    import torch
+
+    idx = np.random.default_rng(cfg.seed).choice(len(seqs), size=min(n, len(seqs)), replace=False)
+    states = []
+    was = model.training
+    model.eval()
+    try:
+        for i in range(0, len(idx), 256):
+            with torch.no_grad():
+                h = forward_states(model, [seqs[int(j)] for j in idx[i : i + 256]])
+            states.append(h.detach().float().cpu())
+    finally:
+        model.train(was)
+    H = torch.cat(states, dim=0)
+    mu = H.mean(0)
+    zc = H - mu
+    cov = (zc.T @ zc) / max(H.shape[0] - 1, 1)
+    ev, V = torch.linalg.eigh(cov + 1e-6 * torch.eye(cov.shape[0]))
+    W = V @ torch.diag(1.0 / torch.sqrt(ev.clamp(min=1e-12))) @ V.T
+
+    def pr(mat):
+        c = mat - mat.mean(0, keepdim=True)
+        cc = (c.T @ c) / max(c.shape[0] - 1, 1)
+        return float(
+            (cc.diagonal().sum() ** 2 / cc.pow(2).sum().clamp(min=1e-24) / c.shape[1]).item()
+        )
+
+    model.set_whitening(mu, W)
+    pre = pr(H)
+    Hw = (H - mu) @ W
+    post = pr(Hw)
+    return {
+        "rows": int(H.shape[0]),
+        "pr_before": round(pre, 4),
+        "pr_after": round(post, 4),
+        "applied": bool(cfg.donor_whiten),
+    }
 
 
 def forward_states(model, seqs, h0s=None):
@@ -893,6 +955,7 @@ def _registry(
                 "weight_trajectory": getattr(cfg, "_weight_trajectory", []) or [],
                 "loss_scales": dict(getattr(cfg, "final_loss_scales", {}) or {}),
                 "bank": dict(getattr(cfg, "final_bank_stats", {}) or {}),
+                "whiten": dict(getattr(cfg, "_whiten_receipt", {}) or {}),
                 "trained_at": datetime.now(timezone.utc).isoformat(),
             },
             indent=1,

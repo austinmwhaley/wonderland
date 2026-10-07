@@ -281,16 +281,43 @@ class CFM(nn.Module):
             + self.t_w_co(t["co"])
         )
 
+    def set_whitening(self, mean: "torch.Tensor", W: "torch.Tensor") -> None:
+        """Frozen whitening at the donor boundary (DEC-022): z = (h-mu) W,
+        W = Sigma^{-1/2} computed from held-out states post-train. Linear ->
+        lossless for downstream linear heads; guarantees full-rank headroom
+        of the CONSUMED representation (the geometry gate grades this)."""
+        self.whiten_mean = mean.detach().float().cpu()
+        self.whiten_W = W.detach().float().cpu()
+        self.whiten_on = True
+
+    def _whiten(self, h: "torch.Tensor") -> "torch.Tensor":
+        if not getattr(self, "whiten_on", False):
+            return h
+        dev = h.device
+        m = self.whiten_mean.to(dev)
+        W = self.whiten_W.to(dev)
+        return (h - m) @ W
+
     def embed(self, x):
         """Public embedding S from the recurrence STATE (x = h, recency-weighted
         via the decay), or mean-pool if a per-step matrix is passed."""
+        x = self._whiten(x)
         v = self.proj(x) if x.dim() == 1 else self.proj(x.mean(0))
         return F.normalize(v, dim=0)
 
     def donor(self, x):
         """Donor representation for plugins: same projection WITHOUT L2
-        normalization, so magnitude (how much / how recent) is preserved."""
+        normalization, so magnitude (how much / how recent) is preserved.
+        Whitened at the boundary when the transform is set (DEC-022).
+        1-D input = single state; 2-D (T, D) = per-step matrix, mean-pooled
+        (the donor_seq contract). For (B, D) STATE BATCHES use donor_batch."""
+        x = self._whiten(x)
         return self.proj(x) if x.dim() == 1 else self.proj(x.mean(0))
+
+    def donor_batch(self, h: "torch.Tensor") -> "torch.Tensor":
+        """Donor readout for (B, D) state batches — no pooling, whitened when
+        the transform is set. The consumed representation (DEC-022)."""
+        return self.proj(self._whiten(h))
 
     def successor(self, state, gamma, reward_weight=None):
         """Item 3: query the discounted future at ANY horizon (gamma in (0,1)) from
