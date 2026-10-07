@@ -212,7 +212,7 @@ same battery
 - **Alternatives:** (a) trim to a minimal set; (b) keep all + fix defects +
   build the missing grade; (c) redesign from scratch.
 - **Decision:** (b), recorded in
-  `looking_glass/specs/objectives_catalog.md` (the operator's 7-family menu
+  `looking_glass/specs/objectives_catalog.html` (the operator's 7-family menu
   + full landscape + status marks). Findings that changed code this cycle:
   - `mask` claimed bidirectional — actually CAUSAL (prefix scan); worse, the
     true brand/entity/value leaked into masked positions → redacted; frac
@@ -253,3 +253,31 @@ same battery
   wiring into resolve/registry); grades differ across streams (comparisons
   are per-stream, not cross-stream); until the probe lands, the default tuple
   is the fallback and is documented as such.
+
+## DEC-011 — Default-ON objectives, opt-out only; catalog ships as HTML
+
+- **Date:** 2026-10-07
+- **Context & problem:** operator set two policies: (1) *every objective is ON
+  by default; we opt OUT of objectives* (supersedes DEC-010's capability
+  opt-in phrasing — the probe still records missing capabilities, but as
+  automatic recorded auto-outs, not as preconditions for enabling), and (2)
+  the objectives catalog exists **only as HTML**
+  (`looking_glass/specs/objectives_catalog.html`) — no .md version.
+- **Alternatives:** (a) keep opt-in plans; (b) default-on with explicit +
+  data-driven opt-outs; (c) default-on with no auto-outs at all.
+- **Decision:** (b). Enabling is the non-decision; disabling is always
+  explicit or data-proven and always recorded (registry/plan receipt). The
+  catalog entry protocol rewritten accordingly: new objectives land
+  default-ON after tests + portfolio grade + version bump; `--set
+  objectives=(...)` is the only operator surface; missing capability →
+  auto-out with reason, never silent, never half-working. HTML chosen for the
+  catalog (operator preference; self-contained, no repo .md), generated from
+  the same content and linked from the README. Principles: *dynamic &
+  orchestrated* (behavior in config/receipts), *fail safe* (recorded reasons).
+- **Trade-offs accepted:** on streams lacking a capability, degenerate-input
+  training is possible until the probe lands (documented; probe is build
+  item (e) in the catalog's build order); HTML is not diff-friendly in
+  review — mitigated by keeping DECISIONS.md as the textual rationale log.
+- **Status marks:** ✅ implemented = default-ON; 🔧 implemented = default-ON
+  with a scheduled fix (contrast stays ON); ⏸ not yet implemented (build
+  candidates — landing means default-ON); ⛔ doctrine-excluded.

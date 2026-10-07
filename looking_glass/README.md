@@ -72,7 +72,7 @@ autotune.py                 data-derived knobs (half-life from event gaps)
 portfolio.py                Layer-B grade: structure-skill + geometry receipt
 ```
 
-Reference: **`specs/objectives_catalog.md`** — every self-supervised
+Reference: **`specs/objectives_catalog.html`** (open in a browser) — every self-supervised
 objective (the 13 we train, the 7-family operator menu, the full landscape),
 what each forces into the state, and the capability-driven plan for turning
 them on/off per stream (DEC-009/DEC-010).

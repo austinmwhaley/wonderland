@@ -34,9 +34,10 @@
   `portfolio.evaluate()`; then Stage 2 of DEC-006 continues (S2 validation on
   real data; both new objectives already train).
 - **Last completed:** objectives catalog published
-  (`looking_glass/specs/objectives_catalog.md` — 13 current objectives with
+  (`looking_glass/specs/objectives_catalog.html` — 13 current objectives with
   inductive bias/failure modes, the 7-family operator menu, full landscape,
-  universal capability-driven plan) + DEC-009/DEC-010 recorded; v2.2.0 core
+  universal capability-driven plan; **HTML-only per DEC-011: default-on,
+  opt-out policy**) + DEC-009/DEC-010/DEC-011 recorded; v2.2.0 core
   committed (combined-objective selection, query/agg objectives, portfolio
   module, mask/contrast/sf_mode audit fixes) — 222 tests green.
   Stage-1 spike done on BOTH streams (DEC-006a):
