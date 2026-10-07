@@ -254,7 +254,8 @@ def test_variance_floor_hinge():
     torch.manual_seed(0)
     model = CFM(vocab, dim=16, n_experts=1)
     cfg = _cfg()
-    assert "variance" in cfg.objectives and CFMConfig().version == "v2.4.0"
+    assert "variance" in cfg.objectives and "rank" in cfg.objectives
+    assert CFMConfig().version == "v2.5.0"
 
     # collapsed states (all identical rows) -> per-dim std 0 -> hinge = 1.0
     h = _t.zeros(4, 16)

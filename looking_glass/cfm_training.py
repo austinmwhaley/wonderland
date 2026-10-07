@@ -212,7 +212,10 @@ def train_cfm(cfg: CFMConfig):
         torch.manual_seed(cfg.seed)
         with torch.no_grad():
             T_ = _task_losses(model, vocab, [a_seqs[i] for i in vi], cfg)
-        v = float(_combine(model, T_, cfg, weights=balancer.weights()))
+        # STATIONARY selection metric: equal-weight held-out sum. DWA weights
+        # change every eval, so a weighted metric would change definition
+        # between evals — selection must compare like with like (DEC-016).
+        v = float(sum(T_[k] for k in cfg.objectives if k in T_))
         balancer.update({k: float(x) for k, x in T_.items()})
         if not math.isfinite(v) or v <= 0.0:
             # a sum of non-negative losses is 0 ONLY when everything collapsed
@@ -493,6 +496,19 @@ def _task_losses(model, vocab, items, cfg):
     # active. A hinge on per-dim std forces every channel to carry variance,
     # which is what eff-rank actually measures. Applied on the UNNORMALIZED
     # projection (per-sample L2 would erase the scale information).
+    # ---- effective-rank pressure (DEC-016): train on the graded metric ----
+    # The portfolio gate measures the participation ratio of the centered
+    # covariance of h; making that ratio a training objective aligns pressure
+    # with the yardstick. PR = (sum l)^2 / sum(l^2) in [1, dim]; loss =
+    # 1 - PR/dim in [0, 1) — rank-1 covariance costs ~1, full spread costs 0.
+    # fp32 eigh on purpose (fp16 eigh is unsupported/unstable).
+    if "rank" in cfg.objectives and h.shape[0] >= 2:
+        hc = model.proj(h).float()  # spread pressure reaches the trunk via proj
+        hc = hc - hc.mean(dim=0, keepdim=True)
+        cov = (hc.T @ hc) / (hc.shape[0] - 1)
+        lam = torch.linalg.eigvalsh(cov).clamp(min=0.0)
+        pr = (lam.sum() ** 2) / lam.pow(2).sum().clamp(min=1e-12)
+        T_["rank"] = (1.0 - pr / hc.shape[1]).clamp(min=0.0)
     if "variance" in cfg.objectives:
         # fp32 on purpose: std over a fp16-autocast batch overflows with large
         # activations and the hinge degenerates (measured: combined -> 0.0000)

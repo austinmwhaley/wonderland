@@ -181,6 +181,7 @@ class CFM(nn.Module):
                     "query",
                     "agg",
                     "variance",
+                    "rank",
                 )
             }
         )

@@ -86,7 +86,11 @@ class CFMConfig:
     # std of the projected state) — twice-measured geometry collapse
     # (eff-rank 0.23-0.26 x null) showed decorrelation alone never treats
     # scale collapse; the floor is the direct lever (DEC-015).
-    version: str = "v2.4.0"  # encoder code version
+    # v2.5.0: `rank` objective — the graded metric (participation ratio of the
+    # centered batch covariance) becomes a training pressure; governor selects
+    # on the STATIONARY equal-weight held-out sum (DWA weights drive training
+    # only — the selection metric must not change definition between evals).
+    version: str = "v2.5.0"  # encoder code version
     revision: int = 1  # data/score revision (r)
     sample_customers: int | None = 500  # working base: first N customers (populations live here)
     split_a_frac: float = 0.7
@@ -167,6 +171,7 @@ class CFMConfig:
         "agg",  # long-horizon integration: exact counts/value per window
         "variance",  # per-dim std floor: treats SCALE collapse (redundancy
         #              treats correlation only — measured insufficient alone)
+        "rank",  # participation-ratio pressure: train on the graded metric
     )
     seed: int = 0
     device: str = "cuda" if torch.cuda.is_available() else "cpu"
