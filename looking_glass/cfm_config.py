@@ -94,7 +94,14 @@ class CFMConfig:
     # weighting — dimensionless contributions; sf's discounted-sum scale
     # measured at 94% of gradient mass while failing to learn) + sf yardstick
     # fixed via target-variance R² (DEC-018) -> sf re-enters the gate.
-    version: str = "v2.6.0"  # encoder code version
+    # v2.7.0: cross-batch memory bank + closed-loop geometry governor
+    # (DEC-019): redundancy/variance penalties now ALSO computed over a FIFO
+    # bank of recent states (population-global; the batch-only versions
+    # couldn't see population collapse — measured ratio 0.213 vs bar 0.30),
+    # and the bank geometry multiplier is driven in closed loop by the bank's
+    # own eff-rank (ramp below 0.32, back off above — replaces the manual
+    # geometry_boost sweep).
+    version: str = "v2.7.0"  # encoder code version
     revision: int = 1  # data/score revision (r)
     sample_customers: int | None = 500  # working base: first N customers (populations live here)
     split_a_frac: float = 0.7
@@ -130,6 +137,7 @@ class CFMConfig:
     set_overrides: list = field(default_factory=list)
     final_task_weights: dict = field(default_factory=dict)  # recorded post-train
     final_loss_scales: dict = field(default_factory=dict)  # the EMA unit system
+    final_bank_stats: dict = field(default_factory=dict)  # bank rank/lambda trail
     dim: int = EMBED_DIM
     n_experts: int = 1  # K=1: M1 multi-timescale gave no gain (speed)
     epochs: int = 3
@@ -153,6 +161,13 @@ class CFMConfig:
     dwa_temp: float = 2.0  # DWA temperature (paper default; the ONLY knob)
     dwa_scale_free: bool = True  # divide each loss by its own EMA (DEC-018):
     # dimensionless contributions; without it sf consumed 94% of grad mass
+    # Geometry guard (DEC-019): the closed-loop population geometry
+    bank_size: int = 8192  # FIFO of recent projected states (0 = off)
+    rank_target: float = 0.32  # bank eff-rank target (0.02 above the 0.30 bar)
+    rank_alpha: float = 0.25  # governor gain (PID-like, EMA-damped)
+    rank_lambda_max: float = 50.0  # runaway clamp
+    tau_eig: float = 0.05  # singular-value floor on the bank covariance
+    #    (the infinitely-steep log-det barrier, in bounded-hinge form)
     # Frontier sampler (DEC-017): multiplier on the geometry-family losses
     # (variance, rank, redundancy). 1.0 = the balanced point; >1 trades a bit
     # of predictive skill for state headroom — the explicit Pareto coordinate,

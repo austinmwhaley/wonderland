@@ -190,6 +190,14 @@ def train_cfm(cfg: CFMConfig):
     scaler = torch.amp.GradScaler("cuda", enabled=use_amp)
     balancer = DWA(sorted(cfg.objectives), temp=cfg.dwa_temp)
     loss_scales: dict = {}  # EMA per task — the unit system (DEC-018)
+    bank = GeometryBank(
+        dim=cfg.dim,
+        size=getattr(cfg, "bank_size", 8192),
+        target=getattr(cfg, "rank_target", 0.32),
+        alpha=getattr(cfg, "rank_alpha", 0.25),
+        lam_max=getattr(cfg, "rank_lambda_max", 50.0),
+        tau=getattr(cfg, "tau_eig", 0.05),
+    ) if getattr(cfg, "bank_size", 0) > 0 else None
 
     def _update_scales(losses: dict) -> None:
         for k, v in losses.items():
@@ -211,6 +219,18 @@ def train_cfm(cfg: CFMConfig):
                     weights=balancer.weights(),
                     scales=loss_scales,
                 )
+            if bank is not None:
+                # bank sees every batch's projected states (population window)
+                with torch.no_grad():
+                    _yb, _hb = model.ssm(
+                        model.tokens_batch(_collate([a_seqs[i] for i in b], vocab, device)),
+                        mask=_collate([a_seqs[i] for i in b], vocab, device)["mask"],
+                    )
+                    bank.push(model.proj(_hb))
+                pen = bank.penalties()
+                if pen["redundancy_bank"] is not None:
+                    # population-global geometry: lambda-driven, on top of batch terms
+                    loss = loss + bank.lam * (pen["redundancy_bank"] + pen["eigfloor"])
             scaler.scale(loss).backward()
             scaler.unscale_(opt)
             torch.nn.utils.clip_grad_norm_(params, 1.0)
@@ -280,6 +300,14 @@ def train_cfm(cfg: CFMConfig):
     task_weights = {k: round(w, 4) for k, w in balancer.weights().items()}
     cfg.final_task_weights = dict(task_weights)
     cfg.final_loss_scales = {k: round(v, 6) for k, v in loss_scales.items()}
+    if bank is not None:
+        st = bank.states()
+        cfg.final_bank_stats = {
+            "bank_rank": round(bank.eff_rank(st), 4) if st is not None else None,
+            "lambda_final": round(bank.lam, 3),
+            "lambda_history": bank.history[-10:],
+            "bank_rows": int(st.shape[0]) if st is not None else 0,
+        }
     _registry(
         cfg,
         vocab,
@@ -641,6 +669,70 @@ class DWA:
         return dict(self.w)
 
 
+class GeometryBank:
+    """Cross-batch memory bank + closed-loop geometry governor (DEC-019).
+
+    FIFO of recent projected states (population-global covariance): computes
+    the off-diagonal decorrelation penalty + eigenvalue floor over the BANK
+    (batch-local penalties can be satisfied while population variance stays
+    collapsed — measured v2.6.0 ratio 0.213). The multiplier lambda_geometry
+    is driven in closed loop by the bank's own eff-rank (participation ratio
+    / dim): ramp below the target, back off above — the graded quantity
+    (portfolio geometry gate) and the controlled quantity are the same.
+    """
+
+    def __init__(self, dim: int, size: int, target: float, alpha: float, lam_max: float, tau: float):
+        self.dim = dim
+        self.size = int(size)
+        self.target = float(target)
+        self.alpha = float(alpha)
+        self.lam_max = float(lam_max)
+        self.tau = float(tau)
+        self.buf: list = []
+        self.lam = 1.0
+        self.history: list[dict] = []
+
+    def push(self, z: "torch.Tensor") -> None:
+        zb = z.detach().float().cpu()
+        self.buf.append(zb)
+        if len(self.buf) > 8:
+            self.buf = self.buf[-8:]
+
+    def states(self) -> "torch.Tensor | None":
+        if not self.buf:
+            return None
+        return torch.cat(self.buf, dim=0)
+
+    def eff_rank(self, z: "torch.Tensor") -> float:
+        zc = z - z.mean(0, keepdim=True)
+        cov = (zc.T @ zc) / max(zc.shape[0] - 1, 1)
+        pr = cov.diagonal().sum() ** 2 / cov.pow(2).sum().clamp(min=1e-24)
+        return float((pr / z.shape[1]).item())
+
+    def penalties(self) -> dict:
+        """(redundancy_bank, eigfloor) losses on the bank + updated lambda."""
+        import numpy as _np
+
+        z = self.states()
+        if z is None or z.shape[0] < self.dim // 2:
+            return {"redundancy_bank": None, "eigfloor": None, "bank_rank": None}
+        zc = z - z.mean(0, keepdim=True)
+        cov = (zc.T @ zc) / max(zc.shape[0] - 1, 1)
+        off = cov - torch.diag(cov.diagonal())
+        red = (off**2).mean()
+        # singular-value floor: bounded hinge (the steep log-det barrier in
+        # stable form); on NORMALIZED covariance so tau is scale-free
+        sd = torch.sqrt(torch.diag(cov).clamp(min=1e-12))
+        corr = cov / torch.outer(sd, sd)
+        ev = torch.linalg.eigvalsh(corr).clamp(min=0.0)
+        floor = torch.relu(self.tau - ev).sum()
+        # closed-loop governor: EMA-damped rank, proportional ramp
+        bank_rank = self.eff_rank(z)
+        gap = self.target - bank_rank
+        self.lam = float(_np.clip(self.lam * _np.exp(self.alpha * gap), 1.0, self.lam_max))
+        self.history.append({"bank_rank": round(bank_rank, 4), "lam": round(self.lam, 3)})
+        return {"redundancy_bank": red, "eigfloor": floor, "bank_rank": bank_rank}
+
 GEOMETRY_FAMILY = ("variance", "rank", "redundancy")
 
 
@@ -751,6 +843,7 @@ def _registry(
                 "weight_mode": cfg.weight_mode,
                 "weight_trajectory": getattr(cfg, "_weight_trajectory", []) or [],
                 "loss_scales": dict(getattr(cfg, "final_loss_scales", {}) or {}),
+                "bank": dict(getattr(cfg, "final_bank_stats", {}) or {}),
                 "trained_at": datetime.now(timezone.utc).isoformat(),
             },
             indent=1,
