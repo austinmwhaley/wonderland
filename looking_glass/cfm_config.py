@@ -105,7 +105,11 @@ class CFMConfig:
     # wall at collapse, replaces the soft tau-hinge as the primary) +
     # grouped PCGrad (geometry-family vs predictive-family conflict
     # resolution; 2 grouped backwards, not 13 pairwise — DEC-020).
-    version: str = "v2.8.0"  # encoder code version
+    # v2.8.1: bank FIFO fixed to ROWS (was 8 chunks = 512 rows on a 17k
+    # population); rank_lambda_max effectively unclamped (1e6) — the closed
+    # loop applies real pressure (measured: lambda pinned at 50 the whole
+    # run with rank 0.10 vs target 0.32). (DEC-021)
+    version: str = "v2.8.1"  # encoder code version
     revision: int = 1  # data/score revision (r)
     sample_customers: int | None = 500  # working base: first N customers (populations live here)
     split_a_frac: float = 0.7
@@ -169,7 +173,7 @@ class CFMConfig:
     bank_size: int = 8192  # FIFO of recent projected states (0 = off)
     rank_target: float = 0.32  # bank eff-rank target (0.02 above the 0.30 bar)
     rank_alpha: float = 0.25  # governor gain (PID-like, EMA-damped)
-    rank_lambda_max: float = 50.0  # runaway clamp
+    rank_lambda_max: float = 1e6  # effectively unclamped (EMA alpha bounds rate)
     tau_eig: float = 0.05  # singular-value floor on the bank covariance
     #    (soft floor; the PRIMARY rank guard is now the log-det barrier)
     pcgrad: bool = True  # grouped PCGrad (DEC-020): geometry vs predictive

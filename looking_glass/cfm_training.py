@@ -730,8 +730,9 @@ class GeometryBank:
     def push(self, z: "torch.Tensor") -> None:
         zb = z.detach().float().cpu()
         self.buf.append(zb)
-        if len(self.buf) > 8:
-            self.buf = self.buf[-8:]
+        rows = sum(c.shape[0] for c in self.buf)
+        if rows > self.size:
+            self.buf = [torch.cat(self.buf, dim=0)[-self.size:]]
 
     def states(self) -> "torch.Tensor | None":
         if not self.buf:
@@ -770,7 +771,9 @@ class GeometryBank:
         # closed-loop governor: EMA-damped rank, proportional ramp
         bank_rank = self.eff_rank(z)
         gap = self.target - bank_rank
-        self.lam = float(_np.clip(self.lam * _np.exp(self.alpha * gap), 1.0, self.lam_max))
+        self.lam = float(
+            _np.clip(self.lam * _np.exp(self.alpha * gap), 1.0, 1e6)
+        )  # no artificial clamp (DEC-021): EMA-damped alpha bounds the RATE
         self.history.append({"bank_rank": round(bank_rank, 4), "lam": round(self.lam, 3)})
         return {
             "redundancy_bank": red,
