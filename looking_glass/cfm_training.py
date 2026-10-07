@@ -871,9 +871,15 @@ def compute_whitening(model, vocab, cfg, seqs, n: int = 4096) -> dict:
     H = torch.cat(states, dim=0)
     mu = H.mean(0)
     zc = H - mu
-    cov = (zc.T @ zc) / max(H.shape[0] - 1, 1)
-    ev, V = torch.linalg.eigh(cov + 1e-6 * torch.eye(cov.shape[0]))
-    W = V @ torch.diag(1.0 / torch.sqrt(ev.clamp(min=1e-12))) @ V.T
+    # float64 eigh + stronger Tikhonov: the real model's state covariance is
+    # ill-conditioned (fp32 eigh failed to converge — measured). float64 has
+    # the precision to resolve near-degenerate spectra; the 1e-4 floor on
+    # eigenvalues prevents noise amplification in near-zero directions.
+    cov = (zc.T @ zc).double() / max(H.shape[0] - 1, 1)
+    ev, V = torch.linalg.eigh(cov + 1e-4 * torch.eye(cov.shape[0], dtype=torch.float64))
+    ev = ev.clamp(min=1e-12)
+    W = (V @ torch.diag(1.0 / torch.sqrt(ev)) @ V.T).float()
+    mu = mu.float()
 
     def pr(mat):
         c = mat - mat.mean(0, keepdim=True)
