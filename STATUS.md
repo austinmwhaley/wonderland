@@ -29,7 +29,7 @@
 
 ## Micro
 
-- **Current task:** finish wiring the v2.2.0 grade — `portfolio` CLI command,
+- **Current task:** portfolio wiring (DEC-012 recorded: keep 13, combination map in catalog §1.5, keep/drop = measured structure-skill); finish wiring the v2.2.0 grade — `portfolio` CLI command,
   train-time emission into the registry, integration tests for
   `portfolio.evaluate()`; then Stage 2 of DEC-006 continues (S2 validation on
   real data; both new objectives already train).

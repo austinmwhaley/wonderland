@@ -281,3 +281,27 @@ same battery
 - **Status marks:** ✅ implemented = default-ON; 🔧 implemented = default-ON
   with a scheduled fix (contrast stays ON); ⏸ not yet implemented (build
   candidates — landing means default-ON); ⛔ doctrine-excluded.
+
+## DEC-012 — Portfolio composition: all 13 stay; combination map + meta-rule
+
+- **Date:** 2026-10-07
+- **Context & problem:** operator asked which objectives to keep and which
+  combinations are good vs bad (JEPA and SF considered important; many others
+  uncertain).
+- **Alternatives:** (a) trim to a small core now; (b) keep all 13 with the
+  combination contract written down + a measured keep/drop meta-rule.
+- **Decision:** (b). Full combination map published in the catalog
+  (§1.5: synergistic clusters = TPP core / hazard stack / future stack /
+  geometry pair / structure regularizers / readout; managed tensions; bad
+  combos banned: anything without `redundancy`, `query` without its heads,
+  aggregates without intensity, regularizer-only portfolios). Minimal viable
+  portfolio = 6 (`next, dt, sf, jepa, redundancy, query`). Cut order under
+  pressure: contrast (until views) -> entity (vocab-dependent) -> occur
+  (subsumed). **Meta-rule:** keep = portfolio structure-skill > 0 at re-cert;
+  skill ~0 across re-certs = flagged drop-candidate — measured, not argued.
+  Principle: *simple over complex* applied to TRAINING (uncertainty weights
+  handle 13-way conflict) + *gate on ground truth* applied to the objectives
+  themselves.
+- **Trade-offs accepted:** larger default compute per step; two 🔧/new items
+  (contrast views, portfolio CLI wiring) must land before the meta-rule is
+  fully automatic.
