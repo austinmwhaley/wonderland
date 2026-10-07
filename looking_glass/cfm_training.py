@@ -189,13 +189,28 @@ def train_cfm(cfg: CFMConfig):
     use_amp = device.type == "cuda"
     scaler = torch.amp.GradScaler("cuda", enabled=use_amp)
     balancer = DWA(sorted(cfg.objectives), temp=cfg.dwa_temp)
+    loss_scales: dict = {}  # EMA per task — the unit system (DEC-018)
+
+    def _update_scales(losses: dict) -> None:
+        for k, v in losses.items():
+            loss_scales[k] = (
+                float(v) if k not in loss_scales else 0.9 * loss_scales[k] + 0.1 * float(v)
+            )
+            loss_scales[k] = max(loss_scales[k], 1e-8)  # documented floor
 
     def train_step(n):
         for _ in range(n):
             b = rng.choice(tr_idx, size=min(cfg.batch, len(tr_idx)), replace=False)
             opt.zero_grad()
             with torch.autocast(device_type=device.type, dtype=torch.float16, enabled=use_amp):
-                loss = _loss(model, vocab, [a_seqs[i] for i in b], cfg, weights=balancer.weights())
+                loss = _loss(
+                    model,
+                    vocab,
+                    [a_seqs[i] for i in b],
+                    cfg,
+                    weights=balancer.weights(),
+                    scales=loss_scales,
+                )
             scaler.scale(loss).backward()
             scaler.unscale_(opt)
             torch.nn.utils.clip_grad_norm_(params, 1.0)
@@ -215,8 +230,12 @@ def train_cfm(cfg: CFMConfig):
         # STATIONARY selection metric: equal-weight held-out sum. DWA weights
         # change every eval, so a weighted metric would change definition
         # between evals — selection must compare like with like (DEC-016).
-        v = float(sum(T_[k] for k in cfg.objectives if k in T_))
+        # stationary selection on the SAME scale-free unit system (DEC-018)
+        v = float(
+            sum(T_[k] / max(loss_scales.get(k, 1.0), 1e-8) for k in cfg.objectives if k in T_)
+        )
         balancer.update({k: float(x) for k, x in T_.items()})
+        _update_scales({k: float(x) for k, x in T_.items()})
         if not math.isfinite(v) or v <= 0.0:
             # a sum of non-negative losses is 0 ONLY when everything collapsed
             # (fp16 blow-up / dead state) — never a breakthrough. Feed the
@@ -260,6 +279,7 @@ def train_cfm(cfg: CFMConfig):
     ]
     task_weights = {k: round(w, 4) for k, w in balancer.weights().items()}
     cfg.final_task_weights = dict(task_weights)
+    cfg.final_loss_scales = {k: round(v, 6) for k, v in loss_scales.items()}
     _registry(
         cfg,
         vocab,
@@ -411,7 +431,7 @@ def _jepa_loss(model, t, y):
     return (1.0 - (S_tgt * S_pred).sum(-1)).mean()
 
 
-def _task_losses(model, vocab, items, cfg):
+def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
     dev = model._dev()
     t = _collate(items, vocab, dev)
     x = model.tokens_batch(t)
@@ -576,6 +596,11 @@ def _task_losses(model, vocab, items, cfg):
     pred = model.head_sf(torch.cat([ye, gcol], dim=-1))
     sl = F.mse_loss(pred, R, reduction="none").mean(-1)
     T_["sf"] = (sl * mask_e).sum() / mask_e.sum().clamp(min=1)
+    if aux is not None:
+        # target variance for the R² yardstick (DEC-018): same masked entries
+        # the loss averages over, across every sampled gamma and phi dim
+        sel = mask_e.reshape(-1) > 0
+        aux["sf_target_var"] = float(R.reshape(-1, R.shape[-1])[sel].var())
     return T_
 
 
@@ -619,7 +644,7 @@ class DWA:
 GEOMETRY_FAMILY = ("variance", "rank", "redundancy")
 
 
-def _combine(model, T, cfg, weights: dict | None = None):
+def _combine(model, T, cfg, weights: dict | None = None, scales: dict | None = None):
     """Task-balance dispatch (DEC-014). `weights` = current DWA weights.
     geometry_boost (DEC-017) scales the geometry family — the explicit
     Pareto coordinate for the skills-vs-headroom frontier."""
@@ -631,9 +656,14 @@ def _combine(model, T, cfg, weights: dict | None = None):
         return w * (boost if k in GEOMETRY_FAMILY else 1.0)
 
     if cfg.weight_mode == "dwa":
-        if weights is not None:
-            return sum(wk(k) * T[k] for k in keys)
-        return sum(T[k] * (boost if k in GEOMETRY_FAMILY else 1.0) for k in keys)
+        sc = scales or getattr(cfg, "final_loss_scales", None) or {}
+
+        def term(k):
+            base = weights.get(k, 1.0) if weights else 1.0
+            unit = T[k] / max(float(sc.get(k, 0.0)), 1e-8) if cfg.dwa_scale_free and sc else T[k]
+            return base * (boost if k in GEOMETRY_FAMILY else 1.0) * unit
+
+        return sum(term(k) for k in keys)
     if cfg.weight_mode == "uncertainty" and cfg.use_uncertainty_weighting:
         return sum(0.5 * torch.exp(-model.log_var[k]) * T[k] + 0.5 * model.log_var[k] for k in keys)
     return sum(T[k] for k in keys)
@@ -679,8 +709,8 @@ def forward_states(model, seqs, h0s=None):
     return h
 
 
-def _loss(model, vocab, items, cfg, weights: dict | None = None):
-    return _combine(model, _task_losses(model, vocab, items, cfg), cfg, weights)
+def _loss(model, vocab, items, cfg, weights: dict | None = None, scales: dict | None = None):
+    return _combine(model, _task_losses(model, vocab, items, cfg), cfg, weights, scales)
 
 
 def _registry(
@@ -720,6 +750,7 @@ def _registry(
                 "task_weights": task_weights or {},
                 "weight_mode": cfg.weight_mode,
                 "weight_trajectory": getattr(cfg, "_weight_trajectory", []) or [],
+                "loss_scales": dict(getattr(cfg, "final_loss_scales", {}) or {}),
                 "trained_at": datetime.now(timezone.utc).isoformat(),
             },
             indent=1,

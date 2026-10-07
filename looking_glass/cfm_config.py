@@ -90,7 +90,11 @@ class CFMConfig:
     # centered batch covariance) becomes a training pressure; governor selects
     # on the STATIONARY equal-weight held-out sum (DWA weights drive training
     # only — the selection metric must not change definition between evals).
-    version: str = "v2.5.0"  # encoder code version
+    # v2.6.0: scale-free DWA (each task's loss divided by its own EMA before
+    # weighting — dimensionless contributions; sf's discounted-sum scale
+    # measured at 94% of gradient mass while failing to learn) + sf yardstick
+    # fixed via target-variance R² (DEC-018) -> sf re-enters the gate.
+    version: str = "v2.6.0"  # encoder code version
     revision: int = 1  # data/score revision (r)
     sample_customers: int | None = 500  # working base: first N customers (populations live here)
     split_a_frac: float = 0.7
@@ -125,6 +129,7 @@ class CFMConfig:
     # derivation and recorded in the registry receipt.
     set_overrides: list = field(default_factory=list)
     final_task_weights: dict = field(default_factory=dict)  # recorded post-train
+    final_loss_scales: dict = field(default_factory=dict)  # the EMA unit system
     dim: int = EMBED_DIM
     n_experts: int = 1  # K=1: M1 multi-timescale gave no gain (speed)
     epochs: int = 3
@@ -146,6 +151,8 @@ class CFMConfig:
     # losses); "equal" = plain sum. Weights are dynamic either way.
     weight_mode: str = "dwa"
     dwa_temp: float = 2.0  # DWA temperature (paper default; the ONLY knob)
+    dwa_scale_free: bool = True  # divide each loss by its own EMA (DEC-018):
+    # dimensionless contributions; without it sf consumed 94% of grad mass
     # Frontier sampler (DEC-017): multiplier on the geometry-family losses
     # (variance, rank, redundancy). 1.0 = the balanced point; >1 trades a bit
     # of predictive skill for state headroom — the explicit Pareto coordinate,

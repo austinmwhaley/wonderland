@@ -165,7 +165,9 @@ def test_portfolio_evaluate_end_to_end(tmp_path):
     assert {"next", "dt", "agg", "query", "sf"} <= names  # fielded combo measured
     assert r1["geometry"]["eff_rank"] > 0
     assert any("canary" in row["check"] for row in r1["rows"])
-    assert "sf" in r1["yardstick_pending"]  # sf reported, not gated
+    assert r1["yardstick_pending"] == []  # sf back in the gate via R² (DEC-018)
+    sf_row = next(r for r in r1["rows"] if "sf" in r["check"])
+    assert "sf" in sf_row["check"]
     files = list(tmp_path.glob("portfolio_t1_*.json"))
     assert len(files) == 1
     saved = json.loads(files[0].read_text())
@@ -255,7 +257,7 @@ def test_variance_floor_hinge():
     model = CFM(vocab, dim=16, n_experts=1)
     cfg = _cfg()
     assert "variance" in cfg.objectives and "rank" in cfg.objectives
-    assert CFMConfig().version == "v2.5.0"
+    assert CFMConfig().version == "v2.6.0"
 
     # collapsed states (all identical rows) -> per-dim std 0 -> hinge = 1.0
     h = _t.zeros(4, 16)
@@ -271,3 +273,21 @@ def test_variance_floor_hinge():
     loss = _loss(model, vocab, seqs, cfg)
     loss.backward()
     assert model.proj.weight.grad is not None
+
+
+def test_combine_scale_free_units():
+    from looking_glass.cfm_training import _combine
+
+    seqs = [_seq("c1"), _seq("c2", day="2025-01-02")]
+    vocab = EventVocab.build(seqs)
+    model = CFM(vocab, dim=16, n_experts=1)
+    cfg = _cfg()
+    T_ = {"next": torch.tensor(100.0), "dt": torch.tensor(1.0)}
+    scales = {"next": 100.0, "dt": 1.0}
+    w = {"next": 1.0, "dt": 1.0}
+    # scale-free: both tasks contribute their NORMALIZED magnitude
+    v = float(_combine(model, T_, cfg, weights=w, scales=scales))
+    assert v == pytest.approx(2.0)
+    # without scales (unit system not yet learned) -> raw sum
+    v2 = float(_combine(model, T_, cfg, weights=w))
+    assert v2 == pytest.approx(101.0)

@@ -38,10 +38,11 @@ DEFAULT_OUT = Path(__file__).resolve().parent / "artifacts" / "cfm" / "portfolio
 # destroyed-input null is the wrong yardstick for it (states may still
 # separate instances without order). redundancy is graded in geometry.
 GATED_EXCLUSIONS = {"contrast", "redundancy", "variance"}
-# yardstick pending: sf's destroyed-null is NOT harder (permutation makes the
-# discounted-sum targets smoother, so raw skill dips negative without meaning).
-# Reported, never gated, until a target-variance-normalized null exists.
-YARDSTICK_PENDING = {"sf"}
+# sf's destroyed-null is scale-broken (permutation smooths discounted-sum
+# targets) — FIXED via the target-variance R² yardstick (DEC-018): skill =
+# R²_real - R²_destroyed = L_shuf/V_shuf - L_real/V_real, dimensionless.
+# sf is GATED again. The mechanism stays for future broken yardsticks.
+YARDSTICK_PENDING: set = set()
 
 
 def _destroyed(seqs: list[dict], seed: int) -> list[dict]:
@@ -184,6 +185,8 @@ def evaluate(
     measured = sorted(set(gated) | YARDSTICK_PENDING)
     real_folds: dict[str, list[float]] = {o: [] for o in measured}
     shuf_folds: dict[str, list[float]] = {o: [] for o in measured}
+    sf_var_real: list[float] = []
+    sf_var_shuf: list[float] = []
     seen: set[str] = set()
 
     was_training = model.training
@@ -195,12 +198,17 @@ def evaluate(
             if len(batch) < 2:
                 continue
             torch.manual_seed(seed + gi)  # identical stochastic draws (real vs destroyed)
+            aux_r: dict = {}
             with torch.no_grad():
-                real = _task_losses(model, vocab, batch, cfg)
+                real = _task_losses(model, vocab, batch, cfg, aux=aux_r)
             shuf_seqs = _destroyed(batch, seed * 1000 + gi)
             torch.manual_seed(seed + gi)
+            aux_s: dict = {}
             with torch.no_grad():
-                shuf = _task_losses(model, vocab, shuf_seqs, cfg)
+                shuf = _task_losses(model, vocab, shuf_seqs, cfg, aux=aux_s)
+            if "sf_target_var" in aux_r and "sf_target_var" in aux_s:
+                sf_var_real.append(aux_r["sf_target_var"])
+                sf_var_shuf.append(aux_s["sf_target_var"])
             seen.update(k for k in real if k != "redundancy")
             for o in gated:
                 if o in real and o in shuf:
@@ -226,7 +234,14 @@ def evaluate(
         gated_o = o not in YARDSTICK_PENDING
         r = np.asarray(real_folds[o])
         s = np.asarray(shuf_folds[o])
-        skill = s - r  # positive = real beats destroyed = uses structure
+        if o == "sf" and sf_var_real and sf_var_shuf:
+            # R² yardstick (DEC-018): dimensionless, immune to the smoothing
+            # artifact — R²_real - R²_shuf = L_shuf/V_shuf - L_real/V_real
+            vr = np.maximum(np.asarray(sf_var_real[: len(r)]), 1e-12)
+            vs = np.maximum(np.asarray(sf_var_shuf[: len(s)]), 1e-12)
+            skill = s[: len(r)] / vs - r / vr
+        else:
+            skill = s - r  # positive = real beats destroyed = uses structure
         se = float(np.std(skill) / np.sqrt(max(len(skill), 1)))
         objectives.append(
             {
@@ -312,6 +327,8 @@ def evaluate(
         "report_only": report_only,
         "canaries": canaries,
         "task_contributions": contributions,
+        "sf_target_var_real": [round(float(v), 4) for v in sf_var_real],
+        "sf_target_var_shuf": [round(float(v), 4) for v in sf_var_shuf],
         "geometry": geometry,
         "rows": rows,
         "ok": bool(ok),
