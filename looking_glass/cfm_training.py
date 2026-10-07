@@ -503,18 +503,22 @@ def _task_losses(model, vocab, items, cfg):
     # 1 - PR/dim in [0, 1) — rank-1 covariance costs ~1, full spread costs 0.
     # fp32 eigh on purpose (fp16 eigh is unsupported/unstable).
     if "rank" in cfg.objectives and h.shape[0] >= 2:
-        hc = model.proj(h).float()  # spread pressure reaches the trunk via proj
-        hc = hc - hc.mean(dim=0, keepdim=True)
-        cov = (hc.T @ hc) / (hc.shape[0] - 1)
-        lam = torch.linalg.eigvalsh(cov).clamp(min=0.0)
-        pr = (lam.sum() ** 2) / lam.pow(2).sum().clamp(min=1e-12)
-        T_["rank"] = (1.0 - pr / hc.shape[1]).clamp(min=0.0)
+        # autocast OFF: it downcasts even fp32 matmuls to fp16 and eigh has no
+        # fp16 CUDA kernel (measured crash); this math must stay fp32.
+        with torch.autocast(device_type=h.device.type, enabled=False):
+            hc = model.proj(h).float()  # spread pressure reaches the trunk via proj
+            hc = hc - hc.mean(dim=0, keepdim=True)
+            cov = (hc.T @ hc) / (hc.shape[0] - 1)
+            lam = torch.linalg.eigvalsh(cov).clamp(min=0.0)
+            pr = (lam.sum() ** 2) / lam.pow(2).sum().clamp(min=1e-12)
+            T_["rank"] = (1.0 - pr / hc.shape[1]).clamp(min=0.0)
     if "variance" in cfg.objectives:
         # fp32 on purpose: std over a fp16-autocast batch overflows with large
         # activations and the hinge degenerates (measured: combined -> 0.0000)
-        zu = model.proj(h).float()  # (B, D) unnormalized
-        std = zu.std(dim=0)  # per-dim std across the batch
-        T_["variance"] = torch.relu(1.0 - std).mean().float()
+        with torch.autocast(device_type=h.device.type, enabled=False):
+            zu = model.proj(h).float()  # (B, D) unnormalized
+            std = zu.std(dim=0)  # per-dim std across the batch
+            T_["variance"] = torch.relu(1.0 - std).mean().float()
     # ---- exact multi-horizon window targets (S2 / DEC-006) ----------------
     # From the state at t, predict log1p(count) and log1p(value-sum) of the
     # events in (t, t+h] for a horizon sampled from the DERIVED gap-quantile
