@@ -387,3 +387,22 @@ same battery
   a CHOICE on a measured curve, not an opinion.
 - **Trade-offs accepted:** predictive skills may dip at high boost; the sweep
   quantifies exactly how much.
+
+## DEC-020 — Barrier geometry + grouped PCGrad (v2.8.0): the autonomous loop
+
+- **Date:** 2026-10-07
+- **Context:** operator's autonomous-architecture blueprint (dimensionless
+  losses / bank+PID governor / eigenvalue barrier / PCGrad / R² yardsticks).
+  Components 1, 2, 5 already landed (v2.6.0/v2.7.0); 3 and 4 were missing.
+- **Decision:** (a) log-det barrier on the bank covariance
+  (-log det(C + eps·I), eps scaled to the trace — infinite wall at collapse;
+  the soft tau-hinge stays as a gentle floor); (b) GROUPED PCGrad: geometry-
+  family gradient projected onto the predictive gradient's plane on conflict
+  (2 grouped backwards, not 13 pairwise — affordable at our batch sizes;
+  geometry can never destroy predictive learning; applied via manual param
+  update, no .backward()). Full GradNorm declined (cost 13 backwards/step;
+  the EMA-normalized DWA covers the same benefit class); pairwise-13 PCGrad
+  reserved as the escalation if grouped proves insufficient.
+- **Trade-offs accepted:** the projection is asymmetric (protects predictive
+  from geometry, not vice versa — intended: the guard must never block
+  learning); barrier's eps is a documented literal scaled to the trace.

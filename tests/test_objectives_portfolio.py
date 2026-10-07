@@ -336,3 +336,20 @@ def test_bank_detaches_from_graph():
     b.push(x)  # must not hold graph references (memory leak)
     pen = b.penalties()
     assert pen["redundancy_bank"].requires_grad is False
+
+
+def test_barrier_and_bank_joint():
+    import torch as _t
+
+    from looking_glass.cfm_training import GeometryBank
+
+    b = GeometryBank(dim=16, size=8192, target=0.32, alpha=0.25, lam_max=50.0, tau=0.05)
+    g = _t.Generator().manual_seed(0)
+    collapsed = _t.randn(1, 16, generator=g).repeat(512, 1)
+    b.push(collapsed)
+    pen = b.penalties()
+    # collapsed bank: barrier is LARGE (near-wall), spread bank: barrier small
+    assert pen["barrier"].item() > 0
+    b2 = GeometryBank(dim=16, size=8192, target=0.32, alpha=0.25, lam_max=50.0, tau=0.05)
+    b2.push(_t.randn(4096, 16, generator=g))
+    assert b2.penalties()["barrier"].item() < pen["barrier"].item()

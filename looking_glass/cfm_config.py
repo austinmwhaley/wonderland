@@ -101,7 +101,11 @@ class CFMConfig:
     # and the bank geometry multiplier is driven in closed loop by the bank's
     # own eff-rank (ramp below 0.32, back off above — replaces the manual
     # geometry_boost sweep).
-    version: str = "v2.7.0"  # encoder code version
+    # v2.8.0: barrier geometry (log-det on the bank covariance — infinite
+    # wall at collapse, replaces the soft tau-hinge as the primary) +
+    # grouped PCGrad (geometry-family vs predictive-family conflict
+    # resolution; 2 grouped backwards, not 13 pairwise — DEC-020).
+    version: str = "v2.8.0"  # encoder code version
     revision: int = 1  # data/score revision (r)
     sample_customers: int | None = 500  # working base: first N customers (populations live here)
     split_a_frac: float = 0.7
@@ -167,7 +171,8 @@ class CFMConfig:
     rank_alpha: float = 0.25  # governor gain (PID-like, EMA-damped)
     rank_lambda_max: float = 50.0  # runaway clamp
     tau_eig: float = 0.05  # singular-value floor on the bank covariance
-    #    (the infinitely-steep log-det barrier, in bounded-hinge form)
+    #    (soft floor; the PRIMARY rank guard is now the log-det barrier)
+    pcgrad: bool = True  # grouped PCGrad (DEC-020): geometry vs predictive
     # Frontier sampler (DEC-017): multiplier on the geometry-family losses
     # (variance, rank, redundancy). 1.0 = the balanced point; >1 trades a bit
     # of predictive skill for state headroom — the explicit Pareto coordinate,

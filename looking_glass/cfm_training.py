@@ -222,15 +222,50 @@ def train_cfm(cfg: CFMConfig):
             if bank is not None:
                 # bank sees every batch's projected states (population window)
                 with torch.no_grad():
-                    _yb, _hb = model.ssm(
-                        model.tokens_batch(_collate([a_seqs[i] for i in b], vocab, device)),
-                        mask=_collate([a_seqs[i] for i in b], vocab, device)["mask"],
-                    )
+                    _t_b = _collate([a_seqs[i] for i in b], vocab, device)
+                    _yb, _hb = model.ssm(model.tokens_batch(_t_b), mask=_t_b["mask"])
                     bank.push(model.proj(_hb))
                 pen = bank.penalties()
                 if pen["redundancy_bank"] is not None:
                     # population-global geometry: lambda-driven, on top of batch terms
-                    loss = loss + bank.lam * (pen["redundancy_bank"] + pen["eigfloor"])
+                    loss = loss + bank.lam * (
+                        pen["redundancy_bank"] + pen["eigfloor"] + pen["barrier"]
+                    )
+            if cfg.pcgrad and use_amp:
+                scaler.scale(loss).backward()
+                scaler.unscale_(opt)
+                scaler.step(opt)
+                scaler.update()
+                model.ema(tau)
+                continue
+            if cfg.pcgrad:
+                # GROUPED PCGrad (DEC-020): 2 grouped backwards, not 13
+                # pairwise. g_geom projected onto the plane of g_pred on
+                # conflict — the geometry guard can never destroy predictive
+                # learning; predictive direction stays intact. Applied via
+                # manual param update (no .backward()).
+                g_pred = torch.autograd.grad(loss, params, retain_graph=True, allow_unused=True)
+                g_pred = [torch.zeros_like(p) if g is None else g for p, g in zip(params, g_pred)]
+                if bank is not None and pen.get("redundancy_bank") is not None:
+                    g_geom = torch.autograd.grad(
+                        bank.lam * (pen["redundancy_bank"] + pen["eigfloor"] + pen["barrier"]),
+                        params,
+                        allow_unused=True,
+                    )
+                    g_geom = [
+                        torch.zeros_like(p) if g is None else g for p, g in zip(params, g_geom)
+                    ]
+                    dot = sum((a * b).sum() for a, b in zip(g_pred, g_geom))
+                    n2 = sum((a * a).sum() for a in g_geom)
+                    if dot < 0 and n2 > 0:
+                        proj = dot / n2
+                        g_pred = [a - proj * b for a, b in zip(g_pred, g_geom)]
+                for p_, g_ in zip(params, g_pred):
+                    p_.grad = g_
+                scaler.step(opt)
+                scaler.update()
+                model.ema(tau)
+                continue
             scaler.scale(loss).backward()
             scaler.unscale_(opt)
             torch.nn.utils.clip_grad_norm_(params, 1.0)
@@ -720,18 +755,29 @@ class GeometryBank:
         cov = (zc.T @ zc) / max(zc.shape[0] - 1, 1)
         off = cov - torch.diag(cov.diagonal())
         red = (off**2).mean()
-        # singular-value floor: bounded hinge (the steep log-det barrier in
-        # stable form); on NORMALIZED covariance so tau is scale-free
+        # BARRIER (DEC-020): -log det(C_bank + eps I) — an un-crossable wall
+        # as any eigenvalue -> 0 (the off-diagonal L2 penalty decays as
+        # correlations get small and leaves weak pressure near collapse; the
+        # barrier does the opposite: infinitely steep). Epsilon-scaled to the
+        # trace so the wall position is scale-free. The soft tau-hinge on the
+        # normalized spectrum stays as a gentle floor below the barrier.
         sd = torch.sqrt(torch.diag(cov).clamp(min=1e-12))
         corr = cov / torch.outer(sd, sd)
         ev = torch.linalg.eigvalsh(corr).clamp(min=0.0)
         floor = torch.relu(self.tau - ev).sum()
+        eps = float(cov.diagonal().mean().clamp(min=1e-8)) * 1e-3
+        barrier = -torch.logdet(cov + eps * torch.eye(cov.shape[0], device=cov.device))
         # closed-loop governor: EMA-damped rank, proportional ramp
         bank_rank = self.eff_rank(z)
         gap = self.target - bank_rank
         self.lam = float(_np.clip(self.lam * _np.exp(self.alpha * gap), 1.0, self.lam_max))
         self.history.append({"bank_rank": round(bank_rank, 4), "lam": round(self.lam, 3)})
-        return {"redundancy_bank": red, "eigfloor": floor, "bank_rank": bank_rank}
+        return {
+            "redundancy_bank": red,
+            "eigfloor": floor,
+            "barrier": barrier,
+            "bank_rank": bank_rank,
+        }
 
 GEOMETRY_FAMILY = ("variance", "rank", "redundancy")
 
