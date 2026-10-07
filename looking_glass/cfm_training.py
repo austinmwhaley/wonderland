@@ -288,18 +288,21 @@ def train_cfm(cfg: CFMConfig):
             T_ = _task_losses(model, vocab, [a_seqs[i] for i in vi], cfg)
         # rolling EMA whitening stats (DEC-025): update per eval so the
         # whitening tracks the population instead of a static calibration slice
-        if getattr(cfg, "donor_whiten", True) and not hasattr(model, "whiten_on"):
-            with torch.no_grad():
-                vi_s = val_idx[:512]
-                _h = forward_states(model, [a_seqs[i] for i in vi_s])
-                _mu = _h.detach().float().cpu().mean(0)
-                _zc = _h.detach().float().cpu() - _mu
-                _cov = (_zc.T @ _zc) / max(_zc.shape[0] - 1, 1)
-                _ev, _V = torch.linalg.eigh(
-                    _cov.double() + 1e-4 * torch.eye(_cov.shape[0], dtype=torch.float64)
-                )
-                _W = (_V @ torch.diag(1.0 / torch.sqrt(_ev.clamp(min=1e-12))) @ _V.T).float()
-                model.set_whitening(_mu, _W)
+        if getattr(cfg, "donor_whiten", True) and not getattr(model, "whiten_on", False):
+            try:
+                with torch.no_grad():
+                    vi_s = val_idx[:512]
+                    _h = forward_states(model, [a_seqs[i] for i in vi_s])
+                    _mu = _h.detach().float().cpu().mean(0)
+                    _zc = _h.detach().float().cpu() - _mu
+                    _cov = (_zc.T @ _zc).double() / max(_zc.shape[0] - 1, 1)
+                    _ev, _V = torch.linalg.eigh(
+                        _cov + 1e-2 * torch.eye(_cov.shape[0], dtype=torch.float64)
+                    )
+                    _W = (_V @ torch.diag(1.0 / torch.sqrt(_ev.clamp(min=1e-8))) @ _V.T).float()
+                    model.set_whitening(_mu, _W)
+            except (RuntimeError, Exception):
+                pass  # whitening failed — retry next eval
         # STATIONARY selection metric: equal-weight held-out sum. DWA weights
         # change every eval, so a weighted metric would change definition
         # between evals — selection must compare like with like (DEC-016).
