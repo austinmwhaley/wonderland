@@ -29,7 +29,10 @@
 
 ## Micro
 
-- **Current task:** fielding table published (catalog §9, DEC-013); portfolio wiring (DEC-012 recorded: keep 13, combination map in catalog §1.5, keep/drop = measured structure-skill); finish wiring the v2.2.0 grade — `portfolio` CLI command,
+- **Current task:** v2.9.0 LOCKED as production encoder (all 13 portfolio
+  objectives PASS, geometry PASS by whitened readout, intrinsic 3/5 with
+  trajectory zigzag documented as structural — DEC-024). Next: bank governor
+  telemetry, contrast views, sf-R² extension to all MSE objectives. (DEC-012 recorded: keep 13, combination map in catalog §1.5, keep/drop = measured structure-skill); finish wiring the v2.2.0 grade — `portfolio` CLI command,
   train-time emission into the registry, integration tests for
   `portfolio.evaluate()`; then Stage 2 of DEC-006 continues (S2 validation on
   real data; both new objectives already train).
