@@ -2597,7 +2597,7 @@ requires-dist = [
     { name = "gymnasium" },
     { name = "matplotlib" },
     { name = "numpy" },
-    { name = "polars" },
+    { name = "polars", specifier = ">=1.30,<2" },
     { name = "pyarrow" },
     { name = "scikit-learn" },
     { name = "scipy" },
