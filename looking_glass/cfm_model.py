@@ -302,9 +302,8 @@ class CFM(nn.Module):
     def embed(self, x):
         """Public embedding S from the recurrence STATE (x = h, recency-weighted
         via the decay), or mean-pool if a per-step matrix is passed."""
-        x = self._whiten(x)
         v = self.proj(x) if x.dim() == 1 else self.proj(x.mean(0))
-        return F.normalize(v, dim=0)
+        return F.normalize(self._whiten(v), dim=0)
 
     def donor(self, x):
         """Donor representation for plugins: same projection WITHOUT L2
@@ -312,13 +311,16 @@ class CFM(nn.Module):
         Whitened at the boundary when the transform is set (DEC-022).
         1-D input = single state; 2-D (T, D) = per-step matrix, mean-pooled
         (the donor_seq contract). For (B, D) STATE BATCHES use donor_batch."""
-        x = self._whiten(x)
-        return self.proj(x) if x.dim() == 1 else self.proj(x.mean(0))
+        v = self.proj(x) if x.dim() == 1 else self.proj(x.mean(0))
+        return self._whiten(v)
 
     def donor_batch(self, h: "torch.Tensor") -> "torch.Tensor":
         """Donor readout for (B, D) state batches — no pooling, whitened when
-        the transform is set. The consumed representation (DEC-022)."""
-        return self.proj(self._whiten(h))
+        the transform is set. The consumed representation (DEC-022). Whitening
+        is applied AFTER `proj` (the actual boundary): whitening `h` first and
+        then projecting re-collapses the representation because `proj` is itself
+        ill-conditioned (measured PR/dim 0.85 -> 0.06)."""
+        return self._whiten(self.proj(h))
 
     def successor(self, state, gamma, reward_weight=None):
         """Item 3: query the discounted future at ANY horizon (gamma in (0,1)) from

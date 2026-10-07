@@ -222,14 +222,10 @@ def _info_plane(model, vocab, seqs, cfg, seed: int = 0) -> dict:
     is a lower bound on I(z_t; future_events_within_h). The multi-horizon
     sweep IS the information plane. No probe training — these are the same
     self-supervised objectives, re-measured on held-out data."""
-    import torch
-
-    from looking_glass.cfm_training import _task_losses
+    from looking_glass.cfm_training import task_losses_chunked
 
     horizons = list(getattr(cfg, "agg_horizons_days", []) or [7.0, 30.0])
-    torch.manual_seed(seed)
-    with torch.no_grad():
-        T_ = _task_losses(model, vocab, seqs, cfg)
+    T_ = task_losses_chunked(model, vocab, seqs, cfg, batch=128)
     # the predictive skills across horizons (from the portfolio receipt if
     # available, else report the raw losses as the plane's y-axis)
     rows = []
@@ -262,7 +258,7 @@ def evaluate(
     """Run all four intrinsic proofs on held-out sequences. Returns receipt."""
     import torch
 
-    from looking_glass.cfm_training import _val_split, forward_states
+    from looking_glass.cfm_training import _val_split, compute_whitening, forward_states
 
     t0 = time.perf_counter()
     _tr, val_idx = _val_split(len(seqs), seed)
@@ -271,6 +267,10 @@ def evaluate(
 
     was_training = model.training
     model.eval()
+    # Refit the donor-boundary whitening on this held-out split (DEC-022) so
+    # every proof grades a self-consistent consumed representation rather than a
+    # possibly stale/mismatched checkpoint transform.
+    compute_whitening(model, vocab, cfg, val)
     try:
         # states for geometry/disentanglement (whitened donor readout)
         states = []

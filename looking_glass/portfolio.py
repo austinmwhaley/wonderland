@@ -166,8 +166,8 @@ def evaluate(
     import torch
 
     from looking_glass.cfm_training import (
-        _task_losses,
         _val_split,
+        compute_whitening,
         forward_states,
     )
 
@@ -191,21 +191,27 @@ def evaluate(
 
     was_training = model.training
     model.eval()
+    # Refit the donor-boundary whitening on THIS held-out split (DEC-022) so the
+    # geometry gate grades a self-consistent consumed representation. A
+    # checkpoint's stored transform can be stale or fit on a different state
+    # distribution (measured: v3.0.0 shipped W implied an eigenvalue floor of
+    # 0.01 while held-out states reach 1e-11 -> PR/dim 0.06 instead of 0.76).
+    compute_whitening(model, vocab, cfg, val)
     try:
         for gi, g in enumerate(fold_ids):
             gset = set(g.tolist())
             batch = [s for s in val if s["customer"] in gset]
             if len(batch) < 2:
                 continue
+            from looking_glass.cfm_training import task_losses_chunked
+
             torch.manual_seed(seed + gi)  # identical stochastic draws (real vs destroyed)
             aux_r: dict = {}
-            with torch.no_grad():
-                real = _task_losses(model, vocab, batch, cfg, aux=aux_r)
+            real = task_losses_chunked(model, vocab, batch, cfg, batch=128, aux=aux_r)
             shuf_seqs = _destroyed(batch, seed * 1000 + gi)
             torch.manual_seed(seed + gi)
             aux_s: dict = {}
-            with torch.no_grad():
-                shuf = _task_losses(model, vocab, shuf_seqs, cfg, aux=aux_s)
+            shuf = task_losses_chunked(model, vocab, shuf_seqs, cfg, batch=128, aux=aux_s)
             if "sf_target_var" in aux_r and "sf_target_var" in aux_s:
                 sf_var_real.append(aux_r["sf_target_var"])
                 sf_var_shuf.append(aux_s["sf_target_var"])

@@ -39,6 +39,42 @@ def _seqs(n=24):
     return [_seq(f"c{i}", day=f"2025-01-{(i % 28) + 1:02d}") for i in range(n)]
 
 
+def test_donor_boundary_whitening_is_self_consistent(monkeypatch):
+    """Regression (DEC-022): whitening must be fit AND applied at the SAME
+    boundary (after `proj`). Pre-fix, whitening was fit on h and applied before
+    proj, so the receipt reported pr_after~0.85 while the consumed readout
+    `proj(_whiten(h))` collapsed to ~0.06 under an ill-conditioned proj."""
+    from looking_glass import cfm_training
+
+    dim = 16
+    seqs = _seqs(2)
+    torch.manual_seed(0)
+    model = CFM(EventVocab.build(seqs), dim=dim, n_experts=1)
+    model.eval()
+    with torch.no_grad():  # a trained proj is ill-conditioned (measured sv 0.002..7.9)
+        model.proj.weight.copy_(torch.diag(torch.logspace(0, -3, dim)))
+        if model.proj.bias is not None:
+            model.proj.bias.zero_()
+    monkeypatch.setattr(
+        cfm_training,
+        "forward_states",
+        lambda m, s, h0s=None: torch.randn(len(s), dim),
+    )
+    cfg = CFMConfig()
+    wh = cfm_training.compute_whitening(
+        model, model.vocab, cfg, [{"x": i} for i in range(800)], n=800
+    )
+    assert wh["applied"], wh
+    H = torch.randn(800, dim)
+    z = model.donor_batch(H)
+    zc = z - z.mean(0)
+    ev = torch.linalg.eigvalsh(((zc.T @ zc) / (z.shape[0] - 1)).double()).clamp(min=0)
+    measured = float(ev.sum() ** 2 / (ev**2).sum()) / dim
+    # the reported post-whitening rank must match what the consumed readout shows
+    assert abs(measured - wh["pr_after"]) < 0.15, (measured, wh["pr_after"])
+    assert measured > 0.5, measured
+
+
 def test_disentanglement_runs_and_flags_anisotropy():
     from looking_glass.intrinsic import _disentanglement
 

@@ -29,33 +29,27 @@
 
 ## Micro
 
-- **Current task:** v2.9.0 LOCKED as production encoder (all 13 portfolio
-  objectives PASS, geometry PASS by whitened readout, intrinsic 3/5 with
-  trajectory zigzag documented as structural — DEC-024). Next: bank governor
-  telemetry, contrast views, sf-R² extension to all MSE objectives. (DEC-012 recorded: keep 13, combination map in catalog §1.5, keep/drop = measured structure-skill); finish wiring the v2.2.0 grade — `portfolio` CLI command,
-  train-time emission into the registry, integration tests for
-  `portfolio.evaluate()`; then Stage 2 of DEC-006 continues (S2 validation on
-  real data; both new objectives already train).
-- **Last completed:** objectives catalog published
-  (`looking_glass/specs/objectives_catalog.html` — 13 current objectives with
-  inductive bias/failure modes, the 7-family operator menu, full landscape,
-  universal capability-driven plan; **HTML-only per DEC-011: default-on,
-  opt-out policy**) + DEC-009/DEC-010/DEC-011 recorded; v2.2.0 core
-  committed (combined-objective selection, query/agg objectives, portfolio
-  module, mask/contrast/sf_mode audit fixes) — 222 tests green.
-  Stage-1 spike done on BOTH streams (DEC-006a):
-  rabbit_hole → frequency +0.023 / event_mix +0.020 beat the donor (recency
-  worst, −0.124); Instacart → recency +0.065 beats the donor (frequency and
-  event_mix lose). Each stream names a different missing statistic — the
-  S1-then-S2 plan is now data-backed, not assumed.
+- **Current task:** v3.0.1 — donor-boundary whitening fix (DEC-026). Root cause
+  of the v3.0.0 geometry FAIL found and fixed: whitening was fit on `h` and
+  applied *before* `proj`, so the ill-conditioned `proj` re-collapsed the
+  consumed readout (PR/dim 0.06). Fixed to `_whiten(proj(h))` + grade-time
+  refit + degenerate no-op fail-safe + chunked `_task_losses` (GPU OOM). Re-grade
+  of v3.0.0 weights: **portfolio PASS 14/14 + geometry 0.76**, **intrinsic 4/5**
+  (OOT 1.125 PASS; slow-trajectory structural FAIL per DEC-024). Next: retrain
+  v3.0.1 so the shipped checkpoint's frozen transform matches the new boundary
+  order (old ckpt W is stale), then regenerate products; add bank governor
+  telemetry / contrast views / sf-R² extension.
+- **Last completed:** v3.0.0 dual-velocity trained (DEC-025); objectives &
+  intrinsic graders fixed; DEC-026 recorded; 239 fast tests green; regression
+  test `test_donor_boundary_whitening_is_self_consistent` added.
 - **Immediate next 3 actions:**
-  1. S1: query-time readout — gap-aware learned read + train the path
-     (correctness + Instacart lever); gate = ablation `donor_beats_raw` on
-     Instacart, battery + plugin gate unchanged.
-  2. S2: multi-horizon aggregate targets (rabbit_hole lever); gate = ablation
-     flips on rabbit_hole under the same guards.
-  3. Log the S1 verdict in DECISIONS/STATUS; only then consider S3
-     (integrator dynamics), per DEC-006/006a.
+  1. Retrain v3.0.1 (`--warm-start none`, Instacart fixture) so the saved
+     `whiten_mean/whiten_W` are fit at the corrected boundary; verify the
+     train-time whitening receipt reports pr_after ~0.76 and portfolio PASS.
+  2. Rebuild products (`products` CLI) from the v3.0.1 checkpoint so the served
+     `donor_embeddings` use the correct transform (train/serve parity).
+  3. Log the v3.0.1 verdict in DECISIONS/STATUS; keep the slow-trajectory
+     structural note (DEC-024) as the one open intrinsic gap.
 - **Environment:** repo `~/Documents/wonderland` (main, CI green);
   `python3 -m pytest -m "not slow"` -> 215 passed; GPU cuda available;
   standing products `looking_glass/artifacts/cfm/cfm_products.duckdb`

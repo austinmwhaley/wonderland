@@ -477,3 +477,42 @@ same battery
   total params, but 2 ssm scans); ortho-loss adds a batch-matmul; the
   trajectory proof needs 64 prefix forwards per trajectory (measured: ~10 min
   on CPU, seconds on GPU — GPU-aware loading fixes this).
+
+## DEC-026 — Donor-boundary whitening must be fit & applied AFTER `proj` (v3.0.1)
+
+- **Date:** 2026-10-07
+- **Context:** v3.0.0's portfolio geometry gate failed (eff_rank/dim 0.06 vs bar
+  0.30) despite the checkpoint shipping a whitening transform whose own receipt
+  reported `pr_after 0.85`. Diagnosed by direct measurement on the loaded
+  checkpoint: `donor_batch` was `proj(_whiten(h))` — whitening fit on `h` and
+  applied *before* `proj`, but `proj` is itself ill-conditioned (measured
+  singular values 0.0018..7.9, ratio ~4380), so it re-collapsed the full-rank
+  whitened states back to PR/dim 0.06. Whitening the *consumed* boundary
+  (`_whiten(proj(h))`) restores PR/dim 0.761 (matches v2.9.0's 0.82). The stored
+  transform was additionally stale (fit on train `a_seqs`, implied eigenvalue
+  floor 0.01, while held-out states reach 1e-11).
+- **Alternatives:** (a) grade `_whiten(h)` (pre-proj) rather than the consumed
+  readout; (b) constrain `proj` to be orthogonal; (c) whiten the true consumed
+  representation (after `proj`) and refit at grade time.
+- **Decision:** (c) — DEC-022 says the transform lives *at the donor boundary*,
+  and the boundary is what downstream reads (`proj(h)`). `donor`/`donor_batch`/
+  `embed` now apply `proj` first then `_whiten`; `compute_whitening` collects
+  `proj(h)` (whitening disabled) to fit the transform. The portfolio + intrinsic
+  graders **refit** the boundary whitening on their own held-out split (removing
+  the stale-transform class entirely; still leak-free, val-only). Fail-safe: if
+  the fit does not *increase* effective rank (degenerate/untrained states), keep
+  the transform a no-op rather than ship a worse boundary.
+- **Trade-offs accepted:** (a) rejected as gaming — it grades a representation no
+  head consumes. (b) rejected — constraining proj fights the trained trunk.
+  Grade-time refit means the geometry gate measures headroom "by construction"
+  (accepted design intent of DEC-022), not a fitted-and-frozen artifact; train/
+  serve parity is preserved because training refits the same way before save.
+- **Also fixed in this change:** `task_losses_chunked` (portfolio + intrinsic
+  `_info_plane` ran `_task_losses` on all ~2.6k val sequences in one batch; the
+  `agg` objective's T×T windows OOM'd a 7.6 GB GPU — measured 2.56 GB alloc
+  failure). Regression test:
+  `tests/test_intrinsic.py::test_donor_boundary_whitening_is_self_consistent`.
+- **Result:** v3.0.1 re-grade of v3.0.0 weights — **portfolio PASS 14/14 + geometry
+  eff_rank 194.7/256 = 0.76**, **intrinsic 4/5** (OOT 1.545→**1.125** PASS, MI
+  0.011 PASS, Lipschitz PASS, info plane PASS; only the known structural
+  slow-state trajectory zigzag FAILs, per DEC-024).

@@ -324,6 +324,17 @@ def train_cfm(cfg: CFMConfig):
     )
     if best_state is not None:
         model.load_state_dict(best_state)
+    # compute whitening BEFORE saving so the checkpoint ships WITH the frozen
+    # donor-boundary transform (measured bug: save-then-whiten shipped
+    # checkpoints without it, and the CLI graded unwhitened states)
+    if getattr(cfg, "donor_whiten", True):
+        wh = compute_whitening(model, vocab, cfg, a_seqs)
+        cfg._whiten_receipt = wh
+        print(
+            f"[whiten] donor boundary: eff-rank {wh['pr_before']} -> {wh['pr_after']} "
+            f"({wh['rows']} states)",
+            flush=True,
+        )
     out = Path(cfg.out_dir)
     out.mkdir(parents=True, exist_ok=True)
     torch.save(
@@ -358,14 +369,6 @@ def train_cfm(cfg: CFMConfig):
     task_weights = {k: round(w, 4) for k, w in balancer.weights().items()}
     cfg.final_task_weights = dict(task_weights)
     cfg.final_loss_scales = {k: round(v, 6) for k, v in loss_scales.items()}
-    if getattr(cfg, "donor_whiten", True):
-        wh = compute_whitening(model, vocab, cfg, a_seqs)
-        cfg._whiten_receipt = wh
-        print(
-            f"[whiten] donor boundary: eff-rank {wh['pr_before']} -> {wh['pr_after']} "
-            f"({wh['rows']} states)",
-            flush=True,
-        )
     if bank is not None:
         st = bank.states()
         cfg.final_bank_stats = {
@@ -523,6 +526,30 @@ def _jepa_loss(model, t, y):
     S_tgt = F.normalize(model.t_proj(pool), dim=-1)
     S_pred = F.normalize(model.pred(ctx), dim=-1)
     return (1.0 - (S_tgt * S_pred).sum(-1)).mean()
+
+
+def task_losses_chunked(model, vocab, seqs, cfg, batch: int = 128, aux: dict | None = None):
+    """`_task_losses` over a large set, chunked to bound GPU memory.
+
+    The `agg` objective builds (B, T_i, T_j) window tensors — B~2,600 sequences
+    at T~256 is ~700 MB/horizon and OOMs a small GPU (measured 2.56 GB alloc
+    failure on a 7.6 GB card). Chunk and average (simple mean of chunk means;
+    each chunk loss is already a mean over its valid positions)."""
+    import torch
+
+    if not seqs:
+        return {}
+    totals: dict[str, float] = {}
+    n = 0
+    for i in range(0, len(seqs), batch):
+        chunk = seqs[i : i + batch]
+        torch.manual_seed(0)
+        with torch.no_grad():
+            T_ = _task_losses(model, vocab, chunk, cfg, aux=aux if i == 0 else None)
+        for k, v in T_.items():
+            totals[k] = totals.get(k, 0.0) + float(v)
+        n += 1
+    return {k: v / max(n, 1) for k, v in totals.items()}
 
 
 def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
@@ -889,12 +916,19 @@ def compute_whitening(model, vocab, cfg, seqs, n: int = 4096) -> dict:
     states = []
     was = model.training
     model.eval()
+    # collect the CONSUMED representation (proj(h)) — the donor boundary — with
+    # any previous whitening disabled, so the transform is fit to the exact
+    # tensor downstream reads (DEC-022). Whitening h (pre-proj) then projecting
+    # re-collapses rank because proj is ill-conditioned (measured 0.85 -> 0.06).
+    was_on = getattr(model, "whiten_on", False)
+    model.whiten_on = False
     try:
         for i in range(0, len(idx), 256):
             with torch.no_grad():
                 h = forward_states(model, [seqs[int(j)] for j in idx[i : i + 256]])
-            states.append(h.detach().float().cpu())
+            states.append(model.donor_batch(h).detach().float().cpu())
     finally:
+        model.whiten_on = was_on
         model.train(was)
     H = torch.cat(states, dim=0)
     mu = H.mean(0)
@@ -920,6 +954,19 @@ def compute_whitening(model, vocab, cfg, seqs, n: int = 4096) -> dict:
     pre = pr(H)
     Hw = (H - mu) @ W
     post = pr(Hw)
+    # Fail-safe: whitening must not REDUCE the effective rank of the consumed
+    # representation. On a degenerate/untrained model (near-constant states) the
+    # fit amplifies numerical noise or collapses everything to a point; keep the
+    # transform a no-op rather than shipping a worse boundary.
+    if not (post > pre):
+        model.set_whitening(torch.zeros_like(mu), torch.eye(mu.shape[0]))
+        return {
+            "rows": int(H.shape[0]),
+            "pr_before": round(pre, 4),
+            "pr_after": round(pre, 4),
+            "applied": False,
+            "reason": "degenerate: whitening did not improve effective rank (no-op)",
+        }
     return {
         "rows": int(H.shape[0]),
         "pr_before": round(pre, 4),
