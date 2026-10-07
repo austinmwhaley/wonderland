@@ -76,7 +76,7 @@ def test_trajectory_velocity_and_continuity():
     cfg = CFMConfig()
     out = _trajectory(model, model.vocab, seqs, cfg, n_traj=4, seed=0)
     assert out["n_trajectories"] > 0
-    for k in ("directional_cos_raw", "directional_cos_whitened"):
+    for k in ("directional_cos_raw", "directional_cos_slow", "directional_cos_whitened"):
         assert -1.0 <= out[k]["mean"] <= 1.0
     assert out["speed_mean"] >= 0
 

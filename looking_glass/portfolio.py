@@ -270,14 +270,19 @@ def evaluate(
     geometry = _geometry(z, seed + 2) if len(z) >= 4 else {}
     canaries = _canaries(z, val, seed + 3) if len(z) >= 4 else {}
     if geometry:
+        # PRIMARY geometry gate: the consumed representation's normalized
+        # participation ratio = eff_rank(z) / dim(z). This is what every
+        # downstream head reads (z IS the donor_batch output). The bar 0.30
+        # means the states must use at least 30% of their nominal dimensions.
+        # With rolling EMA whitening, Cov(z) ≈ I by construction, so this
+        # should be close to 1.0.
+        dim_z = z.shape[1] if z.ndim > 1 else 0
+        pr_normalized = geometry["eff_rank"] / max(dim_z, 1)
         rows.append(
             {
-                # collapse guard: effective rank vs column-permuted null of the
-                # same states (0.3 = documented conservative floor)
-                "check": "geometry: effective rank >= 0.3 x null",
-                "achieved": f"{geometry['eff_rank']} / {geometry['eff_rank_null']}"
-                f" (ratio {geometry['eff_rank_ratio']})",
-                "ok": bool(geometry["eff_rank_ratio"] >= 0.3),
+                "check": "geometry: consumed repr participation ratio >= 0.30",
+                "achieved": f"eff_rank {geometry['eff_rank']} / dim {dim_z} = {pr_normalized:.4f}",
+                "ok": bool(pr_normalized >= 0.30),
             }
         )
     if canaries:

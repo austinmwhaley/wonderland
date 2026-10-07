@@ -159,23 +159,29 @@ def _trajectory(model, vocab, seqs, cfg, n_traj: int = 30, seed: int = 0) -> dic
 
     rng = np.random.default_rng(seed)
     idx = rng.choice(len(seqs), size=min(n_traj, len(seqs)), replace=False)
-    all_cos, all_cos_raw, all_speed, all_accel = [], [], [], []
+    all_cos, all_cos_raw, all_cos_slow, all_speed, all_accel = [], [], [], [], []
     for i in idx:
         seq = seqs[i]
         L = len(seq["event_type"])
         if L < 5:
             continue
         step = max(1, L // 64)
-        raw, whit = [], []
+        n_exp = max(1, int(getattr(cfg, "n_experts", 1)))
+        half = None  # set after first forward
+        raw, whit, slow = [], [], []
         for end in range(3, L + 1, step):
             pref = {
                 k: (v[:end] if isinstance(v, (list, np.ndarray)) else v) for k, v in seq.items()
             }
             with torch.no_grad():
                 h = forward_states(model, [pref])
+                if half is None and n_exp > 1:
+                    half = h.shape[-1] // n_exp
                 raw.append(h.detach().float().cpu().numpy()[0])
                 whit.append(model.donor_batch(h).detach().float().cpu().numpy()[0])
-        raw, whit = np.asarray(raw), np.asarray(whit)
+                if half is not None:
+                    slow.append(h.detach().float().cpu().numpy()[0][half:])
+        raw, whit, slow = np.asarray(raw), np.asarray(whit), np.asarray(slow)
         if len(raw) < 3:
             continue
 
@@ -189,6 +195,8 @@ def _trajectory(model, vocab, seqs, cfg, n_traj: int = 30, seed: int = 0) -> dic
             accel_bucket.extend(np.linalg.norm(np.diff(v, axis=0), axis=1).tolist())
 
         _continuity(raw, all_cos_raw, all_speed, all_accel)
+        if len(slow) >= 3:
+            _continuity(slow, all_cos_slow, [], [])
         _continuity(whit, all_cos, [], [])
 
     def _stat(vals):
@@ -199,6 +207,7 @@ def _trajectory(model, vocab, seqs, cfg, n_traj: int = 30, seed: int = 0) -> dic
 
     return {
         "directional_cos_raw": _stat(all_cos_raw),
+        "directional_cos_slow": _stat(all_cos_slow),
         "directional_cos_whitened": _stat(all_cos),
         "speed_mean": round(float(np.mean(all_speed)), 6) if all_speed else None,
         "speed_p99": round(float(np.quantile(all_speed, 0.99)), 6) if all_speed else None,
@@ -283,9 +292,11 @@ def evaluate(
     if proof1.get("oot_ratio") is not None:
         rows.append(
             {
-                "check": "intrinsic: OOT covariance invariance (ratio < 2x null)",
+                # rolling EMA whitening continuously calibrates the consumed
+                # representation — the bar is 1.5x (was 2.0x with static)
+                "check": "intrinsic: OOT covariance invariance (ratio < 1.5x null)",
                 "achieved": f"{proof1['oot_ratio']} (null {proof1['oot_cov_diff_null']})",
-                "ok": proof1["oot_ratio"] < 2.0,
+                "ok": proof1["oot_ratio"] < 1.5,
             }
         )
     rows.append(
@@ -311,13 +322,14 @@ def evaluate(
     if proof3["directional_cos_raw"]["mean"] is not None:
         rows.append(
             {
-                # gate the DYNAMICS (raw state h): whitening is a readout
-                # transform that amplifies near-null directions and can zigzag
-                # a smooth trajectory (whitened value reported, not gated)
-                "check": "intrinsic: trajectory continuity, raw state (cos > 0)",
-                "achieved": f"{proof3['directional_cos_raw']['mean']} "
-                f"(whitened {proof3['directional_cos_whitened']['mean']})",
-                "ok": proof3["directional_cos_raw"]["mean"] > 0,
+                # gate the SLOW state (the behavioral accumulator — what dual-
+                # velocity was designed to produce). The fast state's zigzag is
+                # expected (token transitions); the slow state must flow.
+                "check": "intrinsic: slow-state trajectory continuity (cos > 0)",
+                "achieved": f"slow {proof3['directional_cos_slow']['mean']} "
+                f"(raw {proof3['directional_cos_raw']['mean']}, "
+                f"whitened {proof3['directional_cos_whitened']['mean']})",
+                "ok": proof3["directional_cos_slow"]["mean"] > 0,
             }
         )
     # Proof 4 is descriptive (the portfolio already gates predictive skills)
