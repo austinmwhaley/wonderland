@@ -33,6 +33,7 @@ verdicts/
 
 # generated docs / scratch results
 *.html
+!looking_glass/specs/objectives_catalog.html
 *.bak
 neg*.json
 

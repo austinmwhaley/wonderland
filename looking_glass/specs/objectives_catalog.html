@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Layer-B objective catalog — looking_glass</title>
+<style>
+  :root { --ink:#1a1d21; --mut:#5b6470; --line:#dfe3e8; --bg:#ffffff; --soft:#f6f8fa; --acc:#245bd1; }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:2.5rem 1.5rem 5rem; font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+         color:var(--ink); background:var(--bg); }
+  main { max-width: 62rem; margin:0 auto; }
+  h1 { font-size:1.9rem; line-height:1.25; margin:.2rem 0 1rem; }
+  h2 { font-size:1.35rem; margin:2.4rem 0 .8rem; padding-bottom:.35rem; border-bottom:2px solid var(--line); }
+  h3 { font-size:1.1rem; margin:1.6rem 0 .6rem; }
+  a { color:var(--acc); text-decoration:none; }
+  a:hover { text-decoration:underline; }
+  p, li { color:var(--ink); }
+  strong { font-weight:650; }
+  code { font:13px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+         background:var(--soft); border:1px solid var(--line); border-radius:4px; padding:.05rem .3rem; }
+  pre { background:var(--soft); border:1px solid var(--line); border-radius:8px; padding:.9rem 1rem; overflow-x:auto; }
+  pre code { background:none; border:none; padding:0; }
+  table { border-collapse:collapse; width:100%; margin:.8rem 0 1.4rem; font-size:.94rem; }
+  th, td { border:1px solid var(--line); padding:.45rem .6rem; text-align:left; vertical-align:top; }
+  th { background:var(--soft); font-weight:650; }
+  tr:nth-child(even) td { background:#fbfcfd; }
+  blockquote { margin:.8rem 0; padding:.4rem .9rem; border-left:3px solid var(--acc); background:var(--soft); color:var(--mut); }
+  .toc { background:var(--soft); border:1px solid var(--line); border-radius:10px; padding:.8rem 1.2rem; margin:1.2rem 0 2rem; }
+  .toc ul { margin:.3rem 0 0; padding-left:1.2rem; columns:2; column-gap:2rem; }
+  .toc li { margin:.15rem 0; font-size:.93rem; }
+  .meta { color:var(--mut); font-size:.9rem; }
+  hr { border:none; border-top:1px solid var(--line); margin:2.5rem 0; }
+  @media (max-width:700px) { .toc ul { columns:1; } table { font-size:.85rem; } }
+  @media print { body { padding:0; } .toc { display:none; } a { color:var(--ink); } }
+</style>
+</head>
+<body>
+<main>
+<nav class="toc"><strong>Contents</strong><ul>
+        <li><a href="#0-the-three-axes-frame">0. The three axes (frame)</a></li>
+        <li><a href="#1-objectives-we-train-today-13-inductive-bias-guarded-failure">1. Objectives we train today (13) — inductive bias &amp; guarded failure</a></li>
+        <li><a href="#2-the-operating-menu-seven-families-operator-taxonomy">2. The operating menu — seven families (operator taxonomy)</a></li>
+        <li><a href="#3-wider-landscape-other-common-objectives-not-yet-in-the-menu">3. Wider landscape — other common objectives (not yet in the menu)</a></li>
+        <li><a href="#4-where-the-next-quality-comes-from-ranking-for-our-case">4. Where the next quality comes from (ranking for our case)</a></li>
+        <li><a href="#5-universal-encoder-plan-any-stream-in-objective-plan-train-grade">5. Universal-encoder plan: any stream in → objective plan → train → grade</a></li>
+        <li><a href="#6-references-canonical-per-family">6. References (canonical per family)</a></li>
+    <li><a href="#combination-map">1.5 Combination map (DEC-012)</a></li>
+    </ul></nav>
+<h1 id="layer-b-objective-catalog-looking_glass">Layer-B objective catalog — looking_glass</h1>
+<p><strong>What this is:</strong> the reference for what the encoder can be trained on, what
+each objective forces into the state, what we run today, and the full menu of
+common self-supervised alternatives — organized so an operator can decide
+what to keep on and what to opt out of for any event stream. Maintained under
+DEC-008/DEC-009/DEC-011; the standing grade for whatever is ON lives in
+<code>looking_glass/portfolio.py</code>.</p>
+<p><strong>Policy (DEC-011): every implemented objective is ON by default.</strong> Opting
+out is the decision — opting in never is.</p>
+<p><strong>How to read status marks</strong></p>
+<table>
+<thead>
+<tr>
+<th>mark</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>✅</td>
+<td>implemented; trains <strong>default-ON</strong>, graded by the portfolio receipt</td>
+</tr>
+<tr>
+<td>🔧</td>
+<td>implemented and <strong>default-ON</strong>, with a known defect (fix scheduled)</td>
+</tr>
+<tr>
+<td>⏸</td>
+<td>not yet implemented — build candidates; once built they land <strong>default-ON</strong> via the entry protocol</td>
+</tr>
+<tr>
+<td>⛔</td>
+<td>excluded by doctrine (reason stated)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Entry protocol (DEC-011, replaces DEC-010's opt-in phrasing):</strong>
+<em>Adding an objective:</em> implement → tests → portfolio grade → version bump →
+it lands <strong>default-ON</strong>. <em>Keeping an objective off</em> is always an explicit,
+recorded act: either (a) an operator opt-out — <code>--set objectives=(...)</code>,
+recorded in the registry receipt — or (b) an <strong>automatic data opt-out</strong>: the
+capability probe (§5) proves a prerequisite absent, so the objective
+auto-skips with the missing capability written to the plan receipt. Never
+silent, never half-working, and nothing is on-but-ungradeable: whatever
+trains must appear in the portfolio grade.</p>
+<hr />
+<h2 id="0-the-three-axes-frame">0. The three axes (frame)</h2>
+<p>Every objective sits on three independent axes; the set is only "complete"
+when coverage is deliberate across all three:</p>
+<ol>
+<li><strong>WHAT is predicted:</strong> raw observable token · continuous attribute ·
+   latent vector · aggregate statistic</li>
+<li><strong>WHEN:</strong> immediate next step · fixed horizon · whole future suffix ·
+   continuous horizon sweep</li>
+<li><strong>HOW the loss shapes space:</strong> discriminative · generative · geometric
+   (align/uniform/decorrelate) · structural (order/invariance)</li>
+</ol>
+<p>Our default set covers all three values of WHAT and all four HOW families;
+WHEN has next-step, suffix (jepa), sampled-moment (query) and horizon-sweep
+(sf) plus exact finite windows (agg). The gaps are mostly in <em>structure of the
+entity vocabulary</em>, <em>distributions instead of points</em>, and <em>non-stationarity</em>
+(see §4).</p>
+<hr />
+<h2 id="1-objectives-we-train-today-13-inductive-bias-guarded-failure">1. Objectives we train today (13) — inductive bias &amp; guarded failure</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>objective</th>
+<th>what it forces the state to encode</th>
+<th>failure mode it guards</th>
+<th>status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><code>next</code></td>
+<td>conditional distribution over the event alphabet given history — the Markov abstraction that transfers</td>
+<td>a state that memorizes the last event instead of integrating history</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>entity</code></td>
+<td>fine-grained identity inside a type (which member, not just category), long-tail resolution</td>
+<td>category-only representations that cannot separate SKUs/customers</td>
+<td>✅ (weakness: flat softmax over big vocab — see semantic-ID ⏸)</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>dt</code></td>
+<td>timing/urgency — the intensity of the underlying process (log param = multiplicative gaps, heavy tails)</td>
+<td>a "bag of events" representation blind to rhythm</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>value</code></td>
+<td>magnitude/severity orthogonal to type — money sensitivity</td>
+<td>latents identical for identical events of wildly different size</td>
+<td>✅ (requires a value field — capability-gated in the plan)</td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>occur</code></td>
+<td>discrete-time hazard: "does anything happen soon?", class-balanced by construction (median-gap threshold)</td>
+<td>zero-inflation swamping the timing gradient (optimization-stability role; subsumed informationally by <code>dt</code>)</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>6</td>
+<td><code>mask</code></td>
+<td>interpolatability from <strong>left context with the position redacted</strong> — denoising robustness</td>
+<td>fragile dependence on exact neighbors; sparse/missing events (a real serving condition)</td>
+<td>✅ <strong>fixed this cycle</strong>: see note A</td>
+</tr>
+<tr>
+<td>7</td>
+<td><code>order</code></td>
+<td>sequential structure itself — "time flows"</td>
+<td>permutation-invariant encoders acing content heads while ignoring order</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>8</td>
+<td><code>contrast</code></td>
+<td>instance dispersion (repel other batch states on the sphere)</td>
+<td>dimensional crowding</td>
+<td>🔧 <strong>see note B</strong> — intended alignment has no second view</td>
+</tr>
+<tr>
+<td>9</td>
+<td><code>redundancy</code></td>
+<td>channel independence (decorrelation = Barlow/VICReg covariance term)</td>
+<td>low-rank collapse of every other head's geometry; <strong>load-bearing for jepa</strong></td>
+<td>✅ graded in geometry section too</td>
+</tr>
+<tr>
+<td>10</td>
+<td><code>jepa</code></td>
+<td>sufficiency for the future's <em>representation</em> (EMA teacher over the suffix) — self-distillation, negative-free alignment</td>
+<td>point-prediction overfitting to stochastic detail; teacher-smoothed long-horizon structure</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>11</td>
+<td><code>sf</code></td>
+<td>linearly-decomposable model of future occupancy: discounted visitation to each φ-feature at sampled γ (horizon-free sweep)</td>
+<td>representations that answer "what does the future look like" but not "what it's worth in feature space"</td>
+<td>✅ event-agnostic φ (value + per-event-type components; legacy purchase-mode kept for old checkpoints)</td>
+</tr>
+<tr>
+<td>12</td>
+<td><code>query</code></td>
+<td>the readout at an <em>arbitrary moment</em>: state faded across a sampled gap must predict next type/time</td>
+<td>the serving path (fade last-event → anchor) never receiving a gradient; recency hidden as magnitude shrinkage</td>
+<td>✅ new (DEC-006 S1 as self-supervision)</td>
+</tr>
+<tr>
+<td>13</td>
+<td><code>agg</code></td>
+<td>exact window integration: log1p count and log1p value-sum in (t, t+h] at horizons derived from gap quantiles</td>
+<td>long-horizon activity structure never demanded of the state (the statistics raw RFM hands downstream for free)</td>
+<td>✅ new (DEC-006 S2 as self-supervision)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Unifying observation (§1 cluster 1–5):</strong> <code>{next, entity, dt, value}</code> factor
+by construction = the likelihood of a <strong>marked temporal point process</strong>
+(type × mark × time). What's missing for TPP completeness is an explicit
+continuous-time intensity λ(t|h) — listed as candidate §5a.</p>
+<p><strong>Note A — <code>mask</code> is causal in <em>our</em> implementation.</strong> The backbone is a
+prefix-scan recurrence: masked positions are predicted from left context
+only; right context never participates (tested:
+<code>tests/test_objectives_portfolio.py::test_masked_forward_causal_and_redacted</code>).
+All content channels at the masked position are redacted (type/brand/entity/
+value); arrival time (<code>dt</code>) and covariates (<code>co</code>) remain — the task is "an
+event of unknown kind arrives after this gap", which matches serving on
+sparse streams. If the backbone ever becomes bidirectional this note must be
+re-derived. Mask rate is <code>cfg.mask_frac</code> (config).</p>
+<p><strong>Note B — <code>contrast</code> currently has no positive pair.</strong> The implemented loss
+is <code>CE(normalize(proj(h)) @ normalize(proj(h)).T / τ, identity)</code> over one view
+per sequence: the diagonal is trivially 1.0, so the loss reduces to <em>repelling
+other batch members</em> — uniformity only, no alignment. <code>cfg.gamma_contrast</code> is
+never referenced (dead config). Fix candidates: real augmentation views
+(value-jitter, time-jitter, entity-dropout, subsequence crop — the view design
+IS the inductive bias), or reclassify it explicitly as a uniformity term
+alongside <code>redundancy</code>. Until fixed: 🔧.</p>
+<h2 id="combination-map">1.5 Combination map — what reinforces what, what conflicts (DEC-012)</h2>
+<p><strong>Synergistic clusters</strong> (keep together; each makes the others better):</p>
+<table>
+<thead><tr><th>cluster</th><th>members</th><th>why together</th></tr></thead>
+<tbody>
+<tr><td>TPP core (marked point process)</td><td><code>next</code> + <code>entity</code> + <code>dt</code> + <code>value</code></td><td>jointly = the factorized likelihood of the next event (type × mark × time); gradients reinforce one representation of “what is happening now”</td></tr>
+<tr><td>hazard stack</td><td><code>dt</code> + <code>occur</code> + <code>agg</code> + <code>query</code></td><td>four views of one quantity (when is the next event): regression, balanced classifier, exact windows, faded readout — the state gets the same physics from four angles</td></tr>
+<tr><td>future stack</td><td><code>sf</code> + <code>agg</code> + <code>jepa</code></td><td>discounted sweep (sf) + exact windows (agg) + latent suffix (jepa): multi-resolution summary of the same future; none alone covers all resolutions</td></tr>
+<tr><td>geometry pair</td><td><code>redundancy</code> + <code>jepa</code> (and <code>contrast</code> once views land)</td><td>alignment without collapse: jepa pulls context→target, redundancy keeps channels used; <strong>redundancy is load-bearing — jepa alone can collapse</strong></td></tr>
+<tr><td>structure regularizers</td><td><code>order</code> + <code>mask</code></td><td>cheap guards: order = “time flows”, mask = “missing events are survivable” (serving-realistic since the redaction fix)</td></tr>
+<tr><td>readout</td><td><code>query</code></td><td>reuses <code>next</code>/<code>dt</code> heads at faded states — meaningless without them, makes them serve-ready with them</td></tr>
+</tbody>
+</table>
+<p><strong>Known tensions</strong> (managed, not feared):</p>
+<table>
+<thead><tr><th>tension</th><th>mechanism</th><th>our mitigation</th></tr></thead>
+<tbody>
+<tr><td>invariance vs sensitivity</td><td><code>contrast</code> (wants views-invariance) vs <code>next</code>/<code>mask</code> (want exact-token sensitivity)</td><td>learned uncertainty weights absorb scale conflict; proper views fix the <em>semantics</em> (align positives, repel negatives) so the tug-of-war becomes the standard contrastive geometry</td></tr>
+<tr><td>repel-all vs smoothness</td><td>contrast-as-uniformity-only pushes apart even semantically-similar customers</td><td>same fix: views; until then contrast is the weakest term (first out under compute pressure)</td></tr>
+<tr><td>self-referential targets</td><td><code>jepa</code> targets come from the same (forgetful) encoder</td><td>EMA teacher (slow target) + <code>redundancy</code> anti-collapse; portfolio geometry gate watches eff-rank</td></tr>
+<tr><td>regression swamping</td><td>many MSE heads (<code>dt</code>, <code>value</code>, <code>agg</code>, <code>sf</code>) could drown CE heads (or vice versa)</td><td>uncertainty weighting + balanced <code>occur</code>; portfolio grades each separately so swamping is visible</td></tr>
+</tbody>
+</table>
+<p><strong>Bad combinations</strong> (do not run):</p>
+<table>
+<thead><tr><th>combo</th><th>why bad</th></tr></thead>
+<tbody>
+<tr><td>anything WITHOUT <code>redundancy</code></td><td>collapse risk for jepa/contrast-style heads; the geometry gate will show it</td></tr>
+<tr><td><code>contrast</code> (even fixed) WITHOUT <code>redundancy</code></td><td>alignment + repulsion with no channel-usage floor = classic dimension collapse</td></tr>
+<tr><td><code>query</code> WITHOUT <code>next</code>/<code>dt</code></td><td>query is readout of those heads at faded states — alone it trains nothing</td></tr>
+<tr><td><code>sf</code>/<code>agg</code> WITHOUT <code>dt</code>/<code>value</code></td><td>aggregates without intensity calibration = biased future predictions</td></tr>
+<tr><td><code>order</code>-only or <code>mask</code>-only portfolios</td><td>pure regularizers, no predictive pressure — states become trivial</td></tr>
+</tbody>
+</table>
+<p><strong>Minimal viable portfolio</strong> (if ever forced by compute): <code>next + dt + sf + jepa + redundancy + query</code> — dynamics, timing, future aggregates, latent alignment, non-collapse, serve-parity readout. Six objectives cover every capability class; the others are breadth, not survival.</p>
+<p><strong>Cut order under compute pressure (DEC-012 meta-rule):</strong> <code>contrast</code> (until views land) → <code>entity</code> (weak flat-softmax head on big vocabs; strong on small) → <code>occur</code> (subsumed by dt+agg) → never cut: next, dt, sf, jepa, redundancy, query.</p>
+<p><strong>The meta-rule that replaces opinion:</strong> an objective STAYS if its portfolio structure-skill is positive (real beats destroyed beyond noise) across re-certs; an objective that cannot beat its destroyed-data null is a drop-candidate flagged in the receipt — keep/drop becomes measured, not argued.</p>
+<hr>
+<p><strong>Tensions when running all 13 jointly (and our mitigations)</strong></p>
+<table>
+<thead>
+<tr>
+<th>tension</th>
+<th>status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>gradient conflict (contrast/mask sensitivity vs invariance)</td>
+<td>mitigated partially by learned uncertainty weights (<code>_combine</code>, no hand λs); watch when contrast gets real views</td>
+</tr>
+<tr>
+<td>redundant supervision (<code>occur ⊂ dt</code>, sf-count ⊂ agg)</td>
+<td>accepted — ensembling helps; weights learned, portfolio grades each separately</td>
+</tr>
+<tr>
+<td>asymmetric collapse (jepa/contrast collapse without uniformity+variance)</td>
+<td><code>redundancy</code> is load-bearing; portfolio geometry gate (eff-rank vs permuted null) catches collapse</td>
+</tr>
+<tr>
+<td>horizon mismatch (1-step heads dominate a shallow trunk)</td>
+<td><code>sf</code>/<code>agg</code>/<code>jepa</code>/<code>query</code> are long/moment horizons now; portfolio structure-skill per objective is the probe (a 1-step-only model scores ~0 on the long ones)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="2-the-operating-menu-seven-families-operator-taxonomy">2. The operating menu — seven families (operator taxonomy)</h2>
+<p>Status column uses §0 marks; <strong>requires</strong> = capability the stream probe
+(§5) must confirm before the plan can enable it.</p>
+<h3 id="21-next-step-predictive-local-autoregressive-dynamics">2.1 Next-step predictive (local autoregressive dynamics)</h3>
+<table>
+<thead>
+<tr>
+<th>item</th>
+<th>candidate objective</th>
+<th>status</th>
+<th>requires</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>a</td>
+<td>categorical transition (<code>next</code>)</td>
+<td>✅</td>
+<td>≥2 event types</td>
+</tr>
+<tr>
+<td>b</td>
+<td>target/attribute regression (<code>entity</code>)</td>
+<td>✅</td>
+<td>≥1 entity field, enough counts</td>
+</tr>
+<tr>
+<td>c</td>
+<td>temporal cadence (<code>dt</code>, <code>occur</code>)</td>
+<td>✅</td>
+<td>timestamps</td>
+</tr>
+<tr>
+<td>d</td>
+<td>magnitude/intensity (<code>value</code>, <code>agg</code> value dim)</td>
+<td>✅</td>
+<td>nonzero value variance</td>
+</tr>
+<tr>
+<td>e</td>
+<td>binary survival horizon (<code>occur</code> + <code>agg</code> counts)</td>
+<td>✅</td>
+<td>timestamps</td>
+</tr>
+</tbody>
+</table>
+<h3 id="22-masked-reconstruction-order">2.2 Masked reconstruction &amp; order</h3>
+<table>
+<thead>
+<tr>
+<th>item</th>
+<th>objective</th>
+<th>status</th>
+<th>requires</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>a</td>
+<td>BERT-style token reconstruction (<code>mask</code>) — <strong>left-context + redaction in our causal backbone, not bidirectional</strong></td>
+<td>✅</td>
+<td>seq_len ≥ ~4</td>
+</tr>
+<tr>
+<td>a2</td>
+<td><strong>field-level masking</strong> (mask value only / type only / time only — fill each modality from the others)</td>
+<td>⏸ S-effort</td>
+<td>typed records (we have them)</td>
+</tr>
+<tr>
+<td>a3</td>
+<td><strong>span masking</strong> (T5-style contiguous spans — trajectory completion vs single-token interpolation)</td>
+<td>⏸ S-effort</td>
+<td>seq_len ≥ ~8</td>
+</tr>
+<tr>
+<td>b</td>
+<td>temporal coherence (<code>order</code>; candidates: pairwise temporal-ranking, shuffle-learn variant, <strong>future-state distance regression</strong> (predict Δt between two states — cheap, ⏸ S))</td>
+<td>✅ for <code>order</code>; ⏸ for the rest</td>
+<td>timestamps</td>
+</tr>
+</tbody>
+</table>
+<h3 id="23-representation-level-joint-embedding">2.3 Representation-level &amp; joint-embedding</h3>
+<table>
+<thead>
+<tr>
+<th>item</th>
+<th>objective</th>
+<th>status</th>
+<th>requires</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>a</td>
+<td>contrastive similarity (<code>contrast</code>)</td>
+<td>🔧 needs views first</td>
+<td>—</td>
+</tr>
+<tr>
+<td>a2</td>
+<td><strong>augmentation-policy design</strong> for the views (value-jitter, time-warp, entity-dropout, crop, type-preserving swap)</td>
+<td>⏸ ★ highest-ROI fix in this family</td>
+<td>—</td>
+</tr>
+<tr>
+<td>a3</td>
+<td>CPC / InfoNCE(future latent vs context), TS2Vec/TCC multi-scale variants, MoCo queues + hard negatives</td>
+<td>⏸ (variants of jepa+contrast; add only if the contrast fix needs negatives at scale)</td>
+<td>batch ≥ 4, queue if vocab big</td>
+</tr>
+<tr>
+<td>b</td>
+<td>information-max / non-collapse (<code>redundancy</code>; candidates: VICReg <strong>variance term</strong> ⏸ S, SimSiam stop-grad ⏸, NNCLR/prototypical ⏸, SwAV/DeepCluster ⏸ L — §2.6)</td>
+<td>✅ redundancy</td>
+<td>batch ≥ 2</td>
+</tr>
+<tr>
+<td>c</td>
+<td>JEPA (suffix latent, EMA teacher)</td>
+<td>✅</td>
+<td>seq_len ≥ ~6</td>
+</tr>
+<tr>
+<td>c2</td>
+<td><strong>probabilistic JEPA</strong> (predict distribution over target latents) / <strong>horizon-sweep JEPA</strong> (predict latent at h ∈ {1,4,16,64})</td>
+<td>⏸ M-effort both</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<h3 id="24-long-horizon-aggregate">2.4 Long-horizon aggregate</h3>
+<table>
+<thead>
+<tr>
+<th>item</th>
+<th>objective</th>
+<th>status</th>
+<th>requires</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>a</td>
+<td>successor features (<code>sf</code>, discounted sweep over φ)</td>
+<td>✅</td>
+<td>timestamps (+ value if money present)</td>
+</tr>
+<tr>
+<td>b</td>
+<td><strong>quantile / distributional future head</strong> (predict FV of count/value, CRPS-style proper scoring rule; enables CVaR/LTV tail decisions)</td>
+<td>⏸ ★ top business-aligned candidate</td>
+<td>agg horizons (already derived)</td>
+</tr>
+<tr>
+<td>c</td>
+<td>explicit Poisson/count head for window volume</td>
+<td>⏸ (mostly subsumed by <code>agg</code>; add only if a downstream volume forecast needs a proper count likelihood)</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<h3 id="25-temporal-rate-based">2.5 Temporal &amp; rate-based</h3>
+<table>
+<thead>
+<tr>
+<th>item</th>
+<th>objective</th>
+<th>status</th>
+<th>requires</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>a</td>
+<td><strong>continuous-time intensity / hazard λ(t|h)</strong> (neural Hawkes / marked-TPP likelihood — unifies dt+occur+value into one principled likelihood)</td>
+<td>⏸ ★ medium effort, high principle</td>
+<td>dense timestamps (we have them)</td>
+</tr>
+<tr>
+<td>b</td>
+<td><strong>Fourier / periodicity modeling</strong> (predict hour/day-of-week structure; periodic positional objectives)</td>
+<td>⏸ — auto-enable only when a <strong>seasonality probe</strong> fires (hour/dow histogram divergence from uniform); rabbit_hole currently scores ~flat, so the probe would correctly say OFF today</td>
+<td>significant seasonality score</td>
+</tr>
+</tbody>
+</table>
+<h3 id="26-latent-structure-clustering">2.6 Latent structure &amp; clustering</h3>
+<table>
+<thead>
+<tr>
+<th>item</th>
+<th>objective</th>
+<th>status</th>
+<th>requires</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>a</td>
+<td>DeepCluster / SwAV online prototypical assignment (discrete codes for free — useful as segments)</td>
+<td>⏸ L-effort</td>
+<td>stable batch ≥ ~1k</td>
+</tr>
+<tr>
+<td>b</td>
+<td>VICReg-style <strong>variance penalty</strong> (per-dim variance floor — closes what pure decorrelation misses)</td>
+<td>⏸ S-effort, pairs with <code>redundancy</code></td>
+<td>batch ≥ 2</td>
+</tr>
+</tbody>
+</table>
+<h3 id="27-higher-order-structural">2.7 Higher-order structural</h3>
+<table>
+<thead>
+<tr>
+<th>item</th>
+<th>objective</th>
+<th>status</th>
+<th>requires</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>a</td>
+<td><strong>subsequence / phrase prediction</strong> (encode a span, predict it from outside — harder than token mask)</td>
+<td>⏸ S-effort (family 2.2a3 neighbor)</td>
+<td>seq_len ≥ ~16</td>
+</tr>
+<tr>
+<td>b</td>
+<td>future-state distance regression (TDM-style: how far apart are two states in time)</td>
+<td>⏸ S</td>
+<td>timestamps</td>
+</tr>
+<tr>
+<td>c</td>
+<td><strong>seq2seq autoregressive</strong> (encode prefix → decode multi-step future t+1..t+k jointly; closes 1-step vs whole-future gap)</td>
+<td>⏸ M</td>
+<td>decoder head</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="3-wider-landscape-other-common-objectives-not-yet-in-the-menu">3. Wider landscape — other common objectives (not yet in the menu)</h2>
+<p>One-liners; each marked with what it would require. These complete the map
+so nothing common is invisible when choosing.</p>
+<table>
+<thead>
+<tr>
+<th>family</th>
+<th>objective</th>
+<th>note / requires</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>AR</td>
+<td>multi-step joint prediction (t+1..t+k)</td>
+<td>overlaps §2.7c</td>
+</tr>
+<tr>
+<td>AR</td>
+<td>inverse dynamics (state_t, state_{t+1}) → what action/caused it</td>
+<td>⏸ <strong>capability: side-action labels</strong> — rabbit_hole has <code>co</code> sends → plan-eligible; Instacart has none → correctly OFF. Turns encoder into attribution machinery for interventions</td>
+</tr>
+<tr>
+<td>AR</td>
+<td>forward dynamics (state + action → next latent)</td>
+<td>pairs with inverse dynamics</td>
+</tr>
+<tr>
+<td>AR</td>
+<td>neural Hawkes / intensity matching</td>
+<td>= §5a</td>
+</tr>
+<tr>
+<td>Masked</td>
+<td>substitution infilling (BART: corrupt → regenerate sequence)</td>
+<td>⏸ medium</td>
+</tr>
+<tr>
+<td>Masked</td>
+<td>partial-attribute reconstruction (subset of fields)</td>
+<td>= field-level masking §2.2a2</td>
+</tr>
+<tr>
+<td>Contrastive</td>
+<td>time-contrastive learning (TCN): discriminate time-window identity</td>
+<td>⏸ needs period labels (probe: spans_periods)</td>
+</tr>
+<tr>
+<td>Contrastive</td>
+<td>temporal neighborhood coding (TNC)</td>
+<td>⏸ — same family</td>
+</tr>
+<tr>
+<td>Contrastive</td>
+<td>cross-modal CLIP-style (pair sequence with text/campaign metadata)</td>
+<td>⛔ unless the stream carries an external modality</td>
+</tr>
+<tr>
+<td>Clustering</td>
+<td>SeLa / online Sinkhorn assignment, prototypical networks</td>
+<td>= §2.6a</td>
+</tr>
+<tr>
+<td>Generative</td>
+<td><strong>VAE on sequences</strong> (sample synthetic customers/trajectories — enables what-if rollout + privacy)</td>
+<td>⏸ L; needs KL balancing; only if downstream wants simulation</td>
+</tr>
+<tr>
+<td>Generative</td>
+<td>diffusion / score-matching over (value, dt) futures</td>
+<td>⏸ L; multimodal futures a Gaussian head can't express</td>
+</tr>
+<tr>
+<td>Generative</td>
+<td>sequence GAN</td>
+<td>⛔ dated; no unique gain over the above</td>
+</tr>
+<tr>
+<td>Structural</td>
+<td>graph objectives (link prediction / node masking on the co-purchase or customer-similarity graph)</td>
+<td>⏸ M — capability: co-occurrence graph derivable from stream (probe: distinct co-occurrence edges); transactional data usually has this and we ignore it today</td>
+</tr>
+<tr>
+<td>Structural</td>
+<td>set prediction / DeepSets over baskets (the "next" is really a set of simultaneous items)</td>
+<td>⏸ M; requires basket/session grouping (rabbit_hole sessions, Instacart orders — both present)</td>
+</tr>
+<tr>
+<td>Latent</td>
+<td>data2vec-style multi-position teacher prediction</td>
+<td>= horizon-sweep JEPA §2.3c2</td>
+</tr>
+<tr>
+<td>Latent</td>
+<td>forward+inverse dynamics pair (model-based RL world model)</td>
+<td>downstream of inverse dynamics</td>
+</tr>
+<tr>
+<td>Quantized</td>
+<td><strong>semantic IDs via RQ-VAE/VQ-VAE for entity head</strong> (short residual codes shared across similar items; fixes the long-tail flat softmax, unlocks cold-start)</td>
+<td>⏸ ★★ L-effort; capability: entity_vocab large + sparse counts (probe quantiles) — rabbit_hole's small vocab says OFF, real retail says ON</td>
+</tr>
+<tr>
+<td>Invariance</td>
+<td><strong>domain-adversarial / IRM across periods</strong> (predict period, then adversarially remove it → transferable across quarters/markets)</td>
+<td>⏸ M; capability: spans_periods ≥ K (probe)</td>
+</tr>
+<tr>
+<td>Invariance</td>
+<td>temporal-consistency regularization across noisy views</td>
+<td>ties to contrast fix</td>
+</tr>
+<tr>
+<td>Info-theoretic</td>
+<td><strong>surprise / info-gain weighting</strong> (weight losses by conditional entropy → capacity on rare events: fraud/churn triggers)</td>
+<td>⏸ S; needs a surprise estimator (ppl of <code>next</code> head is a free one)</td>
+</tr>
+<tr>
+<td>Info-theoretic</td>
+<td>MINE / generic InfoNCE</td>
+<td>= contrast family</td>
+</tr>
+<tr>
+<td>Info-theoretic</td>
+<td>auxiliary side-attribute prediction (channel, device, campaign tag from state)</td>
+<td>⏸ S; capability: side fields present (<code>co</code>/contacts)</td>
+</tr>
+<tr>
+<td>Distributional</td>
+<td>quantile heads / CVaR / CRPS proper scoring rules</td>
+<td>= §2.4b</td>
+</tr>
+<tr>
+<td>Periodicity</td>
+<td>predict time-of-day/day-of-week of the next event</td>
+<td>⏸ S; capability: seasonality probe (see §2.5b) — strongest cheap seasonality objective when the data actually has seasonality</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="4-where-the-next-quality-comes-from-ranking-for-our-case">4. Where the next quality comes from (ranking for our case)</h2>
+<p>The through-line: our WHAT/WHEN/HOW coverage is already broad; the remaining
+gaps cluster exactly as the operator identified:</p>
+<ol>
+<li><strong>Entity-vocabulary structure</strong> → semantic IDs (§3 Quantized, ★★).
+   Fixes the statistically weakest head (<code>entity</code> flat softmax) + cold-start.</li>
+<li><strong>Distributions instead of points</strong> → quantile/probabilistic future head
+   (§2.4b) + probabilistic JEPA (§2.3c2). The business decision usually wants
+   the tail (CVaR/LTV), not the mean.</li>
+<li><strong>Non-stationarity</strong> → drift invariance (§3 Invariance) + seasonality
+   objectives that <em>activate only when the probe sees seasonality</em> (§2.5b).</li>
+<li><strong>Immediate cheap wins</strong>: contrast views (🔧), field-level + span masking
+   (§2.2a2/a3), future-state distance (§2.2b), variance term (§2.6b),
+   hazard head (§2.5a).</li>
+<li><strong>Capability-conditional</strong>: inverse dynamics + graph + set/basket
+   objectives — all three are <em>available on rabbit_hole-class streams today</em>
+   and correctly unavailable on Instacart — which is the whole point of §5.</li>
+</ol>
+<hr />
+<h2 id="5-universal-encoder-plan-any-stream-in-objective-plan-train-grade">5. Universal-encoder plan: any stream in → objective plan → train → grade</h2>
+<p>Goal (operator): <em>pass any event stream, and the encoder trains the optimal
+universal objective set for it</em> — <strong>default-on</strong>: everything implemented
+trains unless the stream itself (capability auto-out) or the operator
+(explicit, recorded opt-out) says otherwise. No hardcoding either way.</p>
+<pre><code>stream ──► capability probe (receipt) ──► objective plan (receipt)
+                                            │  config --set overrides, recorded
+                                            ▼
+                              train (held-out combined objective selects)
+                                            │
+                                            ▼
+                       portfolio grade (structure-skill + geometry) ── receipt
+                                            │
+                     battery / ablation / plugin gate (veto-only seams)
+</code></pre>
+<p><strong>Probe fields (all data-derived, no literals beyond documented floors):</strong></p>
+<table>
+<thead>
+<tr>
+<th>capability</th>
+<th>derived how</th>
+<th>unlocks</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>has_money</code></td>
+<td>nonzero variance of value field</td>
+<td><code>value</code>, sf money dim, agg value dim</td>
+</tr>
+<tr>
+<td><code>entity_profile</code></td>
+<td>vocab size + per-entity count quantiles</td>
+<td><code>entity</code>; semantic-ID upgrade when counts are sparse &amp; vocab large</td>
+</tr>
+<tr>
+<td><code>n_event_types</code></td>
+<td>distinct count</td>
+<td><code>next</code> (≥2), type-aggregate views</td>
+</tr>
+<tr>
+<td><code>seq_len_profile</code></td>
+<td>p50/p90 of events per customer</td>
+<td>mask/span/phrase thresholds</td>
+</tr>
+<tr>
+<td><code>timestamp_resolution</code></td>
+<td>gcd/quantiles of positive gaps</td>
+<td><code>dt</code>, <code>occur</code>, hazard head, <code>query</code></td>
+</tr>
+<tr>
+<td><code>span_days</code> / <code>periods</code></td>
+<td>data_end − data_start; distinct buckets</td>
+<td>drift invariance, period contrast</td>
+</tr>
+<tr>
+<td><code>side_actions</code></td>
+<td>configured <code>company_actions</code> present in stream</td>
+<td>inverse dynamics, covariates</td>
+</tr>
+<tr>
+<td><code>seasonality_score</code></td>
+<td>hour/dow histogram divergence from uniform</td>
+<td>Fourier/periodicity objectives (§2.5b, §3 Periodicity)</td>
+</tr>
+<tr>
+<td><code>graph_density</code></td>
+<td>distinct co-occurrence pairs / customers</td>
+<td>graph objectives</td>
+</tr>
+<tr>
+<td><code>basket_grouping</code></td>
+<td>sessions/orders with ≥2 line items</td>
+<td>set/basket objectives</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Plan rules (DEC-011: default-on, opt-out):</strong> every implemented objective
+starts <strong>enabled</strong>. The probe computes two lists in the plan receipt:
+(1) <strong>auto-disabled</strong> — capability provably absent (with the missing
+capability named), and (2) <strong>operator opt-outs</strong> — whatever <code>--set
+objectives=(...)</code> removed (recorded, never implicit). Re-forcing an objective
+whose capability is absent is allowed but warned (it will train on
+degenerate inputs). The set that needs nothing but a sequence —
+<code>next, dt, occur, mask, order, jepa, redundancy, query, agg, sf</code> — is never
+auto-disabled. <code>contrast</code> stays default-ON with its 🔧 fix scheduled (its
+defect is quality, not capability). The plan receipt is informational until
+the probe lands; today the full default tuple trains and the portfolio grades
+all of it.</p>
+<p><strong>Profiles (per-stream auto-outs under default-on):</strong></p>
+<table>
+<thead>
+<tr>
+<th>profile</th>
+<th>auto-disabled by the probe (recorded)</th>
+<th>everything else</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>rabbit_hole-class (money, side actions, sessions, 25k)</td>
+<td>nothing</td>
+<td>all ON</td>
+</tr>
+<tr>
+<td>Instacart-class (counts only, no sends, orders as baskets)</td>
+<td>value-driven dims (no money variance); inverse-dynamics (no side actions)</td>
+<td>all ON (basket/set candidates become build-relevant)</td>
+</tr>
+<tr>
+<td>big-retail (huge sparse entity vocab)</td>
+<td>nothing</td>
+<td>all ON; semantic-ID upgrade is the build priority</td>
+</tr>
+<tr>
+<td>strongly seasonal stream</td>
+<td>nothing (periodicity objectives auto-ON — they fire only when <code>seasonality_score</code> is significant; flat streams auto-out)</td>
+<td>all ON</td>
+</tr>
+<tr>
+<td>multi-quarter / multi-market</td>
+<td>nothing</td>
+<td>all ON (drift invariance becomes build-relevant)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Operator decisions — two lists, deliberately separate:</strong></p>
+<ol>
+<li><strong>Opt-outs recommended today: none.</strong> Every implemented objective should
+   train; the only auto-outs are the data-driven ones above (Instacart's
+   missing money/sends), and those are recorded, not chosen. If you want an
+   explicit opt-out, name it and it goes into the registry receipt.</li>
+<li><strong>Build order for ⏸ candidates (each lands default-ON when built):</strong>
+   (a) the cheap batch — field-level + span masking, future-state distance;
+   (b) contrast views (🔧 fix — quality of an ON objective, do first);
+   (c) hazard head λ(t|h); (d) quantile/distributional future head;
+   (e) the capability probe + plan receipt machinery (DEC-010) so the
+   auto-outs become real instead of documented; (f) semantic IDs — only when
+   a big-vocab stream exists.</li>
+</ol>
+<hr />
+<h2 id="6-references-canonical-per-family">6. References (canonical per family)</h2>
+<ul>
+<li>TPP/marked point processes: Du et al. 2016 (neural Hawkes); Mehta et al.
+  2022 (torchTPP survey).</li>
+<li>Masked: Devlin et al. 2019 (BERT); Raffel et al. 2020 (T5 spans).</li>
+<li>Contrastive/uniformity: Oord et al. 2018 (CPC/InfoNCE); Chen et al. 2020
+  (SimCLR — view design); Wang &amp; Isola 2020 (alignment/uniformity); Tian et al.
+  2020 (information contrast); Bjorck et al. 2021 (Barlow/VICReg family).</li>
+<li>JEPA/latent: Grill et al. 2020 (BYOL); Chen &amp; He 2021 (SimSiam); BALENTOVIC
+  et al. 2022 (I-JEPA); data2vec (Baevski et al. 2022).</li>
+<li>Sequence SSL: T-Loss (Richards/... 2021); TS2Vec (Yue et al. 2022); TS-TCC
+  (Eldele et al. 2021); TCC (Siam et al. 2021); Time-Contrastive (Hadsell
+  et al. 2006).</li>
+<li>Order/structural: O3N shuffle-and-learn (Fernando et al. 2017); TDM
+  (Weihs... / Varma et al. 2017).</li>
+<li>RL import: Sutton et al. successor features; Barreto et al. 2018.</li>
+<li>Quantized IDs: RQ-VAE (VQ tokenizers); TIGER (Rajput et al. 2023) for
+  semantic IDs in recsys.</li>
+<li>Distributional: CRPS (Gneiting &amp; Raftery 2007); quantile loss (Koenker);
+  probabilistic forecasting heads.</li>
+<li>Non-stationarity: IRM (Arjovsky et al. 2019); domain-adversarial (Ganin et
+  al. 2016).</li>
+</ul>
+<hr>
+<p class="meta">looking_glass · Layer-B objective catalog · default-on / opt-out policy (DEC-011) ·
+graded by <code>looking_glass/portfolio.py</code> · generated from the maintained source in
+<code>looking_glass/specs/</code></p>
+</main>
+</body>
+</html>
