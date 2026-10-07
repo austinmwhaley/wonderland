@@ -70,6 +70,8 @@ sufficiency_battery.py      E vs raw vs scrambled-E sufficiency gate
 layer_b_proof.py            grouped-CV donor-vs-raw probes (battery helper)
 autotune.py                 data-derived knobs (half-life from event gaps)
 portfolio.py                Layer-B grade: structure-skill + geometry receipt
+intrinsic.py                intrinsic foundation proofs (disentanglement,
+                            Lipschitz, trajectory, information plane)
 ```
 
 Reference: **`specs/objectives_catalog.html`** (open in a browser) — every self-supervised

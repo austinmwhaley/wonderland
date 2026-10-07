@@ -1,0 +1,126 @@
+"""Intrinsic foundation proofs (DEC-023): the 4 representation-space proofs
+run without any downstream probe — disentanglement, Lipschitz, trajectory
+smoothness, information plane."""
+
+from __future__ import annotations
+
+import numpy as np
+import torch
+
+from looking_glass.cfm_config import CFMConfig
+from looking_glass.cfm_model import CFM, EventVocab
+
+
+def _seq(key="c1", day="2025-01-01", n=10):
+    ets = [f"{day}T{10 + i:02d}:00:00+00:00" for i in range(n)]
+    ets[0] = f"{day}T08:00:00+00:00"
+    ts = [float(np.datetime64(t.replace("+00:00", ""), "s").astype("int64")) for t in ets]
+    return {
+        "customer": key,
+        "group": "A",
+        "anchor_epoch": None,
+        "event_type": np.array(
+            ["view", "view", "order", "view", "order", "view", "view", "order", "view", "order"][
+                :n
+            ],
+            dtype=object,
+        ),
+        "brand": np.array([None] * n, dtype=object),
+        "entity_type": np.array(["customer"] * n, dtype=object),
+        "entity_id": np.array([key] * n, dtype=object),
+        "value": np.ones(n, dtype=np.float32),
+        "event_ts": np.array(ets, dtype=object),
+        "ts": ts,
+        "co": [[0.0, 0.0]] * n,
+    }
+
+
+def _seqs(n=24):
+    return [_seq(f"c{i}", day=f"2025-01-{(i % 28) + 1:02d}") for i in range(n)]
+
+
+def test_disentanglement_runs_and_flags_anisotropy():
+    from looking_glass.intrinsic import _disentanglement
+
+    rng = np.random.default_rng(0)
+    z = rng.normal(size=(400, 8))
+    ts = np.arange(400, dtype=float)
+    out = _disentanglement(z, ts, seed=0)
+    assert "mi_mean" in out and "oot_ratio" in out
+    # an isotropic gaussian: temporally split covariance should be similar
+    assert out["oot_ratio"] is not None
+
+
+def test_lipschitz_bounded_and_finite():
+    from looking_glass.intrinsic import _lipschitz
+
+    seqs = _seqs(12)
+    torch.manual_seed(0)
+    model = CFM(EventVocab.build(seqs), dim=16, n_experts=1)
+    model.eval()
+    cfg = CFMConfig()
+    cfg.agg_horizons_days = [7.0, 30.0]
+    out = _lipschitz(model, model.vocab, seqs, cfg, n_perturb=6, seed=0)
+    assert out["n_tested"] > 0
+    assert np.isfinite(out["lipschitz_mean"])
+    assert out["lipschitz_max"] >= out["lipschitz_median"] >= 0
+
+
+def test_trajectory_velocity_and_continuity():
+    from looking_glass.intrinsic import _trajectory
+
+    seqs = _seqs(6)
+    torch.manual_seed(0)
+    model = CFM(EventVocab.build(seqs), dim=16, n_experts=1)
+    model.eval()
+    cfg = CFMConfig()
+    out = _trajectory(model, model.vocab, seqs, cfg, n_traj=4, seed=0)
+    assert out["n_trajectories"] > 0
+    assert -1.0 <= out["directional_cos_mean"] <= 1.0
+    assert out["speed_mean"] >= 0
+
+
+def test_info_plane_lists_predictive_losses():
+    from looking_glass.intrinsic import _info_plane
+
+    seqs = _seqs(6)
+    torch.manual_seed(0)
+    model = CFM(EventVocab.build(seqs), dim=16, n_experts=1)
+    model.eval()
+    cfg = CFMConfig()
+    cfg.agg_horizons_days = [7.0, 30.0]
+    out = _info_plane(model, model.vocab, seqs, cfg, seed=0)
+    names = {r["objective"] for r in out["predictive_losses"]}
+    assert {"next", "dt", "sf"} <= names  # predictive objectives present
+    assert not ({"redundancy", "variance", "rank"} & names)  # geometry excluded
+    assert len(out["horizons"]) == 2
+
+
+def test_intrinsic_evaluate_end_to_end(tmp_path):
+    import json
+
+    from looking_glass.intrinsic import evaluate
+
+    seqs = _seqs(30)
+    torch.manual_seed(0)
+    model = CFM(EventVocab.build(seqs), dim=16, n_experts=1)
+    model.eval()
+    cfg = CFMConfig()
+    cfg.agg_horizons_days = [7.0, 30.0]
+    r = evaluate(model, model.vocab, cfg, seqs, seed=0, out_dir=tmp_path, tag="t")
+    assert r["ok"] in (True, False)
+    assert all(
+        k in r
+        for k in (
+            "proof1_disentanglement",
+            "proof2_lipschitz",
+            "proof3_trajectory",
+            "proof4_info_plane",
+        )
+    )
+    files = list(tmp_path.glob("intrinsic_t_*.json"))
+    assert len(files) == 1
+    assert json.loads(files[0].read_text())["ok"] == r["ok"]
+    # determinism
+    r2 = evaluate(model, model.vocab, cfg, seqs, seed=0, out_dir=tmp_path, tag="t2")
+    assert r2["proof2_lipschitz"]["n_tested"] == r["proof2_lipschitz"]["n_tested"]

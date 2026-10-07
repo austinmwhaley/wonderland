@@ -406,3 +406,28 @@ same battery
 - **Trade-offs accepted:** the projection is asymmetric (protects predictive
   from geometry, not vice versa — intended: the guard must never block
   learning); barrier's eps is a documented literal scaled to the trace.
+
+## DEC-023 — Intrinsic foundation proofs (representation-space, no probes)
+
+- **Date:** 2026-10-07
+- **Context:** operator's intrinsic-proof blueprint: demonstrate the encoder
+  is foundational from the representation space alone, without training any
+  downstream probe (which would make the claim circular).
+- **Decision:** `looking_glass/intrinsic.py`, four proofs, each gate-row +
+  receipt, runnable on any frozen checkpoint:
+  1. **Disentanglement** — channel mutual information (kNN estimator) vs a
+     shuffled null; OOT (temporal-split) covariance invariance vs a
+     within-period null. Proves per-channel independence + temporal stability
+     of the geometry.
+  2. **Local Lipschitz** — perturb a realistic event time by ±1 day,
+     re-encode, measure ‖Δz‖/‖Δt‖. Proves a smooth manifold, not memorization.
+  3. **Trajectory smoothness** — per-step velocity/acceleration vectors; mean
+     directional continuity cos(v_t, v_{t+1}). Proves z is a continuous
+     dynamical state variable.
+  4. **Information plane** — multi-horizon predictive losses (the agg/next/dt/
+     sf skills) as the measured lower bound on I(z; future); the compression
+     axis is proof 1's MI + eff-rank. Descriptive.
+- **Trade-offs accepted:** MINE/InfoNCE would need a trained estimator (a
+  probe → circular); we use proxy/estimator bounds and say so in the receipt.
+  The Lipschitz and OOT gates are deliberately conservative literals,
+  documented. Principles: *gate on ground truth*, *measure everything*.
