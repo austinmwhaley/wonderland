@@ -44,7 +44,9 @@
         <li><a href="#3-wider-landscape-other-common-objectives-not-yet-in-the-menu">3. Wider landscape — other common objectives (not yet in the menu)</a></li>
         <li><a href="#4-where-the-next-quality-comes-from-ranking-for-our-case">4. Where the next quality comes from (ranking for our case)</a></li>
         <li><a href="#5-universal-encoder-plan-any-stream-in-objective-plan-train-grade">5. Universal-encoder plan: any stream in → objective plan → train → grade</a></li>
-        <li><a href="#6-references-canonical-per-family">6. References (canonical per family)</a></li>
+        <li><a href="#registry">7. Complete objective registry (~60)</a></li>
+    <li><a href="#techniques">8. Training techniques</a></li>
+    <li><a href="#6-references-canonical-per-family">6. References (canonical per family)</a></li>
     <li><a href="#combination-map">1.5 Combination map (DEC-012)</a></li>
     </ul></nav>
 <h1 id="layer-b-objective-catalog-looking_glass">Layer-B objective catalog — looking_glass</h1>
@@ -847,6 +849,95 @@ all of it.</p>
    a big-vocab stream exists.</li>
 </ol>
 <hr />
+<h2 id="registry">7. Complete objective registry (~60 entries — the search space for the universal donor)</h2>
+<p>The operator is right: 13 was only <em>our current</em> set, not the space.
+This registry is the exhaustive menu the capability probe (§5) selects from.
+Status: ✅ default-ON (implemented) · 🔧 default-ON + scheduled fix ·
+⏸ build candidate (lands default-ON) · ⛔ excluded. <strong>R</strong> =
+representational family it feeds.</p>
+<table>
+<thead><tr><th>#</th><th>objective</th><th>what it forces into the state</th><th>status</th><th>requires / notes</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>next event type</td><td>conditional type distribution (Markov abstraction)</td><td>✅</td><td>≥2 types</td></tr>
+<tr><td>2</td><td>next entity</td><td>fine-grained identity resolution</td><td>✅</td><td>entity vocab; weak flat-softmax on big vocabs → #34</td></tr>
+<tr><td>3</td><td>next inter-event time (dt)</td><td>temporal intensity/rhythm</td><td>✅</td><td>timestamps</td></tr>
+<tr><td>4</td><td>next value</td><td>monetary magnitude, orthogonal to type</td><td>✅</td><td>money field</td></tr>
+<tr><td>5</td><td>occurrence within horizon</td><td>balanced short-horizon hazard</td><td>✅</td><td>timestamps</td></tr>
+<tr><td>6</td><td>masked reconstruction (causal, redacted)</td><td>denoising from left context; missing-event robustness</td><td>✅</td><td>seq_len ≥4</td></tr>
+<tr><td>7</td><td>temporal order (real vs scrambled)</td><td>order sensitivity; kills bag-of-events</td><td>✅</td><td>seq_len ≥3</td></tr>
+<tr><td>8</td><td>instance dispersion (contrast as-is)</td><td>repel batch states on the sphere</td><td>🔧</td><td>no positive pair yet → uniformity-only; fix = #9</td></tr>
+<tr><td>9</td><td>contrastive views (augmentation policy: value-jitter, time-warp, entity-dropout, crop, type-preserving swap)</td><td>alignment + invariance — the view design IS the bias</td><td>⏸ ★</td><td>—</td></tr>
+<tr><td>10</td><td>redundancy (decorrelation)</td><td>channel independence; collapse guard</td><td>✅</td><td>load-bearing for #11</td></tr>
+<tr><td>11</td><td>JEPA (suffix latent, EMA teacher)</td><td>sufficiency for future representation</td><td>✅</td><td>seq_len ≥6</td></tr>
+<tr><td>12</td><td>successor features (discounted φ sweep)</td><td>linear-decomposable future occupancy</td><td>✅</td><td>timestamps; φ = value + per-type (agnostic)</td></tr>
+<tr><td>13</td><td>query-time readout (faded-state prediction)</td><td>gap-conditioned read; train/serve parity</td><td>✅</td><td>timestamps</td></tr>
+<tr><td>14</td><td>exact window aggregates (count/value at quantile horizons)</td><td>long-horizon integration</td><td>✅</td><td>timestamps; horizons derived</td></tr>
+<tr><td>15</td><td>CPC / InfoNCE (future latent vs context, negatives)</td><td>predictive info bottleneck on future</td><td>⏸</td><td>variant overlap: #11+#9</td></tr>
+<tr><td>16</td><td>TS2Vec / TCC hierarchical multi-scale contrast</td><td>scale-consistent representation</td><td>⏸</td><td>crop machinery</td></tr>
+<tr><td>17</td><td>Temporal Neighborhood Coding (TNC)</td><td>neighborhood-in-time discrimination</td><td>⏸</td><td>period structure</td></tr>
+<tr><td>18</td><td>MoCo queue / hard-negative mining</td><td>rich negatives at scale</td><td>⏸</td><td>big batches or queue</td></tr>
+<tr><td>19</td><td>NNCLR / prototypical nearest-neighbor positives</td><td>semantic positives without labels</td><td>⏸</td><td>memory bank</td></tr>
+<tr><td>20</td><td>SimSiam stop-gradient / BYOL twin</td><td>negative-free alignment</td><td>⏸</td><td>overlap: #11 EMA</td></tr>
+<tr><td>21</td><td>data2vec (multi-position teacher latents)</td><td>denoised latent regression at many offsets</td><td>⏸</td><td>EMA teacher exists</td></tr>
+<tr><td>22</td><td>horizon-sweep JEPA (latent at h ∈ {1,4,16,64})</td><td>multi-resolution future latents</td><td>⏸</td><td>= #21 variant</td></tr>
+<tr><td>23</td><td>probabilistic JEPA (distributional target)</td><td>calibrated uncertainty on future latent</td><td>⏸</td><td>Gaussian/mixture head</td></tr>
+<tr><td>24</td><td>quantile future head (count/value distributions; CRPS)</td><td>tail-aware future; CVaR/LTV decisions</td><td>⏸ ★</td><td>horizons from #14</td></tr>
+<tr><td>25</td><td>mixture-density head (MDN future)</td><td>multimodal futures</td><td>⏸</td><td>mode collapse care</td></tr>
+<tr><td>26</td><td>continuous-time hazard λ(t|h) / neural Hawkes</td><td>proper TPP intensity; unifies 3/5/14</td><td>⏸ ★</td><td>dense timestamps</td></tr>
+<tr><td>27</td><td>periodicity / Fourier objectives (hour, dow)</td><td>seasonal phase knowledge</td><td>⏸</td><td>seasonality probe</td></tr>
+<tr><td>28</td><td>predict next event's clock features (time-of-day/dow)</td><td>calendar phase of behavior</td><td>⏸</td><td>seasonality probe</td></tr>
+<tr><td>29</td><td>future-state distance regression (TDM)</td><td>temporal metric space on states</td><td>⏸</td><td>timestamps</td></tr>
+<tr><td>30</td><td>pairwise temporal ranking (A before B?)</td><td>softer order supervision</td><td>⏸</td><td>cheap</td></tr>
+<tr><td>31</td><td>speed prediction (rate of change between crops)</td><td>dynamics magnitude</td><td>⏸</td><td>crop machinery</td></tr>
+<tr><td>32</td><td>field-level masking (mask value-only / time-only / type-only)</td><td>cross-modality filling on typed records</td><td>⏸ ★</td><td>typed records ✓</td></tr>
+<tr><td>33</td><td>span masking (T5-style)</td><td>trajectory completion</td><td>⏸ ★</td><td>seq_len ≥8</td></tr>
+<tr><td>34</td><td>semantic IDs (RQ-VAE/VQ entity codes)</td><td>shared strength across similar entities; cold-start</td><td>⏸ ★★</td><td>big sparse vocab</td></tr>
+<tr><td>35</td><td>VICReg variance term (per-dim floor)</td><td>per-dimension collapse guard</td><td>⏸</td><td>pairs with #10</td></tr>
+<tr><td>36</td><td>SwAV / DeepCluster / SeLa (online clustering)</td><td>discrete codes; free segments</td><td>⏸</td><td>big batches; L-effort</td></tr>
+<tr><td>37</td><td>inverse dynamics (state pair → action)</td><td>attribution/cause from state change</td><td>⏸</td><td>side actions (co)</td></tr>
+<tr><td>38</td><td>forward dynamics (state + action → next latent)</td><td>action-conditioned world model seed</td><td>⏸</td><td>side actions</td></tr>
+<tr><td>39</td><td>graph: link prediction (co-purchase)</td><td>relational structure beyond sequences</td><td>⏸</td><td>co-occurrence graph</td></tr>
+<tr><td>40</td><td>graph: node masking / graph contrastive</td><td>entity-side representation learning</td><td>⏸</td><td>graph</td></tr>
+<tr><td>41</td><td>set / next-basket prediction (DeepSets)</td><td>simultaneous-set structure (baskets)</td><td>⏸</td><td>session/order grouping</td></tr>
+<tr><td>42</td><td>VAE / sequence generative latent</td><td>sampleable customers; what-if rollouts</td><td>⏸</td><td>KL balancing; L-effort</td></tr>
+<tr><td>43</td><td>diffusion / score-matching on futures</td><td>multimodal future modeling</td><td>⏸</td><td>L-effort</td></tr>
+<tr><td>44</td><td>sequence GAN</td><td>—</td><td>⛔</td><td>dated; no unique gain</td></tr>
+<tr><td>45</td><td>domain-adversarial period/segment (IRM)</td><td>time/market-invariant transferable features</td><td>⏸</td><td>spans ≥K periods</td></tr>
+<tr><td>46</td><td>temporal consistency regularization (EMA view)</td><td>smooth state evolution</td><td>⏸</td><td>partially in #11</td></tr>
+<tr><td>47</td><td>surprise / info-gain loss weighting</td><td>capacity to rare/surprising events</td><td>⏸</td><td>ppl estimator free from #1</td></tr>
+<tr><td>48</td><td>variational information bottleneck (VIB)</td><td>minimal sufficient statistics</td><td>⏸</td><td>KL machinery</td></tr>
+<tr><td>49</td><td>HSIC bottleneck</td><td>kernel dependence control</td><td>⏸</td><td>kernel cost</td></tr>
+<tr><td>50</td><td>auxiliary side-attribute prediction (channel/device/campaign)</td><td>anchor semantics to observed metadata</td><td>⏸</td><td>side fields</td></tr>
+<tr><td>51</td><td>cross-modal contrast (sequence ↔ text/metadata)</td><td>shared space with external modality</td><td>⛔</td><td>needs external modality</td></tr>
+<tr><td>52</td><td>cross-task consistency (heads must agree: agg vs sf, next vs mask)</td><td>coherent multi-view latent</td><td>⏸</td><td>cheap once both exist</td></tr>
+<tr><td>53</td><td>privileged-information targets (predict train-only fields)</td><td>state learns what serving can't see but training can</td><td>⏸</td><td>careful: targets only, never inputs</td></tr>
+<tr><td>54</td><td>synthetic-known-effect pretraining (train on rabbit_hole labels → transfer)</td><td>Layer A as labeled teacher for Layer B</td><td>⏸</td><td>unique to our stack; transfer risk</td></tr>
+<tr><td>55</td><td>masked count modeling (ZINB-style on type counts)</td><td>count-distribution denoising</td><td>⏸</td><td>niche</td></tr>
+<tr><td>56</td><td>duration modeling (event duration regression if present)</td><td>event-shape knowledge</td><td>⏸</td><td>duration field</td></tr>
+<tr><td>57</td><td>next-session boundary prediction</td><td>session structure awareness</td><td>⏸</td><td>session labels</td></tr>
+<tr><td>58</td><td>energy-based / score-based state ranking</td><td>compatibility scoring between state and candidates</td><td>⏸</td><td>negative sampling</td></tr>
+<tr><td>59</td><td>bootstrap/ensemble consistency (multi-head agreement)</td><td>uncertainty-aware representations</td><td>⏸</td><td>k× head cost</td></tr>
+<tr><td>60</td><td>rotation/split-prediction canaries (predict A/B, as_of bucket)</td><td>leak detector: state must NOT encode these</td><td>⏸</td><td>negative canary — PASS = cannot predict</td></tr>
+</tbody>
+</table>
+<p class="note">Count: 13 ✅ (one 🔧) + 47 documented candidates/exclusions. The capability
+probe (§5) reads this registry; every ⏸ lands default-ON when built (DEC-011).</p>
+
+<h2 id="techniques">8. Training techniques that make all-objectives training work</h2>
+<p>Not objectives — the machinery that lets 13+ objectives coexist without
+one dominating or collapsing the shared trunk:</p>
+<table>
+<thead><tr><th>technique</th><th>solves</th><th>status</th></tr></thead>
+<tbody>
+<tr><td>uncertainty weighting (Kendall)</td><td>scale conflicts between losses</td><td>✅ <code>_combine</code></td></tr>
+<tr><td>objective dropout (sample objective subsets per batch)</td><td>memory + conflict; robustness to any single loss</td><td>⏸ S</td></tr>
+<tr><td>PCGrad / CAGrad (gradient surgery)</td><td>conflicting gradients on the trunk</td><td>⏸ M</td></tr>
+<tr><td>GradNorm</td><td>dynamic loss balancing by gradient norm</td><td>⏸ (uncertainty covers v1)</td></tr>
+<tr><td>curriculum (easy → hard objectives/horizons)</td><td>early-training stability</td><td>⏸ M</td></tr>
+<tr><td>EMA teacher / slow targets</td><td>stable self-distillation</td><td>✅ jepa</td></tr>
+<tr><td>stochastic depth / trunk regularization</td><td>overfit on small samples</td><td>⏸ S</td></tr>
+</tbody>
+</table>
 <h2 id="6-references-canonical-per-family">6. References (canonical per family)</h2>
 <ul>
 <li>TPP/marked point processes: Du et al. 2016 (neural Hawkes); Mehta et al.
