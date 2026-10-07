@@ -893,7 +893,7 @@ representational family it feeds.</p>
 <tr><td>32</td><td>field-level masking (mask value-only / time-only / type-only)</td><td>cross-modality filling on typed records</td><td>⏸ ★</td><td>typed records ✓</td></tr>
 <tr><td>33</td><td>span masking (T5-style)</td><td>trajectory completion</td><td>⏸ ★</td><td>seq_len ≥8</td></tr>
 <tr><td>34</td><td>semantic IDs (RQ-VAE/VQ entity codes)</td><td>shared strength across similar entities; cold-start</td><td>⏸ ★★</td><td>big sparse vocab</td></tr>
-<tr><td>35</td><td>VICReg variance term (per-dim floor)</td><td>per-dimension collapse guard</td><td>⏸</td><td>pairs with #10</td></tr>
+<tr><td>35</td><td>VICReg variance term (<code>variance</code>)</td><td>per-dimension collapse guard — the direct eff-rank lever</td><td>✅</td><td>graded by the geometry gate (DEC-015); pairs with #10</td></tr>
 <tr><td>36</td><td>SwAV / DeepCluster / SeLa (online clustering)</td><td>discrete codes; free segments</td><td>⏸</td><td>big batches; L-effort</td></tr>
 <tr><td>37</td><td>inverse dynamics (state pair → action)</td><td>attribution/cause from state change</td><td>⏸</td><td>side actions (co)</td></tr>
 <tr><td>38</td><td>forward dynamics (state + action → next latent)</td><td>action-conditioned world model seed</td><td>⏸</td><td>side actions</td></tr>

@@ -195,9 +195,7 @@ def train_cfm(cfg: CFMConfig):
             b = rng.choice(tr_idx, size=min(cfg.batch, len(tr_idx)), replace=False)
             opt.zero_grad()
             with torch.autocast(device_type=device.type, dtype=torch.float16, enabled=use_amp):
-                loss = _loss(
-                    model, vocab, [a_seqs[i] for i in b], cfg, weights=balancer.weights()
-                )
+                loss = _loss(model, vocab, [a_seqs[i] for i in b], cfg, weights=balancer.weights())
             scaler.scale(loss).backward()
             scaler.unscale_(opt)
             torch.nn.utils.clip_grad_norm_(params, 1.0)
@@ -484,6 +482,16 @@ def _task_losses(model, vocab, items, cfg):
         w = w * (1.0 - t["co"][rows, i_next, 0])
         denom = w.sum().clamp(min=1)
         T_["query"] = ((ce_q + mse_q) * w).sum() / denom
+    # ---- variance floor (VICReg-style, DEC-015) ---------------------------
+    # Decorrelation (redundancy) removes correlation but not SCALE collapse:
+    # the production runs measured eff-rank 0.23-0.26x null with redundancy
+    # active. A hinge on per-dim std forces every channel to carry variance,
+    # which is what eff-rank actually measures. Applied on the UNNORMALIZED
+    # projection (per-sample L2 would erase the scale information).
+    if "variance" in cfg.objectives:
+        zu = model.proj(h)  # (B, D) unnormalized
+        std = zu.std(dim=0)  # per-dim std across the batch
+        T_["variance"] = torch.relu(1.0 - std).mean()
     # ---- exact multi-horizon window targets (S2 / DEC-006) ----------------
     # From the state at t, predict log1p(count) and log1p(value-sum) of the
     # events in (t, t+h] for a horizon sampled from the DERIVED gap-quantile
@@ -564,11 +572,7 @@ class DWA:
     def update(self, losses: dict) -> None:
         cur = {k: float(losses[k]) for k in self.tasks if k in losses}
         if self.prev is not None:
-            r = {
-                k: cur[k] / max(self.prev.get(k, cur[k]), 1e-12)
-                for k in cur
-                if k in self.prev
-            }
+            r = {k: cur[k] / max(self.prev.get(k, cur[k]), 1e-12) for k in cur if k in self.prev}
             K = len(r)
             mx = max(r.values())
             e = {k: self._math.exp((v - mx) / self.temp) for k, v in r.items()}
@@ -589,9 +593,7 @@ def _combine(model, T, cfg, weights: dict | None = None):
             return sum(weights.get(k, 1.0) * T[k] for k in keys)
         return sum(T[k] for k in keys)  # no history yet -> equal
     if cfg.weight_mode == "uncertainty" and cfg.use_uncertainty_weighting:
-        return sum(
-            0.5 * torch.exp(-model.log_var[k]) * T[k] + 0.5 * model.log_var[k] for k in keys
-        )
+        return sum(0.5 * torch.exp(-model.log_var[k]) * T[k] + 0.5 * model.log_var[k] for k in keys)
     return sum(T[k] for k in keys)
 
 

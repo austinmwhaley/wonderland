@@ -37,7 +37,7 @@ DEFAULT_OUT = Path(__file__).resolve().parent / "artifacts" / "cfm" / "portfolio
 # contrast = instance discrimination: its capability is agreement, and a
 # destroyed-input null is the wrong yardstick for it (states may still
 # separate instances without order). redundancy is graded in geometry.
-GATED_EXCLUSIONS = {"contrast", "redundancy"}
+GATED_EXCLUSIONS = {"contrast", "redundancy", "variance"}
 # yardstick pending: sf's destroyed-null is NOT harder (permutation makes the
 # discounted-sum targets smoother, so raw skill dips negative without meaning).
 # Reported, never gated, until a target-variance-normalized null exists.

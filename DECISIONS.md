@@ -350,3 +350,25 @@ same battery
   Pareto step (FAMO reserved for that); warmup = 2 evals at equal weights;
   v2.2.0's grade is superseded (geometry collapse finding stands as the
   motivation).
+
+## DEC-015 — Geometry fix #1: variance-floor objective (VICReg-style hinge)
+
+- **Date:** 2026-10-07
+- **Context:** two consecutive production grades measured held-out geometry
+  collapse (eff-rank 0.23-0.26 x null; held-out redundancy 18-26x the
+  marginal null) while train-batch redundancy looked fine — batch-local
+  decorrelation never treats (a) scale collapse and (b) population-global
+  correlation.
+- **Alternatives:** (a) variance-floor hinge (VICReg); (b) cross-batch
+  redundancy bank; (c) contrast views; (d) accept collapse (heads only need
+  2-3 dims).
+- **Decision:** (a) now — new `variance` objective, hinge
+  `mean_j relu(1 - std(proj(h)_j))`, default-ON (DEC-011), graded by the
+  geometry gate (its OUTCOME) rather than a destroyed-null (it is not a
+  predictive loss — same treatment as redundancy). (c) stays queued (pairs
+  into the full VICReg recipe); (b) is the follow-up if population-global
+  correlation persists; (d) rejected — headroom is the point of a UNIVERSAL
+  donor (future unknown heads need unused dims).
+- **Trade-offs accepted:** one more loss term (DWA balances it); the gate may
+  still fail if the null's bar (0.3 x) is met but headroom stays thin — the
+  ratio is reported either way.

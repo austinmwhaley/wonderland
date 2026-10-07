@@ -242,3 +242,31 @@ def test_combine_modes():
 def test_train_uses_dwa_mode_by_default():
     assert CFMConfig().weight_mode == "dwa"
     assert CFMConfig().dwa_temp == 2.0
+
+
+def test_variance_floor_hinge():
+    import torch as _t
+
+    from looking_glass.cfm_training import _task_losses
+
+    seqs = [_seq("c1"), _seq("c2", day="2025-01-02"), _seq("c3", day="2025-01-03")]
+    vocab = EventVocab.build(seqs)
+    torch.manual_seed(0)
+    model = CFM(vocab, dim=16, n_experts=1)
+    cfg = _cfg()
+    assert "variance" in cfg.objectives and CFMConfig().version == "v2.4.0"
+
+    # collapsed states (all identical rows) -> per-dim std 0 -> hinge = 1.0
+    h = _t.zeros(4, 16)
+    std = h.std(dim=0)
+    assert torch.relu(1.0 - std).mean() == pytest.approx(1.0)
+    # spread states (unit-ish std per column) -> hinge ~ 0
+    g = _t.Generator().manual_seed(1)
+    h2 = _t.randn(64, 16, generator=g)
+    assert torch.relu(1.0 - h2.std(dim=0)).mean() < 0.1
+    # trains: objective present, finite, gradients flow through proj -> trunk
+    T_ = _task_losses(model, vocab, seqs, cfg)
+    assert "variance" in T_ and torch.isfinite(T_["variance"])
+    loss = _loss(model, vocab, seqs, cfg)
+    loss.backward()
+    assert model.proj.weight.grad is not None

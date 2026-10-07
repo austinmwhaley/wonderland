@@ -82,7 +82,11 @@ class CFMConfig:
     # weights) as the default balancer — the production run measured s-runaway
     # (redundancy s ~ -9, negative combined contributions) and geometry
     # collapse; DWA is scale-free and works on non-bounded losses (DEC-014).
-    version: str = "v2.3.0"  # encoder code version
+    # v2.4.0: variance-floor objective added (VICReg-style hinge on per-dim
+    # std of the projected state) — twice-measured geometry collapse
+    # (eff-rank 0.23-0.26 x null) showed decorrelation alone never treats
+    # scale collapse; the floor is the direct lever (DEC-015).
+    version: str = "v2.4.0"  # encoder code version
     revision: int = 1  # data/score revision (r)
     sample_customers: int | None = 500  # working base: first N customers (populations live here)
     split_a_frac: float = 0.7
@@ -161,6 +165,8 @@ class CFMConfig:
         "sf",
         "query",  # read-at-time: grade the FADED state (the serving path)
         "agg",  # long-horizon integration: exact counts/value per window
+        "variance",  # per-dim std floor: treats SCALE collapse (redundancy
+        #              treats correlation only — measured insufficient alone)
     )
     seed: int = 0
     device: str = "cuda" if torch.cuda.is_available() else "cpu"

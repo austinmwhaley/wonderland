@@ -180,6 +180,7 @@ class CFM(nn.Module):
                     "sf",
                     "query",
                     "agg",
+                    "variance",
                 )
             }
         )
