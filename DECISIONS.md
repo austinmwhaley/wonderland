@@ -431,3 +431,25 @@ same battery
   probe → circular); we use proxy/estimator bounds and say so in the receipt.
   The Lipschitz and OOT gates are deliberately conservative literals,
   documented. Principles: *gate on ground truth*, *measure everything*.
+
+## DEC-024 — Half-life experiment: trajectory zigzag is structural, not tunable
+
+- **Date:** 2026-10-07
+- **Context:** the intrinsic trajectory proof measured cos(v_t, v_{t+1}) =
+  -0.29 (raw state) on the v2.9.0 encoder. Hypothesis: short half-life makes
+  the state too reactive; doubling it should smooth the trajectory.
+- **Experiment:** retrained with `--set state_half_life_days=60.6` (doubled
+  from the derived 30.3d). All 14 portfolio rows PASS (geometry 0.817).
+  Trajectory cos: **-0.298** — unchanged from -0.29 at 30.3d.
+- **Conclusion:** the zigzag is NOT caused by decay rate. It is caused by the
+  event content embeddings: alternating event types (view/order/view) have
+  orthogonal token directions, so the state tracks *content transitions*,
+  not smooth behavioral trends. The behavioral trend information is present
+  (sf/agg pass) but the trajectory traces the event sequence's actual
+  jaggedness. Doubling the half-life is a dead end for trajectory smoothing.
+- **Implication:** if trajectory smoothness is required for a downstream
+  consumer, it must come from the readout (e.g., an EMA-smoothed donor
+  output) or from a dual-velocity architecture — not from the half-life.
+- **v2.9.0 is LOCKED** as the production encoder: all 13 portfolio objectives
+  PASS, geometry PASS by construction (whitened readout, ratio 0.82),
+  Lipschitz smooth (p99 0.0016), MI low (0.044 nats), canaries clean.
