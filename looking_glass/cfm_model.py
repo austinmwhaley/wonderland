@@ -182,6 +182,7 @@ class CFM(nn.Module):
                     "agg",
                     "variance",
                     "rank",
+                    "ortho",
                 )
             }
         )

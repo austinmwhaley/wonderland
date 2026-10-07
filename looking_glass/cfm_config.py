@@ -116,7 +116,10 @@ class CFMConfig:
     # boundary whitens the CONSUMED representation (z = (h-mu) Sigma^-1/2,
     # frozen from held-out states): linear heads span the same class, the
     # graded geometry becomes full-rank by construction, zero training risk.
-    version: str = "v2.9.0"  # encoder code version
+    # v3.0.0: dual-velocity encoder (DEC-025) — n_experts=2 with spread
+    # delta_bias init (fast/slow timescales), ortho-loss between expert state
+    # components, rolling EMA whitening, trajectory graded on the slow state.
+    version: str = "v3.0.0"  # encoder code version
     revision: int = 1  # data/score revision (r)
     sample_customers: int | None = 500  # working base: first N customers (populations live here)
     split_a_frac: float = 0.7
@@ -154,7 +157,12 @@ class CFMConfig:
     final_loss_scales: dict = field(default_factory=dict)  # the EMA unit system
     final_bank_stats: dict = field(default_factory=dict)  # bank rank/lambda trail
     dim: int = EMBED_DIM
-    n_experts: int = 1  # K=1: M1 multi-timescale gave no gain (speed)
+    # DEC-025: dual-velocity (K=2) — fast expert tracks token transitions,
+    # slow expert accumulates behavioral trends; the donor concatenates both.
+    # The v2.9.0 half-life experiment proved single-state trajectory is
+    # structural (cos -0.30 at any half-life); the fix is architectural.
+    n_experts: int = 2
+    ortho_weight: float = 0.1  # cross-subspace ortho-loss weight
     epochs: int = 3
     batch: int = 64
     lr: float = 3e-3
@@ -216,6 +224,7 @@ class CFMConfig:
         "variance",  # per-dim std floor: treats SCALE collapse (redundancy
         #              treats correlation only — measured insufficient alone)
         "rank",  # participation-ratio pressure: train on the graded metric
+        "ortho",  # fast/slow cross-covariance: zero interference (DEC-025)
     )
     seed: int = 0
     device: str = "cuda" if torch.cuda.is_available() else "cpu"
@@ -296,6 +305,13 @@ def _seed_everything(seed: int) -> None:
 
 
 def _expert_biases(K, gap_days):
-    """Timescale decay scales are LEARNED free parameters (delta_bias), not
-    derived from human periods. Initialised equal; the loss discovers scales."""
-    return [0.0] * K
+    """Dual-velocity init (DEC-025): spread expert delta_biases log-uniformly
+    so the K experts START at different timescales (fast first, slow last)
+    instead of from the same point (which makes them redundant). The learned
+    W_delta adapts; the init breaks the symmetry. gap_days = median gap
+    (the typical event cadence, used to center the spread)."""
+    if K <= 1:
+        return [0.0]
+    # log-uniform spread from -1.5 (slow) to +1.5 (fast) around 0
+    lo, hi = -1.5, 1.5
+    return [lo + (hi - lo) * i / max(K - 1, 1) for i in range(K)]

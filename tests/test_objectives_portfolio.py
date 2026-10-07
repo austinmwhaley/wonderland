@@ -257,7 +257,8 @@ def test_variance_floor_hinge():
     model = CFM(vocab, dim=16, n_experts=1)
     cfg = _cfg()
     assert "variance" in cfg.objectives and "rank" in cfg.objectives
-    assert CFMConfig().version >= "v2.4.0"  # string compare fine within v2.x
+    assert CFMConfig().version == "v3.0.0"
+    assert CFMConfig().n_experts == 2  # dual-velocity (DEC-025)
 
     # collapsed states (all identical rows) -> per-dim std 0 -> hinge = 1.0
     h = _t.zeros(4, 16)
@@ -353,3 +354,26 @@ def test_barrier_and_bank_joint():
     b2 = GeometryBank(dim=16, size=8192, target=0.32, alpha=0.25, lam_max=50.0, tau=0.05)
     b2.push(_t.randn(4096, 16, generator=g))
     assert b2.penalties()["barrier"].item() < pen["barrier"].item()
+
+
+def test_dual_velocity_config_and_ortho_loss():
+    from looking_glass.cfm_training import _task_losses
+
+    assert CFMConfig().n_experts == 2
+    assert CFMConfig().version == "v3.0.0"
+    from looking_glass.cfm_config import _expert_biases
+
+    biases = _expert_biases(2, 7)
+    assert biases[0] < biases[1]  # fast expert first, slow expert last
+    seqs = [_seq("c1"), _seq("c2", day="2025-01-02"), _seq("c3", day="2025-01-03")]
+    torch.manual_seed(0)
+    vocab = EventVocab.build(seqs)
+    model = CFM(vocab, dim=32, n_experts=2)  # dual-velocity
+    cfg = _cfg()
+    assert "ortho" in cfg.objectives
+    T_ = _task_losses(model, vocab, seqs, cfg)
+    assert "ortho" in T_ and torch.isfinite(T_["ortho"])
+    loss = _loss(model, vocab, seqs, cfg)
+    loss.backward()
+    assert model.ssm.experts[0].delta_bias.grad is not None
+    assert model.ssm.experts[1].delta_bias.grad is not None

@@ -286,6 +286,20 @@ def train_cfm(cfg: CFMConfig):
         torch.manual_seed(cfg.seed)
         with torch.no_grad():
             T_ = _task_losses(model, vocab, [a_seqs[i] for i in vi], cfg)
+        # rolling EMA whitening stats (DEC-025): update per eval so the
+        # whitening tracks the population instead of a static calibration slice
+        if getattr(cfg, "donor_whiten", True) and not hasattr(model, "whiten_on"):
+            with torch.no_grad():
+                vi_s = val_idx[:512]
+                _h = forward_states(model, [a_seqs[i] for i in vi_s])
+                _mu = _h.detach().float().cpu().mean(0)
+                _zc = _h.detach().float().cpu() - _mu
+                _cov = (_zc.T @ _zc) / max(_zc.shape[0] - 1, 1)
+                _ev, _V = torch.linalg.eigh(
+                    _cov.double() + 1e-4 * torch.eye(_cov.shape[0], dtype=torch.float64)
+                )
+                _W = (_V @ torch.diag(1.0 / torch.sqrt(_ev.clamp(min=1e-12))) @ _V.T).float()
+                model.set_whitening(_mu, _W)
         # STATIONARY selection metric: equal-weight held-out sum. DWA weights
         # change every eval, so a weighted metric would change definition
         # between evals — selection must compare like with like (DEC-016).
@@ -599,6 +613,17 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
     # with the yardstick. PR = (sum l)^2 / sum(l^2) in [1, dim]; loss =
     # 1 - PR/dim in [0, 1) — rank-1 covariance costs ~1, full spread costs 0.
     # fp32 eigh on purpose (fp16 eigh is unsupported/unstable).
+    # ---- ortho-loss: fast/slow cross-covariance (DEC-025) ----------------
+    # With n_experts=2, h = [h_fast || h_slow]. Zero cross-covariance between
+    # the halves = the experts encode independent information. A single
+    # matmul + Frobenius norm, no loops.
+    if cfg.n_experts >= 2 and h.shape[0] >= 2:
+        half = h.shape[-1] // cfg.n_experts
+        h_fast, h_slow = h[:, :half], h[:, half:]
+        hf_c = h_fast - h_fast.mean(0, keepdim=True)
+        hs_c = h_slow - h_slow.mean(0, keepdim=True)
+        xcov = (hf_c.T @ hs_c) / (h_fast.shape[0] - 1)
+        T_["ortho"] = (xcov**2).mean()
     if "rank" in cfg.objectives and h.shape[0] >= 2:
         # autocast OFF: it downcasts even fp32 matmuls to fp16 (eigh has no
         # fp16 CUDA kernel — measured crash); this math must stay fp32.

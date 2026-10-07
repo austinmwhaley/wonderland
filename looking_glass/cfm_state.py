@@ -154,6 +154,7 @@ def load_frozen_encoder(tag: str, cfm_dir):
         sf_mode=blob.get("sf_mode", "purchase"),
     )
     model.load_state_dict(blob["state"])
+    model = model.to("cuda" if torch.cuda.is_available() else "cpu")
     model.eval()
     if blob.get("whiten_W") is not None:
         model.set_whitening(blob["whiten_mean"], blob["whiten_W"])  # DEC-022

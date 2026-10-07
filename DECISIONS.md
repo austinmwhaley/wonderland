@@ -453,3 +453,27 @@ same battery
 - **v2.9.0 is LOCKED** as the production encoder: all 13 portfolio objectives
   PASS, geometry PASS by construction (whitened readout, ratio 0.82),
   Lipschitz smooth (p99 0.0016), MI low (0.044 nats), canaries clean.
+
+## DEC-025 — v3.0.0: Dual-Velocity Multi-Horizon Encoder
+
+- **Date:** 2026-10-07
+- **Context:** the half-life experiment (DEC-024) proved trajectory zigzag is
+  structural to a single-state recurrence: event-content embeddings alternate
+  (view/order/view), and one state tracks content, not smooth behavioral
+  trends. The architecture fix is dual-velocity: two independent SelectiveSSM
+  experts with spread delta_bias init (fast = -1.5, slow = +1.5), each
+  tracking a different timescale.
+- **Alternatives:** (a) dual-velocity MultiScaleSSM (K=2); (b) dual-
+  architecture (two separate models); (c) accept the zigzag.
+- **Decision:** (a) — the existing MultiScaleSSM bank already supports K>1
+  experts; spreading the delta_bias init breaks the symmetry so the two
+  experts discover different timescales (fast tracks token transitions for
+  next/dt/query/mask; slow accumulates behavioral trends for sf/agg/value/
+  entity). Ortho-loss (cross-covariance between expert state components)
+  prevents collapse into the same subspace. Trajectory measured on the SLOW
+  state (the last 1/K of the state vector). Rolling EMA whitening (per-eval,
+  not post-hoc). GPU-aware load_frozen_encoder.
+- **Trade-offs accepted:** 2× trunk compute (2 experts × half channels = same
+  total params, but 2 ssm scans); ortho-loss adds a batch-matmul; the
+  trajectory proof needs 64 prefix forwards per trajectory (measured: ~10 min
+  on CPU, seconds on GPU — GPU-aware loading fixes this).

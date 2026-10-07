@@ -56,7 +56,7 @@ def test_lipschitz_bounded_and_finite():
 
     seqs = _seqs(12)
     torch.manual_seed(0)
-    model = CFM(EventVocab.build(seqs), dim=16, n_experts=1)
+    model = CFM(EventVocab.build(seqs), dim=16, n_experts=2)
     model.eval()
     cfg = CFMConfig()
     cfg.agg_horizons_days = [7.0, 30.0]
@@ -71,7 +71,7 @@ def test_trajectory_velocity_and_continuity():
 
     seqs = _seqs(6)
     torch.manual_seed(0)
-    model = CFM(EventVocab.build(seqs), dim=16, n_experts=1)
+    model = CFM(EventVocab.build(seqs), dim=16, n_experts=2)
     model.eval()
     cfg = CFMConfig()
     out = _trajectory(model, model.vocab, seqs, cfg, n_traj=4, seed=0)
@@ -86,7 +86,7 @@ def test_info_plane_lists_predictive_losses():
 
     seqs = _seqs(6)
     torch.manual_seed(0)
-    model = CFM(EventVocab.build(seqs), dim=16, n_experts=1)
+    model = CFM(EventVocab.build(seqs), dim=16, n_experts=2)
     model.eval()
     cfg = CFMConfig()
     cfg.agg_horizons_days = [7.0, 30.0]
@@ -104,7 +104,7 @@ def test_intrinsic_evaluate_end_to_end(tmp_path):
 
     seqs = _seqs(30)
     torch.manual_seed(0)
-    model = CFM(EventVocab.build(seqs), dim=16, n_experts=1)
+    model = CFM(EventVocab.build(seqs), dim=16, n_experts=2)
     model.eval()
     cfg = CFMConfig()
     cfg.agg_horizons_days = [7.0, 30.0]
