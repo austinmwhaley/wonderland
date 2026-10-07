@@ -242,9 +242,9 @@ def train_cfm(cfg: CFMConfig):
     # alternative to hand-tuned loss weights — recorded so every run shows
     # where the objective balance actually landed
     with torch.no_grad():
-        raw = {k: float(torch.exp(-v).squeeze()) for k, v in model.log_var.items()}
-    tot = sum(raw.values()) or 1.0
-    task_weights = {k: round(v / tot, 4) for k, v in sorted(raw.items())}
+        task_weights = {
+            k: round(float(v.detach().reshape(-1)[0]), 4) for k, v in sorted(model.log_var.items())
+        }
     _registry(
         cfg,
         vocab,
@@ -262,6 +262,9 @@ def train_cfm(cfg: CFMConfig):
             "budget_steps": res.budget_steps,
             "eval_every": res.eval_every,
             "patience": res.patience,
+            "agg_horizons_days": cfg.agg_horizons_days,
+            "sf_mode": cfg.sf_mode,
+            "selection": "heldout_combined_objective (all active objectives)",
         },
     )
     return model, vocab, df, keys, split

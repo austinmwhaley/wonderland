@@ -76,7 +76,10 @@ def _geometry(states: np.ndarray, seed: int) -> dict:
     n, dim = states.shape
     z = states - states.mean(0, keepdims=True)
     rng = np.random.default_rng(seed)
-    null = states[:, rng.permutation(dim)]
+    # null: independently shuffle rows WITHIN each column — destroys joint
+    # structure while keeping every marginal. (Whole-matrix permutation would
+    # preserve the covariance spectrum exactly and make every null vacuous.)
+    null = np.column_stack([states[:, c][rng.permutation(n)] for c in range(dim)])
     zn = null - null.mean(0, keepdims=True)
 
     def eff_rank(cov):
@@ -276,6 +279,16 @@ def evaluate(
                 }
             )
     missing = sorted(set(cfg.objectives) - seen - GATED_EXCLUSIONS - YARDSTICK_PENDING)
+    # learned per-task contribution at the kept state: w_k*L_k with the
+    # LEARNED uncertainty weights (Kendall) — the dynamic balance, recorded
+    contributions = {}
+    lv = {k: float(v.detach().reshape(-1)[0]) for k, v in model.log_var.items()}
+    for o in objectives:
+        k = o["objective"]
+        if k in lv:
+            contributions[k] = round(0.5 * float(np.exp(-lv[k])) * o["real"], 6)
+    tot = sum(abs(v) for v in contributions.values()) or 1.0
+    contributions = {k: round(v / tot, 4) for k, v in contributions.items()}
     ok = all(r["ok"] for r in rows) if rows else False
     receipt = {
         "tag": tag,
@@ -284,11 +297,16 @@ def evaluate(
         "n_val": len(val),
         "n_seqs": len(seqs),
         "sf_mode": getattr(cfg, "sf_mode", "purchase"),
+        "agg_horizons_days": list(getattr(cfg, "agg_horizons_days", []) or []),
+        "task_log_var": {
+            k: round(float(v.detach().reshape(-1)[0]), 4) for k, v in model.log_var.items()
+        },
         "objectives": objectives,
         "objectives_missing": missing,
         "yardstick_pending": sorted(YARDSTICK_PENDING),
         "report_only": report_only,
         "canaries": canaries,
+        "task_contributions": contributions,
         "geometry": geometry,
         "rows": rows,
         "ok": bool(ok),
