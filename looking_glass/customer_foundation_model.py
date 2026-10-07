@@ -207,6 +207,13 @@ def _portfolio_grade(cfg, tag=None):
     a_keys = [k for k in keys if split[k] == "A"]
     if rcfg.sample_a_customers is not None:
         a_keys = draw_sample(keys, split, "A", rcfg.sample_a_customers, rcfg.split_seed)
+    if not rcfg.agg_horizons_days:
+        # registry predates horizon recording — derive from the stream (the
+        # same data-derived rule training used), never silently skip agg
+        from looking_glass.autotune import derive_agg_horizons
+
+        rcfg.agg_horizons_days, _ = derive_agg_horizons(df)
+        print(f"[portfolio] agg horizons derived: {rcfg.agg_horizons_days}", flush=True)
     seqs = build_sequences(df, a_keys, rcfg, split, with_anchors=False)
     res = _evaluate(model, model.vocab, rcfg, seqs, seed=rcfg.seed, tag=tag)
     return 0 if res["ok"] else 1
