@@ -146,6 +146,11 @@ class CFMConfig:
     # losses); "equal" = plain sum. Weights are dynamic either way.
     weight_mode: str = "dwa"
     dwa_temp: float = 2.0  # DWA temperature (paper default; the ONLY knob)
+    # Frontier sampler (DEC-017): multiplier on the geometry-family losses
+    # (variance, rank, redundancy). 1.0 = the balanced point; >1 trades a bit
+    # of predictive skill for state headroom — the explicit Pareto coordinate,
+    # recorded in the registry so every point on the curve is a receipt.
+    geometry_boost: float = 1.0
     use_uncertainty_weighting: bool = True  # legacy flag (uncertainty mode)
     # Successor-feature phi shape: "event_types" = agnostic (one discounted
     # component per event type + value — the operator's ruling; no objective

@@ -372,3 +372,18 @@ same battery
 - **Trade-offs accepted:** one more loss term (DWA balances it); the gate may
   still fail if the null's bar (0.3 x) is met but headroom stays thin — the
   ratio is reported either way.
+
+## DEC-017 — geometry_boost: the explicit Pareto coordinate + frontier sweep
+
+- **Date:** 2026-10-07
+- **Context:** three falsified attempts at raising held-out eff-rank via
+  batch-local losses (variance hinge, eigh rank, trace-form rank — all
+  measured, geometry ratio 0.23/0.26/0.18) while ALL predictive skills stay
+  positive. Conclusion: the predictive objectives genuinely prefer a
+  low-rank state — this is a Pareto tension, not a bug.
+- **Decision:** add `geometry_boost` (multiplier on variance/rank/redundancy
+  losses; default 1.0; recorded in the registry) and sweep {5, 20} on
+  Instacart to map the skills-vs-headroom frontier. The "best recipe" is then
+  a CHOICE on a measured curve, not an opinion.
+- **Trade-offs accepted:** predictive skills may dip at high boost; the sweep
+  quantifies exactly how much.

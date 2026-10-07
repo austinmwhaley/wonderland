@@ -616,13 +616,24 @@ class DWA:
         return dict(self.w)
 
 
+GEOMETRY_FAMILY = ("variance", "rank", "redundancy")
+
+
 def _combine(model, T, cfg, weights: dict | None = None):
-    """Task-balance dispatch (DEC-014). `weights` = current DWA weights."""
+    """Task-balance dispatch (DEC-014). `weights` = current DWA weights.
+    geometry_boost (DEC-017) scales the geometry family — the explicit
+    Pareto coordinate for the skills-vs-headroom frontier."""
     keys = [k for k in cfg.objectives if k in T]
+    boost = float(getattr(cfg, "geometry_boost", 1.0) or 1.0)
+
+    def wk(k):
+        w = weights.get(k, 1.0) if weights else 1.0
+        return w * (boost if k in GEOMETRY_FAMILY else 1.0)
+
     if cfg.weight_mode == "dwa":
         if weights is not None:
-            return sum(weights.get(k, 1.0) * T[k] for k in keys)
-        return sum(T[k] for k in keys)  # no history yet -> equal
+            return sum(wk(k) * T[k] for k in keys)
+        return sum(T[k] * (boost if k in GEOMETRY_FAMILY else 1.0) for k in keys)
     if cfg.weight_mode == "uncertainty" and cfg.use_uncertainty_weighting:
         return sum(0.5 * torch.exp(-model.log_var[k]) * T[k] + 0.5 * model.log_var[k] for k in keys)
     return sum(T[k] for k in keys)
