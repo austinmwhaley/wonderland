@@ -305,3 +305,18 @@ same battery
 - **Trade-offs accepted:** larger default compute per step; two 🔧/new items
   (contrast views, portfolio CLI wiring) must land before the meta-rule is
   fully automatic.
+
+## DEC-013 — Fielding decisions: six fielded combos, explicit not-fielded list
+
+- **Date:** 2026-10-07
+- **Context:** operator wanted the fielded combinations and the explicit
+  not-fielded list with reasons/triggers (the §1.5 map made operational).
+- **Decision:** field six combos by default (TPP core; clock stack; future
+  stack; geometry pair; discipline drills; readout) = all 13 objectives;
+  everything else stays unbuilt/unfielded with a NAMED TRIGGER (vocab scale,
+  seasonality probe, periods, basket targets, sampling use case...).
+  Promoted: the canary leak-detector objective to next cycle. Published as
+  catalog §9 (HTML-only per DEC-011).
+- **Trade-offs accepted:** several high-value candidates (quantile head,
+  hazard) wait on triggers; the fielded set is judged by the portfolio grade
+  whose sf yardstick still needs one fix.

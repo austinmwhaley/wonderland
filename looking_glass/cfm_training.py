@@ -227,6 +227,17 @@ def train_cfm(cfg: CFMConfig):
         },
         out / f"cfm_{cfg.tag.replace('.', '_')}.pt",
     )
+    # grade the trained encoder on its whole portfolio (DEC-008: every train
+    # is graded, not claimed) — receipt lands next to the checkpoint
+    from looking_glass.portfolio import evaluate as _portfolio_evaluate
+
+    port = _portfolio_evaluate(model, vocab, cfg, a_seqs, seed=cfg.seed, tag=cfg.tag)
+    port_summary = {
+        "ok": bool(port["ok"]),
+        "receipt": port["receipt_path"],
+        "n_pass": sum(1 for r in port["rows"] if r["ok"]),
+        "n_rows": len(port["rows"]),
+    }
     _registry(
         cfg,
         vocab,
@@ -234,6 +245,7 @@ def train_cfm(cfg: CFMConfig):
         len(keys),
         derived=res.receipt,
         governor=gov,
+        portfolio=port_summary,
         cfg_resolved={
             "seq_len": cfg.seq_len,
             "dim": cfg.dim,
@@ -559,7 +571,9 @@ def _loss(model, vocab, items, cfg):
     return _combine(model, _task_losses(model, vocab, items, cfg), cfg)
 
 
-def _registry(cfg, vocab, n_train, n_keys, derived=None, governor=None, cfg_resolved=None):
+def _registry(
+    cfg, vocab, n_train, n_keys, derived=None, governor=None, cfg_resolved=None, portfolio=None
+):
     out = Path(cfg.out_dir)
     out.mkdir(parents=True, exist_ok=True)
     (out / f"registry_{cfg.tag.replace('.', '_')}.json").write_text(
@@ -582,6 +596,7 @@ def _registry(cfg, vocab, n_train, n_keys, derived=None, governor=None, cfg_reso
                 "overrides": (derived or {}).get("overrides", {}),
                 "resolved": cfg_resolved or {},
                 "governor": governor or {},
+                "portfolio": portfolio or {},
                 "trained_at": datetime.now(timezone.utc).isoformat(),
             },
             indent=1,

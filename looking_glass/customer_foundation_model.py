@@ -190,6 +190,28 @@ def _rebuild_products(
     return tag
 
 
+def _portfolio_grade(cfg, tag=None):
+    """Grade a FROZEN encoder on its whole self-supervised portfolio
+    (DEC-008): per-objective structure-skill vs destroyed data + geometry.
+    Exit code doubles as a gate (0 = portfolio PASS)."""
+    from looking_glass.cfm_state import load_frozen_encoder
+    from looking_glass.portfolio import evaluate as _evaluate
+
+    out = Path(cfg.out_dir)
+    tag, meta = _resolve_registry(out, tag)
+    model, rcfg = load_frozen_encoder(tag, out)
+    _replay_run_cfg(meta, rcfg, out, cfg)
+    df = _read_stream(rcfg)
+    keys = _customer_keys(df, rcfg)
+    split = assign_split(keys, rcfg)
+    a_keys = [k for k in keys if split[k] == "A"]
+    if rcfg.sample_a_customers is not None:
+        a_keys = draw_sample(keys, split, "A", rcfg.sample_a_customers, rcfg.split_seed)
+    seqs = build_sequences(df, a_keys, rcfg, split, with_anchors=False)
+    res = _evaluate(model, model.vocab, rcfg, seqs, seed=rcfg.seed, tag=tag)
+    return 0 if res["ok"] else 1
+
+
 def _ladder_chosen_rung(as_of: str | None) -> int | None:
     """Sample-A size chosen by this as_of's encoder ladder receipt (if any)."""
     if not as_of:
@@ -204,7 +226,7 @@ def main(argv=None):
     import argparse
 
     ap = argparse.ArgumentParser(description="Looking Glass — Customer Foundation Model")
-    ap.add_argument("cmd", choices=["train", "validate", "all", "products"])
+    ap.add_argument("cmd", choices=["train", "validate", "all", "products", "portfolio"])
     ap.add_argument(
         "--tag",
         default=None,
@@ -293,6 +315,8 @@ def main(argv=None):
     if a.cmd == "products":
         _rebuild_products(cfg, tag=a.tag, anchors=a.anchors, sample_b=a.sample_b)
         return 0
+    if a.cmd == "portfolio":
+        return _portfolio_grade(cfg, tag=a.tag)
     if a.cmd in ("train", "all"):
         model, vocab, df, keys, split = train_cfm(cfg)
         s, t = build_products(cfg, model, vocab, df, keys, split)

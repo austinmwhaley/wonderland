@@ -46,6 +46,7 @@
         <li><a href="#5-universal-encoder-plan-any-stream-in-objective-plan-train-grade">5. Universal-encoder plan: any stream in → objective plan → train → grade</a></li>
         <li><a href="#registry">7. Complete objective registry (~60)</a></li>
     <li><a href="#techniques">8. Training techniques</a></li>
+    <li><a href="#fielding">9. What we field / what we don’t (DEC-013)</a></li>
     <li><a href="#6-references-canonical-per-family">6. References (canonical per family)</a></li>
     <li><a href="#combination-map">1.5 Combination map (DEC-012)</a></li>
     </ul></nav>
@@ -938,6 +939,42 @@ one dominating or collapsing the shared trunk:</p>
 <tr><td>stochastic depth / trunk regularization</td><td>overfit on small samples</td><td>⏸ S</td></tr>
 </tbody>
 </table>
+<h2 id="fielding">9. What we field, what we don't, and why (DEC-013)</h2>
+<p><strong>Fielded by default (trained together, graded individually):</strong></p>
+<table>
+<thead><tr><th>combo</th><th>members</th><th>why field together</th><th>acceptance</th></tr></thead>
+<tbody>
+<tr><td><strong>TPP core</strong></td><td>next + entity + dt + value</td><td>one fact (what/which/when/how much), four reinforcing angles on one representation of “now”</td><td>each graded individually; all structure-skills &gt; 0</td></tr>
+<tr><td><strong>Clock stack</strong></td><td>dt + occur + agg + query</td><td>rhythm from four views: regression, balanced hazard, exact window counts, faded read-at-date</td><td>agg/query are the two newest — this is where raw’s advantage gets learned</td></tr>
+<tr><td><strong>Future stack</strong></td><td>sf + agg + jepa</td><td>worth (sf) + exact volume (agg) + direction (jepa) = multi-resolution future; none covers alone</td><td>sf grade fix pending; then all three skills &gt; 0</td></tr>
+<tr><td><strong>Geometry pair</strong></td><td>redundancy + jepa (contrast when views land)</td><td>alignment without collapse — redundancy is load-bearing for jepa</td><td>geometry gate: eff-rank ≥ 0.3 × null</td></tr>
+<tr><td><strong>Discipline drills</strong></td><td>order + mask</td><td>cheap robustness: “time flows” + “missing events are survivable”</td><td>trivially green; nearly free</td></tr>
+<tr><td><strong>Readout</strong></td><td>query (with next/dt)</td><td>makes the portfolio answerable at ANY date, not just event moments</td><td>the Instacart lever</td></tr>
+</tbody>
+</table>
+<p><strong>Not fielded (yet) — with the trigger that changes it:</strong></p>
+<table>
+<thead><tr><th>not fielded</th><th>why not now</th><th>field when</th></tr></thead>
+<tbody>
+<tr><td>contrast with real views</td><td>uniformity-only today (no positive pair); needs the augmentation design first</td><td>views implemented (S effort, queued first)</td></tr>
+<tr><td>hazard λ(t|h) (neural Hawkes)</td><td>dt+occur+agg cover timing at current quality; principled unification is M effort</td><td>calibrated “when-to-contact” curves become a shipped decision</td></tr>
+<tr><td>quantile / distributional future head</td><td>point forecasts suffice for today’s gates</td><td>LTV / CVaR tail decisions ship</td></tr>
+<tr><td>semantic IDs (RQ-VAE)</td><td>vocabs here are small; flat softmax works at this scale</td><td>entity vocab large + sparse (real retail scale) — the ★★ upgrade</td></tr>
+<tr><td>span/field masking + future-state distance</td><td>S-effort upgrades of mask/order — queued batch, nothing blocks</td><td>next training cycle after grade wiring</td></tr>
+<tr><td>periodicity / Fourier + clock features</td><td>probes show ≈flat seasonality on both streams</td><td>a stream with real hour/dow structure</td></tr>
+<tr><td>drift invariance (IRM / adversarial)</td><td>single-window streams today</td><td>multi-quarter / multi-market data</td></tr>
+<tr><td>inverse / forward dynamics</td><td>Instacart: no side actions (auto-out); rabbit_hole has sends — capability-conditional</td><td>intervention attribution becomes the product</td></tr>
+<tr><td>graph objectives</td><td>entity graph derivable but unused downstream today</td><td>entity-side learning becomes a need</td></tr>
+<tr><td>set / basket heads (DeepSets)</td><td>sequence view approximates baskets today; M effort</td><td>basket-level targets become first-class</td></tr>
+<tr><td>clustering (SwAV / DeepCluster)</td><td>segments come from downstream heads today</td><td>unsupervised segmentation upgrade</td></tr>
+<tr><td>VAE / diffusion / GAN</td><td>no sampling use case yet</td><td>synthetic customers / what-if rollouts</td></tr>
+<tr><td>CPC / MoCo / NNCLR / SimSiam / data2vec</td><td>variant overlap with jepa + contrast</td><td>contrast fix proves insufficient</td></tr>
+<tr><td>VIB / HSIC / surprise weighting</td><td>no measured gap yet</td><td>capacity-allocation problems appear</td></tr>
+<tr><td>cross-task consistency heads</td><td>needs sf + agg both mature first</td><td>portfolio shows incoherent heads</td></tr>
+</tbody>
+<p><strong>Promoted this cycle:</strong> the <strong>canary objective</strong> (registry #60 — the state must NOT be able to predict the A/B arm or as_of bucket) moves to “field next cycle”: a cheap leak detector, pure robustness.</p>
+<p><strong>Standing bans (never field):</strong> anything without <code>redundancy</code> · <code>query</code> without <code>next</code>/<code>dt</code> · <code>sf</code>/<code>agg</code> without <code>dt</code>/<code>value</code> · regularizer-only portfolios.</p>
+<hr>
 <h2 id="6-references-canonical-per-family">6. References (canonical per family)</h2>
 <ul>
 <li>TPP/marked point processes: Du et al. 2016 (neural Hawkes); Mehta et al.
