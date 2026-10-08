@@ -119,7 +119,7 @@ class CFMConfig:
     # v3.0.0: dual-velocity encoder (DEC-025) — n_experts=2 with spread
     # delta_bias init (fast/slow timescales), ortho-loss between expert state
     # components, rolling EMA whitening, trajectory graded on the slow state.
-    version: str = "v3.1.0"  # encoder code version
+    version: str = "v3.2.0"  # encoder code version
     revision: int = 1  # data/score revision (r)
     sample_customers: int | None = 500  # working base: first N customers (populations live here)
     split_a_frac: float = 0.7
@@ -197,6 +197,11 @@ class CFMConfig:
     #    (soft floor; the PRIMARY rank guard is now the log-det barrier)
     pcgrad: bool = True  # grouped PCGrad (DEC-020): geometry vs predictive
     donor_whiten: bool = True  # whitened readout at the donor boundary
+    # DEC-028: condition cap for the boundary whitening — eigenvalues of the
+    # state covariance are floored at this fraction of the largest, bounding
+    # kappa(Sigma^{-1/2}) <= 1/sqrt(whiten_cond_floor). Prevents near-null
+    # amplification that made the geometry/OOT gates non-reproducible.
+    whiten_cond_floor: float = 1e-2
     # Frontier sampler (DEC-017): multiplier on the geometry-family losses
     # (variance, rank, redundancy). 1.0 = the balanced point; >1 trades a bit
     # of predictive skill for state headroom — the explicit Pareto coordinate,
@@ -228,6 +233,8 @@ class CFMConfig:
         "variance",  # per-dim std floor: treats SCALE collapse (redundancy
         #              treats correlation only — measured insufficient alone)
         "rank",  # participation-ratio pressure: train on the graded metric
+        "spectrum",  # soft-spectrum isotropy (DEC-028): equalize per-dim
+        #              variance so no single direction dominates the PR
         "ortho",  # fast/slow cross-covariance: zero interference (DEC-025)
     )
     seed: int = 0

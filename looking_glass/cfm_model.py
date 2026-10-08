@@ -225,6 +225,7 @@ class CFM(nn.Module):
                     "agg",
                     "variance",
                     "rank",
+                    "spectrum",
                     "ortho",
                 )
             }

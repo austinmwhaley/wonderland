@@ -72,7 +72,9 @@ def test_donor_boundary_whitening_is_self_consistent(monkeypatch):
     measured = float(ev.sum() ** 2 / (ev**2).sum()) / dim
     # the reported post-whitening rank must match what the consumed readout shows
     assert abs(measured - wh["pr_after"]) < 0.15, (measured, wh["pr_after"])
-    assert measured > 0.5, measured
+    # condition-capped whitening (DEC-028) intentionally does NOT manufacture
+    # full rank from amplified near-null noise, so this sits below 0.5
+    assert measured > 0.3, measured
 
 
 def test_disentanglement_runs_and_flags_anisotropy():

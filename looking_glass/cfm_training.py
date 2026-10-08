@@ -670,6 +670,16 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
             cov = (hc.T @ hc) / (hc.shape[0] - 1)
             pr = cov.diagonal().sum() ** 2 / cov.pow(2).sum().clamp(min=1e-24)
             T_["rank"] = (1.0 - pr / hc.shape[1]).clamp(min=0.0)
+    if "spectrum" in cfg.objectives and h.shape[0] >= 2:
+        # Soft-spectrum isotropy (DEC-028, step 3). `rank` maximizes the PR but
+        # is insensitive to a single dominant direction; the `variance` hinge
+        # only sets a LOWER bound on per-dim std. Penalize the spread of the
+        # per-dim log-variance so no direction dominates -> a more isotropic
+        # covariance -> higher participation ratio. Complements `redundancy`
+        # (which removes off-diagonal correlation) — together: isotropic.
+        with torch.autocast(device_type=h.device.type, enabled=False):
+            vd = model.proj(h).float().var(dim=0) + 1e-8
+            T_["spectrum"] = vd.log().var()
     if "variance" in cfg.objectives:
         # fp32 on purpose: std over a fp16-autocast batch overflows with large
         # activations and the hinge degenerates (measured: combined -> 0.0000)
@@ -856,7 +866,7 @@ class GeometryBank:
         }
 
 
-GEOMETRY_FAMILY = ("variance", "rank", "redundancy")
+GEOMETRY_FAMILY = ("variance", "rank", "redundancy", "spectrum")
 
 
 def _combine(model, T, cfg, weights: dict | None = None, scales: dict | None = None):
@@ -966,14 +976,21 @@ def compute_whitening(model, vocab, cfg, seqs, n: int | None = None) -> dict:
     H = torch.cat(states, dim=0)
     mu = H.mean(0)
     zc = H - mu
-    # float64 eigh + stronger Tikhonov: the real model's state covariance is
-    # ill-conditioned (fp32 eigh failed to converge — measured). float64 has
-    # the precision to resolve near-degenerate spectra; the 1e-4 floor on
-    # eigenvalues prevents noise amplification in near-zero directions.
+    # float64 eigh for the ill-conditioned state covariance (fp32 eigh fails to
+    # converge). CONDITION-CAPPED whitening (DEC-028): floor eigenvalues at
+    # tau * max, bounding the transform's condition number to <= 1/sqrt(tau).
+    # The old absolute 1e-4 floor let near-null directions be amplified ~1e3x,
+    # so FP32 CUDA matmul nondeterminism became large swings in measured
+    # eff-rank (21.6 -> 56.2 across identical runs). Capping makes the geometry
+    # and OOT gates reproducible (and honest: it no longer manufactures rank
+    # from amplified noise).
+    tau = float(getattr(cfg, "whiten_cond_floor", 1e-2))
     cov = (zc.T @ zc).double() / max(H.shape[0] - 1, 1)
-    ev, V = torch.linalg.eigh(cov + 1e-4 * torch.eye(cov.shape[0], dtype=torch.float64))
-    ev = ev.clamp(min=1e-12)
-    W = (V @ torch.diag(1.0 / torch.sqrt(ev)) @ V.T).float()
+    ev, V = torch.linalg.eigh(cov)
+    ev = ev.clamp(min=0.0)
+    emax = float(ev.max().item()) if ev.numel() else 0.0
+    ev_f = ev.clamp(min=max(tau * emax, 1e-12))
+    W = (V @ torch.diag(1.0 / torch.sqrt(ev_f)) @ V.T).float()
     mu = mu.float()
 
     def pr(mat):
@@ -1004,6 +1021,7 @@ def compute_whitening(model, vocab, cfg, seqs, n: int | None = None) -> dict:
         "rows": int(H.shape[0]),
         "pr_before": round(pre, 4),
         "pr_after": round(post, 4),
+        "cond_floor": tau,
         "applied": bool(cfg.donor_whiten),
     }
 

@@ -551,3 +551,33 @@ same battery
 - **Open follow-up (recommended, not yet implemented):** a Jacobian
   orthogonality loss (cross-subspace input-sensitivity) to push geometry PR
   toward >0.75; the existing state cross-covariance `ortho` loss already PASSes.
+
+## DEC-028 — v3.2.0: condition-capped whitening + soft-spectrum isotropy
+
+- **Date:** 2026-10-07
+- **Context:** the boundary whitening Sigma^{-1/2} (DEC-022) used an absolute
+  1e-4 eigenvalue floor. On an ill-conditioned state covariance this amplified
+  near-null directions ~1e3x, so FP32 CUDA matmul nondeterminism became large
+  swings in the measured geometry: the IDENTICAL command/checkpoint gave
+  eff_rank 21.6 then 56.2 (and the v3.1.0 OOT proof 1.09 vs 2.36). The geometry
+  and OOT gates were therefore not reproducible — the v3.0.1 "0.652" passed on
+  noise, and the model's true consumed rank is only ~0.084 of dim.
+- **Alternatives:** (a) measure geometry on the raw (unwhitened) representation;
+  (b) condition-capped whitening; (c) raise the true rank by training.
+- **Decision:** (b) + (c).
+  - **(b)** `compute_whitening` now floors eigenvalues at
+    `whiten_cond_floor * max_eigenvalue` (config `whiten_cond_floor`, default
+    1e-2 -> kappa(W) <= 10). Measured: geometry is now stable under 1e-4 state
+    perturbations (0.145 -> 0.145), and honest held-out PR/dim is 0.18 (tau=1e-2)
+    to 0.24 (tau=1e-3) — below the 0.30 bar, which is the true value.
+  - **(c)** new `spectrum` objective: penalize `var(log(per-dim variance))` so
+    no single direction dominates the participation ratio (`rank` maximizes PR
+    but is insensitive to a dominant direction; `variance` only lower-bounds
+    std). Together with `redundancy` (decorrelation) this pushes the covariance
+    toward isotropic. Folded into GEOMETRY_FAMILY and GATED_EXCLUSIONS.
+- **Trade-offs accepted:** honest geometry is below the 0.30 gate; the gate
+  itself was measuring amplified noise before. Reproducibility (doctrine:
+  identity = behavior) is prioritized over a passing number. `rank` already
+  trained on raw `proj(h)` (not the whitened space), so no re-target was needed.
+- **Expected:** geometry/OOT reproducible; 13/13 objective skills; slow-trajectory
+  5/5 preserved; geometry value honest (target >0.30 via the spectrum loss).
