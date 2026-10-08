@@ -177,6 +177,8 @@ def load_frozen_encoder(tag: str, cfm_dir):
         wh = meta.get("whiten") or {}
         if wh.get("pr_after") is not None:
             cfg._whiten_pr_after = float(wh["pr_after"])
+        # training stability (v6): a divergent run is NOT certifiable.
+        cfg._stable = not bool((meta.get("governor") or {}).get("diverged", False))
         resolved = meta.get("resolved", {})
         cfg.seq_len = int(resolved.get("seq_len", cfg.seq_len))
         cfg.state_half_life_days = float(resolved.get("half_life_days", cfg.state_half_life_days))

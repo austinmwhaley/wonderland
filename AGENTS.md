@@ -317,3 +317,22 @@ never as a tuned threshold or a manufactured metric:
 Macro filter for every future change: does it add a literal? → reject. Does it
 rely on cross-sample batch statistics? → reject. Does it enforce an invariant law
 over the continuous state manifold? → approve.
+
+### Monotonic stability is a hard invariant (v6, DEC-039)
+
+A self-governing engine must be **stable from step 0 to the final iteration**.
+A run that diverges and is then "rescued" by keeping the best pre-divergence
+state is a **FALSE GREEN** and must never be certified.
+
+Rules:
+- **Learning rate from the curvature law**: descent is stable iff `lr < 2/L`
+  (`L` = local Lipschitz of the gradient). `lr` is measured, not tuned; no clip
+  ceiling is allowed to do the work.
+- **Divergence is failure, not a rescue**: a non-finite metric or a spike far
+  above the measured noise floor marks the run `UNSTABLE`; the portfolio gate
+  fails it. The governor does not launder divergence into a green.
+- **No silent masking**: non-finite terms, swallowed exceptions, and clamps that
+  hide instability are banned. Failures surface as receipts, not as green scores.
+- **No unit-dependent constants**: every derived scalar must be dimensionless or
+  derived from a data/hardware statistic — never `f(raw_units)` propped up by a
+  clip.

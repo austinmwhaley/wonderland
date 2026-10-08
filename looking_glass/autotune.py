@@ -287,11 +287,14 @@ def govern(train_step, val_metric, budget_steps, eval_every, patience, seed=0):
     hist = []
     no_improve = 0
     steps = 0
+    diverged = False  # any non-finite metric OR a spike far above the noise floor
     while steps < budget_steps:
         train_step(min(eval_every, budget_steps - steps))
         steps += eval_every
         v, state = val_metric()
         if not math.isfinite(v):
+            diverged = True
+            print(f"[govern] DIVERGENCE at step {steps}: non-finite metric", flush=True)
             break
         hist.append(v)
         prev_best = best
@@ -305,6 +308,18 @@ def govern(train_step, val_metric, budget_steps, eval_every, patience, seed=0):
                 f"[govern] step {steps}/{budget_steps}  val {v:.4f}  eval {len(hist)}", flush=True
             )
             continue  # plateau not measurable yet — patience does not start
+        # DIVERGENCE GUARD (v6): a metric that jumps >20x the measured noise floor
+        # above the best is instability, NOT a normal excursion. It is a HARD
+        # FAILURE — never rescued-and-reported-green. (Documented conservative
+        # factor; the SNR of the noise floor is the data-derived quantity.)
+        if v > best + 20.0 * tol:
+            diverged = True
+            print(
+                f"[govern] DIVERGENCE at step {steps}: val {v:.4f} >> best {best:.4f} "
+                f"(+20x tol {tol:.4f}) — UNSTABLE run",
+                flush=True,
+            )
+            break
         if v < prev_best - tol:
             no_improve = 0
         else:
@@ -319,6 +334,7 @@ def govern(train_step, val_metric, budget_steps, eval_every, patience, seed=0):
     return {
         "steps": steps,
         "best": best,
+        "diverged": diverged,
         "eval_every": eval_every,
         "patience": patience,
         "evals": len(hist),

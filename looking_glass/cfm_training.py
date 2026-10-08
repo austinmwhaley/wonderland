@@ -209,25 +209,48 @@ def train_cfm(cfg: CFMConfig):
     use_amp = device.type == "cuda"
     scaler = torch.amp.GradScaler("cuda", enabled=use_amp)
     balancer = DWA(sorted(cfg.objectives), temp=cfg.dwa_temp)
-    # Learning rate derived from the GRADIENT/PARAMETER scale (v6 Stage 5, #10):
-    # lr = target_rel * ||theta|| / ||g|| — a dimensionless RATIO (relative step),
-    # scale-free across streams/units, no clip ceiling. One gradient measured at
-    # init; target_rel is a documented conservative fraction.
+    # Learning rate from the CURVATURE LAW (v6 Stage 5, #10): gradient descent is
+    # monotonically stable iff lr < 2/L, where L = local Lipschitz of the gradient
+    # (top Hessian eigenvalue), measured at init by finite difference along the
+    # gradient. lr = 0.5/L is scale-free AND stability-guaranteed — no clip
+    # ceiling, no governor rescue needed.
     opt = None
     if abs(float(cfg.lr) - 3e-3) < 1e-12:  # only when not explicitly overridden
-        _target_rel = 1e-3
         try:
             _b = rng.choice(tr_idx, size=min(cfg.batch, len(tr_idx)), replace=False)
-            _tl, _il = _loss_split(
-                model, vocab, [a_seqs[i] for i in _b], cfg, weights=balancer.weights(), scales={}
+            _items = [a_seqs[i] for i in _b]
+
+            def _grad():
+                _tl, _il = _loss_split(
+                    model, vocab, _items, cfg, weights=balancer.weights(), scales={}
+                )
+                return torch.autograd.grad(_tl + _il, params, allow_unused=True)
+
+            g0 = _grad()
+            gn = math.sqrt(sum(float((x * x).sum()) for x in g0 if x is not None) + 1e-24)
+            state = [p.detach().clone() for p in params]
+            eps = 1e-4 * math.sqrt(sum(float((p * p).sum()) for p in params))
+            with torch.no_grad():
+                for p, g in zip(params, g0):
+                    if g is not None:
+                        p.add_(eps * g / gn)  # step along the (unit) gradient direction
+            g1 = _grad()
+            with torch.no_grad():
+                for p, s in zip(params, state):
+                    p.copy_(s)
+            dg = math.sqrt(
+                sum(
+                    float(((a - b) * (a - b)).sum())
+                    for a, b in zip(g1, g0)
+                    if a is not None and b is not None
+                )
+                + 1e-24
             )
-            _g = torch.autograd.grad(_tl + _il, params, allow_unused=True)
-            gn = math.sqrt(sum(float((x * x).sum()) for x in _g if x is not None) + 1e-24)
-            pn = math.sqrt(sum(float((p * p).sum()) for p in params) + 1e-24)
-            cfg.lr = float(np.clip(_target_rel * pn / gn, 1e-6, 1e-2))
-            print(f"[lr] ||theta||/||g||={pn / gn:.3e} -> lr {cfg.lr:.2e}", flush=True)
+            L = dg / max(eps, 1e-12)
+            cfg.lr = float(0.5 / max(L, 1e-8))
+            print(f"[lr] curvature L={L:.3e} -> lr {cfg.lr:.2e} (0.5/L < 2/L)", flush=True)
         except Exception as e:
-            print(f"[lr] derivation failed ({e}); fallback 3e-3", flush=True)
+            print(f"[lr] curvature derivation failed ({e}); fallback 3e-3", flush=True)
     if opt is None:
         opt = torch.optim.Adam(params, lr=cfg.lr, weight_decay=1e-4)
     loss_scales: dict = {}  # EMA per task — the unit system (DEC-018)
@@ -382,13 +405,15 @@ def train_cfm(cfg: CFMConfig):
         # change every eval, so a weighted metric would change definition
         # between evals — selection must compare like with like (DEC-016).
         # stationary selection on the SAME scale-free unit system (DEC-018).
-        # Skip non-finite terms so one degenerate objective cannot invalidate the
-        # whole metric and stop training (Layer-A defensive fix).
+        # NO silent masking (v6): a non-finite term is DIVERGENCE, surfaced as an
+        # invalid metric (govern flags it UNSTABLE) — never skipped-and-hidden.
+        if any(k in T_ and not math.isfinite(float(T_[k])) for k in cfg.objectives):
+            return math.inf, None
         v = float(
             sum(
                 T_[k] / max(loss_scales.get(k, 1.0), 1e-8)
                 for k in cfg.objectives
-                if k in T_ and math.isfinite(float(T_[k]))
+                if k in T_
             )
         )
         balancer.update({k: float(x) for k, x in T_.items()})
@@ -408,6 +433,14 @@ def train_cfm(cfg: CFMConfig):
     gov, best_state = AT.govern(
         train_step, val_metric, budget, res.eval_every, res.patience, cfg.seed
     )
+    # STABILITY IS A HARD INVARIANT (v6): a divergent run is a FAILURE, never a
+    # rescued green. Record it; the portfolio gate fails on an unstable run.
+    cfg._stable = not bool(gov.get("diverged", False))
+    if not cfg._stable:
+        print(
+            "[UNSTABLE] training diverged — run is NOT certified (no governor rescue)",
+            flush=True,
+        )
     if best_state is not None:
         model.load_state_dict(best_state)
     # eval/save use the FROZEN boundary transform, not the training-time ZCA

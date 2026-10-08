@@ -339,6 +339,15 @@ def evaluate(
             check = f"geometry: consumed repr PR/dim >= floor {floor}"
             achieved = f"PR/dim {pr_frac} (white-noise null {geometry['mp_null_frac']})"
         rows.append({"check": check, "achieved": achieved, "ok": bool(pr_frac >= floor)})
+        # STABILITY IS A HARD INVARIANT (v6): a run that diverged during training
+        # is NOT certifiable — no governor rescue, no false green.
+        rows.append(
+            {
+                "check": "training: trajectory stable (no divergence)",
+                "achieved": "stable" if getattr(cfg, "_stable", True) else "DIVERGED",
+                "ok": bool(getattr(cfg, "_stable", True)),
+            }
+        )
         # conservation ratio (v6 Stage 3): energy in = energy out, ~1 for any
         # stream. Tolerance is finite-sample (2 sigma ~ 1/sqrt(N)), not a literal.
         if r_cons is not None:
