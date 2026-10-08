@@ -57,7 +57,9 @@ def _scan(d, b):
 
 
 class SelectiveSSM(nn.Module):
-    def __init__(self, dim, delta_bias=0.0, delta_spectrum=False, spectrum=(-1.5, 3.0)):
+    def __init__(
+        self, dim, delta_bias=0.0, delta_spectrum=False, spectrum=(-1.5, 3.0), slow_smooth=False
+    ):
         super().__init__()
         self.W_delta = nn.Linear(dim, dim)
         self.W_B = nn.Linear(dim, dim)
@@ -72,10 +74,35 @@ class SelectiveSSM(nn.Module):
             self.delta_bias = nn.Parameter(torch.linspace(spectrum[0], spectrum[1], dim))
         else:
             self.delta_bias = nn.Parameter(torch.tensor([float(delta_bias)]))
+        # v4.1 (DEC-030): learned low-pass input smoothing on the SLOW band of
+        # the unified trunk, plus a band-diagonal input mixing so raw fast
+        # channels cannot inject token-switching zigzag into the slow state
+        # through W_B/W_delta (the mixing was the reason smoothing alone did not
+        # fix it — measured). Retention is keyed to each channel's timescale:
+        # slow band -> high retention (more smoothing), fast band -> low.
+        self.smooth = None
+        if slow_smooth:
+            dbv = self.delta_bias.detach().numpy().astype(float)
+            slow = dbv <= np.median(dbv)
+            m = np.zeros((dim, dim), dtype=np.float32)
+            fi, si = np.where(~slow)[0], np.where(slow)[0]
+            m[np.ix_(fi, fi)] = 1.0
+            m[np.ix_(si, si)] = 1.0
+            self.register_buffer("band_mask", torch.tensor(m))
+            r0 = np.where(slow, 0.95, 0.05)
+            self.smooth = IntentFilter(dim, retention_init=r0, use_proj=False)
 
     def forward(self, x, h0=None, mask=None):
-        delta = F.softplus(self.W_delta(x) + self.delta_bias)
-        bx = self.W_B(x)
+        if self.smooth is not None:
+            x = self.smooth(x, mask=mask)
+        bm = getattr(self, "band_mask", None)
+        if bm is not None:
+            wd = F.linear(x, self.W_delta.weight * bm, self.W_delta.bias)
+            bx = F.linear(x, self.W_B.weight * bm, self.W_B.bias)
+        else:
+            wd = self.W_delta(x)
+            bx = self.W_B(x)
+        delta = F.softplus(wd + self.delta_bias)
         decay = torch.exp(-delta)
         if mask is not None:
             m = mask.unsqueeze(-1)
@@ -88,42 +115,39 @@ class SelectiveSSM(nn.Module):
         return self.W_C(H), H[:, -1]
 
 
-def ns_zca(z, iters=8, eps=1e-2):
-    """Differentiable ZCA via the coupled Newton-Schulz iteration (v4.0, DEC-029).
-
-    Returns the batch-whitened `z` (centered, covariance ~ I) using only
-    matmuls — no eigh/inverse, so it is differentiable and stable. The
-    covariance is normalized by its SPECTRAL norm (power iteration, detached) so
-    its spectrum lies in (0,1] and the coupled iteration
-    Y_{k+1}=½Y_k(3I−Z_kY_k), Z_{k+1}=½(3I−Z_kY_k)Z_k converges Y→A^{1/2},
-    Z→A^{-1/2}. `eps` ridges the normalized covariance, bounding the condition
-    number so near-null directions are not amplified. (Trace normalization was
-    wrong: it does not bound the top eigenvalue, and NS diverges for
-    high-condition inputs — measured.)"""
-    if z.dim() != 2 or z.shape[0] < 2:
-        return z
-    zc = z - z.mean(0, keepdim=True)
-    n = zc.shape[0]
-    cov = (zc.T @ zc) / (n - 1)
+def ns_inv_sqrt(cov, iters=8, eps=1e-2):
+    """Approximate Sigma^{-1/2} for a symmetric PSD `cov` via the coupled
+    Newton-Schulz iteration, spectral-norm normalized so it converges and `eps`
+    capped so the condition number is bounded (near-null directions are not
+    amplified). Returns a (D, D) matrix usable as a whitening transform."""
     d = cov.shape[0]
-    cd = cov.detach()
+    cd = cov.detach().double()
     with torch.no_grad():  # spectral norm by power iteration
         g = torch.Generator().manual_seed(0)
-        v = torch.randn(d, 1, generator=g).to(cov.device, cov.dtype)
+        v = torch.randn(d, 1, generator=g).to(cd.device, cd.dtype)
         for _ in range(16):
             v = cd @ v
             v = v / v.norm().clamp(min=1e-12)
-        scale = float((v.T @ cd @ v).item())
-    scale = max(scale, 1e-12)
-    eye = torch.eye(d, device=z.device, dtype=z.dtype)
+        scale = max(float((v.T @ cd @ v).item()), 1e-12)
+    eye = torch.eye(d, device=cov.device, dtype=cov.dtype)
     A = cov / scale + eps * eye
-    Y, Z = A, eye
+    Y, Z = A.clone(), eye.clone()
     for _ in range(max(int(iters), 0)):
         T = 3.0 * eye - Z @ Y
         Y = 0.5 * (Y @ T)
         Z = 0.5 * (T @ Z)
-    # Z ~ A^{-1/2}; (cov)^{-1/2} = scale^{-1/2} A^{-1/2}
-    return (zc @ Z) / torch.sqrt(torch.as_tensor(scale, device=z.device, dtype=z.dtype))
+    return Z / torch.sqrt(torch.as_tensor(scale, device=cov.device, dtype=cov.dtype))
+
+
+def ns_zca(z, iters=8, eps=1e-2):
+    """Differentiable batch ZCA: whiten `z` by its own (spectral-norm
+    normalized, condition-capped) covariance via Newton-Schulz. Matmuls only —
+    no eigh/inverse — so it is differentiable and stable."""
+    if z.dim() != 2 or z.shape[0] < 2:
+        return z
+    zc = z - z.mean(0, keepdim=True)
+    cov = (zc.T @ zc) / (zc.shape[0] - 1)
+    return zc @ ns_inv_sqrt(cov, iters=iters, eps=eps)
 
 
 class IntentFilter(nn.Module):
@@ -138,15 +162,19 @@ class IntentFilter(nn.Module):
     second-order low-pass of the token stream and its velocity is smooth.
     """
 
-    def __init__(self, dim, retention_init):
+    def __init__(self, dim, retention_init, use_proj=True):
         super().__init__()
-        self.W_intent = nn.Linear(dim, dim)
-        r0 = float(min(max(retention_init, 1e-3), 1.0 - 1e-3))
-        self.logit = nn.Parameter(torch.full((dim,), float(np.log(r0 / (1.0 - r0)))))
+        self.use_proj = bool(use_proj)
+        if self.use_proj:
+            self.W_intent = nn.Linear(dim, dim)
+        r0 = np.clip(np.asarray(retention_init, dtype=float), 1e-3, 1.0 - 1e-3)
+        if r0.ndim == 0:
+            r0 = np.full(dim, float(r0))
+        self.logit = nn.Parameter(torch.tensor(np.log(r0 / (1.0 - r0)), dtype=torch.float32))
 
     def forward(self, x, mask=None):
         r = torch.sigmoid(self.logit).view(1, 1, -1)
-        e = self.W_intent(x)
+        e = self.W_intent(x) if self.use_proj else x
         d = r.expand_as(e)
         if mask is not None:
             m = mask.unsqueeze(-1)
@@ -167,7 +195,9 @@ class MultiScaleSSM(nn.Module):
             # v4.0: ONE wide selective SSM with a per-channel timescale spectrum.
             self.chan = chan
             self.n_experts = 1
-            self.experts = nn.ModuleList([SelectiveSSM(chan, delta_spectrum=True)])
+            self.experts = nn.ModuleList(
+                [SelectiveSSM(chan, delta_spectrum=True, slow_smooth=True)]
+            )
             self.slow_intent = False
             return
         self.chan = chan
@@ -424,19 +454,34 @@ class CFM(nn.Module):
     def donor_batch(self, h: "torch.Tensor") -> "torch.Tensor":
         """Donor readout for (B, D) state batches — no pooling, whitened when
         the transform is set. The consumed representation (DEC-022). Whitening
-        is applied AFTER `proj` (the actual boundary): whitening `h` first and
-        then projecting re-collapses the representation because `proj` is itself
-        ill-conditioned (measured PR/dim 0.85 -> 0.06).
+        is applied AFTER `proj` (the actual boundary). v4.1 (DEC-030): the
+        transform is a GLOBAL ZCA estimated online by `update_zca` (EMA mean +
+        covariance -> Newton-Schulz); it is a constant per step, so grading and
+        serving share the exact same map."""
+        return self._whiten(self.proj(h))
 
-        v4.0 (DEC-029): when `zca` is enabled the boundary is whitened IN the
-        forward pass by a differentiable Newton-Schulz ZCA (`ns_zca`), so
-        gradients shape the consumed isotropy directly during training. At
-        inference (`zca_train` off) a frozen condition-capped transform is used,
-        so train/serve stay consistent."""
-        z = self.proj(h)
-        if self.zca and getattr(self, "zca_train", False):
-            return ns_zca(z)
-        return self._whiten(z)
+    def update_zca(self, h, beta=0.1):
+        """Update the global boundary ZCA from this batch (v4.1, DEC-030).
+
+        Maintains an EMA of the projected mean and covariance and recomputes the
+        frozen whitening W = Sigma^{-1/2} (Newton-Schulz, spectral-norm
+        normalized, eps-capped) from the GLOBAL estimate. Per-batch ZCA (v4.0)
+        whitened each batch but not the population, so held-out isotropy stayed
+        low; a global estimate is what the geometry gate measures."""
+        with torch.no_grad():
+            z = self.proj(h).detach().float()
+            if z.dim() == 1:
+                z = z.unsqueeze(0)
+            mu = z.mean(0)
+            zc = z - mu
+            cov = (zc.T @ zc) / max(z.shape[0] - 1, 1)
+            if not hasattr(self, "_zca_cov"):
+                self._zca_mean, self._zca_cov = mu, cov
+            else:
+                self._zca_mean = (1 - beta) * self._zca_mean + beta * mu
+                self._zca_cov = (1 - beta) * self._zca_cov + beta * cov
+            W = ns_inv_sqrt(self._zca_cov)
+        self.set_whitening(self._zca_mean, W)
 
     def successor(self, state, gamma, reward_weight=None):
         """Item 3: query the discounted future at ANY horizon (gamma in (0,1)) from

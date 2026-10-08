@@ -315,12 +315,21 @@ def train_cfm(cfg: CFMConfig):
                 )
             except (RuntimeError, Exception):
                 pass
-        # rolling EMA whitening stats (DEC-025): update per eval so the
-        # whitening tracks the population instead of a static calibration slice
-        if getattr(cfg, "donor_whiten", True) and not getattr(model, "whiten_on", False):
+        # boundary whitening. v4.1 (DEC-030): a GLOBAL ZCA (EMA mean+cov ->
+        # Newton-Schulz) updated each eval from TRAIN states, so training and
+        # the frozen inference transform agree and held-out isotropy (what the
+        # geometry gate measures) is what the transform sees.
+        if getattr(cfg, "zca", False):
             try:
                 with torch.no_grad():
-                    vi_s = val_idx[:512]
+                    _h = forward_states(model, [a_seqs[i] for i in tr_idx[:512]])
+                model.update_zca(_h)
+            except (RuntimeError, Exception):
+                pass  # retry next eval
+        elif getattr(cfg, "donor_whiten", True) and not getattr(model, "whiten_on", False):
+            try:
+                with torch.no_grad():
+                    vi_s = tr_idx[:512]
                     _h = forward_states(model, [a_seqs[i] for i in vi_s])
                     _mu = _h.detach().float().cpu().mean(0)
                     _zc = _h.detach().float().cpu() - _mu
