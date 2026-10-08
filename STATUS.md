@@ -29,14 +29,13 @@
 
 ## Micro
 
-- **Current task:** v4.0 — self-governing encoder, all four macro shifts (DEC-029).
-  1. unified multi-timescale SSM (per-channel `delta_bias` spectrum; replaces the
-  expert bank + intent filter); 2. differentiable Newton-Schulz ZCA at the donor
-  boundary (spectral-norm normalized, eps-capped, frozen at inference);
-  3. log-det trunk-volume barrier; 4. scale-free gates (Marchenko-Pastur isotropy
-  score + CCA OOT over the effective rank); 5. adaptive information bottleneck
-  with a dual-ascent beta controller on DWA+PCGrad. All config-gated (defaults on
-  for v4.0). Full Instacart run in progress (`/tmp/opencode/insta_v40`).
+- **Current task:** v4.1 (DEC-030) — fixes v4.0's two failures. (1) global-EMA
+  ZCA (`update_zca`: EMA mean+cov -> `ns_inv_sqrt`, updated each eval, used by
+  `donor_batch`) instead of per-batch ZCA; (2) band-diagonal `W_delta`/`W_B` +
+  learned low-pass on the unified slow band, so raw fast channels cannot inject
+  token zigzag into the slow state. Synthetic slow cos -0.81 -> +0.90. Full run
+  in progress (`/tmp/opencode/insta_v41`).
+
 - **Last completed:** v3.2.0 condition-capped whitening + soft-spectrum (gates
   reproducible; honest geometry 0.21). v4.0 code + 4 regression tests; 245 fast
   tests green; v4.0 smoke run end-to-end.

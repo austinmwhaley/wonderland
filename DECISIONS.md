@@ -640,3 +640,36 @@ same battery
 - **Open items:** (a) restore a low-pass on the unified slow channels (or a
   running-EMA global ZCA); (b) recalibrate the MP geometry bar or make ZCA
   global so held-out isotropy rises.
+
+## DEC-030 — v4.1: global-EMA ZCA + band-diagonal low-pass (fixes v4.0's two failures)
+
+- **Date:** 2026-10-07
+- **Context:** v4.0 implemented all four macro shifts but left two failures:
+  (1) per-batch Newton-Schulz ZCA whitened each batch but not the population, so
+  held-out isotropy stayed at PR/dim 0.325 (geometry MP score -6.5); (2) dropping
+  DEC-027's intent filter in the unified trunk regressed slow-state trajectory cos
+  to -0.227.
+- **Decision:**
+  1. **Global-EMA ZCA**: `CFM.update_zca(h)` keeps an EMA of the projected mean
+     and covariance and recomputes W = Sigma^{-1/2} via `ns_inv_sqrt`
+     (spectral-norm normalized, eps-capped). Updated each eval from TRAIN states;
+     `donor_batch = _whiten(proj(h))` uses the global frozen transform, so
+     training and serving share the same map and the geometry gate measures the
+     population transform (not a per-batch one).
+  2. **Band-diagonal low-pass on the unified slow band**: learned per-channel
+     input EMA (retention 0.95 on the slow band, 0.05 on the fast band, keyed to
+     the delta spectrum) PLUS band-diagonal `W_delta`/`W_B`. The band mask is the
+     key insight: smoothing alone did not fix the zigzag because the full mixing
+     layers let raw fast channels inject token-flips into the slow state
+     (measured slow-state cos -0.86 with smoothing but full mixing).
+- **Trade-offs:** band-diagonal input mixing reduces cross-band capacity (a
+  deliberate structural prior: fast content should not drive slow state); the
+  EMA ZCA warm-up is noisy for the first eval (harmless). All config-gated.
+- **Measured:** synthetic alternating check slow-state cos **-0.81 -> +0.90**;
+  full run `insta_v41` measured: **OOT 0.979** (reproducible, bounded — the
+  v4.0/4.1 win); **12/13 objectives PASS**; but **trajectory still FAIL**
+  (slow cos -0.223) — the synthetic +0.90 did NOT transfer to real Instacart
+  sequences, and **geometry still -7.07** (PR/dim 0.277 vs noise 0.910);
+  band-diagonal mixing broke `agg` (-0.0003, long-horizon integration needs
+  cross-band flow). The condition-capped whitening honestly reveals the trunk is
+  genuinely low-rank (~0.28 of dim).
