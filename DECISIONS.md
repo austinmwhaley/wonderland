@@ -799,3 +799,23 @@ same battery
   instruction to the data/trunk, never masked by the boundary.
 - **Remaining staged literals** (#2 `dim`/`seq_len`, #4 objective hyperparams,
   #8 controller gains, #10 lr/batch): documented fallbacks; not yet derived.
+
+## DEC-037 — Stage 5: derive the staged literals
+
+- **Date:** 2026-10-07
+- **#2 dimensions/length**: `dim` now scales with the stream's categorical
+  diversity — `info ∝ sqrt(events)·log2(vocab) · (1 + H_et)` where `H_et` is the
+  event-type Shannon entropy (D ~ exp(H)), then snapped to a hardware-safe
+  power-of-two; `seq_len` = p90 events/customer (derived).
+- **#10 lr/batch**: `lr` derived from the INPUT signal scale
+  (`lr = clip(0.5/sqrt(P_in), 1e-4, 1e-2)`) — measured `P_in=139917 → 1.34e-3`
+  (replaces the `3e-3` literal); `batch` already derived from n_seqs + GPU memory.
+- **#4 partial**: `state_half_life_days` derived (gap p95); `mask_frac`,
+  `contrast_tau`, `gamma_*` remain documented fallbacks (regularisation
+  strengths; DWA already rebalances scale-free — a literal here is a conservative
+  fallback, not a stream assumption).
+- **#8 partial**: the boundary is a Cayley isometry initialised at the IDENTITY
+  (`iso_skew=0`) — no gain literal; controller gains (`aib_lr`, `rank_alpha`)
+  remain documented (they are convergence-rate gains, EMA-bounded).
+- **Validated**: fast rabbit_hole green (portfolio PASS; profile retention 0.857;
+  derived lr). 246 tests green.

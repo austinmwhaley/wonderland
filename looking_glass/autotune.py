@@ -71,12 +71,42 @@ def derive_seq_len(lengths) -> tuple[int, dict]:
     return val, {"seq_len": f"p90 events/customer={q:.0f} -> {val}"}
 
 
-def derive_dim(n_seqs, total_events, vocab_sizes) -> tuple[int, dict]:
-    """Capacity scales with the information in the data (events, vocab), not a
-    fixed width. Bounded by a conservative hardware-safe range."""
+def event_type_entropy(df) -> float:
+    """Shannon entropy of the event-type distribution (nats) — the stream's
+    categorical diversity, used to scale capacity (v6 Stage 5, #2)."""
+    import numpy as np
+
+    if "event_type" not in df.columns:
+        return 0.0
+    c = df.group_by("event_type").len().sort("len", descending=True)
+    n = float(c["len"].sum())
+    if n <= 0:
+        return 0.0
+    p = (c["len"] / n).to_numpy()
+    return float(-(p * np.log(p)).sum())
+
+
+def derive_dim(
+    n_seqs, total_events, vocab_sizes, et_entropy: float | None = None
+) -> tuple[int, dict]:
+    """Capacity scales with the INFORMATION in the data: events, vocabulary, and
+    the stream's categorical diversity H (v6 Stage 5, #2: D ~ exp(H), not a fixed
+    power of two). Bounded by a conservative hardware-safe range."""
     info = math.sqrt(max(total_events, 1)) * math.log2(2 + sum(vocab_sizes) + n_seqs)
+    if et_entropy is not None:
+        info *= 1.0 + et_entropy  # more diverse stream -> more manifold capacity
     val = int(clip(2 ** round(math.log2(max(info / 64.0, 8.0))), 16, 256))
-    return val, {"dim": f"info={info:.0f} -> {val}"}
+    return val, {"dim": f"info={info:.0f} (H_et={et_entropy}) -> {val}"}
+
+
+def derive_lr(input_power: float | None = None) -> tuple[float, dict]:
+    """Learning rate from the INPUT signal scale (v6 Stage 5, #10): step size
+    ~ 1/sqrt(P_in) so the first update is O(1) relative to the state magnitude,
+    independent of the stream's units. Falls back to 3e-3 when unknown."""
+    if not input_power or input_power <= 0:
+        return 3e-3, {"lr": "fallback 3e-3 (no input power)"}
+    val = float(clip(0.5 / math.sqrt(input_power), 1e-4, 1e-2))
+    return val, {"lr": f"P_in={input_power:.3f} -> {val:.2e}"}
 
 
 def derive_batch(n_seqs) -> tuple[int, dict]:
@@ -175,7 +205,8 @@ def resolve_cfm(base, df, keys, vocab_sizes) -> ResolvedCFM:
     lengths = sequence_lengths(df, keys)
     seq_len, r1 = derive_seq_len(lengths)
     total = int(sum(lengths)) if lengths else 0
-    dim, r2 = derive_dim(len(keys), total, vocab_sizes)
+    et_H = event_type_entropy(df)
+    dim, r2 = derive_dim(len(keys), total, vocab_sizes, et_entropy=et_H)
     batch, r3 = derive_batch(len(keys))
     hl, r4 = derive_half_life(df)
     budget, r5 = derive_budget(len(keys), batch, dim)

@@ -201,6 +201,20 @@ def train_cfm(cfg: CFMConfig):
                 cfg.warm_from = cand_tag
                 print(f"[warm-start] from {cand_tag} (as_of={meta.get('as_of')})", flush=True)
     params = [q for q in model.parameters() if q.requires_grad]
+    # learning rate from the INPUT signal scale (v6 Stage 5, #10) unless set.
+    from looking_glass.autotune import derive_lr
+
+    _pin = None
+    try:
+        _t = _collate(a_seqs[: min(256, len(a_seqs))], vocab, device)
+        _x = model.tokens_batch(_t).reshape(-1, model.chan).float()
+        _pin = float(_x.var(0).sum())
+    except Exception:
+        _pin = None
+    _lr, _lr_rec = derive_lr(_pin)
+    if abs(float(cfg.lr) - 3e-3) < 1e-12:  # only when not explicitly overridden
+        cfg.lr = _lr
+    print(f"[lr] {_lr_rec}", flush=True)
     opt = torch.optim.Adam(params, lr=cfg.lr, weight_decay=1e-4)
     tau = 0.99  # EMA of the JEPA target encoder (documented fallback)
     # ---- train/val split of sample A (shared with the portfolio grade) ----
