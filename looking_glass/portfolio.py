@@ -191,12 +191,11 @@ def evaluate(
 
     was_training = model.training
     model.eval()
-    # Refit the donor-boundary whitening on THIS held-out split (DEC-022) so the
-    # geometry gate grades a self-consistent consumed representation. A
-    # checkpoint's stored transform can be stale or fit on a different state
-    # distribution (measured: v3.0.0 shipped W implied an eigenvalue floor of
-    # 0.01 while held-out states reach 1e-11 -> PR/dim 0.06 instead of 0.76).
-    compute_whitening(model, vocab, cfg, val)
+    # Grade the FROZEN donor-boundary transform (DEC-022) applied to held-out
+    # states — the honest holdout number, no refit-on-the-graded-split. Only a
+    # checkpoint that ships no transform at all gets one derived here.
+    if not getattr(model, "whiten_on", False):
+        compute_whitening(model, vocab, cfg, val)
     try:
         for gi, g in enumerate(fold_ids):
             gset = set(g.tolist())

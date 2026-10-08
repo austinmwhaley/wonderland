@@ -32,24 +32,26 @@
 - **Current task:** v3.0.1 — donor-boundary whitening fix (DEC-026). Root cause
   of the v3.0.0 geometry FAIL found and fixed: whitening was fit on `h` and
   applied *before* `proj`, so the ill-conditioned `proj` re-collapsed the
-  consumed readout (PR/dim 0.06). Fixed to `_whiten(proj(h))` + grade-time
-  refit + degenerate no-op fail-safe + chunked `_task_losses` (GPU OOM). Re-grade
-  of v3.0.0 weights: **portfolio PASS 14/14 + geometry 0.76**, **intrinsic 4/5**
-  (OOT 1.125 PASS; slow-trajectory structural FAIL per DEC-024). Next: retrain
-  v3.0.1 so the shipped checkpoint's frozen transform matches the new boundary
-  order (old ckpt W is stale), then regenerate products; add bank governor
-  telemetry / contrast views / sf-R² extension.
-- **Last completed:** v3.0.0 dual-velocity trained (DEC-025); objectives &
-  intrinsic graders fixed; DEC-026 recorded; 239 fast tests green; regression
-  test `test_donor_boundary_whitening_is_self_consistent` added.
+  consumed readout (PR/dim 0.06). Fixed to `_whiten(proj(h))`; graders grade the
+  **frozen** transform on held-out states (no circular refit); degenerate no-op
+  fail-safe; chunked `_task_losses` (GPU OOM). v3.0.0 checkpoint patched in
+  place (boundary transform refit, registry receipt + products rebuilt).
+  Honest held-out grade: **portfolio PASS 14/14 + geometry eff_rank 167/256 =
+  0.652**, **intrinsic 4/5** (OOT 1.43 PASS; slow-trajectory structural FAIL per
+  DEC-024). Next: consider a full v3.0.1 retrain so the trunk sees the corrected
+  boundary during training; then bank governor telemetry / contrast views /
+  sf-R² extension.
+- **Last completed:** v3.0.0 dual-velocity trained (DEC-025); boundary-order fix
+  + regression test (DEC-026); v3.0.0 checkpoint patched + products rebuilt;
+  239 fast tests green.
 - **Immediate next 3 actions:**
-  1. Retrain v3.0.1 (`--warm-start none`, Instacart fixture) so the saved
-     `whiten_mean/whiten_W` are fit at the corrected boundary; verify the
-     train-time whitening receipt reports pr_after ~0.76 and portfolio PASS.
-  2. Rebuild products (`products` CLI) from the v3.0.1 checkpoint so the served
-     `donor_embeddings` use the correct transform (train/serve parity).
-  3. Log the v3.0.1 verdict in DECISIONS/STATUS; keep the slow-trajectory
-     structural note (DEC-024) as the one open intrinsic gap.
+  1. Full v3.0.1 retrain (`--warm-start none`, Instacart fixture) to confirm the
+     corrected boundary reproduces the grade without the in-place patch, and to
+     let the trunk adapt to the new readout.
+  2. Address the OOT margin (1.43, bar 1.5) — is it within fold noise, or does
+     the slow expert need a stationarity objective?
+  3. Keep the slow-trajectory structural note (DEC-024) as the one open
+     intrinsic gap; do not chase it as a tunable.
 - **Environment:** repo `~/Documents/wonderland` (main, CI green);
   `python3 -m pytest -m "not slow"` -> 215 passed; GPU cuda available;
   standing products `looking_glass/artifacts/cfm/cfm_products.duckdb`

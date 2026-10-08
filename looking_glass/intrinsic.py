@@ -267,10 +267,10 @@ def evaluate(
 
     was_training = model.training
     model.eval()
-    # Refit the donor-boundary whitening on this held-out split (DEC-022) so
-    # every proof grades a self-consistent consumed representation rather than a
-    # possibly stale/mismatched checkpoint transform.
-    compute_whitening(model, vocab, cfg, val)
+    # Grade the FROZEN donor-boundary transform (DEC-022) on held-out states.
+    # Only a checkpoint that ships no transform gets one derived here.
+    if not getattr(model, "whiten_on", False):
+        compute_whitening(model, vocab, cfg, val)
     try:
         # states for geometry/disentanglement (whitened donor readout)
         states = []

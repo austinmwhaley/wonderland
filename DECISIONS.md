@@ -498,21 +498,24 @@ same battery
   and the boundary is what downstream reads (`proj(h)`). `donor`/`donor_batch`/
   `embed` now apply `proj` first then `_whiten`; `compute_whitening` collects
   `proj(h)` (whitening disabled) to fit the transform. The portfolio + intrinsic
-  graders **refit** the boundary whitening on their own held-out split (removing
-  the stale-transform class entirely; still leak-free, val-only). Fail-safe: if
-  the fit does not *increase* effective rank (degenerate/untrained states), keep
-  the transform a no-op rather than ship a worse boundary.
+  graders grade the **frozen** transform on their held-out split (the honest
+  holdout number, no refit-on-the-graded-split); only a checkpoint that ships no
+  transform at all gets one derived there. Fail-safe: if the fit does not
+  *increase* effective rank (degenerate/untrained states), keep the transform a
+  no-op rather than ship a worse boundary.
 - **Trade-offs accepted:** (a) rejected as gaming — it grades a representation no
   head consumes. (b) rejected — constraining proj fights the trained trunk.
-  Grade-time refit means the geometry gate measures headroom "by construction"
-  (accepted design intent of DEC-022), not a fitted-and-frozen artifact; train/
-  serve parity is preserved because training refits the same way before save.
+  A grader that *refits* on the graded split was tried and rejected: it makes
+  geometry pass by construction (measured 0.76) while the shipped transform's
+  honest held-out number is 0.65 — grading the frozen artifact is the real gate.
 - **Also fixed in this change:** `task_losses_chunked` (portfolio + intrinsic
   `_info_plane` ran `_task_losses` on all ~2.6k val sequences in one batch; the
   `agg` objective's T×T windows OOM'd a 7.6 GB GPU — measured 2.56 GB alloc
   failure). Regression test:
   `tests/test_intrinsic.py::test_donor_boundary_whitening_is_self_consistent`.
-- **Result:** v3.0.1 re-grade of v3.0.0 weights — **portfolio PASS 14/14 + geometry
-  eff_rank 194.7/256 = 0.76**, **intrinsic 4/5** (OOT 1.545→**1.125** PASS, MI
-  0.011 PASS, Lipschitz PASS, info plane PASS; only the known structural
-  slow-state trajectory zigzag FAILs, per DEC-024).
+- **Result:** v3.0.1 — old v3.0.0 weights, checkpoint patched in place to refit
+  the boundary transform (`pr_before 0.12 → pr_after 0.76`), registry receipt +
+  products rebuilt. Honest held-out grade (frozen transform): **portfolio PASS
+  14/14 + geometry eff_rank 167.0/256 = 0.652**, **intrinsic 4/5** (OOT 1.545→
+  **1.43** PASS, MI 0.013 PASS, Lipschitz PASS, info plane PASS; only the known
+  structural slow-state trajectory zigzag FAILs, per DEC-024).
