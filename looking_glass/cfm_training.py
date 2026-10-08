@@ -329,7 +329,22 @@ def train_cfm(cfg: CFMConfig):
         # Newton-Schulz) updated each eval from TRAIN states, so training and
         # the frozen inference transform agree and held-out isotropy (what the
         # geometry gate measures) is what the transform sees.
-        if getattr(cfg, "zca", False) and not getattr(cfg, "isometric_boundary", False):
+        if getattr(model, "isometric_boundary", False):
+            # conservation scale (v6 Stage 3): hold Tr(Sigma_readout) to the input
+            # band power P_in. Derived each eval from TRAIN states -> train/serve
+            # share the same (frozen) scale.
+            try:
+                with torch.no_grad():
+                    _s = [a_seqs[i] for i in tr_idx[:512]]
+                    _t = _collate(_s, vocab, device)
+                    _x = model.tokens_batch(_t).reshape(-1, model.chan).float()
+                    pin = _x.var(0).sum()
+                    _z = model.proj(forward_states(model, _s)).float()
+                    trp = _z.var(0).sum().clamp(min=1e-8)
+                    model.boundary_scale.fill_(float((pin / trp).sqrt()))
+            except (RuntimeError, Exception):
+                pass
+        elif getattr(cfg, "zca", False):
             try:
                 with torch.no_grad():
                     _h = forward_states(model, [a_seqs[i] for i in tr_idx[:512]])

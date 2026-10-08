@@ -265,6 +265,9 @@ class CFM(nn.Module):
         self.isometric_boundary = bool(isometric_boundary)
         if self.isometric_boundary:
             self.iso_skew = nn.Parameter(torch.zeros(dim, dim))
+            # conservation scale: Tr(Sigma_readout) is held to the input band
+            # power P_in (v6 Stage 3, R_cons). Derived at fit, frozen at serve.
+            self.register_buffer("boundary_scale", torch.tensor(1.0))
         self.n_experts = 1 if self.unified else max(1, int(n_experts))
         self.chan = max(1, dim // self.n_experts)
         dim = self.chan * self.n_experts
@@ -475,7 +478,9 @@ class CFM(nn.Module):
         return torch.linalg.solve(eye + S, eye - S)
 
     def _boundary(self, v):
-        return v @ self.iso_matrix().t() if self.isometric_boundary else self._whiten(v)
+        if self.isometric_boundary:
+            return (v @ self.iso_matrix().t()) * self.boundary_scale
+        return self._whiten(v)
 
     def donor(self, x):
         """Donor representation for plugins: same projection WITHOUT L2

@@ -264,6 +264,19 @@ def evaluate(
             zc = model.donor_batch(h)
             states.append(zc.detach().float().cpu().numpy())
         z = np.concatenate(states, axis=0) if states else np.zeros((0, 1))
+        # conservation ratio (v6 Stage 3): R_cons = Tr(Sigma_readout)/P_in should
+        # be ~1 for any stream (energy in = energy out) — a scale-free invariant.
+        from looking_glass.cfm_training import _collate
+
+        try:
+            with torch.no_grad():
+                _t = _collate(val, vocab, model._dev())
+                _x = model.tokens_batch(_t).reshape(-1, model.chan).float()
+                pin = float(_x.var(0).sum().item())
+                tr_read = float(np.var(z, axis=0).sum()) if z.size else 0.0
+            r_cons = tr_read / pin if pin > 0 else None
+        except Exception:
+            r_cons = None
     finally:
         model.train(was_training)
 
@@ -326,6 +339,17 @@ def evaluate(
             check = f"geometry: consumed repr PR/dim >= floor {floor}"
             achieved = f"PR/dim {pr_frac} (white-noise null {geometry['mp_null_frac']})"
         rows.append({"check": check, "achieved": achieved, "ok": bool(pr_frac >= floor)})
+        # conservation ratio (v6 Stage 3): energy in = energy out, ~1 for any
+        # stream. Tolerance is finite-sample (2 sigma ~ 1/sqrt(N)), not a literal.
+        if r_cons is not None:
+            tol = 2.0 / float(np.sqrt(max(len(z), 1)))
+            rows.append(
+                {
+                    "check": "geometry: conservation ratio Tr(Sigma_readout)/P_in ~ 1",
+                    "achieved": f"R_cons {r_cons:.3f} (tol {tol:.3f})",
+                    "ok": bool(abs(r_cons - 1.0) <= max(tol, 0.25)),
+                }
+            )
     if canaries:
         if "group_auc" in canaries:
             rows.append(

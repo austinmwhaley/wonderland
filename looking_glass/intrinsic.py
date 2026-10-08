@@ -249,6 +249,55 @@ def _trajectory(model, vocab, seqs, cfg, n_traj: int = 30, seed: int = 0) -> dic
     }
 
 
+def _sufficiency(model, vocab, seqs, cfg, seed: int = 0) -> dict:
+    """Markov sufficiency gap (v6 Stage 3): does the state h_t carry enough
+    predictive state for the FUTURE window X_{t+1:t+H}? Ridge (CV) R^2 from h_t
+    to the future-window event count, minus the R^2 against a temporally
+    SHUFFLED null. Delta_suff > 0 => h_t is informative about the future beyond
+    chance (a Markov-sufficiency proxy for RL/decision heads)."""
+    import numpy as np
+    from sklearn.linear_model import RidgeCV
+    from sklearn.model_selection import KFold, cross_val_score
+
+    import torch
+
+    from looking_glass.cfm_training import forward_states
+
+    rng = np.random.default_rng(seed)
+    horizons = list(getattr(cfg, "agg_horizons_days", []) or [7.0, 30.0])
+    H = float(np.median(horizons))
+    Hs, Y = [], []
+    for sq in seqs:
+        L = len(sq["event_type"])
+        if L < 4:
+            continue
+        t = int(rng.integers(1, L - 1))
+        pref = {k: (v[:t] if isinstance(v, (list, np.ndarray)) else v) for k, v in sq.items()}
+        with torch.no_grad():
+            h = forward_states(model, [pref])[0].float().cpu().numpy()
+        ts = np.asarray(sq["ts"], dtype=float)
+        fut = int(((ts > ts[t - 1]) & (ts <= ts[t - 1] + H * 86400.0)).sum())
+        Hs.append(h)
+        Y.append(np.log1p(fut))
+    if len(Y) < 20 or np.std(Y) == 0:
+        return {"delta_suff": None, "r2_real": None, "r2_null": None, "H_days": H}
+    X, y = np.asarray(Hs), np.asarray(Y)
+    kf = KFold(5, shuffle=True, random_state=seed)
+
+    def r2(t):
+        return float(cross_val_score(RidgeCV(), X, t, cv=kf, scoring="r2").mean())
+
+    r2_real = r2(y)
+    r2_null = r2(rng.permutation(y))
+    return {
+        "r2_real": round(r2_real, 4),
+        "r2_null": round(r2_null, 4),
+        "delta_suff": round(r2_real - r2_null, 4),
+        "H_days": H,
+        "n": int(len(y)),
+    }
+
+
 def _info_plane(model, vocab, seqs, cfg, seed: int = 0) -> dict:
     """Predictive-information proxy: for each horizon h in the config's agg
     horizons, the portfolio's measured structure-skill on the agg objective
@@ -317,6 +366,7 @@ def evaluate(
         proof2 = _lipschitz(model, vocab, val, cfg, seed=seed + 2)
         proof3 = _trajectory(model, vocab, val, cfg, seed=seed + 3)
         proof4 = _info_plane(model, vocab, val, cfg, seed=seed + 4)
+        proof5 = _sufficiency(model, vocab, val, cfg, seed=seed + 5)
     finally:
         model.train(was_training)
 
@@ -383,6 +433,19 @@ def evaluate(
             "ok": True,
         }
     )
+    # Proof 5 (Stage 3): Markov sufficiency gap — h_t predicts the future window
+    # beyond a shuffled null (RL/decision sufficiency proxy).
+    if proof5.get("delta_suff") is not None:
+        rows.append(
+            {
+                "check": "intrinsic: Markov sufficiency gap > 0 (h_t predicts future)",
+                "achieved": (
+                    f"delta {proof5['delta_suff']} (R2 {proof5['r2_real']} vs null "
+                    f"{proof5['r2_null']}, H {round(proof5['H_days'], 1)}d)"
+                ),
+                "ok": bool(proof5["delta_suff"] > 0.0),
+            }
+        )
 
     ok = all(r["ok"] for r in rows)
     receipt = {
@@ -393,6 +456,7 @@ def evaluate(
         "proof2_lipschitz": proof2,
         "proof3_trajectory": proof3,
         "proof4_info_plane": proof4,
+        "proof5_sufficiency": proof5,
         "rows": rows,
         "ok": bool(ok),
         "wall_seconds": round(time.perf_counter() - t0, 2),
