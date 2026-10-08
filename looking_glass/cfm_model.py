@@ -256,13 +256,11 @@ class CFM(nn.Module):
         slow_intent: bool = False,
         unified: bool = False,
         zca: bool = False,
-        banded_input: bool = False,
     ):
         super().__init__()
         self.vocab = vocab
         self.unified = bool(unified)
         self.zca = bool(zca)
-        self.banded_input = bool(banded_input)
         self.n_experts = 1 if self.unified else max(1, int(n_experts))
         self.chan = max(1, dim // self.n_experts)
         dim = self.chan * self.n_experts
@@ -285,7 +283,7 @@ class CFM(nn.Module):
             delta_biases,
             slow_intent=(slow_intent and not self.unified),
             delta_spectrum=self.unified,
-            band_isolate=(self.banded_input and self.unified),
+            band_isolate=self.unified,
         )
         self.head_next = nn.Linear(dim, vocab.n_et + 1)  # next event type
         self.head_ent = nn.Linear(dim, vocab.n_ent + 1)  # next entity type
@@ -376,34 +374,14 @@ class CFM(nn.Module):
         co = seq.get("co")
         co = co if co is not None else [[0.0, 0.0]] * len(seq["event_type"])
         co = torch.tensor(co, dtype=torch.float32, device=dev)
-        content = self.emb_et(et) + self.emb_brand(br) + self.emb_ent(en)
-        trend = self.w_val(val) + self.w_dt(dt) + self.w_co(co)
-        return self._band_route(content, trend)
-
-    def _fast_mask(self):
-        """Channel mask of the FAST band (derived from the learned timescale
-        spectrum). When banded_input is on, categorical CONTENT features drive the
-        fast channels and continuous TREND features (value/Δt/covariates) drive
-        the slow channels — the separation of concerns that makes slow-state
-        continuity structural (v4.5, DEC-035)."""
-        if not self.banded_input:
-            return None
-        ex = getattr(self.ssm, "experts", None)
-        if ex and len(ex) == 1 and ex[0].delta_bias.numel() > 1:
-            db = ex[0].delta_bias.detach().float()
-            return (db > torch.quantile(db, 0.5)).float()
-        return None
-
-    def _band_route(self, content, trend):
-        fm = self._fast_mask()
-        if fm is None:
-            return content + trend
-        fm = fm.to(content.device)
-        # Fast slice: content only (handles discrete event flips). Slow slice:
-        # content + trend — the SSM's input low-pass then smooths the content
-        # into a *rate*, so the slow band keeps long-horizon content signal (what
-        # `agg` needs) while its velocity stays continuous.
-        return content + trend * (1.0 - fm)
+        return (
+            self.emb_et(et)
+            + self.emb_brand(br)
+            + self.emb_ent(en)
+            + self.w_val(val)
+            + self.w_dt(dt)
+            + self.w_co(co)
+        )
 
     def forward(self, seq, h0=None):
         y, h = self.ssm(self.tokens(seq).unsqueeze(0), h0=h0)
@@ -440,18 +418,24 @@ class CFM(nn.Module):
                 pt.data.mul_(1 - tau).add_(ps.data, alpha=tau)
 
     def tokens_batch(self, t):
-        content = self.emb_et(t["et"]) + self.emb_brand(t["br"]) + self.emb_ent(t["en"])
-        trend = self.w_val(t["val"]) + self.w_dt(t["dt"]) + self.w_co(t["co"])
-        return self._band_route(content, trend)
+        return (
+            self.emb_et(t["et"])
+            + self.emb_brand(t["br"])
+            + self.emb_ent(t["en"])
+            + self.w_val(t["val"])
+            + self.w_dt(t["dt"])
+            + self.w_co(t["co"])
+        )
 
     def target_tokens_batch(self, t):
-        content = self.t_emb_et(t["et"]) + self.t_emb_brand(t["br"]) + self.t_emb_ent(t["en"])
-        trend = self.t_w_val(t["val"]) + self.t_w_dt(t["dt"]) + self.t_w_co(t["co"])
-        fm = self._fast_mask()
-        if fm is None:
-            return content + trend
-        fm = fm.to(content.device)
-        return content * fm + trend * (1.0 - fm)
+        return (
+            self.t_emb_et(t["et"])
+            + self.t_emb_brand(t["br"])
+            + self.t_emb_ent(t["en"])
+            + self.t_w_val(t["val"])
+            + self.t_w_dt(t["dt"])
+            + self.t_w_co(t["co"])
+        )
 
     def set_whitening(self, mean: "torch.Tensor", W: "torch.Tensor") -> None:
         """Frozen whitening at the donor boundary (DEC-022): z = (h-mu) W,

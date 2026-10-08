@@ -183,9 +183,6 @@ class CFMConfig:
     tau_mp: float = 0.70  # Marchenko-Pastur PR/dim floor the iso barrier targets
     mp_floor: float = 0.25  # fallback floor when no per-stream capacity is known
     traj_tau_mult: float = 1.0  # slow-band cutoff = tau_mult x median learned half-life
-    fast_band_heads: bool = True  # token-prediction heads read the FAST band only
-    banded_input: bool = True  # categorical content -> fast channels, trend -> slow channels
-    # (input-level separation of concerns; slow continuity is structural)
     # (separation of concerns: keeps the slow band free to be continuous)
     geom_coverage: float = 0.6  # per-stream: held-out PR must retain this
     # fraction of the stream's achievable whitened PR (from the receipt)

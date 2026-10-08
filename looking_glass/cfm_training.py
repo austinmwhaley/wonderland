@@ -143,7 +143,6 @@ def train_cfm(cfg: CFMConfig):
         slow_intent=getattr(cfg, "slow_intent_filter", False),
         unified=getattr(cfg, "unified_ssm", False),
         zca=getattr(cfg, "zca", False),
-        banded_input=getattr(cfg, "banded_input", False),
     ).to(device)
     # v4.0: differentiable ZCA in the forward during training (gradients shape the
     # consumed isotropy); off at eval/save so the frozen transform is used.
@@ -404,7 +403,6 @@ def train_cfm(cfg: CFMConfig):
             "slow_intent": bool(getattr(cfg, "slow_intent_filter", False)),
             "unified": bool(getattr(cfg, "unified_ssm", False)),
             "zca": bool(getattr(cfg, "zca", False)),
-            "banded_input": bool(getattr(cfg, "banded_input", False)),
             "whiten_mean": (model.whiten_mean if getattr(model, "whiten_on", False) else None),
             "whiten_W": (model.whiten_W if getattr(model, "whiten_on", False) else None),
         },
@@ -621,20 +619,6 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
     x = model.tokens_batch(t)
     y, h = model.ssm(x, mask=t["mask"])
     B, T, _ = y.shape
-    # Separation of concerns (v4.5, DEC-035): the TOKEN-prediction heads read
-    # only the FAST band; the SLOW band carries trend objectives (agg/sf) and the
-    # continuity invariant. On a high-frequency stream (Layer A alternates event
-    # type every ~1.3 events) predicting the next type REQUIRES content tracking,
-    # which conflicts with slow-state continuity — task-structural PCGrad then
-    # projects the continuity gradient away. Routing token heads off the slow band
-    # removes the conflict by construction (fast handles discrete events, slow
-    # handles trends).
-    _fbm = None
-    if getattr(cfg, "fast_band_heads", True):
-        _sm = slow_channel_mask(model, tau_mult=float(getattr(cfg, "traj_tau_mult", 1.0)))
-        if _sm is not None:
-            _fbm = (~_sm).float().to(y.device)  # fast-band mask
-    y_tok = y if _fbm is None else y * _fbm
     # Targets at company-action positions are exogenous; never predict them.
     valid_t = t["mask"][:, :-1] * (1.0 - t["co"][:, 1:, 0])
     valid = valid_t.reshape(-1)
@@ -651,10 +635,10 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
         return (loss * valid).sum() / nv
 
     T_ = {
-        "next": mce(model.head_next(y_tok[:, :-1]), t["et"][:, 1:]),
-        "entity": mce(model.head_ent(y_tok[:, :-1]), t["en"][:, 1:]),
-        "dt": mmse(model.head_dt(y_tok[:, :-1]), t["dt"][:, 1:]),
-        "value": mmse(model.head_val(y_tok[:, :-1]), torch.log1p(t["val"][:, 1:].abs())),
+        "next": mce(model.head_next(y[:, :-1]), t["et"][:, 1:]),
+        "entity": mce(model.head_ent(y[:, :-1]), t["en"][:, 1:]),
+        "dt": mmse(model.head_dt(y[:, :-1]), t["dt"][:, 1:]),
+        "value": mmse(model.head_val(y[:, :-1]), torch.log1p(t["val"][:, 1:].abs())),
     }
     # Occurrence horizon derived from the data (median gap) so classes balance,
     # not a fixed window that a frequent exogenous event can saturate.
@@ -663,13 +647,13 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
     thr = torch.median(g[vm]) if vm.any() else torch.tensor(math.log1p(7 * 86400.0), device=dev)
     occ_lab = (g <= thr).float()
     ol = F.binary_cross_entropy_with_logits(
-        model.head_occ(y_tok[:, :-1]).squeeze(-1), occ_lab, reduction="none"
+        model.head_occ(y[:, :-1]).squeeze(-1), occ_lab, reduction="none"
     ).reshape(-1)
     T_["occur"] = (ol * valid).sum() / nv
     pos = t["et"][:, 1:]
     neg = torch.randint(0, vocab.n_et, pos.shape, device=dev)
-    sp = (model.order_W(y_tok[:, :-1]) * model.emb_et(pos)).sum(-1)
-    sn = (model.order_W(y_tok[:, :-1]) * model.emb_et(neg)).sum(-1)
+    sp = (model.order_W(y[:, :-1]) * model.emb_et(pos)).sum(-1)
+    sn = (model.order_W(y[:, :-1]) * model.emb_et(neg)).sum(-1)
     opl = F.binary_cross_entropy_with_logits(
         sp - sn, torch.ones_like(sp), reduction="none"
     ).reshape(-1)
@@ -683,7 +667,7 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
         cov = (zc.t() @ zc) / max(B - 1, 1)
         off = cov - torch.diag(torch.diag(cov))
         T_["redundancy"] = (off**2).mean()
-    T_["mask"] = _mask_loss_batch(model, vocab, t, cfg, dev, fast_mask=_fbm)
+    T_["mask"] = _mask_loss_batch(model, vocab, t, cfg, dev)
     T_["jepa"] = _jepa_loss(model, t, y)
     # ---- query-time readout (S1 / DEC-006): train the FADED state ---------
     # Sample a moment strictly between two events, fade the state there, and
@@ -698,7 +682,7 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
         u = torch.rand(B, 1, device=dev)
         off_s = (u * gap_s.unsqueeze(1)).squeeze(-1)  # seconds after event i
         decay = torch.exp(-LN2 * off_s / max(cfg.state_half_life_days * 86400.0, 1.0))
-        h_q = y_tok[rows, i] * decay.unsqueeze(-1)
+        h_q = y[rows, i] * decay.unsqueeze(-1)
         tgt_next = t["et"][rows, i_next]
         ce_q = F.cross_entropy(model.head_next(h_q), tgt_next, reduction="none")
         tgt_dt = t["dt"][rows, i_next].reshape(-1)

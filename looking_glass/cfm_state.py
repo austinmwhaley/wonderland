@@ -155,7 +155,6 @@ def load_frozen_encoder(tag: str, cfm_dir):
         slow_intent=bool(blob.get("slow_intent", False)),
         unified=bool(blob.get("unified", False)),
         zca=bool(blob.get("zca", False)),
-        banded_input=bool(blob.get("banded_input", False)),
     )
     model.load_state_dict(blob["state"])
     model = model.to("cuda" if torch.cuda.is_available() else "cpu")
