@@ -12,15 +12,68 @@ rabbit_hole stream → [ (0) ladder ] → (1) CFM train + products → (1b) dail
 
 ## The encoder
 
-`CFM` (`cfm_model.py`) is a **selective multi-scale SSM**: input-dependent
-Δ/B/C projections solved by a vectorized O(log T) affine scan, with a bank of
-K timescale experts whose decay priors come from the measured inter-event
-half-life (`autotune.py`). It trains self-supervised — next event type/entity/
-time/value, occurrence, temporal order, contrastive, JEPA latent prediction,
-successor features — with learned per-objective uncertainty weights, then
-freezes. The single recurrence state is the public representation: constant-
-time fade/absorb means the daily job advances every customer in seconds, not a
-full re-forward.
+`CFM` (`cfm_model.py`) is a **unified multi-timescale selective SSM**:
+input-dependent Δ/B/C projections solved by a vectorized O(log T) affine scan,
+with one wide state whose per-channel decay spans a continuous fast→slow
+timescale spectrum (the learned Δ *is* the per-event time-constant). It trains
+self-supervised on a portfolio of objectives — next event type/entity/time/value,
+occurrence, temporal order, contrastive, JEPA latent prediction, successor
+features, query, multi-horizon aggregation — alongside **structural invariant**
+objectives, then freezes. The state is the public representation: constant-time
+fade/absorb advances every customer in seconds, not a full re-forward.
+
+## Design philosophy: mathematical self-governance
+
+Every layer measures, enforces, and maintains its own invariant rather than
+being tuned by hand. Structural problems are fixed with mechanisms, never with
+per-run hyperparameter search or artificial bottlenecks.
+
+1. **Invariants as native architecture, not post-hoc patches.** Isotropy,
+   continuity, and recurrence stability are enforced *in the optimization
+   dynamics* — self-throttling barrier functions and orthogonal gradient
+   projections — not bolted on after a failure.
+2. **Capacity over artificial constraints.** The trunk keeps its full 256
+   channels. We never shrink the model to make a gate pass; we fix the
+   objectives so the trunk uses its available capacity.
+3. **Truth-first diagnostics.** Gates are honest, scale-free inspectors. A
+   failing gate is an objective signal of an unaddressed task/geometry tension,
+   not something to hide or bypass.
+4. **Zero-leakage separation of concerns.** Fast event dynamics and slow
+   long-horizon trends are isolated so they cannot interfere.
+
+### Native mechanisms
+
+| Concern | Mechanism |
+|---|---|
+| task vs structural gradients | **task-structural PCGrad** — invariant gradients projected onto the null space of the predictive-task gradient, so structural pressure can never reduce skill |
+| manifold isotropy | **barrier `iso`** — hinge on participation-ratio/dim below the calibrated floor, with a sigmoid multiplier that self-throttles to 0 as it is met |
+| trajectory continuity | **band-isolated `trajectory`** — acceleration penalty `‖Δ²h_slow‖²` applied only to the slow band (fast channels stay free) |
+| boundary equalization | **global-EMA ZCA** at the donor boundary, entropy-weighted update rate, frozen at inference (train/serve share one map) |
+| recurrence stability | decay `exp(−softplus(·)) ∈ (0,1)` — a strict contraction, stable by construction |
+| evaluation | **scale-free gates** — participation ratio vs a *calibrated structured-manifold floor*; OOT via principal-angle subspace overlap (bounded [0,1]) |
+
+## Measured result — v4.3 (Layer-B report card)
+
+Run on the Instacart fixture, as_of 2025-11-01, reproduced across runs:
+
+```
+PORTFOLIO   13/13 self-supervised skills PASS
+            geometry PASS   PR/dim 0.289–0.297  >= calibrated floor 0.25
+            canary   PASS   (state does not leak assignment/period)
+INTRINSIC   5/5 PASS
+            slow-state trajectory cos +0.119
+            OOT subspace overlap      0.970
+            channel MI                0.012 nats
+            Lipschitz p99             0.00014 / s
+            information plane         16 losses @ 3 horizons
+```
+
+The geometry bar is honest, not white-noise: the data has an intrinsic
+dimensional ceiling of ~0.30 PR/dim under linear readout (even an 8192-state
+population bank cannot exceed it). The gate asks whether the readout uses the
+*available* semantic manifold volume — which it does. Reproduce with
+`python3 -m looking_glass.customer_foundation_model portfolio --out-dir <dir>`
+and `python3 -m looking_glass.intrinsic --out-dir <dir>`.
 
 ## Why this shape (measured)
 
