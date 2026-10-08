@@ -29,11 +29,16 @@
 
 ## Micro
 
-- **Current task:** v4.3 LOCKED — first fully green self-governing encoder
-  (DEC-032). Calibrated structured geometry floor (0.25, data capacity ~0.30) +
-  dual-target volume (bank target 0.35) + entropy-weighted ZCA. Portfolio 13/13 +
-  geometry PASS + canary PASS; intrinsic 5/5 (trajectory +0.119, OOT 0.971);
-  reproducible across runs.
+- **Current task:** v6.0.0 LOCKED — category-theoretic functional realism
+  (DEC-036). Stage 0–4 complete: trace-conservation anchor, isometric per-sample
+  boundary (no rank manufacturing), composition-closure canary, commutation +
+  decorr Gram laws + MP conditioning floor, Markov sufficiency gate +
+  conservation-ratio geometry. **Certification:** rabbit_hole (diverse) FULLY
+  GREEN — portfolio 15/15 (13 skills incl. decorr + geometry + conservation
+  R_cons 0.825) + intrinsic 6/6 (sufficiency Δ 0.148); ecommerce_2019 (low-rank)
+  honest rank-1 (portfolio FAIL, intrinsic 5/6, MI entangled) — boundary proves
+  no rank-faking. Next: Stage 5 — derive the remaining literals (#2 dim/seq_len,
+  #4 objective hyperparams, #8 gain inits, #10 lr/batch).
 
 - **Last completed:** v3.2.0 condition-capped whitening + soft-spectrum (gates
   reproducible; honest geometry 0.21). v4.0 code + 4 regression tests; 245 fast
