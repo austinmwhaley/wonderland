@@ -399,7 +399,11 @@ class CFM(nn.Module):
         if fm is None:
             return content + trend
         fm = fm.to(content.device)
-        return content * fm + trend * (1.0 - fm)
+        # Fast slice: content only (handles discrete event flips). Slow slice:
+        # content + trend — the SSM's input low-pass then smooths the content
+        # into a *rate*, so the slow band keeps long-horizon content signal (what
+        # `agg` needs) while its velocity stays continuous.
+        return content + trend * (1.0 - fm)
 
     def forward(self, seq, h0=None):
         y, h = self.ssm(self.tokens(seq).unsqueeze(0), h0=h0)
