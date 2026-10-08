@@ -338,16 +338,8 @@ def train_cfm(cfg: CFMConfig):
         elif getattr(cfg, "donor_whiten", True) and not getattr(model, "whiten_on", False):
             try:
                 with torch.no_grad():
-                    vi_s = tr_idx[:512]
-                    _h = forward_states(model, [a_seqs[i] for i in vi_s])
-                    _mu = _h.detach().float().cpu().mean(0)
-                    _zc = _h.detach().float().cpu() - _mu
-                    _cov = (_zc.T @ _zc).double() / max(_zc.shape[0] - 1, 1)
-                    _ev, _V = torch.linalg.eigh(
-                        _cov + 1e-2 * torch.eye(_cov.shape[0], dtype=torch.float64)
-                    )
-                    _W = (_V @ torch.diag(1.0 / torch.sqrt(_ev.clamp(min=1e-8))) @ _V.T).float()
-                    model.set_whitening(_mu, _W)
+                    _h = forward_states(model, [a_seqs[i] for i in tr_idx[:512]])
+                model.update_zca(_h)  # single whitening path (Newton-Schulz)
             except (RuntimeError, Exception):
                 pass  # whitening failed — retry next eval
         # STATIONARY selection metric: equal-weight held-out sum. DWA weights

@@ -357,7 +357,7 @@ def evaluate(
         "folds": folds,
         "n_val": len(val),
         "n_seqs": len(seqs),
-        "sf_mode": getattr(cfg, "sf_mode", "purchase"),
+        "sf_mode": getattr(cfg, "sf_mode", "event_types"),
         "agg_horizons_days": list(getattr(cfg, "agg_horizons_days", []) or []),
         "task_log_var": {
             k: round(float(v.detach().reshape(-1)[0]), 4) for k, v in model.log_var.items()

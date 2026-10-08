@@ -81,7 +81,6 @@ from looking_glass.cfm_training import (
     _collate,
     _combine,
     _jepa_loss,
-    _loss,
     _mask_loss_batch,
     _registry,
     _task_losses,
