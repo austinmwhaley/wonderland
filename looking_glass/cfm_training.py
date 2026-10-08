@@ -33,7 +33,7 @@ from looking_glass.cfm_data import (
     build_sequences,
     draw_sample,
 )
-from looking_glass.cfm_model import CFM, EventVocab, _scan
+from looking_glass.cfm_model import CFM, EventVocab, _scan, ns_inv_sqrt
 
 
 # ---------------------------------------------------------------------------
@@ -548,12 +548,10 @@ def _masked_forward(model, vocab, t, cfg, dev):
     return y2, t["et"], rand
 
 
-def _mask_loss_batch(model, vocab, t, cfg, dev, fast_mask=None):
+def _mask_loss_batch(model, vocab, t, cfg, dev):
     y2, tgt, rand = _masked_forward(model, vocab, t, cfg, dev)
     if y2 is None:
         return torch.zeros((), device=dev)
-    if fast_mask is not None:
-        y2 = y2 * fast_mask
     return F.cross_entropy(model.head_next(y2[rand]), tgt[rand])
 
 
@@ -808,7 +806,10 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
         with torch.autocast(device_type=h.device.type, enabled=False):
             zu = model.proj(h).float()  # (B, D) unnormalized
             std = zu.std(dim=0)  # per-dim std across the batch
-            T_["variance"] = torch.relu(1.0 - std).mean().float()
+            # SCALE-FREE target (#11): push each dim's std up to the empirical
+            # MEAN std (equalise), not an assumed unit scale.
+            tgt = std.detach().mean().clamp(min=1e-8)
+            T_["variance"] = (torch.relu(tgt - std).mean() / tgt).float()
     # ---- exact multi-horizon window targets (S2 / DEC-006) ----------------
     # From the state at t, predict log1p(count) and log1p(value-sum) of the
     # events in (t, t+h] for a horizon sampled from the DERIVED gap-quantile
@@ -834,15 +835,11 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
     gamma = (torch.rand(B, GAMS, device=dev) * GAMMA_MAX).clamp(min=1e-3)  # (B,S)
     dt_days = torch.expm1(t["dt"]) / TIME_UNIT_SECONDS  # (B,T,1)
     v = torch.log1p(t["val"].abs())
-    if getattr(cfg, "sf_mode", "purchase") == "event_types":
-        # Agnostic phi (DEC-009): value + one discounted component per event
-        # type — no objective may name a purchase event.
-        et_oh = F.one_hot(t["et"].clamp(max=vocab.n_et - 1), num_classes=vocab.n_et).float()
-        phi = torch.cat([v, et_oh], dim=-1)  # (B,T,1+E)
-    else:
-        oid = model.vocab.et.get(cfg.order_event, -1)
-        is_order = (t["et"] == oid).float().unsqueeze(-1)  # (B,T,1)
-        phi = torch.cat([v, torch.ones_like(v), is_order, v * is_order], dim=-1)  # (B,T,4)
+    # Agnostic phi (DEC-009): value + one discounted component per event type —
+    # no objective may name a business event. (The legacy purchase-named φ is
+    # deleted; the vocabulary is the only source of event identity.)
+    et_oh = F.one_hot(t["et"].clamp(max=vocab.n_et - 1), num_classes=vocab.n_et).float()
+    phi = torch.cat([v, et_oh], dim=-1)  # (B,T,1+E)
     PD = phi.shape[-1]
     de = dt_days.unsqueeze(1).expand(B, GAMS, T, 1).reshape(B * GAMS, T, 1)
     g = gamma.view(B, GAMS, 1, 1).expand(B, GAMS, T, 1).reshape(B * GAMS, T, 1) ** de
@@ -1045,18 +1042,6 @@ def _combine(model, T, cfg, weights: dict | None = None, scales: dict | None = N
     return total
 
 
-def slow_expert_index(model) -> int:
-    """Index of the slowest expert, DERIVED from the learned per-expert
-    timescale bias (largest memory = smallest delta_bias). v3.0.0 hardcoded
-    "last half", which was in fact the FAST expert (measured: expert 0 mean
-    decay 0.847 vs expert 1 0.409) — the trajectory proof never graded the slow
-    expert. With K=1 there is a single (trivially slow) expert."""
-    experts = getattr(getattr(model, "ssm", None), "experts", None)
-    if not experts or len(experts) == 1:
-        return 0
-    return int(np.argmin([float(e.delta_bias.detach().mean().cpu()) for e in experts]))
-
-
 def slow_channel_mask(model, tau_mult: float = 1.0):
     """Boolean mask of the SLOW band for the unified trunk (v4.4, DEC-034).
 
@@ -1078,21 +1063,11 @@ def slow_channel_mask(model, tau_mult: float = 1.0):
 def slow_state_slice(model, h, tau_mult: float = 1.0):
     """The slow channels of a state batch `h`.
 
-    Unified trunk (v4.0+): the slow subspace is the channels with the longest
-    learned half-life (τ) — DERIVED from the stream-adapted trunk, not a hand
-    split (v4.4, DEC-034). Expert bank (v3.x): the slow expert's channel block."""
+    Unified trunk: the slow subspace is the channels with the longest learned
+    half-life (τ) — DERIVED from the stream-adapted trunk, not a hand split.
+    Falls back to the whole state when the trunk has no per-channel spectrum."""
     m = slow_channel_mask(model, tau_mult=tau_mult)
-    if m is not None:
-        return h[..., m]
-    experts = getattr(getattr(model, "ssm", None), "experts", None)
-    if experts and len(experts) == 1:
-        return h
-    K = max(1, int(getattr(model, "n_experts", 1)))
-    if K <= 1:
-        return h
-    chan = h.shape[-1] // K
-    i = slow_expert_index(model)
-    return h[..., i * chan : (i + 1) * chan]
+    return h if m is None else h[..., m]
 
 
 def stream_lowpass_retention(seqs) -> float:
@@ -1176,21 +1151,13 @@ def compute_whitening(model, vocab, cfg, seqs, n: int | None = None) -> dict:
     H = torch.cat(states, dim=0)
     mu = H.mean(0)
     zc = H - mu
-    # float64 eigh for the ill-conditioned state covariance (fp32 eigh fails to
-    # converge). CONDITION-CAPPED whitening (DEC-028): floor eigenvalues at
-    # tau * max, bounding the transform's condition number to <= 1/sqrt(tau).
-    # The old absolute 1e-4 floor let near-null directions be amplified ~1e3x,
-    # so FP32 CUDA matmul nondeterminism became large swings in measured
-    # eff-rank (21.6 -> 56.2 across identical runs). Capping makes the geometry
-    # and OOT gates reproducible (and honest: it no longer manufactures rank
-    # from amplified noise).
-    tau = float(getattr(cfg, "whiten_cond_floor", 1e-2))
+    # SINGLE whitening path (#12): the Newton-Schulz inverse-sqrt in cfm_model
+    # (spectral-norm normalised, eps-capped) is the one implementation — no
+    # duplicate eigh. eps is DERIVED from the sample size (Marchenko-Pastur
+    # finite-sample scale), not a literal (#9).
     cov = (zc.T @ zc).double() / max(H.shape[0] - 1, 1)
-    ev, V = torch.linalg.eigh(cov)
-    ev = ev.clamp(min=0.0)
-    emax = float(ev.max().item()) if ev.numel() else 0.0
-    ev_f = ev.clamp(min=max(tau * emax, 1e-12))
-    W = (V @ torch.diag(1.0 / torch.sqrt(ev_f)) @ V.T).float()
+    eps = 1.0 / float(np.sqrt(max(H.shape[0], 1)))
+    W = ns_inv_sqrt(cov, eps=eps).float()
     mu = mu.float()
 
     def pr(mat):
@@ -1221,7 +1188,7 @@ def compute_whitening(model, vocab, cfg, seqs, n: int | None = None) -> dict:
         "rows": int(H.shape[0]),
         "pr_before": round(pre, 4),
         "pr_after": round(post, 4),
-        "cond_floor": tau,
+        "cond_floor": eps,
         "applied": bool(cfg.donor_whiten),
     }
 
@@ -1242,10 +1209,6 @@ def forward_states(model, seqs, h0s=None):
     with torch.no_grad():
         _y, h = model.ssm(tok, h0=h0, mask=t["mask"])
     return h
-
-
-def _loss(model, vocab, items, cfg, weights: dict | None = None, scales: dict | None = None):
-    return _combine(model, _task_losses(model, vocab, items, cfg), cfg, weights, scales)
 
 
 def _loss_split(model, vocab, items, cfg, weights: dict | None = None, scales: dict | None = None):

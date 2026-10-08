@@ -32,7 +32,6 @@ from sklearn.model_selection import GroupKFold
 from sklearn.preprocessing import StandardScaler
 from scipy.stats import spearmanr
 
-from looking_glass.cfm_config import ORDER_EVENT
 
 WORK = Path(__file__).resolve().parents[0]
 CFM = WORK / "artifacts" / "cfm"
@@ -150,7 +149,7 @@ def build(stream, anch, orders, data_end, window_days):
             float(m.sum()),
             float(pv.sum()),
             float(np.mean(gap)) if len(gap) else 0.0,
-            float((pe == ORDER_EVENT).sum()),
+            float((pv > np.median(pv)).sum()),
             trail,
         ]
         rfm += [float((pe == t).sum()) for t in etypes]

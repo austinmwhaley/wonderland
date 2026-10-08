@@ -54,7 +54,6 @@ from looking_glass.cfm_config import (
     EMBED_DIM,
     GAMMA_MAX,
     LN2,
-    SF_PHI,
     STREAM_TABLE,
     TIME_UNIT_SECONDS,
     _expert_biases,
@@ -287,7 +286,7 @@ def main(argv=None):
         metavar="KEY=VALUE",
         help="explicit config override, applied AFTER data-derivation and "
         "recorded in the registry receipt (repeatable), e.g. "
-        "--set state_half_life_days=7 --set order_event=purchase",
+        "--set state_half_life_days=7 --set dim=128",
     )
     a = ap.parse_args(argv)
     anchors = a.anchors if a.anchors is not None else CFMConfig.n_anchors

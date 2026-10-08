@@ -165,60 +165,28 @@ def test_intrinsic_evaluate_end_to_end(tmp_path):
     assert r2["proof2_lipschitz"]["n_tested"] == r["proof2_lipschitz"]["n_tested"]
 
 
-def test_slow_expert_index_is_derived_from_timescale():
-    from looking_glass.cfm_training import slow_expert_index, slow_state_slice
+def test_slow_channel_mask_derives_slow_band():
+    from looking_glass.cfm_training import slow_channel_mask, slow_state_slice
 
     seqs = _seqs(2)
     torch.manual_seed(0)
-    model = CFM(EventVocab.build(seqs), dim=16, n_experts=2, delta_biases=[-1.5, 1.5])
-    assert slow_expert_index(model) == 0  # -1.5 has the longest memory
-    h = torch.arange(16, dtype=torch.float32).reshape(1, 16)
-    assert torch.equal(slow_state_slice(model, h), h[:, :8])
+    model = CFM(EventVocab.build(seqs), dim=32, unified=True)
+    m = slow_channel_mask(model)
+    assert m is not None and 0 < int(m.sum()) < 32  # a data-derived slow band
+    h = torch.randn(3, 32)
+    assert slow_state_slice(model, h).shape[-1] == int(m.sum())
 
 
-def test_intent_filter_lowpasses_alternating_input():
-    from looking_glass.cfm_training import forward_states, slow_state_slice
+def test_input_lowpass_smooths_alternating_input():
+    from looking_glass.cfm_model import IntentFilter
 
-    def alt_seq(key):
-        n = 40
-        ets = [f"2025-01-{(1 + i // 8):02d}T{10 + (i % 8):02d}:00:00+00:00" for i in range(n)]
-        ts = [float(np.datetime64(t.replace("+00:00", ""), "s").astype("int64")) for t in ets]
-        return {
-            "customer": key,
-            "group": "A",
-            "anchor_epoch": None,
-            "event_type": np.array((["view", "order"] * 20)[:n], dtype=object),
-            "brand": np.array([None] * n, dtype=object),
-            "entity_type": np.array(["customer"] * n, dtype=object),
-            "entity_id": np.array([key] * n, dtype=object),
-            "value": np.ones(n, dtype=np.float32),
-            "event_ts": np.array(ets, dtype=object),
-            "ts": ts,
-            "co": [[0.0, 0.0]] * n,
-        }
+    torch.manual_seed(0)
+    filt = IntentFilter(8, retention_init=0.9, use_proj=False)
+    v = torch.randn(8)
+    x = torch.stack([v if i % 2 == 0 else -v for i in range(48)]).unsqueeze(0)
+    y = filt(x)[0].detach().numpy()
 
-    seqs = [alt_seq("c1")]
-    vocab = EventVocab.build(seqs)
+    def hf(z):
+        return float(np.mean(np.abs(np.diff(z, axis=0)) ** 2))
 
-    def slow_cos(slow_intent):
-        torch.manual_seed(0)
-        m = CFM(vocab, dim=16, n_experts=2, delta_biases=[-1.5, 1.5], slow_intent=slow_intent)
-        m.eval()
-        hs = []
-        for end in range(3, 41):
-            pref = {
-                k: (v[:end] if isinstance(v, (list, np.ndarray)) else v) for k, v in seqs[0].items()
-            }
-            with torch.no_grad():
-                h = forward_states(m, [pref])
-            hs.append(slow_state_slice(m, h)[0].detach().numpy())
-        d = np.diff(np.asarray(hs), axis=0)
-        cs = [
-            float(np.dot(d[t], d[t + 1]) / (np.linalg.norm(d[t]) * np.linalg.norm(d[t + 1])))
-            for t in range(len(d) - 1)
-            if np.linalg.norm(d[t]) > 1e-9 and np.linalg.norm(d[t + 1]) > 1e-9
-        ]
-        return float(np.mean(cs))
-
-    assert slow_cos(False) < 0  # raw token alternation zigzags the slow state
-    assert slow_cos(True) > 0  # intent filter makes the slow velocity smooth
+    assert hf(y) < hf(x[0].numpy())  # the spectral bottleneck removes high-freq energy

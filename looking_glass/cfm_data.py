@@ -193,6 +193,24 @@ def _random_anchor_epochs(ts, data_end, cfg, key):
     return sorted(float(x) for x in rng.uniform(lo, hi, size=n))
 
 
+def derive_order_event(df) -> str | None:
+    """The conversion/order event, DERIVED from the data (v4.6, #1): the event
+    type with the highest mean monetary `value`. No business name is hardcoded;
+    a stream with no value column returns None."""
+    import polars as pl
+
+    if df is None or "value" not in df.columns:
+        return None
+    agg = (
+        df.group_by("event_type")
+        .agg(pl.col("value").cast(pl.Float64, strict=False).fill_null(0.0).mean().alias("mv"))
+        .sort("mv")
+    )
+    if agg.height == 0:
+        return None
+    return str(agg["event_type"][-1])
+
+
 def build_sequences(df, keys, cfg: CFMConfig, split, with_anchors: bool, min_events: int = 3):
     """Polars-first: partition once in Rust, then slice per group. Anchors are
     random uniform days; company actions ride along as exogenous covariates.
@@ -207,7 +225,7 @@ def build_sequences(df, keys, cfg: CFMConfig, split, with_anchors: bool, min_eve
         pl.col("event_ts").str.to_datetime(time_zone="UTC", strict=False).dt.epoch("s").alias("_ts")
     )
     data_end = float(d["_ts"].max()) if d.height else 0.0
-    company = set(map(str, cfg.company_actions))
+    company = set(map(str, getattr(cfg, "exogenous_events", ())))
     min_events = max(1, int(min_events))
     seqs = []
     for g in d.partition_by("customer_key", maintain_order=True):

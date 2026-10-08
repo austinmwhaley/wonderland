@@ -11,7 +11,7 @@ from looking_glass.cfm_config import CFMConfig
 from looking_glass.cfm_model import CFM, EventVocab
 from looking_glass.cfm_training import (
     _collate,
-    _loss,
+    _loss_split,
     _masked_forward,
     _task_losses,
     _val_split,
@@ -83,7 +83,7 @@ def test_query_agg_sf_losses_present_and_train():
     for k in ("query", "agg", "sf", "next", "mask", "jepa"):
         assert k in T_, k
         assert torch.isfinite(T_[k]), (k, float(T_[k]))
-    loss = _loss(model, vocab, seqs, cfg)
+    loss = sum(_loss_split(model, vocab, seqs, cfg))
     assert torch.isfinite(loss)
     loss.backward()
     assert model.head_agg.weight.grad is not None
@@ -104,13 +104,10 @@ def test_sf_mode_shapes_and_phi():
     seqs = [_seq("c1"), _seq("c2", day="2025-01-02")]
     vocab = EventVocab.build(seqs)
     m_evt = CFM(vocab, dim=16, n_experts=1, sf_mode="event_types")
-    m_pur = CFM(vocab, dim=16, n_experts=1, sf_mode="purchase")
     assert m_evt.head_sf[-1].out_features == 1 + vocab.n_et  # value + per-type
-    assert m_pur.head_sf[-1].out_features == 4
-    assert CFMConfig().sf_mode == "event_types"  # agnostic default (DEC-009)
-    for model in (m_evt, m_pur):
-        T_ = _task_losses(model, vocab, seqs, _cfg(sf_mode=model.sf_mode))
-        assert torch.isfinite(T_["sf"])
+    assert CFMConfig().sf_mode == "event_types"  # agnostic only (DEC-009)
+    T_ = _task_losses(m_evt, vocab, seqs, _cfg(sf_mode="event_types"))
+    assert torch.isfinite(T_["sf"])
 
 
 def test_masked_forward_causal_and_redacted():
@@ -271,7 +268,7 @@ def test_variance_floor_hinge():
     # trains: objective present, finite, gradients flow through proj -> trunk
     T_ = _task_losses(model, vocab, seqs, cfg)
     assert "variance" in T_ and torch.isfinite(T_["variance"])
-    loss = _loss(model, vocab, seqs, cfg)
+    loss = sum(_loss_split(model, vocab, seqs, cfg))
     loss.backward()
     assert model.proj.weight.grad is not None
 
@@ -373,7 +370,7 @@ def test_dual_velocity_config_and_ortho_loss():
     assert "ortho" in cfg.objectives
     T_ = _task_losses(model, vocab, seqs, cfg)
     assert "ortho" in T_ and torch.isfinite(T_["ortho"])
-    loss = _loss(model, vocab, seqs, cfg)
+    loss = sum(_loss_split(model, vocab, seqs, cfg))
     loss.backward()
     assert model.ssm.experts[0].delta_bias.grad is not None
     assert model.ssm.experts[1].delta_bias.grad is not None

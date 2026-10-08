@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from looking_glass.cfm_config import SF_PHI, _f, _to_epoch
+from looking_glass.cfm_config import _f, _to_epoch
 
 
 # ---------------------------------------------------------------------------
@@ -268,7 +268,7 @@ class CFM(nn.Module):
         # successor-feature phi shape: agnostic per-event-type counts (default,
         # DEC-009) or the legacy purchase-named 4-dim phi — never both.
         self.sf_mode = sf_mode
-        self.sf_dim = (1 + vocab.n_et) if sf_mode == "event_types" else SF_PHI
+        self.sf_dim = 1 + vocab.n_et
         self.emb_et = nn.Embedding(vocab.n_et + 1, self.chan)
         self.emb_brand = nn.Embedding(vocab.n_brand + 1, self.chan)
         self.emb_ent = nn.Embedding(vocab.n_ent + 1, self.chan)

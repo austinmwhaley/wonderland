@@ -66,12 +66,12 @@ def test_resolve_cfm_applies_explicit_overrides():
 
 def test_set_overrides_applied_after_derivation_and_fail_safe():
     cfg = CFMConfig()
-    cfg.set_overrides = ["state_half_life_days=7.5", "order_event=purchase"]
+    cfg.set_overrides = ["state_half_life_days=7.5", "dim=128"]
     receipt: dict = {}
     apply_set_overrides(cfg, receipt)
     assert cfg.state_half_life_days == 7.5
-    assert cfg.order_event == "purchase"
-    assert receipt["overrides"]["order_event"] == "purchase"
+    assert cfg.dim == 128
+    assert receipt["overrides"]["dim"] == 128
     bad = CFMConfig()
     bad.set_overrides = ["no_such_field=1"]
     with pytest.raises(SystemExit):

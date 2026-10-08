@@ -22,7 +22,6 @@ import argparse
 
 import numpy as np
 
-from looking_glass.cfm_config import ORDER_EVENT
 from looking_glass.layer_b_proof import _load, cv_pred, _rho, _partial_ci
 
 D_SEC = 86400.0
@@ -66,7 +65,7 @@ def rfm_vector(ts, ets, vals, a, o, etypes):
         float(m.sum()),
         float(pv.sum()),
         float(np.mean(gap)) if len(gap) else 0.0,
-        float((pe == ORDER_EVENT).sum()),
+        float((pv > np.median(pv)).sum()),
         trail,
     ]
     rfm += [float((pe == t).sum()) for t in etypes]

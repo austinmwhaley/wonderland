@@ -27,14 +27,9 @@ except Exception:  # run as a standalone script
 STREAM_TABLE = "customer_events"
 EMBED_DIM = 64
 LN2 = math.log(2.0)
-# Registry defaults for event vocabulary: the ORDER event name and the company
-# action (send) names. Sources with different vocabularies override via config
-# (`order_event`, `company_actions`) / `--set`, never by editing call sites.
-ORDER_EVENT = "order_placed"
 # Successor features: predict the DISCOUNTED future at a continuously-sampled
 # discount gamma. No human-chosen horizons — the model learns all timescales.
 TIME_UNIT_SECONDS = 86400.0  # a day (unit scaling only, not a horizon)
-SF_PHI = 4  # discounted [value, count, is_order, order*value]
 GAMMA_MAX = 0.999
 
 
@@ -143,13 +138,12 @@ class CFMConfig:
     as_of: str | None = None
     seq_len: int = 128
     n_anchors: int = 6  # exact number of sample-B anchor days per customer
-    # Company actions are EXOGENOUS (interventions/treatments), not customer
-    # behavior: they are covariates and are never predicted as tokens.
-    company_actions: tuple = ("email_send", "sms_send", "push_send")
-    # The ORDER event name (registry default; override per source via config /
-    # --set). Objectives, evaluation probes and battery raw-features read THIS,
-    # never a literal.
-    order_event: str = ORDER_EVENT
+    # Exogenous events (interventions/treatments, not customer behaviour) are
+    # declared by the DATA/schema at runtime, never hardcoded here. Default empty
+    # (treat every event as customer behaviour — the safe, domain-free fallback);
+    # a source declares its exogenous `source_table`s via `--set
+    # exogenous_events=...`, resolved at runtime and recorded in the receipt.
+    exogenous_events: tuple = ()
     # Explicit CLI overrides (`--set key=value`, repeatable), applied AFTER
     # derivation and recorded in the registry receipt.
     set_overrides: list = field(default_factory=list)
@@ -229,9 +223,9 @@ class CFMConfig:
     # recorded in the registry so every point on the curve is a receipt.
     geometry_boost: float = 1.0
     use_uncertainty_weighting: bool = True  # legacy flag (uncertainty mode)
-    # Successor-feature phi shape: "event_types" = agnostic (one discounted
-    # component per event type + value — the operator's ruling; no objective
-    # may name a purchase event); "purchase" = legacy 4-dim phi.
+    # Successor-feature phi: agnostic only — one discounted component per event
+    # type plus value. No objective may name a business event (DEC-009). The
+    # legacy purchase-named phi was deleted.
     sf_mode: str = "event_types"
     # Exact window targets (count/value over (t, t+h]) at horizons DERIVED
     # from within-customer gap quantiles (filled by resolve_cfm; `--set` can

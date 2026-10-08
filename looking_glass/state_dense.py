@@ -33,7 +33,7 @@ def build(cadence="weekly", max_customers=8000):
         vocab,
         blob["dim"],
         n_experts=blob.get("n_experts", 1),
-        sf_mode=blob.get("sf_mode", "purchase"),
+        sf_mode=blob.get("sf_mode", "event_types"),
     )
     model.load_state_dict(blob["state"])
     if blob.get("whiten_W") is not None:

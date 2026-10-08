@@ -34,7 +34,7 @@ def validate(cfg: CFMConfig):
         vocab,
         blob["dim"],
         n_experts=blob.get("n_experts", 1),
-        sf_mode=blob.get("sf_mode", "purchase"),
+        sf_mode=blob.get("sf_mode", "event_types"),
     ).to(cfg.device)
     model.load_state_dict(blob["state"])
     if blob.get("whiten_W") is not None:

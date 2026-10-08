@@ -116,7 +116,9 @@ def advance_to_date(store, cfg, df, upto_epoch):
     """
     rows = store.con.execute("SELECT customer_key, as_of_epoch FROM customer_state").fetchall()
     as_of_by_key = {k: a for k, a in rows}
-    seqs = new_event_sequences(df, as_of_by_key, upto_epoch, cfg.company_actions, cfg.seq_len)
+    seqs = new_event_sequences(
+        df, as_of_by_key, upto_epoch, getattr(cfg, "exogenous_events", ()), cfg.seq_len
+    )
     if seqs:
         store.advance(seqs, incremental=True)
     with_events = {s["customer"] for s in seqs}
@@ -151,7 +153,7 @@ def load_frozen_encoder(tag: str, cfm_dir):
         vocab,
         blob["dim"],
         n_experts=blob.get("n_experts", 1),
-        sf_mode=blob.get("sf_mode", "purchase"),
+        sf_mode=blob.get("sf_mode", "event_types"),
         slow_intent=bool(blob.get("slow_intent", False)),
         unified=bool(blob.get("unified", False)),
         zca=bool(blob.get("zca", False)),
@@ -162,7 +164,7 @@ def load_frozen_encoder(tag: str, cfm_dir):
     if blob.get("whiten_W") is not None:
         model.set_whitening(blob["whiten_mean"], blob["whiten_W"])  # DEC-022
     cfg = CFMConfig()
-    cfg.sf_mode = blob.get("sf_mode", "purchase")  # checkpoint truth (phi shape)
+    cfg.sf_mode = blob.get("sf_mode", "event_types")  # checkpoint truth (phi shape)
     reg = cfm_dir / f"registry_{tag.replace('.', '_')}.json"
     if reg.exists():
         meta = json.loads(reg.read_text())

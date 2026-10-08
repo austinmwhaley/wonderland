@@ -29,23 +29,17 @@ from sklearn.preprocessing import StandardScaler
 from scipy.stats import spearmanr
 
 from looking_glass.cfm_config import CFMConfig
+from looking_glass.cfm_data import derive_order_event
 
 CFM_DIR = Path(__file__).resolve().parents[0] / "artifacts" / "cfm"
 
 
-def _company_actions(tag):
+def _exogenous_events(tag):
+    """Exogenous event types DECLARED by the run (data/schema), default none."""
     for p in CFM_DIR.glob(f"registry_{tag.replace('.', '_')}.json"):
         cfg = json.loads(p.read_text()).get("config", {})
-        return tuple(cfg.get("company_actions", list(CFMConfig.company_actions)))
-    return tuple(CFMConfig.company_actions)
-
-
-def _order_event(tag):
-    """Order-event name from the run's registry config (default: config)."""
-    for p in CFM_DIR.glob(f"registry_{tag.replace('.', '_')}.json"):
-        cfg = json.loads(p.read_text()).get("config", {})
-        return str(cfg.get("order_event", CFMConfig.order_event))
-    return CFMConfig.order_event
+        return tuple(cfg.get("exogenous_events", list(getattr(CFMConfig, "exogenous_events", ()))))
+    return tuple(getattr(CFMConfig, "exogenous_events", ()))
 
 
 def _read_stream(db):
@@ -91,8 +85,8 @@ def _v(x):
         return 0.0
 
 
-def build_rows(df, anchors, company, order_event: str | None = None):
-    order_event = order_event or CFMConfig.order_event
+def build_rows(df, anchors, company):
+    order_event = derive_order_event(df)
     cols = {c: df[c].to_list() for c in df.columns}
     n = df.height
     by, i = {}, 0
@@ -173,14 +167,12 @@ def _reg(X, y, groups, seed=0):
 def evaluate(db, products, customers=500):
     anchors = _read_anchors(products)
     tag = anchors["version"][0]
-    company = _company_actions(tag)
+    company = _exogenous_events(tag)
     df = _read_stream(db)
     keys = df["customer_key"].unique(maintain_order=True).to_list()[:customers]
     df = df.filter(pl.col("customer_key").is_in(keys))
     anchors = anchors.filter(pl.col("customer_key").is_in(keys))
-    Xc, Xr, y_type, y_val, y_dt, groups = build_rows(
-        df, anchors, company, order_event=_order_event(tag)
-    )
+    Xc, Xr, y_type, y_val, y_dt, groups = build_rows(df, anchors, company)
     if len(groups) < 20:
         return {"error": "too few anchors", "n": int(len(groups))}
     Xs = Xc[np.random.default_rng(0).permutation(len(Xc))]
@@ -228,7 +220,7 @@ def evaluate(db, products, customers=500):
     return {
         "n": int(len(groups)),
         "version": str(tag),
-        "company_actions": list(company),
+        "exogenous_events": list(company),
         "rows": rows,
         "score": score,
         "informative": informative,
@@ -242,7 +234,7 @@ def _show(res):
         return False
     print(
         f"== CFM SOLO SUCCESS TEST ==  version={res['version']}  n={res['n']} "
-        f"(exogenous={','.join(res['company_actions'])})"
+        f"(exogenous={','.join(res['exogenous_events'])})"
     )
     print(f"{'probe':36s} {'CFM':>7s} {'raw':>7s} {'scram':>7s} {'skill':>6s}  ok")
     for r in res["rows"]:
