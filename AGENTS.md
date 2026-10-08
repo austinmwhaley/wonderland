@@ -290,3 +290,30 @@ Source of truth: **https://github.com/austinmwhaley/wonderland** (branch `main`)
 - **Workflow:** `git pull --rebase` -> make changes -> `git add -A` -> `git commit`
   -> `git push`. One repo, one history; do not create nested `.git` directories.
 - **Large data lives only locally** (or a separate storage/DVC), never in this repo.
+
+---
+
+## v6.0 algebraic law enforcement (DEC-036) — Layer B
+
+Where a property can be expressed as an **algebraic law**, enforce it as a law,
+never as a tuned threshold or a manufactured metric:
+
+- **Monoidal functor**: events are morphisms on a continuous state space; the
+  encoder `F` maps sequence-concatenation to composition of affine maps. The scan
+  makes `F(g∘f)=F(g)∘F(f)` **exact** (a canary, not a loss).
+- **Isometry over whitening**: the donor boundary is a per-sample orthogonal
+  `R` (κ=1, invertible). A boundary must **never fake capacity the trunk lacks**;
+  a low-rank diagnostic is an instruction to the trunk/data, not a defect to mask.
+  (Batch-coupled ZCA amplified near-null directions to manufacture rank — banned.)
+- **Lossy monoid, not group**: bounded memory ⇒ forgetting ⇒ no exact inversion
+  in the encoder; inversion is a bounded-window Layer-C contract.
+- **Derived invariants**: conditioning floor from Marchenko–Pastur
+  `λ₊=(1+√(D/N))²`; conservation ratio `Tr(Σ_readout)/P_in≈1`; commutation on
+  data-certified independent pairs; Markov sufficiency gap `Δ_suff` vs a shuffled
+  null; scale-invariant Gram decorrelation `‖D_Σ^{-1/2}Σ_h D_Σ^{-1/2}−I‖_F²`.
+- **Zero domain literals**: no business event names, no feature partitions;
+  exogenous events are data/schema-declared; one whitening path (Newton–Schulz).
+
+Macro filter for every future change: does it add a literal? → reject. Does it
+rely on cross-sample batch statistics? → reject. Does it enforce an invariant law
+over the continuous state manifold? → approve.

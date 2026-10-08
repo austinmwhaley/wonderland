@@ -122,11 +122,19 @@ x̃_t = r ⊙ x̃_{t−1} + (1−r) ⊙ x_t
 This keeps the slow state from receiving high-frequency content through the
 mixing weights, so slow-state continuity is **structural**.
 
-### 2.5 Donor boundary (the consumed representation)
+### 2.5 Donor boundary (the consumed representation) — v6 isometric
 
 ```
-z = ZCA( proj(h) )      # proj: Linear(dim,dim); whitening applied AFTER proj
+z = s * ( proj(h) @ R^T )      # R orthogonal (Cayley), s = conservation scale
 ```
+- **Per-sample orthogonal isometry** `R=(I−S)(I+S)⁻¹` (κ=1, invertible; no batch
+  coupling, no `eps`/conditioning literals). It does **not** whiten: it preserves
+  the trunk's spectrum and **refuses to manufacture rank** (the old batch ZCA
+  amplified near-null directions to fake isotropy — deleted).
+- **Conservation scale** `s` holds `Tr(Σ_readout)` to the input band power `P_in`
+  (derived, frozen): `R_cons=Tr(Σ_readout)/P_in ≈ 1` on any stream.
+- Legacy global-EMA ZCA is retained only behind `donor_whiten` with the isometry
+  off.
 - `proj` is a learned linear readout; whitening is applied **after** it (the true
   boundary — applying it before `proj` re-collapses rank, because `proj` is
   ill-conditioned; measured).
@@ -194,6 +202,10 @@ sums…). The ensemble is the "portfolio"; a combination map lives in
 | expert independence | `ortho` cross-covariance (fast vs slow halves) |
 | task/geometry non-interference | **task-structural PCGrad** (§5) |
 | OOT stability | principal-angle subspace overlap (dimensionless) |
+| event commutation | `commutation` law on data-certified independent pairs (scale-invariant) |
+| directional decorrelation | `decorr` Gram law `‖D_Σ^{-1/2}Σ_h D_Σ^{-1/2}−I‖_F²` (magnitude-decoupled) |
+| energy conservation | `R_cons = Tr(Σ_readout)/P_in ≈ 1` |
+| Markov sufficiency | `Δ_suff = R²(h_t→future H) − R²(shuffled)` gate |
 | reproducibility | deterministic init (`seed_everything`), frozen artifacts, receipt identity |
 
 ---
@@ -313,6 +325,10 @@ literals remain documented fallbacks.
   dual-target volume.
 - **DEC-033** cross-stream validation (Layer A): robustness fixes.
 - **DEC-034** per-stream data-derived geometry floor (coverage × capacity).
+- **DEC-036 (v6.0.0)** category-theoretic realism: isometric boundary (A1),
+  lossy monoid action (A2), commutation/volume/MP/decorr laws (Stage 2), Markov
+  sufficiency + conservation-ratio gates (Stage 3). The encoder is a monoidal
+  functor; the boundary never fakes capacity.
 - **DEC-035** continuous stream-profiled input low-pass (removes the binary
   content/trend partition); task-structural PCGrad; stream-agnostic profiling.
 

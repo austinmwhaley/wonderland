@@ -763,3 +763,39 @@ same battery
   slow-band cutoff should be a data-derived τ rather than the delta-bias median.
   This is the next self-governance step: calibrate the invariants from the input,
   not from a previous run.
+
+## DEC-036 — v6.0.0: Category-Theoretic Functional Realism (algebraic law enforcement)
+
+- **Date:** 2026-10-07
+- **Context:** the doctrine shifted from statistical realism to **algebraic law
+  enforcement**: event streams are morphisms on a continuous state space; the
+  encoder is a **monoidal functor** `F: (events, concatenation) → (affine maps,
+  composition)`; invariants are laws (isometry, commutation, conservation,
+  sufficiency), not fitted thresholds. Four decisions A1–A4 and stages 0–4:
+- **A1 — per-sample orthogonal isometry boundary** (Cayley `R=(I−S)(I+S)⁻¹`,
+  κ=1, invertible, no batch coupling, no `eps` literals) replaces batch-coupled
+  ZCA. Binding finding: the old ZCA was **amplifying near-null directions to
+  manufacture rank**; the isometry reveals the trunk's true manifold. Trunk rank
+  is **stream-intrinsic** (rabbit_hole 77% type-change → PR/dim ≈ 0.19; ecommerce
+  7% → ≈ 0.017) — present at random init, not a training artifact.
+- **A2 — lossy monoid action**: contraction `exp(−softplus)∈(0,1)` gives bounded
+  memory; inversion is a bounded-window Layer-C contract, never an encoder law.
+  No reversibility penalty exists in the encoder (excision confirmed).
+- **A3/A4 — data-derived horizon + data-certified independence.**
+- **Stage 0** trace-conservation variance anchor (fixes the anchorless-ratio
+  collapse; removes the `1.0` literal).
+- **Stage 1** isometric boundary + composition-closure **canary**
+  (`F(g∘f)=F(g)∘F(f)` exact for the affine scan).
+- **Stage 2** commutation law on certified-independent pairs (scale-invariant),
+  per-step volume pressure, MP conditioning floor `λ₊=(1+√(D/N))²`, and the
+  scale-invariant Gram decorrelation `‖D_Σ^{-1/2}Σ_h D_Σ^{-1/2}−I‖_F²`.
+- **Stage 3** **Markov sufficiency gate** `Δ_suff = R²(h_t→future H) −
+  R²(→shuffled)` (RL/decision sufficiency, measured not claimed); **conservation
+  ratio** `R_cons = Tr(Σ_readout)/P_in ≈ 1` (holds on both low- and high-rank
+  streams: 0.97 / 0.90); reversibility excision.
+- **Gates** are scale-free: per-stream geometry coverage of the stream's OWN
+  capacity; dimensionless conservation ratio; principal-angle OOT; sufficiency
+  gap vs shuffled null. **Diagnostic honesty**: a low-rank gate is an
+  instruction to the data/trunk, never masked by the boundary.
+- **Remaining staged literals** (#2 `dim`/`seq_len`, #4 objective hyperparams,
+  #8 controller gains, #10 lr/batch): documented fallbacks; not yet derived.

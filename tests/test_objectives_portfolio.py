@@ -254,7 +254,7 @@ def test_variance_floor_hinge():
     model = CFM(vocab, dim=16, n_experts=1)
     cfg = _cfg()
     assert "variance" in cfg.objectives and "rank" in cfg.objectives
-    assert CFMConfig().version == "v5.0.0"
+    assert CFMConfig().version == "v6.0.0"
     assert CFMConfig().n_experts == 2  # dual-velocity (DEC-025)
 
     # collapsed states (all identical rows) -> per-dim std 0 -> hinge = 1.0
@@ -357,7 +357,7 @@ def test_dual_velocity_config_and_ortho_loss():
     from looking_glass.cfm_training import _task_losses
 
     assert CFMConfig().n_experts == 2
-    assert CFMConfig().version == "v5.0.0"
+    assert CFMConfig().version == "v6.0.0"
     from looking_glass.cfm_config import _expert_biases
 
     biases = _expert_biases(2, 7)
