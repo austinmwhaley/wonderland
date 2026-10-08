@@ -589,3 +589,38 @@ same battery
   the slow-trajectory cos to **+0.267** (was +0.013); MI/Lipschitz/info-plane
   PASS. OOT is only partially reproducible (**2.15, 2.52** — still FAIL vs 1.5),
   so that gate also needs a scale-free reformulation (see v4.0 plan).
+
+## DEC-029 — v4.0: self-governing encoder (all four macro shifts)
+
+- **Date:** 2026-10-07
+- **Context:** the v3.2.0 finding — the whitening-dependent gates were passing on
+  amplified numerical noise (identical command gave eff_rank 21.6 then 56.2) and
+  the honest consumed rank was ~0.08-0.21 of dim. The fix is not another static
+  patch but making isotropy, calibration, and control intrinsic.
+- **Decision (recipe, all four shifts, config-gated, defaults ON for v4.0):**
+  1. **Unified multi-timescale SSM** (`unified_ssm`): one wide SelectiveSSM with a
+     per-channel log-uniform `delta_bias` spectrum (fast→slow), replacing the
+     hand-split 2-expert bank + DEC-027 intent filter. `slow_state_slice` selects
+     the slow channel half DERIVED from the learned spectrum.
+  2. **Differentiable Newton-Schulz ZCA** (`zca`): `ns_zca` in the donor forward
+     during training (isotropy by construction; gradients shape it). Spectrum
+     normalized by the spectral norm (power iteration) so NS converges; `eps`
+     ridge caps the condition number (no noise amplification). Inference uses the
+     frozen condition-capped transform, so train/serve agree.
+  3. **Log-det trunk-volume barrier** (`volume` objective, Step 3): maximize the
+     volume of the raw projected covariance (data-derived eps) so ZCA cannot fake
+     rank from zero-variance directions. Complements `spectrum`/`rank`/`variance`.
+  4. **Scale-free self-calibrating gates** (Step 4): geometry gate is now the
+     Marchenko-Pastur-normalized isotropy score
+     `(PR/dim − PR_MP(γ))/(1 − PR_MP(γ)) > 0` (0 = pure noise, 1 = isotropic;
+     dimension/sample-invariant). OOT gate is the mean canonical correlation of
+     temporal splits over the effective rank (`> 0.85`), replacing the covariance
+     ratio.
+  5. **Adaptive Information Bottleneck + self-paced controller** (Step 5): a
+     Gaussian-KL compression term on projected codes with its multiplier
+     `_aib_beta` tuned by dual ascent on the batch participation ratio, on top of
+     DWA + grouped PCGrad.
+- **Trade-offs:** more moving parts and one more retrain; all shifts are
+  config-gated so any can be disabled. Honest gates may still read FAIL if the
+  trunk's true rank is genuinely low — that is the point (no more noise-passing).
+- **Measured:** _pending full v4.0 run (`/tmp/opencode/insta_v40`)._

@@ -119,7 +119,7 @@ class CFMConfig:
     # v3.0.0: dual-velocity encoder (DEC-025) — n_experts=2 with spread
     # delta_bias init (fast/slow timescales), ortho-loss between expert state
     # components, rolling EMA whitening, trajectory graded on the slow state.
-    version: str = "v3.2.0"  # encoder code version
+    version: str = "v4.0.0"  # encoder code version
     revision: int = 1  # data/score revision (r)
     sample_customers: int | None = 500  # working base: first N customers (populations live here)
     split_a_frac: float = 0.7
@@ -165,7 +165,19 @@ class CFMConfig:
     # v3.1.0 (DEC-027): low-pass intent filter on the slow expert — smooths the
     # content stream so the slow state's velocity no longer zigzags. Default on;
     # opt out with --set slow_intent_filter=false.
-    slow_intent_filter: bool = True
+    slow_intent_filter: bool = False
+    # v4.0 (DEC-029): macro shifts.
+    # (1) unified wide selective SSM with a per-channel timescale spectrum,
+    #     replacing the hand-split expert bank + intent filter.
+    unified_ssm: bool = True
+    # (2) differentiable Newton-Schulz ZCA at the donor boundary (isotropy by
+    #     construction; gradients shape the consumed representation).
+    zca: bool = True
+    # (3) adaptive information bottleneck: a compression term with a
+    #     self-tuned Lagrange multiplier (dual ascent on the batch rank).
+    aib: bool = True
+    aib_lr: float = 0.05
+    aib_target_rank: float = 0.5  # target batch PR/dim the controller holds
     ortho_weight: float = 0.1  # cross-subspace ortho-loss weight
     epochs: int = 3
     batch: int = 64
@@ -235,6 +247,8 @@ class CFMConfig:
         "rank",  # participation-ratio pressure: train on the graded metric
         "spectrum",  # soft-spectrum isotropy (DEC-028): equalize per-dim
         #              variance so no single direction dominates the PR
+        "volume",  # log-det trunk-volume barrier (v4.0, DEC-029): forces the
+        #            raw state covariance to expand dimensionally ahead of ZCA
         "ortho",  # fast/slow cross-covariance: zero interference (DEC-025)
     )
     seed: int = 0

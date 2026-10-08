@@ -57,14 +57,21 @@ def _scan(d, b):
 
 
 class SelectiveSSM(nn.Module):
-    def __init__(self, dim, delta_bias=0.0):
+    def __init__(self, dim, delta_bias=0.0, delta_spectrum=False, spectrum=(-1.5, 3.0)):
         super().__init__()
         self.W_delta = nn.Linear(dim, dim)
         self.W_B = nn.Linear(dim, dim)
         self.W_C = nn.Linear(dim, dim)
         self.W_out = nn.Linear(dim, dim)
-        # per-channel timescale (log-decay) offset; LEARNED (init equal).
-        self.delta_bias = nn.Parameter(torch.tensor([float(delta_bias)]))
+        # per-channel timescale (log-decay) offset; LEARNED.
+        if delta_spectrum:
+            # v4.0 unified trunk (DEC-029): a per-channel log-uniform spectrum
+            # from fast (short memory) to slow (long memory), so ONE wide SSM
+            # carries all timescales instead of a hand-split expert bank. The
+            # learned W_delta then adapts each channel per event.
+            self.delta_bias = nn.Parameter(torch.linspace(spectrum[0], spectrum[1], dim))
+        else:
+            self.delta_bias = nn.Parameter(torch.tensor([float(delta_bias)]))
 
     def forward(self, x, h0=None, mask=None):
         delta = F.softplus(self.W_delta(x) + self.delta_bias)
@@ -79,6 +86,44 @@ class SelectiveSSM(nn.Module):
             h0v = h0 if h0.dim() >= 2 else h0.unsqueeze(0)
             H = H + D * h0v.unsqueeze(1)
         return self.W_C(H), H[:, -1]
+
+
+def ns_zca(z, iters=8, eps=1e-2):
+    """Differentiable ZCA via the coupled Newton-Schulz iteration (v4.0, DEC-029).
+
+    Returns the batch-whitened `z` (centered, covariance ~ I) using only
+    matmuls — no eigh/inverse, so it is differentiable and stable. The
+    covariance is normalized by its SPECTRAL norm (power iteration, detached) so
+    its spectrum lies in (0,1] and the coupled iteration
+    Y_{k+1}=½Y_k(3I−Z_kY_k), Z_{k+1}=½(3I−Z_kY_k)Z_k converges Y→A^{1/2},
+    Z→A^{-1/2}. `eps` ridges the normalized covariance, bounding the condition
+    number so near-null directions are not amplified. (Trace normalization was
+    wrong: it does not bound the top eigenvalue, and NS diverges for
+    high-condition inputs — measured.)"""
+    if z.dim() != 2 or z.shape[0] < 2:
+        return z
+    zc = z - z.mean(0, keepdim=True)
+    n = zc.shape[0]
+    cov = (zc.T @ zc) / (n - 1)
+    d = cov.shape[0]
+    cd = cov.detach()
+    with torch.no_grad():  # spectral norm by power iteration
+        g = torch.Generator().manual_seed(0)
+        v = torch.randn(d, 1, generator=g).to(cov.device, cov.dtype)
+        for _ in range(16):
+            v = cd @ v
+            v = v / v.norm().clamp(min=1e-12)
+        scale = float((v.T @ cd @ v).item())
+    scale = max(scale, 1e-12)
+    eye = torch.eye(d, device=z.device, dtype=z.dtype)
+    A = cov / scale + eps * eye
+    Y, Z = A, eye
+    for _ in range(max(int(iters), 0)):
+        T = 3.0 * eye - Z @ Y
+        Y = 0.5 * (Y @ T)
+        Z = 0.5 * (T @ Z)
+    # Z ~ A^{-1/2}; (cov)^{-1/2} = scale^{-1/2} A^{-1/2}
+    return (zc @ Z) / torch.sqrt(torch.as_tensor(scale, device=z.device, dtype=z.dtype))
 
 
 class IntentFilter(nn.Module):
@@ -116,8 +161,15 @@ class MultiScaleSSM(nn.Module):
     Each channel summarizes a different horizon; their readouts are concatenated
     into the public state (width = chan * n_experts). K=1 is the original SSM."""
 
-    def __init__(self, chan, n_experts, delta_biases, slow_intent=False):
+    def __init__(self, chan, n_experts, delta_biases, slow_intent=False, delta_spectrum=False):
         super().__init__()
+        if delta_spectrum:
+            # v4.0: ONE wide selective SSM with a per-channel timescale spectrum.
+            self.chan = chan
+            self.n_experts = 1
+            self.experts = nn.ModuleList([SelectiveSSM(chan, delta_spectrum=True)])
+            self.slow_intent = False
+            return
         self.chan = chan
         self.n_experts = n_experts
         self.experts = nn.ModuleList([SelectiveSSM(chan, b) for b in delta_biases[:n_experts]])
@@ -157,10 +209,14 @@ class CFM(nn.Module):
         delta_biases=None,
         sf_mode: str = "event_types",
         slow_intent: bool = False,
+        unified: bool = False,
+        zca: bool = False,
     ):
         super().__init__()
         self.vocab = vocab
-        self.n_experts = max(1, int(n_experts))
+        self.unified = bool(unified)
+        self.zca = bool(zca)
+        self.n_experts = 1 if self.unified else max(1, int(n_experts))
         self.chan = max(1, dim // self.n_experts)
         dim = self.chan * self.n_experts
         self.dim = dim
@@ -176,7 +232,13 @@ class CFM(nn.Module):
         self.w_co = nn.Linear(2, self.chan)  # exogenous covariates
         if delta_biases is None:
             delta_biases = [0.0] * self.n_experts
-        self.ssm = MultiScaleSSM(self.chan, self.n_experts, delta_biases, slow_intent=slow_intent)
+        self.ssm = MultiScaleSSM(
+            self.chan,
+            self.n_experts,
+            delta_biases,
+            slow_intent=(slow_intent and not self.unified),
+            delta_spectrum=self.unified,
+        )
         self.head_next = nn.Linear(dim, vocab.n_et + 1)  # next event type
         self.head_ent = nn.Linear(dim, vocab.n_ent + 1)  # next entity type
         self.head_dt = nn.Linear(dim, 1)  # log1p(dt_next)
@@ -226,6 +288,7 @@ class CFM(nn.Module):
                     "variance",
                     "rank",
                     "spectrum",
+                    "volume",
                     "ortho",
                 )
             }
@@ -363,8 +426,17 @@ class CFM(nn.Module):
         the transform is set. The consumed representation (DEC-022). Whitening
         is applied AFTER `proj` (the actual boundary): whitening `h` first and
         then projecting re-collapses the representation because `proj` is itself
-        ill-conditioned (measured PR/dim 0.85 -> 0.06)."""
-        return self._whiten(self.proj(h))
+        ill-conditioned (measured PR/dim 0.85 -> 0.06).
+
+        v4.0 (DEC-029): when `zca` is enabled the boundary is whitened IN the
+        forward pass by a differentiable Newton-Schulz ZCA (`ns_zca`), so
+        gradients shape the consumed isotropy directly during training. At
+        inference (`zca_train` off) a frozen condition-capped transform is used,
+        so train/serve stay consistent."""
+        z = self.proj(h)
+        if self.zca and getattr(self, "zca_train", False):
+            return ns_zca(z)
+        return self._whiten(z)
 
     def successor(self, state, gamma, reward_weight=None):
         """Item 3: query the discounted future at ANY horizon (gamma in (0,1)) from

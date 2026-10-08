@@ -37,7 +37,7 @@ DEFAULT_OUT = Path(__file__).resolve().parent / "artifacts" / "cfm" / "portfolio
 # contrast = instance discrimination: its capability is agreement, and a
 # destroyed-input null is the wrong yardstick for it (states may still
 # separate instances without order). redundancy is graded in geometry.
-GATED_EXCLUSIONS = {"contrast", "redundancy", "variance", "spectrum"}
+GATED_EXCLUSIONS = {"contrast", "redundancy", "variance", "spectrum", "volume"}
 # sf's destroyed-null is scale-broken (permutation smooths discounted-sum
 # targets) — FIXED via the target-variance R² yardstick (DEC-018): skill =
 # R²_real - R²_destroyed = L_shuf/V_shuf - L_real/V_real, dimensionless.
@@ -70,6 +70,20 @@ def _destroyed(seqs: list[dict], seed: int) -> list[dict]:
                 d[f] = [s[f][int(i)] for i in perm]
         out.append(d)
     return out
+
+
+def _mp_pr_frac(n, dim, seed):
+    """Participation-ratio fraction of a finite-sample isotropic-gaussian null
+    (Marchenko-Pastur): the effective rank a PURE-NOISE n x dim matrix shows by
+    chance. The scale-free geometry score is measured against this, so the bar
+    is valid at any dimension / sample size (unlike a raw 0.30 fraction)."""
+    rng = np.random.default_rng(seed)
+    a = rng.normal(size=(n, dim))
+    a = a - a.mean(0, keepdims=True)
+    cov = (a.T @ a) / max(n - 1, 1)
+    ev = np.linalg.eigvalsh(cov).clip(0.0, None)
+    s2 = (ev**2).sum()
+    return float(ev.sum() ** 2 / s2) / dim if s2 > 0 else 0.0
 
 
 def _geometry(states: np.ndarray, seed: int) -> dict:
@@ -108,12 +122,22 @@ def _geometry(states: np.ndarray, seed: int) -> dict:
         mean_cos = float((nz[i[keep]] * nz[j[keep]]).sum(-1).mean()) if keep.any() else float("nan")
     else:
         mean_cos = float("nan")
+    # Scale-free geometry (v4.0, DEC-029): MP-normalized participation ratio.
+    # pr_frac = observed PR/dim; mp_frac = the pure-noise (Marchenko-Pastur)
+    # PR/dim at this n, dim. score 1.0 = perfectly isotropic, 0.0 = pure noise,
+    # <0.0 = LESS isotropic than random noise. Independent of dimension/sample.
+    pr_frac = eff_rank(cov) / dim
+    mp_frac = _mp_pr_frac(n, dim, seed + 7)
+    pr_score = float((pr_frac - mp_frac) / max(1.0 - mp_frac, 1e-9))
     return {
         "n_states": int(n),
         "dim": int(dim),
         "eff_rank": round(eff_rank(cov), 3),
         "eff_rank_null": round(eff_rank(cov_n), 3),
         "eff_rank_ratio": round(eff_rank(cov) / max(eff_rank(cov_n), 1e-9), 3),
+        "pr_frac": round(pr_frac, 4),
+        "mp_null_frac": round(mp_frac, 4),
+        "pr_score": round(pr_score, 4),
         "mean_pairwise_cos": round(mean_cos, 4),
         "redundancy_offdiag": round(float(np.abs(off).mean()), 5),
         "redundancy_offdiag_null": round(float(np.abs(off_n).mean()), 5),
@@ -275,19 +299,20 @@ def evaluate(
     geometry = _geometry(z, seed + 2) if len(z) >= 4 else {}
     canaries = _canaries(z, val, seed + 3) if len(z) >= 4 else {}
     if geometry:
-        # PRIMARY geometry gate: the consumed representation's normalized
-        # participation ratio = eff_rank(z) / dim(z). This is what every
-        # downstream head reads (z IS the donor_batch output). The bar 0.30
-        # means the states must use at least 30% of their nominal dimensions.
-        # With rolling EMA whitening, Cov(z) ≈ I by construction, so this
-        # should be close to 1.0.
-        dim_z = z.shape[1] if z.ndim > 1 else 0
-        pr_normalized = geometry["eff_rank"] / max(dim_z, 1)
+        # PRIMARY geometry gate (v4.0, DEC-029): SCALE-FREE, self-calibrating.
+        # The score normalizes the consumed representation's participation ratio
+        # against the finite-sample Marchenko-Pastur (pure-noise) null, so the
+        # bar is valid at any dimension / sample size (the old static 0.30
+        # fraction was calibrated only for D=256, B~2.6k). Score > 0 means the
+        # representation is more isotropic than random noise.
         rows.append(
             {
-                "check": "geometry: consumed repr participation ratio >= 0.30",
-                "achieved": f"eff_rank {geometry['eff_rank']} / dim {dim_z} = {pr_normalized:.4f}",
-                "ok": bool(pr_normalized >= 0.30),
+                "check": "geometry: isotropy score vs Marchenko-Pastur null > 0",
+                "achieved": (
+                    f"score {geometry['pr_score']} (PR/dim {geometry['pr_frac']} "
+                    f"vs noise {geometry['mp_null_frac']})"
+                ),
+                "ok": bool(geometry["pr_score"] > 0.0),
             }
         )
     if canaries:

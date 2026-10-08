@@ -141,7 +141,13 @@ def train_cfm(cfg: CFMConfig):
         delta_biases=_expert_biases(K, cfg.state_half_life_days),
         sf_mode=cfg.sf_mode,
         slow_intent=getattr(cfg, "slow_intent_filter", False),
+        unified=getattr(cfg, "unified_ssm", False),
+        zca=getattr(cfg, "zca", False),
     ).to(device)
+    # v4.0: differentiable ZCA in the forward during training (gradients shape the
+    # consumed isotropy); off at eval/save so the frozen transform is used.
+    model.zca_train = bool(getattr(cfg, "zca", False))
+    cfg._aib_beta = 0.0
     model.half_life_days = cfg.state_half_life_days
     # ---- warm-start / continual (same objective as scratch: data <= as_of) ----
     cfg.warm_from = None
@@ -287,6 +293,24 @@ def train_cfm(cfg: CFMConfig):
         torch.manual_seed(cfg.seed)
         with torch.no_grad():
             T_ = _task_losses(model, vocab, [a_seqs[i] for i in vi], cfg)
+        # Adaptive Information Bottleneck controller (v4.0, DEC-029): dual ascent
+        # on the multiplier so the batch participation ratio is held near target.
+        # rank > target -> compress harder (beta up); rank < target -> ease off.
+        if getattr(cfg, "aib", False):
+            try:
+                with torch.no_grad():
+                    _hb = forward_states(model, [a_seqs[i] for i in val_idx[:512]])
+                    _z = model.proj(_hb).float().cpu()
+                    _z = _z - _z.mean(0, keepdim=True)
+                    _c = (_z.T @ _z) / max(_z.shape[0] - 1, 1)
+                    _ev = torch.linalg.eigvalsh(_c.double()).clamp(min=0.0)
+                    _pr = float((_ev.sum() ** 2 / (_ev**2).sum().clamp(min=1e-24)) / _c.shape[0])
+                cfg._aib_beta = max(
+                    0.0,
+                    float(cfg._aib_beta) + float(cfg.aib_lr) * (_pr - float(cfg.aib_target_rank)),
+                )
+            except (RuntimeError, Exception):
+                pass
         # rolling EMA whitening stats (DEC-025): update per eval so the
         # whitening tracks the population instead of a static calibration slice
         if getattr(cfg, "donor_whiten", True) and not getattr(model, "whiten_on", False):
@@ -325,6 +349,8 @@ def train_cfm(cfg: CFMConfig):
     )
     if best_state is not None:
         model.load_state_dict(best_state)
+    # eval/save use the FROZEN boundary transform, not the training-time ZCA
+    model.zca_train = False
     # compute whitening BEFORE saving so the checkpoint ships WITH the frozen
     # donor-boundary transform (measured bug: save-then-whiten shipped
     # checkpoints without it, and the CLI graded unwhitened states)
@@ -346,6 +372,8 @@ def train_cfm(cfg: CFMConfig):
             "n_experts": K,
             "sf_mode": cfg.sf_mode,
             "slow_intent": bool(getattr(cfg, "slow_intent_filter", False)),
+            "unified": bool(getattr(cfg, "unified_ssm", False)),
+            "zca": bool(getattr(cfg, "zca", False)),
             "whiten_mean": (model.whiten_mean if getattr(model, "whiten_on", False) else None),
             "whiten_W": (model.whiten_W if getattr(model, "whiten_on", False) else None),
         },
@@ -680,6 +708,32 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
         with torch.autocast(device_type=h.device.type, enabled=False):
             vd = model.proj(h).float().var(dim=0) + 1e-8
             T_["spectrum"] = vd.log().var()
+    if "volume" in cfg.objectives and h.shape[0] >= 2:
+        # Log-Det trunk-volume barrier (v4.0, DEC-029, recipe Step 3): maximize
+        # the volume of the RAW projected covariance so ZCA cannot "fake" rank
+        # from zero-variance noise directions. eps is data-derived (a fraction of
+        # the mean eigenvalue), giving a well-conditioned slogdet.
+        with torch.autocast(device_type=h.device.type, enabled=False):
+            zu = model.proj(h).float()
+            zu = zu - zu.mean(dim=0, keepdim=True)
+            cov = (zu.T @ zu) / (zu.shape[0] - 1)
+            d = cov.shape[0]
+            eps = 1e-2 * cov.diagonal().mean().clamp(min=1e-12)
+            eye = torch.eye(d, device=cov.device, dtype=cov.dtype)
+            _, logdet = torch.linalg.slogdet(cov + eps * eye)
+            T_["volume"] = -logdet / d
+    if getattr(cfg, "aib", False) and h.shape[0] >= 2:
+        # Adaptive Information Bottleneck (v4.0, DEC-029): Gaussian KL(q(z)||N(0,I))
+        # on the projected codes — the compression cost. Its multiplier is tuned
+        # by a dual-ascent controller in the training loop (`_aib_beta`), which
+        # raises compression when the batch rank exceeds target and eases it when
+        # rank falls, so geometry is held by the bottleneck rather than a static
+        # weight.
+        with torch.autocast(device_type=h.device.type, enabled=False):
+            zu = model.proj(h).float()
+            mu = zu.mean(0)
+            var = zu.var(0) + 1e-8
+            T_["compress"] = (0.5 * (mu.pow(2) + var - var.log() - 1.0)).sum()
     if "variance" in cfg.objectives:
         # fp32 on purpose: std over a fp16-autocast batch overflows with large
         # activations and the hinge degenerates (measured: combined -> 0.0000)
@@ -866,32 +920,48 @@ class GeometryBank:
         }
 
 
-GEOMETRY_FAMILY = ("variance", "rank", "redundancy", "spectrum")
+GEOMETRY_FAMILY = ("variance", "rank", "redundancy", "spectrum", "volume")
 
 
 def _combine(model, T, cfg, weights: dict | None = None, scales: dict | None = None):
     """Task-balance dispatch (DEC-014). `weights` = current DWA weights.
     geometry_boost (DEC-017) scales the geometry family — the explicit
-    Pareto coordinate for the skills-vs-headroom frontier."""
+    Pareto coordinate for the skills-vs-headroom frontier. v4.0 (DEC-029) adds
+    the AIB compression term with a self-tuned multiplier `_aib_beta`."""
     keys = [k for k in cfg.objectives if k in T]
     boost = float(getattr(cfg, "geometry_boost", 1.0) or 1.0)
+    sc = scales or getattr(cfg, "final_loss_scales", None) or {}
 
     def wk(k):
         w = weights.get(k, 1.0) if weights else 1.0
         return w * (boost if k in GEOMETRY_FAMILY else 1.0)
 
     if cfg.weight_mode == "dwa":
-        sc = scales or getattr(cfg, "final_loss_scales", None) or {}
 
         def term(k):
             base = weights.get(k, 1.0) if weights else 1.0
             unit = T[k] / max(float(sc.get(k, 0.0)), 1e-8) if cfg.dwa_scale_free and sc else T[k]
             return base * (boost if k in GEOMETRY_FAMILY else 1.0) * unit
 
-        return sum(term(k) for k in keys)
-    if cfg.weight_mode == "uncertainty" and cfg.use_uncertainty_weighting:
-        return sum(0.5 * torch.exp(-model.log_var[k]) * T[k] + 0.5 * model.log_var[k] for k in keys)
-    return sum(T[k] for k in keys)
+        total = sum(term(k) for k in keys)
+    elif cfg.weight_mode == "uncertainty" and cfg.use_uncertainty_weighting:
+        total = sum(
+            0.5 * torch.exp(-model.log_var[k]) * T[k] + 0.5 * model.log_var[k] for k in keys
+        )
+    else:
+        total = sum(T[k] for k in keys)
+    # Adaptive Information Bottleneck (v4.0): the compression term's multiplier
+    # `_aib_beta` is set by the training-loop controller (dual ascent on the
+    # batch participation ratio), so it is NOT part of the DWA task balance.
+    if getattr(cfg, "aib", False) and "compress" in T:
+        beta = float(getattr(cfg, "_aib_beta", 0.0))
+        unit = (
+            T["compress"] / max(float(sc.get("compress", 0.0)), 1e-8)
+            if cfg.dwa_scale_free and sc
+            else T["compress"]
+        )
+        total = total + beta * unit
+    return total
 
 
 def slow_expert_index(model) -> int:
@@ -907,7 +977,20 @@ def slow_expert_index(model) -> int:
 
 
 def slow_state_slice(model, h):
-    """The slow expert's channel slice of a concatenated state batch `h`."""
+    """The slow channels of a state batch `h`.
+
+    Unified trunk (v4.0, DEC-029): the single wide SSM carries a per-channel
+    timescale spectrum, so the slow subspace is the half of channels with the
+    longest memory (smallest learned `delta_bias`) — DERIVED from the trunk, not
+    a hand-split. Expert bank (v3.x): the slow expert's channel block."""
+    experts = getattr(getattr(model, "ssm", None), "experts", None)
+    if experts and len(experts) == 1:
+        db = getattr(experts[0], "delta_bias", None)
+        if db is not None and db.numel() == h.shape[-1]:
+            thr = torch.quantile(db.detach().float(), 0.5)
+            mask = (db.detach().float() <= thr).to(h.device)
+            return h[..., mask]
+        return h
     K = max(1, int(getattr(model, "n_experts", 1)))
     if K <= 1:
         return h
