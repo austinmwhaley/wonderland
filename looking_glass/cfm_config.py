@@ -241,6 +241,7 @@ class CFMConfig:
         "mask",
         "contrast",
         "redundancy",
+        "decorr",  # v6 Stage2: SCALE-INVARIANT directional decorrelation (Gram law)
         "occur",
         "order",
         "jepa",

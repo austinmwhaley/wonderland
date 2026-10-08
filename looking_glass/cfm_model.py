@@ -329,6 +329,7 @@ class CFM(nn.Module):
                     "mask",
                     "contrast",
                     "redundancy",
+                    "decorr",
                     "occur",
                     "order",
                     "jepa",

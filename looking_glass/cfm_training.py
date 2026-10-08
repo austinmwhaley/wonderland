@@ -738,8 +738,12 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
             valid = (t["mask"] > 0) & (t["mask"][bb, jj] > 0) & (i_en != j_en)
             di, ci = dd[bb, ar.unsqueeze(0).expand(Bt, Tt)], cc[bb, ar.unsqueeze(0).expand(Bt, Tt)]
             dj, cj = dd[bb, jj], cc[bb, jj]
-            comm = (di.unsqueeze(-1) - 1.0) * cj - (dj.unsqueeze(-1) - 1.0) * ci
-            T_["commutation"] = (comm.pow(2).sum(-1) * valid).sum() / valid.sum().clamp(min=1)
+            comm = (di - 1.0) * cj - (dj - 1.0) * ci  # (B,T,C), elementwise per channel
+            # Scale-invariant: penalise non-commuting DIRECTION, not magnitude —
+            # otherwise ||comm||^2 is trivially minimised by c->0 (collapse).
+            num = comm.pow(2).sum(-1)
+            den = (ci.pow(2).sum(-1) + cj.pow(2).sum(-1)).clamp(min=1e-8)
+            T_["commutation"] = ((num / den) * valid).sum() / valid.sum().clamp(min=1)
 
     if "rank" in cfg.objectives and h.shape[0] >= 2:
         # autocast OFF: it downcasts even fp32 matmuls to fp16 (eigh has no
@@ -755,6 +759,21 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
             cov = (hc.T @ hc) / (hc.shape[0] - 1)
             pr = cov.diagonal().sum() ** 2 / cov.pow(2).sum().clamp(min=1e-24)
             T_["rank"] = (1.0 - pr / hc.shape[1]).clamp(min=0.0)
+    if "decorr" in cfg.objectives and B * T >= 2:
+        # Scale-invariant directional decorrelation (v6 Stage 2, Gram law):
+        # ||D_Sigma^{-1/2} Sigma_h D_Sigma^{-1/2} - I||_F^2 on the per-step state.
+        # For a rank-1 (collinear) state the correlation matrix is all-ones ->
+        # large loss; minimising it FORCES rank across orthogonal directions. It
+        # is magnitude-decoupled (normalised by per-dim std), so it cannot be
+        # cheated by exploding or shrinking the state.
+        with torch.autocast(device_type=h.device.type, enabled=False):
+            hf = y.reshape(-1, y.shape[-1]).float()
+            hf = hf - hf.mean(0, keepdim=True)
+            cov = (hf.T @ hf) / (hf.shape[0] - 1)
+            sd = cov.diagonal().clamp(min=1e-12).sqrt()
+            corr = cov / torch.outer(sd, sd)
+            eye = torch.eye(corr.shape[0], device=corr.device, dtype=corr.dtype)
+            T_["decorr"] = (corr - eye).pow(2).mean()
     if "spectrum" in cfg.objectives and h.shape[0] >= 2:
         # Soft-spectrum isotropy (DEC-028, step 3). `rank` maximizes the PR but
         # is insensitive to a single dominant direction; the `variance` hinge
@@ -1029,7 +1048,16 @@ class GeometryBank:
         }
 
 
-GEOMETRY_FAMILY = ("variance", "rank", "redundancy", "spectrum", "volume", "iso", "commutation")
+GEOMETRY_FAMILY = (
+    "variance",
+    "rank",
+    "redundancy",
+    "decorr",
+    "spectrum",
+    "volume",
+    "iso",
+    "commutation",
+)
 
 
 def _combine(model, T, cfg, weights: dict | None = None, scales: dict | None = None):
