@@ -150,6 +150,19 @@ def train_cfm(cfg: CFMConfig):
     model.zca_train = bool(getattr(cfg, "zca", False))
     cfg._aib_beta = 0.0
     model.half_life_days = cfg.state_half_life_days
+    # Stream-agnostic input profiler (v4.6, DEC-035): initialize the slow-band
+    # low-pass cutoff from the stream's own content change rate (then it is
+    # learned). No fixed cutoff, no manual per-stream tuning.
+    ex0 = getattr(getattr(model, "ssm", None), "experts", None)
+    if ex0 is not None and len(ex0) == 1 and getattr(ex0[0], "smooth", None) is not None:
+        r0 = stream_lowpass_retention(a_seqs)
+        cfg._input_lowpass_retention = r0
+        with torch.no_grad():
+            db = ex0[0].delta_bias.detach()
+            slow = db <= torch.quantile(db, 0.5)
+            rvec = torch.where(slow, torch.full_like(db, r0), torch.full_like(db, 0.05))
+            ex0[0].smooth.logit.copy_(torch.log(rvec / (1.0 - rvec)))
+        print(f"[profile] input low-pass retention (slow band) = {r0:.3f}", flush=True)
     # ---- warm-start / continual (same objective as scratch: data <= as_of) ----
     cfg.warm_from = None
     if str(cfg.warm_start).lower() not in ("none", "", "0"):
@@ -1096,6 +1109,27 @@ def slow_state_slice(model, h, tau_mult: float = 1.0):
     chan = h.shape[-1] // K
     i = slow_expert_index(model)
     return h[..., i * chan : (i + 1) * chan]
+
+
+def stream_lowpass_retention(seqs) -> float:
+    """Data-derived low-pass retention for the slow band (v4.6, DEC-035).
+
+    Profiled from the stream itself: the per-step change probability `p` of the
+    content features. A feature that flips roughly every `L = 1/(1-p)` events
+    needs an EMA half-life ~L, so `retention = exp(-ln2 / L)`. High-frequency
+    streams (Layer A: p~0.77 -> retention~0.85) get strong smoothing of content
+    into a rate; calm streams (Instacart: p~0.19 -> ~0.57) get little. This is
+    the stream-agnostic input profiler: no fixed cutoff.
+    """
+    chg = tot = 0
+    for s in seqs:
+        et = [str(x) for x in s["event_type"]]
+        for a, b in zip(et[:-1], et[1:]):
+            tot += 1
+            chg += int(a != b)
+    p = chg / max(tot, 1)
+    L = 1.0 / max(1.0 - p, 1e-3)
+    return float(np.exp(-np.log(2.0) / L))
 
 
 def _val_split(n_seqs: int, seed: int):
