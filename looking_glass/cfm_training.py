@@ -340,9 +340,15 @@ def train_cfm(cfg: CFMConfig):
         # STATIONARY selection metric: equal-weight held-out sum. DWA weights
         # change every eval, so a weighted metric would change definition
         # between evals — selection must compare like with like (DEC-016).
-        # stationary selection on the SAME scale-free unit system (DEC-018)
+        # stationary selection on the SAME scale-free unit system (DEC-018).
+        # Skip non-finite terms so one degenerate objective cannot invalidate the
+        # whole metric and stop training (Layer-A defensive fix).
         v = float(
-            sum(T_[k] / max(loss_scales.get(k, 1.0), 1e-8) for k in cfg.objectives if k in T_)
+            sum(
+                T_[k] / max(loss_scales.get(k, 1.0), 1e-8)
+                for k in cfg.objectives
+                if k in T_ and math.isfinite(float(T_[k]))
+            )
         )
         balancer.update({k: float(x) for k, x in T_.items()})
         _update_scales({k: float(x) for k, x in T_.items()})
@@ -686,12 +692,18 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
     # With n_experts=2, h = [h_fast || h_slow]. Zero cross-covariance between
     # the halves = the experts encode independent information. A single
     # matmul + Frobenius norm, no loops.
-    if cfg.n_experts >= 2 and h.shape[0] >= 2:
-        half = h.shape[-1] // cfg.n_experts
-        h_fast, h_slow = h[:, :half], h[:, half:]
-        hf_c = h_fast - h_fast.mean(0, keepdim=True)
-        hs_c = h_slow - h_slow.mean(0, keepdim=True)
-        xcov = (hf_c.T @ hs_c) / (h_fast.shape[0] - 1)
+    if h.shape[0] >= 2:
+        # fast/slow cross-covariance (DEC-025), made SCALE-FREE (v4.3.1): the
+        # raw cross-covariance scales with the state magnitude squared, which on
+        # the Layer-A synthetic stream (larger value/event scale) exploded
+        # (~2e5) and blew up gradients -> non-finite val -> early stop. Using the
+        # standardized halves gives a bounded correlation-space penalty.
+        half = h.shape[-1] // 2
+        hf = h[:, :half].float()
+        hs = h[:, half:].float()
+        hf = (hf - hf.mean(0, keepdim=True)) / hf.std(0, keepdim=True).clamp(min=1e-6)
+        hs = (hs - hs.mean(0, keepdim=True)) / hs.std(0, keepdim=True).clamp(min=1e-6)
+        xcov = (hf.T @ hs) / (h.shape[0] - 1)
         T_["ortho"] = (xcov**2).mean()
     if "rank" in cfg.objectives and h.shape[0] >= 2:
         # autocast OFF: it downcasts even fp32 matmuls to fp16 (eigh has no
@@ -729,8 +741,11 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
             d = cov.shape[0]
             tr = cov.diagonal().mean().clamp(min=1e-12)
             eye = torch.eye(d, device=cov.device, dtype=cov.dtype)
-            _, logdet = torch.linalg.slogdet(cov / tr + 1e-2 * eye)  # trace-normalized
-            T_["volume"] = -logdet / d
+            try:
+                _, logdet = torch.linalg.slogdet(cov / tr + 1e-2 * eye)  # trace-normalized
+                T_["volume"] = -logdet / d
+            except Exception:
+                T_["volume"] = torch.zeros((), device=h.device)  # fail-safe
     if "iso" in cfg.objectives and B * T >= 2:
         # large-sample isotropy (v4.2, DEC-031). The geometry-family losses use
         # the FINAL states (B=64), which caps PR/dim at ~0.25 per step — the
