@@ -695,4 +695,11 @@ same battery
   Trunk stays at 256 channels (capacity preserved).
 - **Trade-offs:** optimization may trade predictive skill for geometry/continuity;
   monitored via the portfolio. Both objectives are config-gated.
-- **Measured:** _pending v4.2 run (`/tmp/opencode/insta_v42`)._
+- **Measured (v4.2.0r682246):** the native mechanics work on real data —
+  **intrinsic 5/5 PASS**, including the slow-trajectory proof at **cos +0.148**
+  (was -0.227; the trajectory objective transferred, unlike v4.1's band mask).
+  **All 13/13 objective skills PASS** (task-structural PCGrad preserved
+  predictive skill; `agg` recovered to +1.59). OOT 0.968. The only remaining
+  failure is **geometry** (MP score -7.16: PR/dim 0.269 vs noise 0.910) — the
+  iso barrier raised per-step PR but not the FINAL-state PR the gate measures;
+  the trunk still occupies ~0.27 of its 256 dims.
