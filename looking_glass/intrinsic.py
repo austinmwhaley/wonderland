@@ -155,7 +155,7 @@ def _trajectory(model, vocab, seqs, cfg, n_traj: int = 30, seed: int = 0) -> dic
     whitened value is reported alongside."""
     import torch
 
-    from looking_glass.cfm_training import forward_states
+    from looking_glass.cfm_training import forward_states, slow_state_slice
 
     rng = np.random.default_rng(seed)
     idx = rng.choice(len(seqs), size=min(n_traj, len(seqs)), replace=False)
@@ -167,7 +167,6 @@ def _trajectory(model, vocab, seqs, cfg, n_traj: int = 30, seed: int = 0) -> dic
             continue
         step = max(1, L // 64)
         n_exp = max(1, int(getattr(cfg, "n_experts", 1)))
-        half = None  # set after first forward
         raw, whit, slow = [], [], []
         for end in range(3, L + 1, step):
             pref = {
@@ -175,12 +174,12 @@ def _trajectory(model, vocab, seqs, cfg, n_traj: int = 30, seed: int = 0) -> dic
             }
             with torch.no_grad():
                 h = forward_states(model, [pref])
-                if half is None and n_exp > 1:
-                    half = h.shape[-1] // n_exp
                 raw.append(h.detach().float().cpu().numpy()[0])
                 whit.append(model.donor_batch(h).detach().float().cpu().numpy()[0])
-                if half is not None:
-                    slow.append(h.detach().float().cpu().numpy()[0][half:])
+                if n_exp > 1:
+                    # grade the SLOW expert's own channels (DERIVED), not "the
+                    # last half" — v3.0.0's last half was the FAST expert.
+                    slow.append(slow_state_slice(model, h).detach().float().cpu().numpy()[0])
         raw, whit, slow = np.asarray(raw), np.asarray(whit), np.asarray(slow)
         if len(raw) < 3:
             continue

@@ -140,6 +140,7 @@ def train_cfm(cfg: CFMConfig):
         n_experts=K,
         delta_biases=_expert_biases(K, cfg.state_half_life_days),
         sf_mode=cfg.sf_mode,
+        slow_intent=getattr(cfg, "slow_intent_filter", False),
     ).to(device)
     model.half_life_days = cfg.state_half_life_days
     # ---- warm-start / continual (same objective as scratch: data <= as_of) ----
@@ -344,6 +345,7 @@ def train_cfm(cfg: CFMConfig):
             "dim": cfg.dim,
             "n_experts": K,
             "sf_mode": cfg.sf_mode,
+            "slow_intent": bool(getattr(cfg, "slow_intent_filter", False)),
             "whiten_mean": (model.whiten_mean if getattr(model, "whiten_on", False) else None),
             "whiten_W": (model.whiten_W if getattr(model, "whiten_on", False) else None),
         },
@@ -880,6 +882,28 @@ def _combine(model, T, cfg, weights: dict | None = None, scales: dict | None = N
     if cfg.weight_mode == "uncertainty" and cfg.use_uncertainty_weighting:
         return sum(0.5 * torch.exp(-model.log_var[k]) * T[k] + 0.5 * model.log_var[k] for k in keys)
     return sum(T[k] for k in keys)
+
+
+def slow_expert_index(model) -> int:
+    """Index of the slowest expert, DERIVED from the learned per-expert
+    timescale bias (largest memory = smallest delta_bias). v3.0.0 hardcoded
+    "last half", which was in fact the FAST expert (measured: expert 0 mean
+    decay 0.847 vs expert 1 0.409) — the trajectory proof never graded the slow
+    expert. With K=1 there is a single (trivially slow) expert."""
+    experts = getattr(getattr(model, "ssm", None), "experts", None)
+    if not experts or len(experts) == 1:
+        return 0
+    return int(np.argmin([float(e.delta_bias.detach().mean().cpu()) for e in experts]))
+
+
+def slow_state_slice(model, h):
+    """The slow expert's channel slice of a concatenated state batch `h`."""
+    K = max(1, int(getattr(model, "n_experts", 1)))
+    if K <= 1:
+        return h
+    chan = h.shape[-1] // K
+    i = slow_expert_index(model)
+    return h[..., i * chan : (i + 1) * chan]
 
 
 def _val_split(n_seqs: int, seed: int):

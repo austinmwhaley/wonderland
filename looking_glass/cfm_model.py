@@ -81,16 +81,55 @@ class SelectiveSSM(nn.Module):
         return self.W_C(H), H[:, -1]
 
 
+class IntentFilter(nn.Module):
+    """Low-pass intent projection for the slow expert (v3.1.0, DEC-027).
+
+    The slow expert otherwise consumes the raw per-token content, whose
+    event-type component flips direction at every event (view -> cart -> view),
+    so the slow state's VELOCITY reverses every step (the DEC-024 zigzag). This
+    filter gives that expert a temporally smoothed content stream: a learned
+    intent projection `W_intent`, then a per-channel EMA whose retention is
+    learned and initialized from the expert's own decay — so the slow state is a
+    second-order low-pass of the token stream and its velocity is smooth.
+    """
+
+    def __init__(self, dim, retention_init):
+        super().__init__()
+        self.W_intent = nn.Linear(dim, dim)
+        r0 = float(min(max(retention_init, 1e-3), 1.0 - 1e-3))
+        self.logit = nn.Parameter(torch.full((dim,), float(np.log(r0 / (1.0 - r0)))))
+
+    def forward(self, x, mask=None):
+        r = torch.sigmoid(self.logit).view(1, 1, -1)
+        e = self.W_intent(x)
+        d = r.expand_as(e)
+        if mask is not None:
+            m = mask.unsqueeze(-1)
+            d = d * m + (1.0 - m)  # pad: hold the EMA state
+            e = e * m
+        _, H = _scan(d, (1.0 - d) * e)
+        return H
+
+
 class MultiScaleSSM(nn.Module):
     """M1: a bank of selective SSMs with different decay scales (timescales).
     Each channel summarizes a different horizon; their readouts are concatenated
     into the public state (width = chan * n_experts). K=1 is the original SSM."""
 
-    def __init__(self, chan, n_experts, delta_biases):
+    def __init__(self, chan, n_experts, delta_biases, slow_intent=False):
         super().__init__()
         self.chan = chan
         self.n_experts = n_experts
         self.experts = nn.ModuleList([SelectiveSSM(chan, b) for b in delta_biases[:n_experts]])
+        # v3.1.0 (DEC-027): the SLOW expert gets a low-pass intent filter so its
+        # state VELOCITY is smooth instead of tracking raw event-type flips. Slow
+        # = the expert with the longest memory (smallest delta_bias) — DERIVED,
+        # never "the last half" (which was in fact the FAST expert).
+        self.slow_intent = bool(slow_intent) and n_experts >= 2
+        if self.slow_intent:
+            self.slow_idx = int(np.argmin(delta_biases[:n_experts]))
+            r0 = float(np.exp(-np.logaddexp(0.0, delta_biases[self.slow_idx])))  # residual
+            self.intent = IntentFilter(chan, retention_init=r0)
 
     def forward(self, x, h0=None, mask=None):
         # NOTE: context-gated mixtures (M2 softmax gate, M5 sparse top-k) were
@@ -99,8 +138,11 @@ class MultiScaleSSM(nn.Module):
         # concatenated (M1) and the multi-task objective (M4) is what helped.
         ys, hs = [], []
         for i, e in enumerate(self.experts):
+            xi = x
+            if self.slow_intent and i == self.slow_idx:
+                xi = self.intent(x, mask=mask)
             hi = None if h0 is None else h0[..., i * self.chan : (i + 1) * self.chan]
-            yi, ho = e(x, h0=hi, mask=mask)
+            yi, ho = e(xi, h0=hi, mask=mask)
             ys.append(yi)
             hs.append(ho)
         return torch.cat(ys, dim=-1), torch.cat(hs, dim=-1)
@@ -114,6 +156,7 @@ class CFM(nn.Module):
         n_experts: int = 1,
         delta_biases=None,
         sf_mode: str = "event_types",
+        slow_intent: bool = False,
     ):
         super().__init__()
         self.vocab = vocab
@@ -133,7 +176,7 @@ class CFM(nn.Module):
         self.w_co = nn.Linear(2, self.chan)  # exogenous covariates
         if delta_biases is None:
             delta_biases = [0.0] * self.n_experts
-        self.ssm = MultiScaleSSM(self.chan, self.n_experts, delta_biases)
+        self.ssm = MultiScaleSSM(self.chan, self.n_experts, delta_biases, slow_intent=slow_intent)
         self.head_next = nn.Linear(dim, vocab.n_et + 1)  # next event type
         self.head_ent = nn.Linear(dim, vocab.n_ent + 1)  # next entity type
         self.head_dt = nn.Linear(dim, 1)  # log1p(dt_next)

@@ -119,7 +119,7 @@ class CFMConfig:
     # v3.0.0: dual-velocity encoder (DEC-025) — n_experts=2 with spread
     # delta_bias init (fast/slow timescales), ortho-loss between expert state
     # components, rolling EMA whitening, trajectory graded on the slow state.
-    version: str = "v3.0.0"  # encoder code version
+    version: str = "v3.1.0"  # encoder code version
     revision: int = 1  # data/score revision (r)
     sample_customers: int | None = 500  # working base: first N customers (populations live here)
     split_a_frac: float = 0.7
@@ -162,6 +162,10 @@ class CFMConfig:
     # The v2.9.0 half-life experiment proved single-state trajectory is
     # structural (cos -0.30 at any half-life); the fix is architectural.
     n_experts: int = 2
+    # v3.1.0 (DEC-027): low-pass intent filter on the slow expert — smooths the
+    # content stream so the slow state's velocity no longer zigzags. Default on;
+    # opt out with --set slow_intent_filter=false.
+    slow_intent_filter: bool = True
     ortho_weight: float = 0.1  # cross-subspace ortho-loss weight
     epochs: int = 3
     batch: int = 64

@@ -519,3 +519,35 @@ same battery
   14/14 + geometry eff_rank 167.0/256 = 0.652**, **intrinsic 4/5** (OOT 1.545→
   **1.43** PASS, MI 0.013 PASS, Lipschitz PASS, info plane PASS; only the known
   structural slow-state trajectory zigzag FAILs, per DEC-024).
+
+## DEC-027 — v3.1.0: derived slow expert + low-pass intent filter (DEC-024 fix)
+
+- **Date:** 2026-10-07
+- **Context:** the one open intrinsic gap was the slow-state trajectory cos
+  (v3.0.x ~-0.34 < 0). Two distinct problems were found by direct measurement:
+  (1) the trajectory proof (and the ortho split) hardcoded slow = the last
+  1/K of the state, but `decay = exp(-softplus(W_delta(x)+delta_bias))` makes
+  `delta_bias=+1.5` the FAST expert — the LAST half was measured to be the fast
+  expert (mean decay 0.409 vs 0.847 for expert 0), so the proof was grading the
+  wrong channels; (2) even the true slow expert's velocity zigzags (cos -0.026),
+  because it is a first-order filter of the raw token stream whose event-type
+  component flips every event (DEC-024).
+- **Alternatives:** (a) only fix the selector; (b) smooth the slow expert's
+  contents ("intent filter"); (c) both.
+- **Decision:** (c). `slow_expert_index()` derives the slow expert as
+  `argmin(e.delta_bias)` (architecture-derived, never "the last half"); the
+  trajectory proof and ortho split now use it. The slow expert receives a
+  **low-pass intent filter**: a learned `W_intent` projection then a
+  per-channel EMA whose retention is learned and initialized from that expert's
+  own decay (`exp(-softplus(delta_bias))`). Its state is therefore a
+  second-order low-pass of the token stream, so its velocity is smooth. Measured
+  on a synthetic alternating sequence: slow-state directional cos -0.78 →
+  +0.79. Config: `slow_intent_filter` (default on; opt out via `--set`).
+  Checkpoint records `slow_intent` for backward-compatible loading.
+- **Trade-offs accepted:** the EMA alone does not smooth velocity (a first-order
+  filter's velocity tracks its input) — the cascade with the SSM is what does;
+  this is exactly why the fix is architecturally placed on the SLOW expert.
+  Cost: one extra linear + one scan on the slow expert only.
+- **Open follow-up (recommended, not yet implemented):** a Jacobian
+  orthogonality loss (cross-subspace input-sensitivity) to push geometry PR
+  toward >0.75; the existing state cross-covariance `ortho` loss already PASSes.

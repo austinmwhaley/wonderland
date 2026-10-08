@@ -29,29 +29,23 @@
 
 ## Micro
 
-- **Current task:** v3.0.1 — donor-boundary whitening fix (DEC-026). Root cause
-  of the v3.0.0 geometry FAIL found and fixed: whitening was fit on `h` and
-  applied *before* `proj`, so the ill-conditioned `proj` re-collapsed the
-  consumed readout (PR/dim 0.06). Fixed to `_whiten(proj(h))`; graders grade the
-  **frozen** transform on held-out states (no circular refit); degenerate no-op
-  fail-safe; chunked `_task_losses` (GPU OOM). v3.0.0 checkpoint patched in
-  place (boundary transform refit, registry receipt + products rebuilt).
-  Honest held-out grade: **portfolio PASS 14/14 + geometry eff_rank 167/256 =
-  0.652**, **intrinsic 4/5** (OOT 1.43 PASS; slow-trajectory structural FAIL per
-  DEC-024). Next: consider a full v3.0.1 retrain so the trunk sees the corrected
-  boundary during training; then bank governor telemetry / contrast views /
-  sf-R² extension.
-- **Last completed:** v3.0.0 dual-velocity trained (DEC-025); boundary-order fix
-  + regression test (DEC-026); v3.0.0 checkpoint patched + products rebuilt;
-  239 fast tests green.
+- **Current task:** v3.1.0 — the DEC-024 slow-trajectory fix (DEC-027). Two
+  fixes: (1) derive the slow expert (`argmin delta_bias`) instead of hardcoding
+  "last half" (which was in fact the FAST expert — the trajectory proof graded
+  the wrong channels); (2) a **low-pass intent filter** on the slow expert
+  (learned `W_intent` + learned per-channel EMA initialized from the expert's
+  own decay), making the slow state a second-order low-pass so its velocity is
+  smooth. Synthetic check: slow-state directional cos -0.78 → **+0.79**. Config
+  `slow_intent_filter` (default on). Full Instacart v3.1.0 run in progress
+  (`/tmp/opencode/insta_v31`); target: 5/5 intrinsic + 14/14 portfolio.
+- **Last completed:** v3.0.1 boundary-whitening fix (DEC-026); v3.1.0 code +
+  regression tests (`tests/test_intrinsic.py`), 241 fast tests green.
 - **Immediate next 3 actions:**
-  1. Full v3.0.1 retrain (`--warm-start none`, Instacart fixture) to confirm the
-     corrected boundary reproduces the grade without the in-place patch, and to
-     let the trunk adapt to the new readout.
-  2. Address the OOT margin (1.43, bar 1.5) — is it within fold noise, or does
-     the slow expert need a stationarity objective?
-  3. Keep the slow-trajectory structural note (DEC-024) as the one open
-     intrinsic gap; do not chase it as a tunable.
+  1. Grade v3.1.0 (portfolio + intrinsic); confirm slow-state cos > 0 and
+     produce the report card.
+  2. If geometry PR < 0.75, implement the Jacobian orthogonality loss (DEC-027
+     open follow-up).
+  3. Commit v3.1.0 + report card; update STATUS/DECISIONS.
 - **Environment:** repo `~/Documents/wonderland` (main, CI green);
   `python3 -m pytest -m "not slow"` -> 215 passed; GPU cuda available;
   standing products `looking_glass/artifacts/cfm/cfm_products.duckdb`
