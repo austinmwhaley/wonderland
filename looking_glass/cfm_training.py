@@ -718,6 +718,29 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
         hs = (hs - hs.mean(0, keepdim=True)) / hs.std(0, keepdim=True).clamp(min=1e-6)
         xcov = (hf.T @ hs) / (h.shape[0] - 1)
         T_["ortho"] = (xcov**2).mean()
+    if "commutation" in cfg.objectives and getattr(model, "unified", False):
+        # Commutation law (v6 Stage 2): causally-INDEPENDENT event operators must
+        # commute. Independence is certified from the data (different entity type
+        # -> different sub-manifold). For affine steps
+        # A_i(h)=d_i h + c_i, the commutator is (d_i-1)c_j - (d_j-1)c_i; forcing it
+        # to zero spreads updates across orthogonal directions instead of one.
+        ex = getattr(getattr(model, "ssm", None), "experts", None)
+        if ex and len(ex) == 1:
+            xs = ex[0].smooth(x, mask=t["mask"]) if ex[0].smooth is not None else x
+            dd = torch.exp(-torch.nn.functional.softplus(ex[0].W_delta(xs) + ex[0].delta_bias))
+            cc = (1.0 - dd) * ex[0].W_B(xs)  # (B, T, C)
+            Bt, Tt, _ = cc.shape
+            ar = torch.arange(Tt, device=dev)
+            jj = torch.randint(0, Tt, (Bt, Tt), device=dev)
+            bb = torch.arange(Bt, device=dev).unsqueeze(1).expand(Bt, Tt)
+            i_en = t["en"][bb, ar.unsqueeze(0).expand(Bt, Tt)]
+            j_en = t["en"][bb, jj]
+            valid = (t["mask"] > 0) & (t["mask"][bb, jj] > 0) & (i_en != j_en)
+            di, ci = dd[bb, ar.unsqueeze(0).expand(Bt, Tt)], cc[bb, ar.unsqueeze(0).expand(Bt, Tt)]
+            dj, cj = dd[bb, jj], cc[bb, jj]
+            comm = (di.unsqueeze(-1) - 1.0) * cj - (dj.unsqueeze(-1) - 1.0) * ci
+            T_["commutation"] = (comm.pow(2).sum(-1) * valid).sum() / valid.sum().clamp(min=1)
+
     if "rank" in cfg.objectives and h.shape[0] >= 2:
         # autocast OFF: it downcasts even fp32 matmuls to fp16 (eigh has no
         # fp16 CUDA kernel — measured crash); this math must stay fp32.
@@ -748,14 +771,19 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
         # from zero-variance noise directions. eps is data-derived (a fraction of
         # the mean eigenvalue), giving a well-conditioned slogdet.
         with torch.autocast(device_type=h.device.type, enabled=False):
-            zu = model.proj(h).float()
+            zu = model.proj(y.reshape(-1, y.shape[-1]).float()).float()  # per-step (B*T, D)
             zu = zu - zu.mean(dim=0, keepdim=True)
             cov = (zu.T @ zu) / (zu.shape[0] - 1)
             d = cov.shape[0]
             tr = cov.diagonal().mean().clamp(min=1e-12)
+            # MP-derived conditioning floor (v6 Stage 2): lambda_+ = (1+sqrt(D/N))^2
+            # is the Marchenko-Pastur noise edge — directions below it are noise, so
+            # do not push them (replaces the 1e-2 literal).
+            _n = max(zu.shape[0], 1)
+            eps = ((1.0 + np.sqrt(d / _n)) ** 2) / d
             eye = torch.eye(d, device=cov.device, dtype=cov.dtype)
             try:
-                _, logdet = torch.linalg.slogdet(cov / tr + 1e-2 * eye)  # trace-normalized
+                _, logdet = torch.linalg.slogdet(cov / tr + eps * eye)  # trace-normalized
                 T_["volume"] = -logdet / d
             except Exception:
                 T_["volume"] = torch.zeros((), device=h.device)  # fail-safe
@@ -1001,7 +1029,7 @@ class GeometryBank:
         }
 
 
-GEOMETRY_FAMILY = ("variance", "rank", "redundancy", "spectrum", "volume", "iso")
+GEOMETRY_FAMILY = ("variance", "rank", "redundancy", "spectrum", "volume", "iso", "commutation")
 
 
 def _combine(model, T, cfg, weights: dict | None = None, scales: dict | None = None):

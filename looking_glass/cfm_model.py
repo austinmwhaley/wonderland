@@ -341,6 +341,7 @@ class CFM(nn.Module):
                     "volume",
                     "iso",
                     "trajectory",
+                    "commutation",
                     "ortho",
                 )
             }

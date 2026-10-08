@@ -258,6 +258,7 @@ class CFMConfig:
         #         states (B*T rows) so the trunk uses its full 256-dim capacity
         "trajectory",  # slow-band smooth-velocity (v4.2, DEC-031): penalize
         #               ||Delta^2 h_slow||^2 so slow channels stay continuous
+        "commutation",  # v6 Stage2: independent event operators must commute
         "ortho",  # fast/slow cross-covariance: zero interference (DEC-025)
     )
     seed: int = 0
