@@ -63,15 +63,14 @@ def test_mp_pr_score_flags_low_rank():
     assert _mp_pr_frac(800, 64, 0) > 0.8
 
 
-def test_cca_high_for_shared_signal_low_for_independent():
-    from looking_glass.intrinsic import _canonical_corrs
+def test_subspace_overlap_high_for_shared_signal_low_for_independent():
+    from looking_glass.intrinsic import _subspace_overlap
 
     rng = np.random.default_rng(0)
-    latent = rng.normal(size=(500, 8))
-    X = latent @ rng.normal(size=(8, 20)) + 0.01 * rng.normal(size=(500, 20))
-    Y = latent @ rng.normal(size=(8, 20)) + 0.01 * rng.normal(size=(500, 20))
-    shared = np.sort(_canonical_corrs(X, Y))[::-1][:8]
-    Z = rng.normal(size=(500, 20))
-    indep = np.sort(_canonical_corrs(X, Z))[::-1][:8]
-    assert float(np.mean(shared)) > 0.9
-    assert float(np.mean(indep)) < 0.6
+    A = rng.normal(size=(20, 8))  # a fixed 8-dim structure in 20 dims
+    # two independent samples from the SAME distribution -> same subspace
+    X = rng.normal(size=(400, 8)) @ A.T + 0.01 * rng.normal(size=(400, 20))
+    Y = rng.normal(size=(400, 8)) @ A.T + 0.01 * rng.normal(size=(400, 20))
+    Z = rng.normal(size=(400, 20))  # independent structure
+    assert float(np.mean(_subspace_overlap(X, Y))) > 0.9
+    assert float(np.mean(_subspace_overlap(X, Z))) < 0.6

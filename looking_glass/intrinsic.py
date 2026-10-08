@@ -86,24 +86,11 @@ def _disentanglement(z: np.ndarray, ts: np.ndarray, seed: int) -> dict:
     a, b = z[perm[: len(early)]], z[perm[len(early) : len(early) + len(late)]]
     diff_null = float(np.abs(_norm_cov(a) - _norm_cov(b)).mean())
     ratio = diff / max(diff_null, 1e-12)
-    # Scale-free OOT (v4.0, DEC-029): mean canonical correlation between the
-    # temporal splits — bounded [0,1], invariant to global scale, and valid at
-    # any dimension (unlike the covariance-difference ratio, which grew with D
-    # and was only partially reproducible; measured 2.15-2.52 at D=256).
-    cca = _canonical_corrs(early, late)
-
-    # Aggregate over the EFFECTIVE rank, not all D dims: a genuinely low-rank
-    # representation (e.g. 20 of 256 dims) has only ~20 high canonical
-    # correlations, so a mean over all 256 would be diluted toward 0 even for a
-    # perfectly stable split. The top-k mean is the honest, scale-free number.
-    def _eff_rank(mat):
-        c = mat - mat.mean(0, keepdims=True)
-        cov = (c.T @ c) / max(len(c) - 1, 1)
-        ev = np.linalg.eigvalsh(cov).clip(0.0, None)
-        return int(round(ev.sum() ** 2 / (ev**2).sum())) if (ev**2).sum() > 0 else 1
-
-    k = min(max(_eff_rank(z), 1), cca.size)
-    cca_topk = np.sort(cca)[::-1][:k]
+    # Scale-free OOT (v4.0, DEC-029): principal-angle overlap between the
+    # temporal splits' top principal subspaces — bounded [0,1], invariant to
+    # global scale, valid at any dimension (unlike the covariance-difference
+    # ratio, which grew with D and was only partially reproducible).
+    cca = _subspace_overlap(early, late)
     return {
         "mi_mean": round(mi_mean, 6),
         "mi_null": round(mi_null_mean, 6),
@@ -111,33 +98,37 @@ def _disentanglement(z: np.ndarray, ts: np.ndarray, seed: int) -> dict:
         "oot_cov_diff": round(diff, 6),
         "oot_cov_diff_null": round(diff_null, 6),
         "oot_ratio": round(ratio, 4),
-        "oot_cca_mean": round(float(np.mean(cca_topk)), 4) if cca.size else None,
-        "oot_cca_all": round(float(np.mean(cca)), 4) if cca.size else None,
-        "oot_cca_p10": round(float(np.quantile(cca_topk, 0.10)), 4) if cca.size else None,
-        "oot_cca_k": int(k),
+        "oot_cca_mean": round(float(np.mean(cca)), 4) if cca.size else None,
+        "oot_cca_energy": round(float(np.mean(cca**2)), 4) if cca.size else None,
+        "oot_cca_p10": round(float(np.quantile(cca, 0.10)), 4) if cca.size else None,
+        "oot_cca_k": int(cca.size),
         "oot_n_early": int(len(early)),
         "oot_n_late": int(len(late)),
     }
 
 
-def _canonical_corrs(X, Y):
-    """Canonical correlations between two state samples (the singular values of
-    Sxx^{-1/2} Sxy Syy^{-1/2}). Mean of these is a scale-free, bounded [0,1]
-    measure of whether the two temporal splits span the same subspace."""
+def _subspace_overlap(X, Y):
+    """Principal-angle cosines between the top-k principal subspaces of two
+    (unpaired) state samples, k = the effective rank. cos=1: the splits span the
+    same subspace; 0: orthogonal — scale-free, bounded [0,1], dimension-invariant.
+    (Ordinary CCA needs paired observations; temporal splits are not paired.)"""
     X = X - X.mean(0, keepdims=True)
     Y = Y - Y.mean(0, keepdims=True)
-    nx, ny = max(len(X) - 1, 1), max(len(Y) - 1, 1)
-    Sxx = (X.T @ X) / nx
-    Syy = (Y.T @ Y) / ny
-    Sxy = (X.T @ Y) / min(nx, ny)
+    d = X.shape[1]
 
-    def isqrt(S):
-        ev, V = np.linalg.eigh(S)
-        ev = np.clip(ev, 1e-8 * max(float(ev.max()), 1e-12), None)
-        return V @ np.diag(1.0 / np.sqrt(ev)) @ V.T
+    def _eff_rank(M):
+        cov = (M.T @ M) / max(len(M) - 1, 1)
+        ev = np.linalg.eigvalsh(cov).clip(0.0, None)
+        return int(round(ev.sum() ** 2 / (ev**2).sum())) if (ev**2).sum() > 0 else 1
 
-    M = isqrt(Sxx) @ Sxy @ isqrt(Syy)
-    s = np.linalg.svd(M, compute_uv=False)
+    k = max(1, min(_eff_rank(X), d, len(X), len(Y)))
+
+    def topk(M):
+        cov = (M.T @ M) / max(len(M) - 1, 1)
+        ev, V = np.linalg.eigh(cov)
+        return V[:, np.argsort(ev)[::-1][:k]]
+
+    s = np.linalg.svd(topk(X).T @ topk(Y), compute_uv=False)
     return np.clip(s, 0.0, 1.0)
 
 

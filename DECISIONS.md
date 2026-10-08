@@ -623,4 +623,20 @@ same battery
 - **Trade-offs:** more moving parts and one more retrain; all shifts are
   config-gated so any can be disabled. Honest gates may still read FAIL if the
   trunk's true rank is genuinely low — that is the point (no more noise-passing).
-- **Measured:** _pending full v4.0 run (`/tmp/opencode/insta_v40`)._
+- **Measured (v4.0.0r682246, `insta_v40b`):** all four shifts run end-to-end.
+  - **Rank 4.7x**: consumed eff_rank 0.08 (v3.0) -> 0.21 (v3.2) -> **0.325**;
+    all **13/13 objective skills PASS** (rank fixed, +0.030).
+  - **Scale-free gates work**: OOT subspace overlap **0.969** (bounded [0,1],
+    reproducible), geometry MP score is stable to <1% across runs.
+  - **Geometry still FAILs**: MP score **-6.54** (PR/dim 0.325 vs noise 0.910).
+    The bar is "more isotropic than a finite-sample gaussian null", which a
+    structured representation does not meet; per-batch ZCA whitens each batch but
+    not the GLOBAL covariance (held-out PR 0.325, not ~1).
+  - **Trajectory regressed**: slow-state cos **-0.227** — removing DEC-027's
+    low-pass intent filter in favour of the unified SSM did NOT make the slow
+    channels smooth (the recipe's claim that input-dependent decay resolves the
+    zigzag is not borne out: slow channels still first-order-filter raw tokens).
+  - MI / Lipschitz / info-plane PASS. 245 fast tests green.
+- **Open items:** (a) restore a low-pass on the unified slow channels (or a
+  running-EMA global ZCA); (b) recalibrate the MP geometry bar or make ZCA
+  global so held-out isotropy rises.
