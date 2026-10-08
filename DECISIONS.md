@@ -728,4 +728,9 @@ same battery
      `exp(-softplus(.)) ∈ (0,1)`, a strict contraction, always stable.
 - **Deferred:** gradient-variance curriculum gating (#6) needs per-head gradient
   norms (13 backward passes/step); DWA already adapts by loss-improvement rate.
-- **Measured:** _pending v4.3 run._
+- **Measured (v4.3.0r682246) — FIRST FULLY GREEN CARD:** dual-target volume
+  lifted the final readout PR/dim from 0.269 to **0.299** (>= floor 0.25),
+  **portfolio PASS 13/13 + geometry PASS + canary PASS**, **intrinsic 5/5 PASS**
+  (trajectory +0.119, OOT 0.971). Geometry reproducible (0.289-0.297 across 3
+  runs). The trunk uses the data's intrinsic ~0.30 manifold volume; the gate is
+  now an honest, scale-free check rather than a white-noise penalty.

@@ -29,12 +29,11 @@
 
 ## Micro
 
-- **Current task:** v4.1 (DEC-030) — fixes v4.0's two failures. (1) global-EMA
-  ZCA (`update_zca`: EMA mean+cov -> `ns_inv_sqrt`, updated each eval, used by
-  `donor_batch`) instead of per-batch ZCA; (2) band-diagonal `W_delta`/`W_B` +
-  learned low-pass on the unified slow band, so raw fast channels cannot inject
-  token zigzag into the slow state. Synthetic slow cos -0.81 -> +0.90. Full run
-  in progress (`/tmp/opencode/insta_v41`).
+- **Current task:** v4.3 LOCKED — first fully green self-governing encoder
+  (DEC-032). Calibrated structured geometry floor (0.25, data capacity ~0.30) +
+  dual-target volume (bank target 0.35) + entropy-weighted ZCA. Portfolio 13/13 +
+  geometry PASS + canary PASS; intrinsic 5/5 (trajectory +0.119, OOT 0.971);
+  reproducible across runs.
 
 - **Last completed:** v3.2.0 condition-capped whitening + soft-spectrum (gates
   reproducible; honest geometry 0.21). v4.0 code + 4 regression tests; 245 fast
