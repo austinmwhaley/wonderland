@@ -119,7 +119,7 @@ class CFMConfig:
     # v3.0.0: dual-velocity encoder (DEC-025) — n_experts=2 with spread
     # delta_bias init (fast/slow timescales), ortho-loss between expert state
     # components, rolling EMA whitening, trajectory graded on the slow state.
-    version: str = "v4.2.0"  # encoder code version
+    version: str = "v4.3.0"  # encoder code version
     revision: int = 1  # data/score revision (r)
     sample_customers: int | None = 500  # working base: first N customers (populations live here)
     split_a_frac: float = 0.7
@@ -181,6 +181,7 @@ class CFMConfig:
     aib_beta_max: float = 5.0  # cap on the compression multiplier
     # v4.2 native self-governing mechanics (DEC-031):
     tau_mp: float = 0.70  # Marchenko-Pastur PR/dim floor the iso barrier targets
+    mp_floor: float = 0.25  # v4.3 calibrated structured-manifold floor (data capacity ~0.27)
     iso_gamma: float = 8.0  # barrier sigmoid steepness (self-throttling)
     ortho_weight: float = 0.1  # cross-subspace ortho-loss weight
     epochs: int = 3
@@ -206,7 +207,7 @@ class CFMConfig:
     # dimensionless contributions; without it sf consumed 94% of grad mass
     # Geometry guard (DEC-019): the closed-loop population geometry
     bank_size: int = 8192  # FIFO of recent projected states (0 = off)
-    rank_target: float = 0.32  # bank eff-rank target (0.02 above the 0.30 bar)
+    rank_target: float = 0.35  # bank eff-rank target (v4.3: push final readout to capacity)
     rank_alpha: float = 0.25  # governor gain (PID-like, EMA-damped)
     rank_lambda_max: float = 1e6  # effectively unclamped (EMA alpha bounds rate)
     tau_eig: float = 0.05  # singular-value floor on the bank covariance

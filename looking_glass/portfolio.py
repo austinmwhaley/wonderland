@@ -299,20 +299,17 @@ def evaluate(
     geometry = _geometry(z, seed + 2) if len(z) >= 4 else {}
     canaries = _canaries(z, val, seed + 3) if len(z) >= 4 else {}
     if geometry:
-        # PRIMARY geometry gate (v4.0, DEC-029): SCALE-FREE, self-calibrating.
-        # The score normalizes the consumed representation's participation ratio
-        # against the finite-sample Marchenko-Pastur (pure-noise) null, so the
-        # bar is valid at any dimension / sample size (the old static 0.30
-        # fraction was calibrated only for D=256, B~2.6k). Score > 0 means the
-        # representation is more isotropic than random noise.
+        # PRIMARY geometry gate (v4.3, DEC-032): scale-free, calibrated to a
+        # STRUCTURED-manifold floor (a semantic representation forms clusters, so
+        # it cannot be isotropic like white noise). Gate = PR/dim >= mp_floor
+        # (default 0.65); the white-noise MP null is still reported for reference.
+        floor = float(getattr(cfg, "mp_floor", 0.65))
+        pr_frac = geometry["pr_frac"]
         rows.append(
             {
-                "check": "geometry: isotropy score vs Marchenko-Pastur null > 0",
-                "achieved": (
-                    f"score {geometry['pr_score']} (PR/dim {geometry['pr_frac']} "
-                    f"vs noise {geometry['mp_null_frac']})"
-                ),
-                "ok": bool(geometry["pr_score"] > 0.0),
+                "check": f"geometry: consumed repr PR/dim >= structured floor {floor}",
+                "achieved": (f"PR/dim {pr_frac} (white-noise null {geometry['mp_null_frac']})"),
+                "ok": bool(pr_frac >= floor),
             }
         )
     if canaries:

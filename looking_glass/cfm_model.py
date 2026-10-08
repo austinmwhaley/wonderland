@@ -465,11 +465,22 @@ class CFM(nn.Module):
             mu = z.mean(0)
             zc = z - mu
             cov = (zc.T @ zc) / max(z.shape[0] - 1, 1)
+            # entropy-weighted EMA rate (v4.3, DEC-032): scale the update by the
+            # local batch's spectral entropy H(B) in [0,1] so covariance whitening
+            # is self-stabilizing against bursty (low-entropy) activity windows.
+            ev = torch.linalg.eigvalsh(cov.double()).clamp(min=0.0)
+            s = float(ev.sum().item())
+            if s > 0 and ev.numel() > 1:
+                p = (ev / s).clamp(min=1e-12)
+                h_frac = float((-(p * p.log()).sum() / np.log(ev.numel())).item())
+            else:
+                h_frac = 1.0
+            beta_eff = beta * (0.5 + max(0.0, min(1.0, h_frac)))
             if not hasattr(self, "_zca_cov"):
                 self._zca_mean, self._zca_cov = mu, cov
             else:
-                self._zca_mean = (1 - beta) * self._zca_mean + beta * mu
-                self._zca_cov = (1 - beta) * self._zca_cov + beta * cov
+                self._zca_mean = (1 - beta_eff) * self._zca_mean + beta_eff * mu
+                self._zca_cov = (1 - beta_eff) * self._zca_cov + beta_eff * cov
             W = ns_inv_sqrt(self._zca_cov)
         self.set_whitening(self._zca_mean, W)
 

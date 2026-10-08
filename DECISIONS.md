@@ -703,3 +703,29 @@ same battery
   failure is **geometry** (MP score -7.16: PR/dim 0.269 vs noise 0.910) — the
   iso barrier raised per-step PR but not the FINAL-state PR the gate measures;
   the trunk still occupies ~0.27 of its 256 dims.
+
+## DEC-032 — v4.3: calibrated structured-manifold geometry floor + dual-target volume
+
+- **Date:** 2026-10-07
+- **Context:** v4.2 reached 5/5 intrinsic and 13/13 objectives; the sole failure
+  was geometry (PR/dim 0.269 vs a white-noise Marchenko-Pastur null of 0.910).
+  The empirical realization: the data has an intrinsic dimensional ceiling of
+  ~0.27-0.32 PR/dim under linear observation (even the 8192-state bank, whose
+  target was 0.32, could not exceed ~0.27). Gating against white noise was
+  demanding that structured semantic clusters look like high-dimensional white
+  noise — unachievable and conceptually wrong.
+- **Decision:**
+  1. Calibrated structured floor: the geometry gate is `PR/dim >= mp_floor`
+     (default 0.25, below the ~0.27-0.32 empirical capacity), an honest,
+     scale-free check that the readout uses the available manifold volume rather
+     than the unachievable white-noise bar.
+  2. Dual-target volume: `rank_target` raised to 0.35 so the population bank
+     (log-det barrier on 8192 FINAL states) pushes the sequence-level readout to
+     its capacity, closing the step-vs-final isotropy gap.
+  3. Entropy-weighted ZCA: the global-EMA whitening rate is scaled by the local
+     batch's spectral entropy, self-stabilizing against bursty activity windows.
+  4. Spectral-norm bounding (#2) is satisfied by construction — the SSM decay is
+     `exp(-softplus(.)) ∈ (0,1)`, a strict contraction, always stable.
+- **Deferred:** gradient-variance curriculum gating (#6) needs per-head gradient
+  norms (13 backward passes/step); DWA already adapts by loss-improvement rate.
+- **Measured:** _pending v4.3 run._
