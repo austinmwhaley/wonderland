@@ -943,10 +943,23 @@ class GeometryBank:
         # normalized spectrum stays as a gentle floor below the barrier.
         sd = torch.sqrt(torch.diag(cov).clamp(min=1e-12))
         corr = cov / torch.outer(sd, sd)
-        ev = torch.linalg.eigvalsh(corr).clamp(min=0.0)
-        floor = torch.relu(self.tau - ev).sum()
+        # eigvalsh on the correlation matrix can fail to converge (ill-conditioned
+        # / repeated eigenvalues — measured on the Layer-A synthetic stream). Use
+        # float64 + a tiny ridge, and fall back to a neutral (no-floor) spectrum
+        # rather than crashing training.
+        try:
+            d = corr.shape[0]
+            ev = torch.linalg.eigvalsh(
+                corr.double() + 1e-6 * torch.eye(d, dtype=torch.float64)
+            ).clamp(min=0.0)
+        except Exception:
+            ev = torch.ones(corr.shape[0], dtype=torch.float64)
+        floor = torch.relu(self.tau - ev.float()).sum()
         eps = float(cov.diagonal().mean().clamp(min=1e-8)) * 1e-3
-        barrier = -torch.logdet(cov + eps * torch.eye(cov.shape[0], device=cov.device))
+        try:
+            barrier = -torch.logdet(cov + eps * torch.eye(cov.shape[0], device=cov.device))
+        except Exception:
+            barrier = torch.zeros((), device=cov.device)
         # closed-loop governor: EMA-damped rank, proportional ramp
         bank_rank = self.eff_rank(z)
         gap = self.target - bank_rank
