@@ -928,15 +928,24 @@ def held_out_objective(
         return float(_combine(model, T_, cfg, weights))
 
 
-def compute_whitening(model, vocab, cfg, seqs, n: int = 4096) -> dict:
+def compute_whitening(model, vocab, cfg, seqs, n: int | None = None) -> dict:
     """Donor-boundary whitening (DEC-022): frozen z = (h - mu) Sigma^{-1/2}
     from a held-out sample of states. Linear heads span the same function
     class after the transform; the consumed representation gets full-rank
-    headroom BY CONSTRUCTION. Returns the before/after receipt."""
+    headroom BY CONSTRUCTION. Returns the before/after receipt.
+
+    `n=None` uses ALL states. A small subsample (the old 4096) makes the
+    Sigma^{-1/2} orientation unstable in the near-null directions: the SAME
+    procedure gave held-out PR/dim anywhere from 0.02 to 0.48 depending on the
+    draw (measured v3.1.0). The full state set is tiny (N x dim floats) and
+    makes the transform deterministic and transferable (measured ~0.46)."""
     import numpy as np
     import torch
 
-    idx = np.random.default_rng(cfg.seed).choice(len(seqs), size=min(n, len(seqs)), replace=False)
+    if n is None or n >= len(seqs):
+        idx = np.arange(len(seqs))
+    else:
+        idx = np.random.default_rng(cfg.seed).choice(len(seqs), size=n, replace=False)
     states = []
     was = model.training
     model.eval()
