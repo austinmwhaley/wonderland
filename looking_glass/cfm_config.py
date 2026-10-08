@@ -119,7 +119,7 @@ class CFMConfig:
     # v3.0.0: dual-velocity encoder (DEC-025) — n_experts=2 with spread
     # delta_bias init (fast/slow timescales), ortho-loss between expert state
     # components, rolling EMA whitening, trajectory graded on the slow state.
-    version: str = "v4.5.0"  # encoder code version
+    version: str = "v4.6.0"  # encoder code version
     revision: int = 1  # data/score revision (r)
     sample_customers: int | None = 500  # working base: first N customers (populations live here)
     split_a_frac: float = 0.7
@@ -184,6 +184,8 @@ class CFMConfig:
     mp_floor: float = 0.25  # fallback floor when no per-stream capacity is known
     traj_tau_mult: float = 1.0  # slow-band cutoff = tau_mult x median learned half-life
     fast_band_heads: bool = True  # token-prediction heads read the FAST band only
+    banded_input: bool = True  # categorical content -> fast channels, trend -> slow channels
+    # (input-level separation of concerns; slow continuity is structural)
     # (separation of concerns: keeps the slow band free to be continuous)
     geom_coverage: float = 0.6  # per-stream: held-out PR must retain this
     # fraction of the stream's achievable whitened PR (from the receipt)

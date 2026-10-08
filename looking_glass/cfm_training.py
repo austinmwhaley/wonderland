@@ -143,6 +143,7 @@ def train_cfm(cfg: CFMConfig):
         slow_intent=getattr(cfg, "slow_intent_filter", False),
         unified=getattr(cfg, "unified_ssm", False),
         zca=getattr(cfg, "zca", False),
+        banded_input=getattr(cfg, "banded_input", False),
     ).to(device)
     # v4.0: differentiable ZCA in the forward during training (gradients shape the
     # consumed isotropy); off at eval/save so the frozen transform is used.
@@ -390,6 +391,7 @@ def train_cfm(cfg: CFMConfig):
             "slow_intent": bool(getattr(cfg, "slow_intent_filter", False)),
             "unified": bool(getattr(cfg, "unified_ssm", False)),
             "zca": bool(getattr(cfg, "zca", False)),
+            "banded_input": bool(getattr(cfg, "banded_input", False)),
             "whiten_mean": (model.whiten_mean if getattr(model, "whiten_on", False) else None),
             "whiten_W": (model.whiten_W if getattr(model, "whiten_on", False) else None),
         },

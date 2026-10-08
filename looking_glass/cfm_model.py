@@ -58,7 +58,13 @@ def _scan(d, b):
 
 class SelectiveSSM(nn.Module):
     def __init__(
-        self, dim, delta_bias=0.0, delta_spectrum=False, spectrum=(-1.5, 3.0), slow_smooth=False
+        self,
+        dim,
+        delta_bias=0.0,
+        delta_spectrum=False,
+        spectrum=(-1.5, 3.0),
+        slow_smooth=False,
+        band_isolate=False,
     ):
         super().__init__()
         self.W_delta = nn.Linear(dim, dim)
@@ -67,18 +73,21 @@ class SelectiveSSM(nn.Module):
         self.W_out = nn.Linear(dim, dim)
         # per-channel timescale (log-decay) offset; LEARNED.
         if delta_spectrum:
-            # v4.0 unified trunk (DEC-029): a per-channel log-uniform spectrum
-            # from fast (short memory) to slow (long memory), so ONE wide SSM
-            # carries all timescales instead of a hand-split expert bank. The
-            # learned W_delta then adapts each channel per event.
             self.delta_bias = nn.Parameter(torch.linspace(spectrum[0], spectrum[1], dim))
         else:
             self.delta_bias = nn.Parameter(torch.tensor([float(delta_bias)]))
-        # v4.1/4.2 (DEC-030/031): learned low-pass input smoothing on the slow
-        # band (retention keyed to each channel's timescale). v4.1 also made
-        # W_delta/W_B band-diagonal, which fixed a synthetic check but BROKE
-        # `agg` (long-horizon integration needs cross-band flow); v4.2 removes the
-        # mask and instead lets the `trajectory` training loss suppress zigzag.
+        # v4.5 (DEC-035): block-diagonal input mixing between the FAST and SLOW
+        # timescale bands, so the slow state is driven ONLY by the slow-band
+        # input (which CFM routes to content-agnostic trend features). This makes
+        # slow-state continuity structural rather than an optimizable loss.
+        if band_isolate and self.delta_bias.numel() > 1:
+            db = self.delta_bias.detach().cpu().numpy()
+            fast = db > float(np.median(db))
+            m = np.zeros((dim, dim), dtype=np.float32)
+            fi, si = np.where(fast)[0], np.where(~fast)[0]
+            m[np.ix_(fi, fi)] = 1.0
+            m[np.ix_(si, si)] = 1.0
+            self.register_buffer("band_mask", torch.tensor(m))
         self.smooth = None
         if slow_smooth:
             dbv = self.delta_bias.detach().numpy().astype(float)
@@ -89,8 +98,14 @@ class SelectiveSSM(nn.Module):
     def forward(self, x, h0=None, mask=None):
         if self.smooth is not None:
             x = self.smooth(x, mask=mask)
-        delta = F.softplus(self.W_delta(x) + self.delta_bias)
-        bx = self.W_B(x)
+        bm = getattr(self, "band_mask", None)
+        if bm is not None:
+            wd = F.linear(x, self.W_delta.weight * bm, self.W_delta.bias)
+            bx = F.linear(x, self.W_B.weight * bm, self.W_B.bias)
+        else:
+            wd = self.W_delta(x)
+            bx = self.W_B(x)
+        delta = F.softplus(wd + self.delta_bias)
         decay = torch.exp(-delta)
         if mask is not None:
             m = mask.unsqueeze(-1)
@@ -177,14 +192,26 @@ class MultiScaleSSM(nn.Module):
     Each channel summarizes a different horizon; their readouts are concatenated
     into the public state (width = chan * n_experts). K=1 is the original SSM."""
 
-    def __init__(self, chan, n_experts, delta_biases, slow_intent=False, delta_spectrum=False):
+    def __init__(
+        self,
+        chan,
+        n_experts,
+        delta_biases,
+        slow_intent=False,
+        delta_spectrum=False,
+        band_isolate=False,
+    ):
         super().__init__()
         if delta_spectrum:
             # v4.0: ONE wide selective SSM with a per-channel timescale spectrum.
             self.chan = chan
             self.n_experts = 1
             self.experts = nn.ModuleList(
-                [SelectiveSSM(chan, delta_spectrum=True, slow_smooth=True)]
+                [
+                    SelectiveSSM(
+                        chan, delta_spectrum=True, slow_smooth=True, band_isolate=band_isolate
+                    )
+                ]
             )
             self.slow_intent = False
             return
@@ -229,11 +256,13 @@ class CFM(nn.Module):
         slow_intent: bool = False,
         unified: bool = False,
         zca: bool = False,
+        banded_input: bool = False,
     ):
         super().__init__()
         self.vocab = vocab
         self.unified = bool(unified)
         self.zca = bool(zca)
+        self.banded_input = bool(banded_input)
         self.n_experts = 1 if self.unified else max(1, int(n_experts))
         self.chan = max(1, dim // self.n_experts)
         dim = self.chan * self.n_experts
@@ -256,6 +285,7 @@ class CFM(nn.Module):
             delta_biases,
             slow_intent=(slow_intent and not self.unified),
             delta_spectrum=self.unified,
+            band_isolate=(self.banded_input and self.unified),
         )
         self.head_next = nn.Linear(dim, vocab.n_et + 1)  # next event type
         self.head_ent = nn.Linear(dim, vocab.n_ent + 1)  # next entity type
@@ -346,14 +376,30 @@ class CFM(nn.Module):
         co = seq.get("co")
         co = co if co is not None else [[0.0, 0.0]] * len(seq["event_type"])
         co = torch.tensor(co, dtype=torch.float32, device=dev)
-        return (
-            self.emb_et(et)
-            + self.emb_brand(br)
-            + self.emb_ent(en)
-            + self.w_val(val)
-            + self.w_dt(dt)
-            + self.w_co(co)
-        )
+        content = self.emb_et(et) + self.emb_brand(br) + self.emb_ent(en)
+        trend = self.w_val(val) + self.w_dt(dt) + self.w_co(co)
+        return self._band_route(content, trend)
+
+    def _fast_mask(self):
+        """Channel mask of the FAST band (derived from the learned timescale
+        spectrum). When banded_input is on, categorical CONTENT features drive the
+        fast channels and continuous TREND features (value/Δt/covariates) drive
+        the slow channels — the separation of concerns that makes slow-state
+        continuity structural (v4.5, DEC-035)."""
+        if not self.banded_input:
+            return None
+        ex = getattr(self.ssm, "experts", None)
+        if ex and len(ex) == 1 and ex[0].delta_bias.numel() > 1:
+            db = ex[0].delta_bias.detach().float()
+            return (db > torch.quantile(db, 0.5)).float()
+        return None
+
+    def _band_route(self, content, trend):
+        fm = self._fast_mask()
+        if fm is None:
+            return content + trend
+        fm = fm.to(content.device)
+        return content * fm + trend * (1.0 - fm)
 
     def forward(self, seq, h0=None):
         y, h = self.ssm(self.tokens(seq).unsqueeze(0), h0=h0)
@@ -390,24 +436,18 @@ class CFM(nn.Module):
                 pt.data.mul_(1 - tau).add_(ps.data, alpha=tau)
 
     def tokens_batch(self, t):
-        return (
-            self.emb_et(t["et"])
-            + self.emb_brand(t["br"])
-            + self.emb_ent(t["en"])
-            + self.w_val(t["val"])
-            + self.w_dt(t["dt"])
-            + self.w_co(t["co"])
-        )
+        content = self.emb_et(t["et"]) + self.emb_brand(t["br"]) + self.emb_ent(t["en"])
+        trend = self.w_val(t["val"]) + self.w_dt(t["dt"]) + self.w_co(t["co"])
+        return self._band_route(content, trend)
 
     def target_tokens_batch(self, t):
-        return (
-            self.t_emb_et(t["et"])
-            + self.t_emb_brand(t["br"])
-            + self.t_emb_ent(t["en"])
-            + self.t_w_val(t["val"])
-            + self.t_w_dt(t["dt"])
-            + self.t_w_co(t["co"])
-        )
+        content = self.t_emb_et(t["et"]) + self.t_emb_brand(t["br"]) + self.t_emb_ent(t["en"])
+        trend = self.t_w_val(t["val"]) + self.t_w_dt(t["dt"]) + self.t_w_co(t["co"])
+        fm = self._fast_mask()
+        if fm is None:
+            return content + trend
+        fm = fm.to(content.device)
+        return content * fm + trend * (1.0 - fm)
 
     def set_whitening(self, mean: "torch.Tensor", W: "torch.Tensor") -> None:
         """Frozen whitening at the donor boundary (DEC-022): z = (h-mu) W,
