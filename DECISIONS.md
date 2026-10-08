@@ -581,3 +581,11 @@ same battery
   trained on raw `proj(h)` (not the whitened space), so no re-target was needed.
 - **Expected:** geometry/OOT reproducible; 13/13 objective skills; slow-trajectory
   5/5 preserved; geometry value honest (target >0.30 via the spectrum loss).
+- **Measured (v3.2.0r682246):** geometry is now REPRODUCIBLE — three identical
+  CLI runs gave eff_rank 54.7 / 53.2 / 52.4 (PR/dim 0.213 / 0.207 / 0.204),
+  versus 21.6 → 56.2 before. Honest geometry is **0.21 < 0.30 (FAIL)** — the
+  gate was previously passing on amplified noise. The `spectrum` loss lifted the
+  skills sharply (agg +38.6, occur +11.2, sf +3.5, order +1.37, value +0.28) and
+  the slow-trajectory cos to **+0.267** (was +0.013); MI/Lipschitz/info-plane
+  PASS. OOT is only partially reproducible (**2.15, 2.52** — still FAIL vs 1.5),
+  so that gate also needs a scale-free reformulation (see v4.0 plan).

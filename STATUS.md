@@ -29,23 +29,25 @@
 
 ## Micro
 
-- **Current task:** v3.1.0 — the DEC-024 slow-trajectory fix (DEC-027). Two
-  fixes: (1) derive the slow expert (`argmin delta_bias`) instead of hardcoding
-  "last half" (which was in fact the FAST expert — the trajectory proof graded
-  the wrong channels); (2) a **low-pass intent filter** on the slow expert
-  (learned `W_intent` + learned per-channel EMA initialized from the expert's
-  own decay), making the slow state a second-order low-pass so its velocity is
-  smooth. Synthetic check: slow-state directional cos -0.78 → **+0.79**. Config
-  `slow_intent_filter` (default on). Full Instacart v3.1.0 run in progress
-  (`/tmp/opencode/insta_v31`); target: 5/5 intrinsic + 14/14 portfolio.
-- **Last completed:** v3.0.1 boundary-whitening fix (DEC-026); v3.1.0 code +
-  regression tests (`tests/test_intrinsic.py`), 241 fast tests green.
+- **Current task:** v3.2.0 — make the whitening-dependent gates reproducible
+  (DEC-028). Root cause of the v3.1.0 geometry/OOT chaos: the boundary
+  `Sigma^{-1/2}` had condition ~1000 and amplified GPU matmul nondeterminism
+  ~1e3x (identical command → eff_rank 21.6 then 56.2; model's true consumed
+  rank ~0.084). Fixes: (1) condition-capped whitening — eigenvalues floored at
+  `whiten_cond_floor*max` (default 1e-2, κ(W)≤10), now stable under 1e-4
+  perturbations; (2) new `spectrum` objective (penalize `var(log per-dim
+  variance)`) to raise the true rank toward the 0.30 bar. `rank` already trained
+  on raw `proj(h)`, so no re-target needed. Full Instacart v3.2.0 run in
+  progress (`/tmp/opencode/insta_v32`).
+- **Last completed:** v3.1.0 slow-trajectory fix (DEC-027, intrinsic cos
+  -0.3443→+0.0131); whitening determinism (all states, no 4096 subsample);
+  condition-cap + spectrum objective; 241 fast tests green.
 - **Immediate next 3 actions:**
-  1. Grade v3.1.0 (portfolio + intrinsic); confirm slow-state cos > 0 and
-     produce the report card.
-  2. If geometry PR < 0.75, implement the Jacobian orthogonality loss (DEC-027
-     open follow-up).
-  3. Commit v3.1.0 + report card; update STATUS/DECISIONS.
+  1. Grade v3.2.0; confirm geometry/OOT reproduce across ≥3 identical runs and
+     report the honest geometry value.
+  2. If geometry < 0.30, strengthen the spectrum/rank lever (or raise
+     `whiten_cond_floor` headroom) and retrain.
+  3. Produce the report card and update DECISIONS/STATUS.
 - **Environment:** repo `~/Documents/wonderland` (main, CI green);
   `python3 -m pytest -m "not slow"` -> 215 passed; GPU cuda available;
   standing products `looking_glass/artifacts/cfm/cfm_products.duckdb`
