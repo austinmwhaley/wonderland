@@ -673,3 +673,26 @@ same battery
   band-diagonal mixing broke `agg` (-0.0003, long-horizon integration needs
   cross-band flow). The condition-capped whitening honestly reveals the trunk is
   genuinely low-rank (~0.28 of dim).
+
+## DEC-031 — v4.2: make the failing gates TRAINABLE (Option B)
+
+- **Date:** 2026-10-07
+- **Context:** v4.1 left two failures whose common root is a low-rank trunk
+  (geometry PR/dim 0.28; trajectory cos -0.22). Option A (shrink `dim` to the
+  effective rank) was rejected: a foundation encoder is the backbone for
+  downstream tasks and must keep its latent capacity. Instead, the two gates
+  become training objectives — they were only ever *measured*.
+- **Decision:**
+  1. `iso` — participation-ratio loss computed on the PER-STEP states (B*T rows,
+     ~16k) rather than the final states (B=64). The batch of 64 final states caps
+     per-step PR/dim at ~0.25, so the trunk literally could not learn to use 256
+     dims; the large per-step sample removes that ceiling.
+  2. `trajectory` — penalize slow-band acceleration ||Delta^2 h_slow||^2, i.e.
+     the intrinsic trajectory proof becomes a training signal. This replaces
+     v4.1's band-diagonal mask (which fixed a synthetic check but broke `agg`);
+     the learned low-pass input smoothing stays, the mask is removed so
+     cross-band flow is preserved.
+  Trunk stays at 256 channels (capacity preserved).
+- **Trade-offs:** optimization may trade predictive skill for geometry/continuity;
+  monitored via the portfolio. Both objectives are config-gated.
+- **Measured:** _pending v4.2 run (`/tmp/opencode/insta_v42`)._
