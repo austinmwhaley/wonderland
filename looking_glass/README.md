@@ -107,6 +107,18 @@ pandas): `customer_key, event_ts, brand, event_type, event_attributes` plus
 `donor_embeddings` (training rows), `customer_state`, `state_embeddings`
 (inference rows, materialized daily), `encoder_samples`, `state_job_receipts`.
 
+## Test streams
+
+The encoder is stream-agnostic; the same engine is graded on each fixture below
+(all local-only, `.duckdb` is gitignored). Pass `--db <path> --as-of <date>` to
+`train`/`portfolio`/`intrinsic`.
+
+| stream | fixture | scale |
+|---|---|---|
+| **Layer A** (rabbit_hole synthetic) | `rabbit_hole/data/duckdb/customer_event_stream.duckdb` | 26.8M events / 25k customers |
+| **Instacart** (external) | `rabbit_hole/data/instacart/customer_event_stream.duckdb` | 37.4M events / 206k customers |
+| **ecommerce_2019** (external, Kaggle) | `rabbit_hole/data/ecommerce_2019/customer_event_stream.duckdb` | 4.4M events / 212k customers (Oct+Nov 2019; see `ecommerce_receipt.json`) |
+
 ## Package layout
 
 ```
