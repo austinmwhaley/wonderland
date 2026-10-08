@@ -182,7 +182,8 @@ class CFMConfig:
     # fraction of the stream's achievable whitened PR (from the receipt)
     iso_gamma: float = 8.0  # barrier sigmoid steepness (self-throttling)
     ortho_weight: float = 0.1  # cross-subspace ortho-loss weight
-    epochs: int = 3
+    epochs: int = 3  # legacy (governor ignores); see max_steps
+    max_steps: int = 0  # 0 = derived budget; >0 caps the governor (FAST iteration)
     batch: int = 64
     lr: float = 3e-3
     gamma_contrast: float = 0.5
@@ -211,7 +212,8 @@ class CFMConfig:
     tau_eig: float = 0.05  # singular-value floor on the bank covariance
     #    (soft floor; the PRIMARY rank guard is now the log-det barrier)
     pcgrad: bool = True  # grouped PCGrad (DEC-020): geometry vs predictive
-    donor_whiten: bool = True  # whitened readout at the donor boundary
+    donor_whiten: bool = True  # whitened readout at the donor boundary (legacy)
+    isometric_boundary: bool = True  # v6 Stage1: per-sample orthogonal readout (kappa=1)
     # DEC-028: condition cap for the boundary whitening — eigenvalues of the
     # state covariance are floored at this fraction of the largest, bounding
     # kappa(Sigma^{-1/2}) <= 1/sqrt(whiten_cond_floor). Prevents near-null

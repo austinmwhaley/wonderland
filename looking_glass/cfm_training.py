@@ -143,6 +143,7 @@ def train_cfm(cfg: CFMConfig):
         slow_intent=getattr(cfg, "slow_intent_filter", False),
         unified=getattr(cfg, "unified_ssm", False),
         zca=getattr(cfg, "zca", False),
+        isometric_boundary=getattr(cfg, "isometric_boundary", False),
     ).to(device)
     # v4.0: differentiable ZCA in the forward during training (gradients shape the
     # consumed isotropy); off at eval/save so the frozen transform is used.
@@ -328,7 +329,7 @@ def train_cfm(cfg: CFMConfig):
         # Newton-Schulz) updated each eval from TRAIN states, so training and
         # the frozen inference transform agree and held-out isotropy (what the
         # geometry gate measures) is what the transform sees.
-        if getattr(cfg, "zca", False):
+        if getattr(cfg, "zca", False) and not getattr(cfg, "isometric_boundary", False):
             try:
                 with torch.no_grad():
                     _h = forward_states(model, [a_seqs[i] for i in tr_idx[:512]])
@@ -364,8 +365,13 @@ def train_cfm(cfg: CFMConfig):
             return math.inf, None
         return v, copy.deepcopy(model.state_dict())
 
+    budget = int(res.budget_steps)
+    _cap = int(getattr(cfg, "max_steps", 0) or 0)
+    if _cap > 0:
+        budget = min(budget, _cap)
+        print(f"[govern] budget capped to {budget} steps (max_steps)", flush=True)
     gov, best_state = AT.govern(
-        train_step, val_metric, res.budget_steps, res.eval_every, res.patience, cfg.seed
+        train_step, val_metric, budget, res.eval_every, res.patience, cfg.seed
     )
     if best_state is not None:
         model.load_state_dict(best_state)
@@ -395,6 +401,7 @@ def train_cfm(cfg: CFMConfig):
             "slow_intent": bool(getattr(cfg, "slow_intent_filter", False)),
             "unified": bool(getattr(cfg, "unified_ssm", False)),
             "zca": bool(getattr(cfg, "zca", False)),
+            "isometric_boundary": bool(getattr(cfg, "isometric_boundary", False)),
             "whiten_mean": (model.whiten_mean if getattr(model, "whiten_on", False) else None),
             "whiten_W": (model.whiten_W if getattr(model, "whiten_on", False) else None),
         },
@@ -442,7 +449,7 @@ def train_cfm(cfg: CFMConfig):
             "dim": cfg.dim,
             "batch": cfg.batch,
             "half_life_days": cfg.state_half_life_days,
-            "budget_steps": res.budget_steps,
+            "budget_steps": budget,
             "eval_every": res.eval_every,
             "patience": res.patience,
             "agg_horizons_days": cfg.agg_horizons_days,
@@ -1176,6 +1183,27 @@ def compute_whitening(model, vocab, cfg, seqs, n: int | None = None) -> dict:
         model.whiten_on = was_on
         model.train(was)
     H = torch.cat(states, dim=0)
+
+    def pr(mat):
+        c = mat - mat.mean(0, keepdim=True)
+        cc = (c.T @ c) / max(c.shape[0] - 1, 1)
+        return float(
+            (cc.diagonal().sum() ** 2 / cc.pow(2).sum().clamp(min=1e-24) / c.shape[1]).item()
+        )
+
+    if getattr(model, "isometric_boundary", False):
+        # v6 Stage 1: the boundary is a per-sample orthogonal isometry — no fitted
+        # transform. The stream capacity is the readout's OWN participation ratio.
+        model.set_whitening(torch.zeros(H.shape[1]), torch.eye(H.shape[1]))
+        p = pr(H)
+        return {
+            "rows": int(H.shape[0]),
+            "pr_before": round(p, 4),
+            "pr_after": round(p, 4),
+            "applied": False,
+            "reason": "isometric boundary (no fitted transform)",
+        }
+
     mu = H.mean(0)
     zc = H - mu
     # SINGLE whitening path (#12): the Newton-Schulz inverse-sqrt in cfm_model
@@ -1186,13 +1214,6 @@ def compute_whitening(model, vocab, cfg, seqs, n: int | None = None) -> dict:
     eps = 1.0 / float(np.sqrt(max(H.shape[0], 1)))
     W = ns_inv_sqrt(cov, eps=eps).float()
     mu = mu.float()
-
-    def pr(mat):
-        c = mat - mat.mean(0, keepdim=True)
-        cc = (c.T @ c) / max(c.shape[0] - 1, 1)
-        return float(
-            (cc.diagonal().sum() ** 2 / cc.pow(2).sum().clamp(min=1e-24) / c.shape[1]).item()
-        )
 
     model.set_whitening(mu, W)
     pre = pr(H)

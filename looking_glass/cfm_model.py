@@ -256,11 +256,15 @@ class CFM(nn.Module):
         slow_intent: bool = False,
         unified: bool = False,
         zca: bool = False,
+        isometric_boundary: bool = False,
     ):
         super().__init__()
         self.vocab = vocab
         self.unified = bool(unified)
         self.zca = bool(zca)
+        self.isometric_boundary = bool(isometric_boundary)
+        if self.isometric_boundary:
+            self.iso_skew = nn.Parameter(torch.zeros(dim, dim))
         self.n_experts = 1 if self.unified else max(1, int(n_experts))
         self.chan = max(1, dim // self.n_experts)
         dim = self.chan * self.n_experts
@@ -458,25 +462,34 @@ class CFM(nn.Module):
         """Public embedding S from the recurrence STATE (x = h, recency-weighted
         via the decay), or mean-pool if a per-step matrix is passed."""
         v = self.proj(x) if x.dim() == 1 else self.proj(x.mean(0))
-        return F.normalize(self._whiten(v), dim=0)
+        return F.normalize(self._boundary(v), dim=0)
+
+    def iso_matrix(self):
+        """Per-sample orthogonal boundary R (Cayley: R=(I−S)(I+S)⁻¹, S skew).
+        κ(R)=1, R⁻¹=Rᵀ: an isometry — deterministic per sample (no batch
+        coupling), invertible, no conditioning floor (v6 Stage 1, A1)."""
+        S = self.iso_skew - self.iso_skew.t()
+        eye = torch.eye(self.dim, device=S.device, dtype=S.dtype)
+        return torch.linalg.solve(eye + S, eye - S)
+
+    def _boundary(self, v):
+        return v @ self.iso_matrix().t() if self.isometric_boundary else self._whiten(v)
 
     def donor(self, x):
         """Donor representation for plugins: same projection WITHOUT L2
         normalization, so magnitude (how much / how recent) is preserved.
-        Whitened at the boundary when the transform is set (DEC-022).
+        Boundary transform (isometry or legacy whitening) at the readout.
         1-D input = single state; 2-D (T, D) = per-step matrix, mean-pooled
         (the donor_seq contract). For (B, D) STATE BATCHES use donor_batch."""
         v = self.proj(x) if x.dim() == 1 else self.proj(x.mean(0))
-        return self._whiten(v)
+        return self._boundary(v)
 
     def donor_batch(self, h: "torch.Tensor") -> "torch.Tensor":
-        """Donor readout for (B, D) state batches — no pooling, whitened when
-        the transform is set. The consumed representation (DEC-022). Whitening
-        is applied AFTER `proj` (the actual boundary). v4.1 (DEC-030): the
-        transform is a GLOBAL ZCA estimated online by `update_zca` (EMA mean +
-        covariance -> Newton-Schulz); it is a constant per step, so grading and
-        serving share the exact same map."""
-        return self._whiten(self.proj(h))
+        """Donor readout for (B, D) state batches — no pooling. The consumed
+        representation. v6 Stage 1: boundary is a per-sample orthogonal isometry
+        (κ=1, invertible) — no batch coupling, no conditioning literals; the
+        legacy global-EMA ZCA is used only when isometric_boundary is off."""
+        return self._boundary(self.proj(h))
 
     def update_zca(self, h, beta=0.1):
         """Update the global boundary ZCA from this batch (v4.1, DEC-030).
