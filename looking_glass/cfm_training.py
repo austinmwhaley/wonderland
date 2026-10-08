@@ -372,6 +372,7 @@ def train_cfm(cfg: CFMConfig):
     if getattr(cfg, "donor_whiten", True):
         wh = compute_whitening(model, vocab, cfg, a_seqs)
         cfg._whiten_receipt = wh
+        cfg._whiten_pr_after = float(wh.get("pr_after", 0.0))  # per-stream capacity (DEC-034)
         print(
             f"[whiten] donor boundary: eff-rank {wh['pr_before']} -> {wh['pr_after']} "
             f"({wh['rows']} states)",
@@ -768,12 +769,7 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
         # ||Delta^2 h_slow||^2 so slow channels stay temporally continuous. This
         # makes the intrinsic trajectory proof a TRAINING signal (it was only
         # measured before), without the band mask that broke `agg`.
-        ex = getattr(getattr(model, "ssm", None), "experts", None)
-        sm = None
-        if ex and len(ex) == 1:
-            db = ex[0].delta_bias.detach().float()
-            if db.numel() == y.shape[-1]:
-                sm = (db <= torch.quantile(db, 0.5)).to(y.device)
+        sm = slow_channel_mask(model, tau_mult=float(getattr(cfg, "traj_tau_mult", 1.0)))
         ys = (y if sm is None else y[..., sm]).float()
         acc = ys[:, 2:] - 2.0 * ys[:, 1:-1] + ys[:, :-2]  # (B, T-2, C)
         mm = (t["mask"][:, 2:] * t["mask"][:, 1:-1] * t["mask"][:, :-2]).unsqueeze(-1)
@@ -1046,20 +1042,35 @@ def slow_expert_index(model) -> int:
     return int(np.argmin([float(e.delta_bias.detach().mean().cpu()) for e in experts]))
 
 
-def slow_state_slice(model, h):
-    """The slow channels of a state batch `h`.
+def slow_channel_mask(model, tau_mult: float = 1.0):
+    """Boolean mask of the SLOW band for the unified trunk (v4.4, DEC-034).
 
-    Unified trunk (v4.0, DEC-029): the single wide SSM carries a per-channel
-    timescale spectrum, so the slow subspace is the half of channels with the
-    longest memory (smallest learned `delta_bias`) — DERIVED from the trunk, not
-    a hand-split. Expert bank (v3.x): the slow expert's channel block."""
+    Derived per-stream from the LEARNED per-channel timescale: each channel's
+    half-life in event-steps is `ln2 / softplus(delta_bias)` (delta_bias is
+    trained on the stream, so the spectrum adapts to it). The cutoff is
+    `tau_mult x median(half-life)` — a data-derived τ, not a fixed index. Returns
+    None for the expert-bank trunk (handled by the slow-expert slice)."""
     experts = getattr(getattr(model, "ssm", None), "experts", None)
     if experts and len(experts) == 1:
-        db = getattr(experts[0], "delta_bias", None)
-        if db is not None and db.numel() == h.shape[-1]:
-            thr = torch.quantile(db.detach().float(), 0.5)
-            mask = (db.detach().float() <= thr).to(h.device)
-            return h[..., mask]
+        db = experts[0].delta_bias.detach().float()
+        if db.numel() > 1:
+            hl = np.log(2.0) / torch.nn.functional.softplus(db).clamp(min=1e-6)
+            thr = float(tau_mult) * float(torch.median(hl))
+            return (hl >= thr).to(db.device)
+    return None
+
+
+def slow_state_slice(model, h, tau_mult: float = 1.0):
+    """The slow channels of a state batch `h`.
+
+    Unified trunk (v4.0+): the slow subspace is the channels with the longest
+    learned half-life (τ) — DERIVED from the stream-adapted trunk, not a hand
+    split (v4.4, DEC-034). Expert bank (v3.x): the slow expert's channel block."""
+    m = slow_channel_mask(model, tau_mult=tau_mult)
+    if m is not None:
+        return h[..., m]
+    experts = getattr(getattr(model, "ssm", None), "experts", None)
+    if experts and len(experts) == 1:
         return h
     K = max(1, int(getattr(model, "n_experts", 1)))
     if K <= 1:

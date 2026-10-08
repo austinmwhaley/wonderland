@@ -299,19 +299,24 @@ def evaluate(
     geometry = _geometry(z, seed + 2) if len(z) >= 4 else {}
     canaries = _canaries(z, val, seed + 3) if len(z) >= 4 else {}
     if geometry:
-        # PRIMARY geometry gate (v4.3, DEC-032): scale-free, calibrated to a
-        # STRUCTURED-manifold floor (a semantic representation forms clusters, so
-        # it cannot be isotropic like white noise). Gate = PR/dim >= mp_floor
-        # (default 0.65); the white-noise MP null is still reported for reference.
-        floor = float(getattr(cfg, "mp_floor", 0.65))
+        # PRIMARY geometry gate (v4.4, DEC-034): PER-STREAM, self-calibrating.
+        # The floor is a coverage fraction of the stream's OWN achievable
+        # whitened PR (the checkpoint's whitening receipt), so the gate asks "does
+        # the held-out readout retain the capacity this stream allows?" — valid
+        # across streams without a cross-stream constant. Falls back to the
+        # structured floor only when no capacity is known.
         pr_frac = geometry["pr_frac"]
-        rows.append(
-            {
-                "check": f"geometry: consumed repr PR/dim >= structured floor {floor}",
-                "achieved": (f"PR/dim {pr_frac} (white-noise null {geometry['mp_null_frac']})"),
-                "ok": bool(pr_frac >= floor),
-            }
-        )
+        cap = getattr(cfg, "_whiten_pr_after", None)
+        coverage = float(getattr(cfg, "geom_coverage", 0.6))
+        if cap:
+            floor = coverage * float(cap)
+            check = f"geometry: held-out PR/dim >= {coverage:.2f} x stream capacity"
+            achieved = f"PR/dim {pr_frac} (capacity {float(cap):.4f}, floor {floor:.4f})"
+        else:
+            floor = float(getattr(cfg, "mp_floor", 0.25))
+            check = f"geometry: consumed repr PR/dim >= floor {floor}"
+            achieved = f"PR/dim {pr_frac} (white-noise null {geometry['mp_null_frac']})"
+        rows.append({"check": check, "achieved": achieved, "ok": bool(pr_frac >= floor)})
     if canaries:
         if "group_auc" in canaries:
             rows.append(

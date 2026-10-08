@@ -119,7 +119,7 @@ class CFMConfig:
     # v3.0.0: dual-velocity encoder (DEC-025) — n_experts=2 with spread
     # delta_bias init (fast/slow timescales), ortho-loss between expert state
     # components, rolling EMA whitening, trajectory graded on the slow state.
-    version: str = "v4.3.0"  # encoder code version
+    version: str = "v4.4.0"  # encoder code version
     revision: int = 1  # data/score revision (r)
     sample_customers: int | None = 500  # working base: first N customers (populations live here)
     split_a_frac: float = 0.7
@@ -181,7 +181,10 @@ class CFMConfig:
     aib_beta_max: float = 5.0  # cap on the compression multiplier
     # v4.2 native self-governing mechanics (DEC-031):
     tau_mp: float = 0.70  # Marchenko-Pastur PR/dim floor the iso barrier targets
-    mp_floor: float = 0.25  # v4.3 calibrated structured-manifold floor (data capacity ~0.27)
+    mp_floor: float = 0.25  # fallback floor when no per-stream capacity is known
+    traj_tau_mult: float = 1.0  # slow-band cutoff = tau_mult x median learned half-life
+    geom_coverage: float = 0.6  # per-stream: held-out PR must retain this
+    # fraction of the stream's achievable whitened PR (from the receipt)
     iso_gamma: float = 8.0  # barrier sigmoid steepness (self-throttling)
     ortho_weight: float = 0.1  # cross-subspace ortho-loss weight
     epochs: int = 3

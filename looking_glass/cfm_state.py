@@ -168,6 +168,12 @@ def load_frozen_encoder(tag: str, cfm_dir):
         meta = json.loads(reg.read_text())
         cfg.version = meta.get("version", cfg.version)
         cfg.revision = int(meta.get("revision", cfg.revision))
+        # per-stream geometry capacity (v4.4, DEC-034): the stream's own
+        # achievable whitened participation ratio, used to calibrate the geometry
+        # floor instead of a cross-stream constant.
+        wh = meta.get("whiten") or {}
+        if wh.get("pr_after") is not None:
+            cfg._whiten_pr_after = float(wh["pr_after"])
         resolved = meta.get("resolved", {})
         cfg.seq_len = int(resolved.get("seq_len", cfg.seq_len))
         cfg.state_half_life_days = float(resolved.get("half_life_days", cfg.state_half_life_days))

@@ -53,7 +53,7 @@ def test_unified_ssm_and_slow_channel_selection():
     assert model.n_experts == 1 and model.ssm.experts[0].delta_bias.numel() == 32
     h = torch.randn(3, 32)
     sl = slow_state_slice(model, h)
-    assert sl.shape[-1] == 16  # half the channels, derived from delta_bias
+    assert 0 < sl.shape[-1] < 32  # a data-derived slow band, not all/none
 
 
 def test_mp_pr_score_flags_low_rank():
