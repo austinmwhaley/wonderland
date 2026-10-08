@@ -74,35 +74,23 @@ class SelectiveSSM(nn.Module):
             self.delta_bias = nn.Parameter(torch.linspace(spectrum[0], spectrum[1], dim))
         else:
             self.delta_bias = nn.Parameter(torch.tensor([float(delta_bias)]))
-        # v4.1 (DEC-030): learned low-pass input smoothing on the SLOW band of
-        # the unified trunk, plus a band-diagonal input mixing so raw fast
-        # channels cannot inject token-switching zigzag into the slow state
-        # through W_B/W_delta (the mixing was the reason smoothing alone did not
-        # fix it — measured). Retention is keyed to each channel's timescale:
-        # slow band -> high retention (more smoothing), fast band -> low.
+        # v4.1/4.2 (DEC-030/031): learned low-pass input smoothing on the slow
+        # band (retention keyed to each channel's timescale). v4.1 also made
+        # W_delta/W_B band-diagonal, which fixed a synthetic check but BROKE
+        # `agg` (long-horizon integration needs cross-band flow); v4.2 removes the
+        # mask and instead lets the `trajectory` training loss suppress zigzag.
         self.smooth = None
         if slow_smooth:
             dbv = self.delta_bias.detach().numpy().astype(float)
             slow = dbv <= np.median(dbv)
-            m = np.zeros((dim, dim), dtype=np.float32)
-            fi, si = np.where(~slow)[0], np.where(slow)[0]
-            m[np.ix_(fi, fi)] = 1.0
-            m[np.ix_(si, si)] = 1.0
-            self.register_buffer("band_mask", torch.tensor(m))
             r0 = np.where(slow, 0.95, 0.05)
             self.smooth = IntentFilter(dim, retention_init=r0, use_proj=False)
 
     def forward(self, x, h0=None, mask=None):
         if self.smooth is not None:
             x = self.smooth(x, mask=mask)
-        bm = getattr(self, "band_mask", None)
-        if bm is not None:
-            wd = F.linear(x, self.W_delta.weight * bm, self.W_delta.bias)
-            bx = F.linear(x, self.W_B.weight * bm, self.W_B.bias)
-        else:
-            wd = self.W_delta(x)
-            bx = self.W_B(x)
-        delta = F.softplus(wd + self.delta_bias)
+        delta = F.softplus(self.W_delta(x) + self.delta_bias)
+        bx = self.W_B(x)
         decay = torch.exp(-delta)
         if mask is not None:
             m = mask.unsqueeze(-1)
@@ -319,6 +307,8 @@ class CFM(nn.Module):
                     "rank",
                     "spectrum",
                     "volume",
+                    "iso",
+                    "trajectory",
                     "ortho",
                 )
             }

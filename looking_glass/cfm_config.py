@@ -119,7 +119,7 @@ class CFMConfig:
     # v3.0.0: dual-velocity encoder (DEC-025) — n_experts=2 with spread
     # delta_bias init (fast/slow timescales), ortho-loss between expert state
     # components, rolling EMA whitening, trajectory graded on the slow state.
-    version: str = "v4.1.0"  # encoder code version
+    version: str = "v4.2.0"  # encoder code version
     revision: int = 1  # data/score revision (r)
     sample_customers: int | None = 500  # working base: first N customers (populations live here)
     split_a_frac: float = 0.7
@@ -250,6 +250,10 @@ class CFMConfig:
         #              variance so no single direction dominates the PR
         "volume",  # log-det trunk-volume barrier (v4.0, DEC-029): forces the
         #            raw state covariance to expand dimensionally ahead of ZCA
+        "iso",  # large-sample isotropy (v4.2, DEC-031): PR loss on per-step
+        #         states (B*T rows) so the trunk uses its full 256-dim capacity
+        "trajectory",  # slow-band smooth-velocity (v4.2, DEC-031): penalize
+        #               ||Delta^2 h_slow||^2 so slow channels stay continuous
         "ortho",  # fast/slow cross-covariance: zero interference (DEC-025)
     )
     seed: int = 0

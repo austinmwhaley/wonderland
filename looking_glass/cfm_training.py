@@ -735,6 +735,32 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
             eye = torch.eye(d, device=cov.device, dtype=cov.dtype)
             _, logdet = torch.linalg.slogdet(cov / tr + 1e-2 * eye)  # trace-normalized
             T_["volume"] = -logdet / d
+    if "iso" in cfg.objectives and B * T >= 2:
+        # large-sample isotropy (v4.2, DEC-031). The geometry-family losses use
+        # the FINAL states (B=64), which caps PR/dim at ~0.25 per step — the
+        # trunk could never learn to use its 256 dims. Compute the PR loss on the
+        # per-step states (B*T rows) so the effective sample is large.
+        with torch.autocast(device_type=h.device.type, enabled=False):
+            zy = model.proj(y.reshape(-1, y.shape[-1])).float()
+            zy = zy - zy.mean(0, keepdim=True)
+            cov = (zy.T @ zy) / (zy.shape[0] - 1)
+            pr = cov.diagonal().sum() ** 2 / cov.pow(2).sum().clamp(min=1e-24)
+            T_["iso"] = (1.0 - pr / zy.shape[1]).clamp(min=0.0)
+    if "trajectory" in cfg.objectives and T >= 3:
+        # slow-band smooth-velocity (v4.2, DEC-031): penalize the acceleration
+        # ||Delta^2 h_slow||^2 so slow channels stay temporally continuous. This
+        # makes the intrinsic trajectory proof a TRAINING signal (it was only
+        # measured before), without the band mask that broke `agg`.
+        ex = getattr(getattr(model, "ssm", None), "experts", None)
+        sm = None
+        if ex and len(ex) == 1:
+            db = ex[0].delta_bias.detach().float()
+            if db.numel() == y.shape[-1]:
+                sm = (db <= torch.quantile(db, 0.5)).to(y.device)
+        ys = y if sm is None else y[..., sm]
+        acc = ys[:, 2:] - 2.0 * ys[:, 1:-1] + ys[:, :-2]  # (B, T-2, C)
+        mm = (t["mask"][:, 2:] * t["mask"][:, 1:-1] * t["mask"][:, :-2]).unsqueeze(-1)
+        T_["trajectory"] = (acc.pow(2).sum(-1, keepdim=True) * mm).sum() / mm.sum().clamp(min=1)
     if getattr(cfg, "aib", False) and h.shape[0] >= 2:
         # Adaptive Information Bottleneck (v4.0, DEC-029, recipe Step 5): KL of
         # the projected codes to a MATCHED isotropic prior N(0, sigma^2 I), scaled
@@ -934,7 +960,7 @@ class GeometryBank:
         }
 
 
-GEOMETRY_FAMILY = ("variance", "rank", "redundancy", "spectrum", "volume")
+GEOMETRY_FAMILY = ("variance", "rank", "redundancy", "spectrum", "volume", "iso")
 
 
 def _combine(model, T, cfg, weights: dict | None = None, scales: dict | None = None):
