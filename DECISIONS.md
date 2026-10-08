@@ -819,3 +819,18 @@ same battery
   remain documented (they are convergence-rate gains, EMA-bounded).
 - **Validated**: fast rabbit_hole green (portfolio PASS; profile retention 0.857;
   derived lr). 246 tests green.
+
+## DEC-038 — cross-stream certification + scale-free lr
+
+- **Date:** 2026-10-07
+- **Cross-stream v6.0.0 certification:** **rabbit_hole FULLY GREEN** (portfolio
+  15/15, intrinsic 6/6); **Instacart FULLY GREEN** (portfolio 15/15 incl. sf
+  +1.70, intrinsic 6/6, R_cons 1.031); **ecommerce_2019** honest low-rank
+  boundary (portfolio FAIL, intrinsic 5/6). Two diverse streams green; the third
+  is the deliberate rank-faking regression fixture.
+- **lr fix (Stage 5 #10):** the first derivation `0.5/√P_in` was unit-dependent
+  (it hit the `1e-2` clip and destabilised Instacart mid-run — val spiked to
+  3001; the governor salvaged the best state). Replaced with a **dimensionless
+  relative step** `lr = target_rel · ‖θ‖/‖g‖` measured from one init gradient
+  (`target_rel=1e-3`, a documented fraction). Scale-free across streams/units; no
+  clip ceiling doing the work.

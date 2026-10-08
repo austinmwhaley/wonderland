@@ -29,16 +29,12 @@
 
 ## Micro
 
-- **Current task:** v6.0.0 LOCKED — category-theoretic functional realism
-  (DEC-036). Stage 0–4 complete: trace-conservation anchor, isometric per-sample
-  boundary (no rank manufacturing), composition-closure canary, commutation +
-  decorr Gram laws + MP conditioning floor, Markov sufficiency gate +
-  conservation-ratio geometry. **Certification:** rabbit_hole (diverse) FULLY
-  GREEN — portfolio 15/15 (13 skills incl. decorr + geometry + conservation
-  R_cons 0.825) + intrinsic 6/6 (sufficiency Δ 0.148); ecommerce_2019 (low-rank)
-  honest rank-1 (portfolio FAIL, intrinsic 5/6, MI entangled) — boundary proves
-  no rank-faking. Next: Stage 5 — derive the remaining literals (#2 dim/seq_len,
-  #4 objective hyperparams, #8 gain inits, #10 lr/batch).
+- **Current task:** v6.0.0 certified across streams (DEC-038). rabbit_hole and
+  Instacart FULLY GREEN (portfolio 15/15 + intrinsic 6/6 each); ecommerce_2019
+  is the honest low-rank boundary (rank-1, no ZCA faking). lr derivation fixed to
+  a scale-free relative step `lr = 1e-3·‖θ‖/‖g‖` (the old `0.5/√P_in` hit the
+  clip and destabilised Instacart). Next: full Instacart re-run to confirm
+  stability under the new lr.
 
 - **Last completed:** v3.2.0 condition-capped whitening + soft-spectrum (gates
   reproducible; honest geometry 0.21). v4.0 code + 4 regression tests; 245 fast
