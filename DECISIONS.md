@@ -734,3 +734,32 @@ same battery
   (trajectory +0.119, OOT 0.971). Geometry reproducible (0.289-0.297 across 3
   runs). The trunk uses the data's intrinsic ~0.30 manifold volume; the gate is
   now an honest, scale-free check rather than a white-noise penalty.
+
+## DEC-033 — cross-stream validation: v4.3 on Layer A (rabbit_hole synthetic)
+
+- **Date:** 2026-10-07
+- **Context:** v4.3 reached a fully green card on the Instacart fixture. The user
+  asked to confirm the same engine works on Layer A (rabbit_hole synthetic,
+  26.8M events / 25k customers / 2024-01..2026-03, as_of 2025-06-01).
+- **Result — the engine RUNS end-to-end on Layer A** (train → whitening →
+  portfolio → intrinsic → products), but two gates do NOT transfer:
+  - **13/13 predictive skills PASS** (agg +1.42, dt +65, mask +5.72, sf +7.72,
+    query +111, ...). The predictive portfolio generalizes across streams.
+  - **Intrinsic 4/5**: OOT 0.975, MI, Lipschitz, info-plane PASS;
+    **slow-trajectory cos -0.344 FAIL** (vs +0.119 on Instacart).
+  - **Geometry FAIL**: PR/dim 0.083 vs the calibrated floor 0.25 — rabbit_hole's
+    intrinsic capacity (~0.09) is far below Instacart's (~0.30).
+- **Bugs found and fixed (native robustness, committed):**
+  1. `GeometryBank.penalties` eigvalsh crashed on the ill-conditioned
+     correlation matrix (float64 + ridge + fail-safe).
+  2. `ortho` used the raw cross-covariance, which scales with state
+     magnitude^2 (~2e5 on Layer A) → gradient blowup → non-finite val →
+     early stop at 2 evals. Now computed on standardized halves (bounded).
+  3. `volume` slogdet wrapped; `val_metric` skips non-finite terms.
+- **Honest conclusion:** the predictive skills are stream-general; the two
+  structural gates carry an Instacart-calibrated constant that must become
+  **per-stream data-derived** — the geometry floor should be derived from the
+  stream's own achievable whitened rank (~0.09 here), and the trajectory
+  slow-band cutoff should be a data-derived τ rather than the delta-bias median.
+  This is the next self-governance step: calibrate the invariants from the input,
+  not from a previous run.
