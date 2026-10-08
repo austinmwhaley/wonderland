@@ -29,25 +29,22 @@
 
 ## Micro
 
-- **Current task:** v3.2.0 — make the whitening-dependent gates reproducible
-  (DEC-028). Root cause of the v3.1.0 geometry/OOT chaos: the boundary
-  `Sigma^{-1/2}` had condition ~1000 and amplified GPU matmul nondeterminism
-  ~1e3x (identical command → eff_rank 21.6 then 56.2; model's true consumed
-  rank ~0.084). Fixes: (1) condition-capped whitening — eigenvalues floored at
-  `whiten_cond_floor*max` (default 1e-2, κ(W)≤10), now stable under 1e-4
-  perturbations; (2) new `spectrum` objective (penalize `var(log per-dim
-  variance)`) to raise the true rank toward the 0.30 bar. `rank` already trained
-  on raw `proj(h)`, so no re-target needed. Full Instacart v3.2.0 run in
-  progress (`/tmp/opencode/insta_v32`).
-- **Last completed:** v3.1.0 slow-trajectory fix (DEC-027, intrinsic cos
-  -0.3443→+0.0131); whitening determinism (all states, no 4096 subsample);
-  condition-cap + spectrum objective; 241 fast tests green.
+- **Current task:** v4.0 — self-governing encoder, all four macro shifts (DEC-029).
+  1. unified multi-timescale SSM (per-channel `delta_bias` spectrum; replaces the
+  expert bank + intent filter); 2. differentiable Newton-Schulz ZCA at the donor
+  boundary (spectral-norm normalized, eps-capped, frozen at inference);
+  3. log-det trunk-volume barrier; 4. scale-free gates (Marchenko-Pastur isotropy
+  score + CCA OOT over the effective rank); 5. adaptive information bottleneck
+  with a dual-ascent beta controller on DWA+PCGrad. All config-gated (defaults on
+  for v4.0). Full Instacart run in progress (`/tmp/opencode/insta_v40`).
+- **Last completed:** v3.2.0 condition-capped whitening + soft-spectrum (gates
+  reproducible; honest geometry 0.21). v4.0 code + 4 regression tests; 245 fast
+  tests green; v4.0 smoke run end-to-end.
 - **Immediate next 3 actions:**
-  1. Grade v3.2.0; confirm geometry/OOT reproduce across ≥3 identical runs and
-     report the honest geometry value.
-  2. If geometry < 0.30, strengthen the spectrum/rank lever (or raise
-     `whiten_cond_floor` headroom) and retrain.
-  3. Produce the report card and update DECISIONS/STATUS.
+  1. Grade v4.0 (portfolio + intrinsic); confirm reproducibility across runs.
+  2. Produce the report card; record honest verdicts (gates are now scale-free,
+     so FAIL is meaningful).
+  3. Update DECISIONS/STATUS with the measured v4.0 result.
 - **Environment:** repo `~/Documents/wonderland` (main, CI green);
   `python3 -m pytest -m "not slow"` -> 215 passed; GPU cuda available;
   standing products `looking_glass/artifacts/cfm/cfm_products.duckdb`

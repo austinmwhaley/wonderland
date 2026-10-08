@@ -91,6 +91,7 @@ def _disentanglement(z: np.ndarray, ts: np.ndarray, seed: int) -> dict:
     # any dimension (unlike the covariance-difference ratio, which grew with D
     # and was only partially reproducible; measured 2.15-2.52 at D=256).
     cca = _canonical_corrs(early, late)
+
     # Aggregate over the EFFECTIVE rank, not all D dims: a genuinely low-rank
     # representation (e.g. 20 of 256 dims) has only ~20 high canonical
     # correlations, so a mean over all 256 would be diluted toward 0 even for a

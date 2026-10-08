@@ -178,6 +178,7 @@ class CFMConfig:
     aib: bool = True
     aib_lr: float = 0.05
     aib_target_rank: float = 0.5  # target batch PR/dim the controller holds
+    aib_beta_max: float = 5.0  # cap on the compression multiplier
     ortho_weight: float = 0.1  # cross-subspace ortho-loss weight
     epochs: int = 3
     batch: int = 64

@@ -305,9 +305,13 @@ def train_cfm(cfg: CFMConfig):
                     _c = (_z.T @ _z) / max(_z.shape[0] - 1, 1)
                     _ev = torch.linalg.eigvalsh(_c.double()).clamp(min=0.0)
                     _pr = float((_ev.sum() ** 2 / (_ev**2).sum().clamp(min=1e-24)) / _c.shape[0])
-                cfg._aib_beta = max(
-                    0.0,
-                    float(cfg._aib_beta) + float(cfg.aib_lr) * (_pr - float(cfg.aib_target_rank)),
+                cfg._aib_beta = min(
+                    float(getattr(cfg, "aib_beta_max", 5.0)),
+                    max(
+                        0.0,
+                        float(cfg._aib_beta)
+                        + float(cfg.aib_lr) * (_pr - float(cfg.aib_target_rank)),
+                    ),
                 )
             except (RuntimeError, Exception):
                 pass
@@ -718,22 +722,23 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
             zu = zu - zu.mean(dim=0, keepdim=True)
             cov = (zu.T @ zu) / (zu.shape[0] - 1)
             d = cov.shape[0]
-            eps = 1e-2 * cov.diagonal().mean().clamp(min=1e-12)
+            tr = cov.diagonal().mean().clamp(min=1e-12)
             eye = torch.eye(d, device=cov.device, dtype=cov.dtype)
-            _, logdet = torch.linalg.slogdet(cov + eps * eye)
+            _, logdet = torch.linalg.slogdet(cov / tr + 1e-2 * eye)  # trace-normalized
             T_["volume"] = -logdet / d
     if getattr(cfg, "aib", False) and h.shape[0] >= 2:
-        # Adaptive Information Bottleneck (v4.0, DEC-029): Gaussian KL(q(z)||N(0,I))
-        # on the projected codes — the compression cost. Its multiplier is tuned
-        # by a dual-ascent controller in the training loop (`_aib_beta`), which
-        # raises compression when the batch rank exceeds target and eases it when
-        # rank falls, so geometry is held by the bottleneck rather than a static
-        # weight.
+        # Adaptive Information Bottleneck (v4.0, DEC-029, recipe Step 5): KL of
+        # the projected codes to a MATCHED isotropic prior N(0, sigma^2 I), scaled
+        # so it is O(1) per dim (the raw KL on unnormalized codes was ~650 and
+        # diverged training — measured). Its multiplier is tuned by a dual-ascent
+        # controller in the training loop (`_aib_beta`).
         with torch.autocast(device_type=h.device.type, enabled=False):
             zu = model.proj(h).float()
-            mu = zu.mean(0)
-            var = zu.var(0) + 1e-8
-            T_["compress"] = (0.5 * (mu.pow(2) + var - var.log() - 1.0)).sum()
+            zc = zu - zu.mean(0)  # remove head bias (not information to compress)
+            var = zc.var(0) + 1e-8
+            ratio = var / var.mean().clamp(min=1e-12)
+            # bounded rate above the isotropic (unit-variance-ratio) floor
+            T_["compress"] = 0.5 * (ratio - ratio.log() - 1.0).mean()
     if "variance" in cfg.objectives:
         # fp32 on purpose: std over a fp16-autocast batch overflows with large
         # activations and the hinge degenerates (measured: combined -> 0.0000)
