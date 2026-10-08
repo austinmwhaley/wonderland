@@ -190,3 +190,14 @@ def test_input_lowpass_smooths_alternating_input():
         return float(np.mean(np.abs(np.diff(z, axis=0)) ** 2))
 
     assert hf(y) < hf(x[0].numpy())  # the spectral bottleneck removes high-freq energy
+
+
+def test_composition_closure_canary():
+    """The affine recurrence is a monoid action: F(g∘f)=F(g)∘F(f) exactly."""
+    from looking_glass.cfm_training import composition_residual
+
+    seqs = _seqs(2)
+    torch.manual_seed(0)
+    model = CFM(EventVocab.build(seqs), dim=32, unified=True)
+    r = composition_residual(model, seqs[0])
+    assert r < 1e-4, r  # nonzero => a non-associative op leaked into the state path

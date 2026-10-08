@@ -798,10 +798,14 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
         with torch.autocast(device_type=h.device.type, enabled=False):
             zu = model.proj(h).float()  # (B, D) unnormalized
             std = zu.std(dim=0)  # per-dim std across the batch
-            # SCALE-FREE target (#11): push each dim's std up to the empirical
-            # MEAN std (equalise), not an assumed unit scale.
-            tgt = std.detach().mean().clamp(min=1e-8)
-            T_["variance"] = (torch.relu(tgt - std).mean() / tgt).float()
+            # TRACE-CONSERVATION anchor (v6, Stage 0): the anchorless ratio
+            # collapsed the trunk to rank-1. A conservation law fixes the scale:
+            # the state's per-dim variance is anchored to the INPUT band's mean
+            # per-dim variance Tr(Cov(x))/D (a derived, data-scaled anchor, not a
+            # literal). Prevents collapse while equalising the spectrum.
+            xc = x.reshape(-1, x.shape[-1]).float()
+            anchor = xc.var(dim=0).mean().clamp(min=1e-8)  # input per-dim variance scale
+            T_["variance"] = (torch.relu(anchor - std.pow(2)).mean() / anchor).float()
     # ---- exact multi-horizon window targets (S2 / DEC-006) ----------------
     # From the state at t, predict log1p(count) and log1p(value-sum) of the
     # events in (t, t+h] for a horizon sampled from the DERIVED gap-quantile
@@ -1060,6 +1064,37 @@ def slow_state_slice(model, h, tau_mult: float = 1.0):
     Falls back to the whole state when the trunk has no per-channel spectrum."""
     m = slow_channel_mask(model, tau_mult=tau_mult)
     return h if m is None else h[..., m]
+
+
+def composition_residual(model, seq) -> float:
+    """Monoid-action closure canary (v6, Stage 0).
+
+    || h(seq) - (F(seq[k:]) ∘ F(seq[:k]))(h0) || / ||h(seq)||: the residual of
+    the composition law F(g∘f)=F(g)∘F(f). Exact (≈0) for the affine recurrence —
+    a NONZERO value means a non-associative operation leaked into the state path
+    (e.g. temporal state not carried). A canary, not a training loss.
+    """
+    import torch
+
+    from looking_glass.cfm_model import _scan
+
+    dev = model._dev()
+    t = _collate([seq], model.vocab, dev)
+    tok = model.tokens_batch(t)
+    ex = model.ssm.experts[0]
+    x = ex.smooth(tok) if getattr(ex, "smooth", None) is not None else tok
+    delta = torch.nn.functional.softplus(ex.W_delta(x) + ex.delta_bias)
+    decay, bx = torch.exp(-delta), ex.W_B(x)
+    T = tok.shape[1]
+    k = max(1, T // 2)
+    with torch.no_grad():
+        _, Hf = _scan(decay, (1 - decay) * bx)
+        h_full = Hf[0, -1]
+        _, H1 = _scan(decay[:, :k], (1 - decay[:, :k]) * bx[:, :k])
+        hk = H1[0, -1]
+        D2, H2 = _scan(decay[:, k:], (1 - decay[:, k:]) * bx[:, k:])
+        h_comp = H2[0, -1] + D2[0, -1] * hk
+    return float(((h_full - h_comp).norm() / h_full.norm().clamp(min=1e-9)).detach())
 
 
 def stream_lowpass_retention(seqs) -> float:
