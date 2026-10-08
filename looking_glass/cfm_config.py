@@ -179,6 +179,9 @@ class CFMConfig:
     aib_lr: float = 0.05
     aib_target_rank: float = 0.5  # target batch PR/dim the controller holds
     aib_beta_max: float = 5.0  # cap on the compression multiplier
+    # v4.2 native self-governing mechanics (DEC-031):
+    tau_mp: float = 0.70  # Marchenko-Pastur PR/dim floor the iso barrier targets
+    iso_gamma: float = 8.0  # barrier sigmoid steepness (self-throttling)
     ortho_weight: float = 0.1  # cross-subspace ortho-loss weight
     epochs: int = 3
     batch: int = 64

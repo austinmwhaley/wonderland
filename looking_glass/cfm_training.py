@@ -222,7 +222,7 @@ def train_cfm(cfg: CFMConfig):
             b = rng.choice(tr_idx, size=min(cfg.batch, len(tr_idx)), replace=False)
             opt.zero_grad()
             with torch.autocast(device_type=device.type, dtype=torch.float16, enabled=use_amp):
-                loss = _loss(
+                task_loss, inv_loss = _loss_split(
                     model,
                     vocab,
                     [a_seqs[i] for i in b],
@@ -230,54 +230,50 @@ def train_cfm(cfg: CFMConfig):
                     weights=balancer.weights(),
                     scales=loss_scales,
                 )
+            pen = None
             if bank is not None:
-                # bank sees every batch's projected states (population window)
+                # bank sees every batch's projected states (population window);
+                # its penalties are part of the INVARIANT group (v4.2, DEC-031).
                 with torch.no_grad():
                     _t_b = _collate([a_seqs[i] for i in b], vocab, device)
                     _yb, _hb = model.ssm(model.tokens_batch(_t_b), mask=_t_b["mask"])
                     bank.push(model.proj(_hb))
                 pen = bank.penalties()
                 if pen["redundancy_bank"] is not None:
-                    # population-global geometry: lambda-driven, on top of batch terms
-                    loss = loss + bank.lam * (
+                    inv_loss = inv_loss + bank.lam * (
                         pen["redundancy_bank"] + pen["eigfloor"] + pen["barrier"]
                     )
             if cfg.pcgrad and use_amp:
-                scaler.scale(loss).backward()
+                # AMP path: single fused backward (no manual projection).
+                scaler.scale(task_loss + inv_loss).backward()
                 scaler.unscale_(opt)
                 scaler.step(opt)
                 scaler.update()
                 model.ema(tau)
                 continue
             if cfg.pcgrad:
-                # GROUPED PCGrad (DEC-020): 2 grouped backwards, not 13
-                # pairwise. g_geom projected onto the plane of g_pred on
-                # conflict — the geometry guard can never destroy predictive
-                # learning; predictive direction stays intact. Applied via
-                # manual param update (no .backward()).
-                g_pred = torch.autograd.grad(loss, params, retain_graph=True, allow_unused=True)
-                g_pred = [torch.zeros_like(p) if g is None else g for p, g in zip(params, g_pred)]
-                if bank is not None and pen.get("redundancy_bank") is not None:
-                    g_geom = torch.autograd.grad(
-                        bank.lam * (pen["redundancy_bank"] + pen["eigfloor"] + pen["barrier"]),
-                        params,
-                        allow_unused=True,
-                    )
-                    g_geom = [
-                        torch.zeros_like(p) if g is None else g for p, g in zip(params, g_geom)
-                    ]
-                    dot = sum((a * b).sum() for a, b in zip(g_pred, g_geom))
-                    n2 = sum((a * a).sum() for a in g_geom)
-                    if dot < 0 and n2 > 0:
-                        proj = dot / n2
-                        g_pred = [a - proj * b for a, b in zip(g_pred, g_geom)]
-                for p_, g_ in zip(params, g_pred):
+                # TASK-STRUCTURAL PCGrad (v4.2, DEC-031): two vector spaces.
+                # g_inv is projected onto the null space of g_task on conflict, so
+                # the structural constraints only refine the representation
+                # without ever decreasing predictive learning. Manual update.
+                g_task = torch.autograd.grad(
+                    task_loss, params, retain_graph=True, allow_unused=True
+                )
+                g_task = [torch.zeros_like(p) if g is None else g for p, g in zip(params, g_task)]
+                g_inv = torch.autograd.grad(inv_loss, params, retain_graph=False, allow_unused=True)
+                g_inv = [torch.zeros_like(p) if g is None else g for p, g in zip(params, g_inv)]
+                dot = sum((a * b).sum() for a, b in zip(g_inv, g_task))
+                n2 = sum((a * a).sum() for a in g_task)
+                if dot < 0 and n2 > 0:
+                    proj = dot / n2
+                    g_inv = [a - proj * b for a, b in zip(g_inv, g_task)]
+                for p_, g_ in zip(params, [a + b for a, b in zip(g_task, g_inv)]):
                     p_.grad = g_
                 scaler.step(opt)
                 scaler.update()
                 model.ema(tau)
                 continue
-            scaler.scale(loss).backward()
+            scaler.scale(task_loss + inv_loss).backward()
             scaler.unscale_(opt)
             torch.nn.utils.clip_grad_norm_(params, 1.0)
             scaler.step(opt)
@@ -738,14 +734,20 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
     if "iso" in cfg.objectives and B * T >= 2:
         # large-sample isotropy (v4.2, DEC-031). The geometry-family losses use
         # the FINAL states (B=64), which caps PR/dim at ~0.25 per step — the
-        # trunk could never learn to use its 256 dims. Compute the PR loss on the
-        # per-step states (B*T rows) so the effective sample is large.
+        # trunk could never learn to use its 256 dims. Compute on the per-step
+        # states (B*T rows, large sample). Barrier-conditioned + self-throttling:
+        # the hinge opens only below the MP floor tau_mp and the sigmoid
+        # multiplier -> 0 as PR/dim reaches it, so the term stops competing with
+        # predictive skills once geometry passes.
         with torch.autocast(device_type=h.device.type, enabled=False):
             zy = model.proj(y.reshape(-1, y.shape[-1]).float()).float()
             zy = zy - zy.mean(0, keepdim=True)
             cov = (zy.T @ zy) / (zy.shape[0] - 1)
             pr = cov.diagonal().sum() ** 2 / cov.pow(2).sum().clamp(min=1e-24)
-            T_["iso"] = (1.0 - pr / zy.shape[1]).clamp(min=0.0)
+            pr_frac = (pr / zy.shape[1]).clamp(0.0, 1.0)
+            tau = float(getattr(cfg, "tau_mp", 0.70))
+            lam = torch.sigmoid(float(getattr(cfg, "iso_gamma", 8.0)) * (tau - pr_frac.detach()))
+            T_["iso"] = lam * torch.relu(tau - pr_frac)
     if "trajectory" in cfg.objectives and T >= 3:
         # slow-band smooth-velocity (v4.2, DEC-031): penalize the acceleration
         # ||Delta^2 h_slow||^2 so slow channels stay temporally continuous. This
@@ -1169,6 +1171,22 @@ def forward_states(model, seqs, h0s=None):
 
 def _loss(model, vocab, items, cfg, weights: dict | None = None, scales: dict | None = None):
     return _combine(model, _task_losses(model, vocab, items, cfg), cfg, weights, scales)
+
+
+def _loss_split(model, vocab, items, cfg, weights: dict | None = None, scales: dict | None = None):
+    """(task_loss, invariant_loss) — the two PCGrad groups (v4.2, DEC-031).
+
+    Task = the self-supervised predictive skills. Invariant = the structural
+    geometry/continuity priors (GEOMETRY_FAMILY + `trajectory`). The invariant
+    group is projected orthogonally to the task gradient when they conflict, so
+    structural constraints can never pull down predictive learning."""
+    T_ = _task_losses(model, vocab, items, cfg)
+    inv = set(GEOMETRY_FAMILY) | {"trajectory"}
+    task_T = {k: v for k, v in T_.items() if k not in inv}
+    inv_T = {k: v for k, v in T_.items() if k in inv}
+    return _combine(model, task_T, cfg, weights, scales), _combine(
+        model, inv_T, cfg, weights, scales
+    )
 
 
 def _registry(
