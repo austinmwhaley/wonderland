@@ -331,25 +331,36 @@ def train_cfm(cfg: CFMConfig):
             )
             loss_scales[k] = max(loss_scales[k], 1e-8)  # documented floor
 
+    def _eval_loss(b):
+        # seeded training-loss evaluation (identical stochastic draws) for the
+        # Armijo comparison: monotone descent on the REAL objective.
+        torch.manual_seed(0)
+        with (
+            torch.no_grad(),
+            torch.autocast(device_type=device.type, dtype=torch.float16, enabled=use_amp),
+        ):
+            tl, il = _loss_split(
+                model,
+                vocab,
+                [a_seqs[i] for i in b],
+                cfg,
+                weights=balancer.weights(),
+                scales=loss_scales,
+            )
+        return float((tl + il).detach())
+
     def train_step(n):
         for _ in range(n):
             b = rng.choice(tr_idx, size=min(cfg.batch, len(tr_idx)), replace=False)
+            items = [a_seqs[i] for i in b]
             opt.zero_grad()
             with torch.autocast(device_type=device.type, dtype=torch.float16, enabled=use_amp):
                 task_loss, inv_loss = _loss_split(
-                    model,
-                    vocab,
-                    [a_seqs[i] for i in b],
-                    cfg,
-                    weights=balancer.weights(),
-                    scales=loss_scales,
+                    model, vocab, items, cfg, weights=balancer.weights(), scales=loss_scales
                 )
-            pen = None
             if bank is not None:
-                # bank sees every batch's projected states (population window);
-                # its penalties are part of the INVARIANT group (v4.2, DEC-031).
                 with torch.no_grad():
-                    _t_b = _collate([a_seqs[i] for i in b], vocab, device)
+                    _t_b = _collate(items, vocab, device)
                     _yb, _hb = model.ssm(model.tokens_batch(_t_b), mask=_t_b["mask"])
                     bank.push(model.proj(_hb))
                 pen = bank.penalties()
@@ -357,19 +368,17 @@ def train_cfm(cfg: CFMConfig):
                     inv_loss = inv_loss + bank.lam * (
                         pen["redundancy_bank"] + pen["eigfloor"] + pen["barrier"]
                     )
+            # ARMIJO BACKTRACKING LINE SEARCH (v6 DEC-039): accept the step iff
+            # the training loss does not increase; else revert and halve lr.
+            # Optimizer-agnostic, monotone descent by construction, no phase lag.
+            loss0 = _eval_loss(b)
+            theta0 = [p.detach().clone() for p in params]
             if cfg.pcgrad and use_amp:
-                # AMP path: single fused backward (no manual projection).
                 scaler.scale(task_loss + inv_loss).backward()
                 scaler.unscale_(opt)
                 scaler.step(opt)
                 scaler.update()
-                model.ema(tau)
-                continue
-            if cfg.pcgrad:
-                # TASK-STRUCTURAL PCGrad (v4.2, DEC-031): two vector spaces.
-                # g_inv is projected onto the null space of g_task on conflict, so
-                # the structural constraints only refine the representation
-                # without ever decreasing predictive learning. Manual update.
+            elif cfg.pcgrad:
                 g_task = torch.autograd.grad(
                     task_loss, params, retain_graph=True, allow_unused=True
                 )
@@ -385,13 +394,23 @@ def train_cfm(cfg: CFMConfig):
                     p_.grad = g_
                 scaler.step(opt)
                 scaler.update()
-                model.ema(tau)
-                continue
-            scaler.scale(task_loss + inv_loss).backward()
-            scaler.unscale_(opt)
-            torch.nn.utils.clip_grad_norm_(params, 1.0)
-            scaler.step(opt)
-            scaler.update()
+            else:
+                scaler.scale(task_loss + inv_loss).backward()
+                scaler.unscale_(opt)
+                torch.nn.utils.clip_grad_norm_(params, 1.0)
+                scaler.step(opt)
+                scaler.update()
+            loss1 = _eval_loss(b)
+            _lr = float(opt.param_groups[0]["lr"])
+            if not math.isfinite(loss1) or loss1 > loss0 + 1e-4 * abs(loss0) + 1e-8:
+                with torch.no_grad():  # REVERT + contract
+                    for p_, s_ in zip(params, theta0):
+                        p_.copy_(s_)
+                _lr = _lr * 0.5
+            else:  # monotone progress -> gently expand (bounded by 2/L)
+                _lr = min(_lr * 1.02, _lr_max)
+            opt.param_groups[0]["lr"] = _lr
+            cfg.lr = _lr
             model.ema(tau)
 
     def val_metric():
@@ -484,14 +503,8 @@ def train_cfm(cfg: CFMConfig):
         budget = min(budget, _cap)
         print(f"[govern] budget capped to {budget} steps (max_steps)", flush=True)
     gov, best_state = AT.govern(
-        train_step,
-        val_metric,
-        budget,
-        res.eval_every,
-        res.patience,
-        cfg.seed,
-        adjust_lr=_adjust_lr,
-    )
+        train_step, val_metric, budget, res.eval_every, res.patience, cfg.seed
+    )  # lr is controlled per-step by the Armijo line search (no eval-cadence lag)
     # STABILITY IS A HARD INVARIANT (v6): a divergent run is a FAILURE, never a
     # rescued green. Record it; the portfolio gate fails on an unstable run.
     cfg._stable = not bool(gov.get("diverged", False))
