@@ -210,56 +210,15 @@ def train_cfm(cfg: CFMConfig):
     use_amp = device.type == "cuda"
     scaler = torch.amp.GradScaler("cuda", enabled=use_amp)
     balancer = DWA(sorted(cfg.objectives), temp=cfg.dwa_temp)
-    # Learning rate from the CURVATURE LAW (v6 Stage 5, #10): gradient descent is
-    # monotonically stable iff lr < 2/L, where L = local Lipschitz of the gradient
-    # (top Hessian eigenvalue), measured at init by finite difference along the
-    # gradient. lr = 0.5/L is scale-free AND stability-guaranteed — no clip
-    # ceiling, no governor rescue needed.
-    opt = None
-    if abs(float(cfg.lr) - 3e-3) < 1e-12:  # only when not explicitly overridden
-        try:
-            _b = rng.choice(tr_idx, size=min(cfg.batch, len(tr_idx)), replace=False)
-            _items = [a_seqs[i] for i in _b]
-
-            def _grad():
-                _tl, _il = _loss_split(
-                    model, vocab, _items, cfg, weights=balancer.weights(), scales={}
-                )
-                return torch.autograd.grad(_tl + _il, params, allow_unused=True)
-
-            g0 = _grad()
-            gn = math.sqrt(sum(float((x * x).sum()) for x in g0 if x is not None) + 1e-24)
-            state = [p.detach().clone() for p in params]
-            eps = 1e-4 * math.sqrt(sum(float((p * p).sum()) for p in params))
-            with torch.no_grad():
-                for p, g in zip(params, g0):
-                    if g is not None:
-                        p.add_(eps * g / gn)  # step along the (unit) gradient direction
-            g1 = _grad()
-            with torch.no_grad():
-                for p, s in zip(params, state):
-                    p.copy_(s)
-            dg = math.sqrt(
-                sum(
-                    float(((a - b) * (a - b)).sum())
-                    for a, b in zip(g1, g0)
-                    if a is not None and b is not None
-                )
-                + 1e-24
-            )
-            L = dg / max(eps, 1e-12)
-            cfg.lr = float(0.5 / max(L, 1e-8))
-            cfg._lr_max = float(2.0 / max(L, 1e-8))  # stability bound (lr < 2/L)
-            print(
-                f"[lr] curvature L={L:.3e} -> lr {cfg.lr:.2e} (init 0.5/L; "
-                f"trust-region max {cfg._lr_max:.2e} = 2/L)",
-                flush=True,
-            )
-        except Exception as e:
-            print(f"[lr] curvature derivation failed ({e}); fallback 3e-3", flush=True)
+    # FR v2.0 Path 2 (DEC-045): NO curvature-seeded lr. The init-curvature `L`
+    # of a random deep net overestimates the safe step by orders of magnitude
+    # (measured L~1e6 -> lr~1e-7 -> frozen). Stability is provided by the
+    # per-step Armijo line search (accept iff the training loss decreases),
+    # which is curvature-free. Seed a documented base rate; Armijo adjusts it.
+    opt = torch.optim.Adam(params, lr=cfg.lr, weight_decay=1e-4)
     if opt is None:
         opt = torch.optim.Adam(params, lr=cfg.lr, weight_decay=1e-4)
-    _lr_max = float(getattr(cfg, "_lr_max", float(cfg.lr) * 4.0))
+    _lr_max = 1e-2  # generous documented cap; Armijo owns the step (FR v2.0)
 
     # Adaptive trust-region lr (v6 DEC-039): LOCAL curvature scan each eval
     # L_t = ||g_t - g_{t-1}|| / ||theta_t - theta_{t-1}||. The step expands (x1.2)
@@ -773,11 +732,19 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
         loss = F.mse_loss(pred, tgt, reduction="none").squeeze(-1).reshape(-1)
         return (loss * valid).sum() / nv
 
+    # FR v2.0 (DEC-045): SCALE-FREE regression targets — standardize each by the
+    # batch's own empirical scale so the MSE is O(1) (dimensionless). Raw targets
+    # (dt in log1p-seconds, value in dollars) produced loss ~1e3 -> L ~ 1e6 ->
+    # lr collapse. This is information-conservation / scale-free (no fixed units).
+    _dt_full = t["dt"][:, 1:]
+    dt_mu, dt_sd = _dt_full.mean(), _dt_full.std().clamp(min=1e-6)
+    _v_full = torch.log1p(t["val"][:, 1:].abs())
+    v_mu, v_sd = _v_full.mean(), _v_full.std().clamp(min=1e-6)
     T_ = {
         "next": mce(model.head_next(y[:, :-1]), t["et"][:, 1:]),
         "entity": mce(model.head_ent(y[:, :-1]), t["en"][:, 1:]),
-        "dt": mmse(model.head_dt(y[:, :-1]), t["dt"][:, 1:]),
-        "value": mmse(model.head_val(y[:, :-1]), torch.log1p(t["val"][:, 1:].abs())),
+        "dt": mmse(model.head_dt(y[:, :-1]), (_dt_full - dt_mu) / dt_sd),
+        "value": mmse(model.head_val(y[:, :-1]), (_v_full - v_mu) / v_sd),
     }
     # Occurrence horizon derived from the data (median gap) so classes balance,
     # not a fixed window that a frequent exogenous event can saturate.
@@ -824,7 +791,7 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
         h_q = y[rows, i] * decay.unsqueeze(-1)
         tgt_next = t["et"][rows, i_next]
         ce_q = F.cross_entropy(model.head_next(h_q), tgt_next, reduction="none")
-        tgt_dt = t["dt"][rows, i_next].reshape(-1)
+        tgt_dt = ((t["dt"][rows, i_next] - dt_mu) / dt_sd).reshape(-1)  # scale-free
         mse_q = F.mse_loss(model.head_dt(h_q).squeeze(-1), tgt_dt, reduction="none")
         w = m_i.clamp(min=0)
         # ignore pad targets (et == n_et) and future company actions
@@ -1030,6 +997,9 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
         pick = torch.randint(0, len(cfg.agg_horizons_days), (B,), device=dev)
         h_sec = (hs[pick] * 86400.0).unsqueeze(1)  # (B,1)
         tgt = agg_window_targets(secs, vals_lp, t["mask"], h_sec)  # (B,T,2)
+        _tm = tgt.mean(dim=(0, 1), keepdim=True)
+        _ts = tgt.std(dim=(0, 1), keepdim=True).clamp(min=1e-6)
+        tgt = (tgt - _tm) / _ts  # FR v2.0: scale-free window targets
         hin = torch.log1p(h_sec / 86400.0).unsqueeze(1).expand(B, T, 1)
         pred_agg = model.head_agg(torch.cat([y, hin], dim=-1))  # (B,T,2)
         m3 = t["mask"].unsqueeze(-1)
@@ -1061,6 +1031,7 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
     bprime[:, 1:] = dprime[:, 1:] * phir[:, :-1]
     _, Sf = _scan(dprime, bprime)
     R = torch.flip(Sf, dims=[1])  # (B*S,T,PD)
+    R = (R - R.mean(dim=1, keepdim=True)) / R.std(dim=1, keepdim=True).clamp(min=1e-6)  # scale-free
     ye = y.unsqueeze(1).expand(B, GAMS, T, y.shape[-1]).reshape(B * GAMS, T, y.shape[-1])
     gcol = gamma.view(B, GAMS, 1, 1).expand(B, GAMS, T, 1).reshape(B * GAMS, T, 1)
     mask_e = t["mask"].unsqueeze(1).expand(B, GAMS, T).reshape(B * GAMS, T)
