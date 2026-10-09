@@ -258,23 +258,57 @@ def train_cfm(cfg: CFMConfig):
             print(f"[lr] curvature derivation failed ({e}); fallback 3e-3", flush=True)
     if opt is None:
         opt = torch.optim.Adam(params, lr=cfg.lr, weight_decay=1e-4)
+    _lr_max = float(getattr(cfg, "_lr_max", float(cfg.lr) * 4.0))
 
-    # Adaptive trust-region lr (v6 DEC-039): expand the step (x1.2) while the
-    # held-out metric progresses monotonically, contract (x0.5) on regression,
-    # bounded by the curvature stability limit lr_max = 2/L. Monotone stability
-    # by construction — never a post-hoc rescue.
-    _lr_max = float(cfg._lr_max) if hasattr(cfg, "_lr_max") else float(cfg.lr) * 4.0
+    # Adaptive trust-region lr (v6 DEC-039): LOCAL curvature scan each eval
+    # L_t = ||g_t - g_{t-1}|| / ||theta_t - theta_{t-1}||. The step expands (x1.2)
+    # while the held-out metric progresses, contracts (x0.5) on regression, and
+    # is capped by the CURRENT stability limit lr < 2/L_t (so it grows as the
+    # landscape smooths past the inflated init curvature). Monotone by construction.
+    _lr_min_floor = 1e-6
+    _prev = {"theta": [p.detach().clone() for p in params], "g": None}
 
     def _adjust_lr(v, best, prev_best, tol):
+        _b = rng.choice(tr_idx, size=min(cfg.batch, len(tr_idx)), replace=False)
+        _tl, _il = _loss_split(
+            model,
+            vocab,
+            [a_seqs[i] for i in _b],
+            cfg,
+            weights=balancer.weights(),
+            scales=loss_scales,
+        )
+        _g = torch.autograd.grad(_tl + _il, params, allow_unused=True)
+        with torch.no_grad():
+            lt = math.sqrt(
+                sum(float((p.detach() - q).pow(2).sum()) for p, q in zip(params, _prev["theta"]))
+                + 1e-24
+            )
+            if _prev["g"] is not None:
+                dg = math.sqrt(
+                    sum(
+                        float(((a - b).pow(2).sum()))
+                        for a, b in zip(_g, _prev["g"])
+                        if a is not None and b is not None
+                    )
+                    + 1e-24
+                )
+                l_local = dg / max(lt, 1e-12)
+            else:
+                l_local = math.inf
+        _prev["theta"] = [p.detach().clone() for p in params]
+        _prev["g"] = _g
+        cap = min(_lr_max, 2.0 / max(l_local, 1e-8))  # never exceed the local bound
         lr = float(opt.param_groups[0]["lr"])
         if v < prev_best - tol:
-            lr = min(lr * 1.2, _lr_max)
+            lr = min(lr * 1.2, cap)
         elif v > prev_best + tol:
             lr = lr * 0.5
+        lr = max(lr, 0.0)
         opt.param_groups[0]["lr"] = lr
         cfg.lr = lr
-        print(f"        [trust-region] lr -> {lr:.3e}", flush=True)
-        return lr
+        print(f"        [trust-region] L_t={l_local:.2e} cap={cap:.2e} lr -> {lr:.3e}", flush=True)
+        return lr if lr > _lr_min_floor else 0.0
 
     loss_scales: dict = {}  # EMA per task — the unit system (DEC-018)
     bank = (
