@@ -119,3 +119,16 @@ mask the collapse. No green tag on the current trunk.
   structurally-distinct remaining candidate is **§4.3 — a NON-LINEAR local
   expansion** (an actual change of the update's function class, not a linear
   reparameterization or a batch normalization). Spike it with the same gate.
+
+### 8.3 Non-linear local expansion (§4.3) — POSITIVE (first rank-changing mechanism)
+- Variants measured on held-out rabbit_hole (dim=64, random init, no batch-fit):
+  base **0.023** · sigmoid-gate 0.0196 · additive-tanh MLP 0.0234 ·
+  **multiplicative `h ⊗ x` 0.0398 (1.73x, transfers)**.
+- The **bilinear** term `h_t = decay·h + (1−decay)·bx + 0.3·(tanh(hA) ⊙ bx)` is
+  the only candidate that raises the *transferable* cross-sample rank (linear
+  centering and batch normalization were no-ops/manufacturing). It is
+  **per-sample** (no batch coupling) → keeps `F` a morphism; rank-changing because
+  the image of a bilinear map can exceed the linear aggregate's span.
+- **Verdict: ADVANCE.** Integrate the multiplicative interaction into the
+  SelectiveSSM update, then train + grade: keep iff held-out cross-sample PR/dim
+  reaches the stream capacity floor with Armijo monotone and barrier finite at t=0.
