@@ -72,11 +72,6 @@ class SelectiveSSM(nn.Module):
         self.W_B = nn.Linear(dim, dim)
         self.W_C = nn.Linear(dim, dim)
         self.W_out = nn.Linear(dim, dim)
-        with torch.no_grad():  # DEC-040: orthogonal input/output frames at t=0
-            for _lin in (self.W_B, self.W_C):
-                _lin.weight.copy_(cayley_orthogonal(dim, _lin.weight.device, _lin.weight.dtype))
-                if _lin.bias is not None:
-                    _lin.bias.zero_()
         # per-channel timescale (log-decay) offset; LEARNED.
         if delta_spectrum:
             self.delta_bias = nn.Parameter(torch.linspace(spectrum[0], spectrum[1], dim))
@@ -105,12 +100,22 @@ class SelectiveSSM(nn.Module):
             self.beta = nn.Parameter(torch.tensor(0.3))
             self.bilinear_iters = 8  # fixed-point passes (cap); converged earlier on tol
             self.bilinear_tol = 1e-4  # state-change convergence (converge, not count)
+            self.bilinear_normalize = True  # Path 1: unit-norm gate (bounded Lipschitz)
         self.smooth = None
         if slow_smooth:
             dbv = self.delta_bias.detach().numpy().astype(float)
             slow = dbv <= np.median(dbv)
             r0 = np.where(slow, 0.95, 0.05)
             self.smooth = IntentFilter(dim, retention_init=r0, use_proj=False)
+
+    def _nl_gate(self, H):
+        """Unit-norm tanh gate (v7 DEC-043, Path 1): bounds the bilinear term's
+        Lipschitz constant without shrinking W_nl, preserving the rank gain.
+        Falls back to a projection (no normalization) via bilinear_normalize."""
+        g = torch.tanh(self.W_nl(H))
+        if getattr(self, "bilinear_normalize", True):
+            g = g / (g.norm(dim=-1, keepdim=True) + 1e-6)
+        return g
 
     def forward(self, x, h0=None, mask=None):
         if self.smooth is not None:
@@ -144,7 +149,7 @@ class SelectiveSSM(nn.Module):
                 if h0v is not None:
                     H = H + D * h0v.unsqueeze(1)
                 for _ in range(max(int(self.bilinear_iters), 1)):
-                    g = torch.tanh(self.W_nl(H))
+                    g = self._nl_gate(H)
                     Dn, Hn = _scan(decay, drive0 + self.beta * (g * bx))
                     if h0v is not None:
                         Hn = Hn + Dn * h0v.unsqueeze(1)
@@ -155,7 +160,7 @@ class SelectiveSSM(nn.Module):
                 Hstar = H
             # (2) ONE differentiable pass with the converged (detached) gate;
             # grad flows through W_nl (tanh) and the drive. Memory = 1 scan graph.
-            g = torch.tanh(self.W_nl(Hstar))
+            g = self._nl_gate(Hstar)
             D, Hout = _scan(decay, drive0 + self.beta * (g * bx))
             if h0v is not None:
                 Hout = Hout + D * h0v.unsqueeze(1)
