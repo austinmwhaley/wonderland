@@ -132,3 +132,27 @@ mask the collapse. No green tag on the current trunk.
 - **Verdict: ADVANCE.** Integrate the multiplicative interaction into the
   SelectiveSSM update, then train + grade: keep iff held-out cross-sample PR/dim
   reaches the stream capacity floor with Armijo monotone and barrier finite at t=0.
+
+## 9. v7 RFC item — Stiff-Update Stability Reconciliation (OPEN, DEC-042)
+
+**Problem:** the bilinear update `h⊗x` (correct: +1.93× transferable
+cross-sample rank) spikes the init curvature to `L≈1e7`, and any `lr∝1/L`
+derivation collapses to `~4.6e-8` → frozen training. Curvature preconditioning
+over-reacts to the stiff high-frequency directions of a non-linear manifold.
+
+**Target:** a **schedule-free, curvature-free** stability guarantee compatible
+with stiff non-linear updates. Candidate directions:
+1. **Normalized / diffeomorphic update** — constrain the state map to a
+   norm-preserving (or bounded-Jacobian) form so stability is structural, not a
+   step-size estimate.
+2. **Step acceptance on the un-preconditioned direction** — evaluate the actual
+   training-loss change for a candidate step (Armijo on the true Adam direction)
+   rather than imposing a global `2/L` bound; reject on increase. This is
+   optimizer-agnostic and does not estimate `L`.
+3. **Spectral-normalized bilinear term** — bound the Lipschitz constant of
+   `tanh(W_nl ·)` (e.g., spectral norm ≤ 1) so the term cannot stiffen the
+   landscape.
+
+**Gate:** bilinear ON → held-out cross-sample PR/dim clears the stream capacity
+floor **with monotone training-loss descent and no step-collapse** (no frozen
+run), on ≥2 diverse streams. Only then integrate + run the triad.

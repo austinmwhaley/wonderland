@@ -908,3 +908,32 @@ state is **rank-1 dominated**, and no loss, barrier, line-search, or orthogonal
 init can raise it (Linear State Collapsibility). **Do not iterate on
 optimization/init for this** — it is a state-aggregation property. v6.0.0 is
 closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
+
+## DEC-042 — FR v2.0 alignment + The Bilinear–Curvature Incompatibility (negative result)
+
+- **Date:** 2026-10-09
+- **FR v2.0 alignment:** doctrine recorded in `AGENTS.md` — invariants are enforced
+  **inside the state update**, never soft losses / step tricks / governor rescues;
+  each pillar has a measured receipt. The **log-det loss barrier is DEPRECATED**
+  (a loss-term invariant violates the Structural Alignment Rule and deadlocked
+  Armijo at the rank-1 init). Rank is to be enforced structurally (bilinear)
+  instead.
+- **Bilinear recurrence built:** `SelectiveSSM(bilinear_recurrence)` — memory-safe
+  detached fixed-point parallel scan (converge the gate under `no_grad`, one
+  differentiable scan; no Python loop). Measured **1.93× transferable
+  cross-sample rank** (held-out, no batch-fit). 246 tests green. This is the
+  Structural-Alignment-correct rank mechanism.
+- **NEGATIVE RESULT — the incompatibility:** integrating the bilinear update with
+  the curvature-derived lr / Armijo **freezes training**: the stiff non-linear
+  term spikes the init curvature `L ≈ 1.085e7` → `lr = 0.5/L ≈ 4.6e-8` → no
+  progress (10/13 skills fail). Same family as the Cayley-init spike: **the init
+  curvature badly overestimates the safe `L`** for a stiff non-linear update, and
+  the derivations compound into a step-collapse.
+- **Conclusion:** both mechanisms are individually correct (structural rank;
+  structural stability) but **mutually incompatible as wired**. This is a
+  stiff-dynamics/integration problem, not a knob. **Optimization work HALTED** —
+  no further in-session tuning (the empirical push-pull the doctrine forbids).
+- **v7 RFC item (new):** *Stiff-Update Stability Reconciliation* — a
+  schedule-free, curvature-free stability guarantee compatible with a stiff
+  non-linear update (normalized/diffeomorphic update map, or step acceptance on
+  the un-preconditioned direction). See `specs/V7_RFC.md` §9.
