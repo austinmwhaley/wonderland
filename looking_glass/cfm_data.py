@@ -48,6 +48,27 @@ def _read_stream(cfg: CFMConfig):
                     raise ValueError(
                         f"--as-of must be an ISO date/datetime, got {cfg.as_of!r}"
                     ) from e
+            # Scale guard (speed/memory): a large stream (100M+ rows) cannot be
+            # materialized. Push a DETERMINISTIC customer-hash sample into SQL so
+            # ~read_mult x the training sample is read — the full stream lives in
+            # DuckDB, only a bounded, seeded subset is loaded into memory.
+            _sc = getattr(cfg, "sample_customers", None)
+            if _sc:
+                try:
+                    _pop = con.execute(
+                        f"SELECT count(distinct customer_key) FROM {cfg.table}{where}"
+                    ).fetchone()[0]
+                    if _pop and _pop > 3 * int(_sc):
+                        _thr = max(1, int(round(3 * int(_sc) / _pop * 1_000_000)))
+                        _h = f"hash(customer_key) % 1000000 < {_thr}"
+                        where = (where + " AND " if where.strip() else " WHERE ") + _h
+                        print(
+                            f"[read] stream has {_pop} customers -> sampled ~{3 * int(_sc)} "
+                            f"(hash threshold {_thr}/1e6)",
+                            flush=True,
+                        )
+                except Exception:
+                    pass  # fall through to a full read (small streams)
             df = con.execute(
                 f"SELECT {', '.join(cols)} FROM {cfg.table}{where} ORDER BY customer_key, event_ts"
             ).pl()
