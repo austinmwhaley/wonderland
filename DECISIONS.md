@@ -875,3 +875,36 @@ same battery
   (S skew), so orthogonal event-space channels map to orthogonal latent
   directions at `t=0` and `R_h(t=0) ≈ I` (the barrier is satisfied at step 0).
   The readout scale is set so `R_cons(t=0)=1`.
+
+### DEC-040 Addendum — Linear State Collapsibility (negative result, ARCHIVED)
+
+- **Finding:** a Cayley-orthogonal initialization of `(W_B, W_C, proj)` does **not**
+  resolve cross-sample rank collapse; it *worsens* optimization (curvature
+  `L` exploded ~4000× → `lr ≈ 2e-8`) while the across-customer state stays
+  rank-1.
+- **Linear State Collapsibility Theorem:** when a continuous SSM aggregates
+  asynchronous event sequences through linear input projections `W_B·x_t`, the
+  cross-sequence state distribution is dominated by a common first-order
+  temporal density component. Because orthogonal maps `Q ∈ O(D)` preserve
+  subspace rank, orthogonalizing the parameters only **rotates the low-rank
+  attractor** into a new basis — it cannot raise the intrinsic rank of the
+  cross-sample manifold.
+- **Four-mechanism wall (all hit the same bound):** soft DWA penalties (rank
+  traded away) · Armijo line search (converges to the collapsed min) · hard
+  log-det barrier + Armijo (deadlock: escape needs non-monotone steps) ·
+  Cayley-orthogonal init (rank preserved, curvature exploded).
+- **Conclusion:** this is a **structural property of state aggregation**, not a
+  loss/step/init defect. Optimization, barrier, and initialization passes are
+  frozen. The fix is a v7 trunk-architecture change.
+ EOF
+cat >> AGENTS.md <<'EOF'
+
+### Representation Bound (DEC-040, v6 diagnostic close)
+
+The v6 diagnostic cycle **succeeded as a diagnostic and is bounded as a
+representation**: the isometric boundary, conservation ratio, Markov sufficiency
+gap, and hard stability law are proven and kept; but the trunk's cross-sample
+state is **rank-1 dominated**, and no loss, barrier, line-search, or orthogonal
+init can raise it (Linear State Collapsibility). **Do not iterate on
+optimization/init for this** — it is a state-aggregation property. v6.0.0 is
+closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
