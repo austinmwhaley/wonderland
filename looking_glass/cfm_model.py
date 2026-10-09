@@ -115,6 +115,7 @@ class SelectiveSSM(nn.Module):
         bilinear=False,
         readout_norm=True,
         input_norm=True,
+        readout_skip=False,
     ):
         super().__init__()
         # variance-preserving recurrence (v6.1, DEC-047): normalize the token
@@ -122,6 +123,19 @@ class SelectiveSSM(nn.Module):
         # readout so heads see unit-scale features. Both per-sample.
         self.input_norm = RMSNorm(dim) if input_norm else None
         self.readout_norm = RMSNorm(dim) if readout_norm else None
+        # readout skip (v6.2, DEC-048): the recurrent state is a low-pass
+        # aggregate; the per-event transition (e.g. cart->purchase) is a function
+        # of the CURRENT token, which survives only weakly/entangled in the state
+        # (measured: state->next CE 0.37 vs the 1-gram's 0.25; adding the state to
+        # the raw current event even HURTS). A direct token->readout skip (the `D`
+        # term of a standard SSM) restores the current event to the readout so a
+        # linear head can express the transition table. Identity-init, learnable.
+        if readout_skip:
+            self.skip = nn.Linear(dim, dim, bias=False)
+            with torch.no_grad():
+                self.skip.weight.copy_(torch.eye(dim))
+        else:
+            self.skip = None
         self.W_delta = nn.Linear(dim, dim)
         self.W_B = nn.Linear(dim, dim)
         self.W_C = nn.Linear(dim, dim)
@@ -174,6 +188,7 @@ class SelectiveSSM(nn.Module):
     def forward(self, x, h0=None, mask=None):
         if self.input_norm is not None:
             x = self.input_norm(x)
+        xs = x  # post-input-norm token for the readout skip (current event)
         if self.smooth is not None:
             x = self.smooth(x, mask=mask)
         bm = getattr(self, "band_mask", None)
@@ -221,12 +236,16 @@ class SelectiveSSM(nn.Module):
             if h0v is not None:
                 Hout = Hout + D * h0v.unsqueeze(1)
             y = self.W_C(Hout)
+            if self.skip is not None:
+                y = y + self.skip(xs)
             return (self.readout_norm(y) if self.readout_norm is not None else y), Hout[:, -1]
         D, H = _scan(decay, (1.0 - decay) * bx)  # h_t (zero-init)
         if h0 is not None:
             h0v = h0 if h0.dim() >= 2 else h0.unsqueeze(0)
             H = H + D * h0v.unsqueeze(1)
         y = self.W_C(H)
+        if self.skip is not None:
+            y = y + self.skip(xs)
         return (self.readout_norm(y) if self.readout_norm is not None else y), H[:, -1]
 
 
@@ -323,6 +342,7 @@ class MultiScaleSSM(nn.Module):
         bilinear=False,
         readout_norm=True,
         input_norm=True,
+        readout_skip=False,
     ):
         super().__init__()
         if delta_spectrum:
@@ -339,6 +359,7 @@ class MultiScaleSSM(nn.Module):
                         bilinear=bilinear,
                         readout_norm=readout_norm,
                         input_norm=input_norm,
+                        readout_skip=readout_skip,
                     )
                 ]
             )
@@ -348,7 +369,13 @@ class MultiScaleSSM(nn.Module):
         self.n_experts = n_experts
         self.experts = nn.ModuleList(
             [
-                SelectiveSSM(chan, b, readout_norm=readout_norm, input_norm=input_norm)
+                SelectiveSSM(
+                    chan,
+                    b,
+                    readout_norm=readout_norm,
+                    input_norm=input_norm,
+                    readout_skip=readout_skip,
+                )
                 for b in delta_biases[:n_experts]
             ]
         )
@@ -394,6 +421,7 @@ class CFM(nn.Module):
         bilinear: bool = False,
         readout_norm: bool = True,
         input_norm: bool = True,
+        readout_skip: bool = False,
     ):
         super().__init__()
         self.vocab = vocab
@@ -403,6 +431,7 @@ class CFM(nn.Module):
         self.isometric_boundary = bool(isometric_boundary)
         self.readout_norm_on = bool(readout_norm)
         self.input_norm_on = bool(input_norm)
+        self.readout_skip_on = bool(readout_skip)
         if self.isometric_boundary:
             self.iso_skew = nn.Parameter(torch.zeros(dim, dim))
             # conservation scale: Tr(Sigma_readout) is held to the input band
@@ -434,6 +463,7 @@ class CFM(nn.Module):
             bilinear=self.bilinear,
             readout_norm=self.readout_norm_on,
             input_norm=self.input_norm_on,
+            readout_skip=self.readout_skip_on,
         )
         self.head_next = nn.Linear(dim, vocab.n_et + 1)  # next event type
         self.head_ent = nn.Linear(dim, vocab.n_ent + 1)  # next entity type

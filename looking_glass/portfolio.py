@@ -485,6 +485,29 @@ def evaluate(
             )
             report_only.append(o)
         rows.append(row)
+    # §4 ABSOLUTE baseline (spec): the relative skill gate is blind to absolute
+    # capability — a uniformly-bad model still scores skill ≈ 0. For each
+    # categorical event-type objective, compare the model's held-out loss to
+    # model-free priors on the SAME held-out pairs: unigram (global marginal) and
+    # 1-gram (first-order transition). Beating the unigram is the weakest honest
+    # bar. Reported (not gated) so the absolute gap is always visible; a model
+    # that cannot beat a unigram prior is not a foundation encoder.
+    abs_baseline = {}
+    for o in ("next", "entity"):
+        ic = ident.get(o)
+        row_o = next((x for x in objectives if x["objective"] == o), None)
+        if not ic or row_o is None or "ceiling" not in ic:
+            continue
+        uni = float(ic["marginal"])
+        gram = max(uni - float(ic["ceiling"]), 0.0)
+        real = float(row_o["real"])
+        abs_baseline[o] = {
+            "model": round(real, 4),
+            "unigram": round(uni, 4),
+            "gram1": round(gram, 4),
+            "beats_unigram": bool(real < uni),
+            "beats_gram1": bool(real < gram),
+        }
     geometry = _geometry(z, seed + 2) if len(z) >= 4 else {}
     canaries = _canaries(z, val, seed + 3) if len(z) >= 4 else {}
     if geometry:
@@ -575,6 +598,7 @@ def evaluate(
         "objectives_missing": missing,
         "yardstick_pending": sorted(YARDSTICK_PENDING),
         "identifiability": ident,
+        "absolute_baseline": abs_baseline,
         "report_only": report_only,
         "canaries": canaries,
         "task_contributions": contributions,
@@ -608,6 +632,13 @@ def evaluate(
         )
     if missing:
         print(f"  WARNING: objectives not evaluated (missing inputs): {missing}")
+    if abs_baseline:
+        for o, b in abs_baseline.items():
+            print(
+                f"  ABS baseline {o}: model {b['model']:.4f}  unigram {b['unigram']:.4f}"
+                f"  gram1 {b['gram1']:.4f}  beats_unigram={b['beats_unigram']}"
+                f"  beats_gram1={b['beats_gram1']}"
+            )
     print(f"PORTFOLIO: {'PASS' if ok else 'FAIL'}   receipt -> {path}")
     receipt["receipt_path"] = str(path)
     return receipt

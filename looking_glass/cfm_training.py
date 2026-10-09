@@ -147,6 +147,7 @@ def train_cfm(cfg: CFMConfig):
         bilinear=getattr(cfg, "bilinear_recurrence", False),
         readout_norm=getattr(cfg, "readout_norm", True),
         input_norm=getattr(cfg, "input_norm", True),
+        readout_skip=getattr(cfg, "readout_skip", True),
     ).to(device)
     # v4.0: differentiable ZCA in the forward during training (gradients shape the
     # consumed isotropy); off at eval/save so the frozen transform is used.
@@ -231,6 +232,7 @@ def train_cfm(cfg: CFMConfig):
     if opt is None:
         opt = torch.optim.Adam(params, lr=cfg.lr, weight_decay=1e-4)
     _lr_max = 1e-2  # generous documented cap; Armijo owns the step (FR v2.0)
+    _lr_base = float(opt.param_groups[0]["lr"])  # for the lr-collapse guard
 
     # Adaptive trust-region lr (v6 DEC-039): LOCAL curvature scan each eval
     # L_t = ||g_t - g_{t-1}|| / ||theta_t - theta_{t-1}||. The step expands (x1.2)
@@ -378,9 +380,13 @@ def train_cfm(cfg: CFMConfig):
                 with torch.no_grad():  # REVERT + contract
                     for p_, s_ in zip(params, theta0):
                         p_.copy_(s_)
-                _lr = _lr * 0.5
-            else:  # monotone progress -> gently expand (bounded by 2/L)
-                _lr = min(_lr * 1.02, _lr_max)
+                _lr = max(_lr * 0.5, _lr_min_floor)
+            else:  # monotone progress -> expand (log-symmetric with the contract:
+                # x1.5 up / x0.5 down keeps lr stable unless >50% of steps
+                # genuinely overshoot. The old x1.02-down/x0.5-up was asymmetric
+                # and collapsed lr to ~1e-6 within ~2k steps (measured),
+                # under-training the readout heads -> next/jepa/sf skills ~0.)
+                _lr = min(_lr * 1.5, _lr_max)
             opt.param_groups[0]["lr"] = _lr
             cfg.lr = _lr
             model.ema(tau)
@@ -480,6 +486,18 @@ def train_cfm(cfg: CFMConfig):
     # STABILITY IS A HARD INVARIANT (v6): a divergent run is a FAILURE, never a
     # rescued green. Record it; the portfolio gate fails on an unstable run.
     cfg._stable = not bool(gov.get("diverged", False))
+    # §4 optimizer-stability guard (spec): lr collapse = the readouts silently
+    # freeze and the heads never train (measured: the asymmetric line search
+    # drove lr 3e-3 -> 3.9e-6, failing next/jepa/sf). Record it as a receipt flag
+    # so a collapsed run can never masquerade as trained.
+    _final_lr = float(opt.param_groups[0]["lr"])
+    cfg._lr_collapsed = bool(_final_lr < _lr_base * 1e-2)
+    if cfg._lr_collapsed:
+        print(
+            f"[WARN] lr collapsed to {_final_lr:.2e} (< 1% of base {_lr_base:.2e}) —"
+            " readouts likely under-trained",
+            flush=True,
+        )
     if not cfg._stable:
         print(
             "[UNSTABLE] training diverged — run is NOT certified (no governor rescue)",
@@ -517,6 +535,7 @@ def train_cfm(cfg: CFMConfig):
             "bilinear_recurrence": bool(getattr(cfg, "bilinear_recurrence", False)),
             "readout_norm": bool(getattr(cfg, "readout_norm", True)),
             "input_norm": bool(getattr(cfg, "input_norm", True)),
+            "readout_skip": bool(getattr(cfg, "readout_skip", True)),
             "whiten_mean": (model.whiten_mean if getattr(model, "whiten_on", False) else None),
             "whiten_W": (model.whiten_W if getattr(model, "whiten_on", False) else None),
         },
@@ -556,7 +575,12 @@ def train_cfm(cfg: CFMConfig):
         len(a_seqs),
         len(keys),
         derived=res.receipt,
-        governor=gov,
+        governor={
+            **gov,
+            "lr_final": float(opt.param_groups[0]["lr"]),
+            "lr_base": _lr_base,
+            "lr_collapsed": bool(getattr(cfg, "_lr_collapsed", False)),
+        },
         portfolio=port_summary,
         task_weights=task_weights,
         cfg_resolved={

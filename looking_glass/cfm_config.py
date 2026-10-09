@@ -139,7 +139,7 @@ class CFMConfig:
     # v3.0.0: dual-velocity encoder (DEC-025) — n_experts=2 with spread
     # delta_bias init (fast/slow timescales), ortho-loss between expert state
     # components, rolling EMA whitening, trajectory graded on the slow state.
-    version: str = "v6.1.0"  # encoder code version
+    version: str = "v6.2.0"  # encoder code version
     revision: int = 1  # data/score revision (r)
     sample_customers: int | None = 500  # working base: first N customers (populations live here)
     split_a_frac: float = 0.7
@@ -250,6 +250,12 @@ class CFMConfig:
     # statistics -> cannot fake rank). Structural invariants, not losses.
     readout_norm: bool = True  # RMSNorm on the SSM readout before heads
     input_norm: bool = True  # RMSNorm on the token stream (bounded drive)
+    # v6.2 (DEC-048): direct token->readout skip (the SSM `D` term). The recurrent
+    # state is a low-pass aggregate; the per-event transition (cart->purchase)
+    # lives in the CURRENT token. A skip restores it to the readout so a linear
+    # head can express the transition table (measured: state->next 0.37 vs
+    # 1-gram 0.25). Identity-init, learnable, per-sample.
+    readout_skip: bool = True
     # DEC-028: condition cap for the boundary whitening — eigenvalues of the
     # state covariance are floored at this fraction of the largest, bounding
     # kappa(Sigma^{-1/2}) <= 1/sqrt(whiten_cond_floor). Prevents near-null
