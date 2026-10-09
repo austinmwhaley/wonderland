@@ -1070,3 +1070,19 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   is ~1-4% of the destroyed-null scale, so the relative gate (>0) is a noise-floor
   tie. Geometry (eff_rank 2->3.9), stability, calibration are fixed; the residual
   is a genuine capability/signal limit, not a structural collapse.
+
+## DEC-050 — Periodic timestamp encoding (spec §1)
+
+- **Date:** 2026-10-09
+- **Decision:** add Fourier time features — time-of-day and day-of-week as
+  sin/cos pairs (`_tod`), projected by `w_tod`/`t_w_tod` into every token.
+  2π-normalized, per-sample, no calendar literals; works on any absolute clock.
+- **Rationale:** spec §1 (Fourier timestamp encoding); also closes the known
+  realism gap (no weekday/hour seasonality). It is additive and low-risk.
+- **Effect:** `sf` now passes (+0.002); `mask` +0.084. The 3 residual skills
+  (`next`, `jepa`, `occur`) stay at the ±0.005 noise floor — as expected, since
+  they are transition/latent objectives, not timing.
+- **Honest status:** 100% green is NOT reached. Verified cause: the `next` head
+  equals the unigram predictor (ABS baseline: model 0.380 vs unigram 0.279), and
+  a fresh linear head on the frozen state extracts only +0.015 skill against a
+  destroyed-null scale ~0.29. The stream's order signal is MI≈0.05 nats.
