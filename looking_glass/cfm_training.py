@@ -33,7 +33,7 @@ from looking_glass.cfm_data import (
     build_sequences,
     draw_sample,
 )
-from looking_glass.cfm_model import CFM, EventVocab, _scan, ns_inv_sqrt
+from looking_glass.cfm_model import CFM, EventVocab, _scan, _tod, ns_inv_sqrt
 
 
 # ---------------------------------------------------------------------------
@@ -608,6 +608,7 @@ def _collate(seqs, vocab, device):
     en = torch.full((B, T), vocab.n_ent, dtype=torch.long, device=device)
     val = torch.zeros(B, T, 1, device=device)
     dt = torch.zeros(B, T, 1, device=device)
+    tod = torch.zeros(B, T, 4, device=device)  # periodic timestamp features (spec §1)
     cov = torch.zeros(B, T, 2, device=device)
     mask = torch.zeros(B, T, device=device)
     cut = torch.ones(B, dtype=torch.long, device=device)
@@ -637,11 +638,22 @@ def _collate(seqs, vocab, device):
         d = np.zeros(L)
         d[1:] = np.maximum(ts[1:] - ts[:-1], 0.0)
         dt[i, :L, 0] = torch.tensor(np.log1p(d), dtype=torch.float32, device=device)
+        tod[i, :L] = torch.tensor(_tod(ts), dtype=torch.float32, device=device)
         if sq.get("co"):
             cov[i, :L] = torch.tensor(sq["co"], dtype=torch.float32, device=device)
         mask[i, :L] = 1.0
         cut[i] = min(L - 1, max(1, int(0.6 * L)))
-    return {"et": et, "br": br, "en": en, "val": val, "dt": dt, "co": cov, "mask": mask, "cut": cut}
+    return {
+        "et": et,
+        "br": br,
+        "en": en,
+        "val": val,
+        "dt": dt,
+        "tod": tod,
+        "co": cov,
+        "mask": mask,
+        "cut": cut,
+    }
 
 
 def _masked_forward(model, vocab, t, cfg, dev):
@@ -680,6 +692,7 @@ def _masked_forward(model, vocab, t, cfg, dev):
         + model.w_val(v2)
         + model.w_dt(t["dt"])
         + model.w_co(t["co"])
+        + model.w_tod(t["tod"])
     )
     y2, _ = model.ssm(x2, mask=mask)
     return y2, t["et"], rand

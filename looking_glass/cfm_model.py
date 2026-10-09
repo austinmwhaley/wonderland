@@ -56,6 +56,16 @@ def _scan(d, b):
     return a, Bb
 
 
+def _tod(ts):
+    """Periodic (Fourier) timestamp features (spec §1): time-of-day and
+    day-of-week as sin/cos pairs. `ts` = epoch seconds (any shape) -> (..., 4).
+    2π-normalized, no calendar literals; works on any absolute clock."""
+    ts = np.asarray(ts, dtype=np.float64)
+    h = (ts % 86400.0) / 86400.0 * (2.0 * np.pi)
+    d = ((ts / 86400.0) % 7.0) / 7.0 * (2.0 * np.pi)
+    return np.stack([np.sin(h), np.cos(h), np.sin(d), np.cos(d)], axis=-1)
+
+
 class RMSNorm(nn.Module):
     """Per-sample, per-timestep RMS normalization (v6.1, DEC-047).
 
@@ -496,6 +506,10 @@ class CFM(nn.Module):
         self.w_val = nn.Linear(1, self.chan)
         self.w_dt = nn.Linear(1, self.chan)
         self.w_co = nn.Linear(2, self.chan)  # exogenous covariates
+        # v6.4 (DEC-050): periodic (Fourier) timestamp encoding — time-of-day
+        # and day-of-week as sin/cos pairs (spec §1). Captures seasonality
+        # without calendar literals (2π-normalized, per-sample).
+        self.w_tod = nn.Linear(4, self.chan)
         if delta_biases is None:
             delta_biases = [0.0] * self.n_experts
         self.ssm = MultiScaleSSM(
@@ -545,6 +559,7 @@ class CFM(nn.Module):
         self.t_w_val = _copy.deepcopy(self.w_val)
         self.t_w_dt = _copy.deepcopy(self.w_dt)
         self.t_w_co = _copy.deepcopy(self.w_co)
+        self.t_w_tod = _copy.deepcopy(self.w_tod)
         self.t_ssm = _copy.deepcopy(self.ssm)
         self.t_proj = _copy.deepcopy(self.proj)
         self.pred = nn.Sequential(nn.Linear(dim, dim), nn.ReLU(), nn.Linear(dim, dim))
@@ -621,6 +636,7 @@ class CFM(nn.Module):
             + self.w_val(val)
             + self.w_dt(dt)
             + self.w_co(co)
+            + self.w_tod(torch.tensor(_tod(ts), dtype=torch.float32, device=dev))
         )
 
     def forward(self, seq, h0=None):
@@ -635,6 +651,7 @@ class CFM(nn.Module):
             + list(self.t_w_val.parameters())
             + list(self.t_w_dt.parameters())
             + list(self.t_w_co.parameters())
+            + list(self.t_w_tod.parameters())
             + list(self.t_ssm.parameters())
             + list(self.t_proj.parameters())
         )
@@ -649,6 +666,7 @@ class CFM(nn.Module):
                 + list(self.w_val.parameters())
                 + list(self.w_dt.parameters())
                 + list(self.w_co.parameters())
+                + list(self.w_tod.parameters())
                 + list(self.ssm.parameters())
                 + list(self.proj.parameters()),
             )
@@ -665,6 +683,7 @@ class CFM(nn.Module):
             + self.w_val(t["val"])
             + self.w_dt(t["dt"])
             + self.w_co(t["co"])
+            + self.w_tod(t["tod"])
         )
 
     def target_tokens_batch(self, t):
@@ -675,6 +694,7 @@ class CFM(nn.Module):
             + self.t_w_val(t["val"])
             + self.t_w_dt(t["dt"])
             + self.t_w_co(t["co"])
+            + self.t_w_tod(t["tod"])
         )
 
     def set_whitening(self, mean: "torch.Tensor", W: "torch.Tensor") -> None:
