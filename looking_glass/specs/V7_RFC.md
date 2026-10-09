@@ -156,3 +156,10 @@ with stiff non-linear updates. Candidate directions:
 **Gate:** bilinear ON → held-out cross-sample PR/dim clears the stream capacity
 floor **with monotone training-loss descent and no step-collapse** (no frozen
 run), on ≥2 diverse streams. Only then integrate + run the triad.
+
+### 9.1 Path-1 result (DEC-043) — necessary, not sufficient
+Path 1 (unit-norm gate) + removing the rejected Cayley init **unfroze** training
+(monotone, no deadlock), but the curvature-seeded base lr (`0.5/L ≈ 2.4e-7` on
+the stiff composite loss) leaves the run undertrained (4/13 fast-run skills
+fail). **Path 2 is the designated next change**: remove the curvature-seeded lr;
+let Armijo accept/reject the true Adam step with no `2/L` bound.

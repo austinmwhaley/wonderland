@@ -937,3 +937,25 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   schedule-free, curvature-free stability guarantee compatible with a stiff
   non-linear update (normalized/diffeomorphic update map, or step acceptance on
   the un-preconditioned direction). See `specs/V7_RFC.md` §9.
+
+## DEC-043 — Path 1 (normalized bilinear gate) + curvature-lr is the bottleneck (negative on full pass)
+
+- **Date:** 2026-10-09
+- **Path 1 implemented:** the bilinear gate is unit-normalized
+  (`g = tanh(W_nl h)/‖tanh(W_nl h)‖`), bounding the bilinear term's Lipschitz
+  without shrinking `W_nl` (preserves the rank gain). The rejected Cayley init
+  (DEC-040: exploded curvature `L≈2e7`, no rank gain) was **removed**.
+- **Effect:** training **unfroze** — monotone descent (val 21.77→20.92, every
+  eval improves), no divergence, no deadlock. The bilinear's *added* stiffness
+  fell from 9.4× to 3.6× of base.
+- **NEGATIVE (full pass):** the **curvature-derived base lr remains the
+  bottleneck** — the composite objective is inherently stiff (`L≈2e6`) so
+  `0.5/L ≈ 2.35e-7` → the run is **undertrained** (4/13 fast-run skills fail).
+  Path 1 bounded the bilinear, but a `1/L` step over *any* stiff multi-objective
+  loss is too small — the same "init L overestimates the safe step" family.
+- **Conclusion / next (Path 2):** the definitive fix is **curvature-free step
+  acceptance** — do NOT seed lr from `0.5/L`; start at a moderate documented rate
+  and let the **Armijo accept/reject on the true (un-preconditioned) Adam
+  direction** with no `2/L` bound. Designated the single next change
+  (`specs/V7_RFC.md` §9). Optimization halted here (boundary of the forbidden
+  empirical push-pull).
