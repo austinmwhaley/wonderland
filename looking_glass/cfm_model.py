@@ -103,6 +103,51 @@ def assert_readout_health(y, kappa=2.0):
     return stats
 
 
+def model_health(model, tokens, mask=None, kappa=2.0):
+    """Fail-fast Step-0 validation harness (spec §2B / DEC-049). Runs BEFORE
+    training and checks, programmatically and per-sample:
+      * magnitude + variance  -> the readout is RMS-normalized (assert_readout_health)
+      * spectral bound        -> every transition decay in (0,1) (bounded operator;
+                                 no orthogonal/unitary recurrence, which cannot forget)
+      * rank health           -> the state batch is not rank-1 collapsed
+      * determinism           -> the same input yields the same output (twice)
+    Returns a stats dict; raises on any violation. Dimensionless bounds only."""
+    with torch.no_grad():
+        y, _h = model.ssm(tokens, mask=mask)
+        stats = assert_readout_health(y, kappa=kappa)
+        # spectral bound: contractive transition (decay = exp(-softplus(delta_bias)))
+        dec_max = 0.0
+        for ex in getattr(model.ssm, "experts", []):
+            db = ex.delta_bias
+            dec_max = max(dec_max, float(torch.exp(-torch.nn.functional.softplus(db)).max()))
+        stats["decay_max"] = round(dec_max, 5)
+        if not dec_max < 1.0:
+            raise RuntimeError(
+                f"model health: transition decay max {dec_max:.4f} >= 1"
+                f" — operator is not contractive (state cannot forget): {stats}"
+            )
+        # rank health: effective rank (participation ratio) of the state batch.
+        # Guard only against rank-1 collapse here; the graded capacity check is
+        # the per-stream geometry gate (a raw MP-null floor would false-fail a
+        # genuinely low-rank stream — DEC-034).
+        z = y.reshape(-1, y.shape[-1]).float()
+        z = z - z.mean(0, keepdim=True)
+        cov = (z.t() @ z) / max(z.shape[0] - 1, 1)
+        ev = torch.linalg.eigvalsh(cov.double()).clamp(min=0.0)
+        pr = float((ev.sum() ** 2) / (ev**2).sum().clamp(min=1e-24))
+        stats["eff_rank"] = round(pr, 3)
+        if pr <= 1.0:
+            raise RuntimeError(
+                f"model health: effective rank {pr:.3f} <= 1 — rank-1 collapse: {stats}"
+            )
+        # determinism: identical input -> identical output
+        y2, _h2 = model.ssm(tokens, mask=mask)
+        stats["deterministic"] = bool(torch.equal(y, y2))
+        if not stats["deterministic"]:
+            raise RuntimeError(f"model health: non-deterministic forward: {stats}")
+    return stats
+
+
 class SelectiveSSM(nn.Module):
     def __init__(
         self,
@@ -466,6 +511,12 @@ class CFM(nn.Module):
             readout_skip=self.readout_skip_on,
         )
         self.head_next = nn.Linear(dim, vocab.n_et + 1)  # next event type
+        # DEC-049: `query` predicts the next event from a FADED state (little
+        # remaining info), so its optimum is the marginal. Sharing head_next with
+        # query dragged the head to the constant marginal (measured: head_next
+        # mean-softmax == the unigram, skill ~0). A dedicated query head lets
+        # `next`/`mask` learn the transition.
+        self.head_query = nn.Linear(dim, vocab.n_et + 1)  # query-time next event
         self.head_ent = nn.Linear(dim, vocab.n_ent + 1)  # next entity type
         self.head_dt = nn.Linear(dim, 1)  # log1p(dt_next)
         self.head_occ = nn.Linear(dim, 1)  # next event within horizon?

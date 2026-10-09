@@ -167,16 +167,15 @@ def train_cfm(cfg: CFMConfig):
             rvec = torch.where(slow, torch.full_like(db, r0), torch.full_like(db, 0.05))
             ex0[0].smooth.logit.copy_(torch.log(rvec / (1.0 - rvec)))
         print(f"[profile] input low-pass retention (slow band) = {r0:.3f}", flush=True)
-    # Tensor-health guard (v6.1, DEC-047): the readout MUST be scale-normalized
-    # before training starts, or every linear head is ill-conditioned. Fails
-    # loudly at step 0 (cheap) instead of after hours of silent mis-training.
-    from looking_glass.cfm_model import assert_readout_health
+    # Fail-fast Step-0 validation harness (v6.3, DEC-049): magnitude, variance,
+    # spectral bound, rank health, determinism — checked BEFORE training, so a
+    # structurally broken model never wastes hours.
+    from looking_glass.cfm_model import model_health
 
     with torch.no_grad():
         _th = _collate(a_seqs[: min(8, len(a_seqs))], vocab, device)
-        _yh, _ = model.ssm(model.tokens_batch(_th), mask=_th["mask"])
-        cfg._readout_health = assert_readout_health(_yh)
-    print(f"[health] readout {cfg._readout_health}", flush=True)
+        cfg._readout_health = model_health(model, model.tokens_batch(_th), mask=_th["mask"])
+    print(f"[health] {cfg._readout_health}", flush=True)
     # ---- warm-start / continual (same objective as scratch: data <= as_of) ----
     cfg.warm_from = None
     if str(cfg.warm_start).lower() not in ("none", "", "0"):
@@ -377,15 +376,15 @@ def train_cfm(cfg: CFMConfig):
             loss1 = _eval_loss(b)
             _lr = float(opt.param_groups[0]["lr"])
             if not math.isfinite(loss1) or loss1 > loss0 + 1e-4 * abs(loss0) + 1e-8:
-                with torch.no_grad():  # REVERT + contract
+                with torch.no_grad():  # REVERT + contract, FLOORED at 10% of base
                     for p_, s_ in zip(params, theta0):
                         p_.copy_(s_)
-                _lr = max(_lr * 0.5, _lr_min_floor)
-            else:  # monotone progress -> expand (log-symmetric with the contract:
-                # x1.5 up / x0.5 down keeps lr stable unless >50% of steps
-                # genuinely overshoot. The old x1.02-down/x0.5-up was asymmetric
-                # and collapsed lr to ~1e-6 within ~2k steps (measured),
-                # under-training the readout heads -> next/jepa/sf skills ~0.)
+                # monotone descent is kept, but the contract may not collapse the
+                # step: an un-floored x0.5-down/x1.5-up line search rejected >50%
+                # of Adam-momentum steps and drove lr 3e-3 -> 3e-5 -> 3.9e-6,
+                # freezing the readout heads at the marginal (next/jepa/sf ~0).
+                _lr = max(_lr * 0.5, _lr_base * 0.1)
+            else:  # progress -> recover toward the base rate
                 _lr = min(_lr * 1.5, _lr_max)
             opt.param_groups[0]["lr"] = _lr
             cfg.lr = _lr
@@ -828,7 +827,7 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
         decay = torch.exp(-LN2 * off_s / max(cfg.state_half_life_days * 86400.0, 1.0))
         h_q = y[rows, i] * decay.unsqueeze(-1)
         tgt_next = t["et"][rows, i_next]
-        ce_q = F.cross_entropy(model.head_next(h_q), tgt_next, reduction="none")
+        ce_q = F.cross_entropy(model.head_query(h_q), tgt_next, reduction="none")
         tgt_dt = ((t["dt"][rows, i_next] - dt_mu) / dt_sd).reshape(-1)  # scale-free
         mse_q = F.mse_loss(model.head_dt(h_q).squeeze(-1), tgt_dt, reduction="none")
         w = m_i.clamp(min=0)

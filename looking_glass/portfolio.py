@@ -500,13 +500,17 @@ def evaluate(
             continue
         uni = float(ic["marginal"])
         gram = max(uni - float(ic["ceiling"]), 0.0)
+        n_cls = (vocab.n_et + 1) if o == "next" else (vocab.n_ent + 1)
+        rand = math.log(max(n_cls, 2))  # uniform prior CE
         real = float(row_o["real"])
         abs_baseline[o] = {
             "model": round(real, 4),
             "unigram": round(uni, 4),
             "gram1": round(gram, 4),
+            "random": round(rand, 4),
             "beats_unigram": bool(real < uni),
             "beats_gram1": bool(real < gram),
+            "beats_random": bool(real < rand),
         }
     geometry = _geometry(z, seed + 2) if len(z) >= 4 else {}
     canaries = _canaries(z, val, seed + 3) if len(z) >= 4 else {}
@@ -636,8 +640,8 @@ def evaluate(
         for o, b in abs_baseline.items():
             print(
                 f"  ABS baseline {o}: model {b['model']:.4f}  unigram {b['unigram']:.4f}"
-                f"  gram1 {b['gram1']:.4f}  beats_unigram={b['beats_unigram']}"
-                f"  beats_gram1={b['beats_gram1']}"
+                f"  gram1 {b['gram1']:.4f}  random {b['random']:.4f}"
+                f"  beats_unigram={b['beats_unigram']} beats_gram1={b['beats_gram1']}"
             )
     print(f"PORTFOLIO: {'PASS' if ok else 'FAIL'}   receipt -> {path}")
     receipt["receipt_path"] = str(path)

@@ -254,7 +254,7 @@ def test_variance_floor_hinge():
     model = CFM(vocab, dim=16, n_experts=1)
     cfg = _cfg(objectives=(*CFMConfig().objectives, "variance"))  # opt-in soft invariant
     assert "variance" not in CFMConfig().objectives and "variance" in CFMConfig().soft_invariants
-    assert CFMConfig().version == "v6.2.0"
+    assert CFMConfig().version == "v6.3.0"
     assert CFMConfig().n_experts == 2  # dual-velocity (DEC-025)
 
     # collapsed states (all identical rows) -> per-dim std 0 -> hinge = 1.0
@@ -357,7 +357,7 @@ def test_dual_velocity_config_and_ortho_loss():
     from looking_glass.cfm_training import _task_losses
 
     assert CFMConfig().n_experts == 2
-    assert CFMConfig().version == "v6.2.0"
+    assert CFMConfig().version == "v6.3.0"
     from looking_glass.cfm_config import _expert_biases
 
     biases = _expert_biases(2, 7)
@@ -497,3 +497,24 @@ def test_govern_flags_a_real_spike():
     vals = iter([5.0, 5.1, 5.0, 5.1, 1000.0])
     gov, _ = govern(lambda n: None, lambda: (next(vals), None), 5, 1, patience=6)
     assert gov["diverged"]
+
+
+def test_model_health_harness_checks_invariants():
+    """DEC-049: Step-0 harness validates magnitude, variance, spectral bound,
+    rank health and determinism by construction."""
+    import torch as _t
+
+    from looking_glass.cfm_model import CFM, EventVocab, model_health
+    from looking_glass.cfm_training import _collate
+
+    seqs = [_seq(f"c{i}", day=f"2025-01-{(i % 28) + 1:02d}") for i in range(6)]
+    vocab = EventVocab.build(seqs)
+    m = CFM(vocab, dim=32, n_experts=1)
+    m.eval()
+    t = _collate(seqs, vocab, m._dev())
+    with _t.no_grad():
+        st = model_health(m, m.tokens_batch(t), mask=t["mask"])
+    assert st["decay_max"] < 1.0  # contractive operator
+    assert st["deterministic"] is True
+    assert st["eff_rank"] > 1.0  # not rank-1 collapsed
+    assert 0.5 <= st["readout_rms"] <= 2.0  # normalized readout
