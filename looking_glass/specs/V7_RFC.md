@@ -104,3 +104,18 @@ mask the collapse. No green tag on the current trunk.
 - Next candidate: §4.2 cross-sample Gramian (frozen, per-sample at inference) or
   §4.3 non-linear local expansion — the only ones that can change the *non-linear*
   geometry. Both must be spiked with the same measured gate.
+
+### 8.2 Cross-sample Gramian inside the recurrence (§4.2) — REJECTED (measured)
+- Implementation: per-step decorrelation of the state by the batch covariance
+  `h ← μ + (h−μ)Σ^{-1/2}` (Newton–Schulz), measured on held-out rabbit_hole.
+- Result: baseline held-out PR/dim **0.023**; **frozen (train-fit) transform
+  0.0209** — No genuine gain. Batch-fit (transform fit on the eval batch)
+  0.0414 — an artifact of batch-coupling (manufactures rank, same failure as the
+  removed ZCA boundary).
+- Conclusion: the per-step Gramian is a no-op when honestly frozen and dishonest
+  (batch-coupled) otherwise. **Rejected**.
+- **Both §4.1 (linear centering) and §4.2 (gramian normalization) are rejected**:
+  neither changes the *genuine, transferable* cross-sample rank. The only
+  structurally-distinct remaining candidate is **§4.3 — a NON-LINEAR local
+  expansion** (an actual change of the update's function class, not a linear
+  reparameterization or a batch normalization). Spike it with the same gate.
