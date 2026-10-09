@@ -200,7 +200,7 @@ class CFMConfig:
     # non-bounded geometric losses); "uncertainty" = Kendall log-var weights
     # (kept for likelihood-pure stacks; measured to s-runaway on geometric
     # losses); "equal" = plain sum. Weights are dynamic either way.
-    weight_mode: str = "dwa"
+    weight_mode: str = "equal"  # FR v2.0: no dynamic re-weighting
     dwa_temp: float = 2.0  # DWA temperature (paper default; the ONLY knob)
     dwa_scale_free: bool = True  # divide each loss by its own EMA (DEC-018):
     # dimensionless contributions; without it sf consumed 94% of grad mass
@@ -234,6 +234,11 @@ class CFMConfig:
     # from within-customer gap quantiles (filled by resolve_cfm; `--set` can
     # override and it wins over derivation, recorded as an override).
     agg_horizons_days: list = field(default_factory=list)
+    # FR v2.0 (DEC-044): the SOFT loss-invariants (redundancy/decorr/variance/
+    # rank/spectrum/volume/iso/trajectory/commutation/ortho) are REMOVED from the
+    # objective — invariants must be structural (the bilinear recurrence), not
+    # soft penalties (they stiffened the landscape: L~2e6 -> lr collapse). Only
+    # predictive self-supervised objectives remain; rank is enforced in the update.
     objectives: tuple = (
         "next",
         "entity",
@@ -241,27 +246,25 @@ class CFMConfig:
         "value",
         "mask",
         "contrast",
-        "redundancy",
-        "decorr",  # v6 Stage2: SCALE-INVARIANT directional decorrelation (Gram law)
         "occur",
         "order",
         "jepa",
         "sf",
-        "query",  # read-at-time: grade the FADED state (the serving path)
-        "agg",  # long-horizon integration: exact counts/value per window
-        "variance",  # per-dim std floor: treats SCALE collapse (redundancy
-        #              treats correlation only — measured insufficient alone)
-        "rank",  # participation-ratio pressure: train on the graded metric
-        "spectrum",  # soft-spectrum isotropy (DEC-028): equalize per-dim
-        #              variance so no single direction dominates the PR
-        "volume",  # log-det trunk-volume barrier (v4.0, DEC-029): forces the
-        #            raw state covariance to expand dimensionally ahead of ZCA
-        "iso",  # large-sample isotropy (v4.2, DEC-031): PR loss on per-step
-        #         states (B*T rows) so the trunk uses its full 256-dim capacity
-        "trajectory",  # slow-band smooth-velocity (v4.2, DEC-031): penalize
-        #               ||Delta^2 h_slow||^2 so slow channels stay continuous
-        "commutation",  # v6 Stage2: independent event operators must commute
-        "ortho",  # fast/slow cross-covariance: zero interference (DEC-025)
+        "query",
+        "agg",
+    )
+    # kept as the (deprecated) soft-invariant family for reference / opt-in
+    soft_invariants: tuple = (
+        "redundancy",
+        "decorr",
+        "variance",
+        "rank",
+        "spectrum",
+        "volume",
+        "iso",
+        "trajectory",
+        "commutation",
+        "ortho",
     )
     seed: int = 0
     device: str = "cuda" if torch.cuda.is_available() else "cpu"

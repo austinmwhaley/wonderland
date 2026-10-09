@@ -220,7 +220,7 @@ def test_combine_modes():
     seqs = [_seq("c1"), _seq("c2", day="2025-01-02")]
     vocab = EventVocab.build(seqs)
     model = CFM(vocab, dim=16, n_experts=1)
-    cfg = _cfg()
+    cfg = _cfg(weight_mode="dwa")
     T_ = {"next": _t.tensor(2.0), "dt": _t.tensor(4.0)}
     # dwa with weights = weighted sum
     v = float(_combine(model, T_, cfg, weights={"next": 1.0, "dt": 0.5}))
@@ -238,8 +238,8 @@ def test_combine_modes():
     assert float(_combine(model, T_, cfg_g, weights={"next": 1.0, "dt": 0.5})) == pytest.approx(2.0)
 
 
-def test_train_uses_dwa_mode_by_default():
-    assert CFMConfig().weight_mode == "dwa"
+def test_train_weighting_mode_default():
+    assert CFMConfig().weight_mode == "equal"  # FR v2.0: no dynamic re-weighting
     assert CFMConfig().dwa_temp == 2.0
 
 
@@ -252,8 +252,8 @@ def test_variance_floor_hinge():
     vocab = EventVocab.build(seqs)
     torch.manual_seed(0)
     model = CFM(vocab, dim=16, n_experts=1)
-    cfg = _cfg()
-    assert "variance" in cfg.objectives and "rank" in cfg.objectives
+    cfg = _cfg(objectives=(*CFMConfig().objectives, "variance"))  # opt-in soft invariant
+    assert "variance" not in CFMConfig().objectives and "variance" in CFMConfig().soft_invariants
     assert CFMConfig().version == "v6.0.0"
     assert CFMConfig().n_experts == 2  # dual-velocity (DEC-025)
 
@@ -279,7 +279,7 @@ def test_combine_scale_free_units():
     seqs = [_seq("c1"), _seq("c2", day="2025-01-02")]
     vocab = EventVocab.build(seqs)
     model = CFM(vocab, dim=16, n_experts=1)
-    cfg = _cfg()
+    cfg = _cfg(weight_mode="dwa", dwa_scale_free=True)
     T_ = {"next": torch.tensor(100.0), "dt": torch.tensor(1.0)}
     scales = {"next": 100.0, "dt": 1.0}
     w = {"next": 1.0, "dt": 1.0}
@@ -366,7 +366,7 @@ def test_dual_velocity_config_and_ortho_loss():
     torch.manual_seed(0)
     vocab = EventVocab.build(seqs)
     model = CFM(vocab, dim=32, n_experts=2)  # dual-velocity
-    cfg = _cfg()
+    cfg = _cfg(objectives=(*CFMConfig().objectives, "ortho"))
     assert "ortho" in cfg.objectives
     T_ = _task_losses(model, vocab, seqs, cfg)
     assert "ortho" in T_ and torch.isfinite(T_["ortho"])
