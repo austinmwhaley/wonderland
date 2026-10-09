@@ -834,3 +834,31 @@ same battery
   relative step** `lr = target_rel · ‖θ‖/‖g‖` measured from one init gradient
   (`target_rel=1e-3`, a documented fraction). Scale-free across streams/units; no
   clip ceiling doing the work.
+
+## DEC-039 (cont.) — Armijo backtracking line search (the convergence close)
+
+- The adaptive trust-region (curvature init + eval-cadence expand/contract)
+  achieved monotone stability but **stalled** (cascading contractions): the SGD
+  bound `lr<2/L` is the wrong bound for Adam (per-coordinate preconditioning has
+  a larger safe step), and eval-cadence control has phase lag.
+- **Fix:** per-step **Armijo backtracking** on the *training* loss. Accept a step
+  iff the seeded training loss does not increase (`L1 ≤ L0 + c1·|L0|`); else
+  revert the parameters and halve lr; expand ×1.02 on monotone progress (capped
+  at `2/L`). Optimizer-agnostic, monotone descent by construction, no phase lag.
+  A collapse (`lr<lr_min`) is `UNSTABLE` (hard failure) via the governor.
+
+### DEC-039 Addendum — monotone loss ≠ monotone rank; barriers, not soft penalties
+
+- **Finding:** Armijo backtracking gave strictly monotone training-loss descent
+  and, being a *better* optimizer, reached a **lower** objective than the fixed
+  lr — and that lower minimum is a **topologically collapsed (rank-1)**
+  representation on rabbit_hole. So the earlier "green" was under-optimization;
+  the **objective's own minimum is collapsed**.
+- **Doctrine shift:** invariant geometry (decorrelation, volume, trace
+  conservation) cannot be soft additive terms that the optimizer trades against
+  predictive loss. They must be **barriers / hard algebraic bounds** where
+  `rank → 1 ⇒ L_inv → +∞`, so a collapsed state is strictly dominated by any
+  high-rank state of equal predictive error.
+- **Mechanism:** `-ln det(R_h)`, `R_h = D_Σ^{-1/2} Σ_h D_Σ^{-1/2}` (the
+  scale-invariant correlation matrix). `det(R)=1` (orthogonal) ⇒ 0 penalty;
+  `det(R)→0` (collapse) ⇒ +∞. Untradeable: no finite predictive gain compensates.

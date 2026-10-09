@@ -333,6 +333,7 @@ class CFM(nn.Module):
                     "contrast",
                     "redundancy",
                     "decorr",
+                    "barrier",
                     "occur",
                     "order",
                     "jepa",

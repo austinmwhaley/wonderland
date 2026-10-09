@@ -242,6 +242,7 @@ class CFMConfig:
         "contrast",
         "redundancy",
         "decorr",  # v6 Stage2: SCALE-INVARIANT directional decorrelation (Gram law)
+        "barrier",  # v6 DEC-039 add: HARD log-det barrier -ln det(R_h) (collapse -> +inf)
         "occur",
         "order",
         "jepa",

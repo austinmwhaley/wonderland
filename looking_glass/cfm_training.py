@@ -914,6 +914,22 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
             corr = cov / torch.outer(sd, sd)
             eye = torch.eye(corr.shape[0], device=corr.device, dtype=corr.dtype)
             T_["decorr"] = (corr - eye).pow(2).mean()
+    if "barrier" in cfg.objectives and B * T >= 2:
+        # HARD log-det barrier (v6 DEC-039 add): -ln det(R_h) on the scale-invariant
+        # correlation matrix. det=1 (orthogonal) -> 0; det->0 (collapse) -> +inf, so
+        # collapse is strictly dominated (no finite predictive gain can offset it).
+        with torch.autocast(device_type=h.device.type, enabled=False):
+            hf = y.reshape(-1, y.shape[-1]).float()
+            hf = hf - hf.mean(0, keepdim=True)
+            cov = (hf.T @ hf) / (hf.shape[0] - 1)
+            sd = cov.diagonal().clamp(min=1e-12).sqrt()
+            corr = cov / torch.outer(sd, sd)
+            sign, logdet = torch.linalg.slogdet(corr)
+            T_["barrier"] = torch.where(
+                sign > 0,
+                -logdet,
+                torch.full_like(logdet, 1e6),  # singular -> barrier
+            )
     if "spectrum" in cfg.objectives and h.shape[0] >= 2:
         # Soft-spectrum isotropy (DEC-028, step 3). `rank` maximizes the PR but
         # is insensitive to a single dominant direction; the `variance` hinge
