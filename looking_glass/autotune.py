@@ -264,7 +264,16 @@ def resolve_cfm(base, df, keys, vocab_sizes) -> ResolvedCFM:
 # ---------------------------------------------------------------------------
 # convergence governor
 # ---------------------------------------------------------------------------
-def govern(train_step, val_metric, budget_steps, eval_every, patience, seed=0):
+def govern(
+    train_step,
+    val_metric,
+    budget_steps,
+    eval_every,
+    patience,
+    seed=0,
+    adjust_lr=None,
+    lr_min=1e-6,
+):
     """Train until the held-out metric plateaus, with an overfit guard.
 
     train_step(n) runs n optimizer steps. val_metric() returns (metric, robust
@@ -272,12 +281,14 @@ def govern(train_step, val_metric, budget_steps, eval_every, patience, seed=0):
     noise floor (tol) is estimated from the metric's own variation, so 'plateau'
     is measured, not assumed. Returns a receipt; the caller keeps the best state.
 
+    v6 DEC-039 adaptive trust region: `adjust_lr(v, best, prev_best, tol)` is
+    called each eval and returns the new lr. The step expands while progress is
+    monotone and contracts on regression — monotone stability by construction. If
+    the trust region collapses (lr < lr_min) the run is UNSTABLE (hard failure).
+
     Receipts:
-      * best_state = the LOWEST-LOSS state ever evaluated (strict) — the old
-        rule only recorded a new best when it beat the old one by more than the
-        noise tol, so training returned an older, worse model.
-      * patience is only counted once the noise floor is measurable (>= 3 evals):
-        calling a run "converged" off one or two points is not a measurement.
+      * best_state = the LOWEST-LOSS state ever evaluated (strict).
+      * patience is only counted once the noise floor is measurable (>= 3 evals).
       * progress prints per eval (what/when/how good).
     """
     import numpy as np
@@ -303,6 +314,18 @@ def govern(train_step, val_metric, budget_steps, eval_every, patience, seed=0):
         if v < best:  # strict: keep the lowest-loss model ever seen
             best = v
             best_state = state
+        # ADAPTIVE TRUST REGION (v6 DEC-039): expand while monotone, contract on
+        # regression. Collapse (lr<lr_min) without stabilising => UNSTABLE.
+        if adjust_lr is not None and tol is not None:
+            _new_lr = adjust_lr(v, best, prev_best, tol)
+            if _new_lr is not None and _new_lr < lr_min:
+                diverged = True
+                print(
+                    f"[govern] trust region collapsed (lr {_new_lr:.2e} < {lr_min:.0e}) "
+                    "— UNSTABLE run",
+                    flush=True,
+                )
+                break
         if tol is None:
             print(
                 f"[govern] step {steps}/{budget_steps}  val {v:.4f}  eval {len(hist)}", flush=True

@@ -248,11 +248,34 @@ def train_cfm(cfg: CFMConfig):
             )
             L = dg / max(eps, 1e-12)
             cfg.lr = float(0.5 / max(L, 1e-8))
-            print(f"[lr] curvature L={L:.3e} -> lr {cfg.lr:.2e} (0.5/L < 2/L)", flush=True)
+            cfg._lr_max = float(2.0 / max(L, 1e-8))  # stability bound (lr < 2/L)
+            print(
+                f"[lr] curvature L={L:.3e} -> lr {cfg.lr:.2e} (init 0.5/L; "
+                f"trust-region max {cfg._lr_max:.2e} = 2/L)",
+                flush=True,
+            )
         except Exception as e:
             print(f"[lr] curvature derivation failed ({e}); fallback 3e-3", flush=True)
     if opt is None:
         opt = torch.optim.Adam(params, lr=cfg.lr, weight_decay=1e-4)
+
+    # Adaptive trust-region lr (v6 DEC-039): expand the step (x1.2) while the
+    # held-out metric progresses monotonically, contract (x0.5) on regression,
+    # bounded by the curvature stability limit lr_max = 2/L. Monotone stability
+    # by construction — never a post-hoc rescue.
+    _lr_max = float(cfg._lr_max) if hasattr(cfg, "_lr_max") else float(cfg.lr) * 4.0
+
+    def _adjust_lr(v, best, prev_best, tol):
+        lr = float(opt.param_groups[0]["lr"])
+        if v < prev_best - tol:
+            lr = min(lr * 1.2, _lr_max)
+        elif v > prev_best + tol:
+            lr = lr * 0.5
+        opt.param_groups[0]["lr"] = lr
+        cfg.lr = lr
+        print(f"        [trust-region] lr -> {lr:.3e}", flush=True)
+        return lr
+
     loss_scales: dict = {}  # EMA per task — the unit system (DEC-018)
     bank = (
         GeometryBank(
@@ -410,11 +433,7 @@ def train_cfm(cfg: CFMConfig):
         if any(k in T_ and not math.isfinite(float(T_[k])) for k in cfg.objectives):
             return math.inf, None
         v = float(
-            sum(
-                T_[k] / max(loss_scales.get(k, 1.0), 1e-8)
-                for k in cfg.objectives
-                if k in T_
-            )
+            sum(T_[k] / max(loss_scales.get(k, 1.0), 1e-8) for k in cfg.objectives if k in T_)
         )
         balancer.update({k: float(x) for k, x in T_.items()})
         _update_scales({k: float(x) for k, x in T_.items()})
@@ -431,7 +450,13 @@ def train_cfm(cfg: CFMConfig):
         budget = min(budget, _cap)
         print(f"[govern] budget capped to {budget} steps (max_steps)", flush=True)
     gov, best_state = AT.govern(
-        train_step, val_metric, budget, res.eval_every, res.patience, cfg.seed
+        train_step,
+        val_metric,
+        budget,
+        res.eval_every,
+        res.patience,
+        cfg.seed,
+        adjust_lr=_adjust_lr,
     )
     # STABILITY IS A HARD INVARIANT (v6): a divergent run is a FAILURE, never a
     # rescued green. Record it; the portfolio gate fails on an unstable run.
