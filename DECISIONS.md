@@ -862,3 +862,16 @@ same battery
 - **Mechanism:** `-ln det(R_h)`, `R_h = D_Σ^{-1/2} Σ_h D_Σ^{-1/2}` (the
   scale-invariant correlation matrix). `det(R)=1` (orthogonal) ⇒ 0 penalty;
   `det(R)→0` (collapse) ⇒ +∞. Untradeable: no finite predictive gain compensates.
+
+## DEC-040 — Initialization Geometry Law (initial manifold span & barrier compatibility)
+
+- **Finding:** enforcing the log-det barrier `-ln det(R_h)` together with Armijo
+  monotone descent **deadlocks** if the trunk initializes rank-1 (`det R_h ≈ 0`):
+  monotone descent forbids the transient loss increase needed to escape a
+  collapsed initialization basin.
+- **Law:** initialization must guarantee a **full-rank, isometric manifold span by
+  construction**. The input/state projections `(W_B, W_C)` (and the readout
+  `proj`) are initialised as **Cayley-orthogonal frames** `Q=(I−S)(I+S)⁻¹`
+  (S skew), so orthogonal event-space channels map to orthogonal latent
+  directions at `t=0` and `R_h(t=0) ≈ I` (the barrier is satisfied at step 0).
+  The readout scale is set so `R_cons(t=0)=1`.

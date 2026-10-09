@@ -71,6 +71,11 @@ class SelectiveSSM(nn.Module):
         self.W_B = nn.Linear(dim, dim)
         self.W_C = nn.Linear(dim, dim)
         self.W_out = nn.Linear(dim, dim)
+        with torch.no_grad():  # DEC-040: orthogonal input/output frames at t=0
+            for _lin in (self.W_B, self.W_C):
+                _lin.weight.copy_(cayley_orthogonal(dim, _lin.weight.device, _lin.weight.dtype))
+                if _lin.bias is not None:
+                    _lin.bias.zero_()
         # per-channel timescale (log-decay) offset; LEARNED.
         if delta_spectrum:
             self.delta_bias = nn.Parameter(torch.linspace(spectrum[0], spectrum[1], dim))
@@ -116,6 +121,14 @@ class SelectiveSSM(nn.Module):
             h0v = h0 if h0.dim() >= 2 else h0.unsqueeze(0)
             H = H + D * h0v.unsqueeze(1)
         return self.W_C(H), H[:, -1]
+
+
+def cayley_orthogonal(n, device=None, dtype=None):
+    """Cayley-orthogonal frame Q=(I−S)(I+S)⁻¹ (S skew, κ=1) for init (DEC-040)."""
+    S = torch.randn(n, n, device=device, dtype=dtype)
+    S = S - S.t()
+    eye = torch.eye(n, device=device, dtype=dtype)
+    return torch.linalg.solve(eye + S, eye - S)
 
 
 def ns_inv_sqrt(cov, iters=8, eps=1e-2):
@@ -304,6 +317,12 @@ class CFM(nn.Module):
         self.head_agg = nn.Linear(dim + 1, 2)  # successor features
         self.order_W = nn.Linear(dim, self.chan, bias=False)  # temporal-order scorer
         self.proj = nn.Linear(dim, dim)  # contrastive / public S
+        with torch.no_grad():  # DEC-040: orthogonal readout frame
+            self.proj.weight.copy_(
+                cayley_orthogonal(dim, self.proj.weight.device, self.proj.weight.dtype)
+            )
+            if self.proj.bias is not None:
+                self.proj.bias.zero_()
         # M3: entity-aware donor — pools step outputs per entity type.
         self.proj_ent = nn.Linear((vocab.n_ent + 1) * dim, dim)
         # JEPA: EMA target encoder + predictor (latent future prediction).
