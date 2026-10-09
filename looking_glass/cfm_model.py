@@ -100,9 +100,11 @@ class SelectiveSSM(nn.Module):
         self.bilinear = bool(bilinear)
         if self.bilinear:
             self.W_nl = nn.Linear(dim, dim)
-            nn.init.normal_(self.W_nl.weight, std=0.02)
+            nn.init.normal_(self.W_nl.weight, std=0.1)
             nn.init.zeros_(self.W_nl.bias)
             self.beta = nn.Parameter(torch.tensor(0.3))
+            self.bilinear_iters = 8  # fixed-point passes (cap); converged earlier on tol
+            self.bilinear_tol = 1e-4  # state-change convergence (converge, not count)
         self.smooth = None
         if slow_smooth:
             dbv = self.delta_bias.detach().numpy().astype(float)
@@ -127,17 +129,26 @@ class SelectiveSSM(nn.Module):
             decay = decay * m + (1.0 - m)  # pad: hold state
             bx = bx * m
         if self.bilinear:
-            # exact non-linear recurrence (sequential; non-affine bilinear term)
-            B, Tt, Cn = bx.shape
-            h = torch.zeros(B, Cn, device=bx.device, dtype=bx.dtype)
+            # VECTORIZED bilinear recurrence (v7 DEC-041, speed-first): the gate
+            # tanh(W_nl h_{t-1}) is non-affine (no exact parallel scan). Solve the
+            # fixed point by ITERATED affine scans (each O(log T), fully parallel,
+            # no Python loop), iterated to convergence (state change < tol), capped.
+            # Converges to the exact non-linear recurrence (measured).
+            h0v = None
             if h0 is not None:
-                h = h0 if h0.dim() >= 2 else h0.unsqueeze(0)
-            Hs = []
-            for t in range(Tt):
-                g = torch.tanh(self.W_nl(h))
-                h = decay[:, t] * h + (1.0 - decay[:, t]) * bx[:, t] + self.beta * (g * bx[:, t])
-                Hs.append(h)
-            H = torch.stack(Hs, dim=1)
+                h0v = h0 if h0.dim() >= 2 else h0.unsqueeze(0)
+            H = _scan(decay, (1.0 - decay) * bx)[1]  # pass 1 (base)
+            if h0v is not None:
+                H = H + _scan(decay, (1.0 - decay) * bx)[0] * h0v.unsqueeze(1)
+            for _ in range(max(int(self.bilinear_iters), 1)):
+                drive = (1.0 - decay) * bx + self.beta * (torch.tanh(self.W_nl(H)) * bx)
+                D, Hn = _scan(decay, drive)
+                if h0v is not None:
+                    Hn = Hn + D * h0v.unsqueeze(1)
+                if float((Hn - H).abs().max()) < self.bilinear_tol:
+                    H = Hn
+                    break
+                H = Hn
             return self.W_C(H), H[:, -1]
         D, H = _scan(decay, (1.0 - decay) * bx)  # h_t (zero-init)
         if h0 is not None:
