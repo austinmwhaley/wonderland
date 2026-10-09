@@ -336,3 +336,27 @@ Rules:
 - **No unit-dependent constants**: every derived scalar must be dimensionless or
   derived from a data/hardware statistic — never `f(raw_units)` propped up by a
   clip.
+
+---
+
+## Functional Realism v2.0 (project alignment — DEC-042)
+
+System invariants are **algebraic construction inside the state update**, never
+soft penalties, step tricks, or governor rescues. Each pillar is backed by a
+measured receipt in this repo:
+
+1. **Invariants by construction** — rank/energy live in `h_t=f(h_{t-1},x_t)`.
+   Receipt: §4.3 spike — bilinear `h⊗x` raised *transferable* cross-sample rank
+   1.79×; soft DWA penalties (§4.1 linear centering no-op; §4.2 gramian
+   batch-fit manufactures) were **rejected by measurement**.
+2. **Topological integrity (no silent rescues)** — divergence is a **hard
+   failure**; reject the step, never roll back to fake a green. Receipt: DEC-039.
+3. **Diagnostic honesty (no capacity faking)** — no batchnorm/ZCA dynamic-range
+   manufacture; per-sample Cayley isometry `R` (κ=1). Receipt: §8.1/§4.2.
+4. **Information conservation** — `R_cons = Tr(Σ_readout)/P_in ≈ 1` forbidden to
+   discard stream entropy. Receipt: measured 0.90–1.05 across streams.
+
+Cost doctrine: pay compute **once for a deterministically stable, self-verifying
+system**, but build it fast (vectorized/scan-native; no per-step Python loops).
+Non-linearity needed for rank is solved by **iterate-to-convergence scans**, not
+sequential loops.

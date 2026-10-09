@@ -137,19 +137,29 @@ class SelectiveSSM(nn.Module):
             h0v = None
             if h0 is not None:
                 h0v = h0 if h0.dim() >= 2 else h0.unsqueeze(0)
-            H = _scan(decay, (1.0 - decay) * bx)[1]  # pass 1 (base)
-            if h0v is not None:
-                H = H + _scan(decay, (1.0 - decay) * bx)[0] * h0v.unsqueeze(1)
-            for _ in range(max(int(self.bilinear_iters), 1)):
-                drive = (1.0 - decay) * bx + self.beta * (torch.tanh(self.W_nl(H)) * bx)
-                D, Hn = _scan(decay, drive)
+            drive0 = (1.0 - decay) * bx
+            # (1) converge the non-linear fixed point under no_grad (cheap memory)
+            with torch.no_grad():
+                D, H = _scan(decay, drive0)
                 if h0v is not None:
-                    Hn = Hn + D * h0v.unsqueeze(1)
-                if float((Hn - H).abs().max()) < self.bilinear_tol:
+                    H = H + D * h0v.unsqueeze(1)
+                for _ in range(max(int(self.bilinear_iters), 1)):
+                    g = torch.tanh(self.W_nl(H))
+                    Dn, Hn = _scan(decay, drive0 + self.beta * (g * bx))
+                    if h0v is not None:
+                        Hn = Hn + Dn * h0v.unsqueeze(1)
+                    conv = float((Hn - H).abs().max()) < self.bilinear_tol
                     H = Hn
-                    break
-                H = Hn
-            return self.W_C(H), H[:, -1]
+                    if conv:
+                        break
+                Hstar = H
+            # (2) ONE differentiable pass with the converged (detached) gate;
+            # grad flows through W_nl (tanh) and the drive. Memory = 1 scan graph.
+            g = torch.tanh(self.W_nl(Hstar))
+            D, Hout = _scan(decay, drive0 + self.beta * (g * bx))
+            if h0v is not None:
+                Hout = Hout + D * h0v.unsqueeze(1)
+            return self.W_C(Hout), Hout[:, -1]
         D, H = _scan(decay, (1.0 - decay) * bx)  # h_t (zero-init)
         if h0 is not None:
             h0v = h0 if h0.dim() >= 2 else h0.unsqueeze(0)
