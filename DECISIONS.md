@@ -1032,3 +1032,41 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   remaining gap to the 1-gram (0.25) is state-side (the recurrent state's
   next-information is lossy). The relative-skill metric's blindness to absolute
   capability (DEC-046 note) is the next thing to address.
+
+## DEC-049 — Spec guardrails: Step-0 harness, absolute baselines, head separation
+
+- **Date:** 2026-10-09
+- **Context:** operator spec (SGEFM/DOSE-derived) requested: per-sample norm,
+  fail-fast Step-0 validation, bounded operators, no soft-loss hacks, anti-
+  collapse, schema-agnostic tokenizer, absolute-baseline governance, optimizer
+  stability, determinism. Mapping to code showed most were already present.
+- **Implemented now:**
+  1. **Step-0 harness** `model_health` (cfm_model.py): checks magnitude+variance
+     (RMSNorm), **spectral bound** (every transition decay in (0,1) — contractive,
+     no orthogonal recurrence), **rank health** (state PR > 1; the graded
+     capacity check stays the per-stream geometry gate, since a raw MP-null
+     floor false-fails a genuinely low-rank stream), and **determinism** (forward
+     twice = identical). Runs before every training; unit-tested.
+  2. **Absolute baselines** (§4) in the portfolio: unigram, 1-gram, random priors
+     vs the model's held-out loss, printed + in the receipt. This is the honest
+     fix for the relative-skill metric's blindness: on ecommerce it shows the
+     `next` head sits at the **unigram** (mean-softmax == the marginal) — i.e.
+     the CE is the target entropy, the head uses no temporal order.
+  3. **Optimizer-stability guard**: floored Armijo (contract floors at 10% of
+     base; recovery x1.5) so monotone descent is kept but lr cannot freeze the
+     readouts (measured collapse 3e-3->3.9e-6). `lr_collapsed` recorded.
+  4. **Dedicated `query` head** (head_query): `query` predicts the next event
+     from a *faded* state whose optimum is the marginal; sharing `head_next` with
+     it pulled the head to the constant marginal. (Separated; `next` still
+     marginal — see below.)
+- **NOT implemented — with reason:** *orthogonal/unitary transition operators.*
+  A reversible, volume-preserving recurrence has no forgetting, so \|h_t\|
+  accumulates without bound (the exact failure fixed in DEC-047) and it is a
+  group, not the required lossy monoid. Orthogonal *mixing/readout* is present
+  and safe; the recurrence stays contractive.
+- **Honest remaining blocker:** `next`/`jepa`/`sf` sit at the stream's signal
+  floor. MI(next;prev) = 0.05 nats (cart->purchase: P 0.28 vs 0.017 base). A
+  fresh linear head on the frozen state extracts only +0.015 skill — the signal
+  is ~1-4% of the destroyed-null scale, so the relative gate (>0) is a noise-floor
+  tie. Geometry (eff_rank 2->3.9), stability, calibration are fixed; the residual
+  is a genuine capability/signal limit, not a structural collapse.
