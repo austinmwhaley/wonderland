@@ -90,3 +90,17 @@ mask the collapse. No green tag on the current trunk.
 2. If 4.1 fails, spike 4.2 (cross-sample Gramian, frozen transform).
 3. Only after a mechanism demonstrably raises rank: integrate, gate, re-run the
    triad.
+
+## 8. Spike log
+
+### 8.1 Centered-covariance (input) recurrence — REJECTED (measured)
+- Implementation: `h = SSM(x − E_batch[x])`, measured cross-sample PR/dim on
+  rabbit_hole (dim=64, 512 seqs, random init).
+- Result: baseline 0.0227 vs centered-input **0.0225** vs population-centered
+  consumed state 0.0227 — **no rank change**. The centered input alters the state
+  (`max|Δh−const|≈165`) but not its cross-sample covariance spectrum.
+- Conclusion: for a **linear** SSM this is an affine reparameterization →
+  translation-invariant spectrum. **Rejected** by §7.1's gate; do not integrate.
+- Next candidate: §4.2 cross-sample Gramian (frozen, per-sample at inference) or
+  §4.3 non-linear local expansion — the only ones that can change the *non-linear*
+  geometry. Both must be spiked with the same measured gate.
