@@ -214,6 +214,7 @@ class CFMConfig:
     pcgrad: bool = True  # grouped PCGrad (DEC-020): geometry vs predictive
     donor_whiten: bool = True  # whitened readout at the donor boundary (legacy)
     isometric_boundary: bool = True  # v6 Stage1: per-sample orthogonal readout (kappa=1)
+    bilinear_recurrence: bool = False  # v7: multiplicative state-input term (rank-preserving fix)
     # DEC-028: condition cap for the boundary whitening — eigenvalues of the
     # state covariance are floored at this fraction of the largest, bounding
     # kappa(Sigma^{-1/2}) <= 1/sqrt(whiten_cond_floor). Prevents near-null

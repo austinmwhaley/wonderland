@@ -144,6 +144,7 @@ def train_cfm(cfg: CFMConfig):
         unified=getattr(cfg, "unified_ssm", False),
         zca=getattr(cfg, "zca", False),
         isometric_boundary=getattr(cfg, "isometric_boundary", False),
+        bilinear=getattr(cfg, "bilinear_recurrence", False),
     ).to(device)
     # v4.0: differentiable ZCA in the forward during training (gradients shape the
     # consumed isotropy); off at eval/save so the frozen transform is used.
@@ -542,6 +543,7 @@ def train_cfm(cfg: CFMConfig):
             "unified": bool(getattr(cfg, "unified_ssm", False)),
             "zca": bool(getattr(cfg, "zca", False)),
             "isometric_boundary": bool(getattr(cfg, "isometric_boundary", False)),
+            "bilinear_recurrence": bool(getattr(cfg, "bilinear_recurrence", False)),
             "whiten_mean": (model.whiten_mean if getattr(model, "whiten_on", False) else None),
             "whiten_W": (model.whiten_W if getattr(model, "whiten_on", False) else None),
         },

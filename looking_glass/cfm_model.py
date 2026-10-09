@@ -65,6 +65,7 @@ class SelectiveSSM(nn.Module):
         spectrum=(-1.5, 3.0),
         slow_smooth=False,
         band_isolate=False,
+        bilinear=False,
     ):
         super().__init__()
         self.W_delta = nn.Linear(dim, dim)
@@ -93,6 +94,15 @@ class SelectiveSSM(nn.Module):
             m[np.ix_(fi, fi)] = 1.0
             m[np.ix_(si, si)] = 1.0
             self.register_buffer("band_mask", torch.tensor(m))
+        # v7 DEC-041: bilinear (multiplicative) state-input interaction — the
+        # only measured mechanism that raises TRANSFERABLE cross-sample rank
+        # (Linear State Collapsibility fix). Per-sample, rank-changing.
+        self.bilinear = bool(bilinear)
+        if self.bilinear:
+            self.W_nl = nn.Linear(dim, dim)
+            nn.init.normal_(self.W_nl.weight, std=0.02)
+            nn.init.zeros_(self.W_nl.bias)
+            self.beta = nn.Parameter(torch.tensor(0.3))
         self.smooth = None
         if slow_smooth:
             dbv = self.delta_bias.detach().numpy().astype(float)
@@ -116,6 +126,19 @@ class SelectiveSSM(nn.Module):
             m = mask.unsqueeze(-1)
             decay = decay * m + (1.0 - m)  # pad: hold state
             bx = bx * m
+        if self.bilinear:
+            # exact non-linear recurrence (sequential; non-affine bilinear term)
+            B, Tt, Cn = bx.shape
+            h = torch.zeros(B, Cn, device=bx.device, dtype=bx.dtype)
+            if h0 is not None:
+                h = h0 if h0.dim() >= 2 else h0.unsqueeze(0)
+            Hs = []
+            for t in range(Tt):
+                g = torch.tanh(self.W_nl(h))
+                h = decay[:, t] * h + (1.0 - decay[:, t]) * bx[:, t] + self.beta * (g * bx[:, t])
+                Hs.append(h)
+            H = torch.stack(Hs, dim=1)
+            return self.W_C(H), H[:, -1]
         D, H = _scan(decay, (1.0 - decay) * bx)  # h_t (zero-init)
         if h0 is not None:
             h0v = h0 if h0.dim() >= 2 else h0.unsqueeze(0)
@@ -213,6 +236,7 @@ class MultiScaleSSM(nn.Module):
         slow_intent=False,
         delta_spectrum=False,
         band_isolate=False,
+        bilinear=False,
     ):
         super().__init__()
         if delta_spectrum:
@@ -222,7 +246,11 @@ class MultiScaleSSM(nn.Module):
             self.experts = nn.ModuleList(
                 [
                     SelectiveSSM(
-                        chan, delta_spectrum=True, slow_smooth=True, band_isolate=band_isolate
+                        chan,
+                        delta_spectrum=True,
+                        slow_smooth=True,
+                        band_isolate=band_isolate,
+                        bilinear=bilinear,
                     )
                 ]
             )
@@ -270,11 +298,13 @@ class CFM(nn.Module):
         unified: bool = False,
         zca: bool = False,
         isometric_boundary: bool = False,
+        bilinear: bool = False,
     ):
         super().__init__()
         self.vocab = vocab
         self.unified = bool(unified)
         self.zca = bool(zca)
+        self.bilinear = bool(bilinear)
         self.isometric_boundary = bool(isometric_boundary)
         if self.isometric_boundary:
             self.iso_skew = nn.Parameter(torch.zeros(dim, dim))
@@ -304,6 +334,7 @@ class CFM(nn.Module):
             slow_intent=(slow_intent and not self.unified),
             delta_spectrum=self.unified,
             band_isolate=self.unified,
+            bilinear=self.bilinear,
         )
         self.head_next = nn.Linear(dim, vocab.n_et + 1)  # next event type
         self.head_ent = nn.Linear(dim, vocab.n_ent + 1)  # next entity type

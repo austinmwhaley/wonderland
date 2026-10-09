@@ -158,6 +158,7 @@ def load_frozen_encoder(tag: str, cfm_dir):
         unified=bool(blob.get("unified", False)),
         zca=bool(blob.get("zca", False)),
         isometric_boundary=bool(blob.get("isometric_boundary", False)),
+        bilinear=bool(blob.get("bilinear_recurrence", False)),
     )
     model.load_state_dict(blob["state"])
     model = model.to("cuda" if torch.cuda.is_available() else "cpu")
