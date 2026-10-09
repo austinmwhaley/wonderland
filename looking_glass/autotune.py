@@ -309,8 +309,16 @@ def govern(
             break
         hist.append(v)
         prev_best = best
-        # measured noise floor from recent variation (needs >= 3 points)
-        tol = float(np.std(hist[-3:])) * 0.5 if len(hist) >= 3 else None
+        # measured noise floor from PRIOR evals (excluding the current one, so a
+        # genuine spike cannot inflate its own yardstick). Measurable after the
+        # third eval (>= 2 priors).
+        prior = hist[:-1]
+        if len(prior) >= 2:
+            win = prior[-8:]
+            tol = float(np.std(win)) * 0.5
+            center = float(np.median(win))
+        else:
+            tol, center = None, None
         if v < best:  # strict: keep the lowest-loss model ever seen
             best = v
             best_state = state
@@ -331,14 +339,16 @@ def govern(
                 f"[govern] step {steps}/{budget_steps}  val {v:.4f}  eval {len(hist)}", flush=True
             )
             continue  # plateau not measurable yet — patience does not start
-        # DIVERGENCE GUARD (v6): a metric that jumps >20x the measured noise floor
-        # above the best is instability, NOT a normal excursion. It is a HARD
-        # FAILURE — never rescued-and-reported-green. (Documented conservative
-        # factor; the SNR of the noise floor is the data-derived quantity.)
-        if v > best + 20.0 * tol:
+        # DIVERGENCE GUARD (v6): instability is a metric far above the RECENT
+        # LEVEL (robust center of prior evals), not above the all-time best — an
+        # early anomalous low must not make a settled plateau look divergent. The
+        # yardstick uses PRIOR evals only, so a real spike is still caught.
+        # 20x the measured noise floor is a documented conservative factor; it is
+        # a HARD FAILURE, never rescued-and-reported-green (DEC-039).
+        if center is not None and v > center + 20.0 * tol:
             diverged = True
             print(
-                f"[govern] DIVERGENCE at step {steps}: val {v:.4f} >> best {best:.4f} "
+                f"[govern] DIVERGENCE at step {steps}: val {v:.4f} >> recent {center:.4f} "
                 f"(+20x tol {tol:.4f}) — UNSTABLE run",
                 flush=True,
             )

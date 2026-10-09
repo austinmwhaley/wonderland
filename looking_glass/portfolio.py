@@ -26,7 +26,9 @@ claimed (doctrine #9/#11).
 from __future__ import annotations
 
 import json
+import math
 import time
+from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -78,6 +80,158 @@ def _destroyed(seqs: list[dict], seed: int) -> list[dict]:
             if f in s and s[f] is not None and len(s[f]) == L:
                 d[f] = [s[f][int(i)] for i in perm]
         out.append(d)
+    return out
+
+
+# Model-free objective gradeability (FR v2.0, DEC-046). The portfolio grades
+# every objective by its destroyed-null skill (loss on structure-destroyed
+# sequences minus loss on real): skill > 0 means "the model exploits temporal
+# structure". That yardstick is meaningless when the target is DEGENERATE -- its
+# own marginal has ~0 entropy/variance (e.g. ecommerce entity_type is always
+# "product"), so no predictor can beat the destroyed null and a FAIL is a FALSE
+# RED (as dishonest as a false green).
+#
+# `_identifiability` reports, model-free, both the target's marginal (entropy
+# for categorical, variance for continuous) and the stream's order-aware
+# ceiling -- a trivial baseline that conditions on the previous event type only,
+# fit on the TRAIN split, scored on the SAME held-out folds the model is graded
+# on:  ceiling = loss_marginal(dest) - loss_conditional(real).
+# The gate excuses ONLY `degenerate` targets (marginal ~ 0). The ceiling is a
+# LOWER bound on the stream's structure and is recorded for the receipt but is
+# NOT used to excuse: a weak baseline finding nothing does not prove nothing
+# exists (measured counter-example: `value`/`dt` have a low baseline ceiling yet
+# the model exploits strong structure the baseline cannot see).
+_IDENT_KINDS = ("next", "mask", "order", "query", "entity", "jepa", "dt", "value", "occur")
+
+
+def _ident_pairs(s, kind, occur_thr):
+    """(feature=prev event type, target) pairs at company-inactive positions.
+    Returns [] when the sequence lacks the fields the objective needs."""
+    if "event_type" not in s:
+        return []
+    et = [str(x) for x in s["event_type"]]
+    L = len(et)
+    if L < 2:
+        return []
+    if kind == "entity" and "entity_type" not in s:
+        return []
+    if kind in ("dt", "occur") and s.get("ts") is None:
+        return []
+    if kind == "value" and s.get("value") is None:
+        return []
+    co = s.get("co")
+    ts = s.get("ts")
+    out = []
+    for i in range(L - 1):
+        if co is not None and len(co) == L and co[i + 1][0]:
+            continue
+        f = et[i]
+        if kind in ("next", "mask", "order", "query", "jepa"):
+            out.append((f, ("c", et[i + 1])))
+        elif kind == "entity":
+            out.append((f, ("c", str(s["entity_type"][i + 1]))))
+        elif kind == "dt":
+            out.append((f, ("r", math.log1p(max(ts[i + 1] - ts[i], 0.0)))))
+        elif kind == "value":
+            out.append((f, ("r", math.log1p(abs(float(s["value"][i + 1]))))))
+        elif kind == "occur":
+            gap = max(ts[i + 1] - ts[i], 0.0)
+            out.append((f, ("c", "1" if gap <= occur_thr else "0")))
+    return out
+
+
+def _identifiability(train: list[dict], val: list[dict], fold_ids, seed: int) -> dict:
+    """Per-objective model-free identifiability ceiling (see note above)."""
+    dts = []
+    for s in train:
+        et = s.get("event_type")
+        ts = s.get("ts")
+        if et is None or ts is None:
+            continue
+        for i in range(len(et) - 1):
+            dts.append(max(ts[i + 1] - ts[i], 0.0))
+    occur_thr = float(np.median(dts)) if dts else 0.0
+
+    out: dict[str, dict] = {}
+    for kind in _IDENT_KINDS:
+        tr = [p for s in train for p in _ident_pairs(s, kind, occur_thr)]
+        if not tr:
+            out[kind] = {
+                "ceiling": 0.0,
+                "se": 0.0,
+                "marginal": 0.0,
+                "degenerate": False,
+                "identifiable": False,
+            }
+            continue
+        cat = tr[0][1][0] == "c"
+        table: dict = defaultdict(Counter) if cat else defaultdict(float)
+        cnts: dict = defaultdict(int)
+        marg = Counter()
+        gsum = 0.0
+        for f, (_t, v) in tr:
+            if cat:
+                table[f][v] += 1
+                marg[v] += 1
+            else:
+                table[f] += v
+                gsum += v
+            cnts[f] += 1
+        tot = sum(marg.values()) or 1
+        gmean = gsum / len(tr)
+        fmean = {f: table[f] / cnts[f] for f in table} if not cat else None
+
+        def loss(p, _cat=cat, _table=table, _marg=marg, _tot=tot, _gmean=gmean, _fmean=fmean):
+            f, (_t, v) = p
+            if _cat:
+                c = _table.get(f)
+                if c and c.get(v):
+                    return -math.log(c[v] / sum(c.values()))
+                return -math.log((_marg.get(v, 0) + 0.5) / (_tot + 0.5))
+            return (v - _fmean.get(f, _gmean)) ** 2
+
+        def loss_marg(p, _cat=cat, _marg=marg, _tot=tot, _gmean=gmean):
+            v = p[1][1]
+            if _cat:
+                return -math.log((_marg.get(v, 0) + 0.5) / (_tot + 0.5))
+            return (v - _gmean) ** 2
+
+        ceilings, margs = [], []
+        for g in fold_ids:
+            gset = set(g.tolist())
+            batch = [s for s in val if s["customer"] in gset]
+            ps = [p for s in batch for p in _ident_pairs(s, kind, occur_thr)]
+            if not ps:
+                continue
+            ceilings.append(float(np.mean([loss_marg(p) - loss(p) for p in ps])))
+            margs.append(float(np.mean([loss_marg(p) for p in ps])))
+        if not ceilings:
+            out[kind] = {
+                "ceiling": 0.0,
+                "se": 0.0,
+                "marginal": 0.0,
+                "degenerate": False,
+                "identifiable": False,
+            }
+            continue
+        c = float(np.mean(ceilings))
+        se = float(np.std(ceilings) / math.sqrt(len(ceilings)))
+        marginal = float(np.mean(margs))
+        # A target is UNGRADEABLE only when it is provably degenerate: its own
+        # marginal (entropy for categorical, variance for continuous) is ~0, so
+        # no predictor -- however strong -- can beat the destroyed null and a
+        # FAIL would be a false red (e.g. ecommerce entity_type == "product",
+        # a single class). The order-aware `ceiling` is recorded for the receipt
+        # but is NOT a gate: it is a LOWER bound on the stream's structure (a
+        # weak baseline finding nothing does not prove nothing exists).
+        degenerate = bool(marginal < 1e-6)
+        out[kind] = {
+            "ceiling": round(c, 5),
+            "se": round(se, 5),
+            "marginal": round(marginal, 4),
+            "degenerate": degenerate,
+            "identifiable": not degenerate,
+        }
     return out
 
 
@@ -216,6 +370,8 @@ def evaluate(
 
     gated = [o for o in cfg.objectives if o not in GATED_EXCLUSIONS]
     measured = sorted(set(gated) | YARDSTICK_PENDING)
+    tr_seqs = [seqs[int(i)] for i in _tr_idx]
+    ident = _identifiability(tr_seqs, val, fold_ids, seed)
     real_folds: dict[str, list[float]] = {o: [] for o in measured}
     shuf_folds: dict[str, list[float]] = {o: [] for o in measured}
     sf_var_real: list[float] = []
@@ -317,6 +473,17 @@ def evaluate(
             row["ok"] = True  # report-only: yardstick pending (see receipt note)
             row["check"] = f"portfolio: {o} structure-skill (REPORT-ONLY, yardstick pending)"
             report_only.append(o)
+        elif not ident.get(o, {}).get("identifiable", True):
+            # Degenerate target (marginal entropy/variance ~ 0, DEC-046): no
+            # predictor can beat the destroyed null, so binding it is a false
+            # red. Grade REPORT-ONLY.
+            ic = ident[o]
+            row["ok"] = True
+            row["check"] = (
+                f"portfolio: {o} structure-skill (REPORT-ONLY, degenerate target:"
+                f" marginal {ic['marginal']:.4f})"
+            )
+            report_only.append(o)
         rows.append(row)
     geometry = _geometry(z, seed + 2) if len(z) >= 4 else {}
     canaries = _canaries(z, val, seed + 3) if len(z) >= 4 else {}
@@ -407,6 +574,7 @@ def evaluate(
         "objectives": objectives,
         "objectives_missing": missing,
         "yardstick_pending": sorted(YARDSTICK_PENDING),
+        "identifiability": ident,
         "report_only": report_only,
         "canaries": canaries,
         "task_contributions": contributions,

@@ -959,3 +959,76 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   direction** with no `2/L` bound. Designated the single next change
   (`specs/V7_RFC.md` §9). Optimization halted here (boundary of the forbidden
   empirical push-pull).
+
+## DEC-046 — Objective gradeability: excuse only DEGENERATE targets (model-free)
+
+- **Date:** 2026-10-09
+- **Context:** the portfolio grades every objective by `skill = loss_destroyed −
+  loss_real`. On ecommerce, `entity` always FAILs — because the target
+  (`entity_type`) is the single constant `"product"` (zero entropy), so no
+  predictor can beat the destroyed null; the FAIL is a false red. But we also
+  proved the metric is **blind to absolute capability**: a model whose `next` CE
+  is 6× worse than a trivial 1-gram still scores `next` skill ≈ 0 and can PASS.
+- **Alternatives:** (a) a model-free "order-aware baseline ceiling" per objective
+  (we measured it: for `value`/`dt` the weak baseline finds ~nothing yet the model
+  exploits strong structure — so a low baseline ceiling is only a LOWER bound and
+  using it to excuse would hide real failures); (b) excuse nothing.
+- **Decision:** `_identifiability` computes, model-free (fit on train, scored on
+  the held-out folds), each target's marginal entropy/variance AND a trivial
+  order-aware ceiling (both recorded in the receipt). The gate excuses an
+  objective ONLY when the target is **provably degenerate** (marginal ≈ 0) — the
+  single case where no predictor can win, so the FAIL is unambiguously a false
+  red. The ceiling is diagnostic only, never used to excuse.
+- **Trade-off:** objectives stay gated even on streams where a weak baseline finds
+  no structure (a false red is safer than a false green, and prompts
+  investigation). The absolute-capability blindness of the relative skill metric
+  is recorded but not yet fixed (candidate: add a model-free capability floor).
+
+## DEC-047 — Variance-preserving readout (RMSNorm) + config coercion + govern fixes
+
+- **Date:** 2026-10-09
+- **Context (the root cause found by 14-step probing):** the SSM readout `y`
+  (which every head reads) grows without bound — measured `std ≈ 50`,
+  `|max| ≈ 900` after training, vs `|max| ≈ 3` at init. This makes the linear
+  heads ill-conditioned: `head_next` had logit std 13.8, never fit its own
+  training data (in-sample CE 1.42), and was 4–6× worse than `nn.Linear`/LR
+  probes on the *same* state (which reach CE ~0.34, ≈ the 1-gram 0.25). `next`
+  CE was 1.62 — worse than uniform (1.10).
+- **Alternatives:** clip/normalize heads individually (many sites, easy to miss);
+  input-only or readout-only norm.
+- **Decision (three structural safeguards, per operator directive):**
+  1. **Normalization by construction** — `RMSNorm` (per-sample, per-token; no
+     batch statistics, so it cannot fake rank) on the SSM **input** (bounds the
+     accumulated drive → variance-preserving over any horizon) and on the
+     **readout** (heads always see unit-scale features). Config flags
+     `readout_norm`/`input_norm` (default True); version bump → **v6.1.0**.
+  2. **Tensor-health guard** — `assert_readout_health(y, kappa)` raises if the
+     readout per-token RMS is outside `[1/κ, κ]` or `|y|max > κ·√dim` (κ=2, a
+     DIMENSIONLESS band — no unit-dependent magic number). Runs at step 0 of
+     every training; a variant without normalization is refused before it wastes
+     hours. Unit-tested.
+  3. **Bounded recurrence** — the recurrence operator is already contractive
+     (`decay ∈ (0,1)`, bilinear gate unit-norm); the growth was input-driven, now
+     bounded by the input RMSNorm.
+- **Co-discovered bugs (fixed):**
+  * `apply_set_overrides` did `ast.literal_eval("false")` → fails → stored the
+    STRING `"false"` (truthy), so **every boolean `--set key=true/false` was a
+    silent no-op**. Fixed with field-type-aware coercion (bool/int/float) +
+    type validation (fail safe). This invalidated earlier bilinear/norm A/B
+    retrains (both arms ran with the flag ON); the state-level probes that
+    toggled the python attribute directly remain valid.
+  * `govern`'s divergence guard compared `v > best + 20·tol` where `best` could
+    be a one-time early low and `tol` came from the last 3 (tight) evals → a
+    stable plateau that settled above an early transient was flagged
+    DIVERGENCE, blocking long runs. Fixed: the yardstick (center + noise floor)
+    is computed from **prior** evals (excluding the current, so a real spike
+    cannot inflate its own threshold); genuine spikes (≫ recent level) are still
+    a HARD FAILURE (DEC-039 intact).
+- **Measured effect:** readout `|max|` 881 → 3.4; `next` CE 1.62 → **0.40**
+  (1-gram 0.25); training now converges (stops on patience at the true plateau,
+  no false divergence). 252 fast tests green.
+- **Trade-offs / open:** the relative `next` skill is still ≈ 0 because the
+  model's absolute CE (0.40) sits near the destroyed/marginal level (~0.29) — the
+  remaining gap to the 1-gram (0.25) is state-side (the recurrent state's
+  next-information is lossy). The relative-skill metric's blindness to absolute
+  capability (DEC-046 note) is the next thing to address.

@@ -254,7 +254,7 @@ def test_variance_floor_hinge():
     model = CFM(vocab, dim=16, n_experts=1)
     cfg = _cfg(objectives=(*CFMConfig().objectives, "variance"))  # opt-in soft invariant
     assert "variance" not in CFMConfig().objectives and "variance" in CFMConfig().soft_invariants
-    assert CFMConfig().version == "v6.0.0"
+    assert CFMConfig().version == "v6.1.0"
     assert CFMConfig().n_experts == 2  # dual-velocity (DEC-025)
 
     # collapsed states (all identical rows) -> per-dim std 0 -> hinge = 1.0
@@ -357,7 +357,7 @@ def test_dual_velocity_config_and_ortho_loss():
     from looking_glass.cfm_training import _task_losses
 
     assert CFMConfig().n_experts == 2
-    assert CFMConfig().version == "v6.0.0"
+    assert CFMConfig().version == "v6.1.0"
     from looking_glass.cfm_config import _expert_biases
 
     biases = _expert_biases(2, 7)
@@ -374,3 +374,126 @@ def test_dual_velocity_config_and_ortho_loss():
     loss.backward()
     assert model.ssm.experts[0].delta_bias.grad is not None
     assert model.ssm.experts[1].delta_bias.grad is not None
+
+
+def test_identifiability_gate_reports_degenerate_targets():
+    """DEC-046: the portfolio excuses ONLY provably degenerate targets; a
+    funnel (order structure) stays gradeable and reports a positive ceiling."""
+    from looking_glass.portfolio import _identifiability
+
+    def seq(c, ets):
+        ets = list(ets)
+        return {
+            "customer": c,
+            "event_type": np.array(ets, dtype=object),
+            "entity_type": np.array(["p"] * len(ets), dtype=object),
+            "ts": list(range(len(ets))),
+            "value": [1.0] * len(ets),
+            "co": [[0.0, 0.0]] * len(ets),
+        }
+
+    train = [seq(f"c{i}", "ab" * 5) for i in range(20)]
+    val = [seq(f"v{i}", "ab" * 5) for i in range(20)]
+    folds = np.array_split(np.array([f"v{i}" for i in range(20)], dtype=object), 5)
+    r = _identifiability(train, val, folds, 0)
+    # deterministic funnel a<->b: strongly gradeable, positive order ceiling
+    assert r["next"]["identifiable"] and r["next"]["ceiling"] > 0.1
+    # constant entity_type: degenerate -> report-only, never a fair FAIL
+    assert r["entity"]["degenerate"] and not r["entity"]["identifiable"]
+
+    # fully constant event stream: `next` itself becomes degenerate
+    r2 = _identifiability(
+        [seq(f"c{i}", "aaaa") for i in range(20)],
+        [seq(f"v{i}", "aaaa") for i in range(20)],
+        folds,
+        0,
+    )
+    assert r2["next"]["degenerate"] and not r2["next"]["identifiable"]
+
+
+def test_rmsnorm_readout_health_guard():
+    """DEC-047: the readout is scale-normalized by construction, and the health
+    guard catches an unnormalized (magnitude-exploding) tensor."""
+    import pytest
+    import torch as _t
+
+    from looking_glass.cfm_model import RMSNorm, assert_readout_health
+
+    x = _t.randn(4, 7, 32) * 123.0
+    z = RMSNorm(32)(x)
+    rms = z.pow(2).mean(-1).sqrt()
+    assert _t.allclose(rms, _t.ones_like(rms), atol=1e-3)
+    assert_readout_health(z)["readout_rms"] == pytest.approx(1.0, abs=0.05)
+    with pytest.raises(RuntimeError):
+        assert_readout_health(x)  # huge + unnormalized -> must raise
+
+
+def test_model_readout_is_normalized_by_construction():
+    import numpy as _np
+    import torch as _t
+
+    from looking_glass.cfm_model import CFM, EventVocab, assert_readout_health
+    from looking_glass.cfm_training import _collate
+
+    seqs = [_seq(f"c{i}", day=f"2025-01-{(i % 28) + 1:02d}") for i in range(6)]
+    # large monetary values -> large input drive (the failure mode being guarded)
+    for s in seqs:
+        s["value"] = _np.full(len(s["value"]), 1e6, dtype=_np.float32)
+    vocab = EventVocab.build(seqs)
+    # default v6.1 encoder normalizes readout + input by construction
+    m = CFM(vocab, dim=16, n_experts=1, readout_norm=True, input_norm=True)
+    m.eval()
+    t = _collate(seqs, vocab, m._dev())
+    with _t.no_grad():
+        y, _ = m.ssm(m.tokens_batch(t), mask=t["mask"])
+    assert_readout_health(y)  # must NOT raise despite 1e6 inputs
+    # an unnormalized encoder on the same huge inputs explodes -> guard fires
+    m2 = CFM(vocab, dim=16, n_experts=1, readout_norm=False, input_norm=False)
+    m2.eval()
+    with _t.no_grad():
+        y2, _ = m2.ssm(m.tokens_batch(t), mask=t["mask"])
+    with pytest.raises(RuntimeError):
+        assert_readout_health(y2)
+
+
+def test_set_override_coerces_boolean_and_numeric():
+    """DEC-047: `--set flag=false` must store a real bool, not the truthy
+    string 'false' (which silently no-op'd every boolean override)."""
+    import pytest
+
+    from looking_glass.cfm_config import CFMConfig, apply_set_overrides
+
+    cfg = CFMConfig()
+    cfg.set_overrides = [
+        "readout_norm=false",
+        "input_norm=true",
+        "bilinear_recurrence=0",
+        "max_steps=123",
+    ]
+    apply_set_overrides(cfg)
+    assert cfg.readout_norm is False
+    assert cfg.input_norm is True
+    assert cfg.bilinear_recurrence is False
+    assert cfg.max_steps == 123 and isinstance(cfg.max_steps, int)
+    bad = CFMConfig()
+    bad.set_overrides = ["readout_norm=maybe"]
+    with pytest.raises(SystemExit):
+        apply_set_overrides(bad)
+
+
+def test_govern_level_shift_is_not_divergence():
+    """DEC-047: a stable plateau that settles above an early anomalous low must
+    NOT be flagged as divergence (it was, blocking long runs)."""
+    from looking_glass.autotune import govern
+
+    vals = iter([9.73, 11.87, 11.83, 11.80, 11.79, 11.78, 11.78, 11.78])
+    gov, _ = govern(lambda n: None, lambda: (next(vals), None), 8, 1, patience=6)
+    assert not gov["diverged"]
+
+
+def test_govern_flags_a_real_spike():
+    from looking_glass.autotune import govern
+
+    vals = iter([5.0, 5.1, 5.0, 5.1, 1000.0])
+    gov, _ = govern(lambda n: None, lambda: (next(vals), None), 5, 1, patience=6)
+    assert gov["diverged"]

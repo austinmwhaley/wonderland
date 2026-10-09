@@ -56,6 +56,53 @@ def _scan(d, b):
     return a, Bb
 
 
+class RMSNorm(nn.Module):
+    """Per-sample, per-timestep RMS normalization (v6.1, DEC-047).
+
+    A recurrent state has no intrinsic scale: over long horizons the input
+    drives accumulate and the readout magnitude drifts (measured here: readout
+    std ~50, max ~900), which makes every downstream LINEAR head ill-conditioned
+    and untrainable (softmax saturates; a head on the same state is 4x worse than
+    a probe). This normalizes each token's readout vector to unit RMS — a
+    structural, per-sample operation (no batch statistics, so it cannot fake
+    rank) — so heads ALWAYS see well-conditioned inputs regardless of sequence
+    length or training dynamics. It is the architectural invariant that makes
+    the CVF's "variance-preserving recurrence" hold at the readout."""
+
+    def __init__(self, dim, eps=1e-6):
+        super().__init__()
+        self.eps = float(eps)
+        self.weight = nn.Parameter(torch.ones(dim))
+
+    def forward(self, x):
+        rms = x.pow(2).mean(-1, keepdim=True).add(self.eps).rsqrt()
+        return x * rms * self.weight
+
+
+def assert_readout_health(y, kappa=2.0):
+    """Tensor-health guard (v6.1, DEC-047): fail loudly if a readout feeds the
+    heads unnormalized. `y` is the SSM readout (B,T,D). With RMSNorm applied the
+    per-token RMS is ~1; `kappa` bounds the tolerated deviation (dimensionless,
+    no unit-dependent constant). Returns a stats dict; raises on violation."""
+    with torch.no_grad():
+        rms = y.float().pow(2).mean(-1).sqrt()  # (B,T) per-token RMS
+        r, mx = float(rms.mean()), float(y.float().abs().max())
+        dim = int(y.shape[-1])
+        bound = kappa * float(np.sqrt(dim))
+        stats = {"readout_rms": round(r, 4), "readout_absmax": round(mx, 4), "dim": dim}
+        if not (1.0 / kappa <= r <= kappa):
+            raise RuntimeError(
+                f"readout health: per-token RMS {r:.3f} outside [{1 / kappa:.3f},{kappa}]"
+                f" — readout is not normalized (RMSNorm missing/inactive): {stats}"
+            )
+        if mx > bound:
+            raise RuntimeError(
+                f"readout health: |y|max {mx:.3f} exceeds {bound:.1f}=kappa*sqrt(dim)"
+                f" — unbounded feature growth: {stats}"
+            )
+    return stats
+
+
 class SelectiveSSM(nn.Module):
     def __init__(
         self,
@@ -66,8 +113,15 @@ class SelectiveSSM(nn.Module):
         slow_smooth=False,
         band_isolate=False,
         bilinear=False,
+        readout_norm=True,
+        input_norm=True,
     ):
         super().__init__()
+        # variance-preserving recurrence (v6.1, DEC-047): normalize the token
+        # stream so the accumulated drive cannot grow with horizon, and the
+        # readout so heads see unit-scale features. Both per-sample.
+        self.input_norm = RMSNorm(dim) if input_norm else None
+        self.readout_norm = RMSNorm(dim) if readout_norm else None
         self.W_delta = nn.Linear(dim, dim)
         self.W_B = nn.Linear(dim, dim)
         self.W_C = nn.Linear(dim, dim)
@@ -118,6 +172,8 @@ class SelectiveSSM(nn.Module):
         return g
 
     def forward(self, x, h0=None, mask=None):
+        if self.input_norm is not None:
+            x = self.input_norm(x)
         if self.smooth is not None:
             x = self.smooth(x, mask=mask)
         bm = getattr(self, "band_mask", None)
@@ -164,12 +220,14 @@ class SelectiveSSM(nn.Module):
             D, Hout = _scan(decay, drive0 + self.beta * (g * bx))
             if h0v is not None:
                 Hout = Hout + D * h0v.unsqueeze(1)
-            return self.W_C(Hout), Hout[:, -1]
+            y = self.W_C(Hout)
+            return (self.readout_norm(y) if self.readout_norm is not None else y), Hout[:, -1]
         D, H = _scan(decay, (1.0 - decay) * bx)  # h_t (zero-init)
         if h0 is not None:
             h0v = h0 if h0.dim() >= 2 else h0.unsqueeze(0)
             H = H + D * h0v.unsqueeze(1)
-        return self.W_C(H), H[:, -1]
+        y = self.W_C(H)
+        return (self.readout_norm(y) if self.readout_norm is not None else y), H[:, -1]
 
 
 def cayley_orthogonal(n, device=None, dtype=None):
@@ -263,6 +321,8 @@ class MultiScaleSSM(nn.Module):
         delta_spectrum=False,
         band_isolate=False,
         bilinear=False,
+        readout_norm=True,
+        input_norm=True,
     ):
         super().__init__()
         if delta_spectrum:
@@ -277,6 +337,8 @@ class MultiScaleSSM(nn.Module):
                         slow_smooth=True,
                         band_isolate=band_isolate,
                         bilinear=bilinear,
+                        readout_norm=readout_norm,
+                        input_norm=input_norm,
                     )
                 ]
             )
@@ -284,7 +346,12 @@ class MultiScaleSSM(nn.Module):
             return
         self.chan = chan
         self.n_experts = n_experts
-        self.experts = nn.ModuleList([SelectiveSSM(chan, b) for b in delta_biases[:n_experts]])
+        self.experts = nn.ModuleList(
+            [
+                SelectiveSSM(chan, b, readout_norm=readout_norm, input_norm=input_norm)
+                for b in delta_biases[:n_experts]
+            ]
+        )
         # v3.1.0 (DEC-027): the SLOW expert gets a low-pass intent filter so its
         # state VELOCITY is smooth instead of tracking raw event-type flips. Slow
         # = the expert with the longest memory (smallest delta_bias) — DERIVED,
@@ -325,6 +392,8 @@ class CFM(nn.Module):
         zca: bool = False,
         isometric_boundary: bool = False,
         bilinear: bool = False,
+        readout_norm: bool = True,
+        input_norm: bool = True,
     ):
         super().__init__()
         self.vocab = vocab
@@ -332,6 +401,8 @@ class CFM(nn.Module):
         self.zca = bool(zca)
         self.bilinear = bool(bilinear)
         self.isometric_boundary = bool(isometric_boundary)
+        self.readout_norm_on = bool(readout_norm)
+        self.input_norm_on = bool(input_norm)
         if self.isometric_boundary:
             self.iso_skew = nn.Parameter(torch.zeros(dim, dim))
             # conservation scale: Tr(Sigma_readout) is held to the input band
@@ -361,6 +432,8 @@ class CFM(nn.Module):
             delta_spectrum=self.unified,
             band_isolate=self.unified,
             bilinear=self.bilinear,
+            readout_norm=self.readout_norm_on,
+            input_norm=self.input_norm_on,
         )
         self.head_next = nn.Linear(dim, vocab.n_et + 1)  # next event type
         self.head_ent = nn.Linear(dim, vocab.n_ent + 1)  # next entity type

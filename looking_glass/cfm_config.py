@@ -47,10 +47,35 @@ def apply_set_overrides(cfg, receipt: dict | None = None) -> dict:
         k = k.strip()
         if not hasattr(cfg, k) or k in ("set_overrides", "tag"):
             raise SystemExit(f"--set: unknown or reserved config field: {k!r}")
-        try:
-            val = ast.literal_eval(v.strip())
-        except (ValueError, SyntaxError):
-            val = v.strip()
+        cur = getattr(cfg, k)
+        s = v.strip()
+        # `--set flag=true/false` arrives as text; ast uses capitalised
+        # True/False, so coerce against the FIELD's own type. Silently keeping
+        # the string made bool fields always-truthy ("false" is truthy) — every
+        # boolean override was a no-op (DEC-047).
+        if isinstance(cur, bool):
+            low = s.lower()
+            if low in ("true", "1", "yes", "on"):
+                val = True
+            elif low in ("false", "0", "no", "off"):
+                val = False
+            else:
+                raise SystemExit(f"--set {k}: expected a boolean, got {s!r}")
+        else:
+            try:
+                val = ast.literal_eval(s)
+            except (ValueError, SyntaxError):
+                if isinstance(cur, int):
+                    val = int(float(s))
+                elif isinstance(cur, float):
+                    val = float(s)
+                else:
+                    val = s
+        if cur is not None and not isinstance(val, type(cur)):
+            raise SystemExit(
+                f"--set {k}: {val!r} ({type(val).__name__}) does not match field"
+                f" type {type(cur).__name__}"
+            )
         setattr(cfg, k, val)
         applied[k] = val
         if receipt is not None:
@@ -114,7 +139,7 @@ class CFMConfig:
     # v3.0.0: dual-velocity encoder (DEC-025) — n_experts=2 with spread
     # delta_bias init (fast/slow timescales), ortho-loss between expert state
     # components, rolling EMA whitening, trajectory graded on the slow state.
-    version: str = "v6.0.0"  # encoder code version
+    version: str = "v6.1.0"  # encoder code version
     revision: int = 1  # data/score revision (r)
     sample_customers: int | None = 500  # working base: first N customers (populations live here)
     split_a_frac: float = 0.7
@@ -215,6 +240,16 @@ class CFMConfig:
     donor_whiten: bool = True  # whitened readout at the donor boundary (legacy)
     isometric_boundary: bool = True  # v6 Stage1: per-sample orthogonal readout (kappa=1)
     bilinear_recurrence: bool = False  # v7: multiplicative state-input term (rank-preserving fix)
+    # v6.1 (DEC-047): variance-preserving recurrence. A recurrent readout has no
+    # intrinsic scale; over long horizons the drives accumulate and the readout
+    # magnitude drifts (measured std ~50, max ~900), which made every linear head
+    # ill-conditioned and untrainable (head 4x worse than a probe on its own
+    # state). `readout_norm` RMS-normalizes the per-step readout (heads always see
+    # unit-scale features); `input_norm` RMS-normalizes the token stream so the
+    # accumulated drive cannot grow with horizon. Both are per-sample (no batch
+    # statistics -> cannot fake rank). Structural invariants, not losses.
+    readout_norm: bool = True  # RMSNorm on the SSM readout before heads
+    input_norm: bool = True  # RMSNorm on the token stream (bounded drive)
     # DEC-028: condition cap for the boundary whitening — eigenvalues of the
     # state covariance are floored at this fraction of the largest, bounding
     # kappa(Sigma^{-1/2}) <= 1/sqrt(whiten_cond_floor). Prevents near-null

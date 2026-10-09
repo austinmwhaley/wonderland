@@ -29,21 +29,27 @@
 
 ## Micro
 
-- **Current task:** v6.0.0 certified across streams (DEC-038). rabbit_hole and
-  Instacart FULLY GREEN (portfolio 15/15 + intrinsic 6/6 each); ecommerce_2019
-  is the honest low-rank boundary (rank-1, no ZCA faking). lr derivation fixed to
-  a scale-free relative step `lr = 1e-3·‖θ‖/‖g‖` (the old `0.5/√P_in` hit the
-  clip and destabilised Instacart). Next: full Instacart re-run to confirm
-  stability under the new lr.
+- **Current task:** v6.1.0 — variance-preserving readout (DEC-047). Root cause
+  of the low-rank/poor-head blocker found by probing: the SSM readout grows
+  unbounded (std~50, |max|~900), making linear heads ill-conditioned and
+  untrainable (`next` CE 1.62 > uniform; `head_next` 4-6x worse than a probe on
+  its own state). Fixed by RMSNorm on the SSM input + readout (per-sample, by
+  construction), a step-0 tensor-health guard, a config-coercion bug fix (all
+  boolean `--set` flags were silent no-ops), and a govern false-divergence fix.
+  Result: readout |max| 881->3.4, `next` CE 1.62->0.40 (1-gram 0.25); training
+  converges. 252 fast tests green. Next: address the relative skill metric's
+  blindness to absolute capability; close the remaining state-side next gap.
 
-- **Last completed:** v3.2.0 condition-capped whitening + soft-spectrum (gates
-  reproducible; honest geometry 0.21). v4.0 code + 4 regression tests; 245 fast
-  tests green; v4.0 smoke run end-to-end.
+- **Last completed:** v6.0.0 certified across rabbit_hole + Instacart (portfolio
+  15/15 + intrinsic 6/6 each); ecommerce = honest low-rank boundary. Then the
+  14-step encoder-defect investigation -> v6.1.0 fixes (DEC-046, DEC-047).
 - **Immediate next 3 actions:**
-  1. Grade v4.0 (portfolio + intrinsic); confirm reproducibility across runs.
-  2. Produce the report card; record honest verdicts (gates are now scale-free,
-     so FAIL is meaningful).
-  3. Update DECISIONS/STATUS with the measured v4.0 result.
+  1. Add a model-free absolute-capability floor to the portfolio (the relative
+     skill metric passes a model whose next CE is 6x worse than a 1-gram).
+  2. Investigate the residual state-side `next` gap (state next-info is lossy:
+     trained head 0.40 vs 1-gram 0.25; fresh probe ~0.37).
+  3. Re-run rabbit_hole + Instacart on v6.1.0 to confirm no regression, then
+     re-certify.
 - **Environment:** repo `~/Documents/wonderland` (main, CI green);
   `python3 -m pytest -m "not slow"` -> 215 passed; GPU cuda available;
   standing products `looking_glass/artifacts/cfm/cfm_products.duckdb`

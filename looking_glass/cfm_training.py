@@ -145,6 +145,8 @@ def train_cfm(cfg: CFMConfig):
         zca=getattr(cfg, "zca", False),
         isometric_boundary=getattr(cfg, "isometric_boundary", False),
         bilinear=getattr(cfg, "bilinear_recurrence", False),
+        readout_norm=getattr(cfg, "readout_norm", True),
+        input_norm=getattr(cfg, "input_norm", True),
     ).to(device)
     # v4.0: differentiable ZCA in the forward during training (gradients shape the
     # consumed isotropy); off at eval/save so the frozen transform is used.
@@ -164,6 +166,16 @@ def train_cfm(cfg: CFMConfig):
             rvec = torch.where(slow, torch.full_like(db, r0), torch.full_like(db, 0.05))
             ex0[0].smooth.logit.copy_(torch.log(rvec / (1.0 - rvec)))
         print(f"[profile] input low-pass retention (slow band) = {r0:.3f}", flush=True)
+    # Tensor-health guard (v6.1, DEC-047): the readout MUST be scale-normalized
+    # before training starts, or every linear head is ill-conditioned. Fails
+    # loudly at step 0 (cheap) instead of after hours of silent mis-training.
+    from looking_glass.cfm_model import assert_readout_health
+
+    with torch.no_grad():
+        _th = _collate(a_seqs[: min(8, len(a_seqs))], vocab, device)
+        _yh, _ = model.ssm(model.tokens_batch(_th), mask=_th["mask"])
+        cfg._readout_health = assert_readout_health(_yh)
+    print(f"[health] readout {cfg._readout_health}", flush=True)
     # ---- warm-start / continual (same objective as scratch: data <= as_of) ----
     cfg.warm_from = None
     if str(cfg.warm_start).lower() not in ("none", "", "0"):
@@ -503,6 +515,8 @@ def train_cfm(cfg: CFMConfig):
             "zca": bool(getattr(cfg, "zca", False)),
             "isometric_boundary": bool(getattr(cfg, "isometric_boundary", False)),
             "bilinear_recurrence": bool(getattr(cfg, "bilinear_recurrence", False)),
+            "readout_norm": bool(getattr(cfg, "readout_norm", True)),
+            "input_norm": bool(getattr(cfg, "input_norm", True)),
             "whiten_mean": (model.whiten_mean if getattr(model, "whiten_on", False) else None),
             "whiten_W": (model.whiten_W if getattr(model, "whiten_on", False) else None),
         },
