@@ -29,7 +29,14 @@
 
 ## Micro
 
-- **Current task:** v6.5.0 — CERTIFIED: rabbit_hole (11/11 portfolio + 6/6
+- **Current task:** v6.6.0 — standardized frozen-encoder probe harness (DEC-052)
+  + ecommerce_2019 probe baseline. CERTIFIED: rabbit_hole (11/11 + 6/6),
+  Instacart (11/11 + 6/6). ecommerce recorded FAIL_LOW_EFFECT_SIZE (next/mask) /
+  NO_IDENTIFIABLE_SIGNAL (entity/value): event-identity decodability shows z_t
+  DOES expose current event (macro-F1 0.81), so no architectural patch is
+  justified. Gates not weakened. 254 tests green.
+
+- **Prior:** v6.5.0 — CERTIFIED: rabbit_hole (11/11 portfolio + 6/6
   intrinsic) and Instacart (11/11 + 6/6 at minimum size 5k/1k). ecommerce_2019
   documented as the low-transition-signal boundary (DEC-046 three-way layer:
   next/jepa/sf FAIL, entity/value NO_IDENTIFIABLE_SIGNAL). Governor metric +
