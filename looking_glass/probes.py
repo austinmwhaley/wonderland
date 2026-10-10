@@ -159,7 +159,10 @@ def _build(name, rows, n_ent, n_ev, horizon):
             elif name == "mask":
                 X.append(r["Zm"][t])
                 Y.append(r["et"][t])
-                PREVID.append(r["et"][t])
+                # 1-gram predictor for a masked event = the PREVIOUS observed
+                # event (NOT the target itself — that leaked the answer and gave
+                # a bogus ~0 baseline).
+                PREVID.append(r["et"][t - 1] if t >= 1 else -1)
                 PREVVAL.append(0.0)
             elif name == "agg":
                 hi = min(t + 1 + horizon, L)
