@@ -24,6 +24,7 @@ from pathlib import Path
 
 import numpy as np
 import torch
+from sklearn.decomposition import PCA
 from sklearn.ensemble import HistGradientBoostingClassifier, HistGradientBoostingRegressor
 from sklearn.metrics import roc_auc_score
 
@@ -47,8 +48,20 @@ GATE = {
     "folds": 5,
 }
 N_FOLDS = 5
-GBM_REG = {"max_iter": 300, "learning_rate": 0.06}
-GBM_CLF = {"max_iter": 300, "learning_rate": 0.06}
+GBM_REG = {
+    "max_iter": 200,
+    "learning_rate": 0.05,
+    "min_samples_leaf": 25,
+    "l2_regularization": 1.0,
+    "max_depth": 4,
+}
+GBM_CLF = {
+    "max_iter": 200,
+    "learning_rate": 0.05,
+    "min_samples_leaf": 25,
+    "l2_regularization": 1.0,
+    "max_depth": 4,
+}
 
 
 def _folds(customers, n=N_FOLDS, seed=1):
@@ -177,7 +190,8 @@ def run_head_battery(model, cfg, horizon_days=90, seeds=(0, 1, 2)):
                 ):
                     continue
                 sc = StandardScaler().fit(Z[tr])
-                Ztr, Zva = sc.transform(Z[tr]), sc.transform(Z[va])
+                pca = PCA(n_components=min(32, Z.shape[1])).fit(sc.transform(Z[tr]))
+                Ztr, Zva = pca.transform(sc.transform(Z[tr])), pca.transform(sc.transform(Z[va]))
                 sc2 = StandardScaler().fit(Xraw[tr])
                 Rtr, Rva = sc2.transform(Xraw[tr]), sc2.transform(Xraw[va])
                 Etva = np.hstack([Zva, Rva])
