@@ -206,8 +206,12 @@ class SelectiveSSM(nn.Module):
         if self.ev_residual:
             self.w_ev = nn.Linear(dim, dim, bias=False)
             self.w_evp = nn.Linear(dim, dim, bias=False)
+            # per-channel norm so the event channels stay at FIXED scale in the
+            # readout (adding pre-normalization washes them out — the state
+            # dominates the vector, measured TMD: z_t still 0.270 vs 1-gram 0.231).
+            self.ev_norm = RMSNorm(dim)
         else:
-            self.w_ev = self.w_evp = None
+            self.w_ev = self.w_evp = self.ev_norm = None
         self.W_delta = nn.Linear(dim, dim)
         self.W_B = nn.Linear(dim, dim)
         self.W_C = nn.Linear(dim, dim)
@@ -310,12 +314,13 @@ class SelectiveSSM(nn.Module):
             y = self.W_C(Hout)
             if self.skip is not None:
                 y = y + self.skip(xs)
+            y = self.readout_norm(y) if self.readout_norm is not None else y
             if self.ev_residual:
                 if ev is not None:
-                    y = y + self.w_ev(ev)
+                    y = y + self.ev_norm(self.w_ev(ev))
                 if ev_prev is not None:
-                    y = y + self.w_evp(ev_prev)
-            return (self.readout_norm(y) if self.readout_norm is not None else y), Hout[:, -1]
+                    y = y + self.ev_norm(self.w_evp(ev_prev))
+            return y, Hout[:, -1]
         D, H = _scan(decay, (1.0 - decay) * bx)  # h_t (zero-init)
         if h0 is not None:
             h0v = h0 if h0.dim() >= 2 else h0.unsqueeze(0)
@@ -323,12 +328,13 @@ class SelectiveSSM(nn.Module):
         y = self.W_C(H)
         if self.skip is not None:
             y = y + self.skip(xs)
+        y = self.readout_norm(y) if self.readout_norm is not None else y
         if self.ev_residual:
             if ev is not None:
-                y = y + self.w_ev(ev)
+                y = y + self.ev_norm(self.w_ev(ev))
             if ev_prev is not None:
-                y = y + self.w_evp(ev_prev)
-        return (self.readout_norm(y) if self.readout_norm is not None else y), H[:, -1]
+                y = y + self.ev_norm(self.w_evp(ev_prev))
+        return y, H[:, -1]
 
 
 def cayley_orthogonal(n, device=None, dtype=None):
@@ -564,6 +570,11 @@ class CFM(nn.Module):
         # mean-softmax == the unigram, skill ~0). A dedicated query head lets
         # `next`/`mask` learn the transition.
         self.head_query = nn.Linear(dim, vocab.n_et + 1)  # query-time next event
+        # DEC-057: dedicated masked-reconstruction head. Sharing head_next with
+        # `mask` (whose input is the MASKED readout, optimum ~ marginal) dragged
+        # the clean-input `next` head to the marginal (measured: model head_next
+        # CE 0.287 vs a fresh probe 0.219 on the SAME readout, 1-gram 0.230).
+        self.head_mask = nn.Linear(dim, vocab.n_et + 1)
         self.head_ent = nn.Linear(dim, vocab.n_ent + 1)  # next entity type
         self.head_dt = nn.Linear(dim, 1)  # log1p(dt_next)
         self.head_occ = nn.Linear(dim, 1)  # next event within horizon?
@@ -752,10 +763,25 @@ class CFM(nn.Module):
         return ev, emb(prev)
 
     def encode_ev(self, x, t, h0=None, emb_et=None):
-        """SSM forward that includes the event-identity readout residual.
-        `x` = token stream; `t` = the collated batch (for event ids)."""
-        ev, ev_prev = self._event_residual_inputs(t, emb_et=emb_et)
-        return self.ssm(x, h0=h0, mask=t["mask"], ev=ev, ev_prev=ev_prev)
+        """SSM forward with DEDICATED event-identity channels in the readout.
+
+        Adds a fast bypass (DEC-057): the raw current/previous event one-hots are
+        written into the FIRST 2*(n_et+1) readout dims, so a linear head ALWAYS
+        has the Markov transition available at full scale (the recurrent state is
+        a low-pass aggregate that washes the identity out — measured: any additive
+        residual still leaves z_t worse than a 1-gram). Never mixed; no loss hack.
+        """
+        y, h = self.ssm(x, h0=h0, mask=t["mask"])
+        if self.event_residual_on:
+            ne = self.vocab.n_et + 1
+            et = t["et"]
+            prev = torch.cat([et[:, :1], et[:, :-1]], dim=1)
+            y = y.clone()
+            oh = torch.nn.functional.one_hot(et.clamp(max=ne - 1), ne).to(y.dtype)
+            ohp = torch.nn.functional.one_hot(prev.clamp(max=ne - 1), ne).to(y.dtype)
+            y[..., :ne] = oh
+            y[..., ne : 2 * ne] = ohp
+        return y, h
 
     def encode(self, t, h0=None):
         """Tokenize + encode a collated batch with the event residual."""

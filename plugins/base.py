@@ -30,7 +30,7 @@ class PluginSpec:
     kind: str  # supervised | unsupervised | white_queen
     target: str  # e.g. "gross_margin"
     window_days: int  # label horizon this plugin owns (1, 365, ...)
-    version: str = "v1.0.0"
+    version: str = "0.1.0"
     revision: int = 1
 
     @property

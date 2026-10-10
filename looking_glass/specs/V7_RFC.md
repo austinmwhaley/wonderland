@@ -1,4 +1,4 @@
-# looking_glass v7.0 — Architecture RFC: Centered Covariance SSM State Dynamics
+# looking_glass 0.7.0 — Architecture RFC: Centered Covariance SSM State Dynamics
 
 Status: **DRAFT** · Supersedes the v6 trunk state-aggregation mechanism · Owner: Layer B
 

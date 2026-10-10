@@ -125,7 +125,7 @@ def test_battery_main_writes_receipt(tmp_path, monkeypatch):
     import looking_glass.sufficiency_battery as B
 
     res = {
-        "version": "v2.1.0r1",
+        "version": "0.2.1r1",
         "rows": [{"target": "t", "n": 100}],
         "skipped": [{"target": "tiny", "n_labeled": 50}],
         "seed": 0,
@@ -140,7 +140,7 @@ def test_battery_main_writes_receipt(tmp_path, monkeypatch):
     monkeypatch.setattr(B, "show", lambda r: True)
     rc = B.main([], out_dir=tmp_path)
     assert rc == 0
-    files = list(tmp_path.glob("battery_v2_1_0r1_*.json"))
+    files = list(tmp_path.glob("battery_0_2_1r1_*.json"))
     assert len(files) == 1
     saved = json.loads(files[0].read_text())
     assert saved["skipped"][0]["target"] == "tiny"

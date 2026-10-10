@@ -1,6 +1,6 @@
 # ecommerce_2019 — frozen-encoder probe baseline (DEC-052)
 
-Frozen encoder: `v6.4.0r162610` (20k-customer ecommerce run). Probe harness:
+Frozen encoder: `0.6.4r162610` (20k-customer ecommerce run). Probe harness:
 `python3 -m looking_glass.probes`. Encoder weights frozen; only probe heads
 trained. Plain CE/MSE, no class weights / focal loss. 5 grouped customer folds;
 verify harness reports `frozen=True` and the forward is grad-free (fail-fast).

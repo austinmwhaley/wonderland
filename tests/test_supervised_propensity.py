@@ -123,7 +123,7 @@ def test_target_contracts_and_state_consistent_feature_table():
     assert PURCHASE_PROPENSITY_30D.kind == "binary"
     assert PURCHASE_PROPENSITY_30D.window_days == 30
     assert PURCHASE_PROPENSITY_30D.feature_table == "donor_embeddings"  # state-consistent
-    assert PURCHASE_PROPENSITY_30D.tag == "supervised_purchase_propensity_30d_v1.0.0r1"
+    assert PURCHASE_PROPENSITY_30D.tag == "supervised_purchase_propensity_30d_0.1.0r1"
     assert clv_target(365).feature_table == "anchor_embeddings"
     assert PURCHASE_PROPENSITY_30D.spec().kind == "supervised"
 

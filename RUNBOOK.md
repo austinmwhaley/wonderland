@@ -127,13 +127,19 @@ keeping a setting, just rebuild products — the day-1 close ships with it.)
    encoder cut, daily-job window, and inference lookups share it (helper:
    `as_of_epoch`). The daily job closes through **yesterday**; today's events
    are never absorbed until tomorrow's run (a time-carrying `as_of` warns).
-8. **One readout rule (v2.1.0).** Training-anchor embeddings and serving
+8. **One readout rule (0.2.1).** Training-anchor embeddings and serving
    embeddings apply the SAME fade: `donor(fade(state, boundary − last_event))`
    — anchors fade to the anchor, serving to the scoring boundary. Half-life
    derives from the **p95 of within-customer gaps** (registry receipt), never a
    merged timeline (that pinned it at the 1-hour floor and silently separated
    train from serve). Explicit `--set` config overrides are applied AFTER
    derivation and recorded — derivation never overwrites them.
+9. **Version scheme (DEC-058).** Versions are pre-1.0 semver
+   `MAJOR.MINOR.PATCH` (currently `0.6.4`). The encoder `tag` appends the `r`
+   data/score revision: `<version>r<revision>` (e.g. `0.6.4r162610`). The
+   historical `v6.x` line re-bases by `vMAJOR.MINOR.PATCH → 0.MAJOR.MINOR`
+   (the old `v` prefix and trailing patch are dropped; `v6.4.0 → 0.6.4`). A
+   change that can alter outputs bumps the version (doctrine #10).
 
 ## What a cycle produces
 

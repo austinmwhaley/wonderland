@@ -714,7 +714,7 @@ def _mask_loss_batch(model, vocab, t, cfg, dev):
     y2, tgt, rand = _masked_forward(model, vocab, t, cfg, dev)
     if y2 is None:
         return torch.zeros((), device=dev)
-    return F.cross_entropy(model.head_next(y2[rand]), tgt[rand])
+    return F.cross_entropy(model.head_mask(y2[rand]), tgt[rand])
 
 
 def agg_window_targets(secs, vals_lp, mask, h_sec):

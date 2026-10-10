@@ -1229,3 +1229,28 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   Boundary (AUROC 0.669). FAIL — Transition Dynamics (`next` -0.036), Content
   Fidelity (`value` -0.37), Uncertainty (AUROC 0.500). NO_SIGNAL — Entity
   Tracking (`entity`). Gates unchanged (DEC-046).
+
+## DEC-058 — Versioning scheme: pre-1.0 semver `MAJOR.MINOR.PATCH`
+
+- **Date:** 2026-10-10
+- **Context:** the encoder version label used the `vN` generation plus an `r`
+  data/score revision (`v6.4.0r162610`), where `N` had grown 1→6 over the
+  project's history even though nothing is a 1.0 release. The label is identity
+  (doctrine #10) but the leading number conflated "generation" with "major".
+- **Decision:** adopt **pre-1.0 semantic versioning**. Version is
+  `MAJOR.MINOR.PATCH` with `MAJOR = 0`; the encoder `tag` appends the existing
+  `r` data/score revision (`<version>r<revision>`, e.g. `0.6.4r162610`). The
+  historical `v` prefix is dropped. Previous labels re-base by
+  `vMAJOR.MINOR.PATCH → 0.MAJOR.MINOR` (old patch dropped): `v6.4.0 → 0.6.4`,
+  `v2.1.0 → 0.2.1`, `v1.0.0 → 0.1.0`.
+- **Scope:** active code literals (`CFMConfig.version`, `PluginSpec`/`Target`
+  defaults), their tests, and live docs (`README`, `STATUS`, `RUNBOOK`,
+  `looking_glass/specs/*`, `spec_looking_glass.html`). `DECISIONS.md` history and
+  on-disk artifact filenames are **left as recorded** (append-only / regenerable;
+  they will re-emit under the new scheme on the next run).
+- **Trade-offs:** the rule is lossy for the two historical patch bumps
+  (`v2.8.1 → 0.2.8`, `v3.0.1 → 0.3.0` collide with `v2.8.0`/`v3.0.0` in prose
+  only). Accepted: those are frozen historical references, not live identities.
+- **Not touched:** the `looking_glass` spec's own document revision
+  (`spec_looking_glass.html` H1) is rebased to `0.9.3` for scheme consistency;
+  the `V7_RFC.md` *filename* is unchanged (rename deferred).

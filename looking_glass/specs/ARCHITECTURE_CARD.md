@@ -3,7 +3,7 @@
 > A self-governing, self-supervised **foundation encoder for event streams**.
 > This card is written to be self-contained: given it, an LLM should be able to
 > re-implement the system and understand *why* every part exists.
-> Canonical source: `wonderland/looking_glass`. Version: v4.6 (DEC-035).
+> Canonical source: `wonderland/looking_glass`. Version: 0.4.6 (DEC-035).
 
 ---
 
@@ -89,7 +89,7 @@ y_t   = W_C h_t
 ```
 - **`δ_bias` is a per-channel LEARNED vector** initialised as a log-uniform
   spectrum from fast (short memory) to slow (long memory). One trunk carries all
-  timescales; there is **no hand-split expert bank** (the early v3.0 dual-expert
+  timescales; there is **no hand-split expert bank** (the early 0.3.0 dual-expert
   scaffold was removed).
 - **Stability is structural**: `decay = exp(−softplus(·))` is always in `(0,1)`.
 
@@ -291,7 +291,7 @@ semantics only — the input tokenizer adapts via vocabulary + schema.
 
 ## 9. Measured state (Layer-B report card)
 
-Instacart v4.3 (weights), v4.4-gates: **portfolio 15/15 (13 skills + geometry +
+Instacart 0.4.3 (weights), 0.4.4-gates: **portfolio 15/15 (13 skills + geometry +
 canary); intrinsic 5/5** (trajectory +0.119, OOT 0.971, MI 0.012, Lipschitz,
 info-plane). Geometry reproducible (0.289–0.297 ≥ per-stream floor).
 
@@ -325,7 +325,7 @@ literals remain documented fallbacks.
   dual-target volume.
 - **DEC-033** cross-stream validation (Layer A): robustness fixes.
 - **DEC-034** per-stream data-derived geometry floor (coverage × capacity).
-- **DEC-036 (v6.0.0)** category-theoretic realism: isometric boundary (A1),
+- **DEC-036 (0.6.0)** category-theoretic realism: isometric boundary (A1),
   lossy monoid action (A2), commutation/volume/MP/decorr laws (Stage 2), Markov
   sufficiency + conservation-ratio gates (Stage 3). The encoder is a monoidal
   functor; the boundary never fakes capacity.

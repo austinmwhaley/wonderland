@@ -47,7 +47,9 @@ objectives; company actions are **exogenous covariates** (never predicted).
 - Publishes **state tables only**: `encoder_samples` (strict A/B split),
   `anchor_embeddings` (sample-B past-anchor states), `customer_state` (`h`+`as_of`
   for `fade()`/`absorb()` inference), `state_dense` (weekly states).
-- Version = `vNrN` (`v` code, `r` data-revision hash); derived config; deterministic;
+- Version = pre-1.0 semver `MAJOR.MINOR.PATCH` (code, e.g. `0.6.4`) + an `r`
+  data-revision suffix → tag `<version>r<revision>` (e.g. `0.6.4r162610`); the
+  historical `v6.x` line is now `0.6.x`; derived config; deterministic;
   vectorized training.
 - Status: **implemented**; gate 15/15.
 

@@ -205,17 +205,17 @@ def test_warm_pick_requires_version_and_architecture_match(tmp_path):
             )
         )
 
-    cfg = CFMConfig(version="v2.1.0", seq_len=128, dim=64, state_half_life_days=30.0)
+    cfg = CFMConfig(version="0.2.1", seq_len=128, dim=64, state_half_life_days=30.0)
     # old behavior version -> incompatible
-    reg("registry_old.json", "v2.0.0", 128)
+    reg("registry_old.json", "0.2.0", 128)
     assert _pick_warm_checkpoint(tmp_path, "2025-12-01", cfg) == (None, None)
     # same version but different resolved architecture -> incompatible
-    reg("registry_baddim.json", "v2.1.0", 64)
+    reg("registry_baddim.json", "0.2.1", 64)
     assert _pick_warm_checkpoint(tmp_path, "2025-12-01", cfg) == (None, None)
     # matching -> eligible
-    reg("registry_ok.json", "v2.1.0", 128)
+    reg("registry_ok.json", "0.2.1", 128)
     tag, _ = _pick_warm_checkpoint(tmp_path, "2025-12-01", cfg)
-    assert tag == "v2.1.0r1"
+    assert tag == "0.2.1r1"
 
 
 # ---------------------------------------------------------------------------

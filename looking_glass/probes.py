@@ -131,7 +131,7 @@ def _build(name, rows, n_ent, n_ev, horizon):
                 continue
             z = r["Z"][t]
             if name in ("next", "dt", "value", "entity", "agg", "query", "jepa", "sf"):
-                if t + 1 >= L or r["co"][t + 1] > 0:
+                if t + 1 >= L or r["co"][t + 1] > 0 or r["et"][t + 1] == n_ev - 1:
                     continue
             elif name == "mask":
                 if not r["rmask"][t]:

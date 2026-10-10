@@ -24,7 +24,7 @@ class Target:
     kind: str  # "binary" | "continuous"
     window_days: int
     spec_target: str
-    version: str = "v1.0.0"
+    version: str = "0.1.0"
     revision: int = 1
     primary_head: str = ""  # "" -> HeadTemplate default for the kind
     # binary model family to use. "" = run the bake-off (logistic/MLP/HGB) and

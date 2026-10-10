@@ -29,26 +29,32 @@
 
 ## Micro
 
-- **Current task:** v6.7.0 — canonical event-stream schema (DEC-053): the 5
+- **Versioning scheme (DEC-058):** versions are now pre-1.0 semver
+  `MAJOR.MINOR.PATCH` (`0.6.4`); tag = `<version>r<revision>` (`0.6.4r162610`).
+  Historical `v6.x` re-bases to `0.6.x` (`vMAJOR.MINOR.PATCH → 0.MAJOR.MINOR`,
+  `v` prefix dropped). Code literals + live docs updated; `DECISIONS.md` history
+  and on-disk artifact filenames left as recorded.
+
+- **Current task:** 0.6.7 — canonical event-stream schema (DEC-053): the 5
   universal fields are `customer_key, event_ts, event_type, source_table,
   event_attributes`; `brand`/`entity_*`/`value`/... fold into `event_attributes`.
   All three fixtures expose a `customer_events_canonical` view; the encoder reads
   canonical (column-or-JSON). 257 tests green.
 
-- **Prior:** v6.6.0 — standardized frozen-encoder probe harness (DEC-052)
+- **Prior:** 0.6.6 — standardized frozen-encoder probe harness (DEC-052)
   + ecommerce_2019 probe baseline. CERTIFIED: rabbit_hole (11/11 + 6/6),
   Instacart (11/11 + 6/6). ecommerce recorded FAIL_LOW_EFFECT_SIZE (next/mask) /
   NO_IDENTIFIABLE_SIGNAL (entity/value): event-identity decodability shows z_t
   DOES expose current event (macro-F1 0.81), so no architectural patch is
   justified. Gates not weakened. 254 tests green.
 
-- **Prior:** v6.5.0 — CERTIFIED: rabbit_hole (11/11 portfolio + 6/6
+- **Prior:** 0.6.5 — CERTIFIED: rabbit_hole (11/11 portfolio + 6/6
   intrinsic) and Instacart (11/11 + 6/6 at minimum size 5k/1k). ecommerce_2019
   documented as the low-transition-signal boundary (DEC-046 three-way layer:
   next/jepa/sf FAIL, entity/value NO_IDENTIFIABLE_SIGNAL). Governor metric +
   pad-target bugs fixed. All spec guardrails implemented. 253 tests green.
 
-- **Prior task:** v6.1.0 — variance-preserving readout (DEC-047). Root cause
+- **Prior task:** 0.6.1 — variance-preserving readout (DEC-047). Root cause
   of the low-rank/poor-head blocker found by probing: the SSM readout grows
   unbounded (std~50, |max|~900), making linear heads ill-conditioned and
   untrainable (`next` CE 1.62 > uniform; `head_next` 4-6x worse than a probe on
@@ -59,20 +65,20 @@
   converges. 252 fast tests green. Next: address the relative skill metric's
   blindness to absolute capability; close the remaining state-side next gap.
 
-- **Last completed:** v6.0.0 certified across rabbit_hole + Instacart (portfolio
+- **Last completed:** 0.6.0 certified across rabbit_hole + Instacart (portfolio
   15/15 + intrinsic 6/6 each); ecommerce = honest low-rank boundary. Then the
-  14-step encoder-defect investigation -> v6.1.0 fixes (DEC-046, DEC-047).
+  14-step encoder-defect investigation -> 0.6.1 fixes (DEC-046, DEC-047).
 - **Immediate next 3 actions:**
   1. Add a model-free absolute-capability floor to the portfolio (the relative
      skill metric passes a model whose next CE is 6x worse than a 1-gram).
   2. Investigate the residual state-side `next` gap (state next-info is lossy:
      trained head 0.40 vs 1-gram 0.25; fresh probe ~0.37).
-  3. Re-run rabbit_hole + Instacart on v6.1.0 to confirm no regression, then
+  3. Re-run rabbit_hole + Instacart on 0.6.1 to confirm no regression, then
      re-certify.
 - **Environment:** repo `~/Documents/wonderland` (main, CI green);
   `python3 -m pytest -m "not slow"` -> 215 passed; GPU cuda available;
   standing products `looking_glass/artifacts/cfm/cfm_products.duckdb`
-  (v2.0.0r90061, 25k); v2.1.0 smoke `/tmp/opencode/insta_prod`;
+  (0.2.0r90061, 25k); 0.2.1 smoke `/tmp/opencode/insta_prod`;
   Instacart fixture `rabbit_hole/data/instacart/customer_event_stream.parquet`;
   battery baselines archived `red_king/artifacts/*_baseline_w1_raw.json`.
 
@@ -89,7 +95,7 @@ with `white_queen` (OPE) and `caterpillar` beside it. Strict one-way.
 
 ## Doctrine
 `AGENTS.md` — no magic numbers, learn don't teach, adapt by construction, fail
-safe, uncertainty first, gate on ground truth, versioning=vNrN identity,
+safe, uncertainty first, gate on ground truth, versioning=MAJOR.MINOR.PATCH identity,
 observability, prefer deletion, best tool, cost-aware, **speed-first (16)**.
 
 ## Key facts
@@ -104,10 +110,10 @@ observability, prefer deletion, best tool, cost-aware, **speed-first (16)**.
   email arms + logged propensity + known causal effect** (documented CONV ladder
   0.01/0.03/0.06/0.10 does NOT reproduce on the artifact — measured decreasing;
   pin-or-fix is ROADMAP P3-4).
-- Donor: looking_glass CFM — certified Dec cycle `v2.0.0r90061` (25k), gate
+- Donor: looking_glass CFM — certified Dec cycle `0.2.0r90061` (25k), gate
   15/15; horizon-free successor features; battery unique 62%(20k)/75%(30k).
-  **Code is now v2.1.0** (half-life, readout parity, governor fixes) — re-cert
-  of v2.0.0 receipts pending.
+  **Code is now 0.2.1** (half-life, readout parity, governor fixes) — re-cert
+  of 0.2.0 receipts pending.
 - red_king: ensemble world model; synthetic counterfactual within 2% of truth.
 
 ## Works ✅
@@ -336,7 +342,7 @@ recommendations, and provenance (artifacts + CFM version). Read-only.
 Stream: 50k customers / 18.86M events (randomized arms).
 BUG FIXED: generator Arrow export OOM'd at 18.8M rows (row-wise read_events).
  -> rabbit_hole/stream.to_arrow now uses read_frame/write_frame (zero-copy): 18.86M rows in 22s.
-Donor v2.0.0r623641 at 50k: signal 100% / standalone 100% / UNIQUE 75% => UNIVERSAL DONOR.
+Donor 0.2.0r623641 at 50k: signal 100% / standalone 100% / UNIQUE 75% => UNIVERSAL DONOR.
 E BEATS raw on 6/8 targets (gp_365 +0.38, days_to_next +0.27, next_order_value +0.14,
 reorder_90 +0.11, orders_90 +0.10, gp_90 +0.03). Only gp_30/reorder_30 raw-ish.
 Training 50k ~48 min; battery ~14 min.
@@ -432,7 +438,7 @@ red_queen; end-to-end acceptance gate.
 Generator: added email FATIGUE (diminishing returns, heterogeneous tolerance) AND
 made CONV non-monotone: CONV=(0.03,0.06,0.08,0.04) -> IPW causal E[incGP|arm] =
 [3.27,14.72,29.55,16.73] (peaks at arm 2; over-emailing backfires).
-Cycle: regenerated 25k stream (9.3M events) -> donor v2.0.0r458243 (gate PASS) ->
+Cycle: regenerated 25k stream (9.3M events) -> donor 0.2.0r458243 (gate PASS) ->
 RSSM (reward R2 0.29, cos 0.86).
 red_queen: acts on CALIBRATED red_king values (scale anchored to observed behavior),
 risk_z=0 (uncertainty penalty pending). Acts 6334, arm mix all ARM 2 (the true
@@ -444,7 +450,7 @@ heterogeneous optima); uncertainty penalty (risk_z) pending SD calibration.
 ## HETEROGENEOUS RESPONSE cycle — honest result
 Generator: per-customer unimodal response p_conv = PEAK*exp(1 - x/x0), x0 = f(activity)
 -> optimal cadence x0 varies 0.2..2.0 with activity (personalization signal exists).
-Cycle: 25k stream (9.43M events) -> donor v2.0.0r472985 (PASS) -> RSSM reward R2 0.59.
+Cycle: 25k stream (9.43M events) -> donor 0.2.0r472985 (PASS) -> RSSM reward R2 0.59.
 Fixed engine: select arm by TOTAL V (not value-per-send), calibration to behavior.
 RESULT: gt_per_arm = [38,96,150,156] (population-optimal = arm3). red_queen serves
 3799 (budget), ALL arm3 -> plan == best-constant (146.1). lift +4.45 CI[-3.36,12.52]
@@ -469,7 +475,7 @@ or a data design that gives within-customer action variation.
 
 ## WITHIN-CUSTOMER ACTION VARIATION cycle — honest result
 Generator: per-PERIOD randomized cadence (6 periods), arm+propensity stored per send.
-Stream 25k (9.43M events), donor v2.0.0r221198 (PASS). Within-customer variation:
+Stream 25k (9.43M events), donor 0.2.0r221198 (PASS). Within-customer variation:
 4863/5000 customers have >1 arm. gt_per_arm = [125,127,147,142] (near-flat, peak arm2).
 RSSM (per-window arms): reward R2 0.53, next-state cos 0.81.
 BUT red_queen picks arm 0 for ALL and the plan LOSES to behavior (lift -33). The RSSM's
@@ -633,7 +639,7 @@ Generator changes (for REALISM, not to help the project):
   * seasonal non-stationarity in outcomes.
 Effect: naive vs IPW now DIVERGE strongly (naive says arm3 best/overstates; IPW
 deconfounds: [121,157,153,162], arm3 barely best). Behavior is already near-optimal.
-Cycle (25k, donor v2.0.0r443473): red_queen VALIDATED mode picks the DECONFOUNDED
+Cycle (25k, donor 0.2.0r443473): red_queen VALIDATED mode picks the DECONFOUNDED
 best arm (arm3) via logged propensities; lift +1.16 CI[-5.13,7.46] -> NOT significant;
 does NOT overclaim. fail-safe triggered for 7.
 => The project is ROBUST to realistic confounding: it does not manufacture lift, it
@@ -714,7 +720,7 @@ customers; population fallback); broaden the experiment; hierarchical shrinkage.
 
 ## PERSISTENT HOLDOUTS -> measurable incrementality (the right offline design)
 Generator: 5% of customer-periods held out of ALL marketing (randomized control).
-Stream 8.9M events, donor v2.0.0r249648 (gate PASS).
+Stream 8.9M events, donor 0.2.0r249648 (gate PASS).
 `red_queen/incrementality.py`:
   population incrementality  +6.97 per period, 95% CI [4.42, 9.62] (SIGNIFICANT)
   11404 customers observed in BOTH treated and held-out states
@@ -1148,7 +1154,7 @@ real data). Ran the production config against the fixture: population 25,000,
 `--sample-a 20000` (explicit — production Dec's rung; NOT borrowed from
 rabbit_hole's ladder receipt for this stream; clipped to full A = 17,455 for
 this month), as_of 2025-11-01, scratch.
-- **Encoder train + products: ~12.5 min** (tag v2.0.0r682246),
+- **Encoder train + products: ~12.5 min** (tag 0.2.0r682246),
   `customer_state=25000`, `training_embeddings=45,222` (rabbit_hole production
   shape: 44,427). Day-1 close receipt `device=encoder`, 25,000 embeddings.
 - **Week of daily jobs (11-02..11-08)**: 630–730 real order absorbs/day,
@@ -1162,16 +1168,16 @@ this month), as_of 2025-11-01, scratch.
   recency on real public data too. Artifacts in /tmp (certified receipts
   untouched).
 - Artifacts: /tmp/opencode/insta_prod/{cfm_products.duckdb, registry_*.json,
-  plugin/supervised_purchase_propensity_30d_v1.0.0r1.json}.
+  plugin/supervised_purchase_propensity_30d_0.1.0r1.json}.
 - NOT run: Instacart-specific sample-A ladder (9 rungs x ~7-25 min each —
   hours); sizing used the production-proven rung instead. Run
   `plugins.ladder_sample_a --as-of <date> --db <fixture>` (needs a --ladder-dir
   override first) if per-stream sizing receipts are wanted.
 
-## Pass: v2.1.0 — real-data bugs from the vendored fork, fixed upstream (DONE)
+## Pass: 0.2.1 — real-data bugs from the vendored fork, fixed upstream (DONE)
 Triaged the fork report (vendored wonderland cd1d0cf -> now) against canonical
 code; everything verifiable and fixable without their diff landed here as
-**v2.1.0** (behavior changes that alter trained weights — doctrine #10).
+**0.2.1** (behavior changes that alter trained weights — doctrine #10).
 What landed, with receipts:
 - **Half-life was pinned at the 1-hour floor on EVERY multi-customer dataset**
   (worse than reported): `derive_half_life` received a merged, globally
@@ -1180,9 +1186,9 @@ What landed, with receipts:
   Instacart = `p95 within-customer gap 30.00d -> 30.00` (was 0.0417).
 - **Train/serve readout parity**: training-anchor donor rows are now
   `donor(fade(h, anchor − last_event))` (`cfm_state.py`) — serving fades to the
-  scoring boundary with the same closed form. v2.0.0 gates measured UN-faded
+  scoring boundary with the same closed form. 0.2.0 gates measured UN-faded
   donor rows while live serving faded them (the fork's served-AUC-0.538 class);
-  re-cert of v2.0.0 receipts is therefore pending.
+  re-cert of 0.2.0 receipts is therefore pending.
 - **Governor**: best_state = strict lowest-loss ever seen (old
   `v < best - tol` record rule returned older/worse states), patience only
   counts once the noise floor is measurable (>= 3 evals), progress prints
@@ -1276,9 +1282,9 @@ Executed the new ROADMAP's first phases in order (evidence trust first):
 on `donor_embeddings` (paired customer-bootstrap SE); battery's rfm_vector is
 now the single "raw" definition for both. Receipts:
 `plugins/artifacts/ablation_..._20251201.json` + `/tmp/opencode/insta_ablation/`.
-- rabbit_hole (v2.0.0r90061 products, 42,587 rows): **raw 0.7650 > donor
+- rabbit_hole (0.2.0r90061 products, 42,587 rows): **raw 0.7650 > donor
   0.7343** (d -0.031, 2SE 0.006 — beyond noise); E+R 0.7597 > donor.
-- Instacart (v2.1.0 products, 734 rows): **raw 0.8944 > donor 0.7961**
+- Instacart (0.2.1 products, 734 rows): **raw 0.8944 > donor 0.7961**
   (d -0.098, 2SE 0.025); **E+R 0.9201 = best of all three**.
 For 30-day purchase propensity the frozen state does NOT dominate exact RFM
 aggregates (the battery's 'raw-ish reorder_30" hint, now proven on the shipped

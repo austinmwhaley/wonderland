@@ -52,7 +52,7 @@ per-run hyperparameter search or artificial bottlenecks.
 | recurrence stability | decay `exp(−softplus(·)) ∈ (0,1)` — a strict contraction, stable by construction |
 | evaluation | **scale-free gates** — participation ratio vs a *calibrated structured-manifold floor*; OOT via principal-angle subspace overlap (bounded [0,1]) |
 
-## Measured result — v4.3 (Layer-B report card)
+## Measured result — 0.4.3 (Layer-B report card)
 
 Run on the Instacart fixture, as_of 2025-11-01, reproduced across runs:
 

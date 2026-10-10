@@ -39,12 +39,12 @@ def test_plugin_spec_tag_encodes_name_version_revision():
         target="gross_margin",
         window_days=365,
     )
-    assert spec.version == "v1.0.0"
+    assert spec.version == "0.1.0"
     assert spec.revision == 1
-    assert spec.tag == "customer_segmentation_365d_v1.0.0r1"
-    spec.version = "v2.1.0"
+    assert spec.tag == "customer_segmentation_365d_0.1.0r1"
+    spec.version = "0.2.1"
     spec.revision = 7
-    assert spec.tag == "customer_segmentation_365d_v2.1.0r7"
+    assert spec.tag == "customer_segmentation_365d_0.2.1r7"
     payload = asdict(spec)
     assert payload["window_days"] == 365
     assert payload["kind"] == "unsupervised"
@@ -89,11 +89,11 @@ def test_save_artifact_writes_tagged_json(monkeypatch, tmp_path):
         kind="supervised",
         target="gross_margin",
         window_days=30,
-        version="v1.2.0",
+        version="0.1.2",
         revision=3,
     )
     path = base.save_artifact(spec, {"verdict": True, "score": np.float32(0.5)})
-    assert path == tmp_path / "clv_supervised_30d_v1.2.0r3.json"
+    assert path == tmp_path / "clv_supervised_30d_0.1.2r3.json"
     blob = json.loads(path.read_text())
     assert blob["tag"] == spec.tag
     assert blob["spec"]["window_days"] == 30
@@ -203,10 +203,10 @@ def test_supervised_run_passes_gate_and_writes_artifact(monkeypatch, tmp_path, s
     assert payload["verdict"] is True
     names = [h["name"] for h in payload["heads"]]
     assert names == ["point", "two_part", "quantile", "trailing_baseline"]
-    path = tmp_path / "clv_supervised_30d_v1.0.0r1.json"
+    path = tmp_path / "clv_supervised_30d_0.1.0r1.json"
     assert path.exists()
     blob = json.loads(path.read_text())
-    assert blob["tag"] == "clv_supervised_30d_v1.0.0r1"
+    assert blob["tag"] == "clv_supervised_30d_0.1.0r1"
     assert blob["payload"]["verdict"] is True
 
 
@@ -244,10 +244,10 @@ def test_segmentation_run_separates_synthetic_segments(monkeypatch, tmp_path, se
     assert 0.02 < info["eta2"] <= 1.0
     assert len(info["means"]) == info["k"]
     assert all(np.isfinite(m) for m in info["means"])
-    path = tmp_path / "customer_segmentation_30d_v1.0.0r1.json"
+    path = tmp_path / "customer_segmentation_30d_0.1.0r1.json"
     assert path.exists()
     blob = json.loads(path.read_text())
-    assert blob["tag"] == "customer_segmentation_30d_v1.0.0r1"
+    assert blob["tag"] == "customer_segmentation_30d_0.1.0r1"
     assert blob["payload"]["verdict"] is True
 
 
