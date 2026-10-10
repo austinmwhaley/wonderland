@@ -29,7 +29,13 @@
 
 ## Micro
 
-- **Current task:** v6.6.0 — standardized frozen-encoder probe harness (DEC-052)
+- **Current task:** v6.7.0 — canonical event-stream schema (DEC-053): the 5
+  universal fields are `customer_key, event_ts, event_type, source_table,
+  event_attributes`; `brand`/`entity_*`/`value`/... fold into `event_attributes`.
+  All three fixtures expose a `customer_events_canonical` view; the encoder reads
+  canonical (column-or-JSON). 257 tests green.
+
+- **Prior:** v6.6.0 — standardized frozen-encoder probe harness (DEC-052)
   + ecommerce_2019 probe baseline. CERTIFIED: rabbit_hole (11/11 + 6/6),
   Instacart (11/11 + 6/6). ecommerce recorded FAIL_LOW_EFFECT_SIZE (next/mask) /
   NO_IDENTIFIABLE_SIGNAL (entity/value): event-identity decodability shows z_t

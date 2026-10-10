@@ -1145,3 +1145,35 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   `entity`/`value`. Gates were not weakened. The residual `next` gap is a
   low-effect-size/optimisation limit on an MI≈0.05-nat transition signal.
 - **Certification unchanged:** rabbit_hole 11/11 + 6/6, Instacart 11/11 + 6/6.
+
+## DEC-053 — Canonical event-stream schema: 5 universal fields; fold the rest
+
+- **Date:** 2026-10-10
+- **Decision:** the canonical Layer-A stream is exactly the fields present in
+  EVERY input stream:
+  **`customer_key, event_ts, event_type, source_table, event_attributes`**.
+  `brand` is explicitly NOT canonical (many streams have no brand) — it, plus
+  `entity_id`, `entity_type`, `value`, `event_id`, `category_id`,
+  `user_session`, … are folded into `event_attributes` (schema-evolved JSON).
+  `source_table` is canonical because every stream declares its origin.
+- **Rule:** anything not in the canonical set goes into `event_attributes`.
+  `canonicalize_row` now folds EVERY non-canonical column (not a fixed list).
+- **Implementation:**
+  * `rabbit_hole/schema.py`: new `CANONICAL_FIELDS`; `canonical_select()` /
+    `canonical_view_sql()` fold non-canonical columns via DuckDB
+    `json_merge_patch` (null patch value drops the key); `EventRecord` updated.
+  * `rabbit_hole/stream.py`: `write_events`/`write_frame` emit the canonical 5
+    columns (no extra top-level columns) and attach a `customer_events_canonical`
+    view.
+  * `looking_glass/cfm_data.py`: reads canonical — uses a content channel's
+    top-level column when present, else extracts it from `event_attributes`
+    (`json_extract_string`). Works on both wide and canonical streams.
+- **Existing fixtures:** the 29 GB ecommerce / 7.8 GB instacart / 5 GB synthetic
+  DuckDBs are physically unchanged (disk is 97% full — a rewrite is infeasible),
+  but each now carries the `customer_events_canonical` view exposing the
+  canonical 5-field form. Newly materialized streams are canonical by
+  construction.
+- **Trade-offs:** schema-on-read (view) for existing wide fixtures rather than a
+  physical rewrite; the encoder reader tolerates both forms.
+- **Validated:** 257 fast tests green; the encoder reads the canonical view and
+  the wide table to identical columns.

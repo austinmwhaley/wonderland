@@ -12,29 +12,40 @@ from looking_glass.cfm_config import AT, CFMConfig, _h, as_of_epoch
 # data
 # ---------------------------------------------------------------------------
 def _read_stream(cfg: CFMConfig):
-    cols = (
-        "customer_key",
-        "event_ts",
-        "brand",
-        "event_type",
-        "event_attributes",
-        "entity_type",
-        "entity_id",
-        "value",
-    )
+    # Canonical stream = [customer_key, event_ts, event_type, source_table,
+    # event_attributes]. Content channels the encoder uses (brand, entity_type,
+    # entity_id, value) live INSIDE event_attributes in canonical streams, but
+    # the older wide fixtures still carry them as top-level columns. Read both:
+    # use the column when present, else extract from the JSON attributes.
+    base = ["customer_key", "event_ts", "event_type", "event_attributes"]
+    content = ("brand", "entity_type", "entity_id", "value")
+
+    def _ex(col, cols, cast=None):
+        if col in cols:
+            return col
+        e = f"json_extract_string(event_attributes, '$.{col}')"
+        return f"CAST({e} AS {cast}) AS {col}" if cast else f"{e} AS {col}"
+
     if str(cfg.db).endswith((".arrow", ".feather", ".ipc")):
         import polars as pl
 
-        df = (
-            pl.read_ipc(cfg.db, memory_map=True)
-            .select(list(cols))
-            .sort(["customer_key", "event_ts"])
-        )
+        df = pl.read_ipc(cfg.db, memory_map=True).sort(["customer_key", "event_ts"])
+        for c in content:
+            if c not in df.columns:
+                df = df.with_columns(
+                    pl.col("event_attributes").str.json_path_match(f"$.{c}").alias(c)
+                )
+        df = df.select([*base, *content])
     else:
         import duckdb
 
         con = duckdb.connect(cfg.db, read_only=True)
         try:
+            tcols = {r[0] for r in con.execute(f"DESCRIBE {cfg.table}").fetchall()}
+            select = ", ".join(
+                [*base, _ex("brand", tcols), _ex("entity_type", tcols),
+                 _ex("entity_id", tcols), _ex("value", tcols, "FLOAT")]
+            )
             # push the point-in-time cut into SQL (before materializing): the
             # polars filter below is now a no-op for duckdb sources, and loads
             # stop growing with the future tail of the stream.
@@ -70,7 +81,7 @@ def _read_stream(cfg: CFMConfig):
                 except Exception:
                     pass  # fall through to a full read (small streams)
             df = con.execute(
-                f"SELECT {', '.join(cols)} FROM {cfg.table}{where} ORDER BY customer_key, event_ts"
+                f"SELECT {select} FROM {cfg.table}{where} ORDER BY customer_key, event_ts"
             ).pl()
         finally:
             con.close()

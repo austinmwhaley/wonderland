@@ -2,9 +2,11 @@
 
 The stream is one row per event and MUST carry the canonical five fields:
 
-    customer_key, event_ts, brand, event_type, event_attributes
+    customer_key, event_ts, event_type, source_table, event_attributes
 
-Extra columns are allowed and preserved, but the five are always present.
+These are the fields every input stream has. Everything else (brand, entity_id,
+value, category_id, …) is folded into `event_attributes` by `canonicalize_row`;
+no non-canonical column is materialized.
 
 Storage backends (chosen by file extension):
   * ``.arrow`` / ``.feather`` / ``.ipc`` -> Arrow IPC (primary data layer;
@@ -21,10 +23,19 @@ import json
 from pathlib import Path
 from typing import Iterable, Iterator, Mapping
 
-from .schema import CANONICAL_FIELDS, EVENT_STREAM_TABLE, canonicalize_row, parse_attributes
+from .schema import (
+    CANONICAL_FIELDS,
+    CANONICAL_VIEW,
+    EVENT_STREAM_TABLE,
+    canonical_select,
+    canonical_view_sql,
+    canonicalize_row,
+    parse_attributes,
+)
 
-# Non-canonical columns we carry through when present (contract extras).
-EXTRA_FIELDS = ("event_id", "entity_type", "entity_id", "source_table", "value")
+# Non-canonical columns are folded into `event_attributes` (not materialized);
+# there are no extra top-level columns in the canonical stream.
+EXTRA_FIELDS: tuple = ()
 
 
 # ---------------------------------------------------------------------------
@@ -50,11 +61,7 @@ def _canon_all(rows: Iterable[Mapping]) -> list[dict]:
     """Canonicalize each row and keep any extra columns."""
     out = []
     for r in rows:
-        c = canonicalize_row(r)
-        for k, v in dict(r).items():
-            if k not in c:
-                c[k] = v
-        # ensure all five are present (missing -> None/{}).
+        c = canonicalize_row(r)  # folds every non-canonical column into attributes
         for f in CANONICAL_FIELDS:
             c.setdefault(f, "{}" if f == "event_attributes" else None)
         out.append(c)
@@ -166,20 +173,29 @@ def read_frame(path: str, table: str = EVENT_STREAM_TABLE):
 
 
 def write_frame(path: str, df, table: str = EVENT_STREAM_TABLE) -> int:
-    """Write a Polars DataFrame as the stream (uncompressed IPC for zero-copy)."""
-    eng = engine_of(path)
+    """Write a Polars DataFrame as the canonical stream (uncompressed IPC for
+    zero-copy). Non-canonical columns are folded into ``event_attributes``."""
+    import duckdb
+
     Path(path).parent.mkdir(parents=True, exist_ok=True)
+    eng = engine_of(path)
+    if any(c not in CANONICAL_FIELDS and c != "event_attributes" for c in df.columns):
+        con = duckdb.connect()
+        try:
+            con.register("rh_df", df)
+            df = con.execute(canonical_select("rh_df", list(df.columns))).pl()
+        finally:
+            con.close()
     if eng == "arrow":
         df.write_ipc(str(path))
     elif eng == "parquet":
         df.write_parquet(str(path))
     else:
-        import duckdb
-
         con = duckdb.connect(str(path))
         try:
             con.register("rh_df", df)
             con.execute(f"CREATE OR REPLACE TABLE {table} AS SELECT * FROM rh_df")
+            con.execute(canonical_view_sql(table, CANONICAL_VIEW, list(CANONICAL_FIELDS)))
         finally:
             con.close()
     return df.height
