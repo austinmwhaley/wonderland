@@ -1118,3 +1118,30 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
     low-transition-signal boundary. Gates were NOT weakened to force green.
 - **Run-size discipline:** diagnostics use the minimum viable run (5k/1k); only
   certification scales up.
+
+## DEC-052 — Standardized frozen-encoder probe harness + ecommerce patch decision
+
+- **Date:** 2026-10-10
+- **Harness:** `looking_glass/probes.py` (`python3 -m looking_glass.probes`).
+  10 objectives (next, dt, jepa, sf, mask, value, entity, order, agg, query),
+  each with a Linear and a shallow-MLP head. Encoder **frozen** (fail-fast if the
+  forward carries grad); only probe heads train. One standardized fold split
+  (grouped customers) and target mask (drop company-action + end-of-sequence pad)
+  for every probe. Plain CE/MSE (no class weights / focal loss). ECE reported for
+  categorical probes. Absolute model-free baselines per objective. DEC-046
+  verdict PASS / FAIL / NO_IDENTIFIABLE_SIGNAL. Event-identity decodability and
+  next-event slices included. Unit-tested. 254 fast tests green.
+- **ecommerce_2019 baseline** (frozen v6.4.0, `specs/ECOM_2019_PROBE_BASELINE.md`):
+  `next` FAIL (readout 0.274 vs 1-gram 0.239); rare slice CE 3.06; empirical
+  P(purchase|prev=cart)=0.281 vs base 0.017.
+- **Event-identity decodability:** `z_t -> current event` macro-F1 **0.809**,
+  CE 0.068 — the frozen readout **does** linearly expose immediate event identity
+  (e_t gives 1.0).
+- **Decision — NO architectural patch.** The patch admissibility rule requires
+  next/jepa/sf to FAIL **and** z_t to *lack* current-event identity. The identity
+  test shows z_t **has** it, so Options A/B/C (event skip / dedicated event
+  channel / fast residual) are unjustified. ecommerce_2019 is recorded as
+  **FAIL_LOW_EFFECT_SIZE** for `next`/`mask` and **NO_IDENTIFIABLE_SIGNAL** for
+  `entity`/`value`. Gates were not weakened. The residual `next` gap is a
+  low-effect-size/optimisation limit on an MI≈0.05-nat transition signal.
+- **Certification unchanged:** rabbit_hole 11/11 + 6/6, Instacart 11/11 + 6/6.

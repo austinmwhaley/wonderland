@@ -518,3 +518,23 @@ def test_model_health_harness_checks_invariants():
     assert st["deterministic"] is True
     assert st["eff_rank"] > 1.0  # not rank-1 collapsed
     assert 0.5 <= st["readout_rms"] <= 2.0  # normalized readout
+
+
+def test_probe_harness_is_frozen_and_reports():
+    """DEC-052: the probe harness freezes the encoder (fail-fast if not) and
+    emits a standardized report over all 10 objectives + identity decodability."""
+    from looking_glass.cfm_model import CFM, EventVocab
+    from looking_glass.probes import freeze_encoder, run_probe_report
+
+    seqs = [_seq(f"c{i}", day=f"2025-01-{(i % 28) + 1:02d}") for i in range(24)]
+    vocab = EventVocab.build(seqs)
+    model = CFM(vocab, dim=16, n_experts=1)
+    model.head_next.weight.requires_grad_(True)  # simulate a leaked gradient
+    freeze_encoder(model)  # must re-freeze every encoder parameter
+    assert all(not p.requires_grad for p in model.parameters())
+    md, rc = run_probe_report(model, vocab, _cfg(), seqs, "t")
+    assert "| Objective |" in md and "Event-identity decodability" in md
+    assert set(rc["objectives"]).issubset(
+        set(("next", "dt", "jepa", "sf", "mask", "value", "entity", "order", "agg", "query"))
+    )
+    assert "identity_decodability" in rc and "next_slices" in rc
