@@ -439,6 +439,9 @@ def evaluate(
     objectives = []
     rows = []
     report_only = []
+    passed: list[str] = []
+    failed: list[str] = []
+    no_signal: list[str] = []
     for o in measured:
         if o not in real_folds or not real_folds[o]:
             continue
@@ -464,26 +467,37 @@ def evaluate(
                 "folds": int(len(skill)),
             }
         )
-        row = {
-            "check": f"portfolio: {o} structure-skill > 0",
-            "achieved": f"{skill.mean():+.4f} ± {se:.4f} ({len(skill)} folds)",
-            "ok": bool(skill.mean() > 0),
-        }
+        smean = float(skill.mean())
+        sfloor = 2.0 * se  # noise floor: 2x the across-fold (seed+group) SE
+        ic = ident.get(o, {})
+        ceil = ic.get("ceiling")
+        ceil_se = float(ic.get("se") or 0.0)
         if not gated_o:
-            row["ok"] = True  # report-only: yardstick pending (see receipt note)
-            row["check"] = f"portfolio: {o} structure-skill (REPORT-ONLY, yardstick pending)"
+            status = "REPORT_ONLY"
+        elif ceil is not None and ceil <= 2.0 * ceil_se:
+            # No model-free predictor (the 1-gram baseline) beats the destroyed
+            # null on this stream => the objective is NOT identifiable here.
+            # Takes precedence: a noise-level "pass" on a non-identifiable (or
+            # degenerate) target is NOT a PASS (DEC-046).
+            status = "NO_IDENTIFIABLE_SIGNAL"
+        elif smean > max(sfloor, 0.0):
+            status = "PASS"
+        else:
+            status = "FAIL"  # signal exists (ceiling > noise); the model missed it
+        row = {
+            "check": f"portfolio: {o} structure-skill",
+            "achieved": f"{smean:+.4f} ± {se:.4f} ({len(skill)} folds)",
+            "ok": status == "PASS",
+            "status": status,
+        }
+        if status == "REPORT_ONLY":
             report_only.append(o)
-        elif not ident.get(o, {}).get("identifiable", True):
-            # Degenerate target (marginal entropy/variance ~ 0, DEC-046): no
-            # predictor can beat the destroyed null, so binding it is a false
-            # red. Grade REPORT-ONLY.
-            ic = ident[o]
-            row["ok"] = True
-            row["check"] = (
-                f"portfolio: {o} structure-skill (REPORT-ONLY, degenerate target:"
-                f" marginal {ic['marginal']:.4f})"
-            )
-            report_only.append(o)
+        elif status == "NO_IDENTIFIABLE_SIGNAL":
+            no_signal.append(o)
+        elif status == "FAIL":
+            failed.append(o)
+        else:
+            passed.append(o)
         rows.append(row)
     # §4 ABSOLUTE baseline (spec): the relative skill gate is blind to absolute
     # capability — a uniformly-bad model still scores skill ≈ 0. For each
@@ -586,7 +600,13 @@ def evaluate(
             contributions[k] = 0.5 * float(np.exp(-lv[k])) * o["real"]
     tot = sum(abs(v) for v in contributions.values()) or 1.0
     contributions = {k: round(v / tot, 4) for k, v in contributions.items()}
-    ok = all(r["ok"] for r in rows) if rows else False
+    nonobj_ok = all(r["ok"] for r in rows if "status" not in r)
+    # Fully green = every measured objective PASSES and no non-objective gate
+    # fails. A NO_IDENTIFIABLE_SIGNAL objective is NOT a PASS: it keeps the
+    # portfolio from being "fully green" but is not a FAIL either. `certifiable`
+    # = the model has no genuine failure (green on the identifiable subset).
+    ok = bool((not failed) and (not no_signal) and nonobj_ok)
+    certifiable = bool((not failed) and nonobj_ok)
     receipt = {
         "tag": tag,
         "seed": seed,
@@ -604,6 +624,12 @@ def evaluate(
         "identifiability": ident,
         "absolute_baseline": abs_baseline,
         "report_only": report_only,
+        "certification": {
+            "passed": passed,
+            "failed": failed,
+            "no_identifiable_signal": no_signal,
+            "certifiable": certifiable,
+        },
         "canaries": canaries,
         "task_contributions": contributions,
         "sf_target_var_real": [round(float(v), 4) for v in sf_var_real],
@@ -623,10 +649,12 @@ def evaluate(
     print("== LAYER-B PORTFOLIO GRADE (held-out, destroyed-data null) ==")
     obj_rows = [r for r in rows if r["check"].startswith("portfolio:")]
     for o, row in zip(objectives, obj_rows):
-        status = "PASS" if row["ok"] else "FAIL"
-        if "REPORT-ONLY" in row["check"]:
+        status = row.get("status", "PASS" if row["ok"] else "FAIL")
+        if status == "REPORT_ONLY":
             status = "REPORT"
         print(f"  {o['objective']:12s} skill {o['skill']:+.4f} ± {o['skill_se']:.4f}  {status}")
+    if no_signal:
+        print(f"  NO_IDENTIFIABLE_SIGNAL on this stream: {no_signal}")
     if geometry:
         print(
             f"  geometry: eff_rank {geometry['eff_rank']}/{geometry['eff_rank_null']}"

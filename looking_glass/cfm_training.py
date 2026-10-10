@@ -479,6 +479,16 @@ def train_cfm(cfg: CFMConfig):
     if _cap > 0:
         budget = min(budget, _cap)
         print(f"[govern] budget capped to {budget} steps (max_steps)", flush=True)
+    # Seed the scale-free unit system BEFORE the first eval (DEC-018/DEC-049):
+    # otherwise eval-1 is scored with an EMPTY `loss_scales` (raw sum) while
+    # every later eval is scale-normalized (~n_objectives), so the first eval
+    # always looks best and the governor saves an undertrained checkpoint
+    # (measured: instacart/rabbit_hole best == step 411, ~0.15 of budget).
+    torch.manual_seed(cfg.seed)
+    with torch.no_grad():
+        _seed_T = _task_losses(model, vocab, [a_seqs[i] for i in tr_idx[:256]], cfg)
+    _update_scales({k: float(v) for k, v in _seed_T.items()})
+    print(f"[scale] seeded loss_scales from {len(_seed_T)} tasks", flush=True)
     gov, best_state = AT.govern(
         train_step, val_metric, budget, res.eval_every, res.patience, cfg.seed
     )  # lr is controlled per-step by the Armijo line search (no eval-cadence lag)
@@ -768,7 +778,11 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
     y, h = model.ssm(x, mask=t["mask"])
     B, T, _ = y.shape
     # Targets at company-action positions are exogenous; never predict them.
-    valid_t = t["mask"][:, :-1] * (1.0 - t["co"][:, 1:, 0])
+    # Also exclude positions whose NEXT target is a pad (end-of-sequence): the
+    # "next event type" task is over real events only, matching the model-free
+    # baseline (spec §4) — otherwise a pad-dominated tail inflates the CE.
+    _next_is_pad = (t["et"][:, 1:] == vocab.n_et).float()
+    valid_t = t["mask"][:, :-1] * (1.0 - t["co"][:, 1:, 0]) * (1.0 - _next_is_pad)
     valid = valid_t.reshape(-1)
     nv = valid.sum().clamp(min=1)
 
