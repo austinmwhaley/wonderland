@@ -48,7 +48,7 @@ from .targets import PURCHASE_PROPENSITY_30D
 WORK = Path(__file__).resolve().parents[1]
 OUT = WORK / "plugins" / "artifacts"
 CFM_DIR = WORK / "looking_glass" / "artifacts" / "cfm"
-STREAM_DB = "rabbit_hole/data/duckdb/customer_event_stream.duckdb"
+STREAM_DB = "rabbit_hole/data/duckdb/customer_event_stream.parquet"
 
 
 def _mondays(start: date, end: date) -> list[date]:

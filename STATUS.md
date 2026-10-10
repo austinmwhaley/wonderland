@@ -73,7 +73,7 @@
   `python3 -m pytest -m "not slow"` -> 215 passed; GPU cuda available;
   standing products `looking_glass/artifacts/cfm/cfm_products.duckdb`
   (v2.0.0r90061, 25k); v2.1.0 smoke `/tmp/opencode/insta_prod`;
-  Instacart fixture `rabbit_hole/data/instacart/customer_event_stream.duckdb`;
+  Instacart fixture `rabbit_hole/data/instacart/customer_event_stream.parquet`;
   battery baselines archived `red_king/artifacts/*_baseline_w1_raw.json`.
 
 ---

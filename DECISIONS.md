@@ -1177,3 +1177,24 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   physical rewrite; the encoder reader tolerates both forms.
 - **Validated:** 257 fast tests green; the encoder reads the canonical view and
   the wide table to identical columns.
+
+## DEC-054 — Canonical streams stored as compressed Parquet (2.6x smaller)
+
+- **Date:** 2026-10-10
+- **Context:** the canonical rewrite (DEC-053) could not be applied physically
+  to the fixtures because the 29 GB ecommerce DuckDB + 97%-full disk made an
+  in-place rewrite infeasible.
+- **Decision:** store each stream as **canonical Parquet + ZSTD** (the 5
+  universal fields, non-canonical columns folded into `event_attributes`). This
+  both compresses and canonicalizes:
+  * ecommerce_2019: 29.4 GB DuckDB -> **11.2 GB** Parquet (411,709,736 rows)
+  * instacart:      7.8 GB  -> **1.05 GB** (37,446,398 rows)
+  * synthetic:      5.0 GB  -> **0.57 GB** (26,800,544 rows)
+  Freed ~30 GB (disk 15 GB -> 42 GB free). Row counts and event distributions
+  verified identical before the source was removed.
+- **Encoder reads Parquet in place:** `_read_stream` queries `.parquet` via
+  DuckDB `read_parquet(...)` (in-memory connection) and extracts the content
+  channels (brand/entity_type/entity_id/value) from `event_attributes` when not
+  top-level. Verified identical output across all three streams.
+- **References updated** (`plugins/`, `red_queen/`, `rabbit_hole/`, docs,
+  receipts) to the `.parquet` paths. 257 fast tests green.

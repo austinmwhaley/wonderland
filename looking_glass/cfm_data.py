@@ -39,12 +39,22 @@ def _read_stream(cfg: CFMConfig):
     else:
         import duckdb
 
-        con = duckdb.connect(cfg.db, read_only=True)
+        db = str(cfg.db)
+        is_file = db.endswith((".duckdb", ".ddb"))
+        con = duckdb.connect(db, read_only=True) if is_file else duckdb.connect()
         try:
-            tcols = {r[0] for r in con.execute(f"DESCRIBE {cfg.table}").fetchall()}
+            # Parquet/other files are queried in place via read_parquet (the
+            # canonical compressed form); DuckDB files use their table.
+            src = cfg.table if is_file else f"read_parquet('{db}')"
+            tcols = {r[0] for r in con.execute(f"DESCRIBE SELECT * FROM {src}").fetchall()}
             select = ", ".join(
-                [*base, _ex("brand", tcols), _ex("entity_type", tcols),
-                 _ex("entity_id", tcols), _ex("value", tcols, "FLOAT")]
+                [
+                    *base,
+                    _ex("brand", tcols),
+                    _ex("entity_type", tcols),
+                    _ex("entity_id", tcols),
+                    _ex("value", tcols, "FLOAT"),
+                ]
             )
             # push the point-in-time cut into SQL (before materializing): the
             # polars filter below is now a no-op for duckdb sources, and loads
@@ -67,7 +77,7 @@ def _read_stream(cfg: CFMConfig):
             if _sc:
                 try:
                     _pop = con.execute(
-                        f"SELECT count(distinct customer_key) FROM {cfg.table}{where}"
+                        f"SELECT count(distinct customer_key) FROM {src}{where}"
                     ).fetchone()[0]
                     if _pop and _pop > 3 * int(_sc):
                         _thr = max(1, int(round(3 * int(_sc) / _pop * 1_000_000)))
@@ -81,7 +91,7 @@ def _read_stream(cfg: CFMConfig):
                 except Exception:
                     pass  # fall through to a full read (small streams)
             df = con.execute(
-                f"SELECT {select} FROM {cfg.table}{where} ORDER BY customer_key, event_ts"
+                f"SELECT {select} FROM {src}{where} ORDER BY customer_key, event_ts"
             ).pl()
         finally:
             con.close()

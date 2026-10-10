@@ -23,7 +23,7 @@ is the only writer of state/embeddings.
 
 | When | Step | Command |
 |---|---|---|
-| **1st of month** | (0) size **Sample A** from the encoder-ladder receipt (first run of a new as_of runs the ladder first) → (1) encoder retrain on that Sample A, as-of the 1st (event cutoff + re-randomized A/B + **warm-start** from the previous compatible month) → products rebuilt: split, monthly embeddings, states at the 1st | `python -m looking_glass.customer_foundation_model train --customers 25000 --anchors 6 --as-of YYYY-MM-01 --db rabbit_hole/data/duckdb/customer_event_stream.duckdb --out-dir looking_glass/artifacts/cfm` |
+| **1st of month** | (0) size **Sample A** from the encoder-ladder receipt (first run of a new as_of runs the ladder first) → (1) encoder retrain on that Sample A, as-of the 1st (event cutoff + re-randomized A/B + **warm-start** from the previous compatible month) → products rebuilt: split, monthly embeddings, states at the 1st | `python -m looking_glass.customer_foundation_model train --customers 25000 --anchors 6 --as-of YYYY-MM-01 --db rabbit_hole/data/duckdb/customer_event_stream.parquet --out-dir looking_glass/artifacts/cfm` |
 | 1st (after 1) | (1b) day-1 close — **shipped with (1)** (build_products fades to the 1st and materializes its `state_embeddings`; receipt `device=encoder`) | *(no separate command)* |
 | 1st (after 1) | (2) **per supervised plugin**: fit/gate/persist head on the frozen table, labels closed at the 1st, pinned to the encoder tag | `python -m plugins.head_template supervised_purchase_propensity_30d --as-of YYYY-MM-01` |
 | 1st | (3) inference (training day counts as a run) | `python -m plugins.inference supervised_purchase_propensity_30d --as-of YYYY-MM-01` |

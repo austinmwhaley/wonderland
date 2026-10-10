@@ -35,7 +35,7 @@ def _parse_args() -> argparse.Namespace:
         description="Build business raw data and customer event stream"
     )
     parser.add_argument(
-        "--duckdb-path", type=Path, default=Path("data/duckdb/customer_event_stream.duckdb")
+        "--duckdb-path", type=Path, default=Path("data/duckdb/customer_event_stream.parquet")
     )
     parser.add_argument(
         "--arrow-path", type=Path, default=Path("data/arrow/customer_event_stream.feather")

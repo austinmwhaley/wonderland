@@ -35,7 +35,7 @@ from scipy.stats import spearmanr
 
 WORK = Path(__file__).resolve().parents[0]
 CFM = WORK / "artifacts" / "cfm"
-STREAM = WORK.parent / "rabbit_hole" / "data" / "duckdb" / "customer_event_stream.duckdb"
+STREAM = WORK.parent / "rabbit_hole" / "data" / "duckdb" / "customer_event_stream.parquet"
 
 
 def _epoch(s):

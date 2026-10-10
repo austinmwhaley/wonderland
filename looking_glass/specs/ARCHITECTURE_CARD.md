@@ -278,9 +278,9 @@ Five representation-space proofs, no downstream probe:
 
 | stream | fixture | scale |
 |---|---|---|
-| **Layer A** (rabbit_hole synthetic) | `rabbit_hole/data/duckdb/customer_event_stream.duckdb` | 26.8M events / 25k cust |
-| **Instacart** (external) | `rabbit_hole/data/instacart/customer_event_stream.duckdb` | 37.4M events / 206k cust |
-| **ecommerce_2019** (Kaggle, external) | `rabbit_hole/data/ecommerce_2019/customer_event_stream.duckdb` | 4.4M events / 212k cust |
+| **Layer A** (rabbit_hole synthetic) | `rabbit_hole/data/duckdb/customer_event_stream.parquet` | 26.8M events / 25k cust |
+| **Instacart** (external) | `rabbit_hole/data/instacart/customer_event_stream.parquet` | 37.4M events / 206k cust |
+| **ecommerce_2019** (Kaggle, external) | `rabbit_hole/data/ecommerce_2019/customer_event_stream.parquet` | 4.4M events / 212k cust |
 
 The canonical schema (DuckDB table `customer_events`):
 `customer_key, event_ts, brand, event_type, event_attributes, entity_type,

@@ -156,7 +156,7 @@ def real(seed=0):
 
     WORK = Path(__file__).resolve().parents[1]
     CFM = WORK / "looking_glass" / "artifacts" / "cfm" / "cfm_products.duckdb"
-    STREAM = WORK / "rabbit_hole" / "data" / "duckdb" / "customer_event_stream.duckdb"
+    STREAM = WORK / "rabbit_hole" / "data" / "duckdb" / "customer_event_stream.parquet"
     sc = duckdb.connect(str(STREAM), read_only=True)
     try:
         arm = sc.execute("SELECT customer_id k, arm, propensity, optimal_arm FROM email_arm").pl()

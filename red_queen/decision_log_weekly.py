@@ -6,7 +6,7 @@ import numpy as np
 
 WORK = Path(__file__).resolve().parents[1]
 DENSE = WORK / "looking_glass" / "artifacts" / "cfm" / "state_dense.feather"
-STREAM = WORK / "rabbit_hole" / "data" / "duckdb" / "customer_event_stream.duckdb"
+STREAM = WORK / "rabbit_hole" / "data" / "duckdb" / "customer_event_stream.parquet"
 OUT = Path(__file__).resolve().parents[0] / "artifacts" / "decision_log_weekly.npz"
 ACTION_DIM = 5
 

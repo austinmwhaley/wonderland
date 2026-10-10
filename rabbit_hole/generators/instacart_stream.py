@@ -103,7 +103,7 @@ def build(src: Path, out_dir: Path, arrow: bool = False) -> dict:
     out_dir.mkdir(parents=True, exist_ok=True)
     f = {name: str(src / name).replace("'", "''") for name in SOURCE_FILES}
 
-    db_path = out_dir / "customer_event_stream.duckdb"
+    db_path = out_dir / "customer_event_stream.parquet"
     if db_path.exists():
         db_path.unlink()
     con = duckdb.connect(str(db_path))
@@ -359,7 +359,7 @@ def main() -> None:
     r = build(args.src, args.out, arrow=args.arrow)
     print(
         f"instacart stream: {r['n_events']:,} events / {r['n_customers']:,} customers "
-        f"-> {args.out}/customer_event_stream.duckdb ({r['wall_seconds']}s)",
+        f"-> {args.out}/customer_event_stream.parquet ({r['wall_seconds']}s)",
         flush=True,
     )
     print(f"receipt: {args.out}/instacart_receipt.json", flush=True)

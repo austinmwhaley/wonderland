@@ -24,7 +24,7 @@ import numpy as np
 from red_queen.identifiability import require_holdout, require_stream_view
 
 WORK = Path(__file__).resolve().parents[1]
-STREAM = WORK / "rabbit_hole" / "data" / "duckdb" / "customer_event_stream.duckdb"
+STREAM = WORK / "rabbit_hole" / "data" / "duckdb" / "customer_event_stream.parquet"
 CFM = WORK / "looking_glass" / "artifacts" / "cfm" / "cfm_products.duckdb"
 OUT = Path(__file__).resolve().parents[0] / "artifacts" / "incrementality_report.json"
 N_PERIODS = 12

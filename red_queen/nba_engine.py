@@ -19,7 +19,7 @@ from pathlib import Path
 import numpy as np
 
 WORK = Path(__file__).resolve().parents[1]
-STREAM = WORK / "rabbit_hole" / "data" / "duckdb" / "customer_event_stream.duckdb"
+STREAM = WORK / "rabbit_hole" / "data" / "duckdb" / "customer_event_stream.parquet"
 OUT = Path(__file__).resolve().parents[0] / "artifacts" / "nba_multi_plan.json"
 
 CHANNEL_CADENCE = {

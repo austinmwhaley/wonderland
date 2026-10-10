@@ -67,7 +67,7 @@ def test_build_canonical_stream(tmp_path):
     out = tmp_path / "out"
     r1 = build(src, out)
 
-    db = out / "customer_event_stream.duckdb"
+    db = out / "customer_event_stream.parquet"
     con = duckdb.connect(str(db), read_only=True)
     try:
         cols = [c[1] for c in con.execute("PRAGMA table_info(customer_events)").fetchall()]
@@ -128,10 +128,10 @@ def test_build_is_deterministic(tmp_path):
     )
     with (
         duckdb.connect(
-            str(tmp_path / "out1" / "customer_event_stream.duckdb"), read_only=True
+            str(tmp_path / "out1" / "customer_event_stream.parquet"), read_only=True
         ) as c1,
         duckdb.connect(
-            str(tmp_path / "out2" / "customer_event_stream.duckdb"), read_only=True
+            str(tmp_path / "out2" / "customer_event_stream.parquet"), read_only=True
         ) as c2,
     ):
         assert c1.execute(q).fetchall() == c2.execute(q).fetchall()

@@ -92,7 +92,7 @@ and `python3 -m looking_glass.intrinsic --out-dir <dir>`.
 | Step | Command |
 |---|---|
 | size Sample A (ladder) | `python3 -m looking_glass.customer_foundation_model ladder --customers 25000 --as-of YYYY-MM-01 ...` |
-| (1) train encoder + products (also closes day 1) | `python3 -m looking_glass.customer_foundation_model train --customers 25000 --anchors 6 --as-of YYYY-MM-01 --db rabbit_hole/data/duckdb/customer_event_stream.duckdb --out-dir looking_glass/artifacts/cfm` |
+| (1) train encoder + products (also closes day 1) | `python3 -m looking_glass.customer_foundation_model train --customers 25000 --anchors 6 --as-of YYYY-MM-01 --db rabbit_hole/data/duckdb/customer_event_stream.parquet --out-dir looking_glass/artifacts/cfm` |
 | rebuild products only (fast knob sweeps) | `python3 -m looking_glass.customer_foundation_model products --anchors 6 --out-dir looking_glass/artifacts/cfm` |
 | (1b) daily state job, days 2..N | `python3 -m looking_glass.daily_states --as-of YYYY-MM-DD` |
 | battery (donor vs raw) | `python3 -m looking_glass.sufficiency_battery` |
@@ -115,9 +115,9 @@ The encoder is stream-agnostic; the same engine is graded on each fixture below
 
 | stream | fixture | scale |
 |---|---|---|
-| **Layer A** (rabbit_hole synthetic) | `rabbit_hole/data/duckdb/customer_event_stream.duckdb` | 26.8M events / 25k customers |
-| **Instacart** (external) | `rabbit_hole/data/instacart/customer_event_stream.duckdb` | 37.4M events / 206k customers |
-| **ecommerce_2019** (external, Kaggle) | `rabbit_hole/data/ecommerce_2019/customer_event_stream.duckdb` | 4.4M events / 212k customers (Oct+Nov 2019; see `ecommerce_receipt.json`) |
+| **Layer A** (rabbit_hole synthetic) | `rabbit_hole/data/duckdb/customer_event_stream.parquet` | 26.8M events / 25k customers |
+| **Instacart** (external) | `rabbit_hole/data/instacart/customer_event_stream.parquet` | 37.4M events / 206k customers |
+| **ecommerce_2019** (external, Kaggle) | `rabbit_hole/data/ecommerce_2019/customer_event_stream.parquet` | 4.4M events / 212k customers (Oct+Nov 2019; see `ecommerce_receipt.json`) |
 
 ## Package layout
 

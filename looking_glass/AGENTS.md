@@ -22,7 +22,7 @@ top-level `looking_glass/` directory and the root `pyproject.toml` puts it on
 
 - Install deps: `python3 -m pip install -r looking_glass/requirements.txt` (or the root `requirements.txt`)
 - Tests: `python3 -m pytest` (the CFM/plugin tests live in the repo-root `tests/`; fast tier `-m "not slow"`)
-- Train + products: `python3 -m looking_glass.customer_foundation_model train --customers 25000 --anchors 6 --as-of YYYY-MM-01 --db rabbit_hole/data/duckdb/customer_event_stream.duckdb --out-dir looking_glass/artifacts/cfm`
+- Train + products: `python3 -m looking_glass.customer_foundation_model train --customers 25000 --anchors 6 --as-of YYYY-MM-01 --db rabbit_hole/data/duckdb/customer_event_stream.parquet --out-dir looking_glass/artifacts/cfm`
 
 ## Code conventions
 

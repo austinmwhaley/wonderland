@@ -31,10 +31,10 @@ rabbit_hole/
                        canonical stream (see "Instacart fixture")
 data/
   arrow/customer_event_stream.feather   the canonical stream (Arrow primary)
-  duckdb/customer_event_stream.duckdb   the source DuckDB stream (Arrow feather is derived from it)
+  duckdb/customer_event_stream.parquet  the canonical compressed stream (5 fields)
   instacart/                            fixture build (local-only, gitignored)
     src/*.csv                           downloaded source tables
-    customer_event_stream.duckdb        canonical stream + `orders` contract table
+    customer_event_stream.parquet        canonical stream + `orders` contract table
     instacart_receipt.json              sha256s, counts, timeline receipts
   logs/
 ```
@@ -72,7 +72,7 @@ DuckDB (query engine over the Arrow stream), `.parquet`/`.pq` -> Parquet
 ```python
 import rabbit_hole as rh
 
-stream = rh.CustomerEventStream.load("data/duckdb/customer_event_stream.duckdb")
+stream = rh.CustomerEventStream.load("data/duckdb/customer_event_stream.parquet")
 for row in stream:  # canonical rows
     attrs = rh.parse_attributes(row["event_attributes"])
     ...
@@ -102,11 +102,11 @@ python3 -m rabbit_hole.generators.instacart_stream \
 
 # 3. any layer can point at it
 python3 -m looking_glass.customer_foundation_model train --customers 500 --anchors 6 \
-  --as-of 2025-11-01 --db rabbit_hole/data/instacart/customer_event_stream.duckdb \
+  --as-of 2025-11-01 --db rabbit_hole/data/instacart/customer_event_stream.parquet \
   --out-dir /tmp/insta_cfm
 python3 -m plugins.head_template supervised_purchase_propensity_30d --as-of 2025-11-01 \
   --products /tmp/insta_cfm/cfm_products.duckdb \
-  --stream rabbit_hole/data/instacart/customer_event_stream.duckdb \
+  --stream rabbit_hole/data/instacart/customer_event_stream.parquet \
   --out-dir /tmp/insta_plugin
 ```
 

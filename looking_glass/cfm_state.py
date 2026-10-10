@@ -197,7 +197,7 @@ def load_frozen_encoder(tag: str, cfm_dir):
                 / "rabbit_hole"
                 / "data"
                 / "duckdb"
-                / "customer_event_stream.duckdb"
+                / "customer_event_stream.parquet"
             )
     else:
         cfg.db = str(
@@ -205,7 +205,7 @@ def load_frozen_encoder(tag: str, cfm_dir):
             / "rabbit_hole"
             / "data"
             / "duckdb"
-            / "customer_event_stream.duckdb"
+            / "customer_event_stream.parquet"
         )
     model.half_life_days = cfg.state_half_life_days
     return model, cfg

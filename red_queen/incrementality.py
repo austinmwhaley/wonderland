@@ -24,7 +24,7 @@ from red_queen.identifiability import (
 )
 
 WORK = Path(__file__).resolve().parents[1]
-STREAM = WORK / "rabbit_hole" / "data" / "duckdb" / "customer_event_stream.duckdb"
+STREAM = WORK / "rabbit_hole" / "data" / "duckdb" / "customer_event_stream.parquet"
 CFM = WORK / "looking_glass" / "artifacts" / "cfm" / "cfm_products.duckdb"
 N_PERIODS = 12
 

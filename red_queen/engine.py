@@ -18,7 +18,7 @@ from pathlib import Path
 import numpy as np
 
 WORK = Path(__file__).resolve().parents[1]
-STREAM = WORK / "rabbit_hole" / "data" / "duckdb" / "customer_event_stream.duckdb"
+STREAM = WORK / "rabbit_hole" / "data" / "duckdb" / "customer_event_stream.parquet"
 DATA = WORK / "red_king" / "data" / "seq_email.npz"
 CFM_PRODUCTS = WORK / "looking_glass" / "artifacts" / "cfm" / "cfm_products.duckdb"
 OUT = Path(__file__).resolve().parents[0] / "artifacts"

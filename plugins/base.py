@@ -20,7 +20,7 @@ import numpy as np
 
 WORK = Path(__file__).resolve().parents[1]
 CFM_PRODUCTS = WORK / "looking_glass" / "artifacts" / "cfm" / "cfm_products.duckdb"
-STREAM_DB = WORK / "rabbit_hole" / "data" / "duckdb" / "customer_event_stream.duckdb"
+STREAM_DB = WORK / "rabbit_hole" / "data" / "duckdb" / "customer_event_stream.parquet"
 OUT = WORK / "plugins" / "artifacts"
 
 
