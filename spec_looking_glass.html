@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>looking_glass specification 0.9.3 — The Geometric Manifold Foundation Model</title>
+<title>looking_glass specification 0.9.4 — The Geometric Manifold Foundation Model</title>
 <style>
   :root { --ink:#1a1d21; --mut:#5b6470; --line:#dfe3e8; --bg:#ffffff; --soft:#f6f8fa; --acc:#245bd1; }
   * { box-sizing: border-box; }
@@ -40,118 +40,67 @@ window.MathJax = {
 </head>
 <body>
 <main>
-<h1 id="specification-093-the-geometric-manifold-foundation-model">Specification 0.9.3: The Geometric Manifold Foundation Model</h1>
-<h2 id="1-core-objective-philosophy-the-canonical-telemetry-foundation-model-factory">1. Core Objective &amp; Philosophy: The Canonical Telemetry Foundation Model Factory</h2>
-<h3 id="the-grand-vision-the-what-and-the-why">The Grand Vision (The WHAT and the WHY)</h3>
-<p>The objective is to build an autonomous, self-governed foundation model factory that ingests <strong>Canonical Event Streams (CESI)</strong>—structured temporal telemetry, user clickstreams, and system logs—and automatically yields a production-grade foundation model.</p>
-<p>The core philosophy remains: predicting the next event is merely a mechanism for constructing a latent manifold $z_t$ guaranteed to satisfy strict intrinsic representation quality. When the manifold is geometrically healthy, it natively powers supervised, unsupervised, and reinforcement learning (RL) downstream heads out-of-the-box without altering the core encoder weights.</p>
-<h3 id="scoped-target-domain-093-initial-release">Scoped Target Domain (0.9.3 Initial Release)</h3>
-<ul>
-<li><strong>Target Domain:</strong> Time-ordered, discrete-event telemetry and transactional logs adhering to the Canonical Event Stream Interface (CESI).</li>
-<li><strong>Exclusions:</strong> Unstructured video, raw audio, and free-form text are out of scope for this architecture (delegated to modality-specific front-ends).</li>
-</ul>
+<h1 id="specification-093-the-geometric-manifold-foundation-model">Specification 0.9.4: The Geometric Manifold Foundation Model</h1>
+<h2 id="0-document-map">0. Document map</h2>
+<table>
+<thead>
+<tr>
+<th>Section</th>
+<th>Subject</th>
+<th>Anchored to (v1.0 criteria)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1. Core Objective</td>
+<td>Input/output contract + <strong>v1.0 Definition of Done</strong></td>
+<td>C1–C10 (the anchor)</td>
+</tr>
+<tr>
+<td>2. Philosophy</td>
+<td>Self-governance: autonomy, construction, honesty</td>
+<td>C1–C3</td>
+</tr>
+<tr>
+<td>3. Guardrails</td>
+<td>Structural invariants A–I</td>
+<td>C2, C3, C5</td>
+</tr>
+<tr>
+<td>4. Metrics</td>
+<td>The 12 intrinsic governance metrics</td>
+<td>C4, C5</td>
+</tr>
+<tr>
+<td>5. Components</td>
+<td>Architecture: ingestion → operators → readout</td>
+<td>C1, C6–C9</td>
+</tr>
+<tr>
+<td>6. Pipeline</td>
+<td>Two-phase factory (pre-train → freeze → adapt)</td>
+<td>C1–C5</td>
+</tr>
+<tr>
+<td>7. Execution</td>
+<td>Build order, each step mapped to a criterion</td>
+<td>all</td>
+</tr>
+<tr>
+<td>8. Reconciliation</td>
+<td>As-built state vs the target, grounded</td>
+<td>status</td>
+</tr>
+<tr>
+<td>9. Structured Capability Model</td>
+<td>The macro HOW: capability success law, dataflow, traceability matrix, probe spec, build graph</td>
+<td>C4, C5, C8</td>
+</tr>
+</tbody>
+</table>
 <hr />
-<h2 id="2-mandatory-architectural-guardrails-the-invariants">2. Mandatory Architectural Guardrails (The Invariants)</h2>
-<p>To achieve true autonomy and eliminate manual tuning, the architecture enforces the following structural laws by construction:</p>
-<ul>
-<li><strong>Guardrail A (Normalization by Construction):</strong> Per-sample feature normalization ($\sigma \approx 1.0$) applied exclusively within hidden recurrent mixer boundaries. Raw magnitude and trend data are preserved via the Payload Bypass Stream.</li>
-<li><strong>Guardrail B (Fail-Fast Tensor Health):</strong> Step-0 validation harness halting on NaN, Inf, explosive magnitude ($&gt; 10^4$), or variance collapse ($\sigma^2 &lt; 10^{-6}$).</li>
-<li><strong>Guardrail C (Bounded Operator Dynamics):</strong> Contractive state-space transitions ($\rho &lt; 1$) enforced by spectral normalization on transition matrix $A$.</li>
-<li><strong>Guardrail D (Zero Supervised Loss Hacks):</strong> Absolute ban on focal loss, class weights, and manual auxiliary task balancing. Self-supervised representation objectives (e.g., Barlow Twins, predictive coding) are permitted as structural geometry constraints.</li>
-<li><strong>Guardrail E (Anti-Collapse):</strong> Prevention of low-rank degeneracy via asynchronous memory-bank decorrelation.</li>
-<li><strong>Guardrail F (Identifiability Ceiling):</strong> Grading data streams against pre-training information entropy ceilings before committing compute.</li>
-<li><strong>Guardrail G (Strict Causal Arrow Enforcement):</strong> Zero look-ahead leakage across temporal mixing layers (strictly causal masking).</li>
-<li><strong>Guardrail H (Absorbing State Prevention):</strong> Minimum singular value floor ($\sigma_{\min}(A) \ge \epsilon = 10^{-4}$) on recurrent operators.</li>
-<li><strong>Guardrail I (Information-Theoretic Invertibility Bound):</strong> Mutual information lower bound ensuring the encoder retains input entropy above a defined threshold ($I(x_t; z_t) \ge H_{min}$).</li>
-</ul>
-<hr />
-<h2 id="3-operational-definitions-of-the-12-intrinsic-governance-metrics">3. Operational Definitions of the 12 Intrinsic Governance Metrics</h2>
-<p>To make the governance loop mathematically auditable, all 12 macro categories are operationalized into concrete quantitative metrics evaluated on frozen embedding checkpoints every $N$ steps:</p>
-<ol>
-<li><strong>Information Capacity &amp; Fidelity (Effective Rank Ratio):</strong>
-   $$ER(Z) = \exp\left( -\sum_{i=1}^d p_i \log p_i \right), \quad p_i = \frac{\sigma_i}{\sum_{j=1}^d \sigma_j}$$
-   <em>Halt if relative effective rank $ER(Z_{current}) / ER(Z_{baseline}) &lt; 0.15$.</em></li>
-<li><strong>Geometric Separability &amp; Manifold Health (Alignment &amp; Uniformity):</strong>
-   $$\mathcal{L}_{align} = \mathbb{E}_{(z, z^+) \sim p_{pos}} \left[ \Vert{} z - z^+ \Vert{}_2^2 \right], \quad \mathcal{L}_{uniform} = \log \mathbb{E}_{z, z&#x27; \sim p_{data}} \left[ e^{-2 \Vert{} z - z&#x27; \Vert{}_2^2} \right]$$</li>
-<li><strong>Temporal Coherence &amp; Markovianity (Time’s Arrow Asymmetry):</strong>
-   $$TAA = \mathbb{E}\left[ \Vert{} z_{t+1} - f_{fwd}(z_t) \Vert{}_2^2 \right] - \mathbb{E}\left[ \Vert{} z_t - f_{bwd}(z_{t+1}) \Vert{}_2^2 \right]$$
-   Quantifies compliance with the arrow of time ($TAA &gt; 0$).</li>
-<li><strong>Disentanglement &amp; Factorization (Total Correlation):</strong>
-   $$TC(Z) = D_{KL}\left( q(z) \;\Big\Vert{}\; \prod_{j=1}^d q(z_j) \right)$$
-   Measures independence across latent subspace blocks.</li>
-<li><strong>Robustness &amp; Nuisance Invariance (Augmentation Invariance Distance):</strong>
-   $$\mathcal{L}_{inv} = \mathbb{E}\left[ \Vert{} f(x) - f(x_{augmented}) \Vert{}_2^2 \right]$$</li>
-<li><strong>Epistemic Density &amp; Boundary Awareness (OOD AUROC):</strong>
-   $$D_M(z) = \sqrt{(z - \mu)^T \Sigma^{-1} (z - \mu)}$$
-   Uses Mahalanobis distance $D_M(z)$ to compute AUROC separation between in-distribution and synthetic noise samples.</li>
-<li><strong>Equivariance &amp; Group Symmetries (Equivariance Error - <em>Conditional</em>):</strong>
-   $$\mathcal{L}_{eq} = \mathbb{E}\left[ \Vert{} f(g \cdot x) - g&#x27; \cdot f(x) \Vert{}_2^2 \right]$$</li>
-<li><strong>Manifold Flatness &amp; Interpolation Validity (Geodesic Interpolation Loss):</strong>
-   $$\mathcal{L}_{geo} = \mathbb{E}_{\alpha \in [0,1]} \left[ \Vert{} f(\alpha x_i + (1-\alpha)x_j) - (\alpha f(x_i) + (1-\alpha)f(x_j)) \Vert{}_2^2 \right]$$
-   <em>Halt if interpolation error spikes past local tolerance threshold.</em></li>
-<li><strong>Causal Identifiability (Interventional Shift Variance - <em>Conditional</em>):</strong>
-   $$ISV = \text{Var}\left( z_{t+1} \mid do(a_t) \right) - \text{Var}\left( z_{t+1} \mid a_t \right)$$</li>
-<li><strong>Controllability &amp; Reachability (Reachability Gramian Rank - <em>Conditional</em>):</strong>
-    $$\sigma_{\min}(W_R) \ge \epsilon, \quad W_R = \sum_{k=0}^{K} A^k B B^T (A^T)^k$$</li>
-<li><strong>Temporal Hierarchy &amp; Abstraction (Temporal Abstraction Decay Ratio):</strong>
-    $$TAR = \frac{I(Z_{macro}; x_{t+k})}{I(z_t; x_{t+k})} \quad \text{for } k \gg 1$$</li>
-<li><strong>Protected Attribute Invariance (Null-Space Residual - <em>Conditional</em>):</strong>
-    $$NSR = 1 - \text{Accuracy}\left( \text{Decoder}(P_{\text{null}} z_t) \to S_{\text{protected}} \right)$$
-    <em>Halt if residual decoding accuracy exceeds chance performance.</em></li>
-</ol>
-<hr />
-<h2 id="4-architectural-components">4. Architectural Components</h2>
-<ul>
-<li><strong>Component 0 (Canonical Ingestion Interface):</strong> Validates incoming streams against the CESI schema contract (Timestamp, Entity ID, Categorical Tokens, Continuous Metrics). Proves presence/absence of optional action arms or protected attributes.</li>
-<li><strong>Component A (Multi-Scale SSM + Payload Bypass):</strong> Log-spaced decay spectrum ($\rho \in [0.05, 0.82]$) coupled with a raw payload bypass stream routed directly to readout.</li>
-<li><strong>Component B (Soft-Orthogonal Subspace Routing):</strong> Block-diagonal state transition matrix $A = \text{diag}(A_1, A_2, \dots, A_k)$ with regularized cross-talk penalties.</li>
-<li><strong>Component C &amp; H (Conditional Action-Gated Operators &amp; Rollouts):</strong> <em>Opt-in.</em> Dynamically instantiates $B(a_t)$ if action arms exist, enforcing bounded norm $\Vert{}B(a_t)\Vert{} \le \kappa$ to maintain contractivity.</li>
-<li><strong>Component D (Memory-Bank Barlow Alignment):</strong> Anti-collapse decorrelation loss computed over asynchronous rolling queue $Z_{mem}$, eliminating batch statistics (Guardrail A).</li>
-<li><strong>Component E (Composite Uncertainty):</strong> Structural uncertainty derived from reconstruction dispersion, Mahalanobis distance, and fast/slow temporal channel disagreement.</li>
-<li><strong>Component F (Boundary-Gated Soft-Macro-Pooling):</strong> Temperature-scaled soft-reset EMA session tracking ($Z_{macro}$).</li>
-<li><strong>Component G (Conditional Null-Space Fairness):</strong> <em>Opt-in.</em> Projects final vector onto orthogonal complement of protected attributes when declared in CESI schema.</li>
-</ul>
-<hr />
-<h2 id="5-the-two-phase-factory-pipeline-evaluation-plan">5. The Two-Phase Factory Pipeline &amp; Evaluation Plan</h2>
-<h3 id="phase-1-self-supervised-foundation-pre-training">Phase 1: Self-Supervised Foundation Pre-Training</h3>
-<ul>
-<li>Encoder is trained via self-supervised predictive coding ($\mathcal{L}_{pred}$) and memory-bank Barlow decorrelation ($\mathcal{L}_{barlow}$).</li>
-<li>Continuous execution of Step-1 Governance Loop with fail-fast Halt Rules.</li>
-</ul>
-<h3 id="phase-2-frozen-manifold-downstream-probing">Phase 2: Frozen-Manifold Downstream Probing</h3>
-<ul>
-<li>Encoder weights are permanently locked ($z_t = \text{Encoder}(x_{1:t})$).</li>
-<li>Lightweight Supervised, Unsupervised, and RL heads attach as downstream adapters.</li>
-</ul>
-<hr />
-<h2 id="6-execution-directive-implementation-blueprint">6. Execution Directive &amp; Implementation Blueprint</h2>
-<pre><code class="language-text">Evolving architecture to Specification 0.9.3:
-
-1. Implement Component 0 (CESI Schema Parser) with feature type clustering and capability discovery.
-2. Build Component A (Multi-Scale SSM with Spectral Normalization) and Payload Bypass Stream.
-3. Build Component D (Memory-Bank Barlow Twins Loss) ensuring zero batch statistics.
-4. Implement Step-1 Governance Loop evaluating all 12 operationalized intrinsic metrics every N steps.
-5. Enforce Halt Rules for Relative Effective Rank (&lt; 0.15), Geodesic Interpolation Loss spikes, and Null-Space Leakage.
-6. Verify Phase 2 frozen readout adapter attachment across downstream probing tasks.
-</code></pre>
-<h2 id="-">---</h2>
-<h2 id="7-current-state-reconciliation-grounded-2026-10-10">7. Current-State Reconciliation (grounded, 2026-10-10)</h2>
-<blockquote>
-<p><strong>Provenance.</strong> Added by the isolated spec session. The 0.9.3 text above is the
-<em>target</em>; this section maps it to what actually exists in
-<code>wonderland/looking_glass</code>, what is <em>measured</em>, and the open gaps. It is
-grounded in repo artifacts, not the spec's aspirational claims.
-Sources: <code>STATUS.md</code>, <code>DECISIONS.md</code> (DEC-044/047/049/053/055/056),
-<code>looking_glass/specs/ARCHITECTURE_CARD.md</code>, <code>looking_glass/specs/V7_RFC.md</code>,
-<code>looking_glass/specs/ECOM_2019_PROBE_BASELINE.md</code>, portfolio receipts in
-<code>looking_glass/artifacts/cfm/portfolio/*.json</code>, and the concurrently-running
-session's probe receipts in <code>/tmp/opencode/ecomm_*.{json,md}</code>.</p>
-<p><strong>Isolation note.</strong> A separate opencode session is actively editing
-<code>looking_glass/cfm_model.py</code> / <code>cfm_training.py</code> (DEC-057, uncommitted) and
-running ecommerce probes. This document was produced read-only with respect to
-that work.</p>
-</blockquote>
-<h3 id="71-version-reality">7.1 Version reality</h3>
+<h2 id="1-core-objective">1. Core Objective</h2>
+<h3 id="11-the-contract">1.1 The contract</h3>
 <table>
 <thead>
 <tr>
@@ -161,16 +110,508 @@ that work.</p>
 </thead>
 <tbody>
 <tr>
+<td><strong>Input</strong></td>
+<td>a <strong>Canonical Event Stream (CESI)</strong> — time-ordered discrete events with an entity key, categorical tokens, continuous magnitudes, and (when present) randomized <strong>action arms</strong>, logged <strong>propensity</strong>, and <strong>protected attributes</strong>.</td>
+</tr>
+<tr>
+<td><strong>Output</strong></td>
+<td>a <strong>frozen foundation model</strong> whose foundational embeddings $z_t$ support supervised, unsupervised, and reinforcement-learning (RL) heads — including <code>white_queen</code> (OPE certification) and <code>red_king</code> (counterfactual evaluation) — <strong>without altering the encoder weights</strong>.</td>
+</tr>
+<tr>
+<td><strong>Interface</strong></td>
+<td>the foundational embedding $z_t$ (per entity, per time), exposed as read-only tables.</td>
+</tr>
+<tr>
+<td><strong>Mechanism</strong></td>
+<td>self-supervised next-event prediction <strong>over a portfolio</strong> of distributional and temporal objectives — the means, not the product.</td>
+</tr>
+<tr>
+<td><strong>Product</strong></td>
+<td>a latent manifold <strong>maintained by construction</strong> to satisfy strict intrinsic representation quality and <strong>verified</strong> against held-out + ground-truth gates before it is called healthy.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="12-v10-definition-of-done">1.2 v1.0 Definition of Done</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Layer</th>
+<th>Criterion</th>
+<th>Gate (how it is measured)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>C1</strong></td>
+<td>Producer</td>
+<td>Ingestion &amp; genericity</td>
+<td>any CESI stream runs end-to-end with <strong>no code changes</strong>; action arms / protected attributes <em>discovered</em> from schema; feature types auto-resolved</td>
+</tr>
+<tr>
+<td><strong>C2</strong></td>
+<td>Producer</td>
+<td>Autonomous training</td>
+<td>converges on the <strong>held-out self-supervised objective</strong> under a data+hardware-derived budget; no per-run tuning; <strong>stable step 0 → end</strong> (no false green)</td>
+</tr>
+<tr>
+<td><strong>C3</strong></td>
+<td>Producer</td>
+<td>Fail-fast governance</td>
+<td>halts <strong>with a receipt</strong> on tensor-health violation, rank/absorbing-state collapse, or a below-ceiling stream — refusing to emit a model</td>
+</tr>
+<tr>
+<td><strong>C4</strong></td>
+<td>Product</td>
+<td>Intrinsic quality</td>
+<td>the operationalized metrics (§4) pass their calibrated gates on ≥2 diverse streams, <strong>per capability</strong> (never one composite)</td>
+</tr>
+<tr>
+<td><strong>C5</strong></td>
+<td>Product</td>
+<td>Frozen-manifold signal</td>
+<td>frozen $z_t$ beats model-free baselines on <strong>every capability the stream carries</strong>, each with uncertainty</td>
+</tr>
+<tr>
+<td><strong>C6</strong></td>
+<td>Consumer</td>
+<td>Supervised head</td>
+<td>adapter on frozen embeddings passes its independent gate (beats raw; effect size + interval)</td>
+</tr>
+<tr>
+<td><strong>C7</strong></td>
+<td>Consumer</td>
+<td>Unsupervised head</td>
+<td>grounded structure recovered from frozen embeddings (segment recovery / cluster stability), gated</td>
+</tr>
+<tr>
+<td><strong>C8</strong></td>
+<td>Consumer</td>
+<td>RL head</td>
+<td>on a stream with randomized arms + logged propensity, an OPE/counterfactual adapter (<code>white_queen</code> / <code>red_king</code>) passes its gate (incremental counterfactual margin vs. logging, calibrated). <strong>The encoder must supply whatever this requires</strong> (§5, Components C &amp; H)</td>
+</tr>
+<tr>
+<td><strong>C9</strong></td>
+<td>Consumer</td>
+<td>Universal donor</td>
+<td>E-vs-R-vs-E+R ablation on <code>donor_embeddings</code> under the <strong>production</strong> head: embeddings add unique signal, never materially worse than raw</td>
+</tr>
+<tr>
+<td><strong>C10</strong></td>
+<td>Identity</td>
+<td>Reproducibility</td>
+<td>semver-versioned (<code>0.MAJOR.MINOR</code>) + receipted (inputs / config / seed / git SHA); deterministic</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Verdict law — there is no FAIL.</strong></p>
+<table>
+<thead>
+<tr>
+<th>Verdict</th>
+<th>Meaning</th>
+<th>Allowed?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PASS</code></td>
+<td>the capability is carried by the stream <strong>and</strong> the model beats its baseline</td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>NO_SIGNAL</code></td>
+<td>the stream <strong>provably cannot carry</strong> the target (certified by an independent stream-side entropy/identifiability ceiling, §3 Guardrail F)</td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>FAIL</code></td>
+<td>the capability <strong>is</strong> carried but the model does not beat its baseline — a <strong>defect</strong></td>
+<td><strong>no — blocks v1.0</strong></td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>Every capability the stream <em>can</em> carry must <code>PASS</code>. <code>NO_SIGNAL</code> is never a relabeled failure.</p>
+</blockquote>
+<h3 id="13-scope-093-initial-release">1.3 Scope (0.9.3 initial release)</h3>
+<table>
+<thead>
+<tr>
+<th>In scope</th>
+<th>Out of scope</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>time-ordered, discrete-event telemetry and transactional logs adhering to CESI</td>
+<td>unstructured video, raw audio, free-form text (delegated to modality front-ends)</td>
+</tr>
+<tr>
+<td>supervised, unsupervised, RL heads via frozen embeddings</td>
+<td>per-stream hand-tuned models</td>
+</tr>
+<tr>
+<td>self-governed, autonomous training</td>
+<td>a single composite score that hides a failed capability</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="2-philosophy-self-governance">2. Philosophy — Self-Governance</h2>
+<p>The system is <strong>autonomous, automatic, and self-governed</strong>: it resolves its own configuration from what it sees, derives its own budgets/thresholds/schedules from data + hardware, and fails fast with a receipt. Human input defines <em>what</em> quality means (the §1.2 criteria); the system decides <em>how</em> to reach it.</p>
+<table>
+<thead>
+<tr>
+<th>Principle</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Invariants as native architecture</td>
+<td>isotropy, continuity, recurrence stability live in the state update and the optimization dynamics — never bolted on after a failure</td>
+</tr>
+<tr>
+<td>Capacity over artificial constraints</td>
+<td>never shrink the model to make a gate pass; fix the objectives so the trunk uses its capacity</td>
+</tr>
+<tr>
+<td>Truth-first diagnostics</td>
+<td>a capability that cannot be passed honestly is reported (<code>FAIL</code> / <code>NO_SIGNAL</code>), never hidden, weakened, or relabeled</td>
+</tr>
+<tr>
+<td>Zero manual hyperparameters</td>
+<td>any surviving literal is a documented, overridable fallback, resolved at runtime and recorded in a receipt</td>
+</tr>
+<tr>
+<td>Reproducibility is identity</td>
+<td>a change that can alter outputs bumps the version; every artifact records its inputs, config, and version</td>
+</tr>
+<tr>
+<td>Adapt by construction</td>
+<td>an unseen schema / dim / horizon / action space must work with no code edits</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="3-mandatory-architectural-guardrails-the-invariants">3. Mandatory Architectural Guardrails (The Invariants)</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Invariant</th>
+<th>Enforced by construction</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>A</strong></td>
+<td>Normalization by construction</td>
+<td>per-sample feature normalization ($\sigma \approx 1.0$) inside hidden recurrent mixer boundaries; raw magnitude/trend preserved via the <strong>Payload Bypass Stream</strong></td>
+</tr>
+<tr>
+<td><strong>B</strong></td>
+<td>Fail-fast tensor health</td>
+<td>Step-0 harness halts on NaN, Inf, explosive magnitude ($&gt; 10^4$), variance collapse ($\sigma^2 &lt; 10^{-6}$)</td>
+</tr>
+<tr>
+<td><strong>C</strong></td>
+<td>Bounded operator dynamics</td>
+<td>contractive transitions ($\rho &lt; 1$) via spectral normalization on the transition matrix $A$</td>
+</tr>
+<tr>
+<td><strong>D</strong></td>
+<td>Zero supervised loss hacks</td>
+<td>no focal loss, no class weights, no manual auxiliary balancing; self-supervised objectives permitted as geometry constraints</td>
+</tr>
+<tr>
+<td><strong>E</strong></td>
+<td>Anti-collapse</td>
+<td>asynchronous memory-bank decorrelation prevents low-rank degeneracy</td>
+</tr>
+<tr>
+<td><strong>F</strong></td>
+<td>Identifiability ceiling</td>
+<td>grade streams against pre-training information entropy ceilings before compute; a target the stream provably cannot carry is <code>NO_SIGNAL</code> — <strong>never <code>FAIL</code></strong> (§1.2 verdict law)</td>
+</tr>
+<tr>
+<td><strong>G</strong></td>
+<td>Strict causal arrow</td>
+<td>zero look-ahead leakage across temporal mixing layers (strictly causal masking)</td>
+</tr>
+<tr>
+<td><strong>H</strong></td>
+<td>Absorbing-state prevention</td>
+<td>minimum singular value floor on recurrent operators: $\sigma_{\min}(A) \ge \epsilon = 10^{-4}$</td>
+</tr>
+<tr>
+<td><strong>I</strong></td>
+<td>Information-theoretic invertibility bound</td>
+<td>encoder retains input entropy above a floor: $I(x_t; z_t) \ge H_{min}$</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="4-operational-definitions-of-the-12-intrinsic-governance-metrics">4. Operational Definitions of the 12 Intrinsic Governance Metrics</h2>
+<p>Evaluated on frozen embedding checkpoints every $N$ steps; each is auditable and per-capability.</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Category</th>
+<th>Metric &amp; definition</th>
+<th>Trigger / limit</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Information Capacity &amp; Fidelity</td>
+<td>Effective Rank Ratio $ER(Z) = \exp\left( -\sum_{i=1}^d p_i \log p_i \right)$, $p_i = \frac{\sigma_i}{\sum_{j=1}^d \sigma_j}$</td>
+<td>halt if $ER(Z_{current}) / ER(Z_{baseline}) &lt; 0.15$</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Geometric Separability &amp; Manifold Health</td>
+<td>Alignment &amp; Uniformity: $\mathcal{L}_{align} = \mathbb{E}_{(z, z^+) \sim p_{pos}} \left[ \Vert{} z - z^+ \Vert{}_2^2 \right]$, $\mathcal{L}_{uniform} = \log \mathbb{E}_{z, z&#x27; \sim p_{data}} \left[ e^{-2 \Vert{} z - z&#x27; \Vert{}_2^2} \right]$</td>
+<td>align ↓, uniformity ↓</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Temporal Coherence &amp; Markovianity</td>
+<td>Time’s Arrow Asymmetry $TAA = \mathbb{E}\left[ \Vert{} z_{t+1} - f_{fwd}(z_t) \Vert{}_2^2 \right] - \mathbb{E}\left[ \Vert{} z_t - f_{bwd}(z_{t+1}) \Vert{}_2^2 \right]$</td>
+<td>$TAA &gt; 0$ (arrow of time respected)</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Disentanglement &amp; Factorization</td>
+<td>Total Correlation $TC(Z) = D_{KL}\left( q(z) \;\Big\Vert{}\; \prod_{j=1}^d q(z_j) \right)$</td>
+<td>independence across latent blocks</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Robustness &amp; Nuisance Invariance</td>
+<td>Augmentation Invariance Distance $\mathcal{L}_{inv} = \mathbb{E}\left[ \Vert{} f(x) - f(x_{augmented}) \Vert{}_2^2 \right]$</td>
+<td>low</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Epistemic Density &amp; Boundary Awareness</td>
+<td>OOD AUROC from Mahalanobis $D_M(z) = \sqrt{(z - \mu)^T \Sigma^{-1} (z - \mu)}$</td>
+<td>AUROC separation of in-dist vs noise $&gt; 0.5$</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Equivariance &amp; Group Symmetries <em>(conditional)</em></td>
+<td>Equivariance Error $\mathcal{L}_{eq} = \mathbb{E}\left[ \Vert{} f(g \cdot x) - g&#x27; \cdot f(x) \Vert{}_2^2 \right]$</td>
+<td>low</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Manifold Flatness &amp; Interpolation Validity</td>
+<td>Geodesic Interpolation Loss $\mathcal{L}_{geo} = \mathbb{E}_{\alpha \in [0,1]} \left[ \Vert{} f(\alpha x_i + (1-\alpha)x_j) - (\alpha f(x_i) + (1-\alpha)f(x_j)) \Vert{}_2^2 \right]$</td>
+<td>halt on interpolation-error spike past local tolerance</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Causal Identifiability <em>(conditional)</em></td>
+<td>Interventional Shift Variance $ISV = \text{Var}\left( z_{t+1} \mid do(a_t) \right) - \text{Var}\left( z_{t+1} \mid a_t \right)$</td>
+<td>$ISV &gt; 0$</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Controllability &amp; Reachability <em>(conditional)</em></td>
+<td>Reachability Gramian rank $\sigma_{\min}(W_R) \ge \epsilon$, $W_R = \sum_{k=0}^{K} A^k B B^T (A^T)^k$</td>
+<td>$\sigma_{\min}(W_R) \ge \epsilon$</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Temporal Hierarchy &amp; Abstraction</td>
+<td>Temporal Abstraction Decay Ratio $TAR = \frac{I(Z_{macro}; x_{t+k})}{I(z_t; x_{t+k})}$ for $k \gg 1$</td>
+<td>abstraction gain at long horizon</td>
+</tr>
+<tr>
+<td>12</td>
+<td>Protected Attribute Invariance <em>(conditional)</em></td>
+<td>Null-Space Residual $NSR = 1 - \text{Accuracy}\left( \text{Decoder}(P_{\text{null}} z_t) \to S_{\text{protected}} \right)$</td>
+<td>halt if residual decoding exceeds chance</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="5-architectural-components">5. Architectural Components</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Component</th>
+<th>Function</th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>0</strong></td>
+<td>Canonical Ingestion Interface</td>
+<td>validates the CESI schema contract (Timestamp, Entity ID, Categorical Tokens, Continuous Metrics); proves presence/absence of action arms + protected attributes</td>
+<td>core</td>
+</tr>
+<tr>
+<td><strong>A</strong></td>
+<td>Multi-Scale SSM + Payload Bypass</td>
+<td>log-spaced decay spectrum ($\rho \in [0.05, 0.82]$) + raw payload bypass routed directly to readout</td>
+<td>core</td>
+</tr>
+<tr>
+<td><strong>B</strong></td>
+<td>Soft-Orthogonal Subspace Routing</td>
+<td>block-diagonal transition $A = \text{diag}(A_1, A_2, \dots, A_k)$ + regularized cross-talk penalties</td>
+<td>core</td>
+</tr>
+<tr>
+<td><strong>C &amp; H</strong></td>
+<td>Action-Gated Operators &amp; Rollouts</td>
+<td>instantiates $B(a_t)$ when arms exist, bounded $\Vert{}B(a_t)\Vert{} \le \kappa$ to keep contractivity</td>
+<td><strong>required when arms declared</strong> (v1.0 RL, C8)</td>
+</tr>
+<tr>
+<td><strong>D</strong></td>
+<td>Memory-Bank Barlow Alignment</td>
+<td>anti-collapse decorrelation over asynchronous rolling queue $Z_{mem}$, zero batch statistics</td>
+<td>core</td>
+</tr>
+<tr>
+<td><strong>E</strong></td>
+<td>Composite Uncertainty</td>
+<td>reconstruction dispersion + Mahalanobis distance + fast/slow temporal disagreement</td>
+<td>core</td>
+</tr>
+<tr>
+<td><strong>F</strong></td>
+<td>Boundary-Gated Soft-Macro-Pooling</td>
+<td>temperature-scaled soft-reset EMA session tracking $Z_{macro}$</td>
+<td>core</td>
+</tr>
+<tr>
+<td><strong>G</strong></td>
+<td>Conditional Null-Space Fairness</td>
+<td>projects the final vector onto the orthogonal complement of protected attributes</td>
+<td>opt-in when protected attributes declared</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="6-the-two-phase-factory-pipeline-evaluation-plan">6. The Two-Phase Factory Pipeline &amp; Evaluation Plan</h2>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Encoder state</th>
+<th>Trained objective</th>
+<th>Governance</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Phase 1 — Self-Supervised Pre-Training</strong></td>
+<td>trainable</td>
+<td>predictive coding $\mathcal{L}_{pred}$ + memory-bank Barlow decorrelation $\mathcal{L}_{barlow}$</td>
+<td>Step-1 Governance Loop with fail-fast Halt Rules (C2, C3, C4)</td>
+</tr>
+<tr>
+<td><strong>Phase 2 — Frozen-Manifold Downstream Probing</strong></td>
+<td><strong>permanently locked</strong>, $z_t = \text{Encoder}(x_{1:t})$</td>
+<td>none (adapters only)</td>
+<td>each head attaches and passes its independent gate (C6, C7, C8, C9)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="7-execution-directive-implementation-blueprint">7. Execution Directive &amp; Implementation Blueprint</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Deliverable</th>
+<th>Serves</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Component 0 (CESI schema parser) with feature-type clustering + capability discovery</td>
+<td>C1</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Component A (multi-scale SSM with spectral normalization) + Payload Bypass Stream</td>
+<td>C4, C5</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Component D (memory-bank Barlow Twins loss), zero batch statistics</td>
+<td>C3, C4</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Step-1 Governance Loop evaluating all 12 operationalized metrics every $N$ steps</td>
+<td>C4</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Halt Rules for relative effective rank ($&lt; 0.15$), geodesic-interpolation spikes, null-space leakage</td>
+<td>C3</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Phase-2 frozen readout adapters: supervised, unsupervised, and RL (<code>white_queen</code> / <code>red_king</code>)</td>
+<td>C6–C9</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="8-current-state-reconciliation-grounded-2026-10-10">8. Current-State Reconciliation (grounded, 2026-10-10)</h2>
+<blockquote>
+<p><strong>Provenance.</strong> The spec above is the <em>target</em>; this section maps it to what
+actually exists in <code>wonderland/looking_glass</code>, what is <em>measured</em>, and the open
+gaps. Sources: <code>STATUS.md</code>, <code>DECISIONS.md</code>,
+<code>looking_glass/specs/ARCHITECTURE_CARD.md</code>, <code>specs/V7_RFC.md</code>,
+<code>specs/ECOM_2019_PROBE_BASELINE.md</code>, portfolio receipts, and the concurrently
+running session's probe receipts in <code>/tmp/opencode/ecomm_*.{json,md}</code>.</p>
+<p><strong>v1.0 alignment.</strong> §1.2 is the anchor for the whole document. Two governing
+decisions: (1) <strong>RL support is required</strong> — the encoder must enable
+<code>white_queen</code>/<code>red_king</code> (C8; Components C &amp; H in scope); (2) <strong>no-FAIL verdict
+law</strong> — every capability resolves to <code>PASS</code> or a ceiling-certified <code>NO_SIGNAL</code>.
+A current <code>FAIL</code> is therefore a <strong>v1.0 blocker</strong>.</p>
+<p><strong>Isolation note.</strong> A separate session is editing <code>cfm_model.py</code> /
+<code>cfm_training.py</code> / <code>probes.py</code> (DEC-057) and running ecommerce probes; this
+document was produced read-only with respect to that work.</p>
+</blockquote>
+<h3 id="81-version-reality">8.1 Version reality</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
 <td>Committed code line</td>
-<td><code>main</code> @ 0.6.9 (top commit <code>6987aed</code>); <code>CFMConfig.version = "0.6.4"</code> (<code>cfm_config.py:142</code>)</td>
+<td><code>main</code> @ <code>0.6.9</code>; <code>CFMConfig.version = "0.6.4"</code> (<code>cfm_config.py:142</code>)</td>
+</tr>
+<tr>
+<td>Versioning scheme</td>
+<td>pre-1.0 semver <code>0.MAJOR.MINOR</code> + <code>r</code> revision (DEC-058)</td>
 </tr>
 <tr>
 <td>Frozen encoder in receipts</td>
 <td><code>0.6.4r162610</code> (25k/1.5k ecommerce sample; 5-fold grouped CV)</td>
 </tr>
 <tr>
-<td>Open design RFCs</td>
-<td>0.7.0 centered-covariance SSM (<code>specs/V7_RFC.md</code>) — bilinear <code>h⊗x</code> ADVANCED (DEC-042/043)</td>
+<td>Open design RFC</td>
+<td><code>0.7.0</code> centered-covariance SSM (<code>specs/V7_RFC.md</code>) — bilinear <code>h⊗x</code> ADVANCED (DEC-042/043)</td>
 </tr>
 <tr>
 <td>In-flight (uncommitted)</td>
@@ -178,7 +619,7 @@ that work.</p>
 </tr>
 <tr>
 <td>Certified streams</td>
-<td>rabbit_hole 11/11 portfolio + 6/6 intrinsic; Instacart 11/11 + 6/6</td>
+<td>rabbit_hole 11/11 + 6/6; Instacart 11/11 + 6/6</td>
 </tr>
 <tr>
 <td>Weak stream</td>
@@ -186,17 +627,11 @@ that work.</p>
 </tr>
 </tbody>
 </table>
-<p>The 0.9.3 spec is a <em>re-architecture</em> (telemetry-agnostic factory, CESI, 12-metric
-governor). The current system is a <strong>single frozen multi-scale SSM donor</strong> with a
-13-objective self-supervised portfolio and honest, scale-free gates. 0.9.3 is a
-superset: most of §2/§3 already exists in a weaker form; §4's opt-in causal/fairness
-arms do not.</p>
-<h3 id="72-guardrails-ai-target-as-built">7.2 Guardrails A–I: target → as-built</h3>
+<h3 id="82-guardrails-ai-target-as-built">8.2 Guardrails A–I: target → as-built</h3>
 <table>
 <thead>
 <tr>
 <th>Guardrail</th>
-<th>0.9.3 target</th>
 <th>As-built today</th>
 <th>Status</th>
 </tr>
@@ -204,66 +639,56 @@ arms do not.</p>
 <tbody>
 <tr>
 <td><strong>A</strong> Normalization by construction</td>
-<td>per-sample $\sigma\approx1$ inside recurrent mixer; raw magnitude preserved via bypass</td>
-<td><code>RMSNorm</code> on SSM input + readout, per-sample (<code>cfm_model.py:69</code>); value/trend carried by separate token channels; DEC-047 fixed unbounded readout ($|\max|$ 900→3.4)</td>
-<td>✅ core; "Payload Bypass Stream" only partial (§7.4-A)</td>
+<td><code>RMSNorm</code> per-sample on SSM input + readout (<code>cfm_model.py:69</code>); value/trend on separate token channels; DEC-047 fixed unbounded readout ($|\max|$ 900→3.4)</td>
+<td>core; Payload Bypass partial</td>
 </tr>
 <tr>
 <td><strong>B</strong> Fail-fast tensor health</td>
-<td>Step-0 halts on NaN/Inf/$&gt;10^4$/$\sigma^2&lt;10^{-6}$</td>
-<td><code>assert_readout_health</code> (<code>cfm_model.py:92</code>) + <code>model_health</code> (<code>:116</code>): magnitude / variance / spectral-bound / rank / determinism, run before training (DEC-049)</td>
-<td>✅</td>
+<td><code>assert_readout_health</code> (<code>:92</code>) + <code>model_health</code> (<code>:116</code>): magnitude / variance / spectral-bound / rank / determinism (DEC-049)</td>
+<td>done</td>
 </tr>
 <tr>
 <td><strong>C</strong> Bounded operator dynamics</td>
-<td>$\rho&lt;1$ via spectral normalization on $A$</td>
-<td><code>decay = exp(−softplus(·)) ∈ (0,1)</code> — contractive <strong>by construction</strong>; health check asserts every transition decay in (0,1) (<code>cfm_model.py:120-140</code>). Diagonal map, so no explicit spectral-normalized dense $A$</td>
-<td>✅ (stronger-by-construction)</td>
+<td><code>decay = exp(−softplus(·)) ∈ (0,1)</code> contractive by construction; asserted (<code>cfm_model.py:120-140</code>)</td>
+<td>done (stronger)</td>
 </tr>
 <tr>
 <td><strong>D</strong> Zero supervised loss hacks</td>
-<td>ban focal / class weights / manual balancing</td>
-<td>No focal loss, no class weights; DEC-044 removed all <em>soft loss-invariant</em> penalties; <code>weight_mode=equal</code>; probes report plain CE/MSE</td>
-<td>✅</td>
+<td>no focal/class weights; DEC-044 removed soft loss-invariants; <code>weight_mode=equal</code>; plain CE/MSE probes</td>
+<td>done</td>
 </tr>
 <tr>
 <td><strong>E</strong> Anti-collapse</td>
-<td>asynchronous memory-bank decorrelation</td>
-<td><code>GeometryBank</code> 8192-state FIFO + closed-loop (PID-like) governor, <code>cfm_training.py:1154</code> (DEC-019); batch-statistics decorrelation removed (DEC-044)</td>
-<td>🟡 memory-bank exists but <strong>not</strong> a Barlow-Twins loss</td>
+<td><code>GeometryBank</code> 8192-state FIFO + closed-loop governor (<code>cfm_training.py:1154</code>, DEC-019); batch-stat decorrelation removed (DEC-044)</td>
+<td>bank only — <strong>not</strong> Barlow</td>
 </tr>
 <tr>
 <td><strong>F</strong> Identifiability ceiling</td>
-<td>grade stream vs entropy ceiling before compute</td>
-<td>DEC-046 three-way layer (PASS / FAIL_LOW_EFFECT_SIZE / NO_IDENTIFIABLE_SIGNAL, degenerate precedence, never PASS); signal floor documented for ecommerce (MI ≈ 0.05 nats)</td>
-<td>✅ identifiability; ❌ pre-compute <em>entropy ceiling</em> gate</td>
+<td>DEC-046 three-way layer; ecommerce signal floor (MI ≈ 0.05 nats)</td>
+<td>identifiability yes; <strong>no pre-compute ceiling</strong>; <code>FAIL_LOW_EFFECT_SIZE</code> must be retired</td>
 </tr>
 <tr>
 <td><strong>G</strong> Strict causal arrow</td>
-<td>zero look-ahead in mixing</td>
-<td>SSM recurrences are strictly causal; masked-reconstruction target is the masked position only; <code>_causal</code> probe in <code>cfm_validation.py:237</code></td>
-<td>✅</td>
+<td>SSM strictly causal; masked target only; <code>_causal</code> probe (<code>cfm_validation.py:237</code>)</td>
+<td>done</td>
 </tr>
 <tr>
 <td><strong>H</strong> Absorbing-state prevention</td>
-<td>$\sigma_{\min}(A)\ge\epsilon=10^{-4}$</td>
-<td><code>decay∈(0,1)</code> and <code>1−decay</code> mixing means the state never freezes to an absorbing point; no explicit $\sigma_{\min}$ floor literal</td>
-<td>🟡 structural, not a measured floor</td>
+<td><code>decay∈(0,1)</code> + <code>1−decay</code> mixing ⇒ no absorbing point</td>
+<td>structural, not a measured floor</td>
 </tr>
 <tr>
 <td><strong>I</strong> Information invertibility bound</td>
-<td>$I(x_t;z_t)\ge H_{min}$</td>
-<td>Conservation ratio <code>R_cons = Tr(Σ_readout)/P_in ≈ 1</code> (measured 0.90–1.05 across streams); Markov sufficiency gap vs shuffled null</td>
-<td>🟡 conservation proxy, not an MI lower bound</td>
+<td>conservation ratio <code>R_cons = Tr(Σ_readout)/P_in ≈ 1</code> (0.90–1.05); Markov-sufficiency gap</td>
+<td>proxy, not an MI bound</td>
 </tr>
 </tbody>
 </table>
-<h3 id="73-the-12-governance-metrics-target-as-built">7.3 The 12 governance metrics: target → as-built</h3>
+<h3 id="83-the-12-governance-metrics-target-as-built">8.3 The 12 governance metrics: target → as-built</h3>
 <table>
 <thead>
 <tr>
 <th>#</th>
-<th>0.9.3 metric</th>
 <th>As-built</th>
 <th>Status</th>
 </tr>
@@ -271,152 +696,125 @@ arms do not.</p>
 <tbody>
 <tr>
 <td>1</td>
-<td>Effective Rank Ratio + halt if <code>ER/ER_base &lt; 0.15</code></td>
-<td>Participation-ratio <code>PR/dim</code> in the geometry gate (<code>portfolio.py</code>), self-calibrating per-stream floor; Marchenko–Pastur null reported. <strong>No</strong> relative baseline-ratio halt</td>
-<td>🟡</td>
+<td>participation-ratio <code>PR/dim</code> geometry gate + Marchenko–Pastur null; <strong>no</strong> relative-baseline halt</td>
+<td>partial</td>
 </tr>
 <tr>
 <td>2</td>
-<td>Alignment &amp; Uniformity</td>
-<td><code>contrast</code> InfoNCE objective enforces uniformity; no explicit alignment term</td>
-<td>🟡 (uniformity only)</td>
+<td><code>contrast</code> InfoNCE (uniformity) only</td>
+<td>partial</td>
 </tr>
 <tr>
 <td>3</td>
-<td>Time's-Arrow Asymmetry <code>TAA&gt;0</code></td>
-<td><code>order</code> probe (event vs random alternative); no forward/backward TAA statistic</td>
-<td>❌</td>
+<td><code>order</code> probe; no forward/backward <code>TAA</code></td>
+<td>absent</td>
 </tr>
 <tr>
 <td>4</td>
-<td>Total Correlation <code>TC</code></td>
-<td><code>intrinsic._disentanglement</code> channel-MI (kNN vs shuffled null); <code>decorr</code> Gram law. Not a TC estimator</td>
-<td>🟡</td>
+<td><code>intrinsic._disentanglement</code> channel-MI; <code>decorr</code> Gram law; no <code>TC</code> estimator</td>
+<td>partial</td>
 </tr>
 <tr>
 <td>5</td>
-<td>Augmentation Invariance Distance</td>
-<td>Not implemented (v8 Capability 11 "Nuisance Invariance", conceptual)</td>
-<td>❌</td>
+<td>not implemented (0.8 Capability 11)</td>
+<td>absent</td>
 </tr>
 <tr>
 <td>6</td>
-<td>OOD AUROC (Mahalanobis)</td>
-<td><code>uncertainty</code> capability probe uses entropy of the next-head softmax (AUROC) instead of Mahalanobis; currently AUROC 0.500 on ecommerce</td>
-<td>🟡 different estimator, failing</td>
+<td><code>uncertainty</code> probe = next-head entropy, not Mahalanobis; AUROC 0.500</td>
+<td>different / failing</td>
 </tr>
 <tr>
 <td>7</td>
-<td>Equivariance error (conditional)</td>
-<td>Not implemented</td>
-<td>❌</td>
+<td>not implemented</td>
+<td>absent</td>
 </tr>
 <tr>
 <td>8</td>
-<td>Geodesic Interpolation Loss (+halt)</td>
-<td>Not implemented</td>
-<td>❌</td>
+<td>not implemented</td>
+<td>absent</td>
 </tr>
 <tr>
 <td>9</td>
-<td>Interventional Shift Variance (conditional)</td>
-<td>Not implemented (v8 Capability 9 "Action Conditioning", conceptual)</td>
-<td>❌</td>
+<td>not implemented (0.8 Capability 9)</td>
+<td><strong>required for C8</strong></td>
 </tr>
 <tr>
 <td>10</td>
-<td>Reachability Gramian rank (conditional)</td>
-<td>Not implemented</td>
-<td>❌</td>
+<td>not implemented</td>
+<td>absent</td>
 </tr>
 <tr>
 <td>11</td>
-<td>Temporal Abstraction Decay Ratio</td>
-<td><code>agg</code> multi-horizon skill (information plane) is a proxy; no macro-state (v8 Capability 10, conceptual)</td>
-<td>🟡 proxy</td>
+<td><code>agg</code> multi-horizon proxy; no macro-state (0.8 Capability 10)</td>
+<td>proxy</td>
 </tr>
 <tr>
 <td>12</td>
-<td>Null-Space Residual fairness (conditional)</td>
-<td>Not implemented (Component G, absent)</td>
-<td>❌</td>
+<td>not implemented (Component G absent)</td>
+<td>absent</td>
 </tr>
 </tbody>
 </table>
-<p>Net: <strong>~3 of 12</strong> exist substantively (1, 2-partial, 4-partial); the conditional
-metrics (7, 9, 10, 12) require causal arms / protected attributes that the current
-CESI does not yet carry.</p>
-<h3 id="74-components-0ah-target-as-built">7.4 Components 0/A–H: target → as-built</h3>
+<h3 id="84-components-0ah-target-as-built">8.4 Components 0/A–H: target → as-built</h3>
 <table>
 <thead>
 <tr>
 <th>Component</th>
-<th>0.9.3</th>
 <th>As-built</th>
 <th>Status</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>0</strong> CESI schema parser + capability discovery</td>
-<td>Validate Timestamp/Entity/Tokens/Metrics; detect optional action arms &amp; protected attrs</td>
-<td><code>rabbit_hole/schema.py</code> + <code>canonicalize_row</code>; <code>EventVocab.build</code> derives vocabulary from data; DEC-053 canonical 5-field schema (<code>customer_key, event_ts, event_type, source_table, event_attributes</code>). <strong>No</strong> action-arm / protected-attribute declaration</td>
-<td>🟡 parser yes; capability discovery partial</td>
+<td><strong>0</strong> CESI parser + discovery</td>
+<td><code>rabbit_hole/schema.py</code> + <code>canonicalize_row</code>; <code>EventVocab.build</code>; DEC-053 5-field schema; no arms/protected declaration</td>
+<td>parser yes; discovery partial</td>
 </tr>
 <tr>
-<td><strong>A</strong> Multi-scale SSM + payload bypass</td>
-<td>log-spaced decay + raw payload routed to readout</td>
-<td><code>MultiScaleSSM</code> (<code>cfm_model.py:417</code>), learned per-channel log-uniform $\delta$ spectrum; <strong>payload bypass</strong> = DEC-057 event-identity one-hots written into the first <code>2·(n_et+1)</code> readout dims (<code>encode_ev</code>, uncommitted)</td>
-<td>🟡 bypass is event-identity only</td>
+<td><strong>A</strong> SSM + payload bypass</td>
+<td><code>MultiScaleSSM</code> (<code>cfm_model.py:417</code>) learned log-uniform δ spectrum; bypass = DEC-057 event-identity one-hots in first <code>2·(n_et+1)</code> readout dims</td>
+<td>bypass is event-identity only</td>
 </tr>
 <tr>
-<td><strong>B</strong> Soft-orthogonal subspace routing</td>
-<td>block-diagonal $A=\mathrm{diag}(A_1..A_k)$ + cross-talk penalty</td>
-<td>Band isolation: <code>W_δ</code>/<code>W_B</code> made block-diagonal between fast/slow bands; <code>ortho</code> cross-covariance objective; <code>slow_channel_mask</code> derived from learned spectrum (ARCHITECTURE_CARD §2.4)</td>
-<td>🟡 2-band, not learned $k$-way</td>
+<td><strong>B</strong> subspace routing</td>
+<td>fast/slow band block-diagonal <code>W_δ</code>/<code>W_B</code> + <code>ortho</code> objective + <code>slow_channel_mask</code></td>
+<td>2-band, not learned $k$-way</td>
 </tr>
 <tr>
-<td><strong>C &amp; H</strong> Conditional action-gated $B(a_t)$</td>
-<td>opt-in when action arms exist, bounded $\|B\|\le\kappa$</td>
-<td>rabbit_hole <em>has</em> randomized email arms + logged propensity, but the encoder does <strong>not</strong> condition on actions; v8 Capability 9 is conceptual only</td>
-<td>❌</td>
+<td><strong>C &amp; H</strong> action-gated operators</td>
+<td>arms + propensity exist in rabbit_hole, but encoder does <strong>not</strong> condition on actions; 0.8 Cap 9 conceptual</td>
+<td><strong>v1.0 blocker (C8)</strong></td>
 </tr>
 <tr>
-<td><strong>D</strong> Memory-bank Barlow Alignment</td>
-<td>Barlow decorrelation over async rolling queue, zero batch stats</td>
-<td>Memory bank + governor exist (<code>cfm_training.py:1154</code>); soft decorrelation objectives <strong>removed</strong> by DEC-044 in favor of structural rank (<code>h⊗x</code>). No Barlow-Twins objective</td>
-<td>❌</td>
+<td><strong>D</strong> memory-bank Barlow</td>
+<td>bank + governor exist (<code>cfm_training.py:1154</code>); soft decorrelation removed (DEC-044); no Barlow loss</td>
+<td>absent (bank only)</td>
 </tr>
 <tr>
-<td><strong>E</strong> Composite Uncertainty</td>
-<td>reconstruction dispersion + Mahalanobis + fast/slow disagreement</td>
-<td>Single derived entropy probe (<code>probes.py:420</code>, DEC-056); red_queen <code>value_sd</code> is all-zero (ROADMAP P2-2)</td>
-<td>❌</td>
+<td><strong>E</strong> composite uncertainty</td>
+<td>single entropy probe (<code>probes.py:420</code>); red_queen <code>value_sd</code> all-zero</td>
+<td>absent</td>
 </tr>
 <tr>
-<td><strong>F</strong> Boundary-gated soft-macro-pooling</td>
-<td>temperature-scaled soft-reset EMA $Z_{macro}$</td>
-<td><code>boundary</code> capability probe (AUROC 0.669); no <code>Z_macro</code> (v8 Capability 10 conceptual)</td>
-<td>❌</td>
+<td><strong>F</strong> macro-pooling</td>
+<td><code>boundary</code> probe (AUROC 0.669); no <code>Z_macro</code></td>
+<td>absent</td>
 </tr>
 <tr>
-<td><strong>G</strong> Conditional null-space fairness</td>
-<td>project onto complement of protected attrs</td>
-<td>Not implemented</td>
-<td>❌</td>
+<td><strong>G</strong> fairness</td>
+<td>not implemented</td>
+<td>absent</td>
 </tr>
 </tbody>
 </table>
-<h3 id="75-measured-results-the-other-sessions-running-receipts">7.5 Measured results (the other session's running receipts)</h3>
-<p><strong>Frozen encoder <code>0.6.4r162610</code>, 5-fold grouped CV, ecommerce_2019</strong> (worst-case
-stream; <code>/tmp/opencode/ecomm_70.md</code>, <code>/tmp/opencode/ecomm_8cap2.md</code>, and the
-<code>specs/ECOM_2019_PROBE_BASELINE.md</code> baseline):</p>
+<h3 id="85-measured-results-frozen-encoder-064r162610-ecommerce_2019">8.5 Measured results — frozen encoder <code>0.6.4r162610</code>, ecommerce_2019</h3>
 <table>
 <thead>
 <tr>
 <th>objective</th>
 <th>model</th>
-<th>baseline (1-gram/unigram)</th>
+<th>baseline</th>
 <th>Δ</th>
 <th>verdict</th>
 </tr>
@@ -427,7 +825,7 @@ stream; <code>/tmp/opencode/ecomm_70.md</code>, <code>/tmp/opencode/ecomm_8cap2.
 <td>0.281</td>
 <td>0.238</td>
 <td>−0.043</td>
-<td>FAIL (does not beat 1-gram)</td>
+<td>FAIL</td>
 </tr>
 <tr>
 <td>mask</td>
@@ -480,54 +878,240 @@ stream; <code>/tmp/opencode/ecomm_70.md</code>, <code>/tmp/opencode/ecomm_8cap2.
 </tr>
 </tbody>
 </table>
-<p>Capabilities (DEC-056): <strong>pacing PASS</strong> (1.87 vs 2.57), <strong>boundary PASS</strong>
-(AUROC 0.653 vs 0.500), <strong>uncertainty FAIL</strong> (AUROC 0.500). Event-identity
-decodability <code>z_t → current event</code>: acc 0.945, macro-F1 0.448, CE 0.185 —
-improving across the running session's DEC-057 iterations (macro-F1 0.448 → 0.746
-→ 0.809, CE 0.185 → 0.091 → 0.069).</p>
-<p><strong>Interpretation.</strong> The failure is a <strong>low-effect-size / optimisation limit on a
-stream whose cart→purchase MI ≈ 0.05 nats</strong>, not an identity-exposure defect
-(DEC-052 patch-admissibility rule triggered NO patch). The running DEC-057 work
-adds a <em>dedicated event-identity bypass + dedicated mask head</em> to give a linear
-head the Markov transition at full scale without a loss hack — consistent with
-0.9.3 Component A's Payload Bypass but not yet validated on a full budget.</p>
-<h3 id="76-gap-analysis-what-093-requires-that-does-not-exist">7.6 Gap analysis — what 0.9.3 requires that does not exist</h3>
+<p>Capabilities (DEC-056): pacing PASS (1.87 vs 2.57), boundary PASS (AUROC 0.653),
+uncertainty FAIL (AUROC 0.500). Event-identity decodability <code>z_t → current event</code>:
+acc 0.945, macro-F1 0.448 — rising across DEC-057 iterations (macro-F1 0.448 →
+0.746 → 0.809).</p>
+<blockquote>
+<p>Under §1.2 this is a <strong>v1.0 blocker</strong>: every <code>FAIL</code> must become a <code>PASS</code> (real
+fix) or a certified <code>NO_SIGNAL</code> (independent stream-side ceiling). Cart→purchase
+MI ≈ 0.05 nats is the candidate ceiling for <code>next</code>/<code>mask</code>. <code>FAIL_LOW_EFFECT_SIZE</code>
+is retired.</p>
+</blockquote>
+<h3 id="86-v10-gap-register">8.6 v1.0 gap register</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Gap</th>
+<th>Blocks</th>
+<th>Detail</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>CESI capability discovery</td>
+<td>C1</td>
+<td>no declaration/parse of action arms or protected attributes</td>
+<td>open</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Action-conditioned operators</td>
+<td><strong>C8</strong></td>
+<td>encoder does not condition on actions (<code>B(a_t)</code> absent)</td>
+<td>open</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Memory-bank Barlow loss</td>
+<td>C3, C4</td>
+<td>governor + bilinear rank only; soft decorrelation removed (DEC-044)</td>
+<td>open</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Composite uncertainty</td>
+<td>C5</td>
+<td>entropy probe only; no dispersion/Mahalanobis/disagreement</td>
+<td>open</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Macro-state pooling</td>
+<td>C4</td>
+<td>no <code>Z_macro</code>; boundary signal weak (AUROC 0.669)</td>
+<td>open</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Fairness null-space</td>
+<td>C4</td>
+<td>Component G absent</td>
+<td>open</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Full 12-metric governance loop</td>
+<td>C4</td>
+<td>current loop = structure-skill + 5 intrinsic proofs</td>
+<td>open</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Geodesic / equivariance / TAA estimators</td>
+<td>C4</td>
+<td>metrics 3, 7, 8 absent</td>
+<td>open</td>
+</tr>
+<tr>
+<td>9</td>
+<td>No-FAIL verdict machinery</td>
+<td>C2–C5</td>
+<td><code>FAIL_LOW_EFFECT_SIZE</code> still emitted; ceiling must be stream-side</td>
+<td>open</td>
+</tr>
+</tbody>
+</table>
+<h3 id="87-doctrine-reconciliation">8.7 Doctrine reconciliation</h3>
+<table>
+<thead>
+<tr>
+<th>Repo law</th>
+<th>Requirement on the spec</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>No magic numbers</td>
+<td>spec literals ($10^4$, $10^{-6}$, $10^{-4}$, <code>0.15</code>) become derived/calibrated fallbacks with receipts</td>
+</tr>
+<tr>
+<td>No batch-coupled statistics (DEC-036)</td>
+<td>any Barlow/ZCA path must be a frozen per-sample transform at serve (batch-fit manufactures rank — V7_RFC §8.2)</td>
+</tr>
+<tr>
+<td>Invariants by construction, not soft penalties (DEC-042/044)</td>
+<td>prefer structural mechanisms (<code>decay=exp(−softplus)</code>, bilinear rank, bounded gates) over loss terms</td>
+</tr>
+<tr>
+<td>Gate on ground truth, never weaken gates</td>
+<td>failing capabilities are fixed or certified <code>NO_SIGNAL</code> — never relabeled</td>
+</tr>
+<tr>
+<td>Prefer deletion over accretion</td>
+<td>promote a component only when a measured spike beats the current mechanism</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="9-structured-capability-model-the-macro-how">9. Structured Capability Model (the macro HOW)</h2>
+<p>This section is the working bridge between the target (&sect;4&ndash;&sect;5) and the
+as-built (&sect;8). It defines, structurally, <em>why</em> a capability succeeds and
+<em>where</em> to act when it does not. We evolve this section as the macro
+architecture and the probe harness change &mdash; it is the model that tells us
+what to build next rather than chasing one failure at a time.</p>
+
+<h3 id="91-the-capability-success-law">9.1 The capability success law</h3>
+<p>For a capability <em>c</em> on a stream <em>s</em>, with <code>z_t</code> the frozen
+foundational embedding, define four predicates:</p>
+<table>
+<thead><tr><th>Predicate</th><th>Meaning</th><th>Measured by</th></tr></thead>
+<tbody>
+<tr><td><strong>CARRIED</strong>(s,c)</td><td>the stream carries the signal</td><td>independent stream-side ceiling (&sect;3-F): a model-free ceiling predictor beats the trivial baseline by &gt; noise</td></tr>
+<tr><td><strong>PRESERVED</strong>(z,c)</td><td>the contractive core retains the signal through the mixer</td><td>oracle probe on the pre-readout hidden state <code>H_t</code> beats the baseline</td></tr>
+<tr><td><strong>EXPOSED</strong>(z,c)</td><td><code>z_t</code> surfaces the signal to a probe</td><td>probe on <code>z_t</code> beats the baseline</td></tr>
+<tr><td><strong>BEATS</strong>(z,c)</td><td>the model (frozen <code>z_t</code>) beats the model-free baseline</td><td>capability probe, margin &gt; 2&middot;SE</td></tr>
+</tbody>
+</table>
+<p><strong>PASS</strong> &hArr; CARRIED &and; PRESERVED &and; EXPOSED &and; BEATS.<br>
+<strong>NO_SIGNAL</strong> &hArr; &not;CARRIED (certified before compute).<br>
+<strong>FAIL</strong> &hArr; CARRIED &and; &not;(PRESERVED &and; EXPOSED &and; BEATS).</p>
+<p>The law <em>localises</em> a failure and dictates the fix &mdash; the macro
+decision procedure:</p>
+<table>
+<thead><tr><th>Failure</th><th>Diagnosis</th><th>Macro action</th></tr></thead>
+<tbody>
+<tr><td>&not;CARRIED</td><td>stream cannot carry the target</td><td>certify NO_SIGNAL (stream-side ceiling, no compute)</td></tr>
+<tr><td>CARRIED &and; &not;PRESERVED</td><td>the recurrent core destroys the signal</td><td>core change: add/repair the channel or timescale that retains it (Component A/B)</td></tr>
+<tr><td>CARRIED &and; PRESERVED &and; &not;EXPOSED</td><td>the readout does not surface it</td><td>readout change: a bypass channel for that capability&rsquo;s input (Component A, Payload Bypass)</td></tr>
+<tr><td>CARRIED &and; PRESERVED &and; EXPOSED &and; &not;BEATS</td><td>information is present but the head does not use it</td><td>head/objective change: dedicated head, convergence, de-sharing &mdash; never a loss hack</td></tr>
+</tbody>
+</table>
+<p><strong>Worked examples from the record:</strong> <code>next</code> was CARRIED
+(1-gram beats marginal, MI&asymp;0.05) but &not;EXPOSED (the recurrent readout washed
+the event identity out) &mdash; fixed by the event-identity bypass, not by tuning.
+<code>entity</code> is &not;CARRIED on ecommerce (<code>entity_type</code> is the
+constant <code>&quot;product&quot;</code>) &rarr; NO_SIGNAL. <code>uncertainty</code>
+is EXPOSED but &not;BEATS (derived entropy AUROC 0.500) &rarr; objective change or
+NO_SIGNAL.</p>
+
+<h3 id="92-macro-dataflow">9.2 Macro dataflow &mdash; one pipeline, an invariant at every boundary</h3>
+<table>
+<thead><tr><th>#</th><th>Boundary</th><th>Transform</th><th>Invariant / Guardrail</th><th>Component</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>raw &rarr; CESI</td><td>canonicalise to the 5 universal fields; discover arms / protected attributes / feature types</td><td>schema contract; A at ingestion</td><td>0</td></tr>
+<tr><td>2</td><td>CESI &rarr; channels</td><td>event-id, entity-id, magnitude (payload), time &rarr; per-sample-normalised token contributions</td><td>A (per-sample, &sigma;&asymp;1)</td><td>A</td></tr>
+<tr><td>3</td><td>channels &rarr; hidden state <code>H_t</code></td><td>multi-scale contractive selective SSM + block-diagonal subspace routing</td><td>C (&rho;&lt;1), B (block-diagonal), G (causal), H (no absorbing state)</td><td>A, B</td></tr>
+<tr><td>4</td><td>core &rarr; readout</td><td>normalise the state <em>and</em> <strong>bypass each channel&rsquo;s identity</strong> to the readout</td><td>A (per-sample); <strong>EXPOSED is decided here</strong></td><td>A (Payload Bypass)</td></tr>
+<tr><td>5</td><td>readout &rarr; <code>z_t</code></td><td>fixed-dim, per-sample-normalised foundational embedding</td><td>A; I (invertibility floor)</td><td>A</td></tr>
+<tr><td>6</td><td><code>z_t</code> &rarr; heads</td><td>frozen; supervised / unsupervised / RL adapters read read-only</td><td>no weight change to the encoder</td><td>C&ndash;H (C8)</td></tr>
+</tbody>
+</table>
+<p><strong>Macro principle:</strong> every capability maps to an <em>input channel</em>
+that must be PRESERVED through &sect;9.2.3 and EXPOSED at &sect;9.2.4. A capability
+fails when the pipeline drops its channel somewhere; the fix is to carry it
+(&sect;9.2.3) or surface it (&sect;9.2.4), never to bolt on a loss.</p>
+
+<h3 id="93-master-traceability-matrix">9.3 Master traceability matrix</h3>
+<table>
+<thead><tr><th>Capability</th><th>Input channel</th><th>Core mechanism</th><th>Exposure (&sect;9.2.4)</th><th>Probe</th><th>Model-free baseline</th><th>C</th><th>Status</th></tr></thead>
+<tbody>
+<tr><td>next</td><td>event-id (t)</td><td>fast band</td><td>event bypass (t) &mdash; <strong>DEC-057</strong></td><td>linear <code>z_t&rarr;e_{t+1}</code></td><td>1-gram</td><td>C5</td><td>FAIL &rarr; beats 1-gram after bypass (eval pending)</td></tr>
+<tr><td>mask</td><td>event-id (t)</td><td>fast band</td><td>event bypass (masked fwd)</td><td>linear masked-<code>z&rarr;e_t</code></td><td>1-gram</td><td>C5</td><td>FAIL (borderline)</td></tr>
+<tr><td>value</td><td>magnitude</td><td>magnitude channel</td><td><strong>payload bypass (absent)</strong></td><td>regression</td><td>naive prev-value</td><td>C5</td><td>FAIL &rarr; needs payload bypass</td></tr>
+<tr><td>sf</td><td>event-id (future)</td><td>slow band</td><td>readout (undetermined)</td><td>reg discounted counts</td><td>historical mean</td><td>C5</td><td>FAIL &rarr; diagnose PRESERVED/EXPOSED</td></tr>
+<tr><td>order</td><td>session outcome</td><td>slow band</td><td>state</td><td>seq-level</td><td>majority class</td><td>C5</td><td>PASS</td></tr>
+<tr><td>agg</td><td>magnitudes</td><td>core</td><td>&mdash;</td><td>window agg regression</td><td>historical mean</td><td>C5</td><td>PASS</td></tr>
+<tr><td>dt</td><td>time</td><td>time channel</td><td>payload bypass (absent)</td><td>regression</td><td>naive prev-value</td><td>C5</td><td>NO_SIGNAL (ecom)</td></tr>
+<tr><td>query</td><td>time / event-id</td><td>faded state</td><td>&mdash;</td><td>regression</td><td>naive prev-value</td><td>C5</td><td>NO_SIGNAL (ecom)</td></tr>
+<tr><td>entity</td><td>entity-id</td><td>entity channel</td><td>(absent)</td><td>categorical</td><td>majority class</td><td>C5</td><td>NO_SIGNAL (ecom: constant)</td></tr>
+<tr><td>pacing</td><td>time</td><td>slow band</td><td>&mdash;</td><td>session velocity (MSE)</td><td>historical mean</td><td>C4/C5</td><td>PASS</td></tr>
+<tr><td>boundary</td><td>gap / session</td><td>&mdash;</td><td>&mdash;</td><td>AUROC reset</td><td>0.5</td><td>C4</td><td>PASS (AUROC 0.67)</td></tr>
+<tr><td>uncertainty</td><td>error / dispersion</td><td>&mdash;</td><td>derived channel (E)</td><td>AUROC (in vs OOD)</td><td>0.5</td><td>C5</td><td>FAIL (&not;BEATS)</td></tr>
+<tr><td>intervention_effect</td><td>action arm</td><td><strong>action-gated B(a_t)</strong> (C/H)</td><td>readout</td><td>counterfactual (IPW)</td><td>IPW truth</td><td>C8</td><td>ABSENT (v1.0 blocker)</td></tr>
+<tr><td>macro_order</td><td>boundary + slow</td><td><strong>macro-pool Z_macro</strong> (F)</td><td><code>Z_macro</code> block</td><td>seq-level</td><td>majority class</td><td>C4</td><td>ABSENT</td></tr>
+</tbody>
+</table>
+
+<h3 id="94-probe-specification">9.4 Probe specification &mdash; the measurement layer</h3>
+<p>One harness (<code>looking_glass.probes</code>): encoder <strong>frozen</strong>
+(fail-fast if any gradient reaches it); one fold split (grouped by held-out
+customer); one target mask (drop company-action and end-of-sequence-pad targets);
+Linear <em>and</em> shallow-MLP heads; plain CE / MSE / AUROC; ECE for categorical.
+Every probe reports model, baseline, ceiling, &Delta; vs baseline, SE across folds,
+and a &sect;1.2 verdict.</p>
+<table>
+<thead><tr><th>Probe</th><th>Target</th><th>Head</th><th>Metric</th><th>Model-free baseline</th><th>Gate</th></tr></thead>
+<tbody>
+<tr><td>next / mask / entity</td><td>categorical event field</td><td>linear+MLP</td><td>CE</td><td>unigram &amp; 1-gram</td><td>model &lt; stronger baseline &minus; 2&middot;SE</td></tr>
+<tr><td>dt / value / agg / query</td><td>continuous payload</td><td>linear+MLP</td><td>MSE</td><td>historical mean &amp; previous-value</td><td>model &lt; stronger baseline &minus; 2&middot;SE</td></tr>
+<tr><td>order</td><td>sequence-level binary</td><td>linear+MLP</td><td>AUROC</td><td>majority class</td><td>model &gt; baseline</td></tr>
+<tr><td>jepa / sf</td><td>latent future / successor</td><td>linear+MLP</td><td>cosine / MSE</td><td>mean &amp; random embedding</td><td>model &lt; stronger baseline &minus; 2&middot;SE</td></tr>
+<tr><td>pacing</td><td>session velocity</td><td>ridge</td><td>MSE</td><td>historical mean</td><td>model &lt; baseline &minus; 2&middot;SE</td></tr>
+<tr><td>boundary</td><td>next-event session reset</td><td>logistic</td><td>AUROC</td><td>0.5</td><td>&gt; 0.5 + 2&middot;SE</td></tr>
+<tr><td>uncertainty</td><td>in-dist vs injected OOD</td><td>derived (no head)</td><td>AUROC</td><td>0.5</td><td>&gt; 0.5 + 2&middot;SE</td></tr>
+<tr><td>intervention_effect</td><td>&Delta; outcome | action</td><td>linear+MLP</td><td>incremental margin</td><td>IPW / logging</td><td>&gt; logging, calibrated</td></tr>
+</tbody>
+</table>
+
+<h3 id="95-build-dependency-graph">9.5 Build dependency graph (what unblocks what)</h3>
 <ol>
-<li><strong>CESI capability discovery</strong> (§4-0): no declaration/parse of optional action
-   arms or protected attributes.</li>
-<li><strong>Barlow-Twins memory-bank loss</strong> (§4-D, §5 Phase 1 $\mathcal{L}_{barlow}$):
-   only a geometry governor + structural bilinear rank; soft decorrelation was
-   deliberately removed (DEC-044). Reintroducing Barlow must clear the doctrine
-   ban on batch-coupled statistics (frozen transform at serve).</li>
-<li><strong>Composite uncertainty</strong> (§4-E): needs reconstruction dispersion +
-   Mahalanobis + fast/slow disagreement, wired to a calibrated interval.</li>
-<li><strong>Macro-state pooling</strong> (§3-11, §4-F): <code>Z_macro</code> with a <strong>soft, differentiable</strong>
-   boundary gate (the <code>boundary</code> signal is weak on ecommerce, AUROC 0.669).</li>
-<li><strong>Causal action conditioning</strong> (§4-C/H, §3-9/10): only meaningful on
-   randomized streams (rabbit_hole has arms; ecommerce is observational).</li>
-<li><strong>Fairness null-space</strong> (§4-G, §3-12): absent.</li>
-<li><strong>Governance loop for all 12 metrics</strong> (§3, §6-4): the current loop grades
-   structure-skill + 5 intrinsic proofs, not the 0.9.3 metric set; halts exist for
-   divergence/degeneracy, not for <code>ER ratio &lt; 0.15</code> / geodesic-spike / NSR leakage.</li>
-<li><strong>Geodesic / equivariance / TAA estimators</strong> (§3-3, 7, 8): not implemented.</li>
+<li><strong>Stream-side identifiability ceiling (&sect;3-F)</strong> &mdash; prerequisite for the whole no-FAIL law: certifies &not;CARRIED (NO_SIGNAL) before compute and retires <code>FAIL_LOW_EFFECT_SIZE</code>. Unblocks C2&ndash;C5.</li>
+<li><strong>Payload Bypass Stream (Component A)</strong> &mdash; the general EXPOSED mechanism; event-id bypass (DEC-057) proves it fixes <code>next</code>; extend to magnitude (fixes <code>value</code>/<code>dt</code>) and entity-id. Unblocks C4/C5.</li>
+<li><strong>Core PRESERVED check</strong> &mdash; an oracle probe on <code>H_t</code> to separate &not;PRESERVED from &not;EXPOSED (so we fix the right stage). Unblocks diagnosis.</li>
+<li><strong>Action-conditioned operators (C&amp;H)</strong> &mdash; required for C8 (RL, white_queen/red_king); testable on rabbit_hole only. Unblocks C8.</li>
+<li><strong>Memory-bank Barlow (D)</strong> &mdash; anti-collapse decorrelation over an asynchronous queue (train-time; frozen per-sample at serve). Unblocks C3/C4.</li>
+<li><strong>Composite uncertainty (E)</strong>, <strong>macro-pooling (F)</strong>, <strong>fairness null-space (G)</strong> &mdash; capability additions gated on a measured spike.</li>
+<li><strong>12-metric governance loop (&sect;4)</strong> &mdash; operationalise the intrinsic metrics with calibrated (derived) thresholds and the halt rules.</li>
 </ol>
-<h3 id="77-doctrine-reconciliation-why-093-must-not-regress-the-repo-laws">7.7 Doctrine reconciliation (why 0.9.3 must not regress the repo laws)</h3>
-<p>The 0.9.3 language ("spectral normalization", "Barlow Twins", "macro pooling") is
-compatible with <code>AGENTS.md</code> <strong>only if</strong> implemented under the existing laws:</p>
-<ul>
-<li><strong>No magic numbers</strong> → 0.9.3's literals ($10^4$, $10^{-6}$, $10^{-4}$, thresholds
-  <code>0.15</code>) must become derived/calibrated fallbacks with receipts.</li>
-<li><strong>No batch-coupled statistics</strong> (root AGENTS §0.6.0 / DEC-036) → any Barlow/ZCA
-  path must be a <strong>frozen per-sample transform</strong> at serve time; batch-fit was
-  measured to manufacture rank and is banned (V7_RFC §8.2).</li>
-<li><strong>Invariants by construction, not soft penalties</strong> (DEC-042/044) → prefer
-  structural mechanisms (<code>decay=exp(−softplus)</code>, bilinear rank, bounded gates)
-  over loss terms; DEC-044 condemned soft loss-invariants.</li>
-<li><strong>Gate on ground truth, never weaken gates</strong> → failing ecommerce gates stand
-  as honest LOW_EFFECT_SIZE / NO_IDENTIFIABLE_SIGNAL verdicts.</li>
-<li><strong>Prefer deletion over accretion</strong> → promote a 0.9.3 component only when a
-  measured spike beats the current mechanism; otherwise keep the smaller system.</li>
-</ul>
+<p><strong>Sequencing:</strong> 1 &rarr; 2 &rarr; 3 resolve the current FAILs honestly
+(PASS or certified NO_SIGNAL) and make the verdict law real; then 4 (C8, the RL
+requirement) and 5&ndash;7 deepen the manifold. Each step is promoted only when a
+measured spike beats the current mechanism (prefer deletion over accretion).</p>
+
 </main>
 </body>
 </html>
