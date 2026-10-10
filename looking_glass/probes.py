@@ -76,7 +76,7 @@ def _encode(model, vocab, seqs, batch=128, mask_frac=0.15, seed=0):
         chunk = seqs[i : i + batch]
         t = _collate(chunk, vocab, dev)
         with torch.no_grad():
-            y, h = model.ssm(model.tokens_batch(t), mask=t["mask"])
+            y, h = model.encode(t)
             rand = (torch.rand(t["et"].shape, device=dev) < mask_frac) & (t["mask"] > 0)
             t2 = dict(t)
             t2["et"] = torch.where(rand, torch.full_like(t["et"], NE), t["et"])
