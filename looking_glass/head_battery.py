@@ -24,7 +24,6 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from sklearn.decomposition import PCA
 from sklearn.ensemble import HistGradientBoostingClassifier, HistGradientBoostingRegressor
 from sklearn.metrics import roc_auc_score
 
@@ -190,8 +189,7 @@ def run_head_battery(model, cfg, horizon_days=90, seeds=(0, 1, 2)):
                 ):
                     continue
                 sc = StandardScaler().fit(Z[tr])
-                pca = PCA(n_components=min(32, Z.shape[1])).fit(sc.transform(Z[tr]))
-                Ztr, Zva = pca.transform(sc.transform(Z[tr])), pca.transform(sc.transform(Z[va]))
+                Ztr, Zva = sc.transform(Z[tr]), sc.transform(Z[va])
                 sc2 = StandardScaler().fit(Xraw[tr])
                 Rtr, Rva = sc2.transform(Xraw[tr]), sc2.transform(Xraw[va])
                 Etva = np.hstack([Zva, Rva])
