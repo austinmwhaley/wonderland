@@ -219,3 +219,56 @@ state+embeddings ~210 GB fp32, encoder/plugin compute **unchanged**
 (sample-capped); what breaks first = generation (21 days single-node → shard),
 then the daily job (4.5h/day 1-GPU → shard the state store), then the 210 GB
 daily embeddings rewrite. All shardable; not needed at current scale.
+
+---
+
+## v8.0 — RL World Model Extensions (conceptual; not implemented)
+
+Deferred roadmap items 9–11 (Capabilities 1–8 are the v7.0 baseline). Do not
+implement until the v7.0 plan lands (fix `uncertainty`, confirm the
+`event_residual` transition fix). All three must obey Guardrails A–E.
+
+### Capability 9 — Intervention & Action Conditioning (Causal RL)
+Separate observational user behavior from interventional system actions by
+conditioning the SSM transition on an action embedding (gate the input
+projection `B`, or route user vs intervention events through a MoE). Probe:
+`intervention_effect` (Δ conversion given an action, controlling for pre-action
+state).
+- **Feasibility (per-sample norm + contractive bounds):** compatible *if* the
+  conditioning is a **bounded multiplicative gate** (e.g. `σ(W_a·a)` in `[0,1]`
+  applied to `B·x`, or an additive action embedding like the existing `w_co`
+  exogenous-covariate channel) — the decay stays contractive (`ρ<1`) because
+  gating `B` scales the *drive*, not the transition operator, and the readout
+  stays per-sample RMS-normalized. Two hard caveats: (a) **MoE routing is a
+  known-failed pattern here** — context-gated softmax/top-k mixtures were
+  rejected earlier for collapsing channel diversity (M2/M5); (b) causal
+  identification needs **randomized/interventional** data, which ecommerce_2019
+  lacks (it is purely observational). This capability is only meaningful on
+  streams with logged arms (rabbit_hole's randomized email arms).
+
+### Capability 10 — Hierarchical Intent Abstraction (Macro-States)
+Pool micro-states into a slowly-updating macro-state at detected session/regime
+boundaries; dual readout `z_micro` (per event) + `Z_macro` (per boundary). Probe:
+`macro_order` (session outcome from `Z_macro` alone).
+- **Feasibility:** a macro-state that is a **convex/EMA pool** of `z_micro` is a
+  bounded, contractive accumulator (`Z_macro ← (1−g)·Z_macro + g·pool`, `g∈[0,1]`)
+  and is fully per-sample — compatible. The risk is the **trigger**: using the
+  *predicted* boundary (Capability 7, AUROC only 0.669 on ecommerce) as a
+  structural pooling gate is (i) error-propagating and (ii) **discrete/non-
+  differentiable** if hard-gated. It must be a **soft, bounded gate** (continuous
+  in the boundary logit) to keep gradients; the weak boundary signal caps how
+  much `Z_macro` can add on this stream.
+
+### Capability 11 — Nuisance Invariance (Robustness)
+Structural contrastive alignment: pass the same sequence through two augmented
+tokenizers (drop <100 ms dwell; jitter Δt ±10%) and align the two `z_t` with a
+plain unweighted InfoNCE.
+- **Feasibility:** the most compatible of the three. The augmentations are
+  **input-side** (not loss hacks), the contrastive term is a plain objective
+  (the model already has a `contrast` instance-discrimination objective), and
+  because both views' `z_t` are **per-sample RMS-normalized** the alignment is
+  scale-free; the contractive SSM is untouched. One honest caveat: InfoNCE's
+  **in-batch negatives are batch-coupled** during training (acceptable — the
+  frozen readout is per-sample, so this does not fake rank at serve time), and
+  the augmentation must stay *structural* (fixed, data-derived thresholds) rather
+  than tuned, or it becomes a soft hyperparameter.
