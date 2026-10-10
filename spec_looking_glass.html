@@ -1563,6 +1563,37 @@ and <code>mask</code>, the cart-to-purchase signal is about 0.05 nats, which may
 </tr>
 </tbody>
 </table>
+
+<h3 id="96-head-battery-contract-bc">9.6 Head battery contract (B+C) &mdash; rigor requirements</h3>
+<p>Lessons from the first B+C run on rabbit_hole; these are <strong>requirements</strong>, not
+options, so the results are defensible.</p>
+<table>
+<thead><tr><th>#</th><th>Requirement</th><th>Why (measured)</th></tr></thead>
+<tbody>
+<tr><td>1</td><td><strong>Standardize every head input (per-dim z-score).</strong> The consumed
+<code>z_t</code> carries a large boundary scale (measured <em>boundary_scale</em> = 134, so
+<code>|z|</code> ~ 250) while raw features are O(1&ndash;10). Unstandardized, the logistic/ridge
+<em>solver</em> underfits and the embedding appears <em>worse than raw</em> (churn AUROC 0.697)
+when it is not (0.770 standardized; 0.835 as a donor). This is a HEAD contract, never a reason to
+rescale the encoder.</td></tr>
+<tr><td>2</td><td><strong>Grade the donor way.</strong> A head that reads the embedding is graded
+<code>[E, raw]</code> vs <code>raw</code> (does E add incremental signal?) &mdash; not
+<code>E alone</code> vs <code>raw</code>. E alone only needs to be <em>not materially worse than
+raw</em>; the PASS bar is that E <em>adds unique signal</em> (SPEC C9).</td></tr>
+<tr><td>3</td><td><strong>Evaluate on HELD-OUT customers</strong> &mdash; the encoder's <code>B</code>
+split, never the customers it trained on. Training-customer evaluation leaks and inflates.</td></tr>
+<tr><td>4</td><td><strong>Strong baselines, no strawmen.</strong> The raw baseline is a tuned
+RFM / gradient-boosted model on recency&middot;frequency&middot;monetary, not a single feature.</td></tr>
+<tr><td>5</td><td><strong>Effect size + interval.</strong> Report &Delta; vs baseline with a bootstrap
+95% CI across held-out customers, over &ge; 3 seeds; PASS requires the interval to exclude 0.</td></tr>
+<tr><td>6</td><td><strong>Converged, scale-appropriate encoder.</strong> Grade a run trained to
+convergence at a meaningful sample, not an undersized smoke.</td></tr>
+</tbody>
+</table>
+<p><strong>Verdict (unchanged):</strong> PASS / NO_SIGNAL / FAIL / UNCERTAIN; GREEN only when every
+carried capability PASSES. UNCERTAIN = within noise (needs more data). A GREEN under requirements
+1&ndash;3 with strawman baselines is <em>not</em> yet defensible.</p>
+
 </main>
 </body>
 </html>
