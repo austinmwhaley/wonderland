@@ -37,6 +37,7 @@ def build(cadence="weekly", max_customers=8000):
         readout_norm=bool(blob.get("readout_norm", False)),
         input_norm=bool(blob.get("input_norm", False)),
         readout_skip=bool(blob.get("readout_skip", False)),
+        event_residual=bool(blob.get("event_residual", False)),
     )
     model.load_state_dict(blob["state"])
     if blob.get("whiten_W") is not None:

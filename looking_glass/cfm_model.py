@@ -113,7 +113,7 @@ def assert_readout_health(y, kappa=2.0):
     return stats
 
 
-def model_health(model, tokens, mask=None, kappa=2.0):
+def model_health(model, tokens, mask=None, kappa=2.0, t=None):
     """Fail-fast Step-0 validation harness (spec §2B / DEC-049). Runs BEFORE
     training and checks, programmatically and per-sample:
       * magnitude + variance  -> the readout is RMS-normalized (assert_readout_health)
@@ -123,7 +123,10 @@ def model_health(model, tokens, mask=None, kappa=2.0):
       * determinism           -> the same input yields the same output (twice)
     Returns a stats dict; raises on any violation. Dimensionless bounds only."""
     with torch.no_grad():
-        y, _h = model.ssm(tokens, mask=mask)
+        if t is not None:
+            y, _h = model.encode(t)
+        else:
+            y, _h = model.ssm(tokens, mask=mask)
         stats = assert_readout_health(y, kappa=kappa)
         # spectral bound: contractive transition (decay = exp(-softplus(delta_bias)))
         dec_max = 0.0
@@ -151,7 +154,7 @@ def model_health(model, tokens, mask=None, kappa=2.0):
                 f"model health: effective rank {pr:.3f} <= 1 — rank-1 collapse: {stats}"
             )
         # determinism: identical input -> identical output
-        y2, _h2 = model.ssm(tokens, mask=mask)
+        y2, _h2 = model.encode(t) if t is not None else model.ssm(tokens, mask=mask)
         stats["deterministic"] = bool(torch.equal(y, y2))
         if not stats["deterministic"]:
             raise RuntimeError(f"model health: non-deterministic forward: {stats}")
@@ -171,6 +174,7 @@ class SelectiveSSM(nn.Module):
         readout_norm=True,
         input_norm=True,
         readout_skip=False,
+        event_residual=False,
     ):
         super().__init__()
         # variance-preserving recurrence (v6.1, DEC-047): normalize the token
@@ -191,6 +195,19 @@ class SelectiveSSM(nn.Module):
                 self.skip.weight.copy_(torch.eye(dim))
         else:
             self.skip = None
+        # Event-identity residual (v6.9, DEC-055): a dedicated, clean path for the
+        # current and previous EVENT embeddings into the readout, so a linear head
+        # can express the Markov transition. The generic token skip above mixes
+        # emb(event) with brand/value/dt, so the transition trigger is not
+        # linearly isolable (measured: z_t alone CE 0.257 vs 1-gram 0.231; adding
+        # raw e_{t-1} -> 0.228). This adds information by construction (no loss
+        # hack); the SSM core stays contractive and the readout stays normalized.
+        self.ev_residual = bool(event_residual)
+        if self.ev_residual:
+            self.w_ev = nn.Linear(dim, dim, bias=False)
+            self.w_evp = nn.Linear(dim, dim, bias=False)
+        else:
+            self.w_ev = self.w_evp = None
         self.W_delta = nn.Linear(dim, dim)
         self.W_B = nn.Linear(dim, dim)
         self.W_C = nn.Linear(dim, dim)
@@ -240,7 +257,7 @@ class SelectiveSSM(nn.Module):
             g = g / (g.norm(dim=-1, keepdim=True) + 1e-6)
         return g
 
-    def forward(self, x, h0=None, mask=None):
+    def forward(self, x, h0=None, mask=None, ev=None, ev_prev=None):
         if self.input_norm is not None:
             x = self.input_norm(x)
         xs = x  # post-input-norm token for the readout skip (current event)
@@ -293,6 +310,11 @@ class SelectiveSSM(nn.Module):
             y = self.W_C(Hout)
             if self.skip is not None:
                 y = y + self.skip(xs)
+            if self.ev_residual:
+                if ev is not None:
+                    y = y + self.w_ev(ev)
+                if ev_prev is not None:
+                    y = y + self.w_evp(ev_prev)
             return (self.readout_norm(y) if self.readout_norm is not None else y), Hout[:, -1]
         D, H = _scan(decay, (1.0 - decay) * bx)  # h_t (zero-init)
         if h0 is not None:
@@ -301,6 +323,11 @@ class SelectiveSSM(nn.Module):
         y = self.W_C(H)
         if self.skip is not None:
             y = y + self.skip(xs)
+        if self.ev_residual:
+            if ev is not None:
+                y = y + self.w_ev(ev)
+            if ev_prev is not None:
+                y = y + self.w_evp(ev_prev)
         return (self.readout_norm(y) if self.readout_norm is not None else y), H[:, -1]
 
 
@@ -398,6 +425,7 @@ class MultiScaleSSM(nn.Module):
         readout_norm=True,
         input_norm=True,
         readout_skip=False,
+        event_residual=False,
     ):
         super().__init__()
         if delta_spectrum:
@@ -415,6 +443,7 @@ class MultiScaleSSM(nn.Module):
                         readout_norm=readout_norm,
                         input_norm=input_norm,
                         readout_skip=readout_skip,
+                        event_residual=event_residual,
                     )
                 ]
             )
@@ -430,6 +459,7 @@ class MultiScaleSSM(nn.Module):
                     readout_norm=readout_norm,
                     input_norm=input_norm,
                     readout_skip=readout_skip,
+                    event_residual=event_residual,
                 )
                 for b in delta_biases[:n_experts]
             ]
@@ -444,7 +474,7 @@ class MultiScaleSSM(nn.Module):
             r0 = float(np.exp(-np.logaddexp(0.0, delta_biases[self.slow_idx])))  # residual
             self.intent = IntentFilter(chan, retention_init=r0)
 
-    def forward(self, x, h0=None, mask=None):
+    def forward(self, x, h0=None, mask=None, ev=None, ev_prev=None):
         # NOTE: context-gated mixtures (M2 softmax gate, M5 sparse top-k) were
         # both REJECTED by the battery — the gate attenuated channels and
         # collapsed their diversity (unique-coverage fell). Experts stay
@@ -455,7 +485,7 @@ class MultiScaleSSM(nn.Module):
             if self.slow_intent and i == self.slow_idx:
                 xi = self.intent(x, mask=mask)
             hi = None if h0 is None else h0[..., i * self.chan : (i + 1) * self.chan]
-            yi, ho = e(xi, h0=hi, mask=mask)
+            yi, ho = e(xi, h0=hi, mask=mask, ev=ev, ev_prev=ev_prev)
             ys.append(yi)
             hs.append(ho)
         return torch.cat(ys, dim=-1), torch.cat(hs, dim=-1)
@@ -477,6 +507,7 @@ class CFM(nn.Module):
         readout_norm: bool = True,
         input_norm: bool = True,
         readout_skip: bool = False,
+        event_residual: bool = False,
     ):
         super().__init__()
         self.vocab = vocab
@@ -487,6 +518,7 @@ class CFM(nn.Module):
         self.readout_norm_on = bool(readout_norm)
         self.input_norm_on = bool(input_norm)
         self.readout_skip_on = bool(readout_skip)
+        self.event_residual_on = bool(event_residual)
         if self.isometric_boundary:
             self.iso_skew = nn.Parameter(torch.zeros(dim, dim))
             # conservation scale: Tr(Sigma_readout) is held to the input band
@@ -523,6 +555,7 @@ class CFM(nn.Module):
             readout_norm=self.readout_norm_on,
             input_norm=self.input_norm_on,
             readout_skip=self.readout_skip_on,
+            event_residual=self.event_residual_on,
         )
         self.head_next = nn.Linear(dim, vocab.n_et + 1)  # next event type
         # DEC-049: `query` predicts the next event from a FADED state (little
@@ -640,7 +673,17 @@ class CFM(nn.Module):
         )
 
     def forward(self, seq, h0=None):
-        y, h = self.ssm(self.tokens(seq).unsqueeze(0), h0=h0)
+        tok = self.tokens(seq).unsqueeze(0)
+        if self.event_residual_on:
+            dev = self._dev()
+            et = torch.tensor(
+                [[self.vocab.et.get(str(x), self.vocab.n_et) for x in seq["event_type"]]],
+                device=dev,
+            )
+            t = {"et": et, "mask": torch.ones_like(et, dtype=torch.float32)}
+            y, h = self.encode_ev(tok, t, h0=h0)
+        else:
+            y, h = self.ssm(tok, h0=h0)
         return y.squeeze(0), h.squeeze(0)
 
     def _target_params(self):
@@ -696,6 +739,27 @@ class CFM(nn.Module):
             + self.t_w_co(t["co"])
             + self.t_w_tod(t["tod"])
         )
+
+    def _event_residual_inputs(self, t, emb_et=None):
+        """(ev, ev_prev) = the current and previous EVENT embeddings, for the
+        event-identity readout residual (DEC-055). None when the residual is off."""
+        if not self.event_residual_on:
+            return None, None
+        emb = emb_et if emb_et is not None else self.emb_et
+        et = t["et"]
+        ev = emb(et)
+        prev = torch.cat([et[:, :1], et[:, :-1]], dim=1)  # e_{t-1} (first = e_0)
+        return ev, emb(prev)
+
+    def encode_ev(self, x, t, h0=None, emb_et=None):
+        """SSM forward that includes the event-identity readout residual.
+        `x` = token stream; `t` = the collated batch (for event ids)."""
+        ev, ev_prev = self._event_residual_inputs(t, emb_et=emb_et)
+        return self.ssm(x, h0=h0, mask=t["mask"], ev=ev, ev_prev=ev_prev)
+
+    def encode(self, t, h0=None):
+        """Tokenize + encode a collated batch with the event residual."""
+        return self.encode_ev(self.tokens_batch(t), t, h0=h0)
 
     def set_whitening(self, mean: "torch.Tensor", W: "torch.Tensor") -> None:
         """Frozen whitening at the donor boundary (DEC-022): z = (h-mu) W,

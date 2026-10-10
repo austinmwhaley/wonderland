@@ -1198,3 +1198,34 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   top-level. Verified identical output across all three streams.
 - **References updated** (`plugins/`, `red_queen/`, `rabbit_hole/`, docs,
   receipts) to the `.parquet` paths. 257 fast tests green.
+
+## DEC-055 — Event-identity readout residual (Phase 2 of the multi-scale upgrade)
+
+- **Date:** 2026-10-10
+- **TMD test result** (frozen ecommerce v6.4.0): Probe A `z_t` CE 0.257 (worse than
+  1-gram 0.231); Probe B `[z_t, z_{t-1}]` 0.255 (previous *state* does not help);
+  Probe C `[z_t, e_{t-1}]` **0.228** and Probe D `[z_t, hash(e_{t-1})]` **0.228**
+  (raw previous event beats the 1-gram). Diagnosis: the transition signal is in
+  the raw event, not the smoothed state, and the generic token skip mixes
+  `emb(event)` with brand/value/dt so it is not linearly isolable.
+- **Patch (opt-in `event_residual`):** readout
+  `z_t = RMSNorm(W_C·H_t + skip(x_t) + W_e·emb(e_t) + W_ep·emb(e_{t-1}))`.
+  Adds information by construction (no loss hack); SSM stays contractive (ρ<1);
+  readout stays per-sample normalized; Step-0 passes. Matched 6k/2k run: Probe A
+  1.66 -> 1.07 (helps), both undertrained vs the 1-gram — full-budget confirm
+  pending. Phases 1 (multi-scale spectrum) and 3 (mask/agg/next/value) were
+  already present.
+
+## DEC-056 — 8-capability frozen-probe harness (Phase 5)
+
+- **Date:** 2026-10-10
+- **Added probes:** `pacing` (session velocity = mean/std log1p(dt) from the mean
+  state; MSE vs historical mean), `boundary` (next event is a session reset =
+  long gap; AUROC vs 0.5), `uncertainty` (DERIVED U_t = entropy of the frozen
+  next-head softmax; AUROC separating injected novel events from in-distribution;
+  no trained head).
+- **ecommerce_2019 v6.4.0 8-capability baseline:** PASS — Session Aggregation
+  (`agg` +0.11), Event Identity (z->current macro-F1 0.81), Pacing (1.79 vs 2.66),
+  Boundary (AUROC 0.669). FAIL — Transition Dynamics (`next` -0.036), Content
+  Fidelity (`value` -0.37), Uncertainty (AUROC 0.500). NO_SIGNAL — Entity
+  Tracking (`entity`). Gates unchanged (DEC-046).

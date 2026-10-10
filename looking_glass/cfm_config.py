@@ -256,6 +256,11 @@ class CFMConfig:
     # head can express the transition table (measured: state->next 0.37 vs
     # 1-gram 0.25). Identity-init, learnable, per-sample.
     readout_skip: bool = True
+    # v6.9 (DEC-055): dedicated event-identity residual in the readout
+    # z_t = RMSNorm(W_C H_t + skip(x_t) + W_e·emb(e_t) + W_ep·emb(e_{t-1})).
+    # Adds a CLEAN, linearly-usable event path (the generic token skip mixes
+    # emb(event) with brand/value/dt). No loss hack; SSM stays contractive.
+    event_residual: bool = False
     # DEC-028: condition cap for the boundary whitening — eigenvalues of the
     # state covariance are floored at this fraction of the largest, bounding
     # kappa(Sigma^{-1/2}) <= 1/sqrt(whiten_cond_floor). Prevents near-null

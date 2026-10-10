@@ -80,7 +80,7 @@ def _encode(model, vocab, seqs, batch=128, mask_frac=0.15, seed=0):
             rand = (torch.rand(t["et"].shape, device=dev) < mask_frac) & (t["mask"] > 0)
             t2 = dict(t)
             t2["et"] = torch.where(rand, torch.full_like(t["et"], NE), t["et"])
-            y_m, _ = model.ssm(model.tokens_batch(t2), mask=t2["mask"])
+            y_m, _ = model.encode(t2)
         y = y.float().cpu().numpy()
         h = h.float().cpu().numpy()
         y_m = y_m.float().cpu().numpy()
@@ -416,12 +416,127 @@ def _next_slices(X, Y, PREVID, fof, S, vocab):
     return slices
 
 
+def _capability_probes(model, vocab, rows, seqs, fof):
+    """Phase-5 capability probes (DEC-056): pacing, boundary, uncertainty.
+    Frozen encoder; plain MSE / AUROC; uncertainty is a DERIVED deterministic
+    channel (entropy of the frozen next-head), never a trained head."""
+    import torch
+    from sklearn.linear_model import LogisticRegression, Ridge
+    from sklearn.metrics import roc_auc_score
+
+    dev = model._dev()
+    out = {}
+
+    # ---- pacing: session velocity = (mean, std) of log1p(dt), from the mean state
+    Xp, Yp, Sp = [], [], []
+    for r in rows:
+        d = r["dt"][1:]
+        if len(d) < 3:
+            continue
+        Xp.append(r["Z"].mean(0))
+        Yp.append([float(d.mean()), float(d.std())])
+        Sp.append(r["cust"])
+    if Xp:
+        Xp = np.asarray(Xp)
+        Yp = np.asarray(Yp)
+        fp = np.array([fof[c] for c in Sp])
+        loss = np.full(len(Yp), np.nan)
+        for fi in range(N_FOLDS):
+            tr, va = fp != fi, fp == fi
+            if va.any() and tr.any():
+                h = Ridge().fit(Xp[tr], Yp[tr])
+                loss[va] = ((h.predict(Xp[va]) - Yp[va]) ** 2).mean(1)
+        base = ((Yp - Yp.mean(0)) ** 2).mean(1)
+        m, b = float(np.nanmean(loss)), float(base.mean())
+        fm = [np.nanmean(loss[fp == fi]) for fi in range(N_FOLDS) if (fp == fi).any()]
+        se = float(np.std(fm) / np.sqrt(max(len(fm), 1)))
+        out["pacing"] = {
+            "model": m,
+            "baseline": b,
+            "ceiling": b,
+            "se": se,
+            "delta": b - m,
+            "verdict": "PASS" if m < b - 2 * se else "FAIL",
+        }
+
+    # ---- boundary: next event is a session reset (long gap) -> AUROC
+    alldt = np.concatenate([r["dt"][1:] for r in rows if len(r["dt"]) > 1])
+    thr = float(np.quantile(alldt, 0.95)) if alldt.size else 0.0
+    Xb, Yb, Sb = [], [], []
+    for r in rows:
+        for t in range(len(r["et"]) - 1):
+            if r["co"][t] > 0 or r["co"][t + 1] > 0:
+                continue
+            Xb.append(r["Z"][t])
+            Yb.append(1.0 if r["dt"][t + 1] > thr else 0.0)
+            Sb.append(r["cust"])
+    if Xb and 0 < np.mean(Yb) < 1:
+        Xb = np.asarray(Xb)
+        Yb = np.asarray(Yb)
+        fb = np.array([fof[c] for c in Sb])
+        auc = []
+        for fi in range(N_FOLDS):
+            tr, va = fb != fi, fb == fi
+            if va.any() and tr.any() and len(np.unique(Yb[tr])) > 1 and len(np.unique(Yb[va])) > 1:
+                clf = LogisticRegression(max_iter=300).fit(Xb[tr], Yb[tr])
+                auc.append(roc_auc_score(Yb[va], clf.predict_proba(Xb[va])[:, 1]))
+        a = float(np.mean(auc)) if auc else 0.5
+        se = float(np.std(auc) / np.sqrt(len(auc))) if auc else 0.0
+        out["boundary"] = {
+            "model": a,
+            "baseline": 0.5,
+            "ceiling": 1.0,
+            "se": se,
+            "delta": a - 0.5,
+            "verdict": "PASS" if a > 0.5 + 2 * se else "FAIL",
+        }
+
+    # ---- uncertainty: DERIVED U_t = H(softmax(head_next(z_t))). OOD = synthetic
+    # anomalous events (novel event id injected); AUROC(U, in-dist vs OOD).
+    rng = np.random.default_rng(0)
+    Un, Uo = [], []
+    for i in range(0, len(seqs), 128):
+        chunk = seqs[i : i + 128]
+        t = _collate(chunk, vocab, dev)
+        with torch.no_grad():
+            y, _ = model.encode(t)
+            lg = model.head_next(y[:, :-1])
+            p = torch.softmax(lg, -1)
+            U = (-(p * torch.log(p.clamp_min(1e-12))).sum(-1)).cpu().numpy()
+            et2 = t["et"].clone()
+            pos = rng.integers(1, max(t["et"].shape[1], 2), size=t["et"].shape[0])
+            for b in range(et2.shape[0]):
+                et2[b, pos[b]] = vocab.n_et  # novel event
+            y2, _ = model.encode({**t, "et": et2})
+            lg2 = model.head_next(y2[:, :-1])
+            p2 = torch.softmax(lg2, -1)
+            U2 = (-(p2 * torch.log(p2.clamp_min(1e-12))).sum(-1)).cpu().numpy()
+        m = t["mask"].cpu().numpy()
+        for b in range(t["et"].shape[0]):
+            L = int(m[b].sum())
+            j = int(pos[b]) - 1
+            if 0 <= j < L - 1:
+                Un.append(float(U[b, j]))
+                Uo.append(float(U2[b, j]))
+    if Un and Uo and len(set(Un + Uo)) > 1:
+        auc = roc_auc_score([0] * len(Un) + [1] * len(Uo), Un + Uo)
+        out["uncertainty"] = {
+            "model": float(auc),
+            "baseline": 0.5,
+            "ceiling": 1.0,
+            "se": 0.0,
+            "delta": float(auc) - 0.5,
+            "verdict": "PASS" if auc > 0.5 else "FAIL",
+        }
+    return out
+
+
 def run_probe_report(model, vocab, cfg, seqs, tag):
     freeze_encoder(model)
     dev = model._dev()
     with torch.no_grad():
         t = _collate(seqs[:4], vocab, dev)
-        y, _ = model.ssm(model.tokens_batch(t), mask=t["mask"])
+        y, _ = model.encode(t)
     if y.requires_grad:
         raise RuntimeError("probe harness: encoder forward returned a grad tensor")
 
@@ -512,7 +627,12 @@ def run_probe_report(model, vocab, cfg, seqs, tag):
                 report["next"]["rare"] = slices["rare(next!=view)"]
         except Exception as exc:  # noqa: BLE001
             slices = {"error": str(exc)}
-    md = _to_markdown(report, tag, ident, slices)
+    # Phase-5 capability probes (pacing / boundary / uncertainty)
+    try:
+        caps = _capability_probes(model, vocab, rows, seqs, fof)
+    except Exception as exc:  # noqa: BLE001
+        caps = {"error": str(exc)}
+    md = _to_markdown(report, tag, ident, slices, caps)
     receipt = {
         "tag": tag,
         "frozen": True,
@@ -520,11 +640,12 @@ def run_probe_report(model, vocab, cfg, seqs, tag):
         "objectives": report,
         "identity_decodability": ident,
         "next_slices": slices,
+        "capabilities": caps,
     }
     return md, receipt
 
 
-def _to_markdown(report, tag, ident=None, slices=None):
+def _to_markdown(report, tag, ident=None, slices=None, caps=None):
     lines = [
         f"### Frozen-encoder probe report — {tag}",
         "",
@@ -562,6 +683,20 @@ def _to_markdown(report, tag, ident=None, slices=None):
         ]
         for k, v in slices.items():
             lines.append(f"| {k} | {v} |")
+    if caps:
+        lines += [
+            "",
+            "#### Phase-5 capabilities (pacing / boundary / uncertainty)",
+            "",
+            "| capability | Model | Baseline | Δ | Verdict |",
+            "|---|---|---|---|---|",
+        ]
+        for k, v in caps.items():
+            if isinstance(v, dict) and "model" in v:
+                lines.append(
+                    f"| {k} | {v['model']:.4f} | {v['baseline']:.4f} | "
+                    f"{v['delta']:+.4f} | {v['verdict']} |"
+                )
     return "\n".join(lines) + "\n"
 
 

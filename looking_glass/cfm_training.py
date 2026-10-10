@@ -148,6 +148,7 @@ def train_cfm(cfg: CFMConfig):
         readout_norm=getattr(cfg, "readout_norm", True),
         input_norm=getattr(cfg, "input_norm", True),
         readout_skip=getattr(cfg, "readout_skip", True),
+        event_residual=getattr(cfg, "event_residual", False),
     ).to(device)
     # v4.0: differentiable ZCA in the forward during training (gradients shape the
     # consumed isotropy); off at eval/save so the frozen transform is used.
@@ -334,7 +335,7 @@ def train_cfm(cfg: CFMConfig):
             if bank is not None:
                 with torch.no_grad():
                     _t_b = _collate(items, vocab, device)
-                    _yb, _hb = model.ssm(model.tokens_batch(_t_b), mask=_t_b["mask"])
+                    _yb, _hb = model.encode(_t_b)
                     bank.push(model.proj(_hb))
                 pen = bank.penalties()
                 if pen["redundancy_bank"] is not None:
@@ -545,6 +546,7 @@ def train_cfm(cfg: CFMConfig):
             "readout_norm": bool(getattr(cfg, "readout_norm", True)),
             "input_norm": bool(getattr(cfg, "input_norm", True)),
             "readout_skip": bool(getattr(cfg, "readout_skip", True)),
+            "event_residual": bool(getattr(cfg, "event_residual", False)),
             "whiten_mean": (model.whiten_mean if getattr(model, "whiten_on", False) else None),
             "whiten_W": (model.whiten_W if getattr(model, "whiten_on", False) else None),
         },
@@ -704,7 +706,7 @@ def _masked_forward(model, vocab, t, cfg, dev):
         + model.w_co(t["co"])
         + model.w_tod(t["tod"])
     )
-    y2, _ = model.ssm(x2, mask=mask)
+    y2, _ = model.encode_ev(x2, {**t, "et": et2})
     return y2, t["et"], rand
 
 
@@ -737,7 +739,8 @@ def _jepa_loss(model, t, y):
     idx = torch.arange(B, device=y.device)
     ctx = y[idx, cut - 1]
     xt = model.target_tokens_batch(t)
-    yt, _ = model.t_ssm(xt, mask=t["mask"])
+    _ev, _evp = model._event_residual_inputs(t, emb_et=model.t_emb_et)
+    yt, _ = model.t_ssm(xt, mask=t["mask"], ev=_ev, ev_prev=_evp)
     pos = torch.arange(T, device=y.device).unsqueeze(0)
     suf = (pos >= cut.unsqueeze(1)) & (t["mask"] > 0)
     cnt = suf.sum(1, keepdim=True).clamp(min=1)
@@ -775,7 +778,7 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
     dev = model._dev()
     t = _collate(items, vocab, dev)
     x = model.tokens_batch(t)
-    y, h = model.ssm(x, mask=t["mask"])
+    y, h = model.encode(t)
     B, T, _ = y.shape
     # Targets at company-action positions are exogenous; never predict them.
     # Also exclude positions whose NEXT target is a pad (end-of-sequence): the
@@ -1504,7 +1507,7 @@ def forward_states(model, seqs, h0s=None):
     if h0s is not None:
         h0 = torch.stack([torch.as_tensor(h, dtype=torch.float32, device=dev) for h in h0s])
     with torch.no_grad():
-        _y, h = model.ssm(tok, h0=h0, mask=t["mask"])
+        _y, h = model.encode_ev(tok, t, h0=h0)
     return h
 
 
