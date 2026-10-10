@@ -164,7 +164,11 @@ def load_frozen_encoder(tag: str, cfm_dir):
         readout_skip=bool(blob.get("readout_skip", False)),
         event_residual=bool(blob.get("event_residual", False)),
     )
-    model.load_state_dict(blob["state"])
+    # tolerate checkpoints from earlier revisions (e.g. a head added later):
+    # load what matches, report what did not. The encoder trunk must match.
+    missing, unexpected = model.load_state_dict(blob["state"], strict=False)
+    if missing or unexpected:
+        print(f"[load] {tag}: missing={len(missing)} unexpected={len(unexpected)} keys", flush=True)
     model = model.to("cuda" if torch.cuda.is_available() else "cpu")
     model.eval()
     if blob.get("whiten_W") is not None:

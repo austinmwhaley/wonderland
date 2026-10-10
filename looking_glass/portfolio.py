@@ -325,12 +325,12 @@ def _canaries(states, seqs, seed: int) -> dict:
     tr, te = next(gss.split(states, groups=cust))
     # A/B membership: AUC must be near-chance
     uniq_g = np.unique(groups)
-    if len(uniq_g) == 2:
+    if len(uniq_g) == 2 and len(np.unique(groups[tr])) == 2:
         clf = LogisticRegression(max_iter=1000).fit(states[tr], groups[tr])
         auc = float(roc_auc_score(groups[te], clf.predict_proba(states[te])[:, 1]))
         out["group_auc"] = round(auc, 4)
     # period bucket: accuracy must be near-chance (multi-class)
-    if len(np.unique(months)) > 1:
+    if len(np.unique(months)) > 1 and len(np.unique(months[tr])) > 1:
         clf = LogisticRegression(max_iter=1000).fit(states[tr], months[tr])
         acc = float(accuracy_score(months[te], clf.predict(states[te])))
         chance = float(max(np.bincount(months[tr] - months[tr].min()).max() / len(tr), 1e-9))

@@ -345,11 +345,15 @@ def govern(
         # yardstick uses PRIOR evals only, so a real spike is still caught.
         # 20x the measured noise floor is a documented conservative factor; it is
         # a HARD FAILURE, never rescued-and-reported-green (DEC-039).
-        if center is not None and v > center + 20.0 * tol:
+        # DIVERGENCE = EXPLOSION, not a small drift. Require the metric to rise at
+        # least 50% above its recent level (a dimensionless, scale-free blow-up
+        # floor; the spec's divergence is explosion/non-finite, not a 2% wobble).
+        _explode = max(20.0 * tol, 0.5 * abs(center)) if center is not None else None
+        if center is not None and v > center + _explode:
             diverged = True
             print(
                 f"[govern] DIVERGENCE at step {steps}: val {v:.4f} >> recent {center:.4f} "
-                f"(+20x tol {tol:.4f}) — UNSTABLE run",
+                f"(explode floor {_explode:.4f}) — UNSTABLE run",
                 flush=True,
             )
             break

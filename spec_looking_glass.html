@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>looking_glass specification 0.9.4 — The Geometric Manifold Foundation Model</title>
+<title>looking_glass specification 0.9.3 — The Geometric Manifold Foundation Model</title>
 <style>
   :root { --ink:#1a1d21; --mut:#5b6470; --line:#dfe3e8; --bg:#ffffff; --soft:#f6f8fa; --acc:#245bd1; }
   * { box-sizing: border-box; }
@@ -40,7 +40,9 @@ window.MathJax = {
 </head>
 <body>
 <main>
-<h1 id="specification-093-the-geometric-manifold-foundation-model">Specification 0.9.4: The Geometric Manifold Foundation Model</h1>
+<h1 id="specification-093-the-geometric-manifold-foundation-model">Specification 0.9.3: The Geometric Manifold Foundation Model</h1>
+<p>A specification and architecture guide for <code>looking_glass</code>. The intent: an
+engineer or an LLM should be able to rebuild the system from this document alone.</p>
 <h2 id="0-document-map">0. Document map</h2>
 <table>
 <thead>
@@ -53,53 +55,104 @@ window.MathJax = {
 <tbody>
 <tr>
 <td>1. Core Objective</td>
-<td>Input/output contract + <strong>v1.0 Definition of Done</strong></td>
-<td>C1–C10 (the anchor)</td>
+<td>input/output contract + v1.0 definition of done</td>
+<td>C1–C10</td>
 </tr>
 <tr>
 <td>2. Philosophy</td>
-<td>Self-governance: autonomy, construction, honesty</td>
+<td>self-governance: autonomy, construction, honesty</td>
 <td>C1–C3</td>
 </tr>
 <tr>
-<td>3. Guardrails</td>
-<td>Structural invariants A–I</td>
-<td>C2, C3, C5</td>
-</tr>
-<tr>
-<td>4. Metrics</td>
-<td>The 12 intrinsic governance metrics</td>
-<td>C4, C5</td>
-</tr>
-<tr>
-<td>5. Components</td>
-<td>Architecture: ingestion → operators → readout</td>
-<td>C1, C6–C9</td>
-</tr>
-<tr>
-<td>6. Pipeline</td>
-<td>Two-phase factory (pre-train → freeze → adapt)</td>
-<td>C1–C5</td>
-</tr>
-<tr>
-<td>7. Execution</td>
-<td>Build order, each step mapped to a criterion</td>
+<td>3. System overview</td>
+<td>the one-way pipeline and the artifacts</td>
 <td>all</td>
 </tr>
 <tr>
-<td>8. Reconciliation</td>
-<td>As-built state vs the target, grounded</td>
-<td>status</td>
+<td>4. Data layer &amp; CESI</td>
+<td>the canonical event contract and storage</td>
+<td>C1</td>
 </tr>
 <tr>
-<td>9. Structured Capability Model</td>
-<td>The macro HOW: capability success law, dataflow, traceability matrix, probe spec, build graph</td>
-<td>C4, C5, C8</td>
+<td>5. Data path</td>
+<td>point-in-time cut, split, sampling, sequences</td>
+<td>C1, C2</td>
+</tr>
+<tr>
+<td>6. Tokenization</td>
+<td>turning events into vectors</td>
+<td>C4, C5</td>
+</tr>
+<tr>
+<td>7. Encoder</td>
+<td>the selective multi-scale SSM and the readout</td>
+<td>C4, C5</td>
+</tr>
+<tr>
+<td>8. Objectives</td>
+<td>the self-supervised training goals</td>
+<td>C2, C4</td>
+</tr>
+<tr>
+<td>9. Optimizer</td>
+<td>weighting, projection, memory bank, step size</td>
+<td>C2, C3</td>
+</tr>
+<tr>
+<td>10. Training</td>
+<td>budget, convergence, health checks, receipts</td>
+<td>C2, C3, C10</td>
+</tr>
+<tr>
+<td>11. Evaluation</td>
+<td>structure skill, geometry, intrinsic proofs, probes</td>
+<td>C4, C5</td>
+</tr>
+<tr>
+<td>12. Products</td>
+<td>the state store and published tables</td>
+<td>C6–C9</td>
+</tr>
+<tr>
+<td>13. Head interfaces</td>
+<td>how supervised / unsupervised / RL heads attach</td>
+<td>C6–C9</td>
+</tr>
+<tr>
+<td>14. CLI &amp; versioning</td>
+<td>commands, tags, reproducibility</td>
+<td>C10</td>
+</tr>
+<tr>
+<td>15. Guardrails</td>
+<td>the self-enforced invariants</td>
+<td>C2, C3, C5</td>
+</tr>
+<tr>
+<td>16. Health checks</td>
+<td>the 12 target metrics</td>
+<td>C4, C5</td>
+</tr>
+<tr>
+<td>17. Components</td>
+<td>the target parts and their status</td>
+<td>C1, C6–C9</td>
+</tr>
+<tr>
+<td>18. Build order</td>
+<td>what to build, in sequence</td>
+<td>all</td>
+</tr>
+<tr>
+<td>19. Reconciliation</td>
+<td>what exists today vs the target</td>
+<td>status</td>
 </tr>
 </tbody>
 </table>
 <hr />
 <h2 id="1-core-objective">1. Core Objective</h2>
+<p>Input an event stream; output a frozen foundation model whose embeddings $z_t$ support supervised, unsupervised, and reinforcement-learning heads.</p>
 <h3 id="11-the-contract">1.1 The contract</h3>
 <table>
 <thead>
@@ -111,23 +164,15 @@ window.MathJax = {
 <tbody>
 <tr>
 <td><strong>Input</strong></td>
-<td>a <strong>Canonical Event Stream (CESI)</strong> — time-ordered discrete events with an entity key, categorical tokens, continuous magnitudes, and (when present) randomized <strong>action arms</strong>, logged <strong>propensity</strong>, and <strong>protected attributes</strong>.</td>
+<td>an event stream (CESI)</td>
 </tr>
 <tr>
 <td><strong>Output</strong></td>
-<td>a <strong>frozen foundation model</strong> whose foundational embeddings $z_t$ support supervised, unsupervised, and reinforcement-learning (RL) heads — including <code>white_queen</code> (OPE certification) and <code>red_king</code> (counterfactual evaluation) — <strong>without altering the encoder weights</strong>.</td>
+<td>a frozen foundation model</td>
 </tr>
 <tr>
 <td><strong>Interface</strong></td>
-<td>the foundational embedding $z_t$ (per entity, per time), exposed as read-only tables.</td>
-</tr>
-<tr>
-<td><strong>Mechanism</strong></td>
-<td>self-supervised next-event prediction <strong>over a portfolio</strong> of distributional and temporal objectives — the means, not the product.</td>
-</tr>
-<tr>
-<td><strong>Product</strong></td>
-<td>a latent manifold <strong>maintained by construction</strong> to satisfy strict intrinsic representation quality and <strong>verified</strong> against held-out + ground-truth gates before it is called healthy.</td>
+<td>the model's embeddings $z_t$ (read-only)</td>
 </tr>
 </tbody>
 </table>
@@ -136,79 +181,79 @@ window.MathJax = {
 <thead>
 <tr>
 <th>ID</th>
-<th>Layer</th>
+<th>Area</th>
 <th>Criterion</th>
-<th>Gate (how it is measured)</th>
+<th>How we check it</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><strong>C1</strong></td>
-<td>Producer</td>
-<td>Ingestion &amp; genericity</td>
-<td>any CESI stream runs end-to-end with <strong>no code changes</strong>; action arms / protected attributes <em>discovered</em> from schema; feature types auto-resolved</td>
+<td>Runs itself</td>
+<td>any CESI stream works with <strong>no code changes</strong>; optional columns (actions, protected attributes) are detected automatically</td>
+<td>run a new dataset end-to-end</td>
 </tr>
 <tr>
 <td><strong>C2</strong></td>
-<td>Producer</td>
-<td>Autonomous training</td>
-<td>converges on the <strong>held-out self-supervised objective</strong> under a data+hardware-derived budget; no per-run tuning; <strong>stable step 0 → end</strong> (no false green)</td>
+<td>Runs itself</td>
+<td>training <strong>finishes on its own</strong> on a held-out self-supervised score, within a data/hardware-derived budget — no hand-tuning</td>
+<td>training curve plateaus; no divergence step 0 → end</td>
 </tr>
 <tr>
 <td><strong>C3</strong></td>
-<td>Producer</td>
-<td>Fail-fast governance</td>
-<td>halts <strong>with a receipt</strong> on tensor-health violation, rank/absorbing-state collapse, or a below-ceiling stream — refusing to emit a model</td>
+<td>Runs itself</td>
+<td>it <strong>stops and refuses</strong> instead of producing a bad model — bad numbers, collapsed embeddings, or an impossible task</td>
+<td>fail-fast checks with a saved report</td>
 </tr>
 <tr>
 <td><strong>C4</strong></td>
-<td>Product</td>
-<td>Intrinsic quality</td>
-<td>the operationalized metrics (§4) pass their calibrated gates on ≥2 diverse streams, <strong>per capability</strong> (never one composite)</td>
+<td>Healthy output</td>
+<td>the health checks (§16) pass on ≥2 diverse datasets, <strong>one check at a time</strong></td>
+<td>per-check gate results</td>
 </tr>
 <tr>
 <td><strong>C5</strong></td>
-<td>Product</td>
-<td>Frozen-manifold signal</td>
-<td>frozen $z_t$ beats model-free baselines on <strong>every capability the stream carries</strong>, each with uncertainty</td>
+<td>Healthy output</td>
+<td>the frozen embeddings <strong>beat model-free baselines</strong> on every task the data contains</td>
+<td>probe tests (§11.3)</td>
 </tr>
 <tr>
 <td><strong>C6</strong></td>
-<td>Consumer</td>
-<td>Supervised head</td>
-<td>adapter on frozen embeddings passes its independent gate (beats raw; effect size + interval)</td>
+<td>Heads attach</td>
+<td>a supervised head on the frozen embeddings passes its own gate (better than raw features)</td>
+<td>independent gate (§13.3)</td>
 </tr>
 <tr>
 <td><strong>C7</strong></td>
-<td>Consumer</td>
-<td>Unsupervised head</td>
-<td>grounded structure recovered from frozen embeddings (segment recovery / cluster stability), gated</td>
+<td>Heads attach</td>
+<td>an unsupervised head recovers real structure from the frozen embeddings</td>
+<td>independent gate</td>
 </tr>
 <tr>
 <td><strong>C8</strong></td>
-<td>Consumer</td>
-<td>RL head</td>
-<td>on a stream with randomized arms + logged propensity, an OPE/counterfactual adapter (<code>white_queen</code> / <code>red_king</code>) passes its gate (incremental counterfactual margin vs. logging, calibrated). <strong>The encoder must supply whatever this requires</strong> (§5, Components C &amp; H)</td>
+<td>Heads attach</td>
+<td>on data with randomized actions, an RL/OPE head (<code>white_queen</code>/<code>red_king</code>) on the frozen embeddings passes its gate (real incremental effect). <strong>The model must provide whatever this needs</strong> (§13.5)</td>
+<td>independent gate</td>
 </tr>
 <tr>
 <td><strong>C9</strong></td>
-<td>Consumer</td>
-<td>Universal donor</td>
-<td>E-vs-R-vs-E+R ablation on <code>donor_embeddings</code> under the <strong>production</strong> head: embeddings add unique signal, never materially worse than raw</td>
+<td>Heads attach</td>
+<td>the embeddings add signal beyond raw features and are never worse than raw, under the <strong>production</strong> head</td>
+<td>E vs raw vs both ablation (§11.4)</td>
 </tr>
 <tr>
 <td><strong>C10</strong></td>
-<td>Identity</td>
-<td>Reproducibility</td>
-<td>semver-versioned (<code>0.MAJOR.MINOR</code>) + receipted (inputs / config / seed / git SHA); deterministic</td>
+<td>Trustworthy</td>
+<td>every result is versioned and recorded; runs are repeatable</td>
+<td>version + receipt in every artifact</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Verdict law — there is no FAIL.</strong></p>
+<p><strong>The rule about results — there is no <code>FAIL</code>.</strong></p>
 <table>
 <thead>
 <tr>
-<th>Verdict</th>
+<th>Result</th>
 <th>Meaning</th>
 <th>Allowed?</th>
 </tr>
@@ -216,25 +261,25 @@ window.MathJax = {
 <tbody>
 <tr>
 <td><code>PASS</code></td>
-<td>the capability is carried by the stream <strong>and</strong> the model beats its baseline</td>
+<td>the data contains the signal <strong>and</strong> the model beats the baseline</td>
 <td>yes</td>
 </tr>
 <tr>
 <td><code>NO_SIGNAL</code></td>
-<td>the stream <strong>provably cannot carry</strong> the target (certified by an independent stream-side entropy/identifiability ceiling, §3 Guardrail F)</td>
+<td>the data <strong>provably does not contain</strong> the signal (confirmed by an independent data-side check, §15 Guardrail F)</td>
 <td>yes</td>
 </tr>
 <tr>
 <td><code>FAIL</code></td>
-<td>the capability <strong>is</strong> carried but the model does not beat its baseline — a <strong>defect</strong></td>
+<td>the data contains the signal but the model does <strong>not</strong> beat the baseline — a <strong>defect</strong></td>
 <td><strong>no — blocks v1.0</strong></td>
 </tr>
 </tbody>
 </table>
 <blockquote>
-<p>Every capability the stream <em>can</em> carry must <code>PASS</code>. <code>NO_SIGNAL</code> is never a relabeled failure.</p>
+<p>Every task the data can support must <code>PASS</code>. <code>NO_SIGNAL</code> is a fact about the data, never an excuse for a weak model.</p>
 </blockquote>
-<h3 id="13-scope-093-initial-release">1.3 Scope (0.9.3 initial release)</h3>
+<h3 id="13-scope">1.3 Scope</h3>
 <table>
 <thead>
 <tr>
@@ -244,58 +289,819 @@ window.MathJax = {
 </thead>
 <tbody>
 <tr>
-<td>time-ordered, discrete-event telemetry and transactional logs adhering to CESI</td>
-<td>unstructured video, raw audio, free-form text (delegated to modality front-ends)</td>
+<td>time-ordered event logs and transactional records in the standard shape</td>
+<td>video, audio, and free-form text</td>
 </tr>
 <tr>
-<td>supervised, unsupervised, RL heads via frozen embeddings</td>
-<td>per-stream hand-tuned models</td>
+<td>supervised, unsupervised, and RL heads on frozen embeddings</td>
+<td>a separate hand-built model per dataset</td>
 </tr>
 <tr>
-<td>self-governed, autonomous training</td>
-<td>a single composite score that hides a failed capability</td>
+<td>training that governs itself</td>
+<td>one average score that hides a failed task</td>
 </tr>
 </tbody>
 </table>
 <hr />
 <h2 id="2-philosophy-self-governance">2. Philosophy — Self-Governance</h2>
-<p>The system is <strong>autonomous, automatic, and self-governed</strong>: it resolves its own configuration from what it sees, derives its own budgets/thresholds/schedules from data + hardware, and fails fast with a receipt. Human input defines <em>what</em> quality means (the §1.2 criteria); the system decides <em>how</em> to reach it.</p>
+<p>The system runs and governs itself: people set <em>what good means</em> (the §1.2 criteria); the system decides <em>how to get there</em>.</p>
 <table>
 <thead>
 <tr>
 <th>Principle</th>
+<th>In practice</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Rules built into the model, not patched on later</td>
+<td>smoothness, spread, and stable memory are properties of how the model is built</td>
+</tr>
+<tr>
+<td>Use the model's full capacity</td>
+<td>never shrink the model to pass a test; fix the training goals</td>
+</tr>
+<tr>
+<td>Honest results</td>
+<td>a task that cannot pass is reported <code>FAIL</code> or <code>NO_SIGNAL</code> — never hidden</td>
+</tr>
+<tr>
+<td>No hand-set numbers</td>
+<td>any leftover constant is a documented, overridable fallback, chosen at runtime and recorded</td>
+</tr>
+<tr>
+<td>Versioning is identity</td>
+<td>a change that can alter outputs bumps the version; every artifact records how it was made</td>
+</tr>
+<tr>
+<td>Adapt by construction</td>
+<td>a new schema / size / horizon / action space works without editing code</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="3-system-overview">3. System Overview</h2>
+<p>The system is a one-way pipeline. Data flows forward only; nothing downstream ever feeds back into the encoder.</p>
+<pre><code>rabbit_hole (event stream)  →  looking_glass (frozen encoder)  →  heads (supervised / unsupervised / RL)
+                                      │
+                                      └── products DB (read-only tables)
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Stage</th>
+<th>Role</th>
+<th>Produces</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Layer A (<code>rabbit_hole</code>)</td>
+<td>source of truth: the append-only canonical event stream</td>
+<td>the stream + schema/aliases</td>
+</tr>
+<tr>
+<td>Layer B (<code>looking_glass</code>)</td>
+<td>trains one self-supervised encoder, freezes it, publishes embeddings</td>
+<td><code>cfm_&lt;tag&gt;.pt</code> checkpoint + <code>cfm_products.duckdb</code> tables + registry/receipts</td>
+</tr>
+<tr>
+<td>Heads (<code>plugins</code>, <code>white_queen</code>, <code>red_king</code>)</td>
+<td>train small models on the frozen embeddings</td>
+<td>task artifacts that record the encoder version they used</td>
+</tr>
+</tbody>
+</table>
+<p>Three ideas hold the whole design together:</p>
+<ol>
+<li><strong>One encoder, many tasks.</strong> The foundation model is trained once, self-supervised, and then frozen. Every downstream task attaches a small head instead of retraining.</li>
+<li><strong>Populations A/B.</strong> Customers are split into disjoint groups by a hash. The encoder only ever trains on population A; heads and anchors use population B. No label ever touches the encoder.</li>
+<li><strong>Self-governance.</strong> Training derives its own budget and sizes, watches its own health, and stops when converged or when something is wrong.</li>
+</ol>
+<hr />
+<h2 id="4-data-layer-cesi">4. Data Layer &amp; CESI</h2>
+<h3 id="41-canonical-event-schema">4.1 Canonical event schema</h3>
+<p>Every event is exactly five fields. Anything else is folded into <code>event_attributes</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
 <th>Meaning</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Invariants as native architecture</td>
-<td>isotropy, continuity, recurrence stability live in the state update and the optimization dynamics — never bolted on after a failure</td>
+<td><code>customer_key</code></td>
+<td>the entity (who)</td>
 </tr>
 <tr>
-<td>Capacity over artificial constraints</td>
-<td>never shrink the model to make a gate pass; fix the objectives so the trunk uses its capacity</td>
+<td><code>event_ts</code></td>
+<td>event time (when)</td>
 </tr>
 <tr>
-<td>Truth-first diagnostics</td>
-<td>a capability that cannot be passed honestly is reported (<code>FAIL</code> / <code>NO_SIGNAL</code>), never hidden, weakened, or relabeled</td>
+<td><code>event_type</code></td>
+<td>categorical token (what kind)</td>
 </tr>
 <tr>
-<td>Zero manual hyperparameters</td>
-<td>any surviving literal is a documented, overridable fallback, resolved at runtime and recorded in a receipt</td>
+<td><code>source_table</code></td>
+<td>provenance (which system)</td>
 </tr>
 <tr>
-<td>Reproducibility is identity</td>
-<td>a change that can alter outputs bumps the version; every artifact records its inputs, config, and version</td>
-</tr>
-<tr>
-<td>Adapt by construction</td>
-<td>an unseen schema / dim / horizon / action space must work with no code edits</td>
+<td><code>event_attributes</code></td>
+<td>JSON string of all remaining key/value context</td>
 </tr>
 </tbody>
 </table>
+<p><strong>Folding rule.</strong> Given a wide table, <code>canonicalize_row</code> picks one source column per canonical field (by alias) and folds <strong>every other non-null column</strong> into <code>event_attributes</code> as JSON. Aliases include: <code>customer_id</code>/<code>user_id</code> for <code>customer_key</code>; <code>timestamp</code>/<code>ts</code> for <code>event_ts</code>; <code>type</code>/<code>event_name</code> for <code>event_type</code>. The SQL equivalent builds the JSON with <code>json_merge_patch(coalesce(try_cast(event_attributes AS JSON), json('{}')), json_object(...))</code>, and a view <code>customer_events_canonical</code> exposes any wide table in the five-field form without rewriting it.</p>
+<h3 id="42-storage-and-io">4.2 Storage and IO</h3>
+<table>
+<thead>
+<tr>
+<th>Format</th>
+<th>Engine</th>
+<th>How it is read</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.arrow</code> / <code>.feather</code> / <code>.ipc</code></td>
+<td>Arrow IPC (uncompressed, memory-mapped)</td>
+<td><code>polars.read_ipc(..., memory_map=True)</code> — zero-copy</td>
+</tr>
+<tr>
+<td><code>.parquet</code> / <code>.pq</code></td>
+<td>Parquet</td>
+<td><code>polars.read_parquet(...)</code></td>
+</tr>
+<tr>
+<td><code>.duckdb</code> / <code>.ddb</code></td>
+<td>DuckDB (read-only)</td>
+<td><code>duckdb.connect(read_only=True).execute("SELECT * FROM t").pl()</code></td>
+</tr>
+</tbody>
+</table>
+<p>All reads return a Polars DataFrame (no pandas, no SQLite). Writes rebuild the five canonical columns first if the frame is wide, then write in the format's native path.</p>
+<h3 id="43-reading-attributes-whether-column-or-json">4.3 Reading attributes whether column or JSON</h3>
+<p>The encoder's content channels — <code>brand</code>, <code>entity_type</code>, <code>entity_id</code>, <code>value</code> — may sit either at the top level (wide fixtures) or inside <code>event_attributes</code> (canonical). The reader tries the column first; otherwise it extracts from JSON (<code>json_extract_string</code> in DuckDB, <code>str.json_path_match</code> in Polars), casting <code>value</code> to float. This one code path lets the encoder consume both shapes.</p>
 <hr />
-<h2 id="3-mandatory-architectural-guardrails-the-invariants">3. Mandatory Architectural Guardrails (The Invariants)</h2>
+<h2 id="5-data-path-point-in-time">5. Data Path (point-in-time)</h2>
+<h3 id="51-the-single-day-boundary">5.1 The single day boundary</h3>
+<p><code>as_of_epoch(s)</code> interprets a naive ISO date as <strong>UTC midnight</strong>. This one helper is shared by the encoder cut, the daily job, and inference lookups, so "the day" means the same thing everywhere. <code>as_of</code> is always passed, even in production, so backtests and production run the identical path.</p>
+<h3 id="52-point-in-time-cut">5.2 Point-in-time cut</h3>
+<p>Before anything else, the raw stream is filtered to <code>event_ts ≤ as_of</code>. Keys, splits, anchors, sequences, and products are all built from this leak-free prefix. Nothing after the cutoff is ever visible.</p>
+<h3 id="53-population-split-ab">5.3 Population split A/B</h3>
+<p>Each key is assigned by a stable hash:</p>
+<pre><code>split(key) = &quot;B&quot; if md5(f&quot;{split_seed}:{key}&quot;) % 1000 ≥ split_a_frac·1000 else &quot;A&quot;
+</code></pre>
+<p><code>split_a_frac = 0.7</code>. A and B are disjoint by construction. The seed rotates monthly (<code>md5(base_seed + "YYYY-MM")</code>) so the split re-randomizes each cycle while staying reproducible within a cycle. The encoder trains only on A; population B is reserved for anchors/heads.</p>
+<h3 id="54-sampling">5.4 Sampling</h3>
+<p>A sample is a seeded uniform draw from a population:</p>
+<pre><code>draw_sample(keys, split, side, n, seed): shuffle its own RNG, take the first n
+</code></pre>
+<p><code>sample_a</code> builds the encoder-training sample; <code>sample_b_customers</code> draws the head/anchor sample. Sizes are chosen by the ladder (the smallest sample whose products match the best within paired noise), not hardcoded.</p>
+<h3 id="55-anchors">5.5 Anchors</h3>
+<p>For each customer, <code>n_anchors</code> (default 6) uniformly random days are drawn in <code>[history_start, data_end − 1 day]</code>, independent of any label. The anchor timestamp travels with the sequence and is where the embedding is read.</p>
+<h3 id="56-sequence-construction">5.6 Sequence construction</h3>
+<ul>
+<li>Partition the frame once by <code>customer_key</code> (ordered by time).</li>
+<li>Events whose type is a declared <strong>exogenous/company action</strong> are removed from the token stream and become covariates — the model must tell "what the user did" from "what our system did".</li>
+<li>Each customer's history is cut into windows of at most <code>seq_len</code> (default 128) ending at an anchor (for B) or spanning the whole history (for A). Very short histories (<code>&lt; 3</code> events) are dropped for training.</li>
+<li>Each sequence carries: <code>customer, group, anchor_epoch, event_type, brand, entity_type, entity_id, value, event_ts, ts, co</code>.</li>
+</ul>
+<h3 id="57-collation-masking-padding">5.7 Collation, masking, padding</h3>
+<p>A batch is padded to the longest sequence; pads use the "unknown" token id and <code>mask = 0</code>. Derivable signals:</p>
+<ul>
+<li><code>dt[t] = log1p(max(ts[t] − ts[t−1], 0))</code> — inter-event gap.</li>
+<li><code>tod = [sin, cos]</code> of time-of-day and <code>[sin, cos]</code> of day-of-week (periodic, no calendar literals).</li>
+<li><code>co = [is_company_action, log1p(gap)]</code> — exogenous covariates.</li>
+<li>Inside the recurrence, pads <strong>hold</strong> the state: <code>decay ← 1</code>, <code>bx ← 0</code> on padded steps.</li>
+</ul>
+<p>Targets exclude pads and company-action steps, so the model never predicts the system's own interventions as if they were user behavior.</p>
+<hr />
+<h2 id="6-tokenization">6. Tokenization</h2>
+<p>The vocabulary is learned from data: sorted sets of every <code>event_type</code>, <code>brand</code>, and <code>entity_type</code> seen in the A-training sequences, each with one extra "unknown" slot.</p>
+<p>Each event becomes a vector (width <code>chan = dim / n_experts</code>):</p>
+<pre><code>x_t = emb_et[event_type] + emb_brand[brand] + emb_ent[entity_type]
+      + w_val(value) + w_dt(log1p gap) + w_co(covariates) + w_tod(tod)
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Kind</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>emb_et</code>, <code>emb_brand</code>, <code>emb_ent</code></td>
+<td>embedding tables</td>
+<td>unknown index used for missing/pad</td>
+</tr>
+<tr>
+<td><code>w_val</code></td>
+<td>linear on scalar</td>
+<td>value/magnitude</td>
+</tr>
+<tr>
+<td><code>w_dt</code></td>
+<td>linear on <code>log1p(Δs)</code></td>
+<td>continuous-time gap</td>
+</tr>
+<tr>
+<td><code>w_co</code></td>
+<td>linear on 2 covariates</td>
+<td>exogenous/company + gap</td>
+</tr>
+<tr>
+<td><code>w_tod</code></td>
+<td>linear on 4 Fourier features</td>
+<td>time-of-day, day-of-week</td>
+</tr>
+</tbody>
+</table>
+<p><code>RMSNorm</code> (per-sample, per-timestep; <code>x · rsqrt(mean(x²)+eps) · gain</code>) is applied to the token stream at the model input and to the readout — normalization by construction, never using batch statistics.</p>
+<hr />
+<h2 id="7-encoder">7. Encoder</h2>
+<p>The encoder is a <strong>selective multi-scale state-space model (SSM)</strong>. It reads the event sequence and produces, at every step, an output vector <code>y_t</code>; the final recurrent state is the customer's summary.</p>
+<h3 id="71-the-recurrence">7.1 The recurrence</h3>
+<p>Per channel, per step:</p>
+<p>$$\delta_t = \mathrm{softplus}(W_\delta x_t + b_\delta), \qquad \mathrm{decay}_t = e^{-\delta_t} \in (0,1)$$</p>
+<p>$$h_t = \mathrm{decay}_t \odot h_{t-1} + (1-\mathrm{decay}_t)\odot (W_B x_t), \qquad y_t = W_C h_t$$</p>
+<p>This is a leaky integrator whose leak is <strong>selected by the input</strong>: <code>b_δ</code> is a learned per-channel vector (a log-uniform spectrum from fast to slow), and the data can speed up or slow down each channel. Because <code>decay ∈ (0,1)</code> always, the memory is contractive <strong>by construction</strong> — it can neither explode nor freeze.</p>
+<p>A learned skip (the SSM <code>D</code> term), identity-initialized, adds the current token back into the readout.</p>
+<p>The whole recurrence is solved by a <strong>vectorized affine prefix scan</strong> in <code>O(log T)</code> passes (Hillis–Steele). Each step is an affine map <code>f_i = (decay_i, drive_i)</code>; composing is <code>(d_i d_j, d_i b_j + b_i)</code>. Only <code>log T</code> Python iterations occur; the work is tensorized over time. A stored initial state <code>h0</code> is applied exactly as <code>H_t += (∏_{m≤t} decay_m) · h0</code>.</p>
+<h3 id="72-multi-scale-and-band-isolation">7.2 Multi-scale and band isolation</h3>
+<p>One wide state covers all timescales. The <code>b_δ</code> spectrum is spread log-uniformly (default range −1.5 to 3.0), so some channels remember seconds and others weeks within a single trunk. Optional <strong>band isolation</strong> zeroes the cross-band entries of <code>W_δ</code> and <code>W_B</code> (split derived from the learned <code>b_δ</code> median), so the slow band is driven only by slow-band input — separation is structural, not a loss term.</p>
+<p>An expert-bank variant (n_experts independent selective SSMs) exists but the default is the unified trunk (<code>n_experts = 2</code>, <code>unified_ssm = True</code>).</p>
+<h3 id="73-the-low-pass-intent-filter">7.3 The low-pass intent filter</h3>
+<p>To turn spiky per-event content into smooth local rates, a per-channel learned EMA low-pass runs before the recurrence:</p>
+<p>$$\tilde{x}_t = r \odot \tilde{x}_{t-1} + (1-r)\odot x_t$$</p>
+<p>The retention <code>r</code> is learned, initialized from the <strong>stream's own statistics</strong>: the content-change probability <code>p</code> gives an average run length <code>L = 1/(1-p)</code>, and <code>r = exp(−ln2 / L)</code>. A stream with 77% type-change gets <code>r ≈ 0.85</code> (heavy smoothing); a calmer stream gets <code>r ≈ 0.57</code>. No hand-set partition of features.</p>
+<h3 id="74-the-donor-boundary">7.4 The donor boundary</h3>
+<p>The consumed representation <code>z = boundary(proj(h))</code> is built in two steps, in this order:</p>
+<ol>
+<li><strong>learned projection</strong> <code>proj</code> (a linear readout), and</li>
+<li>a <strong>per-sample boundary transform</strong>.</li>
+</ol>
+<p>The default boundary is a <strong>Cayley orthogonal isometry</strong> <code>R = (I−S)(I+S)^{−1}</code> (<code>S</code> skew-symmetric), so <code>R</code> is well-conditioned (κ = 1) and invertible. It does <strong>not</strong> whiten and does <strong>not</strong> manufacture rank — it preserves the trunk's spectrum. It is scaled by a conservation factor <code>boundary_scale = sqrt(P_in / tr(Σ_readout))</code>, holding the readout energy to the input band power (<code>R_cons ≈ 1</code>).</p>
+<p>A legacy global-EMA ZCA path remains as a fallback: maintain a running mean/covariance and approximate <code>Σ^{−1/2}</code> with a <strong>Newton–Schulz</strong> iteration (matmuls only, spectral-norm normalized, condition-capped by <code>eps</code>), with an entropy-weighted update rate. It is fit <strong>after</strong> <code>proj</code> (whitening <code>h</code> first and then projecting re-collapses rank — measured). It is frozen at inference so training and serving share one map.</p>
+<h3 id="75-event-identity-bypass-dedicated-readout-dims">7.5 Event-identity bypass (dedicated readout dims)</h3>
+<p>The recurrent state is a low-pass aggregate; it washes out the immediate event. To give a linear head the Markov transition at full scale — with no loss hack — the readout reserves the first <code>2·(n_et+1)</code> dimensions:</p>
+<table>
+<thead>
+<tr>
+<th>Readout dims</th>
+<th>Content</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>[0 : n_et+1)</code></td>
+<td>one-hot of the <strong>current</strong> event type <code>e_t</code></td>
+</tr>
+<tr>
+<td><code>[n_et+1 : 2·(n_et+1))</code></td>
+<td>one-hot of the <strong>previous</strong> event type <code>e_{t-1}</code></td>
+</tr>
+<tr>
+<td><code>[2·(n_et+1) : dim)</code></td>
+<td>the SSM readout (untouched)</td>
+</tr>
+</tbody>
+</table>
+<p>This is a bypass, not a bottleneck: raw one-hots are written at full scale. It is opt-in (<code>event_residual</code>).</p>
+<h3 id="76-inference-constant-time-state-advance">7.6 Inference (constant-time state advance)</h3>
+<p>The recurrent state is the public representation. Serving never re-runs the whole history:</p>
+<ul>
+<li><strong>fade</strong> (idle advance): <code>h · exp(−ln2 · Δt / half_life)</code> — O(1) elementwise.</li>
+<li><strong>absorb</strong> (event advance): fade the stored state to the first new event, then run only the new events.</li>
+</ul>
+<p>The half-life derives from the p95 of within-customer gaps.</p>
+<h3 id="77-config-surface-key-defaults">7.7 Config surface (key defaults)</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Default</th>
+<th>Field</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>dim</code></td>
+<td>64</td>
+<td><code>n_experts</code></td>
+<td>2</td>
+</tr>
+<tr>
+<td><code>seq_len</code></td>
+<td>128</td>
+<td><code>unified_ssm</code></td>
+<td>True</td>
+</tr>
+<tr>
+<td><code>state_half_life_days</code></td>
+<td>30.0</td>
+<td><code>band_isolate</code></td>
+<td>True</td>
+</tr>
+<tr>
+<td><code>n_anchors</code></td>
+<td>6</td>
+<td><code>input_norm</code> / <code>readout_norm</code></td>
+<td>True</td>
+</tr>
+<tr>
+<td><code>split_a_frac</code></td>
+<td>0.7</td>
+<td><code>readout_skip</code></td>
+<td>True</td>
+</tr>
+<tr>
+<td><code>weight_mode</code></td>
+<td>"equal"</td>
+<td><code>isometric_boundary</code></td>
+<td>True</td>
+</tr>
+<tr>
+<td><code>bank_size</code></td>
+<td>8192</td>
+<td><code>event_residual</code></td>
+<td>False (opt-in)</td>
+</tr>
+<tr>
+<td><code>rank_target</code></td>
+<td>0.35</td>
+<td><code>symbol_pcgrad</code></td>
+<td>True</td>
+</tr>
+<tr>
+<td><code>lr</code></td>
+<td>3e-3</td>
+<td><code>mask_frac</code></td>
+<td>0.15</td>
+</tr>
+<tr>
+<td><code>sf_mode</code></td>
+<td>"event_types"</td>
+<td><code>seed</code></td>
+<td>0</td>
+</tr>
+</tbody>
+</table>
+<p><code>objectives</code> default: <code>(next, entity, dt, value, mask, contrast, occur, order, jepa, sf, query, agg)</code>. <code>tag = f"{version}r{revision}"</code> (version <code>0.6.4</code>).</p>
+<hr />
+<h2 id="8-objectives-self-supervised">8. Objectives (self-supervised)</h2>
+<p>All objectives train jointly; none uses labels. Targets come from the same batch (next event, masked event, future window, etc.). Regression targets are standardized by the batch's own moments so every loss is O(1).</p>
+<table>
+<thead>
+<tr>
+<th>Objective</th>
+<th>What it teaches</th>
+<th>Loss</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>next</code></td>
+<td>next event type</td>
+<td>cross-entropy of <code>head_next(y_{t})</code> vs <code>e_{t+1}</code></td>
+</tr>
+<tr>
+<td><code>entity</code></td>
+<td>next entity type</td>
+<td>cross-entropy vs <code>entity_{t+1}</code></td>
+</tr>
+<tr>
+<td><code>dt</code></td>
+<td>next gap</td>
+<td>MSE of standardized <code>log1p Δt</code></td>
+</tr>
+<tr>
+<td><code>value</code></td>
+<td>next magnitude</td>
+<td>MSE of standardized $\log(1+|value|)$</td>
+</tr>
+<tr>
+<td><code>occur</code></td>
+<td>will an event occur within a horizon</td>
+<td>BCE at a data-derived gap threshold</td>
+</tr>
+<tr>
+<td><code>order</code></td>
+<td>temporal order</td>
+<td>Bradley–Terry margin between the true and a random event</td>
+</tr>
+<tr>
+<td><code>mask</code></td>
+<td>reconstruct a redacted event</td>
+<td>cross-entropy of <code>head_mask</code> on masked positions (causal, left-context only)</td>
+</tr>
+<tr>
+<td><code>contrast</code></td>
+<td>instance discrimination (uniformity)</td>
+<td>NT-Xent over normalized final states</td>
+</tr>
+<tr>
+<td><code>jepa</code></td>
+<td>predict the future latent (EMA target encoder)</td>
+<td>negative cosine between predicted and target future state</td>
+</tr>
+<tr>
+<td><code>sf</code></td>
+<td>long-horizon successor features</td>
+<td>MSE to the exact discounted future aggregate of $\phi=[\log(1+|value|),\ \text{one-hot event}]$, via a reverse affine scan</td>
+</tr>
+<tr>
+<td><code>query</code></td>
+<td>serving path: read the faded state at an arbitrary time</td>
+<td>cross-entropy of next event + MSE of gap, after fading <code>h</code> to a random query time</td>
+</tr>
+<tr>
+<td><code>agg</code></td>
+<td>exact multi-horizon window sums</td>
+<td>MSE of standardized <code>[log1p(count), log1p(value_sum)]</code> over a derived horizon</td>
+</tr>
+</tbody>
+</table>
+<p>Two design points worth stating:</p>
+<ul>
+<li><strong><code>query</code></strong> is the objective that makes the frozen model <em>usable at serving time</em>: it trains the readout to answer from a faded state, exactly as inference will.</li>
+<li><strong><code>sf</code></strong> uses a successor-feature target built by an exact reverse scan over the event clock (discount <code>γ</code> sampled from <code>[0, 0.999]</code>), so long-horizon value is learnable out of the box without a decision label.</li>
+</ul>
+<p>A deprecated set of <strong>soft-invariant</strong> terms (<code>variance, rank, redundancy, decorr, spectrum, volume, iso, trajectory, commutation, ortho</code>) is opt-in only; it was removed from the default objective because structural mechanisms replaced it (§15).</p>
+<hr />
+<h2 id="9-optimizer">9. Optimizer</h2>
+<h3 id="91-weighting">9.1 Weighting</h3>
+<table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Rule</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>equal</code> (default)</td>
+<td>sum the losses as-is</td>
+<td>no dynamic re-weighting</td>
+</tr>
+<tr>
+<td><code>dwa</code></td>
+<td>per-task weight from the rate of change, <code>w = K·softmax(r/T)</code></td>
+<td>scale-free: each loss divided by its own EMA unit</td>
+</tr>
+<tr>
+<td><code>uncertainty</code></td>
+<td>Kendall log-variance per task</td>
+<td>legacy</td>
+</tr>
+</tbody>
+</table>
+<p>A bounded compression term (AIB) can be added, its multiplier tuned by dual ascent on batch participation ratio.</p>
+<h3 id="92-taskstructure-projection-pcgrad">9.2 Task–structure projection (PCGrad)</h3>
+<p>Losses are split into <strong>task</strong> (predictive) and <strong>invariant</strong> (geometry). When the invariant gradient conflicts with the task gradient, it is projected onto the null space of the task gradient, so structural pressure can never reduce predictive skill. With the default objective set the invariant set is empty, so this is a no-op unless soft invariants are enabled.</p>
+<h3 id="93-memory-bank-and-closed-loop-governor">9.3 Memory bank and closed-loop governor</h3>
+<p>An 8192-state FIFO (<code>GeometryBank</code>) holds recent projected states. Each step it adds decorrelation, an eigenvalue floor, and a log-det volume barrier, multiplied by a closed-loop multiplier:</p>
+<p>$$\lambda \leftarrow \mathrm{clip}(\lambda\cdot e^{\alpha\,(\mathrm{target} - \mathrm{rank})},\ 1,\ 10^6)$$</p>
+<p>So when the bank's participation-ratio (rank) falls below target, the structural pressure grows; when it is on target, the pressure relaxes. The multiplier history is recorded.</p>
+<h3 id="94-step-size-armijo-per-step">9.4 Step size (Armijo per step)</h3>
+<p>Adam is the base optimizer. Each step, the training loss (with current weights) is evaluated before and after the candidate step:</p>
+<ul>
+<li>if the new loss is non-finite or clearly worse → <strong>revert the step</strong>, halve the learning rate (floored at 10% of base to avoid collapse);</li>
+<li>otherwise accept and grow the learning rate (capped).</li>
+</ul>
+<p>This makes training stable <strong>step 0 → end</strong> without estimating a global curvature bound. (Divergence is a hard failure, never rescued by rolling back to a lucky earlier state.)</p>
+<h3 id="95-whitening">9.5 Whitening</h3>
+<p>Before saving, the boundary transform is fit on the <strong>consumed</strong> representation <code>proj(h)</code> (not <code>h</code>), full-precision, with the current transform disabled. Fail-safe: if whitening does not improve participation ratio, it saves an identity transform and records that it was a no-op.</p>
+<h3 id="96-warm-start">9.6 Warm-start</h3>
+<p>Auto warm-start continues from the most recent <strong>compatible</strong> checkpoint: same behavior version, same resolved architecture (<code>seq_len, dim, half_life, sf_mode</code>), same objective set, and <code>as_of</code> no later than this run. Compatibility is required so a warm start can never change behavior silently.</p>
+<hr />
+<h2 id="10-training">10. Training</h2>
+<h3 id="101-derived-budget-and-sizes">10.1 Derived budget and sizes</h3>
+<p>Nothing is a fixed count. From the data and hardware:</p>
+<table>
+<thead>
+<tr>
+<th>Quantity</th>
+<th>Derivation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>seq_len</code></td>
+<td>p90 events/customer, clipped to [8, 256]</td>
+</tr>
+<tr>
+<td><code>dim</code></td>
+<td>from <code>sqrt(N) · log2(vocab + sequences) · (1 + event-type entropy)</code>, clipped to a power of two in [16, 256]</td>
+</tr>
+<tr>
+<td><code>batch</code></td>
+<td>sequences/32, power of two, capped by available GPU memory</td>
+</tr>
+<tr>
+<td><code>state_half_life_days</code></td>
+<td>p95 of within-customer gaps, clipped to [1/24, 365] days</td>
+</tr>
+<tr>
+<td><code>agg_horizons_days</code></td>
+<td>quantiles (0.5/0.9/0.99) of within-customer gaps</td>
+</tr>
+<tr>
+<td><code>budget</code></td>
+<td><code>15 · ceil(N/batch) · sqrt(dim/64)</code>, clipped to [50, 200000]</td>
+</tr>
+<tr>
+<td><code>eval_every</code>, <code>patience</code></td>
+<td>budget-scaled</td>
+</tr>
+</tbody>
+</table>
+<p>Architecture identity derives from the full working base; batch and budget derive from the actual sample, so the sample ladder scales honestly. Any explicit override wins and is recorded.</p>
+<h3 id="102-convergence">10.2 Convergence</h3>
+<p>Training runs in evaluation chunks. After each chunk it measures a held-out metric and:</p>
+<ul>
+<li>tracks a noise floor from recent evaluations (<code>tol = 0.5·std</code> of the last window);</li>
+<li>keeps the <strong>strictly best</strong> held-out state ever seen;</li>
+<li>stops when improvement stalls for <code>patience</code> evaluations (converged), or on budget;</li>
+<li><strong>divergence guard</strong>: a metric far above the noise floor marks the run unstable and stops it as a hard failure (no green).</li>
+</ul>
+<h3 id="103-best-state-selection">10.3 Best-state selection</h3>
+<p>Selection uses a <strong>stationary, equal-weight held-out sum</strong> in the scale-free unit system — never the same self-referential weighting the model is optimizing. A non-finite term or a non-positive metric surfaces as failure, not a masked pass.</p>
+<h3 id="104-step-0-tensor-health-harness">10.4 Step-0 tensor-health harness</h3>
+<p>Before training, on a small batch, the model is checked and <strong>must pass</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Check</th>
+<th>Rule</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>magnitude</td>
+<td>per-token RMS within [1/κ, κ] (κ=2); absolute max bounded</td>
+</tr>
+<tr>
+<td>variance</td>
+<td>no collapsed variance</td>
+</tr>
+<tr>
+<td>spectral bound</td>
+<td>every decay &lt; 1 (contractive)</td>
+</tr>
+<tr>
+<td>rank</td>
+<td>state participation ratio &gt; 1 (not rank-1)</td>
+</tr>
+<tr>
+<td>determinism</td>
+<td>identical output on a repeated forward</td>
+</tr>
+</tbody>
+</table>
+<h3 id="105-receipts">10.5 Receipts</h3>
+<p>Every run writes a registry JSON with version, tag, data signature, <code>as_of</code>, split seed, warm-start source, resolved config and overrides, governor outcome, portfolio result, task weights, loss scales, bank stats, and whitening receipt. Every artifact is traceable to the inputs and settings that produced it.</p>
+<hr />
+<h2 id="11-evaluation">11. Evaluation</h2>
+<h3 id="111-portfolio-structure-skill-geometry-canary">11.1 Portfolio (structure skill, geometry, canary)</h3>
+<ul>
+<li><strong>Structure skill</strong> per objective: the held-out loss on <strong>real</strong> data minus the loss on <strong>destroyed</strong> data (content permuted within each customer), grouped by customer, with fold standard error. Positive skill means the model uses temporal structure. Some objectives are report-only.</li>
+<li><strong>Identifiability ceiling</strong>: a model-free first-order baseline (conditioning on the previous event) is fit and scored on the same folds; if the achievable signal is at the noise floor, the objective is <code>NO_IDENTIFIABLE_SIGNAL</code>.</li>
+<li><strong>Verdict</strong>: PASS if skill exceeds twice its standard error; <code>NO_IDENTIFIABLE_SIGNAL</code> if the ceiling is at the floor; otherwise <code>FAIL</code>.</li>
+<li><strong>Geometry gate</strong>: participation-ratio fraction of the consumed states, compared to a fraction of the stream's own achievable (whitened) capacity, with the finite-sample Marchenko–Pastur null shown for reference. Also checks the conservation ratio and a stability flag.</li>
+<li><strong>Canary probes</strong>: the state must <strong>not</strong> predict the A/B arm or the time period (&lt; chance × 1.5) — a leak detector.</li>
+</ul>
+<h3 id="112-intrinsic-proofs">11.2 Intrinsic proofs</h3>
+<p>Five representation-space checks on frozen states:</p>
+<table>
+<thead>
+<tr>
+<th>Proof</th>
+<th>Gate</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>disentanglement</td>
+<td>channel mutual information below a floor vs a shuffled null</td>
+</tr>
+<tr>
+<td>out-of-time stability</td>
+<td>principal-angle subspace overlap across time splits above 0.85</td>
+</tr>
+<tr>
+<td>local Lipschitz</td>
+<td>perturbing one event by ±1 day changes the state by less than a bound</td>
+</tr>
+<tr>
+<td>trajectory smoothness</td>
+<td>slow-state velocity direction cosine &gt; 0</td>
+</tr>
+<tr>
+<td>Markov sufficiency</td>
+<td>predicting a future window from the state beats a shuffled null</td>
+</tr>
+</tbody>
+</table>
+<h3 id="113-probe-harness-frozen">11.3 Probe harness (frozen)</h3>
+<p>Encoder weights are frozen and every head is trained on top. For each probe objective, the model's held-out score is compared to <strong>model-free baselines</strong> (unigram, previous-event transition, historical mean, previous value), each with standard error. The verdict rule: PASS if the model beats the stronger baseline by twice the standard error; <code>NO_IDENTIFIABLE_SIGNAL</code> if the baselines are already at the noise floor; else FAIL.</p>
+<p>Additional diagnostics: <strong>event-identity decodability</strong> (can a linear probe read the current event from <code>z_t</code>?), next-event slices, and three named capabilities — <strong>pacing</strong>, <strong>boundary</strong> (is the next event a session reset?), and <strong>uncertainty</strong> (is unusual input detected?). Plain CE/MSE, no class weights.</p>
+<h3 id="114-sufficiency-battery-the-universal-donor-gate">11.4 Sufficiency battery (the universal-donor gate)</h3>
+<p>The donor claim is tested by an ablation on the same held-out rows, under the <strong>production</strong> head:</p>
+<table>
+<thead>
+<tr>
+<th>Arm</th>
+<th>Features</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>E</td>
+<td>frozen embeddings</td>
+</tr>
+<tr>
+<td>R</td>
+<td>causal raw aggregates (recency, tenure, count, value, gaps, order stats, per-type counts)</td>
+</tr>
+<tr>
+<td>E+R</td>
+<td>concatenation</td>
+</tr>
+<tr>
+<td>Scr</td>
+<td>row-shuffled embeddings (null)</td>
+</tr>
+</tbody>
+</table>
+<p>The verdict requires, per target: E beats shuffled (adds signal), E is not materially worse than raw, and E adds <strong>unique</strong> signal beyond raw (partial-correlation lower bound &gt; 0). Across the 8 targets, the donor is "universal" when unique coverage ≥ threshold and standalone/coverage ≥ 0.8.</p>
+<hr />
+<h2 id="12-products-the-state-store">12. Products (the state store)</h2>
+<p><code>cfm_products.duckdb</code> is written by exactly one component (<code>StateStore</code>); everything downstream reads it.</p>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Columns</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>customer_state</code></td>
+<td>key, <code>as_of_epoch</code>, version, dim, <code>state[]</code>, <code>embedding[]</code>, <code>last_event_ts</code></td>
+<td>the live recurrent state per customer</td>
+</tr>
+<tr>
+<td><code>anchor_embeddings</code></td>
+<td>key, <code>anchor_epoch</code>, version, dim, <code>embedding[]</code></td>
+<td>entity-pooled readout at anchors</td>
+</tr>
+<tr>
+<td><code>donor_embeddings</code></td>
+<td>same as <code>anchor_embeddings</code></td>
+<td>state-consistent readout (<code>boundary(proj(h))</code>) — the production feature</td>
+</tr>
+<tr>
+<td><code>state_embeddings</code></td>
+<td>key, <code>as_of_epoch</code>, version, dim, <code>embedding[]</code></td>
+<td>materialized daily serving features</td>
+</tr>
+<tr>
+<td><code>encoder_samples</code></td>
+<td>key, split, version</td>
+<td>the persisted A/B assignment</td>
+</tr>
+<tr>
+<td><code>state_job_receipts</code></td>
+<td><code>as_of_epoch</code>, version, counts, device, wall time, <code>ran_at</code></td>
+<td>one row per daily job / day-1 close</td>
+</tr>
+</tbody>
+</table>
+<p>Flow: <code>build_products</code> writes splits, runs every customer's full history to a state, closes day 1 (fade idle states + materialize embeddings + receipt), and writes anchor/donor embeddings. The daily job reads only the new window <code>(last_as_of, day]</code>, <strong>absorbs</strong> new events, <strong>fades</strong> idle customers, rematerializes embeddings, and refuses to run backwards. Dense per-week/daily states are emitted for downstream decision logs.</p>
+<hr />
+<h2 id="13-head-interfaces">13. Head Interfaces</h2>
+<h3 id="131-plugin-contract">13.1 Plugin contract</h3>
+<table>
+<thead>
+<tr>
+<th>Object</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PluginSpec</code></td>
+<td><code>name, kind, target, window_days, version, revision</code>; <code>tag = name_version r revision</code></td>
+</tr>
+<tr>
+<td><code>Dataset</code></td>
+<td>frozen embeddings <code>X</code>, labels <code>y</code>, keys, anchor times, a raw baseline <code>x_base</code>, and <code>meta</code></td>
+</tr>
+<tr>
+<td><code>save_artifact</code></td>
+<td>writes <code>{spec, tag, payload}</code> and an as-of-stamped archive</td>
+</tr>
+</tbody>
+</table>
+<p><code>Dataset</code> reads from the products DB, builds labels only from windows that close by the last observable order, and records the encoder version(s) present in the feature table.</p>
+<h3 id="132-targets">13.2 Targets</h3>
+<p>A <code>Target</code> declares kind (binary/continuous), window, and <strong>which feature table</strong> it reads. The production propensity target reads <code>donor_embeddings</code> — a pure function of the state, so it is reproducible at inference. Continuous CLV reads <code>anchor_embeddings</code>.</p>
+<h3 id="133-supervised-head-and-gates">13.3 Supervised head and gates</h3>
+<p>Heads are fit on one shared grouped split (by customer), with a bake-off across model families; ties are broken by paired standard error. Gates are explicit and per-capability:</p>
+<table>
+<thead>
+<tr>
+<th>Gate</th>
+<th>Rule</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>discrimination</td>
+<td>AUC/lift beats the baseline by &gt; 2·SE (paired)</td>
+</tr>
+<tr>
+<td>calibration</td>
+<td>calibration gap within a derived tolerance; Brier below baseline</td>
+</tr>
+<tr>
+<td>continuous</td>
+<td>rank correlation above a floor and not worse than the trailing baseline</td>
+</tr>
+</tbody>
+</table>
+<h3 id="134-encoder-version-pinning">13.4 Encoder-version pinning</h3>
+<p>A head records the encoder tag it learned from. If the feature table holds <strong>zero or more than one</strong> distinct encoder version, the head refuses to train (a mixed-version table would train a null-pinned head that passes and fails later). Inference rejects a version mismatch.</p>
+<h3 id="135-rl-heads-white_queen-red_king">13.5 RL heads (white_queen / red_king)</h3>
+<p>The foundation model must enable offline policy evaluation and counterfactual evaluation. That imposes hard requirements on the data contract and the encoder:</p>
+<table>
+<thead>
+<tr>
+<th>Requirement</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>preserve randomized <strong>action arms</strong> and logged <strong>propensity</strong> through CESI</td>
+<td>causal identification needs the action and its selection probability</td>
+</tr>
+<tr>
+<td>expose actions distinctly from user events (covariates, and — where needed — an <strong>action-gated operator</strong> <code>B(a_t)</code>)</td>
+<td>the model must separate "what the system did" from "what the user did"</td>
+</tr>
+<tr>
+<td>per-customer, calibrated uncertainty in the embedding path</td>
+<td>OPE/counterfactual estimates must carry intervals, not point values</td>
+</tr>
+</tbody>
+</table>
+<p>With those in place, <code>white_queen</code> (offline policy evaluation / certification) and <code>red_king</code> (counterfactual evaluation) attach to the frozen embeddings as downstream heads and must pass their own gates. On streams without randomized arms, these heads correctly refuse.</p>
+<hr />
+<h2 id="14-cli-versioning">14. CLI &amp; Versioning</h2>
+<h3 id="141-commands-run-from-the-repo-root">14.1 Commands (run from the repo root)</h3>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>train</code></td>
+<td>train the encoder + build products (also closes day 1)</td>
+</tr>
+<tr>
+<td><code>products</code></td>
+<td>rebuild products from an existing checkpoint (no retrain)</td>
+</tr>
+<tr>
+<td><code>portfolio</code></td>
+<td>grade a checkpoint (structure skill + geometry + canary)</td>
+</tr>
+<tr>
+<td><code>validate</code></td>
+<td>frozen causal next-event validation</td>
+</tr>
+<tr>
+<td><code>all</code></td>
+<td>train, then validate</td>
+</tr>
+</tbody>
+</table>
+<p>Key flags: <code>--db</code>, <code>--as-of</code>, <code>--customers</code>, <code>--anchors</code>, <code>--sample-a</code>, <code>--sample-b</code>, <code>--warm-start {auto,none,tag}</code>, <code>--tag</code>, <code>--out-dir</code>, <code>--set KEY=VALUE</code> (repeatable; applied after derivation and recorded). The daily job is a separate command (<code>--as-of</code> = the day being closed).</p>
+<h3 id="142-versioning">14.2 Versioning</h3>
+<p>Versions are pre-1.0 semver <code>MAJOR.MINOR.PATCH</code> (<code>0.MAJOR.MINOR</code>), with an <code>r</code> data/score revision appended to form the tag: <code>&lt;version&gt;r&lt;revision&gt;</code> (e.g. <code>0.6.4r162610</code>). The version encodes <strong>behavior</strong>: a change that can alter outputs bumps the version; every artifact records its inputs, config, and version (DEC-058).</p>
+<hr />
+<h2 id="15-guardrails-the-invariants">15. Guardrails (The Invariants)</h2>
 <table>
 <thead>
 <tr>
@@ -308,287 +1114,264 @@ window.MathJax = {
 <tr>
 <td><strong>A</strong></td>
 <td>Normalization by construction</td>
-<td>per-sample feature normalization ($\sigma \approx 1.0$) inside hidden recurrent mixer boundaries; raw magnitude/trend preserved via the <strong>Payload Bypass Stream</strong></td>
+<td>per-sample normalization ($\sigma\approx1$) inside the mixer; raw magnitude preserved via the Payload Bypass Stream</td>
 </tr>
 <tr>
 <td><strong>B</strong></td>
 <td>Fail-fast tensor health</td>
-<td>Step-0 harness halts on NaN, Inf, explosive magnitude ($&gt; 10^4$), variance collapse ($\sigma^2 &lt; 10^{-6}$)</td>
+<td>Step-0 harness halts on NaN, Inf, magnitude $&gt;10^4$, variance $&lt;10^{-6}$</td>
 </tr>
 <tr>
 <td><strong>C</strong></td>
 <td>Bounded operator dynamics</td>
-<td>contractive transitions ($\rho &lt; 1$) via spectral normalization on the transition matrix $A$</td>
+<td>contractive transitions ($\rho&lt;1$) by construction</td>
 </tr>
 <tr>
 <td><strong>D</strong></td>
 <td>Zero supervised loss hacks</td>
-<td>no focal loss, no class weights, no manual auxiliary balancing; self-supervised objectives permitted as geometry constraints</td>
+<td>no focal loss, class weights, or manual balancing; only self-supervised structure</td>
 </tr>
 <tr>
 <td><strong>E</strong></td>
 <td>Anti-collapse</td>
-<td>asynchronous memory-bank decorrelation prevents low-rank degeneracy</td>
+<td>asynchronous memory-bank decorrelation</td>
 </tr>
 <tr>
 <td><strong>F</strong></td>
 <td>Identifiability ceiling</td>
-<td>grade streams against pre-training information entropy ceilings before compute; a target the stream provably cannot carry is <code>NO_SIGNAL</code> — <strong>never <code>FAIL</code></strong> (§1.2 verdict law)</td>
+<td>grade streams against entropy ceilings before compute; a target the stream cannot carry is <code>NO_SIGNAL</code>, never <code>FAIL</code></td>
 </tr>
 <tr>
 <td><strong>G</strong></td>
 <td>Strict causal arrow</td>
-<td>zero look-ahead leakage across temporal mixing layers (strictly causal masking)</td>
+<td>zero look-ahead; strictly causal masking</td>
 </tr>
 <tr>
 <td><strong>H</strong></td>
 <td>Absorbing-state prevention</td>
-<td>minimum singular value floor on recurrent operators: $\sigma_{\min}(A) \ge \epsilon = 10^{-4}$</td>
+<td>minimum singular value floor $\sigma_{\min}(A)\ge10^{-4}$</td>
 </tr>
 <tr>
 <td><strong>I</strong></td>
-<td>Information-theoretic invertibility bound</td>
-<td>encoder retains input entropy above a floor: $I(x_t; z_t) \ge H_{min}$</td>
+<td>Information invertibility bound</td>
+<td>retain input entropy above a floor: $I(x_t;z_t)\ge H_{min}$</td>
 </tr>
 </tbody>
 </table>
 <hr />
-<h2 id="4-operational-definitions-of-the-12-intrinsic-governance-metrics">4. Operational Definitions of the 12 Intrinsic Governance Metrics</h2>
-<p>Evaluated on frozen embedding checkpoints every $N$ steps; each is auditable and per-capability.</p>
+<h2 id="16-the-12-health-checks-target">16. The 12 Health Checks (target)</h2>
 <table>
 <thead>
 <tr>
 <th>#</th>
-<th>Category</th>
-<th>Metric &amp; definition</th>
-<th>Trigger / limit</th>
+<th>Checks</th>
+<th>How it is computed</th>
+<th>Fails if</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>1</td>
-<td>Information Capacity &amp; Fidelity</td>
-<td>Effective Rank Ratio $ER(Z) = \exp\left( -\sum_{i=1}^d p_i \log p_i \right)$, $p_i = \frac{\sigma_i}{\sum_{j=1}^d \sigma_j}$</td>
-<td>halt if $ER(Z_{current}) / ER(Z_{baseline}) &lt; 0.15$</td>
+<td>capacity</td>
+<td>Effective Rank Ratio $ER(Z)=\exp(-\sum p_i\log p_i)$, $p_i=\sigma_i/\sum\sigma_j$</td>
+<td>rank $&lt;0.15$ of baseline</td>
 </tr>
 <tr>
 <td>2</td>
-<td>Geometric Separability &amp; Manifold Health</td>
-<td>Alignment &amp; Uniformity: $\mathcal{L}_{align} = \mathbb{E}_{(z, z^+) \sim p_{pos}} \left[ \Vert{} z - z^+ \Vert{}_2^2 \right]$, $\mathcal{L}_{uniform} = \log \mathbb{E}_{z, z&#x27; \sim p_{data}} \left[ e^{-2 \Vert{} z - z&#x27; \Vert{}_2^2} \right]$</td>
-<td>align ↓, uniformity ↓</td>
+<td>geometry</td>
+<td>Alignment $\mathbb{E}\Vert z-z^+\Vert_2^2$; Uniformity $\log\mathbb{E}\,e^{-2\Vert z-z&#x27;\Vert_2^2}$</td>
+<td>either high</td>
 </tr>
 <tr>
 <td>3</td>
-<td>Temporal Coherence &amp; Markovianity</td>
-<td>Time’s Arrow Asymmetry $TAA = \mathbb{E}\left[ \Vert{} z_{t+1} - f_{fwd}(z_t) \Vert{}_2^2 \right] - \mathbb{E}\left[ \Vert{} z_t - f_{bwd}(z_{t+1}) \Vert{}_2^2 \right]$</td>
-<td>$TAA &gt; 0$ (arrow of time respected)</td>
+<td>time direction</td>
+<td>$TAA=\mathbb{E}\Vert z_{t+1}-f_{fwd}(z_t)\Vert^2-\mathbb{E}\Vert z_t-f_{bwd}(z_{t+1})\Vert^2$</td>
+<td>$TAA\le0$</td>
 </tr>
 <tr>
 <td>4</td>
-<td>Disentanglement &amp; Factorization</td>
-<td>Total Correlation $TC(Z) = D_{KL}\left( q(z) \;\Big\Vert{}\; \prod_{j=1}^d q(z_j) \right)$</td>
-<td>independence across latent blocks</td>
+<td>factorization</td>
+<td>Total Correlation $TC=D_{KL}(q(z)\,\Vert\,\prod_j q(z_j))$</td>
+<td>high redundancy</td>
 </tr>
 <tr>
 <td>5</td>
-<td>Robustness &amp; Nuisance Invariance</td>
-<td>Augmentation Invariance Distance $\mathcal{L}_{inv} = \mathbb{E}\left[ \Vert{} f(x) - f(x_{augmented}) \Vert{}_2^2 \right]$</td>
-<td>low</td>
+<td>nuisance invariance</td>
+<td>augmentation distance $\mathbb{E}\Vert f(x)-f(x_{aug})\Vert^2$</td>
+<td>large</td>
 </tr>
 <tr>
 <td>6</td>
-<td>Epistemic Density &amp; Boundary Awareness</td>
-<td>OOD AUROC from Mahalanobis $D_M(z) = \sqrt{(z - \mu)^T \Sigma^{-1} (z - \mu)}$</td>
-<td>AUROC separation of in-dist vs noise $&gt; 0.5$</td>
+<td>boundary awareness</td>
+<td>OOD AUROC from Mahalanobis $D_M(z)=\sqrt{(z-\mu)^T\Sigma^{-1}(z-\mu)}$</td>
+<td>AUROC $\le0.5$</td>
 </tr>
 <tr>
 <td>7</td>
-<td>Equivariance &amp; Group Symmetries <em>(conditional)</em></td>
-<td>Equivariance Error $\mathcal{L}_{eq} = \mathbb{E}\left[ \Vert{} f(g \cdot x) - g&#x27; \cdot f(x) \Vert{}_2^2 \right]$</td>
-<td>low</td>
+<td>equivariance <em>(cond.)</em></td>
+<td>$\mathbb{E}\Vert f(g\cdot x)-g&#x27;\cdot f(x)\Vert^2$</td>
+<td>large</td>
 </tr>
 <tr>
 <td>8</td>
-<td>Manifold Flatness &amp; Interpolation Validity</td>
-<td>Geodesic Interpolation Loss $\mathcal{L}_{geo} = \mathbb{E}_{\alpha \in [0,1]} \left[ \Vert{} f(\alpha x_i + (1-\alpha)x_j) - (\alpha f(x_i) + (1-\alpha)f(x_j)) \Vert{}_2^2 \right]$</td>
-<td>halt on interpolation-error spike past local tolerance</td>
+<td>flatness</td>
+<td>geodesic interpolation loss over $\alpha\in[0,1]$</td>
+<td>error spikes</td>
 </tr>
 <tr>
 <td>9</td>
-<td>Causal Identifiability <em>(conditional)</em></td>
-<td>Interventional Shift Variance $ISV = \text{Var}\left( z_{t+1} \mid do(a_t) \right) - \text{Var}\left( z_{t+1} \mid a_t \right)$</td>
-<td>$ISV &gt; 0$</td>
+<td>causal identifiability <em>(cond.)</em></td>
+<td>$ISV=\mathrm{Var}(z_{t+1}\mid do(a_t))-\mathrm{Var}(z_{t+1}\mid a_t)$</td>
+<td>$ISV\le0$</td>
 </tr>
 <tr>
 <td>10</td>
-<td>Controllability &amp; Reachability <em>(conditional)</em></td>
-<td>Reachability Gramian rank $\sigma_{\min}(W_R) \ge \epsilon$, $W_R = \sum_{k=0}^{K} A^k B B^T (A^T)^k$</td>
-<td>$\sigma_{\min}(W_R) \ge \epsilon$</td>
+<td>controllability <em>(cond.)</em></td>
+<td>reachability Gramian $\sigma_{\min}(W_R)\ge\epsilon$, $W_R=\sum_k A^kBB^T(A^T)^k$</td>
+<td>too thin</td>
 </tr>
 <tr>
 <td>11</td>
-<td>Temporal Hierarchy &amp; Abstraction</td>
-<td>Temporal Abstraction Decay Ratio $TAR = \frac{I(Z_{macro}; x_{t+k})}{I(z_t; x_{t+k})}$ for $k \gg 1$</td>
-<td>abstraction gain at long horizon</td>
+<td>abstraction</td>
+<td>$TAR=I(Z_{macro};x_{t+k})/I(z_t;x_{t+k})$ for $k\gg1$</td>
+<td>no gain</td>
 </tr>
 <tr>
 <td>12</td>
-<td>Protected Attribute Invariance <em>(conditional)</em></td>
-<td>Null-Space Residual $NSR = 1 - \text{Accuracy}\left( \text{Decoder}(P_{\text{null}} z_t) \to S_{\text{protected}} \right)$</td>
-<td>halt if residual decoding exceeds chance</td>
+<td>protected invariance <em>(cond.)</em></td>
+<td>Null-Space Residual $1-\mathrm{Acc}(\mathrm{Decoder}(P_{null}z_t)\to S_{prot})$</td>
+<td>recovery above chance</td>
 </tr>
 </tbody>
 </table>
 <hr />
-<h2 id="5-architectural-components">5. Architectural Components</h2>
+<h2 id="17-components-target-status">17. Components (target → status)</h2>
 <table>
 <thead>
 <tr>
 <th>ID</th>
 <th>Component</th>
 <th>Function</th>
-<th>Requirement</th>
+<th>Status today</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><strong>0</strong></td>
-<td>Canonical Ingestion Interface</td>
-<td>validates the CESI schema contract (Timestamp, Entity ID, Categorical Tokens, Continuous Metrics); proves presence/absence of action arms + protected attributes</td>
-<td>core</td>
+<td>Ingestion</td>
+<td>validate CESI; detect optional arms / protected attributes</td>
+<td>parser yes; discovery partial</td>
 </tr>
 <tr>
 <td><strong>A</strong></td>
-<td>Multi-Scale SSM + Payload Bypass</td>
-<td>log-spaced decay spectrum ($\rho \in [0.05, 0.82]$) + raw payload bypass routed directly to readout</td>
-<td>core</td>
+<td>Multi-scale SSM + bypass</td>
+<td>log-spaced decay + raw payload to readout</td>
+<td>core present; bypass is event-identity only</td>
 </tr>
 <tr>
 <td><strong>B</strong></td>
-<td>Soft-Orthogonal Subspace Routing</td>
-<td>block-diagonal transition $A = \text{diag}(A_1, A_2, \dots, A_k)$ + regularized cross-talk penalties</td>
-<td>core</td>
+<td>Subspace routing</td>
+<td>block-diagonal $A$ + cross-talk penalty</td>
+<td>2-band present</td>
 </tr>
 <tr>
 <td><strong>C &amp; H</strong></td>
-<td>Action-Gated Operators &amp; Rollouts</td>
-<td>instantiates $B(a_t)$ when arms exist, bounded $\Vert{}B(a_t)\Vert{} \le \kappa$ to keep contractivity</td>
-<td><strong>required when arms declared</strong> (v1.0 RL, C8)</td>
+<td>Action-gated operators</td>
+<td>$B(a_t)$ when arms exist; bounded</td>
+<td><strong>absent — blocks C8</strong></td>
 </tr>
 <tr>
 <td><strong>D</strong></td>
-<td>Memory-Bank Barlow Alignment</td>
-<td>anti-collapse decorrelation over asynchronous rolling queue $Z_{mem}$, zero batch statistics</td>
-<td>core</td>
+<td>Memory-bank alignment</td>
+<td>asynchronous decorrelation</td>
+<td>bank present; no Barlow loss</td>
 </tr>
 <tr>
 <td><strong>E</strong></td>
-<td>Composite Uncertainty</td>
-<td>reconstruction dispersion + Mahalanobis distance + fast/slow temporal disagreement</td>
-<td>core</td>
+<td>Composite uncertainty</td>
+<td>dispersion + Mahalanobis + channel disagreement</td>
+<td>absent</td>
 </tr>
 <tr>
 <td><strong>F</strong></td>
-<td>Boundary-Gated Soft-Macro-Pooling</td>
-<td>temperature-scaled soft-reset EMA session tracking $Z_{macro}$</td>
-<td>core</td>
+<td>Macro-pooling</td>
+<td>soft-reset EMA $Z_{macro}$</td>
+<td>absent</td>
 </tr>
 <tr>
 <td><strong>G</strong></td>
-<td>Conditional Null-Space Fairness</td>
-<td>projects the final vector onto the orthogonal complement of protected attributes</td>
-<td>opt-in when protected attributes declared</td>
+<td>Fairness projection</td>
+<td>null-space of protected attributes</td>
+<td>absent</td>
 </tr>
 </tbody>
 </table>
 <hr />
-<h2 id="6-the-two-phase-factory-pipeline-evaluation-plan">6. The Two-Phase Factory Pipeline &amp; Evaluation Plan</h2>
-<table>
-<thead>
-<tr>
-<th>Phase</th>
-<th>Encoder state</th>
-<th>Trained objective</th>
-<th>Governance</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>Phase 1 — Self-Supervised Pre-Training</strong></td>
-<td>trainable</td>
-<td>predictive coding $\mathcal{L}_{pred}$ + memory-bank Barlow decorrelation $\mathcal{L}_{barlow}$</td>
-<td>Step-1 Governance Loop with fail-fast Halt Rules (C2, C3, C4)</td>
-</tr>
-<tr>
-<td><strong>Phase 2 — Frozen-Manifold Downstream Probing</strong></td>
-<td><strong>permanently locked</strong>, $z_t = \text{Encoder}(x_{1:t})$</td>
-<td>none (adapters only)</td>
-<td>each head attaches and passes its independent gate (C6, C7, C8, C9)</td>
-</tr>
-</tbody>
-</table>
-<hr />
-<h2 id="7-execution-directive-implementation-blueprint">7. Execution Directive &amp; Implementation Blueprint</h2>
+<h2 id="18-build-order">18. Build Order</h2>
 <table>
 <thead>
 <tr>
 <th>#</th>
-<th>Deliverable</th>
+<th>Build</th>
 <th>Serves</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>1</td>
-<td>Component 0 (CESI schema parser) with feature-type clustering + capability discovery</td>
+<td>Ingestion parser: canonical schema + alias folding + optional-column discovery</td>
 <td>C1</td>
 </tr>
 <tr>
 <td>2</td>
-<td>Component A (multi-scale SSM with spectral normalization) + Payload Bypass Stream</td>
-<td>C4, C5</td>
+<td>Data path: point-in-time cut, A/B split, sampling, sequences, collation</td>
+<td>C1, C2</td>
 </tr>
 <tr>
 <td>3</td>
-<td>Component D (memory-bank Barlow Twins loss), zero batch statistics</td>
-<td>C3, C4</td>
+<td>Tokenizer + selective multi-scale SSM + scan + normalization + boundary</td>
+<td>C4, C5</td>
 </tr>
 <tr>
 <td>4</td>
-<td>Step-1 Governance Loop evaluating all 12 operationalized metrics every $N$ steps</td>
-<td>C4</td>
+<td>Objective portfolio (12 self-supervised terms)</td>
+<td>C2, C4</td>
 </tr>
 <tr>
 <td>5</td>
-<td>Halt Rules for relative effective rank ($&lt; 0.15$), geodesic-interpolation spikes, null-space leakage</td>
-<td>C3</td>
+<td>Optimizer: weighting, PCGrad, memory bank/governor, Armijo, whitening, warm-start</td>
+<td>C2, C3</td>
 </tr>
 <tr>
 <td>6</td>
-<td>Phase-2 frozen readout adapters: supervised, unsupervised, and RL (<code>white_queen</code> / <code>red_king</code>)</td>
+<td>Training protocol: derived budget, governor, best-state, health harness, receipts</td>
+<td>C2, C3, C10</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Evaluation: portfolio, intrinsic proofs, probe harness, sufficiency battery</td>
+<td>C4, C5</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Products: state store + daily job + dense states</td>
+<td>C6–C9</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Head interfaces: supervised, unsupervised, RL (white_queen / red_king)</td>
 <td>C6–C9</td>
 </tr>
 </tbody>
 </table>
 <hr />
-<h2 id="8-current-state-reconciliation-grounded-2026-10-10">8. Current-State Reconciliation (grounded, 2026-10-10)</h2>
+<h2 id="19-reconciliation-grounded-2026-10-10">19. Reconciliation (grounded, 2026-10-10)</h2>
 <blockquote>
-<p><strong>Provenance.</strong> The spec above is the <em>target</em>; this section maps it to what
-actually exists in <code>wonderland/looking_glass</code>, what is <em>measured</em>, and the open
-gaps. Sources: <code>STATUS.md</code>, <code>DECISIONS.md</code>,
-<code>looking_glass/specs/ARCHITECTURE_CARD.md</code>, <code>specs/V7_RFC.md</code>,
-<code>specs/ECOM_2019_PROBE_BASELINE.md</code>, portfolio receipts, and the concurrently
-running session's probe receipts in <code>/tmp/opencode/ecomm_*.{json,md}</code>.</p>
-<p><strong>v1.0 alignment.</strong> §1.2 is the anchor for the whole document. Two governing
-decisions: (1) <strong>RL support is required</strong> — the encoder must enable
-<code>white_queen</code>/<code>red_king</code> (C8; Components C &amp; H in scope); (2) <strong>no-FAIL verdict
-law</strong> — every capability resolves to <code>PASS</code> or a ceiling-certified <code>NO_SIGNAL</code>.
-A current <code>FAIL</code> is therefore a <strong>v1.0 blocker</strong>.</p>
-<p><strong>Isolation note.</strong> A separate session is editing <code>cfm_model.py</code> /
-<code>cfm_training.py</code> / <code>probes.py</code> (DEC-057) and running ecommerce probes; this
-document was produced read-only with respect to that work.</p>
+<p>The plan above is the target; this section maps it to what exists today. A
+separate session is editing <code>cfm_model.py</code> / <code>cfm_training.py</code> / <code>probes.py</code>;
+this section is written read-only with respect to that work.</p>
 </blockquote>
-<h3 id="81-version-reality">8.1 Version reality</h3>
+<h3 id="191-versions">19.1 Versions</h3>
 <table>
 <thead>
 <tr>
@@ -598,520 +1381,188 @@ document was produced read-only with respect to that work.</p>
 </thead>
 <tbody>
 <tr>
-<td>Committed code line</td>
-<td><code>main</code> @ <code>0.6.9</code>; <code>CFMConfig.version = "0.6.4"</code> (<code>cfm_config.py:142</code>)</td>
+<td>Current code</td>
+<td><code>0.6.9</code>; encoder version <code>0.6.4</code></td>
 </tr>
 <tr>
-<td>Versioning scheme</td>
+<td>Versioning</td>
 <td>pre-1.0 semver <code>0.MAJOR.MINOR</code> + <code>r</code> revision (DEC-058)</td>
 </tr>
 <tr>
-<td>Frozen encoder in receipts</td>
-<td><code>0.6.4r162610</code> (25k/1.5k ecommerce sample; 5-fold grouped CV)</td>
+<td>Frozen encoder in results</td>
+<td><code>0.6.4r162610</code></td>
 </tr>
 <tr>
-<td>Open design RFC</td>
-<td><code>0.7.0</code> centered-covariance SSM (<code>specs/V7_RFC.md</code>) — bilinear <code>h⊗x</code> ADVANCED (DEC-042/043)</td>
+<td>Datasets that pass today</td>
+<td>rabbit_hole (all), Instacart (all)</td>
 </tr>
 <tr>
-<td>In-flight (uncommitted)</td>
-<td>DEC-057: dedicated event-identity readout channels + dedicated <code>head_mask</code></td>
-</tr>
-<tr>
-<td>Certified streams</td>
-<td>rabbit_hole 11/11 + 6/6; Instacart 11/11 + 6/6</td>
-</tr>
-<tr>
-<td>Weak stream</td>
-<td>ecommerce_2019 — <code>next</code>/<code>value</code> FAIL, <code>uncertainty</code> FAIL, <code>entity</code> NO_SIGNAL</td>
+<td>Dataset that struggles</td>
+<td>ecommerce_2019 (several <code>FAIL</code>, one <code>NO_SIGNAL</code>)</td>
 </tr>
 </tbody>
 </table>
-<h3 id="82-guardrails-ai-target-as-built">8.2 Guardrails A–I: target → as-built</h3>
+<h3 id="192-what-exists-today-vs-the-target">19.2 What exists today vs the target</h3>
 <table>
 <thead>
 <tr>
-<th>Guardrail</th>
-<th>As-built today</th>
-<th>Status</th>
+<th>Area</th>
+<th>Today</th>
+<th>Gap</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>A</strong> Normalization by construction</td>
-<td><code>RMSNorm</code> per-sample on SSM input + readout (<code>cfm_model.py:69</code>); value/trend on separate token channels; DEC-047 fixed unbounded readout ($|\max|$ 900→3.4)</td>
-<td>core; Payload Bypass partial</td>
+<td>Data contract</td>
+<td>canonical 5-field schema, alias folding, Arrow/Parquet/DuckDB</td>
+<td>no action-arm / protected-attribute detection</td>
 </tr>
 <tr>
-<td><strong>B</strong> Fail-fast tensor health</td>
-<td><code>assert_readout_health</code> (<code>:92</code>) + <code>model_health</code> (<code>:116</code>): magnitude / variance / spectral-bound / rank / determinism (DEC-049)</td>
-<td>done</td>
+<td>Data path</td>
+<td>cut, A/B split, sampling, anchors, sequences, collation</td>
+<td>—</td>
 </tr>
 <tr>
-<td><strong>C</strong> Bounded operator dynamics</td>
-<td><code>decay = exp(−softplus(·)) ∈ (0,1)</code> contractive by construction; asserted (<code>cfm_model.py:120-140</code>)</td>
-<td>done (stronger)</td>
+<td>Encoder</td>
+<td>selective multi-scale SSM, scan, band isolation, low-pass, isometric boundary, event-identity bypass</td>
+<td>action gating; learned k-way routing</td>
 </tr>
 <tr>
-<td><strong>D</strong> Zero supervised loss hacks</td>
-<td>no focal/class weights; DEC-044 removed soft loss-invariants; <code>weight_mode=equal</code>; plain CE/MSE probes</td>
-<td>done</td>
+<td>Objectives</td>
+<td>12 objectives implemented</td>
+<td>—</td>
 </tr>
 <tr>
-<td><strong>E</strong> Anti-collapse</td>
-<td><code>GeometryBank</code> 8192-state FIFO + closed-loop governor (<code>cfm_training.py:1154</code>, DEC-019); batch-stat decorrelation removed (DEC-044)</td>
-<td>bank only — <strong>not</strong> Barlow</td>
+<td>Optimizer</td>
+<td>equal/DWA weighting, PCGrad, geometry bank + governor, Armijo, whitening, warm-start</td>
+<td>Barlow-style bank loss</td>
 </tr>
 <tr>
-<td><strong>F</strong> Identifiability ceiling</td>
-<td>DEC-046 three-way layer; ecommerce signal floor (MI ≈ 0.05 nats)</td>
-<td>identifiability yes; <strong>no pre-compute ceiling</strong>; <code>FAIL_LOW_EFFECT_SIZE</code> must be retired</td>
+<td>Training</td>
+<td>derived budget, governor, best-state, health harness, receipts</td>
+<td>—</td>
 </tr>
 <tr>
-<td><strong>G</strong> Strict causal arrow</td>
-<td>SSM strictly causal; masked target only; <code>_causal</code> probe (<code>cfm_validation.py:237</code>)</td>
-<td>done</td>
+<td>Evaluation</td>
+<td>portfolio, intrinsic proofs, probes, sufficiency battery</td>
+<td>full 12-metric loop; data-side ceiling; retire <code>FAIL_LOW_EFFECT_SIZE</code></td>
 </tr>
 <tr>
-<td><strong>H</strong> Absorbing-state prevention</td>
-<td><code>decay∈(0,1)</code> + <code>1−decay</code> mixing ⇒ no absorbing point</td>
-<td>structural, not a measured floor</td>
+<td>Products</td>
+<td>state store, daily job, dense states</td>
+<td>—</td>
 </tr>
 <tr>
-<td><strong>I</strong> Information invertibility bound</td>
-<td>conservation ratio <code>R_cons = Tr(Σ_readout)/P_in ≈ 1</code> (0.90–1.05); Markov-sufficiency gap</td>
-<td>proxy, not an MI bound</td>
+<td>Heads</td>
+<td>supervised + unsupported-only heads; encoder-version pinning</td>
+<td>RL head requires action conditioning (C8)</td>
+</tr>
+<tr>
+<td>Uncertainty</td>
+<td>single entropy probe; downstream <code>value_sd</code> all-zero</td>
+<td>composite uncertainty</td>
+</tr>
+<tr>
+<td>Fairness</td>
+<td>absent</td>
+<td>Component G</td>
 </tr>
 </tbody>
 </table>
-<h3 id="83-the-12-governance-metrics-target-as-built">8.3 The 12 governance metrics: target → as-built</h3>
+<h3 id="193-ecommerce_2019-measurements-worst-case">19.3 ecommerce_2019 measurements (worst case)</h3>
 <table>
 <thead>
 <tr>
-<th>#</th>
-<th>As-built</th>
-<th>Status</th>
+<th>Task</th>
+<th>Model</th>
+<th>Baseline</th>
+<th>Result</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>1</td>
-<td>participation-ratio <code>PR/dim</code> geometry gate + Marchenko–Pastur null; <strong>no</strong> relative-baseline halt</td>
-<td>partial</td>
-</tr>
-<tr>
-<td>2</td>
-<td><code>contrast</code> InfoNCE (uniformity) only</td>
-<td>partial</td>
-</tr>
-<tr>
-<td>3</td>
-<td><code>order</code> probe; no forward/backward <code>TAA</code></td>
-<td>absent</td>
-</tr>
-<tr>
-<td>4</td>
-<td><code>intrinsic._disentanglement</code> channel-MI; <code>decorr</code> Gram law; no <code>TC</code> estimator</td>
-<td>partial</td>
-</tr>
-<tr>
-<td>5</td>
-<td>not implemented (0.8 Capability 11)</td>
-<td>absent</td>
-</tr>
-<tr>
-<td>6</td>
-<td><code>uncertainty</code> probe = next-head entropy, not Mahalanobis; AUROC 0.500</td>
-<td>different / failing</td>
-</tr>
-<tr>
-<td>7</td>
-<td>not implemented</td>
-<td>absent</td>
-</tr>
-<tr>
-<td>8</td>
-<td>not implemented</td>
-<td>absent</td>
-</tr>
-<tr>
-<td>9</td>
-<td>not implemented (0.8 Capability 9)</td>
-<td><strong>required for C8</strong></td>
-</tr>
-<tr>
-<td>10</td>
-<td>not implemented</td>
-<td>absent</td>
-</tr>
-<tr>
-<td>11</td>
-<td><code>agg</code> multi-horizon proxy; no macro-state (0.8 Capability 10)</td>
-<td>proxy</td>
-</tr>
-<tr>
-<td>12</td>
-<td>not implemented (Component G absent)</td>
-<td>absent</td>
-</tr>
-</tbody>
-</table>
-<h3 id="84-components-0ah-target-as-built">8.4 Components 0/A–H: target → as-built</h3>
-<table>
-<thead>
-<tr>
-<th>Component</th>
-<th>As-built</th>
-<th>Status</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>0</strong> CESI parser + discovery</td>
-<td><code>rabbit_hole/schema.py</code> + <code>canonicalize_row</code>; <code>EventVocab.build</code>; DEC-053 5-field schema; no arms/protected declaration</td>
-<td>parser yes; discovery partial</td>
-</tr>
-<tr>
-<td><strong>A</strong> SSM + payload bypass</td>
-<td><code>MultiScaleSSM</code> (<code>cfm_model.py:417</code>) learned log-uniform δ spectrum; bypass = DEC-057 event-identity one-hots in first <code>2·(n_et+1)</code> readout dims</td>
-<td>bypass is event-identity only</td>
-</tr>
-<tr>
-<td><strong>B</strong> subspace routing</td>
-<td>fast/slow band block-diagonal <code>W_δ</code>/<code>W_B</code> + <code>ortho</code> objective + <code>slow_channel_mask</code></td>
-<td>2-band, not learned $k$-way</td>
-</tr>
-<tr>
-<td><strong>C &amp; H</strong> action-gated operators</td>
-<td>arms + propensity exist in rabbit_hole, but encoder does <strong>not</strong> condition on actions; 0.8 Cap 9 conceptual</td>
-<td><strong>v1.0 blocker (C8)</strong></td>
-</tr>
-<tr>
-<td><strong>D</strong> memory-bank Barlow</td>
-<td>bank + governor exist (<code>cfm_training.py:1154</code>); soft decorrelation removed (DEC-044); no Barlow loss</td>
-<td>absent (bank only)</td>
-</tr>
-<tr>
-<td><strong>E</strong> composite uncertainty</td>
-<td>single entropy probe (<code>probes.py:420</code>); red_queen <code>value_sd</code> all-zero</td>
-<td>absent</td>
-</tr>
-<tr>
-<td><strong>F</strong> macro-pooling</td>
-<td><code>boundary</code> probe (AUROC 0.669); no <code>Z_macro</code></td>
-<td>absent</td>
-</tr>
-<tr>
-<td><strong>G</strong> fairness</td>
-<td>not implemented</td>
-<td>absent</td>
-</tr>
-</tbody>
-</table>
-<h3 id="85-measured-results-frozen-encoder-064r162610-ecommerce_2019">8.5 Measured results — frozen encoder <code>0.6.4r162610</code>, ecommerce_2019</h3>
-<table>
-<thead>
-<tr>
-<th>objective</th>
-<th>model</th>
-<th>baseline</th>
-<th>Δ</th>
-<th>verdict</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>next</td>
+<td>next event</td>
 <td>0.281</td>
 <td>0.238</td>
-<td>−0.043</td>
 <td>FAIL</td>
 </tr>
 <tr>
-<td>mask</td>
+<td>masked event</td>
 <td>0.233</td>
 <td>0.225</td>
-<td>−0.009</td>
 <td>FAIL</td>
-</tr>
-<tr>
-<td>jepa</td>
-<td>1.054</td>
-<td>1.034</td>
-<td>−0.020</td>
-<td>FAIL (noisy)</td>
 </tr>
 <tr>
 <td>value</td>
 <td>1.272</td>
 <td>0.774</td>
-<td>−0.498</td>
 <td>FAIL</td>
 </tr>
 <tr>
-<td>sf</td>
+<td>successor features</td>
 <td>337.6</td>
 <td>280.0</td>
-<td>−57.6</td>
 <td>FAIL</td>
 </tr>
 <tr>
-<td>order</td>
+<td>ordering</td>
 <td>0.501</td>
 <td>0.570</td>
-<td>+0.069</td>
 <td>PASS</td>
 </tr>
 <tr>
-<td>agg</td>
+<td>aggregation</td>
 <td>0.620</td>
 <td>0.672</td>
-<td>+0.051</td>
 <td>PASS</td>
 </tr>
 <tr>
-<td>dt / query / entity</td>
+<td>time / query / entity</td>
 <td>—</td>
 <td>—</td>
-<td>—</td>
-<td>NO_IDENTIFIABLE_SIGNAL</td>
+<td>NO_SIGNAL</td>
 </tr>
 </tbody>
 </table>
-<p>Capabilities (DEC-056): pacing PASS (1.87 vs 2.57), boundary PASS (AUROC 0.653),
-uncertainty FAIL (AUROC 0.500). Event-identity decodability <code>z_t → current event</code>:
-acc 0.945, macro-F1 0.448 — rising across DEC-057 iterations (macro-F1 0.448 →
-0.746 → 0.809).</p>
+<p>Capabilities: pacing PASS, boundary PASS, uncertainty FAIL. Event-identity readability
+is rising across recent experiments (macro-F1 ≈ 0.45 → 0.81).</p>
 <blockquote>
-<p>Under §1.2 this is a <strong>v1.0 blocker</strong>: every <code>FAIL</code> must become a <code>PASS</code> (real
-fix) or a certified <code>NO_SIGNAL</code> (independent stream-side ceiling). Cart→purchase
-MI ≈ 0.05 nats is the candidate ceiling for <code>next</code>/<code>mask</code>. <code>FAIL_LOW_EFFECT_SIZE</code>
-is retired.</p>
+<p>Under §1.2 this is a <strong>v1.0 blocker</strong>: each <code>FAIL</code> must become a <code>PASS</code> (a real
+fix) or a confirmed <code>NO_SIGNAL</code> (the data truly lacks the signal). For <code>next</code>
+and <code>mask</code>, the cart-to-purchase signal is about 0.05 nats, which may justify
+<code>NO_SIGNAL</code>.</p>
 </blockquote>
-<h3 id="86-v10-gap-register">8.6 v1.0 gap register</h3>
+<h3 id="194-staying-consistent-with-the-projects-own-rules">19.4 Staying consistent with the project's own rules</h3>
 <table>
 <thead>
 <tr>
-<th>#</th>
-<th>Gap</th>
-<th>Blocks</th>
-<th>Detail</th>
-<th>Status</th>
+<th>Project rule</th>
+<th>What the spec must respect</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>1</td>
-<td>CESI capability discovery</td>
-<td>C1</td>
-<td>no declaration/parse of action arms or protected attributes</td>
-<td>open</td>
+<td>No hand-set numbers</td>
+<td>the constants in §15/§16 become data-derived fallbacks with receipts</td>
 </tr>
 <tr>
-<td>2</td>
-<td>Action-conditioned operators</td>
-<td><strong>C8</strong></td>
-<td>encoder does not condition on actions (<code>B(a_t)</code> absent)</td>
-<td>open</td>
+<td>No batch statistics at serving time</td>
+<td>any alignment step is a frozen, per-sample transform</td>
 </tr>
 <tr>
-<td>3</td>
-<td>Memory-bank Barlow loss</td>
-<td>C3, C4</td>
-<td>governor + bilinear rank only; soft decorrelation removed (DEC-044)</td>
-<td>open</td>
+<td>Fix structure, not penalties</td>
+<td>prefer design guarantees (fading memory, bounded gates) over extra loss terms</td>
 </tr>
 <tr>
-<td>4</td>
-<td>Composite uncertainty</td>
-<td>C5</td>
-<td>entropy probe only; no dispersion/Mahalanobis/disagreement</td>
-<td>open</td>
+<td>Never weaken a test to pass</td>
+<td>a failing task is fixed or shown <code>NO_SIGNAL</code></td>
 </tr>
 <tr>
-<td>5</td>
-<td>Macro-state pooling</td>
-<td>C4</td>
-<td>no <code>Z_macro</code>; boundary signal weak (AUROC 0.669)</td>
-<td>open</td>
-</tr>
-<tr>
-<td>6</td>
-<td>Fairness null-space</td>
-<td>C4</td>
-<td>Component G absent</td>
-<td>open</td>
-</tr>
-<tr>
-<td>7</td>
-<td>Full 12-metric governance loop</td>
-<td>C4</td>
-<td>current loop = structure-skill + 5 intrinsic proofs</td>
-<td>open</td>
-</tr>
-<tr>
-<td>8</td>
-<td>Geodesic / equivariance / TAA estimators</td>
-<td>C4</td>
-<td>metrics 3, 7, 8 absent</td>
-<td>open</td>
-</tr>
-<tr>
-<td>9</td>
-<td>No-FAIL verdict machinery</td>
-<td>C2–C5</td>
-<td><code>FAIL_LOW_EFFECT_SIZE</code> still emitted; ceiling must be stream-side</td>
-<td>open</td>
+<td>Prefer deleting over adding</td>
+<td>add a part only when a measured test shows it beat the existing mechanism</td>
 </tr>
 </tbody>
 </table>
-<h3 id="87-doctrine-reconciliation">8.7 Doctrine reconciliation</h3>
-<table>
-<thead>
-<tr>
-<th>Repo law</th>
-<th>Requirement on the spec</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>No magic numbers</td>
-<td>spec literals ($10^4$, $10^{-6}$, $10^{-4}$, <code>0.15</code>) become derived/calibrated fallbacks with receipts</td>
-</tr>
-<tr>
-<td>No batch-coupled statistics (DEC-036)</td>
-<td>any Barlow/ZCA path must be a frozen per-sample transform at serve (batch-fit manufactures rank — V7_RFC §8.2)</td>
-</tr>
-<tr>
-<td>Invariants by construction, not soft penalties (DEC-042/044)</td>
-<td>prefer structural mechanisms (<code>decay=exp(−softplus)</code>, bilinear rank, bounded gates) over loss terms</td>
-</tr>
-<tr>
-<td>Gate on ground truth, never weaken gates</td>
-<td>failing capabilities are fixed or certified <code>NO_SIGNAL</code> — never relabeled</td>
-</tr>
-<tr>
-<td>Prefer deletion over accretion</td>
-<td>promote a component only when a measured spike beats the current mechanism</td>
-</tr>
-</tbody>
-</table>
-
-<h2 id="9-structured-capability-model-the-macro-how">9. Structured Capability Model (the macro HOW)</h2>
-<p>This section is the working bridge between the target (&sect;4&ndash;&sect;5) and the
-as-built (&sect;8). It defines, structurally, <em>why</em> a capability succeeds and
-<em>where</em> to act when it does not. We evolve this section as the macro
-architecture and the probe harness change &mdash; it is the model that tells us
-what to build next rather than chasing one failure at a time.</p>
-
-<h3 id="91-the-capability-success-law">9.1 The capability success law</h3>
-<p>For a capability <em>c</em> on a stream <em>s</em>, with <code>z_t</code> the frozen
-foundational embedding, define four predicates:</p>
-<table>
-<thead><tr><th>Predicate</th><th>Meaning</th><th>Measured by</th></tr></thead>
-<tbody>
-<tr><td><strong>CARRIED</strong>(s,c)</td><td>the stream carries the signal</td><td>independent stream-side ceiling (&sect;3-F): a model-free ceiling predictor beats the trivial baseline by &gt; noise</td></tr>
-<tr><td><strong>PRESERVED</strong>(z,c)</td><td>the contractive core retains the signal through the mixer</td><td>oracle probe on the pre-readout hidden state <code>H_t</code> beats the baseline</td></tr>
-<tr><td><strong>EXPOSED</strong>(z,c)</td><td><code>z_t</code> surfaces the signal to a probe</td><td>probe on <code>z_t</code> beats the baseline</td></tr>
-<tr><td><strong>BEATS</strong>(z,c)</td><td>the model (frozen <code>z_t</code>) beats the model-free baseline</td><td>capability probe, margin &gt; 2&middot;SE</td></tr>
-</tbody>
-</table>
-<p><strong>PASS</strong> &hArr; CARRIED &and; PRESERVED &and; EXPOSED &and; BEATS.<br>
-<strong>NO_SIGNAL</strong> &hArr; &not;CARRIED (certified before compute).<br>
-<strong>FAIL</strong> &hArr; CARRIED &and; &not;(PRESERVED &and; EXPOSED &and; BEATS).</p>
-<p>The law <em>localises</em> a failure and dictates the fix &mdash; the macro
-decision procedure:</p>
-<table>
-<thead><tr><th>Failure</th><th>Diagnosis</th><th>Macro action</th></tr></thead>
-<tbody>
-<tr><td>&not;CARRIED</td><td>stream cannot carry the target</td><td>certify NO_SIGNAL (stream-side ceiling, no compute)</td></tr>
-<tr><td>CARRIED &and; &not;PRESERVED</td><td>the recurrent core destroys the signal</td><td>core change: add/repair the channel or timescale that retains it (Component A/B)</td></tr>
-<tr><td>CARRIED &and; PRESERVED &and; &not;EXPOSED</td><td>the readout does not surface it</td><td>readout change: a bypass channel for that capability&rsquo;s input (Component A, Payload Bypass)</td></tr>
-<tr><td>CARRIED &and; PRESERVED &and; EXPOSED &and; &not;BEATS</td><td>information is present but the head does not use it</td><td>head/objective change: dedicated head, convergence, de-sharing &mdash; never a loss hack</td></tr>
-</tbody>
-</table>
-<p><strong>Worked examples from the record:</strong> <code>next</code> was CARRIED
-(1-gram beats marginal, MI&asymp;0.05) but &not;EXPOSED (the recurrent readout washed
-the event identity out) &mdash; fixed by the event-identity bypass, not by tuning.
-<code>entity</code> is &not;CARRIED on ecommerce (<code>entity_type</code> is the
-constant <code>&quot;product&quot;</code>) &rarr; NO_SIGNAL. <code>uncertainty</code>
-is EXPOSED but &not;BEATS (derived entropy AUROC 0.500) &rarr; objective change or
-NO_SIGNAL.</p>
-
-<h3 id="92-macro-dataflow">9.2 Macro dataflow &mdash; one pipeline, an invariant at every boundary</h3>
-<table>
-<thead><tr><th>#</th><th>Boundary</th><th>Transform</th><th>Invariant / Guardrail</th><th>Component</th></tr></thead>
-<tbody>
-<tr><td>1</td><td>raw &rarr; CESI</td><td>canonicalise to the 5 universal fields; discover arms / protected attributes / feature types</td><td>schema contract; A at ingestion</td><td>0</td></tr>
-<tr><td>2</td><td>CESI &rarr; channels</td><td>event-id, entity-id, magnitude (payload), time &rarr; per-sample-normalised token contributions</td><td>A (per-sample, &sigma;&asymp;1)</td><td>A</td></tr>
-<tr><td>3</td><td>channels &rarr; hidden state <code>H_t</code></td><td>multi-scale contractive selective SSM + block-diagonal subspace routing</td><td>C (&rho;&lt;1), B (block-diagonal), G (causal), H (no absorbing state)</td><td>A, B</td></tr>
-<tr><td>4</td><td>core &rarr; readout</td><td>normalise the state <em>and</em> <strong>bypass each channel&rsquo;s identity</strong> to the readout</td><td>A (per-sample); <strong>EXPOSED is decided here</strong></td><td>A (Payload Bypass)</td></tr>
-<tr><td>5</td><td>readout &rarr; <code>z_t</code></td><td>fixed-dim, per-sample-normalised foundational embedding</td><td>A; I (invertibility floor)</td><td>A</td></tr>
-<tr><td>6</td><td><code>z_t</code> &rarr; heads</td><td>frozen; supervised / unsupervised / RL adapters read read-only</td><td>no weight change to the encoder</td><td>C&ndash;H (C8)</td></tr>
-</tbody>
-</table>
-<p><strong>Macro principle:</strong> every capability maps to an <em>input channel</em>
-that must be PRESERVED through &sect;9.2.3 and EXPOSED at &sect;9.2.4. A capability
-fails when the pipeline drops its channel somewhere; the fix is to carry it
-(&sect;9.2.3) or surface it (&sect;9.2.4), never to bolt on a loss.</p>
-
-<h3 id="93-master-traceability-matrix">9.3 Master traceability matrix</h3>
-<table>
-<thead><tr><th>Capability</th><th>Input channel</th><th>Core mechanism</th><th>Exposure (&sect;9.2.4)</th><th>Probe</th><th>Model-free baseline</th><th>C</th><th>Status</th></tr></thead>
-<tbody>
-<tr><td>next</td><td>event-id (t)</td><td>fast band</td><td>event bypass (t) &mdash; <strong>DEC-057</strong></td><td>linear <code>z_t&rarr;e_{t+1}</code></td><td>1-gram</td><td>C5</td><td>FAIL &rarr; beats 1-gram after bypass (eval pending)</td></tr>
-<tr><td>mask</td><td>event-id (t)</td><td>fast band</td><td>event bypass (masked fwd)</td><td>linear masked-<code>z&rarr;e_t</code></td><td>1-gram</td><td>C5</td><td>FAIL (borderline)</td></tr>
-<tr><td>value</td><td>magnitude</td><td>magnitude channel</td><td><strong>payload bypass (absent)</strong></td><td>regression</td><td>naive prev-value</td><td>C5</td><td>FAIL &rarr; needs payload bypass</td></tr>
-<tr><td>sf</td><td>event-id (future)</td><td>slow band</td><td>readout (undetermined)</td><td>reg discounted counts</td><td>historical mean</td><td>C5</td><td>FAIL &rarr; diagnose PRESERVED/EXPOSED</td></tr>
-<tr><td>order</td><td>session outcome</td><td>slow band</td><td>state</td><td>seq-level</td><td>majority class</td><td>C5</td><td>PASS</td></tr>
-<tr><td>agg</td><td>magnitudes</td><td>core</td><td>&mdash;</td><td>window agg regression</td><td>historical mean</td><td>C5</td><td>PASS</td></tr>
-<tr><td>dt</td><td>time</td><td>time channel</td><td>payload bypass (absent)</td><td>regression</td><td>naive prev-value</td><td>C5</td><td>NO_SIGNAL (ecom)</td></tr>
-<tr><td>query</td><td>time / event-id</td><td>faded state</td><td>&mdash;</td><td>regression</td><td>naive prev-value</td><td>C5</td><td>NO_SIGNAL (ecom)</td></tr>
-<tr><td>entity</td><td>entity-id</td><td>entity channel</td><td>(absent)</td><td>categorical</td><td>majority class</td><td>C5</td><td>NO_SIGNAL (ecom: constant)</td></tr>
-<tr><td>pacing</td><td>time</td><td>slow band</td><td>&mdash;</td><td>session velocity (MSE)</td><td>historical mean</td><td>C4/C5</td><td>PASS</td></tr>
-<tr><td>boundary</td><td>gap / session</td><td>&mdash;</td><td>&mdash;</td><td>AUROC reset</td><td>0.5</td><td>C4</td><td>PASS (AUROC 0.67)</td></tr>
-<tr><td>uncertainty</td><td>error / dispersion</td><td>&mdash;</td><td>derived channel (E)</td><td>AUROC (in vs OOD)</td><td>0.5</td><td>C5</td><td>FAIL (&not;BEATS)</td></tr>
-<tr><td>intervention_effect</td><td>action arm</td><td><strong>action-gated B(a_t)</strong> (C/H)</td><td>readout</td><td>counterfactual (IPW)</td><td>IPW truth</td><td>C8</td><td>ABSENT (v1.0 blocker)</td></tr>
-<tr><td>macro_order</td><td>boundary + slow</td><td><strong>macro-pool Z_macro</strong> (F)</td><td><code>Z_macro</code> block</td><td>seq-level</td><td>majority class</td><td>C4</td><td>ABSENT</td></tr>
-</tbody>
-</table>
-
-<h3 id="94-probe-specification">9.4 Probe specification &mdash; the measurement layer</h3>
-<p>One harness (<code>looking_glass.probes</code>): encoder <strong>frozen</strong>
-(fail-fast if any gradient reaches it); one fold split (grouped by held-out
-customer); one target mask (drop company-action and end-of-sequence-pad targets);
-Linear <em>and</em> shallow-MLP heads; plain CE / MSE / AUROC; ECE for categorical.
-Every probe reports model, baseline, ceiling, &Delta; vs baseline, SE across folds,
-and a &sect;1.2 verdict.</p>
-<table>
-<thead><tr><th>Probe</th><th>Target</th><th>Head</th><th>Metric</th><th>Model-free baseline</th><th>Gate</th></tr></thead>
-<tbody>
-<tr><td>next / mask / entity</td><td>categorical event field</td><td>linear+MLP</td><td>CE</td><td>unigram &amp; 1-gram</td><td>model &lt; stronger baseline &minus; 2&middot;SE</td></tr>
-<tr><td>dt / value / agg / query</td><td>continuous payload</td><td>linear+MLP</td><td>MSE</td><td>historical mean &amp; previous-value</td><td>model &lt; stronger baseline &minus; 2&middot;SE</td></tr>
-<tr><td>order</td><td>sequence-level binary</td><td>linear+MLP</td><td>AUROC</td><td>majority class</td><td>model &gt; baseline</td></tr>
-<tr><td>jepa / sf</td><td>latent future / successor</td><td>linear+MLP</td><td>cosine / MSE</td><td>mean &amp; random embedding</td><td>model &lt; stronger baseline &minus; 2&middot;SE</td></tr>
-<tr><td>pacing</td><td>session velocity</td><td>ridge</td><td>MSE</td><td>historical mean</td><td>model &lt; baseline &minus; 2&middot;SE</td></tr>
-<tr><td>boundary</td><td>next-event session reset</td><td>logistic</td><td>AUROC</td><td>0.5</td><td>&gt; 0.5 + 2&middot;SE</td></tr>
-<tr><td>uncertainty</td><td>in-dist vs injected OOD</td><td>derived (no head)</td><td>AUROC</td><td>0.5</td><td>&gt; 0.5 + 2&middot;SE</td></tr>
-<tr><td>intervention_effect</td><td>&Delta; outcome | action</td><td>linear+MLP</td><td>incremental margin</td><td>IPW / logging</td><td>&gt; logging, calibrated</td></tr>
-</tbody>
-</table>
-
-<h3 id="95-build-dependency-graph">9.5 Build dependency graph (what unblocks what)</h3>
-<ol>
-<li><strong>Stream-side identifiability ceiling (&sect;3-F)</strong> &mdash; prerequisite for the whole no-FAIL law: certifies &not;CARRIED (NO_SIGNAL) before compute and retires <code>FAIL_LOW_EFFECT_SIZE</code>. Unblocks C2&ndash;C5.</li>
-<li><strong>Payload Bypass Stream (Component A)</strong> &mdash; the general EXPOSED mechanism; event-id bypass (DEC-057) proves it fixes <code>next</code>; extend to magnitude (fixes <code>value</code>/<code>dt</code>) and entity-id. Unblocks C4/C5.</li>
-<li><strong>Core PRESERVED check</strong> &mdash; an oracle probe on <code>H_t</code> to separate &not;PRESERVED from &not;EXPOSED (so we fix the right stage). Unblocks diagnosis.</li>
-<li><strong>Action-conditioned operators (C&amp;H)</strong> &mdash; required for C8 (RL, white_queen/red_king); testable on rabbit_hole only. Unblocks C8.</li>
-<li><strong>Memory-bank Barlow (D)</strong> &mdash; anti-collapse decorrelation over an asynchronous queue (train-time; frozen per-sample at serve). Unblocks C3/C4.</li>
-<li><strong>Composite uncertainty (E)</strong>, <strong>macro-pooling (F)</strong>, <strong>fairness null-space (G)</strong> &mdash; capability additions gated on a measured spike.</li>
-<li><strong>12-metric governance loop (&sect;4)</strong> &mdash; operationalise the intrinsic metrics with calibrated (derived) thresholds and the halt rules.</li>
-</ol>
-<p><strong>Sequencing:</strong> 1 &rarr; 2 &rarr; 3 resolve the current FAILs honestly
-(PASS or certified NO_SIGNAL) and make the verdict law real; then 4 (C8, the RL
-requirement) and 5&ndash;7 deepen the manifold. Each step is promoted only when a
-measured spike beats the current mechanism (prefer deletion over accretion).</p>
-
 </main>
 </body>
 </html>
