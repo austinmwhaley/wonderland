@@ -1086,3 +1086,35 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   equals the unigram predictor (ABS baseline: model 0.380 vs unigram 0.279), and
   a fresh linear head on the frozen state extracts only +0.015 skill against a
   destroyed-null scale ~0.29. The stream's order signal is MI≈0.05 nats.
+
+## DEC-051 — Three-way identifiability layer + certification (rabbit_hole/Instacart)
+
+- **Date:** 2026-10-10
+- **DEC-046 layer implemented (transparent, three-way):** for each objective the
+  portfolio reports the unchanged absolute metrics AND classifies as
+  **PASS** (model skill > 2×SE noise floor), **FAIL** (a model-free 1-gram
+  baseline beats the destroyed null ⇒ signal exists; the model missed it), or
+  **NO_IDENTIFIABLE_SIGNAL** (even the 1-gram cannot beat the null ⇒ not
+  gradeable here). Degenerate/no-signal takes precedence: a noise-level "pass"
+  on a non-identifiable target is NOT a PASS. Absolute baselines (unigram,
+  1-gram, random) are reported unchanged (spec §4).
+- **Two bugs fixed while validating:**
+  1. **Governor metric inconsistency:** eval-1 was scored with an EMPTY
+     `loss_scales` (raw sum) while later evals were scale-normalized, so the
+     first eval always looked best and the governor saved an undertrained
+     checkpoint (~step 411). Fixed by seeding `loss_scales` before the first
+     eval.
+  2. **Target-set mismatch:** the `next` loss included end-of-sequence pad
+     targets while the model-free baseline did not, inflating the model's CE
+     (ecommerce next 0.38 → 0.30 after excluding pads). Now comparable.
+- **CERTIFICATION:**
+  * **rabbit_hole** (26.8M events / 25k customers): portfolio **11/11**, intrinsic
+    **6/6** → CERTIFIED.
+  * **Instacart** (37.4M / 206k): portfolio **11/11**, intrinsic **6/6** at the
+    **minimum size** (8k customers, 5k sample-A, 1000 steps) → CERTIFIED.
+  * **ecommerce_2019** (411M / 15.6M, real): `next`/`jepa`/`sf` FAIL (a 1-gram
+    beats the null, so the ~0.05-nat signal exists but the model does not capture
+    it); `entity`/`value` NO_IDENTIFIABLE_SIGNAL. Documented as the
+    low-transition-signal boundary. Gates were NOT weakened to force green.
+- **Run-size discipline:** diagnostics use the minimum viable run (5k/1k); only
+  certification scales up.

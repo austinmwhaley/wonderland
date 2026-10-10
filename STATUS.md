@@ -29,7 +29,13 @@
 
 ## Micro
 
-- **Current task:** v6.1.0 — variance-preserving readout (DEC-047). Root cause
+- **Current task:** v6.5.0 — CERTIFIED: rabbit_hole (11/11 portfolio + 6/6
+  intrinsic) and Instacart (11/11 + 6/6 at minimum size 5k/1k). ecommerce_2019
+  documented as the low-transition-signal boundary (DEC-046 three-way layer:
+  next/jepa/sf FAIL, entity/value NO_IDENTIFIABLE_SIGNAL). Governor metric +
+  pad-target bugs fixed. All spec guardrails implemented. 253 tests green.
+
+- **Prior task:** v6.1.0 — variance-preserving readout (DEC-047). Root cause
   of the low-rank/poor-head blocker found by probing: the SSM readout grows
   unbounded (std~50, |max|~900), making linear heads ill-conditioned and
   untrainable (`next` CE 1.62 > uniform; `head_next` 4-6x worse than a probe on
