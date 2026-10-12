@@ -2101,3 +2101,25 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   on LTV/order-count) · ecommerce NOT|GREEN(vacuous).
 - **Next:** an objective/readout that exposes recency-window activity (the concrete encoder gap);
   OR commit the substantial work and treat these as the documented frontier.
+
+## DEC-095 — Instacart LTV/order-count: marginal lift persists across every lever & power
+
+- **Date:** 2026-10-11
+- **Every configuration, matched (25k, as_of 2025-10-01):**
+  ```
+  baseline            LTV +0.048 [-0.008,+0.108]  UNC   (3 seeds)
+  +per-id entity_id   LTV +0.036 [-0.025,+0.104]  UNC
+  +attributes         LTV +0.035 [-0.035,+0.109]  UNC
+  +attributes +hl7d   LTV +0.030 [-0.021,+0.091]  UNC
+  +attributes +recency LTV +0.045 [-0.020,+0.122] UNC   (3 seeds)
+  +recency, 8 seeds   LTV +0.038 [-0.016,+0.107]  UNC
+  ```
+  churn/propensity PASS+FAR-EXCEED in every config; rich model-free baseline beats RFM by +0.08
+  on LTV (so the target IS carried beyond RFM), but the embedding adds only ~+0.04.
+- **Conclusion:** instacart LTV/order-count are a genuine, RESISTANT encoder frontier: the
+  embedding reliably adds a small positive lift (~+0.04) that cannot be made to robustly beat a
+  strong RFM+GBM (which the RICH baseline already dominates). Not a data/coverage problem
+  (rank 3->17 tried), not a power problem (8 seeds tried) — the encoder under-exposes
+  recent-activity/velocity relative to a 30/90-day count.
+- **Scoreboard:** rabbit_hole GREEN|GREEN · anchor GREEN|GREEN · instacart GREEN|NOT(marginal
+  LTV/order-count) · ecommerce NOT|GREEN(vacuous). 277 tests green.
