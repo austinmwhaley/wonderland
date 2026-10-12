@@ -623,6 +623,7 @@ class CFM(nn.Module):
         self.head_ent = nn.Linear(dim, vocab.n_ent + 1)  # next entity type
         self.head_dt = nn.Linear(dim, 1)  # log1p(dt_next)
         self.head_occ = nn.Linear(dim, 1)  # next event within horizon?
+        self.head_recency = nn.Linear(dim, 1)  # recent-activity level (velocity)
         self.head_val = nn.Linear(dim, 1)  # next event value (monetary)
         self.head_sf = nn.Sequential(
             nn.Linear(dim + 1, dim), nn.ReLU(), nn.Linear(dim, self.sf_dim)
@@ -744,8 +745,9 @@ class CFM(nn.Module):
             if vals is not None:
                 idx = torch.tensor(
                     [
-                        self.vocab.attrs[f].get(str(x) if x is not None else "none",
-                                                 self.vocab.n_attr[f])
+                        self.vocab.attrs[f].get(
+                            str(x) if x is not None else "none", self.vocab.n_attr[f]
+                        )
                         for x in vals
                     ],
                     device=dev,

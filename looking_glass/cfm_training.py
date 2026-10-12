@@ -882,6 +882,28 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
         T_["redundancy"] = (off**2).mean()
     T_["mask"] = _mask_loss_batch(model, vocab, t, cfg, dev)
     T_["jepa"] = _jepa_loss(model, t, y)
+    # ---- recency/velocity (v8): expose RECENT activity (a magnitude-driven
+    # signal the RMSNorm readout otherwise hides). From the state at t, predict the
+    # scale-free log1p count of events in the last H days (H derived from the
+    # stream's own gap scale). Forces the state to carry recent-activity level.
+    if "recency" in cfg.objectives:
+        secs = torch.cumsum(torch.expm1(t["dt"]).squeeze(-1), dim=1)  # (B,T) clock
+        gap = torch.expm1(t["dt"]).squeeze(-1)
+        _g = gap[gap > 0]
+        med = torch.median(_g) if _g.numel() else torch.tensor(7.0 * 86400.0, device=dev)
+        H = torch.clamp(med * 10.0, min=86400.0)  # ~10 median gaps (data-derived)
+        # count events in (t-H, t] per position (chunked over T to bound cost)
+        cnt = torch.zeros_like(secs)
+        for a in range(0, T, 32):
+            b = min(a + 32, T)
+            d = secs[:, a:b, None] - secs[:, None, :]  # (B,chunk,T) = secs_t - secs_j
+            m = (d >= 0) & (d < H)  # events j in (t-H, t]
+            cnt[:, a:b] = m.sum(-1).float()
+        tgt = torch.log1p(cnt)[:, :-1]  # (B,T-1) aligned with y[:, :-1] / valid_t
+        _m = valid_t > 0
+        mu = tgt[_m].mean() if _m.any() else tgt.mean()
+        sd = (tgt[_m].std() if _m.any() else tgt.std()).clamp(min=1e-6)
+        T_["recency"] = mmse(model.head_recency(y[:, :-1]), ((tgt - mu) / sd).unsqueeze(-1))
     # ---- query-time readout (S1 / DEC-006): train the FADED state ---------
     # Sample a moment strictly between two events, fade the state there, and
     # grade it on predicting the next event/time — the exact path serving uses
