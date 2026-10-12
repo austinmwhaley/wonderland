@@ -16,7 +16,6 @@ from rabbit_hole.generators.business_tables import (
     _bulk_insert,
     _exec_script,
     _flush_contact,
-    _flush_email,
     _flush_order_items,
     create_business_tables,
 )

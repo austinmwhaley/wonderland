@@ -148,6 +148,11 @@ engineer or an LLM should be able to rebuild the system from this document alone
 <td>what exists today vs the target</td>
 <td>status</td>
 </tr>
+<tr>
+<td>20. Ideas</td>
+<td>candidate directions beyond the spec</td>
+<td>future</td>
+</tr>
 </tbody>
 </table>
 <hr />
@@ -378,6 +383,62 @@ engineer or an LLM should be able to rebuild the system from this document alone
 <li><strong>Populations A/B.</strong> Customers are split into disjoint groups by a hash. The encoder only ever trains on population A; heads and anchors use population B. No label ever touches the encoder.</li>
 <li><strong>Self-governance.</strong> Training derives its own budget and sizes, watches its own health, and stops when converged or when something is wrong.</li>
 </ol>
+<h3 id="31-two-enforcement-paths-search-statistically-certify-functionally">3.1 Two enforcement paths — search statistically, certify functionally</h3>
+<p>The system enforces its invariants through two paths that occupy different layers. They are not rivals: one drives capability, the other decides what may be claimed.</p>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Path</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Search / capability</td>
+<td><strong>Statistical Realism</strong></td>
+<td>soft, per-sample, scale-free objectives + dynamic weighting — the engine that reaches green</td>
+</tr>
+<tr>
+<td>Instruments</td>
+<td><strong>Statistical Realism</strong></td>
+<td>the metrics that measure health (§16) — honest inspectors, never the thing optimized</td>
+</tr>
+<tr>
+<td>Law / certification</td>
+<td><strong>Functional Realism</strong></td>
+<td>the admissibility rules that decide whether a green counts (§15)</td>
+</tr>
+</tbody>
+</table>
+<p>In one line: <strong>SR proposes, FR disposes.</strong></p>
+<table>
+<thead>
+<tr>
+<th>Rule</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Search statistically</td>
+<td>the default design path is the soft-objective toolkit (per-sample, scale-free) — empirically what has reached and held green</td>
+</tr>
+<tr>
+<td>Certify functionally</td>
+<td>every green must pass the FR filter: per-sample at serve, no batch-coupled capacity faking, no self-referential selection, no governor rescues</td>
+</tr>
+<tr>
+<td>Construction as capability, not purity</td>
+<td>structural mechanisms (information injection, contractive updates) are a legitimate capability tool; the measured failure mode is <strong>purification</strong> — deleting working tools to demand every property be an algebraic law (DEC-042/043/044)</td>
+</tr>
+<tr>
+<td>Keep cheap structural invariants</td>
+<td>contractive decay, per-sample normalization, isometric boundary, conservation stay regardless of path</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Decision rule.</strong> On a fixed benchmark and budget, if an FR-only mechanism does not beat the SR mechanism in capability per unit cost, keep the SR mechanism — subject to the FR admissibility filter.</p>
 <hr />
 <h2 id="4-data-layer-cesi">4. Data Layer &amp; CESI</h2>
 <h3 id="41-canonical-event-schema">4.1 Canonical event schema</h3>
@@ -734,6 +795,7 @@ engineer or an LLM should be able to rebuild the system from this document alone
 <p>A deprecated set of <strong>soft-invariant</strong> terms (<code>variance, rank, redundancy, decorr, spectrum, volume, iso, trajectory, commutation, ortho</code>) is opt-in only; it was removed from the default objective because structural mechanisms replaced it (§15).</p>
 <hr />
 <h2 id="9-optimizer">9. Optimizer</h2>
+<p>The optimizer is the <strong>Statistical Realism</strong> search path (§3.1): soft, per-sample, scale-free pressure that drives capability. Its outputs are certified separately by the FR filter.</p>
 <h3 id="91-weighting">9.1 Weighting</h3>
 <table>
 <thead>
@@ -1101,7 +1163,8 @@ engineer or an LLM should be able to rebuild the system from this document alone
 <h3 id="142-versioning">14.2 Versioning</h3>
 <p>Versions are pre-1.0 semver <code>MAJOR.MINOR.PATCH</code> (<code>0.MAJOR.MINOR</code>), with an <code>r</code> data/score revision appended to form the tag: <code>&lt;version&gt;r&lt;revision&gt;</code> (e.g. <code>0.6.4r162610</code>). The version encodes <strong>behavior</strong>: a change that can alter outputs bumps the version; every artifact records its inputs, config, and version (DEC-058).</p>
 <hr />
-<h2 id="15-guardrails-the-invariants">15. Guardrails (The Invariants)</h2>
+<h2 id="15-guardrails-functional-realism-the-invariants">15. Guardrails — Functional Realism (The Invariants)</h2>
+<p>These are the <strong>Functional Realism (FR)</strong> invariants: the certification law (§3.1). They are enforced by construction and govern what may be <em>certified</em>, independent of which search path produced the model.</p>
 <table>
 <thead>
 <tr>
@@ -1563,37 +1626,295 @@ and <code>mask</code>, the cart-to-purchase signal is about 0.05 nats, which may
 </tr>
 </tbody>
 </table>
-
-<h3 id="96-head-battery-contract-bc">9.6 Head battery contract (B+C) &mdash; rigor requirements</h3>
-<p>Lessons from the first B+C run on rabbit_hole; these are <strong>requirements</strong>, not
-options, so the results are defensible.</p>
+<hr />
+<h2 id="20-ideas">20. Ideas</h2>
+<p>Candidate directions to reach the objective — <strong>any event stream → a foundation model whose embeddings power supervised, unsupervised, and RL heads</strong> — that are not yet part of the spec. Each must pass the doctrine filter (§20.9) and ship with a known-truth test.</p>
+<p><strong>Priority</strong></p>
 <table>
-<thead><tr><th>#</th><th>Requirement</th><th>Why (measured)</th></tr></thead>
+<thead>
+<tr>
+<th>Priority</th>
+<th>Idea</th>
+<th>Why</th>
+</tr>
+</thead>
 <tbody>
-<tr><td>1</td><td><strong>Standardize every head input (per-dim z-score).</strong> The consumed
-<code>z_t</code> carries a large boundary scale (measured <em>boundary_scale</em> = 134, so
-<code>|z|</code> ~ 250) while raw features are O(1&ndash;10). Unstandardized, the logistic/ridge
-<em>solver</em> underfits and the embedding appears <em>worse than raw</em> (churn AUROC 0.697)
-when it is not (0.770 standardized; 0.835 as a donor). This is a HEAD contract, never a reason to
-rescale the encoder.</td></tr>
-<tr><td>2</td><td><strong>Grade the donor way.</strong> A head that reads the embedding is graded
-<code>[E, raw]</code> vs <code>raw</code> (does E add incremental signal?) &mdash; not
-<code>E alone</code> vs <code>raw</code>. E alone only needs to be <em>not materially worse than
-raw</em>; the PASS bar is that E <em>adds unique signal</em> (SPEC C9).</td></tr>
-<tr><td>3</td><td><strong>Evaluate on HELD-OUT customers</strong> &mdash; the encoder's <code>B</code>
-split, never the customers it trained on. Training-customer evaluation leaks and inflates.</td></tr>
-<tr><td>4</td><td><strong>Strong baselines, no strawmen.</strong> The raw baseline is a tuned
-RFM / gradient-boosted model on recency&middot;frequency&middot;monetary, not a single feature.</td></tr>
-<tr><td>5</td><td><strong>Effect size + interval.</strong> Report &Delta; vs baseline with a bootstrap
-95% CI across held-out customers, over &ge; 3 seeds; PASS requires the interval to exclude 0.</td></tr>
-<tr><td>6</td><td><strong>Converged, scale-appropriate encoder.</strong> Grade a run trained to
-convergence at a meaningful sample, not an undersized smoke.</td></tr>
+<tr>
+<td>1</td>
+<td>§20.4 Stream capability card</td>
+<td>cheap, and de-risks every other idea</td>
+</tr>
+<tr>
+<td>2</td>
+<td>§20.5 Stream zoo</td>
+<td>you cannot claim "any stream" from three customer streams</td>
+</tr>
+<tr>
+<td>3</td>
+<td>§20.2 Relational encoding</td>
+<td>the real generality blocker (multi-entity, high cardinality)</td>
+</tr>
+<tr>
+<td>4</td>
+<td>§20.3 RL sufficiency by construction</td>
+<td>the unlock for white_queen / red_king</td>
+</tr>
+<tr>
+<td>5</td>
+<td>§20.1, §20.6, §20.7, §20.8</td>
+<td>scale, cost, and operational robustness</td>
+</tr>
 </tbody>
 </table>
-<p><strong>Verdict (unchanged):</strong> PASS / NO_SIGNAL / FAIL / UNCERTAIN; GREEN only when every
-carried capability PASSES. UNCERTAIN = within noise (needs more data). A GREEN under requirements
-1&ndash;3 with strawman baselines is <em>not</em> yet defensible.</p>
-
+<h3 id="201-the-transferable-asset-is-the-factory-not-the-weights">20.1 The transferable asset is the factory, not the weights</h3>
+<table>
+<thead>
+<tr>
+<th>Aspect</th>
+<th>Detail</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>What</td>
+<td>A shared trunk plus <strong>per-stream adapters</strong> (LoRA-style); a new stream trains a small adapter, not a model</td>
+</tr>
+<tr>
+<td>Why</td>
+<td>Event telemetry is far more heterogeneous than text/images; one weight set is probably the wrong target, but the <strong>recipe</strong> (biases + objective selection + governor + adapters) transfers</td>
+</tr>
+<tr>
+<td>Plugs in at</td>
+<td>Encoder (§7), training (§10)</td>
+</tr>
+<tr>
+<td>Test</td>
+<td>Train a trunk on the zoo; for a held-out stream, an adapter reaches the same green as a from-scratch model, at a fraction of the cost</td>
+</tr>
+</tbody>
+</table>
+<h3 id="202-relational-multi-entity-encoding">20.2 Relational / multi-entity encoding</h3>
+<table>
+<thead>
+<tr>
+<th>Aspect</th>
+<th>Detail</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>What</td>
+<td>A relational encoder — set-transformer or message passing over the <strong>entity–event bipartite graph</strong>; replace per-ID lookup tables with <strong>shared value encoders + relational aggregation</strong></td>
+</tr>
+<tr>
+<td>Why</td>
+<td>Real telemetry is multi-entity (user, item, session, device); unseen high-cardinality ids currently go out-of-vocabulary and break "any stream"</td>
+</tr>
+<tr>
+<td>Plugs in at</td>
+<td>Tokenization (§6), Components A/B (§17)</td>
+</tr>
+<tr>
+<td>Test</td>
+<td>On a stream with held-out entities, relational aggregation beats per-ID embeddings on next-event and head gates</td>
+</tr>
+</tbody>
+</table>
+<h3 id="203-rl-sufficiency-by-construction">20.3 RL sufficiency by construction</h3>
+<table>
+<thead>
+<tr>
+<th>Aspect</th>
+<th>Detail</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>What</td>
+<td>Label-free targets that make the embedding decision-sufficient: <strong>action-conditioned successor features + a bisimulation metric</strong>, and/or a <strong>Predictive State Representation</strong> (the embedding <em>is</em> the vector of predicted future observable statistics)</td>
+</tr>
+<tr>
+<td>Why</td>
+<td>"Power RL heads" needs embeddings that preserve long-horizon, action-conditioned dynamics — a gate alone cannot create that</td>
+</tr>
+<tr>
+<td>Plugs in at</td>
+<td>Objectives (§8), Components C &amp; H (§17)</td>
+</tr>
+<tr>
+<td>Test</td>
+<td>On a randomized-arm stream, an OPE head on these embeddings recovers the known effect within tolerance; bisimulation distance correlates with true behavioral difference</td>
+</tr>
+</tbody>
+</table>
+<h3 id="204-stream-capability-card-decide-before-you-spend-compute">20.4 Stream capability card (decide before you spend compute)</h3>
+<table>
+<thead>
+<tr>
+<th>Aspect</th>
+<th>Detail</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>What</td>
+<td>A model-free <strong>entropy ceiling</strong> per objective (context-tree weighting / transfer entropy / directed information), computed <strong>before</strong> training</td>
+</tr>
+<tr>
+<td>Why</td>
+<td>Turns the no-<code>FAIL</code> law (§1.2) into a computation: which tasks are <code>PASS</code>-able, which are <code>NO_SIGNAL</code>, and the honest budget</td>
+</tr>
+<tr>
+<td>Plugs in at</td>
+<td>Guardrail F (§15), training (§10)</td>
+</tr>
+<tr>
+<td>Test</td>
+<td>On the zoo, the predicted <code>NO_SIGNAL</code> set matches the ground-truth unlearnable set; no budget is spent on unlearnable targets</td>
+</tr>
+</tbody>
+</table>
+<h3 id="205-stream-zoo-generality-benchmark">20.5 Stream zoo (generality benchmark)</h3>
+<table>
+<thead>
+<tr>
+<th>Aspect</th>
+<th>Detail</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>What</td>
+<td>Many synthetic streams with <strong>known structure</strong> plus <strong>negative controls</strong> (zero signal), alongside real streams</td>
+</tr>
+<tr>
+<td>Why</td>
+<td>Generality must be measured against ground truth, not asserted from three customer streams</td>
+</tr>
+<tr>
+<td>Plugs in at</td>
+<td>Evaluation (§11), pretraining (§7)</td>
+</tr>
+<tr>
+<td>Test</td>
+<td>Cross-stream transfer matrix; the model recovers known structure and correctly reports <code>NO_SIGNAL</code> on controls</td>
+</tr>
+</tbody>
+</table>
+<h3 id="206-universal-event-tokenizer">20.6 Universal event tokenizer</h3>
+<table>
+<thead>
+<tr>
+<th>Aspect</th>
+<th>Detail</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>What</td>
+<td>Infer feature <strong>types</strong> (categorical / numeric / timestamp / text-like) per stream; tokenize numerics with a <strong>learnable monotone / quantile</strong> transform; normalize multiple clocks (event-time vs wall-clock, timezones, bursts)</td>
+</tr>
+<tr>
+<td>Why</td>
+<td>Makes a genuinely unseen schema work with no code changes (C1); fixed <code>log1p</code> under-serves arbitrary distributions</td>
+</tr>
+<tr>
+<td>Plugs in at</td>
+<td>Tokenization (§6), Ingestion (§4)</td>
+</tr>
+<tr>
+<td>Test</td>
+<td>On an unseen schema, the tokenizer runs end-to-end and matches a hand-tuned encoding within noise</td>
+</tr>
+</tbody>
+</table>
+<h3 id="207-capability-compiler-automated-head-factory">20.7 Capability compiler (automated head factory)</h3>
+<table>
+<thead>
+<tr>
+<th>Aspect</th>
+<th>Detail</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>What</td>
+<td>CESI discovery → the set of well-posed tasks → auto-generate, train, and gate the supervised / unsupervised / RL heads, emitting PASS / NO_SIGNAL</td>
+</tr>
+<tr>
+<td>Why</td>
+<td>Phase 2 (§6) is manual today; the "factory" must close the loop to power heads out of the box</td>
+</tr>
+<tr>
+<td>Plugs in at</td>
+<td>Head interfaces (§13), pipeline (§11)</td>
+</tr>
+<tr>
+<td>Test</td>
+<td>Given a new stream and target schema, the compiler emits a gated head suite with no human edits</td>
+</tr>
+</tbody>
+</table>
+<h3 id="208-drift-regime-layer">20.8 Drift / regime layer</h3>
+<table>
+<thead>
+<tr>
+<th>Aspect</th>
+<th>Detail</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>What</td>
+<td>Monitor the health metrics over rolling windows; on drift, <strong>refresh adapters / boundary / macro-state</strong> (never the frozen trunk) and segment regimes</td>
+</tr>
+<tr>
+<td>Why</td>
+<td>"Any stream" includes non-stationary ones; the frozen manifold must degrade gracefully</td>
+</tr>
+<tr>
+<td>Plugs in at</td>
+<td>Products/state (§12), macro-state Component F (§17)</td>
+</tr>
+<tr>
+<td>Test</td>
+<td>On a stream with a known regime change, drift is detected and post-change performance is restored by a refresh</td>
+</tr>
+</tbody>
+</table>
+<h3 id="209-doctrine-filter-and-priority">20.9 Doctrine filter and priority</h3>
+<p>Every idea above is admitted only if it:</p>
+<table>
+<thead>
+<tr>
+<th>Constraint</th>
+<th>Rule</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Label-free</td>
+<td>no leakage into Layer B — targets stay self-supervised</td>
+</tr>
+<tr>
+<td>Per-sample at serve</td>
+<td>no batch statistics at inference time</td>
+</tr>
+<tr>
+<td>No magic numbers</td>
+<td>thresholds are derived or calibrated, with receipts</td>
+</tr>
+<tr>
+<td>Grounded</td>
+<td>ships with a known-truth test in the zoo (§20.5)</td>
+</tr>
+<tr>
+<td>Cost-aware</td>
+<td>must beat the existing mechanism in capability per unit cost (§3.1)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Start here: §20.4 (capability card) and §20.5 (stream zoo)</strong> — they are cheap, they de-risk everything else, and they are the fastest path to honestly claiming the system works on <em>any</em> stream. Then <strong>§20.2 (relational)</strong> and <strong>§20.3 (RL sufficiency)</strong> are the two capability unlocks.</p>
 </main>
 </body>
 </html>

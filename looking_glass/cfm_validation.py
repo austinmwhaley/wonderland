@@ -29,7 +29,13 @@ def validate(cfg: CFMConfig):
         map_location=cfg.device,
         weights_only=False,
     )
-    vocab = EventVocab(blob["vocab"]["et"], blob["vocab"]["brand"], blob["vocab"]["ent"])
+    vocab = EventVocab(
+        blob["vocab"]["et"],
+        blob["vocab"]["brand"],
+        blob["vocab"]["ent"],
+        blob["vocab"].get("eid"),
+        blob["vocab"].get("attrs"),
+    )
     model = CFM(
         vocab,
         blob["dim"],
@@ -39,6 +45,7 @@ def validate(cfg: CFMConfig):
         input_norm=bool(blob.get("input_norm", False)),
         readout_skip=bool(blob.get("readout_skip", False)),
         event_residual=bool(blob.get("event_residual", False)),
+        entity_id_embed=bool(blob.get("entity_id_embed", False)),
     ).to(cfg.device)
     model.load_state_dict(blob["state"])
     if blob.get("whiten_W") is not None:

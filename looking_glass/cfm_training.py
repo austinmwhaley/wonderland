@@ -130,7 +130,12 @@ def train_cfm(cfg: CFMConfig):
     apply_set_overrides(cfg, res.receipt)  # record every --set key in receipts
     apply_set_overrides(cfg, res_all.receipt)
     a_seqs = build_sequences(df, a_keys, cfg, split, with_anchors=False)
-    vocab = EventVocab.build(a_seqs)
+    vocab = EventVocab.build(
+        a_seqs,
+        max_eid=getattr(cfg, "max_entity_vocab", 0),
+        attr_fields=getattr(cfg, "attr_fields", ()) or (),
+        max_attr=getattr(cfg, "max_attr_vocab", 0),
+    )
     device = torch.device(cfg.device)
     K = max(1, int(cfg.n_experts))
     cfg.dim = max(K, (cfg.dim // K) * K)
@@ -149,6 +154,7 @@ def train_cfm(cfg: CFMConfig):
         input_norm=getattr(cfg, "input_norm", True),
         readout_skip=getattr(cfg, "readout_skip", True),
         event_residual=getattr(cfg, "event_residual", False),
+        entity_id_embed=getattr(cfg, "entity_id_embed", False),
     ).to(device)
     # v4.0: differentiable ZCA in the forward during training (gradients shape the
     # consumed isotropy); off at eval/save so the frozen transform is used.
@@ -547,6 +553,7 @@ def train_cfm(cfg: CFMConfig):
             "input_norm": bool(getattr(cfg, "input_norm", True)),
             "readout_skip": bool(getattr(cfg, "readout_skip", True)),
             "event_residual": bool(getattr(cfg, "event_residual", False)),
+            "entity_id_embed": bool(getattr(cfg, "entity_id_embed", False)),
             "whiten_mean": (model.whiten_mean if getattr(model, "whiten_on", False) else None),
             "whiten_W": (model.whiten_W if getattr(model, "whiten_on", False) else None),
         },
@@ -618,6 +625,11 @@ def _collate(seqs, vocab, device):
     et = torch.full((B, T), vocab.n_et, dtype=torch.long, device=device)
     br = torch.full((B, T), vocab.n_brand, dtype=torch.long, device=device)
     en = torch.full((B, T), vocab.n_ent, dtype=torch.long, device=device)
+    eid = torch.full((B, T), vocab.n_eid, dtype=torch.long, device=device)
+    attr_t = {
+        f: torch.full((B, T), vocab.n_attr[f], dtype=torch.long, device=device)
+        for f in (getattr(vocab, "attrs", {}) or {})
+    }
     val = torch.zeros(B, T, 1, device=device)
     dt = torch.zeros(B, T, 1, device=device)
     tod = torch.zeros(B, T, 4, device=device)  # periodic timestamp features (spec §1)
@@ -643,6 +655,23 @@ def _collate(seqs, vocab, device):
             ],
             device=device,
         )
+        _eids = sq.get("entity_id")
+        if _eids is None:
+            _eids = [None] * L
+        eid[i, :L] = torch.tensor(
+            [vocab.eid.get(str(x) if x is not None else "none", vocab.n_eid) for x in _eids],
+            device=device,
+        )
+        for f, ten in attr_t.items():
+            vals = (sq.get("attrs") or {}).get(f)
+            if vals is not None:
+                ten[i, :L] = torch.tensor(
+                    [
+                        vocab.attrs[f].get(str(x) if x is not None else "none", vocab.n_attr[f])
+                        for x in vals
+                    ],
+                    device=device,
+                )
         val[i, :L, 0] = torch.tensor(
             [_f(v) for v in sq["value"]], dtype=torch.float32, device=device
         )
@@ -659,6 +688,8 @@ def _collate(seqs, vocab, device):
         "et": et,
         "br": br,
         "en": en,
+        "eid": eid,
+        **attr_t,
         "val": val,
         "dt": dt,
         "tod": tod,
@@ -706,6 +737,15 @@ def _masked_forward(model, vocab, t, cfg, dev):
         + model.w_co(t["co"])
         + model.w_tod(t["tod"])
     )
+    if getattr(model, "eid_embed_on", False) and "eid" in t:
+        eid2 = t["eid"].clone()
+        eid2[rand] = vocab.n_eid
+        x2 = x2 + model.emb_eid(eid2)
+    for f in getattr(model, "attr_fields", ()):
+        if f in t:
+            a2 = t[f].clone()
+            a2[rand] = vocab.n_attr[f]
+            x2 = x2 + model.emb_attr[f](a2)
     y2, _ = model.encode_ev(x2, {**t, "et": et2})
     return y2, t["et"], rand
 

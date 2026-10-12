@@ -40,6 +40,8 @@ import numpy as np
 import torch
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.neural_network import MLPClassifier, MLPRegressor
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
 
 from looking_glass.cfm_data import (
     _customer_keys,
@@ -80,6 +82,15 @@ def _encode(model, vocab, seqs, batch=128, mask_frac=0.15, seed=0):
             rand = (torch.rand(t["et"].shape, device=dev) < mask_frac) & (t["mask"] > 0)
             t2 = dict(t)
             t2["et"] = torch.where(rand, torch.full_like(t["et"], NE), t["et"])
+            # Redact ALL content channels at the masked position (not just the
+            # event type) — otherwise brand/entity/value leak the masked event
+            # through the readout (measured: mask probe CE 0.47 vs unigram 1.10 on
+            # the L0 negative control). Matches training `_masked_forward`.
+            t2["br"] = torch.where(rand, torch.full_like(t["br"], vocab.n_brand), t["br"])
+            t2["en"] = torch.where(rand, torch.full_like(t["en"], vocab.n_ent), t["en"])
+            t2["val"] = torch.where(rand.unsqueeze(-1), torch.zeros_like(t["val"]), t["val"])
+            if "eid" in t:
+                t2["eid"] = torch.where(rand, torch.full_like(t["eid"], vocab.n_eid), t["eid"])
             y_m, _ = model.encode(t2)
         y = y.float().cpu().numpy()
         h = h.float().cpu().numpy()
@@ -126,6 +137,26 @@ def _build(name, rows, n_ent, n_ev, horizon):
             PREVVAL.append(0.0)
             S.append(r["cust"])
             continue
+        if name == "sf":
+            # Successor features MATCHING the training objective (cfm_training
+            # `sf`): the time-discounted future phi = [log1p|value|, event one-hot],
+            # scale-free. (The old raw future-COUNT target was a different,
+            # magnitude-heavy quantity the model was never trained on.)
+            etr = np.asarray(r["et"], int)
+            valr = np.log1p(np.abs(np.asarray(r["val"], float)))
+            gap = np.expm1(np.asarray(r["dt"], float))
+            tau = np.cumsum(gap)
+            w = np.zeros((L, n_ev))
+            w[:, 0] = valr
+            ok = (etr >= 0) & (etr < n_ev - 1)
+            w[np.arange(L)[ok], 1 + etr[ok]] = 1.0
+            gam, unit = 0.5, 86400.0
+            gpow = gam ** (tau / unit)
+            wg = w * gpow[:, None]
+            rc = np.cumsum(wg[::-1], axis=0)[::-1]
+            ssum = np.zeros_like(w)
+            ssum[:-1] = rc[1:]
+            Rrow = ssum * (gam ** (-tau / unit))[:, None]
         for t in range(L):
             if r["co"][t] > 0:
                 continue
@@ -186,17 +217,19 @@ def _build(name, rows, n_ent, n_ev, horizon):
                 PREVID.append(-1)
                 PREVVAL.append(0.0)
             elif name == "sf":
-                counts = np.bincount(r["et"][t + 1 :], minlength=n_ev).astype(np.float64)
                 X.append(z)
-                Y.append(counts)
+                Y.append(Rrow[t])
                 PREVID.append(-1)
                 PREVVAL.append(0.0)
             S.append(r["cust"])
     if not X:
         return None
+    Y = np.asarray(Y)
+    if name == "sf":
+        Y = (Y - Y.mean(0)) / np.maximum(Y.std(0), 1e-6)  # scale-free (DEC-018)
     return (
         np.asarray(X, float),
-        np.asarray(Y),
+        Y,
         np.asarray(PREVID),
         np.asarray(PREVVAL),
         np.asarray(S),
@@ -225,22 +258,35 @@ def _kind(name):
 
 
 def _head(kind, family):
+    # Standardize features inside the head (fit on train only): raw frozen states
+    # are O(10-100) scale, which makes LBFGS crawl and MLPs mistune. The scaler is
+    # part of the fitted pipeline => no leakage; it is a conditioning fix, not a
+    # change to the graded quantity.
     if kind == "cat":
         return (
-            LogisticRegression(max_iter=500)
+            make_pipeline(StandardScaler(with_std=False), LogisticRegression(max_iter=100))
             if family == "lin"
-            else MLPClassifier(hidden_layer_sizes=(128,), max_iter=25, early_stopping=True)
+            else make_pipeline(
+                StandardScaler(with_std=False),
+                MLPClassifier(hidden_layer_sizes=(128,), max_iter=25, early_stopping=True),
+            )
         )
     if kind == "multi":
         return (
-            LinearRegression()
+            make_pipeline(StandardScaler(with_std=False), LinearRegression())
             if family == "lin"
-            else MLPRegressor(hidden_layer_sizes=(128,), max_iter=25, early_stopping=True)
+            else make_pipeline(
+                StandardScaler(with_std=False),
+                MLPRegressor(hidden_layer_sizes=(128,), max_iter=25, early_stopping=True),
+            )
         )
     return (
-        LinearRegression()
+        make_pipeline(StandardScaler(with_std=False), LinearRegression())
         if family == "lin"
-        else MLPRegressor(hidden_layer_sizes=(128,), max_iter=25, early_stopping=True)
+        else make_pipeline(
+            StandardScaler(with_std=False),
+            MLPRegressor(hidden_layer_sizes=(128,), max_iter=25, early_stopping=True),
+        )
     )
 
 
@@ -317,6 +363,50 @@ def _verdict(model_m, stronger_base, null_base, se):
         return "PASS" if model_m < stronger_base - floor else "FAIL"
     # no model-free signal; PASS only if the probe beats the trivial predictor.
     return "PASS" if model_m < null_base - floor else "NO_IDENTIFIABLE_SIGNAL"
+
+
+def _bootstrap_ci(delta, S, n_boot=1000, seed=0):
+    """Customer-level bootstrap 95% CI of the mean per-sample delta
+    (delta = strong_baseline_loss - model_loss, >0 = model beats the baseline).
+    Resamples HELD-OUT CUSTOMERS (the §9.6 unit), so within-customer correlation
+    does not inflate the interval. Returns (mean, lo, hi)."""
+    d = np.asarray(delta, float)
+    S = np.asarray(S)
+    ok = np.isfinite(d)
+    d, S = d[ok], S[ok]
+    if len(d) < 8:
+        return float(np.mean(d)) if len(d) else 0.0, 0.0, 0.0
+    cust = np.asarray(sorted(set(S.tolist())), dtype=object)
+    idx = {c: i for i, c in enumerate(cust)}
+    sums = np.zeros(len(cust))
+    cnts = np.zeros(len(cust))
+    np.add.at(sums, [idx[c] for c in S], d)
+    np.add.at(cnts, [idx[c] for c in S], 1.0)
+    cmean = sums / np.maximum(cnts, 1.0)
+    rng = np.random.default_rng(seed)
+    boots = rng.choice(cmean, size=(n_boot, len(cmean)), replace=True).mean(axis=1)
+    return float(cmean.mean()), float(np.quantile(boots, 0.025)), float(np.quantile(boots, 0.975))
+
+
+def _verdict_ci(mean, lo, hi, stronger_base, null_base, floor):
+    """§9.6 / §11.3 defensible verdict: PASS iff the bootstrap 95% CI of the
+    delta vs the STRONGER model-free baseline excludes 0 and mean>0; NO_SIGNAL iff
+    that baseline is itself at the trivial-predictor floor; else FAIL/UNCERTAIN."""
+    signal = stronger_base < null_base - floor
+    if lo > 0:
+        return "PASS"
+    if not signal:
+        return "NO_SIGNAL"
+    if hi < 0:
+        return "FAIL"
+    return "UNCERTAIN"
+
+
+def _stronger_per_sample(bnull, bstrong, Bnull, Bstrong):
+    """The stronger model-free baseline (chosen by MEAN loss), applied per sample
+    and used for the CI. Deliberately NOT `np.fmin(Bnull, Bstrong)`: a per-sample
+    best-of oracle is unbeatable by construction and FALSE-FAILs every model."""
+    return Bstrong if bstrong <= bnull else Bnull
 
 
 def _identity_decodability(rows, fof):
@@ -531,7 +621,7 @@ def _capability_probes(model, vocab, rows, seqs, fof):
     return out
 
 
-def run_probe_report(model, vocab, cfg, seqs, tag):
+def run_probe_report(model, vocab, cfg, seqs, tag, light=False):
     freeze_encoder(model)
     dev = model._dev()
     with torch.no_grad():
@@ -556,10 +646,26 @@ def run_probe_report(model, vocab, cfg, seqs, tag):
         if built is None:
             continue
         X, Y, PREVID, PREVVAL, S = built
-        if len(X) > 40000:  # bound probe cost (speed principle)
-            sub = rng.choice(len(X), 8000, replace=False)
+        cap = 8000  # bound probe cost (speed principle)
+        if len(X) > cap:
+            sub = rng.choice(len(X), cap, replace=False)
             X, Y, PREVID, PREVVAL, S = [a[sub] for a in built]
         kind = _kind(name)
+        # GRADE THE DONOR WAY (SPEC §9.6 req.2 / §9): the model probe reads
+        # [E, raw] and the baseline reads raw — the PASS bar is that E ADDS
+        # incremental signal over the strong model-free baseline. raw = the
+        # previous-event one-hot (cat) / previous value (reg); the multi-output
+        # tasks (agg/jepa/sf) have no per-sample raw feature, so they stay E-only
+        # vs the bag-of-events mean.
+        if kind == "cat":
+            raw = np.zeros((len(PREVID), n_ev))
+            mm = PREVID >= 0
+            raw[np.arange(len(PREVID))[mm], PREVID[mm]] = 1.0
+            Xm = np.hstack([X, raw])
+        elif kind == "reg":
+            Xm = np.hstack([X, np.asarray(PREVVAL, float).reshape(-1, 1)])
+        else:
+            Xm = X
         fold = np.array([fof[c] for c in S])
         Llin = np.full(len(Y), np.nan)
         Lmlp = np.full(len(Y), np.nan)
@@ -579,29 +685,45 @@ def run_probe_report(model, vocab, cfg, seqs, tag):
                 Lmlp[va] = Bnull[va]
                 continue
             hl = _head(kind, "lin")
-            hl.fit(X[tr], Y[tr])
-            Llin[va] = _loss(kind, hl, X[va], Y[va])
-            hm = _head(kind, "mlp")
-            hm.fit(X[tr], Y[tr])
-            Lmlp[va] = _loss(kind, hm, X[va], Y[va])
+            hl.fit(Xm[tr], Y[tr])
+            Llin[va] = _loss(kind, hl, Xm[va], Y[va])
+            if not light:
+                hm = _head(kind, "mlp")
+                hm.fit(Xm[tr], Y[tr])
+                Lmlp[va] = _loss(kind, hm, Xm[va], Y[va])
             if kind == "cat":
                 Bnull[va] = _unigram_loss(Y[tr], Y[va])
                 Bstrong[va] = _gram_loss(Y[tr], Y[va], PREVID[tr], PREVID[va])
-                e = _ece(kind, hl, X[va], Y[va])
+                e = _ece(kind, hl, Xm[va], Y[va])
                 if e is not None:
                     ece_acc.append(e)
             elif kind == "reg":
                 Bnull[va] = _mean_loss(Y[tr], Y[va])
                 Bstrong[va] = _prevval_loss(Y[va], PREVVAL[va])
             else:  # multi-output (agg / jepa / sf)
-                Bstrong[va] = _mean_loss(Y[tr], Y[va])  # bag-of-events / mean
-                Bnull[va] = 2.0 * float(np.mean(np.var(Y[tr], axis=0)))  # random embedding
-        lin_m, mlp_m = float(np.nanmean(Llin)), float(np.nanmean(Lmlp))
+                # The trivial predictor for a multi-output target IS the mean, so
+                # the null loss equals the strong-baseline loss (no stronger
+                # model-free predictor exists). Previously the null was set to
+                # `2*var`, which is always LARGER than the mean loss -> "signal
+                # present" -> these objectives could never be NO_SIGNAL (they
+                # FALSE-FAILed on the L0 negative control). Now: PASS iff the
+                # model beats the mean, else NO_SIGNAL.
+                Bstrong[va] = _mean_loss(Y[tr], Y[va])
+                Bnull[va] = Bstrong[va]
+        lin_m = float(np.nanmean(Llin))
+        mlp_m = float(np.nanmean(Lmlp)) if not light else float("nan")
         bnull, bstrong = float(np.nanmean(Bnull)), float(np.nanmean(Bstrong))
         fold_means = [np.nanmean(Llin[fold == fi]) for fi in range(N_FOLDS) if np.any(fold == fi)]
         se = float(np.std(fold_means) / np.sqrt(max(len(fold_means), 1)))
         stronger = min(bnull, bstrong)
         verdict = _verdict(lin_m, stronger, bnull, se)
+        # §9.6-defensible verdict: bootstrap 95% CI of the delta vs the stronger
+        # model-free baseline (chosen by MEAN loss — the SAME baseline the verdict
+        # uses; never a per-sample fmin oracle, which no model could beat),
+        # resampled over held-out customers.
+        stronger_ps = _stronger_per_sample(bnull, bstrong, Bnull, Bstrong)
+        dmean, lo, hi = _bootstrap_ci(stronger_ps - Llin, S, seed=(abs(hash(name)) % (2**31)))
+        floor = 2.0 * se
         report[name] = {
             "model_lin": lin_m,
             "model_mlp": mlp_m,
@@ -610,34 +732,57 @@ def run_probe_report(model, vocab, cfg, seqs, tag):
             "null": bnull,
             "ceiling": stronger,
             "delta": bstrong - lin_m,
+            "delta_mean": dmean,
+            "ci_lo": lo,
+            "ci_hi": hi,
             "verdict": verdict,
+            "verdict_ci": _verdict_ci(dmean, lo, hi, stronger, bnull, floor),
             "ece": round(float(np.mean(ece_acc)), 4) if ece_acc else None,
         }
-    # intrinsic diagnostics (spec §6/§7)
+    # §20.4 capability card: if a k-event context does NOT predict the next event
+    # better than the 1-gram, the 1-gram is the ceiling and the transition
+    # capability is NO_SIGNAL (¬CARRIED beyond the baseline) — a model must not be
+    # required to beat an optimal baseline. Keep PASS if the model actually beat it.
+    card = {}
     try:
-        ident = _identity_decodability(rows, fof)
+        from looking_glass.capability_card import transition_carried
+
+        carried, card = transition_carried(rows, n_ev)
+        if not carried:
+            for o in ("next", "mask"):
+                if o in report and report[o]["verdict_ci"] in ("FAIL", "UNCERTAIN"):
+                    report[o]["verdict_ci"] = "NO_SIGNAL"
+                    report[o]["capability_card"] = "1-gram is the ceiling"
     except Exception as exc:  # noqa: BLE001
-        ident = {"error": str(exc)}
-    bn = _build("next", rows, n_ent, n_ev, horizon)
-    slices = {}
-    if bn is not None:
+        card = {"error": str(exc)}
+    # intrinsic diagnostics (spec §6/§7) — skipped in `light` mode (the card only
+    # needs the per-objective verdicts; these are for the standalone report).
+    ident, slices, caps = {}, {}, {}
+    if not light:
         try:
-            slices = _next_slices(bn[0], bn[1], bn[2], fof, bn[4], vocab)
-            if "next" in report and "rare(next!=view)" in slices:
-                report["next"]["rare"] = slices["rare(next!=view)"]
+            ident = _identity_decodability(rows, fof)
         except Exception as exc:  # noqa: BLE001
-            slices = {"error": str(exc)}
-    # Phase-5 capability probes (pacing / boundary / uncertainty)
-    try:
-        caps = _capability_probes(model, vocab, rows, seqs, fof)
-    except Exception as exc:  # noqa: BLE001
-        caps = {"error": str(exc)}
+            ident = {"error": str(exc)}
+        bn = _build("next", rows, n_ent, n_ev, horizon)
+        if bn is not None:
+            try:
+                slices = _next_slices(bn[0], bn[1], bn[2], fof, bn[4], vocab)
+                if "next" in report and "rare(next!=view)" in slices:
+                    report["next"]["rare"] = slices["rare(next!=view)"]
+            except Exception as exc:  # noqa: BLE001
+                slices = {"error": str(exc)}
+        # Phase-5 capability probes (pacing / boundary / uncertainty)
+        try:
+            caps = _capability_probes(model, vocab, rows, seqs, fof)
+        except Exception as exc:  # noqa: BLE001
+            caps = {"error": str(exc)}
     md = _to_markdown(report, tag, ident, slices, caps)
     receipt = {
         "tag": tag,
         "frozen": True,
         "n_sequences": len(rows),
         "objectives": report,
+        "capability_card": card,
         "identity_decodability": ident,
         "next_slices": slices,
         "capabilities": caps,

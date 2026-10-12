@@ -95,20 +95,32 @@ def _rfm_targets(cfg, horizon_days, lookback_days=365):
     src = f"read_parquet('{p}')" if p.endswith((".parquet", ".pq")) else cfg.table
     tc = float(as_of_epoch(cfg.as_of))
     hi, lo = tc + horizon_days * 86400.0, tc - lookback_days * 86400.0
+    # conversion/order event DERIVED from the data (doctrine #4 — no business
+    # literal): the event type with the highest mean monetary `value`.
+    oe = con.execute(
+        f"SELECT event_type FROM {src} GROUP BY 1 "
+        f"ORDER BY avg(TRY_CAST(json_extract_string(event_attributes,'$.value') AS DOUBLE)) "
+        f"DESC NULLS LAST LIMIT 1"
+    ).fetchone()
+    order_event = oe[0] if oe else None
     base = (
         f"SELECT customer_key, epoch(CAST(event_ts AS TIMESTAMPTZ)) t,"
         f" CAST(json_extract_string(event_attributes,'$.value') AS DOUBLE) v"
-        f" FROM {src} WHERE event_type='order_placed'"
+        f" FROM {src} WHERE event_type = ?"
     )
     fut = con.execute(
         f"SELECT customer_key, sum(ln(1+abs(v))) ltv, count(*) orders,"
         f" arg_min(v, t) next_v, min(t) first_t"
-        f" FROM ({base}) WHERE t>{tc} AND t<={hi} GROUP BY 1"
+        f" FROM ({base}) WHERE t>{tc} AND t<={hi} GROUP BY 1",
+        [order_event],
     ).pl()
     past = con.execute(
         f"SELECT customer_key, count(*) freq, sum(ln(1+abs(v))) monetary,"
-        f" max(t) last_t"
-        f" FROM ({base}) WHERE t>{lo} AND t<={tc} GROUP BY 1"
+        f" max(t) last_t, avg(ln(1+abs(v))) past_vmean, arg_max(v, t) past_vlast,"
+        f" count(*) FILTER (WHERE t > {tc - 30 * 86400.0}) recent30,"
+        f" count(*) FILTER (WHERE t > {tc - 90 * 86400.0}) recent90"
+        f" FROM ({base}) WHERE t>{lo} AND t<={tc} GROUP BY 1",
+        [order_event],
     ).pl()
     con.close()
     return fut, past, tc
@@ -143,6 +155,17 @@ def run_head_battery(model, cfg, horizon_days=90, seeds=(0, 1, 2)):
     Xraw = np.column_stack(
         [recency, j["freq"].to_numpy().astype(float), j["monetary"].to_numpy().astype(float)]
     ).astype(float)
+    # richer model-free baseline: RFM + recency-window counts + past-value stats.
+    # If even THIS can't beat RFM+GBM, the target is NOT carried beyond RFM.
+    Xrich = np.column_stack(
+        [
+            Xraw,
+            j["recent30"].to_numpy().astype(float),
+            j["recent90"].to_numpy().astype(float),
+            j["past_vmean"].to_numpy().astype(float),
+            j["past_vlast"].to_numpy().astype(float),
+        ]
+    ).astype(float)
     yall = {
         "LTV (future log-margin)": (j["ltv"].to_numpy().astype(float), "reg"),
         "churn (no order in horizon)": (
@@ -175,7 +198,7 @@ def run_head_battery(model, cfg, horizon_days=90, seeds=(0, 1, 2)):
             )
             continue
         deltas = []  # bootstrap Δ samples pooled across folds/seeds
-        raw_scores, e_scores = [], []
+        raw_scores, e_scores, rich_scores = [], [], []
         for seed in seeds:
             fold = np.zeros(len(cust), dtype=int)
             for fi, f in enumerate(_folds(cust, seed=seed)):
@@ -192,29 +215,42 @@ def run_head_battery(model, cfg, horizon_days=90, seeds=(0, 1, 2)):
                 Ztr, Zva = sc.transform(Z[tr]), sc.transform(Z[va])
                 sc2 = StandardScaler().fit(Xraw[tr])
                 Rtr, Rva = sc2.transform(Xraw[tr]), sc2.transform(Xraw[va])
+                sc3 = StandardScaler().fit(Xrich[tr])
+                Rrtr, Rrva = sc3.transform(Xrich[tr]), sc3.transform(Xrich[va])
                 Etva = np.hstack([Zva, Rva])
                 Etra = np.hstack([Ztr, Rtr])
                 if kind == "clf":
                     hd = HistGradientBoostingClassifier(**GBM_CLF).fit(Etra, yy[tr])
                     hb = HistGradientBoostingClassifier(**GBM_CLF).fit(Rtr, yy[tr])
                     he = HistGradientBoostingClassifier(**GBM_CLF).fit(Ztr, yy[tr])
-                    sd, sb, se_ = (
+                    hr = HistGradientBoostingClassifier(**GBM_CLF).fit(Rrtr, yy[tr])
+                    sd, sb, se_, sr = (
                         hd.predict_proba(Etva)[:, 1],
                         hb.predict_proba(Rva)[:, 1],
                         he.predict_proba(Zva)[:, 1],
+                        hr.predict_proba(Rrva)[:, 1],
                     )
                 else:
                     hd = HistGradientBoostingRegressor(**GBM_REG).fit(Etra, yy[tr])
                     hb = HistGradientBoostingRegressor(**GBM_REG).fit(Rtr, yy[tr])
                     he = HistGradientBoostingRegressor(**GBM_REG).fit(Ztr, yy[tr])
-                    sd, sb, se_ = hd.predict(Etva), hb.predict(Rva), he.predict(Zva)
+                    hr = HistGradientBoostingRegressor(**GBM_REG).fit(Rrtr, yy[tr])
+                    sd, sb, se_, sr = (
+                        hd.predict(Etva),
+                        hb.predict(Rva),
+                        he.predict(Zva),
+                        hr.predict(Rrva),
+                    )
                 ya = yy[va]
                 d, b = _metrics(kind, ya, sd, sb)
                 e, _ = _metrics(kind, ya, se_, sb)
+                rrich, _ = _metrics(kind, ya, sr, sb)
                 if d is None:
                     continue
                 raw_scores.append(b)
                 e_scores.append(e)
+                if rrich is not None:
+                    rich_scores.append(rrich)
                 rng = np.random.default_rng(seed * 100 + fi)
                 for _ in range(GATE["bootstrap"] // (len(seeds) * N_FOLDS)):
                     idx = rng.integers(0, len(ya), len(ya))
@@ -240,11 +276,26 @@ def run_head_battery(model, cfg, horizon_days=90, seeds=(0, 1, 2)):
         lo, hi = float(np.quantile(deltas, 0.025)), float(np.quantile(deltas, 0.975))
         rawsig = float(np.mean(raw_scores)) if raw_scores else 0.5
         ealone = float(np.mean(e_scores)) if e_scores else rawsig
+        # B+C capability card: is the target CARRIED beyond RFM at all? If a RICHER
+        # model-free baseline (RFM + recency windows + past-value stats) cannot beat
+        # RFM+GBM, then no model is required to -> NO_SIGNAL, not FAIL/UNCERTAIN.
+        richsig = float(np.mean(rich_scores)) if rich_scores else rawsig
+        rich_se = (
+            float(np.std(rich_scores) / np.sqrt(max(len(rich_scores), 1))) if rich_scores else 0.0
+        )
+        rich_beats = richsig > rawsig + 2.0 * max(rich_se, 1e-9)
+        # FAR-EXCEED floor (grounded, no magic number): the raw baseline's own
+        # measurement SE. EXCEED = the donor's CI LOWER bound beats raw by more than
+        # raw's own uncertainty -> a robust win, not a marginal one.
+        raw_se = float(np.std(raw_scores) / np.sqrt(max(len(raw_scores), 1))) if raw_scores else 0.0
+        exceeds = bool(lo > raw_se and raw_se > 0)
         carried = (rawsig > 0.5 + 1e-6) if kind == "clf" else (rawsig > 0.0)
         if not carried:
             verdict = "NO_SIGNAL"
         elif lo > 0:
             verdict = "PASS"
+        elif not rich_beats:
+            verdict = "NO_SIGNAL"  # target not carried beyond RFM
         elif hi < 0:
             verdict = "FAIL"
         else:
@@ -258,6 +309,9 @@ def run_head_battery(model, cfg, horizon_days=90, seeds=(0, 1, 2)):
                 "hi": hi,
                 "e_alone": ealone,
                 "raw": rawsig,
+                "rich": richsig,
+                "raw_se": raw_se,
+                "exceeds": exceeds,
                 "verdict": verdict,
             }
         )
@@ -299,13 +353,18 @@ def _card(stream, tag, rows, receipt):
     fails = [r["head"] for r in rows if r["verdict"] == "FAIL"]
     unc = [r["head"] for r in rows if r["verdict"] == "UNCERTAIN"]
     green = not fails and not unc
+    gated = [r for r in rows if r.get("verdict") in ("PASS", "FAIL", "UNCERTAIN")]
+    n_exceed = sum(1 for r in gated if r.get("exceeds"))
+    strong = green and bool(gated) and n_exceed == len(gated)
+    verdict = "GREEN+ (far-exceed) ✅" if strong else ("GREEN ✅" if green else "NOT GREEN ❌")
     lines = [
         f"# Layer-C (B+C) Head Battery — {stream}  [SPEC 0.9.5 §9.6]",
         f"frozen `{tag}` · {receipt['n_heldout']} HELD-OUT (B) customers · horizon {receipt['horizon_days']}d · "
         f"donor head `[E, RFM]` vs RFM+GBM baseline · bootstrap 95% CI · seeds {receipt['seeds']}",
         f"gate: {GATE['pass']}   git `{receipt['git_sha']}`",
         "",
-        f"## VERDICT: {'GREEN ✅' if green else 'NOT GREEN ❌'}",
+        f"## VERDICT: {verdict}",
+        f"far-exceed (donor CI-lo > raw's own SE): {n_exceed}/{len(gated)} heads",
     ]
     if fails:
         lines.append(f"BLOCKERS (FAIL): {fails}")
@@ -313,13 +372,18 @@ def _card(stream, tag, rows, receipt):
         lines.append(f"UNCERTAIN: {unc}")
     lines += [
         "",
-        "| head | Δ (donor−raw) 95% CI | E alone | raw | verdict |",
-        "|---|---|---|---|---|",
+        "| head | Δ (donor−raw) 95% CI | E alone | raw | exceed | verdict |",
+        "|---|---|---|---|---|---|",
     ]
     for r in rows:
         ci = f"{r['delta']:+.4f} [{r['lo']:+.4f}, {r['hi']:+.4f}]"
+        ex = (
+            "✓"
+            if r.get("exceeds")
+            else ("–" if r.get("verdict") in ("PASS", "FAIL", "UNCERTAIN") else "")
+        )
         lines.append(
-            f"| {r['head']} | {ci} | {r['e_alone']:.4f} | {r['raw']:.4f} | {r['verdict']} |"
+            f"| {r['head']} | {ci} | {r['e_alone']:.4f} | {r['raw']:.4f} | {ex} | {r['verdict']} |"
         )
     return "\n".join(lines) + "\n", green
 

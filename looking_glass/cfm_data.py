@@ -19,6 +19,8 @@ def _read_stream(cfg: CFMConfig):
     # use the column when present, else extract from the JSON attributes.
     base = ["customer_key", "event_ts", "event_type", "event_attributes"]
     content = ("brand", "entity_type", "entity_id", "value")
+    # generic categorical attributes (relational value encoder; §20.2).
+    attr_cols = ("category_code", "aisle", "department")
 
     def _ex(col, cols, cast=None):
         if col in cols:
@@ -54,6 +56,7 @@ def _read_stream(cfg: CFMConfig):
                     _ex("entity_type", tcols),
                     _ex("entity_id", tcols),
                     _ex("value", tcols, "FLOAT"),
+                    *[_ex(c, tcols) for c in attr_cols],
                 ]
             )
             # push the point-in-time cut into SQL (before materializing): the
@@ -237,15 +240,17 @@ def _random_anchor_epochs(ts, data_end, cfg, key):
 
 def derive_order_event(df) -> str | None:
     """The conversion/order event, DERIVED from the data (v4.6, #1): the event
-    type with the highest mean monetary `value`. No business name is hardcoded;
-    a stream with no value column returns None."""
+    type with the highest TOTAL monetary `value` (sum, not mean — a rare reversal
+    like a cancellation can have a high MEAN value but is not the conversion; the
+    conversion is the value-bearing event the stream produces most of). No business
+    name is hardcoded; a stream with no value column returns None."""
     import polars as pl
 
     if df is None or "value" not in df.columns:
         return None
     agg = (
         df.group_by("event_type")
-        .agg(pl.col("value").cast(pl.Float64, strict=False).fill_null(0.0).mean().alias("mv"))
+        .agg(pl.col("value").cast(pl.Float64, strict=False).fill_null(0.0).sum().alias("mv"))
         .sort("mv")
     )
     if agg.height == 0:
@@ -289,6 +294,10 @@ def build_sequences(df, keys, cfg: CFMConfig, split, with_anchors: bool, min_eve
         brand = g["brand"].to_numpy()[ki]
         ent = g["entity_type"].to_numpy()[ki]
         eid = g["entity_id"].to_numpy()[ki]
+        attrs = {
+            c: (g[c].to_numpy() if c in g.columns else np.full(g.height, None, dtype=object))[ki]
+            for c in getattr(cfg, "attr_fields", ()) or ()
+        }
         ets = g["event_ts"].to_numpy()[ki]
         n = ts.size
         spans: list[tuple[int, float | None]] = []
@@ -311,6 +320,7 @@ def build_sequences(df, keys, cfg: CFMConfig, split, with_anchors: bool, min_eve
                         "brand": brand[start:end],
                         "entity_type": ent[start:end],
                         "entity_id": eid[start:end],
+                        "attrs": {c: v[start:end] for c, v in attrs.items()},
                         "value": val[start:end],
                         "event_ts": ets[start:end],
                         "ts": ts[start:end].tolist(),

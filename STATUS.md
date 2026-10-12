@@ -35,7 +35,45 @@
   `v` prefix dropped). Code literals + live docs updated; `DECISIONS.md` history
   and on-disk artifact filenames left as recorded.
 
-- **Current task:** 0.6.7 — canonical event-stream schema (DEC-053): the 5
+- **Current task:** Layer-A laboratory (rabbit_hole synthetic) — make it a 100%-defensible
+  known-truth fixture for ALL encoder use cases. STEP 1 DONE (DEC-076): 32-use-case ontology +
+  coverage matrix (`rabbit_hole/lab.py`, `coverage_report`, CLI -> `rabbit_hole/lab_coverage.json`),
+  coverage low (fixtures are the work), tests green. STEP 2 DONE (DEC-077): parameterized data
+  spec `rabbit_hole/data_spec.py` (one simulator; SNR dial; truth+oracle DERIVED from the spec;
+  `write_fixture` emits stream/truth/oracle/baseline). NEXT: step 3 oracles+baselines per use case.
+
+- **Prior:** rabbit_hole complexity ladder (SPEC §20.5) — **BUILT** (DEC-069) and
+  **scored** (DEC-070): capability-vs-complexity curve shows the encoder recovers structure
+  as the rung rises (L0 null → L2+ transitions); the null exposed a multi-output-null gate bug
+  (fixed → jepa/agg/sf now NO_SIGNAL on L0). Residual: mask/query PASS on the null.
+  `rabbit_hole/generators/ladder.py`, rungs `L0_null`(negative control)→`L5_entity`, canonical
+  Parquet + `*_truth.json` receipts at `rabbit_hole/data/ladder/`; validated (L0 no structure,
+  L2+ transitions) + `tests/test_ladder.py`. NEXT: score the frozen encoder's B card per rung
+  (capability-vs-complexity curve); add `L6_action`; wire to the §20.4 capability card.
+  PRIOR: ecommerce MVP (below).
+
+- **Prior task:** MVP — make **ecommerce_2019 GREEN on BOTH cards** (loop until then).
+  B (v64, as_of 2020-04-30): FAIL `sf` + channel-MI; UNCERTAIN `mask`/`next`; rest PASS/
+  NO_SIGNAL. B+C (as_of 2020-03-01): UNCERTAIN churn/propensity/order-count/next-value;
+  LTV NO_SIGNAL; seg PASS. DONE this pass: `sf` probe target fixed to match training
+  (Δ −26→−0.08); `mask` → PASS; entity_id consumption implemented (`entity_id_embed`);
+  card gate = donor-way strong-baseline + bootstrap CI; oracle + scaling + literal bugs fixed.
+  NEXT: `sf`/channel-MI encoder levers; power for mask/next; B+C timing heads. DEC-067.
+  UPDATE (DEC-068): SR rank objective (`rank,decorr`) and entity_id did NOT raise the state
+  rank (eff_rank 2.02 vs 2.33 at matched config) — ecommerce is **capacity-limited**, not
+  search-limited. Realistic green path: (a) grounded NO_SIGNAL via the §20.4 capability card
+  for `sf`/`next`/channel-MI, and/or (b) §20.2 relational/multi-entity encoder.
+
+- **Prior:** B+C §9.6 on rabbit_hole_synthetic — NOT green (LTV/order-count
+  PASS; churn/propensity UNCERTAIN; next-order-value FAIL; segmentation NO_SIGNAL).
+  DEC-059 (attention-pool readout = measured dead end, code reverted) and DEC-060
+  (diagnosis: E re-encodes RFM; unique signal is spend-volume not timing; bilinear,
+  head-scaling, and readout_norm=false all falsified). Cheapest tools:
+  `/tmp/opencode/fast_bc.py` (~2 min 1-seed battery), `/tmp/opencode/rank_probe.py`
+  (~90 s rank/decodability). OPEN: §9.6 green needs a stream with churn velocity
+  beyond RFM, a velocity objective, or a grounded gate refinement — operator call.
+
+- **Prior:** 0.6.7 — canonical event-stream schema (DEC-053): the 5
   universal fields are `customer_key, event_ts, event_type, source_table,
   event_attributes`; `brand`/`entity_*`/`value`/... fold into `event_attributes`.
   All three fixtures expose a `customer_events_canonical` view; the encoder reads

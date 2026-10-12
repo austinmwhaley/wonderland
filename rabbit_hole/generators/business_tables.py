@@ -66,23 +66,8 @@ def _flush_contact(conn, rows) -> int:
         """
         INSERT INTO contact_sends (channel, send_id, customer_id, period, campaign_id,
             send_ts, opened, clicked, open_ts, click_ts, click_session_id,
-            converted_order_id, arm, propensity, discount_pct)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """,
-        rows,
-    )
-
-
-def _flush_email(conn, rows) -> int:
-    """Bulk-insert email sends (no-op when empty)."""
-    return _bulk_insert(
-        conn,
-        """
-        INSERT INTO email_sends (
-            send_id, customer_id, campaign_id, send_ts,
-            opened, clicked, open_ts, click_ts, click_session_id, converted_order_id,
-            arm, propensity
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            converted_order_id, arm, discount_pct)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         rows,
     )
@@ -226,7 +211,6 @@ def create_business_tables(conn: duckdb.DuckDBPyConnection) -> None:
             click_session_id TEXT,
             converted_order_id TEXT,
             arm INTEGER,
-            propensity REAL,
             discount_pct REAL DEFAULT 0,
             PRIMARY KEY (channel, send_id)
         );
@@ -238,16 +222,16 @@ def create_business_tables(conn: duckdb.DuckDBPyConnection) -> None:
 
         CREATE TABLE contact_arm (
             channel TEXT NOT NULL, customer_id TEXT NOT NULL, period INTEGER NOT NULL,
-            arm INTEGER NOT NULL, propensity REAL NOT NULL, optimal_arm INTEGER,
+            arm INTEGER NOT NULL, optimal_arm INTEGER,
             PRIMARY KEY (channel, customer_id, period)
         );
 
         CREATE VIEW email_sends AS SELECT send_id, customer_id, campaign_id, send_ts,
             opened, clicked, open_ts, click_ts, click_session_id, converted_order_id,
-            arm, propensity, discount_pct FROM contact_sends WHERE channel = 'email';
+            arm, discount_pct FROM contact_sends WHERE channel = 'email';
         CREATE VIEW email_holdout AS SELECT customer_id, period, holdout
             FROM contact_holdout WHERE channel = 'email';
-        CREATE VIEW email_arm AS SELECT customer_id, period, arm, propensity, optimal_arm
+        CREATE VIEW email_arm AS SELECT customer_id, period, arm, optimal_arm
             FROM contact_arm WHERE channel = 'email';
 
         CREATE SEQUENCE IF NOT EXISTS customer_events_seq START 1;

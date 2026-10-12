@@ -1,0 +1,521 @@
+{
+ "n_use_cases": 32,
+ "n_complete": 0,
+ "coverage": 0.0,
+ "rows": {
+  "churn": {
+   "family": "binary",
+   "card": [
+    "C"
+   ],
+   "present": {
+    "stream": false,
+    "truth": false,
+    "oracle": false,
+    "baseline": false,
+    "negative": false,
+    "adversarial": false
+   },
+   "complete": false,
+   "n_present": 0
+  },
+  "purchase_propensity": {
+   "family": "binary",
+   "card": [
+    "C"
+   ],
+   "present": {
+    "stream": false,
+    "truth": false,
+    "oracle": false,
+    "baseline": false,
+    "negative": false,
+    "adversarial": false
+   },
+   "complete": false,
+   "n_present": 0
+  },
+  "funnel_conversion": {
+   "family": "binary",
+   "card": [
+    "C"
+   ],
+   "present": {
+    "stream": false,
+    "truth": false,
+    "oracle": false,
+    "baseline": false,
+    "negative": false,
+    "adversarial": false
+   },
+   "complete": false,
+   "n_present": 0
+  },
+  "cart_abandonment": {
+   "family": "binary",
+   "card": [
+    "C"
+   ],
+   "present": {
+    "stream": false,
+    "truth": false,
+    "oracle": false,
+    "baseline": false,
+    "negative": false,
+    "adversarial": false
+   },
+   "complete": false,
+   "n_present": 0
+  },
+  "week_n_retention": {
+   "family": "binary",
+   "card": [
+    "C"
+   ],
+   "present": {
+    "stream": false,
+    "truth": false,
+    "oracle": false,
+    "baseline": false,
+    "negative": false,
+    "adversarial": false
+   },
+   "complete": false,
+   "n_present": 0
+  },
+  "order_count": {
+   "family": "count",
+   "card": [
+    "C"
+   ],
+   "present": {
+    "stream": false,
+    "truth": false,
+    "oracle": false,
+    "baseline": false,
+    "negative": false,
+    "adversarial": false
+   },
+   "complete": false,
+   "n_present": 0
+  },
+  "basket_size": {
+   "family": "count",
+   "card": [
+    "C"
+   ],
+   "present": {
+    "stream": false,
+    "truth": false,
+    "oracle": false,
+    "baseline": false,
+    "negative": false,
+    "adversarial": false
+   },
+   "complete": false,
+   "n_present": 0
+  },
+  "ltv": {
+   "family": "regression",
+   "card": [
+    "C"
+   ],
+   "present": {
+    "stream": false,
+    "truth": false,
+    "oracle": false,
+    "baseline": false,
+    "negative": false,
+    "adversarial": false
+   },
+   "complete": false,
+   "n_present": 0
+  },
+  "next_order_value": {
+   "family": "regression",
+   "card": [
+    "C"
+   ],
+   "present": {
+    "stream": false,
+    "truth": false,
+    "oracle": false,
+    "baseline": false,
+    "negative": false,
+    "adversarial": false
+   },
+   "complete": false,
+   "n_present": 0
+  },
+  "time_to_purchase": {
+   "family": "regression",
+   "card": [
+    "C"
+   ],
+   "present": {
+    "stream": false,
+    "truth": false,
+    "oracle": false,
+    "baseline": false,
+    "negative": false,
+    "adversarial": false
+   },
+   "complete": false,
+   "n_present": 0
+  },
+  "price_sensitivity": {
+   "family": "regression",
+   "card": [
+    "C"
+   ],
+   "present": {
+    "stream": false,
+    "truth": false,
+    "oracle": false,
+    "baseline": false,
+    "negative": false,
+    "adversarial": false
+   },
+   "complete": false,
+   "n_present": 0
+  },
+  "next_event": {
+   "family": "multiclass",
+   "card": [
+    "B",
+    "C"
+   ],
+   "present": {
+    "stream": false,
+    "truth": false,
+    "oracle": false,
+    "baseline": false,
+    "negative": false,
+    "adversarial": false
+   },
+   "complete": false,
+   "n_present": 0
+  },
+  "next_entity": {
+   "family": "multiclass",
+   "card": [
+    "B",
+    "C"
+   ],
+   "present": {
+    "stream": false,
+    "truth": false,
+    "oracle": false,
+    "baseline": false,
+    "negative": false,
+    "adversarial": false
+   },
+   "complete": false,
+   "n_present": 0
+  },
+  "funnel_step": {
+   "family": "multiclass",
+   "card": [
+    "C"
+   ],
+   "present": {
+    "stream": false,
+    "truth": false,
+    "oracle": false,
+    "baseline": false,
+    "negative": false,
+    "adversarial": false
+   },
+   "complete": false,
+   "n_present": 0
+  },
+  "brand_affinity": {
+   "family": "multiclass",
+   "card": [
+    "C"
+   ],
+   "present": {
+    "stream": false,
+    "truth": false,
+    "oracle": false,
+    "baseline": false,
+    "negative": false,
+    "adversarial": false
+   },
+   "complete": false,
+   "n_present": 0
+  },
+  "segmentation": {
+   "family": "representation",
+   "card": [
+    "C"
+   ],
+   "present": {
+    "stream": false,
+    "truth": false,
+    "oracle": false,
+    "baseline": false,
+    "negative": false,
+    "adversarial": false
+   },
+   "complete": false,
+   "n_present": 0
+  },
+  "anomaly": {
+   "family": "representation",
+   "card": [
+    "B"
+   ],
+   "present": {
+    "stream": false,
+    "truth": false,
+    "oracle": false,
+    "baseline": false,
+    "negative": false,
+    "adversarial": false
+   },
+   "complete": false,
+   "n_present": 0
+  },
+  "identity": {
+   "family": "representation",
+   "card": [
+    "B"
+   ],
+   "present": {
+    "stream": false,
+    "truth": false,
+    "oracle": false,
+    "baseline": false,
+    "negative": false,
+    "adversarial": false
+   },
+   "complete": false,
+   "n_present": 0
+  },
+  "rl_ope_incremental_margin": {
+   "family": "decision",
+   "card": [
+    "C"
+   ],
+   "present": {
+    "stream": false,
+    "truth": false,
+    "oracle": false,
+    "baseline": false,
+    "negative": false,
+    "adversarial": false
+   },
+   "complete": false,
+   "n_present": 0
+  },
+  "optimal_action": {
+   "family": "decision",
+   "card": [
+    "C"
+   ],
+   "present": {
+    "stream": false,
+    "truth": false,
+    "oracle": false,
+    "baseline": false,
+    "negative": false,
+    "adversarial": false
+   },
+   "complete": false,
+   "n_present": 0
+  },
+  "next": {
+   "family": "ssl",
+   "card": [
+    "B"
+   ],
+   "present": {
+    "stream": false,
+    "truth": false,
+    "oracle": false,
+    "baseline": false,
+    "negative": false,
+    "adversarial": false
+   },
+   "complete": false,
+   "n_present": 0
+  },
+  "mask": {
+   "family": "ssl",
+   "card": [
+    "B"
+   ],
+   "present": {
+    "stream": false,
+    "truth": false,
+    "oracle": false,
+    "baseline": false,
+    "negative": false,
+    "adversarial": false
+   },
+   "complete": false,
+   "n_present": 0
+  },
+  "dt": {
+   "family": "ssl",
+   "card": [
+    "B"
+   ],
+   "present": {
+    "stream": false,
+    "truth": false,
+    "oracle": false,
+    "baseline": false,
+    "negative": false,
+    "adversarial": false
+   },
+   "complete": false,
+   "n_present": 0
+  },
+  "value": {
+   "family": "ssl",
+   "card": [
+    "B"
+   ],
+   "present": {
+    "stream": false,
+    "truth": false,
+    "oracle": false,
+    "baseline": false,
+    "negative": false,
+    "adversarial": false
+   },
+   "complete": false,
+   "n_present": 0
+  },
+  "agg": {
+   "family": "ssl",
+   "card": [
+    "B"
+   ],
+   "present": {
+    "stream": false,
+    "truth": false,
+    "oracle": false,
+    "baseline": false,
+    "negative": false,
+    "adversarial": false
+   },
+   "complete": false,
+   "n_present": 0
+  },
+  "sf": {
+   "family": "ssl",
+   "card": [
+    "B"
+   ],
+   "present": {
+    "stream": false,
+    "truth": false,
+    "oracle": false,
+    "baseline": false,
+    "negative": false,
+    "adversarial": false
+   },
+   "complete": false,
+   "n_present": 0
+  },
+  "jepa": {
+   "family": "ssl",
+   "card": [
+    "B"
+   ],
+   "present": {
+    "stream": false,
+    "truth": false,
+    "oracle": false,
+    "baseline": false,
+    "negative": false,
+    "adversarial": false
+   },
+   "complete": false,
+   "n_present": 0
+  },
+  "order": {
+   "family": "ssl",
+   "card": [
+    "B"
+   ],
+   "present": {
+    "stream": false,
+    "truth": false,
+    "oracle": false,
+    "baseline": false,
+    "negative": false,
+    "adversarial": false
+   },
+   "complete": false,
+   "n_present": 0
+  },
+  "query": {
+   "family": "ssl",
+   "card": [
+    "B"
+   ],
+   "present": {
+    "stream": false,
+    "truth": false,
+    "oracle": false,
+    "baseline": false,
+    "negative": false,
+    "adversarial": false
+   },
+   "complete": false,
+   "n_present": 0
+  },
+  "pacing": {
+   "family": "ssl",
+   "card": [
+    "B"
+   ],
+   "present": {
+    "stream": false,
+    "truth": false,
+    "oracle": false,
+    "baseline": false,
+    "negative": false,
+    "adversarial": false
+   },
+   "complete": false,
+   "n_present": 0
+  },
+  "boundary": {
+   "family": "ssl",
+   "card": [
+    "B"
+   ],
+   "present": {
+    "stream": false,
+    "truth": false,
+    "oracle": false,
+    "baseline": false,
+    "negative": false,
+    "adversarial": false
+   },
+   "complete": false,
+   "n_present": 0
+  },
+  "uncertainty": {
+   "family": "ssl",
+   "card": [
+    "B"
+   ],
+   "present": {
+    "stream": false,
+    "truth": false,
+    "oracle": false,
+    "baseline": false,
+    "negative": false,
+    "adversarial": false
+   },
+   "complete": false,
+   "n_present": 0
+  }
+ }
+}

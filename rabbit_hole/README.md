@@ -86,9 +86,11 @@ Column names vary across sources; incoming rows are canonicalized through
 
 ## Instacart fixture (public real-data validation)
 
-Runs the whole pipeline on real observational data — no arms/propensity/known
-effect, so `generate_data.py` remains the known-truth fixture for causal/OPE
-gates; this one validates layers A→C the way production would see them.
+Runs the whole pipeline on real observational data — no logged treatment or
+ground truth — so `generate_data.py` remains the known-truth fixture for
+causal/OPE validation (it carries a randomized holdout + a latent per-customer
+response; see `GENERATOR_DECISIONS.md`); this one validates layers A→C the way
+production would see them.
 
 ```bash
 # 1. download (~197MB, no Kaggle auth needed for public datasets)
@@ -125,3 +127,20 @@ Known properties (all receipted in `instacart_receipt.json`):
 - `products`/`aisles`/`departments` are joined wide into each
   `add_to_cart` event's attributes (product name, aisle, department; department
   also rides the canonical `brand` field).
+
+## Synthetic stream — generator decisions
+
+Every non-trivial design choice for `generate_data.py` is recorded in
+**`GENERATOR_DECISIONS.md`** (reviewable: accepted / proposed / superseded).
+Two override how the stream was previously built:
+
+- **No email opens.** Open events are unobservable/unreliable under Apple MPP,
+  so email emits `email_send` + `email_click` only (SMS/push keep opens).
+- **No logged propensity.** The per-period cadence is the *observed marketing
+  policy* (confounded, not randomized); RL/OPE is offline (`white_queen`
+  estimates propensity). The send event carries the **action**
+  (`campaign_id`, `arm`, `discount_pct`); clicks are separate outcome events. A
+  small randomized holdout is retained **for ground-truth validation only**.
+
+Enforced by `python -m rabbit_hole.acceptance` (asserts no `email_open` events,
+no propensity column anywhere, and action attributes on send events).

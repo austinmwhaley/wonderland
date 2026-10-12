@@ -28,7 +28,13 @@ def build(cadence="weekly", max_customers=8000):
 
     ckpt = sorted(glob.glob(str(CFM_DIR / "cfm_v*.pt")))[-1]
     blob = torch.load(ckpt, map_location="cpu", weights_only=False)
-    vocab = C.EventVocab(blob["vocab"]["et"], blob["vocab"]["brand"], blob["vocab"]["ent"])
+    vocab = C.EventVocab(
+        blob["vocab"]["et"],
+        blob["vocab"]["brand"],
+        blob["vocab"]["ent"],
+        blob["vocab"].get("eid"),
+        blob["vocab"].get("attrs"),
+    )
     model = C.CFM(
         vocab,
         blob["dim"],
@@ -38,6 +44,7 @@ def build(cadence="weekly", max_customers=8000):
         input_norm=bool(blob.get("input_norm", False)),
         readout_skip=bool(blob.get("readout_skip", False)),
         event_residual=bool(blob.get("event_residual", False)),
+        entity_id_embed=bool(blob.get("entity_id_embed", False)),
     )
     model.load_state_dict(blob["state"])
     if blob.get("whiten_W") is not None:

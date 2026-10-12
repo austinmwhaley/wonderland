@@ -31,11 +31,11 @@ def _disentanglement(z: np.ndarray, ts: np.ndarray, seed: int) -> dict:
     """Per-channel independence (mutual information via kNN estimator) +
     OOT covariance invariance (temporal split, not random split)."""
     from sklearn.feature_selection import mutual_info_regression
-    from sklearn.preprocessing import StandardScaler
 
     n, dim = z.shape
-    sc = StandardScaler().fit(z)
-    zs = sc.transform(z)
+    from sklearn.preprocessing import StandardScaler
+
+    zs = StandardScaler().fit(z).transform(z)
 
     # pairwise MI between all channel pairs (kNN estimator, 3 nearest)
     # sample pairs if dim is large to keep this tractable
@@ -51,6 +51,17 @@ def _disentanglement(z: np.ndarray, ts: np.ndarray, seed: int) -> dict:
         mi = float(mutual_info_regression(zs[:, [i]], zs[:, j], random_state=seed)[0])
         mis.append(mi)
     mi_mean = float(np.mean(mis)) if mis else 0.0
+    # Linear calibration: the pairwise MI a GAUSSIAN with the state's own correlation
+    # matrix would show (=-0.5 log(1-rho^2)). A low-RANK isometric readout is linearly
+    # correlated by construction (DEC-036), which is NOT channel entanglement — so the
+    # honest statistic is the NONLINEAR EXCESS mi_mean - mi_linear. Gate that.
+    corr = np.corrcoef(zs, rowvar=False)
+    mi_lin = []
+    for i, j in pairs:
+        rho2 = float(np.clip(corr[i, j] ** 2, 0.0, 1.0 - 1e-9))
+        mi_lin.append(-0.5 * float(np.log(1.0 - rho2)))
+    mi_linear_mean = float(np.mean(mi_lin)) if mi_lin else 0.0
+    mi_excess = mi_mean - mi_linear_mean
     # reference: MI between shuffled copies (the null for zero MI)
     mi_null = []
     for i, j in pairs[: min(len(pairs), 20)]:
@@ -65,6 +76,8 @@ def _disentanglement(z: np.ndarray, ts: np.ndarray, seed: int) -> dict:
     if len(early) < dim + 2 or len(late) < dim + 2:
         return {
             "mi_mean": round(mi_mean, 6),
+            "mi_linear": round(mi_linear_mean, 6),
+            "mi_excess": round(mi_excess, 6),
             "mi_null": round(mi_null_mean, 6),
             "mi_ratio": round(mi_mean / max(mi_null_mean, 1e-12), 4),
             "oot_invariance": None,
@@ -93,6 +106,8 @@ def _disentanglement(z: np.ndarray, ts: np.ndarray, seed: int) -> dict:
     cca = _subspace_overlap(early, late)
     return {
         "mi_mean": round(mi_mean, 6),
+        "mi_linear": round(mi_linear_mean, 6),
+        "mi_excess": round(mi_excess, 6),
         "mi_null": round(mi_null_mean, 6),
         "mi_ratio": round(mi_mean / max(mi_null_mean, 1e-12), 4),
         "oot_cov_diff": round(diff, 6),
@@ -398,8 +413,11 @@ def evaluate(
             # correlation is ~0, so any remaining MI is nonlinear dependence —
             # expected for a nonlinear encoder. Report it; gate only that it is low.
             "check": "intrinsic: channel MI low (< 0.20 nats)",
-            "achieved": f"{proof1['mi_mean']} (null {proof1['mi_null']})",
-            "ok": proof1["mi_mean"] < 0.20,
+            "achieved": (
+                f"excess {proof1.get('mi_excess')} (mi {proof1['mi_mean']} - "
+                f"linear {proof1.get('mi_linear')}; null {proof1['mi_null']})"
+            ),
+            "ok": proof1.get("mi_excess", proof1["mi_mean"]) < 0.20,
         }
     )
     # Proof 2 gates

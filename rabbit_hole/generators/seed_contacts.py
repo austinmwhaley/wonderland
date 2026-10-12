@@ -120,9 +120,10 @@ def _seed_contacts(
 ):
     """Generate contact sends, holdouts, and arm assignments across channels."""
     # ------------------------------------------------------------------
-    # email interactions: RANDOMIZED arm (cadence) with logged propensity and a
-    # KNOWN causal effect on orders. Overlap identifies the counterfactual; the
-    # known effect forecasts ground truth so red_king can be validated.
+    # Multi-channel contacts: the per-period cadence is the OBSERVED marketing
+    # policy (confounded by latent intent, NOT randomized). No propensity is
+    # logged (offline/observational OPE via white_queen; GD-003). A small
+    # randomized holdout is kept only as a ground-truth control (GD-005).
     # ------------------------------------------------------------------
     # Per-customer UNIMODAL response: each customer has an optimal cadence x0
     # tied to activity (so the optimal arm DIFFERS by customer and is learnable
@@ -157,7 +158,6 @@ def _seed_contacts(
         base = (activity + 0.6 * intents)[:, None] * arm_axis[None, :]
         pp = softmax(base[:, None, :] + noise, axis=-1)
         arm = np.where(hold, -1, sample_categorical(rng, pp)).astype(np.int64)
-        prop = np.take_along_axis(pp, arm[..., None].clip(min=0), axis=-1)[..., 0]
         x0c = cadence[0] + (cadence[-1] - cadence[0]) * np.clip(activity, 0.0, 1.0)
         opt = np.argmax(cadence[None, :] * np.exp(-cadence[None, :] / x0c[:, None]), axis=-1)
 
@@ -165,7 +165,6 @@ def _seed_contacts(
         per_rep = np.tile(np.arange(_N_PERIODS, dtype=np.int64), nc)
         hold_flat = hold.ravel()
         arm_flat = arm.ravel()
-        prop_flat = prop.ravel()
         _bulk_insert(
             conn,
             "INSERT INTO contact_holdout (channel, customer_id, period, holdout) VALUES (?,?,?,?)",
@@ -180,14 +179,13 @@ def _seed_contacts(
         if arm_mask.any():
             _bulk_insert(
                 conn,
-                "INSERT INTO contact_arm (channel, customer_id, period, arm, propensity, "
-                "optimal_arm) VALUES (?,?,?,?,?,?)",
+                "INSERT INTO contact_arm (channel, customer_id, period, arm, optimal_arm) "
+                "VALUES (?,?,?,?,?)",
                 {
                     "channel": np.repeat(chan, int(arm_mask.sum())),
                     "customer_id": customer_col[ci_rep[arm_mask]],
                     "period": per_rep[arm_mask],
                     "arm": arm_flat[arm_mask],
-                    "propensity": prop_flat[arm_mask],
                     "optimal_arm": opt[ci_rep[arm_mask]],
                 },
             )
@@ -212,7 +210,6 @@ def _seed_contacts(
             t = rng.random(m) * tot[cs]
             pidx = np.minimum((cw[cs] <= t[:, None]).sum(axis=1), _N_PERIODS - 1)
             arm_cs = arm[cs, pidx]
-            prop_cs = prop[cs, pidx]
 
             days = pidx * period_days + rng.random(m) * period_days
             send_dt = start_anchor + (days * 86_400_000_000.0).astype("timedelta64[us]")
@@ -252,6 +249,14 @@ def _seed_contacts(
                 opened = ~np.isnat(open_dt)
                 clicked = ~np.isnat(click_dt)
                 clicked_idx = np.flatnonzero(clicked)  # refresh before conv join
+
+            # Email opens are unobservable under Apple MPP (GD-001). Keep the
+            # latent open->click path (clicks survive) but never expose email
+            # opens: zero the flag and drop the timestamp so no email_open event
+            # or open attribute is ever materialized.
+            if chan == "email":
+                opened = np.zeros(m, dtype=bool)
+                open_dt = np.full(m, np.datetime64("NaT", "us"), dtype="datetime64[us]")
 
             click_sid = np.full(m, None, dtype=object)
             conv_txn = np.full(m, None, dtype=object)
@@ -380,7 +385,6 @@ def _seed_contacts(
                     "click_session_id": click_sid.tolist(),
                     "converted_order_id": conv_txn.tolist(),
                     "arm": arm_cs,
-                    "propensity": prop_cs,
                     "discount_pct": disc,
                 }
             ).with_columns(

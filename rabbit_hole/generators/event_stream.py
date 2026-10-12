@@ -218,7 +218,7 @@ def materialize_customer_event_stream(
         INSERT INTO customer_events ({_INSERT_COLS})
         SELECT
             customer_id, send_ts, channel || '_send', channel, send_id, 'contact_sends', 0,
-            json_object('campaign_id', campaign_id, 'opened', opened, 'clicked', clicked),
+            json_object('campaign_id', campaign_id, 'arm', arm, 'discount_pct', discount_pct),
             ''
         FROM contact_sends
         """
@@ -228,6 +228,8 @@ def materialize_customer_event_stream(
     conn.execute(
         "DELETE FROM customer_events WHERE source_table = 'contact_sends' AND ends_with(event_type, '_open')"
     )  # upsert: replace this partition
+    # Email opens are never produced (Apple MPP, GD-001): the generator zeroes
+    # `opened`/`open_ts` for the email channel, so this emits SMS/push opens only.
     conn.execute(
         f"""
         INSERT INTO customer_events ({_INSERT_COLS})

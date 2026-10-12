@@ -217,23 +217,33 @@ def check(seed=17):
         checks.append(r("channel mix: max share", "<=0.8", round(top_share, 3), top_share <= 0.8))
         for ch in ("email_send", "sms_send", "push_send"):
             checks.append(r(f"event vocabulary: {ch}", "present", ch in types, ch in types))
-        n_arm, pmin, pmax, n_arms = con.execute(
-            "SELECT count(*), min(propensity), max(propensity), count(DISTINCT arm) "
-            "FROM contact_arm"
+        n_arm, n_arms = con.execute(
+            "SELECT count(*), count(DISTINCT arm) FROM contact_arm"
         ).fetchone()
         checks.append(
-            r("logged arms", f"{_ARMS} arms", int(n_arms or 0), bool(n_arm) and n_arms >= _ARMS)
-        )
-        # conservative floor: no arm may be log-probability-invisible (IPW
-        # explodes); measured production min was 0.00026
-        checks.append(
             r(
-                "propensity in [1e-4, 1)",
-                "strict",
-                f"{float(pmin):.4g}..{float(pmax):.4g}" if pmin is not None else "none",
-                pmin is not None and float(pmin) >= 1e-4 and float(pmax) < 1.0,
+                "observed treatment arms",
+                f"{_ARMS} arms",
+                int(n_arms or 0),
+                bool(n_arm) and n_arms >= _ARMS,
             )
         )
+        # GD-003: no logged propensity anywhere stream-facing (offline/observational OPE).
+        props = con.execute(
+            "SELECT count(*) FROM information_schema.columns WHERE column_name = 'propensity'"
+        ).fetchone()[0]
+        checks.append(r("no logged propensity", "0 columns", int(props), int(props) == 0))
+        # GD-001: email opens are unobservable under Apple MPP.
+        n_eopen = con.execute(
+            "SELECT count(*) FROM customer_events WHERE event_type = 'email_open'"
+        ).fetchone()[0]
+        checks.append(r("no email_open events (MPP)", "0", int(n_eopen), int(n_eopen) == 0))
+        # GD-006: send events carry the action (arm + discount), not outcomes.
+        n_act = con.execute(
+            "SELECT count(*) FROM customer_events WHERE event_type = 'email_send' "
+            "AND json_extract_string(event_attributes, '$.arm') IS NOT NULL"
+        ).fetchone()[0]
+        checks.append(r("send carries action attrs", ">0", int(n_act), int(n_act) > 0))
         hold, n_hold = con.execute("SELECT avg(holdout), count(*) FROM contact_holdout").fetchone()
         hold, n_hold = float(hold or 0.0), int(n_hold or 0)
         se = math.sqrt(_HOLD_FRAC * (1 - _HOLD_FRAC) / max(n_hold, 1))

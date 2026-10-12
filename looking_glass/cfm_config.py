@@ -261,6 +261,18 @@ class CFMConfig:
     # Adds a CLEAN, linearly-usable event path (the generic token skip mixes
     # emb(event) with brand/value/dt). No loss hack; SSM stays contractive.
     event_residual: bool = False
+    # v8 capability-first: consume the high-cardinality product/ENTITY IDENTITY
+    # (the stream carries `entity_id`; it was previously dropped). Adds an
+    # `emb_eid` over the (capped) entity-id vocab to the token input. Off by
+    # default so existing checkpoints are unchanged.
+    entity_id_embed: bool = False
+    # cap on the entity-id vocabulary (most FREQUENT ids; rest -> OOV bucket).
+    max_entity_vocab: int = 20000
+    # v8 (§20.2 relational): categorical ATTRIBUTE fields to consume as shared value
+    # encoders (category_code / aisle / department / ...). GENERALIZES to unseen
+    # entities via attributes (unlike a per-id table). Off by default.
+    attr_fields: tuple = ()
+    max_attr_vocab: int = 2000
     # DEC-028: condition cap for the boundary whitening — eigenvalues of the
     # state covariance are floored at this fraction of the largest, bounding
     # kappa(Sigma^{-1/2}) <= 1/sqrt(whiten_cond_floor). Prevents near-null

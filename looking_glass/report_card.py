@@ -31,7 +31,6 @@ from looking_glass.cfm_data import (
 from looking_glass.cfm_training import _collate
 from looking_glass.probes import freeze_encoder
 
-SEND = {"email_send", "sms_send", "push_send"}
 N_FOLDS = 5
 
 
@@ -42,10 +41,17 @@ def _folds(customers, n=N_FOLDS, seed=1):
     return np.array_split(np.asarray(cs, dtype=object), n)
 
 
-def _rl_checks(model, vocab, seqs, horizon=10, seed=0):
+def _rl_checks(model, vocab, seqs, actions=(), order_event=None, horizon=10, seed=0):
     """RL-relevant capability checks ON THE FROZEN EMBEDDING (folded into section
     A): (1) action representation, (2) outcome sufficiency, (3) action x state.
+
+    Stream-agnostic (doctrine #4): the action vocabulary is the run's DECLARED
+    exogenous events and the conversion event is DERIVED from the data — no
+    business names hardcoded. On a stream with no exogenous actions (e.g. a pure
+    behavioral log) the action-conditioned checks are omitted, not crashed.
     Returns rows with a SPEC verdict (PASS/FAIL/UNCERTAIN)."""
+    actions = tuple(str(a) for a in actions)
+    aset = set(actions)
     Z, A, OUT, S = [], [], [], []
     for i in range(0, len(seqs), 128):
         chunk = seqs[i : i + 128]
@@ -59,9 +65,12 @@ def _rl_checks(model, vocab, seqs, horizon=10, seed=0):
             et = [str(x) for x in chunk[b]["event_type"]]
             for j in range(L - 1):
                 Z.append(y[b, j])
-                A.append(et[j + 1] if et[j + 1] in SEND else "none")
+                A.append(et[j + 1] if et[j + 1] in aset else "none")
                 OUT.append(
-                    1.0 if any(e == "order_placed" for e in et[j + 1 : j + 1 + horizon]) else 0.0
+                    1.0
+                    if order_event is not None
+                    and any(e == order_event for e in et[j + 1 : j + 1 + horizon])
+                    else 0.0
                 )
                 S.append(chunk[b]["customer"])
     Z = np.asarray(Z)
@@ -74,6 +83,7 @@ def _rl_checks(model, vocab, seqs, horizon=10, seed=0):
     fof = {c: fi for fi, f in enumerate(_folds(S, seed=seed)) for c in f}
     fold = np.array([fof[c] for c in S])
     rows = []
+    has_actions = bool(aset) and len(np.unique(A)) >= 2
 
     def _st(score, base, se, better_low=True):
         d = (base - score) if better_low else (score - base)  # >0 = better than baseline
@@ -86,6 +96,8 @@ def _rl_checks(model, vocab, seqs, horizon=10, seed=0):
     # (1) action representation: z_t -> next action channel (CE vs unigram)
     ce, marg = [], []
     for fi in range(N_FOLDS):
+        if not has_actions:
+            break
         tr, va = fold != fi, fold == fi
         if not tr.any() or not va.any():
             continue
@@ -99,57 +111,62 @@ def _rl_checks(model, vocab, seqs, horizon=10, seed=0):
         cnt = np.bincount([list(cls).index(x) for x in A[tr]], minlength=len(cls)) + 0.5
         p = cnt / cnt.sum()
         marg.append(np.mean([-np.log(p[list(cls).index(t_)]) for t_ in A[va]]))
-    ce_m, marg_m = float(np.mean(ce)), float(np.mean(marg))
-    se = float(np.std(ce) / np.sqrt(max(len(ce), 1)))
-    rows.append(
-        (
-            "rl: action representation (z_t->action)",
-            f"CE {ce_m:.4f} vs unigram {marg_m:.4f}",
-            _st(ce_m, marg_m, se),
+    if has_actions and ce:
+        ce_m, marg_m = float(np.mean(ce)), float(np.mean(marg))
+        se = float(np.std(ce) / np.sqrt(max(len(ce), 1)))
+        rows.append(
+            (
+                "rl: action representation (z_t->action)",
+                f"CE {ce_m:.4f} vs unigram {marg_m:.4f}",
+                _st(ce_m, marg_m, se),
+            )
         )
-    )
 
-    # (2) outcome sufficiency: z_t -> order within horizon (AUROC vs 0.5)
+    # (2) outcome sufficiency: z_t -> conversion within horizon (AUROC vs 0.5)
     auc = []
-    for fi in range(N_FOLDS):
-        tr, va = fold != fi, fold == fi
-        if not tr.any() or not va.any() or 0 in (OUT[va].mean(), 1 - OUT[va].mean()):
-            continue
-        clf = LogisticRegression(max_iter=80, solver="lbfgs").fit(Z[tr], OUT[tr])
-        auc.append(roc_auc_score(OUT[va], clf.predict_proba(Z[va])[:, 1]))
-    a = float(np.mean(auc))
-    se = float(np.std(auc) / np.sqrt(max(len(auc), 1)))
-    rows.append(
-        (
-            f"rl: outcome sufficiency (z_t->order in {horizon})",
-            f"AUROC {a:.4f}",
-            _st(a, 0.5, se, better_low=False),
-        )
-    )
-
-    # (3) action x state: within-action AUROC (who responds). Average per fold
-    # (over action contexts) so the SE reflects fold noise, not the 4-action spread.
-    per_fold = {fi: [] for fi in range(N_FOLDS)}
-    for act in ("email_send", "push_send", "sms_send", "none"):
-        m_ = A == act
-        if m_.sum() < 200 or not 0 < OUT[m_].mean() < 1:
-            continue
+    if order_event is not None and len(np.unique(OUT)) >= 2:
         for fi in range(N_FOLDS):
-            tr, va = (fold != fi) & m_, (fold == fi) & m_
+            tr, va = fold != fi, fold == fi
             if not tr.any() or not va.any() or 0 in (OUT[va].mean(), 1 - OUT[va].mean()):
                 continue
             clf = LogisticRegression(max_iter=80, solver="lbfgs").fit(Z[tr], OUT[tr])
-            per_fold[fi].append(roc_auc_score(OUT[va], clf.predict_proba(Z[va])[:, 1]))
-    fmeans = [float(np.mean(v)) for v in per_fold.values() if v]
-    wa = float(np.mean(fmeans)) if fmeans else 0.5
-    se = float(np.std(fmeans) / np.sqrt(len(fmeans))) if fmeans else 0.0
-    rows.append(
-        (
-            "rl: action x state (who responds)",
-            f"mean within-action AUROC {wa:.4f}",
-            _st(wa, 0.5, se, better_low=False),
+            auc.append(roc_auc_score(OUT[va], clf.predict_proba(Z[va])[:, 1]))
+    if auc:
+        a = float(np.mean(auc))
+        se = float(np.std(auc) / np.sqrt(max(len(auc), 1)))
+        rows.append(
+            (
+                f"rl: outcome sufficiency (z_t->{order_event} in {horizon})",
+                f"AUROC {a:.4f}",
+                _st(a, 0.5, se, better_low=False),
+            )
         )
-    )
+
+    # (3) action x state: within-action AUROC (who responds). Average per fold
+    # (over the DECLARED action contexts) so the SE reflects fold noise.
+    per_fold = {fi: [] for fi in range(N_FOLDS)}
+    if has_actions and order_event is not None:
+        for act in tuple(sorted(aset)) + ("none",):
+            m_ = A == act
+            if m_.sum() < 200 or not 0 < OUT[m_].mean() < 1:
+                continue
+            for fi in range(N_FOLDS):
+                tr, va = (fold != fi) & m_, (fold == fi) & m_
+                if not tr.any() or not va.any() or 0 in (OUT[va].mean(), 1 - OUT[va].mean()):
+                    continue
+                clf = LogisticRegression(max_iter=80, solver="lbfgs").fit(Z[tr], OUT[tr])
+                per_fold[fi].append(roc_auc_score(OUT[va], clf.predict_proba(Z[va])[:, 1]))
+    fmeans = [float(np.mean(v)) for v in per_fold.values() if v]
+    if has_actions and fmeans:
+        wa = float(np.mean(fmeans))
+        se = float(np.std(fmeans) / np.sqrt(len(fmeans)))
+        rows.append(
+            (
+                "rl: action x state (who responds)",
+                f"mean within-action AUROC {wa:.4f}",
+                _st(wa, 0.5, se, better_low=False),
+            )
+        )
     return rows
 
 
@@ -167,7 +184,9 @@ def _latest_receipt(out_dir, kind, tag):
     return _json.loads(Path(fs[-1]).read_text()) if fs else None
 
 
-def build_report_card(model, vocab, cfg, seqs, stream, tag, out_dir=None, seed=0, refresh=False):
+def build_report_card(
+    model, vocab, cfg, seqs, stream, tag, out_dir=None, seed=0, refresh=False, order_event=None
+):
     freeze_encoder(model)
     from looking_glass.intrinsic import evaluate as intrinsic_eval
     from looking_glass.portfolio import evaluate as portfolio_eval
@@ -179,33 +198,63 @@ def build_report_card(model, vocab, cfg, seqs, stream, tag, out_dir=None, seed=0
     intrin = None if refresh else _latest_receipt(out_dir, "intrinsic", tag)
     if intrin is None:
         intrin = intrinsic_eval(model, vocab, cfg, seqs, seed=seed, out_dir=out_dir, tag=tag)
-    rl = _rl_checks(model, vocab, seqs, seed=seed)
+    rl = _rl_checks(
+        model,
+        vocab,
+        seqs,
+        actions=tuple(getattr(cfg, "exogenous_events", ()) or ()),
+        order_event=order_event,
+        seed=seed,
+    )
+
+    # §11.3-defensible capability gate: strong model-free baselines + bootstrap
+    # 95% CI over held-out customers (the same rigor as B+C §9.6). Falls back to
+    # the destroyed-null portfolio verdict for objectives the probe does not cover.
+    pobj = {}
+    try:
+        from looking_glass.probes import run_probe_report
+
+        _md, probe = run_probe_report(model, vocab, cfg, seqs, tag, light=True)
+        pobj = probe.get("objectives", {}) or {}
+    except Exception:  # noqa: BLE001 — a probe failure must not silently wrong-verdict
+        pobj = {}
 
     # capability verdicts (SPEC §1.2): PASS / NO_SIGNAL / FAIL / UNCERTAIN
     ident = port.get("identifiability", {})
     caps, fails, nosig, unc = [], [], [], []
     for o in port.get("objectives", []):
+        obj = o["objective"]
         skill, se = o.get("skill", 0.0), o.get("skill_se", 0.0)
-        ic = ident.get(o["objective"], {})
-        ce, cse = ic.get("ceiling"), ic.get("se")
-        # NO_SIGNAL only when a ceiling was MEASURED and can't beat the null.
-        # No ceiling for an objective (e.g. agg/sf) => judge it on the skill.
-        no_signal = ce is not None and ce <= 2.0 * float(cse or 0.0)
-        if no_signal:
-            st = "NO_SIGNAL"
-        elif skill > 2.0 * se:
-            st = "PASS"
-        elif skill < -2.0 * se:
-            st = "FAIL"
+        po = pobj.get(obj)
+        if po is not None and po.get("verdict_ci") is not None:
+            # STRONG-baseline gate (defensible): Δ vs the stronger model-free
+            # baseline with a bootstrap CI over held-out customers.
+            dmean = po["delta_mean"]
+            meas = (
+                f"Δ {dmean:+.4f} [{po['ci_lo']:+.4f}, {po['ci_hi']:+.4f}] Δ[E,raw] vs raw baseline"
+            )
+            st = po["verdict_ci"]
         else:
-            st = "UNCERTAIN"  # within noise of the threshold; needs more data
-        caps.append((o["objective"], f"skill {skill:+.4f} ± {se:.4f}", st))
+            ic = ident.get(obj, {})
+            ce, cse = ic.get("ceiling"), ic.get("se")
+            # NO_SIGNAL only when a ceiling was MEASURED and can't beat the null.
+            no_signal = ce is not None and ce <= 2.0 * float(cse or 0.0)
+            if no_signal:
+                st = "NO_SIGNAL"
+            elif skill > 2.0 * se:
+                st = "PASS"
+            elif skill < -2.0 * se:
+                st = "FAIL"
+            else:
+                st = "UNCERTAIN"  # within noise of the threshold; needs more data
+            meas = f"skill {skill:+.4f} ± {se:.4f}"
+        caps.append((obj, meas, st))
         if st == "FAIL":
-            fails.append(o["objective"])
+            fails.append(obj)
         elif st == "NO_SIGNAL":
-            nosig.append(o["objective"])
+            nosig.append(obj)
         elif st == "UNCERTAIN":
-            unc.append(o["objective"])
+            unc.append(obj)
     # RL-relevant capability checks (frozen embedding) — folded into section A
     for name, meas, st in rl:
         caps.append((name, meas, st))
@@ -313,11 +362,15 @@ def main(argv=None):
             "batch",
             "state_half_life_days",
             "agg_horizons_days",
+            "exogenous_events",
         ):
             v = (meta.get("config") or {}).get(k)
             if v is not None:
                 setattr(dcfg, k, v)
     df = _read_stream(dcfg)
+    from looking_glass.cfm_data import derive_order_event
+
+    order_event = derive_order_event(df)  # conversion event, DERIVED (no literal)
     keys = _customer_keys(df, dcfg)
     split = assign_split(keys, dcfg)
     ak = draw_sample(keys, split, "A", args.sample_a, dcfg.split_seed)
@@ -326,7 +379,14 @@ def main(argv=None):
         seqs = seqs[: args.max_seqs]
     stream = args.stream or Path(args.db).parent.name
     card, receipt = build_report_card(
-        model, model.vocab, dcfg, seqs, stream, args.tag, out_dir=args.ckpt_dir
+        model,
+        model.vocab,
+        dcfg,
+        seqs,
+        stream,
+        args.tag,
+        out_dir=args.ckpt_dir,
+        order_event=order_event,
     )
     print(card)
     if args.out:

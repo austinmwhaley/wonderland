@@ -14,23 +14,56 @@ from looking_glass.cfm_config import _f, _to_epoch
 # vocab + tokenizer
 # ---------------------------------------------------------------------------
 class EventVocab:
-    def __init__(self, et, brand, ent):
+    def __init__(self, et, brand, ent, eid=None, attrs=None):
         self.et = {v: i for i, v in enumerate(et)}
         self.brand = {v: i for i, v in enumerate(brand)}
         self.ent = {v: i for i, v in enumerate(ent)}
-        self.n_et, self.n_brand, self.n_ent = len(et), len(brand), len(ent)
+        self.eid = {v: i for i, v in enumerate(eid or [])}
+        self.n_et, self.n_brand, self.n_ent, self.n_eid = (
+            len(et),
+            len(brand),
+            len(ent),
+            len(self.eid),
+        )
+        # shared value encoders (§20.2): field -> {value -> idx}
+        self.attrs = {f: {v: i for i, v in enumerate(vals)} for f, vals in (attrs or {}).items()}
+        self.n_attr = {f: len(v) for f, v in self.attrs.items()}
 
     @staticmethod
-    def build(seqs):
+    def build(seqs, max_eid=0, attr_fields=(), max_attr=0):
+        from collections import Counter
+
         et, br, en = set(), set(), set()
+        eidc: Counter = Counter()
+        attrc: dict = {f: Counter() for f in attr_fields}
         for s in seqs:
             et.update(map(str, s["event_type"]))
             br.update(str(b) if b is not None else "none" for b in s["brand"])
             en.update(str(e) if e is not None else "none" for e in s["entity_type"])
-        return EventVocab(sorted(et), sorted(br), sorted(en))
+            _eids = s.get("entity_id")
+            if _eids is not None:
+                for e in _eids:
+                    eidc[str(e) if e is not None else "none"] += 1
+            for f, vals in (s.get("attrs") or {}).items():
+                for v in vals:
+                    attrc[f][str(v) if v is not None else "none"] += 1
+        # high-cardinality product/entity identity, capped to the most FREQUENT
+        # `max_eid` ids (data-derived); the rest fall to the OOV index n_eid.
+        eid = [v for v, _ in eidc.most_common(max_eid)] if max_eid else sorted(eidc)
+        attrs = {
+            f: ([v for v, _ in c.most_common(max_attr)] if max_attr else sorted(c))
+            for f, c in attrc.items()
+        }
+        return EventVocab(sorted(et), sorted(br), sorted(en), eid, attrs)
 
     def dumps(self):
-        return {"et": list(self.et), "brand": list(self.brand), "ent": list(self.ent)}
+        return {
+            "et": list(self.et),
+            "brand": list(self.brand),
+            "ent": list(self.ent),
+            "eid": list(self.eid),
+            "attrs": {f: list(v) for f, v in self.attrs.items()},
+        }
 
 
 # ---------------------------------------------------------------------------
@@ -514,6 +547,7 @@ class CFM(nn.Module):
         input_norm: bool = True,
         readout_skip: bool = False,
         event_residual: bool = False,
+        entity_id_embed: bool = False,
     ):
         super().__init__()
         self.vocab = vocab
@@ -525,6 +559,7 @@ class CFM(nn.Module):
         self.input_norm_on = bool(input_norm)
         self.readout_skip_on = bool(readout_skip)
         self.event_residual_on = bool(event_residual)
+        self.eid_embed_on = bool(entity_id_embed) and vocab.n_eid > 0
         if self.isometric_boundary:
             self.iso_skew = nn.Parameter(torch.zeros(dim, dim))
             # conservation scale: Tr(Sigma_readout) is held to the input band
@@ -541,6 +576,16 @@ class CFM(nn.Module):
         self.emb_et = nn.Embedding(vocab.n_et + 1, self.chan)
         self.emb_brand = nn.Embedding(vocab.n_brand + 1, self.chan)
         self.emb_ent = nn.Embedding(vocab.n_ent + 1, self.chan)
+        # high-cardinality product/entity identity (the stream carries it; use it)
+        if self.eid_embed_on:
+            self.emb_eid = nn.Embedding(vocab.n_eid + 1, self.chan)
+        # shared value encoders (§20.2): categorical attributes -> embeddings, which
+        # GENERALIZE to unseen entities (an unseen product still has a category/aisle)
+        self.attr_fields = tuple(getattr(vocab, "attrs", {}) or {})
+        if self.attr_fields:
+            self.emb_attr = nn.ModuleDict(
+                {f: nn.Embedding(vocab.n_attr[f] + 1, self.chan) for f in self.attr_fields}
+            )
         self.w_val = nn.Linear(1, self.chan)
         self.w_dt = nn.Linear(1, self.chan)
         self.w_co = nn.Linear(2, self.chan)  # exogenous covariates
@@ -600,6 +645,8 @@ class CFM(nn.Module):
         self.t_emb_et = _copy.deepcopy(self.emb_et)
         self.t_emb_brand = _copy.deepcopy(self.emb_brand)
         self.t_emb_ent = _copy.deepcopy(self.emb_ent)
+        if self.eid_embed_on:
+            self.t_emb_eid = _copy.deepcopy(self.emb_eid)
         self.t_w_val = _copy.deepcopy(self.w_val)
         self.t_w_dt = _copy.deepcopy(self.w_dt)
         self.t_w_co = _copy.deepcopy(self.w_co)
@@ -673,7 +720,7 @@ class CFM(nn.Module):
         co = seq.get("co")
         co = co if co is not None else [[0.0, 0.0]] * len(seq["event_type"])
         co = torch.tensor(co, dtype=torch.float32, device=dev)
-        return (
+        out = (
             self.emb_et(et)
             + self.emb_brand(br)
             + self.emb_ent(en)
@@ -682,6 +729,29 @@ class CFM(nn.Module):
             + self.w_co(co)
             + self.w_tod(torch.tensor(_tod(ts), dtype=torch.float32, device=dev))
         )
+        if self.eid_embed_on and seq.get("entity_id") is not None:
+            eids = seq["entity_id"]
+            eid = torch.tensor(
+                [
+                    self.vocab.eid.get(str(x) if x is not None else "none", self.vocab.n_eid)
+                    for x in eids
+                ],
+                device=dev,
+            )
+            out = out + self.emb_eid(eid)
+        for f in self.attr_fields:
+            vals = (seq.get("attrs") or {}).get(f)
+            if vals is not None:
+                idx = torch.tensor(
+                    [
+                        self.vocab.attrs[f].get(str(x) if x is not None else "none",
+                                                 self.vocab.n_attr[f])
+                        for x in vals
+                    ],
+                    device=dev,
+                )
+                out = out + self.emb_attr[f](idx)
+        return out
 
     def forward(self, seq, h0=None):
         tok = self.tokens(seq).unsqueeze(0)
@@ -730,7 +800,7 @@ class CFM(nn.Module):
                 pt.data.mul_(1 - tau).add_(ps.data, alpha=tau)
 
     def tokens_batch(self, t):
-        return (
+        out = (
             self.emb_et(t["et"])
             + self.emb_brand(t["br"])
             + self.emb_ent(t["en"])
@@ -739,9 +809,15 @@ class CFM(nn.Module):
             + self.w_co(t["co"])
             + self.w_tod(t["tod"])
         )
+        if self.eid_embed_on and "eid" in t:
+            out = out + self.emb_eid(t["eid"])
+        for f in self.attr_fields:
+            if f in t:
+                out = out + self.emb_attr[f](t[f])
+        return out
 
     def target_tokens_batch(self, t):
-        return (
+        out = (
             self.t_emb_et(t["et"])
             + self.t_emb_brand(t["br"])
             + self.t_emb_ent(t["en"])
@@ -750,6 +826,9 @@ class CFM(nn.Module):
             + self.t_w_co(t["co"])
             + self.t_w_tod(t["tod"])
         )
+        if self.eid_embed_on and "eid" in t:
+            out = out + self.t_emb_eid(t["eid"])
+        return out
 
     def _event_residual_inputs(self, t, emb_et=None):
         """(ev, ev_prev) = the current and previous EVENT embeddings, for the
