@@ -2227,3 +2227,20 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   Fix: route the statistics/moments into the consumed representation (either make the donor use
   the readout, or fold the accumulator into the state), then re-test sufficiency.
 - Gate green (277 tests).
+
+## DEC-102 — A+B+D sufficiency test: mechanisms in, but E still does not subsume RFM
+
+- **Date:** 2026-10-13
+- **Test:** with A+B+D (psr + readout moments + statistics pathway), instacart `E alone`
+  (GBM on the embedding alone, no raw features) on LTV is **~ -0.04 to 0.06** vs the strong
+  baseline ~0.36. So the embedding STILL does not carry the value/frequency signal — A+B+D did
+  not achieve sufficiency. Routing the donor to the readout (`y[:,-1]`) instead of the raw state
+  `h` did not change this either, and is a risky global change -> REVERTED.
+- **Read:** the mechanisms to carry everything now exist (PSR objective, magnitude readout,
+  long-memory statistics pathway), but the encoder still collapses to a low-rank state that does
+  not linearly expose RFM. Likely causes: PSR targets are batch-standardized (relative, not
+  level); the consumed state is rank-limited; the readout/state exposure is still weak.
+- **Status:** A+B+D mechanisms implemented + committed (opt-in). Sufficiency NOT achieved.
+  Next levers: (i) make the PSR/reconstruction targets LEVEL-preserving + reconstruct the raw
+  statistics directly; (ii) raise genuine rank (SR rank pressure); (iii) make the consumed state
+  explicitly concatenate the accumulated statistics (not just the readout).
