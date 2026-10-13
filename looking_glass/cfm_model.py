@@ -208,6 +208,7 @@ class SelectiveSSM(nn.Module):
         input_norm=True,
         readout_skip=False,
         event_residual=False,
+        readout_scale=False,
     ):
         super().__init__()
         # variance-preserving recurrence (v6.1, DEC-047): normalize the token
@@ -215,6 +216,10 @@ class SelectiveSSM(nn.Module):
         # readout so heads see unit-scale features. Both per-sample.
         self.input_norm = RMSNorm(dim) if input_norm else None
         self.readout_norm = RMSNorm(dim) if readout_norm else None
+        # magnitude-preserving readout (v8): RMSNorm erases SCALE, but recent-activity
+        # IS scale. Add a learned projection of the pre-norm magnitude as a per-sample
+        # offset so heads can read "how active" while per-dim conditioning is kept.
+        self.readout_scale = nn.Linear(1, dim) if (readout_norm and readout_scale) else None
         # readout skip (v6.2, DEC-048): the recurrent state is a low-pass
         # aggregate; the per-event transition (e.g. cart->purchase) is a function
         # of the CURRENT token, which survives only weakly/entangled in the state
@@ -294,6 +299,15 @@ class SelectiveSSM(nn.Module):
             g = g / (g.norm(dim=-1, keepdim=True) + 1e-6)
         return g
 
+    def _readout(self, y):
+        if self.readout_norm is None:
+            return y
+        mag = None
+        if self.readout_scale is not None:
+            mag = torch.log1p(y.pow(2).mean(-1, keepdim=True).sqrt())
+        yn = self.readout_norm(y)
+        return yn + self.readout_scale(mag) if mag is not None else yn
+
     def forward(self, x, h0=None, mask=None, ev=None, ev_prev=None):
         if self.input_norm is not None:
             x = self.input_norm(x)
@@ -347,7 +361,7 @@ class SelectiveSSM(nn.Module):
             y = self.W_C(Hout)
             if self.skip is not None:
                 y = y + self.skip(xs)
-            y = self.readout_norm(y) if self.readout_norm is not None else y
+            y = self._readout(y)
             if self.ev_residual:
                 if ev is not None:
                     y = y + self.ev_norm(self.w_ev(ev))
@@ -361,7 +375,7 @@ class SelectiveSSM(nn.Module):
         y = self.W_C(H)
         if self.skip is not None:
             y = y + self.skip(xs)
-        y = self.readout_norm(y) if self.readout_norm is not None else y
+        y = self._readout(y)
         if self.ev_residual:
             if ev is not None:
                 y = y + self.ev_norm(self.w_ev(ev))
@@ -465,6 +479,7 @@ class MultiScaleSSM(nn.Module):
         input_norm=True,
         readout_skip=False,
         event_residual=False,
+        readout_scale=False,
     ):
         super().__init__()
         if delta_spectrum:
@@ -483,6 +498,7 @@ class MultiScaleSSM(nn.Module):
                         input_norm=input_norm,
                         readout_skip=readout_skip,
                         event_residual=event_residual,
+                        readout_scale=readout_scale,
                     )
                 ]
             )
@@ -499,6 +515,7 @@ class MultiScaleSSM(nn.Module):
                     input_norm=input_norm,
                     readout_skip=readout_skip,
                     event_residual=event_residual,
+                    readout_scale=readout_scale,
                 )
                 for b in delta_biases[:n_experts]
             ]
@@ -548,6 +565,7 @@ class CFM(nn.Module):
         readout_skip: bool = False,
         event_residual: bool = False,
         entity_id_embed: bool = False,
+        readout_scale: bool = False,
     ):
         super().__init__()
         self.vocab = vocab
@@ -560,6 +578,7 @@ class CFM(nn.Module):
         self.readout_skip_on = bool(readout_skip)
         self.event_residual_on = bool(event_residual)
         self.eid_embed_on = bool(entity_id_embed) and vocab.n_eid > 0
+        self.readout_scale_on = bool(readout_scale)
         if self.isometric_boundary:
             self.iso_skew = nn.Parameter(torch.zeros(dim, dim))
             # conservation scale: Tr(Sigma_readout) is held to the input band
@@ -607,6 +626,7 @@ class CFM(nn.Module):
             input_norm=self.input_norm_on,
             readout_skip=self.readout_skip_on,
             event_residual=self.event_residual_on,
+            readout_scale=self.readout_scale_on,
         )
         self.head_next = nn.Linear(dim, vocab.n_et + 1)  # next event type
         # DEC-049: `query` predicts the next event from a FADED state (little

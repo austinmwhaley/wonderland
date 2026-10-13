@@ -2123,3 +2123,20 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   recent-activity/velocity relative to a 30/90-day count.
 - **Scoreboard:** rabbit_hole GREEN|GREEN · anchor GREEN|GREEN · instacart GREEN|NOT(marginal
   LTV/order-count) · ecommerce NOT|GREEN(vacuous). 277 tests green.
+
+## DEC-096 — Magnitude-preserving readout: rank 26 but instacart LTV still marginal
+
+- **Date:** 2026-10-13
+- **Built (v8, flag `readout_scale`):** after RMSNorm, add a learned projection of the
+  PRE-norm magnitude (`log1p(||y||)`) as a per-sample offset, so heads can read
+  recent-activity (scale) while per-dim conditioning is kept (SelectiveSSM `_readout`).
+- **Instacart** (entity_id + attrs + recency + readout_scale): eff_rank **26.3** (from 17),
+  PORTFOLIO PASS; B+C **LTV +0.040 [-0.017,+0.108] UNCERTAIN**, order-count UNCERTAIN;
+  churn/propensity PASS+exceed. No flip.
+- **CONCLUSION — instacart LTV/order-count is the resistant frontier.** Across EVERY lever
+  (per-id identity, attributes, half-life 7d, recency objective, magnitude-preserving readout,
+  8 seeds) the embedding adds a consistent **~+0.04** to LTV over RFM+GBM and cannot be made to
+  robustly beat it, while a rich model-free baseline adds +0.08. The target is CARRIED, the
+  encoder under-captures it, and the current architecture's ceiling is ~+0.04 there.
+- **Scoreboard:** rabbit_hole GREEN|GREEN · anchor GREEN|GREEN · instacart GREEN|NOT(LTV,
+  order-count: encoder-ceiling) · ecommerce NOT|GREEN(vacuous). 277 tests green.

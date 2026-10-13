@@ -256,6 +256,9 @@ class CFMConfig:
     # head can express the transition table (measured: state->next 0.37 vs
     # 1-gram 0.25). Identity-init, learnable, per-sample.
     readout_skip: bool = True
+    # v8 magnitude-preserving readout: add a learned projection of the pre-norm
+    # magnitude so heads can read RECENT-ACTIVITY (scale) despite RMSNorm. Off.
+    readout_scale: bool = False
     # v6.9 (DEC-055): dedicated event-identity residual in the readout
     # z_t = RMSNorm(W_C H_t + skip(x_t) + W_e·emb(e_t) + W_ep·emb(e_{t-1})).
     # Adds a CLEAN, linearly-usable event path (the generic token skip mixes

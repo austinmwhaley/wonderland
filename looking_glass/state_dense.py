@@ -45,6 +45,7 @@ def build(cadence="weekly", max_customers=8000):
         readout_skip=bool(blob.get("readout_skip", False)),
         event_residual=bool(blob.get("event_residual", False)),
         entity_id_embed=bool(blob.get("entity_id_embed", False)),
+        readout_scale=bool(blob.get("readout_scale", False)),
     )
     model.load_state_dict(blob["state"])
     if blob.get("whiten_W") is not None:

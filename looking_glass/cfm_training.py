@@ -155,6 +155,7 @@ def train_cfm(cfg: CFMConfig):
         readout_skip=getattr(cfg, "readout_skip", True),
         event_residual=getattr(cfg, "event_residual", False),
         entity_id_embed=getattr(cfg, "entity_id_embed", False),
+        readout_scale=getattr(cfg, "readout_scale", False),
     ).to(device)
     # v4.0: differentiable ZCA in the forward during training (gradients shape the
     # consumed isotropy); off at eval/save so the frozen transform is used.
@@ -554,6 +555,7 @@ def train_cfm(cfg: CFMConfig):
             "readout_skip": bool(getattr(cfg, "readout_skip", True)),
             "event_residual": bool(getattr(cfg, "event_residual", False)),
             "entity_id_embed": bool(getattr(cfg, "entity_id_embed", False)),
+            "readout_scale": bool(getattr(cfg, "readout_scale", False)),
             "whiten_mean": (model.whiten_mean if getattr(model, "whiten_on", False) else None),
             "whiten_W": (model.whiten_W if getattr(model, "whiten_on", False) else None),
         },
