@@ -209,8 +209,19 @@ class SelectiveSSM(nn.Module):
         readout_skip=False,
         event_residual=False,
         readout_scale=False,
+        stats_pathway=False,
     ):
         super().__init__()
+        # D (v8, "carry everything"): a long-memory STATISTICS pathway — an EMA
+        # accumulator of the input drive whose decay is learned (init long) so it
+        # integrates the customer's running aggregate (RFM-like), added to the
+        # readout. Gives the state a mechanism to HOLD long-run statistics the
+        # contractive recurrence forgets.
+        self.stats_proj = None
+        self.stats_decay_logit = None
+        if stats_pathway:
+            self.stats_proj = nn.Linear(dim, dim)
+            self.stats_decay_logit = nn.Parameter(torch.tensor(4.0))  # sigmoid ~0.982
         # variance-preserving recurrence (v6.1, DEC-047): normalize the token
         # stream so the accumulated drive cannot grow with horizon, and the
         # readout so heads see unit-scale features. Both per-sample.
@@ -219,7 +230,7 @@ class SelectiveSSM(nn.Module):
         # magnitude-preserving readout (v8): RMSNorm erases SCALE, but recent-activity
         # IS scale. Add a learned projection of the pre-norm magnitude as a per-sample
         # offset so heads can read "how active" while per-dim conditioning is kept.
-        self.readout_scale = nn.Linear(1, dim) if (readout_norm and readout_scale) else None
+        self.readout_scale = nn.Linear(3, dim) if (readout_norm and readout_scale) else None
         # readout skip (v6.2, DEC-048): the recurrent state is a low-pass
         # aggregate; the per-event transition (e.g. cart->purchase) is a function
         # of the CURRENT token, which survives only weakly/entangled in the state
@@ -302,11 +313,14 @@ class SelectiveSSM(nn.Module):
     def _readout(self, y):
         if self.readout_norm is None:
             return y
-        mag = None
+        mom = None
         if self.readout_scale is not None:
-            mag = torch.log1p(y.pow(2).mean(-1, keepdim=True).sqrt())
+            rms = y.pow(2).mean(-1, keepdim=True).sqrt()
+            mean = y.mean(-1, keepdim=True)
+            std = y.std(-1, keepdim=True)
+            mom = torch.cat([torch.log1p(rms), mean, std], dim=-1)  # (B,T,3)
         yn = self.readout_norm(y)
-        return yn + self.readout_scale(mag) if mag is not None else yn
+        return yn + self.readout_scale(mom) if mom is not None else yn
 
     def forward(self, x, h0=None, mask=None, ev=None, ev_prev=None):
         if self.input_norm is not None:
@@ -362,6 +376,10 @@ class SelectiveSSM(nn.Module):
             if self.skip is not None:
                 y = y + self.skip(xs)
             y = self._readout(y)
+            if self.stats_proj is not None:
+                _dc = torch.sigmoid(self.stats_decay_logit)
+                _S, _ = _scan(torch.full_like(xs, float(_dc)), (1.0 - _dc) * xs)
+                y = y + self.stats_proj(_S)
             if self.ev_residual:
                 if ev is not None:
                     y = y + self.ev_norm(self.w_ev(ev))
@@ -376,6 +394,10 @@ class SelectiveSSM(nn.Module):
         if self.skip is not None:
             y = y + self.skip(xs)
         y = self._readout(y)
+        if self.stats_proj is not None:
+            _dc = torch.sigmoid(self.stats_decay_logit)
+            _S, _ = _scan(torch.full_like(xs, float(_dc)), (1.0 - _dc) * xs)
+            y = y + self.stats_proj(_S)
         if self.ev_residual:
             if ev is not None:
                 y = y + self.ev_norm(self.w_ev(ev))
@@ -480,6 +502,7 @@ class MultiScaleSSM(nn.Module):
         readout_skip=False,
         event_residual=False,
         readout_scale=False,
+        stats_pathway=False,
     ):
         super().__init__()
         if delta_spectrum:
@@ -499,6 +522,7 @@ class MultiScaleSSM(nn.Module):
                         readout_skip=readout_skip,
                         event_residual=event_residual,
                         readout_scale=readout_scale,
+                        stats_pathway=stats_pathway,
                     )
                 ]
             )
@@ -516,6 +540,7 @@ class MultiScaleSSM(nn.Module):
                     readout_skip=readout_skip,
                     event_residual=event_residual,
                     readout_scale=readout_scale,
+                    stats_pathway=stats_pathway,
                 )
                 for b in delta_biases[:n_experts]
             ]
@@ -567,6 +592,7 @@ class CFM(nn.Module):
         entity_id_embed: bool = False,
         readout_scale: bool = False,
         prod_dim: int = 0,
+        stats_pathway: bool = False,
     ):
         super().__init__()
         self.vocab = vocab
@@ -583,6 +609,7 @@ class CFM(nn.Module):
         # table aligned to the entity-id vocab, set after construction. 0 cols = off.
         self.register_buffer("prod_vec_table", torch.zeros(vocab.n_eid + 1, int(prod_dim)))
         self.readout_scale_on = bool(readout_scale)
+        self.stats_pathway_on = bool(stats_pathway)
         if self.isometric_boundary:
             self.iso_skew = nn.Parameter(torch.zeros(dim, dim))
             # conservation scale: Tr(Sigma_readout) is held to the input band
@@ -631,6 +658,7 @@ class CFM(nn.Module):
             readout_skip=self.readout_skip_on,
             event_residual=self.event_residual_on,
             readout_scale=self.readout_scale_on,
+            stats_pathway=self.stats_pathway_on,
         )
         self.head_next = nn.Linear(dim, vocab.n_et + 1)  # next event type
         # DEC-049: `query` predicts the next event from a FADED state (little
@@ -649,6 +677,7 @@ class CFM(nn.Module):
         self.head_occ = nn.Linear(dim, 1)  # next event within horizon?
         self.head_recency = nn.Linear(dim, 1)  # recent-activity level (velocity)
         self.head_foresight = nn.Linear(dim, dim)  # multi-horizon future-state prediction
+        self.head_psr = nn.Linear(dim, 6)  # PSR: 3 horizons x [count, value]
         self.head_val = nn.Linear(dim, 1)  # next event value (monetary)
         self.head_sf = nn.Sequential(
             nn.Linear(dim + 1, dim), nn.ReLU(), nn.Linear(dim, self.sf_dim + int(prod_dim))

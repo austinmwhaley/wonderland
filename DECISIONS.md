@@ -2209,3 +2209,21 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   NEUTRAL (NO_SIGNAL) on RFM-reconstructable ones — an honest "universal donor" statement, and the
   bridge is production-realistic (downstream always has raw counters). Gate green (277 tests).
 - **Remaining:** only ecommerce B (encoder-only card: channel-MI excess + tied `next`).
+
+## DEC-101 — A+B+D built (PSR objective, magnitude readout, statistics pathway); routing gap found
+
+- **Date:** 2026-10-13
+- **A — `psr` objective:** the state must predict its own future observable statistics
+  (event COUNT + VALUE SUM) over (t, t+H] at 3 derived horizons (5/15/40% of the span);
+  scale-free. Forces the state toward a sufficient statistic by learning (no labels).
+- **B — magnitude-exposing readout:** `readout_scale` now exposes 3 running moments
+  (log-RMS, mean, std) of the pre-norm readout.
+- **D — statistics pathway:** `stats_pathway` — a long-memory EMA accumulator of the input
+  drive (learned decay, init ~0.98) projected into the readout, giving the state a mechanism to
+  HOLD long-run aggregates the contractive recurrence forgets.
+- **Finding (the gap):** the DONOR consumes the raw recurrence state `h` (`donor_batch(proj(h))`),
+  while B and D modify the READOUT `y`. So the moments/statistics do NOT reach the B+C donor.
+  Measured: instacart `E alone` LTV 0.06 vs strong baseline 0.36 — E still does not subsume RFM.
+  Fix: route the statistics/moments into the consumed representation (either make the donor use
+  the readout, or fold the accumulator into the state), then re-test sufficiency.
+- Gate green (277 tests).

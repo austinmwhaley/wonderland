@@ -172,6 +172,7 @@ def load_frozen_encoder(tag: str, cfm_dir):
         entity_id_embed=bool(blob.get("entity_id_embed", False)),
         readout_scale=bool(blob.get("readout_scale", False)),
         prod_dim=int(blob.get("prod_embed_dim", 0)),
+        stats_pathway=bool(blob.get("stats_pathway", False)),
     )
     # tolerate checkpoints from earlier revisions (e.g. a head added later):
     # load what matches, report what did not. The encoder trunk must match.

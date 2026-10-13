@@ -157,6 +157,7 @@ def train_cfm(cfg: CFMConfig):
         entity_id_embed=getattr(cfg, "entity_id_embed", False),
         readout_scale=getattr(cfg, "readout_scale", False),
         prod_dim=(getattr(cfg, "prod_embed_dim", 0) if getattr(cfg, "prod_embed_path", "") else 0),
+        stats_pathway=getattr(cfg, "stats_pathway", False),
     ).to(device)
     # v4.0: differentiable ZCA in the forward during training (gradients shape the
     # consumed isotropy); off at eval/save so the frozen transform is used.
@@ -565,6 +566,7 @@ def train_cfm(cfg: CFMConfig):
             "event_residual": bool(getattr(cfg, "event_residual", False)),
             "entity_id_embed": bool(getattr(cfg, "entity_id_embed", False)),
             "readout_scale": bool(getattr(cfg, "readout_scale", False)),
+            "stats_pathway": bool(getattr(cfg, "stats_pathway", False)),
             "prod_embed_dim": int(getattr(cfg, "prod_embed_dim", 0))
             if getattr(cfg, "prod_embed_path", "")
             else 0,
@@ -896,6 +898,32 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
         T_["redundancy"] = (off**2).mean()
     T_["mask"] = _mask_loss_batch(model, vocab, t, cfg, dev)
     T_["jepa"] = _jepa_loss(model, t, y)
+    # ---- PSR / comprehensive future statistics (v8, goal A): from the state at t,
+    # predict the customer's FUTURE observable statistics — event COUNT and VALUE
+    # SUM over (t, t+H] — at several horizons H (derived as fractions of the
+    # sequence span). Forcing the state to predict its own future makes it a
+    # SUFFICIENT STATISTIC by learning (no labels; targets from the stream).
+    if "psr" in cfg.objectives:
+        secs = torch.cumsum(torch.expm1(t["dt"]).squeeze(-1), dim=1)  # (B,T)
+        span = secs[:, -1:].clamp(min=1.0)
+        vabs = torch.log1p(t["val"].abs().squeeze(-1))  # (B,T)
+        psr = torch.zeros((), device=dev)
+        fracs = (0.05, 0.15, 0.4)
+        preds = model.head_psr(y[:, :-1]).view(B, T - 1, len(fracs), 2)
+        for hi, frac in enumerate(fracs):
+            H = span * frac  # (B,1)
+            d = secs[:, :-1, None] - secs[:, None, :]  # (B,T-1,T): secs_t - secs_j
+            m = (d < 0) & (d > -H[:, :, None])  # j in (t, t+H]
+            cnt = m.sum(-1).float()
+            valsum = (m.float() * vabs[:, None, :]).sum(-1)
+            tgt = torch.stack([torch.log1p(cnt), torch.log1p(valsum)], dim=-1)  # (B,T-1,2)
+            _sel = (valid_t > 0).unsqueeze(-1).expand_as(tgt)
+            mu = tgt[_sel].mean(0, keepdim=True) if _sel.any() else tgt.mean(0, keepdim=True)
+            sd = tgt[_sel].std(0, keepdim=True) if _sel.any() else tgt.std(0, keepdim=True)
+            sd = sd.clamp(min=1e-6)
+            err = (preds[:, :, hi, :] - (tgt - mu) / sd).pow(2).mean(-1)  # (B,T-1)
+            psr = psr + (err * valid_t).sum() / nv
+        T_["psr"] = psr / len(fracs)
     # ---- foresight (v8): multi-horizon FUTURE-STATE prediction. From the state at
     # t, predict the encoder's own (detached) state at several future horizons, so
     # the present state must carry the customer's FUTURE dynamics (a predictive
