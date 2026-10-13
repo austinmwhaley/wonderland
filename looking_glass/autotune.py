@@ -66,9 +66,11 @@ def derive_seq_len(lengths) -> tuple[int, dict]:
 
     if not lengths:
         return 64, {"seq_len": "fallback default (no sequences)"}
-    q = float(np.quantile(lengths, 0.9))
-    val = int(clip(round(q), 8, 256))
-    return val, {"seq_len": f"p90 events/customer={q:.0f} -> {val}"}
+    # FULL-HISTORY default: cover nearly the whole customer history (p99), not just
+    # the median. A windowed state cannot subsume full-history RFM.
+    q = float(np.quantile(lengths, 0.99))
+    val = int(clip(round(q), 8, 4096))
+    return val, {"seq_len": f"p99 events/customer={q:.0f} -> {val}"}
 
 
 def event_type_entropy(df) -> float:

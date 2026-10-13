@@ -930,10 +930,14 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
         preds = model.head_psr(y[:, :-1]).view(B, T - 1, len(fracs), 2)
         for hi, frac in enumerate(fracs):
             H = span * frac  # (B,1)
-            d = secs[:, :-1, None] - secs[:, None, :]  # (B,T-1,T): secs_t - secs_j
-            m = (d < 0) & (d > -H[:, :, None])  # j in (t, t+H]
-            cnt = m.sum(-1).float()
-            valsum = (m.float() * vabs[:, None, :]).sum(-1)
+            cnt = torch.zeros((B, T - 1), device=dev)
+            valsum = torch.zeros((B, T - 1), device=dev)
+            for a in range(0, T - 1, 128):  # chunk positions -> bound O(T^2) memory
+                b = min(a + 128, T - 1)
+                d = secs[:, a:b, None] - secs[:, None, :]  # (B,chunk,T)
+                m = (d < 0) & (d > -H[:, :, None])
+                cnt[:, a:b] = m.sum(-1).float()
+                valsum[:, a:b] = (m.float() * vabs[:, None, :]).sum(-1)
             tgt = torch.stack([torch.log1p(cnt), torch.log1p(valsum)], dim=-1)  # (B,T-1,2)
             _sel = (valid_t > 0).unsqueeze(-1).expand_as(tgt)
             mu = tgt[_sel].mean(0, keepdim=True) if _sel.any() else tgt.mean(0, keepdim=True)

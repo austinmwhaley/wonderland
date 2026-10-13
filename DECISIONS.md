@@ -2265,3 +2265,23 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   (raw features). 
 - **Next (if pursued):** (i) customer-level (non-leaked) reconstruction targets; (ii) genuine
   rank pressure (SR); (iii) carry state across windows so the encoding spans full history.
+
+## DEC-104 — Full-history default + de-leaked stats_recon + rank pressure; sufficiency still open
+
+- **Date:** 2026-10-13
+- **Measurement robustness (priority):** de-leaked `stats_recon` (was predicting `count=t+1`, a
+  POSITION-only quantity; now predicts per-customer AGGREGATES [count, mean gap, mean value] — no
+  position leak). State-store consistency preserved (reverted the readout-routing; tests green).
+- **Full-history default:** `derive_seq_len` now uses **p99** events/customer (cap 4096) instead of
+  p90 capped at 256. instacart: median 102 but **p99 = 1083** — the state now spans (nearly) the
+  whole history RFM uses. PSR term chunked (positions) to bound O(T^2) memory.
+- **Rank pressure:** available (`rank`,`decorr` in objectives, SR-sanctioned); tested.
+- **Sufficiency test (full stack: entity_id + attrs + psr + stats_recon + readout moments +
+  statistics pathway + rank/decorr + full-history):** instacart `E alone` on LTV is still
+  **~0.067 vs the strong baseline 0.36** — the embedding STILL does not subsume RFM. churn
+  `E alone` 0.73-0.75 vs 0.92. B+C is GREEN+ (3/3 far-exceed) via the strong baseline.
+- **Conclusion:** the mechanisms are all in (PSR, stats-recon, magnitude readout, statistics
+  pathway, rank pressure, full-history). The embedding STILL fails to carry the value/frequency
+  signal. Likely final barrier: the consumed state is `proj(h)` — a 256-dim projection that DILUTES
+  any single magnitude/statistic, and RMSNorm erases magnitude upstream. Next: expose the
+  statistics via CONCATENATION (not mixing), or a magnitude-native state.
