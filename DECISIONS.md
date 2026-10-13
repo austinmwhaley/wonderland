@@ -2302,3 +2302,21 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   (+0.32), next_value 0.159 vs 0.405 (+0.25). The embedding is NOT sufficient: it loses the
   magnitude/level signal. This is the gap to close, now TESTABLE.
 - Gate green (277 tests).
+
+## DEC-106 — ROOT CAUSE of the sufficiency gap: the contractive recurrence cannot hold CUMULATIVE stats
+
+- **Date:** 2026-10-13
+- **Diagnosis (instacart `insta_full`):** a probe on the embedding decodes the customer's basic
+  activity at near-zero: **freq R² 0.03, monetary 0.06, recent30/90 0.015, recency 0.08**.
+  Linear/PCA probes give the same (~0.05-0.07) as GBM -> NOT a probe artifact. The RAW state `h`
+  decodes freq equally poorly (0.03) -> the donor/boundary is not the cause.
+- **Root cause:** the recurrence is **contractive (EMA)**: `h_t = decay*h_{t-1}+(1-decay)*x_t`
+  tracks the RECENT RATE, not the RUNNING TOTAL. A bounded EMA CANNOT hold a cumulative count/sum
+  (freq/monetary) — that requires an integrator (decay~1). So the embedding is not sufficient: it
+  loses the cumulative/magnitude information that matters for LTV/order-count.
+- **Implication:** the fix is ARCHITECTURAL — a non-contractive ACCUMULATOR channel (bounded
+  integrator) exposed in the consumed embedding. The contractive guardrail (rho<1) forbids it in
+  the recurrence, so it must be a SEPARATE, LEARNED accumulator (bounded/normalized for stability)
+  — doctrine-safe (computed from the model's own token features, not hand-coded RFM).
+- **Next:** implement a bounded learned accumulator exposed in `embedding(customer, t)`; re-run the
+  sufficiency gate.
