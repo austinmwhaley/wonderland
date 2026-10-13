@@ -2155,3 +2155,20 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   state at t, predict the encoder's own detached state at 5/15/40% of the span. Instacart
   foresight run: LTV +0.041 UNCERTAIN (no flip).
 - **Status:** sf fix gate-green (277 tests). Instacart re-run with the fixed sf pending.
+
+## DEC-098 — sf fix verified on instacart (churn up; LTV still marginal)
+
+- **Date:** 2026-10-13
+- **With the fixed sf** (level-preserving global standardization) + entity_id + attrs +
+  readout_scale + recency + foresight, instacart (25k, as_of 2025-10-01):
+  ```
+  churn/propensity  Δ +0.033 [lo +0.020]  PASS + FAR-EXCEED   (was +0.026 before the sf fix)
+  LTV               Δ +0.045 [lo -0.021]  UNCERTAIN           (was +0.040)
+  order-count       UNCERTAIN
+  ```
+- **Read:** the sf fix is correct and helps (churn lift up ~25%, LTV nudged), but instacart
+  LTV/order-count remain at the ~+0.045 encoder ceiling vs the rich baseline's +0.08.
+- **sf status: FIXED** — training target now matches the probe (level-preserving, per-dim
+  global standardization). Remaining optional enrichment: include the ENTITY/product in phi
+  (currently phi = [value, event-type one-hot]) so SF carries product affinity — must update
+  BOTH training and probe together.
