@@ -1670,6 +1670,22 @@ def forward_states(model, seqs, h0s=None):
     return h
 
 
+def forward_embedding(model, seqs, h0s=None):
+    """The CONSUMED embedding(customer, t): contractive state (shape) ++ a learned
+    cumulative accumulator (magnitude). The state store still persists the raw
+    recurrence state via `forward_states`; downstream heads consume THIS."""
+    dev = model._dev()
+    t = _collate(seqs, model.vocab, dev)
+    tok = model.tokens_batch(t)
+    h0 = None
+    if h0s is not None:
+        h0 = torch.stack([torch.as_tensor(h, dtype=torch.float32, device=dev) for h in h0s])
+    with torch.no_grad():
+        _y, h = model.encode_ev(tok, t, h0=h0)
+        acc = model.accumulator(tok, t)  # (B, 33) learned cumulative stats
+    return torch.cat([model.donor_batch(h), acc], dim=-1)
+
+
 def _loss_split(model, vocab, items, cfg, weights: dict | None = None, scales: dict | None = None):
     """(task_loss, invariant_loss) — the two PCGrad groups (v4.2, DEC-031).
 

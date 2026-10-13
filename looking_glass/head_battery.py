@@ -39,7 +39,7 @@ from looking_glass.cfm_data import (
     assign_split,
     build_sequences,
 )
-from looking_glass.cfm_training import forward_states
+from looking_glass.cfm_training import forward_embedding
 from looking_glass.probes import freeze_encoder
 
 # ---- PRE-REGISTERED GATE (fixed before evaluation) --------------------------
@@ -85,7 +85,7 @@ def _b_states(model, cfg, batch=512):
     Z = []
     for i in range(0, len(seqs), batch):
         with torch.no_grad():
-            z = model.donor_batch(forward_states(model, seqs[i : i + batch]))
+            z = forward_embedding(model, seqs[i : i + batch])  # consumed embedding
         Z.append(z.detach().float().cpu().numpy())
     return np.array([s["customer"] for s in seqs]), np.concatenate(Z, 0)
 

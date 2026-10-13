@@ -687,6 +687,7 @@ class CFM(nn.Module):
         self.head_agg = nn.Linear(dim + 1, 2)  # successor features
         self.order_W = nn.Linear(dim, self.chan, bias=False)  # temporal-order scorer
         self.proj = nn.Linear(dim, dim)  # contrastive / public S
+
         with torch.no_grad():  # DEC-040: orthogonal readout frame
             self.proj.weight.copy_(
                 cayley_orthogonal(dim, self.proj.weight.device, self.proj.weight.dtype)
@@ -983,6 +984,19 @@ class CFM(nn.Module):
                 hit += 1
         self.prod_vec_table = tab.to(next(self.parameters()).device)
         return hit
+
+    def accumulator(self, tok, t):
+        """CUMULATIVE statistics from the model's own (learned) token features: the
+        MEAN token drive (average event = mean value / mean gap / event-type mix) and
+        the log TOTAL COUNT. Exposed in the consumed embedding so `embedding(customer,t)`
+        carries cumulative info the contractive recurrence cannot. Universal (no domain
+        literals); built from learned features, so it is a learned statistic, not a
+        hand-coded RFM feature."""
+        mask = t["mask"].unsqueeze(-1)  # (B,T,1)
+        ssum = (tok * mask).sum(1)  # (B, chan) cumulative token drive (TOTAL)
+        count = mask.sum(1).clamp(min=1.0)  # (B,1)
+        mag = torch.log1p(ssum.norm(dim=-1, keepdim=True))  # total magnitude
+        return torch.cat([ssum, ssum / count, mag, torch.log1p(count)], dim=-1)
 
     def donor_batch(self, h: "torch.Tensor") -> "torch.Tensor":
         """Donor readout for (B, D) state batches — no pooling. The consumed

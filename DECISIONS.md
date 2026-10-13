@@ -2320,3 +2320,27 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   — doctrine-safe (computed from the model's own token features, not hand-coded RFM).
 - **Next:** implement a bounded learned accumulator exposed in `embedding(customer, t)`; re-run the
   sufficiency gate.
+
+## DEC-107 — Learned cumulative accumulator exposed in the embedding: the gap SHRINKS
+
+- **Date:** 2026-10-13
+- **Built:** `CFM.accumulator(tok, t)` — the model's own (learned) token features, cumulated:
+  the TOTAL token drive `Σ x`, the MEAN drive `Σx/count`, the total magnitude `log1p|Σx|`, and
+  `log1p(count)`. `forward_embedding()` returns `[ donor(state) ‖ accumulator ]` — the CONSUMED
+  embedding; the state store still persists the raw recurrence state (`forward_states`).
+  Universal (no domain literals); built from learned features (a learned statistic, not RFM).
+- **Effect (instacart `insta_full`, NO retrain needed — the accumulator is a function of the
+  existing tokens):** sufficiency gate E-alone:
+  ```
+  target        raw     E-alone (no acc)  E-alone (+acc)
+  LTV           0.362   0.052             0.11-0.12
+  churn         0.923   0.727             0.79
+  order_count   0.379   0.057             0.12
+  next_value    0.405   0.159             0.23
+  ```
+  Every target improved (LTV ~2.3x, churn +0.06); SUFFICIENT still 0/5 (gaps 0.13-0.26).
+- **Read:** the ROOT CAUSE (DEC-106) is confirmed — adding the cumulative info the contractive
+  recurrence loses materially closes part of the gap. Not yet sufficient: the raw (RFM+clock) bar
+  is strong and the accumulator is a fixed (untrained) function of the tokens.
+- **Next:** (i) make the accumulator LEARNED/trained (an objective that shapes it); (ii) add
+  recency-WEIGHTED windows (not just the total); (iii) re-run the gate. Gate green (277 tests).
