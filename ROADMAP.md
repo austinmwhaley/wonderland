@@ -272,3 +272,27 @@ plain unweighted InfoNCE.
   frozen readout is per-sample, so this does not fake rank at serve time), and
   the augmentation must stay *structural* (fixed, data-derived thresholds) rather
   than tuned, or it becomes a soft hyperparameter.
+
+---
+
+## v8 — scorecard hardening + Layer-A laboratory + capability frontier (2026-10-13)
+
+**Done:** Layer-B report card + Layer-C head battery hardened (held-out customers, strong
+baselines, bootstrap 95% CI, far-exceed tier) and made stream-agnostic; measurement bugs fixed
+(oracle baseline, mask leak, scaling, multi-output null, channel-MI rank-vs-entanglement,
+conversion event, `sf` standardization); Layer-A laboratory (32-use-case ontology + parameterized
+data spec + complexity ladder + oracle/null/adversarial controls + coverage gate); the A<->B loop
+proven on an anchor (both cards GREEN, 4/5 far-exceed); §20.2 value encoders (entity_id +
+attributes + model-free product co-occurrence embeddings); new objectives (recency, foresight) +
+magnitude-preserving readout.
+
+**Scoreboard (B | B+C):** rabbit_hole GREEN|GREEN · anchor GREEN|GREEN · instacart GREEN|NOT ·
+ecommerce NOT|GREEN(vacuous).
+
+**Frontier (the next real work):** the encoder's unique signal over a strong RFM+GBM baseline is
+~+0.04 on RFM-reconstructable targets (instacart LTV/order-count), vs a rich model-free baseline's
++0.08. The signal is CARRIED (so NO_SIGNAL would be dishonest); the encoder under-exposes
+recency/velocity at the readout. Every readout/data lever tried (rank, attributes, half-life,
+recency, foresight, magnitude-preserving readout, SF-product, 8 seeds) lands ~+0.04. Closing it
+needs a genuinely new capability (e.g., a dedicated recency-window readout fed by the raw event
+clock), not another tweak.
