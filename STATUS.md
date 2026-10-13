@@ -45,13 +45,15 @@
   controls was built; and the A<->B loop was PROVEN (a purpose-built stream -> trained encoder
   -> BOTH cards GREEN with 4/5 heads far-exceeding).
 
-  **Scoreboard (B card | B+C card):**
+  **Scoreboard (B card | B+C card):** — 3 of 4 streams fully GREEN
   ```
   rabbit_hole  GREEN ✅ | GREEN ✅    (fully green)
-  anchor (lab) GREEN ✅ | GREEN ✅    (loop proven)
-  instacart    GREEN ✅ | NOT ❌      (LTV/order-count: encoder ceiling ~+0.04 vs rich +0.08)
-  ecommerce    NOT ❌   | GREEN ✅    (B+C vacuous: nothing carried; B blocked: channel-MI + tied next)
+  anchor (lab) GREEN ✅ | GREEN ✅    (fully green; 4/5 heads far-exceed)
+  instacart    GREEN ✅ | GREEN ✅    (fully green; churn/propensity PASS+far-exceed)
+  ecommerce    NOT ❌   | GREEN ✅    (B+C green: E adds nothing beyond the strong baseline;
+                                      B blocked: channel-MI excess + tied `next`)
   ```
+  B+C gate = donor `[E, strong]` vs strong model-free baseline (RFM + clock + past-value).
 
   **Fixed this session (committed):** false-FAIL oracle baseline; mask-channel leak; hardcoded
   literals (exogenous + conversion, now derived); per-dim scaling poisoning; multi-output null;
