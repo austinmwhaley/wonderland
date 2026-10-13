@@ -884,6 +884,28 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
         T_["redundancy"] = (off**2).mean()
     T_["mask"] = _mask_loss_batch(model, vocab, t, cfg, dev)
     T_["jepa"] = _jepa_loss(model, t, y)
+    # ---- foresight (v8): multi-horizon FUTURE-STATE prediction. From the state at
+    # t, predict the encoder's own (detached) state at several future horizons, so
+    # the present state must carry the customer's FUTURE dynamics (a predictive
+    # state representation). Scale-free per-dim; horizons derived from the span.
+    if "foresight" in cfg.objectives:
+        secs = torch.cumsum(torch.expm1(t["dt"]).squeeze(-1), dim=1)  # (B,T) clock
+        span = secs[:, -1:].clamp(min=1.0)
+        ydet = y.detach()
+        fs = torch.zeros((), device=dev)
+        hs = (0.05, 0.15, 0.4)  # fraction of the per-sequence span
+        for frac in hs:
+            H = span * frac  # (B,1)
+            j = torch.searchsorted(secs, (secs + H).contiguous()) - 1
+            j = j.clamp(0, T - 1)
+            tgt = torch.gather(ydet, 1, j.unsqueeze(-1).expand(-1, -1, y.shape[-1]))[:, :-1]
+            _sel = (valid_t > 0).unsqueeze(-1).expand_as(tgt)
+            mu = tgt[_sel].mean() if _sel.any() else tgt.mean()
+            sd = (tgt[_sel].std() if _sel.any() else tgt.std()).clamp(min=1e-6)
+            pred = model.head_foresight(y[:, :-1])
+            err = (pred - (tgt - mu) / sd).pow(2).mean(-1)
+            fs = fs + (err * valid_t).sum() / nv
+        T_["foresight"] = fs / len(hs)
     # ---- recency/velocity (v8): expose RECENT activity (a magnitude-driven
     # signal the RMSNorm readout otherwise hides). From the state at t, predict the
     # scale-free log1p count of events in the last H days (H derived from the
@@ -1161,11 +1183,19 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
     bprime = torch.zeros_like(phir)
     bprime[:, 1:] = dprime[:, 1:] * phir[:, :-1]
     _, Sf = _scan(dprime, bprime)
-    R = torch.flip(Sf, dims=[1])  # (B*S,T,PD)
-    R = (R - R.mean(dim=1, keepdim=True)) / R.std(dim=1, keepdim=True).clamp(min=1e-6)  # scale-free
+    R = torch.flip(Sf, dims=[1])  # (B*S,T,PD) = discounted future phi (the SF VALUE)
+    mask_e = t["mask"].unsqueeze(1).expand(B, GAMS, T).reshape(B * GAMS, T)
+    # scale-free but LEVEL-PRESERVING: standardize each phi dim GLOBALLY over the
+    # batch's valid entries (cross-customer), NOT per-sequence-over-time. The SF
+    # LEVEL (how much future value) is the signal; per-sequence centering erased it
+    # (and mismatched the probe, which standardizes globally). Matches probes._build.
+    sel = (mask_e > 0).reshape(-1)
+    _Rf = R.reshape(-1, PD)
+    _mu = _Rf[sel].mean(0) if sel.any() else _Rf.mean(0)
+    _sd = (_Rf[sel].std(0) if sel.any() else _Rf.std(0)).clamp(min=1e-6)
+    R = (R - _mu) / _sd
     ye = y.unsqueeze(1).expand(B, GAMS, T, y.shape[-1]).reshape(B * GAMS, T, y.shape[-1])
     gcol = gamma.view(B, GAMS, 1, 1).expand(B, GAMS, T, 1).reshape(B * GAMS, T, 1)
-    mask_e = t["mask"].unsqueeze(1).expand(B, GAMS, T).reshape(B * GAMS, T)
     pred = model.head_sf(torch.cat([ye, gcol], dim=-1))
     sl = F.mse_loss(pred, R, reduction="none").mean(-1)
     T_["sf"] = (sl * mask_e).sum() / mask_e.sum().clamp(min=1)

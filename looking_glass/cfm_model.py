@@ -644,6 +644,7 @@ class CFM(nn.Module):
         self.head_dt = nn.Linear(dim, 1)  # log1p(dt_next)
         self.head_occ = nn.Linear(dim, 1)  # next event within horizon?
         self.head_recency = nn.Linear(dim, 1)  # recent-activity level (velocity)
+        self.head_foresight = nn.Linear(dim, dim)  # multi-horizon future-state prediction
         self.head_val = nn.Linear(dim, 1)  # next event value (monetary)
         self.head_sf = nn.Sequential(
             nn.Linear(dim + 1, dim), nn.ReLU(), nn.Linear(dim, self.sf_dim)

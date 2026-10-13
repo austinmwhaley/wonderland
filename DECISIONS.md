@@ -2140,3 +2140,18 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   encoder under-captures it, and the current architecture's ceiling is ~+0.04 there.
 - **Scoreboard:** rabbit_hole GREEN|GREEN · anchor GREEN|GREEN · instacart GREEN|NOT(LTV,
   order-count: encoder-ceiling) · ecommerce NOT|GREEN(vacuous). 277 tests green.
+
+## DEC-097 — sf FIXED: level-preserving standardization (training now matches the probe)
+
+- **Date:** 2026-10-13
+- **Bug found:** the `sf` (successor-feature) TRAINING target was standardized
+  **per-sequence over time** (`(R - R.mean(dim=1))/R.std(dim=1)`), which ERASES the
+  cross-customer LEVEL — and the SF level (expected discounted future value) IS the signal.
+  The frozen PROBE grades the same target standardized **per-dim GLOBALLY** (cross-customer,
+  `probes._build`), so training and grading disagreed, and training threw away the level.
+- **Fix:** standardize each phi dim GLOBALLY over the batch's valid entries (cross-customer),
+  matching the probe. Scale stays bounded (FR), but the level is preserved.
+- **Also this pass:** `foresight` objective (multi-horizon future-STATE prediction) — from the
+  state at t, predict the encoder's own detached state at 5/15/40% of the span. Instacart
+  foresight run: LTV +0.041 UNCERTAIN (no flip).
+- **Status:** sf fix gate-green (277 tests). Instacart re-run with the fixed sf pending.
