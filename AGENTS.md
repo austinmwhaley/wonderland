@@ -5,6 +5,19 @@ checklist of values. Where an example implies a constant or a procedure, treat
 it as an *intent* and implement the mechanism that achieves it **adaptively**.
 
 The system (one-way): `rabbit_hole → looking_glass → plugins → red_king →
+
+## Project goal (v8, sharpened)
+**Produce `embedding(customer, timestamp)` — a point-in-time customer STATE that is a SUFFICIENT
+STATISTIC of the history: everything about the past that matters for the future is in this one
+vector; nothing that matters is lost.** It must be **predictive** (supervised),
+**structure-revealing** (unsupervised), and **decision-sufficient** (RL): a PERFECT DISTILLATION
+of the event stream, not a lossy summary. A sufficient statistic is the OPPOSITE of "compression
+that throws data away" — it is the smallest object that preserves everything that matters
+(including magnitude/level, which summaries like RFM keep and a normalized state must not lose).
+Every change is judged by ONE question: does it move `embedding(customer, t)` toward sufficiency
+— measured by a sufficiency gate (embedding-alone ≈ / ≥ the best raw feature set on prediction,
+plus a decision-sufficiency check for RL)?
+
 red_queen`, with `white_queen` (OPE certification) and `caterpillar` (read-only
 interpretability) hanging off `plugins`.
 

@@ -7,8 +7,14 @@
 
 ## Macro
 
-- **Primary goal (operator-defined, DEC-008):** `rabbit_hole` provides the
-  data looking_glass needs; `looking_glass` produces **the best encoder
+- **Primary goal (operator-defined, DEC-008; sharpened v8):** produce
+  `embedding(customer, timestamp)` — a point-in-time **customer STATE** that is a **sufficient
+  statistic of the history**: *everything about the past that matters for the future is in this
+  one vector; nothing that matters is lost.* It must be **predictive** (supervised),
+  **structure-revealing** (unsupervised), and **decision-sufficient** (RL) — a PERFECT
+  DISTILLATION of the stream, not a lossy summary. (A sufficient statistic is not "compression
+  that throws data away"; it is the smallest object that preserves everything that matters.)
+  `rabbit_hole` provides the data; `looking_glass` produces **the best encoder
   possible, judged on self-supervision quality ONLY (Layer B)** — optimized,
   stopped, selected, and sized on the held-out self-supervised portfolio
   (no downstream metric in Layer B decisions). Downstream instruments

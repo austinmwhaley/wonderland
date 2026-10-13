@@ -2285,3 +2285,20 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   signal. Likely final barrier: the consumed state is `proj(h)` — a 256-dim projection that DILUTES
   any single magnitude/statistic, and RMSNorm erases magnitude upstream. Next: expose the
   statistics via CONCATENATION (not mixing), or a magnitude-native state.
+
+## DEC-105 — Project goal sharpened to SUFFICIENCY + a sufficiency gate
+
+- **Date:** 2026-10-13
+- **Goal updated (AGENTS.md + STATUS.md):** produce `embedding(customer, timestamp)` — a
+  point-in-time customer STATE that is a **sufficient statistic of the history**: *everything
+  about the past that matters for the future is in this one vector; nothing that matters is
+  lost.* Predictive (supervised) + structure-revealing (unsupervised) + decision-sufficient
+  (RL) = a PERFECT DISTILLATION, not a lossy summary. (A sufficient statistic is the opposite of
+  throwing data away; magnitude/level must be preserved, not normalized off.)
+- **New `looking_glass/sufficiency_gate.py`:** per target, RAW (RFM+clock+past-value) vs
+  EMBEDDING-ALONE score; sufficient ⟺ E-alone ≥ raw − 0.02.
+- **Measured (instacart, `insta_full`):** **SUFFICIENT 0/5** —
+  LTV 0.052 vs 0.361 (gap +0.31), churn 0.727 vs 0.923 (+0.20), order_count 0.057 vs 0.379
+  (+0.32), next_value 0.159 vs 0.405 (+0.25). The embedding is NOT sufficient: it loses the
+  magnitude/level signal. This is the gap to close, now TESTABLE.
+- Gate green (277 tests).
