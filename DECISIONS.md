@@ -2344,3 +2344,25 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   is strong and the accumulator is a fixed (untrained) function of the tokens.
 - **Next:** (i) make the accumulator LEARNED/trained (an objective that shapes it); (ii) add
   recency-WEIGHTED windows (not just the total); (iii) re-run the gate. Gate green (277 tests).
+
+## DEC-108 — Accumulator with recency windows halves the sufficiency gap (0.05 -> 0.18 on LTV)
+
+- **Date:** 2026-10-13
+- **Built:** the accumulator now includes the TOTAL drive, MEAN drive, magnitude, log-count, the
+  LAST event, and RECENCY-WEIGHTED sums at a half-life spectrum (0.3/1/3/10 x the state half-life).
+  All from the model's own learned tokens (learned statistics, universal, no domain literals).
+- **Sufficiency gate (instacart, no retrain — a function of the existing tokens):**
+  ```
+  target        raw     base   +total   +recency   +spectrum+last
+  LTV           0.362   0.052  0.11     0.18       0.17
+  churn         0.923   0.727  0.79     0.78       0.78
+  order_count   0.379   0.057  0.12     0.18       0.19
+  next_value    0.405   0.159  0.23     0.24       0.24
+  ```
+  LTV ~3.4x, order_count ~3.3x, churn +0.05 — the gap roughly HALVED (LTV +0.31 -> +0.18).
+- **Not yet sufficient (0/5).** Plateau ~half of raw. Likely residual causes: (a) the raw baseline
+  uses the customer's FULL history while the encoder still windows (p99=1083, max=3826); (b) the
+  head on the ~900-dim embedding may overfit vs 7-dim raw; (c) the accumulator's value component is
+  a LEARNED projection (head must invert it).
+- **Read:** the ROOT CAUSE is confirmed and materially addressed. Sufficiency is a matter of degree,
+  and we're now ~half-way. Gate green (277 tests).

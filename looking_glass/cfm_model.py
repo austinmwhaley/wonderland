@@ -996,7 +996,16 @@ class CFM(nn.Module):
         ssum = (tok * mask).sum(1)  # (B, chan) cumulative token drive (TOTAL)
         count = mask.sum(1).clamp(min=1.0)  # (B,1)
         mag = torch.log1p(ssum.norm(dim=-1, keepdim=True))  # total magnitude
-        return torch.cat([ssum, ssum / count, mag, torch.log1p(count)], dim=-1)
+        feats = [ssum, ssum / count, mag, torch.log1p(count), tok[:, -1]]  # last event too
+        # RECENCY-WEIGHTED windows (recent activity the raw baseline has): recency-
+        # weighted sums of the token drive at derived half-lives (state half-life x {1,3}).
+        hl = float(getattr(self, "half_life_days", 30.0)) or 30.0
+        secs = (torch.expm1(t["dt"]).squeeze(-1) * t["mask"]).cumsum(1)  # (B,T) clock
+        age = secs[:, -1:] - secs  # (B,T) seconds since each event
+        for k in (0.3, 1.0, 3.0, 10.0):  # wider half-life spectrum
+            w = (0.5 ** (age / (hl * k * 86400.0)) * t["mask"]).unsqueeze(-1)
+            feats.append((tok * w).sum(1))
+        return torch.cat(feats, dim=-1)
 
     def donor_batch(self, h: "torch.Tensor") -> "torch.Tensor":
         """Donor readout for (B, D) state batches — no pooling. The consumed
