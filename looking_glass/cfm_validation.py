@@ -47,6 +47,7 @@ def validate(cfg: CFMConfig):
         event_residual=bool(blob.get("event_residual", False)),
         entity_id_embed=bool(blob.get("entity_id_embed", False)),
         readout_scale=bool(blob.get("readout_scale", False)),
+        prod_dim=int(blob.get("prod_embed_dim", 0)),
     ).to(cfg.device)
     model.load_state_dict(blob["state"])
     if blob.get("whiten_W") is not None:

@@ -171,6 +171,7 @@ def load_frozen_encoder(tag: str, cfm_dir):
         event_residual=bool(blob.get("event_residual", False)),
         entity_id_embed=bool(blob.get("entity_id_embed", False)),
         readout_scale=bool(blob.get("readout_scale", False)),
+        prod_dim=int(blob.get("prod_embed_dim", 0)),
     )
     # tolerate checkpoints from earlier revisions (e.g. a head added later):
     # load what matches, report what did not. The encoder trunk must match.
@@ -221,6 +222,15 @@ def load_frozen_encoder(tag: str, cfm_dir):
             / "customer_event_stream.parquet"
         )
     model.half_life_days = cfg.state_half_life_days
+    # attach model-free product vectors for the SF phi if the run used them
+    if getattr(cfg, "prod_embed_path", "") and model.prod_vec_table.shape[1] == 0:
+        try:
+            import numpy as _np
+
+            _pe = _np.load(cfg.prod_embed_path, allow_pickle=True)
+            model.set_product_embeddings(_pe["ids"], _pe["vec"])
+        except Exception:  # noqa: BLE001
+            pass
     return model, cfg
 
 

@@ -2172,3 +2172,20 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   global standardization). Remaining optional enrichment: include the ENTITY/product in phi
   (currently phi = [value, event-type one-hot]) so SF carries product affinity — must update
   BOTH training and probe together.
+
+## DEC-099 — SF product enrichment (co-occurrence embeddings in phi) — done correctly
+
+- **Date:** 2026-10-13
+- **Built:** `looking_glass/product_embed.py` — model-free PRODUCT embeddings from basket
+  co-occurrence (PMI + truncated SVD, top-K products), the "train product embeddings first,
+  attach them" step (Layer A). New flags `prod_embed_path`/`prod_embed_dim`: `φ` for the SF
+  objective now includes `E_prod[entity]` (training AND probe), so successor features carry
+  product affinity at a bounded dim (16) instead of an infeasible ~20k one-hot.
+- **Plumbing:** `CFM.set_product_embeddings` + `prod_vec_table` buffer (device-safe, saved;
+  loader rebuilds via `prod_embed_dim` from the blob). Gate green.
+- **Instacart with product-SF** (entity_id + attrs + readout_scale + recency + foresight + SF
+  products): eff_rank 22.3, PORTFOLIO PASS; B+C LTV +0.032 UNCERTAIN, order-count UNCERTAIN,
+  churn/propensity PASS+exceed. No flip (similar to all prior configs).
+- **SF STATUS: DONE** — (1) level-preserving standardization (matches probe, DEC-097),
+  (2) product affinity fold-in (DEC-099). SF is correct and current; instacart LTV/order-count
+  remain the ~+0.03-0.05 encoder ceiling regardless.

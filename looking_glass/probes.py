@@ -102,6 +102,9 @@ def _encode(model, vocab, seqs, batch=128, mask_frac=0.15, seed=0):
         m = t["mask"].cpu().numpy()
         co = t["co"][:, :, 0].cpu().numpy()
         rmask = rand.cpu().numpy()
+        _pv = None
+        if getattr(model, "prod_vec_table", None) is not None and model.prod_vec_table.shape[1] > 0:
+            _pv = model.prod_vec_table[t["eid"]].float().cpu().numpy()
         for b in range(et.shape[0]):
             L = int(m[b].sum())
             if L < 3:
@@ -118,6 +121,7 @@ def _encode(model, vocab, seqs, batch=128, mask_frac=0.15, seed=0):
                     "val": val[b, :L],
                     "dt": dt[b, :L],
                     "co": co[b, :L],
+                    **({"pvec": _pv[b, :L]} if _pv is not None else {}),
                 }
             )
     return rows
@@ -148,6 +152,7 @@ def _build(name, rows, n_ent, n_ev, horizon):
             tau = np.cumsum(gap)
             w = np.zeros((L, n_ev))
             w[:, 0] = valr
+            _pvec = r.get("pvec")
             ok = (etr >= 0) & (etr < n_ev - 1)
             w[np.arange(L)[ok], 1 + etr[ok]] = 1.0
             gam, unit = 0.5, 86400.0
@@ -157,6 +162,8 @@ def _build(name, rows, n_ent, n_ev, horizon):
             ssum = np.zeros_like(w)
             ssum[:-1] = rc[1:]
             Rrow = ssum * (gam ** (-tau / unit))[:, None]
+            if _pvec is not None:
+                Rrow = np.concatenate([Rrow, _pvec], axis=1)
         for t in range(L):
             if r["co"][t] > 0:
                 continue

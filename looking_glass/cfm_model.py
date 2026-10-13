@@ -566,6 +566,7 @@ class CFM(nn.Module):
         event_residual: bool = False,
         entity_id_embed: bool = False,
         readout_scale: bool = False,
+        prod_dim: int = 0,
     ):
         super().__init__()
         self.vocab = vocab
@@ -578,6 +579,9 @@ class CFM(nn.Module):
         self.readout_skip_on = bool(readout_skip)
         self.event_residual_on = bool(event_residual)
         self.eid_embed_on = bool(entity_id_embed) and vocab.n_eid > 0
+        # model-free PRODUCT vectors (co-occurrence; §20.2) for the SF phi — a fixed
+        # table aligned to the entity-id vocab, set after construction. 0 cols = off.
+        self.register_buffer("prod_vec_table", torch.zeros(vocab.n_eid + 1, int(prod_dim)))
         self.readout_scale_on = bool(readout_scale)
         if self.isometric_boundary:
             self.iso_skew = nn.Parameter(torch.zeros(dim, dim))
@@ -647,7 +651,7 @@ class CFM(nn.Module):
         self.head_foresight = nn.Linear(dim, dim)  # multi-horizon future-state prediction
         self.head_val = nn.Linear(dim, 1)  # next event value (monetary)
         self.head_sf = nn.Sequential(
-            nn.Linear(dim + 1, dim), nn.ReLU(), nn.Linear(dim, self.sf_dim)
+            nn.Linear(dim + 1, dim), nn.ReLU(), nn.Linear(dim, self.sf_dim + int(prod_dim))
         )
         # exact multi-horizon window targets (count, value-sum) for `agg`
         self.head_agg = nn.Linear(dim + 1, 2)  # successor features
@@ -933,6 +937,22 @@ class CFM(nn.Module):
         (the donor_seq contract). For (B, D) STATE BATCHES use donor_batch."""
         v = self.proj(x) if x.dim() == 1 else self.proj(x.mean(0))
         return self._boundary(v)
+
+    def set_product_embeddings(self, ids, vec):
+        """Attach model-free product vectors (co-occurrence; §20.2) for the SF phi,
+        aligned to the entity-id vocab. Returns how many ids matched."""
+        import numpy as _np
+
+        d = int(vec.shape[1])
+        tab = torch.zeros(self.vocab.n_eid + 1, d)
+        hit = 0
+        for i, pid in enumerate(ids):
+            j = self.vocab.eid.get(str(pid))
+            if j is not None:
+                tab[j] = torch.tensor(_np.asarray(vec[i], dtype=_np.float32))
+                hit += 1
+        self.prod_vec_table = tab.to(next(self.parameters()).device)
+        return hit
 
     def donor_batch(self, h: "torch.Tensor") -> "torch.Tensor":
         """Donor readout for (B, D) state batches — no pooling. The consumed

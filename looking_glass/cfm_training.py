@@ -156,9 +156,18 @@ def train_cfm(cfg: CFMConfig):
         event_residual=getattr(cfg, "event_residual", False),
         entity_id_embed=getattr(cfg, "entity_id_embed", False),
         readout_scale=getattr(cfg, "readout_scale", False),
+        prod_dim=(getattr(cfg, "prod_embed_dim", 0) if getattr(cfg, "prod_embed_path", "") else 0),
     ).to(device)
     # v4.0: differentiable ZCA in the forward during training (gradients shape the
     # consumed isotropy); off at eval/save so the frozen transform is used.
+    if getattr(cfg, "prod_embed_path", ""):
+        import numpy as _np
+
+        _pe = _np.load(cfg.prod_embed_path, allow_pickle=True)
+        _hit = model.set_product_embeddings(_pe["ids"], _pe["vec"])
+        print(
+            f"[prod-embed] attached {_hit} product vectors (dim {_pe['vec'].shape[1]})", flush=True
+        )
     model.zca_train = bool(getattr(cfg, "zca", False))
     cfg._aib_beta = 0.0
     model.half_life_days = cfg.state_half_life_days
@@ -556,6 +565,9 @@ def train_cfm(cfg: CFMConfig):
             "event_residual": bool(getattr(cfg, "event_residual", False)),
             "entity_id_embed": bool(getattr(cfg, "entity_id_embed", False)),
             "readout_scale": bool(getattr(cfg, "readout_scale", False)),
+            "prod_embed_dim": int(getattr(cfg, "prod_embed_dim", 0))
+            if getattr(cfg, "prod_embed_path", "")
+            else 0,
             "whiten_mean": (model.whiten_mean if getattr(model, "whiten_on", False) else None),
             "whiten_W": (model.whiten_W if getattr(model, "whiten_on", False) else None),
         },
@@ -1171,6 +1183,9 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
     # deleted; the vocabulary is the only source of event identity.)
     et_oh = F.one_hot(t["et"].clamp(max=vocab.n_et - 1), num_classes=vocab.n_et).float()
     phi = torch.cat([v, et_oh], dim=-1)  # (B,T,1+E)
+    if model.prod_vec_table.shape[1] > 0 and "eid" in t:
+        # model-free product affinity in the successor features (§20.2)
+        phi = torch.cat([phi, model.prod_vec_table[t["eid"]]], dim=-1)
     PD = phi.shape[-1]
     de = dt_days.unsqueeze(1).expand(B, GAMS, T, 1).reshape(B * GAMS, T, 1)
     g = gamma.view(B, GAMS, 1, 1).expand(B, GAMS, T, 1).reshape(B * GAMS, T, 1) ** de

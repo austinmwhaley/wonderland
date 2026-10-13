@@ -276,6 +276,10 @@ class CFMConfig:
     # entities via attributes (unlike a per-id table). Off by default.
     attr_fields: tuple = ()
     max_attr_vocab: int = 2000
+    # model-free product co-occurrence embeddings (npz from looking_glass.product_embed)
+    # folded into the SF phi so successor features carry product affinity. Off by default.
+    prod_embed_path: str = ""
+    prod_embed_dim: int = 16  # dim of the product vectors (must match the npz)
     # DEC-028: condition cap for the boundary whitening — eigenvalues of the
     # state covariance are floored at this fraction of the largest, bounding
     # kappa(Sigma^{-1/2}) <= 1/sqrt(whiten_cond_floor). Prevents near-null
