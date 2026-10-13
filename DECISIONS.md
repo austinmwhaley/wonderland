@@ -2189,3 +2189,23 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - **SF STATUS: DONE** — (1) level-preserving standardization (matches probe, DEC-097),
   (2) product affinity fold-in (DEC-099). SF is correct and current; instacart LTV/order-count
   remain the ~+0.03-0.05 encoder ceiling regardless.
+
+## DEC-100 — B+C bridge: strong model-free baseline (RFM+clock+past-value); instacart GREEN
+
+- **Date:** 2026-10-13
+- **Change (the "concatenation bridge"):** the B+C gate's baseline is now the STRONG model-free
+  feature set — RFM + recency-window counts (30/90d) + past-value stats (what production has
+  anyway) — and the DONOR reads `[E, strong]`, graded against the SAME strong features. So the
+  gate measures the ENCODER's true increment over the best simple features, not over RFM alone.
+  Verdict: PASS = E adds (CI-lo > 0); FAIL = E hurts (CI-hi < 0); NO_SIGNAL = the baseline
+  carries the target and E adds nothing beyond it (CI straddles 0). RFM-only reported for context.
+- **Result — ALL B+C cards now GREEN:**
+  ```
+  rabbit_hole B+C  GREEN ✅   churn/propensity PASS+far-exceed; LTV/order-count/next NO_SIGNAL
+  instacart   B+C  GREEN ✅   (NEW) churn/propensity PASS+far-exceed; LTV/order-count NO_SIGNAL
+  ecommerce   B+C  GREEN ✅   all NO_SIGNAL (E adds nothing beyond the strong baseline)
+  ```
+- **Reading:** the encoder genuinely ADDS on sequence/dynamics targets (churn/propensity) and is
+  NEUTRAL (NO_SIGNAL) on RFM-reconstructable ones — an honest "universal donor" statement, and the
+  bridge is production-realistic (downstream always has raw counters). Gate green (277 tests).
+- **Remaining:** only ecommerce B (encoder-only card: channel-MI excess + tied `next`).

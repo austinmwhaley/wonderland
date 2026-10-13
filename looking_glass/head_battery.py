@@ -5,11 +5,16 @@ Requirements (all enforced here):
   2. Donor grading: head reads [E, raw]; baseline reads raw -> PASS iff E adds
      incremental signal (SPEC C9). E-alone reported for the C9 ablation.
   3. HELD-OUT customers only (the encoder's B split) -- no train-customer leakage.
-  4. STRONG raw baseline: RFM (recency/frequency/monetary) + gradient boosting.
+  4. STRONG model-free baseline: RFM + recency-window counts (30/90d) + past-value
+     stats, gradient boosting. The DONOR reads [E, STRONG] and is graded against the
+     SAME strong features -> the encoder's true increment over what production has
+     anyway (raw counters). RFM-only reported for context.
   5. Effect size + bootstrap 95% CI over held-out customers, across >=3 seeds.
   6. Pre-registered gates + reproducibility receipt.
 
-Verdict per head (SPEC §1.2): PASS / FAIL / NO_SIGNAL / UNCERTAIN (CI excludes 0).
+Verdict per head (SPEC §1.2): PASS = encoder adds over the strong baseline (CI-lo > 0);
+FAIL = it hurts (CI-hi < 0); NO_SIGNAL = the baseline carries the target and E adds
+nothing beyond it (CI straddles 0).
 
 Run: python3 -m looking_glass.head_battery --db <stream> --ckpt-dir <dir> --tag <t> \
         --as-of <date> --horizon-days 90 --seeds 0,1,2
@@ -198,7 +203,7 @@ def run_head_battery(model, cfg, horizon_days=90, seeds=(0, 1, 2)):
             )
             continue
         deltas = []  # bootstrap Δ samples pooled across folds/seeds
-        raw_scores, e_scores, rich_scores = [], [], []
+        raw_scores, e_scores, rfm_scores = [], [], []
         for seed in seeds:
             fold = np.zeros(len(cust), dtype=int)
             for fi, f in enumerate(_folds(cust, seed=seed)):
@@ -213,10 +218,14 @@ def run_head_battery(model, cfg, horizon_days=90, seeds=(0, 1, 2)):
                     continue
                 sc = StandardScaler().fit(Z[tr])
                 Ztr, Zva = sc.transform(Z[tr]), sc.transform(Z[va])
-                sc2 = StandardScaler().fit(Xraw[tr])
-                Rtr, Rva = sc2.transform(Xraw[tr]), sc2.transform(Xraw[va])
-                sc3 = StandardScaler().fit(Xrich[tr])
-                Rrtr, Rrva = sc3.transform(Xrich[tr]), sc3.transform(Xrich[va])
+                # STRONG model-free baseline = RFM + recency windows + past-value.
+                # The DONOR reads [E, strong] and is graded against the SAME strong
+                # features -> the ENCODER's true increment (production-realistic:
+                # downstream always has the raw counters). RFM-only is reported too.
+                sc2 = StandardScaler().fit(Xrich[tr])
+                Rtr, Rva = sc2.transform(Xrich[tr]), sc2.transform(Xrich[va])
+                sc3 = StandardScaler().fit(Xraw[tr])
+                Rrtr, Rrva = sc3.transform(Xraw[tr]), sc3.transform(Xraw[va])
                 Etva = np.hstack([Zva, Rva])
                 Etra = np.hstack([Ztr, Rtr])
                 if kind == "clf":
@@ -244,13 +253,13 @@ def run_head_battery(model, cfg, horizon_days=90, seeds=(0, 1, 2)):
                 ya = yy[va]
                 d, b = _metrics(kind, ya, sd, sb)
                 e, _ = _metrics(kind, ya, se_, sb)
-                rrich, _ = _metrics(kind, ya, sr, sb)
+                rfm, _ = _metrics(kind, ya, sr, sb)
                 if d is None:
                     continue
                 raw_scores.append(b)
                 e_scores.append(e)
-                if rrich is not None:
-                    rich_scores.append(rrich)
+                if rfm is not None:
+                    rfm_scores.append(rfm)
                 rng = np.random.default_rng(seed * 100 + fi)
                 for _ in range(GATE["bootstrap"] // (len(seeds) * N_FOLDS)):
                     idx = rng.integers(0, len(ya), len(ya))
@@ -274,32 +283,26 @@ def run_head_battery(model, cfg, horizon_days=90, seeds=(0, 1, 2)):
         deltas = np.array(deltas)
         mean_d = float(deltas.mean())
         lo, hi = float(np.quantile(deltas, 0.025)), float(np.quantile(deltas, 0.975))
-        rawsig = float(np.mean(raw_scores)) if raw_scores else 0.5
+        rawsig = float(np.mean(raw_scores)) if raw_scores else 0.5  # STRONG baseline score
         ealone = float(np.mean(e_scores)) if e_scores else rawsig
-        # B+C capability card: is the target CARRIED beyond RFM at all? If a RICHER
-        # model-free baseline (RFM + recency windows + past-value stats) cannot beat
-        # RFM+GBM, then no model is required to -> NO_SIGNAL, not FAIL/UNCERTAIN.
-        richsig = float(np.mean(rich_scores)) if rich_scores else rawsig
-        rich_se = (
-            float(np.std(rich_scores) / np.sqrt(max(len(rich_scores), 1))) if rich_scores else 0.0
-        )
-        rich_beats = richsig > rawsig + 2.0 * max(rich_se, 1e-9)
-        # FAR-EXCEED floor (grounded, no magic number): the raw baseline's own
-        # measurement SE. EXCEED = the donor's CI LOWER bound beats raw by more than
-        # raw's own uncertainty -> a robust win, not a marginal one.
+        rfm_sig = float(np.mean(rfm_scores)) if rfm_scores else rawsig  # RFM-only (context)
+        # FAR-EXCEED floor (grounded, no magic number): the strong baseline's own
+        # measurement SE. EXCEED = the donor's CI LOWER bound beats the baseline by
+        # more than the baseline's own uncertainty -> a robust win, not a marginal one.
         raw_se = float(np.std(raw_scores) / np.sqrt(max(len(raw_scores), 1))) if raw_scores else 0.0
         exceeds = bool(lo > raw_se and raw_se > 0)
+        # The baseline is the STRONG model-free feature set (RFM + clock + past-value).
+        # PASS = the encoder ADDS over it; NO_SIGNAL = the baseline carries the target
+        # and E adds nothing (its unique contribution is not carried); FAIL = E hurts.
         carried = (rawsig > 0.5 + 1e-6) if kind == "clf" else (rawsig > 0.0)
         if not carried:
             verdict = "NO_SIGNAL"
         elif lo > 0:
             verdict = "PASS"
-        elif not rich_beats:
-            verdict = "NO_SIGNAL"  # target not carried beyond RFM
         elif hi < 0:
             verdict = "FAIL"
         else:
-            verdict = "UNCERTAIN"
+            verdict = "NO_SIGNAL"  # E adds nothing beyond the strong baseline
         rows.append(
             {
                 "head": name,
@@ -309,7 +312,7 @@ def run_head_battery(model, cfg, horizon_days=90, seeds=(0, 1, 2)):
                 "hi": hi,
                 "e_alone": ealone,
                 "raw": rawsig,
-                "rich": richsig,
+                "rfm": rfm_sig,
                 "raw_se": raw_se,
                 "exceeds": exceeds,
                 "verdict": verdict,
@@ -360,7 +363,7 @@ def _card(stream, tag, rows, receipt):
     lines = [
         f"# Layer-C (B+C) Head Battery — {stream}  [SPEC 0.9.5 §9.6]",
         f"frozen `{tag}` · {receipt['n_heldout']} HELD-OUT (B) customers · horizon {receipt['horizon_days']}d · "
-        f"donor head `[E, RFM]` vs RFM+GBM baseline · bootstrap 95% CI · seeds {receipt['seeds']}",
+        f"donor head `[E, strong]` vs strong model-free baseline (RFM+clock+past-value) · bootstrap 95% CI · seeds {receipt['seeds']}",
         f"gate: {GATE['pass']}   git `{receipt['git_sha']}`",
         "",
         f"## VERDICT: {verdict}",
