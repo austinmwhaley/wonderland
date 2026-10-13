@@ -898,6 +898,24 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
         T_["redundancy"] = (off**2).mean()
     T_["mask"] = _mask_loss_batch(model, vocab, t, cfg, dev)
     T_["jepa"] = _jepa_loss(model, t, y)
+    # ---- stats RECONSTRUCTION (v8, sufficiency): force the state to reproduce the
+    # running RFM quantities (count, cumulative value, recency) LEVEL-PRESERVING
+    # (global per-dim standardize, not per-sequence), so the embedding EXPOSES the
+    # raw features downstream relies on. Self-supervised (targets from the stream).
+    if "stats_recon" in cfg.objectives:
+        secs = torch.cumsum(torch.expm1(t["dt"]).squeeze(-1), dim=1)  # (B,T)
+        cnt = torch.arange(1, T + 1, device=dev).float()[None, :].expand(B, T)
+        vsum = torch.cumsum(torch.log1p(t["val"].abs().squeeze(-1)), dim=1)
+        rec = torch.expm1(t["dt"]).squeeze(-1)  # gap to previous event (recency proxy)
+        tgt = torch.stack([torch.log1p(cnt), vsum, torch.log1p(rec)], dim=-1)  # (B,T,3)
+        _sel = (t["mask"] > 0).unsqueeze(-1).expand_as(tgt)
+        mu = tgt[_sel].mean(0, keepdim=True) if _sel.any() else tgt.mean(0, keepdim=True)
+        sd = (tgt[_sel].std(0, keepdim=True) if _sel.any() else tgt.std(0, keepdim=True)).clamp(
+            min=1e-6
+        )
+        pred = model.head_recon(y)
+        err = (pred - (tgt - mu) / sd).pow(2).mean(-1)  # (B,T)
+        T_["stats_recon"] = (err * t["mask"]).sum() / t["mask"].sum().clamp(min=1)
     # ---- PSR / comprehensive future statistics (v8, goal A): from the state at t,
     # predict the customer's FUTURE observable statistics — event COUNT and VALUE
     # SUM over (t, t+H] — at several horizons H (derived as fractions of the

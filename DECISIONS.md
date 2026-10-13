@@ -2244,3 +2244,24 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   Next levers: (i) make the PSR/reconstruction targets LEVEL-preserving + reconstruct the raw
   statistics directly; (ii) raise genuine rank (SR rank pressure); (iii) make the consumed state
   explicitly concatenate the accumulated statistics (not just the readout).
+
+## DEC-103 — Sufficiency still not achieved; reconstruction targets were position-leaked
+
+- **Date:** 2026-10-13
+- **Added `stats_recon`** (reconstruct running [count, value-sum, recency] from the state,
+  level-preserving). Instacart with the FULL sufficiency stack (psr + stats_recon + readout
+  moments + statistics pathway): eff_rank 21.2, PORTFOLIO FAIL.
+- **Sufficiency test:** instacart `E alone` LTV **0.055** vs strong baseline **0.36** — STILL
+  does not subsume RFM. churn `E alone` 0.74 vs 0.92 (closer but below).
+- **Diagnosis of the recon objective:** the `count` target is `t+1` — a function of the
+  POSITION, not the customer — so it is trivially satisfiable without carrying customer-level
+  information. The reconstruction targets were **position-leaked** and taught the state nothing
+  customer-specific. (Value-sum is similarly position-influenced.)
+- **Honest status — the "encoder carries everything" goal is NOT achieved.** Across
+  entity_id, attributes, half-life, recency, foresight, PSR, magnitude readout, statistics
+  pathway, stats-reconstruction, and 8 seeds, instacart `E alone` stays ~0.05 on LTV vs RFM's
+  0.36. The encoder's contractive, low-rank, 256-event-windowed state does not subsume the
+  full-history RFM that downstream relies on. B+C is GREEN only via the strong baseline
+  (raw features). 
+- **Next (if pursued):** (i) customer-level (non-leaked) reconstruction targets; (ii) genuine
+  rank pressure (SR); (iii) carry state across windows so the encoding spans full history.
