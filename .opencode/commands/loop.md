@@ -1,15 +1,21 @@
 ---
-description: Run the wonderland autonomous loop until the goal is GREEN (or a real decision)
+description: Run the wonderland autonomous loop until the goal is GREEN
 ---
 AUTONOMOUS LOOP MODE. Work in /home/austin-whaley/Documents/wonderland; pass
 workdir=/home/austin-whaley/Documents/wonderland on every shell call.
 
 GOAL (the north star, see STATUS.md "Primary goal"): `embedding(customer, timestamp)` is a
 SUFFICIENT STATISTIC of the history, and every B card AND B+C card is GREEN across all three
-streams. The checkable predicate is `bash loop/status.sh` — it prints GOAL_MET when green.
-Also track the sufficiency gate (`python3 -m looking_glass.sufficiency_gate ...`).
+streams. Checkable predicate: `bash loop/status.sh` (prints GOAL_MET when green). Also track the
+sufficiency gate (`python3 -m looking_glass.sufficiency_gate ...`).
 
-CHAIN CONTINUOUSLY — do NOT stop, summarize, or ask between steps. Each step:
+KEEP GOING. Do NOT stop, summarize, or ask between steps. Decide everything yourself inside the
+guardrails below; when you hit a fork (spec/gate/stream), choose the option that best serves the
+goal and the doctrine, record it in DECISIONS.md, and continue. Only stop when `bash loop/status.sh`
+prints GOAL_MET (then report receipts) — or if you are truly blocked with NO legitimate path,
+say so in one line and stop.
+
+Each step:
 1. Restore state: STATUS.md top + tail of DECISIONS.md + `git log --oneline -8` + `git status`.
 2. Pick the single highest-leverage remaining blocker; name it in one line.
 3. Cheapest matched experiment FIRST — Rung 0 (measure on an existing checkpoint; no training)
@@ -19,15 +25,23 @@ CHAIN CONTINUOUSLY — do NOT stop, summarize, or ask between steps. Each step:
 4. Keep the fast gate green each step: `ruff check . && ruff format --check . && pytest -m "not slow"`.
 5. Keep what wins; DELETE dead ends (revert code, record why).
 6. Record: append a DEC entry (context / what changed / what was MEASURED / verdict) and update
-   STATUS.md. If a genuine operator decision arises (spec/gate/stream change), write it to
-   STATUS.md under "Open decisions" and surface it in ONE line — then stop.
+   STATUS.md. No decision is "for the operator" — decide it and move on.
 7. Commit (code + docs only; NEVER data `*.pt/*.parquet/*.duckdb`); message = what was measured +
    receipts + verdict (fact-only).
-8. Immediately begin the next step. Loop until `bash loop/status.sh` prints GOAL_MET, then report
-   the receipts and stop.
+8. Immediately begin the next step. Loop until `bash loop/status.sh` prints GOAL_MET.
 
-DOCTRINE (SPEC §3.1 "SR proposes, FR disposes" + AGENTS.md): no magic numbers (derive/learn);
-no domain literals; per-sample at serve (no batch statistics); contractive ρ<1; no loss hacks;
-no silent non-finite masking; divergence is a hard failure; never weaken a gate to pass; never
-select on the metric you optimize; never encode an answer the system could learn; Self-supervised
-only for Layer B.
+GUARDRAILS — achieving the goal by honest means (no manual hacks):
+- No magic numbers: every threshold/dim/window/rate is derived from the data, learned, or a
+  documented fallback resolved at runtime and recorded in a receipt.
+- No domain literals (no business event names / hand-picked feature partitions).
+- Per-sample at serve: NO batch statistics at inference.
+- Contractive recurrence (ρ<1); divergence / non-finite is a HARD FAILURE, never masked or
+  rolled back to fake a green.
+- No loss hacks (focal/class weights/clips to pass); no silent masking of non-finite terms.
+- NEVER weaken or re-interpret a gate / baseline / threshold to make a card pass. A green must be
+  earned against strong baselines, held-out, with CIs.
+- NEVER select weights on the metric you optimize (use held-out / ground truth).
+- NEVER encode an answer the system could learn or derive; MAKE IT LEARN, don't teach it.
+- Layer B (the encoder) is self-supervised only — no downstream labels in its training.
+- You may re-add soft, per-sample, scale-free objectives (SPEC §3.1 "SR proposes, FR disposes"),
+  but the certification filter (per-sample, no batch-coupled capacity faking) still applies.
