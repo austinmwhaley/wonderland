@@ -3271,3 +3271,24 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - **Principles served:** *Universal/Adaptive* (cross-schema transfer demonstrated), *Honest*
   (easy-stream caveat).
 - **Gate:** green.
+
+## DEC-153 — Loop iter 25: the encoder CANNOT produce the measure; it must be a Layer-B aggregate pipeline
+
+- **Date:** 2026-10-14
+- **What:** tested the in-encoder generic measure (`CFM.generic_measure` over all consumed fields)
+  at **full window** (`--seq-len 4096`) vs short (`256`), on `uni_allfields` (all-field encoder).
+- **Measured (instacart, 1181 B, horizon 30, seed 0):** U = **0.1876 (256) → 0.2084 (4096)**.
+  Full history barely helps; the gap is **not** closed.
+- **Read (key realizability gap):** the DEC-142/148 near-sufficiency (U≈0.93) came from
+  **PCA of the ORACLE's measure** (`_full_history_features`: all 27 fields' full-history
+  aggregates: counts, n-unique, numeric moments, timing). The **encoder cannot reproduce that**:
+  (a) it is **window-limited**, and (b) its `generic_measure` covers only a **subset** of the
+  oracle's aggregates. So `E = [shape ‖ ~64-dim measure]` is, as measured, an **idealized**
+  architecture — the measure part is *not* an encoder output today.
+- **Consequence (the real build):** the universal embedding needs an explicit **Layer-B
+  aggregate pipeline**: compute the generic full-history measure per customer (SQL/streaming at
+  the A/B boundary — a production artifact, like the state store), then **compress it (learned)**
+  into the embedding. That is the concrete next object; the encoder alone cannot be the whole
+  thing.
+- **Principles served:** *Honest* (exposed the unrealized assumption), *Diagnosable*.
+- **Gate:** green.
