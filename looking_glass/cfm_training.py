@@ -1705,6 +1705,9 @@ def forward_embedding(model, seqs, h0s=None):
         out = model.donor_batch(h)
         if getattr(model, "accumulator_on", False):
             out = torch.cat([out, model.accumulator(tok, t)], dim=-1)
+        gm = model.generic_measure(t) if hasattr(model, "generic_measure") else None
+        if gm is not None:
+            out = torch.cat([out, gm], dim=-1)
     return out
 
 

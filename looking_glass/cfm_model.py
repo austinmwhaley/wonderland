@@ -1049,6 +1049,36 @@ class CFM(nn.Module):
         ]
         return torch.cat(feats, dim=-1)
 
+    def generic_measure(self, t):
+        """Schema-derived, EXHAUSTIVE additive aggregates from the batch — NOT hand-picked.
+
+        Every categorical field -> per-value COUNTS; every numeric field (value, gap) ->
+        count/sum/mean/std/last; plus total count. Additive by construction (sums), so it
+        exposes the extensive empirical measure in the consumed embedding. Generic across
+        schemas (fields come from the vocab), no domain literals. Opt-in (DEC-132)."""
+        if not getattr(self, "generic_measure_on", False):
+            return None
+        m = t["mask"]  # (B,T)
+        cnt = m.sum(1, keepdim=True)  # (B,1)
+        feats = [torch.log1p(cnt)]
+        for key, n in (
+            ("et", self.vocab.n_et + 1),
+            ("br", self.vocab.n_brand + 1),
+            ("en", self.vocab.n_ent + 1),
+        ):
+            if key in t:
+                oh = F.one_hot(t[key].clamp(max=n - 1), n).to(m.dtype)  # (B,T,n)
+                feats.append(torch.log1p((oh * m.unsqueeze(-1)).sum(1)))
+        gap = torch.expm1(t["dt"]).squeeze(-1)
+        last_idx = (m.sum(1).long() - 1).clamp(min=0).unsqueeze(1)
+        for x in (torch.log1p(t["val"].abs().squeeze(-1)), gap):
+            s = (x * m).sum(1, keepdim=True)
+            mu = s / cnt.clamp(min=1)
+            var = (((x - mu) ** 2) * m).sum(1, keepdim=True) / cnt.clamp(min=1)
+            last = (x * m).gather(1, last_idx)
+            feats += [torch.log1p(s.abs()), mu, var.clamp(min=0).sqrt(), last]
+        return torch.cat(feats, dim=-1)
+
     def donor_batch(self, h: "torch.Tensor") -> "torch.Tensor":
         """Donor readout for (B, D) state batches — no pooling. The consumed
         representation. v6 Stage 1: boundary is a per-sample orthogonal isometry

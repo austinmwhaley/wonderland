@@ -2909,3 +2909,24 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - **Principles served:** *Honest* (5 matched controls, recorded the dead end), *Diagnosable*,
   *Efficient* (stopped after the decisive test).
 - **Gate:** green (279 passed; reverted cleanly).
+
+## DEC-133 — Loop iter 6: truncation is NOT the mass gap; generic-measure inconclusive
+
+- **Date:** 2026-10-14
+- **Lead:** the encoder's `seq_len = 256` truncates history, while the oracle uses the full history
+  — a plausible cause of the mass gap. Tested by overriding `seq_len` in the gate.
+- **Measured (Rung-0, instacart, 1181 B, horizon 30, seed 0):** U **0.1715 (seq_len 256) →
+  0.1972 (1024)**, but the worst-case gap is **unchanged** (next-order value: 0.500 → 0.503).
+  ⇒ truncation contributes only marginally; **the mass gap is not (mainly) truncation.**
+- **Also tried (option B, inference-only):** a generic exhaustive additive measure
+  (`CFM.generic_measure`: per-categorical value counts + numeric moments), exposed in E.
+  Result U = 0.116 at the same settings — **no improvement** (inconclusive; the accumulator's
+  1803 dims likely dominate, and the extra dims don't help). Kept opt-in (`--generic-measure`).
+- **Tooling added (kept, useful):** `--seq-len` override and an adaptive embedding batch
+  (`131072//T`) in the gate to avoid GPU OOM on long sequences.
+- **Remaining asymmetries to test:** the encoder may not **consume all fields** the oracle uses
+  (`attr_fields` default empty → category/aisle/etc. ignored) — the tokenizer/exhaustive-consumption
+  axis. Next lead.
+- **Principles served:** *Diagnosable* (isolated truncation), *Efficient* (kept useful tooling),
+  *Honest* (recorded the null).
+- **Gate:** green.

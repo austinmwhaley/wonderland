@@ -405,10 +405,12 @@ def run_universality(model, cfg, horizons=(30, 90), seeds=(0, 1, 2), use_seq=Tru
 
     seqs = _b_sequences(cfg)  # raw held-out histories (for E and the sequence oracle)
     cust = np.array([s["customer"] for s in seqs])
+    tmax = max((len(s["event_type"]) for s in seqs), default=1)
+    bs = max(16, min(512, 131072 // max(tmax, 1)))  # bound GPU memory vs sequence length
     Zs = []
-    for i in range(0, len(seqs), 512):
+    for i in range(0, len(seqs), bs):
         with torch.no_grad():
-            z = forward_embedding(model, seqs[i : i + 512])
+            z = forward_embedding(model, seqs[i : i + bs])
         Zs.append(z.detach().float().cpu().numpy())
     Z = np.concatenate(Zs, 0) if Zs else np.zeros((0, 1), dtype=np.float32)
     dev = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -506,6 +508,14 @@ def main(argv=None):
     ap.add_argument("--ckpt-dir", required=False, dest="ckpt_dir")
     ap.add_argument("--tag", required=False)
     ap.add_argument("--customers", type=int, default=25000)
+    ap.add_argument(
+        "--seq-len",
+        type=int,
+        default=0,
+        dest="seq_len",
+        help="override sequence length (0 = checkpoint's resolved value). Use a large value "
+        "to test whether the encoder's bounded window (train seq_len) truncates full history.",
+    )
     ap.add_argument("--horizons", default="30,90")
     ap.add_argument("--seeds", default="0,1,2")
     ap.add_argument("--out", default=None)
@@ -514,6 +524,12 @@ def main(argv=None):
         action="store_true",
         dest="no_acc",
         help="disable the cumulative-accumulator measure pathway (matched control for U)",
+    )
+    ap.add_argument(
+        "--generic-measure",
+        action="store_true",
+        dest="generic_measure",
+        help="expose the generic, exhaustive additive measure in E (DEC-132 option B)",
     )
     ap.add_argument(
         "--synthetic",
@@ -544,7 +560,11 @@ def main(argv=None):
     model, cfg = load_frozen_encoder(a.tag, a.ckpt_dir)
     if a.no_acc:
         model.accumulator_on = False  # matched control: shape-only (no measure pathway)
+    if a.generic_measure:
+        model.generic_measure_on = True  # expose the generic exhaustive measure in E
     cfg.db, cfg.as_of, cfg.sample_customers = a.db, a.as_of, a.customers
+    if a.seq_len:
+        cfg.seq_len = int(a.seq_len)  # test whether the bounded window truncates history
     horizons = tuple(int(x) for x in a.horizons.split(","))
     seeds = tuple(int(x) for x in a.seeds.split(","))
     rows, u, n, solved = run_universality(model, cfg, horizons, seeds, use_seq=not a.no_seq)

@@ -250,6 +250,10 @@ invariant-by-construction).
   **Loop iter 5 (DEC-132):** open-gate measure learns *much* better (skill **+1.13**) but U
   unchanged (**0.013**) → **5 learned-measure negatives**; **DEAD END**; loop **paused** on the
   goal-level OPEN DECISION above.
+  **Loop iter 6 (DEC-133):** truncation (`seq_len 256→1024`) is a **minor** factor (U 0.17→0.20;
+  worst gap unchanged); option-B generic measure expose is **inconclusive** (U 0.12). Next lead:
+  the encoder may not **consume all fields** the oracle uses (`attr_fields` empty) → tokenizer/
+  exhaustive-consumption axis.
 
 - **Versioning scheme (DEC-058):** versions are now pre-1.0 semver
   `MAJOR.MINOR.PATCH` (`0.6.4`); tag = `<version>r<revision>` (`0.6.4r162610`).
