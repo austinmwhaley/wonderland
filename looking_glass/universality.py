@@ -12,10 +12,13 @@ where, for each task tau in a self-supervised future family,
     normalized    = gap_tau / range_tau                     # range = oracle's achievable spread
                     (reg: range = score([E,history]); clf: range = score - 0.5)
 
-`history` here is the model-free full-history proxy (RFM + clock + past-value
-stats = what production has anyway); the TRUE oracle (full sequence) is bounded
-below by this, so the measured gap is a CONSERVATIVE estimate of the real
-insufficiency. On the Layer-A lab (known truth) the gap is exact.
+`history` here is the **schema-derived, EXHAUSTIVE** full-history measure — every
+field discovered from the stream, aggregated by its natural type (categorical ->
+distinct-count; numeric -> count/sum/mean/std/min/max; + generic timing). It is
+NOT a hand-picked feature set (no RFM), so an embedding cannot look sufficient by
+reproducing hand features; the true oracle (a learned sequence model over the raw
+history) bounds it from below, so the measured gap is a CONSERVATIVE estimate of
+the real insufficiency. On the Layer-A lab (known truth) the gap is exact.
 
 `U -> 1`  <=>  universal at this capacity. Worst-case (minimax), not average.
 
@@ -31,6 +34,7 @@ from pathlib import Path
 
 import numpy as np
 
+from looking_glass.cfm_config import as_of_epoch
 from looking_glass.cfm_state import load_frozen_encoder
 from looking_glass.head_battery import (
     GBM_CLF,
@@ -56,6 +60,87 @@ def _history_features(past):
         "past_vmean": past["past_vmean"].to_numpy().astype(float),
         "past_vlast": past["past_vlast"].to_numpy().astype(float),
     }
+
+
+def _full_history_features(cfg, cust):
+    """Schema-derived, EXHAUSTIVE full-history features — the ORACLE's input.
+
+    GENERIC, not hand-picked: discover EVERY field in the canonical stream and
+    aggregate it by its natural type — every categorical field -> distinct-count;
+    every numeric field -> count/sum/mean/std/min/max; plus generic timing
+    (span, recency, timestamp spread). This is the empirical measure of the full
+    history (bounded only by the fields the stream carries), so an embedding
+    cannot look sufficient merely by reproducing a hand-picked set like RFM.
+    Returns (X:(N,D) float32, names) aligned to `cust` order."""
+    import duckdb
+    import polars as pl
+
+    con = duckdb.connect()
+    con.execute("SET threads TO 8")
+    p = str(cfg.db)
+    src = f"read_parquet('{p}')" if p.endswith((".parquet", ".pq")) else cfg.table
+    tc = float(as_of_epoch(cfg.as_of))
+    keys = [str(c) for c in list(cust)]
+    if not keys:
+        return np.zeros((0, 1), dtype=np.float32), []
+    con.register("_cust", pl.DataFrame({"customer_key": keys}))
+    con.execute(
+        f"CREATE TEMP TABLE base AS SELECT e.customer_key AS ck, "
+        f"epoch(CAST(e.event_ts AS TIMESTAMPTZ)) AS t, e.event_type AS et, "
+        f"e.event_attributes AS attrs FROM {src} e "
+        f"JOIN _cust c ON e.customer_key = c.customer_key WHERE "
+        f"epoch(CAST(e.event_ts AS TIMESTAMPTZ)) <= {tc}"
+    )
+    jkeys = [
+        str(r[0])
+        for r in con.execute(
+            "SELECT DISTINCT unnest(json_keys(attrs)) FROM base WHERE attrs IS NOT NULL"
+        ).fetchall()
+    ]
+    numeric = []
+    for k in jkeys:
+        esc = k.replace("'", "''")
+        cast = f"TRY_CAST(json_extract_string(attrs,'$.{esc}') AS DOUBLE)"
+        nn, tot = con.execute(
+            f"SELECT count(*) FILTER (WHERE {cast} IS NOT NULL), "
+            f"count(json_extract_string(attrs,'$.{esc}')) FROM base"
+        ).fetchone()
+        if tot and nn / tot > 0.9:
+            numeric.append(k)
+    aggs = [
+        "count(*) AS n_events",
+        "count(DISTINCT et) AS n_etype",
+        "max(t) - min(t) AS tspan",
+        "stddev(t) AS tspread",
+        "max(t) AS tlast",
+    ]
+    cols = ["n_events", "n_etype", "tspan", "tspread", "tlast"]
+    for k in jkeys:
+        esc = k.replace("'", "''")
+        safe = "".join(ch if ch.isalnum() else "_" for ch in k)
+        aggs.append(f"count(DISTINCT json_extract_string(attrs,'$.{esc}')) AS cat_{safe}_nuniq")
+        cols.append(f"cat_{safe}_nuniq")
+    for k in numeric:
+        esc = k.replace("'", "''")
+        safe = "".join(ch if ch.isalnum() else "_" for ch in k)
+        c = f"TRY_CAST(json_extract_string(attrs,'$.{esc}') AS DOUBLE)"
+        for fn, s in (
+            ("cnt", f"count({c})"),
+            ("sum", f"sum({c})"),
+            ("mean", f"avg({c})"),
+            ("std", f"stddev({c})"),
+            ("min", f"min({c})"),
+            ("max", f"max({c})"),
+        ):
+            aggs.append(f"{s} AS num_{safe}_{fn}")
+            cols.append(f"num_{safe}_{fn}")
+    df = con.execute(f"SELECT ck, {', '.join(aggs)} FROM base GROUP BY ck").pl()
+    con.close()
+    full = pl.DataFrame({"ck": keys}).join(df, on="ck", how="left").fill_null(0.0)
+    full = full.with_columns((pl.lit(tc) - pl.col("tlast")).alias("recency"))
+    cols = cols + ["recency"]
+    X = np.column_stack([full[c].to_numpy().astype(np.float32) for c in cols])
+    return X.astype(np.float32), cols
 
 
 def _future_family(j):
@@ -195,19 +280,16 @@ def run_universality(model, cfg, horizons=(30, 90), seeds=(0, 1, 2)):
     import polars as pl
 
     cust, Z = _b_states(model, cfg)
+    # ORACLE input: the schema-derived, exhaustive full-history measure (not RFM).
+    Xhist, _hnames = _full_history_features(cfg, cust)
     rows = []
     for h in horizons:
-        fut, past, tc = _rfm_targets(cfg, h)
+        fut, _past, _tc = _rfm_targets(cfg, h)
         j = (
             pl.DataFrame({"customer": cust})
             .join(fut, left_on="customer", right_on="customer_key", how="left")
-            .join(past, left_on="customer", right_on="customer_key", how="left")
             .fill_null(0.0)
         )
-        H = _history_features(j)
-        recency = (tc - j["last_t"].to_numpy().astype(float)) / 86400.0
-        Xhist = np.column_stack([recency] + [H[k] for k in H if k != "recency"]).astype(float)
-
         for name, (yy, kind) in _future_family(j).items():
             r = _oracle_gap(Z, Xhist, yy, kind, cust, seeds=seeds)
             if r is None:
@@ -231,7 +313,7 @@ def _card(tag, rows, u, n):
     worst = max(rows, key=lambda r: r["norm_gap"]) if rows else None
     lines = [
         f"# UNIVERSALITY GATE — {tag}  [loop/UNIVERSALITY.md]",
-        f"{n} HELD-OUT (B) customers · oracle = [E, full-history proxy] · worst-case (minimax)",
+        f"{n} HELD-OUT (B) customers · oracle = [E, exhaustive full-history measure] · worst-case (minimax)",
         "",
         f"## U (universality index) = {u:.4f}   (1.0 = universal)",
     ]
@@ -252,8 +334,9 @@ def _card(tag, rows, u, n):
         )
     lines.append("")
     lines.append(
-        "> gap = score([E,history]) - score(E): what the full-history proxy adds beyond E "
-        "(0 => E sufficient w.r.t. it). Conservative (proxy oracle; true sequence oracle is higher)."
+        "> gap = score([E,history]) - score(E): what the EXHAUSTIVE full-history measure adds "
+        "beyond E (0 => E sufficient w.r.t. it). NOT hand-RFM; conservative (true sequence "
+        "oracle is higher)."
     )
     return "\n".join(lines) + "\n", u
 

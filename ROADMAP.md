@@ -60,7 +60,8 @@ unlogged events carried as uncertainty.
   sufficient 0.00 · magnitude-dropped 0.65 · over-capacity 0.00. Remaining: repeat on a generated
   ladder stream with *trained* lossy/sufficient encoders (Rung 1/2).
 - **U3. Adversarial family** — a growing task-search adversary that finds where `E` loses most
-  (worst-case objective).
+  (worst-case objective). Also (DEC-124): the oracle is now the **exhaustive, schema-derived
+  full-history measure** (no hand-RFM); refine next to a learned **sequence-model** oracle.
 - **U4. Accessibility + similarity gates** — probe-parity on the held-out family; kNN
   label-transfer (lookalike/segmentation usability) — separate from sufficiency.
 - **U5. Close the gap with the architecture** — the shape×measure decomposition (contractive

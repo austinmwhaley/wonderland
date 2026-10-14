@@ -2698,3 +2698,30 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - **Trade-offs:** none material; principles are a frame, not code. Cites the *Robust* and
   *Honest* principles (axis diagnostics must be ground-truth-gated).
 - **Gate:** green (docs only).
+
+## DEC-124 — Metric oracle FIXED: replace hand-RFM with an exhaustive, schema-derived full-history measure
+
+- **Date:** 2026-10-14
+- **Problem (Honest principle):** the `U` gate's oracle was a **hand-picked RFM+clock+past-value**
+  feature set, so an embedding could look "sufficient" merely by reproducing hand features — a
+  false green that rewards exactly the hand-coding we forbid.
+- **Fix:** `_full_history_features(cfg, cust)` in `looking_glass/universality.py` — the oracle's
+  input is now the **schema-derived, EXHAUSTIVE full-history measure**: discover *every* field in
+  the stream (JSON attribute keys + `event_type`) and aggregate it by its natural type
+  (categorical → distinct-count; numeric → count/sum/mean/std/min/max) plus generic timing
+  (span, timestamp spread, recency). No RFM, no hand-picked windows, no domain literals.
+- **Measured (Rung-0, instacart `v6.4.0r767243`, 1181 held-out B, horizon 30, seed 0):**
+  history-alone R² jumps to **0.64–0.68** (vs RFM's 0.29–0.39) — the oracle is materially
+  stronger. **U = 0.1697** (was 0.1796 with the RFM oracle); E-alone R² 0.07–0.13 vs oracle
+  0.57–0.61. Worst case unchanged: the **mass axis** (`next-order value`, norm_gap 0.83).
+- **Observation to investigate (not yet explained):** `propensity`/`churn` history-alone AUC =
+  **1.000** — the exhaustive past features *perfectly* separate the next-30d order label on this
+  fixture. Either the fixture is near-deterministic past→future, or a subtle leak. Logged for the
+  next iteration; it bounds `U` on that target (a *data* property, honestly measured).
+- **Caveats:** still a **feature-based** oracle (bounds the true sequence oracle from below ⇒ the
+  gap is conservative in E's favour). The full fix is a **learned sequence model over the raw
+  history** (order-aware) — the next refinement.
+- **Principles served:** *Honest* (won't certify on hand-feature mimicry), *Universal* +
+  *Adaptive* (fields discovered from data, no schema assumptions), *Diagnosable* (the oracle
+  strengthens a specific instrument).
+- **Gate:** green (279 passed; ruff clean).

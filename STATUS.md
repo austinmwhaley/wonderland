@@ -222,6 +222,9 @@ invariant-by-construction).
   recurrence.
   Next: attack the mass axis via the objective (predict FUTURE aggregates), then U3-adversary →
   accessibility/similarity gates (U4).
+  **Oracle fix (DEC-124):** the `U` oracle is now the **exhaustive, schema-derived full-history
+  measure** (no hand-RFM); history-alone R² 0.64–0.68 (was 0.29–0.39), U = 0.1697. Next refine:
+  a learned **sequence-model** oracle (order-aware).
 
 - **Versioning scheme (DEC-058):** versions are now pre-1.0 semver
   `MAJOR.MINOR.PATCH` (`0.6.4`); tag = `<version>r<revision>` (`0.6.4r162610`).
