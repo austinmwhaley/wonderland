@@ -154,16 +154,15 @@ def _history_features(past):
     }
 
 
-def _full_history_features(cfg, cust):
+def _full_history_features(cfg, cust, only_keys=None):
     """Schema-derived, EXHAUSTIVE full-history features — the ORACLE's input.
 
     GENERIC, not hand-picked: discover EVERY field in the canonical stream and
     aggregate it by its natural type — every categorical field -> distinct-count;
-    every numeric field -> count/sum/mean/std/min/max; plus generic timing
-    (span, recency, timestamp spread). This is the empirical measure of the full
-    history (bounded only by the fields the stream carries), so an embedding
-    cannot look sufficient merely by reproducing a hand-picked set like RFM.
-    Returns (X:(N,D) float32, names) aligned to `cust` order."""
+    every numeric field -> count/sum/mean/std/min/max; plus generic timing.
+    `only_keys` (optional) RESTRICTS the JSON keys to a subset — used to test
+    whether the mass gap is a field-consumption gap (oracle restricted to the
+    fields the encoder consumes). Returns (X:(N,D) float32, names)."""
     import duckdb
     import polars as pl
 
@@ -189,6 +188,9 @@ def _full_history_features(cfg, cust):
             "SELECT DISTINCT unnest(json_keys(attrs)) FROM base WHERE attrs IS NOT NULL"
         ).fetchall()
     ]
+    if only_keys is not None:
+        allow = {str(k) for k in only_keys}
+        jkeys = [k for k in jkeys if k in allow]
     numeric = []
     for k in jkeys:
         esc = k.replace("'", "''")
@@ -400,7 +402,9 @@ def synthetic_machinery_check(seed=0, n=4000, kind="reg", seeds=(0, 1, 2)):
     return out
 
 
-def run_universality(model, cfg, horizons=(30, 90), seeds=(0, 1, 2), use_seq=True):
+def run_universality(
+    model, cfg, horizons=(30, 90), seeds=(0, 1, 2), use_seq=True, oracle_keys=None
+):
     import polars as pl
 
     seqs = _b_sequences(cfg)  # raw held-out histories (for E and the sequence oracle)
@@ -416,7 +420,7 @@ def run_universality(model, cfg, horizons=(30, 90), seeds=(0, 1, 2), use_seq=Tru
     dev = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     seq_arg = seqs if use_seq else None
     # ORACLE input: the schema-derived, exhaustive full-history measure (not RFM).
-    Xhist, _hnames = _full_history_features(cfg, cust)
+    Xhist, _hnames = _full_history_features(cfg, cust, only_keys=oracle_keys)
     rows = []
     for h in horizons:
         fut, _past, _tc = _rfm_targets(cfg, h)
@@ -532,6 +536,12 @@ def main(argv=None):
         help="expose the generic, exhaustive additive measure in E (DEC-132 option B)",
     )
     ap.add_argument(
+        "--oracle-keys",
+        default="",
+        dest="oracle_keys",
+        help="comma list: RESTRICT the oracle to these JSON keys (test the field-consumption gap)",
+    )
+    ap.add_argument(
         "--synthetic",
         action="store_true",
         help="ground-truth machinery check (known sufficient statistic; no checkpoint)",
@@ -567,7 +577,10 @@ def main(argv=None):
         cfg.seq_len = int(a.seq_len)  # test whether the bounded window truncates history
     horizons = tuple(int(x) for x in a.horizons.split(","))
     seeds = tuple(int(x) for x in a.seeds.split(","))
-    rows, u, n, solved = run_universality(model, cfg, horizons, seeds, use_seq=not a.no_seq)
+    oracle_keys = [k for k in a.oracle_keys.split(",") if k] or None
+    rows, u, n, solved = run_universality(
+        model, cfg, horizons, seeds, use_seq=not a.no_seq, oracle_keys=oracle_keys
+    )
     card, u, solved = _card(a.tag, rows, u, n, solved)
     print(card)
     if a.out:

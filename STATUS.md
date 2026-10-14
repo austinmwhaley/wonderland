@@ -257,6 +257,9 @@ invariant-by-construction).
   **Loop iter 7 (DEC-134):** consuming aisle/department/entity_id does **NOT** help (U 0.101 vs
   0.123). The mass gap is **robust** (not truncation, not fields, not learnable measure, not gate
   init). Next: the **all-fields universal tokenizer** (axis 1).
+  **Loop iter 8 (DEC-135):** restricted-oracle test decomposes the gap — **fields ≈ ⅓** (LTV gap
+  0.497→0.313), **structural ≈ ⅔** (compact learned repr vs exhaustive aggregates). Next: build the
+  all-fields universal tokenizer (captures the field third; on the goal's critical path).
 
 - **Versioning scheme (DEC-058):** versions are now pre-1.0 semver
   `MAJOR.MINOR.PATCH` (`0.6.4`); tag = `<version>r<revision>` (`0.6.4r162610`).

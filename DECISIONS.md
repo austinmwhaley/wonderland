@@ -2954,3 +2954,21 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - **Principles served:** *Universal/Adaptive* (schema-agnostic consumption), *Diagnosable*,
   *Honest* (null recorded).
 - **Gate:** green.
+
+## DEC-135 — Loop iter 8: field-consumption explains ~⅓ of the mass gap; the rest is structural
+
+- **Date:** 2026-10-14
+- **Test (decisive, Rung-0):** restrict the ORACLE to only the fields the encoder consumes
+  (`--oracle-keys value,brand,entity_type`; event_type + timing always included). If the gap
+  collapses, it's a field gap; if not, it's structural.
+- **Measured (Rung-0, instacart, 1181 B, horizon 30, seed 0, `--no-seq-oracle`):**
+  - full oracle: **U = 0.1629**, worst case LTV (gap **0.497**)
+  - oracle restricted to E's fields: **U = 0.2226**, worst case `order_count` (gap **0.313**)
+  ⇒ the **field-consumption gap accounts for ~⅓** of the mass gap (LTV 0.497 → 0.313); a
+  **substantial structural gap (~0.31) remains** even when the oracle uses only E's fields.
+- **Read:** two additive causes: (1) E ignores ~18 stream fields the oracle uses (~⅓ of the gap);
+  (2) even on matched fields, E-alone falls well short of a full-history aggregate oracle
+  (~⅔) — the "compact learned representation vs exhaustive aggregate" limit. (1) is fixable by
+  the all-fields **universal tokenizer** (axis 1).
+- **Principles served:** *Diagnosable* (decomposed the gap), *Universal/Adaptive*.
+- **Gate:** green.
