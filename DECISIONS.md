@@ -2472,3 +2472,15 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   **0.238** (the honest DEC-088 value). Gate green (277 tests).
 - **Remaining ecommerce-B blockers:** channel-MI excess 0.238 (>0.20) and UNCERTAIN
   next/occur/value/outcome.
+
+## DEC-114 — Decorrelation/rank objectives COLLAPSE the ecommerce encoder (dead end)
+
+- **Date:** 2026-10-14
+- **Tried:** retrain ecommerce with `decorr` + `rank` (SR rank pressure) added to the objective set,
+  the current self-organization arch. Result: `eff_rank 1.30` (COLLAPSE; redundancy 0.667), and
+  **channel-MI excess 1.05** (far worse than v64's 0.238). next UNCERTAIN; outcome-sufficiency FAIL.
+- **Read:** the ecommerce stream is low-capacity; adding rank/decorr pressure collapses it rather
+  than decorrelating it. ecommerce B's channel-MI (0.238) is a genuine capacity-limited property,
+  not a tunable defect. (Matches DEC-088: the `decorr` objective does not lower it.)
+- **ecommerce-B blockers remain:** channel-MI excess 0.238 (>0.20) + UNCERTAIN next (dead tie).
+- Gate green (277 tests).
