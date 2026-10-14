@@ -3107,3 +3107,17 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   aggregate measure (the real Layer-B object), and re-certify; then the other axes.
 - **Principles served:** *Efficient*, *Universal*, *Honest* (leakage removed).
 - **Gate:** green.
+
+## DEC-143 — Loop iter 15: minimality result is ROBUST to the independent sequence oracle
+
+- **Date:** 2026-10-14
+- **What:** re-ran `--measure-dim 64` **with** the GRU sequence oracle (independent, order-aware
+  ceiling; not the feature oracle alone).
+- **Measured (Rung-0, 1181 B, horizon 30, seed 0):** **U = 0.8998**, worst member LTV (gap 0.0686
+  vs noise 0.0651 — just above the SOLVED threshold). So the ~64-dim measure is near-sufficient
+  **even against the stronger, independent oracle** — the DEC-142 positive result holds.
+- **Read:** the compression claim is not an artifact of the feature oracle. `E = [learned shape ‖
+  ~64-dim measure]` is near-sufficient at ~64 dims; a few more dims (or better compression) would
+  cross SOLVED.
+- **Principles served:** *Honest* (robustness check), *Diagnosable*.
+- **Gate:** green.
