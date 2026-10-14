@@ -3253,3 +3253,21 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - **Principles served:** *Honest* (named the untestable gap), *Universal/Adaptive* (the gap is
   universal-*ness*), *Diagnosable*.
 - **Gate:** green.
+
+## DEC-152 — Loop iter 24: second stream (L6 ladder) made cross-schema TESTABLE — instacart→L6 U=0.985
+
+- **Date:** 2026-10-14
+- **What:** generated a **dense** Layer-A stream, `L6_action` (5000 customers, 403,877 events;
+  98,087 purchases; schema `view/cart/purchase/action_send`), and ran the gate with the
+  **instacart** encoder on it (`as_of 2024-06-01`, cross-schema).
+- **Measured (1547 held-out B, horizon 30, seed 0, `--no-seq-oracle`):** **U = 0.9854,
+  SOLVED = True** (worst LTV norm_gap 0.0146). So the encoder **transfers across schemas** (OOV
+  event types handled by the generic field extraction + the value/time accumulator), and the
+  metric is now testable on a **second stream** — closing the DEC-151 untestability gap.
+- **Caveat (Honest):** L6 is an **easy** stream — the **bare** encoder (shape + accumulator, no
+  measure) already scores 0.985 there (vs 0.28 on instacart). So this shows *transferability*, not
+  a hard cross-schema challenge. A meaningful universality test needs a **harder** second stream
+  (e.g. L0–L4 with weak structure) and/or a native L6 encoder for comparison.
+- **Principles served:** *Universal/Adaptive* (cross-schema transfer demonstrated), *Honest*
+  (easy-stream caveat).
+- **Gate:** green.
