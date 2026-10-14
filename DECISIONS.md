@@ -3172,3 +3172,19 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   as_of, e.g. within the stream's event range minus the horizon).
 - **Principles served:** *Honest* (false-perfect removed; void result corrected), *Diagnosable*.
 - **Gate:** green.
+
+## DEC-147 — Loop iter 19: CORRECTION — rh window is NOT empty; at-chance oracle is sparse targets
+
+- **Date:** 2026-10-14
+- **Correction to DEC-146:** the rabbit_hole stream spans **2024-01-02 … 2025-12-31**, so
+  `as_of 2025-06-01` (horizon 30d) has a **non-empty** forward window. The oracle scoring at/below
+  chance on rabbit_hole is therefore a **sparse-target / sample** property (few future purchases in
+  the sampled held-out B at 4000 customers), **not** an empty window. The mechanism-level fix in
+  DEC-146 (mask near-chance members; `U=0` when none informative) **stands and is correct**; the
+  *cause* is corrected here.
+- **Implication:** rabbit_hole needs a **larger sample** (or a longer horizon) for the gate to have
+  informative members; `loop/status.sh` should use a sample/param where the oracle carries signal,
+  or the gate must be run at ≥ the population the B card uses. Instacart (`as_of 2025-10-01`) is
+  unaffected (all members informative).
+- **Principles served:** *Honest* (corrected the cause), *Diagnosable*.
+- **Gate:** green.
