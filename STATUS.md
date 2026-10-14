@@ -229,6 +229,9 @@ invariant-by-construction).
   green); loop predicate rewired. **PLAYBOOK (DEC-127):** hypothesis queue + guardrails + axis
   contract; gate prints BOTTLENECK AXIS. **Loop iter 1 (DEC-128):** nonlinear-drive learned ledger
   FAILS (U 0.035 vs shape-only 0.066, accumulator 0.217) — 3rd learned-measure negative; reverted.
+  **Loop iter 2 (DEC-129):** future-aggregate objective FAILS too (U 0.012) — **4 learned-measure
+  negatives**; pivoting to build a learned **sequence-model oracle** (non-degenerate ceiling) before
+  re-evaluating the state axis.
 
 - **Versioning scheme (DEC-058):** versions are now pre-1.0 semver
   `MAJOR.MINOR.PATCH` (`0.6.4`); tag = `<version>r<revision>` (`0.6.4r162610`).

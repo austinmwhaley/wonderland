@@ -2816,3 +2816,30 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - **Principles served:** *Honest* (recorded the negative, reverted), *Diagnosable* (axis = state),
   *Efficient* (did not keep a losing pathway), *Robust* (matched control).
 - **Gate:** green (279 passed; reverted cleanly).
+
+## DEC-129 — Loop iter 2 (state axis): future-aggregate objective FAILS too (4th learned-measure negative)
+
+- **Date:** 2026-10-14
+- **Hypothesis (PLAYBOOK queue #1, last learned attempt):** DEC-128's ledger used the *running-total*
+  target (near-identity). Fix: a **measure-targeted** objective — train the measure readout to
+  predict the **FUTURE** aggregate over a derived window (`ledger_target=future`). Same nonlinear
+  drive; one variable vs DEC-128.
+- **Measured (Rung-1 tiny, instacart, 618 held-out B, horizon 30, seed 0):**
+  - nonlinear drive + future-aggregate: **U = 0.0118**
+  - (DEC-128) nonlinear + running: 0.0348 · (DEC-120) linear + running: 0.0470
+  - shape-only: 0.0660 · accumulator (explicit): 0.2174
+  ⇒ **worse again.** Every learned-measure variant lands **at or below shape-only**; the learned
+  measure *hurts*. Reverted (dead end).
+- **Conclusion (4 negatives — linear ledger, `psr`, nonlinear ledger, future-aggregate):** the
+  extensive axis is **not recovered by a learned additive memory over token embeddings** at Rung-1.
+  The explicit accumulator remains the only thing that helps.
+- **Strategic decision (agent, within the principles):**
+  1. **Stop repeating learned-measure variants** (Diagnosable: 4 matched controls agree).
+  2. **Build the learned SEQUENCE-MODEL oracle next** — the deferred item is now on the critical
+     path: (a) the current gate's oracle is the *same* exhaustive measure we might otherwise expose
+     in `E`, so exposing aggregates would be **self-referential/degenerate** (Honest forbids); a
+     stronger, independent sequence oracle makes the ceiling non-degenerate and re-anchors "SOLVED".
+  3. Then re-evaluate the state axis against that honest ceiling.
+- **Principles served:** *Honest* (refused the self-referential shortcut), *Diagnosable* (axis +
+  4 matched controls), *Efficient* (stopped repeating), *Robust*.
+- **Gate:** green (279 passed; reverted cleanly).
