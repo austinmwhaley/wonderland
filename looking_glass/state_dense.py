@@ -48,6 +48,7 @@ def build(cadence="weekly", max_customers=8000):
         readout_scale=bool(blob.get("readout_scale", False)),
         prod_dim=int(blob.get("prod_embed_dim", 0)),
         stats_pathway=bool(blob.get("stats_pathway", False)),
+        continuous_time=bool(blob.get("continuous_time", False)),
     )
     model.load_state_dict(blob["state"])
     if blob.get("whiten_W") is not None:

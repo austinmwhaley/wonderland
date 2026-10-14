@@ -210,8 +210,10 @@ class SelectiveSSM(nn.Module):
         event_residual=False,
         readout_scale=False,
         stats_pathway=False,
+        continuous_time=False,
     ):
         super().__init__()
+        self.continuous_time = bool(continuous_time)
         # D (v8, "carry everything"): a long-memory STATISTICS pathway — an EMA
         # accumulator of the input drive whose decay is learned (init long) so it
         # integrates the customer's running aggregate (RFM-like), added to the
@@ -339,7 +341,7 @@ class SelectiveSSM(nn.Module):
         # CONTINUOUS-TIME (v8): scale the per-channel decay by the ELAPSED TIME
         # between events, so a channel's memory is in TIME units (irregular streams).
         # decay = exp(-delta * dt_days); dt is log1p(seconds) -> days.
-        if dt is not None:
+        if dt is not None and self.continuous_time:
             dt_days = torch.expm1(dt) / 86400.0  # (B,T,1)
             decay = torch.exp(-delta * dt_days)
         else:
@@ -510,6 +512,7 @@ class MultiScaleSSM(nn.Module):
         event_residual=False,
         readout_scale=False,
         stats_pathway=False,
+        continuous_time=False,
     ):
         super().__init__()
         if delta_spectrum:
@@ -530,6 +533,7 @@ class MultiScaleSSM(nn.Module):
                         event_residual=event_residual,
                         readout_scale=readout_scale,
                         stats_pathway=stats_pathway,
+                        continuous_time=continuous_time,
                     )
                 ]
             )
@@ -548,6 +552,7 @@ class MultiScaleSSM(nn.Module):
                     event_residual=event_residual,
                     readout_scale=readout_scale,
                     stats_pathway=stats_pathway,
+                    continuous_time=continuous_time,
                 )
                 for b in delta_biases[:n_experts]
             ]
@@ -600,6 +605,7 @@ class CFM(nn.Module):
         readout_scale: bool = False,
         prod_dim: int = 0,
         stats_pathway: bool = False,
+        continuous_time: bool = False,
     ):
         super().__init__()
         self.vocab = vocab
@@ -617,6 +623,7 @@ class CFM(nn.Module):
         self.register_buffer("prod_vec_table", torch.zeros(vocab.n_eid + 1, int(prod_dim)))
         self.readout_scale_on = bool(readout_scale)
         self.stats_pathway_on = bool(stats_pathway)
+        self.continuous_time_on = bool(continuous_time)
         if self.isometric_boundary:
             self.iso_skew = nn.Parameter(torch.zeros(dim, dim))
             # conservation scale: Tr(Sigma_readout) is held to the input band
@@ -666,6 +673,7 @@ class CFM(nn.Module):
             event_residual=self.event_residual_on,
             readout_scale=self.readout_scale_on,
             stats_pathway=self.stats_pathway_on,
+            continuous_time=self.continuous_time_on,
         )
         self.head_next = nn.Linear(dim, vocab.n_et + 1)  # next event type
         # DEC-049: `query` predicts the next event from a FADED state (little

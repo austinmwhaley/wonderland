@@ -261,6 +261,8 @@ class CFMConfig:
     readout_scale: bool = False
     # D: long-memory statistics pathway (EMA accumulator added to the readout).
     stats_pathway: bool = False
+    # continuous-time dt-scaled decay (opt-in; must match the checkpoint)
+    continuous_time: bool = False
     # v6.9 (DEC-055): dedicated event-identity residual in the readout
     # z_t = RMSNorm(W_C H_t + skip(x_t) + W_e·emb(e_t) + W_ep·emb(e_{t-1})).
     # Adds a CLEAN, linearly-usable event path (the generic token skip mixes

@@ -158,6 +158,7 @@ def train_cfm(cfg: CFMConfig):
         readout_scale=getattr(cfg, "readout_scale", False),
         prod_dim=(getattr(cfg, "prod_embed_dim", 0) if getattr(cfg, "prod_embed_path", "") else 0),
         stats_pathway=getattr(cfg, "stats_pathway", False),
+        continuous_time=getattr(cfg, "continuous_time", False),
     ).to(device)
     # v4.0: differentiable ZCA in the forward during training (gradients shape the
     # consumed isotropy); off at eval/save so the frozen transform is used.
@@ -567,6 +568,7 @@ def train_cfm(cfg: CFMConfig):
             "entity_id_embed": bool(getattr(cfg, "entity_id_embed", False)),
             "readout_scale": bool(getattr(cfg, "readout_scale", False)),
             "stats_pathway": bool(getattr(cfg, "stats_pathway", False)),
+            "continuous_time": bool(getattr(cfg, "continuous_time", False)),
             "prod_embed_dim": int(getattr(cfg, "prod_embed_dim", 0))
             if getattr(cfg, "prod_embed_path", "")
             else 0,
