@@ -2725,3 +2725,21 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   *Adaptive* (fields discovered from data, no schema assumptions), *Diagnosable* (the oracle
   strengthens a specific instrument).
 - **Gate:** green (279 passed; ruff clean).
+
+## DEC-125 — Leak check: the perfect oracle AUC is a DATA property, not leakage
+
+- **Date:** 2026-10-14
+- **Why (Honest/Robust):** DEC-124 flagged `propensity`/`churn` history-alone AUC = 1.000 with the
+  new exhaustive oracle — a correctness worry (leak or near-determinism) that had to be settled
+  before the metric can be trusted.
+- **Checked (instacart, as_of 2025-10-01):** the oracle's `base` table is strictly past —
+  `base_max == tc == 1759276800` and `future_min == tc + 3600s` (**boundaries clean**). Label is
+  balanced (48% future orders). No single feature is perfect (`recency` AUC 0.874, `past_freq`
+  0.593); it takes the *whole* exhaustive feature set to reach 1.0.
+- **Verdict:** **not leakage** — a data/feature property (the fixture's past nearly determines the
+  next-30d order). The metric stands: with a near-deterministic target, a truly sufficient `E`
+  *should* also reach 1.0; `E` at 0.79 is a genuine gap, not an artifact.
+- **Instrument status:** oracle temporal-correctness verified; remaining refinement = a learned
+  **sequence-model** oracle (order-aware) to raise the ceiling from "exhaustive aggregates."
+- **Principles served:** *Honest* (trustworthy instrument), *Robust* (ruled out a silent leak).
+- **Gate:** green (docs only).
