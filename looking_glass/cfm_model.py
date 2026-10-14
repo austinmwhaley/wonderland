@@ -1005,6 +1005,17 @@ class CFM(nn.Module):
         for k in (0.3, 1.0, 3.0, 10.0):  # wider half-life spectrum
             w = (0.5 ** (age / (hl * k * 86400.0)) * t["mask"]).unsqueeze(-1)
             feats.append((tok * w).sum(1))
+        # RAW universal TOTALS (exact, not a learned projection): value & time sums.
+        # These are schema-agnostic aggregates of the stream's numeric channels.
+        m = t["mask"]
+        val = torch.log1p(t["val"].abs().squeeze(-1))  # (B,T)
+        gap = torch.expm1(t["dt"]).squeeze(-1)
+        feats += [
+            (val * m).sum(1, keepdim=True),
+            (gap * m).sum(1, keepdim=True),
+            (val * m).mean(1, keepdim=True),
+            (gap * m).mean(1, keepdim=True),
+        ]
         return torch.cat(feats, dim=-1)
 
     def donor_batch(self, h: "torch.Tensor") -> "torch.Tensor":

@@ -2366,3 +2366,25 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   a LEARNED projection (head must invert it).
 - **Read:** the ROOT CAUSE is confirmed and materially addressed. Sufficiency is a matter of degree,
   and we're now ~half-way. Gate green (277 tests).
+
+## DEC-109 — Raw universal totals in the accumulator: LTV 0.20 vs raw 0.36 (gap ~half)
+
+- **Date:** 2026-10-13
+- **Added:** exact RAW universal totals to the accumulator (sum & mean of `log1p|value|` and of the
+  inter-event gap) — schema-agnostic aggregates, not the learned projection. Diagnostic showed the
+  learned-token sums alone reach 0.158; adding exact value/time totals pushes further.
+- **Sufficiency gate (instacart, no retrain):**
+  ```
+  target        raw     base   +acc(sum/mean)  +recency  +raw totals
+  LTV           0.362   0.052  0.11            0.18      0.204
+  churn         0.923   0.727  0.79            0.78      0.820
+  order_count   0.379   0.057  0.12            0.18      0.216
+  next_value    0.405   0.159  0.23            0.24      0.256
+  ```
+  LTV ~4x, churn +0.09; the gap is now ~HALF (LTV +0.31 -> +0.16). Still SUFFICIENT 0/5.
+- **Diagnostic (DEC-108 cont.):** the donor (contractive state) contributes only ~0.03 over the
+  accumulator for LTV; the accumulator is the workhorse. Linear is bad (nonlinear readout).
+- **Residual (~1.8x):** the raw baseline uses EXACT recent-30/90-day windows; the accumulator uses
+  a derived half-life spectrum + totals. Exact-window matching would reproduce RFM (hand-feeding),
+  which is off-path. The honest target is APPROXIMATE sufficiency + sequence structure.
+- **Read:** the ROOT CAUSE is confirmed and the fix closes ~half the gap. Gate green (277 tests).
