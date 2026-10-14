@@ -95,10 +95,104 @@ def _normalized_gap(donor, e_alone, kind, eps=1e-9):
     return float(gap), norm
 
 
-def run_universality(model, cfg, horizons=(30, 90), seeds=(0, 1, 2)):
-    import polars as pl
+def _oracle_gap(Z, Xhist, yy, kind, cust, seeds=(0, 1, 2), eps=1e-9):
+    """Mean oracle-gap over held-out folds for one target.
+
+    E-alone = model on E; history-alone = model on the history proxy; oracle
+    [E,history] = model on both. gap = oracle - E-alone (what history adds beyond
+    E), normalized to the oracle's own range. Returns (e_alone, hist_alone,
+    oracle, gap, norm) means, or None if no usable fold.
+    """
     from sklearn.ensemble import HistGradientBoostingClassifier, HistGradientBoostingRegressor
     from sklearn.preprocessing import StandardScaler
+
+    Cls = HistGradientBoostingClassifier if kind == "clf" else HistGradientBoostingRegressor
+    Conf = GBM_CLF if kind == "clf" else GBM_REG
+    e_al, raw_al, don_al, gaps, norms = [], [], [], [], []
+    for seed in seeds:
+        fold = np.zeros(len(cust), dtype=int)
+        for fi, f in enumerate(_folds(cust, seed=seed)):
+            fold[np.isin(cust, f)] = fi
+        for fi in range(5):
+            tr, va = fold != fi, fold == fi
+            if (
+                not tr.any()
+                or not va.any()
+                or (kind == "clf" and (len(set(yy[tr])) < 2 or len(set(yy[va])) < 2))
+            ):
+                continue
+            Ztr, Zva = StandardScaler().fit(Z[tr]).transform(Z[tr]), None
+            scZ = StandardScaler().fit(Z[tr])
+            Ztr, Zva = scZ.transform(Z[tr]), scZ.transform(Z[va])
+            scH = StandardScaler().fit(Xhist[tr])
+            Htr, Hva = scH.transform(Xhist[tr]), scH.transform(Xhist[va])
+            Etra, Etva = np.hstack([Ztr, Htr]), np.hstack([Zva, Hva])  # oracle = [E, history]
+            hE = Cls(**Conf).fit(Ztr, yy[tr])
+            hH = Cls(**Conf).fit(Htr, yy[tr])
+            hEH = Cls(**Conf).fit(Etra, yy[tr])
+            if kind == "clf":
+                se = hE.predict_proba(Zva)[:, 1]
+                sh = hH.predict_proba(Hva)[:, 1]
+                shh = hEH.predict_proba(Etva)[:, 1]
+            else:
+                se = hE.predict(Zva)
+                sh = hH.predict(Hva)
+                shh = hEH.predict(Etva)
+            ya = yy[va]
+            onE, onH, onEH = _score(kind, ya, se), _score(kind, ya, sh), _score(kind, ya, shh)
+            if onE is None or onH is None or onEH is None:
+                continue
+            g, nrm = _normalized_gap(onEH, onE, kind, eps=eps)
+            gaps.append(g)
+            norms.append(nrm)
+            e_al.append(onE)
+            raw_al.append(onH)
+            don_al.append(onEH)
+    if not norms:
+        return None
+    return (
+        float(np.mean(e_al)),
+        float(np.mean(raw_al)),
+        float(np.mean(don_al)),
+        float(np.mean(gaps)),
+        float(np.mean(norms)),
+    )
+
+
+def synthetic_machinery_check(seed=0, n=4000, kind="reg", seeds=(0, 1, 2)):
+    """Ground-truth verification of the oracle-gap / U machinery.
+
+    A KNOWN sufficient statistic S* = [direction S, log-magnitude], a future
+    target that IS a function of both, and a history proxy that carries the
+    magnitude. Then, by construction:
+      * E = S*            (sufficient)      -> history adds nothing  -> U ~ 1
+      * E = direction only (lossy)           -> history adds magnitude -> U < 1
+      * E = [S*, noise]   (over-capacity)    -> no improvement       -> U ~ U(sufficient)
+    Verifies the metric separates lossy from sufficient and SATURATES on extra
+    capacity (no false reward for more dims)."""
+    rng = np.random.default_rng(seed)
+    S = rng.normal(size=(n, 3))
+    logmag = rng.normal(0.0, 1.0, size=n)  # the extensive axis (unbounded, additive)
+    direction = S / np.linalg.norm(S, axis=1, keepdims=True)
+    cust = np.array([f"c{i:07d}" for i in range(n)])
+    # target depends on the DIRECTION (in E) AND the log-magnitude (in history):
+    y = 2.0 * direction[:, 0] + 1.5 * logmag + rng.normal(0.0, 0.3, size=n)
+    Xhist = np.column_stack([logmag, rng.normal(size=(n, 4))])  # history proxy carries magnitude
+    reps = {
+        "sufficient [S, logmag]": np.column_stack([S, logmag]),
+        "lossy [direction]": direction,
+        "over [S, logmag, noise]": np.column_stack([S, logmag, rng.normal(size=(n, 8))]),
+    }
+    out = {}
+    for name, Z in reps.items():
+        r = _oracle_gap(Z, Xhist, y, kind, cust, seeds=seeds)
+        if r is not None:
+            out[name] = {"norm_gap": round(r[4], 4), "gap": round(r[3], 4)}
+    return out
+
+
+def run_universality(model, cfg, horizons=(30, 90), seeds=(0, 1, 2)):
+    import polars as pl
 
     cust, Z = _b_states(model, cfg)
     rows = []
@@ -115,66 +209,18 @@ def run_universality(model, cfg, horizons=(30, 90), seeds=(0, 1, 2)):
         Xhist = np.column_stack([recency] + [H[k] for k in H if k != "recency"]).astype(float)
 
         for name, (yy, kind) in _future_family(j).items():
-            gaps, norms, e_al, raw_al, don_al = [], [], [], [], []
-            for seed in seeds:
-                fold = np.zeros(len(cust), dtype=int)
-                for fi, f in enumerate(_folds(cust, seed=seed)):
-                    fold[np.isin(cust, f)] = fi
-                for fi in range(5):
-                    tr, va = fold != fi, fold == fi
-                    if (
-                        not tr.any()
-                        or not va.any()
-                        or (kind == "clf" and (len(set(yy[tr])) < 2 or len(set(yy[va])) < 2))
-                    ):
-                        continue
-                    scZ = StandardScaler().fit(Z[tr])
-                    scH = StandardScaler().fit(Xhist[tr])
-                    Ztr, Zva = scZ.transform(Z[tr]), scZ.transform(Z[va])
-                    Htr, Hva = scH.transform(Xhist[tr]), scH.transform(Xhist[va])
-                    Etra, Etva = (
-                        np.hstack([Ztr, Htr]),
-                        np.hstack([Zva, Hva]),
-                    )  # oracle = [E, history]
-                    if kind == "clf":
-                        Cls = HistGradientBoostingClassifier
-                        Conf = GBM_CLF
-                    else:
-                        Cls = HistGradientBoostingRegressor
-                        Conf = GBM_REG
-                    hE = Cls(**Conf).fit(Ztr, yy[tr])
-                    hH = Cls(**Conf).fit(Htr, yy[tr])
-                    hEH = Cls(**Conf).fit(Etra, yy[tr])
-                    if kind == "clf":
-                        se = hE.predict_proba(Zva)[:, 1]
-                        sh = hH.predict_proba(Hva)[:, 1]
-                        shh = hEH.predict_proba(Etva)[:, 1]
-                    else:
-                        se = hE.predict(Zva)
-                        sh = hH.predict(Hva)
-                        shh = hEH.predict(Etva)
-                    ya = yy[va]
-                    onE = _score(kind, ya, se)
-                    onH = _score(kind, ya, sh)
-                    onEH = _score(kind, ya, shh)
-                    if onE is None or onH is None or onEH is None:
-                        continue
-                    g, nrm = _normalized_gap(onEH, onE, kind)
-                    gaps.append(g)
-                    norms.append(nrm)
-                    e_al.append(onE)
-                    raw_al.append(onH)
-                    don_al.append(onEH)
-            if not norms:
+            r = _oracle_gap(Z, Xhist, yy, kind, cust, seeds=seeds)
+            if r is None:
                 continue
+            e_al, raw_al, don_al, gap, norm = r
             rows.append(
                 {
                     "target": f"{name} @ {h}d",
-                    "E_alone": round(float(np.mean(e_al)), 4),
-                    "history_alone": round(float(np.mean(raw_al)), 4),
-                    "oracle [E,hist]": round(float(np.mean(don_al)), 4),
-                    "gap (hist adds)": round(float(np.mean(gaps)), 4),
-                    "norm_gap": round(float(np.mean(norms)), 4),
+                    "E_alone": round(e_al, 4),
+                    "history_alone": round(raw_al, 4),
+                    "oracle [E,hist]": round(don_al, 4),
+                    "gap (hist adds)": round(gap, 4),
+                    "norm_gap": round(norm, 4),
                 }
             )
     u = 1.0 - max((r["norm_gap"] for r in rows), default=0.0)
@@ -214,15 +260,28 @@ def _card(tag, rows, u, n):
 
 def main(argv=None):
     ap = argparse.ArgumentParser()
-    ap.add_argument("--db", required=True)
-    ap.add_argument("--as-of", required=True, dest="as_of")
-    ap.add_argument("--ckpt-dir", required=True, dest="ckpt_dir")
-    ap.add_argument("--tag", required=True)
+    ap.add_argument("--db", required=False)
+    ap.add_argument("--as-of", required=False, dest="as_of")
+    ap.add_argument("--ckpt-dir", required=False, dest="ckpt_dir")
+    ap.add_argument("--tag", required=False)
     ap.add_argument("--customers", type=int, default=25000)
     ap.add_argument("--horizons", default="30,90")
     ap.add_argument("--seeds", default="0,1,2")
     ap.add_argument("--out", default=None)
+    ap.add_argument(
+        "--synthetic",
+        action="store_true",
+        help="ground-truth machinery check (known sufficient statistic; no checkpoint)",
+    )
     a = ap.parse_args(argv)
+    if a.synthetic:
+        res = synthetic_machinery_check()
+        print("# UNIVERSALITY MACHINERY CHECK (ground truth: known sufficient statistic)")
+        for name, r in res.items():
+            print(f"  {name:28s} norm_gap {r['norm_gap']:.4f}  (gap {r['gap']:+.4f})")
+        return res
+    if not (a.db and a.as_of and a.ckpt_dir and a.tag):
+        ap.error("--db/--as-of/--ckpt-dir/--tag are required unless --synthetic")
     model, cfg = load_frozen_encoder(a.tag, a.ckpt_dir)
     cfg.db, cfg.as_of, cfg.sample_customers = a.db, a.as_of, a.customers
     horizons = tuple(int(x) for x in a.horizons.split(","))

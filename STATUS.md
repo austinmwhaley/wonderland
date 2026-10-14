@@ -192,8 +192,10 @@ invariant-by-construction).
   `U = 1 − worst-case oracle-gap` (`loop/UNIVERSALITY.md`). Built the gate
   (`looking_glass/universality.py`, DEC-117). **First measurement (Rung 0, instacart, 1181
   held-out B): U = 0.2227** — far from universal; worst-case = the **mass axis**
-  (`next-order value`/LTV norm_gap ~0.77). Next: Layer-A exact `U` (U2) → adversarial family (U3)
-  → accessibility/similarity gates → attack the mass axis with the shape×measure lever (DEC-106).
+  (`next-order value`/LTV norm_gap ~0.77). **U2 done** (DEC-118): ground-truth machinery check —
+  sufficient → norm_gap 0.00, magnitude-dropped → 0.65, over-capacity → 0.00 (saturation).
+  Next: adversarial family (U3) → accessibility/similarity gates (U4) → attack the mass axis with
+  the shape×measure lever (U5, DEC-106).
 
 - **Versioning scheme (DEC-058):** versions are now pre-1.0 semver
   `MAJOR.MINOR.PATCH` (`0.6.4`); tag = `<version>r<revision>` (`0.6.4r162610`).

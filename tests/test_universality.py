@@ -10,7 +10,12 @@ from __future__ import annotations
 import polars as pl
 import pytest
 
-from looking_glass.universality import _future_family, _history_features, _normalized_gap
+from looking_glass.universality import (
+    _future_family,
+    _history_features,
+    _normalized_gap,
+    synthetic_machinery_check,
+)
 
 
 def test_normalized_gap_regression():
@@ -74,3 +79,16 @@ def test_future_family_is_self_supervised_and_typed():
     assert p.tolist() == [0.0, 1.0]
     assert c.tolist() == [1.0, 0.0]
     assert (p + c == 1.0).all()
+
+
+def test_synthetic_machinery_separates_lossy_and_saturates():
+    """Ground-truth check: known sufficient statistic. The gate must (a) score a
+    sufficient representation ~1, (b) penalize a representation that dropped the
+    magnitude (extensive) axis, and (c) NOT reward extra capacity (saturation)."""
+    res = synthetic_machinery_check(n=2000, seeds=(0,))
+    suff = res["sufficient [S, logmag]"]["norm_gap"]
+    lossy = res["lossy [direction]"]["norm_gap"]
+    over = res["over [S, logmag, noise]"]["norm_gap"]
+    assert suff < 0.15, f"sufficient rep should leave near-zero gap, got {suff}"
+    assert lossy > suff + 0.3, f"dropping magnitude must raise the gap ({lossy} vs {suff})"
+    assert over <= suff + 0.1, f"extra capacity must not lower U ({over} vs {suff})"

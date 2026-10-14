@@ -52,10 +52,13 @@ unlogged events carried as uncertainty.
 
 - **U1. Build the universality gate** — `looking_glass/universality.py`: the oracle-gap /
   history-residual test (`future ⊥ history | E`), a broad self-supervised future family, and the
-  `U` scalar. Rung-0 on existing checkpoints.
+  `U` scalar. Rung-0 on existing checkpoints. **DONE (DEC-117):** Rung-0 instacart **U=0.2227**,
+  worst-case = mass axis.
 - **U2. Wire the Layer-A lab to exact `U`** — on synthetic streams the true sufficient statistic
   is known ⇒ `U` is exact; verify the *machinery* and that a deliberately-lossy encoder scores
-  lower while an over-capacity one does not score higher (saturation).
+  lower while an over-capacity one does not score higher (saturation). **DONE (DEC-118, machinery):**
+  sufficient 0.00 · magnitude-dropped 0.65 · over-capacity 0.00. Remaining: repeat on a generated
+  ladder stream with *trained* lossy/sufficient encoders (Rung 1/2).
 - **U3. Adversarial family** — a growing task-search adversary that finds where `E` loses most
   (worst-case objective).
 - **U4. Accessibility + similarity gates** — probe-parity on the held-out family; kNN

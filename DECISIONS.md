@@ -2553,3 +2553,23 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   add the adversarial family; add accessibility + similarity gates; then attack the worst-case
   (the mass axis) with the shape×measure architecture lever (DEC-106).
 - **Gate:** green (new unit tests + existing suite; ruff clean).
+
+## DEC-118 — U2: universality gate verified on GROUND TRUTH (known sufficient statistic)
+
+- **Date:** 2026-10-14
+- **What:** verified the `U` machinery on synthetic data where the true sufficient statistic is
+  known: `S* = [direction S, log-magnitude]`, a target `y = f(direction) + g(log-magnitude) + noise`,
+  and a history proxy that carries the magnitude. Three representations were scored by the SAME
+  `_oracle_gap` path (refactored to a single source of truth shared with the real gate).
+- **Measured (`python3 -m looking_glass.universality --synthetic`):**
+  - `sufficient [S, logmag]` → **norm_gap 0.0000** (U ≈ 1)
+  - `lossy [direction]` (magnitude DROPPED) → **norm_gap 0.6519** (U ≈ 0.35)
+  - `over [S, logmag, noise]` (extra capacity) → **norm_gap 0.0007** (no gain — **saturation**)
+- **Read:** the metric (a) is exact on ground truth, (b) penalizes a representation that lost the
+  **magnitude/extensive** axis (the DEC-106 blind spot), (c) does not reward extra capacity — i.e.
+  it measures sufficiency, not dimension count. The `_oracle_gap` fold/score path is now shared
+  (single source of truth) between the synthetic check and the real-stream gate.
+- **Caveat / next:** this verifies the *machinery* on a known statistic; the follow-on is a
+  generated **ladder stream + trained** lossy/sufficient encoders (Rung 1/2) so the separation is
+  shown on actual encoders, not just constructed representations.
+- **Gate:** green (279 passed; new test `test_synthetic_machinery_separates_lossy_and_saturates`).
