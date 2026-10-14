@@ -33,16 +33,108 @@ import argparse
 from pathlib import Path
 
 import numpy as np
+import torch
+import torch.nn.functional as F
 
-from looking_glass.cfm_config import as_of_epoch
+from looking_glass.cfm_config import _f, _to_epoch, as_of_epoch
 from looking_glass.cfm_state import load_frozen_encoder
+from looking_glass.cfm_training import forward_embedding
 from looking_glass.head_battery import (
     GBM_CLF,
     GBM_REG,
-    _b_states,
     _folds,
     _rfm_targets,
 )
+
+
+def _b_sequences(cfg):
+    """Held-out (split B) raw event sequences — for the SEQUENCE-MODEL oracle."""
+    from looking_glass.cfm_data import (
+        _customer_keys,
+        _read_stream,
+        assign_split,
+        build_sequences,
+    )
+
+    df = _read_stream(cfg)
+    keys = _customer_keys(df, cfg)
+    split = assign_split(keys, cfg)
+    bkeys = [k for k in keys if split.get(k) == "B"]
+    return build_sequences(df, bkeys, cfg, split, with_anchors=False)
+
+
+def _seq_vocab(seqs):
+    v: dict = {}
+    for s in seqs:
+        for e in s["event_type"]:
+            k = str(e)
+            if k not in v:
+                v[k] = len(v)
+    return v
+
+
+def _seq_tensors(seqs, vocab, dev):
+    B = len(seqs)
+    T = max(1, max(len(s["event_type"]) for s in seqs))
+    et = torch.zeros(B, T, dtype=torch.long)
+    val = torch.zeros(B, T)
+    dt = torch.zeros(B, T)
+    mask = torch.zeros(B, T)
+    for i, s in enumerate(seqs):
+        L = len(s["event_type"])
+        ts = np.asarray(s.get("ts") or [_to_epoch(x) for x in s["event_ts"]], dtype=np.float64)
+        d = np.zeros(L)
+        d[1:] = np.maximum(ts[1:] - ts[:-1], 0.0)
+        for j in range(L):
+            et[i, j] = vocab.get(str(s["event_type"][j]), len(vocab))
+            val[i, j] = _f(s["value"][j])
+            dt[i, j] = np.log1p(d[j])
+        mask[i, :L] = 1.0
+    return et.to(dev), val.to(dev), dt.to(dev), mask.to(dev)
+
+
+class _SeqOracle(torch.nn.Module):
+    """A small recurrent full-history oracle (order-aware), independent of E."""
+
+    def __init__(self, n_et, hidden=32):
+        super().__init__()
+        self.emb = torch.nn.Embedding(n_et + 1, hidden)
+        self.gru = torch.nn.GRU(hidden + 2, hidden, batch_first=True)
+        self.head = torch.nn.Linear(hidden, 1)
+
+    def forward(self, et, val, dt, mask):
+        x = torch.cat([self.emb(et), val.unsqueeze(-1), dt.unsqueeze(-1)], dim=-1)
+        h, _ = self.gru(x)
+        h = h * mask.unsqueeze(-1)
+        pooled = h.sum(1) / mask.sum(1, keepdim=True).clamp(min=1)
+        return self.head(pooled).squeeze(-1)
+
+
+def _seq_oracle_score(seqs_tr, y_tr, seqs_va, y_va, kind, dev, seed, epochs=40):
+    """Train a GRU oracle on the raw train histories; score on the val histories."""
+    torch.manual_seed(seed)
+    vocab = _seq_vocab(seqs_tr)
+    etr, vtr, dtr, mtr = _seq_tensors(seqs_tr, vocab, dev)
+    eva, vva, dva, mva = _seq_tensors(seqs_va, vocab, dev)
+    m = _SeqOracle(len(vocab) + 1).to(dev)
+    opt = torch.optim.Adam(m.parameters(), lr=1e-2)
+    yt = torch.tensor(y_tr, dtype=torch.float32, device=dev)
+    ym = ys = 0.0
+    if kind == "reg":
+        ym, ys = float(yt.mean()), float(yt.std().clamp(min=1e-6))
+        yt = (yt - ym) / ys
+    for _ in range(int(epochs)):
+        m.train()
+        opt.zero_grad()
+        out = m(etr, vtr, dtr, mtr)
+        loss = F.mse_loss(out, yt) if kind == "reg" else F.binary_cross_entropy_with_logits(out, yt)
+        loss.backward()
+        opt.step()
+    m.eval()
+    with torch.no_grad():
+        o = m(eva, vva, dva, mva)
+        o = torch.sigmoid(o) if kind == "clf" else o * ys + ym
+    return _score(kind, np.asarray(y_va, dtype=float), o.cpu().numpy())
 
 
 def _history_features(past):
@@ -180,19 +272,21 @@ def _normalized_gap(donor, e_alone, kind, eps=1e-9):
     return float(gap), norm
 
 
-def _oracle_gap(Z, Xhist, yy, kind, cust, seeds=(0, 1, 2), eps=1e-9):
+def _oracle_gap(Z, Xhist, yy, kind, cust, seeds=(0, 1, 2), eps=1e-9, seqs=None, dev=None):
     """Mean oracle-gap over held-out folds for one target.
 
-    E-alone = model on E; history-alone = model on the history proxy; oracle
-    [E,history] = model on both. gap = oracle - E-alone (what history adds beyond
-    E), normalized to the oracle's own range. Returns (e_alone, hist_alone,
-    oracle, gap, norm) means, or None if no usable fold.
+    E-alone = model on E; oracle = max(model on [E, history], learned SEQUENCE
+    oracle on the raw history) — the independent, order-aware ceiling. gap =
+    oracle - E-alone (what the full history adds beyond E), normalized. When
+    `seqs` (raw held-out histories, aligned to `cust`) is given, a small GRU
+    oracle is trained per fold and raises the ceiling (non-degenerate).
     """
     from sklearn.ensemble import HistGradientBoostingClassifier, HistGradientBoostingRegressor
     from sklearn.preprocessing import StandardScaler
 
     Cls = HistGradientBoostingClassifier if kind == "clf" else HistGradientBoostingRegressor
     Conf = GBM_CLF if kind == "clf" else GBM_REG
+    seq_by_cust = {s["customer"]: s for s in seqs} if seqs is not None else None
     e_al, raw_al, don_al, gaps, norms, nvs = [], [], [], [], [], []
     for seed in seeds:
         fold = np.zeros(len(cust), dtype=int)
@@ -226,6 +320,26 @@ def _oracle_gap(Z, Xhist, yy, kind, cust, seeds=(0, 1, 2), eps=1e-9):
             onE, onH, onEH = _score(kind, ya, se), _score(kind, ya, sh), _score(kind, ya, shh)
             if onE is None or onH is None or onEH is None:
                 continue
+            # independent, order-aware SEQUENCE oracle (raises the true ceiling)
+            if seq_by_cust is not None and dev is not None:
+                itr = [int(i) for i in np.where(tr)[0] if cust[i] in seq_by_cust]
+                iva = [int(i) for i in np.where(va)[0] if cust[i] in seq_by_cust]
+                ytr = [float(yy[i]) for i in itr]
+                if len(itr) >= 8 and len(iva) >= 8 and (kind != "clf" or len(set(ytr)) >= 2):
+                    try:
+                        onSeq = _seq_oracle_score(
+                            [seq_by_cust[cust[i]] for i in itr],
+                            ytr,
+                            [seq_by_cust[cust[i]] for i in iva],
+                            [float(yy[i]) for i in iva],
+                            kind,
+                            dev,
+                            seed=seed,
+                        )
+                        if onSeq is not None:
+                            onEH = max(onEH, onSeq)
+                    except Exception:  # noqa: BLE001 - oracle is best-effort
+                        pass
             g, nrm = _normalized_gap(onEH, onE, kind, eps=eps)
             gaps.append(g)
             norms.append(nrm)
@@ -286,10 +400,19 @@ def synthetic_machinery_check(seed=0, n=4000, kind="reg", seeds=(0, 1, 2)):
     return out
 
 
-def run_universality(model, cfg, horizons=(30, 90), seeds=(0, 1, 2)):
+def run_universality(model, cfg, horizons=(30, 90), seeds=(0, 1, 2), use_seq=True):
     import polars as pl
 
-    cust, Z = _b_states(model, cfg)
+    seqs = _b_sequences(cfg)  # raw held-out histories (for E and the sequence oracle)
+    cust = np.array([s["customer"] for s in seqs])
+    Zs = []
+    for i in range(0, len(seqs), 512):
+        with torch.no_grad():
+            z = forward_embedding(model, seqs[i : i + 512])
+        Zs.append(z.detach().float().cpu().numpy())
+    Z = np.concatenate(Zs, 0) if Zs else np.zeros((0, 1), dtype=np.float32)
+    dev = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    seq_arg = seqs if use_seq else None
     # ORACLE input: the schema-derived, exhaustive full-history measure (not RFM).
     Xhist, _hnames = _full_history_features(cfg, cust)
     rows = []
@@ -301,7 +424,7 @@ def run_universality(model, cfg, horizons=(30, 90), seeds=(0, 1, 2)):
             .fill_null(0.0)
         )
         for name, (yy, kind) in _future_family(j).items():
-            r = _oracle_gap(Z, Xhist, yy, kind, cust, seeds=seeds)
+            r = _oracle_gap(Z, Xhist, yy, kind, cust, seeds=seeds, seqs=seq_arg, dev=dev)
             if r is None:
                 continue
             e_al, raw_al, don_al, gap, norm, noise, solved = r
@@ -403,6 +526,12 @@ def main(argv=None):
         dest="require_solved",
         help="exit non-zero unless SOLVED (E within oracle noise on every member) — loop predicate",
     )
+    ap.add_argument(
+        "--no-seq-oracle",
+        action="store_true",
+        dest="no_seq",
+        help="skip the (costly) independent GRU sequence oracle; use the exhaustive feature oracle only",
+    )
     a = ap.parse_args(argv)
     if a.synthetic:
         res = synthetic_machinery_check()
@@ -418,7 +547,7 @@ def main(argv=None):
     cfg.db, cfg.as_of, cfg.sample_customers = a.db, a.as_of, a.customers
     horizons = tuple(int(x) for x in a.horizons.split(","))
     seeds = tuple(int(x) for x in a.seeds.split(","))
-    rows, u, n, solved = run_universality(model, cfg, horizons, seeds)
+    rows, u, n, solved = run_universality(model, cfg, horizons, seeds, use_seq=not a.no_seq)
     card, u, solved = _card(a.tag, rows, u, n, solved)
     print(card)
     if a.out:

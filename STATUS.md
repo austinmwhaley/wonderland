@@ -232,6 +232,9 @@ invariant-by-construction).
   **Loop iter 2 (DEC-129):** future-aggregate objective FAILS too (U 0.012) — **4 learned-measure
   negatives**; pivoting to build a learned **sequence-model oracle** (non-degenerate ceiling) before
   re-evaluating the state axis.
+  **Loop iter 3 (DEC-130):** independent GRU **sequence oracle** built; it does NOT exceed the
+  exhaustive feature oracle (LTV 0.554 vs 0.550) ⇒ feature oracle is a **non-degenerate near-ceiling**;
+  mass gap ~0.5 is genuine. Bottleneck still **state (mass/extensive)**.
 
 - **Versioning scheme (DEC-058):** versions are now pre-1.0 semver
   `MAJOR.MINOR.PATCH` (`0.6.4`); tag = `<version>r<revision>` (`0.6.4r162610`).

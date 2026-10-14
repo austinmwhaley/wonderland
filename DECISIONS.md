@@ -2843,3 +2843,28 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - **Principles served:** *Honest* (refused the self-referential shortcut), *Diagnosable* (axis +
   4 matched controls), *Efficient* (stopped repeating), *Robust*.
 - **Gate:** green (279 passed; reverted cleanly).
+
+## DEC-130 — Loop iter 3: independent SEQUENCE-MODEL oracle built; feature oracle is near-ceiling
+
+- **Date:** 2026-10-14
+- **What:** added an independent, order-aware **sequence oracle** to
+  `looking_glass/universality.py` — a small GRU over the raw held-out histories, trained per fold
+  (per target), used as `oracle = max(model[E, history], GRU(raw history))`. Purpose: make the
+  ceiling **independent** of `E` so "SOLVED" can't be gamed by exposing the exhaustive measure in
+  `E` (a self-referential false green), and to learn the true ceiling. `--no-seq-oracle` opts out
+  (Efficient); default on.
+- **Measured (Rung-0, instacart, 1181 held-out B, horizon 30, seed 0):** the GRU does **not**
+  exceed the exhaustive feature oracle — LTV oracle 0.554 (vs 0.550), order_count 0.609 (vs 0.612),
+  propensity 1.000, next-order value 0.577 (vs 0.597). `U = 0.1012`, SOLVED = False, bottleneck
+  still **state (mass/extensive)** (worst `next-order value`, gap +0.561 vs noise 0.123).
+- **Read:** on these aggregate targets the **exhaustive feature oracle is already at/near the
+  ceiling** (a learned GRU of this size adds nothing) ⇒ it is a **reasonable, non-degenerate
+  ceiling**, and the mass gap (~0.5; oracle 0.55–0.68 vs E-alone 0.02–0.07) is **genuine and
+  large**, not a metric artifact. Caveat: a small GRU is not proof of the true ceiling — a stronger
+  sequence model could still exceed it; recorded honestly.
+- **Consequence for the state axis:** the bottleneck is real. Remaining routes: (a) a learned
+  measure mechanism that actually works (4 Rung-1 negatives so far), or (b) exposing a **generic,
+  exhaustive** measure in `E` — now *evaluable honestly* against this independent ceiling.
+- **Principles served:** *Honest* (independent, non-degenerate ceiling), *Diagnosable*, *Efficient*
+  (opt-out flag).
+- **Gate:** green (6 universality tests, ruff clean).
