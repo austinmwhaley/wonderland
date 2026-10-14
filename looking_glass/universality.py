@@ -322,6 +322,23 @@ def run_universality(model, cfg, horizons=(30, 90), seeds=(0, 1, 2)):
     return rows, u, len(cust), solved
 
 
+# target -> design axis (Diagnosable: the worst member names the bottleneck axis).
+_AXIS = {
+    "LTV": "state (mass/extensive)",
+    "order_count": "state (mass/extensive)",
+    "next-order value": "state (mass/extensive)",
+    "propensity": "interface (decidability)",
+    "churn": "interface (decidability)",
+}
+
+
+def _axis_of(target):
+    for k, v in _AXIS.items():
+        if str(target).startswith(k):
+            return v
+    return "unknown"
+
+
 def _card(tag, rows, u, n, solved):
     worst = max(rows, key=lambda r: r["norm_gap"]) if rows else None
     lines = [
@@ -332,6 +349,7 @@ def _card(tag, rows, u, n, solved):
         f"## SOLVED = {solved}   (E within the oracle's own noise on EVERY member; gap <= noise)",
     ]
     if worst is not None:
+        lines.append(f"## BOTTLENECK AXIS = {_axis_of(worst['target'])}")
         lines.append(
             f"worst-case member: `{worst['target']}`  norm_gap {worst['norm_gap']:.4f}  "
             f"gap {worst['gap (hist adds)']:+.4f}  noise {worst['noise']:.4f}  "
