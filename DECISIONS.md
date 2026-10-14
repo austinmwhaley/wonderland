@@ -2868,3 +2868,20 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - **Principles served:** *Honest* (independent, non-degenerate ceiling), *Diagnosable*, *Efficient*
   (opt-out flag).
 - **Gate:** green (6 universality tests, ruff clean).
+
+## DEC-131 — Loop iter 4 (diagnostic): the measure LEARNS its objective but HURTS downstream
+
+- **Date:** 2026-10-14
+- **Diagnostic (free — from the DEC-129 training log, no new build):** the `ledger` objective
+  **PASSES** (skill **+0.32 ± 0.011**) — the learned measure readout *does* predict the future
+  aggregate better than the null. Yet E-alone built from `[donor ‖ ledger]` scores **worse** than
+  donor alone (U 0.012 vs shape-only 0.066).
+- **Read:** the learned measure is **not unlearnable** — the failure is **translation/accessibility**:
+  the measure readout (a squashed, low-variance, learned transform) is **not usable by downstream**
+  and its extra dimensions **hurt** the probe (spurious splits / near-constant noise). This reframes
+  the state-axis problem: *learnable ≠ usable*, and the extra path **degrades** E.
+- **Consequence:** for the state axis, a learned measure must be **aligned/accessible**, not merely
+  predictable. But Layer B is self-supervised only (no downstream alignment allowed) — a real tension.
+- **Principles served:** *Accessible* (the principle this exposes), *Diagnosable*, *Efficient*
+  (a free diagnostic from existing logs rather than another build).
+- **Gate:** n/a (diagnostic only; no code change).

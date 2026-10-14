@@ -235,6 +235,9 @@ invariant-by-construction).
   **Loop iter 3 (DEC-130):** independent GRU **sequence oracle** built; it does NOT exceed the
   exhaustive feature oracle (LTV 0.554 vs 0.550) ⇒ feature oracle is a **non-degenerate near-ceiling**;
   mass gap ~0.5 is genuine. Bottleneck still **state (mass/extensive)**.
+  **Loop iter 4 (DEC-131, diagnostic):** the `ledger` objective PASSES (skill +0.32) — the measure
+  *learns* — but its readout **hurts** E-alone (U 0.012 < shape-only 0.066): the failure is
+  **translation/accessibility**, not learnability. Tension with Layer-B self-supervised-only.
 
 - **Versioning scheme (DEC-058):** versions are now pre-1.0 semver
   `MAJOR.MINOR.PATCH` (`0.6.4`); tag = `<version>r<revision>` (`0.6.4r162610`).
