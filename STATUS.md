@@ -5,6 +5,134 @@
 > (phased plan), **AGENTS.md** (doctrine + operating mode). Read this header
 > first to restore state; update it before yielding.
 
+## Canonical decomposition (the frame every change is judged against)
+
+Read top to bottom: each level is *derived from* the level above it. This is the
+one structure the project is organized around. User-facing debates (2026-10-14)
+settled the GOAL and the reasoning below; work down from here.
+
+```
+GOAL            a minimal, bounded, DECISION-SUFFICIENT statistic of the event stream
+                 | judged by
+METRIC          Δ = predictive-sufficiency gap + decision (margin) regret  ->  0 at fixed |E|
+                 | requires the state to carry
+CONTENT         information axes: shape · mass · identity · rate · uncertainty · causal
+                 | reasoned about via
+LENS            polar factors: direction × magnitude (complete for a vector; applies within each axis)
+                 | realized by
+MECHANISM       contractive memory + content-addressed additive memory (+ uncertainty + causal heads)
+                 | driven/learned by
+OBJECTIVE       self-supervised "predict the future" (PSR) — no hand targets
+                 | certified by
+GATES           Layer-A ground-truth lab (exact Δ) + held-out oracle-referenced probes
+                 | kept honest by
+DOCTRINE        no magic numbers · make it learn · invariants by construction · one-way flow
+```
+
+### GOAL — and *why* it is the goal
+**`embedding(customer, t)` = a minimal, bounded, decision-sufficient statistic
+of their history** — the smallest fixed-size object that loses nothing about the
+future, for prediction *and* for decisions.
+
+Why this and not something else (the purpose chain):
+- The system exists to **decide** (NBA, email frequency, promos, timing) to
+  maximize long-term incremental margin. Everything else is instrumental.
+- The architecture is a **frozen, shared foundation** (one-way: A→B→C). If the
+  foundation loses what a decision needs, every downstream plugin must reach
+  back into raw data (breaks one-way flow + cost doctrine) or decide blind.
+- **"Sufficient"** is the precise meaning of "nothing that matters is lost" — the
+  realization of the thesis (carry the signal, don't compress to wide features).
+- **"Decision-" sufficient, not merely statistical/predictive**: observational
+  sufficiency (`P(future|E)`) can be *perfect* and still *decision-useless* — it
+  predicts the future under the *logged* policy and cannot answer "what if".
+  Decisions need the counterfactual (`P(future | do(a), history)`). The formal
+  anchor is the **belief / predictive state**: the statistic sufficient for
+  optimal control in a partially-observed process. This is what separates us from
+  traditional RFM wide-feature projects.
+- **"Minimal, bounded"**: the full history is trivially sufficient but
+  operationally useless; sufficiency *at fixed capacity* is the only non-vacuous
+  version, and it is the "distillation, not summary" doctrine made exact.
+
+### METRIC — how every change is judged
+`Δ = L*(full history) − L*(E)` on a held-out, rich family of futures and
+decisions, **minimized at fixed `|E|`**. Two legs:
+- **predictive-sufficiency gap** (dense surrogate): future-prediction loss from
+  `E` vs from the full history.
+- **decision regret** (the real target): `V*(full history) − V*(policy from E)`
+  in discounted incremental margin (the project's declared reward).
+`Δ → 0` at fixed capacity ⟺ the goal is achieved. Properties: oracle-referenced
+(un-gameable), task-agnostic *by richness*, minimality as a constraint (⇒ optimal
+information-bottleneck operating point), ground-truthable on the Layer-A lab.
+Do **not** optimize reconstruction, absolute prediction skill, a single
+hand-picked task, or any self-referential training metric.
+
+### CONTENT — the information axes the state must carry
+Independent kinds of information (not polar factors); each is a checklist item:
+
+| axis | what it holds | if missing, Δ rises on |
+|---|---|---|
+| shape | order, transitions, timing pattern | sequence prediction |
+| mass | extensive totals/counts (cumulative) | LTV, order counts |
+| identity | *which* entities/types/categories | product-aware futures |
+| rate | recency, velocity, trend, seasonality | timing / churn |
+| uncertainty | how much the state *knows* | decisions (risk) |
+| causal/action | what's manipulable; counterfactual response | decision regret |
+
+### LENS — the polar factors (how to *reason*, not the whole goal)
+Any state **vector** decomposes losslessly as **direction × magnitude**:
+direction = normalized pattern (the contractive part; a contraction is a
+normalizer), magnitude = extensive scale (the additive part; normalization
+erases it). Complete for a single vector — there is no third polar factor — but
+it is a *reasoning tool* that explains the **mass** axis and applies *within*
+each axis above. Do not confuse "2 polar factors" (a math fact) with "2
+information axes" (false: there are six).
+
+### MECHANISM — what realizes each axis
+| axis | mechanism | how it stays universal (not hand-coded) |
+|---|---|---|
+| shape | selective SSM (contractive, learned timescales) | decay learned per channel |
+| mass | content-gated additive memory (`M += g⊙φ(k)vᵀ`) | gate/key/value all learned |
+| identity | the *addressing* of that memory (keys) | continuous keys ⇒ open register set |
+| rate | explicit time in keys/values + multi-horizon targets | horizons derived from stream |
+| uncertainty | a variance/confidence head | from data |
+| causal | randomized arms in the stream + decision heads (Layer C) | causal effect learned, not assumed |
+
+Core insight: **softmax attention is the normalizer (summarize); unnormalized /
+linear attention is the ledger (accumulate).** The measure half is associative
+memory with `+` instead of a normalized average.
+
+### OBJECTIVE — the pressure (architecture ≠ behavior)
+Capacity alone self-organized nothing (DEC-111/112). The one objective that
+forces `Δ→0` with no hand targets: **predict the future** — maximize the past's
+predictive information over the future (a learned **Predictive State
+Representation**), targets sampled from the stream. Do it in log-space so
+multiplicative extensives turn additive.
+
+### GATES — how we *know*
+Layer-A lab (synthetic streams, true sufficient statistic known ⇒ exact `Δ` +
+algebraic-law checks); oracle-referenced held-out probes with bootstrap CIs on
+real streams. Never certify on the metric being optimized.
+
+### DOCTRINE alignment
+| principle | how the structure honors it |
+|---|---|
+| no hand-coding / no magic numbers | axes learned (gates/keys); horizons/dims/capacity derived |
+| make it learn, don't teach | memory content + routing learned; only the *algebra* fixed (math, not taste) |
+| adapt by construction | keys are functions of tokens ⇒ any schema/domain works |
+| invariants by construction | contractive law on shape half; additive law on measure half |
+| not wide-feature compression | the state *carries* the signal (PSR), replacing enumerated RFM |
+| uncertainty first | uncertainty is a first-class axis |
+| measure/gate on ground truth | the Layer-A lab certifies exact sufficiency |
+| one-way flow | A (stream+lab) → B (sufficient-statistic encoder) → C (heads/decisions) |
+| cost & speed | constant-state associative memory; scan-native, no per-step loops |
+
+One-breath chain: **Goal** (minimal, decision-sufficient statistic) → **Metric**
+(`Δ→0` at fixed capacity) → **Content** (6 axes) → **Lens** (direction×magnitude
+explains the mass axis) → **Mechanism** (contractive shape memory +
+content-addressed additive measure memory) → **Objective** (predict the future =
+PSR) → **Gates** (Layer-A ground truth) → **Doctrine** (learned, adaptive,
+invariant-by-construction).
+
 ## Macro
 
 - **Primary goal (operator-defined, DEC-008; sharpened v8):** produce
