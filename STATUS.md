@@ -263,6 +263,10 @@ invariant-by-construction).
   **Loop iter 9 (DEC-136):** generic all-field extraction added; consuming 10 fields as **tokens**
   does NOT improve U (0.151 vs 0.153) ⇒ the field third is **not capturable by tokenization** — it's
   the same **structural** limit (exhaustive aggregates >> compact learned embedding).
+  **Loop iter 10 (DEC-137):** exposing the in-encoder generic measure in E also **fails** (U 0.092;
+  window vs full-history mismatch). **Structural conclusion (iters 1–10):** the mass gap is robust;
+  a compact bounded-window learned embedding cannot match an exhaustive full-history aggregate
+  oracle → **goal-level fork (option B/C)**; agent-decidable state-axis leads exhausted.
 
 - **Versioning scheme (DEC-058):** versions are now pre-1.0 semver
   `MAJOR.MINOR.PATCH` (`0.6.4`); tag = `<version>r<revision>` (`0.6.4r162610`).

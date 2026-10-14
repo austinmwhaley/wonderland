@@ -1069,6 +1069,13 @@ class CFM(nn.Module):
             if key in t:
                 oh = F.one_hot(t[key].clamp(max=n - 1), n).to(m.dtype)  # (B,T,n)
                 feats.append(torch.log1p((oh * m.unsqueeze(-1)).sum(1)))
+        # every consumed attribute field -> per-value counts (generic, no domain literals)
+        for f in getattr(self, "attr_fields", ()):
+            if f in t:
+                nf = self.vocab.n_attr.get(f, 0) + 1
+                if nf > 1:
+                    oh = F.one_hot(t[f].clamp(max=nf - 1), nf).to(m.dtype)
+                    feats.append(torch.log1p((oh * m.unsqueeze(-1)).sum(1)))
         gap = torch.expm1(t["dt"]).squeeze(-1)
         last_idx = (m.sum(1).long() - 1).clamp(min=0).unsqueeze(1)
         for x in (torch.log1p(t["val"].abs().squeeze(-1)), gap):

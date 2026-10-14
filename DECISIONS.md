@@ -2993,3 +2993,24 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - **Kept:** generic all-field extraction in `_read_stream` (on-path for the universal tokenizer).
 - **Principles served:** *Diagnosable*, *Honest* (null), *Universal* (generic extraction kept).
 - **Gate:** green.
+
+## DEC-137 — Loop iter 10: option-B in-encoder measure also fails (window vs full-history mismatch)
+
+- **Date:** 2026-10-14
+- **What:** extended `generic_measure` to cover **all consumed attribute fields** (per-value
+  counts) and exposed it in E on the all-fields checkpoint (`--generic-measure`).
+- **Measured (Rung-0, 618 B, horizon 30, seed 0):** U **0.1511 (without) → 0.0923 (with)**
+  — **worse**.
+- **Read:** `generic_measure` aggregates the **truncated** sequence (seq_len=256) while the oracle
+  aggregates the **full history** — so it adds window-limited noise, **not** the oracle's
+  information. This is the same window/full-history mismatch flagged in DEC-133, now confirmed as
+  the reason an in-encoder measure can't match the oracle.
+- **Combined structural conclusion (iters 1–10):** the mass gap is **structural** and robust:
+  a **compact, bounded-window, learned** embedding does not match an **exhaustive, full-history
+  aggregate** oracle. Every escape failed — learned measures (5×), truncation, fields-as-tokens,
+  in-encoder generic measure. The only way `E` matches the oracle is to *be* it (full-history
+  aggregates = pass-through). **This is the goal-level fork** (option B or C); the loop has
+  exhausted the agent-decidable leads on the state axis.
+- **Kept:** `generic_measure` now generic over attr fields (opt-in; documented).
+- **Principles served:** *Diagnosable*, *Honest*.
+- **Gate:** green.
