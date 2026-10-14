@@ -49,6 +49,19 @@ def _read_stream(cfg: CFMConfig):
             # canonical compressed form); DuckDB files use their table.
             src = cfg.table if is_file else f"read_parquet('{db}')"
             tcols = {r[0] for r in con.execute(f"DESCRIBE SELECT * FROM {src}").fetchall()}
+            # GENERIC exhaustive consumption: discover EVERY attribute key and expose
+            # each as a column, so the encoder can consume any schema (axis 1).
+            known = set(base) | {"brand", "entity_type", "entity_id", "value", *attr_cols}
+            try:
+                _jk = [
+                    r[0]
+                    for r in con.execute(
+                        f"SELECT DISTINCT unnest(json_keys(event_attributes)) FROM {src} LIMIT 500"
+                    ).fetchall()
+                ]
+            except Exception:  # noqa: BLE001
+                _jk = []
+            extra = [k for k in _jk if k and k not in known]
             select = ", ".join(
                 [
                     *base,
@@ -57,6 +70,7 @@ def _read_stream(cfg: CFMConfig):
                     _ex("entity_id", tcols),
                     _ex("value", tcols, "FLOAT"),
                     *[_ex(c, tcols) for c in attr_cols],
+                    *[_ex(k, tcols) for k in extra],
                 ]
             )
             # push the point-in-time cut into SQL (before materializing): the

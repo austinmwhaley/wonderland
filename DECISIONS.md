@@ -2972,3 +2972,24 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   the all-fields **universal tokenizer** (axis 1).
 - **Principles served:** *Diagnosable* (decomposed the gap), *Universal/Adaptive*.
 - **Gate:** green.
+
+## DEC-136 — Loop iter 9: all-fields tokenizer does NOT close the gap (structural limit)
+
+- **Date:** 2026-10-14
+- **What:** made `_read_stream` generically extract **every** attribute key as a column (27 fields
+  on instacart), and trained a Rung-1 encoder consuming 10 of them as attribute embeddings
+  (`uni_allfields`), matched control = same recipe without them (`uni_acc`).
+- **Measured (Rung-0, 618 B, horizon 30, seed 0):** U **0.1529 (baseline) → 0.1511 (all fields)**
+  — **no improvement** (within run noise).
+- **Read:** consuming fields as **learned token embeddings** does not reproduce the oracle's
+  advantage — the oracle carries exhaustive **aggregate statistics** (per-value counts, per-field
+  moments), which a compact learned embedding does not expose as usable features. The
+  DEC-135 "field ⅓" is therefore not capturable by tokenization; it reflects the **representation
+  form** (aggregates vs embeddings), i.e. it is part of the same **structural** limit.
+- **Combined conclusion (iters 1–9):** the mass gap is **structural** — for these targets, an
+  **exhaustive aggregate** representation (what the oracle is) dominates any **compact learned
+  embedding**; the only way `E` matches it is to *contain* such aggregates (the pass-through the
+  operator rejected). Not truncation, not fields-as-tokens, not a learnable measure, not the gate.
+- **Kept:** generic all-field extraction in `_read_stream` (on-path for the universal tokenizer).
+- **Principles served:** *Diagnosable*, *Honest* (null), *Universal* (generic extraction kept).
+- **Gate:** green.

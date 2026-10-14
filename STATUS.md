@@ -260,6 +260,9 @@ invariant-by-construction).
   **Loop iter 8 (DEC-135):** restricted-oracle test decomposes the gap — **fields ≈ ⅓** (LTV gap
   0.497→0.313), **structural ≈ ⅔** (compact learned repr vs exhaustive aggregates). Next: build the
   all-fields universal tokenizer (captures the field third; on the goal's critical path).
+  **Loop iter 9 (DEC-136):** generic all-field extraction added; consuming 10 fields as **tokens**
+  does NOT improve U (0.151 vs 0.153) ⇒ the field third is **not capturable by tokenization** — it's
+  the same **structural** limit (exhaustive aggregates >> compact learned embedding).
 
 - **Versioning scheme (DEC-058):** versions are now pre-1.0 semver
   `MAJOR.MINOR.PATCH` (`0.6.4`); tag = `<version>r<revision>` (`0.6.4r162610`).
