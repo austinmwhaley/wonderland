@@ -1,14 +1,20 @@
 #!/usr/bin/env bash
-# loop/status.sh — THE GOAL PREDICATE.
-# Exit 0 (and print GOAL_MET) iff the goal holds; else print the blockers and exit 1.
-# The driver (loop/run.sh) calls this before each iteration to decide stop/continue.
+# loop/status.sh — THE GOAL PREDICATE (Layer 0 + Layer 1).
+# Exit 0 (and print GOAL_MET) iff the goal holds; else print blockers and exit 1.
 #
-# EDIT the STREAMS table below to point at the current checkpoint dirs the loop trains
-# into. Each entry: name|db|ckpt_dir|as_of
+# SOLVED (derived from the goal): the embedding is a universal sufficient
+# statistic — `E` matches the full-history oracle on EVERY future-family member
+# (|oracle-gap| <= the oracle's own noise), on held-out customers, across streams
+# (Layer 1), AND every B/B+C card is GREEN (a necessary condition). The oracle is
+# the exhaustive schema-derived full-history measure (NOT hand-RFM), so this cannot
+# be earned by reproducing hand features.
+#
+# EDIT the STREAMS table to point at the checkpoints the loop trains into.
+# Each entry: name|db|ckpt_dir|as_of
 set -u
 cd /home/austin-whaley/Documents/wonderland
 
-# name|db|ckpt_dir|as_of   (point ckpt_dir at wherever the loop trains for that stream)
+# name|db|ckpt_dir|as_of
 STREAMS=(
 "rabbit_hole|rabbit_hole/data/duckdb/customer_event_stream.parquet|/tmp/opencode/rh_jun|2025-06-01"
 "instacart|rabbit_hole/data/instacart/customer_event_stream.parquet|/tmp/opencode/insta_noinpm|2025-10-01"
@@ -22,13 +28,21 @@ for entry in "${STREAMS[@]}"; do
   if [ -z "${reg:-}" ]; then echo "MISSING ckpt: $name ($dir)"; fail=1; continue; fi
   tag=$(python3 -c "import json,sys;print(json.load(open('$reg'))['tag'])")
   b=/tmp/opencode/loop_${name}_b.md; bc=/tmp/opencode/loop_${name}_bc.md
+  u=/tmp/opencode/loop_${name}_u.md
   python3 -m looking_glass.report_card --db "$db" --as-of "$asof" --ckpt-dir "$dir" --tag "$tag" \
     --stream "$name" --out "$b" >/dev/null 2>&1
   python3 -m looking_glass.head_battery --db "$db" --ckpt-dir "$dir" --tag "$tag" --as-of "$asof" \
     --horizon-days 90 --customers 25000 --seeds 0,1,2 --out "$bc" >/dev/null 2>&1
+  # Layer 1: universality — require SOLVED (E within the oracle's noise on every member)
+  python3 -m looking_glass.universality --db "$db" --as-of "$asof" --ckpt-dir "$dir" --tag "$tag" \
+    --customers 25000 --horizons 30,90 --seeds 0,1,2 --out "$u" --require-solved >/dev/null 2>&1
+  usol=$?
+  ub=$(grep -m1 "^## U" "$u" 2>/dev/null)
   vb=$(grep -m1 "VERDICT" "$b" 2>/dev/null); vbc=$(grep -m1 "VERDICT" "$bc" 2>/dev/null)
-  echo "[$name] B: ${vb:-<none>} | B+C: ${vbc:-<none>}"
-  if ! grep -q "VERDICT: GREEN" "$b" 2>/dev/null || ! grep -q "VERDICT: GREEN" "$bc" 2>/dev/null; then
+  echo "[$name] B: ${vb:-<none>} | B+C: ${vbc:-<none>} | ${ub:-<no universality>} | solved=$([ $usol -eq 0 ] && echo yes || echo no)"
+  if ! grep -q "VERDICT: GREEN" "$b" 2>/dev/null \
+     || ! grep -q "VERDICT: GREEN" "$bc" 2>/dev/null \
+     || [ "$usol" -ne 0 ]; then
     fail=1
   fi
 done

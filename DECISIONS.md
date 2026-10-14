@@ -2743,3 +2743,29 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   **sequence-model** oracle (order-aware) to raise the ceiling from "exhaustive aggregates."
 - **Principles served:** *Honest* (trustworthy instrument), *Robust* (ruled out a silent leak).
 - **Gate:** green (docs only).
+
+## DEC-126 — Derived STOP CONDITION ("SOLVED") + loop predicate rewired to it
+
+- **Date:** 2026-10-14
+- **Decision (owning the previously-operator question, per the role split):** "solved" is derived
+  from the goal, not asked: **`E` matches the full-history oracle on EVERY future-family member**
+  — `|oracle-gap| <= noise`, where `noise` is the oracle's own fold-to-fold SE floored by the
+  finite-sample rate `1/sqrt(n_val)`. This is attainable (asks only that the embedding be as good
+  as the raw history), measurable, and un-gameable (the oracle is the ceiling; it is the
+  exhaustive full-history measure, not hand-RFM). Implemented in
+  `looking_glass/universality.py` (`_oracle_gap` returns `noise`+`solved`; `run_universality`
+  returns overall `solved`; `--require-solved` exits non-zero when not solved).
+- **Measured (Rung-0, instacart, 1181 held-out B, horizon 30, seed 0):** `U = 0.1449`,
+  **SOLVED = False**; worst case LTV (gap +0.506 vs noise 0.118). Every member unsolved.
+- **Loop predicate rewired:** `loop/status.sh` now runs, per stream, the B card, the B+C battery,
+  **and** `universality --require-solved`; `GOAL_MET` iff all B/B+C GREEN **and** universality
+  SOLVED on every stream.
+- **Principles served:** *Honest* (stop condition can't be earned by hand-feature mimicry or by
+  fooling a weak baseline), *Diagnosable* (per-member noise makes the gap interpretable),
+  *Universal* (the predicate spans streams).
+- **Trade-offs:** the predicate is expensive (GBM folds per stream) — acceptable for a periodic
+  stop check, run less often than iterations.
+- **Remaining instrument work (owned):** learned **sequence-model** oracle (raise the ceiling
+  above exhaustive aggregates); axis scorecard + hypothesis queue; guardrails (caps, no
+  gate-weakening, independent re-certification).
+- **Gate:** green (6 universality tests, ruff clean; `status.sh` syntax-checked).

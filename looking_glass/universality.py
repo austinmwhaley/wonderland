@@ -193,7 +193,7 @@ def _oracle_gap(Z, Xhist, yy, kind, cust, seeds=(0, 1, 2), eps=1e-9):
 
     Cls = HistGradientBoostingClassifier if kind == "clf" else HistGradientBoostingRegressor
     Conf = GBM_CLF if kind == "clf" else GBM_REG
-    e_al, raw_al, don_al, gaps, norms = [], [], [], [], []
+    e_al, raw_al, don_al, gaps, norms, nvs = [], [], [], [], [], []
     for seed in seeds:
         fold = np.zeros(len(cust), dtype=int)
         for fi, f in enumerate(_folds(cust, seed=seed)):
@@ -206,7 +206,6 @@ def _oracle_gap(Z, Xhist, yy, kind, cust, seeds=(0, 1, 2), eps=1e-9):
                 or (kind == "clf" and (len(set(yy[tr])) < 2 or len(set(yy[va])) < 2))
             ):
                 continue
-            Ztr, Zva = StandardScaler().fit(Z[tr]).transform(Z[tr]), None
             scZ = StandardScaler().fit(Z[tr])
             Ztr, Zva = scZ.transform(Z[tr]), scZ.transform(Z[va])
             scH = StandardScaler().fit(Xhist[tr])
@@ -233,14 +232,25 @@ def _oracle_gap(Z, Xhist, yy, kind, cust, seeds=(0, 1, 2), eps=1e-9):
             e_al.append(onE)
             raw_al.append(onH)
             don_al.append(onEH)
+            nvs.append(int(va.sum()))
     if not norms:
         return None
+    # NOISE FLOOR (derived, not a magic number): the oracle's fold-to-fold SE,
+    # floored by the finite-sample rate 1/sqrt(n_val). "Solved" for this member
+    # = E is within this noise of the full-history oracle (gap indistinguishable
+    # from 0), i.e. the embedding is as good as the raw history can make it.
+    nval = max(int(np.mean(nvs)), 2)
+    noise = max(float(np.std(don_al)), float(np.std(e_al)), 1.0 / np.sqrt(nval))
+    gap_mean = float(np.mean(gaps))
+    solved = abs(gap_mean) <= noise
     return (
         float(np.mean(e_al)),
         float(np.mean(raw_al)),
         float(np.mean(don_al)),
-        float(np.mean(gaps)),
+        gap_mean,
         float(np.mean(norms)),
+        noise,
+        bool(solved),
     )
 
 
@@ -294,7 +304,7 @@ def run_universality(model, cfg, horizons=(30, 90), seeds=(0, 1, 2)):
             r = _oracle_gap(Z, Xhist, yy, kind, cust, seeds=seeds)
             if r is None:
                 continue
-            e_al, raw_al, don_al, gap, norm = r
+            e_al, raw_al, don_al, gap, norm, noise, solved = r
             rows.append(
                 {
                     "target": f"{name} @ {h}d",
@@ -303,42 +313,49 @@ def run_universality(model, cfg, horizons=(30, 90), seeds=(0, 1, 2)):
                     "oracle [E,hist]": round(don_al, 4),
                     "gap (hist adds)": round(gap, 4),
                     "norm_gap": round(norm, 4),
+                    "noise": round(noise, 4),
+                    "solved": solved,
                 }
             )
     u = 1.0 - max((r["norm_gap"] for r in rows), default=0.0)
-    return rows, u, len(cust)
+    solved = bool(rows) and all(r["solved"] for r in rows)
+    return rows, u, len(cust), solved
 
 
-def _card(tag, rows, u, n):
+def _card(tag, rows, u, n, solved):
     worst = max(rows, key=lambda r: r["norm_gap"]) if rows else None
     lines = [
         f"# UNIVERSALITY GATE — {tag}  [loop/UNIVERSALITY.md]",
         f"{n} HELD-OUT (B) customers · oracle = [E, exhaustive full-history measure] · worst-case (minimax)",
         "",
         f"## U (universality index) = {u:.4f}   (1.0 = universal)",
+        f"## SOLVED = {solved}   (E within the oracle's own noise on EVERY member; gap <= noise)",
     ]
     if worst is not None:
         lines.append(
-            f"worst-case member: `{worst['target']}`  norm_gap {worst['norm_gap']:.4f}"
-            f"  (history adds {worst['gap (hist adds)']:+.4f} over E)"
+            f"worst-case member: `{worst['target']}`  norm_gap {worst['norm_gap']:.4f}  "
+            f"gap {worst['gap (hist adds)']:+.4f}  noise {worst['noise']:.4f}  "
+            f"solved={worst['solved']}"
         )
     lines += [
         "",
-        "| target | E alone | history alone | oracle [E,hist] | gap (hist adds) | norm_gap |",
-        "|---|---|---|---|---|---|",
+        "| target | E alone | history alone | oracle [E,hist] | gap (hist adds) | noise | "
+        "norm_gap | solved |",
+        "|---|---|---|---|---|---|---|---|",
     ]
     for r in rows:
         lines.append(
             f"| {r['target']} | {r['E_alone']:.4f} | {r['history_alone']:.4f} | "
-            f"{r['oracle [E,hist]']:.4f} | {r['gap (hist adds)']:+.4f} | {r['norm_gap']:.4f} |"
+            f"{r['oracle [E,hist]']:.4f} | {r['gap (hist adds)']:+.4f} | {r['noise']:.4f} | "
+            f"{r['norm_gap']:.4f} | {'✓' if r['solved'] else '✗'} |"
         )
     lines.append("")
     lines.append(
         "> gap = score([E,history]) - score(E): what the EXHAUSTIVE full-history measure adds "
-        "beyond E (0 => E sufficient w.r.t. it). NOT hand-RFM; conservative (true sequence "
-        "oracle is higher)."
+        "beyond E. SOLVED for a member when |gap| <= noise (the oracle's fold SE, floored by "
+        "1/sqrt(n)); SOLVED overall when every member is. NOT hand-RFM."
     )
-    return "\n".join(lines) + "\n", u
+    return "\n".join(lines) + "\n", u, solved
 
 
 def main(argv=None):
@@ -362,6 +379,12 @@ def main(argv=None):
         action="store_true",
         help="ground-truth machinery check (known sufficient statistic; no checkpoint)",
     )
+    ap.add_argument(
+        "--require-solved",
+        action="store_true",
+        dest="require_solved",
+        help="exit non-zero unless SOLVED (E within oracle noise on every member) — loop predicate",
+    )
     a = ap.parse_args(argv)
     if a.synthetic:
         res = synthetic_machinery_check()
@@ -377,12 +400,14 @@ def main(argv=None):
     cfg.db, cfg.as_of, cfg.sample_customers = a.db, a.as_of, a.customers
     horizons = tuple(int(x) for x in a.horizons.split(","))
     seeds = tuple(int(x) for x in a.seeds.split(","))
-    rows, u, n = run_universality(model, cfg, horizons, seeds)
-    card, u = _card(a.tag, rows, u, n)
+    rows, u, n, solved = run_universality(model, cfg, horizons, seeds)
+    card, u, solved = _card(a.tag, rows, u, n, solved)
     print(card)
     if a.out:
         Path(a.out).write_text(card)
-    return {"U": u, "rows": rows}
+    if a.require_solved and not solved:
+        raise SystemExit(1)
+    return {"U": u, "solved": solved, "rows": rows}
 
 
 if __name__ == "__main__":
