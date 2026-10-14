@@ -2791,3 +2791,28 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - **Principles served:** *Diagnosable*, *Honest*, *Robust*, *Efficient* (don't build an oracle
   that can't yet change a decision).
 - **Gate:** green (docs only; `bash -n loop/status.sh` OK).
+
+## DEC-128 — Loop iter 1 (state axis): nonlinear-drive learned ledger FAILS (3rd learned-measure negative)
+
+- **Date:** 2026-10-14
+- **Hypothesis (PLAYBOOK queue #1):** DEC-120's ledger failed partly because its drive was
+  **linear** in the tokens and could not represent nonlinear per-event transforms (`log(1+value)`).
+  Fix: make the drive an **MLP**; everything else identical; matched control = DEC-120.
+- **Measured (Rung-1 tiny, instacart, 618 held-out B, horizon 30, seed 0):**
+  - nonlinear-drive ledger-only: **U = 0.0348**
+  - (DEC-120) linear-drive ledger-only: U = 0.0470 · shape-only: 0.0660 · accumulator: 0.2174
+  ⇒ **nonlinearity made it worse**; the learned measure still loses to *no measure*.
+- **Read:** the drive-nonlinearity hypothesis is **falsified**. This is now the **third** learned
+  measure attempt to fail (linear ledger DEC-120, `psr` objective DEC-121, nonlinear ledger
+  DEC-128). Strong, repeated evidence that the extensive axis is **not recovered by learning from
+  token embeddings** at this scale — the explicit accumulator (raw aggregates) remains the only
+  mechanism that helps. Reverted (dead end).
+- **Honest tension:** this presses on the *"make it learn, don't teach"* doctrine vs the evidence.
+  Reconciling reading: the **law** (additivity) is fixed, and the **content** should be learned —
+  but the content is not being learned. Next (PLAYBOOK queue): the LAST learned attempt
+  (**measure-targeted objective** / content-addressed memory); if it also fails, adopt the
+  documented **complete explicit measure** (all generic aggregates = the empirical measure, which
+  is *algebra + exhaustive content*, not hand-picked features).
+- **Principles served:** *Honest* (recorded the negative, reverted), *Diagnosable* (axis = state),
+  *Efficient* (did not keep a losing pathway), *Robust* (matched control).
+- **Gate:** green (279 passed; reverted cleanly).

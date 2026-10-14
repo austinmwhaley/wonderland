@@ -225,6 +225,10 @@ invariant-by-construction).
   **Oracle fix (DEC-124):** the `U` oracle is now the **exhaustive, schema-derived full-history
   measure** (no hand-RFM); history-alone R² 0.64–0.68 (was 0.29–0.39), U = 0.1697. Next refine:
   a learned **sequence-model** oracle (order-aware).
+  **Stop condition (DEC-126):** `SOLVED` = E within the oracle noise on every member (+ B/B+C
+  green); loop predicate rewired. **PLAYBOOK (DEC-127):** hypothesis queue + guardrails + axis
+  contract; gate prints BOTTLENECK AXIS. **Loop iter 1 (DEC-128):** nonlinear-drive learned ledger
+  FAILS (U 0.035 vs shape-only 0.066, accumulator 0.217) — 3rd learned-measure negative; reverted.
 
 - **Versioning scheme (DEC-058):** versions are now pre-1.0 semver
   `MAJOR.MINOR.PATCH` (`0.6.4`); tag = `<version>r<revision>` (`0.6.4r162610`).
