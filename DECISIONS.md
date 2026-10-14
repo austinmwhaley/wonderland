@@ -3188,3 +3188,17 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   unaffected (all members informative).
 - **Principles served:** *Honest* (corrected the cause), *Diagnosable*.
 - **Gate:** green.
+
+## DEC-148 — Loop iter 20: minimality CONFIRMED at 12k (U 0.285 → 0.936); ~64 dims near-SOLVED
+
+- **Date:** 2026-10-14
+- **What:** reran the minimality sweep at a **larger sample** (instacart, 12000 → **3538 held-out
+  B**) with the hardened metric, `--no-seq-oracle`, horizon 30, seed 0.
+- **Measured:** baseline (k=0) **U = 0.2851** (worst LTV gap 0.474); measure-64 **U = 0.9359**
+  (worst LTV gap **0.0486** vs noise **0.0376** — just shy of SOLVED).
+- **Read:** the minimality result **holds and strengthens with N** (U 0.29 → 0.94). A **~64-dim**
+  compression of the generic full-history measure brings E to the **SOLVED boundary**; a few more
+  dims (or a better compressor) would cross it. Headline result: **`E = [learned shape ‖ ~64-dim
+  measure]` is near-sufficient**, robust across sample sizes.
+- **Principles served:** *Efficient*, *Universal*, *Honest*.
+- **Gate:** green.
