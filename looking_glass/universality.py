@@ -371,14 +371,21 @@ def _oracle_gap(
     noise = max(float(np.std(don_al)), float(np.std(e_al)), 1.0 / np.sqrt(nval))
     gap_mean = float(np.mean(gaps))
     solved = abs(gap_mean) <= noise
+    don_mean = float(np.mean(don_al))
+    # INFORMATIVE? a member the oracle barely carries (near-chance clf / ~0-R2 reg) has a tiny
+    # normalization denominator and produces an unstable gap; it must NOT drive the worst-case
+    # (DEC-145). Floor derived from the oracle's own noise / finite-sample rate.
+    floor = max(noise, 1.0 / np.sqrt(nval))
+    informative = (don_mean > 0.5 + floor) if kind == "clf" else (don_mean > floor)
     return (
         float(np.mean(e_al)),
         float(np.mean(raw_al)),
-        float(np.mean(don_al)),
+        don_mean,
         gap_mean,
         float(np.mean(norms)),
         noise,
         bool(solved),
+        bool(informative),
     )
 
 
@@ -464,7 +471,7 @@ def run_universality(
             )
             if r is None:
                 continue
-            e_al, raw_al, don_al, gap, norm, noise, solved = r
+            e_al, raw_al, don_al, gap, norm, noise, solved, informative = r
             rows.append(
                 {
                     "target": f"{name} @ {h}d",
@@ -475,10 +482,16 @@ def run_universality(
                     "norm_gap": round(norm, 4),
                     "noise": round(noise, 4),
                     "solved": solved,
+                    "informative": informative,
                 }
             )
-    u = 1.0 - max((r["norm_gap"] for r in rows), default=0.0)
-    solved = bool(rows) and all(r["solved"] for r in rows)
+    # worst-case over INFORMATIVE members only (near-chance members must not drive U; DEC-145)
+    inf = [r for r in rows if r.get("informative")]
+    if inf:
+        u = 1.0 - max(r["norm_gap"] for r in inf)
+    else:
+        u = 0.0  # NO informative members (oracle at chance on every target) -> cannot claim
+    solved = bool(inf) and all(r["solved"] for r in inf)
     return rows, u, len(cust), solved
 
 

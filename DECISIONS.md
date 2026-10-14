@@ -3137,3 +3137,38 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   a schema-agnostic vocabulary (the tokenizer axis).
 - **Principles served:** *Honest* (no over-claim from a noisy fixture), *Diagnosable*.
 - **Gate:** green.
+
+## DEC-145 — Loop iter 17: cross-schema degrades (0.80→0.60); metric FRAGILITY on near-chance clf members
+
+- **Date:** 2026-10-14
+- **Cross-schema (high-signal pair):** instacart encoder → rabbit_hole stream: U **0.6000**;
+  rabbit_hole native (`rh_jun`) U **0.8000** (both worst members solved). Cross-schema degrades
+  ~0.2 but is **not catastrophic** — the generic field extraction + value/dt channels carry over.
+  A schema-agnostic vocabulary would close more.
+- **METRIC FRAGILITY (important):** on rabbit_hole the worst member is a **near-chance clf**
+  (`propensity`, AUC≈0.5), whose normalization denominator (`AUC − 0.5`) is **tiny** → `norm_gap`
+  is unstable and can dominate `U` even when `gap ≈ 0` (displayed gap −0.016 yet `norm_gap` 0.40).
+  So `U` can be driven by **low-signal members**, not by real insufficiency.
+- **Fix (next):** gate should **exclude/mask near-chance members** (denominator below a derived
+  floor) from the worst-case, or use a **scale-free** normalization — otherwise `SOLVED` may be
+  unreachable for metric reasons, not capability reasons.
+- **Principles served:** *Honest* (metric robustness), *Universal/Adaptive* (cross-schema),
+  *Diagnosable*.
+- **Gate:** green.
+
+## DEC-146 — Loop iter 18: near-chance masking + `rabbit_hole as_of 2025-06-01` is DEGENERATE
+
+- **Date:** 2026-10-14
+- **Fix:** worst-case `U` now uses **only informative members** (oracle above chance by a derived
+  floor); if there are **no** informative members, `U = 0.0` (previously it defaulted to a **false
+  `U=1.0`**). Each member reports `informative`.
+- **Discovered (degrades/confounds DEC-145):** `rabbit_hole as_of 2025-06-01` is **degenerate** —
+  the oracle itself scores at/below chance (LTV R² **−0.12**, order_count −0.11, propensity AUC
+  **0.455**, next-value −0.19), i.e. the 30-day forward window is **empty**. So **all** rh members
+  are non-informative and the DEC-145 cross-schema "0.80 vs 0.60" is **confounded** (both sides
+  are on a signal-less target set) — treat it as **void**.
+- **Consequence:** the gate needs a **valid `as_of` per stream** (non-empty forward window).
+  `loop/status.sh`'s `rh_jun|2025-06-01` entry is invalid and must be fixed (use an earlier
+  as_of, e.g. within the stream's event range minus the horizon).
+- **Principles served:** *Honest* (false-perfect removed; void result corrected), *Diagnosable*.
+- **Gate:** green.
