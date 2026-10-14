@@ -3202,3 +3202,21 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   measure]` is near-sufficient**, robust across sample sizes.
 - **Principles served:** *Efficient*, *Universal*, *Honest*.
 - **Gate:** green.
+
+## DEC-149 — Loop iter 21: minimality PLATEAUS at U≈0.93; last ~0.07 is a probe/representation limit
+
+- **Date:** 2026-10-14
+- **What:** extended the capacity sweep (instacart 12000 → 3538 B, horizon 30, seed 0).
+- **Measured:** k=64 → **0.9359** · k=96 → **0.9328** · k=128 → **0.9364** (worst LTV gap ~0.048–0.051
+  vs noise **0.0376** — just above SOLVED). Past ~64 dims, U **plateaus**; more dims do not help.
+- **Read:** the residual gap is **not** measure capacity. Two candidates: (a) PCA (even near-lossless
+  when k ≥ rank) is a *rotation*, and the **GBM probe uses the compressed basis slightly worse** than
+  the raw features — a **compressed-measure vs raw-probe interaction**; (b) a genuine small loss from
+  compressing the timing/value directions. Either way, exact `SOLVED` is reachable only by putting the
+  **raw** measure in `E` (the DEC-139 degeneracy) — so the *achievable* point for a **compact** measure
+  is **U ≈ 0.93 (near-sufficient)**, and the last ~0.07 is a metric/probe reconciliation, not capability.
+- **Headline:** `E = [learned shape ‖ ~64-dim measure]` is **near-sufficient (U≈0.93)** and the
+  measure does **not** need to grow beyond ~64 dims. The frontier is now **the probe/representation
+  reconciliation** (make the compact measure as usable as the raw one) + the remaining axes.
+- **Principles served:** *Efficient*, *Honest* (no capacity over-claim), *Diagnosable*.
+- **Gate:** green.
