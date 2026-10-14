@@ -796,7 +796,7 @@ def _jepa_loss(model, t, y):
     ctx = y[idx, cut - 1]
     xt = model.target_tokens_batch(t)
     _ev, _evp = model._event_residual_inputs(t, emb_et=model.t_emb_et)
-    yt, _ = model.t_ssm(xt, mask=t["mask"], ev=_ev, ev_prev=_evp)
+    yt, _ = model.t_ssm(xt, mask=t["mask"], ev=_ev, ev_prev=_evp, dt=t["dt"])
     pos = torch.arange(T, device=y.device).unsqueeze(0)
     suf = (pos >= cut.unsqueeze(1)) & (t["mask"] > 0)
     cnt = suf.sum(1, keepdim=True).clamp(min=1)
@@ -1682,8 +1682,9 @@ def forward_embedding(model, seqs, h0s=None):
         h0 = torch.stack([torch.as_tensor(h, dtype=torch.float32, device=dev) for h in h0s])
     with torch.no_grad():
         _y, h = model.encode_ev(tok, t, h0=h0)
-        acc = model.accumulator(tok, t)  # (B, 33) learned cumulative stats
-    return torch.cat([model.donor_batch(h), acc], dim=-1)
+    # consumed embedding = the selective trunk's donor (its LEARNED per-channel
+    # decay lets individual channels become cumulative ledgers, so no separate track)
+    return model.donor_batch(h)
 
 
 def _loss_split(model, vocab, items, cfg, weights: dict | None = None, scales: dict | None = None):

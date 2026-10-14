@@ -200,7 +200,7 @@ class SelectiveSSM(nn.Module):
         dim,
         delta_bias=0.0,
         delta_spectrum=False,
-        spectrum=(-1.5, 3.0),
+        spectrum=(-8.0, 3.0),
         slow_smooth=False,
         band_isolate=False,
         bilinear=False,
@@ -322,7 +322,7 @@ class SelectiveSSM(nn.Module):
         yn = self.readout_norm(y)
         return yn + self.readout_scale(mom) if mom is not None else yn
 
-    def forward(self, x, h0=None, mask=None, ev=None, ev_prev=None):
+    def forward(self, x, h0=None, mask=None, ev=None, ev_prev=None, dt=None):
         if self.input_norm is not None:
             x = self.input_norm(x)
         xs = x  # post-input-norm token for the readout skip (current event)
@@ -336,7 +336,14 @@ class SelectiveSSM(nn.Module):
             wd = self.W_delta(x)
             bx = self.W_B(x)
         delta = F.softplus(wd + self.delta_bias)
-        decay = torch.exp(-delta)
+        # CONTINUOUS-TIME (v8): scale the per-channel decay by the ELAPSED TIME
+        # between events, so a channel's memory is in TIME units (irregular streams).
+        # decay = exp(-delta * dt_days); dt is log1p(seconds) -> days.
+        if dt is not None:
+            dt_days = torch.expm1(dt) / 86400.0  # (B,T,1)
+            decay = torch.exp(-delta * dt_days)
+        else:
+            decay = torch.exp(-delta)
         if mask is not None:
             m = mask.unsqueeze(-1)
             decay = decay * m + (1.0 - m)  # pad: hold state
@@ -555,7 +562,7 @@ class MultiScaleSSM(nn.Module):
             r0 = float(np.exp(-np.logaddexp(0.0, delta_biases[self.slow_idx])))  # residual
             self.intent = IntentFilter(chan, retention_init=r0)
 
-    def forward(self, x, h0=None, mask=None, ev=None, ev_prev=None):
+    def forward(self, x, h0=None, mask=None, ev=None, ev_prev=None, dt=None):
         # NOTE: context-gated mixtures (M2 softmax gate, M5 sparse top-k) were
         # both REJECTED by the battery — the gate attenuated channels and
         # collapsed their diversity (unique-coverage fell). Experts stay
@@ -566,7 +573,7 @@ class MultiScaleSSM(nn.Module):
             if self.slow_intent and i == self.slow_idx:
                 xi = self.intent(x, mask=mask)
             hi = None if h0 is None else h0[..., i * self.chan : (i + 1) * self.chan]
-            yi, ho = e(xi, h0=hi, mask=mask, ev=ev, ev_prev=ev_prev)
+            yi, ho = e(xi, h0=hi, mask=mask, ev=ev, ev_prev=ev_prev, dt=dt)
             ys.append(yi)
             hs.append(ho)
         return torch.cat(ys, dim=-1), torch.cat(hs, dim=-1)
@@ -822,7 +829,17 @@ class CFM(nn.Module):
             t = {"et": et, "mask": torch.ones_like(et, dtype=torch.float32)}
             y, h = self.encode_ev(tok, t, h0=h0)
         else:
-            y, h = self.ssm(tok, h0=h0)
+            import numpy as _np
+
+            ts = _np.array([_to_epoch(x) for x in seq["event_ts"]], dtype=_np.float64)
+            d = _np.zeros_like(ts)
+            d[1:] = _np.maximum(ts[1:] - ts[:-1], 0.0)
+            dt = (
+                torch.tensor(_np.log1p(d), dtype=torch.float32, device=self._dev())
+                .unsqueeze(0)
+                .unsqueeze(-1)
+            )
+            y, h = self.ssm(tok, h0=h0, dt=dt)
         return y.squeeze(0), h.squeeze(0)
 
     def _target_params(self):
@@ -908,7 +925,7 @@ class CFM(nn.Module):
         a low-pass aggregate that washes the identity out — measured: any additive
         residual still leaves z_t worse than a 1-gram). Never mixed; no loss hack.
         """
-        y, h = self.ssm(x, h0=h0, mask=t["mask"])
+        y, h = self.ssm(x, h0=h0, mask=t["mask"], dt=t["dt"])
         if self.event_residual_on:
             ne = self.vocab.n_et + 1
             et = t["et"]
@@ -984,41 +1001,6 @@ class CFM(nn.Module):
                 hit += 1
         self.prod_vec_table = tab.to(next(self.parameters()).device)
         return hit
-
-    def accumulator(self, tok, t):
-        """CUMULATIVE statistics from the model's own (learned) token features: the
-        MEAN token drive (average event = mean value / mean gap / event-type mix) and
-        the log TOTAL COUNT. Exposed in the consumed embedding so `embedding(customer,t)`
-        carries cumulative info the contractive recurrence cannot. Universal (no domain
-        literals); built from learned features, so it is a learned statistic, not a
-        hand-coded RFM feature."""
-        mask = t["mask"].unsqueeze(-1)  # (B,T,1)
-        ssum = (tok * mask).sum(1)  # (B, chan) cumulative token drive (TOTAL)
-        count = mask.sum(1).clamp(min=1.0)  # (B,1)
-        mag = torch.log1p(ssum.norm(dim=-1, keepdim=True))  # total magnitude
-        feats = [ssum, ssum / count, mag, torch.log1p(count), tok[:, -1]]  # last event too
-        # RECENCY-WEIGHTED windows (recent activity the raw baseline has): recency-
-        # weighted sums of the token drive at derived half-lives (state half-life x {1,3}).
-        hl = float(getattr(self, "half_life_days", 30.0)) or 30.0
-        secs = (torch.expm1(t["dt"]).squeeze(-1) * t["mask"]).cumsum(1)  # (B,T) clock
-        age = secs[:, -1:] - secs  # (B,T) seconds since each event
-        for k in (0.3, 1.0, 3.0, 10.0):  # wider half-life spectrum
-            w = 0.5 ** (age / (hl * k * 86400.0)) * t["mask"]
-            feats.append((tok * w.unsqueeze(-1)).sum(1))
-            feats.append(w.sum(1, keepdim=True))  # recency-weighted COUNT
-        # RAW universal TOTALS (exact, not a learned projection): value & time sums.
-        # These are schema-agnostic aggregates of the stream's numeric channels.
-        m = t["mask"]
-        val = torch.log1p(t["val"].abs().squeeze(-1))  # (B,T)
-        gap = torch.expm1(t["dt"]).squeeze(-1)
-        feats += [
-            (val * m).sum(1, keepdim=True),
-            (gap * m).sum(1, keepdim=True),
-            (val * m).mean(1, keepdim=True),
-            (gap * m).mean(1, keepdim=True),
-            gap[:, -1:],  # RECENCY (time since last event)
-        ]
-        return torch.cat(feats, dim=-1)
 
     def donor_batch(self, h: "torch.Tensor") -> "torch.Tensor":
         """Donor readout for (B, D) state batches — no pooling. The consumed

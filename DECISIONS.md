@@ -2416,3 +2416,24 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   structure (adds over raw on dynamics)** — NOT exact reproduction of summaries. Measure both:
   the sufficiency gate (how close) and the B+C gate (does it add over raw).
 - Gate green (277 tests). Committed.
+
+## DEC-111 — The "self-organizing ledger" hypothesis FAILS (continuous-time decay counters it)
+
+- **Date:** 2026-10-14
+- **Implemented (the blueprint's Pillars):** (1) widened the LEARNED per-channel decay spectrum
+  to `[-8, 3]` so channels CAN be near-ledgers (`decay_max` 0.82 -> 0.99966); (2) made the
+  recurrence CONTINUOUS-TIME (`decay = exp(-delta * dt_days)`); (3) PURGED the bypasses
+  (`readout_skip` default False; `event_residual` False); (4) REMOVED the explicit
+  accumulator/register, trusting the selective trunk to self-organize.
+- **Result (instacart, matched w/ objectives; `insta_ct`):** `E alone` LTV **0.129** — WORSE
+  than the explicit accumulator (0.21). eff_rank dropped to 7.1. SUFFICIENT 0/5.
+- **Why it failed (two mechanisms):**
+  1. **Continuous-time decay RESETS memory on sparse events:** `decay=exp(-delta*dt_days)` -> a
+     30-day gap gives decay~0, so the state FORGETS across real gaps — the opposite of a ledger.
+  2. **Channel specialization did not emerge:** the SSL objectives don't reward cumulative
+     memory strongly enough for gradient descent to grow ledger channels on its own.
+- **Conclusion:** the clean-slate "self-organizing ledgers" does NOT replace the explicit
+  integrity track in practice. The explicit accumulator (0.21) beats the self-organized trunk
+  (0.13). The principled path is: keep a (LEARNED) explicit integration register, AND be careful
+  with continuous-time decay (it must not wipe cumulative state across gaps).
+- Gate green (277 tests).

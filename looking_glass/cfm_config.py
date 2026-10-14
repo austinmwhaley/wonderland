@@ -255,7 +255,7 @@ class CFMConfig:
     # lives in the CURRENT token. A skip restores it to the readout so a linear
     # head can express the transition table (measured: state->next 0.37 vs
     # 1-gram 0.25). Identity-init, learnable, per-sample.
-    readout_skip: bool = True
+    readout_skip: bool = False  # (v8) purged hand-fed bypass
     # v8 magnitude-preserving readout: add a learned projection of the pre-norm
     # magnitude so heads can read RECENT-ACTIVITY (scale) despite RMSNorm. Off.
     readout_scale: bool = False
