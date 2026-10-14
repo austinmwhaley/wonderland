@@ -3089,3 +3089,21 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   form) — the next iteration.
 - **Principles served:** *Efficient* (compact measure), *Universal*, *Honest* (caveat stated).
 - **Gate:** green.
+
+## DEC-142 — Loop iter 14: minimality CONFIRMED without leakage — ~64 dims → U≈0.90
+
+- **Date:** 2026-10-14
+- **What:** moved the PCA measure-compression **inside `_oracle_gap`, fit per fold on TRAIN** (no
+  leakage), and swept capacity.
+- **Measured (Rung-0, 1181 B, horizon 30, seed 0, `--no-seq-oracle`):** U = **0.1442 (k=0) →
+  0.5890 (k=16) → 0.8962 (k=64, worst member SOLVED) → 0.8816 (k=256)**. The k=256 drop is
+  dim-sensitivity (the probe prefers the compact 64-dim measure).
+- **Read:** the full-history measure is **learnably compressible** (PCA = a *linear* learned
+  compression) to **~64 dims** with near-sufficiency, **without leakage**. This is the first
+  solid **positive** result: the architecture `E = [learned shape ‖ ~64-dim measure]` is
+  **compact + near-sufficient**, and the measure's *form* is learnable (dim reduction of generic
+  aggregates), unlike the failed "learn from token embeddings" route.
+- **Next:** replace the gate's PCA with an **in-encoder learned compression** of the generic
+  aggregate measure (the real Layer-B object), and re-certify; then the other axes.
+- **Principles served:** *Efficient*, *Universal*, *Honest* (leakage removed).
+- **Gate:** green.

@@ -274,7 +274,9 @@ def _normalized_gap(donor, e_alone, kind, eps=1e-9):
     return float(gap), norm
 
 
-def _oracle_gap(Z, Xhist, yy, kind, cust, seeds=(0, 1, 2), eps=1e-9, seqs=None, dev=None):
+def _oracle_gap(
+    Z, Xhist, yy, kind, cust, seeds=(0, 1, 2), eps=1e-9, seqs=None, dev=None, measure_dim=0
+):
     """Mean oracle-gap over held-out folds for one target.
 
     E-alone = model on E; oracle = max(model on [E, history], learned SEQUENCE
@@ -304,6 +306,16 @@ def _oracle_gap(Z, Xhist, yy, kind, cust, seeds=(0, 1, 2), eps=1e-9, seqs=None, 
                 continue
             scZ = StandardScaler().fit(Z[tr])
             Ztr, Zva = scZ.transform(Z[tr]), scZ.transform(Z[va])
+            if measure_dim and int(measure_dim) > 0:
+                # minimality (no leakage): compress the FULL-HISTORY measure with PCA fit on TRAIN
+                from sklearn.decomposition import PCA
+
+                scM = StandardScaler().fit(Xhist[tr])
+                mtr, mva = scM.transform(Xhist[tr]), scM.transform(Xhist[va])
+                kk = min(int(measure_dim), mtr.shape[1], max(1, mtr.shape[0] - 1))
+                pca = PCA(n_components=kk, random_state=0).fit(mtr)
+                Ztr = np.hstack([Ztr, pca.transform(mtr)])
+                Zva = np.hstack([Zva, pca.transform(mva)])
             scH = StandardScaler().fit(Xhist[tr])
             Htr, Hva = scH.transform(Xhist[tr]), scH.transform(Xhist[va])
             Etra, Etva = np.hstack([Ztr, Htr]), np.hstack([Zva, Hva])  # oracle = [E, history]
@@ -430,17 +442,6 @@ def run_universality(
     Xhist, _hnames = _full_history_features(cfg, cust, only_keys=oracle_keys)
     if oracle_in_e:
         Z = np.hstack([Z, Xhist]).astype(np.float32)  # architecture receipt (DEC-138)
-    elif measure_dim and int(measure_dim) > 0:
-        # minimality: compress the full-history measure to `measure_dim` via PCA (variance-
-        # maximizing; fit on the held-out measure — a leakage caveat, but a fair upper bound on
-        # what any LINEAR compression can retain). U vs measure_dim = minimal sufficient measure.
-        from sklearn.decomposition import PCA
-        from sklearn.preprocessing import StandardScaler
-
-        Xs = StandardScaler().fit_transform(Xhist)
-        k = min(int(measure_dim), Xs.shape[1], max(1, Xs.shape[0] - 1))
-        Xc = PCA(n_components=k, random_state=0).fit_transform(Xs)
-        Z = np.hstack([Z, Xc]).astype(np.float32)
     rows = []
     for h in horizons:
         fut, _past, _tc = _rfm_targets(cfg, h)
@@ -450,7 +451,17 @@ def run_universality(
             .fill_null(0.0)
         )
         for name, (yy, kind) in _future_family(j).items():
-            r = _oracle_gap(Z, Xhist, yy, kind, cust, seeds=seeds, seqs=seq_arg, dev=dev)
+            r = _oracle_gap(
+                Z,
+                Xhist,
+                yy,
+                kind,
+                cust,
+                seeds=seeds,
+                seqs=seq_arg,
+                dev=dev,
+                measure_dim=measure_dim,
+            )
             if r is None:
                 continue
             e_al, raw_al, don_al, gap, norm, noise, solved = r
