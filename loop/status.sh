@@ -8,10 +8,11 @@
 set -u
 cd /home/austin-whaley/Documents/wonderland
 
+# name|db|ckpt_dir|as_of   (point ckpt_dir at wherever the loop trains for that stream)
 STREAMS=(
-"rabbit_hole|rabbit_hole/data/duckdb/customer_event_stream.parquet|/tmp/opencode/loop_rh|2025-06-01"
-"instacart|rabbit_hole/data/instacart/customer_event_stream.parquet|/tmp/opencode/loop_insta|2025-10-01"
-"ecommerce|rabbit_hole/data/ecommerce_2019/customer_event_stream.parquet|/tmp/opencode/loop_ec|2020-03-01"
+"rabbit_hole|rabbit_hole/data/duckdb/customer_event_stream.parquet|/tmp/opencode/rh_jun|2025-06-01"
+"instacart|rabbit_hole/data/instacart/customer_event_stream.parquet|/tmp/opencode/insta_noinpm|2025-10-01"
+"ecommerce|rabbit_hole/data/ecommerce_2019/customer_event_stream.parquet|/tmp/opencode/v64|2020-03-01"
 )
 
 fail=0
