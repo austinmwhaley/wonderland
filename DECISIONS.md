@@ -2619,3 +2619,34 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - **Next:** attack the mass axis via the objective (predict the FUTURE aggregate from the state),
   then re-test; only re-introduce an additive block if it wins.
 - **Gate:** green (282 passed; reverted cleanly).
+
+## DEC-121 — U5 Rung-1 (2): the future-aggregate objective (`psr`) also FAILS; the accumulator stands
+
+- **Date:** 2026-10-14
+- **Tried:** the DEC-120 follow-up — add the targeted self-supervised **future-aggregate** objective
+  (`psr`: predict future count/value over horizons from the state) to force the state to carry the
+  extensive axis. Matched Rung-1 tiny train on instacart (same size/budget as DEC-120), one
+  variable: **default objectives vs default + `psr`** (accumulator on in both).
+- **Measured (U, 618 held-out B, horizon 30, seed 0):**
+  - accumulator, default objectives (`uni_acc`): **U = 0.2174**
+  - accumulator + `psr` (`uni_psr`): **U = 0.0928** (worst-case `next-order value`, norm_gap 0.91)
+  The `psr` run's val loss was also higher (best 4.76 vs 3.93), so `psr` competed with / dominated
+  the equal-weight objective set rather than helping.
+- **Read:** TWO independent measure-axis fixes now fail at Rung-1 — a learned additive ledger
+  (DEC-120) and a targeted future-aggregate objective (DEC-121). The **explicit additive
+  accumulator** (raw sums) remains the best mechanism (U 0.22). Strong evidence that the extensive
+  axis is best carried by **explicit aggregation** (an algebraic mechanism), and that "make it
+  learn from token embeddings" does not recover it at this scale/budget.
+- **Strategic implication (to debate):** "make it learn, don't teach" may be mis-scoped for the
+  **extensive** axis: an additive aggregator is *algebra*, not a hand-picked feature. The remaining
+  question is whether the accumulator can be made **complete** (cover the history proxy's value
+  distribution stats) honestly, or whether the metric's proxy oracle is over-strong for that axis.
+- **Gate:** green (ruff clean).
+
+## Loop checkpoint — universality work (2026-10-14)
+- **U1** gate built (DEC-117). **U2** ground-truth verified (DEC-118). **U3-R0** measure pathway
+  lifts U 0.066→0.180 (DEC-119). **U5-R1** ledger loses (DEC-120); `psr` loses (DEC-121).
+- **State:** U ≈ 0.22 (instacart); bottleneck = the **mass/extensive axis**; the explicit
+  accumulator is the best known measure; two learned-measure attempts failed and were reverted.
+  Next: make the measure **complete** honestly, or re-scope the metric's oracle for the extensive
+  axis — and build U3-adversary / U4 accessibility gates.
