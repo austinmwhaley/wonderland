@@ -35,6 +35,39 @@ Enforced in code, not just documented:
 
 ---
 
+## North star — Phase U: the UNIVERSAL embedding (`loop/UNIVERSALITY.md`)
+
+The goal (v8-sharpened) is a **minimal, bounded, universal sufficient statistic** of the stream:
+sufficient for the **full observable future**, so any present/future consumer (ours or another
+team's, known or unknown) is covered **by construction**. Judged by
+`U = 1 − worst-case_τ oracle-gap_τ` over a **broad, adversarial, held-out, self-supervised** family
+at **fixed capacity** (oracle = full history / Bayes floor). `U → 1` ⟺ done.
+
+Anti-overfit (binding): Layer B self-supervised only; reference = full-history oracle, never our
+tasks; family broader than any consumer + adversarially grown; **known uses VETO, never SHAPE**;
+**accessibility** (probe parity) and **geometry/similarity-usability** are separate gates;
+unlogged events carried as uncertainty.
+
+**Phase U workstream (sequenced after Phase 0's evidence fixes for the real-stream legs):**
+
+- **U1. Build the universality gate** — `looking_glass/universality.py`: the oracle-gap /
+  history-residual test (`future ⊥ history | E`), a broad self-supervised future family, and the
+  `U` scalar. Rung-0 on existing checkpoints.
+- **U2. Wire the Layer-A lab to exact `U`** — on synthetic streams the true sufficient statistic
+  is known ⇒ `U` is exact; verify the *machinery* and that a deliberately-lossy encoder scores
+  lower while an over-capacity one does not score higher (saturation).
+- **U3. Adversarial family** — a growing task-search adversary that finds where `E` loses most
+  (worst-case objective).
+- **U4. Accessibility + similarity gates** — probe-parity on the held-out family; kNN
+  label-transfer (lookalike/segmentation usability) — separate from sufficiency.
+- **U5. Close the gap with the architecture** — the shape×measure decomposition (contractive
+  shape memory + content-addressed additive measure memory; `AGENTS.md` DEC-106 root cause),
+  driven by the future-prediction objective; re-measure `U` each step.
+- **U6. Cross-consumer validation** — train plugins on `E` for held-out, *never-used* tasks and
+  confirm parity (the empirical "unknown use case" test).
+
+---
+
 # The roadmap
 
 Sequencing matters: **Phase 0 first** — several numbers we currently cite don't

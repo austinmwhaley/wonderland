@@ -7,6 +7,16 @@
 You are one iteration of an autonomous loop in /home/austin-whaley/Documents/wonderland.
 Pass workdir=/home/austin-whaley/Documents/wonderland to every shell call.
 
+GOAL (north star; `AGENTS.md` "Project goal", `STATUS.md` "Canonical decomposition",
+`loop/UNIVERSALITY.md`): make `embedding(customer, t)` a MINIMAL, BOUNDED, **UNIVERSAL
+SUFFICIENT STATISTIC of the stream** — sufficient for the full observable future so ANY present
+or future consumer is covered by construction. Measured by `U = 1 − worst-case oracle-gap`
+(broad, adversarial, held-out, self-supervised family; oracle = full history / Bayes floor;
+fixed capacity). `U → 1` ⟺ done. The B/B+C cards green across all streams are a NECESSARY
+condition, not the goal. Known use cases may VETO (gates), never SHAPE the encoder.
+PRIORITY this phase: build the universality gate (`looking_glass/universality.py` per the spec),
+then drive `U` up with the highest-leverage architectural lever (the shape×measure decomposition).
+
 NEXT ACTION: run `bash loop/status.sh`. If it prints GOAL_MET, do nothing further and
 exit. Otherwise:
 

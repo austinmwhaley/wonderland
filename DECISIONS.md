@@ -2497,3 +2497,35 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - **State:** goal = sufficient statistic; sufficiency ~0.55-0.88x raw (best-measured; gap ~half);
   the only non-green CARD is ecommerce B (channel-MI capacity-limited, DEC-114). Gate green
   (277 tests).
+
+## DEC-116 — Goal reframed as the UNIVERSAL embedding; metric = `U`; docs aligned
+
+- **Date:** 2026-10-14
+- **Context:** operator brainstorming settled the north star. The previous goal ("a sufficient
+  statistic, judged by a sufficiency gate vs the best raw feature set") was too narrow: (a) plain
+  sufficiency is vacuous (the full history is trivially sufficient) — the real target is **minimal
+  sufficiency at a capacity budget**; (b) it was framed around OUR decision tasks, which
+  under-covers "unknown use cases" (the embedding must serve any present/future consumer); (c) it
+  conflated *observation* with *decision* sufficiency (a state can be perfectly predictive under
+  the logged policy yet blind to counterfactuals).
+- **Decision (the goal):** `embedding(customer, t)` = a **minimal, bounded, universal sufficient
+  statistic of the stream** — sufficient for the **full observable future** so any consumer is
+  covered by construction; **predictive** (supervised) + **structure-revealing** (unsupervised,
+  usable geometry) + **decision-sufficient for the declared action/reward family** (RL).
+- **Decision (the metric):** `U = 1 − worst-case_τ oracle-gap_τ`, oracle-gap = excess loss (beyond
+  the Bayes floor) predicting the future from `E` vs the **full history**, over a **broad,
+  adversarial, held-out, self-supervised** family, at **fixed capacity**. `U → 1` ⟺ done.
+  Worst-case (minimax), exact on the Layer-A lab, estimated with CIs on real streams.
+- **Anti-overfit clause (binding):** Layer B self-supervised only; reference = full-history
+  oracle, never our tasks; family broader than any consumer + adversarially grown; **known use
+  cases VETO (gates), never SHAPE**; **accessibility** (probe parity) and **geometry /
+  similarity-usability** measured separately from sufficiency; unlogged events carried as
+  uncertainty.
+- **Docs aligned:** `AGENTS.md` (goal + metric + anti-overfit clause), `STATUS.md` (Primary goal,
+  Canonical decomposition GOAL/METRIC), `ROADMAP.md` (Phase U workstream), `loop/UNIVERSALITY.md`
+  (**new** metric spec), `loop/ITER.md` + `.opencode/commands/loop.md` + `loop/README.md` (loop now
+  pursues `U`; B/B+C green = NECESSARY condition, not the goal).
+- **Trade-offs:** the B/B+C cards remain the checkable predicate (necessary, honest, already
+  gated); `U` is the true target. Building the universality gate (`U1`) is now the loop's top
+  priority; the shape×measure architecture lever (DEC-106 root cause) is the path to raise `U`.
+- **Status:** docs-only change; no code. Gate green (277 tests).

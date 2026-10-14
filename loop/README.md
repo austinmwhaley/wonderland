@@ -50,9 +50,11 @@ loginctl enable-linger $USER      # keep running after logout
 ## Configure
 
 - **Model:** `-m` in `run.sh` (or env `LOOP_MODEL`).
-- **Goal:** edit the `STREAMS` table in `status.sh` (name|db|ckpt_dir|as_of). The loop trains
-  into `ckpt_dir`, and `status.sh` picks the newest `registry_*.json` there. GOAL = every
-  B card AND every B+C card reads `VERDICT: GREEN`.
+- **Goal:** the north star is a **universal sufficient-statistic embedding** (`loop/UNIVERSALITY.md`,
+  metric `U = 1 − worst-case oracle-gap`). The **checkable predicate** in `status.sh` is the
+  NECESSARY condition: edit its `STREAMS` table (name|db|ckpt_dir|as_of); the loop trains into
+  `ckpt_dir` and `status.sh` picks the newest `registry_*.json` there. GOAL_MET = every B card
+  AND every B+C card reads `VERDICT: GREEN`. Drive `U` up in parallel once the gate exists.
 - **Caps:** `LOOP_MAX_ITERS` / `LOOP_MAX_HOURS` (default 500 / 24h). Hitting a cap exits `2`
   (so you can tell "gave up" from "done").
 - **Continuity is in the repo:** STATUS.md + DECISIONS.md + git. Each iteration commits, so a

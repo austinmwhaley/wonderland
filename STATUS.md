@@ -30,9 +30,11 @@ DOCTRINE        no magic numbers · make it learn · invariants by construction 
 ```
 
 ### GOAL — and *why* it is the goal
-**`embedding(customer, t)` = a minimal, bounded, decision-sufficient statistic
-of their history** — the smallest fixed-size object that loses nothing about the
-future, for prediction *and* for decisions.
+**`embedding(customer, t)` = a minimal, bounded, UNIVERSAL sufficient statistic of
+their history** — the smallest fixed-size object that loses nothing about the
+future, for prediction *and* for decisions. **"Universal"** = sufficient for the
+**full observable future**, so *any* present or future consumer (ours or another
+team's, known or unknown) is covered **by construction**, not by enumeration.
 
 Why this and not something else (the purpose chain):
 - The system exists to **decide** (NBA, email frequency, promos, timing) to
@@ -65,6 +67,20 @@ decisions, **minimized at fixed `|E|`**. Two legs:
 information-bottleneck operating point), ground-truthable on the Layer-A lab.
 Do **not** optimize reconstruction, absolute prediction skill, a single
 hand-picked task, or any self-referential training metric.
+
+**The universality index** (what the loop drives):
+`U = 1 − worst-case_τ (oracle-gap_τ)`, oracle-gap = *excess* loss (beyond the
+Bayes floor) predicting the future from `E` vs from the **full history**, over a
+**broad, adversarial, held-out, self-supervised** family, at fixed capacity.
+`U → 1` ⟺ universal. Worst-case (minimax), not average — averages hide blind
+spots. Measured exactly on the Layer-A lab (known truth); estimated with CIs on
+real streams. Spec: `loop/UNIVERSALITY.md`.
+
+**Anti-overfit clause (binding):** Layer B self-supervised only; reference is
+the **full-history oracle**, never our tasks; family stays broader than any
+consumer + adversarially grown; **known use cases VETO, never SHAPE**; report
+**accessibility** (probe parity) and **geometry** (isotropy/rank) separately from
+sufficiency; unlogged events carried as uncertainty, never faked.
 
 ### CONTENT — the information axes the state must carry
 Independent kinds of information (not polar factors); each is a checklist item:
@@ -135,13 +151,18 @@ invariant-by-construction).
 
 ## Macro
 
-- **Primary goal (operator-defined, DEC-008; sharpened v8):** produce
-  `embedding(customer, timestamp)` — a point-in-time **customer STATE** that is a **sufficient
-  statistic of the history**: *everything about the past that matters for the future is in this
-  one vector; nothing that matters is lost.* It must be **predictive** (supervised),
-  **structure-revealing** (unsupervised), and **decision-sufficient** (RL) — a PERFECT
-  DISTILLATION of the stream, not a lossy summary. (A sufficient statistic is not "compression
-  that throws data away"; it is the smallest object that preserves everything that matters.)
+- **Primary goal (operator-defined, DEC-008; sharpened v8, universal — see "Canonical
+  decomposition" below):** produce `embedding(customer, timestamp)` — a point-in-time
+  **customer STATE** that is a **minimal, bounded, UNIVERSAL sufficient statistic of the
+  stream**: *everything about the past that matters for the future is in this one vector;
+  nothing that matters is lost; and any present or future consumer — ours or another team's,
+  known or unknown — is covered by construction.* It must be **predictive** (supervised),
+  **structure-revealing** (unsupervised, usable geometry), and **decision-sufficient for the
+  declared action/reward family** (RL) — a PERFECT DISTILLATION of the stream, not a lossy
+  summary. (A sufficient statistic is not "compression that throws data away"; it is the
+  smallest object that preserves everything that matters.) Judged by `U = 1 − worst-case
+  oracle-gap` (`loop/UNIVERSALITY.md`), **never** by our known tasks — known uses **veto, never
+  shape**.
   `rabbit_hole` provides the data; `looking_glass` produces **the best encoder
   possible, judged on self-supervision quality ONLY (Layer B)** — optimized,
   stopped, selected, and sized on the held-out self-supervised portfolio

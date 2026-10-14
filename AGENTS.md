@@ -6,17 +6,37 @@ it as an *intent* and implement the mechanism that achieves it **adaptively**.
 
 The system (one-way): `rabbit_hole → looking_glass → plugins → red_king →
 
-## Project goal (v8, sharpened)
-**Produce `embedding(customer, timestamp)` — a point-in-time customer STATE that is a SUFFICIENT
-STATISTIC of the history: everything about the past that matters for the future is in this one
-vector; nothing that matters is lost.** It must be **predictive** (supervised),
-**structure-revealing** (unsupervised), and **decision-sufficient** (RL): a PERFECT DISTILLATION
-of the event stream, not a lossy summary. A sufficient statistic is the OPPOSITE of "compression
-that throws data away" — it is the smallest object that preserves everything that matters
-(including magnitude/level, which summaries like RFM keep and a normalized state must not lose).
-Every change is judged by ONE question: does it move `embedding(customer, t)` toward sufficiency
-— measured by a sufficiency gate (embedding-alone ≈ / ≥ the best raw feature set on prediction,
-plus a decision-sufficiency check for RL)?
+## Project goal (v8, sharpened — "universal" embedding)
+**Produce `embedding(customer, timestamp)` — a point-in-time customer STATE that is a MINIMAL,
+BOUNDED, UNIVERSAL SUFFICIENT STATISTIC of the event stream: the smallest fixed-size object
+that loses nothing about the future — for prediction AND for decisions.** "Universal" is the
+load-bearing word: sufficient for the **full observable future**, so **any present or future
+consumer — ours or another team's, known or unknown — is covered BY CONSTRUCTION**, not by
+enumeration. It must be **predictive** (supervised), **structure-revealing** (unsupervised,
+usable geometry for similarity/segmentation), and **decision-sufficient for the declared
+action/reward family** (RL loses nothing). A PERFECT DISTILLATION of the event stream, not a
+lossy summary — the smallest object that preserves everything that matters, *including
+magnitude/level* (which summaries like RFM keep and a contractive state must not lose).
+
+**The metric** (the one question every change is judged by): does it move `embedding(customer,t)`
+toward universality? Measure
+`U = 1 − worst-case_{τ} oracle-gap_τ`, where the oracle-gap is the EXCESS loss (beyond the Bayes
+floor) of predicting the future from `E` vs from the **full history**, over a **broad,
+adversarial, held-out, self-supervised** task family, at **fixed embedding capacity**.
+`U → 1` ⟺ the goal. Never judge against our known tasks. See `loop/UNIVERSALITY.md`.
+
+**Anti-overfit clause (binding).** To stay universal and not drift into designing for our known
+use cases:
+- Layer B is **self-supervised only**; no downstream labels/tasks in its training.
+- The **reference is the full-history oracle** (Bayes floor), never a hand-chosen feature set or
+  our task list.
+- The task family stays **broader than any consumer** and is **adversarially grown** to expose
+  blind spots; universality is a **worst-case (minimax)** property, reported at fixed capacity.
+- **Known use cases may VETO (gates), never SHAPE the encoder.**
+- Sufficiency guarantees information is *present*; **accessibility** (simple probes / usable
+  distances) and **geometry** (isotropy/rank) are separate, gated requirements.
+- Coverage is over **functions of the observed stream**; unlogged events/confounders are carried
+  as **uncertainty**, never faked.
 
 red_queen`, with `white_queen` (OPE certification) and `caterpillar` (read-only
 interpretability) hanging off `plugins`.
