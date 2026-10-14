@@ -33,10 +33,11 @@ exit. Otherwise:
    what was measured + receipts + verdict (fact-only).
 8. STOP after this one step. Do not start a second experiment in the same run.
 
-TOP-LEVEL PRINCIPLES (AGENTS.md charter — every decision MUST align; conflict order
-robustness > universality > adaptability > dynamism > speed > generality): universality,
-adaptability, dynamism, speed, robustness, generality. Cite the principle(s) a non-trivial
-decision serves in its DEC entry.
+TOP-LEVEL PRINCIPLES (AGENTS.md charter — broad strokes; align every decision, cite in the DEC
+entry): universal · adaptive&dynamic · lawful (compositionality/equivariance/algebra) ·
+efficient · robust · honest · accessible · diagnosable. Conflict order robust > universal >
+adaptive > lawful > efficient > honest. DIAGNOSABLE = attribute each shortfall to an axis,
+propose the resolving change, and record the cross-axis trade.
 
 CONSTRAINTS: no magic numbers (derive/learn); no domain literals; per-sample at serve;
 contractive; no loss hacks; no silent non-finite masking; never weaken a gate to pass;

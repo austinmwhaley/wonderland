@@ -64,29 +64,62 @@ use cases:
 
 ## Top-level principles (the operator's charter)
 
-These are the project's **top-level principles**. **Every decision must align to them**; a
-change that violates one is wrong regardless of any metric it improves. The detailed
-engineering doctrine below ("Principles" 1–16) **elaborates** these — it must not contradict
-them.
+These are the project's **top-level principles** — deliberately **broad strokes**. **Every
+decision must align to them**; a change that violates one is wrong regardless of any metric it
+improves. The detailed engineering doctrine below ("Principles" 1–16) **elaborates** these — it
+must not contradict them.
 
-1. **Universality** — one model, any stream, any schema, any use case, present or future; no
-   per-domain / per-task special-casing. The embedding is a single shared space.
-2. **Adaptability** — every component resolves its own configuration from what it sees
-   (schema, dimensionality, horizons, cadence, action space); an unseen shape works with no
-   code changes.
-3. **Dynamism** — behavior lives in config / learned state, not hardcoded source; prefer
-   learned/derived over fixed; every decision belongs where the information is (the learner).
-4. **Speed** — a first-class requirement, built in from the start (vectorized, scan-native,
-   cost-aware). A capability that is correct but unacceptably slow is **not done**.
-5. **Robustness** — fail safe and reject rather than clamp; uncertainty first; invariants by
-   construction; divergence / non-finite is a hard failure, never masked or rolled back.
-6. **Generality over fitting** — earn results on held-out / ground-truth signal, never by
-   tuning to a metric; never weaken a gate to pass. Known uses may **VETO**, never **SHAPE**.
+1. **Universal** — one model for any stream, schema, entity, horizon, task, or scale; a single
+   shared space; no per-domain / per-task special-casing. (subsumes *homogeneity*,
+   *scale-invariance*.)
+2. **Adaptive & Dynamic** — everything resolves or learns from the input; behavior lives in
+   learned state / config, never in source; input-conditioned dynamics. (subsumes
+   *adaptability*, *dynamism*, *self-supervision*.)
+3. **Lawful** — built on universal laws and symmetries: **compositionality** (the state is a
+   mergeable homomorphism over event sequences), **equivariance** (time-translation, entity-
+   and field-permutation symmetry), and the **correct algebra per quantity** (additive for
+   extensive mass, bounded/contractive for shape, idempotent for presence if ever needed).
+   (subsumes *invariants by construction*. Laws and symmetries outrank convenience.)
+4. **Efficient** — linear-time, constant-state, incremental, minimal capacity; a capability
+   that is correct but unacceptably slow, or needlessly large, is **not done**. (subsumes
+   *speed*, *incrementality*, *minimality*, *cost-awareness*.)
+5. **Robust** — fail safe and reject rather than clamp; **calibrated uncertainty first**;
+   deterministic and stable from step 0; divergence / non-finite is a hard failure, never
+   masked or rolled back. (subsumes *determinism*, *calibration*, *stability*.)
+6. **Honest** — grounded in held-out / ground-truth signal and **falsifiable**; label-free
+   upstream; never tuned to the metric it is judged by; never weaken a gate to pass. (subsumes
+   *generality over fitting*, *self-supervision*, *falsifiability*.)
+7. **Accessible** — information must be **recoverable by simple downstream consumers**, not
+   merely present; a sufficient-but-entangled representation is a failure of this principle.
+8. **Diagnosable** — the loop must **attribute a shortfall to a specific axis, propose the
+   change that resolves it, and reason about how axes interact** (see below). Without this the
+   design space is inert: it is how we turn "the embedding isn't good enough" into "axis X is
+   the bottleneck, here is the fix, and here is what it costs axis Y."
 
-**Operating contract.** The operator supplies principles; the agent aligns the solution to
-them. Every non-trivial decision must cite the top-level principle(s) it serves, and
-`STATUS.md` / `DECISIONS.md` record that alignment. When principles conflict, prefer in order:
-**Robustness → Universality → Adaptability → Dynamism → Speed → Generality.**
+**Conflict order:** Robust → Universal → Adaptive → Lawful → Efficient → Honest, with
+**Lawful (compositionality/equivariance) and Robust outranking convenience**.
+
+### The loop ↔ axis contract (Diagnosable, in practice)
+
+The design is decomposed into **axes** (input/tokenizer · dynamics · state · objective ·
+training regime · interface; see the design-space notes). Each axis must be **independently
+observable** so the loop can localize work:
+
+- For every axis, keep an **axis scorecard**: a ground-truth metric + a *working / not* state +
+  the current lever. A failing embedding must map to one (or more) axes.
+- Attribute the bottleneck: run the cheapest experiment that **isolates one axis** on ground
+  truth (matched control), and name the axis.
+- Propose the **resolving solution** for that axis, cited to the principle it serves.
+- Account for **coupling**: axes constrain each other, so a fix to one may cost another —
+  e.g. tokenizer richness ↔ what the dynamics can express; linear-time dynamics ↔ expressivity;
+  unbounded measure ↔ stability; objective ↔ what the state is pressured to hold; tokenizer
+  universality ↔ objective task-freeness. Record both sides of every trade.
+
+### Operating contract
+
+The operator supplies principles; the agent aligns the solution to them. Every non-trivial
+decision must cite the top-level principle(s) it serves, and `STATUS.md` / `DECISIONS.md`
+record that alignment.
 
 ---
 

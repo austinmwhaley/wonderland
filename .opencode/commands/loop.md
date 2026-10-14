@@ -37,9 +37,11 @@ Each step:
 8. Immediately begin the next step. Loop until `bash loop/status.sh` prints GOAL_MET.
 
 GUARDRAILS — achieving the goal by honest means (no manual hacks):
-- TOP-LEVEL PRINCIPLES (AGENTS.md charter; align every decision, cite in the DEC entry;
-  conflict order robustness > universality > adaptability > dynamism > speed > generality):
-  universality, adaptability, dynamism, speed, robustness, generality.
+- TOP-LEVEL PRINCIPLES (AGENTS.md charter — broad strokes; align every decision, cite it in
+  the DEC entry; conflict order robust > universal > adaptive > lawful > efficient > honest):
+  universal · adaptive&dynamic · lawful (compositionality/equivariance/algebra) · efficient ·
+  robust · honest · accessible · diagnosable. DIAGNOSABLE = attribute each shortfall to an axis,
+  propose the resolving change, record the cross-axis trade.
 - No magic numbers: every threshold/dim/window/rate is derived from the data, learned, or a
   documented fallback resolved at runtime and recorded in a receipt.
 - No domain literals (no business event names / hand-picked feature partitions).

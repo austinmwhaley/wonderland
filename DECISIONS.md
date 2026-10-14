@@ -2674,3 +2674,27 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - **Trade-offs:** no code change; Layer 1 (sufficiency) work already done (gate, DEC-117..121)
   is reframed as the *certification* layer, not the definition — nothing discarded.
 - **Gate:** green (docs only).
+
+## DEC-123 — Charter generalized to broad strokes + Diagnosable (loop↔axis contract)
+
+- **Date:** 2026-10-14
+- **Decision:** generalize the top-level principles into **broad strokes** (operator request),
+  adding/merging: **universal · adaptive&dynamic · lawful (compositionality / equivariance /
+  algebra) · efficient · robust · honest · accessible · diagnosable.** Key additions:
+  *compositionality*, *equivariance*, *accessibility*, and **diagnosable**.
+- **Diagnosable (new, first-class):** the loop must **attribute a shortfall to a specific axis,
+  propose the change that resolves it, and reason about cross-axis interactions**. Each axis
+  keeps an **axis scorecard** (ground-truth metric + working/not + lever); failures map to axes;
+  fixes cite the principle served and record the coupling trade (tokenizer↔dynamics,
+  linear-time↔expressivity, unbounded-measure↔stability, objective↔state, universality↔task-
+  freeness). Without this the design space is inert.
+- **Axis 3 clarified:** "dual state" is **not two hardcoded tensors** — it is ONE associative
+  memory with a learned per-channel decay spectrum; "dual" is the *theorem* that the decay
+  scalar has one distinguished value (`a=1` integrate vs `a<1` contract). Registers are
+  content-addressed/open-ended. Extra aggregation *semirings* (e.g. idempotent/max for
+  presence) are an **empirical add**, never hardcoded.
+- **Docs:** `AGENTS.md` (broad-stroke charter + loop↔axis contract), `STATUS.md` (PRINCIPLES
+  line + Macro charter), `loop/ITER.md` + `.opencode/commands/loop.md`.
+- **Trade-offs:** none material; principles are a frame, not code. Cites the *Robust* and
+  *Honest* principles (axis diagnostics must be ground-truth-gated).
+- **Gate:** green (docs only).

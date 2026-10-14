@@ -12,8 +12,9 @@ one structure the project is organized around. User-facing debates (2026-10-14)
 settled the GOAL and the reasoning below; work down from here.
 
 ```
-PRINCIPLES      universality · adaptability · dynamism · speed · robustness · generality
-                 (the operator's charter; every decision must align — see AGENTS.md)
+PRINCIPLES      universal · adaptive&dynamic · lawful (composition/equivariance/algebra) ·
+                 efficient · robust · honest · accessible · diagnosable
+                 (the operator's charter, broad strokes; every decision must align — AGENTS.md)
                  | applied to
 LAYER 0 (NOW)   input any event stream -> encode -> a FOUNDATION MODEL emitting UNIVERSAL
                  FOUNDATIONAL EMBEDDINGS: self-supervised, frozen/reusable, schema- and
@@ -180,8 +181,8 @@ invariant-by-construction).
   statistic is not "compression that throws data away"; it is the smallest object that
   preserves everything that matters.) Judged by `U = 1 − worst-case oracle-gap`
   (`loop/UNIVERSALITY.md`), **never** by our known tasks — known uses **veto, never shape**.
-  **Principles charter** (`AGENTS.md`): universality · adaptability · dynamism · speed ·
-  robustness · generality — every decision must align.
+  **Principles charter** (`AGENTS.md`, broad strokes): universal · adaptive&dynamic · lawful ·
+  efficient · robust · honest · accessible · diagnosable — every decision must align.
   `rabbit_hole` provides the data; `looking_glass` produces **the best encoder
   possible, judged on self-supervision quality ONLY (Layer B)** — optimized,
   stopped, selected, and sized on the held-out self-supervised portfolio
