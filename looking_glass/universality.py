@@ -410,6 +410,7 @@ def run_universality(
     use_seq=True,
     oracle_keys=None,
     oracle_in_e=False,
+    measure_dim=0,
 ):
     import polars as pl
 
@@ -429,6 +430,12 @@ def run_universality(
     Xhist, _hnames = _full_history_features(cfg, cust, only_keys=oracle_keys)
     if oracle_in_e:
         Z = np.hstack([Z, Xhist]).astype(np.float32)  # architecture receipt (DEC-138)
+    elif measure_dim and int(measure_dim) > 0:
+        # minimality: compress the full-history measure to `measure_dim` (random projection,
+        # no fit -> no leakage). U vs measure_dim gives the minimal sufficient measure size.
+        rng = np.random.default_rng(0)
+        R = rng.normal(size=(Xhist.shape[1], int(measure_dim))) / np.sqrt(max(int(measure_dim), 1))
+        Z = np.hstack([Z, Xhist @ R]).astype(np.float32)
     rows = []
     for h in horizons:
         fut, _past, _tc = _rfm_targets(cfg, h)
@@ -556,6 +563,13 @@ def main(argv=None):
         help="append the full-history measure to E (architecture receipt, DEC-138)",
     )
     ap.add_argument(
+        "--measure-dim",
+        type=int,
+        default=0,
+        dest="measure_dim",
+        help="append a random-projection of the measure with this many dims (minimality sweep)",
+    )
+    ap.add_argument(
         "--synthetic",
         action="store_true",
         help="ground-truth machinery check (known sufficient statistic; no checkpoint)",
@@ -600,6 +614,7 @@ def main(argv=None):
         use_seq=not a.no_seq,
         oracle_keys=oracle_keys,
         oracle_in_e=a.oracle_in_e,
+        measure_dim=a.measure_dim,
     )
     card, u, solved = _card(a.tag, rows, u, n, solved)
     print(card)

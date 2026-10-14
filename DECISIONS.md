@@ -3054,3 +3054,21 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - **Added:** `--oracle-in-E` gate option (architecture receipt).
 - **Principles served:** *Honest* (a labeled receipt, not a claimed win), *Diagnosable*.
 - **Gate:** green.
+
+## DEC-140 — Loop iter 12: minimality via random projection FAILS (measure is feature-specific)
+
+- **Date:** 2026-10-14
+- **What:** added `--measure-dim k` — append a random projection (no fit, no leakage) of the
+  full-history measure to E — and swept k.
+- **Measured (Rung-0, 1181 B, horizon 30, seed 0, `--no-seq-oracle`):** U = **0.1785 (baseline,
+  k=0)** · 0.1119 (k=8) · 0.1294 (k=32) · 0.1326 (k=128) · **1.000 (full measure, DEC-139)**.
+  Every compressed measure is **worse than baseline**; only the exact full measure gives U=1.
+- **Read:** (a) the measure's sufficiency is **feature-specific, not low-rank** — random projections
+  destroy the predictive directions; (b) adding extra dims **hurts** E-alone (the HGB probe is
+  dimension-sensitive on 1181 samples). So this minimality probe is **confounded** (both a
+  compressor issue and a learner-sensitivity issue).
+- **Degeneracy caveat:** the gate's oracle `[E, measure]` makes "E contains the measure" trivially
+  `SOLVED`; a proper minimality metric needs an **independent** oracle (the sequence model) and a
+  **learned** compression of the measure. Next.
+- **Principles served:** *Honest*, *Diagnosable*.
+- **Gate:** green.
