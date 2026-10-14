@@ -2885,3 +2885,27 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - **Principles served:** *Accessible* (the principle this exposes), *Diagnosable*, *Efficient*
   (a free diagnostic from existing logs rather than another build).
 - **Gate:** n/a (diagnostic only; no code change).
+
+## DEC-132 — Loop iter 5 (state axis): open-gate measure learns but still doesn't help (5th negative); DEAD END for learned measure
+
+- **Date:** 2026-10-14
+- **Hypothesis (from DEC-131):** the measure readout's low variance (gate init ≈ 0) made it
+  unusable. Fix: **open the write gate at init** (bias 0 ⇒ g≈0.5) so the measure has variance.
+  One variable; matched control = DEC-129.
+- **Measured (Rung-1 tiny, instacart, 618 held-out B, horizon 30, seed 0):** the `ledger` objective
+  skill jumps **+0.32 → +1.13** (the measure now learns its target very well) — yet
+  **U = 0.0130**, unchanged (DEC-129 0.0118; shape-only 0.066; accumulator 0.217). Still below
+  *no measure*. Reverted (dead end).
+- **Conclusion (5 learned-measure negatives — linear, psr, nonlinear, future-agg, open-gate):**
+  the learned additive measure **does not translate to downstream sufficiency** even when its own
+  objective is nearly solved. It is now a well-evidenced **DEAD END** for the learned-measure route
+  at Rung-1. The explicit accumulator remains the only mechanism that helps.
+- **STOP condition hit (loop command #2 — goal/principle conflict):** *"make it learn, don't teach"*
+  (doctrine + operator philosophy) is in direct conflict with the measured result that the
+  **extensive axis is only carried by explicit aggregation**. The remaining routes are
+  **operator-level**: (B) accept a **generic, exhaustive** measure (the canonical statistic — not
+  hand-picked, but pass-through-ish), or (C) **reconsider the goal** (bounded *learned*
+  sufficiency for the extensive axis). Written to STATUS.md "Open decisions".
+- **Principles served:** *Honest* (5 matched controls, recorded the dead end), *Diagnosable*,
+  *Efficient* (stopped after the decisive test).
+- **Gate:** green (279 passed; reverted cleanly).

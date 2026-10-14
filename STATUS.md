@@ -204,6 +204,15 @@ invariant-by-construction).
 - **Active blockers:** none technical. Open decisions: stream regeneration
   size (#4), known-effect ladder pin-or-fix (#1), D14 fallback trigger
   (pre-committed in DEC-006).
+- **OPEN DECISION (2026-10-14, DEC-132) — the measure axis, goal-level.** After **5** matched
+  Rung-1 negatives (linear ledger, `psr`, nonlinear, future-aggregate, open-gate — DEC-120/121/
+  128/129/132), the **learned** additive measure **does not translate to downstream sufficiency**
+  (its objective passes, even at skill +1.13, but E-alone never beats shape-only; the explicit
+  accumulator does). This conflicts with *"make it learn, don't teach."* Operator call needed:
+  **(A)** keep searching for a learned measure mechanism; **(B)** accept a **generic, exhaustive**
+  measure (the canonical empirical statistic — not hand-picked, but pass-through-ish); or
+  **(C)** restate the goal (bounded *learned* sufficiency for the extensive axis). Loop paused on
+  this per its stop condition #2.
 
 ## Micro
 
@@ -238,6 +247,9 @@ invariant-by-construction).
   **Loop iter 4 (DEC-131, diagnostic):** the `ledger` objective PASSES (skill +0.32) — the measure
   *learns* — but its readout **hurts** E-alone (U 0.012 < shape-only 0.066): the failure is
   **translation/accessibility**, not learnability. Tension with Layer-B self-supervised-only.
+  **Loop iter 5 (DEC-132):** open-gate measure learns *much* better (skill **+1.13**) but U
+  unchanged (**0.013**) → **5 learned-measure negatives**; **DEAD END**; loop **paused** on the
+  goal-level OPEN DECISION above.
 
 - **Versioning scheme (DEC-058):** versions are now pre-1.0 semver
   `MAJOR.MINOR.PATCH` (`0.6.4`); tag = `<version>r<revision>` (`0.6.4r162610`).
