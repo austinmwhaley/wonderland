@@ -2437,3 +2437,25 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   (0.13). The principled path is: keep a (LEARNED) explicit integration register, AND be careful
   with continuous-time decay (it must not wipe cumulative state across gaps).
 - Gate green (277 tests).
+
+## DEC-112 — Pure self-organization underperforms the explicit register (paused for loop work)
+
+- **Date:** 2026-10-14
+- **Tested pure self-organization** (selective trunk, ledger-capable decay `[-8,3]` -> decay_max
+  0.99966, continuous-time, purged bypasses, NO explicit register), with a `ledger` objective
+  (predict per-position RUNNING TOTALS) as the force to grow ledger channels:
+  ```
+  config                        E-alone LTV   note
+  explicit accumulator (heuristic) 0.21        (the working baseline)
+  full 19-objective set + ledger   0.13
+  focused 9-objective set + ledger 0.11        + COLLAPSE (mean_cos 0.93)
+  ```
+- **Result:** self-organized ledger channels did NOT emerge strongly enough; every variant
+  underperforms the explicit register. Dropping objectives to reduce dilution caused collapse
+  (the diversity/structure objectives were load-bearing).
+- **Conclusion:** "let the trunk discover what to remember" does not, in practice, match an
+  explicit learned integration register. The mechanism (ledger-capable decay) exists; the force
+  (an objective worth the memory) did not produce usable ledgers within budget.
+- **State (paused):** goal language + sufficiency gate landed; root cause characterized; explicit
+  accumulator proven (0.21); self-organization variants proven weaker. All committed; 277 tests
+  green.

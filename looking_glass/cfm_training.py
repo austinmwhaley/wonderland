@@ -898,6 +898,23 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
         T_["redundancy"] = (off**2).mean()
     T_["mask"] = _mask_loss_batch(model, vocab, t, cfg, dev)
     T_["jepa"] = _jepa_loss(model, t, y)
+    # ---- LEDGER (v8, self-organization): from the state at EACH position, predict the
+    # RUNNING TOTALS up to t — [cumulative count, cumulative value]. A decaying state
+    # cannot hold a running total; the ONLY way to satisfy this per-position is a LEDGER
+    # channel (decay~1 that integrates). This is the FORCE that grows ledger channels.
+    if "ledger" in cfg.objectives:
+        m_ = t["mask"]
+        cnt = torch.cumsum(m_, dim=1)  # running count (B,T)
+        vsum = torch.cumsum(torch.log1p(t["val"].abs().squeeze(-1)) * m_, dim=1)
+        tgt = torch.stack([torch.log1p(cnt), torch.log1p(vsum)], dim=-1)  # (B,T,2)
+        _sel = (m_ > 0).unsqueeze(-1).expand_as(tgt)
+        mu = tgt[_sel].mean(0, keepdim=True) if _sel.any() else tgt.mean(0, keepdim=True)
+        sd = (tgt[_sel].std(0, keepdim=True) if _sel.any() else tgt.std(0, keepdim=True)).clamp(
+            min=1e-6
+        )
+        pred = model.head_ledger(y)  # (B,T,2)
+        err = (pred - (tgt - mu) / sd).pow(2).mean(-1)  # (B,T)
+        T_["ledger"] = (err * m_).sum() / m_.sum().clamp(min=1)
     # ---- stats RECONSTRUCTION (v8, sufficiency): force the state to reproduce the
     # running RFM quantities (count, cumulative value, recency) LEVEL-PRESERVING
     # (global per-dim standardize, not per-sequence), so the embedding EXPOSES the

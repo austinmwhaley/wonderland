@@ -686,6 +686,7 @@ class CFM(nn.Module):
         self.head_foresight = nn.Linear(dim, dim)  # multi-horizon future-state prediction
         self.head_psr = nn.Linear(dim, 6)  # PSR: 3 horizons x [count, value]
         self.head_recon = nn.Linear(dim, 3)  # reconstruct RFM: [count, value-sum, recency]
+        self.head_ledger = nn.Linear(dim, 2)  # running totals [count_t, value_t]
         self.head_val = nn.Linear(dim, 1)  # next event value (monetary)
         self.head_sf = nn.Sequential(
             nn.Linear(dim + 1, dim), nn.ReLU(), nn.Linear(dim, self.sf_dim + int(prod_dim))
