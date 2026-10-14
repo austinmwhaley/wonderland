@@ -1003,8 +1003,9 @@ class CFM(nn.Module):
         secs = (torch.expm1(t["dt"]).squeeze(-1) * t["mask"]).cumsum(1)  # (B,T) clock
         age = secs[:, -1:] - secs  # (B,T) seconds since each event
         for k in (0.3, 1.0, 3.0, 10.0):  # wider half-life spectrum
-            w = (0.5 ** (age / (hl * k * 86400.0)) * t["mask"]).unsqueeze(-1)
-            feats.append((tok * w).sum(1))
+            w = 0.5 ** (age / (hl * k * 86400.0)) * t["mask"]
+            feats.append((tok * w.unsqueeze(-1)).sum(1))
+            feats.append(w.sum(1, keepdim=True))  # recency-weighted COUNT
         # RAW universal TOTALS (exact, not a learned projection): value & time sums.
         # These are schema-agnostic aggregates of the stream's numeric channels.
         m = t["mask"]
@@ -1015,6 +1016,7 @@ class CFM(nn.Module):
             (gap * m).sum(1, keepdim=True),
             (val * m).mean(1, keepdim=True),
             (gap * m).mean(1, keepdim=True),
+            gap[:, -1:],  # RECENCY (time since last event)
         ]
         return torch.cat(feats, dim=-1)
 

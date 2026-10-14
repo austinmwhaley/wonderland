@@ -2388,3 +2388,31 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   a derived half-life spectrum + totals. Exact-window matching would reproduce RFM (hand-feeding),
   which is off-path. The honest target is APPROXIMATE sufficiency + sequence structure.
 - **Read:** the ROOT CAUSE is confirmed and the fix closes ~half the gap. Gate green (277 tests).
+
+## DEC-110 — Accumulator saturating at ~0.58x raw on LTV; synthesis
+
+- **Date:** 2026-10-13
+- **Added:** recency-weighted COUNTS + recency (last gap). Marginal gains (LTV 0.204 -> 0.212).
+- **Sufficiency gate (instacart, final this pass):**
+  ```
+  target        raw     E-alone   ratio
+  LTV           0.362   0.212     0.59x
+  churn         0.923   0.811     0.88x
+  order_count   0.379   0.226     0.60x
+  next_value    0.405   0.255     0.63x
+  ```
+  E-alone went 0.05 -> 0.21 on LTV (~4x); the gap is ~HALVED and plateauing.
+- **SYNTHESIS:**
+  1. The ROOT CAUSE (contractive state can't hold cumulative stats) is CONFIRMED, and the fix
+     (a learned+exact cumulative accumulator in `embedding(customer,t)`) closes ~half the gap.
+  2. **The contractive state contributes almost nothing for LTV (~0.03 over the accumulator).**
+     The "shape" (dynamics) is what the state gives; the "how much" (magnitude/cumulative) must
+     come from the accumulator.
+  3. **Exact sufficiency (E-alone == raw) would mean REPRODUCING the raw aggregates (RFM+windows)
+     — which is hand-feeding summaries**, off-path and pointless (you'd just use the raw).
+  4. The embedding's UNIQUE, on-path superpower is **sequence structure** summaries can't express
+     — which the B+C gate already shows ([E,strong] PASS+far-exceed on churn/propensity).
+- **Recommended reframe:** the goal is **APPROXIMATE sufficiency (close to raw) + sequence
+  structure (adds over raw on dynamics)** — NOT exact reproduction of summaries. Measure both:
+  the sufficiency gate (how close) and the B+C gate (does it add over raw).
+- Gate green (277 tests). Committed.
