@@ -2459,3 +2459,16 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - **State (paused):** goal language + sufficiency gate landed; root cause characterized; explicit
   accumulator proven (0.21); self-organization variants proven weaker. All committed; 277 tests
   green.
+
+## DEC-113 — Regression fix: continuous-time dt-decay must be opt-in per checkpoint
+
+- **Date:** 2026-10-14
+- **Bug:** the continuous-time decay (`decay=exp(-delta*dt_days)`) was applied at INFERENCE to
+  every checkpoint, changing the states of checkpoints trained WITHOUT it. Effect on ecommerce
+  `v64`: conservation 1.036 -> 1.293 (FAIL) and channel-MI excess 0.238 -> 0.413 (worse).
+- **Fix:** `continuous_time` is now a model flag (config + checkpoint), default **False**; dt-scaling
+  applies only when the checkpoint was trained with it. Restores backward compatibility.
+- **Verified:** ecommerce B card reverts — conservation **PASS (1.036)**, channel-MI excess
+  **0.238** (the honest DEC-088 value). Gate green (277 tests).
+- **Remaining ecommerce-B blockers:** channel-MI excess 0.238 (>0.20) and UNCERTAIN
+  next/occur/value/outcome.
