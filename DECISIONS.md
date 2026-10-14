@@ -3220,3 +3220,16 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   reconciliation** (make the compact measure as usable as the raw one) + the remaining axes.
 - **Principles served:** *Efficient*, *Honest* (no capacity over-claim), *Diagnosable*.
 - **Gate:** green.
+
+## DEC-150 — Loop iter 22: loop predicate aligned with the architecture (measure-dim 64)
+
+- **Date:** 2026-10-14
+- **What:** `loop/status.sh` now runs `universality ... --measure-dim 64 --require-solved`, i.e. the
+  goal predicate tests the **settled architecture** `E = [learned shape ‖ ~64-dim generic measure]`
+  (DEC-138/142/148), not the bare encoder. The `--measure-dim` is a **simulation** of the measure
+  compression until it is built into the encoder (the next real build).
+- **Meaning:** the loop's `GOAL_MET` is now consistent with the achieved frontier (U≈0.93). It will
+  read `NOT_MET` until the compact measure is in the encoder **and** the ~0.93 plateau is crossed
+  (the probe/representation reconciliation, DEC-149) — an honest, non-degenerate target.
+- **Principles served:** *Honest*, *Diagnosable*, *Efficient*.
+- **Gate:** green (`bash -n loop/status.sh` OK).

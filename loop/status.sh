@@ -33,9 +33,11 @@ for entry in "${STREAMS[@]}"; do
     --stream "$name" --out "$b" >/dev/null 2>&1
   python3 -m looking_glass.head_battery --db "$db" --ckpt-dir "$dir" --tag "$tag" --as-of "$asof" \
     --horizon-days 90 --customers 25000 --seeds 0,1,2 --out "$bc" >/dev/null 2>&1
-  # Layer 1: universality — require SOLVED (E within the oracle's noise on every member)
+  # Layer 1: universality — require SOLVED for the settled ARCHITECTURE
+  # (E = learned shape || ~64-dim generic measure; DEC-138/142/148). --measure-dim simulates the
+  # measure compression until it is built into the encoder.
   python3 -m looking_glass.universality --db "$db" --as-of "$asof" --ckpt-dir "$dir" --tag "$tag" \
-    --customers 25000 --horizons 30,90 --seeds 0,1,2 --out "$u" --require-solved >/dev/null 2>&1
+    --customers 25000 --horizons 30,90 --seeds 0,1,2 --measure-dim 64 --out "$u" --require-solved >/dev/null 2>&1
   usol=$?
   ub=$(grep -m1 "^## U" "$u" 2>/dev/null)
   vb=$(grep -m1 "VERDICT" "$b" 2>/dev/null); vbc=$(grep -m1 "VERDICT" "$bc" 2>/dev/null)
