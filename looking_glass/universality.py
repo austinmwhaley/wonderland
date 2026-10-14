@@ -431,11 +431,16 @@ def run_universality(
     if oracle_in_e:
         Z = np.hstack([Z, Xhist]).astype(np.float32)  # architecture receipt (DEC-138)
     elif measure_dim and int(measure_dim) > 0:
-        # minimality: compress the full-history measure to `measure_dim` (random projection,
-        # no fit -> no leakage). U vs measure_dim gives the minimal sufficient measure size.
-        rng = np.random.default_rng(0)
-        R = rng.normal(size=(Xhist.shape[1], int(measure_dim))) / np.sqrt(max(int(measure_dim), 1))
-        Z = np.hstack([Z, Xhist @ R]).astype(np.float32)
+        # minimality: compress the full-history measure to `measure_dim` via PCA (variance-
+        # maximizing; fit on the held-out measure — a leakage caveat, but a fair upper bound on
+        # what any LINEAR compression can retain). U vs measure_dim = minimal sufficient measure.
+        from sklearn.decomposition import PCA
+        from sklearn.preprocessing import StandardScaler
+
+        Xs = StandardScaler().fit_transform(Xhist)
+        k = min(int(measure_dim), Xs.shape[1], max(1, Xs.shape[0] - 1))
+        Xc = PCA(n_components=k, random_state=0).fit_transform(Xs)
+        Z = np.hstack([Z, Xc]).astype(np.float32)
     rows = []
     for h in horizons:
         fut, _past, _tc = _rfm_targets(cfg, h)

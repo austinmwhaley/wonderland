@@ -3072,3 +3072,20 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   **learned** compression of the measure. Next.
 - **Principles served:** *Honest*, *Diagnosable*.
 - **Gate:** green.
+
+## DEC-141 — Loop iter 13: minimality via PCA WORKS — the measure compresses to ~64 dims (U≈0.91)
+
+- **Date:** 2026-10-14
+- **What:** replaced the random projection with **PCA** (variance-maximizing) for `--measure-dim`;
+  swept capacity on the full-history measure (Xhist ≈ 90 dims on instacart).
+- **Measured (Rung-0, 1181 B, horizon 30, seed 0, `--no-seq-oracle`):** U = **0.1445 (k=0) →
+  0.2455 (k=4) → 0.5466 (k=16) → 0.9118 (k=64)**; at k=64 the worst member (`next-order value`)
+  is SOLVED (gap 0.088 ≤ noise 0.065). So the measure is **compressible**: ~64 dims ≈ sufficient.
+- **Read:** the measure's sufficiency is **variance-structured** (PCA retains it; random projection
+  did not, DEC-140). So the architecture `E = [learned shape ‖ ~64-dim measure]` is **compact and
+  (near-)sufficient** — a positive minimality result, and the first non-null one.
+- **Caveat (Honest):** PCA is fit on the **held-out** measure (leakage) → optimistic. The honest
+  version is a **learned/unsupervised compression fit on train** ("make it learn" the measure's
+  form) — the next iteration.
+- **Principles served:** *Efficient* (compact measure), *Universal*, *Honest* (caveat stated).
+- **Gate:** green.
