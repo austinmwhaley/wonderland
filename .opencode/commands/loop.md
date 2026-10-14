@@ -5,15 +5,13 @@ AUTONOMOUS LOOP MODE. Work in /home/austin-whaley/Documents/wonderland; pass
 workdir=/home/austin-whaley/Documents/wonderland on every shell call.
 
 GOAL (north star; AGENTS.md "The project", STATUS.md "Canonical decomposition",
-loop/UNIVERSALITY.md). **Layer 0 (NOW):** input any event stream → encode → a FOUNDATION MODEL
+loop/UNIVERSALITY.md, loop/PLAYBOOK.md — hypothesis queue + guardrails + axis contract).
+**STOP = SOLVED (DEC-126):** the checking predicate `bash loop/status.sh` prints GOAL_MET iff
+`E` matches the exhaustive full-history oracle on EVERY member (on every stream) AND all B/B+C
+cards are GREEN. **Layer 0 (NOW):** input any event stream → encode → a FOUNDATION MODEL
 emitting UNIVERSAL FOUNDATIONAL EMBEDDINGS (self-supervised, frozen/reusable, schema- and
-domain-agnostic, transferable, shared geometry). **Layer 1 (NEXT):** certify them as a MINIMAL,
-BOUNDED, **UNIVERSAL SUFFICIENT STATISTIC** — sufficient for the full observable future so ANY
-present or future consumer is covered BY CONSTRUCTION. Measured by `U = 1 − worst-case
-oracle-gap` over a broad, adversarial, held-out, self-supervised family (oracle = full history /
-Bayes floor; fixed capacity). `U → 1` ⟺ sufficient. B/B+C cards GREEN across all streams are a
-NECESSARY condition (checkable: `bash loop/status.sh`), not the goal. Known use cases may VETO
-(gates), never SHAPE the encoder.
+domain-agnostic, transferable, shared geometry). **Layer 1:** certification (sufficiency via
+`SOLVED`). Known use cases may VETO (gates), never SHAPE the encoder.
 
 KEEP GOING. Do NOT stop, summarize, or ask between steps. Decide everything yourself inside the
 guardrails below; when you hit a fork (spec/gate/stream), choose the option that best serves the

@@ -7,15 +7,16 @@
 You are one iteration of an autonomous loop in /home/austin-whaley/Documents/wonderland.
 Pass workdir=/home/austin-whaley/Documents/wonderland to every shell call.
 
-GOAL (north star; `AGENTS.md` "Project goal", `STATUS.md` "Canonical decomposition",
-`loop/UNIVERSALITY.md`): make `embedding(customer, t)` a MINIMAL, BOUNDED, **UNIVERSAL
-SUFFICIENT STATISTIC of the stream** — sufficient for the full observable future so ANY present
-or future consumer is covered by construction. Measured by `U = 1 − worst-case oracle-gap`
-(broad, adversarial, held-out, self-supervised family; oracle = full history / Bayes floor;
-fixed capacity). `U → 1` ⟺ done. The B/B+C cards green across all streams are a NECESSARY
-condition, not the goal. Known use cases may VETO (gates), never SHAPE the encoder.
-PRIORITY this phase: build the universality gate (`looking_glass/universality.py` per the spec),
-then drive `U` up with the highest-leverage architectural lever (the shape×measure decomposition).
+GOAL (north star; `AGENTS.md` "The project", `STATUS.md` "Canonical decomposition",
+`loop/UNIVERSALITY.md`, `loop/PLAYBOOK.md`): make `embedding(customer, t)` a MINIMAL, BOUNDED,
+**UNIVERSAL SUFFICIENT STATISTIC of the stream** — sufficient for the full observable future so
+ANY present or future consumer is covered by construction. STOP CONDITION (DEC-126): `SOLVED`
+iff `E` matches the exhaustive full-history oracle (not hand-RFM) on EVERY future-family member
+(`|gap| <= noise`), on every stream, AND every B/B+C card is GREEN. The B/B+C cards are a
+necessary condition, not the goal. Known uses may VETO (gates), never SHAPE the encoder.
+Work the axis contract in `loop/PLAYBOOK.md` (hypothesis queue; attribute shortfalls to an axis;
+record the cross-axis trade). Do NOT repeat recorded negatives (linear-drive measure DEC-120;
+diluted future-aggregate objective DEC-121).
 
 NEXT ACTION: run `bash loop/status.sh`. If it prints GOAL_MET, do nothing further and
 exit. Otherwise:

@@ -2769,3 +2769,25 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   above exhaustive aggregates); axis scorecard + hypothesis queue; guardrails (caps, no
   gate-weakening, independent re-certification).
 - **Gate:** green (6 universality tests, ruff clean; `status.sh` syntax-checked).
+
+## DEC-127 — Loop PLAYBOOK: hypothesis queue, guardrails, axis contract (+ sequence-oracle deferred)
+
+- **Date:** 2026-10-14
+- **Added `loop/PLAYBOOK.md`**: the loop's operational brain — the **goal predicate**, the
+  **guardrails**, the **axis contract**, and a prioritized, falsifiable **hypothesis queue**
+  seeded by recorded negatives (so the loop cannot repeat linear-drive-measure DEC-120 or
+  diluted-objective DEC-121). Wired into `loop/ITER.md` and `.opencode/commands/loop.md`.
+- **Guardrails (Honest/Robust):** no self-certification (Layer B is self-supervised; gates are
+  downstream instruments; keep an independent certificate on a split/stream tuning didn't use);
+  never weaken a gate/baseline/threshold/oracle; never hand-craft the oracle further; caps;
+  escalation only for goal/principle changes.
+- **Axis contract (Diagnosable):** map the universality gate's worst member → the bottleneck
+  axis; record the cross-axis trade. Axis table (tokenizer/dynamics/state/objective/regime/
+  interface) with current levers.
+- **Decision (defer the sequence-model oracle) — Robust:** we are far from solved
+  (gap ≈ 0.5 ≫ noise ≈ 0.1), so a *stronger* oracle would not change any decision yet; the
+  exhaustive oracle already dominates `E` by a wide margin. Build the learned sequence oracle
+  when we approach the boundary (it matters near `SOLVED`). Recorded so it isn't lost.
+- **Principles served:** *Diagnosable*, *Honest*, *Robust*, *Efficient* (don't build an oracle
+  that can't yet change a decision).
+- **Gate:** green (docs only; `bash -n loop/status.sh` OK).
