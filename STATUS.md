@@ -187,6 +187,14 @@ invariant-by-construction).
 
 ## Micro
 
+- **Current status (2026-10-14 — universality gate).** Goal reframed to the **UNIVERSAL
+  embedding** (DEC-116): minimal, bounded, universal sufficient statistic; metric
+  `U = 1 − worst-case oracle-gap` (`loop/UNIVERSALITY.md`). Built the gate
+  (`looking_glass/universality.py`, DEC-117). **First measurement (Rung 0, instacart, 1181
+  held-out B): U = 0.2227** — far from universal; worst-case = the **mass axis**
+  (`next-order value`/LTV norm_gap ~0.77). Next: Layer-A exact `U` (U2) → adversarial family (U3)
+  → accessibility/similarity gates → attack the mass axis with the shape×measure lever (DEC-106).
+
 - **Versioning scheme (DEC-058):** versions are now pre-1.0 semver
   `MAJOR.MINOR.PATCH` (`0.6.4`); tag = `<version>r<revision>` (`0.6.4r162610`).
   Historical `v6.x` re-bases to `0.6.x` (`vMAJOR.MINOR.PATCH → 0.MAJOR.MINOR`,

@@ -2529,3 +2529,27 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   gated); `U` is the true target. Building the universality gate (`U1`) is now the loop's top
   priority; the shape×measure architecture lever (DEC-106 root cause) is the path to raise `U`.
 - **Status:** docs-only change; no code. Gate green (277 tests).
+
+## DEC-117 — Universality gate built (`looking_glass/universality.py`); first `U` measured
+
+- **Date:** 2026-10-14
+- **What:** first iteration of the Phase-U loop. Built the **universality gate** per
+  `loop/UNIVERSALITY.md`: an oracle-gap / history-residual measurement over a self-supervised
+  future family (LTV, order-count, propensity, churn, next-order-value; horizons 30/90d), with
+  `gap = score([E, history-proxy]) − score(E)` (what history adds beyond E), normalized to the
+  oracle's own range, and `U = 1 − worst-case normalized gap`. Reuses the held-out-B `_b_states`
+  + `_rfm_targets` probe machinery. Pure-function unit tests added (`tests/test_universality.py`).
+- **Measured (Rung 0, instacart `v6.4.0r767243`, 1181 held-out B, 4000 sampled, seeds 0/1):**
+  **U = 0.2227**. Worst-case member: `next-order value @30d` (norm_gap **0.777**, history adds
+  +0.2475 over E); LTV@30d norm_gap 0.765; order_count 0.74; propensity/churn 0.39. E-alone R² is
+  ~0.05–0.12 on the value/count targets vs history-alone 0.29–0.39.
+- **Read:** the embedding is FAR from universal, and the worst-case is exactly the **mass/magnitude
+  axis** (value, LTV, counts) — consistent with the DEC-106 root cause and DEC-115's ~half gap.
+  The gate separates members and localizes the blind spot (its intended behaviour).
+- **Caveats:** proxy oracle (RFM+clock+past-value, not the true full sequence ⇒ the gap is
+  *conservative*); Rung-0 sample (4000/2 seeds), not a final number; Layer-A exact-`U` leg (U2) and
+  the adversarial family (U3) not yet built.
+- **Next (U2→U5):** wire the Layer-A lab for **exact `U`** (known truth) and the saturation check;
+  add the adversarial family; add accessibility + similarity gates; then attack the worst-case
+  (the mass axis) with the shape×measure architecture lever (DEC-106).
+- **Gate:** green (new unit tests + existing suite; ruff clean).
