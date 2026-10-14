@@ -3121,3 +3121,19 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   cross SOLVED.
 - **Principles served:** *Honest* (robustness check), *Diagnosable*.
 - **Gate:** green.
+
+## DEC-144 — Loop iter 16: cross-schema test INCONCLUSIVE (ecommerce too low-signal)
+
+- **Date:** 2026-10-14
+- **What:** evaluated the instacart-trained encoder on the **ecommerce** stream (cross-schema,
+  OOV tokens) vs the native ecommerce encoder (`v64`).
+- **Measured (Rung-0, ~900 B, horizon 30, seed 0, `--no-seq-oracle`):** cross-schema U **0.8000**
+  (worst member solved); native ecommerce U **0.6000** with **noise 0.37** and a *negative* worst
+  gap (E beats the oracle). 
+- **Read:** **inconclusive** — the ecommerce fixture is too **low-signal** at this size for the
+  metric (large noise, saturating gaps), so a cross-schema comparison cannot be read from it; and
+  the "wrong" encoder scoring higher than native is a low-signal artifact, not evidence of
+  transfer. A clean cross-schema test needs a high-signal pair (e.g. instacart ↔ rabbit_hole) and
+  a schema-agnostic vocabulary (the tokenizer axis).
+- **Principles served:** *Honest* (no over-claim from a noisy fixture), *Diagnosable*.
+- **Gate:** green.
