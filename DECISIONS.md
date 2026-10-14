@@ -3233,3 +3233,23 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   (the probe/representation reconciliation, DEC-149) — an honest, non-degenerate target.
 - **Principles served:** *Honest*, *Diagnosable*, *Efficient*.
 - **Gate:** green (`bash -n loop/status.sh` OK).
+
+## DEC-151 — Loop iter 23: cross-schema is UNTESTABLE — only instacart has informative targets
+
+- **Date:** 2026-10-14
+- **Finding:** at 12000 customers, **both** the instacart encoder → rabbit_hole stream and the
+  rabbit_hole native encoder give **`U = 0.0`** (no informative members; oracle at chance). So
+  rabbit_hole is **non-informative for the universality targets** at this `as_of` even at scale
+  (sparse future purchases → future-LTV/count targets ≈ 0 → oracle R² ≤ 0).
+- **Consequence (important):** of the three fixtures, **only instacart** carries signal on the
+  gate's future-aggregate targets. So the core **"universal across streams"** claim **cannot be
+  tested** with the current fixtures — the other streams are **degenerate for these targets**
+  (rabbit_hole sparse; ecommerce low-signal, DEC-144). The `U` metric measures sufficiency on
+  *purchase-aggregate* targets; synthetic streams (rabbit_hole) lack the density.
+- **Fix (next, on the critical path):** produce a **second high-signal stream** — e.g. regenerate
+  rabbit_hole with a higher purchase rate / denser orders, or use the **Layer-A ladder** (L5/L6)
+  which ships known-truth structure — so cross-schema universality (the heart of the foundation
+  claim) can be measured.
+- **Principles served:** *Honest* (named the untestable gap), *Universal/Adaptive* (the gap is
+  universal-*ness*), *Diagnosable*.
+- **Gate:** green.
