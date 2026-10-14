@@ -2592,3 +2592,30 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - **Next (U5):** implement a stronger, **learned** content-gated additive measure pathway and beat
   0.180; measure `U` each step. Then U3-adversary + U4 accessibility/similarity gates.
 - **Gate:** green (ruff clean).
+
+## DEC-120 — U5 Rung-1: a learned additive ledger LOSES to the hand accumulator (dead end, reverted)
+
+- **Date:** 2026-10-14
+- **Tried:** the factored "shape×measure" lever — a `LedgerBlock` (content-gated additive monoid
+  `L_t = L_{t-1} + σ(W_g x)·W_v(x)`, decay ≡ 1, read out with signed-log1p, exposed in the consumed
+  embedding) trained by the `ledger` objective (predict running [count, value-sum]). Matched
+  Rung-1 tiny train on instacart (`--customers 2000 --sample-a 1500 --max_steps 250`), one variable:
+  **ledger-only vs accumulator-only**.
+- **Measured (U, 618 held-out B, horizon 30, seed 0):**
+  - accumulator-only (`uni_acc`): **U = 0.2174** (worst-case `next-order value`, norm_gap 0.78)
+  - ledger-only (`uni_led`): **U = 0.0469** (worst-case `LTV`, norm_gap 0.95)
+  The ledger's self-supervised *val* also **plateaued** (best 3.65 @ step 94, no_improve 4/4) — so
+  it is not merely undertrained on the training objective; it simply does not recover the
+  extensive signal.
+- **Read:** a learned additive recurrence over **token embeddings** does not spontaneously
+  reconstruct the raw extensive features (cumulative value/count) that the hand accumulator
+  carries **explicitly** (it literally sums `log1p(|value|)`). The running-total objective is
+  near-identity on the accumulated readout and does not force the drive to align with the raw
+  aggregates. Consistent with DEC-111/112 (self-organization underperforms the explicit register).
+- **Verdict:** DEAD END as implemented — reverted the code (git history keeps it). The lesson for
+  the measure axis: the fix is a **targeted self-supervised future-aggregate objective**
+  (sufficiency pressure) and/or a content-gated memory whose **input includes the raw event
+  channels**, not a plain additive recurrence hoping to discover them.
+- **Next:** attack the mass axis via the objective (predict the FUTURE aggregate from the state),
+  then re-test; only re-introduce an additive block if it wins.
+- **Gate:** green (282 passed; reverted cleanly).

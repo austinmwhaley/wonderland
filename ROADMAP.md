@@ -65,7 +65,10 @@ unlogged events carried as uncertainty.
   label-transfer (lookalike/segmentation usability) — separate from sufficiency.
 - **U5. Close the gap with the architecture** — the shape×measure decomposition (contractive
   shape memory + content-addressed additive measure memory; `AGENTS.md` DEC-106 root cause),
-  driven by the future-prediction objective; re-measure `U` each step.
+  driven by the future-prediction objective; re-measure `U` each step. **Rung-1 attempt (DEC-120):**
+  a learned additive ledger *lost* to the hand accumulator (U 0.047 vs 0.217) → reverted. Pivot:
+  drive the measure axis with a **targeted future-aggregate objective** (and only re-add an additive
+  block if it wins).
 - **U6. Cross-consumer validation** — train plugins on `E` for held-out, *never-used* tasks and
   confirm parity (the empirical "unknown use case" test).
 

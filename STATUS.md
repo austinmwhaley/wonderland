@@ -196,8 +196,12 @@ invariant-by-construction).
   sufficient → norm_gap 0.00, magnitude-dropped → 0.65, over-capacity → 0.00 (saturation).
   Matched Rung-0 (DEC-119): the measure pathway lifts **U 0.066 → 0.180** (worst-case still LTV/
   order-count) — the mass gap is the biggest lever.
-  Next: U5 — implement a stronger **learned** content-gated additive measure and beat U=0.180;
-  then U3-adversary → accessibility/similarity gates (U4).
+  U5 Rung-1 (DEC-120): a learned additive ledger **LOST** to the accumulator (U 0.047 vs 0.217,
+  val plateaued) → reverted. Raw extensive aggregates are hard to beat by "learning" from token
+  embeddings; the measure fix is a **targeted future-aggregate objective**, not a plain additive
+  recurrence.
+  Next: attack the mass axis via the objective (predict FUTURE aggregates), then U3-adversary →
+  accessibility/similarity gates (U4).
 
 - **Versioning scheme (DEC-058):** versions are now pre-1.0 semver
   `MAJOR.MINOR.PATCH` (`0.6.4`); tag = `<version>r<revision>` (`0.6.4r162610`).
