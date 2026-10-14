@@ -2484,3 +2484,16 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   not a tunable defect. (Matches DEC-088: the `decorr` objective does not lower it.)
 - **ecommerce-B blockers remain:** channel-MI excess 0.238 (>0.20) + UNCERTAIN next (dead tie).
 - Gate green (277 tests).
+
+## DEC-115 — Reinstate the accumulator (opt-in default-on): best-measured sufficiency restored
+
+- **Date:** 2026-10-14
+- **Context:** the self-organization experiments (DEC-111/112) removed the explicit accumulator and
+  underperformed (LTV 0.13 vs 0.21). Per the evidence, reinstated it as `use_accumulator`
+  (default True), exposed in the consumed embedding via `forward_embedding`.
+- **Verified (instacart `insta_full`, no retrain):** sufficiency gate `E alone` back to
+  **LTV 0.21**, churn 0.80, order_count 0.22 (gap ~HALF vs raw). The accumulator is a function of
+  the tokens, so it applies at inference to existing checkpoints.
+- **State:** goal = sufficient statistic; sufficiency ~0.55-0.88x raw (best-measured; gap ~half);
+  the only non-green CARD is ecommerce B (channel-MI capacity-limited, DEC-114). Gate green
+  (277 tests).

@@ -159,6 +159,7 @@ def train_cfm(cfg: CFMConfig):
         prod_dim=(getattr(cfg, "prod_embed_dim", 0) if getattr(cfg, "prod_embed_path", "") else 0),
         stats_pathway=getattr(cfg, "stats_pathway", False),
         continuous_time=getattr(cfg, "continuous_time", False),
+        accumulator=getattr(cfg, "use_accumulator", True),
     ).to(device)
     # v4.0: differentiable ZCA in the forward during training (gradients shape the
     # consumed isotropy); off at eval/save so the frozen transform is used.
@@ -1701,9 +1702,10 @@ def forward_embedding(model, seqs, h0s=None):
         h0 = torch.stack([torch.as_tensor(h, dtype=torch.float32, device=dev) for h in h0s])
     with torch.no_grad():
         _y, h = model.encode_ev(tok, t, h0=h0)
-    # consumed embedding = the selective trunk's donor (its LEARNED per-channel
-    # decay lets individual channels become cumulative ledgers, so no separate track)
-    return model.donor_batch(h)
+        out = model.donor_batch(h)
+        if getattr(model, "accumulator_on", False):
+            out = torch.cat([out, model.accumulator(tok, t)], dim=-1)
+    return out
 
 
 def _loss_split(model, vocab, items, cfg, weights: dict | None = None, scales: dict | None = None):

@@ -606,6 +606,7 @@ class CFM(nn.Module):
         prod_dim: int = 0,
         stats_pathway: bool = False,
         continuous_time: bool = False,
+        accumulator: bool = True,
     ):
         super().__init__()
         self.vocab = vocab
@@ -703,6 +704,10 @@ class CFM(nn.Module):
         self.head_agg = nn.Linear(dim + 1, 2)  # successor features
         self.order_W = nn.Linear(dim, self.chan, bias=False)  # temporal-order scorer
         self.proj = nn.Linear(dim, dim)  # contrastive / public S
+        # v8 SUFFICIENCY (reinstate, opt-in default-on): a cumulative accumulator
+        # exposed in the consumed embedding — the contractive trunk loses "how much"
+        # (freq/monetary); this restores it. Best-measured readout (LTV 0.05->0.21).
+        self.accumulator_on = bool(accumulator)
 
         with torch.no_grad():  # DEC-040: orthogonal readout frame
             self.proj.weight.copy_(
@@ -1010,6 +1015,39 @@ class CFM(nn.Module):
                 hit += 1
         self.prod_vec_table = tab.to(next(self.parameters()).device)
         return hit
+
+    def accumulator(self, tok, t):
+        """Cumulative statistics exposed in the consumed embedding (contractive
+        trunk cannot hold running totals). Learned token-drive totals + recency
+        windows + raw universal totals (value/time). Universal, no domain literals."""
+        mask = t["mask"].unsqueeze(-1)  # (B,T,1)
+        ssum = (tok * mask).sum(1)  # (B, chan) TOTAL token drive
+        count = mask.sum(1).clamp(min=1.0)  # (B,1)
+        feats = [
+            ssum,
+            ssum / count,
+            torch.log1p(ssum.norm(dim=-1, keepdim=True)),
+            torch.log1p(count),
+            tok[:, -1],
+        ]
+        hl = float(getattr(self, "half_life_days", 30.0)) or 30.0
+        secs = (torch.expm1(t["dt"]).squeeze(-1) * t["mask"]).cumsum(1)
+        age = secs[:, -1:] - secs
+        for k in (0.3, 1.0, 3.0, 10.0):
+            w = 0.5 ** (age / (hl * k * 86400.0)) * t["mask"]
+            feats.append((tok * w.unsqueeze(-1)).sum(1))
+            feats.append(w.sum(1, keepdim=True))
+        m = t["mask"]
+        val = torch.log1p(t["val"].abs().squeeze(-1))
+        gap = torch.expm1(t["dt"]).squeeze(-1)
+        feats += [
+            (val * m).sum(1, keepdim=True),
+            (gap * m).sum(1, keepdim=True),
+            (val * m).mean(1, keepdim=True),
+            (gap * m).mean(1, keepdim=True),
+            gap[:, -1:],
+        ]
+        return torch.cat(feats, dim=-1)
 
     def donor_batch(self, h: "torch.Tensor") -> "torch.Tensor":
         """Donor readout for (B, D) state batches — no pooling. The consumed
