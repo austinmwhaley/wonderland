@@ -269,6 +269,12 @@ def main(argv=None):
     ap.add_argument("--seeds", default="0,1,2")
     ap.add_argument("--out", default=None)
     ap.add_argument(
+        "--no-accumulator",
+        action="store_true",
+        dest="no_acc",
+        help="disable the cumulative-accumulator measure pathway (matched control for U)",
+    )
+    ap.add_argument(
         "--synthetic",
         action="store_true",
         help="ground-truth machinery check (known sufficient statistic; no checkpoint)",
@@ -283,6 +289,8 @@ def main(argv=None):
     if not (a.db and a.as_of and a.ckpt_dir and a.tag):
         ap.error("--db/--as-of/--ckpt-dir/--tag are required unless --synthetic")
     model, cfg = load_frozen_encoder(a.tag, a.ckpt_dir)
+    if a.no_acc:
+        model.accumulator_on = False  # matched control: shape-only (no measure pathway)
     cfg.db, cfg.as_of, cfg.sample_customers = a.db, a.as_of, a.customers
     horizons = tuple(int(x) for x in a.horizons.split(","))
     seeds = tuple(int(x) for x in a.seeds.split(","))

@@ -2573,3 +2573,22 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   generated **ladder stream + trained** lossy/sufficient encoders (Rung 1/2) so the separation is
   shown on actual encoders, not just constructed representations.
 - **Gate:** green (279 passed; new test `test_synthetic_machinery_separates_lossy_and_saturates`).
+
+## DEC-119 — U3 (Rung 0): the measure pathway lifts U 0.066 → 0.180; mass gap remains large
+
+- **Date:** 2026-10-14
+- **What:** matched control (one variable) — measured `U` on the SAME frozen instacart checkpoint
+  (`v6.4.0r767243`) with and without the cumulative-accumulator measure pathway
+  (`--no-accumulator`), same settings (1181 held-out B, horizon 30d, seed 0).
+- **Measured:** WITH accumulator **U = 0.1796** (worst-case LTV, norm_gap 0.82); WITHOUT
+  **U = 0.0660** (worst-case order_count, norm_gap 0.93).
+- **Read:** the current crude measure pathway closes a large fraction of the mass gap
+  (ΔU ≈ +0.11; it *is* the dominant contributor), but `U` is still far from 1 — the remaining
+  mass gap is the biggest lever. Confirms the DEC-106 diagnosis at the level of the whole-embedding
+  worst-case metric (not just one target), and gives the matched baseline the shape×measure
+  architecture (U5) must beat.
+- **Caveat:** single seed / single horizon for speed; the earlier 2-horizon/2-seed number was
+  U=0.2227 — the *matched* comparison here (same settings both arms) is the valid one.
+- **Next (U5):** implement a stronger, **learned** content-gated additive measure pathway and beat
+  0.180; measure `U` each step. Then U3-adversary + U4 accessibility/similarity gates.
+- **Gate:** green (ruff clean).

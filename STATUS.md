@@ -194,8 +194,10 @@ invariant-by-construction).
   held-out B): U = 0.2227** — far from universal; worst-case = the **mass axis**
   (`next-order value`/LTV norm_gap ~0.77). **U2 done** (DEC-118): ground-truth machinery check —
   sufficient → norm_gap 0.00, magnitude-dropped → 0.65, over-capacity → 0.00 (saturation).
-  Next: adversarial family (U3) → accessibility/similarity gates (U4) → attack the mass axis with
-  the shape×measure lever (U5, DEC-106).
+  Matched Rung-0 (DEC-119): the measure pathway lifts **U 0.066 → 0.180** (worst-case still LTV/
+  order-count) — the mass gap is the biggest lever.
+  Next: U5 — implement a stronger **learned** content-gated additive measure and beat U=0.180;
+  then U3-adversary → accessibility/similarity gates (U4).
 
 - **Versioning scheme (DEC-058):** versions are now pre-1.0 semver
   `MAJOR.MINOR.PATCH` (`0.6.4`); tag = `<version>r<revision>` (`0.6.4r162610`).
