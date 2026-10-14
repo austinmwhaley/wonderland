@@ -254,6 +254,9 @@ invariant-by-construction).
   worst gap unchanged); option-B generic measure expose is **inconclusive** (U 0.12). Next lead:
   the encoder may not **consume all fields** the oracle uses (`attr_fields` empty) → tokenizer/
   exhaustive-consumption axis.
+  **Loop iter 7 (DEC-134):** consuming aisle/department/entity_id does **NOT** help (U 0.101 vs
+  0.123). The mass gap is **robust** (not truncation, not fields, not learnable measure, not gate
+  init). Next: the **all-fields universal tokenizer** (axis 1).
 
 - **Versioning scheme (DEC-058):** versions are now pre-1.0 semver
   `MAJOR.MINOR.PATCH` (`0.6.4`); tag = `<version>r<revision>` (`0.6.4r162610`).

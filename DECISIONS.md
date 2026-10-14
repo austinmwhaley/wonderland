@@ -2930,3 +2930,27 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - **Principles served:** *Diagnosable* (isolated truncation), *Efficient* (kept useful tooling),
   *Honest* (recorded the null).
 - **Gate:** green.
+
+## DEC-134 — Loop iter 7: consuming attribute fields does NOT close the mass gap
+
+- **Date:** 2026-10-14
+- **Lead:** the instacart stream has ~23 attribute keys; the oracle uses all; the encoder
+  (`attr_fields` empty) consumes ~5. Hypothesis: the mass gap is a field-consumption gap.
+- **Tested:** Rung-1 tiny train with `attr_fields=('aisle','department')` + `entity_id_embed=true`,
+  matched control = the same tiny recipe without them (`uni_acc`).
+- **Measured (Rung-0, 618 B, horizon 30, seed 0):** U **0.1229 (baseline) → 0.1009 (with fields)**
+  — **worse**. So consuming these fields does **not** close the gap (noise/undertrain at Rung-1,
+  and these fields add little beyond the accumulator for next-order value).
+- **Why this is only a partial test:** the encoder still ignores ~18 other keys (numeric:
+  `n_items`, `order_dow`, `order_hour_of_day`, `days_since_prior_order`, `reordered`, …). A fair
+  test needs a **tokenizer that consumes ALL fields** (categorical → embeddings, numeric → scalar
+  encoders) — the axis-1 universal tokenizer.
+- **Standing conclusion (DEC-133/134 + 5 measure negatives):** the mass gap (E-alone vs the
+  exhaustive full-history aggregate oracle) is **robust** — not truncation, not these fields, not
+  a learnable measure, not the gate init. The exhaustive aggregate oracle holds a large advantage
+  over any compact learned representation for these targets.
+- **Next:** the all-fields **universal tokenizer** (axis 1) — the one remaining untested
+  explanation, and independently on the goal's critical path ("universal" = consume any schema).
+- **Principles served:** *Universal/Adaptive* (schema-agnostic consumption), *Diagnosable*,
+  *Honest* (null recorded).
+- **Gate:** green.
