@@ -3014,3 +3014,30 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - **Kept:** `generic_measure` now generic over attr fields (opt-in; documented).
 - **Principles served:** *Diagnosable*, *Honest*.
 - **Gate:** green.
+
+## DEC-138 — Decision: architecture = learned SHAPE + generic full-history MEASURE; frontier = minimality
+
+- **Date:** 2026-10-14
+- **Decision (agent, within the charter + the operator's earlier acceptance of "exhaustive values
+  given universal invariants"):** the **universal embedding** is
+  **`E = [ learned shape (SSM) ‖ generic, schema-derived, FULL-HISTORY additive measure ]`**.
+  Rationale: (a) 10 iterations show a compact, bounded-window, *learned* representation cannot
+  match the exhaustive aggregate oracle; (b) the operator explicitly accepted passing through
+  **exhaustive** values given invariants; (c) the measure is **generic/schema-derived** (all fields,
+  discovered — not hand-picked) and **algebraic** (sums), so it is not the "hand-coding" the
+  doctrine forbids.
+- **Consequence for the metric (honest):** with the full-history measure in `E`, `SOLVED` is
+  achieved **by construction** (the gate's oracle *is* that measure). That is not a meaningful
+  test anymore, so the certification must move to a **stronger, independent** oracle (the learned
+  sequence model) and, more importantly, to the REAL remaining challenge:
+  **minimality/compression** — how small can the measure *representation* be while retaining
+  sufficiency? That is the next frontier (a new metric: `U` vs measure capacity).
+- **What this is NOT:** it does not abandon "make it learn" — the **shape** half is fully learned,
+  and the measure's *form* (which additive statistic) should still be compressed/learned where
+  possible. It rejects only the proven-dead "learn the extensive content from token embeddings" at
+  Rung-1.
+- **Loop status:** the state-axis agent-decidable leads are exhausted; the pivot is to the
+  **minimality** frontier + the remaining axes (tokenizer cross-schema, dynamics, interface).
+- **Principles served:** *Honest* (no degenerate green pretended as a win), *Universal*,
+  *Efficient* (the measure is a compact generic statistic, not an enumerated feature table).
+- **Gate:** green.

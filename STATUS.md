@@ -267,6 +267,9 @@ invariant-by-construction).
   window vs full-history mismatch). **Structural conclusion (iters 1–10):** the mass gap is robust;
   a compact bounded-window learned embedding cannot match an exhaustive full-history aggregate
   oracle → **goal-level fork (option B/C)**; agent-decidable state-axis leads exhausted.
+  **DECISION (DEC-138):** architecture = **learned SHAPE + generic, schema-derived, FULL-HISTORY
+  additive MEASURE**; the metric is sufficiency-by-construction, so the frontier pivots to
+  **minimality/compression** (how small can the measure be while sufficient?) + remaining axes.
 
 - **Versioning scheme (DEC-058):** versions are now pre-1.0 semver
   `MAJOR.MINOR.PATCH` (`0.6.4`); tag = `<version>r<revision>` (`0.6.4r162610`).
