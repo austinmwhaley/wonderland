@@ -4,16 +4,16 @@ description: Run the wonderland autonomous loop until the goal is GREEN
 AUTONOMOUS LOOP MODE. Work in /home/austin-whaley/Documents/wonderland; pass
 workdir=/home/austin-whaley/Documents/wonderland on every shell call.
 
-GOAL (north star; see AGENTS.md "Project goal", STATUS.md "Canonical decomposition",
-loop/UNIVERSALITY.md): `embedding(customer, timestamp)` must be a MINIMAL, BOUNDED, **UNIVERSAL
-SUFFICIENT STATISTIC of the stream** — sufficient for the full observable future so ANY present
-or future consumer (ours or another's, known or unknown) is covered BY CONSTRUCTION. Measured by
-`U = 1 − worst-case oracle-gap` over a broad, adversarial, held-out, self-supervised family
-(oracle = full history / Bayes floor; fixed capacity). `U → 1` ⟺ goal. The B card AND B+C card
-GREEN across all streams are a NECESSARY condition (checkable: `bash loop/status.sh`), not the
-goal. PRIORITY this phase: BUILD the universality gate (`looking_glass/universality.py` per
-loop/UNIVERSALITY.md), then drive `U` up with the highest-leverage architectural lever (the
-shape×measure decomposition). Known use cases may VETO (gates), never SHAPE the encoder.
+GOAL (north star; AGENTS.md "The project", STATUS.md "Canonical decomposition",
+loop/UNIVERSALITY.md). **Layer 0 (NOW):** input any event stream → encode → a FOUNDATION MODEL
+emitting UNIVERSAL FOUNDATIONAL EMBEDDINGS (self-supervised, frozen/reusable, schema- and
+domain-agnostic, transferable, shared geometry). **Layer 1 (NEXT):** certify them as a MINIMAL,
+BOUNDED, **UNIVERSAL SUFFICIENT STATISTIC** — sufficient for the full observable future so ANY
+present or future consumer is covered BY CONSTRUCTION. Measured by `U = 1 − worst-case
+oracle-gap` over a broad, adversarial, held-out, self-supervised family (oracle = full history /
+Bayes floor; fixed capacity). `U → 1` ⟺ sufficient. B/B+C cards GREEN across all streams are a
+NECESSARY condition (checkable: `bash loop/status.sh`), not the goal. Known use cases may VETO
+(gates), never SHAPE the encoder.
 
 KEEP GOING. Do NOT stop, summarize, or ask between steps. Decide everything yourself inside the
 guardrails below; when you hit a fork (spec/gate/stream), choose the option that best serves the
@@ -37,6 +37,9 @@ Each step:
 8. Immediately begin the next step. Loop until `bash loop/status.sh` prints GOAL_MET.
 
 GUARDRAILS — achieving the goal by honest means (no manual hacks):
+- TOP-LEVEL PRINCIPLES (AGENTS.md charter; align every decision, cite in the DEC entry;
+  conflict order robustness > universality > adaptability > dynamism > speed > generality):
+  universality, adaptability, dynamism, speed, robustness, generality.
 - No magic numbers: every threshold/dim/window/rate is derived from the data, learned, or a
   documented fallback resolved at runtime and recorded in a receipt.
 - No domain literals (no business event names / hand-picked feature partitions).

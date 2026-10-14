@@ -33,6 +33,11 @@ exit. Otherwise:
    what was measured + receipts + verdict (fact-only).
 8. STOP after this one step. Do not start a second experiment in the same run.
 
+TOP-LEVEL PRINCIPLES (AGENTS.md charter — every decision MUST align; conflict order
+robustness > universality > adaptability > dynamism > speed > generality): universality,
+adaptability, dynamism, speed, robustness, generality. Cite the principle(s) a non-trivial
+decision serves in its DEC entry.
+
 CONSTRAINTS: no magic numbers (derive/learn); no domain literals; per-sample at serve;
 contractive; no loss hacks; no silent non-finite masking; never weaken a gate to pass;
 never select on the metric you optimize; self-supervised only for Layer B. If you hit a

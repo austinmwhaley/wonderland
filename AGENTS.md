@@ -4,26 +4,48 @@ This file governs every change to the system. It is a **doctrine**, not a
 checklist of values. Where an example implies a constant or a procedure, treat
 it as an *intent* and implement the mechanism that achieves it **adaptively**.
 
-The system (one-way): `rabbit_hole → looking_glass → plugins → red_king →
+The system (one-way): `rabbit_hole → looking_glass → plugins → red_king → red_queen`,
+with `white_queen` (OPE certification) and `caterpillar` (read-only interpretability)
+hanging off `plugins`.
 
-## Project goal (v8, sharpened — "universal" embedding)
-**Produce `embedding(customer, timestamp)` — a point-in-time customer STATE that is a MINIMAL,
-BOUNDED, UNIVERSAL SUFFICIENT STATISTIC of the event stream: the smallest fixed-size object
-that loses nothing about the future — for prediction AND for decisions.** "Universal" is the
-load-bearing word: sufficient for the **full observable future**, so **any present or future
-consumer — ours or another team's, known or unknown — is covered BY CONSTRUCTION**, not by
-enumeration. It must be **predictive** (supervised), **structure-revealing** (unsupervised,
-usable geometry for similarity/segmentation), and **decision-sufficient for the declared
-action/reward family** (RL loses nothing). A PERFECT DISTILLATION of the event stream, not a
-lossy summary — the smallest object that preserves everything that matters, *including
-magnitude/level* (which summaries like RFM keep and a contractive state must not lose).
+## The project — a universal foundation model for event streams
 
-**The metric** (the one question every change is judged by): does it move `embedding(customer,t)`
-toward universality? Measure
-`U = 1 − worst-case_{τ} oracle-gap_τ`, where the oracle-gap is the EXCESS loss (beyond the Bayes
-floor) of predicting the future from `E` vs from the **full history**, over a **broad,
-adversarial, held-out, self-supervised** task family, at **fixed embedding capacity**.
-`U → 1` ⟺ the goal. Never judge against our known tasks. See `loop/UNIVERSALITY.md`.
+**Input an event stream → encode it → produce a foundation model that emits UNIVERSAL
+FOUNDATIONAL EMBEDDINGS.** That is the current focus. Concretely: one pretrained,
+self-supervised, domain-agnostic encoder whose FROZEN output is the "universal donor"
+that everything downstream builds on.
+
+Work in **two layers — do not conflate them**:
+
+- **Layer 0 — the universal foundation embedding (NOW).** A single encoder that maps *any*
+  event stream to per-customer, per-time vectors, **universal** in the ordinary sense:
+  - **self-supervised** (no labels in its training),
+  - **reusable / frozen** (downstream reads it; never mutates it),
+  - **schema- and domain-agnostic** (one model, many streams, no code changes),
+  - **transferable** (many downstream tasks — including held-out/unseen ones — get signal
+    from it above raw features),
+  - **shared geometry** (similar customers land near each other — a general space).
+- **Layer 1 — certification (NEXT).** Quality guarantees layered on top of a universal
+  embedding: *sufficiency* (nothing that matters is lost), *minimality* (smallest such
+  object), *decision-sufficiency* (counterfactual/action sufficiency), measured by `U`
+  below. These are upgrades to **certify**, not part of the definition of a foundation model.
+
+The aspiration the certification layer measures (Layer 1, precise):
+
+> `embedding(customer, t)` = a **minimal, bounded, universal sufficient statistic** of the
+> event stream — the smallest fixed-size object that loses nothing about the future, for
+> prediction AND decisions, such that **any present or future consumer — ours or another
+> team's, known or unknown — is covered BY CONSTRUCTION**, not by enumeration. It must be
+> **predictive** (supervised), **structure-revealing** (unsupervised, usable geometry), and
+> **decision-sufficient for the declared action/reward family** (RL loses nothing): a perfect
+> distillation, not a lossy summary, *including magnitude/level* (which summaries like RFM
+> keep and a contractive state must not lose).
+
+**The certification metric** (`U`): `U = 1 − worst-case_{τ} oracle-gap_τ`, where oracle-gap is
+the EXCESS loss (beyond the Bayes floor) of predicting the future from `E` vs from the **full
+history**, over a **broad, adversarial, held-out, self-supervised** family, at **fixed
+capacity**. `U → 1` ⟺ sufficient. Never judged against our known tasks. See
+`loop/UNIVERSALITY.md`.
 
 **Anti-overfit clause (binding).** To stay universal and not drift into designing for our known
 use cases:
@@ -38,8 +60,33 @@ use cases:
 - Coverage is over **functions of the observed stream**; unlogged events/confounders are carried
   as **uncertainty**, never faked.
 
-red_queen`, with `white_queen` (OPE certification) and `caterpillar` (read-only
-interpretability) hanging off `plugins`.
+---
+
+## Top-level principles (the operator's charter)
+
+These are the project's **top-level principles**. **Every decision must align to them**; a
+change that violates one is wrong regardless of any metric it improves. The detailed
+engineering doctrine below ("Principles" 1–16) **elaborates** these — it must not contradict
+them.
+
+1. **Universality** — one model, any stream, any schema, any use case, present or future; no
+   per-domain / per-task special-casing. The embedding is a single shared space.
+2. **Adaptability** — every component resolves its own configuration from what it sees
+   (schema, dimensionality, horizons, cadence, action space); an unseen shape works with no
+   code changes.
+3. **Dynamism** — behavior lives in config / learned state, not hardcoded source; prefer
+   learned/derived over fixed; every decision belongs where the information is (the learner).
+4. **Speed** — a first-class requirement, built in from the start (vectorized, scan-native,
+   cost-aware). A capability that is correct but unacceptably slow is **not done**.
+5. **Robustness** — fail safe and reject rather than clamp; uncertainty first; invariants by
+   construction; divergence / non-finite is a hard failure, never masked or rolled back.
+6. **Generality over fitting** — earn results on held-out / ground-truth signal, never by
+   tuning to a metric; never weaken a gate to pass. Known uses may **VETO**, never **SHAPE**.
+
+**Operating contract.** The operator supplies principles; the agent aligns the solution to
+them. Every non-trivial decision must cite the top-level principle(s) it serves, and
+`STATUS.md` / `DECISIONS.md` record that alignment. When principles conflict, prefer in order:
+**Robustness → Universality → Adaptability → Dynamism → Speed → Generality.**
 
 ---
 

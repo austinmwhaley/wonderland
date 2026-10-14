@@ -12,9 +12,15 @@ one structure the project is organized around. User-facing debates (2026-10-14)
 settled the GOAL and the reasoning below; work down from here.
 
 ```
-GOAL            a minimal, bounded, DECISION-SUFFICIENT statistic of the event stream
-                 | judged by
-METRIC          Δ = predictive-sufficiency gap + decision (margin) regret  ->  0 at fixed |E|
+PRINCIPLES      universality · adaptability · dynamism · speed · robustness · generality
+                 (the operator's charter; every decision must align — see AGENTS.md)
+                 | applied to
+LAYER 0 (NOW)   input any event stream -> encode -> a FOUNDATION MODEL emitting UNIVERSAL
+                 FOUNDATIONAL EMBEDDINGS: self-supervised, frozen/reusable, schema- and
+                 domain-agnostic, transferable, shared geometry
+                 | certified by (NEXT layer)
+LAYER 1         sufficiency · minimality · decision-sufficiency, measured by
+                 U = 1 - worst-case oracle-gap  -> 1  (loop/UNIVERSALITY.md)
                  | requires the state to carry
 CONTENT         information axes: shape · mass · identity · rate · uncertainty · causal
                  | reasoned about via
@@ -24,12 +30,22 @@ MECHANISM       contractive memory + content-addressed additive memory (+ uncert
                  | driven/learned by
 OBJECTIVE       self-supervised "predict the future" (PSR) — no hand targets
                  | certified by
-GATES           Layer-A ground-truth lab (exact Δ) + held-out oracle-referenced probes
-                 | kept honest by
-DOCTRINE        no magic numbers · make it learn · invariants by construction · one-way flow
+GATES           Layer-A ground-truth lab (exact U) + held-out oracle-referenced probes
 ```
 
-### GOAL — and *why* it is the goal
+### LAYERS — what we build now vs what we certify next
+Two layers; do not conflate them (`AGENTS.md` "The project"):
+
+- **Layer 0 — the universal foundation embedding (NOW).** Input any event stream → encode →
+  a foundation model emitting **universal foundational embeddings**: one pretrained,
+  self-supervised, domain-agnostic encoder whose **frozen** output is the "universal donor."
+  "Universal" here is the ordinary sense — self-supervised, reusable/frozen,
+  schema/domain-agnostic, **transferable** to many tasks (incl. unseen), shared geometry.
+- **Layer 1 — certification (NEXT).** Quality upgrades layered on top: **sufficiency**
+  (nothing that matters is lost), **minimality**, **decision-sufficiency** — measured by `U`.
+  These are guarantees to certify, **not** part of the definition of a foundation model.
+
+### GOAL (Layer 1, precise) — and *why*
 **`embedding(customer, t)` = a minimal, bounded, UNIVERSAL sufficient statistic of
 their history** — the smallest fixed-size object that loses nothing about the
 future, for prediction *and* for decisions. **"Universal"** = sufficient for the
@@ -152,17 +168,20 @@ invariant-by-construction).
 ## Macro
 
 - **Primary goal (operator-defined, DEC-008; sharpened v8, universal — see "Canonical
-  decomposition" below):** produce `embedding(customer, timestamp)` — a point-in-time
-  **customer STATE** that is a **minimal, bounded, UNIVERSAL sufficient statistic of the
-  stream**: *everything about the past that matters for the future is in this one vector;
-  nothing that matters is lost; and any present or future consumer — ours or another team's,
-  known or unknown — is covered by construction.* It must be **predictive** (supervised),
-  **structure-revealing** (unsupervised, usable geometry), and **decision-sufficient for the
-  declared action/reward family** (RL) — a PERFECT DISTILLATION of the stream, not a lossy
-  summary. (A sufficient statistic is not "compression that throws data away"; it is the
-  smallest object that preserves everything that matters.) Judged by `U = 1 − worst-case
-  oracle-gap` (`loop/UNIVERSALITY.md`), **never** by our known tasks — known uses **veto, never
-  shape**.
+  decomposition" below):** **Current focus = Layer 0:** input any event stream → encode → a
+  **foundation model emitting universal foundational embeddings** (self-supervised,
+  frozen/reusable, schema- and domain-agnostic, transferable). **Layer 1 (next):** certify
+  these as a **minimal, bounded, UNIVERSAL sufficient statistic** of the stream — *everything
+  about the past that matters for the future is in this one vector; nothing that matters is
+  lost; and any present or future consumer — ours or another team's, known or unknown — is
+  covered by construction.* It must be **predictive** (supervised), **structure-revealing**
+  (unsupervised, usable geometry), and **decision-sufficient for the declared action/reward
+  family** (RL) — a PERFECT DISTILLATION of the stream, not a lossy summary. (A sufficient
+  statistic is not "compression that throws data away"; it is the smallest object that
+  preserves everything that matters.) Judged by `U = 1 − worst-case oracle-gap`
+  (`loop/UNIVERSALITY.md`), **never** by our known tasks — known uses **veto, never shape**.
+  **Principles charter** (`AGENTS.md`): universality · adaptability · dynamism · speed ·
+  robustness · generality — every decision must align.
   `rabbit_hole` provides the data; `looking_glass` produces **the best encoder
   possible, judged on self-supervision quality ONLY (Layer B)** — optimized,
   stopped, selected, and sized on the held-out self-supervised portfolio

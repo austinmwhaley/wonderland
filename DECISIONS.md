@@ -2650,3 +2650,27 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   accumulator is the best known measure; two learned-measure attempts failed and were reverted.
   Next: make the measure **complete** honestly, or re-scope the metric's oracle for the extensive
   axis — and build U3-adversary / U4 accessibility gates.
+
+## DEC-122 — Docs realigned: two-layer goal + top-level PRINCIPLES charter (operator supplies principles)
+
+- **Date:** 2026-10-14
+- **Decision (operator):** the project is, at top level, **"input an event stream → encode →
+  a foundation model emitting universal foundational embeddings."** Split the goal into **two
+  layers**: **Layer 0 (NOW)** = the universal foundation embedding (self-supervised,
+  frozen/reusable, schema- and domain-agnostic, transferable, shared geometry) — *"universal" in
+  the ordinary sense*; **Layer 1 (NEXT)** = certification of *sufficiency / minimality /
+  decision-sufficiency* via `U`. Sufficiency is a guarantee to **certify on top**, not part of the
+  definition of a foundation model.
+- **Decision (principles):** elevate a **top-level principles charter** — **universality,
+  adaptability, dynamism, speed, robustness, generality** — as the frame every decision must
+  align to; the detailed engineering doctrine (Principles 1–16) elaborates, never contradicts.
+  **Operating contract:** the operator supplies principles; the agent aligns the solution and
+  **cites the principle(s)** each non-trivial decision serves. Conflict order:
+  robustness > universality > adaptability > dynamism > speed > generality.
+- **Docs aligned:** `AGENTS.md` (fixed the split intro; new "The project" two-layer section +
+  "Top-level principles (the operator's charter)"); `STATUS.md` (canonical frame now leads with
+  PRINCIPLES + LAYER 0 / LAYER 1; Macro primary goal reframed); `loop/ITER.md` +
+  `.opencode/commands/loop.md` (loop carries the two-layer goal + charter, cites principles).
+- **Trade-offs:** no code change; Layer 1 (sufficiency) work already done (gate, DEC-117..121)
+  is reframed as the *certification* layer, not the definition — nothing discarded.
+- **Gate:** green (docs only).
