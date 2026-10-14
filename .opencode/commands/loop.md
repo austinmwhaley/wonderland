@@ -1,56 +1,58 @@
 ---
-description: Run the wonderland autonomous loop until the goal is GREEN
+description: Run the wonderland autonomous loop CONTINUOUSLY until the goal is SOLVED
 ---
-AUTONOMOUS LOOP MODE. Work in /home/austin-whaley/Documents/wonderland; pass
-workdir=/home/austin-whaley/Documents/wonderland on every shell call.
+PERSISTENT AUTONOMOUS LOOP — NOT a one-shot task. Work in
+/home/austin-whaley/Documents/wonderland; pass workdir=/home/austin-whaley/Documents/wonderland
+on every shell call.
 
-GOAL (north star; AGENTS.md "The project", STATUS.md "Canonical decomposition",
-loop/UNIVERSALITY.md, loop/PLAYBOOK.md — hypothesis queue + guardrails + axis contract).
-**STOP = SOLVED (DEC-126):** the checking predicate `bash loop/status.sh` prints GOAL_MET iff
-`E` matches the exhaustive full-history oracle on EVERY member (on every stream) AND all B/B+C
-cards are GREEN. **Layer 0 (NOW):** input any event stream → encode → a FOUNDATION MODEL
-emitting UNIVERSAL FOUNDATIONAL EMBEDDINGS (self-supervised, frozen/reusable, schema- and
-domain-agnostic, transferable, shared geometry). **Layer 1:** certification (sufficiency via
-`SOLVED`). Known use cases may VETO (gates), never SHAPE the encoder.
+## The one behavioral rule (read first)
+You are a LOOP, not an assistant answering once. After each iteration you MUST immediately start
+the next one by making another tool call. **Emitting a final answer, a "status report", a
+summary, or a question after a single iteration is a FAILURE of this command.** Do not yield
+between iterations. Between iterations output AT MOST ONE LINE (e.g. `iter 7: <one clause>`),
+then continue calling tools. A run ends only for the three reasons below.
 
-KEEP GOING. Do NOT stop, summarize, or ask between steps. Decide everything yourself inside the
-guardrails below; when you hit a fork (spec/gate/stream), choose the option that best serves the
-goal and the doctrine, record it in DECISIONS.md, and continue. Only stop when `bash loop/status.sh`
-prints GOAL_MET (then report receipts) — or if you are truly blocked with NO legitimate path,
-say so in one line and stop.
+## Stop ONLY when
+1. `bash loop/status.sh` prints **GOAL_MET** → then write the final receipts and stop.
+2. A **genuine goal-level or principle-level conflict**, or a **no-legitimate-path dead end** →
+   write it to `STATUS.md` under "Open decisions" with a one-line question, then stop.
+3. **Hard cap: 25 iterations OR ~90 minutes OR context exhaustion** → stop and say exactly where
+   you got to. (Hitting the cap is "gave up", not "done".)
 
-Each step:
-1. Restore state: STATUS.md top + tail of DECISIONS.md + `git log --oneline -8` + `git status`.
-2. Pick the single highest-leverage remaining blocker; name it in one line.
+## GOAL / STOP predicate
+North star: `AGENTS.md` "The project", `STATUS.md` "Canonical decomposition", `loop/UNIVERSALITY.md`,
+`loop/PLAYBOOK.md` (hypothesis queue + guardrails + axis contract). **SOLVED (DEC-126):**
+`E` matches the exhaustive full-history oracle on EVERY member, on EVERY stream (E within the
+oracle's own noise) AND all B/B+C cards GREEN. **Layer 0 (NOW):** input an event stream → encode →
+a FOUNDATION MODEL emitting UNIVERSAL FOUNDATIONAL EMBEDDINGS (self-supervised, frozen/reusable,
+schema- and domain-agnostic, transferable). **Layer 1:** certification via `SOLVED`.
+Known use cases may VETO (gates), never SHAPE the encoder.
+
+## One iteration (repeat back-to-back)
+Maintain a todo list with the iteration counter and the current hypothesis.
+1. Restore state (≤1 min): STATUS.md top + tail of DECISIONS.md + `git log --oneline -8` + `git status`.
+2. Name the single highest-leverage blocker (one line).
 3. Cheapest matched experiment FIRST — Rung 0 (measure on an existing checkpoint; no training)
    → Rung 1 (tiny train `--customers 2000 --sample-a 1500 --set max_steps=250`) → Rung 2 (full).
-   ALWAYS a matched control (identical args; one variable differs). Run jobs in the background and
-   poll; never sit blocking.
-4. Keep the fast gate green each step: `ruff check . && ruff format --check . && pytest -m "not slow"`.
+   ALWAYS a matched control (identical args; **one variable differs**). Long jobs: run in background
+   and poll; never sit blocking.
+4. Keep the fast gate green: `ruff check . && ruff format --check . && pytest -m "not slow"`.
 5. Keep what wins; DELETE dead ends (revert code, record why).
-6. Record: append a DEC entry (context / what changed / what was MEASURED / verdict) and update
-   STATUS.md. No decision is "for the operator" — decide it and move on.
-7. Commit (code + docs only; NEVER data `*.pt/*.parquet/*.duckdb`); message = what was measured +
-   receipts + verdict (fact-only).
-8. Immediately begin the next step. Loop until `bash loop/status.sh` prints GOAL_MET.
+6. Record: append a DEC entry (context / what changed / what was MEASURED / verdict / principles
+   served) and update STATUS.md. Decide it yourself — do not defer to the operator.
+7. Commit + **push** (code + docs only; NEVER data `*.pt/*.parquet/*.duckdb`); message = measured
+   facts + receipts + verdict.
+8. **Immediately begin iteration N+1** (back to step 1). Do not stop to restate progress.
 
-GUARDRAILS — achieving the goal by honest means (no manual hacks):
-- TOP-LEVEL PRINCIPLES (AGENTS.md charter — broad strokes; align every decision, cite it in
-  the DEC entry; conflict order robust > universal > adaptive > lawful > efficient > honest):
-  universal · adaptive&dynamic · lawful (compositionality/equivariance/algebra) · efficient ·
+## Guardrails (honest means only)
+- PRINCIPLES (AGENTS.md charter; cite the one(s) each DEC serves; conflict order robust > universal
+  > adaptive > lawful > efficient > honest): universal · adaptive&dynamic · lawful · efficient ·
   robust · honest · accessible · diagnosable. DIAGNOSABLE = attribute each shortfall to an axis,
   propose the resolving change, record the cross-axis trade.
-- No magic numbers: every threshold/dim/window/rate is derived from the data, learned, or a
-  documented fallback resolved at runtime and recorded in a receipt.
-- No domain literals (no business event names / hand-picked feature partitions).
-- Per-sample at serve: NO batch statistics at inference.
-- Contractive recurrence (ρ<1); divergence / non-finite is a HARD FAILURE, never masked or
-  rolled back to fake a green.
-- No loss hacks (focal/class weights/clips to pass); no silent masking of non-finite terms.
-- NEVER weaken or re-interpret a gate / baseline / threshold to make a card pass. A green must be
-  earned against strong baselines, held-out, with CIs.
-- NEVER select weights on the metric you optimize (use held-out / ground truth).
-- NEVER encode an answer the system could learn or derive; MAKE IT LEARN, don't teach it.
-- Layer B (the encoder) is self-supervised only — no downstream labels in its training.
-- You may re-add soft, per-sample, scale-free objectives (SPEC §3.1 "SR proposes, FR disposes"),
-  but the certification filter (per-sample, no batch-coupled capacity faking) still applies.
+- No magic numbers (derive/learn); no domain literals; per-sample at serve; contractive recurrence
+  (ρ<1); divergence/non-finite = HARD FAILURE (never masked/rolled back); no loss hacks.
+- NEVER weaken/re-interpret a gate, baseline, threshold, or the oracle to pass.
+- NEVER select weights on the metric you optimize (held-out / ground truth only).
+- Layer B (encoder) is self-supervised only — no downstream labels in its training.
+- MAKE IT LEARN, don't teach it.
+- Do NOT repeat recorded negatives (grep DECISIONS.md before trying a measure variant).

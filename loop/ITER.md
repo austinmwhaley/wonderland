@@ -1,8 +1,12 @@
 # ONE ITERATION of the autonomous loop.
 #
-# This is the message handed to `opencode run` on every pass. It is deliberately
-# BOUNDED (one loop step) and STATELESS: all continuity lives in the repo
-# (STATUS.md, DECISIONS.md, git), never in the agent session.
+# This is the message handed to `opencode run` on every pass by the EXTERNAL DRIVER
+# (loop/run.sh). It is deliberately BOUNDED (one loop step) and STATELESS: all
+# continuity lives in the repo (STATUS.md, DECISIONS.md, git), never in the session.
+#
+# NOTE: this file is for the external driver ONLY. The interactive `/loop` command
+# (.opencode/commands/loop.md) is CONTINUOUS — it chains many iterations in one
+# session and must NOT stop after one step.
 
 You are one iteration of an autonomous loop in /home/austin-whaley/Documents/wonderland.
 Pass workdir=/home/austin-whaley/Documents/wonderland to every shell call.
