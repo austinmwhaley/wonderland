@@ -3041,3 +3041,16 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - **Principles served:** *Honest* (no degenerate green pretended as a win), *Universal*,
   *Efficient* (the measure is a compact generic statistic, not an enumerated feature table).
 - **Gate:** green.
+
+## DEC-139 — Architecture receipt: E with the full-history measure → U=1, SOLVED (by construction)
+
+- **Date:** 2026-10-14
+- **Receipt:** `--oracle-in-E` (append the full-history measure `Xhist` to `E`) on instacart
+  (1181 B, horizon 30, seed 0): **U = 1.0000, SOLVED = True** on every member. Confirms the mass
+  gap is **exclusively** the missing measure — `E`'s learned shape is not the issue.
+- **Meaning:** the architecture `E = [learned shape ‖ generic full-history measure]` is
+  **sufficient by construction** (DEC-138). The meaningful frontier is now **minimality**: how
+  compact can the measure representation be while retaining `SOLVED`?
+- **Added:** `--oracle-in-E` gate option (architecture receipt).
+- **Principles served:** *Honest* (a labeled receipt, not a claimed win), *Diagnosable*.
+- **Gate:** green.

@@ -403,7 +403,13 @@ def synthetic_machinery_check(seed=0, n=4000, kind="reg", seeds=(0, 1, 2)):
 
 
 def run_universality(
-    model, cfg, horizons=(30, 90), seeds=(0, 1, 2), use_seq=True, oracle_keys=None
+    model,
+    cfg,
+    horizons=(30, 90),
+    seeds=(0, 1, 2),
+    use_seq=True,
+    oracle_keys=None,
+    oracle_in_e=False,
 ):
     import polars as pl
 
@@ -421,6 +427,8 @@ def run_universality(
     seq_arg = seqs if use_seq else None
     # ORACLE input: the schema-derived, exhaustive full-history measure (not RFM).
     Xhist, _hnames = _full_history_features(cfg, cust, only_keys=oracle_keys)
+    if oracle_in_e:
+        Z = np.hstack([Z, Xhist]).astype(np.float32)  # architecture receipt (DEC-138)
     rows = []
     for h in horizons:
         fut, _past, _tc = _rfm_targets(cfg, h)
@@ -542,6 +550,12 @@ def main(argv=None):
         help="comma list: RESTRICT the oracle to these JSON keys (test the field-consumption gap)",
     )
     ap.add_argument(
+        "--oracle-in-E",
+        action="store_true",
+        dest="oracle_in_e",
+        help="append the full-history measure to E (architecture receipt, DEC-138)",
+    )
+    ap.add_argument(
         "--synthetic",
         action="store_true",
         help="ground-truth machinery check (known sufficient statistic; no checkpoint)",
@@ -579,7 +593,13 @@ def main(argv=None):
     seeds = tuple(int(x) for x in a.seeds.split(","))
     oracle_keys = [k for k in a.oracle_keys.split(",") if k] or None
     rows, u, n, solved = run_universality(
-        model, cfg, horizons, seeds, use_seq=not a.no_seq, oracle_keys=oracle_keys
+        model,
+        cfg,
+        horizons,
+        seeds,
+        use_seq=not a.no_seq,
+        oracle_keys=oracle_keys,
+        oracle_in_e=a.oracle_in_e,
     )
     card, u, solved = _card(a.tag, rows, u, n, solved)
     print(card)
