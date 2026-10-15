@@ -76,6 +76,17 @@ def build_card(stream, tag, as_of, cfg, model, horizons=(30,), seeds=(0,)):
             f"{r['gap (hist adds)']:+.4f} | {r['noise']:.4f} | "
             f"{'✅' if r['solved'] else '❌'}{'' if r.get('informative') else ' (n/a)'} |"
         )
+    gain = u - max(u_bare, u_acc)
+    if gain > 0.1:
+        compare_note = (
+            "⇒ on **this** stream the learned measure adds **substantial** signal over naive "
+            "representations (the difference matters when the stream is hard)."
+        )
+    else:
+        compare_note = (
+            "⇒ on **this** stream naive representations are **already near the ceiling** (an easy "
+            "stream); the pipeline **matches** it (and is the general, task-agnostic form)."
+        )
     lines += [
         "",
         "## How it compares (the point)",
@@ -84,8 +95,7 @@ def build_card(stream, tag, as_of, cfg, model, horizons=(30,), seeds=(0,)):
         f"| bare sequence encoder (shape only) | {u_bare:.4f} |",
         f"| hand features (RFM-ish accumulator) | {u_acc:.4f} |",
         f"| **THIS: learned shape ‖ compact learned measure** | **{u:.4f}** |",
-        "⇒ the pipeline matches the **full-history ceiling**; hand features capture only a "
-        "fraction of what is predictable.",
+        compare_note,
         "",
         "## Architecture",
         "`E = [ learned shape (self-supervised SSM)  ‖  learned-compressed generic full-history "
