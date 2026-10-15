@@ -90,7 +90,9 @@ def certify(model, cfg, horizon_days=90, seed=0):
     # MODELING witness: value V(E, a) for every arm; the candidate = argmax_a V.
     V = np.zeros((N, Q))
     for aa in range(Q):
-        m = HistGradientBoostingRegressor(max_iter=150).fit(np.column_stack([Zs, np.full(N, aa)]), r)
+        m = HistGradientBoostingRegressor(max_iter=150).fit(
+            np.column_stack([Zs, np.full(N, aa)]), r
+        )
         V[:, aa] = m.predict(np.column_stack([Zs, np.full(N, aa)]))
     cand_a = V.argmax(1)  # the candidate (personalized, derived from E)
     match = (cand_a == a).astype(float)
