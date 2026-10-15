@@ -3413,3 +3413,17 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - **Principles served:** *Universal* (generic fields), *Lawful* + *Efficient* (compact measure),
   *Honest* (no simulation, no leakage), *Accessible* (real consumed embedding).
 - **Gate:** green.
+
+## DEC-160 — Layer-B pipeline generalizes: SOLVED on a SECOND stream (L6, U=0.956)
+
+- **Date:** 2026-10-14
+- **What:** trained the Layer-B pipeline (`use_measure=true`) on the **L6 ladder** stream (distinct
+  schema: view/cart/purchase/action_send; measure fit on 2000 train) and evaluated the real
+  consumed embedding on 5000 customers.
+- **Measured:** **U = 0.9555, SOLVED = True**.
+- **Read:** the production pipeline is **not instacart-specific** — it generalizes to a second stream
+  and certifies SOLVED. The measure's *schema* is stream-derived (118 instacart features vs 31 for
+  L6), so the current pipeline is **per-stream**; true "one model, many streams" (universality)
+  needs a **canonical measure schema** shared across streams — the remaining universality work.
+- **Principles served:** *Universal*, *Efficient*, *Honest*.
+- **Gate:** green.
