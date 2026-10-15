@@ -30,3 +30,17 @@ def test_signed_log1p_monotone():
     y = signed_log1p(x)
     assert torch.all(y[1:] > y[:-1])
     assert torch.allclose(signed_log1p(-x), -y)
+
+
+def test_counter_registers_exact_and_route_sums_to_one():
+    torch.manual_seed(0)
+    blk = CounterBlock(6, 5, n_registers=4)
+    x = torch.randn(2, 5, 6)
+    raw = torch.rand(2, 5, 5)
+    mask = torch.ones(2, 5)
+    cre, M = blk(x, raw, mask=mask)
+    assert M.shape == (2, 5, 20)  # 4 registers x 5 raw
+    assert torch.allclose(signed_log1p(M), cre)
+    # softmax routing sums to 1 -> total over registers == gated raw sum (exact)
+    g = torch.sigmoid(blk.W_g(x))
+    assert torch.allclose(M.reshape(2, 5, 4, 5).sum(2)[:, -1], (g * raw).sum(1), atol=1e-5)

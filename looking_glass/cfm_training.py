@@ -161,6 +161,7 @@ def train_cfm(cfg: CFMConfig):
         continuous_time=getattr(cfg, "continuous_time", False),
         accumulator=getattr(cfg, "use_accumulator", True),
         counter=getattr(cfg, "use_counter", False),
+        counter_registers=getattr(cfg, "counter_registers", 1),
     ).to(device)
     # v4.0: differentiable ZCA in the forward during training (gradients shape the
     # consumed isotropy); off at eval/save so the frozen transform is used.
@@ -572,6 +573,7 @@ def train_cfm(cfg: CFMConfig):
             "stats_pathway": bool(getattr(cfg, "stats_pathway", False)),
             "continuous_time": bool(getattr(cfg, "continuous_time", False)),
             "counter": bool(getattr(cfg, "use_counter", False)),
+            "counter_registers": int(getattr(cfg, "counter_registers", 1)),
             "prod_embed_dim": int(getattr(cfg, "prod_embed_dim", 0))
             if getattr(cfg, "prod_embed_path", "")
             else 0,

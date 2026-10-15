@@ -500,34 +500,45 @@ def signed_log1p(x):
 
 
 class CounterBlock(nn.Module):
-    """S1 — ANCHORED additive counter (the hybrid: exact arithmetic inside the net).
+    """S1 + S2 — ANCHORED additive counter with content-addressed registers.
 
-    The model's account-keeper. Update is an exact monoid over RAW event quantities:
+    Exact arithmetic inside the net. `R` registers; each event's anchored raw write
+    `v_t = g_t ⊙ raw_t` is distributed to registers by a LEARNED content-addressing
+    assignment `a_t = softmax(W_a x_t)` (S2); with `R=1` this reduces to S1.
 
-        M_t = M_{t-1} + g_t ⊙ raw_t          (decay ≡ 1 in the prefix scan)
+        M_t[r] = M_{t-1}[r] + a_t[r] · v_t            (exact sum; decay ≡ 1)
 
-    where `raw_t` is the event's **raw field vector** (count 1, one-hot event_type /
-    brand / entity_type / attrs, raw value, raw gap) — the stream's actual quantities,
-    NOT a learned reconstruction — and `g_t = σ(W_g x_t + b)` is a **learned gate**
-    that decides WHAT to count (its bias starts positive so counting begins EXACT and
-    the net can only modulate, never fully switch it off). Addition is exact, so the
-    totals are always right; the net's jobs are selection (`g`) and usage (readout).
-    Readout is signed-log1p (magnitude-preserving), never normalized away.
+    `raw_t` = the event's RAW field vector (count 1, one-hot event_type/brand/entity_type/
+    attrs, raw value, log|value|, gap, log gap) — actual quantities, NOT a learned
+    reconstruction. The gate `g` (bias +4 ⇒ σ≈0.98) starts EXACT and only modulates.
+    Readout is signed-log1p of the (flattened) registers — magnitude-preserving, never
+    normalized away. S2 adds open-endedness (R registers, learned routing) *without*
+    losing S1's anchoring/lawfulness.
     """
 
-    def __init__(self, x_dim, raw_dim, gate_bias=4.0):
+    def __init__(self, x_dim, raw_dim, n_registers=1, gate_bias=4.0):
         super().__init__()
+        self.R = int(max(1, n_registers))
+        self.raw_dim = int(raw_dim)
         self.W_g = nn.Linear(x_dim, raw_dim)
         nn.init.normal_(self.W_g.weight, std=0.01)
         nn.init.zeros_(self.W_g.bias)
         self.W_g.bias.data.fill_(float(gate_bias))  # σ(4)≈0.98 -> starts exact
+        self.W_a = nn.Linear(x_dim, self.R) if self.R > 1 else None  # content-addressing
 
     def forward(self, x, raw, mask=None):
         g = torch.sigmoid(self.W_g(x))
-        drive = g * raw
+        v = g * raw  # (B,T,raw_dim) anchored write
+        if self.W_a is None:
+            drive = v
+        else:
+            a = torch.softmax(self.W_a(x), dim=-1)  # (B,T,R) learned routing
+            drive = (a.unsqueeze(-1) * v.unsqueeze(-2)).reshape(
+                x.shape[0], x.shape[1], self.R * self.raw_dim
+            )
         if mask is not None:
-            drive = drive * mask.unsqueeze(-1)  # pads: hold (no accumulation)
-        ones = torch.ones_like(drive[:, :, :1])  # decay ≡ 1 (B,T,1) => exact monoid sum
+            drive = drive * mask.unsqueeze(-1)  # pads: hold
+        ones = torch.ones_like(drive[:, :, :1])  # decay ≡ 1 => exact monoid sum
         _D, M = _scan(ones, drive)
         return signed_log1p(M), M
 
@@ -648,6 +659,7 @@ class CFM(nn.Module):
         continuous_time: bool = False,
         accumulator: bool = True,
         counter: bool = False,
+        counter_registers: int = 1,
     ):
         super().__init__()
         self.vocab = vocab
@@ -753,14 +765,15 @@ class CFM(nn.Module):
         # all fields, magnitude-preserving readout. Co-evolves with the shape (its gate +
         # readout projection train under the same objectives).
         self.counter_on = bool(counter)
+        self.counter_registers = int(max(1, counter_registers))
         if self.counter_on:
             raw_dim = 1 + (self.vocab.n_et + 1) + (self.vocab.n_brand + 1) + (self.vocab.n_ent + 1)
             for f in self.attr_fields:
                 raw_dim += self.vocab.n_attr.get(f, 0) + 1
             raw_dim += 4  # value, log1p|value|, gap, log1p(gap)
             self.counter_raw_dim = raw_dim
-            self.counter = CounterBlock(self.chan, raw_dim)
-            self.w_counter = nn.Linear(raw_dim, dim)
+            self.counter = CounterBlock(self.chan, raw_dim, n_registers=self.counter_registers)
+            self.w_counter = nn.Linear(self.counter_registers * raw_dim, dim)
         else:
             self.counter_raw_dim = 0
             self.counter = None

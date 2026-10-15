@@ -3314,3 +3314,24 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - **Principles served:** *Lawful* (exact anchored algebra), *Universal/Adaptive* (all fields,
   learned gate), *Efficient* (one scan), *Honest* (raw quantities, not learned arithmetic).
 - **Gate:** green (12 new-category tests pass).
+
+## DEC-155 — S2 IMPLEMENTED: content-addressed register bank; improves on S1
+
+- **Date:** 2026-10-14
+- **What (S2):** extended `CounterBlock` with an open-ended **register bank**: `R` registers, each
+  event's anchored raw write `v_t = g_t ⊙ raw_t` distributed to registers by a **learned soft
+  content-addressing** `a_t = softmax(W_a x_t)`:
+  `M_t[r] = M_{t-1}[r] + a_t[r]·v_t` (exact sum). `R=1` reduces to S1. Readout
+  `signed_log1p(M) → (B,T,R·raw_dim)` (magnitude-preserving). Crucially, writes stay
+  **anchored to raw quantities** — S2 adds open-endedness **without** the learned-arithmetic trap
+  that killed the earlier ledger. Opt-in (`--set use_counter=true --set counter_registers=8`);
+  checkpointed; unit-tested (routing sums to 1 ⇒ exact).
+- **Measured (Rung-1 tiny, instacart, 1181 B, horizon 30, seed 0, `--no-seq-oracle`):**
+  accumulator 0.131 · S1 (R=1) 0.118–0.176 (run noise) · **S2 (R=8) 0.2112** · full generic
+  measure (PCA-64) ≈0.90.
+- **Read:** content-addressed registers **improve** over the single counter and the external
+  accumulator — the S2 hypothesis (learned routing + anchored exact writes) holds. Still far from
+  the ~0.90 the full-history measure reaches; the counter remains **window-limited** and Rung-1 tiny.
+- **Principles served:** *Universal/Adaptive* (open-ended, learned routing), *Lawful* (anchored,
+  exact), *Efficient* (one scan over R·raw_dim), *Honest* (raw writes).
+- **Gate:** green (all tests pass).

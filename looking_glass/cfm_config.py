@@ -268,6 +268,8 @@ class CFMConfig:
     # S1 ANCHORED COUNTER (inside the net): exact gated sums of RAW event quantities
     # (all fields), magnitude-preserving readout, co-evolving with the shape.
     use_counter: bool = False
+    # S2: number of content-addressed registers for the counter (1 = S1; >1 = S2 routing).
+    counter_registers: int = 1
     # v6.9 (DEC-055): dedicated event-identity residual in the readout
     # z_t = RMSNorm(W_C H_t + skip(x_t) + W_e·emb(e_t) + W_ep·emb(e_{t-1})).
     # Adds a CLEAN, linearly-usable event path (the generic token skip mixes
