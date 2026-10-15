@@ -40,6 +40,13 @@ def build_card(stream, tag, as_of, cfg, model, horizons=(30,), seeds=(0,)):
     # restore
     model.accumulator_on = False
     model.layer_b = lb
+    # B+C — decision certification (the RL arm of rabbit_hole + looking_glass)
+    try:
+        from looking_glass.decision_certify import certify
+
+        dec = certify(model, cfg, horizon_days=int(max(horizons)))
+    except Exception:
+        dec = None
 
     sha = subprocess.run(
         ["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True
@@ -104,10 +111,25 @@ def build_card(stream, tag, as_of, cfg, model, horizons=(30,), seeds=(0,)):
         "counter does *exact arithmetic* (addition is a law, not learned).",
         "",
         "## What does NOT work yet (honest)",
-        "- **Decision-sufficiency (RL):** not built. The embedding is certified for **prediction**, "
-        "not yet for **counterfactual decisions** (`P(outcome | do(action), history)`).",
+        "- **Decision certification (RL arm):** a *first cut* is built (see the B+C section below) — "
+        "it certifies a candidate policy from `E` with a never-ship-worse guarantee; full acceptance "
+        "(recall/coverage across action spaces) is in progress.",
         "- Streams with **no predictive future signal** (e.g. sparse-purchase fixtures) are reported "
         "as non-informative, never faked.",
+        "",
+        "## B+C — decision certification (RL arm of rabbit_hole + looking_glass)",
+        *(
+            [
+                f"- candidate (personalized, derived from `E`): value **{dec['value_candidate']}** vs "
+                f"logging **{dec['value_logging']}** → Δ **{dec['delta']:+.3f}** 95% CI "
+                f"[{dec['lo']:+.3f}, {dec['hi']:+.3f}] · ESS {dec['ess_frac']} → **{dec['verdict']}**",
+                "- rule: **DEPLOY iff the paired CI lower bound > 0** (never ship worse than logging, "
+                "*by construction*); the candidate policy and the modeling witness both read `E` — a "
+                "more sufficient embedding ⇒ better decision estimation.",
+            ]
+            if dec is not None
+            else ["- (no randomized actions in this stream — decision certification skipped)"]
+        ),
         "",
         "## Provenance",
         f"- checkpoint `{tag}` in `{cfg.out_dir if hasattr(cfg, 'out_dir') else ''}`; encoder + "
