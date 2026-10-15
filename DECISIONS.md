@@ -3759,3 +3759,19 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   matched control — response-block policy vs `E` policy), *Honest* (instrument bug fixed, not hidden),
   *Accessible* (info is in clean dims, decodable by a simple consumer).
 - **Gate:** green (**290** fast tests). Capability gate **DEPLOY**.
+
+## DEC-176 — Decision certification: apply the joint-chooser fix to `decision_certify`; card reports B+C as N/A when there is no arm structure
+
+- **Date:** 2026-10-15
+- **What:**
+  - Same measurement bug as DEC-175 existed in `decision_certify.certify`: separate per-action
+    regressors compared miscalibrated outputs. Replaced with a **joint, customer-cross-fitted**
+    `V(E, a)` ranking only supported arms.
+  - `certify` returns **N/A** when the stream has no per-customer randomized-ARM structure
+    (`Q <= 1`; e.g. `email_opt`'s action lives per-period as freq/hour). The report card's B+C
+    section now prints **N/A** (pointing to USE-CASES) instead of a degenerate `Δ=+0.001`.
+  - Card wording updated (RL arm verified; response-by-construction noted).
+- **Rationale:** "known use cases may VETO, never SHAPE" AND "never report a degenerate result as a
+  verdict" — a `+0.001` from a single-arm fallback is not a capability, it is a measurement artifact.
+- **Principles served:** *Honest*, *Diagnosable*, *Robust* (fail-safe N/A, not a false green).
+- **Gate:** green (**290** fast tests).

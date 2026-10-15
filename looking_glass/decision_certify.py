@@ -76,9 +76,27 @@ def certify(model, cfg, horizon_days=90, seed=0):
     a = j["arm"].to_numpy().astype(int)
     r = j["gm"].to_numpy().astype(float)
     kn = a >= 0  # all have an arm (0..2)
+    cust = np.asarray(cust)[kn]
     Z, a, r = Z[kn], a[kn], r[kn]
     Q = int(a.max()) + 1
     N = len(Z)
+    if Q <= 1:
+        # no randomized-arm structure in this stream (e.g. the action lives per-period, as in
+        # email_opt's freq/hour) — decision certification is not applicable, do not report a
+        # degenerate Δ=0 as if it were a verdict.
+        return {
+            "n": N,
+            "Q": Q,
+            "value_candidate": 0.0,
+            "value_logging": 0.0,
+            "delta": 0.0,
+            "lo": 0.0,
+            "hi": 0.0,
+            "ess_frac": 1.0,
+            "deploy": False,
+            "verdict": "N/A",
+            "note": "no per-customer randomized-arm structure; see the USE-CASES section",
+        }
     sc = StandardScaler().fit(Z)
     Zs = sc.transform(Z)
     # LOGGING policy pi(a|E): a multinomial propensity model on E (no logged propensity).
@@ -87,14 +105,22 @@ def certify(model, cfg, horizon_days=90, seed=0):
     P = np.clip(P, 1e-3, 1.0)
     P = P / P.sum(1, keepdims=True)
     pa = P[np.arange(N), a]  # propensity of the logged action
-    # MODELING witness: value V(E, a) for every arm; the candidate = argmax_a V.
+    # MODELING witness: ONE joint value model V(E, a) (action as a feature), CROSS-FITTED by
+    # customer so the candidate is out-of-sample; the candidate = argmax_a V. (Separate
+    # per-action regressors compared miscalibrated outputs — a measurement bug; seen in
+    # use_case_gate, DEC-175.)
     V = np.zeros((N, Q))
-    for aa in range(Q):
-        m = HistGradientBoostingRegressor(max_iter=150).fit(
-            np.column_stack([Zs, np.full(N, aa)]), r
+    from sklearn.model_selection import GroupKFold
+
+    _folds = max(2, min(5, len(np.unique(cust))))
+    for tr, va in GroupKFold(_folds).split(Zs, groups=cust):
+        m = HistGradientBoostingRegressor(max_iter=300).fit(
+            np.column_stack([Zs[tr], a[tr].astype(float)]), r[tr]
         )
-        V[:, aa] = m.predict(np.column_stack([Zs, np.full(N, aa)]))
-    cand_a = V.argmax(1)  # the candidate (personalized, derived from E)
+        for aa in range(Q):
+            V[va, aa] = m.predict(np.column_stack([Zs[va], np.full(len(va), float(aa))]))
+    logged_a = np.unique(a)
+    cand_a = logged_a[np.argmax(V[:, logged_a], axis=1)]  # only supported arms
     match = (cand_a == a).astype(float)
     # IPS value of the candidate vs the logging value (paired, per customer).
     v_cand = r * match / pa  # IPW contribution

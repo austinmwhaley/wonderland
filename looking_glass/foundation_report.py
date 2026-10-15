@@ -56,6 +56,23 @@ def build_card(stream, tag, as_of, cfg, model, horizons=(30,), seeds=(0,)):
     except Exception:
         uses = []
 
+    if dec is None:
+        bc_lines = ["- (no action structure in this stream — decision certification skipped)"]
+    elif dec.get("verdict") == "N/A":
+        bc_lines = [
+            "- **N/A** — no per-customer randomized-ARM structure in this stream "
+            "(`$.arm` absent). Its optimization capability is certified in the USE-CASES section."
+        ]
+    else:
+        bc_lines = [
+            f"- candidate (personalized, derived from `E`): value **{dec['value_candidate']}** vs "
+            f"logging **{dec['value_logging']}** → Δ **{dec['delta']:+.3f}** 95% CI "
+            f"[{dec['lo']:+.3f}, {dec['hi']:+.3f}] · ESS {dec['ess_frac']} → **{dec['verdict']}**",
+            "- rule: **DEPLOY iff the paired CI lower bound > 0** (never ship worse than logging, "
+            "*by construction*); the candidate policy and the modeling witness both read `E` — a "
+            "more sufficient embedding ⇒ better decision estimation.",
+        ]
+
     sha = subprocess.run(
         ["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True
     ).stdout.strip()
@@ -116,12 +133,15 @@ def build_card(stream, tag, as_of, cfg, model, horizons=(30,), seeds=(0,)):
         "`E = [ learned shape (self-supervised SSM)  ‖  learned-compressed generic full-history "
         "measure ]`, plus an **in-net anchored additive counter** (S1 gated / S2 content-addressed "
         "registers; streaming across the full history). The net does *selection* and *usage*; the "
-        "counter does *exact arithmetic* (addition is a law, not learned).",
+        "counter does *exact arithmetic* (addition is a law, not learned). When the stream declares "
+        "**randomized action keys**, the measure also carries the per-customer **action-conditioned "
+        "response** (dose-response) — decision-sufficiency **by construction**.",
         "",
         "## What does NOT work yet (honest)",
-        "- **Decision certification (RL arm):** a *first cut* is built (see the B+C section below) — "
-        "it certifies a candidate policy from `E` with a never-ship-worse guarantee; full acceptance "
-        "(recall/coverage across action spaces) is in progress.",
+        "- **Decision certification (RL arm):** the RL arm is verified on streams with randomized "
+        "actions (see the USE-CASES and B+C sections): `E` now *supplies* the optimization policy "
+        "(policy-from-`E` beats logging with a positive CI). Broad acceptance across action spaces "
+        "(white_queen recall/coverage) is the remaining work.",
         "- Streams with **no predictive future signal** (e.g. sparse-purchase fixtures) are reported "
         "as non-informative, never faked.",
         "",
@@ -137,18 +157,7 @@ def build_card(stream, tag, as_of, cfg, model, horizons=(30,), seeds=(0,)):
         ),
         "",
         "## B+C — decision certification (RL arm of rabbit_hole + looking_glass)",
-        *(
-            [
-                f"- candidate (personalized, derived from `E`): value **{dec['value_candidate']}** vs "
-                f"logging **{dec['value_logging']}** → Δ **{dec['delta']:+.3f}** 95% CI "
-                f"[{dec['lo']:+.3f}, {dec['hi']:+.3f}] · ESS {dec['ess_frac']} → **{dec['verdict']}**",
-                "- rule: **DEPLOY iff the paired CI lower bound > 0** (never ship worse than logging, "
-                "*by construction*); the candidate policy and the modeling witness both read `E` — a "
-                "more sufficient embedding ⇒ better decision estimation.",
-            ]
-            if dec is not None
-            else ["- (no randomized actions in this stream — decision certification skipped)"]
-        ),
+        *bc_lines,
         "",
         "## Provenance",
         f"- checkpoint `{tag}` in `{cfg.out_dir if hasattr(cfg, 'out_dir') else ''}`; encoder + "
