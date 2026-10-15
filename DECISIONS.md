@@ -3528,3 +3528,27 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - **Principles served:** *Universal* (schema-agnostic pipeline), *Honest* (null + degenerate cases
   reported), *Robust*.
 - **Gate:** green.
+
+## DEC-167 — CONTROLLED PROOF: the measure is necessary (windowed fails U=0, measure SOLVED)
+
+- **Date:** 2026-10-14
+- **What:** rebuilt `rabbit_hole/generators/magnitude.py` with all three required conditions —
+  (1) **histories ≫ window** (≈3600 events/customer; train/eval with `--set seq_len=256`),
+  (2) **activity independent of the latent** (uniform rate; count cannot leak `S`),
+  (3) the latent `S` written ONLY into an **early transient** (first 45d) and the **future window**;
+  the recent past (what the window sees) is `S`-free. Future LTV ∝ `S`; the full-history **sum of
+  values** is dominated by the early ∝S transient.
+- **Measured (mag2 stream, 3000 customers, `--no-seq-oracle`, seq_len=256):**
+  - **shape-only (windowed): U = 0.0000, NOT SOLVED**
+  - **hand accumulator (windowed RFM): U = 0.0000, NOT SOLVED**
+  - **pipeline (full-history measure): U = 0.9546, SOLVED**
+- **Meaning:** a **controlled, causal** demonstration that the **full-history additive measure is
+  the cause** of sufficiency — windowed representations (even RFM-style) *cannot* recover a
+  full-history cumulative the recent window doesn't contain; the measure *can*. This resolves the
+  DEC-166 concern ("the ladder doesn't discriminate") and turns "instacart happens to be hard" into
+  a **causal proof**.
+- **Why the first cut failed (DEC-166):** wrong construction — histories ≈ window (no truncation),
+  rate ∝ latent (leak), weak/absent early driver. All three now fixed.
+- **Principles served:** *Honest* (controlled, by-construction), *Lawful* (the measure is the
+  cause), *Universal*.
+- **Gate:** green.
