@@ -3589,3 +3589,18 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - **Principles served:** *Robust* (no false deploys), *Honest* (falsifiable contract, no partial
   credit), *Diagnosable* (per-case FN/FP listed).
 - **Gate:** green.
+
+## DEC-170 — white_queen: the acceptance suite is SLOW (no caching); blocks judge iteration
+
+- **Date:** 2026-10-14
+- **Finding:** the command "seemed to hang" but is genuinely **slow** (a single env > 25 min).
+  Root cause: `pipeline.train_candidates` → `candidates.train_candidate` **retrains iql/cql/bc every
+  call** (`ckpt = out_dir/{name}.pt` is always overwritten; no load-if-exists), and the full OPE
+  panel (+ bootstrap) reruns each time. So each `survey`/scorecard pass pays full training + OPE.
+- **Consequence:** iterating on the **judge** (to fix recall) is impractically slow — which is why
+  the recall diagnosis stalled.
+- **Fix (next, doctrine d15/16 — speed-first):** add **candidate caching** (load `{name}.pt` when it
+  exists; regen only with `WHITE_QUEEN_REGEN_LOGS=1`) and/or memoize the panel per (env, seed,
+  config) so re-judging a fixed panel is instant. Then diagnose + fix recall quickly.
+- **Principles served:** *Efficient* (speed is first-class), *Diagnosable*.
+- **Gate:** green.
