@@ -174,6 +174,7 @@ def load_frozen_encoder(tag: str, cfm_dir):
         prod_dim=int(blob.get("prod_embed_dim", 0)),
         stats_pathway=bool(blob.get("stats_pathway", False)),
         continuous_time=bool(blob.get("continuous_time", False)),
+        counter=bool(blob.get("counter", False)),
     )
     # tolerate checkpoints from earlier revisions (e.g. a head added later):
     # load what matches, report what did not. The encoder trunk must match.

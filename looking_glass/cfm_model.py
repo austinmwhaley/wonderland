@@ -492,6 +492,46 @@ class IntentFilter(nn.Module):
         return H
 
 
+def signed_log1p(x):
+    """Monotone, order-of-magnitude-preserving squash: sign(x)·log1p(|x|). Applied
+    ONLY to the counter readout (S1). Unlike RMSNorm it does not erase scale — a
+    larger running total stays larger — while keeping the exposed feature bounded."""
+    return torch.sign(x) * torch.log1p(x.abs())
+
+
+class CounterBlock(nn.Module):
+    """S1 — ANCHORED additive counter (the hybrid: exact arithmetic inside the net).
+
+    The model's account-keeper. Update is an exact monoid over RAW event quantities:
+
+        M_t = M_{t-1} + g_t ⊙ raw_t          (decay ≡ 1 in the prefix scan)
+
+    where `raw_t` is the event's **raw field vector** (count 1, one-hot event_type /
+    brand / entity_type / attrs, raw value, raw gap) — the stream's actual quantities,
+    NOT a learned reconstruction — and `g_t = σ(W_g x_t + b)` is a **learned gate**
+    that decides WHAT to count (its bias starts positive so counting begins EXACT and
+    the net can only modulate, never fully switch it off). Addition is exact, so the
+    totals are always right; the net's jobs are selection (`g`) and usage (readout).
+    Readout is signed-log1p (magnitude-preserving), never normalized away.
+    """
+
+    def __init__(self, x_dim, raw_dim, gate_bias=4.0):
+        super().__init__()
+        self.W_g = nn.Linear(x_dim, raw_dim)
+        nn.init.normal_(self.W_g.weight, std=0.01)
+        nn.init.zeros_(self.W_g.bias)
+        self.W_g.bias.data.fill_(float(gate_bias))  # σ(4)≈0.98 -> starts exact
+
+    def forward(self, x, raw, mask=None):
+        g = torch.sigmoid(self.W_g(x))
+        drive = g * raw
+        if mask is not None:
+            drive = drive * mask.unsqueeze(-1)  # pads: hold (no accumulation)
+        ones = torch.ones_like(drive[:, :, :1])  # decay ≡ 1 (B,T,1) => exact monoid sum
+        _D, M = _scan(ones, drive)
+        return signed_log1p(M), M
+
+
 class MultiScaleSSM(nn.Module):
     """M1: a bank of selective SSMs with different decay scales (timescales).
     Each channel summarizes a different horizon; their readouts are concatenated
@@ -607,6 +647,7 @@ class CFM(nn.Module):
         stats_pathway: bool = False,
         continuous_time: bool = False,
         accumulator: bool = True,
+        counter: bool = False,
     ):
         super().__init__()
         self.vocab = vocab
@@ -708,6 +749,22 @@ class CFM(nn.Module):
         # exposed in the consumed embedding — the contractive trunk loses "how much"
         # (freq/monetary); this restores it. Best-measured readout (LTV 0.05->0.21).
         self.accumulator_on = bool(accumulator)
+        # S1 ANCHORED COUNTER (inside the net): exact gated sums of RAW event quantities,
+        # all fields, magnitude-preserving readout. Co-evolves with the shape (its gate +
+        # readout projection train under the same objectives).
+        self.counter_on = bool(counter)
+        if self.counter_on:
+            raw_dim = 1 + (self.vocab.n_et + 1) + (self.vocab.n_brand + 1) + (self.vocab.n_ent + 1)
+            for f in self.attr_fields:
+                raw_dim += self.vocab.n_attr.get(f, 0) + 1
+            raw_dim += 4  # value, log1p|value|, gap, log1p(gap)
+            self.counter_raw_dim = raw_dim
+            self.counter = CounterBlock(self.chan, raw_dim)
+            self.w_counter = nn.Linear(raw_dim, dim)
+        else:
+            self.counter_raw_dim = 0
+            self.counter = None
+            self.w_counter = None
 
         with torch.no_grad():  # DEC-040: orthogonal readout frame
             self.proj.weight.copy_(
@@ -940,6 +997,11 @@ class CFM(nn.Module):
         residual still leaves z_t worse than a 1-gram). Never mixed; no loss hack.
         """
         y, h = self.ssm(x, h0=h0, mask=t["mask"], dt=t["dt"])
+        if self.counter_on:
+            # S1: add a learned projection of the anchored counter readout to y, so the
+            # shape heads / self-supervised losses SEE the totals (co-evolution).
+            cre, _M = self.counter_readout(x, t)
+            y = y + self.w_counter(cre)
         if self.event_residual_on:
             ne = self.vocab.n_et + 1
             et = t["et"]
@@ -1085,6 +1147,39 @@ class CFM(nn.Module):
             last = (x * m).gather(1, last_idx)
             feats += [torch.log1p(s.abs()), mu, var.clamp(min=0).sqrt(), last]
         return torch.cat(feats, dim=-1)
+
+    def raw_fields(self, t):
+        """Generic per-event RAW vector for the S1 counter (all fields; no hand-picking):
+        count(1) + one-hot(event_type/brand/entity_type) + one-hot(attr fields) + raw
+        numeric (value, log1p|value|, gap, log1p gap). Pads -> 0 (hold)."""
+        dev = t["mask"].device
+        B, T = t["mask"].shape
+        feats = [torch.ones(B, T, 1, device=dev, dtype=torch.float32)]
+        for key, n in (
+            ("et", self.vocab.n_et + 1),
+            ("br", self.vocab.n_brand + 1),
+            ("en", self.vocab.n_ent + 1),
+        ):
+            if key in t:
+                feats.append(F.one_hot(t[key].clamp(max=n - 1), n).to(torch.float32))
+            else:
+                feats.append(torch.zeros(B, T, n, device=dev, dtype=torch.float32))
+        for f in self.attr_fields:
+            if f in t:
+                nf = self.vocab.n_attr.get(f, 0) + 1
+                feats.append(F.one_hot(t[f].clamp(max=nf - 1), nf).to(torch.float32))
+        v = t["val"].to(torch.float32)
+        dt = t["dt"].to(torch.float32)
+        feats += [v, torch.log1p(v.abs()), dt, torch.log1p(dt)]
+        raw = torch.cat(feats, dim=-1)
+        return raw * t["mask"].unsqueeze(-1)
+
+    def counter_readout(self, x, t):
+        """S1 counter readout at every position: (signed_log1p(M), M); (None, None) if off."""
+        if not self.counter_on:
+            return None, None
+        raw = self.raw_fields(t)
+        return self.counter(x, raw, mask=t.get("mask"))
 
     def donor_batch(self, h: "torch.Tensor") -> "torch.Tensor":
         """Donor readout for (B, D) state batches — no pooling. The consumed

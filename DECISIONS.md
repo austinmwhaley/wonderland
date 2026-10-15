@@ -3292,3 +3292,25 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   thing.
 - **Principles served:** *Honest* (exposed the unrealized assumption), *Diagnosable*.
 - **Gate:** green.
+
+## DEC-154 — S1 IMPLEMENTED: anchored additive counter inside the net; beats the accumulator
+
+- **Date:** 2026-10-14
+- **What (S1, per operator direction):** a `CounterBlock` in the encoder whose state is
+  `M_t = M_{t-1} + g_t ⊙ raw_t` — an **exact monoid** over the event's **RAW field vector**
+  (count 1, one-hot event_type/brand/entity_type/attrs, raw value, log|value|, gap, log gap — ALL
+  fields, schema-discovered). `g` is a **learned gate** (bias init +4 ⇒ σ≈0.98, so counting starts
+  **exact**; the net can only modulate). Readout `signed_log1p(M)` (magnitude-preserving), added to
+  the shape readout `y` via a learned projection (co-evolution) and exposed in the consumed
+  embedding `E` as the final totals. Opt-in (`--set use_counter=true`); checkpointed; unit-tested.
+- **Measured (Rung-1 tiny, instacart, 1181 B, horizon 30, seed 0, `--no-seq-oracle`):**
+  - shape-only 0.066 · hand accumulator (external) **0.1311** · **S1 counter (inside) 0.1759** ·
+    full generic measure (PCA-64) ≈0.90.
+  ⇒ the counter **inside the net already beats the external accumulator**, and both dwarf
+  shape-only — the hybrid (learned shape + exact counting) is the right shape.
+- **Caveat:** still far from the ~0.93 achievable with the full-history measure — S1's counter is
+  **window-limited** and Rung-1 is tiny; the full-history/streaming plumbing + all-field coverage
+  are the next steps (the road to the ~0.9 result on the real object).
+- **Principles served:** *Lawful* (exact anchored algebra), *Universal/Adaptive* (all fields,
+  learned gate), *Efficient* (one scan), *Honest* (raw quantities, not learned arithmetic).
+- **Gate:** green (12 new-category tests pass).

@@ -263,6 +263,11 @@ class CFMConfig:
     stats_pathway: bool = False
     # continuous-time dt-scaled decay (opt-in; must match the checkpoint)
     continuous_time: bool = False
+    # cumulative-accumulator measure pathway (hand-listed; default on).
+    use_accumulator: bool = True
+    # S1 ANCHORED COUNTER (inside the net): exact gated sums of RAW event quantities
+    # (all fields), magnitude-preserving readout, co-evolving with the shape.
+    use_counter: bool = False
     # v6.9 (DEC-055): dedicated event-identity residual in the readout
     # z_t = RMSNorm(W_C H_t + skip(x_t) + W_e·emb(e_t) + W_ep·emb(e_{t-1})).
     # Adds a CLEAN, linearly-usable event path (the generic token skip mixes
