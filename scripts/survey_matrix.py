@@ -96,11 +96,13 @@ def survey(
     t_col = time.perf_counter() - t0
 
     d = odata.to_canonical(db_path, estimate_propensity=True, source_name=env_name)
+    print("[survey] canonical data loaded", flush=True)
     env = make_env(env_name, seed=999)
     cand_dir = os.path.join(OUT, f"{env_name}_cands")
     handles = pipeline.train_candidates(
         d, ALGOS, gamma=cfg["gamma"], offline_steps=offline_steps, out_dir=cand_dir
     )
+    print("[survey] candidates trained/loaded", flush=True)
     truth = {n: _discounted_rollout(h, env, gt_eps, cfg["gamma"]) for n, h in handles.items()}
 
     t1 = time.perf_counter()
@@ -112,9 +114,18 @@ def survey(
     if _os.environ.get("WHITE_QUEEN_DYN_K"):
         _fqe["dyn_ensemble"] = int(_os.environ["WHITE_QUEEN_DYN_K"])
     _ek = int(_os.environ.get("WHITE_QUEEN_ENSEMBLE_K", "3"))
+    print("[survey] cands+truth done; starting OPE (evaluate_pool)...", flush=True)
+    _t_ope0 = time.perf_counter()
     rep = pipeline.evaluate_pool(
-        d, handles, gamma=cfg["gamma"], fast=True, ensemble_K=_ek, fqe_cfg=(_fqe or None)
+        d,
+        handles,
+        gamma=cfg["gamma"],
+        fast=True,
+        ensemble_K=_ek,
+        fqe_cfg=(_fqe or None),
+        cache_dir=os.path.join(OUT, "ope_cache"),
     )
+    print(f"[survey] OPE done in {time.perf_counter() - _t_ope0:.0f}s", flush=True)
     t_ope = time.perf_counter() - t1
 
     anchor = float(rep["behavior_mean"])

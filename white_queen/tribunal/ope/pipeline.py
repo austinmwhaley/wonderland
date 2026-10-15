@@ -41,7 +41,7 @@ def train_candidates(
     """Train offline-RL candidates on a canonical dataset. `algorithms` may
     mix registered/built-in names (str) and already-trained policy objects
     (anything implementing act + action_probs). Returns {name: handle}."""
-    from white_queen.tribunal.candidates import train_candidate, CANDIDATES
+    from white_queen.tribunal.candidates import CANDIDATES, load_candidate, train_candidate
 
     d = int(data["obs"].shape[1])
     if data.get("continuous"):
@@ -83,6 +83,14 @@ def train_candidates(
                     f"registered {sorted(CANDIDATE_TRAINERS)}"
                 )
         ckpt = os.path.join(out_dir, f"{entry}.pt")
+        # CACHE: reload saved weights instead of retraining (pure-OPE reruns) unless
+        # an explicit regen is requested. Big speedup for judge iteration (DEC-170).
+        if os.path.exists(ckpt) and os.environ.get("WHITE_QUEEN_REGEN_LOGS") != "1":
+            try:
+                handles[entry] = load_candidate(entry, env, data, base, ckpt)
+                continue
+            except Exception:
+                pass  # fall through to training
         handles[entry] = train_candidate(entry, env, data, base, ckpt)
     return handles
 
@@ -111,7 +119,10 @@ def evaluate_pool(
     names = list(handles)
     panels, rows = {}, {}
     per = {}
+    import time as _time
+
     for name in names:
+        _t0 = _time.perf_counter()
         if data.get("continuous"):
             from .continuous import panel_continuous
 
@@ -136,6 +147,7 @@ def evaluate_pool(
                 ensemble_K=ensemble_K,
                 fast=fast,
             )
+        print(f"[ope] panel {name}: {_time.perf_counter() - _t0:.0f}s", flush=True)
         panels[name] = p
         per[name] = p
     rows = G.adjudicate(
