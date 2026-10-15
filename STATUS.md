@@ -17,8 +17,9 @@ PRINCIPLES      universal · adaptive&dynamic · lawful (composition/equivarianc
                  (the operator's charter, broad strokes; every decision must align — AGENTS.md)
                  | applied to
 LAYER 0 (NOW)   input any event stream -> encode -> a FOUNDATION MODEL emitting UNIVERSAL
-                 FOUNDATIONAL EMBEDDINGS: self-supervised, frozen/reusable, schema- and
-                 domain-agnostic, transferable, shared geometry
+                 FOUNDATIONAL EMBEDDINGS (self-supervised, frozen/reusable, schema-agnostic,
+                 transferable). PER STREAM: one stream in -> one model out; never cross-applied.
+                 "Universal" = the ARCHITECTURE adapts to any stream, not shared weights.
                  | certified by (NEXT layer)
 LAYER 1         sufficiency · minimality · decision-sufficiency, measured by
                  U = 1 - worst-case oracle-gap  -> 1  (loop/UNIVERSALITY.md)

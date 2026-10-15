@@ -17,11 +17,13 @@ that everything downstream builds on.
 
 Work in **two layers — do not conflate them**:
 
-- **Layer 0 — the universal foundation embedding (NOW).** A single encoder that maps *any*
-  event stream to per-customer, per-time vectors, **universal** in the ordinary sense:
+- **Layer 0 — the universal foundation embedding (NOW).** **One stream in → one foundation model
+  out:** for any given event stream, one encoder (trained on *that* stream) maps its events to
+  per-customer, per-time vectors, **universal** in the sense the pipeline adapts to any schema:
   - **self-supervised** (no labels in its training),
   - **reusable / frozen** (downstream reads it; never mutates it),
-  - **schema- and domain-agnostic** (one model, many streams, no code changes),
+  - **schema- and domain-agnostic** (the *pipeline* handles any schema, no code changes; a model
+    is trained **per stream** and never cross-applied),
   - **transferable** (many downstream tasks — including held-out/unseen ones — get signal
     from it above raw features),
   - **shared geometry** (similar customers land near each other — a general space).
@@ -69,8 +71,10 @@ decision must align to them**; a change that violates one is wrong regardless of
 improves. The detailed engineering doctrine below ("Principles" 1–16) **elaborates** these — it
 must not contradict them.
 
-1. **Universal** — one model for any stream, schema, entity, horizon, task, or scale; a single
-   shared space; no per-domain / per-task special-casing. (subsumes *homogeneity*,
+1. **Universal** — **one *architecture* for any event stream**: schema-agnostic, resolves its own
+   configuration from whatever it sees. **A model is trained *per stream* and is NEVER applied to a
+   stream it did not train on** — "1 stream in → 1 foundation model out." Universality is a property
+   of the *pipeline*, not of shared weights across streams. (subsumes *adaptability-of-architecture*,
    *scale-invariance*.)
 2. **Adaptive & Dynamic** — everything resolves or learns from the input; behavior lives in
    learned state / config, never in source; input-conditioned dynamics. (subsumes

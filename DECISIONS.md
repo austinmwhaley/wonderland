@@ -3491,3 +3491,20 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   or (b) much richer field-agnostic encoders — a real open problem, not a quick fix.
 - **Principles served:** *Honest*, *Diagnosable*, *Universal* (named the gap).
 - **Gate:** green.
+
+## DEC-165 — CLARIFICATION (operator): universality = per-stream architecture; cross-stream is a non-goal
+
+- **Date:** 2026-10-14
+- **Decision (operator):** **one encoder per stream. A model is NEVER applied to a stream it did
+  not train on.** The tool is **"1 event stream in → 1 foundation model out."** "Universal" means
+  the **architecture/pipeline adapts to any stream** — *not* shared weights across streams.
+- **Consequence:** **cross-stream measure sharing is a NON-GOAL** → the negatives DEC-163 (hashed
+  canonical measure) and DEC-164 (field-set pooling) were chasing something we don't need. The
+  per-stream pipeline is the deliverable, and it is **already achieved and certified**: instacart
+  **U=0.952 SOLVED**, L6 **U=0.956 SOLVED** (real consumed embedding, no leakage).
+- **Docs aligned:** `AGENTS.md` (charter "Universal" bullet + "The project"/Layer-0 wording),
+  `STATUS.md` (canonical LAYER 0 line): per-stream, never cross-applied.
+- **Remaining work (per-stream tool):** harden/scale (full Rung-2, more streams/seeds), a genuinely
+  **hard** stream, and the **decision-sufficiency (RL)** leg (Layer 1).
+- **Principles served:** *Universal* (clarified), *Honest*, *Efficient* (drop a non-goal).
+- **Gate:** green (docs only).
