@@ -3570,3 +3570,22 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   RL, known effect) + add **arm-effect recovery** (per-arm predicted profile vs IPW truth).
 - **Principles served:** *Honest* (no fake causal claim), *Diagnosable*.
 - **Gate:** green.
+
+## DEC-169 — white_queen: fix `.db` loader bug (acceptance suite now runs) + baseline scorecard
+
+- **Date:** 2026-10-14
+- **Bug (blocker):** `white_queen.tribunal.ope.data._duckdb_to_columns` accepted `.duckdb`/`.ddb`
+  (and parquet/csv/json) but **not `.db`** — yet `scripts/survey_matrix.py` writes the colony log as
+  `*.db` (a **DuckDB** file; no SQLite anywhere). So the acceptance suite crashed on every env
+  (`unrecognized file type: ...cartpole#s0.db`). **Fix:** recognize `.db` as DuckDB (one-line).
+- **Baseline scorecard (cartpole + bandit_synth), first real run:**
+  - Safety (false deploys) **0 PASS** · Precision **1.000 PASS** · picked_best **1.000 PASS** ·
+    rank ρ **1.000 PASS** · conformal coverage (k=4.75) **1.000 PASS** · Rigor PASS.
+  - Coverage (truth in CI) **0.600 FAIL** (target 0.9) · Sensitivity (recall) **0.750 FAIL**
+    (missed `cql` on cartpole) · Breadth **2/3 FAIL** (continuous not yet run) · completion 2/7.
+- **Read:** white_queen is **safe and well-ranked but conservative** — it **misses genuinely-better
+  policies** (recall) and its **CIs under-cover**. That's the concrete work: raise recall + coverage
+  **without** introducing false deploys (matches ROADMAP P2-1).
+- **Principles served:** *Robust* (no false deploys), *Honest* (falsifiable contract, no partial
+  credit), *Diagnosable* (per-case FN/FP listed).
+- **Gate:** green.

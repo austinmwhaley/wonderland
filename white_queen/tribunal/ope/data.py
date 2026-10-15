@@ -105,7 +105,7 @@ def _duckdb_to_columns(source):
     if isinstance(source, (str, bytes)):
         p = source if isinstance(source, str) else source.decode()
         low = p.lower()
-        if low.endswith(".duckdb") or low.endswith(".ddb"):
+        if low.endswith(".duckdb") or low.endswith(".ddb") or low.endswith(".db"):
             con = duckdb.connect(p, read_only=True)
             try:
                 tables = [r[0] for r in con.execute("SHOW TABLES").fetchall()]
