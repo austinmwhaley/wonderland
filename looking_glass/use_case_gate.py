@@ -71,7 +71,10 @@ def discover_action_keys(cfg, max_distinct=24):
 
     # prefer the stream's DECLARED use-case action keys (a metadata / truth receipt next to it)
     _p = Path(str(cfg.db))
-    for _t in (_p.parent / f"{_p.parent.name}_truth.json", _p.with_suffix("").with_name(_p.stem + "_truth.json")):
+    for _t in (
+        _p.parent / f"{_p.parent.name}_truth.json",
+        _p.with_suffix("").with_name(_p.stem + "_truth.json"),
+    ):
         if _t.exists():
             try:
                 import json
@@ -83,6 +86,7 @@ def discover_action_keys(cfg, max_distinct=24):
             except Exception:
                 pass
     import duckdb
+
     _META = ("idx", "index", "week", "campaign", "time", "date", "day", "send")
 
     con = duckdb.connect()
