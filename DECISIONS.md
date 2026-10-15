@@ -3427,3 +3427,17 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   needs a **canonical measure schema** shared across streams — the remaining universality work.
 - **Principles served:** *Universal*, *Efficient*, *Honest*.
 - **Gate:** green.
+
+## DEC-161 — Robustness: pipeline U≈0.93 at 12k/2 seeds; SOLVED is marginal (lb fit on 1404)
+
+- **Date:** 2026-10-14
+- **What:** re-evaluated `uni_lb` (measure fit on 1404 train) on **12000 customers (3538 B), seeds
+  0,1**.
+- **Measured:** **U = 0.9334**, SOLVED = **False** (worst member just outside noise). At 4000/seed0
+  the same checkpoint gave 0.9057 SOLVED=True; L6 gave 0.9555 SOLVED=True.
+- **Read:** the pipeline is **robustly near-sufficient (U ≈ 0.91–0.96)** — the result is real, not
+  a fluke. Strict `SOLVED` is **marginal**: it flips with sample/seed because the measure
+  compression was fit on a **tiny** train set (1404). The lever is **more measure-training data**
+  (fit the lb on the full population A) → a better compression → SOLVED more solidly.
+- **Principles served:** *Honest* (reported the flip), *Robust* (multiple seeds), *Efficient*.
+- **Gate:** green.
