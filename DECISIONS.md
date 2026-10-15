@@ -3571,6 +3571,29 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - **Principles served:** *Honest* (no fake causal claim), *Diagnosable*.
 - **Gate:** green.
 
+## DEC-171 — Use cases: the embedding does NOT carry the treatment response (decision gap localized)
+
+- **Date:** 2026-10-15
+- **What:** built `email_opt` stream + `use_case_gate` + the report-card **USE CASES** section
+  (per-stream optimization capability). Then **probed** whether `E` carries the per-customer
+  optima.
+- **Measured:**
+  - the stream **supports** both use cases (identifiable dose-response: `freq` peaks at 1 = fatigue;
+    `hour` has a peak);
+  - but **`E → x0` (optimal frequency) R² = −0.001** and **`E → h0` (optimal hour) R² = −0.133** —
+    the embedding carries **NO** treatment-response signal;
+  - the use-case gate's policy-from-`E` is **Δ≈0 → HOLD** for both.
+- **Read:** the foundation is **decision-INsufficient** for optimization: it encodes *what the
+  customer is like*, not *what action is best for them*. The self-supervised objectives
+  (next/mask/…) do not force the **treatment-response** structure into `E`.
+- **Fix direction (next):** a **counterfactual / dose-response objective** — from the state,
+  predict the **outcome under randomized actions** (generic: discovered action keys + reward event;
+  no domain literals), so `E` must expose the per-customer response (the `x0`/`h0` structure). This
+  is the direct lever that makes `looking_glass + white_queen` *supply* the optimization capability.
+- **Principles served:** *Diagnosable* (localized the decision gap), *Honest*, *Universal*
+  (generic action keys).
+- **Gate:** green.
+
 ## DEC-169 — white_queen: fix `.db` loader bug (acceptance suite now runs) + baseline scorecard
 
 - **Date:** 2026-10-14
