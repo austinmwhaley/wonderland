@@ -106,6 +106,79 @@ def generic_measure(cfg, cust, only_keys=None):
     return X.astype(np.float32), cols
 
 
+def canonical_measure(cfg, cust, buckets: int = 256):
+    """Schema-agnostic CANONICAL measure — FIXED dimension for ANY stream (universality).
+
+    Every discovered field is **hashed** into `buckets` slots and aggregated per slot:
+    categorical fields -> event COUNTS per `hash(field=value)`; numeric fields -> SUM and
+    SUM-OF-SQUARES per `hash(field)`. Dimension = 2*buckets regardless of schema, so ONE
+    measure model can serve many streams. Generic (keys discovered + hashed), not hand-picked."""
+    import duckdb
+    import polars as pl
+
+    con = duckdb.connect()
+    con.execute("SET threads TO 8")
+    p = str(cfg.db)
+    src = f"read_parquet('{p}')" if p.endswith((".parquet", ".pq")) else cfg.table
+    tc = float(as_of_epoch(cfg.as_of))
+    keys = [str(c) for c in list(cust)]
+    names = [f"cnt_{i}" for i in range(int(buckets))] + [f"num_{i}" for i in range(int(buckets))]
+    if not keys:
+        return np.zeros((0, 2 * int(buckets)), dtype=np.float32), names
+    con.register("_cust", pl.DataFrame({"customer_key": keys}))
+    con.execute(
+        f"CREATE TEMP TABLE base AS SELECT e.customer_key AS ck, "
+        f"epoch(CAST(e.event_ts AS TIMESTAMPTZ)) AS t, e.event_attributes AS attrs FROM {src} e "
+        f"JOIN _cust c ON e.customer_key = c.customer_key WHERE "
+        f"epoch(CAST(e.event_ts AS TIMESTAMPTZ)) <= {tc}"
+    )
+    jkeys = [
+        str(r[0])
+        for r in con.execute(
+            "SELECT DISTINCT unnest(json_keys(attrs)) AS k FROM base "
+            "WHERE attrs IS NOT NULL ORDER BY k"
+        ).fetchall()
+    ]
+    B = int(buckets)
+    parts = []
+    for k in jkeys:
+        esc = k.replace("'", "''")
+        cast = f"TRY_CAST(json_extract_string(attrs,'$.{esc}') AS DOUBLE)"
+        nn, tot = con.execute(
+            f"SELECT count(*) FILTER (WHERE {cast} IS NOT NULL), "
+            f"count(json_extract_string(attrs,'$.{esc}')) FROM base"
+        ).fetchone()
+        if tot and nn / tot > 0.9:  # numeric -> sums per field-hash
+            parts.append(
+                f"SELECT ck, hash('{esc}')%{B} AS b, 0.0 AS cnt, "
+                f"coalesce(sum({cast}),0.0) AS sx, coalesce(sum({cast}*{cast}),0.0) AS sxx "
+                f"FROM base GROUP BY 1,2"
+            )
+        else:  # categorical -> value counts per (field=value)-hash
+            parts.append(
+                f"SELECT ck, hash(concat('{esc}','=', json_extract_string(attrs,'$.{esc}')))%{B} AS b, "
+                f"count(*) AS cnt, 0.0 AS sx, 0.0 AS sxx FROM base "
+                f"WHERE json_extract_string(attrs,'$.{esc}') IS NOT NULL GROUP BY 1,2"
+            )
+    df = con.execute(
+        f"SELECT ck, b, sum(cnt) AS cnt, sum(sx) AS sx, sum(sxx) AS sxx "
+        f"FROM ({' UNION ALL '.join(parts)}) GROUP BY 1,2"
+    ).pl()
+    con.close()
+    N = len(keys)
+    Xc = np.zeros((N, B), dtype=np.float32)
+    Xs = np.zeros((N, B), dtype=np.float32)
+    ki = {k: i for i, k in enumerate(keys)}
+    for ck, b, cnt, sx, sxx in zip(df["ck"], df["b"], df["cnt"], df["sx"], df["sxx"]):
+        i = ki.get(str(ck))
+        if i is None:
+            continue
+        Xc[i, int(b)] += float(cnt)
+        Xs[i, int(b)] += float(sx) + float(sxx)
+    X = np.hstack([np.log1p(np.abs(Xc)), np.log1p(np.abs(Xs))]).astype(np.float32)
+    return X, names
+
+
 class LayerBEmbedder:
     """Compose encoder embedding with a LEARNED compression of the generic measure.
 

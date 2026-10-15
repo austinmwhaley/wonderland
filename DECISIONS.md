@@ -3454,3 +3454,21 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   is now **certified sufficient** on instacart (real consumed embedding, no leakage, multi-seed).
 - **Principles served:** *Robust*, *Honest*, *Efficient*.
 - **Gate:** green.
+
+## DEC-163 — Canonical (hashed) cross-stream measure FAILS; the measure stays per-stream
+
+- **Date:** 2026-10-14
+- **What:** implemented `canonical_measure` — a **schema-agnostic, fixed-dimension** measure
+  (hash every `field=value` into `B` count slots; hash numeric fields into sum/sumsq slots), so ONE
+  measure could serve any stream. Tested on instacart (fit on A, eval on B).
+- **Measured:** U = **0.2727 (B=512)** · **0.1717 (B=4096)** — far below the per-field measure
+  (~0.90), and **worse with more buckets** (sparser slots = noisier). 
+- **Read:** schema-agnostic **hashing loses sufficiency** — it destroys the **aligned per-field
+  structure** (per-key distinct-counts, numeric moments) that carries the signal. So the measure
+  **must stay per-stream / per-field**. True "one measure for all streams" is **not** achieved by
+  hashing; it would require a **common field schema** across streams (a deeper design question).
+- **Consequence (honest):** the pipeline is **per-stream**, certified SOLVED on instacart (0.952)
+  and L6 (0.956). Cross-stream *sharing* of the measure remains open.
+- **Principles served:** *Honest* (recorded the null), *Universal* (named the open gap),
+  *Diagnosable*.
+- **Gate:** green.
