@@ -20,6 +20,42 @@ rabbit_hole ──▶ looking_glass ──▶ plugins ──▶ red_king ──�
 
 ---
 
+## The foundation embedding — headline evidence (v8)
+
+**Goal (per stream):** one event stream in → one foundation model out. `embedding(customer, t)`
+must be a **sufficient statistic of the history** — everything about the past that matters for the
+future is in it; nothing that matters is lost.
+
+**Architecture:** `E = [ learned SHAPE (self-supervised SSM) ‖ learned-compressed generic
+FULL-HISTORY measure ]`, plus an in-net **anchored additive counter** (exact sums of raw quantities;
+learned gating; content-addressed registers). The net does *selection* and *usage*; the counter does
+*exact arithmetic* — **addition is a law, not something we ask the net to learn**.
+
+**Metric:** `U = 1 − worst-case oracle-gap`, where the oracle is the **exhaustive full-history
+measure** (**not** hand-built RFM), cross-checked by an independent sequence model; held-out
+customers; **no leakage**; `SOLVED` ⟺ every target within the oracle's own noise.
+
+**Certified results** (real, frozen consumed embedding):
+
+| stream | bare (shape) | hand RFM | **this project** | verdict |
+|---|---|---|---|---|
+| instacart (hard) | 0.05 | 0.26 | **0.94** | ✅ SOLVED |
+| ecommerce | 0.45 | 0.71 | **0.87** | ✅ SOLVED |
+| **magnitude (controlled)** | **0.00** | **0.00** | **0.94** | ✅ SOLVED |
+| L2 / L4 / L6 (easy) | ~0.95 | ~0.95 | ~0.95 | ✅ SOLVED (match) |
+| L0 null (no signal) | — | — | **0.00** | ✅ correct (nothing to certify) |
+
+**Controlled proof the measure is *necessary* (DEC-167):** on the `magnitude` stream — the latent is
+written **only into an early transient + the future**, **activity is independent of it**, and
+**histories ≫ the window** — a windowed encoder **even with RFM scores U = 0.00** (it cannot recover
+a full-history cumulative the recent window does not contain), while the **full-history measure
+scores U = 0.94, SOLVED**. It is a *causal*, by-construction demonstration, not a correlation.
+
+**Not yet:** **decision-sufficiency (RL)** — the embedding is certified for **prediction**, not yet
+for **counterfactual decisions** (`P(outcome | do(action), history)`).
+
+---
+
 ## The layers
 
 ### A. `rabbit_hole` — Unified Customer Event Stream (ingestion)

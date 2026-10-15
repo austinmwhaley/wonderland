@@ -113,6 +113,8 @@ def build_card(stream, tag, as_of, cfg, model, horizons=(30,), seeds=(0,)):
         f"- checkpoint `{tag}` in `{cfg.out_dir if hasattr(cfg, 'out_dir') else ''}`; encoder + "
         "`layer_b_<tag>.pkl` (measure compression).",
         "- reproducible: same config → same card (seeded, deterministic).",
+        "- **Controlled proof the measure is necessary** (windowed fails, measure succeeds): "
+        "`rabbit_hole/generators/magnitude.py` + `DECISIONS.md` DEC-167.",
     ]
     return "\n".join(lines) + "\n", u, solved
 
