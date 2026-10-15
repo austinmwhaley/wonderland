@@ -526,7 +526,7 @@ class CounterBlock(nn.Module):
         self.W_g.bias.data.fill_(float(gate_bias))  # σ(4)≈0.98 -> starts exact
         self.W_a = nn.Linear(x_dim, self.R) if self.R > 1 else None  # content-addressing
 
-    def forward(self, x, raw, mask=None):
+    def forward(self, x, raw, mask=None, m0=None):
         g = torch.sigmoid(self.W_g(x))
         v = g * raw  # (B,T,raw_dim) anchored write
         if self.W_a is None:
@@ -540,6 +540,8 @@ class CounterBlock(nn.Module):
             drive = drive * mask.unsqueeze(-1)  # pads: hold
         ones = torch.ones_like(drive[:, :, :1])  # decay ≡ 1 => exact monoid sum
         _D, M = _scan(ones, drive)
+        if m0 is not None:
+            M = M + m0.unsqueeze(1)  # STREAMING: carry the running total across chunks
         return signed_log1p(M), M
 
 

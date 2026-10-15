@@ -3354,3 +3354,24 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   (b) the counter spans the **full history**.
 - **Principles served:** *Universal/Adaptive* (generic numeric consumption), *Lawful*, *Honest*.
 - **Gate:** green.
+
+## DEC-157 — S2 STREAMING counter (full-history carry) + numeric: U → 0.31
+
+- **Date:** 2026-10-14
+- **What:** made `forward_embedding` **stream in chunks** (`chunk=2048`), carrying the recurrence
+  `h` and the counter state `M` across chunks (`CounterBlock.forward(..., m0=M)`), so the anchored
+  counter spans the **full history** (not a fixed window). Fixed a 2D/3D bug (carry `Mseq[:,-1]`).
+- **Measured (Rung-1 tiny, instacart, 1181 B, horizon 30, seed 0, `--no-seq-oracle`):**
+  S2 + numeric, `seq_len` 256 → **0.2912**; 8192 → **0.3105**. (Accumulator 0.131; full generic
+  measure ≈0.90.)
+- **Read (the honest ceiling for an in-net additive counter):** field coverage + full-history
+  streaming raise the counter to **~0.31**, but the ~0.9 requires the **full generic measure**,
+  which includes features an additive counter **cannot** produce — per-key **distinct-counts**
+  (nuniq, non-additive) and **min/max/std** over ~27 keys. So the in-net counter is a strong
+  *foundation* (beats the external accumulator by 2.4×) but is **not** the whole measure.
+- **Conclusion:** the ~0.9 route remains the **Layer-B aggregate pipeline** (DEC-153) — compute the
+  full generic measure (SQL/streaming) and **learn to compress it**. S1/S2 give the *inside-the-net*
+  exact-counting substrate; the pipeline supplies the *complete* statistic.
+- **Principles served:** *Universal/Adaptive*, *Efficient* (chunked, constant state), *Honest*
+  (named the additive-only ceiling).
+- **Gate:** green.

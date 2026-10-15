@@ -33,7 +33,7 @@ from looking_glass.cfm_data import (
     build_sequences,
     draw_sample,
 )
-from looking_glass.cfm_model import CFM, EventVocab, _scan, _tod, ns_inv_sqrt
+from looking_glass.cfm_model import CFM, EventVocab, _scan, _tod, ns_inv_sqrt, signed_log1p
 
 
 # ---------------------------------------------------------------------------
@@ -1708,22 +1708,35 @@ def forward_states(model, seqs, h0s=None):
     return h
 
 
-def forward_embedding(model, seqs, h0s=None):
-    """The CONSUMED embedding(customer, t): contractive state (shape) ++ a learned
-    cumulative accumulator (magnitude). The state store still persists the raw
-    recurrence state via `forward_states`; downstream heads consume THIS."""
+def forward_embedding(model, seqs, h0s=None, chunk: int = 2048):
+    """The CONSUMED embedding(customer, t): contractive state (shape) ++ the anchored
+    counter totals (magnitude). STREAMED in chunks of `chunk` events, carrying the
+    recurrence `h` and the counter `M` across chunks, so the counter spans the FULL
+    history (not a window). Downstream heads consume THIS."""
     dev = model._dev()
     t = _collate(seqs, model.vocab, dev)
     tok = model.tokens_batch(t)
-    h0 = None
+    _B, T, _ = tok.shape
+    h = None
     if h0s is not None:
-        h0 = torch.stack([torch.as_tensor(h, dtype=torch.float32, device=dev) for h in h0s])
+        h = torch.stack([torch.as_tensor(x, dtype=torch.float32, device=dev) for x in h0s])
+    M = None
     with torch.no_grad():
-        _y, h = model.encode_ev(tok, t, h0=h0)
+        for a in range(0, T, chunk):
+            b = min(a + chunk, T)
+            xc = tok[:, a:b]
+            tc = {
+                k: (v[:, a:b] if (torch.is_tensor(v) and v.dim() >= 2 and v.shape[1] == T) else v)
+                for k, v in t.items()
+            }
+            _y, h = model.ssm(xc, h0=h, mask=tc["mask"], dt=tc["dt"])
+            if getattr(model, "counter_on", False):
+                raw = model.raw_fields(tc)
+                _cre, Mseq = model.counter(xc, raw, mask=tc["mask"], m0=M)
+                M = Mseq[:, -1]  # carry the running total (B, R*raw_dim) into the next chunk
         out = model.donor_batch(h)
         if getattr(model, "counter_on", False):
-            cre, _M = model.counter_readout(tok, t)
-            out = torch.cat([out, cre[:, -1]], dim=-1)  # S1 anchored-total readout
+            out = torch.cat([out, signed_log1p(M)], dim=-1)  # full-history anchored totals
         if getattr(model, "accumulator_on", False):
             out = torch.cat([out, model.accumulator(tok, t)], dim=-1)
         gm = model.generic_measure(t) if hasattr(model, "generic_measure") else None
