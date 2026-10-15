@@ -85,7 +85,9 @@ def _b_states(model, cfg, batch=512):
     Z = []
     for i in range(0, len(seqs), batch):
         with torch.no_grad():
-            z = forward_embedding(model, seqs[i : i + batch])  # consumed embedding
+            z = forward_embedding(
+                model, seqs[i : i + batch], cfg=cfg, lb=getattr(model, "layer_b", None)
+            )  # consumed embedding
         Z.append(z.detach().float().cpu().numpy())
     return np.array([s["customer"] for s in seqs]), np.concatenate(Z, 0)
 

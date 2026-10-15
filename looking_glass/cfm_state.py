@@ -227,6 +227,13 @@ def load_frozen_encoder(tag: str, cfm_dir):
             / "customer_event_stream.parquet"
         )
     model.half_life_days = cfg.state_half_life_days
+    # Layer-B MEASURE pipeline: load the learned measure compression if it exists.
+    _lb_path = cfm_dir / f"layer_b_{tag.replace('.', '_')}.pkl"
+    if _lb_path.exists():
+        from looking_glass.layer_b import LayerBEmbedder
+
+        model.layer_b = LayerBEmbedder.load(_lb_path)
+        cfg.use_measure = True
     # attach model-free product vectors for the SF phi if the run used them
     if getattr(cfg, "prod_embed_path", "") and model.prod_vec_table.shape[1] == 0:
         try:

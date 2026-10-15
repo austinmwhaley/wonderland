@@ -584,6 +584,15 @@ def train_cfm(cfg: CFMConfig):
         },
         out / f"cfm_{cfg.tag.replace('.', '_')}.pt",
     )
+    # Layer-B MEASURE pipeline: fit the learned compression of the generic full-history
+    # measure on TRAINING customers (no leakage) and persist it with the checkpoint.
+    if getattr(cfg, "use_measure", False):
+        from looking_glass.layer_b import LayerBEmbedder, generic_measure
+
+        m_train, _names = generic_measure(cfg, a_keys)
+        _lb = LayerBEmbedder(int(getattr(cfg, "measure_dim", 64))).fit(m_train)
+        _lb.save(out / f"layer_b_{cfg.tag.replace('.', '_')}.pkl")
+        print(f"[measure] Layer-B compression fit on {m_train.shape} train measure", flush=True)
     # grade the trained encoder on its whole portfolio (DEC-008: every train
     # is graded, not claimed) — receipt lands next to the checkpoint
     from looking_glass.portfolio import evaluate as _portfolio_evaluate
@@ -1708,11 +1717,11 @@ def forward_states(model, seqs, h0s=None):
     return h
 
 
-def forward_embedding(model, seqs, h0s=None, chunk: int = 2048):
+def forward_embedding(model, seqs, h0s=None, chunk: int = 2048, cfg=None, lb=None):
     """The CONSUMED embedding(customer, t): contractive state (shape) ++ the anchored
-    counter totals (magnitude). STREAMED in chunks of `chunk` events, carrying the
-    recurrence `h` and the counter `M` across chunks, so the counter spans the FULL
-    history (not a window). Downstream heads consume THIS."""
+    counter totals (magnitude) ++ (optional) a LEARNED compression of the generic
+    full-history measure (`lb` = a fitted LayerBEmbedder + `cfg`). STREAMED in chunks,
+    carrying `h` + `M`, so the counter spans the FULL history. Heads consume THIS."""
     dev = model._dev()
     t = _collate(seqs, model.vocab, dev)
     tok = model.tokens_batch(t)
@@ -1742,6 +1751,14 @@ def forward_embedding(model, seqs, h0s=None, chunk: int = 2048):
         gm = model.generic_measure(t) if hasattr(model, "generic_measure") else None
         if gm is not None:
             out = torch.cat([out, gm], dim=-1)
+        if lb is not None and cfg is not None:
+            # Layer-B pipeline: append a LEARNED compression of the generic full-history
+            # measure (the ~0.9 object; DEC-142/153/158). Fit on train, frozen at serve.
+            from looking_glass.layer_b import generic_measure
+
+            keys = [s["customer"] for s in seqs]
+            m, _ = generic_measure(cfg, keys)
+            out = torch.cat([out, torch.as_tensor(lb.compress(m), device=out.device)], dim=-1)
     return out
 
 

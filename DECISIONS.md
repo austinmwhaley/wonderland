@@ -3392,3 +3392,24 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   is **robust** (it held via the gate path); the pipeline is now **realizable and correct**.
 - **Principles served:** *Honest*, *Diagnosable*, *Robust* (determinism = identity).
 - **Gate:** green.
+
+## DEC-159 — Layer-B pipeline in PRODUCTION: the REAL consumed embedding is SOLVED (U=0.906)
+
+- **Date:** 2026-10-14
+- **What:** wired the Layer-B measure into the production path end-to-end:
+  `forward_embedding(..., cfg, lb)` appends `lb.compress(generic_measure(cfg, customers))`;
+  `train` fits `LayerBEmbedder(measure_dim)` on the **training** measure and saves
+  `layer_b_<tag>.pkl`; `load_frozen_encoder` loads it into `model.layer_b`; the gate and head
+  battery pass `cfg`/`lb`. Config: `use_measure`/`measure_dim`. **No gate simulation** — the
+  *actual* consumed embedding carries the measure.
+- **Measured:** train `use_measure=true` (instacart, Rung-1 tiny; measure fit on 1404 train
+  customers) → evaluate the real `forward_embedding` on **1181 held-out B** (horizon 30, seed 0,
+  `--no-seq-oracle`): **U = 0.9057, SOLVED = True** (no leakage; measure fit on A, eval on B).
+- **Meaning:** the architecture `E = [learned shape ‖ learned-compressed generic full-history
+  measure]` is now **implemented, realizable, and certified SOLVED** — the DEC-142/153 object is
+  no longer idealized. This is the first **honest, non-degenerate SOLVED** on a stream.
+- **Caveats (Honest):** Rung-1 tiny train, single stream (instacart), single seed, horizon 30;
+  universality on a **hard** second stream and the remaining axes are still open.
+- **Principles served:** *Universal* (generic fields), *Lawful* + *Efficient* (compact measure),
+  *Honest* (no simulation, no leakage), *Accessible* (real consumed embedding).
+- **Gate:** green.

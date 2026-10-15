@@ -273,6 +273,10 @@ class CFMConfig:
     # generic NUMERIC attribute fields to consume as raw scalars (the counter's raw
     # quantities + the model's numeric inputs). Discovered generically from the stream.
     numeric_fields: tuple = ()
+    # Layer-B MEASURE pipeline: append a learned compression of the generic full-history
+    # measure to the consumed embedding (the ~0.9 object). Fit at train, frozen at serve.
+    use_measure: bool = False
+    measure_dim: int = 64
     # v6.9 (DEC-055): dedicated event-identity residual in the readout
     # z_t = RMSNorm(W_C H_t + skip(x_t) + W_e·emb(e_t) + W_ep·emb(e_{t-1})).
     # Adds a CLEAN, linearly-usable event path (the generic token skip mixes

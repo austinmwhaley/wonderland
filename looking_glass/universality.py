@@ -363,7 +363,9 @@ def run_universality(
     Zs = []
     for i in range(0, len(seqs), bs):
         with torch.no_grad():
-            z = forward_embedding(model, seqs[i : i + bs])
+            z = forward_embedding(
+                model, seqs[i : i + bs], cfg=cfg, lb=getattr(model, "layer_b", None)
+            )
         Zs.append(z.detach().float().cpu().numpy())
     Z = np.concatenate(Zs, 0) if Zs else np.zeros((0, 1), dtype=np.float32)
     dev = torch.device("cuda" if torch.cuda.is_available() else "cpu")
