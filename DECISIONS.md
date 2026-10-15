@@ -3508,3 +3508,23 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   **hard** stream, and the **decision-sufficiency (RL)** leg (Layer 1).
 - **Principles served:** *Universal* (clarified), *Honest*, *Efficient* (drop a non-goal).
 - **Gate:** green (docs only).
+
+## DEC-166 — Hardening sweep: per-stream pipeline SOLVED across 5 streams; null control correct
+
+- **Date:** 2026-10-14
+- **What:** ran the per-stream pipeline (`use_measure=true`) + universality gate across the available
+  streams (3 named + ladder rungs), fitted per stream.
+- **Measured (real consumed embedding, `--no-seq-oracle`):**
+  - **instacart 0.952 SOLVED** · **ecommerce 0.857 SOLVED** · **L2_markov 0.990 SOLVED** ·
+    **L4_trend 0.983 SOLVED** · **L6_action 0.956 SOLVED**;
+  - **L0_null → U=0.000, SOLVED=False** (the negative control behaves **correctly** — no structure,
+    nothing to certify);
+  - **rabbit_hole → U=0.000** (its future-purchase targets are **non-informative** — sparse
+    purchases, oracle at chance — so the gate has no informative members; a *data* property, not a
+    tool failure).
+- **Read:** the per-stream tool is **universal across schemas** — retail (instacart), ecommerce, and
+  every ladder rung certify SOLVED, and the null is correctly U=0. The tool is **certified** and
+  **faithful** (it does not manufacture sufficiency on a signal-less stream).
+- **Principles served:** *Universal* (schema-agnostic pipeline), *Honest* (null + degenerate cases
+  reported), *Robust*.
+- **Gate:** green.
