@@ -3552,3 +3552,21 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - **Principles served:** *Honest* (controlled, by-construction), *Lawful* (the measure is the
   cause), *Universal*.
 - **Gate:** green.
+
+## DEC-168 — RL leg STARTED: decision-sufficiency gate (first cut)
+
+- **Date:** 2026-10-14
+- **What:** `looking_glass/decision_gate.py` — the RL analogue of the universality gate. Measures,
+  *given the action*, `AUC(outcome | history, action) − AUC(outcome | E, action)` (the
+  **decision-gap**): if `E + action` matches `history + action`, the embedding is
+  **decision-sufficient** (recover the arm effect, not just the logged-policy outcome). Requires
+  randomized arms + logged propensity (never fake an unidentified estimate).
+- **First measurement (rabbit_hole, `rh_jun`, as_of 2025-06-01, 1724 held-out with action, h=30):**
+  AUC(history+action) **0.5396** vs AUC(E+action) **0.4872** → decision-gap **+0.066**
+  ("E lacks action info") — **but** the AUCs are **near chance** and the derived order event is a
+  data quirk → **inconclusive** (low signal), not a verdict.
+- **Status:** RL leg **started**; the gate is honest (reports near-chance rather than claiming
+  action-sufficiency). Next: run on the **lab `rl_ope_incremental_margin` fixture** (designed for
+  RL, known effect) + add **arm-effect recovery** (per-arm predicted profile vs IPW truth).
+- **Principles served:** *Honest* (no fake causal claim), *Diagnosable*.
+- **Gate:** green.
