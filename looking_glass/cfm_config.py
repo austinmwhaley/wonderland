@@ -209,6 +209,11 @@ class CFMConfig:
     ortho_weight: float = 0.1  # cross-subspace ortho-loss weight
     epochs: int = 3  # legacy (governor ignores); see max_steps
     max_steps: int = 0  # 0 = derived budget; >0 caps the governor (FAST iteration)
+    # Governor patience in EVAL units. 0 = derived (a fraction of the eval budget).
+    # A late-converging capability objective (e.g. `effect`) needs PATIENCE sized to the
+    # SLOWEST objective, not the fastest — raise this so the governor does not save a
+    # checkpoint before that objective has trained (DEC-173).
+    train_patience: int = 0
     batch: int = 64
     lr: float = 3e-3
     gamma_contrast: float = 0.5

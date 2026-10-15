@@ -3699,3 +3699,31 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - **Principles served:** *Diagnosable* (isolated the axis with a matched control — isolation vs full),
   *Honest* (records the negative: gate still HOLD), *Efficient*/*Robust* (no unstable config kept).
 - **Gate:** green (289 fast tests); capability gate remains **HOLD**.
+
+## DEC-174 — Decision-sufficiency: it is a MULTI-OBJECTIVE CONFLICT, not a patience problem (patience knob added)
+
+- **Date:** 2026-10-15
+- **What:** tested the DEC-173 "training-regime" lever.
+  - Added `CFMConfig.train_patience` (0 = derived; override in `resolve_cfm`, recorded in the
+    receipt) so the governor's patience can be sized to the slowest objective.
+- **Measured:** with `train_patience=40`, `max_steps=1500`, `objective_boost={effect:5}`:
+  - held-out `val` **rises monotonically** after ~step 70 (5.29 → 7.94 over 735 steps) — the
+    small-sample encoder (3000 customers, dim 128) **OVERFITS**; the governor's early stop is
+    CORRECT, not premature;
+  - the effect head still sits at the marginal (skill ~0) — it cannot converge inside the
+    pre-overfit window.
+- **Additional falsification:** the frozen state does NOT linearly/decodably contain `x0`
+  (HGBR probe on the internal state `h`: acc 0.272 ≈ chance), so a fast/greedy effect head
+  cannot shortcut it — the shared STATE must change, and it does not before overfitting.
+- **Read (refined root cause):** a genuine **multi-objective conflict** on a small sample —
+  the 12 predictive objectives own the early (pre-overfit) window; the `effect` gradient is
+  starved there, and boosting it into the shared `val` destabilises (the joint loss grows).
+  This is the *objective/training-regime coupling* axis, not the objective alone.
+- **Next levers (mechanism, not knobs):** (a) **group-PCGrad/FairGrad** between the effect and
+  predictive groups (balance, don't out-shout); (b) a **dedicated response channel** (a small
+  additive/register memory keyed by action, pressured by the effect head) so the response is not
+  in competition with the shape objectives; (c) train the effect on a **larger sample** so the
+  pre-overfit window is long enough.
+- **Principles served:** *Diagnosable* (isolated conflict vs patience with a matched control),
+  *Honest* (two more negatives recorded), *Robust* (does not adopt a destabilising config).
+- **Gate:** green (289 fast tests); capability gate remains **HOLD**.

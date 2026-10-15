@@ -215,9 +215,14 @@ def resolve_cfm(base, df, keys, vocab_sizes) -> ResolvedCFM:
     # eval cadence: enough evals to detect a plateau inside the budget.
     eval_every = int(clip(round(budget / 20.0), 5, 5000))
     # patience: a fraction of the eval budget, so convergence, not a count, is
-    # what stops training. Overridable.
+    # what stops training. Overridable (a late-converging objective needs more).
     patience = int(clip(round(budget / eval_every / 5.0), 3, 20))
+    user_p = int(getattr(base, "train_patience", 0) or 0)
+    if user_p > 0:
+        patience = user_p
     rec = {"derived": {}, "overrides": {}}
+    if user_p > 0:
+        rec["overrides"]["patience"] = user_p
     out = {}
     for name, (val, rr) in (
         ("seq_len", (seq_len, r1)),

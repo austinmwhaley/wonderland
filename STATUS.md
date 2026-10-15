@@ -231,9 +231,13 @@ invariant-by-construction).
   recovers x0 at **46.5%** (chance 25%) so the window is NOT the bottleneck; the blocker is the
   **training regime** — the governor's early-stop (val dominated by the 12 early-converging
   predictive objectives) saves a ~step-70 checkpoint long before the late-converging `effect`
-  trains (MLP head + `objective_boost` added). **Next levers:** training-regime axis —
-  patience/budget sized to the slowest objective, or two-phase (predictive→effect) training.
-  Fast gate **289 passed**.
+  trains (MLP head + `objective_boost` added). **DEC-174:** it is NOT a patience problem — added
+  `CFMConfig.train_patience` (governor patience, override+receipt); with patience=40 the held-out
+  `val` still **rises monotonically** past ~step 70 (small-sample **overfit**, governor correct),
+  and `x0` is **not decodable from the frozen state** (acc 0.272 ≈ chance) — a genuine
+  **multi-objective conflict**: the 12 predictive objectives own the pre-overfit window and boosting
+  `effect` destabilises. **Next levers (mechanism):** group-PCGrad/FairGrad (effect vs predictive),
+  a dedicated action-keyed response channel, or a larger sample. Fast gate **289 passed**.
 
 - **Current status (2026-10-14 — universality gate).** Goal reframed to the **UNIVERSAL
   embedding** (DEC-116): minimal, bounded, universal sufficient statistic; metric
