@@ -226,9 +226,14 @@ invariant-by-construction).
   trained). **Result:** oracle policy beats logging by **+0.115** (gate is meaningful) and `E→x0`
   R² rose from ~0 to **+0.007** (mean-target variant +0.014) — but the use-case gate is **still
   HOLD** (Δ≈+0.001). **Read:** right direction, weak magnitude — a ~47-event window under 12 other
-  objectives under-encodes the per-customer response. **Next levers:** more effect history
-  (larger `seq_len` / dedicated channel), up-weight `effect`, longer budget, or a stronger
-  randomized effect in `email_opt`. Fast gate **289 passed**.
+  objectives under-encodes the per-customer response. **DEC-173 diagnosis:** the objective is
+  **correct and generalizes in isolation** (held-out skill **+0.175**); the raw 47-event window
+  recovers x0 at **46.5%** (chance 25%) so the window is NOT the bottleneck; the blocker is the
+  **training regime** — the governor's early-stop (val dominated by the 12 early-converging
+  predictive objectives) saves a ~step-70 checkpoint long before the late-converging `effect`
+  trains (MLP head + `objective_boost` added). **Next levers:** training-regime axis —
+  patience/budget sized to the slowest objective, or two-phase (predictive→effect) training.
+  Fast gate **289 passed**.
 
 - **Current status (2026-10-14 — universality gate).** Goal reframed to the **UNIVERSAL
   embedding** (DEC-116): minimal, bounded, universal sufficient statistic; metric

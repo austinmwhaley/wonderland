@@ -564,7 +564,7 @@ def test_effect_objective_present_finite_and_trains():
     T_ = _task_losses(model, vocab, seqs, cfg)
     assert "effect" in T_ and torch.isfinite(T_["effect"])
     T_["effect"].backward()
-    assert model.head_effect.weight.grad is not None
+    assert model.head_effect[0].weight.grad is not None
     assert model.emb_et.weight.grad is not None  # gradient reaches the trunk
 
 

@@ -3669,3 +3669,33 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   *Honest* (numbers stand even though the gate is not green), *Universal* (generic keys/cadence),
   *Lawful* (action-conditioned algebra), *Efficient*/*Robust* (stable variant chosen by measurement).
 - **Gate:** green (289 fast tests) — capability gate itself remains **HOLD**.
+
+## DEC-173 — Decision-sufficiency: the objective is correct & generalizes in isolation; the bottleneck is the TRAINING REGIME (early-stop vs a late-converging objective)
+
+- **Date:** 2026-10-15
+- **What:** tightened the DEC-172 objective and localised why the gate is still HOLD.
+  - **MLP head** (`head_effect = Linear(dim+Σlevels, dim) → GELU → Linear(dim,1)`): the state
+    then need only encode the latent response; the head learns the response SHAPE. (A linear head
+    would force the whole per-action shape into the state.)
+  - **`objective_boost`** config (`dict` name→multiplier, applied in `_combine` on top of DWA) —
+    a generic lever to emphasize a capability axis without touching the balancer.
+- **Decisive diagnostics (email_opt):**
+  - **Ceiling:** the raw 47-event WINDOW recovers `x0` at **46.5%** (chance 25%) — the SAME as full
+    history ⇒ the window is NOT the bottleneck; the signal is present in what the state sees.
+  - **Isolation proof:** training the effect objective ALONE (train/test customer split, 600 steps)
+    reaches **held-out skill +0.175** — the mechanism is correct AND generalizes.
+  - **Full run:** despite `loss_scales['effect']=0.46`, DWA weight ~1.01, and `objective_boost=15`,
+    the saved model's effect head is at the **marginal on train** (skill −0.004). `_task_losses`
+    DOES compute it (`effect≈0.221`) and it DOES decrease under gradient steps (0.221→0.216/40 steps),
+    but the governor's best-val checkpoint is ~**step 70** — long before the effect converges.
+- **Root cause (axis diagnosis):** the bottleneck is the **training regime**, not the objective,
+  the data, or the representation. The held-out `val` (the combined loss) is dominated by the 12
+  predictive objectives that converge early, so the governor stops before a late-converging
+  capability objective has trained; boosting it into `val` surfaces it but destabilises (val rises).
+- **Next levers (queued, training-regime axis):** (a) patience/budget sized to the SLOWEST objective
+  (or per-objective convergence), (b) two-phase training — converge the predictive objectives, THEN
+  the effect (or train the effect on the frozen consumed rep), (c) a slow-convergence-aware governor
+  signal. Then re-run the use-case gate toward DEPLOY.
+- **Principles served:** *Diagnosable* (isolated the axis with a matched control — isolation vs full),
+  *Honest* (records the negative: gate still HOLD), *Efficient*/*Robust* (no unstable config kept).
+- **Gate:** green (289 fast tests); capability gate remains **HOLD**.

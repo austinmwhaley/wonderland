@@ -1526,18 +1526,23 @@ def _combine(model, T, cfg, weights: dict | None = None, scales: dict | None = N
     the AIB compression term with a self-tuned multiplier `_aib_beta`."""
     keys = [k for k in cfg.objectives if k in T]
     boost = float(getattr(cfg, "geometry_boost", 1.0) or 1.0)
+    _ob = getattr(cfg, "objective_boost", None) or {}
     sc = scales or getattr(cfg, "final_loss_scales", None) or {}
+
+    def _boost(k):
+        # explicit per-objective boost wins; else the geometry-family boost; else 1.0.
+        return float(_ob[k]) if k in _ob else (boost if k in GEOMETRY_FAMILY else 1.0)
 
     def wk(k):
         w = weights.get(k, 1.0) if weights else 1.0
-        return w * (boost if k in GEOMETRY_FAMILY else 1.0)
+        return w * _boost(k)
 
     if cfg.weight_mode == "dwa":
 
         def term(k):
             base = weights.get(k, 1.0) if weights else 1.0
             unit = T[k] / max(float(sc.get(k, 0.0)), 1e-8) if cfg.dwa_scale_free and sc else T[k]
-            return base * (boost if k in GEOMETRY_FAMILY else 1.0) * unit
+            return base * _boost(k) * unit
 
         total = sum(term(k) for k in keys)
     elif cfg.weight_mode == "uncertainty" and cfg.use_uncertainty_weighting:

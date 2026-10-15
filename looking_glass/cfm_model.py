@@ -757,8 +757,14 @@ class CFM(nn.Module):
         # counterfactual OUTCOME head (RL leg, DEC-172): f(state, one-hot(action)) -> reward
         # logit, fitted on the randomized (action, reward) periods. Its only role is to FORCE
         # the state to carry the treatment response (decision-sufficiency). `effect_dim` is
-        # the total number of action levels (the one-hot width).
-        self.head_effect = nn.Linear(dim + effect_dim, 1) if effect_dim else None
+        # the total number of action levels (the one-hot width). MLP (not linear): the state
+        # then need only encode the latent response, and the head learns the response SHAPE —
+        # a linear head would force the whole per-action shape into the state (measured weak).
+        self.head_effect = (
+            nn.Sequential(nn.Linear(dim + effect_dim, dim), nn.GELU(), nn.Linear(dim, 1))
+            if effect_dim
+            else None
+        )
         self.effect_dim = int(effect_dim)
         self.head_val = nn.Linear(dim, 1)  # next event value (monetary)
         self.head_sf = nn.Sequential(

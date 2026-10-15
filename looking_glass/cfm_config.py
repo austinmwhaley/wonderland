@@ -313,6 +313,10 @@ class CFMConfig:
     # of predictive skill for state headroom — the explicit Pareto coordinate,
     # recorded in the registry so every point on the curve is a receipt.
     geometry_boost: float = 1.0
+    # per-objective weight multipliers (name -> multiplier), applied on top of the task
+    # balance. Lets the loop emphasize a key capability axis (e.g. `effect` = the RL leg's
+    # decision-sufficiency objective) without changing the DWA machinery. Empty = all 1.0.
+    objective_boost: dict = field(default_factory=dict)
     use_uncertainty_weighting: bool = True  # legacy flag (uncertainty mode)
     # Successor-feature phi: agnostic only — one discounted component per event
     # type plus value. No objective may name a business event (DEC-009). The
