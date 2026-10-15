@@ -3627,3 +3627,45 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   config) so re-judging a fixed panel is instant. Then diagnose + fix recall quickly.
 - **Principles served:** *Efficient* (speed is first-class), *Diagnosable*.
 - **Gate:** green.
+
+## DEC-172 — Decision-sufficiency: action-conditioned outcome objective (integrated, tested; gap narrowed but not closed)
+
+- **Date:** 2026-10-15
+- **What:** implemented the DEC-171 fix as a generic, self-supervised objective:
+  - `CFMConfig.effect_actions` (declared randomized action keys, schema-driven; no literals).
+  - `cfm_data._effect_targets`: per-customer PERIOD-level data — one action cadence per period
+    (`ACTION_PERIOD_S`, ANCHORED AT THE STREAM ORIGIN), the randomized action per declared key,
+    and reward = a value-bearing event in that period. Target from the stream only.
+  - `CFM.head_effect`: `f(state, one-hot(action)) -> reward logit` (the direct-method/dose-response
+    mirror of the gate's `V(E,a)`); `objectives+=("effect",)` activated from `--set effect_actions=...`
+    AFTER `apply_set_overrides` (see bug below).
+  - Tests: `tests/test_cfm_fixes.py` (target recovery + attach) and `tests/test_objectives_portfolio.py`
+    (objective present/finite/trains + off-without-target). Fast gate 289 passed.
+- **Bugs found & fixed along the way (both real):**
+  1. **Period misalignment** — bucketing at unix-epoch week boundaries SPLIT the generator's weekly
+     periods (a send and its reward landed in different buckets). Anchoring at the stream origin fixes
+     it; the same fix was applied to `use_case_gate._period_rows` so objective and gate agree.
+  2. **Objective never activated** — `--set effect_actions=...` is applied by `apply_set_overrides`
+     *inside* `train_cfm`, after the activation check, so `effect` was added to `cfg.objectives` too
+     late (the run trained with the head built but the loss excluded — val curve byte-identical).
+     Moved activation after `apply_set_overrides`.
+- **Measured (email_opt, 3000 sample-A, as_of 2024-06-01):**
+  - **Oracle headroom is large:** the true-`x0` policy beats logging by **Δ=+0.115 CI[0.111,0.118]** —
+    the stream DOES support the use case and the gate is meaningful.
+  - **The embedding now carries SOME response** (was ~0): outcome head `E→x0` R² **+0.007**
+    (acc 0.283); an earlier aggregated-mean target gave R² **+0.014**. Small but consistently positive.
+  - **Gate still HOLD** (`freq` Δ≈+0.001, `hour` Δ≈+0.002) — not yet sufficient to ship.
+  - **Stability finding:** training the effect head on the CONSUMED `donor_batch(h)` (batch-coupled
+    whitening) or on the shared `proj(h)` DESTABILISED training (val 5.9→7.4 / 6.5). Training on the
+    readout state `y` (last valid position) is stable; since `proj` is orthogonal, a response linearly
+    recoverable from the state is recoverable from the consumed `E`.
+- **Read:** the objective is correct and integrated, and it moves the needle the right way, but a
+  ~47-event window under 12 other objectives yields only a weak per-customer response. Decision-
+  sufficiency is **partially, not fully** addressed.
+- **Next levers (queued):** (a) give the effect head more history (larger `seq_len` / longer window)
+  or a dedicated full-history effect channel; (b) up-weight `effect`; (c) train to convergence with a
+  larger budget; (d) a stronger randomized effect in `email_opt` (more weeks) to raise the ceiling.
+- **Principles served:** *Diagnosable* (attributed the gap, tested variants, recorded the failed ones),
+  *Honest* (numbers stand even though the gate is not green), *Universal* (generic keys/cadence),
+  *Lawful* (action-conditioned algebra), *Efficient*/*Robust* (stable variant chosen by measurement).
+- **Gate:** green (289 fast tests) — capability gate itself remains **HOLD**.

@@ -129,6 +129,12 @@ def train_cfm(cfg: CFMConfig):
     cfg.agg_horizons_days = list(res_all.agg_horizons_days)
     apply_set_overrides(cfg, res.receipt)  # record every --set key in receipts
     apply_set_overrides(cfg, res_all.receipt)
+    # Decision-sufficiency (RL leg): act on the declared randomized actions by adding the
+    # counterfactual dose-response objective. Placed AFTER apply_set_overrides so a
+    # `--set effect_actions=...` actually activates it. No literal is added — the keys are
+    # schema-declared; the objective is a switch, not a magic number.
+    if getattr(cfg, "effect_actions", None) and "effect" not in cfg.objectives:
+        cfg.objectives = (*cfg.objectives, "effect")
     a_seqs = build_sequences(df, a_keys, cfg, split, with_anchors=False)
     vocab = EventVocab.build(
         a_seqs,
@@ -163,6 +169,7 @@ def train_cfm(cfg: CFMConfig):
         counter=getattr(cfg, "use_counter", False),
         counter_registers=getattr(cfg, "counter_registers", 1),
         numeric_fields=getattr(cfg, "numeric_fields", ()),
+        effect_dim=getattr(cfg, "_effect_dim", 0),
     ).to(device)
     # v4.0: differentiable ZCA in the forward during training (gradients shape the
     # consumed isotropy); off at eval/save so the frozen transform is used.
@@ -576,6 +583,7 @@ def train_cfm(cfg: CFMConfig):
             "counter": bool(getattr(cfg, "use_counter", False)),
             "counter_registers": int(getattr(cfg, "counter_registers", 1)),
             "numeric_fields": list(getattr(cfg, "numeric_fields", ()) or ()),
+            "effect_dim": int(getattr(cfg, "_effect_dim", 0) or 0),
             "prod_embed_dim": int(getattr(cfg, "prod_embed_dim", 0))
             if getattr(cfg, "prod_embed_path", "")
             else 0,
@@ -729,7 +737,7 @@ def _collate(seqs, vocab, device):
             cov[i, :L] = torch.tensor(sq["co"], dtype=torch.float32, device=device)
         mask[i, :L] = 1.0
         cut[i] = min(L - 1, max(1, int(0.6 * L)))
-    return {
+    out = {
         "et": et,
         "br": br,
         "en": en,
@@ -743,6 +751,27 @@ def _collate(seqs, vocab, device):
         "mask": mask,
         "cut": cut,
     }
+    # counterfactual period data (RL leg): pad per-customer (action, reward) periods and
+    # their validity mask. Present only when the `effect` objective is active.
+    _a0 = seqs[0].get("eff_act") if seqs else None
+    if _a0 is not None:
+        K = _a0.shape[1]
+        P = max(len(s["eff_act"]) for s in seqs if s.get("eff_act") is not None) if seqs else 0
+        eff_act = torch.zeros(B, P, K, device=device)
+        eff_rew = torch.zeros(B, P, device=device)
+        eff_mask = torch.zeros(B, P, device=device)
+        for i, sq in enumerate(seqs):
+            a, r = sq.get("eff_act"), sq.get("eff_rew")
+            if a is None:
+                continue
+            p = len(r)
+            eff_act[i, :p] = torch.tensor(np.asarray(a, dtype=np.float32), device=device)
+            eff_rew[i, :p] = torch.tensor(np.asarray(r, dtype=np.float32), device=device)
+            eff_mask[i, :p] = 1.0
+        out["eff_act"] = eff_act
+        out["eff_rew"] = eff_rew
+        out["eff_mask"] = eff_mask
+    return out
 
 
 def _masked_forward(model, vocab, t, cfg, dev):
@@ -1037,6 +1066,34 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
         mu = tgt[_m].mean() if _m.any() else tgt.mean()
         sd = (tgt[_m].std() if _m.any() else tgt.std()).clamp(min=1e-6)
         T_["recency"] = mmse(model.head_recency(y[:, :-1]), ((tgt - mu) / sd).unsqueeze(-1))
+    # ---- counterfactual OUTCOME head (RL leg, DEC-172): fit f(FULL-history state,
+    # one-hot(action)) -> reward logit on the randomized (action, reward) periods. A
+    # state that is decision-sufficient must let a head recover the customer's RESPONSE;
+    # a purely predictive state can be outcome-sufficient yet response-blind (measured:
+    # E->x0 R2 ~ 0). Self-supervised (targets from the stream); masked; the direct-method
+    # mirror of the decision gate's V(E, a).
+    if (
+        "effect" in cfg.objectives
+        and getattr(model, "head_effect", None) is not None
+        and "eff_act" in t
+    ):
+        rows = torch.arange(B, device=dev)
+        Lc = t["mask"].sum(1).long().clamp(min=1) - 1
+        # grade the FULL-history readout state (last valid position). proj (which feeds the
+        # consumed E) is orthogonal, so a response linearly recoverable from the state is
+        # recoverable from E too; training on the state keeps the loss stable (the batch-
+        # coupled donor_batch / shared proj destabilised training — measured).
+        s_full = y[rows, Lc.clamp(max=y.shape[1] - 1)]  # (B, dim)
+        act, rew, m = t["eff_act"], t["eff_rew"], t["eff_mask"]  # (B,P,K),(B,P),(B,P)
+        P = act.shape[1]
+        onehot = []
+        for i, Q in enumerate(getattr(cfg, "_effect_levels", [])):
+            a = act[:, :, i].long().clamp(min=0, max=Q - 1)
+            onehot.append(F.one_hot(a, Q).float())  # (B,P,Q)
+        feat = torch.cat([s_full.unsqueeze(1).expand(-1, P, -1), *onehot], dim=-1)
+        logit = model.head_effect(feat).squeeze(-1)  # (B,P)
+        bce = F.binary_cross_entropy_with_logits(logit, rew, reduction="none")
+        T_["effect"] = (bce * m).sum() / m.sum().clamp(min=1)
     # ---- query-time readout (S1 / DEC-006): train the FADED state ---------
     # Sample a moment strictly between two events, fade the state there, and
     # grade it on predicting the next event/time — the exact path serving uses

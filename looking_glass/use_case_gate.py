@@ -40,10 +40,19 @@ def _period_rows(cfg, cust, action_key, reward_event="purchase"):
     tc = float(as_of_epoch(cfg.as_of))
     con.register("_cust", pl.DataFrame({"customer_key": [str(c) for c in cust]}))
     key = action_key.replace("'", "''")
+    # Period = one action cadence ANCHORED AT THE STREAM ORIGIN (min ts), so buckets align
+    # with the randomized periods instead of arbitrary unix-week boundaries (which split
+    # a period and mismatch action<->reward). Must match cfm_data._effect_targets.
+    t0 = float(
+        con.execute(
+            f"SELECT min(epoch(CAST(event_ts AS TIMESTAMPTZ))) FROM {src} "
+            f"WHERE epoch(CAST(event_ts AS TIMESTAMPTZ)) <= {tc}"
+        ).fetchone()[0]
+    )
     # randomized action per (customer, period): period = a rounded time bucket (data-derived)
     snd = con.execute(
         f"SELECT customer_key, "
-        f"CAST(floor(epoch(CAST(event_ts AS TIMESTAMPTZ)) / 604800.0) AS BIGINT) AS period, "
+        f"CAST(floor((epoch(CAST(event_ts AS TIMESTAMPTZ)) - {t0}) / 604800.0) AS BIGINT) AS period, "
         f"arg_max(TRY_CAST(json_extract_string(event_attributes,'$.{key}') AS DOUBLE), "
         f"epoch(CAST(event_ts AS TIMESTAMPTZ))) AS action "
         f"FROM {src} WHERE event_type LIKE '%send%' "
@@ -53,7 +62,7 @@ def _period_rows(cfg, cust, action_key, reward_event="purchase"):
     ).pl()
     evt = con.execute(
         f"SELECT customer_key, "
-        f"CAST(floor(epoch(CAST(event_ts AS TIMESTAMPTZ)) / 604800.0) AS BIGINT) AS period, "
+        f"CAST(floor((epoch(CAST(event_ts AS TIMESTAMPTZ)) - {t0}) / 604800.0) AS BIGINT) AS period, "
         f"count(*) AS y FROM {src} WHERE event_type = '{reward_event}' "
         f"AND epoch(CAST(event_ts AS TIMESTAMPTZ)) <= {tc} "
         f"AND customer_key IN (SELECT customer_key FROM _cust) GROUP BY 1,2"

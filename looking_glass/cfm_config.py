@@ -273,6 +273,11 @@ class CFMConfig:
     # generic NUMERIC attribute fields to consume as raw scalars (the counter's raw
     # quantities + the model's numeric inputs). Discovered generically from the stream.
     numeric_fields: tuple = ()
+    # DECISION-sufficiency (RL leg): declared RANDOMIZED action keys (JSON attribute keys on
+    # the send/action events, e.g. `freq`, `hour`). When set, the encoder trains a generic
+    # counterfactual/dose-response objective (`effect`) so `E` exposes the treatment
+    # response (the per-customer mean reward per action level). Empty = objective off.
+    effect_actions: tuple = ()
     # Layer-B MEASURE pipeline: append a learned compression of the generic full-history
     # measure to the consumed embedding (the ~0.9 object). Fit at train, frozen at serve.
     use_measure: bool = False

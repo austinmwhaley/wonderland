@@ -538,3 +538,41 @@ def test_probe_harness_is_frozen_and_reports():
         set(("next", "dt", "jepa", "sf", "mask", "value", "entity", "order", "agg", "query"))
     )
     assert "identity_decodability" in rc and "next_slices" in rc
+
+
+def _seq_eff(key, act, rew, day="2025-01-01", n=8):
+    s = _seq(key, day=day, n=n)
+    s["eff_act"] = np.asarray(act, dtype=np.float32)
+    s["eff_rew"] = np.asarray(rew, dtype=np.float32)
+    return s
+
+
+def test_effect_objective_present_finite_and_trains():
+    """DEC-172: the action-conditioned outcome head forces the state to carry the
+    treatment response; the objective is self-supervised, masked, and scale-free."""
+    seqs = [
+        _seq_eff("c1", [[0], [1], [2]], [1, 0, 0], day="2025-01-01"),
+        _seq_eff("c2", [[0], [1], [2]], [0, 1, 0], day="2025-01-02"),
+        _seq_eff("c3", [[0], [1], [2]], [0, 0, 1], day="2025-01-03"),
+    ]
+    vocab = EventVocab.build(seqs)
+    torch.manual_seed(0)
+    model = CFM(vocab, dim=16, n_experts=1, effect_dim=3)  # one key, 3 levels
+    assert model.head_effect is not None
+    cfg = _cfg(objectives=(*CFMConfig().objectives, "effect"))
+    cfg._effect_levels = [3]
+    T_ = _task_losses(model, vocab, seqs, cfg)
+    assert "effect" in T_ and torch.isfinite(T_["effect"])
+    T_["effect"].backward()
+    assert model.head_effect.weight.grad is not None
+    assert model.emb_et.weight.grad is not None  # gradient reaches the trunk
+
+
+def test_effect_objective_off_without_target_and_dim():
+    seqs = [_seq("c1"), _seq("c2", day="2025-01-02")]  # no period data attached
+    vocab = EventVocab.build(seqs)
+    model = CFM(vocab, dim=16, n_experts=1)  # effect_dim=0 -> no head
+    assert model.head_effect is None
+    cfg = _cfg(objectives=(*CFMConfig().objectives, "effect"))
+    T_ = _task_losses(model, vocab, seqs, cfg)
+    assert "effect" not in T_  # silently absent, never a NaN

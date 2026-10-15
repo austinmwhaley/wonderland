@@ -7,6 +7,11 @@ import polars as pl
 
 from looking_glass.cfm_config import AT, CFMConfig, _h, as_of_epoch
 
+# The randomized-action cadence (seconds). One action "period" = one week — the
+# convention the use-case gate's `_period_rows` also buckets by, so the training
+# objective and the decision gate measure the SAME dose-response.
+ACTION_PERIOD_S = 604800.0
+
 
 # ---------------------------------------------------------------------------
 # data
@@ -272,6 +277,51 @@ def derive_order_event(df) -> str | None:
     return str(agg["event_type"][-1])
 
 
+def _effect_targets(d, cfg):
+    """Per-customer PERIOD-level counterfactual data: for each action period, the
+    randomized action level per declared key and the realized reward.
+
+    SELF-SUPERVISED (targets from the stream). This is the direct-method/outcome-model
+    view of decision-sufficiency: a head `f(state, action)->reward` fitted on the
+    randomized (action, reward) pairs must encode the customer's RESPONSE in `state`,
+    else it cannot fit. Lower-variance and stronger than a per-action MEAN target.
+    Generic: keys from the schema, levels/cadence from the data, reward = the stream's
+    own monetary signal. Returns `(per_cust, levels)` where `per_cust[c] =
+    (act (p,K) f32, rew (p,) f32)`, or `(None, None)` when off / no action keys present.
+    """
+    acts = [k for k in (getattr(cfg, "effect_actions", ()) or ()) if k in d.columns]
+    if not acts or d.height == 0:
+        return None, None
+    _ts = pl.col("event_ts").str.to_datetime(time_zone="UTC", strict=False).dt.epoch("s")
+    d = d.with_columns(_ts.alias("_ts"))
+    # Period = one action cadence ANCHORED AT THE STREAM ORIGIN (min ts). Anchoring at
+    # unix-epoch week boundaries arbitrarily SPLITS the randomized periods (a send and
+    # its reward land in different buckets), destroying the dose-response. Origin-
+    # anchored buckets align with the stream's own cadence.
+    _t0 = float(d["_ts"].min())
+    d = d.with_columns(((_ts - _t0) // ACTION_PERIOD_S).cast(pl.Int64).alias("_period"))
+    v = pl.col("value").cast(pl.Float64, strict=False).fill_null(0.0)
+    rew = (
+        d.filter(v != 0.0)
+        .group_by(["customer_key", "_period"])
+        .agg(pl.lit(1.0, dtype=pl.Float64).alias("_y"))
+    )
+    snd = (
+        d.filter(pl.all_horizontal([pl.col(k).is_not_null() for k in acts]))
+        .group_by(["customer_key", "_period"])
+        .agg([pl.col(k).cast(pl.Float64, strict=False).last().alias(k) for k in acts])
+    )
+    j = snd.join(rew, on=["customer_key", "_period"], how="left").fill_null(0.0)
+    levels = [int(float(j[k].max() or 0)) + 1 for k in acts]
+    per_cust = {}
+    for g in j.partition_by("customer_key", maintain_order=True):
+        per_cust[g["customer_key"][0]] = (
+            g.select(acts).to_numpy().astype(np.float32),
+            g["_y"].to_numpy().astype(np.float32),
+        )
+    return per_cust, levels
+
+
 def build_sequences(df, keys, cfg: CFMConfig, split, with_anchors: bool, min_events: int = 3):
     """Polars-first: partition once in Rust, then slice per group. Anchors are
     random uniform days; company actions ride along as exogenous covariates.
@@ -288,6 +338,13 @@ def build_sequences(df, keys, cfg: CFMConfig, split, with_anchors: bool, min_eve
     data_end = float(d["_ts"].max()) if d.height else 0.0
     company = set(map(str, getattr(cfg, "exogenous_events", ())))
     min_events = max(1, int(min_events))
+    # per-customer counterfactual period data (cached: cheap if off, computed once)
+    if getattr(cfg, "_effect_cache", None) is None:
+        _per, _levels = _effect_targets(df, cfg)
+        cfg._effect_cache = (_per, _levels)
+        cfg._effect_levels = list(_levels or [])
+        cfg._effect_dim = int(sum(_levels or []))
+    eff_map, _ = cfg._effect_cache
     seqs = []
     for g in d.partition_by("customer_key", maintain_order=True):
         k = g["customer_key"][0]
@@ -349,6 +406,8 @@ def build_sequences(df, keys, cfg: CFMConfig, split, with_anchors: bool, min_eve
                         "event_ts": ets[start:end],
                         "ts": ts[start:end].tolist(),
                         "co": co[start:end].tolist(),
+                        "eff_act": (eff_map[k][0] if eff_map and k in eff_map else None),
+                        "eff_rew": (eff_map[k][1] if eff_map and k in eff_map else None),
                     }
                 )
     return seqs

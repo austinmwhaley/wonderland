@@ -217,6 +217,19 @@ invariant-by-construction).
 
 ## Micro
 
+- **Latest (2026-10-15 — decision-sufficiency objective, DEC-172).** Built the DEC-171 fix as a
+  **generic self-supervised counterfactual outcome objective**: `CFMConfig.effect_actions` →
+  `cfm_data._effect_targets` (per-customer PERIOD-level randomized action + reward, origin-anchored
+  cadence) → `CFM.head_effect` `f(state, one-hot(action))→reward` (`objectives+=("effect",)`,
+  activated from `--set effect_actions=...`). **Fixed two real bugs** (unix-vs-origin period
+  misalignment that split periods; objective activated *before* `apply_set_overrides` so it never
+  trained). **Result:** oracle policy beats logging by **+0.115** (gate is meaningful) and `E→x0`
+  R² rose from ~0 to **+0.007** (mean-target variant +0.014) — but the use-case gate is **still
+  HOLD** (Δ≈+0.001). **Read:** right direction, weak magnitude — a ~47-event window under 12 other
+  objectives under-encodes the per-customer response. **Next levers:** more effect history
+  (larger `seq_len` / dedicated channel), up-weight `effect`, longer budget, or a stronger
+  randomized effect in `email_opt`. Fast gate **289 passed**.
+
 - **Current status (2026-10-14 — universality gate).** Goal reframed to the **UNIVERSAL
   embedding** (DEC-116): minimal, bounded, universal sufficient statistic; metric
   `U = 1 − worst-case oracle-gap` (`loop/UNIVERSALITY.md`). Built the gate

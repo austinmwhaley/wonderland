@@ -297,3 +297,59 @@ def test_read_stream_pushes_as_of_cut_into_sql(tmp_path):
     df = _read_stream(CFMConfig(db=str(db), as_of="2025-03-01"))
     assert df.height == 1
     assert df["event_ts"][0].startswith("2025-01-01")
+
+
+# ---------------------------------------------------------------------------
+# 8. counterfactual dose-response target (DEC-172): per-customer response
+# ---------------------------------------------------------------------------
+def _opt_events(rows):
+    return pl.DataFrame(
+        {
+            "customer_key": [r[0] for r in rows],
+            "event_ts": [r[1] for r in rows],
+            "event_type": [r[2] for r in rows],
+            "brand": [None] * len(rows),
+            "entity_type": ["customer"] * len(rows),
+            "entity_id": [r[0] for r in rows],
+            "value": [r[3] for r in rows],
+            "freq": [r[4] for r in rows],
+        }
+    ).sort(["customer_key", "event_ts"])
+
+
+def test_effect_targets_recovers_dose_response_and_attaches():
+    from looking_glass.cfm_data import _effect_targets
+
+    base = datetime(2024, 1, 1)
+    rows = []
+    # cust c0 optimal freq 0; c1 optimal freq 2. Reward iff action == optimum.
+    for c, x0 in (("c0", 0), ("c1", 2)):
+        for w in range(40):
+            f = (w + int(c[1])) % 4
+            rows.append((c, (base + timedelta(days=w * 7.0)).isoformat(), "email_send", 0.0, f))
+            if f == x0:
+                rows.append(
+                    (c, (base + timedelta(days=w * 7.0 + 1)).isoformat(), "purchase", 5.0, None)
+                )
+    df = _opt_events(rows)
+    cfg = CFMConfig()
+    cfg.effect_actions = ("freq",)
+    per, levels = _effect_targets(df, cfg)
+    assert levels == [4]  # freq levels 0..3
+    # per-customer period data: reward at the optimal action is 1, at others 0
+    act, rew = per["c0"]
+    opt = (act[:, 0] == 0).astype(float)  # c0 optimal freq = 0
+    assert np.array_equal(rew, opt)
+
+    # build_sequences attaches the period data to every sequence
+    cfg2 = CFMConfig()
+    cfg2.effect_actions = ("freq",)
+    split = {"c0": "A", "c1": "A"}
+    seqs = build_sequences(df, ["c0", "c1"], cfg2, split, with_anchors=False, min_events=1)
+    assert seqs and all(s["eff_act"] is not None and s["eff_rew"] is not None for s in seqs)
+    assert getattr(cfg2, "_effect_levels", []) == [4]
+
+    # off (no action keys) -> no target attached
+    cfg3 = CFMConfig()
+    seqs3 = build_sequences(df, ["c0"], cfg3, split, with_anchors=False, min_events=1)
+    assert all(s["eff_act"] is None for s in seqs3)

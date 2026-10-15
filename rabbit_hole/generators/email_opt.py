@@ -75,7 +75,7 @@ def build_email_opt(n_customers: int = 8000, weeks: int = 52, seed: int = 17):
             if rng.random() < p:
                 emit(
                     key,
-                    day0 + 7.0 + float(rng.random()),
+                    day0 + float(rng.uniform(0.0, 7.0)),
                     "purchase",
                     {"value": round(float(np.exp(rng.normal(3.0, 0.4))), 2), "week": w},
                 )
