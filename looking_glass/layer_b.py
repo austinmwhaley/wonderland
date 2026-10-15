@@ -179,6 +179,130 @@ def canonical_measure(cfg, cust, buckets: int = 256):
     return X, names
 
 
+def field_set_measure(cfg, cust, only_keys=None):
+    """Per-field aggregate SET — the schema-agnostic measure representation.
+
+    Returns X:(N, F, 6) and field names: one 6-vector per field (numeric ->
+    [count,sum,mean,std,min,max]; categorical -> [count,distinct,0,0,0,0]). A
+    permutation-invariant (field-set) encoder over this works on ANY schema/field
+    count -> ONE measure model can serve many streams (universality)."""
+    import duckdb
+    import polars as pl
+
+    con = duckdb.connect()
+    con.execute("SET threads TO 8")
+    p = str(cfg.db)
+    src = f"read_parquet('{p}')" if p.endswith((".parquet", ".pq")) else cfg.table
+    tc = float(as_of_epoch(cfg.as_of))
+    keys = [str(c) for c in list(cust)]
+    if not keys:
+        return np.zeros((0, 0, 6), dtype=np.float32), []
+    con.register("_cust", pl.DataFrame({"customer_key": keys}))
+    con.execute(
+        f"CREATE TEMP TABLE base AS SELECT e.customer_key AS ck, "
+        f"epoch(CAST(e.event_ts AS TIMESTAMPTZ)) AS t, e.event_attributes AS attrs FROM {src} e "
+        f"JOIN _cust c ON e.customer_key = c.customer_key WHERE "
+        f"epoch(CAST(e.event_ts AS TIMESTAMPTZ)) <= {tc}"
+    )
+    jkeys = [
+        str(r[0])
+        for r in con.execute(
+            "SELECT DISTINCT unnest(json_keys(attrs)) AS k FROM base "
+            "WHERE attrs IS NOT NULL ORDER BY k"
+        ).fetchall()
+    ]
+    if only_keys is not None:
+        allow = {str(k) for k in only_keys}
+        jkeys = [k for k in jkeys if k in allow]
+    aggs = []
+    for k in jkeys:
+        esc = k.replace("'", "''")
+        safe = "".join(ch if ch.isalnum() else "_" for ch in k)
+        cast = f"TRY_CAST(json_extract_string(attrs,'$.{esc}') AS DOUBLE)"
+        nn, tot = con.execute(
+            f"SELECT count(*) FILTER (WHERE {cast} IS NOT NULL), "
+            f"count(json_extract_string(attrs,'$.{esc}')) FROM base"
+        ).fetchone()
+        if tot and nn / tot > 0.9:  # numeric: 6 moments
+            aggs += [
+                f"count({cast}) AS {safe}_0",
+                f"coalesce(sum({cast}),0.0) AS {safe}_1",
+                f"coalesce(avg({cast}),0.0) AS {safe}_2",
+                f"coalesce(stddev({cast}),0.0) AS {safe}_3",
+                f"coalesce(min({cast}),0.0) AS {safe}_4",
+                f"coalesce(max({cast}),0.0) AS {safe}_5",
+            ]
+        else:  # categorical: count + distinct
+            aggs += [
+                f"count(json_extract_string(attrs,'$.{esc}')) AS {safe}_0",
+                f"count(DISTINCT json_extract_string(attrs,'$.{esc}')) AS {safe}_1",
+                f"0.0 AS {safe}_2",
+                f"0.0 AS {safe}_3",
+                f"0.0 AS {safe}_4",
+                f"0.0 AS {safe}_5",
+            ]
+    df = con.execute(
+        f"SELECT ck{'' if not aggs else ', ' + ', '.join(aggs)} FROM base GROUP BY ck"
+    ).pl()
+    con.close()
+    full = pl.DataFrame({"ck": keys}).join(df, on="ck", how="left").fill_null(0.0)
+    F = len(jkeys)
+    X = np.zeros((len(keys), F, 6), dtype=np.float32)
+    for fi, k in enumerate(jkeys):
+        safe = "".join(ch if ch.isalnum() else "_" for ch in k)
+        for m in range(6):
+            X[:, fi, m] = full[f"{safe}_{m}"].to_numpy().astype(np.float32)
+    return X, jkeys
+
+
+class FieldSetMeasure:
+    """Permutation-invariant (field-set) measure encoder: per-field 6-vectors ->
+    shared MLP -> sum-pool -> d-dim. Field-agnostic (any F) -> cross-stream usable."""
+
+    def __init__(self, d=64, hidden=64, epochs=200, seed=0):
+        self.d = int(d)
+        self.hidden = int(hidden)
+        self.epochs = int(epochs)
+        self.seed = int(seed)
+        self.net = None
+        self.scaler = None
+
+    def fit(self, X):
+        import torch
+        import torch.nn as nn
+        from sklearn.preprocessing import StandardScaler
+
+        N, F, M = X.shape
+        sc = StandardScaler().fit(X.reshape(-1, M))
+        Xs = sc.transform(X.reshape(-1, M)).reshape(N, F, M).astype(np.float32)
+        torch.manual_seed(self.seed)
+        net = nn.Sequential(nn.Linear(M, self.hidden), nn.GELU(), nn.Linear(self.hidden, self.d))
+        x = torch.tensor(Xs)
+        head = nn.Linear(self.d, M)
+        params = list(net.parameters()) + list(head.parameters())
+        opt = torch.optim.Adam(params, lr=1e-2)
+        for _ in range(self.epochs):
+            opt.zero_grad()
+            per = net(x)  # (N,F,d)
+            pooled = per.mean(1)  # (N,d)
+            rec = head(pooled)[:, None, :].expand_as(x)  # broadcast decode
+            loss = ((rec - x) ** 2).mean()
+            loss.backward()
+            opt.step()
+        self.net, self.scaler, self.head = net.eval(), sc, head.eval()
+        return self
+
+    def embed(self, X) -> np.ndarray:
+        import torch
+
+        N, F, M = X.shape
+        Xs = self.scaler.transform(X.reshape(-1, M)).reshape(N, F, M).astype(np.float32)
+        with torch.no_grad():
+            per = self.net(torch.tensor(Xs))
+            pooled = per.mean(1)
+        return pooled.numpy().astype(np.float32)
+
+
 class LayerBEmbedder:
     """Compose encoder embedding with a LEARNED compression of the generic measure.
 

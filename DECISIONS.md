@@ -3472,3 +3472,22 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - **Principles served:** *Honest* (recorded the null), *Universal* (named the open gap),
   *Diagnosable*.
 - **Gate:** green.
+
+## DEC-164 — Field-set (permutation-invariant) measure also FAILS; cross-stream sharing unsolved
+
+- **Date:** 2026-10-14
+- **What:** implemented `field_set_measure` (per-field 6-vectors, any `F`) + `FieldSetMeasure`
+  (shared per-field MLP + mean-pool + autoencode), the principled "one measure for any schema"
+  design (as opposed to hashing, DEC-163).
+- **Measured:** U = **0.1305** (instacart, fit A / eval B) — far below the aligned per-field measure
+  (~0.90).
+- **Read:** **pooling/autoencoding the per-field vectors loses sufficiency** — the signal lives in
+  the **aligned per-field structure**, and compressing it through a field-agnostic bottleneck
+  (hash buckets or pooled MLP) discards it. So **both** generic cross-stream schemes fail; the
+  measure must stay **per-stream / per-field**.
+- **Honest conclusion:** **true "one measure model for all streams" is unsolved.** The foundation
+  encoder is currently a **per-stream pipeline** (certified SOLVED per stream). Cross-stream
+  sharing likely needs either (a) a **shared field schema** (canonical field roles across sources)
+  or (b) much richer field-agnostic encoders — a real open problem, not a quick fix.
+- **Principles served:** *Honest*, *Diagnosable*, *Universal* (named the gap).
+- **Gate:** green.
