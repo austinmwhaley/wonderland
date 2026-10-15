@@ -176,6 +176,7 @@ def load_frozen_encoder(tag: str, cfm_dir):
         continuous_time=bool(blob.get("continuous_time", False)),
         counter=bool(blob.get("counter", False)),
         counter_registers=int(blob.get("counter_registers", 1)),
+        numeric_fields=tuple(blob.get("numeric_fields", ()) or ()),
     )
     # tolerate checkpoints from earlier revisions (e.g. a head added later):
     # load what matches, report what did not. The encoder trunk must match.

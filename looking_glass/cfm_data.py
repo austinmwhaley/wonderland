@@ -312,6 +312,15 @@ def build_sequences(df, keys, cfg: CFMConfig, split, with_anchors: bool, min_eve
             c: (g[c].to_numpy() if c in g.columns else np.full(g.height, None, dtype=object))[ki]
             for c in getattr(cfg, "attr_fields", ()) or ()
         }
+        # generic NUMERIC fields -> raw scalars (the counter's raw quantities)
+        numeric = {
+            c: (
+                g[c].cast(pl.Float64, strict=False).fill_null(0.0).to_numpy()
+                if c in g.columns
+                else np.zeros(g.height)
+            )[ki]
+            for c in getattr(cfg, "numeric_fields", ()) or ()
+        }
         ets = g["event_ts"].to_numpy()[ki]
         n = ts.size
         spans: list[tuple[int, float | None]] = []
@@ -335,6 +344,7 @@ def build_sequences(df, keys, cfg: CFMConfig, split, with_anchors: bool, min_eve
                         "entity_type": ent[start:end],
                         "entity_id": eid[start:end],
                         "attrs": {c: v[start:end] for c, v in attrs.items()},
+                        "numeric": {c: v[start:end] for c, v in numeric.items()},
                         "value": val[start:end],
                         "event_ts": ets[start:end],
                         "ts": ts[start:end].tolist(),

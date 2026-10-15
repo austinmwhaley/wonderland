@@ -660,6 +660,7 @@ class CFM(nn.Module):
         accumulator: bool = True,
         counter: bool = False,
         counter_registers: int = 1,
+        numeric_fields: tuple = (),
     ):
         super().__init__()
         self.vocab = vocab
@@ -700,6 +701,7 @@ class CFM(nn.Module):
         # shared value encoders (§20.2): categorical attributes -> embeddings, which
         # GENERALIZE to unseen entities (an unseen product still has a category/aisle)
         self.attr_fields = tuple(getattr(vocab, "attrs", {}) or {})
+        self.numeric_fields = tuple(numeric_fields or ())
         if self.attr_fields:
             self.emb_attr = nn.ModuleDict(
                 {f: nn.Embedding(vocab.n_attr[f] + 1, self.chan) for f in self.attr_fields}
@@ -771,6 +773,7 @@ class CFM(nn.Module):
             for f in self.attr_fields:
                 raw_dim += self.vocab.n_attr.get(f, 0) + 1
             raw_dim += 4  # value, log1p|value|, gap, log1p(gap)
+            raw_dim += 2 * len(self.numeric_fields)  # each numeric field: x, x^2
             self.counter_raw_dim = raw_dim
             self.counter = CounterBlock(self.chan, raw_dim, n_registers=self.counter_registers)
             self.w_counter = nn.Linear(self.counter_registers * raw_dim, dim)
@@ -1181,6 +1184,10 @@ class CFM(nn.Module):
             if f in t:
                 nf = self.vocab.n_attr.get(f, 0) + 1
                 feats.append(F.one_hot(t[f].clamp(max=nf - 1), nf).to(torch.float32))
+        for c in self.numeric_fields:
+            if c in t:
+                xc = t[c].unsqueeze(-1).to(torch.float32)
+                feats += [xc, xc * xc]  # sum + 2nd moment (mean/std derivable)
         v = t["val"].to(torch.float32)
         dt = t["dt"].to(torch.float32)
         feats += [v, torch.log1p(v.abs()), dt, torch.log1p(dt)]

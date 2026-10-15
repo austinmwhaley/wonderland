@@ -270,6 +270,9 @@ class CFMConfig:
     use_counter: bool = False
     # S2: number of content-addressed registers for the counter (1 = S1; >1 = S2 routing).
     counter_registers: int = 1
+    # generic NUMERIC attribute fields to consume as raw scalars (the counter's raw
+    # quantities + the model's numeric inputs). Discovered generically from the stream.
+    numeric_fields: tuple = ()
     # v6.9 (DEC-055): dedicated event-identity residual in the readout
     # z_t = RMSNorm(W_C H_t + skip(x_t) + W_e·emb(e_t) + W_ep·emb(e_{t-1})).
     # Adds a CLEAN, linearly-usable event path (the generic token skip mixes

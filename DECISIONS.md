@@ -3335,3 +3335,22 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - **Principles served:** *Universal/Adaptive* (open-ended, learned routing), *Lawful* (anchored,
   exact), *Efficient* (one scan over R·raw_dim), *Honest* (raw writes).
 - **Gate:** green (all tests pass).
+
+## DEC-156 — S2 + generic NUMERIC fields: field coverage lifts U (0.214→0.279)
+
+- **Date:** 2026-10-14
+- **What:** added a generic **`numeric_fields`** path (config → `_read_stream` columns →
+  `build_sequences` → `_collate` → `CFM.raw_fields`), so the S2 counter accumulates **numeric**
+  fields' raw quantities ([x, x²] → sum + 2nd moment) in addition to value/dt and one-hots.
+  Served/loaded fields are synced into `cfg` in the gate (serving parity). A GPU OOM was fixed with
+  `expandable_segments`.
+- **Measured (Rung-1 tiny, instacart, 1181 B, horizon 30, seed 0, `--no-seq-oracle`):**
+  S2 (8 registers, no numeric) **0.2137** → S2 + 7 numeric fields **0.2786**. (full generic
+  measure PCA-64 ≈0.90.)
+- **Read:** **field coverage helps** (0.21→0.28) — the counter matches more of the oracle's measure.
+  But S2 still covers only a **fraction** of the oracle's 27 keys (it has 7 numeric + et/br/en +
+  value/dt; the oracle has *every* key incl. high-cardinality nuniq and min/max/std), and it is
+  **window-limited**. So the ~0.9 remains out of reach until (a) **all** fields are counted and
+  (b) the counter spans the **full history**.
+- **Principles served:** *Universal/Adaptive* (generic numeric consumption), *Lawful*, *Honest*.
+- **Gate:** green.

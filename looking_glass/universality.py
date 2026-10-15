@@ -548,6 +548,9 @@ def main(argv=None):
     if not (a.db and a.as_of and a.ckpt_dir and a.tag):
         ap.error("--db/--as-of/--ckpt-dir/--tag are required unless --synthetic")
     model, cfg = load_frozen_encoder(a.tag, a.ckpt_dir)
+    # serving parity: the stream must carry the SAME fields the checkpoint consumes.
+    cfg.attr_fields = tuple(getattr(model, "attr_fields", ()) or ())
+    cfg.numeric_fields = tuple(getattr(model, "numeric_fields", ()) or ())
     if a.no_acc:
         model.accumulator_on = False  # matched control: shape-only (no measure pathway)
     if a.generic_measure:

@@ -162,6 +162,7 @@ def train_cfm(cfg: CFMConfig):
         accumulator=getattr(cfg, "use_accumulator", True),
         counter=getattr(cfg, "use_counter", False),
         counter_registers=getattr(cfg, "counter_registers", 1),
+        numeric_fields=getattr(cfg, "numeric_fields", ()),
     ).to(device)
     # v4.0: differentiable ZCA in the forward during training (gradients shape the
     # consumed isotropy); off at eval/save so the frozen transform is used.
@@ -574,6 +575,7 @@ def train_cfm(cfg: CFMConfig):
             "continuous_time": bool(getattr(cfg, "continuous_time", False)),
             "counter": bool(getattr(cfg, "use_counter", False)),
             "counter_registers": int(getattr(cfg, "counter_registers", 1)),
+            "numeric_fields": list(getattr(cfg, "numeric_fields", ()) or ()),
             "prod_embed_dim": int(getattr(cfg, "prod_embed_dim", 0))
             if getattr(cfg, "prod_embed_path", "")
             else 0,
@@ -653,6 +655,11 @@ def _collate(seqs, vocab, device):
         f: torch.full((B, T), vocab.n_attr[f], dtype=torch.long, device=device)
         for f in (getattr(vocab, "attrs", {}) or {})
     }
+    num_t = (
+        {c: torch.zeros(B, T, device=device) for c in (seqs[0].get("numeric") or {})}
+        if seqs
+        else {}
+    )
     val = torch.zeros(B, T, 1, device=device)
     dt = torch.zeros(B, T, 1, device=device)
     tod = torch.zeros(B, T, 4, device=device)  # periodic timestamp features (spec §1)
@@ -695,6 +702,12 @@ def _collate(seqs, vocab, device):
                     ],
                     device=device,
                 )
+        for c, ten in num_t.items():
+            vals = (sq.get("numeric") or {}).get(c)
+            if vals is not None and len(vals) == L:
+                ten[i, :L] = torch.tensor(
+                    [float(v) for v in vals], dtype=torch.float32, device=device
+                )
         val[i, :L, 0] = torch.tensor(
             [_f(v) for v in sq["value"]], dtype=torch.float32, device=device
         )
@@ -713,6 +726,7 @@ def _collate(seqs, vocab, device):
         "en": en,
         "eid": eid,
         **attr_t,
+        **num_t,
         "val": val,
         "dt": dt,
         "tod": tod,
