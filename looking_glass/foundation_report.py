@@ -47,6 +47,14 @@ def build_card(stream, tag, as_of, cfg, model, horizons=(30,), seeds=(0,)):
         dec = certify(model, cfg, horizon_days=int(max(horizons)))
     except Exception:
         dec = None
+    # USE CASES — which optimization tasks this stream supports + whether E supplies them
+    try:
+        from looking_glass.use_case_gate import discover_action_keys, run_use_case
+
+        _akeys = discover_action_keys(cfg)
+        uses = [(k, run_use_case(model, cfg, k)) for k in _akeys]
+    except Exception:
+        uses = []
 
     sha = subprocess.run(
         ["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True
@@ -116,6 +124,17 @@ def build_card(stream, tag, as_of, cfg, model, horizons=(30,), seeds=(0,)):
         "(recall/coverage across action spaces) is in progress.",
         "- Streams with **no predictive future signal** (e.g. sparse-purchase fixtures) are reported "
         "as non-informative, never faked.",
+        "",
+        "## USE CASES — optimization capabilities of THIS stream",
+        *(
+            [
+                f"- **{k}**: dose-response argmax={r['dose_argmax']} over {r['n_actions']} actions · "
+                f"policy-from-E Δ={r['delta']:+.3f} CI[{r['lo']:+.3f},{r['hi']:+.3f}] → **{r['verdict']}**"
+                for k, r in uses
+            ]
+            if uses
+            else ["- (no randomized discrete actions found — no optimization use case)"]
+        ),
         "",
         "## B+C — decision certification (RL arm of rabbit_hole + looking_glass)",
         *(

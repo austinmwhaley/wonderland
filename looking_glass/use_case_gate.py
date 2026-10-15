@@ -63,6 +63,67 @@ def _period_rows(cfg, cust, action_key, reward_event="purchase"):
     return j
 
 
+def discover_action_keys(cfg, max_distinct=24):
+    """Identify the stream's randomized ACTION keys: JSON keys on send events whose values are
+    (almost always) integers with a small, DISCRETE set of values (an action space). Generic —
+    no per-domain key names."""
+    from pathlib import Path
+
+    # prefer the stream's DECLARED use-case action keys (a metadata / truth receipt next to it)
+    _p = Path(str(cfg.db))
+    for _t in (_p.parent / f"{_p.parent.name}_truth.json", _p.with_suffix("").with_name(_p.stem + "_truth.json")):
+        if _t.exists():
+            try:
+                import json
+
+                meta = json.loads(_t.read_text()).get("meta", {})
+                declared = meta.get("action_keys")
+                if declared:
+                    return [str(k) for k in declared]
+            except Exception:
+                pass
+    import duckdb
+    _META = ("idx", "index", "week", "campaign", "time", "date", "day", "send")
+
+    con = duckdb.connect()
+    con.execute("SET threads TO 8")
+    p = str(cfg.db)
+    src = f"read_parquet('{p}')" if p.endswith((".parquet", ".pq")) else cfg.table
+    tc = float(as_of_epoch(cfg.as_of))
+    try:
+        keys = [
+            str(r[0])
+            for r in con.execute(
+                f"SELECT DISTINCT unnest(json_keys(event_attributes)) AS k FROM {src} "
+                f"WHERE event_type LIKE '%send%' AND event_attributes IS NOT NULL ORDER BY k"
+            ).fetchall()
+        ]
+    except Exception:
+        keys = []
+    out = []
+    for k in keys:
+        esc = k.replace("'", "''")
+        c = f"json_extract_string(event_attributes,'$.{esc}')"
+        try:
+            nn, tot = con.execute(
+                f"SELECT count(*) FILTER (WHERE TRY_CAST({c} AS BIGINT) IS NOT NULL), "
+                f"count({c}) FROM {src} WHERE event_type LIKE '%send%' "
+                f"AND epoch(CAST(event_ts AS TIMESTAMPTZ)) <= {tc}"
+            ).fetchone()
+            if not tot or nn / tot < 0.99:
+                continue
+            nd = con.execute(
+                f"SELECT count(DISTINCT TRY_CAST({c} AS BIGINT)) FROM {src} "
+                f"WHERE event_type LIKE '%send%' AND epoch(CAST(event_ts AS TIMESTAMPTZ)) <= {tc}"
+            ).fetchone()[0]
+        except Exception:
+            continue
+        if nd and 1 < int(nd) <= max_distinct and not any(t in k.lower() for t in _META):
+            out.append(k)
+    con.close()
+    return out
+
+
 def run_use_case(model, cfg, action_key, seed=0):
     import polars as pl
 

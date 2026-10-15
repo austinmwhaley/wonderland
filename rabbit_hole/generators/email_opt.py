@@ -58,14 +58,14 @@ def build_email_opt(n_customers: int = 8000, weeks: int = 52, seed: int = 17):
             f = int(rng.integers(0, 4))  # RANDOMIZED weekly frequency (0 = control)
             if f == 0:
                 continue
-            h_week = float(rng.uniform(0.0, 24.0))  # RANDOMIZED send hour
+            h_week = int(rng.integers(0, 24))  # RANDOMIZED send hour (0..23, discoverable)
             for j in range(f):
                 send_day = day0 + float(rng.uniform(0.0, 7.0))
                 emit(
                     key,
                     send_day,
                     "email_send",
-                    {"freq": f, "hour": round(h_week, 2), "week": w, "send_idx": j},
+                    {"freq": f, "hour": h_week, "week": w, "send_idx": j},
                 )
             p = (
                 peak
@@ -90,6 +90,7 @@ def build_email_opt(n_customers: int = 8000, weeks: int = 52, seed: int = 17):
         "weeks": weeks,
         "seed": seed,
         "use_cases": ["weekly_email_frequency_optimization", "daily_time_of_day_optimization"],
+        "action_keys": ["freq", "hour"],
         "peak": peak,
         "sigma_f": sigma_f,
         "sigma_h": sigma_h,
