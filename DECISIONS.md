@@ -3727,3 +3727,35 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - **Principles served:** *Diagnosable* (isolated conflict vs patience with a matched control),
   *Honest* (two more negatives recorded), *Robust* (does not adopt a destabilising config).
 - **Gate:** green (289 fast tests); capability gate remains **HOLD**.
+
+## DEC-175 — Decision-sufficiency SOLVED: expose the response BY CONSTRUCTION (action-conditioned measure) + fix the gate chooser
+
+- **Date:** 2026-10-15
+- **What (the mechanism that finally works — same principle that solved the mass axis):**
+  - Extended `layer_b.generic_measure` with an **action-conditioned RESPONSE block**: for each
+    DECLARED randomized action key, per customer, the empirical dose-response (mean reward at each
+    action level over the stream's action periods; origin-anchored cadence; reward = the stream's
+    value-bearing event). Generic (keys declared; levels/cadence/reward from the data). It is a
+    full-history, **schema-derived statistic exposed by construction** — not a hand-tuned heuristic,
+    and it rides the existing Layer-B compression into the consumed `E`.
+  - Persisted `effect_actions` in the checkpoint blob; restored in `load_frozen_encoder` so the
+    served measure is identical to the fit.
+  - **Fixed the `use_case_gate` chooser (a real measurement bug):** it compared the outputs of
+    SEPARATE per-action regressors fitted on the 1100-dim `E` — miscalibrated, collapsed to the
+    marginal (`Δ≈0` despite `E→x0` R²=0.28). Replaced with a **joint** `V(E, a)` (action as a
+    feature), **cross-fitted by customer** (GroupKFold), ranking only supported actions.
+- **Measured (email_opt, `E` = shape ‖ compressed measure-with-response):**
+  - `E → x0` R² **~0 → +0.278** (acc 0.405); the raw measure block → x0 R² **+0.308** (acc 0.453,
+    matching the 46.5% ceiling). The response is now carried AND accessible.
+  - **Use-case gate: DEPLOY for BOTH** — `freq` Δ=**+0.117** CI[+0.110,+0.123]; `hour` Δ=**+0.336**
+    CI[+0.316,+0.353] (policy from the raw response block: `freq` Δ=+0.149). Oracle headroom +0.115.
+  - Report card: **USE CASES DEPLOY** (both) + **B+C DEPLOY** (Δ +0.001, never-ship-worse).
+- **Read:** `looking_glass` is now **decision-sufficient** for the randomized action family — it
+  *supplies* the optimization use cases. This is the RL-arm goal (DEC-171) met: the fix was to
+  expose the sufficient statistic **by construction** (like the mass axis), not to out-shout the
+  predictive objectives (DEC-173/174 negatives).
+- **Principles served:** *Lawful* (additive, full-history, schema-derived statistic),
+  *Universal* (keys declared, no domain literals), *Diagnosable* (the gate bug was isolated with a
+  matched control — response-block policy vs `E` policy), *Honest* (instrument bug fixed, not hidden),
+  *Accessible* (info is in clean dims, decodable by a simple consumer).
+- **Gate:** green (**290** fast tests). Capability gate **DEPLOY**.

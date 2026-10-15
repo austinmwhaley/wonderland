@@ -237,7 +237,15 @@ invariant-by-construction).
   and `x0` is **not decodable from the frozen state** (acc 0.272 ≈ chance) — a genuine
   **multi-objective conflict**: the 12 predictive objectives own the pre-overfit window and boosting
   `effect` destabilises. **Next levers (mechanism):** group-PCGrad/FairGrad (effect vs predictive),
-  a dedicated action-keyed response channel, or a larger sample. Fast gate **289 passed**.
+  a dedicated action-keyed response channel, or a larger sample. **DEC-175 — SOLVED:** the winning
+  mechanism is to expose the response **by construction** (like the mass axis): extend
+  `generic_measure` with an **action-conditioned response block** (per-customer dose-response, generic,
+  origin-anchored, rides the Layer-B compression into `E`). Also **fixed a `use_case_gate` bug** (it
+  compared miscalibrated separate per-action regressors → collapsed to the marginal) → a joint,
+  cross-fitted `V(E,a)` ranking supported actions. **Result:** `E→x0` R² **~0 → +0.278**;
+  **use-case gate DEPLOY for BOTH** (`freq` Δ=+0.117, `hour` Δ=+0.336); report card **USE CASES +
+  B+C DEPLOY**. `looking_glass` now *supplies* the optimization use cases (RL-arm goal met).
+  Fast gate **290 passed**.
 
 - **Current status (2026-10-14 — universality gate).** Goal reframed to the **UNIVERSAL
   embedding** (DEC-116): minimal, bounded, universal sufficient statistic; metric

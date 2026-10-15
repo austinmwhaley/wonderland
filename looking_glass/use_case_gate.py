@@ -158,13 +158,24 @@ def run_use_case(model, cfg, action_key, seed=0):
     N = len(A)
     # dose-response: empirical E[reward | do(action)] (uniform randomization)
     dose = {int(a): round(float((y[A == a]).mean()), 4) for a in range(Q) if (A == a).any()}
+    # policy-from-E: a JOINT outcome model V(E, a) (action as a feature), CROSS-FITTED by
+    # customer so the policy is evaluated out-of-sample. (Separate per-action regressors
+    # compared miscalibrated outputs and collapsed to the marginal — a measurement bug.)
     sc = StandardScaler().fit(Zi)
     Zs = sc.transform(Zi)
     V = np.zeros((N, Q))
-    for a in range(Q):
-        m = HistGradientBoostingRegressor(max_iter=150).fit(np.column_stack([Zs, np.full(N, a)]), y)
-        V[:, a] = m.predict(np.column_stack([Zs, np.full(N, a)]))
-    cand = V.argmax(1)
+    from sklearn.model_selection import GroupKFold
+
+    _folds = max(2, min(5, len(np.unique(cu))))
+    for tr, va in GroupKFold(_folds).split(Zs, groups=cu):
+        m = HistGradientBoostingRegressor(max_iter=300).fit(
+            np.column_stack([Zs[tr], A[tr].astype(float)]), y[tr]
+        )
+        for a in range(Q):
+            V[va, a] = m.predict(np.column_stack([Zs[va], np.full(len(va), float(a))]))
+    # only rank actions that the logging policy actually took (support — no extrapolation)
+    logged = np.unique(A)
+    cand = logged[np.argmax(V[:, logged], axis=1)]
     pa = 1.0 / Q
     v_cand = y * (cand == A) / pa
     v_log = y.copy()

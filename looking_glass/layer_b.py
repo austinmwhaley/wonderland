@@ -98,11 +98,58 @@ def generic_measure(cfg, cust, only_keys=None):
             aggs.append(f"{s} AS num_{safe}_{fn}")
             cols.append(f"num_{safe}_{fn}")
     df = con.execute(f"SELECT ck, {', '.join(aggs)} FROM base GROUP BY ck").pl()
+    # ---- action-conditioned RESPONSE measure (RL leg, DEC-175): the empirical dose-response
+    # exposed BY CONSTRUCTION (the same principle that solved the mass axis). For each DECLARED
+    # randomized action key, per customer: mean reward at each action level over the stream's
+    # action periods. Generic (keys declared; levels/cadence from the data; reward = the
+    # stream's own value-bearing event). Makes `E` decision-sufficient for that action family.
+    resp_blocks, resp_names = [], []
+    acts = [str(k) for k in (getattr(cfg, "effect_actions", ()) or ())]
+    if acts:
+        from looking_glass.cfm_data import ACTION_PERIOD_S
+
+        _t0 = con.execute("SELECT min(t) FROM base").fetchone()[0]
+        if _t0 is not None:
+            t0 = float(_t0)
+            val = "TRY_CAST(json_extract_string(attrs,'$.value') AS DOUBLE)"
+            cidx = {c: i for i, c in enumerate(keys)}
+            for k in acts:
+                esc = k.replace("'", "''")
+                a = f"TRY_CAST(json_extract_string(attrs,'$.{esc}') AS DOUBLE)"
+                mxr = con.execute(
+                    f"SELECT max(TRY_CAST(json_extract_string(attrs,'$.{esc}') AS BIGINT)) "
+                    f"FROM base WHERE {a} IS NOT NULL"
+                ).fetchone()[0]
+                if mxr is None:
+                    continue
+                Q = int(mxr) + 1
+                dfk = con.execute(
+                    f"WITH per AS (SELECT ck, "
+                    f"CAST(floor((t - {t0})/{ACTION_PERIOD_S}) AS BIGINT) AS per, "
+                    f"max(TRY_CAST(json_extract_string(attrs,'$.{esc}') AS BIGINT)) AS act "
+                    f"FROM base WHERE {a} IS NOT NULL GROUP BY 1,2), "
+                    f"rew AS (SELECT ck, "
+                    f"CAST(floor((t - {t0})/{ACTION_PERIOD_S}) AS BIGINT) AS per, 1.0 AS y "
+                    f"FROM base WHERE {val} IS NOT NULL AND {val} != 0 GROUP BY 1,2) "
+                    f"SELECT per.ck AS ck, per.act AS act, avg(COALESCE(rew.y,0.0)) AS r "
+                    f"FROM per LEFT JOIN rew ON per.ck=rew.ck AND per.per=rew.per GROUP BY 1,2"
+                ).pl()
+                M = np.zeros((len(keys), Q), np.float32)
+                for c, aa, r in zip(dfk["ck"].to_list(), dfk["act"].to_list(), dfk["r"].to_list()):
+                    j = cidx.get(c)
+                    if j is not None and 0 <= int(aa) < Q:
+                        M[j, int(aa)] = float(r)
+                safe = "".join(ch if ch.isalnum() else "_" for ch in k)
+                resp_blocks.append(M)
+                resp_names += [f"resp_{safe}_{i}" for i in range(Q)]
     con.close()
     full = pl.DataFrame({"ck": keys}).join(df, on="ck", how="left").fill_null(0.0)
     full = full.with_columns((pl.lit(tc) - pl.col("tlast")).alias("recency"))
     cols = cols + ["recency"]
     X = np.column_stack([full[c].to_numpy().astype(np.float32) for c in cols])
+    if resp_blocks:
+        X = np.column_stack([X, *resp_blocks])
+        cols = cols + resp_names
     return X.astype(np.float32), cols
 
 
