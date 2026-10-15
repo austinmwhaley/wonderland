@@ -159,6 +159,12 @@ def survey(
                 "ess": _fin(est[n].get("ess_frac")),
                 "deploy": bool(dec[n]["deploy"]),
                 "better": bool(truth[n] > anchor),
+                "reasons": list(dec[n].get("reasons") or []),
+                "witnesses": (
+                    dec[n].get("witnesses")
+                    if isinstance(dec[n].get("witnesses"), (dict, list))
+                    else None
+                ),
             }
             for n in names
         },

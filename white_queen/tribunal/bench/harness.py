@@ -27,6 +27,7 @@ class Cell:
     rank: Optional[int] = None
     lo: Optional[float] = None
     hi: Optional[float] = None
+    why: Optional[str] = None  # judge's HOLD/DEPLOY reasons (diagnosability)
 
     @property
     def worthy(self) -> bool:

@@ -46,6 +46,7 @@ def _save(case):
                 "rank": c.rank,
                 "lo": c.lo,
                 "hi": c.hi,
+                "why": c.why,
             }
             for c in case.cells
         ],
@@ -75,6 +76,7 @@ def _load_all():
                     c["rank"],
                     c.get("lo"),
                     c.get("hi"),
+                    c.get("why"),
                 )
                 for c in r["cells"]
             ],
@@ -159,6 +161,7 @@ def _matrix_case(env, seed=0):
                 order.get(n, 999),
                 cert.get("lo"),
                 cert.get("hi"),
+                "; ".join(c.get("reasons") or []) or None,
             )
         )
     return Case(f"{env}#s{seed}", cells, meta={"family": FAMILY[env], "seed": seed})
