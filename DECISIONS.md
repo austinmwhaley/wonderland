@@ -3375,3 +3375,20 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - **Principles served:** *Universal/Adaptive*, *Efficient* (chunked, constant state), *Honest*
   (named the additive-only ceiling).
 - **Gate:** green.
+
+## DEC-158 — CRITICAL fix: `generic_measure` was NON-DETERMINISTIC (column order); Layer-B pipeline verified
+
+- **Date:** 2026-10-14
+- **Bug:** `layer_b.generic_measure` discovered keys via `SELECT DISTINCT unnest(json_keys(attrs))`
+  with **no `ORDER BY`** → the measure's **column order reshuffled** across calls (max diff ≈1.5e10).
+  This made the oracle/measure **non-reproducible** and silently added run-to-run **variance to `U`**
+  (and broke `LayerBEmbedder.embed` vs the gate path: 0.17 vs 0.89).
+- **Fix:** `ORDER BY k` in the key discovery → the measure is now **deterministic**
+  (`np.allclose` across calls: True; `embed` == gate path).
+- **Verified:** the packaged **Layer-B pipeline** (`LayerBEmbedder.embed` = `[encoder ‖ PCA(measure)]`)
+  now reproduces the gate result: LTV norm_gap **0.094** (≈U 0.9), no discrepancy.
+- **Consequence:** every `U` measured before this fix may carry order-induced noise (esp. the
+  counter variants S1/S2 whose spread we noted); re-measurement is needed. The ~0.9 positive result
+  is **robust** (it held via the gate path); the pipeline is now **realizable and correct**.
+- **Principles served:** *Honest*, *Diagnosable*, *Robust* (determinism = identity).
+- **Gate:** green.

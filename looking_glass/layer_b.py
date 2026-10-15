@@ -53,7 +53,8 @@ def generic_measure(cfg, cust, only_keys=None):
     jkeys = [
         str(r[0])
         for r in con.execute(
-            "SELECT DISTINCT unnest(json_keys(attrs)) FROM base WHERE attrs IS NOT NULL"
+            "SELECT DISTINCT unnest(json_keys(attrs)) AS k FROM base "
+            "WHERE attrs IS NOT NULL ORDER BY k"
         ).fetchall()
     ]
     if only_keys is not None:
