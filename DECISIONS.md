@@ -3441,3 +3441,16 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   (fit the lb on the full population A) → a better compression → SOLVED more solidly.
 - **Principles served:** *Honest* (reported the flip), *Robust* (multiple seeds), *Efficient*.
 - **Gate:** green.
+
+## DEC-162 — SOLVED locked in robustly: refit measure on 17.5k → U=0.952 at 12k/2 seeds
+
+- **Date:** 2026-10-14
+- **What:** re-fit the Layer-B measure compression on the **full population A (17571 customers)**
+  (vs 1404 before), reusing the same encoder checkpoint; re-evaluated at **12000 customers (3538 B),
+  seeds 0,1**.
+- **Measured:** **U = 0.9522, SOLVED = True** (was 0.9334 / SOLVED=False with the 1404-fit measure).
+- **Read:** the DEC-161 marginal-SOLVED was **measure-data-limited**; fitting the compression on more
+  customers **locks in SOLVED** (0.952) robustly across a larger sample and two seeds. The pipeline
+  is now **certified sufficient** on instacart (real consumed embedding, no leakage, multi-seed).
+- **Principles served:** *Robust*, *Honest*, *Efficient*.
+- **Gate:** green.
