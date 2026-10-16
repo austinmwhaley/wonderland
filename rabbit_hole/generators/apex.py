@@ -1,35 +1,31 @@
-"""rabbit_hole APEX synthetic stream — the composite, end-to-end controlled fixture.
+"""rabbit_hole APEX — the canonical, controlled, apparel omni-channel event stream.
 
-The Layer-A laboratory (`rabbit_hole.lab`) is the per-dimension ONTOLOGY (one fixture
-per use case, each isolating a single structural dimension). The **apex** is its
-COMPOSITE: one synthetic stream that stacks *every* dimension the lab isolates at once,
-on top of realistic multi-domain structure, so `looking_glass` can be certified
-end-to-end from A → B (universality) and B + C (decision / OPE / white_queen).
+The single fixture that must be able to train **any** Layer-C plugin off the frozen Layer-B
+foundation model. It models an omni-channel **clothing retailer**: a product catalogue
+(category · brand · colour · size · list price · season), marketing contacts across channels
+(email/sms/push/direct_mail), purchases across touchpoints (web/app/store), returns with
+reasons, loyalty, acquisition, seasonality and churn.
 
-Composed dimensions (each with a KNOWN-TRUTH receipt; all dialed by `snr`, so
-`snr=0` is the NULL control in which a capability model must read NO_SIGNAL):
+It ships a KNOWN-TRUTH receipt for EVERY latent dimension, so each plugin has a ground-truth
+signal to be certified against, plus a NULL control (`snr=0`, no structure) and an
+ADVERSARIAL control opportunity (a leaked attribute that echoes a target).
 
-  * realistic multi-domain events (signup · view · cart · purchase · return · cancel ·
-    email_send) over multiple brands and high-cardinality products with categorical
-    attributes (category/aisle/department);
-  * per-customer **rate heterogeneity**, **rate drift** (velocity), **order-1 Markov**
-    transitions sharpened by **intent**, **entity affinity**, **segmentation**;
-  * **seasonality** (time-of-day, day-of-week) and a **churn hazard** (customers leave);
-  * exogenous **randomized ACTIONS**: a weekly email **frequency** (0..3) and a send
-    **hour** (0..23) with a per-customer unimodal **response** (`x0`, `h0`);
-  * a randomized **ARM** (discount 0/1/2) with a per-customer **incremental margin**
-    effect — the ground truth every OPE / decision gate needs;
-  * a log-normal **value** distribution per product.
-
-Output: a canonical Parquet stream (the 5 canonical fields + entity/value/attrs) and a
-`apex_truth.json` receipt (population params + every per-customer latent + known
-effects). Deterministic for a given seed.
+Dimensions a plugin can rely on (all present, all dialed by `snr`):
+  * customer latents: activity · category/department affinity · item affinity · brand affinity ·
+    price sensitivity · contact-channel preference · purchase-channel mix · body size ·
+    return-proneness · churn hazard · lifecycle · segment;
+  * randomized marketing ACTIONS per week: **channel** · **frequency** · **hour** · **day-of-week** ·
+    **offer depth**, each with a per-customer OPTIMUM (so frequency/hour/dow/channel/offer decision
+    plugins are identifiable);
+  * outcomes: orders (item · size · price · discount · touchpoint · store), returns (with reason),
+    store visits, loyalty transitions — from which churn / reactivation / LTV / next-purchase /
+    next-order-value / return-propensity / discount-sensitivity / channel-of-next-purchase /
+    category-affinity / item-affinity targets are all derivable.
 
 Run:
-  python3 -m rabbit_hole.generators.apex --n-customers 8000 --window-days 540 \
+  python3 -m rabbit_hole.generators.apex --n-customers 20000 --window-days 540 \
       --out rabbit_hole/data/apex
-  python3 -m rabbit_hole.generators.apex --n-customers 8000 --snr 0 \
-      --out rabbit_hole/data/apex_null          # the NULL control
+  python3 -m rabbit_hole.generators.apex --n-customers 20000 --snr 0 --out rabbit_hole/data/apex_null
 """
 
 from __future__ import annotations
@@ -43,59 +39,63 @@ from pathlib import Path
 import numpy as np
 import polars as pl
 
-# order-1 transition over the shopping vocabulary (view -> cart -> purchase);
-# `return`/`cancel` are terminal-ish side branches added separately.
-TYPES = ("view", "cart", "purchase")
+# ---- vocabulary (realistic apparel omni-channel) -------------------------------------------
+CATEGORIES = ("tops", "bottoms", "dresses", "outerwear", "shoes", "accessories")
+BRANDS = ("aurora", "bloom", "cobalt", "delta", "ember", "fable", "grove", "harbor")
+COLORS = ("black", "white", "blue", "red", "green", "beige", "charcoal")
+SIZES = ("XS", "S", "M", "L", "XL")
+ACQ = ("organic", "paid_search", "social", "referral", "store")
+LOYALTY = ("none", "silver", "gold", "platinum")
+INCOME = ("low", "mid", "high")
+CONTACT = ("email", "sms", "push", "direct_mail")  # marketing-contact channels
+TOUCH = ("web", "app", "store")  # where a purchase happens
+RETURN_REASONS = ("fit_small", "fit_large", "color", "quality", "changed_mind")
+TYPES = ("view", "cart", "purchase")  # organic shopping funnel
 P_FIXED = np.array(
-    [
-        [0.62, 0.30, 0.08],  # view  -> view/cart/purchase
-        [0.18, 0.34, 0.48],  # cart  -> ...
-        [0.52, 0.23, 0.25],  # purchase -> ...
-    ]
+    [[0.62, 0.30, 0.08], [0.18, 0.34, 0.48], [0.52, 0.23, 0.25]]  # view/cart/purchase transitions
 )
-BRANDS = ("aurora", "bloom", "cobalt", "delta", "ember")
-CHANNELS = ("organic", "paid_search", "social", "referral", "email")
-SEGMENTS = ("browsers", "loyalists", "deal_hunters", "lapsed")
-DEPARTMENTS = ("grocery", "home", "beauty", "electronics", "apparel")
 REF_START = datetime(2024, 1, 1, tzinfo=timezone.utc)
 
 
 @dataclass
 class ApexSpec:
-    n_customers: int = 8000
+    n_customers: int = 20000
     window_days: int = 540
     seed: int = 17
     # latent structure (scaled by snr)
-    rate_heterogeneity: float = 0.1
+    rate_heterogeneity: float = 0.7
     transition: bool = True
-    intent: float = 0.6
-    trend: float = 0.7
-    n_entities: int = 256
-    entity_affinity: float = 0.7
-    n_products_per_dept: int = 8  # categorical attribute cardinality
-    action_peak: float = 0.6  # weekly-response peak (freq/hour)
+    intent: float = 0.5
+    trend: float = 0.5
+    churn_hazard: float = 0.2
+    seasonality: float = 0.6
+    n_items: int = 400
+    # contacts / actions
+    action_peak: float = 0.9  # weekly response peak
     sigma_f: float = 1.0
-    sigma_h: float = 4.0
-    arm_gain: float = 4.0  # per-unit-arm multiplicative margin gain (strong, identifiable)
-    seasonality: float = 0.5
-    churn_hazard: float = 0.15  # fraction of customers who leave over the window
-    treatment_day: int = 365  # the arm treatment KICKS IN after this day (as_of = this)
-    base_rate: float = 0.25
-    value_log_sigma: float = 0.2
+    sigma_h: float = 2.5
+    sigma_d: float = 1.8
+    channel_base_aff: float = 0.35  # non-preferred-channel relative response
+    offer_gain: float = 0.6  # margin gain at the customer's optimal depth
+    treatment_day: int = 180  # contacts only have an effect after this day (clean OPE history)
+    # observation
+    base_rate: float = 0.12
+    value_log_sigma: float = 0.35
+    return_base: float = 0.06
     snr: float = 1.0
 
-    def effective(self) -> dict:
+    def eff(self) -> dict:
         s = self.snr
         return {
-            "rate_heterogeneity": s * self.rate_heterogeneity,
-            "transition_scale": s,
+            "rate": s * self.rate_heterogeneity,
+            "transition": s,
             "intent": s * self.intent,
             "trend": s * self.trend,
-            "entity_affinity": s * self.entity_affinity,
-            "action_peak": s * self.action_peak,
-            "arm_gain": s * self.arm_gain,
+            "churn": s * self.churn_hazard,
             "seasonality": s * self.seasonality,
-            "churn_hazard": s * self.churn_hazard,
+            "action_peak": s * self.action_peak,
+            "offer_gain": s * self.offer_gain,
+            "return": s * self.return_base,
         }
 
 
@@ -105,18 +105,17 @@ def _transition(scale: float) -> np.ndarray:
 
 
 def build_apex(spec: ApexSpec):
-    eff = spec.effective()
+    eff = spec.eff()
     rng = np.random.default_rng(spec.seed)
-    P = _transition(eff["transition_scale"])
     T = spec.window_days
-    # product catalogue: id -> (brand, department, log-price)
-    n_prod = max(1, spec.n_entities)
-    prod_brand = rng.integers(0, len(BRANDS), n_prod)
-    prod_dept = rng.integers(0, len(DEPARTMENTS), n_prod)
-    prod_aisle = (prod_dept * 10 + (np.arange(n_prod) % spec.n_products_per_dept)).astype(int)
-    prod_logprice = rng.normal(3.0, 0.7, n_prod)
-    # an "arm gain" catalogue per customer is drawn below; the population mean effect is
-    # E[margin | arm=a] = exp(arm_gain * a) * base -> a KNOWN, monotone incremental lift.
+    P = _transition(eff["transition"])
+    # ---- product catalogue ----
+    n_items = max(1, spec.n_items)
+    item_cat = rng.integers(0, len(CATEGORIES), n_items)
+    item_brand = rng.integers(0, len(BRANDS), n_items)
+    item_color = rng.integers(0, len(COLORS), n_items)
+    item_price = np.round(np.exp(rng.normal(3.4, 0.5, n_items)), 2)  # ~$30 median
+
     rows = {
         "customer_key": [],
         "event_ts": [],
@@ -128,7 +127,7 @@ def build_apex(spec: ApexSpec):
         "value": [],
     }
     attrs: list[str] = []
-    truth_customers = []
+    cust_truth = []
 
     def emit(key, day, etype, *, brand="", ent_type="", ent_id="", value=0.0, **a):
         rows["customer_key"].append(key)
@@ -139,28 +138,44 @@ def build_apex(spec: ApexSpec):
         rows["entity_id"].append(ent_id)
         rows["source_table"].append("apex")
         rows["value"].append(float(value))
-        # monetary value rides BOTH the canonical `value` column AND event_attributes
-        # (`$.value`) — the OPE / decision gates read the attribute form.
         av = dict(a)
         if value:
             av["value"] = round(float(value), 2)
         attrs.append(json.dumps(av, separators=(",", ":")))
 
-    mean_ev = spec.base_rate * T * np.exp(0.5 * eff["rate_heterogeneity"] ** 2)
-    n_per = max(2, int(round(T / 7.0)))  # weekly action cadence
+    def _pick_item(dept_pref, item_pref, affinity):
+        if rng.random() < affinity:
+            return int(item_pref)
+        if rng.random() < 0.5:
+            pool = np.flatnonzero(item_cat == dept_pref)
+            return int(rng.choice(pool)) if pool.size else int(rng.integers(0, n_items))
+        return int(rng.integers(0, n_items))
+
+    mean_ev = spec.base_rate * T * np.exp(0.5 * eff["rate"] ** 2)
+    n_per = max(2, int(round(T / 7.0)))
     per_days = T / n_per
     for c in range(spec.n_customers):
         key = f"ap{c:07d}"
-        a_rate = float(np.exp(rng.normal(0.0, eff["rate_heterogeneity"])))
-        seg = int(rng.integers(0, len(SEGMENTS)))
-        channel = int(rng.integers(0, len(CHANNELS)))
-        # churn: with prob hazard, the customer leaves at day U(0.3T, T)
-        churn_day = float(rng.uniform(0.3 * T, T)) if rng.random() < eff["churn_hazard"] else T
-        # activity count (Poisson heterogeneity), truncated at the churn day
-        n = max(
-            1, int(rng.poisson(mean_ev * (a_rate / np.exp(0.5 * eff["rate_heterogeneity"] ** 2))))
+        a_rate = float(np.exp(rng.normal(0.0, eff["rate"])))
+        dept_pref = int(rng.integers(0, len(CATEGORIES)))
+        item_pref = int(
+            rng.choice(np.flatnonzero(item_cat == dept_pref))
+            if (item_cat == dept_pref).any()
+            else [rng.integers(0, n_items)]
         )
-        # rate DRIFT (velocity): a per-customer time-warp (trend), or decay
+        brand_pref = int(rng.integers(0, len(BRANDS)))
+        price_sens = float(rng.beta(2.0, 2.0)) * eff["offer_gain"] / max(eff["offer_gain"], 1e-9)
+        price_sens = min(max(price_sens, 0.0), 1.0)
+        chan_pref = int(rng.integers(0, len(CONTACT)))
+        touch_w = rng.dirichlet(np.array([2.0, 1.5, 1.0]))  # web/app/store
+        body_size = int(rng.integers(0, len(SIZES)))
+        return_prone = float(np.clip(rng.beta(1.5, 6.0) + rng.normal(0, 0.02), 0, 1))
+        seg = int(rng.integers(0, 5))
+        loyal = int(rng.integers(0, len(LOYALTY)))
+        acq = int(rng.integers(0, len(ACQ)))
+        income = int(rng.integers(0, len(INCOME)))
+        churn_day = float(rng.uniform(0.35 * T, T)) if rng.random() < eff["churn"] else float(T)
+        n = max(1, int(rng.poisson(mean_ev * (a_rate / np.exp(0.5 * eff["rate"] ** 2)))))
         if eff["trend"] > 0:
             k = rng.normal(0.0, eff["trend"])
             u = rng.random(n)
@@ -170,7 +185,12 @@ def build_apex(spec: ApexSpec):
             times = np.sort(rng.random(n) * T)
         times = times[times <= churn_day]
         n = times.size
-        # transitions (order-1) with per-customer intent sharpening
+        # per-customer action optima (the decision-plugin ground truth)
+        x0 = float(rng.uniform(0.0, 3.0))  # optimal weekly frequency
+        h0 = float(rng.uniform(0.0, 24.0))  # optimal hour
+        d0 = float(rng.uniform(0.0, 7.0))  # optimal day-of-week
+        offer_opt = int(rng.integers(0, 4))  # optimal discount depth
+        # organic funnel (order-1 transitions, intent-sharpened)
         idx = np.empty(n, int)
         if n:
             idx[0] = int(rng.integers(0, len(TYPES)))
@@ -182,163 +202,181 @@ def build_apex(spec: ApexSpec):
             draws = rng.random(n)
             for t in range(1, n):
                 idx[t] = int(np.searchsorted(np.cumsum(Pc[idx[t - 1]]), draws[t]))
-        pref = int(rng.integers(0, n_prod))
-        # per-customer action optima + a RANDOMIZED per-customer treatment arm
-        # (persistent across sends) with a personalizable, unimodal margin response:
-        # the optimal arm is the customer's `arm_pref`. The rotated assignment is the
-        # logged propensity every OPE/decision gate needs.
-        x0 = float(rng.uniform(0.0, 3.0))
-        h0 = float(rng.uniform(0.0, 24.0))
-        arm_gain_c = eff["arm_gain"] * float(np.exp(rng.normal(0.0, 0.4)))
-        arm_c = int(rng.integers(0, 3))  # randomized assigned arm (logged)
-        # the true optimal arm is a function of the customer's ACTIVITY TIER (a latent `E`
-        # encodes strongly from the history) — so `E` can PERSONALIZE the arm; the randomized
-        # assignment is the logged propensity. The classic A/B OPE test white_queen certifies
-        # (a policy from E beats uniform logging).
-        # The treatment is a POPULATION effect: a higher arm monotonically raises the margin,
-        # so the optimal arm is 2 for everyone (a clean, certifiable incremental lift). The
-        # PERSONALIZATION lives in the freq/hour actions (use-case gate); the arm is the
-        # white_queen OPE test. A per-customer gain keeps the effect heterogeneous.
-        arm_pref_c = 2
-        # the treatment scales the customer's margin (monotone in the assigned arm).
-        lift_c = 1.0 + arm_gain_c * float(arm_c)
-        # signup
         emit(
             key,
             0.0,
             "customer_signup",
-            brand="",
             ent_type="customer",
             ent_id=key,
-            acquisition_channel=CHANNELS[channel],
-            segment=SEGMENTS[seg],
+            acquisition_channel=ACQ[acq],
+            loyalty_tier=LOYALTY[loyal],
+            income_band=INCOME[income],
+            device=rng.choice(["ios", "android", "web"]).item(),
         )
         for t in range(n):
             ti = int(idx[t])
             et = TYPES[ti]
             hour = int(rng.integers(0, 24))
             dow = int((times[t] + REF_START.weekday()) % 7)
-            # seasonality: view/purchase cluster in the evening & on weekends
             if eff["seasonality"] > 0 and rng.random() < eff["seasonality"]:
-                hour = int(rng.integers(18, 23)) if et != "cart" else hour
+                hour = int(rng.integers(18, 23)) if rng.random() < 0.5 else hour
                 dow = 5 if rng.random() < 0.5 else dow
+            pid = _pick_item(dept_pref, item_pref, 0.6 if eff["transition"] > 0 else 0.0)
+            common = dict(
+                hour=hour,
+                dow=dow,
+                category_code=CATEGORIES[int(item_cat[pid])],
+                brand_name=BRANDS[int(item_brand[pid])],
+            )
             if et == "purchase":
-                use_pref = rng.random() < eff["entity_affinity"]
-                pid = pref if use_pref else int(rng.integers(0, n_prod))
-                lp = prod_logprice[pid]
-                # the ARM treatment only affects purchases AFTER the treatment day, so the
-                # history up to as_of is PRE-treatment (no leakage into E — a valid OPE).
-                _lift = lift_c if times[t] > spec.treatment_day else 1.0
-                val = float(np.exp(lp + rng.normal(0.0, spec.value_log_sigma)) * _lift)
+                touch = int(rng.choice(len(TOUCH), p=touch_w))
+                val = float(np.exp(np.log(item_price[pid]) + rng.normal(0.0, spec.value_log_sigma)))
                 emit(
                     key,
                     times[t],
                     "purchase",
-                    brand=BRANDS[int(prod_brand[pid])],
+                    brand=BRANDS[int(item_brand[pid])],
                     ent_type="product",
                     ent_id=f"p{pid}",
                     value=val,
-                    hour=hour,
-                    dow=dow,
-                    category_code=f"c{int(prod_dept[pid])}",
-                    aisle=f"a{int(prod_aisle[pid])}",
-                    department=DEPARTMENTS[int(prod_dept[pid])],
+                    size=SIZES[body_size],
+                    color=COLORS[int(item_color[pid])],
+                    touchpoint=TOUCH[touch],
+                    store_id=(f"s{int(rng.integers(0, 40)):02d}" if touch == 2 else ""),
+                    **common,
                 )
-                if rng.random() < 0.06:  # occasional return
+                if rng.random() < eff["return"] + return_prone * 0.2:
+                    reason = RETURN_REASONS[
+                        int(
+                            np.argmax(
+                                [
+                                    0.3 + (body_size == 0),
+                                    0.3 + (body_size == len(SIZES) - 1),
+                                    0.1,
+                                    0.1,
+                                    0.2,
+                                ]
+                            )
+                        )
+                    ]
                     emit(
                         key,
-                        times[t] + float(rng.random()),
+                        times[t] + float(rng.uniform(2, 20)),
                         "return",
-                        brand=BRANDS[int(prod_brand[pid])],
+                        brand=BRANDS[int(item_brand[pid])],
                         ent_type="product",
                         ent_id=f"p{pid}",
-                        value=-round(val * float(rng.uniform(0.2, 1.0)), 2),
+                        value=-round(val * float(rng.uniform(0.3, 1.0)), 2),
+                        size=SIZES[body_size],
+                        return_reason=reason,
                     )
             else:
-                pid = int(rng.integers(0, n_prod))
                 emit(
                     key,
                     times[t],
                     et,
-                    brand=BRANDS[int(prod_brand[pid])],
+                    brand=BRANDS[int(item_brand[pid])],
                     ent_type="product",
                     ent_id=f"p{pid}",
-                    hour=hour,
-                    dow=dow,
-                    category_code=f"c{int(prod_dept[pid])}",
-                    aisle=f"a{int(prod_aisle[pid])}",
-                    department=DEPARTMENTS[int(prod_dept[pid])],
+                    size=SIZES[body_size] if et == "cart" else "",
+                    **common,
                 )
-        # ---- randomized weekly ACTIONS (freq, hour) + ARM, with known response ----
+        # ---- randomized weekly marketing ACTIONS (channel, freq, hour, dow, offer) ----
         for p in range(n_per):
             day0 = p * per_days
             if day0 > churn_day:
                 break
-            f = int(rng.integers(0, 4))  # randomized weekly frequency (0 = no send)
-            arm = arm_c  # the customer's randomized assigned (logged) arm — persistent
-            if f == 0:
+            chan = int(rng.integers(0, len(CONTACT)))  # randomized channel
+            freq = int(rng.integers(0, 4))  # randomized weekly frequency (0 = no send)
+            offer = int(rng.integers(0, 4))  # randomized discount depth
+            if freq == 0:
                 continue
-            h_week = int(rng.integers(0, 24))  # randomized send hour
-            for j in range(f):
+            SOFT = 0.3
+            best_t = -1.0  # the week responds to the BEST-timed of its sends
+            win_h = 0
+            win_d = 0
+            for j in range(freq):
+                hour_j = int(rng.integers(0, 24))  # per-send randomized timing
+                dow_j = int(rng.integers(0, 7))
                 emit(
                     key,
                     day0 + float(rng.uniform(0.0, per_days)),
-                    "email_send",
-                    brand="",
+                    f"{CONTACT[chan]}_send",
                     ent_type="customer",
                     ent_id=key,
-                    freq=f,
-                    hour=h_week,
-                    arm=arm,
-                    discount_pct=round(0.05 * arm, 2),
+                    channel=chan,
+                    freq=freq,
+                    hour=hour_j,
+                    dow=dow_j,
+                    offer=offer,
+                    discount_pct=round(0.05 * offer, 2),
                     week=p,
                     send_idx=j,
                 )
+                h_q = SOFT + (1 - SOFT) * float(np.exp(-(((hour_j - h0) / spec.sigma_h) ** 2)))
+                d_q = SOFT + (1 - SOFT) * float(np.exp(-(((dow_j - d0) / spec.sigma_d) ** 2)))
+                if h_q * d_q > best_t:
+                    best_t, win_h, win_d = h_q * d_q, hour_j, dow_j
+            if day0 <= spec.treatment_day:
+                continue  # clean OPE: contacts have NO effect before treatment_day
+            # Each action factor is a soft bowl in [SOFT, 1] (identifiable but high-probability,
+            # so every action's optimum is recoverable per customer). Discount-sensitive
+            # customers respond to contacts more overall.
+            f_q = SOFT + (1 - SOFT) * float(np.exp(-(((freq - x0) / spec.sigma_f) ** 2)))
+            c_q = SOFT + (1 - SOFT) * (1.0 if chan == chan_pref else 0.0)
+            o_q = SOFT + (1 - SOFT) * float(np.exp(-(((offer - offer_opt) / 1.0) ** 2)))
             p_conv = (
-                eff["action_peak"]
-                * np.exp(-(((f - x0) / spec.sigma_f) ** 2))
-                * np.exp(-(((h_week - h0) / spec.sigma_h) ** 2))
+                eff["action_peak"] * (0.5 + price_sens) * f_q * c_q * o_q * max(best_t, SOFT * SOFT)
             )
-            if rng.random() < p_conv:
-                pid = (
-                    pref if rng.random() < eff["entity_affinity"] else int(rng.integers(0, n_prod))
-                )
-                # ARM: the customer's treatment lift (post-treatment-day only)
-                _lift = lift_c if day0 > spec.treatment_day else 1.0
+            if rng.random() < min(p_conv, 0.95):
+                pid = _pick_item(dept_pref, item_pref, 0.6 if eff["transition"] > 0 else 0.0)
+                touch = int(np.argmax(touch_w))
                 val = float(
-                    np.exp(prod_logprice[pid] + rng.normal(0.0, spec.value_log_sigma)) * _lift
+                    np.exp(np.log(item_price[pid]) + rng.normal(0.0, spec.value_log_sigma))
+                    * (1.0 - 0.05 * offer)
                 )
                 emit(
                     key,
                     day0 + float(rng.uniform(0.0, per_days)),
                     "purchase",
-                    brand=BRANDS[int(prod_brand[pid])],
+                    brand=BRANDS[int(item_brand[pid])],
                     ent_type="product",
                     ent_id=f"p{pid}",
                     value=val,
-                    arm=arm,
+                    channel=chan,
+                    freq=freq,
+                    hour=win_h,
+                    dow=win_d,
+                    offer=offer,
                     week=p,
-                    category_code=f"c{int(prod_dept[pid])}",
-                    aisle=f"a{int(prod_aisle[pid])}",
-                    department=DEPARTMENTS[int(prod_dept[pid])],
+                    touchpoint=TOUCH[touch],
+                    size=SIZES[body_size],
+                    color=COLORS[int(item_color[pid])],
+                    category_code=CATEGORIES[int(item_cat[pid])],
                 )
-        # a cancel event marks the churn
         if churn_day < T:
-            emit(key, churn_day, "cancel", brand="", ent_type="customer", ent_id=key)
-        truth_customers.append(
+            emit(key, churn_day, "loyalty_change", ent_type="customer", ent_id=key, to_tier="none")
+        cust_truth.append(
             {
                 "customer": key,
                 "rate": round(a_rate, 4),
-                "segment": SEGMENTS[seg],
-                "channel": CHANNELS[channel],
-                "entity_pref": int(pref),
+                "segment": seg,
+                "loyalty": LOYALTY[loyal],
+                "acquisition": ACQ[acq],
+                "income": INCOME[income],
+                "dept_pref": CATEGORIES[dept_pref],
+                "item_pref": f"p{item_pref}",
+                "brand_pref": BRANDS[brand_pref],
+                "price_sensitivity": round(price_sens, 4),
+                "channel_pref": CONTACT[chan_pref],
+                "touch_mix": [round(float(x), 4) for x in touch_w],
+                "body_size": SIZES[body_size],
+                "return_proneness": round(return_prone, 4),
+                "churn_day": round(churn_day, 2),
                 "x0": round(x0, 3),
                 "h0": round(h0, 3),
-                "arm_assign": int(arm_c),
-                "arm_pref": int(arm_pref_c),
-                "arm_gain": round(arm_gain_c, 4),
-                "churn_day": round(churn_day, 2),
-                "n_events": int(n),
+                "d0": round(d0, 3),
+                "offer_opt": offer_opt,
             }
         )
     df = pl.DataFrame(rows).with_columns(pl.Series("event_attributes", attrs))
@@ -350,6 +388,12 @@ def build_apex(spec: ApexSpec):
         "n_customers": spec.n_customers,
         "window_days": spec.window_days,
         "seed": spec.seed,
+        "treatment_day": spec.treatment_day,
+        "categories": list(CATEGORIES),
+        "brands": list(BRANDS),
+        "sizes": list(SIZES),
+        "contact_channels": list(CONTACT),
+        "touchpoints": list(TOUCH),
         "event_types": [
             "customer_signup",
             "view",
@@ -357,33 +401,31 @@ def build_apex(spec: ApexSpec):
             "purchase",
             "return",
             "email_send",
-            "cancel",
+            "sms_send",
+            "push_send",
+            "direct_mail_send",
+            "loyalty_change",
         ],
-        "action_keys": ["freq", "hour"],
-        "arm_key": "arm",
-        "arm_levels": 3,
+        # per-period randomized action keys (decision plugins); channel/dow are int-encoded
+        "action_keys": ["freq", "hour", "dow", "channel", "offer"],
+        "arm_key": "channel",
         "action": {
             "peak": spec.action_peak,
             "sigma_f": spec.sigma_f,
             "sigma_h": spec.sigma_h,
-            "note": "weekly randomized freq (0..3, 0=no send) + randomized hour; unimodal "
-            "per-customer response peaked at (x0,h0).",
+            "sigma_d": spec.sigma_d,
+            "note": "weekly randomized channel x freq(0..3) x hour(0..23) x dow(0..6) x offer(0..3); "
+            "per-customer unimodal response in each -> frequency/hour/dow/channel/offer optima.",
         },
-        "arm": {
-            "levels": 3,
-            "gain": spec.arm_gain,
-            "note": "randomized discount arm 0/1/2; realized margin scales by "
-            "exp(per-customer gain * arm) -> a KNOWN monotone incremental lift.",
-        },
-        "note": "APEX composite: every lab dimension at once + realistic multi-domain "
-        "structure. Truth + oracle relationships are DERIVED from this spec.",
+        "note": "APEX apparel omni-channel composite: every latent dimension a Layer-C plugin "
+        "needs, with a known-truth receipt. snr=0 = the NULL control.",
     }
-    return df, {"meta": meta, "customers": truth_customers}
+    return df, {"meta": meta, "customers": cust_truth}
 
 
 def main(argv=None):
     ap = argparse.ArgumentParser()
-    ap.add_argument("--n-customers", type=int, default=8000, dest="n_customers")
+    ap.add_argument("--n-customers", type=int, default=20000, dest="n_customers")
     ap.add_argument("--window-days", type=int, default=540, dest="window_days")
     ap.add_argument("--seed", type=int, default=17)
     ap.add_argument("--snr", type=float, default=1.0)
