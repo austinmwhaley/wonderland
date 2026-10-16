@@ -25,7 +25,18 @@ def _u(model, cfg, horizons, seeds):
     return rows, u, n, solved
 
 
-def build_card(stream, tag, as_of, cfg, model, horizons=(30,), seeds=(0,), null=None):
+def build_card(
+    stream,
+    tag,
+    as_of,
+    cfg,
+    model,
+    horizons=(30,),
+    seeds=(0,),
+    null=None,
+    white_queen=False,
+    truth=None,
+):
     # 1) the pipeline (shape + learned-compressed measure)
     model.accumulator_on = False
     lb = getattr(model, "layer_b", None)
@@ -105,6 +116,29 @@ def build_card(stream, tag, as_of, cfg, model, horizons=(30,), seeds=(0,), null=
             "*by construction*); the candidate policy and the modeling witness both read `E` — a "
             "more sufficient embedding ⇒ better decision estimation.",
         ]
+
+    # WHITE_QUEEN — the REAL tribunal (optional). Context = E, action = arm, reward = margin.
+    wq_lines = []
+    if white_queen:
+        try:
+            from looking_glass.white_queen_bridge import certify as _wqc
+            from looking_glass.white_queen_bridge import oracle as _wqo
+
+            wqr = _wqc(model, cfg, horizon_days=int(max(horizons)))
+            wq_lines.append(
+                f"- **E-policy: {wqr['deploy'] and 'DEPLOY ✅' or 'HOLD'}** — DR "
+                f"{wqr['estimates'].get('dr')} / behavior {wqr['behavior_mean']} vs bar "
+                f"{wqr['bar']}"
+            )
+            if truth:
+                wqor = _wqo(model, cfg, truth, horizon_days=int(max(horizons)))
+                wq_lines.append(
+                    f"- ORACLE (known `arm_pref`, positive control): "
+                    f"**{wqor['deploy'] and 'DEPLOY ✅' or 'HOLD'}** — DR "
+                    f"{wqor['estimates'].get('dr')} vs bar {wqor['bar']}"
+                )
+        except Exception as _e:  # noqa: BLE001
+            wq_lines = [f"- (white_queen unavailable: {_e})"]
 
     sha = subprocess.run(
         ["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True
@@ -193,6 +227,12 @@ def build_card(stream, tag, as_of, cfg, model, horizons=(30,), seeds=(0,), null=
         *bc_lines,
         "",
         *(
+            ["## WHITE_QUEEN — the REAL tribunal bids on the same `E`", *wq_lines, ""]
+            if wq_lines
+            else []
+        ),
+        "",
+        *(
             [
                 "## CONTROLS (null stream, snr=0) — every DEPLOY above must HOLD here",
                 *null_lines,
@@ -226,6 +266,10 @@ def main(argv=None):
     ap.add_argument("--null-db", default=None, dest="null_db")
     ap.add_argument("--null-tag", default=None, dest="null_tag")
     ap.add_argument("--null-ckpt-dir", default=None, dest="null_ckpt_dir")
+    ap.add_argument(
+        "--white-queen", action="store_true", dest="white_queen", help="run the real tribunal"
+    )
+    ap.add_argument("--truth", default=None, help="truth json for the white_queen oracle control")
     a = ap.parse_args(argv)
     model, cfg = load_frozen_encoder(a.tag, a.ckpt_dir)
     cfg.attr_fields = tuple(getattr(model, "attr_fields", ()) or ())
@@ -239,7 +283,18 @@ def main(argv=None):
         if (a.null_db and a.null_tag and a.null_ckpt_dir)
         else None
     )
-    card, u, solved = build_card(stream, a.tag, a.as_of, cfg, model, horizons, seeds, null=null)
+    card, u, solved = build_card(
+        stream,
+        a.tag,
+        a.as_of,
+        cfg,
+        model,
+        horizons,
+        seeds,
+        null=null,
+        white_queen=a.white_queen,
+        truth=a.truth,
+    )
     print(card)
     if a.out:
         Path(a.out).write_text(card)

@@ -80,3 +80,57 @@ def test_generic_measure_exposes_action_response(tmp_path):
     cfg2 = CFMConfig(db=str(p), as_of="2024-12-31")
     X2, names2 = generic_measure(cfg2, ["c0", "c1"])
     assert not any(n.startswith("resp_") for n in names2)
+
+
+def test_generic_measure_excludes_declared_action_fields(tmp_path):
+    """DEC-182: declared action fields must be EXCLUDED from the measure, so `E` never carries
+    the logged action (which leaked via `discount_pct=0.05*arm` → E->arm acc 0.999)."""
+    import json
+    from datetime import datetime, timedelta, timezone
+
+    import polars as pl
+
+    from looking_glass.cfm_config import CFMConfig
+    from looking_glass.layer_b import generic_measure
+
+    base = datetime(2024, 1, 1, tzinfo=timezone.utc)
+    rows = []
+    for c in ("c0", "c1"):
+        for w in range(10):
+            arm = w % 3
+            rows.append(
+                (
+                    c,
+                    (base + timedelta(days=w * 7.0)).isoformat(),
+                    "send",
+                    json.dumps({"arm": arm, "discount_pct": 0.05 * arm, "freq": 1}),
+                )
+            )
+            rows.append(
+                (
+                    c,
+                    (base + timedelta(days=w * 7.0 + 1)).isoformat(),
+                    "buy",
+                    json.dumps({"value": 5.0}),
+                )
+            )
+    df = pl.DataFrame(
+        {
+            "customer_key": [r[0] for r in rows],
+            "event_ts": [r[1] for r in rows],
+            "event_type": [r[2] for r in rows],
+            "event_attributes": [r[3] for r in rows],
+        }
+    )
+    p = tmp_path / "s.parquet"
+    df.write_parquet(p)
+    cfg = CFMConfig(db=str(p), as_of="2025-01-01")
+    cfg.effect_actions = ("freq",)
+    cfg.action_fields = ("arm", "discount_pct")
+    _, names = generic_measure(cfg, ["c0", "c1"])
+    assert not any("discount" in n for n in names)
+    assert not any(n.endswith("_arm_mean") or "_arm_" in n for n in names)
+    # off -> the action fields ARE (leakily) present
+    cfg2 = CFMConfig(db=str(p), as_of="2025-01-01")
+    _, names2 = generic_measure(cfg2, ["c0", "c1"])
+    assert any("discount" in n for n in names2)

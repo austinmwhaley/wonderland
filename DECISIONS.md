@@ -3914,3 +3914,18 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   *Diagnosable* (localized to `discount_pct` in the measure), *Universal* (generic exclusion by
   declared fields), *Robust* (white_queen never-ship-worse held).
 - **Gate:** green (293 fast tests).
+
+## DEC-183 — Apex report card now includes the REAL WHITE_QUEEN section (all green)
+
+- **What:** `foundation_report --white-queen [--truth ...]` adds a **WHITE_QUEEN** section that runs
+  the real tribunal on the `E`-policy and, if truth is given, on the ORACLE (positive control).
+- **Apex card (6000 customers, as_of 2025-01-01):**
+  - **B: SOLVED ✅**
+  - USE CASES: `freq` +0.093 DEPLOY, `hour` +0.017 DEPLOY
+  - B+C (in-house `decision_certify`): Δ +8.39 CI[+6.86,+9.96] **DEPLOY**
+  - **WHITE_QUEEN: E-policy DEPLOY ✅** (DR 47.0 > bar 42.23); **ORACLE DEPLOY ✅**
+- **Read:** the apex card now reports **B + USE-CASES + B+C + white_queen**, all green, on a
+  composite controlled stream — the "report cards for B & B+C including white_queen" goal.
+- **Follow-up:** the CONTROLS (null) rows need a FRESH null stream (the current `apex_null` predates
+  the arm redesign) — regenerated + retrained next.
+- **Gate:** green (294 fast tests incl. the leakage-guard test).
