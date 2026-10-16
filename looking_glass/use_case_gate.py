@@ -27,7 +27,7 @@ from looking_glass.cfm_state import load_frozen_encoder
 from looking_glass.head_battery import _b_states
 
 
-def _period_rows(cfg, cust, action_key, reward_event="purchase"):
+def _period_rows(cfg, cust, action_key, reward_event="purchase", period_secs=604800.0):
     """(customer, action) rows at the stream's own cadence: the randomized action per
     (customer, period) from sends, reward = did the reward event fire that period."""
     import duckdb
@@ -52,7 +52,7 @@ def _period_rows(cfg, cust, action_key, reward_event="purchase"):
     # randomized action per (customer, period): period = a rounded time bucket (data-derived)
     snd = con.execute(
         f"SELECT customer_key, "
-        f"CAST(floor((epoch(CAST(event_ts AS TIMESTAMPTZ)) - {t0}) / 604800.0) AS BIGINT) AS period, "
+        f"CAST(floor((epoch(CAST(event_ts AS TIMESTAMPTZ)) - {t0}) / {period_secs}) AS BIGINT) AS period, "
         f"arg_max(TRY_CAST(json_extract_string(event_attributes,'$.{key}') AS DOUBLE), "
         f"epoch(CAST(event_ts AS TIMESTAMPTZ))) AS action "
         f"FROM {src} WHERE event_type LIKE '%send%' "
@@ -62,7 +62,7 @@ def _period_rows(cfg, cust, action_key, reward_event="purchase"):
     ).pl()
     evt = con.execute(
         f"SELECT customer_key, "
-        f"CAST(floor((epoch(CAST(event_ts AS TIMESTAMPTZ)) - {t0}) / 604800.0) AS BIGINT) AS period, "
+        f"CAST(floor((epoch(CAST(event_ts AS TIMESTAMPTZ)) - {t0}) / {period_secs}) AS BIGINT) AS period, "
         f"count(*) AS y FROM {src} WHERE event_type = '{reward_event}' "
         f"AND epoch(CAST(event_ts AS TIMESTAMPTZ)) <= {tc} "
         f"AND customer_key IN (SELECT customer_key FROM _cust) GROUP BY 1,2"
@@ -137,11 +137,11 @@ def discover_action_keys(cfg, max_distinct=24):
     return out
 
 
-def run_use_case(model, cfg, action_key, seed=0):
+def run_use_case(model, cfg, action_key, seed=0, period_secs=604800.0):
     import polars as pl
 
     cust, Z = _b_states(model, cfg)
-    j = _period_rows(cfg, cust, action_key)
+    j = _period_rows(cfg, cust, action_key, period_secs=period_secs)
     ci = {c: i for i, c in enumerate(cust)}
     rows = j.filter(pl.col("customer_key").is_in(list(ci)))
     cu = rows["customer_key"].to_numpy()

@@ -295,12 +295,14 @@ def build_apex(spec: ApexSpec):
             best_t = -1.0  # the week responds to the BEST-timed of its sends
             win_h = 0
             win_d = 0
+            win_ts = day0
             for j in range(freq):
                 hour_j = int(rng.integers(0, 24))  # per-send randomized timing
                 dow_j = int(rng.integers(0, 7))
+                ts_j = day0 + float(rng.uniform(0.0, per_days))
                 emit(
                     key,
-                    day0 + float(rng.uniform(0.0, per_days)),
+                    ts_j,
                     f"{CONTACT[chan]}_send",
                     ent_type="customer",
                     ent_id=key,
@@ -316,7 +318,7 @@ def build_apex(spec: ApexSpec):
                 h_q = SOFT + (1 - SOFT) * float(np.exp(-(((hour_j - h0) / spec.sigma_h) ** 2)))
                 d_q = SOFT + (1 - SOFT) * float(np.exp(-(((dow_j - d0) / spec.sigma_d) ** 2)))
                 if h_q * d_q > best_t:
-                    best_t, win_h, win_d = h_q * d_q, hour_j, dow_j
+                    best_t, win_h, win_d, win_ts = h_q * d_q, hour_j, dow_j, ts_j
             if day0 <= spec.treatment_day:
                 continue  # clean OPE: contacts have NO effect before treatment_day
             # Each action factor is a soft bowl in [SOFT, 1] (identifiable but high-probability,
@@ -337,7 +339,7 @@ def build_apex(spec: ApexSpec):
                 )
                 emit(
                     key,
-                    day0 + float(rng.uniform(0.0, per_days)),
+                    win_ts,
                     "purchase",
                     brand=BRANDS[int(item_brand[pid])],
                     ent_type="product",

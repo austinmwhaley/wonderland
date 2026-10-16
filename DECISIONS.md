@@ -3945,3 +3945,26 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   plugins certify (in-house + real white_queen). `dow`/`hour` need per-send OPE; that + the
   supervised/unsupervised plugins on `E` are the next steps.
 - **Gate:** green.
+
+## DEC-186 — CRITICAL: the use-case gate false-positives on the apex NULL (+0.025) -> C-DEPLOY is not trustworthy
+
+- **Date:** 2026-10-15
+- **Finding (the apex null control did its job):** on the no-signal apex (`snr=0`), the use-case gate
+  **DEPLOYs** `freq` (+0.025), `offer` (+0.022), `channel` (+0.028) with p=0.000 — i.e. it certifies
+  optimization on a NULL. The signal stream's lifts (+0.057/+0.076/+0.080) are only ~2–3× this
+  residual, so **the C-DEPLOY cannot be trusted as evidence of a real capability.**
+- **Cause:** the data-dependent policy (`argmax_a V(E,a)`) inherits the `E->y` (activity) signal, so
+  `1[cand==A]` correlates with `y` even with NO action effect — a systematic positive IPS bias
+  (DEC-178), now measured at ~+0.025 (larger than first estimated). Cross-fitting does not remove it
+  because the policy still depends on `E`. The action-permutation test is blinded to it (the optimism
+  is in the `E`-based candidate, not the action); the outcome-refit null removes the very confound
+  that causes it.
+- **Consequence:** every in-house-transcript DEPLOY in DEC-185 is provisional. The `white_queen`
+  verdicts are a separate instrument (its own bar/witnesses) and are NOT affected by this gate bug.
+- **Also:** `E` is ~2141-dim; low-capacity probes overfit (E->x0 R^2 negative is a probe artifact;
+  the raw response measure carries x0 at ~0.40). A proper E->optima probe is needed.
+- **Fix (top priority):** a null-CALIBRATED gate. The honest estimator must subtract the `E->y`
+  confound: e.g. compute the candidate's lift relative to a matched null in which `E`'s activity
+  signal is preserved but the action is provably inert — and require the lift to exceed it. Until
+  then, C verdicts are reported as *provisional*.
+- **Gate:** green.
