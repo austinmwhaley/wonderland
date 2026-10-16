@@ -25,7 +25,7 @@ def _u(model, cfg, horizons, seeds):
     return rows, u, n, solved
 
 
-def build_card(stream, tag, as_of, cfg, model, horizons=(30,), seeds=(0,)):
+def build_card(stream, tag, as_of, cfg, model, horizons=(30,), seeds=(0,), null=None):
     # 1) the pipeline (shape + learned-compressed measure)
     model.accumulator_on = False
     lb = getattr(model, "layer_b", None)
@@ -55,6 +55,39 @@ def build_card(stream, tag, as_of, cfg, model, horizons=(30,), seeds=(0,)):
         uses = [(k, run_use_case(model, cfg, k)) for k in _akeys]
     except Exception:
         uses = []
+
+    # CONTROLS — run the SAME capability + decision gates on an optional NULL stream (snr=0),
+    # so a DEPLOY on the real stream is verified against a no-signal control that must HOLD.
+    null_lines = []
+    if null is not None:
+        try:
+            from looking_glass.cfm_state import load_frozen_encoder as _lfe
+            from looking_glass.decision_certify import certify as _certify
+            from looking_glass.use_case_gate import run_use_case as _ruc
+
+            n_model, n_cfg = _lfe(null["tag"], null["ckpt_dir"])
+            n_cfg.attr_fields = tuple(getattr(n_model, "attr_fields", ()) or ())
+            n_cfg.numeric_fields = tuple(getattr(n_model, "numeric_fields", ()) or ())
+            n_cfg.db, n_cfg.as_of, n_cfg.sample_customers = (
+                null["db"],
+                as_of,
+                cfg.sample_customers,
+            )
+            for k in _akeys:
+                try:
+                    nr = _ruc(n_model, n_cfg, k)
+                    null_lines.append(
+                        f"- null `{k}`: policy-from-E Δ={nr['delta']:+.3f} → **{nr['verdict']}**"
+                    )
+                except Exception:
+                    pass
+            try:
+                nd = _certify(n_model, n_cfg, horizon_days=int(max(horizons)))
+                null_lines.append(f"- null arm B+C: Δ={nd['delta']:+.3f} → **{nd['verdict']}**")
+            except Exception:
+                pass
+        except Exception as _e:  # noqa: BLE001
+            null_lines = [f"- (null control failed to run: {_e})"]
 
     if dec is None:
         bc_lines = ["- (no action structure in this stream — decision certification skipped)"]
@@ -159,6 +192,16 @@ def build_card(stream, tag, as_of, cfg, model, horizons=(30,), seeds=(0,)):
         "## B+C — decision certification (RL arm of rabbit_hole + looking_glass)",
         *bc_lines,
         "",
+        *(
+            [
+                "## CONTROLS (null stream, snr=0) — every DEPLOY above must HOLD here",
+                *null_lines,
+                "",
+            ]
+            if null_lines
+            else []
+        ),
+        "",
         "## Provenance",
         f"- checkpoint `{tag}` in `{cfg.out_dir if hasattr(cfg, 'out_dir') else ''}`; encoder + "
         "`layer_b_<tag>.pkl` (measure compression).",
@@ -180,6 +223,9 @@ def main(argv=None):
     ap.add_argument("--horizons", default="30")
     ap.add_argument("--seeds", default="0")
     ap.add_argument("--out", default=None)
+    ap.add_argument("--null-db", default=None, dest="null_db")
+    ap.add_argument("--null-tag", default=None, dest="null_tag")
+    ap.add_argument("--null-ckpt-dir", default=None, dest="null_ckpt_dir")
     a = ap.parse_args(argv)
     model, cfg = load_frozen_encoder(a.tag, a.ckpt_dir)
     cfg.attr_fields = tuple(getattr(model, "attr_fields", ()) or ())
@@ -188,7 +234,12 @@ def main(argv=None):
     horizons = tuple(int(x) for x in a.horizons.split(","))
     seeds = tuple(int(x) for x in a.seeds.split(","))
     stream = a.stream or Path(a.db).parent.name
-    card, u, solved = build_card(stream, a.tag, a.as_of, cfg, model, horizons, seeds)
+    null = (
+        {"db": a.null_db, "tag": a.null_tag, "ckpt_dir": a.null_ckpt_dir}
+        if (a.null_db and a.null_tag and a.null_ckpt_dir)
+        else None
+    )
+    card, u, solved = build_card(stream, a.tag, a.as_of, cfg, model, horizons, seeds, null=null)
     print(card)
     if a.out:
         Path(a.out).write_text(card)

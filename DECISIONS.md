@@ -3831,3 +3831,15 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - **Principles served:** *Honest* (the null exposed the `1/Q` bug; the residual bias is written
   down, not laundered), *Robust* (fail-safe never-ship-worse unchanged).
 - **Gate:** green (**293** fast tests).
+
+## DEC-179 — Apex report card gains a CONTROLS section (null stream, snr=0)
+
+- **What:** `foundation_report` accepts `--null-db/--null-tag/--null-ckpt-dir` and appends a
+  **CONTROLS** section that runs the SAME capability + decision gates on the no-signal apex and
+  reports their verdicts next to the signal — so every DEPLOY is shown against a control that must
+  HOLD. Transparent and reproducible in one card.
+- **Apex card now shows:** signal `freq` +0.088 DEPLOY, `hour` +0.065 DEPLOY; null `freq` +0.024
+  DEPLOY (the DEC-178 residual bias, now VISIBLE), null `hour` +0.005 HOLD, null arm B+C HOLD.
+- **Read:** the card ACCOUNTS for the control; the remaining residual (null freq) is the documented
+  DEC-178 limitation, not hidden.
+- **Gate:** green.
