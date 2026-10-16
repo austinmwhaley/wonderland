@@ -217,6 +217,15 @@ invariant-by-construction).
 
 ## Micro
 
+- **APEX dataset (DEC-177).** Built `rabbit_hole/generators/apex.py` — one COMPOSITE controlled stream
+  (lab = per-dimension ontology; apex = all dimensions at once: multi-domain events, rate/transition/
+  intent/trend/entity/seasonality/churn, randomized weekly freq+hour actions, and a randomized
+  per-customer ARM with a personalizable treatment that kicks in after as_of → pre-treatment `E`, a
+  valid OPE). Known-truth receipt for everything; `--snr 0` = null. **On apex (30k customers):**
+  **B: SOLVED ✅ U=0.6521**, **USE CASES: DEPLOY** (freq +0.188, hour +0.153), **B+C arm OPE: DEPLOY ✅**
+  (Δ=+0.495 CI[+0.257,+0.731]). Fixed real `decision_certify` bugs (cross-fit V, marginal propensity,
+  PCA denoise, doubly-robust). Fast gate **293**. Next: null control (snr=0) end-to-end; broaden.
+
 - **Latest (2026-10-15 — decision-sufficiency objective, DEC-172).** Built the DEC-171 fix as a
   **generic self-supervised counterfactual outcome objective**: `CFMConfig.effect_actions` →
   `cfm_data._effect_targets` (per-customer PERIOD-level randomized action + reward, origin-anchored

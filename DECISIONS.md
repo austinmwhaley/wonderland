@@ -3775,3 +3775,40 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   verdict" — a `+0.001` from a single-arm fallback is not a capability, it is a measurement artifact.
 - **Principles served:** *Honest*, *Diagnosable*, *Robust* (fail-safe N/A, not a false green).
 - **Gate:** green (**290** fast tests).
+
+## DEC-177 — rabbit_hole APEX: one composite controlled stream that certifies A→B and B+C (incl. the arm OPE)
+
+- **Date:** 2026-10-15
+- **What:** built `rabbit_hole/generators/apex.py` — the **apex synthetic dataset**. The Layer-A lab
+  (`rabbit_hole.lab`, 32/32 use cases) is the per-dimension ONTOLOGY; the apex is its COMPOSITE:
+  one stream stacking *every* dimension at once on realistic multi-domain structure, with a
+  KNOWN-TRUTH receipt for all of it:
+  - realistic events (signup · view · cart · purchase · return · cancel · email_send) over 5 brands
+    and 256 products with category/aisle/department attributes;
+  - per-customer rate heterogeneity · order-1 Markov transitions · intent · rate drift · entity
+    affinity · seasonality · churn hazard;
+  - exogenous randomized ACTIONS (weekly freq 0..3 + hour 0..23) with a per-customer unimodal
+    response (`x0`,`h0`);
+  - a randomized per-customer ARM with a **strong, personalizable incremental-margin treatment**
+    that kicks in AFTER `treatment_day` (= as_of) so the history `E` sees is **pre-treatment** —
+    a valid OPE with no leakage. Truth ships `arm_assign`/`arm_pref`/`arm_gain`.
+  - CLI: `--n-customers --window-days --seed --snr` (`--snr 0` = the NULL control).
+- **Measured (apex 30k customers, 5.15M events, as_of 2025-01-01):**
+  - **B (universality): SOLVED ✅ U=0.6521** — every target (LTV/order_count/propensity/churn/
+    next-value at 30d & 90d) within the full-history oracle's own noise.
+  - **USE CASES: DEPLOY** — `freq` Δ=+0.188, `hour` Δ=+0.153.
+  - **B+C (white_queen-style arm OPE): DEPLOY ✅** — Δ=+0.495 CI[+0.257,+0.731] (in the report card;
+    direct run +0.77 CI[+0.54,+1.01]).
+- **Instrument fixes that made B+C certifiable (all real bugs):** `decision_certify` — (a) joint,
+  customer-**cross-fitted** `V(E,a)`; (b) **marginal** propensity (modeling E-dependence overfit and
+  collapsed ESS to 0.13); (c) **PCA denoising** of the high-dim `E` for the value model; (d)
+  **doubly-robust** value (outcome model + IPW residual) for a tight CI.
+- **Design lesson (recorded):** an OPE is only identifiable if (i) the treatment does NOT contaminate
+  the pre-treatment history `E` reads, and (ii) the effect is large enough relative to the reward's
+  variance. The first `arm` designs leaked (arm affected the whole history) and were unidentifiable;
+  the `treatment_day` cut + a behavioral (activity-tier) `arm_pref` fixed it. This is exactly what the
+  apex is FOR: it exposes such issues under controlled truth.
+- **Principles served:** *Universal* (one architecture, composite stream), *Honest* (known-truth +
+  null; every gate measured), *Diagnosable* (the OPE failed for identifiable reasons, then was fixed),
+  *Lawful* (additive pre/post-treatment separation), *Robust* (fail-safe never-ship-worse holds).
+- **Gate:** green (**293** fast tests, incl. 3 new apex tests); apex B + USE-CASES + B+C all green.

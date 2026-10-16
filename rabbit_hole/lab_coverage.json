@@ -1,7 +1,7 @@
 {
  "n_use_cases": 32,
- "n_complete": 0,
- "coverage": 0.0,
+ "n_complete": 32,
+ "coverage": 1.0,
  "rows": {
   "churn": {
    "family": "binary",
@@ -9,15 +9,15 @@
     "C"
    ],
    "present": {
-    "stream": false,
-    "truth": false,
-    "oracle": false,
-    "baseline": false,
-    "negative": false,
-    "adversarial": false
+    "stream": true,
+    "truth": true,
+    "oracle": true,
+    "baseline": true,
+    "negative": true,
+    "adversarial": true
    },
-   "complete": false,
-   "n_present": 0
+   "complete": true,
+   "n_present": 6
   },
   "purchase_propensity": {
    "family": "binary",
@@ -25,15 +25,15 @@
     "C"
    ],
    "present": {
-    "stream": false,
-    "truth": false,
-    "oracle": false,
-    "baseline": false,
-    "negative": false,
-    "adversarial": false
+    "stream": true,
+    "truth": true,
+    "oracle": true,
+    "baseline": true,
+    "negative": true,
+    "adversarial": true
    },
-   "complete": false,
-   "n_present": 0
+   "complete": true,
+   "n_present": 6
   },
   "funnel_conversion": {
    "family": "binary",
@@ -41,15 +41,15 @@
     "C"
    ],
    "present": {
-    "stream": false,
-    "truth": false,
-    "oracle": false,
-    "baseline": false,
-    "negative": false,
-    "adversarial": false
+    "stream": true,
+    "truth": true,
+    "oracle": true,
+    "baseline": true,
+    "negative": true,
+    "adversarial": true
    },
-   "complete": false,
-   "n_present": 0
+   "complete": true,
+   "n_present": 6
   },
   "cart_abandonment": {
    "family": "binary",
@@ -57,15 +57,15 @@
     "C"
    ],
    "present": {
-    "stream": false,
-    "truth": false,
-    "oracle": false,
-    "baseline": false,
-    "negative": false,
-    "adversarial": false
+    "stream": true,
+    "truth": true,
+    "oracle": true,
+    "baseline": true,
+    "negative": true,
+    "adversarial": true
    },
-   "complete": false,
-   "n_present": 0
+   "complete": true,
+   "n_present": 6
   },
   "week_n_retention": {
    "family": "binary",
@@ -73,15 +73,15 @@
     "C"
    ],
    "present": {
-    "stream": false,
-    "truth": false,
-    "oracle": false,
-    "baseline": false,
-    "negative": false,
-    "adversarial": false
+    "stream": true,
+    "truth": true,
+    "oracle": true,
+    "baseline": true,
+    "negative": true,
+    "adversarial": true
    },
-   "complete": false,
-   "n_present": 0
+   "complete": true,
+   "n_present": 6
   },
   "order_count": {
    "family": "count",
@@ -89,15 +89,15 @@
     "C"
    ],
    "present": {
-    "stream": false,
-    "truth": false,
-    "oracle": false,
-    "baseline": false,
-    "negative": false,
-    "adversarial": false
+    "stream": true,
+    "truth": true,
+    "oracle": true,
+    "baseline": true,
+    "negative": true,
+    "adversarial": true
    },
-   "complete": false,
-   "n_present": 0
+   "complete": true,
+   "n_present": 6
   },
   "basket_size": {
    "family": "count",
@@ -105,15 +105,15 @@
     "C"
    ],
    "present": {
-    "stream": false,
-    "truth": false,
-    "oracle": false,
-    "baseline": false,
-    "negative": false,
-    "adversarial": false
+    "stream": true,
+    "truth": true,
+    "oracle": true,
+    "baseline": true,
+    "negative": true,
+    "adversarial": true
    },
-   "complete": false,
-   "n_present": 0
+   "complete": true,
+   "n_present": 6
   },
   "ltv": {
    "family": "regression",
@@ -121,15 +121,15 @@
     "C"
    ],
    "present": {
-    "stream": false,
-    "truth": false,
-    "oracle": false,
-    "baseline": false,
-    "negative": false,
-    "adversarial": false
+    "stream": true,
+    "truth": true,
+    "oracle": true,
+    "baseline": true,
+    "negative": true,
+    "adversarial": true
    },
-   "complete": false,
-   "n_present": 0
+   "complete": true,
+   "n_present": 6
   },
   "next_order_value": {
    "family": "regression",
@@ -137,15 +137,15 @@
     "C"
    ],
    "present": {
-    "stream": false,
-    "truth": false,
-    "oracle": false,
-    "baseline": false,
-    "negative": false,
-    "adversarial": false
+    "stream": true,
+    "truth": true,
+    "oracle": true,
+    "baseline": true,
+    "negative": true,
+    "adversarial": true
    },
-   "complete": false,
-   "n_present": 0
+   "complete": true,
+   "n_present": 6
   },
   "time_to_purchase": {
    "family": "regression",
@@ -153,15 +153,15 @@
     "C"
    ],
    "present": {
-    "stream": false,
-    "truth": false,
-    "oracle": false,
-    "baseline": false,
-    "negative": false,
-    "adversarial": false
+    "stream": true,
+    "truth": true,
+    "oracle": true,
+    "baseline": true,
+    "negative": true,
+    "adversarial": true
    },
-   "complete": false,
-   "n_present": 0
+   "complete": true,
+   "n_present": 6
   },
   "price_sensitivity": {
    "family": "regression",
@@ -169,15 +169,15 @@
     "C"
    ],
    "present": {
-    "stream": false,
-    "truth": false,
-    "oracle": false,
-    "baseline": false,
-    "negative": false,
-    "adversarial": false
+    "stream": true,
+    "truth": true,
+    "oracle": true,
+    "baseline": true,
+    "negative": true,
+    "adversarial": true
    },
-   "complete": false,
-   "n_present": 0
+   "complete": true,
+   "n_present": 6
   },
   "next_event": {
    "family": "multiclass",
@@ -186,15 +186,15 @@
     "C"
    ],
    "present": {
-    "stream": false,
-    "truth": false,
-    "oracle": false,
-    "baseline": false,
-    "negative": false,
-    "adversarial": false
+    "stream": true,
+    "truth": true,
+    "oracle": true,
+    "baseline": true,
+    "negative": true,
+    "adversarial": true
    },
-   "complete": false,
-   "n_present": 0
+   "complete": true,
+   "n_present": 6
   },
   "next_entity": {
    "family": "multiclass",
@@ -203,15 +203,15 @@
     "C"
    ],
    "present": {
-    "stream": false,
-    "truth": false,
-    "oracle": false,
-    "baseline": false,
-    "negative": false,
-    "adversarial": false
+    "stream": true,
+    "truth": true,
+    "oracle": true,
+    "baseline": true,
+    "negative": true,
+    "adversarial": true
    },
-   "complete": false,
-   "n_present": 0
+   "complete": true,
+   "n_present": 6
   },
   "funnel_step": {
    "family": "multiclass",
@@ -219,15 +219,15 @@
     "C"
    ],
    "present": {
-    "stream": false,
-    "truth": false,
-    "oracle": false,
-    "baseline": false,
-    "negative": false,
-    "adversarial": false
+    "stream": true,
+    "truth": true,
+    "oracle": true,
+    "baseline": true,
+    "negative": true,
+    "adversarial": true
    },
-   "complete": false,
-   "n_present": 0
+   "complete": true,
+   "n_present": 6
   },
   "brand_affinity": {
    "family": "multiclass",
@@ -235,15 +235,15 @@
     "C"
    ],
    "present": {
-    "stream": false,
-    "truth": false,
-    "oracle": false,
-    "baseline": false,
-    "negative": false,
-    "adversarial": false
+    "stream": true,
+    "truth": true,
+    "oracle": true,
+    "baseline": true,
+    "negative": true,
+    "adversarial": true
    },
-   "complete": false,
-   "n_present": 0
+   "complete": true,
+   "n_present": 6
   },
   "segmentation": {
    "family": "representation",
@@ -251,15 +251,15 @@
     "C"
    ],
    "present": {
-    "stream": false,
-    "truth": false,
-    "oracle": false,
-    "baseline": false,
-    "negative": false,
-    "adversarial": false
+    "stream": true,
+    "truth": true,
+    "oracle": true,
+    "baseline": true,
+    "negative": true,
+    "adversarial": true
    },
-   "complete": false,
-   "n_present": 0
+   "complete": true,
+   "n_present": 6
   },
   "anomaly": {
    "family": "representation",
@@ -267,15 +267,15 @@
     "B"
    ],
    "present": {
-    "stream": false,
-    "truth": false,
-    "oracle": false,
-    "baseline": false,
-    "negative": false,
-    "adversarial": false
+    "stream": true,
+    "truth": true,
+    "oracle": true,
+    "baseline": true,
+    "negative": true,
+    "adversarial": true
    },
-   "complete": false,
-   "n_present": 0
+   "complete": true,
+   "n_present": 6
   },
   "identity": {
    "family": "representation",
@@ -283,15 +283,15 @@
     "B"
    ],
    "present": {
-    "stream": false,
-    "truth": false,
-    "oracle": false,
-    "baseline": false,
-    "negative": false,
-    "adversarial": false
+    "stream": true,
+    "truth": true,
+    "oracle": true,
+    "baseline": true,
+    "negative": true,
+    "adversarial": true
    },
-   "complete": false,
-   "n_present": 0
+   "complete": true,
+   "n_present": 6
   },
   "rl_ope_incremental_margin": {
    "family": "decision",
@@ -299,15 +299,15 @@
     "C"
    ],
    "present": {
-    "stream": false,
-    "truth": false,
-    "oracle": false,
-    "baseline": false,
-    "negative": false,
-    "adversarial": false
+    "stream": true,
+    "truth": true,
+    "oracle": true,
+    "baseline": true,
+    "negative": true,
+    "adversarial": true
    },
-   "complete": false,
-   "n_present": 0
+   "complete": true,
+   "n_present": 6
   },
   "optimal_action": {
    "family": "decision",
@@ -315,15 +315,15 @@
     "C"
    ],
    "present": {
-    "stream": false,
-    "truth": false,
-    "oracle": false,
-    "baseline": false,
-    "negative": false,
-    "adversarial": false
+    "stream": true,
+    "truth": true,
+    "oracle": true,
+    "baseline": true,
+    "negative": true,
+    "adversarial": true
    },
-   "complete": false,
-   "n_present": 0
+   "complete": true,
+   "n_present": 6
   },
   "next": {
    "family": "ssl",
@@ -331,15 +331,15 @@
     "B"
    ],
    "present": {
-    "stream": false,
-    "truth": false,
-    "oracle": false,
-    "baseline": false,
-    "negative": false,
-    "adversarial": false
+    "stream": true,
+    "truth": true,
+    "oracle": true,
+    "baseline": true,
+    "negative": true,
+    "adversarial": true
    },
-   "complete": false,
-   "n_present": 0
+   "complete": true,
+   "n_present": 6
   },
   "mask": {
    "family": "ssl",
@@ -347,15 +347,15 @@
     "B"
    ],
    "present": {
-    "stream": false,
-    "truth": false,
-    "oracle": false,
-    "baseline": false,
-    "negative": false,
-    "adversarial": false
+    "stream": true,
+    "truth": true,
+    "oracle": true,
+    "baseline": true,
+    "negative": true,
+    "adversarial": true
    },
-   "complete": false,
-   "n_present": 0
+   "complete": true,
+   "n_present": 6
   },
   "dt": {
    "family": "ssl",
@@ -363,15 +363,15 @@
     "B"
    ],
    "present": {
-    "stream": false,
-    "truth": false,
-    "oracle": false,
-    "baseline": false,
-    "negative": false,
-    "adversarial": false
+    "stream": true,
+    "truth": true,
+    "oracle": true,
+    "baseline": true,
+    "negative": true,
+    "adversarial": true
    },
-   "complete": false,
-   "n_present": 0
+   "complete": true,
+   "n_present": 6
   },
   "value": {
    "family": "ssl",
@@ -379,15 +379,15 @@
     "B"
    ],
    "present": {
-    "stream": false,
-    "truth": false,
-    "oracle": false,
-    "baseline": false,
-    "negative": false,
-    "adversarial": false
+    "stream": true,
+    "truth": true,
+    "oracle": true,
+    "baseline": true,
+    "negative": true,
+    "adversarial": true
    },
-   "complete": false,
-   "n_present": 0
+   "complete": true,
+   "n_present": 6
   },
   "agg": {
    "family": "ssl",
@@ -395,15 +395,15 @@
     "B"
    ],
    "present": {
-    "stream": false,
-    "truth": false,
-    "oracle": false,
-    "baseline": false,
-    "negative": false,
-    "adversarial": false
+    "stream": true,
+    "truth": true,
+    "oracle": true,
+    "baseline": true,
+    "negative": true,
+    "adversarial": true
    },
-   "complete": false,
-   "n_present": 0
+   "complete": true,
+   "n_present": 6
   },
   "sf": {
    "family": "ssl",
@@ -411,15 +411,15 @@
     "B"
    ],
    "present": {
-    "stream": false,
-    "truth": false,
-    "oracle": false,
-    "baseline": false,
-    "negative": false,
-    "adversarial": false
+    "stream": true,
+    "truth": true,
+    "oracle": true,
+    "baseline": true,
+    "negative": true,
+    "adversarial": true
    },
-   "complete": false,
-   "n_present": 0
+   "complete": true,
+   "n_present": 6
   },
   "jepa": {
    "family": "ssl",
@@ -427,15 +427,15 @@
     "B"
    ],
    "present": {
-    "stream": false,
-    "truth": false,
-    "oracle": false,
-    "baseline": false,
-    "negative": false,
-    "adversarial": false
+    "stream": true,
+    "truth": true,
+    "oracle": true,
+    "baseline": true,
+    "negative": true,
+    "adversarial": true
    },
-   "complete": false,
-   "n_present": 0
+   "complete": true,
+   "n_present": 6
   },
   "order": {
    "family": "ssl",
@@ -443,15 +443,15 @@
     "B"
    ],
    "present": {
-    "stream": false,
-    "truth": false,
-    "oracle": false,
-    "baseline": false,
-    "negative": false,
-    "adversarial": false
+    "stream": true,
+    "truth": true,
+    "oracle": true,
+    "baseline": true,
+    "negative": true,
+    "adversarial": true
    },
-   "complete": false,
-   "n_present": 0
+   "complete": true,
+   "n_present": 6
   },
   "query": {
    "family": "ssl",
@@ -459,15 +459,15 @@
     "B"
    ],
    "present": {
-    "stream": false,
-    "truth": false,
-    "oracle": false,
-    "baseline": false,
-    "negative": false,
-    "adversarial": false
+    "stream": true,
+    "truth": true,
+    "oracle": true,
+    "baseline": true,
+    "negative": true,
+    "adversarial": true
    },
-   "complete": false,
-   "n_present": 0
+   "complete": true,
+   "n_present": 6
   },
   "pacing": {
    "family": "ssl",
@@ -475,15 +475,15 @@
     "B"
    ],
    "present": {
-    "stream": false,
-    "truth": false,
-    "oracle": false,
-    "baseline": false,
-    "negative": false,
-    "adversarial": false
+    "stream": true,
+    "truth": true,
+    "oracle": true,
+    "baseline": true,
+    "negative": true,
+    "adversarial": true
    },
-   "complete": false,
-   "n_present": 0
+   "complete": true,
+   "n_present": 6
   },
   "boundary": {
    "family": "ssl",
@@ -491,15 +491,15 @@
     "B"
    ],
    "present": {
-    "stream": false,
-    "truth": false,
-    "oracle": false,
-    "baseline": false,
-    "negative": false,
-    "adversarial": false
+    "stream": true,
+    "truth": true,
+    "oracle": true,
+    "baseline": true,
+    "negative": true,
+    "adversarial": true
    },
-   "complete": false,
-   "n_present": 0
+   "complete": true,
+   "n_present": 6
   },
   "uncertainty": {
    "family": "ssl",
@@ -507,15 +507,15 @@
     "B"
    ],
    "present": {
-    "stream": false,
-    "truth": false,
-    "oracle": false,
-    "baseline": false,
-    "negative": false,
-    "adversarial": false
+    "stream": true,
+    "truth": true,
+    "oracle": true,
+    "baseline": true,
+    "negative": true,
+    "adversarial": true
    },
-   "complete": false,
-   "n_present": 0
+   "complete": true,
+   "n_present": 6
   }
  }
 }

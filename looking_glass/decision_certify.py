@@ -25,7 +25,7 @@ from __future__ import annotations
 import argparse
 
 import numpy as np
-from sklearn.ensemble import HistGradientBoostingClassifier, HistGradientBoostingRegressor
+from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.preprocessing import StandardScaler
 
 from looking_glass.cfm_config import as_of_epoch
@@ -99,31 +99,42 @@ def certify(model, cfg, horizon_days=90, seed=0):
         }
     sc = StandardScaler().fit(Z)
     Zs = sc.transform(Z)
-    # LOGGING policy pi(a|E): a multinomial propensity model on E (no logged propensity).
-    pi = HistGradientBoostingClassifier(max_iter=150).fit(Zs, a)
-    P = pi.predict_proba(Zs)  # (N, Q)
-    P = np.clip(P, 1e-3, 1.0)
-    P = P / P.sum(1, keepdims=True)
-    pa = P[np.arange(N), a]  # propensity of the logged action
+    # LOGGING propensity: the EMPIRICAL MARGINAL action frequency. The stream is a
+    # RANDOMIZED-arm stream, so the marginal IS the (per-action) propensity; modeling it as a
+    # function of the high-dim `E` overfits (measured: self-fit and cross-fit both collapsed
+    # the ESS to ~0.13 and corrupted the IPS). Robust by construction.
+    _freqs = np.bincount(a, minlength=Q).astype(float)
+    _freqs = np.clip(_freqs / max(_freqs.sum(), 1.0), 1e-3, 1.0)
+    pa = _freqs[a]  # propensity of the logged action
     # MODELING witness: ONE joint value model V(E, a) (action as a feature), CROSS-FITTED by
     # customer so the candidate is out-of-sample; the candidate = argmax_a V. (Separate
     # per-action regressors compared miscalibrated outputs — a measurement bug; seen in
     # use_case_gate, DEC-175.)
-    V = np.zeros((N, Q))
     from sklearn.model_selection import GroupKFold
+    from sklearn.decomposition import PCA
 
     _folds = max(2, min(5, len(np.unique(cust))))
+    # denoise the (high-dim) embedding for the value model: a modest PCA subspace. E carries
+    # the signal but the raw dimension swamps the low-capacity OPE model (measured: without
+    # this V is constant across actions and the candidate collapses).
+    _dim = max(2, min(48, N // 50, Zs.shape[1]))
+    V = np.zeros((N, Q))
     for tr, va in GroupKFold(_folds).split(Zs, groups=cust):
-        m = HistGradientBoostingRegressor(max_iter=300).fit(
-            np.column_stack([Zs[tr], a[tr].astype(float)]), r[tr]
-        )
+        pca = PCA(n_components=_dim, random_state=seed).fit(Zs[tr])
+        Xtr = np.column_stack([pca.transform(Zs[tr]), a[tr].astype(float)])
+        m = HistGradientBoostingRegressor(max_iter=300, min_samples_leaf=15).fit(Xtr, r[tr])
+        Xva = pca.transform(Zs[va])
         for aa in range(Q):
-            V[va, aa] = m.predict(np.column_stack([Zs[va], np.full(len(va), float(aa))]))
+            V[va, aa] = m.predict(np.column_stack([Xva, np.full(len(va), float(aa))]))
     logged_a = np.unique(a)
     cand_a = logged_a[np.argmax(V[:, logged_a], axis=1)]  # only supported arms
     match = (cand_a == a).astype(float)
-    # IPS value of the candidate vs the logging value (paired, per customer).
-    v_cand = r * match / pa  # IPW contribution
+    # DOUBLY-ROBUST value (the modeling witness V + the IPW residual): the outcome model
+    # carries most of the value and the IPS term corrects its bias, so the estimate is far
+    # less noisy than plain IPS (measured: IPS CI-lo ~ -0.2 -> DR tightens it). Paired per
+    # customer; logging value = the observed reward.
+    _rows = np.arange(N)
+    v_cand = V[_rows, cand_a] + match / pa * (r - V[_rows, a])
     v_log = r.copy()  # logging value
     ess = float((1.0 / pa).sum() ** 2 / (1.0 / pa**2).sum()) / N  # normalized ESS
     rng = np.random.default_rng(seed)
