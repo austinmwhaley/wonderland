@@ -217,6 +217,16 @@ invariant-by-construction).
 
 ## Micro
 
+- **APEX card ALL GREEN (DEC-182/183).** `looking_glass/foundation_report --white-queen --truth ...`
+  emits the full apex card: **B SOLVED ✅ · USE-CASES DEPLOY** (freq, hour) **· B+C DEPLOY · WHITE_QUEEN
+  DEPLOY** (E-policy DR 47.0 > bar 42.23) **+ ORACLE DEPLOY ✅ · CONTROLS** (null) shown. **Key fix
+  (DEC-182):** `E` was LEAKING the logged action (`E→arm` acc **0.999**, via `discount_pct=0.05·arm`
+  in the measure) → `V(E,a)` ignored `a`; a **leakage guard** excludes declared action fields from
+  `generic_measure` (`cfg.action_fields`, persisted) → `E→arm` chance → white_queen certifies the
+  `E`-policy. `looking_glass/white_queen_bridge.py` runs the REAL tribunal. Fast gate **294**.
+  Remaining: null `freq` residual (+0.030, DEC-178); lab→apex unification + one-command reproduce;
+  minimality/calibration/geometry rows.
+
 - **APEX dataset (DEC-177).** Built `rabbit_hole/generators/apex.py` — one COMPOSITE controlled stream
   (lab = per-dimension ontology; apex = all dimensions at once: multi-domain events, rate/transition/
   intent/trend/entity/seasonality/churn, randomized weekly freq+hour actions, and a randomized
