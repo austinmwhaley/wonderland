@@ -585,6 +585,7 @@ def train_cfm(cfg: CFMConfig):
             "numeric_fields": list(getattr(cfg, "numeric_fields", ()) or ()),
             "effect_dim": int(getattr(cfg, "_effect_dim", 0) or 0),
             "effect_actions": list(getattr(cfg, "effect_actions", ()) or ()),
+            "action_fields": list(getattr(cfg, "action_fields", ()) or ()),
             "prod_embed_dim": int(getattr(cfg, "prod_embed_dim", 0))
             if getattr(cfg, "prod_embed_path", "")
             else 0,

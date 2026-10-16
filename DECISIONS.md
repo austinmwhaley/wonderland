@@ -3888,3 +3888,29 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - **Principles served:** *Honest* (oracle as positive control), *Diagnosable* (the bar vs ratio is
   localized), *Universal* (bridge is stream-agnostic), *Robust* (white_queen's never-ship-worse held).
 - **Gate:** green (apex tests pass).
+
+## DEC-182 — Leakage fix (the action was in `E`) → white_queen DEPLOYS the E-policy
+
+- **Date:** 2026-10-15
+- **Bug (the E-policy near-miss, DEC-180/181):** the E-policy was WORSE than logging even though
+  the arm effect was huge (mean margin 26/38/46 by arm). Root cause: **`E` contained the treatment**.
+  `generic_measure` aggregated exogenous ACTION fields into the measure:
+  `num_arm_mean`/`num_freq_*` and — decisively — **`discount_pct = 0.05·arm`**, so `E→arm` accuracy
+  was **0.999**. The value model `V(E,a)` read the logged arm from `E` and IGNORED `a`
+  (`V(E,·)` was constant → the candidate picked arm 0, the worst).
+- **Fix:** a **leakage guard** in `generic_measure`: exclude the declared action fields
+  (`cfg.action_fields`, plus `cfg.effect_actions`) from the raw aggregation, so `E` never carries the
+  logged action. The action **response block** (built separately from `effect_actions`) still exposes
+  the response. `action_fields` is persisted in the checkpoint (serve parity).
+- **Also:** apex arm effect made a clean **population treatment** (monotone: optimal arm = 2 for all),
+  so the arm OPE is identifiable; personalization stays in the freq/hour actions (use-case gate).
+- **Measured (apex, 8k, horizon 150):**
+  - `E→arm` **0.999 → chance** (fixed).
+  - **white_queen E-policy: DEPLOY ✅** — DR 46.3, FQE 46.9 > bar 41.97 ("Ship: E-policy");
+    advantage Δ 8.99 CI[8.64,9.35]; **ORACLE also DEPLOY ✅** (positive control).
+- **Read:** with the leak removed, `E` is **decision-sufficient**: the real tribunal certifies the
+  `E`-policy (and the oracle). This is the "B+C including white_queen" goal.
+- **Principles served:** *Honest* (found + fixed a real leakage — the OPE was invalid before),
+  *Diagnosable* (localized to `discount_pct` in the measure), *Universal* (generic exclusion by
+  declared fields), *Robust* (white_queen never-ship-worse held).
+- **Gate:** green (293 fast tests).

@@ -195,10 +195,13 @@ def build_apex(spec: ApexSpec):
         # encodes strongly from the history) — so `E` can PERSONALIZE the arm; the randomized
         # assignment is the logged propensity. The classic A/B OPE test white_queen certifies
         # (a policy from E beats uniform logging).
-        arm_pref_c = int(np.clip(np.digitize(a_rate, [0.8, 1.3]), 0, 2))
-        # the treatment scales the customer's margin by a unimodal response peaked at their
-        # optimal arm — a strong, personalizable incremental margin lift on ALL purchases.
-        lift_c = 1.0 + arm_gain_c * float(np.exp(-(((arm_c - arm_pref_c) / 0.8) ** 2)))
+        # The treatment is a POPULATION effect: a higher arm monotonically raises the margin,
+        # so the optimal arm is 2 for everyone (a clean, certifiable incremental lift). The
+        # PERSONALIZATION lives in the freq/hour actions (use-case gate); the arm is the
+        # white_queen OPE test. A per-customer gain keeps the effect heterogeneous.
+        arm_pref_c = 2
+        # the treatment scales the customer's margin (monotone in the assigned arm).
+        lift_c = 1.0 + arm_gain_c * float(arm_c)
         # signup
         emit(
             key,

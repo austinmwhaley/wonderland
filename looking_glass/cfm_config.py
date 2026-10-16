@@ -283,6 +283,10 @@ class CFMConfig:
     # counterfactual/dose-response objective (`effect`) so `E` exposes the treatment
     # response (the per-customer mean reward per action level). Empty = objective off.
     effect_actions: tuple = ()
+    # exogenous ACTION fields to EXCLUDE from the generic measure (prevents the measure — and
+    # hence `E` — from carrying the logged action, which would leak the treatment into the OPE).
+    # Declared separately from `effect_actions` so the action's RESPONSE is still exposed.
+    action_fields: tuple = ()
     # Layer-B MEASURE pipeline: append a learned compression of the generic full-history
     # measure to the consumed embedding (the ~0.9 object). Fit at train, frozen at serve.
     use_measure: bool = False

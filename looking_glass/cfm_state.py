@@ -193,6 +193,7 @@ def load_frozen_encoder(tag: str, cfm_dir):
     # RL leg: the declared action keys must be restored so the served measure rebuilds with
     # the same action-conditioned response block the Layer-B compression was fit on.
     cfg.effect_actions = tuple(blob.get("effect_actions", ()) or ())
+    cfg.action_fields = tuple(blob.get("action_fields", ()) or ())
     reg = cfm_dir / f"registry_{tag.replace('.', '_')}.json"
     if reg.exists():
         meta = json.loads(reg.read_text())
