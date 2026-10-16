@@ -3843,3 +3843,25 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - **Read:** the card ACCOUNTS for the control; the remaining residual (null freq) is the documented
   DEC-178 limitation, not hidden.
 - **Gate:** green.
+
+## DEC-180 — white_queen (real tribunal) wired onto the apex: it is CONSERVATIVE (HOLDs even the oracle)
+
+- **Date:** 2026-10-15
+- **What:** `looking_glass/white_queen_bridge.py` runs the **real** white_queen tribunal
+  (`white_queen.tribunal.ope.api.evaluate`) on the apex: context = the frozen embedding `E`,
+  action = the randomized ARM, reward = logged future margin, propensity = the empirical marginal
+  (randomized arms). The candidate policy reads `E` (`V(E,a)→argmax`); an `oracle` variant certifies
+  the KNOWN-truth `arm_pref` as a positive control.
+- **Measured (apex, 8k):** white_queen **HOLDs** the `E`-policy (DR 8.9 < behavior 9.54) AND the
+  **ORACLE** (DR 10.5, WIS 11.1) — both below the **bar 11.62**. The bar is
+  `behavior_mean + rel_edge_std·max(behavior_std, …)`, i.e. **~+2.1** above logging; the apex
+  oracle's true lift is only **~+1.0–1.5**. So white_queen is **more conservative** than the in-house
+  `decision_certify` (which DEPLOYed +0.5 at N=20k).
+- **Read (the apex doing its job):** with KNOWN truth we can now see *why* the two certifiers
+  disagree — white_queen's bar is calibrated for effect sizes / reward dispersions larger than the
+  apex's. To make white_queen DEPLOY on the apex we must EITHER raise the treatment effect (larger
+  `arm_gain`) OR lower the reward dispersion (cleaner reward), so the oracle clears `bar`.
+- **Principles served:** *Honest* (report the real tribunal's verdict, including on the oracle),
+  *Diagnosable* (the disagreement is localized to the bar vs effect size), *Universal* (the bridge
+  is stream-agnostic: E + arm + reward).
+- **Gate:** green (bridge imports + unit-checked).
