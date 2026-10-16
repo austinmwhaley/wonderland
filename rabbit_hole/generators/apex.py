@@ -77,7 +77,7 @@ class ApexSpec:
     sigma_d: float = 1.8
     channel_base_aff: float = 0.35  # non-preferred-channel relative response
     offer_gain: float = 0.6  # margin gain at the customer's optimal depth
-    treatment_day: int = 180  # contacts only have an effect after this day (clean OPE history)
+    treatment_day: int = 0  # contacts respond throughout (E excludes action fields -> no leak)
     # observation
     base_rate: float = 0.12
     value_log_sigma: float = 0.35

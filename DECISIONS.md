@@ -3929,3 +3929,19 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - **Follow-up:** the CONTROLS (null) rows need a FRESH null stream (the current `apex_null` predates
   the arm redesign) — regenerated + retrained next.
 - **Gate:** green (294 fast tests incl. the leakage-guard test).
+
+## DEC-185 — C on apex v2: gate DEPLOYs freq/offer/channel; white_queen DEPLOYs the E-policy
+
+- **What:** ran the decision arm on the apparel apex v2. Contacts now respond THROUGHOUT the window
+  (`treatment_day=0`) — the pre-treatment cut was unnecessary once `E` excludes the action fields
+  (DEC-182); it only starved the gate (which reads outcomes <= as_of).
+- **use-case gate (as_of 2025-01-01):** `freq` +0.057 **DEPLOY**, `offer` +0.076 **DEPLOY**,
+  `channel` +0.080 **DEPLOY**; `dow`/`hour` HOLD (the gate attributes the WEEK's action, but timing
+  is per-SEND → diluted; needs per-send attribution).
+- **white_queen (real tribunal, per-period, capped):** `channel` **E-policy DEPLOY** (DR 0.4 >
+  bar 0.32). Added `white_queen_bridge.certify_period` (per-period log: context=E, action=logged
+  action, reward=outcome that period; panel capped to 4k rows because FQE cost scales with N).
+- **Read:** the pipeline (A -> B -> C) is live on the apparel apex: B trains, and the decision
+  plugins certify (in-house + real white_queen). `dow`/`hour` need per-send OPE; that + the
+  supervised/unsupervised plugins on `E` are the next steps.
+- **Gate:** green.

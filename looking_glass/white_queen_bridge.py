@@ -60,6 +60,57 @@ class EPolicy:
         return int(np.argmax(self.action_probs(o)[0]))
 
 
+def certify_period(model, cfg, action_key: str = "channel", risk_aversion: float = 0.5, fast=True):
+    """white_queen on a PER-PERIOD randomized action (e.g. the weekly `channel`/`offer`/`freq`):
+    context = the customer's frozen `E`; action = the logged action that period; reward = whether
+    the outcome fired that period. The candidate policy reads `E` (V(E,a)->argmax)."""
+    from sklearn.ensemble import HistGradientBoostingRegressor
+
+    from looking_glass.use_case_gate import _period_rows
+    from white_queen.tribunal.ope.api import evaluate
+
+    cust, Z = _b_states(model, cfg)
+    j = _period_rows(cfg, cust, action_key)
+    ci = {c: i for i, c in enumerate(cust)}
+    cu = j["customer_key"].to_numpy()
+    A = j["action"].to_numpy().astype(int)
+    y = (j["y"].to_numpy().astype(float) > 0).astype(float)
+    # white_queen's panel cost scales with rows (FQE budget ~ H*N/batch); subsample periods to
+    # a bounded, seeded set (still an unbiased OPE sample).
+    _cap = 4000
+    if len(A) > _cap:
+        rng = np.random.default_rng(0)
+        sel = np.sort(rng.choice(len(A), _cap, replace=False))
+        cu, A, y = cu[sel], A[sel], y[sel]
+    Q = int(A.max()) + 1
+    N = len(A)
+    Zrow = Z[[ci[c] for c in cu]]
+    mean, std = Z.mean(0), Z.std(0)
+    sc = ((Zrow - mean) / (std + 1e-9)).astype(np.float32)
+    vm = HistGradientBoostingRegressor(max_iter=300, min_samples_leaf=50).fit(
+        np.column_stack([sc, A.astype(float)]), y
+    )
+    cand = EPolicy(vm, mean, std, Q)
+    ctx = np.column_stack([np.arange(N), sc]).astype(np.float32)
+    src = {"obs": ctx, "action": A, "reward": y, "propensity": np.full(N, 1.0 / Q)}
+    rep = evaluate(
+        src,
+        cand,
+        candidate_name=f"E-{action_key}",
+        fast=fast,
+        risk_aversion=risk_aversion,
+        fqe_cfg={"steps_max": 4000, "patience": 3},
+    )
+    return {
+        "deploy": bool(rep["deploy"]),
+        "behavior_mean": rep.get("behavior_mean"),
+        "bar": rep.get("bar"),
+        "estimates": {
+            k: rep["estimates"].get(k) for k in ("dr", "fqe", "wis") if k in rep["estimates"]
+        },
+    }
+
+
 def certify(model, cfg, horizon_days: int = 90, risk_aversion: float = 0.5, fast: bool = True):
     """Run the white_queen tribunal on an `E`-policy + the apex arm log. Returns its verdict."""
     from sklearn.ensemble import HistGradientBoostingRegressor
