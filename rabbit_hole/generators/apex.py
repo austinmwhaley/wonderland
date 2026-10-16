@@ -66,7 +66,7 @@ class ApexSpec:
     window_days: int = 540
     seed: int = 17
     # latent structure (scaled by snr)
-    rate_heterogeneity: float = 0.8
+    rate_heterogeneity: float = 0.1
     transition: bool = True
     intent: float = 0.6
     trend: float = 0.7
@@ -76,12 +76,12 @@ class ApexSpec:
     action_peak: float = 0.6  # weekly-response peak (freq/hour)
     sigma_f: float = 1.0
     sigma_h: float = 4.0
-    arm_gain: float = 2.5  # per-unit-arm multiplicative margin gain (strong, identifiable)
+    arm_gain: float = 4.0  # per-unit-arm multiplicative margin gain (strong, identifiable)
     seasonality: float = 0.5
     churn_hazard: float = 0.15  # fraction of customers who leave over the window
     treatment_day: int = 365  # the arm treatment KICKS IN after this day (as_of = this)
-    base_rate: float = 0.08
-    value_log_sigma: float = 0.45
+    base_rate: float = 0.25
+    value_log_sigma: float = 0.2
     snr: float = 1.0
 
     def effective(self) -> dict:

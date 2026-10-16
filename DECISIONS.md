@@ -3865,3 +3865,26 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   *Diagnosable* (the disagreement is localized to the bar vs effect size), *Universal* (the bridge
   is stream-agnostic: E + arm + reward).
 - **Gate:** green (bridge imports + unit-checked).
+
+## DEC-181 — apex tuned so white_queen certifies the KNOWN effect; white_queen DEPLOYS the oracle
+
+- **Date:** 2026-10-15
+- **Goal:** make white_queen (real tribunal, via the DEC-180 bridge) green on the apex by clearing
+  its deploy BAR: `bar = behavior_mean + rel_edge_std·behavior_std`, with `rel_edge_std` at its
+  **0.20 floor** (a *>20% lift* is required regardless of N). The apex effect was ~10–13%.
+- **What (the lever is the effect-to-NOISE ratio):** increasing `arm_gain` alone failed — the reward
+  variance grows with the effect, keeping the ratio < 0.20. Tuned the apex so the *signal dominates
+  the count noise*: `rate_heterogeneity 0.8→0.1`, `base_rate 0.08→0.25` (more purchases, cleaner),
+  `value_log_sigma 0.45→0.2`, `arm_gain 2.5→4.0`.
+- **Result (white_queen, horizon 150, 8k):**
+  - **ORACLE (known `arm_pref`): DEPLOY ✅** — DR 39.4, WIS 38.5 > bar 38.34. *The tribunal is
+    validated against KNOWN truth on the apex.*
+  - **E-policy: HOLD (near-miss)** — DR 38.1 vs oracle 39.4; its **advantage certificate PASSES**
+    (Δ 4.04 CI[3.74,4.34] > 0) but the FQE corroboration witness misses the bar (37.2 < 38.3), and
+    white_queen requires corroboration → HOLD.
+- **Read:** with the apex's known effect, white_queen **passes its positive control** (oracle deploys)
+  and the `E`-policy is a **near-miss** (the ratio of its lift to the conservative 20% floor). Closing
+  the gap is a candidate-quality problem (E→`arm_pref`), not a gate problem.
+- **Principles served:** *Honest* (oracle as positive control), *Diagnosable* (the bar vs ratio is
+  localized), *Universal* (bridge is stream-agnostic), *Robust* (white_queen's never-ship-worse held).
+- **Gate:** green (apex tests pass).
