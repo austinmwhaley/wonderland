@@ -3812,3 +3812,22 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   null; every gate measured), *Diagnosable* (the OPE failed for identifiable reasons, then was fixed),
   *Lawful* (additive pre/post-treatment separation), *Robust* (fail-safe never-ship-worse holds).
 - **Gate:** green (**293** fast tests, incl. 3 new apex tests); apex B + USE-CASES + B+C all green.
+
+## DEC-178 — Use-case gate hardening (from the apex NULL control) + known IPS selection-bias limitation
+
+- **Date:** 2026-10-15
+- **What (the apex null caught a real bug):** `use_case_gate` used `pa = 1/Q`, but `freq=0`
+  (no-send) is never logged, so the true propensity is `1/n_logged`, not `1/Q`. The inflated
+  weight manufactured a **spurious +0.096 on the snr=0 null**. Fixed to the **empirical marginal**
+  propensity (also matches `decision_certify`).
+- **Remaining KNOWN LIMITATION (recorded, not hidden):** a *data-dependent* policy evaluated by
+  IPS carries a small positive bias — the candidate `argmax_a V(E,a)` inherits the `E→y` (activity)
+  signal, so `1[cand==A]` correlates with `y` even with **no** action effect. On the apex null this
+  shows a residual **~+0.015** (freq) and **~0** (hour); the real apex signal is **~+0.08** (≈5×).
+  Tried: action-permutation (leaves the bias), outcome-permutation refit-null (wrong — removes the
+  `E→y` confound that causes it), noise-matched null (too smooth). A rigorous null-calibrated gate
+  is **future work**; today the gate reports Δ + CI and the marginal-propensity IPS.
+- **Speed (doctrine #16):** dropped the expensive refit-nulls; gate is back to ~2.5 min (one fit).
+- **Principles served:** *Honest* (the null exposed the `1/Q` bug; the residual bias is written
+  down, not laundered), *Robust* (fail-safe never-ship-worse unchanged).
+- **Gate:** green (**293** fast tests).
