@@ -4066,3 +4066,16 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   (`objectives += "mtp"`). Adds a denser, longer-horizon SHAPE signal; replaces/augments `next`.
   Doesn't touch mass (the measure's job). Unit test added.
 - **Tests:** green.
+
+## DEC-193 — C6 objective pruning + C7 conformal uncertainty (utilities)
+
+- **C6 (`looking_glass/objective_pruning.py`):** `prune_objectives(base, without, seeds)` uses a
+  data-derived noise floor (`k_se·SE`) to drop any training objective whose leave-one-out removal
+  doesn't reduce the held-out metric beyond noise; returns the minimal set + a receipt (means/SEs/
+  reasons). `load_ablation` parses ablation receipts. (Driving it with real LOO runs needs GPU —
+  deferred.)
+- **C7 (`looking_glass/conformal.py`):** split-conformal `ConformalRegressor` / `ConformalClassifier`
+  — finite-sample coverage (measured 0.90→0.90, 0.95→0.947; widths shrink with n). "Uncertainty
+  first", no distributional assumptions. (Wiring intervals into the card is a follow-up.)
+- **B4 SSD:** kept as a documented negative (`ssd_scan.py`), not adopted.
+- **Tests:** +100 (conformal/pruning/ssd). No behavior change to the default pipeline.
