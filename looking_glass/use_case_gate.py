@@ -161,8 +161,14 @@ def run_use_case(model, cfg, action_key, seed=0, period_secs=604800.0):
     # policy-from-E: a JOINT outcome model V(E, a) (action as a feature), CROSS-FITTED by
     # customer so the policy is evaluated out-of-sample. (Separate per-action regressors
     # compared miscalibrated outputs and collapsed to the marginal — a measurement bug.)
+    # reduce the (~2141-d) E to a compact subspace for the value model: the full dim is the CPU
+    # bottleneck of the cross-fit, and PCA-128 preserves the response signal (DEC-194/195).
+    from sklearn.decomposition import PCA
+
     sc = StandardScaler().fit(Zi)
-    Zs = sc.transform(Zi)
+    _Z = sc.transform(Zi)
+    _k = max(2, min(128, _Z.shape[1], _Z.shape[0] - 1))
+    Zs = PCA(n_components=_k, random_state=seed).fit_transform(_Z)
     from sklearn.model_selection import GroupKFold
 
     _folds = max(2, min(5, len(np.unique(cu))))
