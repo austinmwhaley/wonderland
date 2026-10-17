@@ -186,6 +186,11 @@ def load_frozen_encoder(tag: str, cfm_dir):
         print(f"[load] {tag}: missing={len(missing)} unexpected={len(unexpected)} keys", flush=True)
     model = model.to("cuda" if torch.cuda.is_available() else "cpu")
     model.eval()
+    # The served `E` = shape (donor) || learned-compressed measure. The in-net ACCUMULATOR is
+    # the hand-RFM BASELINE (used only by the B card's comparison), NOT part of the pipeline —
+    # keeping it ON bloated E to ~2141 dims (1803 were accumulator) and slowed every gate. The
+    # B card toggles it explicitly for its "hand features" row.
+    model.accumulator_on = False
     if blob.get("whiten_W") is not None:
         model.set_whitening(blob["whiten_mean"], blob["whiten_W"])  # DEC-022
     cfg = CFMConfig()

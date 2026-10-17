@@ -4132,3 +4132,16 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - This eliminates the train/serve skew class at the source; the DEC-196 name-alignment remains as a
   defensive guard for future schema drift.
 - **Tests:** layer_b 5 pass.
+
+## DEC-198 — `E` was bloated 2141 -> 338: the hand-RFM accumulator was 84% of it
+
+- **Finding (user question "why is E 2141-dim?"):** `E = donor(256) ‖ accumulator(1803) ‖
+  learned-measure(82)`. The **accumulator** (the hand-RFM BASELINE — token-drive sum/mean/last at 4
+  timescales) was **1803 dims = 84% of E**. It is *not* part of the production pipeline (the B card's
+  "pipeline" U already excludes it and gets 0.88), yet `load_frozen_encoder` left
+  `accumulator_on=True`, so every gate/white_queen consumed the bloated 2141-dim `E`.
+- **Fix:** `load_frozen_encoder` sets `accumulator_on=False` — the served `E` = **shape (256) ‖
+  learned measure (82) = 338**. The B card still toggles the accumulator for its "hand features" row.
+- **Why it matters:** minimality (a 6.3× smaller embedding) AND speed (the gates' cross-fit was
+  O(2141) — now O(338)); also removes a redundant hand-feature block from the universal donor.
+- **Tests:** green.
