@@ -27,6 +27,46 @@ from looking_glass.cfm_config import as_of_epoch
 # measured many times — card, gates, certification — but it only depends on
 # (stream, as_of, effect_actions, action_fields, customer set)).
 _GM_CACHE: dict = {}
+_SCHEMA_CACHE: dict = {}
+
+
+def _measure_schema(cfg):
+    """The measure's column SCHEMA from the WHOLE stream (not the queried customer subset), so the
+    columns are STABLE across subsets -> no train/serve skew (82 vs 81 cols). Returns (jkeys, numeric).
+    """
+    key = (str(cfg.db), str(getattr(cfg, "as_of", None)))
+    hit = _SCHEMA_CACHE.get(key)
+    if hit is not None:
+        return hit
+    import duckdb
+
+    con = duckdb.connect()
+    con.execute("SET threads TO 8")
+    p = str(cfg.db)
+    src = f"read_parquet('{p}')" if p.endswith((".parquet", ".pq")) else cfg.table
+    tc = float(as_of_epoch(cfg.as_of))
+    jkeys = [
+        str(r[0])
+        for r in con.execute(
+            f"SELECT DISTINCT unnest(json_keys(event_attributes)) AS k FROM {src} "
+            f"WHERE event_attributes IS NOT NULL "
+            f"AND epoch(CAST(event_ts AS TIMESTAMPTZ)) <= {tc} ORDER BY k"
+        ).fetchall()
+    ]
+    numeric = []
+    for k in jkeys:
+        esc = k.replace("'", "''")
+        cast = f"TRY_CAST(json_extract_string(event_attributes,'$.{esc}') AS DOUBLE)"
+        nn, tot = con.execute(
+            f"SELECT count(*) FILTER (WHERE {cast} IS NOT NULL), "
+            f"count(json_extract_string(event_attributes,'$.{esc}')) FROM {src} "
+            f"WHERE epoch(CAST(event_ts AS TIMESTAMPTZ)) <= {tc}"
+        ).fetchone()
+        if tot and nn / tot > 0.9:
+            numeric.append(k)
+    con.close()
+    _SCHEMA_CACHE[key] = (jkeys, numeric)
+    return jkeys, numeric
 
 
 def generic_measure(cfg, cust, only_keys=None):
@@ -66,13 +106,8 @@ def generic_measure(cfg, cust, only_keys=None):
         f"JOIN _cust c ON e.customer_key = c.customer_key WHERE "
         f"epoch(CAST(e.event_ts AS TIMESTAMPTZ)) <= {tc}"
     )
-    jkeys = [
-        str(r[0])
-        for r in con.execute(
-            "SELECT DISTINCT unnest(json_keys(attrs)) AS k FROM base "
-            "WHERE attrs IS NOT NULL ORDER BY k"
-        ).fetchall()
-    ]
+    # SCHEMA from the WHOLE stream (stable columns across customer subsets -> no train/serve skew)
+    jkeys, numeric = _measure_schema(cfg)
     if only_keys is not None:
         allow = {str(k) for k in only_keys}
         jkeys = [k for k in jkeys if k in allow]
@@ -85,16 +120,7 @@ def generic_measure(cfg, cust, only_keys=None):
     }
     if _excl:
         jkeys = [k for k in jkeys if k not in _excl]
-    numeric = []
-    for k in jkeys:
-        esc = k.replace("'", "''")
-        cast = f"TRY_CAST(json_extract_string(attrs,'$.{esc}') AS DOUBLE)"
-        nn, tot = con.execute(
-            f"SELECT count(*) FILTER (WHERE {cast} IS NOT NULL), "
-            f"count(json_extract_string(attrs,'$.{esc}')) FROM base"
-        ).fetchone()
-        if tot and nn / tot > 0.9:
-            numeric.append(k)
+        numeric = [k for k in numeric if k not in _excl]
     aggs = [
         "count(*) AS n_events",
         "count(DISTINCT et) AS n_etype",

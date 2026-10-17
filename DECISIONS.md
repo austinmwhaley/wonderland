@@ -4122,3 +4122,13 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   embedding served must be built from the SAME schema the compression was fit on, regardless of the
   customer subset / sampling.
 - **Tests:** layer_b 5 pass.
+
+## DEC-197 — Measure schema is now STREAM-derived (subset-independent) — root fix for the skew
+
+- **Root fix (better than DEC-196's name-alignment):** `generic_measure` derives its **column schema
+  from the WHOLE stream** (`_measure_schema`, cached by (stream, as_of)) — not from the queried
+  customer subset — so the column set is **stable across subsets** (verified: 82 cols for both
+  subset1 and subset2; matches the saved scaler). No retraining needed for existing ckpts.
+- This eliminates the train/serve skew class at the source; the DEC-196 name-alignment remains as a
+  defensive guard for future schema drift.
+- **Tests:** layer_b 5 pass.
