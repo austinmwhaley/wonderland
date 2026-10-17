@@ -4183,3 +4183,18 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   target set (future targets + measure). The `EmbeddingDistiller` (C8) is the tool; the full joint
   certificate is a follow-up. Measure-minimal dim recorded as **128**.
 - **Tests:** 422.
+
+## DEC-202 — #7 white_queen acceptance NOT passed yet (diagnosis, no gate weakening)
+
+- **Scorecard:** Coverage 0.60 (target 0.9) · recall 0.75 (target 1.0) · breadth 2/3 · completion 60%.
+  Safety 0 FP, precision 1.0, ranking 1.0 all PASS.
+- **Diagnosis:**
+  - **Recall:** cartpole `cql` is a false-negative — truth 82.6 > anchor 66.5 (worthy) but DR-lo 68.67 <
+    bar 72.63. Only `rel_edge_std ≈ 0.07` (below a *small* effect; the floor is a Cohen-medium 0.20)
+    recalls it → that would be **weakening the gate**, which the doctrine forbids. **Not done.**
+  - **Coverage:** bandit CIs **under-cover upward** — `best` truth 2.579 vs CI [1.463,2.195]; `logging`
+    truth −0.35 vs CI [−0.411,−0.389]. The estimator under-estimates the value's upper interval.
+  - **Breadth/robustness:** only 2/7 envs run (no continuous family) — needs the slow mujoco runs.
+- **The honest conflict:** coverage wants a **wider** interval; recall wants a **higher lo** (narrower).
+  Only a **less-variance / less-biased estimator** satisfies both — deeper white_queen work, not a knob.
+- **Status:** #1–#6 done; **#7 open** (research item). Not weakened to pass.
