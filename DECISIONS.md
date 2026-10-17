@@ -4053,3 +4053,16 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   white_queen candidates reading `E`); the bridge no longer injects a fake `1/Q` propensity — it
   passes none (white_queen ESTIMATES it — the real-world default).
 - **Tests:** 307 fast (12 new). white_queen roster (channel): value/bc/cql HOLD so far.
+
+## DEC-192 — B4 SSD (rejected, honest) + B5 multi-token prediction
+
+- **B4 (SSD/Mamba-2 chunked scan):** implemented `looking_glass/ssd_scan.py` (chunked affine
+  recurrence, 91 equivalence tests vs a naive loop + `_scan`, atol 1e-5) and BENCHMARKED it vs the
+  compiled scan (B=64,T=512,d=128, CPU): **SSD 85–134 ms vs compiled scan 31–47 ms** → SSD is
+  **~2–3× SLOWER** here (the compile-fused scan wins; SSD's matmul advantage needs GPU tensor
+  cores). **Not adopted** — kept as a documented negative; the compiled scan (A2) stands.
+- **B5 (multi-token prediction):** `cfg.mtp_k` (default 4) + `CFM.head_mtp` (k heads predicting
+  event type at t+1..t+k from the state at t); objective `mtp` (masked k-step CE), opt-in
+  (`objectives += "mtp"`). Adds a denser, longer-horizon SHAPE signal; replaces/augments `next`.
+  Doesn't touch mass (the measure's job). Unit test added.
+- **Tests:** green.

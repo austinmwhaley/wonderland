@@ -698,6 +698,7 @@ class CFM(nn.Module):
         counter_registers: int = 1,
         numeric_fields: tuple = (),
         effect_dim: int = 0,
+        mtp_k: int = 0,
     ):
         super().__init__()
         self.vocab = vocab
@@ -788,6 +789,14 @@ class CFM(nn.Module):
         self.head_psr = nn.Linear(dim, 6)  # PSR: 3 horizons x [count, value]
         self.head_recon = nn.Linear(dim, 3)  # reconstruct RFM: [count, value-sum, recency]
         self.head_ledger = nn.Linear(dim, 2)  # running totals [count_t, value_t]
+        # B5 multi-token prediction: k heads predicting event type at t+1..t+k from the
+        # state at t (denser, longer-horizon SHAPE signal; opt-in).
+        self.mtp_k = int(mtp_k)
+        self.head_mtp = (
+            nn.ModuleList([nn.Linear(dim, vocab.n_et + 1) for _ in range(self.mtp_k)])
+            if self.mtp_k
+            else None
+        )
         # counterfactual OUTCOME head (RL leg, DEC-172): f(state, one-hot(action)) -> reward
         # logit, fitted on the randomized (action, reward) periods. Its only role is to FORCE
         # the state to carry the treatment response (decision-sufficiency). `effect_dim` is
@@ -885,6 +894,7 @@ class CFM(nn.Module):
                     "commutation",
                     "ortho",
                     "effect",
+                    "mtp",
                 )
             }
         )

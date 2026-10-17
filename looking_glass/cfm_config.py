@@ -372,6 +372,8 @@ class CFMConfig:
     # A3: autocast dtype. bf16 (default) has fp32 range -> no loss scaling, fewer Armijo
     # reverts than fp16; set "fp16" on hardware where fp16 is materially faster.
     amp_dtype: str = "bf16"
+    # B5: multi-token prediction horizon k (opt-in via objectives+="mtp"). 0 = off.
+    mtp_k: int = 4
 
     @property
     def tag(self) -> str:

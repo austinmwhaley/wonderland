@@ -576,3 +576,18 @@ def test_effect_objective_off_without_target_and_dim():
     cfg = _cfg(objectives=(*CFMConfig().objectives, "effect"))
     T_ = _task_losses(model, vocab, seqs, cfg)
     assert "effect" not in T_  # silently absent, never a NaN
+
+
+def test_mtp_objective_present_and_trains():
+    """B5: multi-token prediction heads exist and the k-step loss is finite + trains."""
+    seqs = [_seq(f"c{i}", day=f"2025-01-{(i % 28) + 1:02d}") for i in range(4)]
+    vocab = EventVocab.build(seqs)
+    torch.manual_seed(0)
+    model = CFM(vocab, dim=16, n_experts=1, mtp_k=4)
+    assert model.head_mtp is not None and len(model.head_mtp) == 4
+    cfg = _cfg(objectives=(*CFMConfig().objectives, "mtp"))
+    T_ = _task_losses(model, vocab, seqs, cfg)
+    assert "mtp" in T_ and torch.isfinite(T_["mtp"])
+    T_["mtp"].backward()
+    assert model.head_mtp[0].weight.grad is not None
+    assert model.emb_et.weight.grad is not None

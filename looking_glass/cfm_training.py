@@ -170,6 +170,7 @@ def train_cfm(cfg: CFMConfig):
         counter_registers=getattr(cfg, "counter_registers", 1),
         numeric_fields=getattr(cfg, "numeric_fields", ()),
         effect_dim=getattr(cfg, "_effect_dim", 0),
+        mtp_k=getattr(cfg, "mtp_k", 0),
     ).to(device)
     # v4.0: differentiable ZCA in the forward during training (gradients shape the
     # consumed isotropy); off at eval/save so the frozen transform is used.
@@ -954,6 +955,21 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
         sp - sn, torch.ones_like(sp), reduction="none"
     ).reshape(-1)
     T_["order"] = (opl * valid).sum() / nv
+    # B5 multi-token prediction: from the state at t predict the event type at t+1..t+k (denser,
+    # longer-horizon SHAPE signal). Opt-in; replaces/augments `next`.
+    if "mtp" in cfg.objectives and getattr(model, "head_mtp", None) is not None:
+        mtp = torch.zeros((), device=dev)
+        for j, head in enumerate(model.head_mtp, start=1):
+            if j >= T:
+                break
+            tgt = t["et"][:, j:]
+            logits = head(y[:, : T - j])
+            vj = t["mask"][:, : T - j] * (tgt != vocab.n_et).float() * (1.0 - t["co"][:, j:, 0])
+            mj = F.cross_entropy(
+                logits.reshape(-1, logits.shape[-1]), tgt.reshape(-1), reduction="none"
+            )
+            mtp = mtp + (mj * vj.reshape(-1)).sum() / vj.sum().clamp(min=1)
+        T_["mtp"] = mtp / len(model.head_mtp)
     S = F.normalize(model.proj(h), dim=-1)
     if B >= 4:
         logits = S @ S.t() / cfg.contrast_tau
