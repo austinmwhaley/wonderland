@@ -185,12 +185,13 @@ def build_card(
         try:
             from looking_glass.unsupervised_gate import run_unsupervised as _ru
 
-            u = _ru(model, cfg)
+            _uu = _ru(model, cfg)
             _f = lambda x: 0.0 if x is None else x  # noqa: E731
             unsup_lines = [
-                f"- segmentation: k={u.get('k')} silhouette **{_f(u.get('silhouette')):.3f}** · "
-                f"truth-segment ARI {_f(u.get('ari')):+.3f} · margin ANOVA F={_f(u.get('anova_f')):.1f} "
-                f"(p={u.get('anova_p')}) · lookalike enrichment **{_f(u.get('lookalike_enrichment')):.2f}x**"
+                f"- segmentation: k={_uu.get('k')} silhouette **{_f(_uu.get('silhouette')):.3f}** · "
+                f"truth-segment ARI {_f(_uu.get('ari')):+.3f} · margin ANOVA "
+                f"F={_f(_uu.get('anova_f')):.1f} (p={_uu.get('anova_p')}) · lookalike enrichment "
+                f"**{_f(_uu.get('lookalike_enrichment')):.2f}x**"
             ]
         except Exception as _e:  # noqa: BLE001
             unsup_lines = [f"- (unsupervised gate unavailable: {_e})"]
