@@ -141,6 +141,8 @@ def build_commands(
             "--horizons",
             "30,90",
             "--white-queen",
+            "--supervised",
+            "--unsupervised",
             "--truth",
             f"{apex}/apex_truth.json",
             "--null-db",
