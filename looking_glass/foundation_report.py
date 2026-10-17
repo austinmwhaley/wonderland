@@ -36,6 +36,8 @@ def build_card(
     null=None,
     white_queen=False,
     truth=None,
+    supervised=False,
+    unsupervised=False,
 ):
     # 1) the pipeline (shape + learned-compressed measure)
     model.accumulator_on = False
@@ -151,6 +153,42 @@ def build_card(
         ["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True
     ).stdout.strip()
     verdict = "SOLVED ✅" if solved else "NOT YET ❌"
+
+    # SUPERVISED plugin family (optional): heads on `E` vs held-out future targets.
+    sup_lines = []
+    if supervised:
+        try:
+            from looking_glass.supervised_gate import run_supervised as _rs
+
+            for r in _rs(model, cfg, horizon_days=int(max(horizons))):
+                extra = (
+                    f" cov90={r['coverage90']:.3f} w90={r['width90']:.1f}"
+                    if r.get("coverage90") is not None
+                    else ""
+                )
+                sup_lines.append(
+                    f"- {r['name']}: {r['metric']} **{r['skill']:+.3f}** "
+                    f"(baseline {r['baseline']:.3f}){extra}"
+                )
+        except Exception as _e:  # noqa: BLE001
+            sup_lines = [f"- (supervised gate unavailable: {_e})"]
+
+    # UNSUPERVISED plugin family (optional): segmentation / lookalike on `E`.
+    unsup_lines = []
+    if unsupervised:
+        try:
+            from looking_glass.unsupervised_gate import run_unsupervised as _ru
+
+            u = _ru(model, cfg)
+            _f = lambda x: 0.0 if x is None else x  # noqa: E731
+            unsup_lines = [
+                f"- segmentation: k={u.get('k')} silhouette **{_f(u.get('silhouette')):.3f}** · "
+                f"truth-segment ARI {_f(u.get('ari')):+.3f} · margin ANOVA F={_f(u.get('anova_f')):.1f} "
+                f"(p={u.get('anova_p')}) · lookalike enrichment **{_f(u.get('lookalike_enrichment')):.2f}x**"
+            ]
+        except Exception as _e:  # noqa: BLE001
+            unsup_lines = [f"- (unsupervised gate unavailable: {_e})"]
+
     lines = [
         f"# Foundation-Model Report Card — `{stream}`",
         "",
@@ -249,6 +287,16 @@ def build_card(
             else []
         ),
         "",
+        *(
+            ["## SUPERVISED — heads on `E` vs held-out future targets", *sup_lines, ""]
+            if sup_lines
+            else []
+        ),
+        *(
+            ["## UNSUPERVISED — segmentation / lookalike on `E`", *unsup_lines, ""]
+            if unsup_lines
+            else []
+        ),
         "## Provenance",
         f"- checkpoint `{tag}` in `{cfg.out_dir if hasattr(cfg, 'out_dir') else ''}`; encoder + "
         "`layer_b_<tag>.pkl` (measure compression).",
@@ -277,6 +325,8 @@ def main(argv=None):
         "--white-queen", action="store_true", dest="white_queen", help="run the real tribunal"
     )
     ap.add_argument("--truth", default=None, help="truth json for the white_queen oracle control")
+    ap.add_argument("--supervised", action="store_true")
+    ap.add_argument("--unsupervised", action="store_true")
     a = ap.parse_args(argv)
     model, cfg = load_frozen_encoder(a.tag, a.ckpt_dir)
     cfg.attr_fields = tuple(getattr(model, "attr_fields", ()) or ())
@@ -301,6 +351,8 @@ def main(argv=None):
         null=null,
         white_queen=a.white_queen,
         truth=a.truth,
+        supervised=a.supervised,
+        unsupervised=a.unsupervised,
     )
     print(card)
     if a.out:
