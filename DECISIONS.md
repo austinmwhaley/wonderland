@@ -3989,3 +3989,18 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - **Read:** the gate now HONESTLY certifies (null HOLDs) AND the apex carries a strong per-customer
   action signal — both prerequisites for trustworthy C verdicts. Re-run C on the strengthened apex.
 - **Gate:** green (295).
+
+## DEC-188 — C on the strengthened, null-calibrated apex: freq/offer/channel clearly DEPLOY
+
+- **Re-ran C on the regenerated (strengthened) apex** with the null-calibrated gate (DEC-187):
+  - **SIGNAL:** `freq` +0.041, `channel` +0.047, `offer` +0.020 (all DEPLOY, clear); `dow` +0.004,
+    `hour` +0.005 (DEPLOY but marginal).
+  - **NULL (snr=0):** +0.000..+0.003 (HOLD-ish); the residual bias collapsed from +0.025 to ~+0.003.
+  - `freq`/`channel` signal is ~13-15x the null residual; `dow`/`hour` are at the null floor.
+- **`E` now carries the optima** (PCA-128 probe on the 2141-d `E`): `E->x0` R² +0.029,
+  `E->offer_opt` R² +0.095, `E->channel_pref` acc **0.460** (chance 0.25). (Was negative before the
+  apex strengthening.)
+- **Read:** with a null-calibrated gate AND a stream that actually carries the per-customer response,
+  the decision family certifies **honestly** — `freq`/`offer`/`channel` (frequency, discount, channel
+  choice) are real; `dow`/`hour` remain at the noise floor. This is the trustworthy version of DEC-185.
+- **Gate:** green.
