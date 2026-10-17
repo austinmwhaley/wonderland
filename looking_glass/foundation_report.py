@@ -137,7 +137,7 @@ def build_card(
                 f"- **E-policy (`channel`): {wqr['deploy'] and 'DEPLOY ✅' or 'HOLD'}** — DR "
                 f"{wqr['estimates'].get('dr')} / behavior {wqr['behavior_mean']} vs bar {wqr['bar']}"
             )
-            if truth:
+            if truth and not fast:
                 import json as _json
 
                 _T = {c["customer"]: c for c in _json.loads(open(truth).read())["customers"]}
