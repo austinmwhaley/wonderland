@@ -117,26 +117,33 @@ def build_card(
             "more sufficient embedding ⇒ better decision estimation.",
         ]
 
-    # WHITE_QUEEN — the REAL tribunal (optional). Context = E, action = arm, reward = margin.
+    # WHITE_QUEEN — the REAL tribunal (optional). Per-period: context = E, action = a logged
+    # periodic action (`channel`), reward = the outcome that period; oracle = truth `channel_pref`.
     wq_lines = []
     if white_queen:
         try:
-            from looking_glass.white_queen_bridge import certify as _wqc
-            from looking_glass.white_queen_bridge import oracle as _wqo
+            from looking_glass.white_queen_bridge import certify_period as _wqp
 
-            wqr = _wqc(model, cfg, horizon_days=int(max(horizons)))
+            wqr = _wqp(model, cfg, "channel")
             wq_lines.append(
-                f"- **E-policy: {wqr['deploy'] and 'DEPLOY ✅' or 'HOLD'}** — DR "
-                f"{wqr['estimates'].get('dr')} / behavior {wqr['behavior_mean']} vs bar "
-                f"{wqr['bar']}"
+                f"- **E-policy (`channel`): {wqr['deploy'] and 'DEPLOY ✅' or 'HOLD'}** — DR "
+                f"{wqr['estimates'].get('dr')} / behavior {wqr['behavior_mean']} vs bar {wqr['bar']}"
             )
             if truth:
-                wqor = _wqo(model, cfg, truth, horizon_days=int(max(horizons)))
-                wq_lines.append(
-                    f"- ORACLE (known `arm_pref`, positive control): "
-                    f"**{wqor['deploy'] and 'DEPLOY ✅' or 'HOLD'}** — DR "
-                    f"{wqor['estimates'].get('dr')} vs bar {wqor['bar']}"
-                )
+                import json as _json
+
+                _T = {c["customer"]: c for c in _json.loads(open(truth).read())["customers"]}
+                _ch = ("email", "sms", "push", "direct_mail")
+                _pref = {
+                    c: _ch.index(v["channel_pref"]) for c, v in _T.items() if "channel_pref" in v
+                }
+                if _pref:
+                    wqor = _wqp(model, cfg, "channel", pref_by_customer=_pref)
+                    wq_lines.append(
+                        f"- ORACLE (`channel_pref`, positive control): "
+                        f"**{wqor['deploy'] and 'DEPLOY ✅' or 'HOLD'}** — DR "
+                        f"{wqor['estimates'].get('dr')} vs bar {wqor['bar']}"
+                    )
         except Exception as _e:  # noqa: BLE001
             wq_lines = [f"- (white_queen unavailable: {_e})"]
 

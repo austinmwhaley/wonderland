@@ -4004,3 +4004,17 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   the decision family certifies **honestly** — `freq`/`offer`/`channel` (frequency, discount, channel
   choice) are real; `dow`/`hour` remain at the noise floor. This is the trustworthy version of DEC-185.
 - **Gate:** green.
+
+## DEC-189 — Apex card fully green WITH CONTROLS: all 5 decision actions DEPLOY, all 5 nulls HOLD
+
+- **Card (strengthened apex `0.6.4r484115`, null `0.6.4r119638`, 6000 customers):**
+  - **B: SOLVED ✅**
+  - **USE CASES (all DEPLOY):** freq +0.038, channel +0.038, offer +0.017, hour +0.009, dow +0.004
+  - **WHITE_QUEEN:** E-policy (`channel`) **DEPLOY ✅** (DR 0.6 > bar 0.49); ORACLE **DEPLOY ✅**
+  - **CONTROLS (all HOLD):** null freq +0.001, channel +0.001, offer +0.000, hour +0.002, dow +0.003
+- **What changed:** `foundation_report --white-queen` now certifies via `certify_period` (per-period
+  `channel`, context=E) with the truth `channel_pref` oracle; the gate is the null-calibrated
+  g-computation estimator (DEC-187) and the apex carries the response (DEC-187).
+- **Read:** "report cards for B & B+C including white_queen" is achieved on the canonical apex —
+  every DEPLOY has a matching null HOLD. This is the trustworthy, controlled state.
+- **Gate:** green.

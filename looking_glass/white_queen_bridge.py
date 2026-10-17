@@ -60,7 +60,14 @@ class EPolicy:
         return int(np.argmax(self.action_probs(o)[0]))
 
 
-def certify_period(model, cfg, action_key: str = "channel", risk_aversion: float = 0.5, fast=True):
+def certify_period(
+    model,
+    cfg,
+    action_key: str = "channel",
+    risk_aversion: float = 0.5,
+    fast=True,
+    pref_by_customer=None,
+):
     """white_queen on a PER-PERIOD randomized action (e.g. the weekly `channel`/`offer`/`freq`):
     context = the customer's frozen `E`; action = the logged action that period; reward = whether
     the outcome fired that period. The candidate policy reads `E` (V(E,a)->argmax)."""
@@ -90,13 +97,20 @@ def certify_period(model, cfg, action_key: str = "channel", risk_aversion: float
     vm = HistGradientBoostingRegressor(max_iter=300, min_samples_leaf=50).fit(
         np.column_stack([sc, A.astype(float)]), y
     )
-    cand = EPolicy(vm, mean, std, Q)
+    if pref_by_customer is not None:
+        # ORACLE control: a fixed per-customer policy (e.g. the truth channel_pref).
+        pref_arr = np.array([int(pref_by_customer.get(str(c), 0)) for c in cu])
+        cand = EPolicy(None, mean, std, Q, pref=pref_arr)
+        _name = f"ORACLE-{action_key}"
+    else:
+        cand = EPolicy(vm, mean, std, Q)
+        _name = f"E-{action_key}"
     ctx = np.column_stack([np.arange(N), sc]).astype(np.float32)
     src = {"obs": ctx, "action": A, "reward": y, "propensity": np.full(N, 1.0 / Q)}
     rep = evaluate(
         src,
         cand,
-        candidate_name=f"E-{action_key}",
+        candidate_name=_name,
         fast=fast,
         risk_aversion=risk_aversion,
         fqe_cfg={"steps_max": 4000, "patience": 3},
