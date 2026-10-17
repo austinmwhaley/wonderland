@@ -78,7 +78,9 @@ def test_card_command_and_placeholders():
     assert _flag(card, "--stream") == "apex"
     assert _flag(card, "--customers") == "45"
     assert _flag(card, "--horizons") == "30,90"
-    assert "--white-queen" in card
+    assert "--white-queen" not in card  # fast card by default
+    full = apex_pipeline.build_commands(**KW, full=True)[4]
+    assert {"--white-queen", "--supervised", "--unsupervised"}.issubset(set(full))
     assert _flag(card, "--truth") == "/tmp/apex_out/apex/apex_truth.json"
     assert _flag(card, "--null-db") == "/tmp/apex_out/apex_null/customer_event_stream.parquet"
     assert _flag(card, "--null-tag") == "<NULLTAG>"

@@ -32,6 +32,7 @@ def build_commands(
     customers,
     sample_a,
     max_steps,
+    full=False,
 ) -> list[list[str]]:
     apex = f"{out_root}/apex"
     apex_null = f"{out_root}/apex_null"
@@ -140,9 +141,8 @@ def build_commands(
             str(customers),
             "--horizons",
             "30,90",
-            "--white-queen",
-            "--supervised",
-            "--unsupervised",
+            "--fast",
+            *(["--white-queen", "--supervised", "--unsupervised"] if full else []),
             "--truth",
             f"{apex}/apex_truth.json",
             "--null-db",
@@ -181,6 +181,11 @@ def main(argv=None):
     ap.add_argument("--customers", type=int, default=12000)
     ap.add_argument("--sample-a", type=int, default=500)
     ap.add_argument("--max-steps", type=int, default=0)
+    ap.add_argument(
+        "--full",
+        action="store_true",
+        help="include white_queen + supervised + unsupervised (slow)",
+    )
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args(argv)
 
@@ -193,6 +198,7 @@ def main(argv=None):
         a.customers,
         a.sample_a,
         a.max_steps,
+        full=a.full,
     )
 
     if a.dry_run:

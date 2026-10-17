@@ -116,7 +116,7 @@ def certify_period(
         candidate_name=_name,
         fast=fast,
         risk_aversion=risk_aversion,
-        fqe_cfg={"steps_max": (1500 if fast else 4000), "patience": 3},
+        fqe_cfg={"steps_max": 1500, "patience": 3},
     )
     return {
         "deploy": bool(rep["deploy"]),

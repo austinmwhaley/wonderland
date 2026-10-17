@@ -166,7 +166,7 @@ def build_card(
         try:
             from looking_glass.supervised_gate import run_supervised as _rs
 
-            for r in _rs(model, cfg, horizon_days=int(max(horizons))):
+            for r in _rs(model, cfg, horizon_days=int(max(horizons)), fast=fast):
                 extra = (
                     f" cov90={r['coverage90']:.3f} w90={r['width90']:.1f}"
                     if r.get("coverage90") is not None

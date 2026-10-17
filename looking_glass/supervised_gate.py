@@ -188,7 +188,7 @@ def _states(model, cfg, keys):
     return np.concatenate(Z, 0), C
 
 
-def _run_supervised(model, cfg, horizon_days=90, seed=0):
+def _run_supervised(model, cfg, horizon_days=90, seed=0, fast=False):
     from sklearn.ensemble import HistGradientBoostingClassifier, HistGradientBoostingRegressor
     from sklearn.model_selection import GroupKFold
 
@@ -234,12 +234,12 @@ def _run_supervised(model, cfg, horizon_days=90, seed=0):
                 continue
         else:
             y = np.array([float(v) for v in yv[ok]], dtype=float)
-        nf = max(2, min(5, len(np.unique(cu))))
+        nf = max(2, min(3 if fast else 5, len(np.unique(cu))))
         oof_pred, oof_y, base = [], [], []
         covs, widths = [], []
         for tr, va in GroupKFold(nf).split(X, groups=cu):
             if kind == "clf":
-                m = HistGradientBoostingClassifier(max_iter=200).fit(X[tr], y[tr])
+                m = HistGradientBoostingClassifier(max_iter=(80 if fast else 200)).fit(X[tr], y[tr])
                 if metric == "auc":
                     if len(getattr(m, "classes_", ())) < 2:
                         pv = np.zeros(len(va), dtype=float)
@@ -249,7 +249,7 @@ def _run_supervised(model, cfg, horizon_days=90, seed=0):
                     pv = m.predict(X[va])
                     base.append(float(np.bincount(y[tr]).max()) / len(tr))
             else:
-                m = HistGradientBoostingRegressor(max_iter=200).fit(X[tr], y[tr])
+                m = HistGradientBoostingRegressor(max_iter=(80 if fast else 200)).fit(X[tr], y[tr])
                 pv = m.predict(X[va])
                 base.append(0.0)
                 cov, width = _conformal_split(pv, y[va], cu[va], alpha=0.1)
@@ -299,17 +299,19 @@ def _run_supervised(model, cfg, horizon_days=90, seed=0):
     return rows
 
 
-def run_supervised(model, cfg, horizon_days=90, seed=0, null=None):
+def run_supervised(model, cfg, horizon_days=90, seed=0, null=None, fast=False):
     """Grade supervised targets on held-out customers, with a bootstrap verdict.
 
     With ``null=(db, tag, ckpt_dir)``, the same targets are also run on a null
     encoder; ``null_ok`` is True iff every null target FAILs (no skill).
     """
-    rows = _run_supervised(model, cfg, horizon_days=horizon_days, seed=seed)
+    rows = _run_supervised(model, cfg, horizon_days=horizon_days, seed=seed, fast=fast)
     if null is None:
         return SupervisedGateResult(rows)
     null_model, null_cfg = _load_null_model(cfg, null)
-    null_rows = _run_supervised(null_model, null_cfg, horizon_days=horizon_days, seed=seed)
+    null_rows = _run_supervised(
+        null_model, null_cfg, horizon_days=horizon_days, seed=seed, fast=fast
+    )
     by_name = {r["name"]: r for r in null_rows}
     null_ok = all(r["verdict"] == "FAIL" for r in null_rows)
     for row in rows:
