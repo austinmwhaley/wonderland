@@ -38,21 +38,27 @@ def build_card(
     truth=None,
     supervised=False,
     unsupervised=False,
+    fast=False,
 ):
     # 1) the pipeline (shape + learned-compressed measure)
     model.accumulator_on = False
     lb = getattr(model, "layer_b", None)
     rows, u, n, solved = _u(model, cfg, horizons, seeds)
-    # 2) bare shape encoder (no measure, no accumulator)
-    model.layer_b = None
-    model.accumulator_on = False
-    _rb, u_bare, _, _sb = _u(model, cfg, horizons, seeds)
-    # 3) hand accumulator (RFM-ish), no learned measure
-    model.accumulator_on = True
-    _ra, u_acc, _, _sa = _u(model, cfg, horizons, seeds)
-    # restore
-    model.accumulator_on = False
-    model.layer_b = lb
+    if fast:
+        # --fast: skip the bare/accumulator comparison U runs (each trains a sequence oracle);
+        # this is the dominant cost of the card. Report the pipeline U only.
+        u_bare = u_acc = u
+    else:
+        # 2) bare shape encoder (no measure, no accumulator)
+        model.layer_b = None
+        model.accumulator_on = False
+        _rb, u_bare, _, _sb = _u(model, cfg, horizons, seeds)
+        # 3) hand accumulator (RFM-ish), no learned measure
+        model.accumulator_on = True
+        _ra, u_acc, _, _sa = _u(model, cfg, horizons, seeds)
+        # restore
+        model.accumulator_on = False
+        model.layer_b = lb
     # B+C — decision certification (the RL arm of rabbit_hole + looking_glass)
     try:
         from looking_glass.decision_certify import certify
@@ -325,6 +331,7 @@ def main(argv=None):
         "--white-queen", action="store_true", dest="white_queen", help="run the real tribunal"
     )
     ap.add_argument("--truth", default=None, help="truth json for the white_queen oracle control")
+    ap.add_argument("--fast", action="store_true", help="skip the bare/accumulator U comparisons")
     ap.add_argument("--supervised", action="store_true")
     ap.add_argument("--unsupervised", action="store_true")
     a = ap.parse_args(argv)
@@ -353,6 +360,7 @@ def main(argv=None):
         truth=a.truth,
         supervised=a.supervised,
         unsupervised=a.unsupervised,
+        fast=a.fast,
     )
     print(card)
     if a.out:
