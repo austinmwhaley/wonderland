@@ -4161,3 +4161,14 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - **Card speed (#1):** memoized `_b_states` (per model/stream/as_of/sampling) and `_period_rows`
   (per stream/as_of/customers/action) — the card/gates/white_queen re-called them ~15×.
 - **Tests:** +14 (gates/contract/onboard).
+
+## DEC-200 — #1 fast card (202 s) + #2 re-verified on E=338
+
+- **#1:** the card's cost was dominated by **white_queen (716 s)** + **supervised (268 s)**; the
+  one-command now defaults to the **fast core** (B + use-cases + null controls) = **202 s (~3.4 min)**
+  via memoized `_b_states`/`_period_rows`, `--fast` (1× U), and full-E gates. `--full` adds
+  white_queen/supervised/unsupervised (slower). A too-aggressive white_queen cut false-HOLDed and was
+  reverted.
+- **#2 (E=338, pipeline ckpt 0.6.4r364731):** **B SOLVED**, **freq/hour/channel/offer DEPLOY**,
+  dow HOLD (the lone marginal), **all 5 nulls HOLD**.
+- **Tests:** 422.
