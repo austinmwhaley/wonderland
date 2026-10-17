@@ -3968,3 +3968,24 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   signal is preserved but the action is provably inert — and require the lift to exceed it. Until
   then, C verdicts are reported as *provisional*.
 - **Gate:** green.
+
+## DEC-187 — Null-calibrated gate + strengthened apex: null HOLDs, signal DEPLOYs
+
+- **Gate fix (the root cause of DEC-186):** replaced the IPS lift with a **direct (g-computation)
+  policy value using a cross-half candidate**: the candidate `argmax_a V(E,a)` is fit on the OTHER
+  half of customers, and the value is the out-of-sample prediction `E[V(E,pi(E))]` — **no importance
+  reweighting**. Agent-diagnosed: IPS/SNIPS/DR/clipping ALL keep a ~+0.03 null bias (the `1[cand==A]`
+  term covaries with `y` through the `E->y` activity signal; the `1/pa` reweight amplifies it);
+  g-computation removes the reweighting and the cross-half selection removes the winner's curse.
+  Measured: **null Δ = +0.001..+0.004** (was +0.025..+0.028); **signal Δ = +0.019..+0.025**. Clear
+  separation. (The apex null control drove the fix.)
+- **Apex strengthening (per-customer optima were near-absent, DEC-186/AgentB):** the weekly response
+  was a product of 5 randomized factors -> each factor's per-customer marginal was diluted. Rewrote
+  the response as `quality(freq,channel,offer) x (ungated floor + timing-gated gain)` (additive soft
+  bowls, no dilution), drew `hour`/`dow` once per week, aligned the action cadence to exactly 7 days.
+  **Raw recoverability: freq 0.46->0.73, offer 0.46->0.74, channel 0.57->0.77, hour 0.25->0.37,
+  dow 0.54->0.62** (all vs ~0.13-0.51 chance); `snr=0` null stays at chance. Category 0.996->0.9998,
+  touchpoint 0.91->0.997 intact; returns/segments/churn/LTV intact.
+- **Read:** the gate now HONESTLY certifies (null HOLDs) AND the apex carries a strong per-customer
+  action signal — both prerequisites for trustworthy C verdicts. Re-run C on the strengthened apex.
+- **Gate:** green (295).

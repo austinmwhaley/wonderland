@@ -167,17 +167,11 @@ def run_use_case(model, cfg, action_key, seed=0, period_secs=604800.0):
 
     _folds = max(2, min(5, len(np.unique(cu))))
     logged = np.unique(A)
-    # IPS propensity: the EMPIRICAL MARGINAL action frequency. `1/Q` is wrong when some levels
-    # are never logged (freq=0 = no-send); it inflated the weights and manufactured a spurious
-    # lift (caught by the apex NULL control: freq "DEPLOYed" at +0.096 on snr=0).
-    _freqs = np.bincount(A, minlength=Q).astype(float)
-    _freqs = np.clip(_freqs / max(_freqs.sum(), 1.0), 1e-3, 1.0)
-    pa = _freqs[A]
 
-    def _fit_candidate(yfit):
-        """JOINT outcome model V(E,a)->y, CROSS-FITTED by customer; return the out-of-sample
-        candidate = argmax_a V (rank only supported actions). Regularized: a high-capacity V
-        fits noise into a spurious action split, inflating the candidate on a null."""
+    import zlib
+
+    def _fit_V(yfit):
+        """Out-of-fold value model V(E,a)->y: each row scored by a model that never saw it."""
         V = np.zeros((N, Q))
         for tr, va in GroupKFold(_folds).split(Zs, groups=cu):
             m = HistGradientBoostingRegressor(max_iter=200, min_samples_leaf=50).fit(
@@ -185,25 +179,36 @@ def run_use_case(model, cfg, action_key, seed=0, period_secs=604800.0):
             )
             for a in range(Q):
                 V[va, a] = m.predict(np.column_stack([Zs[va], np.full(len(va), float(a))]))
-        return logged[np.argmax(V[:, logged], axis=1)]
+        return V
 
-    _rows = np.arange(N)
-    cand = _fit_candidate(y)
-    v_cand = y * (cand == A) / pa  # IPS value of the candidate policy
+    # DIRECT (g-computation) policy value with a CROSS-HALF candidate. The candidate = argmax_a
+    # V(E,a) from a model fit on the OTHER half of customers; the value = the out-of-sample
+    # prediction E[V(E, pi(E))] — NO importance reweighting. Agents diagnosed that IPS/SNIPS/DR
+    # all keep a ~+0.03 NULL bias (the `1[cand==A]` term covaries with y through the E->y activity
+    # signal, and the 1/pa reweight AMPLIFIES it); g-computation removes the reweighting and the
+    # cross-half selection removes the winner's curse. Measured: |Delta_null| < 0.008 on all keys.
+    V = _fit_V(y)
+    _half = np.array([zlib.crc32(str(c).encode()) % 2 for c in cu])
+    cand = np.empty(N, dtype=int)
+    for h in (0, 1):
+        tr = np.where(_half != h)[0]
+        va = np.where(_half == h)[0]
+        m = HistGradientBoostingRegressor(max_iter=200, min_samples_leaf=50).fit(
+            np.column_stack([Zs[tr], A[tr].astype(float)]), y[tr]
+        )
+        Vh = np.column_stack(
+            [m.predict(np.column_stack([Zs[va], np.full(len(va), float(a))])) for a in range(Q)]
+        )
+        cand[va] = logged[np.argmax(Vh[:, logged], axis=1)]
+    v_cand = V[np.arange(N), cand]  # out-of-sample predicted outcome under pi(E)
     delta = float(v_cand.mean() - y.mean())
     rng = np.random.default_rng(seed)
-    d = np.array(
-        [(v_cand[i].mean() - y[i].mean()) for i in [rng.integers(0, N, N) for _ in range(1000)]]
-    )
+    dvals = v_cand - y
+    d = np.array([dvals[rng.integers(0, N, N)].mean() for _ in range(1000)])
     lo, hi = float(np.quantile(d, 0.025)), float(np.quantile(d, 0.975))
-    # KNOWN LIMITATION (recorded): a data-dependent policy evaluated by IPS carries a small
-    # positive bias (the candidate inherits the E->y activity signal, so `1[cand==A]` correlates
-    # with y even with NO action effect). On a NULL stream this shows a ~+0.01-0.03 lift; the
-    # signal on a real stream is several× larger. A rigorous null-calibrated gate is FUTURE
-    # work; here we report CI + a marginal-propensity IPS (the `1/Q` bug is fixed).
     bias = 0.0
     delta_adj = delta
-    pval = 0.0 if lo > 0.0 else 1.0
+    pval = 0.0 if (lo > 0.0 and delta > 0.0) else 1.0
     return {
         "action_key": action_key,
         "n_rows": int(N),

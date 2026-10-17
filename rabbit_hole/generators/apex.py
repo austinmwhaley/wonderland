@@ -71,11 +71,17 @@ class ApexSpec:
     seasonality: float = 0.6
     n_items: int = 400
     # contacts / actions
-    action_peak: float = 0.9  # weekly response peak
-    sigma_f: float = 1.0
-    sigma_h: float = 2.5
-    sigma_d: float = 1.8
-    channel_base_aff: float = 0.35  # non-preferred-channel relative response
+    action_peak: float = 10.0  # timing-gated response gain at the customer's optimal tuple
+    action_base: float = 0.12  # ungated response floor (scaled by snr -> 0 at snr=0)
+    action_floor: float = 0.06  # per-factor soft floor so off-optimal arms still convert
+    sigma_f: float = 0.38
+    sigma_h: float = 1.05
+    sigma_d: float = 0.95
+    sigma_o: float = 0.4
+    channel_base_aff: float = 0.0  # non-preferred-channel relative response
+    action_weights: tuple = (0.45, 0.275, 0.275)  # (freq, channel, offer) additive weights
+    timing_floor: float = 0.04  # timing-gate floor (off-timing weeks still convert via base)
+    timing_hour_weight: float = 0.86  # hour vs dow share of the timing gate
     offer_gain: float = 0.6  # margin gain at the customer's optimal depth
     treatment_day: int = 0  # contacts respond throughout (E excludes action fields -> no leak)
     # observation
@@ -94,6 +100,7 @@ class ApexSpec:
             "churn": s * self.churn_hazard,
             "seasonality": s * self.seasonality,
             "action_peak": s * self.action_peak,
+            "action_base": s * self.action_base,
             "offer_gain": s * self.offer_gain,
             "return": s * self.return_base,
         }
@@ -152,8 +159,8 @@ def build_apex(spec: ApexSpec):
         return int(rng.integers(0, n_items))
 
     mean_ev = spec.base_rate * T * np.exp(0.5 * eff["rate"] ** 2)
-    n_per = max(2, int(round(T / 7.0)))
-    per_days = T / n_per
+    per_days = 7.0  # weekly action period: aligns with generic_measure's 7-day period bins
+    n_per = max(2, int(T // per_days))
     for c in range(spec.n_customers):
         key = f"ap{c:07d}"
         a_rate = float(np.exp(rng.normal(0.0, eff["rate"])))
@@ -291,15 +298,19 @@ def build_apex(spec: ApexSpec):
             offer = int(rng.integers(0, 4))  # randomized discount depth
             if freq == 0:
                 continue
-            SOFT = 0.3
-            best_t = -1.0  # the week responds to the BEST-timed of its sends
-            win_h = 0
-            win_d = 0
+            SOFT = spec.action_floor
+            # hour/dow are part of the WEEKLY action tuple (drawn once, shared by the week's sends)
+            win_h = int(rng.integers(0, 24))
+            win_d = int(rng.integers(0, 7))
+            h_q = float(np.exp(-(((win_h - h0) / spec.sigma_h) ** 2)))
+            d_q = float(np.exp(-(((win_d - d0) / spec.sigma_d) ** 2)))
+            # timing quality of the week's tuple (freq-independent -> no confound with the others)
+            best_t = spec.timing_hour_weight * h_q + (1.0 - spec.timing_hour_weight) * d_q
             win_ts = day0
             for j in range(freq):
-                hour_j = int(rng.integers(0, 24))  # per-send randomized timing
-                dow_j = int(rng.integers(0, 7))
                 ts_j = day0 + float(rng.uniform(0.0, per_days))
+                if j == 0:
+                    win_ts = ts_j
                 emit(
                     key,
                     ts_j,
@@ -308,29 +319,31 @@ def build_apex(spec: ApexSpec):
                     ent_id=key,
                     channel=chan,
                     freq=freq,
-                    hour=hour_j,
-                    dow=dow_j,
+                    hour=win_h,
+                    dow=win_d,
                     offer=offer,
                     discount_pct=round(0.05 * offer, 2),
                     week=p,
                     send_idx=j,
                 )
-                h_q = SOFT + (1 - SOFT) * float(np.exp(-(((hour_j - h0) / spec.sigma_h) ** 2)))
-                d_q = SOFT + (1 - SOFT) * float(np.exp(-(((dow_j - d0) / spec.sigma_d) ** 2)))
-                if h_q * d_q > best_t:
-                    best_t, win_h, win_d, win_ts = h_q * d_q, hour_j, dow_j, ts_j
             if day0 <= spec.treatment_day:
                 continue  # clean OPE: contacts have NO effect before treatment_day
-            # Each action factor is a soft bowl in [SOFT, 1] (identifiable but high-probability,
-            # so every action's optimum is recoverable per customer). Discount-sensitive
-            # customers respond to contacts more overall.
+            # conversion = quality(freq/channel/offer) x (ungated floor + timing-gated gain).
+            # The freq/channel/offer score is ADDITIVE over per-factor soft bowls so no factor's
+            # per-customer optimum is diluted by the others' randomization; the soft floor keeps
+            # off-optimal arms converting enough to estimate. The timing gate concentrates the
+            # extra conversions on weeks whose (hour,dow) tuple is near the optimum, so the
+            # attributed winning send carries the full tuple (channel/freq/hour/dow/offer).
             f_q = SOFT + (1 - SOFT) * float(np.exp(-(((freq - x0) / spec.sigma_f) ** 2)))
-            c_q = SOFT + (1 - SOFT) * (1.0 if chan == chan_pref else 0.0)
-            o_q = SOFT + (1 - SOFT) * float(np.exp(-(((offer - offer_opt) / 1.0) ** 2)))
-            p_conv = (
-                eff["action_peak"] * (0.5 + price_sens) * f_q * c_q * o_q * max(best_t, SOFT * SOFT)
-            )
-            if rng.random() < min(p_conv, 0.95):
+            c_q = 1.0 if chan == chan_pref else spec.channel_base_aff
+            o_q = SOFT + (1 - SOFT) * float(np.exp(-(((offer - offer_opt) / spec.sigma_o) ** 2)))
+            wf, wc, wo = spec.action_weights
+            wsum = max(wf + wc + wo, 1e-9)
+            quality = (wf * f_q + wc * c_q + wo * o_q) / wsum
+            timing_gate = spec.timing_floor + (1 - spec.timing_floor) * max(best_t, 0.0)
+            p_hi = eff["action_peak"] * (0.7 + 0.3 * price_sens)  # discount-sensitive respond more
+            p_conv = quality * (eff["action_base"] + max(p_hi, 0.0) * timing_gate)
+            if rng.random() < min(p_conv, 0.97):
                 pid = _pick_item(dept_pref, item_pref, 0.6 if eff["transition"] > 0 else 0.0)
                 touch = int(np.argmax(touch_w))
                 val = float(
@@ -413,11 +426,20 @@ def build_apex(spec: ApexSpec):
         "arm_key": "channel",
         "action": {
             "peak": spec.action_peak,
+            "base": spec.action_base,
+            "floor": spec.action_floor,
             "sigma_f": spec.sigma_f,
             "sigma_h": spec.sigma_h,
             "sigma_d": spec.sigma_d,
+            "sigma_o": spec.sigma_o,
+            "channel_base_aff": spec.channel_base_aff,
+            "timing_floor": spec.timing_floor,
+            "timing_hour_weight": spec.timing_hour_weight,
+            "weights": list(spec.action_weights),
             "note": "weekly randomized channel x freq(0..3) x hour(0..23) x dow(0..6) x offer(0..3); "
-            "per-customer unimodal response in each -> frequency/hour/dow/channel/offer optima.",
+            "hour/dow are part of the weekly tuple (shared by the week's sends). Conversion = "
+            "quality(freq/channel/offer, additive soft bowls) x (ungated floor + timing-gated gain); "
+            "the winning send carries the outcome. No single factor's optimum is diluted.",
         },
         "note": "APEX apparel omni-channel composite: every latent dimension a Layer-C plugin "
         "needs, with a known-truth receipt. snr=0 = the NULL control.",
