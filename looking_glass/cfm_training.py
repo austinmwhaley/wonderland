@@ -613,7 +613,7 @@ def train_cfm(cfg: CFMConfig):
         _md = int(getattr(cfg, "measure_dim", 0) or 0)
         if _md <= 0:
             _md = int(m_train.shape[1])  # FULL measure (lossless) by default
-        _lb = LayerBEmbedder(_md).fit(m_train)
+        _lb = LayerBEmbedder(_md).fit(m_train, _names)
         _lb.save(out / f"layer_b_{cfg.tag.replace('.', '_')}.pkl")
         print(f"[measure] Layer-B compression fit on {m_train.shape} train measure", flush=True)
     # grade the trained encoder on its whole portfolio (DEC-008: every train
@@ -1849,8 +1849,10 @@ def forward_embedding(model, seqs, h0s=None, chunk: int = 2048, cfg=None, lb=Non
             from looking_glass.layer_b import generic_measure
 
             keys = [s["customer"] for s in seqs]
-            m, _ = generic_measure(cfg, keys)
-            out = torch.cat([out, torch.as_tensor(lb.compress(m), device=out.device)], dim=-1)
+            m, _mnames = generic_measure(cfg, keys)
+            out = torch.cat(
+                [out, torch.as_tensor(lb.compress(m, _mnames), device=out.device)], dim=-1
+            )
     return out
 
 

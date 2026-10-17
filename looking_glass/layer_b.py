@@ -389,19 +389,36 @@ class LayerBEmbedder:
         self.pca = None
         self.names: list = []
 
-    def fit(self, measure):
+    def fit(self, measure, names=None):
         from sklearn.decomposition import PCA
         from sklearn.preprocessing import StandardScaler
 
+        # store the fit-time column NAMES so serve can ALIGN the measure to the exact schema the
+        # compression was fit on (the measure's column set can differ by customer subset -> a
+        # train/serve skew: 82 cols at train vs 81 at serve crashed the scaler).
+        self.names = list(names) if names is not None else []
         self.scaler = StandardScaler().fit(measure)
         m = self.scaler.transform(measure)
         k = min(self.n_components, m.shape[1], max(1, m.shape[0] - 1))
         self.pca = PCA(n_components=k, random_state=0).fit(m)
         return self
 
-    def compress(self, measure) -> np.ndarray:
+    def _align(self, measure, names):
+        """Reindex `measure` (columns = `names`) to `self.names`; missing -> 0, extras dropped."""
+        if not self.names or names is None or list(names) == self.names:
+            return measure
+        idx = {str(n): j for j, n in enumerate(names)}
+        out = np.zeros((measure.shape[0], len(self.names)), dtype=np.float32)
+        for j, n in enumerate(self.names):
+            k = idx.get(str(n))
+            if k is not None:
+                out[:, j] = measure[:, k]
+        return out
+
+    def compress(self, measure, names=None) -> np.ndarray:
         if self.pca is None:
             raise RuntimeError("LayerBEmbedder not fit")
+        measure = self._align(measure, names)
         return self.pca.transform(self.scaler.transform(measure)).astype(np.float32)
 
     def save(self, path) -> None:

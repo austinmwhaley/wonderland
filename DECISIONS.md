@@ -4109,3 +4109,16 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   (ANOVA F=472, p=0); **lookalike enrichment 3.08**; ARI≈0 — expected, since the generator's latent
   `segment` is random (unobservable), so the *value* segmentation is the meaningful one.
 - **Tests:** 420 fast.
+
+## DEC-196 — Fix a train/serve SKEW: the measure's column set varies by customer subset
+
+- **Bug (found by the one-command pipeline at a different `--customers`):** `generic_measure` discovers
+  its columns from the QUERIED customers, so the column set can differ between train (82 cols) and
+  serve (81 cols). The Layer-B scaler (fit on 82) then crashed on 81 → the card failed.
+- **Fix:** `LayerBEmbedder` now stores the **fit-time column names** and **aligns** the serve measure
+  to them (`_align`: reindex by name, missing→0, extras dropped); `fit` takes `names`, `compress`
+  takes the serve `names`. `cfm_training` passes the names both at fit and at `forward_embedding`.
+- **Why it matters:** this is exactly the "train/serve skew" class the doctrine warns about — the
+  embedding served must be built from the SAME schema the compression was fit on, regardless of the
+  customer subset / sampling.
+- **Tests:** layer_b 5 pass.
