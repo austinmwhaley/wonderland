@@ -12,6 +12,7 @@ Targets are computed from the stream in (as_of, as_of+horizon]; no leakage into 
 from __future__ import annotations
 
 import argparse
+import hashlib
 
 import numpy as np
 
@@ -77,6 +78,31 @@ TARGETS = {
 }
 
 
+def _stable_bucket(key) -> int:
+    digest = hashlib.sha256(str(key).encode("utf-8")).digest()
+    return int.from_bytes(digest[:8], "big") & 1
+
+
+def _conformal_split(pred, y, groups, alpha=0.1):
+    """Split by stable customer hash; fit conformal on calib, score on test."""
+    from looking_glass.conformal import ConformalRegressor
+
+    pred = np.asarray(pred, dtype=float).ravel()
+    y = np.asarray(y, dtype=float).ravel()
+    groups = np.asarray(groups).ravel()
+    if not (pred.shape[0] == y.shape[0] == groups.shape[0]):
+        raise ValueError("pred, y and groups must have the same length")
+    calib = np.array([_stable_bucket(g) == 0 for g in groups], dtype=bool)
+    test = ~calib
+    if not calib.any() or not test.any():
+        return float("nan"), float("nan")
+    cr = ConformalRegressor().fit(pred[calib], y[calib], alpha)
+    lo, hi = cr.interval(pred[test])
+    coverage = cr.coverage(pred[test], y[test])
+    width = float(np.mean(hi - lo))
+    return coverage, width
+
+
 def _states(model, cfg, keys):
     import torch
 
@@ -127,12 +153,23 @@ def run_supervised(model, cfg, horizon_days=90, seed=0):
             cmap = {c: i for i, c in enumerate(classes)}
             y = np.array([cmap[str(v)] for v in yv[ok]], dtype=int)
             if len(classes) < 2:
-                rows.append((name, "clf", float("nan"), float("nan"), len(classes)))
+                rows.append(
+                    {
+                        "name": name,
+                        "metric": "clf",
+                        "skill": float("nan"),
+                        "baseline": float("nan"),
+                        "n_classes": len(classes),
+                        "coverage90": None,
+                        "width90": None,
+                    }
+                )
                 continue
         else:
             y = np.array([float(v) for v in yv[ok]], dtype=float)
         nf = max(2, min(5, len(np.unique(cu))))
         aucs, accs, r2s, base = [], [], [], []
+        covs, widths = [], []
         for tr, va in GroupKFold(nf).split(X, groups=cu):
             if kind == "clf":
                 m = HistGradientBoostingClassifier(max_iter=200).fit(X[tr], y[tr])
@@ -145,14 +182,40 @@ def run_supervised(model, cfg, horizon_days=90, seed=0):
                     base.append(float(np.bincount(y[tr]).max()) / len(tr))
             else:
                 m = HistGradientBoostingRegressor(max_iter=200).fit(X[tr], y[tr])
-                r2s.append(r2_score(y[va], m.predict(X[va])))
+                pv = m.predict(X[va])
+                r2s.append(r2_score(y[va], pv))
                 base.append(0.0)
+                cov, width = _conformal_split(pv, y[va], cu[va], alpha=0.1)
+                covs.append(cov)
+                widths.append(width)
         if kind == "clf":
             skill = float(np.mean(aucs)) if metric == "auc" else float(np.mean(accs))
             b = float(np.mean(base)) if base else 0.5
-            rows.append((name, metric, round(skill, 4), round(b, 4), len(set(y))))
+            rows.append(
+                {
+                    "name": name,
+                    "metric": metric,
+                    "skill": round(skill, 4),
+                    "baseline": round(b, 4),
+                    "n_classes": len(set(y)),
+                    "coverage90": None,
+                    "width90": None,
+                }
+            )
         else:
-            rows.append((name, metric, round(float(np.mean(r2s)), 4), 0.0, -1))
+            covs = [c for c in covs if np.isfinite(c)]
+            widths = [w for w in widths if np.isfinite(w)]
+            rows.append(
+                {
+                    "name": name,
+                    "metric": metric,
+                    "skill": round(float(np.mean(r2s)), 4),
+                    "baseline": 0.0,
+                    "n_classes": -1,
+                    "coverage90": round(float(np.mean(covs)), 4) if covs else float("nan"),
+                    "width90": round(float(np.mean(widths)), 4) if widths else float("nan"),
+                }
+            )
     return rows
 
 
@@ -170,8 +233,14 @@ def main(argv=None):
     cfg.numeric_fields = tuple(getattr(model, "numeric_fields", ()) or ())
     cfg.db, cfg.as_of, cfg.sample_customers = a.db, a.as_of, a.customers
     print("# SUPERVISED PLUGIN GATE (held-out, head on E)")
-    for name, metric, skill, base, ncl in run_supervised(model, cfg, a.horizon_days):
-        print(f"  {name:16s} {metric:4s} skill={skill:+.4f}  baseline={base:.4f}  classes={ncl}")
+    for row in run_supervised(model, cfg, a.horizon_days):
+        extra = ""
+        if row["coverage90"] is not None:
+            extra = f"  coverage90={row['coverage90']:.4f}  width90={row['width90']:.4f}"
+        print(
+            f"  {row['name']:16s} {row['metric']:4s} skill={row['skill']:+.4f}  "
+            f"baseline={row['baseline']:.4f}  classes={row['n_classes']}{extra}"
+        )
 
 
 if __name__ == "__main__":

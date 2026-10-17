@@ -135,6 +135,9 @@ def train_cfm(cfg: CFMConfig):
     # schema-declared; the objective is a switch, not a magic number.
     if getattr(cfg, "effect_actions", None) and "effect" not in cfg.objectives:
         cfg.objectives = (*cfg.objectives, "effect")
+    # B5: enable multi-token prediction when mtp_k > 0 (after --set, same rationale).
+    if int(getattr(cfg, "mtp_k", 0) or 0) > 0 and "mtp" not in cfg.objectives:
+        cfg.objectives = (*cfg.objectives, "mtp")
     a_seqs = build_sequences(df, a_keys, cfg, split, with_anchors=False)
     vocab = EventVocab.build(
         a_seqs,
