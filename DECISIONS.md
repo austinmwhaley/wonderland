@@ -4172,3 +4172,14 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - **#2 (E=338, pipeline ckpt 0.6.4r364731):** **B SOLVED**, **freq/hour/channel/offer DEPLOY**,
   dow HOLD (the lone marginal), **all 5 nulls HOLD**.
 - **Tests:** 422.
+
+## DEC-201 — #6 minimality: E's measure content is ~128-dim (retained 0.997 vs 338)
+
+- **Method:** PCA-sweep of the served `E` (338) + ridge probe on the full-history measure (82 cols),
+  held-out R² per target averaged. **k=128 retains 0.997**; k=64 → 0.725; k=32 → 0.443. So the
+  measure-sufficient dimension of `E` is **~128** (2.6× smaller than 338).
+- **Caveat (honest):** this certifies minimality for the *measure* content; `E` also carries the SHAPE
+  (256) needed for future prediction, so a joint shape+measure minimality certification needs a joint
+  target set (future targets + measure). The `EmbeddingDistiller` (C8) is the tool; the full joint
+  certificate is a follow-up. Measure-minimal dim recorded as **128**.
+- **Tests:** 422.
