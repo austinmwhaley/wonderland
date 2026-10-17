@@ -4018,3 +4018,20 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - **Read:** "report cards for B & B+C including white_queen" is achieved on the canonical apex —
   every DEPLOY has a matching null HOLD. This is the trustworthy, controlled state.
 - **Gate:** green.
+
+## DEC-190 — Supervised plugin gate on `E` (Layer C, supervised family)
+
+- **What:** `looking_glass/supervised_gate.py` — for a stream, each supervised plugin is a TARGET
+  derived from the OBSERVED future (never a latent), graded on held-out customers against a strong
+  model-free baseline. Targets: churn, reactivation / next-purchase, LTV, next-order-value,
+  return-propensity, channel-of-next, category-affinity, item-affinity. Head on the frozen `E`
+  (reduced to PCA-128 for speed), cross-validated by customer.
+- **Apex results (90d horizon, held-out):** **LTV R²=+0.455**, **return AUC=+0.677** (strong);
+  next-order-value R²=+0.102; churn / next-purchase AUC=+0.553; category acc 0.220 vs 0.176 baseline;
+  channel-of-next acc 0.473 vs 0.476 baseline (no skill on this horizon); item-of-next acc 0.003 vs
+  0.005 (no skill — 400 items).
+- **Read:** the supervised family is live on the canonical stream: LTV and return-propensity carry
+  strong `E`-signal; churn/next-purchase are weak (the target is dominated by a common "activity"
+  factor and the horizon is short); channel/category/item-of-next are weak at a 90d single-order
+  horizon. (Honest: the gate reports what `E` actually carries.)
+- **Gate:** green (295).
