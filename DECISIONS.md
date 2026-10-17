@@ -4035,3 +4035,21 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   factor and the horizon is short); channel/category/item-of-next are weak at a 90d single-order
   horizon. (Honest: the gate reports what `E` actually carries.)
 - **Gate:** green (295).
+
+## DEC-191 — Improvements batch: A1 cache, A2 scan compile, A3 bf16, C8 distillation, + roster/propensity
+
+- **A1 (speed, zero-risk):** memoized the deterministic full-history measure (`layer_b.generic_measure`)
+  per `(stream, as_of, effect_actions, action_fields, customer set)` — the card/gates/certification
+  re-measure the same population many times; now computed once per process.
+- **A2 (speed, equivalence-tested):** flag-gated accelerated `_scan` (`LG_SCAN=auto|compiled|eager`)
+  via a module-cached `torch.compile` of the SAME affine prefix scan, with eager fallback.
+  Verified numerically equivalent (allclose 1e-5, fwd+bwd) and **~5× faster on CPU** (T=512,B=64,d=128).
+- **A3 (speed/robustness):** autocast dtype is now `bf16` by default (`cfg.amp_dtype`) — fp32 range,
+  no GradScaler, fewer Armijo reverts than fp16.
+- **C8 (minimality):** `looking_glass/distill.py` — `EmbeddingDistiller` (PLS + 1-SE k selection)
+  finds the smallest linear projection of `E` retaining its held-out predictive signal; test recovers
+  a known rank-3 structure at k=4 with retained sufficiency 1.00.
+- **Roster + propensity (b):** `looking_glass/candidate_roster.py` (value · bc · iql · cql · dt as
+  white_queen candidates reading `E`); the bridge no longer injects a fake `1/Q` propensity — it
+  passes none (white_queen ESTIMATES it — the real-world default).
+- **Tests:** 307 fast (12 new). white_queen roster (channel): value/bc/cql HOLD so far.

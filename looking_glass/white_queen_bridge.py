@@ -106,7 +106,10 @@ def certify_period(
         cand = EPolicy(vm, mean, std, Q)
         _name = f"E-{action_key}"
     ctx = np.column_stack([np.arange(N), sc]).astype(np.float32)
-    src = {"obs": ctx, "action": A, "reward": y, "propensity": np.full(N, 1.0 / Q)}
+    # NO logged propensity (the real-world default: the human/logging policy is unrecorded).
+    # white_queen ESTIMATES P(action|context) from the stream. Pass a real column only if you
+    # truly have it.
+    src = {"obs": ctx, "action": A, "reward": y}
     rep = evaluate(
         src,
         cand,
@@ -153,7 +156,8 @@ def certify(model, cfg, horizon_days: int = 90, risk_aversion: float = 0.5, fast
         np.column_stack([sc, a.astype(float)]), r
     )
     cand = EPolicy(vm, mean, std, Q)
-    src = {"obs": ctx, "action": a, "reward": r, "propensity": np.full(N, 1.0 / Q)}
+    # NO logged propensity (estimated by white_queen); pass a real column only if logged.
+    src = {"obs": ctx, "action": a, "reward": r}
     rep = evaluate(src, cand, candidate_name="E-policy", fast=fast, risk_aversion=risk_aversion)
     return {
         "deploy": bool(rep["deploy"]),
@@ -191,7 +195,8 @@ def oracle(model, cfg, truth_json, horizon_days: int = 90, risk_aversion: float 
     sc = ((Z - mean) / (std + 1e-9)).astype(np.float32)
     ctx = np.column_stack([np.arange(N), sc]).astype(np.float32)
     pol = EPolicy(None, mean, std, Q, pref=pref)
-    src = {"obs": ctx, "action": a, "reward": r, "propensity": np.full(N, 1.0 / Q)}
+    # NO logged propensity (estimated by white_queen); pass a real column only if logged.
+    src = {"obs": ctx, "action": a, "reward": r}
     rep = evaluate(src, pol, candidate_name="ORACLE", fast=fast, risk_aversion=risk_aversion)
     return {
         "deploy": bool(rep["deploy"]),

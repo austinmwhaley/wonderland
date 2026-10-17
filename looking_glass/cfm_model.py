@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -69,7 +71,7 @@ class EventVocab:
 # ---------------------------------------------------------------------------
 # encoder (selective SSM) + objectives
 # ---------------------------------------------------------------------------
-def _scan(d, b):
+def _scan_eager(d, b):
     """Vectorized affine prefix scan (Hillis-Steele, O(log T) Python steps).
 
     Solves h_t = d_t * h_{t-1} + b_t with h_{-1}=0, for d:(B,T,1), b:(B,T,D).
@@ -87,6 +89,38 @@ def _scan(d, b):
         a, Bb = an, bn
         s *= 2
     return a, Bb
+
+
+# ---------------------------------------------------------------------------
+# A2: accelerated scan. `LG_SCAN` = auto (default) | compiled | eager.
+#   * auto / compiled: use a module-cached `torch.compile` of the SAME
+#     recurrence (`_scan_eager`); on any compile or first-call failure fall
+#     back to the eager path (and stay there — safe, never breaks a forward).
+#   * eager: disable acceleration entirely (default-equivalent numerics).
+# Both paths compute the identical affine prefix scan (fp32, atol 1e-5); the
+# initial-state term (`H + D*h0`) is handled by the callers, not here.
+# ---------------------------------------------------------------------------
+_SCAN_MODE = os.environ.get("LG_SCAN", "auto").strip().lower()
+_scan_compiled = None
+_scan_disabled = _SCAN_MODE == "eager"
+
+
+def _scan(d, b):
+    """Affine prefix scan dispatcher (accelerated when `LG_SCAN` allows)."""
+    global _scan_compiled, _scan_disabled
+    if _scan_disabled:
+        return _scan_eager(d, b)
+    if _scan_compiled is None:
+        try:
+            _scan_compiled = torch.compile(_scan_eager)
+        except Exception:
+            _scan_disabled = True
+            return _scan_eager(d, b)
+    try:
+        return _scan_compiled(d, b)
+    except Exception:
+        _scan_disabled = True
+        return _scan_eager(d, b)
 
 
 def _tod(ts):

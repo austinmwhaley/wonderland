@@ -23,6 +23,11 @@ import numpy as np
 
 from looking_glass.cfm_config import as_of_epoch
 
+# A1: process-level cache for the deterministic full-history measure (the same population is
+# measured many times — card, gates, certification — but it only depends on
+# (stream, as_of, effect_actions, action_fields, customer set)).
+_GM_CACHE: dict = {}
+
 
 def generic_measure(cfg, cust, only_keys=None):
     """Schema-derived, EXHAUSTIVE full-history measure (the Layer-B measure + the oracle's input).
@@ -31,6 +36,17 @@ def generic_measure(cfg, cust, only_keys=None):
     its natural type — every categorical field -> distinct-count; every numeric field ->
     count/sum/mean/std/min/max; plus generic timing. `only_keys` restricts the JSON keys (for
     ablations). Returns (X:(N,D) float32, names) aligned to `cust` order."""
+    _key = (
+        str(cfg.db),
+        str(getattr(cfg, "as_of", None)),
+        tuple(getattr(cfg, "effect_actions", ()) or ()),
+        tuple(getattr(cfg, "action_fields", ()) or ()),
+        str(only_keys),
+        tuple(map(str, cust)),
+    )
+    _hit = _GM_CACHE.get(_key)
+    if _hit is not None:
+        return _hit
     import duckdb
     import polars as pl
 
@@ -159,6 +175,7 @@ def generic_measure(cfg, cust, only_keys=None):
     if resp_blocks:
         X = np.column_stack([X, *resp_blocks])
         cols = cols + resp_names
+    _GM_CACHE[_key] = (X.astype(np.float32), cols)
     return X.astype(np.float32), cols
 
 

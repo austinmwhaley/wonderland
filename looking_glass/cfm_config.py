@@ -369,6 +369,9 @@ class CFMConfig:
     )
     seed: int = 0
     device: str = "cuda" if torch.cuda.is_available() else "cpu"
+    # A3: autocast dtype. bf16 (default) has fp32 range -> no loss scaling, fewer Armijo
+    # reverts than fp16; set "fp16" on hardware where fp16 is materially faster.
+    amp_dtype: str = "bf16"
 
     @property
     def tag(self) -> str:

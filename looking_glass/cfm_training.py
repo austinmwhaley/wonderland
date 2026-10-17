@@ -250,7 +250,13 @@ def train_cfm(cfg: CFMConfig):
     rng = np.random.default_rng(cfg.seed)
 
     use_amp = device.type == "cuda"
-    scaler = torch.amp.GradScaler("cuda", enabled=use_amp)
+    # A3: bf16 (default) has fp32 range -> no loss scaling; fp16 needs the GradScaler.
+    _amp_dtype = (
+        torch.bfloat16
+        if str(getattr(cfg, "amp_dtype", "bf16")).lower() == "bf16"
+        else torch.float16
+    )
+    scaler = torch.amp.GradScaler("cuda", enabled=(use_amp and _amp_dtype is torch.float16))
     balancer = DWA(sorted(cfg.objectives), temp=cfg.dwa_temp)
     # FR v2.0 Path 2 (DEC-045): NO curvature-seeded lr. The init-curvature `L`
     # of a random deep net overestimates the safe step by orders of magnitude
@@ -340,7 +346,7 @@ def train_cfm(cfg: CFMConfig):
         torch.manual_seed(0)
         with (
             torch.no_grad(),
-            torch.autocast(device_type=device.type, dtype=torch.float16, enabled=use_amp),
+            torch.autocast(device_type=device.type, dtype=_amp_dtype, enabled=use_amp),
         ):
             tl, il = _loss_split(
                 model,
@@ -357,7 +363,7 @@ def train_cfm(cfg: CFMConfig):
             b = rng.choice(tr_idx, size=min(cfg.batch, len(tr_idx)), replace=False)
             items = [a_seqs[i] for i in b]
             opt.zero_grad()
-            with torch.autocast(device_type=device.type, dtype=torch.float16, enabled=use_amp):
+            with torch.autocast(device_type=device.type, dtype=_amp_dtype, enabled=use_amp):
                 task_loss, inv_loss = _loss_split(
                     model, vocab, items, cfg, weights=balancer.weights(), scales=loss_scales
                 )
