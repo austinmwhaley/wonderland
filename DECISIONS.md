@@ -4097,3 +4097,15 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - **Action:** adopt `measure_dim >= measure columns` as the default for decision/measure streams
   (the 64-dim compression was silently lossy).
 - **Tests:** 420 fast.
+
+## DEC-195 — measure_dim defaults to FULL (lossless); supervised+unsupervised gates run on the everything ckpt
+
+- **Adopt DEC-194:** `measure_dim` default is now **0 = full** (all measure columns; lossless) — a
+  positive value is an explicit compression. (The 64-dim PCA was silently lossy: U 0.65 vs 0.88.)
+- **Supervised gate (apex_everything, 90d, held-out):** churn/next-purchase AUC **+0.578**,
+  return AUC **+0.686**, LTV R² **+0.451** with **conformal 90% coverage 0.901** (width 377),
+  next-value R² +0.118 (coverage 0.901, width 68). channel/category/item-of-next weak.
+- **Unsupervised gate:** silhouette **0.396**; discovered segments are **strongly value-differentiated**
+  (ANOVA F=472, p=0); **lookalike enrichment 3.08**; ARI≈0 — expected, since the generator's latent
+  `segment` is random (unobservable), so the *value* segmentation is the meaningful one.
+- **Tests:** 420 fast.

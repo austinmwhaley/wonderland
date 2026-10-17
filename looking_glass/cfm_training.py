@@ -610,7 +610,10 @@ def train_cfm(cfg: CFMConfig):
         from looking_glass.layer_b import LayerBEmbedder, generic_measure
 
         m_train, _names = generic_measure(cfg, a_keys)
-        _lb = LayerBEmbedder(int(getattr(cfg, "measure_dim", 64))).fit(m_train)
+        _md = int(getattr(cfg, "measure_dim", 0) or 0)
+        if _md <= 0:
+            _md = int(m_train.shape[1])  # FULL measure (lossless) by default
+        _lb = LayerBEmbedder(_md).fit(m_train)
         _lb.save(out / f"layer_b_{cfg.tag.replace('.', '_')}.pkl")
         print(f"[measure] Layer-B compression fit on {m_train.shape} train measure", flush=True)
     # grade the trained encoder on its whole portfolio (DEC-008: every train

@@ -290,7 +290,10 @@ class CFMConfig:
     # Layer-B MEASURE pipeline: append a learned compression of the generic full-history
     # measure to the consumed embedding (the ~0.9 object). Fit at train, frozen at serve.
     use_measure: bool = False
-    measure_dim: int = 64
+    # Layer-B measure compression width. 0 = FULL (all measure columns, lossless) — the
+    # default, because a smaller PCA silently LOSES sufficiency (measured: U 0.65 at 64 dims
+    # vs 0.88 full). A positive value is an explicit compression (minimality trade).
+    measure_dim: int = 0
     # v6.9 (DEC-055): dedicated event-identity residual in the readout
     # z_t = RMSNorm(W_C H_t + skip(x_t) + W_e·emb(e_t) + W_ep·emb(e_{t-1})).
     # Adds a CLEAN, linearly-usable event path (the generic token skip mixes
