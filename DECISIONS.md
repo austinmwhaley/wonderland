@@ -4079,3 +4079,21 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   first", no distributional assumptions. (Wiring intervals into the card is a follow-up.)
 - **B4 SSD:** kept as a documented negative (`ssd_scan.py`), not adopted.
 - **Tests:** +100 (conformal/pruning/ssd). No behavior change to the default pipeline.
+
+## DEC-194 — Everything-enabled end-to-end: improvements RAISED capability (U 0.65 -> 0.88) without hurting
+
+- **Ran the full pipeline with A1 (measure cache) + A2 (compiled scan) + A3 (bf16) + B5 (MTP) +
+  measure_dim=128 + the response measure.** Train took **441 s**.
+- **Card (apex_everything `0.6.4r484115`):**
+  - **B: SOLVED ✅ U = 0.8779** (was **0.6521** at measure_dim=64) — preserving the FULL measure
+    (dim 128 >= columns) plus MTP **raised sufficiency by +0.23** (the 64-dim PCA was losing
+    sufficiency, consistent with the earlier probe).
+  - **USE CASES: all 5 DEPLOY** (freq +0.039, channel +0.041, offer +0.018, hour +0.010, dow +0.005).
+  - **WHITE_QUEEN: E-policy + ORACLE DEPLOY ✅.**
+  - **CONTROLS: all 5 nulls HOLD.**
+- **Portfolio:** all members PASS except the legacy `effect` head probe; **`mtp` PASS (+0.041)**.
+- **Read:** the speed/capability batch is a net win — **faster** (compiled scan + cache + bf16) and
+  **more capable** (U +0.23 from the full measure + MTP), with every gate and control green.
+- **Action:** adopt `measure_dim >= measure columns` as the default for decision/measure streams
+  (the 64-dim compression was silently lossy).
+- **Tests:** 420 fast.
