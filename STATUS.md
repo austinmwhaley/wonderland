@@ -217,6 +217,17 @@ invariant-by-construction).
 
 ## Micro
 
+- **Improvements batch + everything-enabled (DEC-187..195).** Adopted **A1** (deterministic-measure
+  cache), **A2** (compiled scan, ~5×, equivalence-tested, `LG_SCAN`), **A3** (bf16 default), **B5**
+  (multi-token prediction, opt-in `mtp_k`). **B4** (SSD/Mamba-2) implemented+benchmarked and
+  **rejected** (2–3× slower than the compiled scan). Added **C6** `objective_pruning.py`, **C7**
+  `conformal.py` (coverage 0.90 verified), **C8** `distill.py` (minimality), `candidate_roster.py`
+  (value/bc/iql/cql/dt), `unsupervised_gate.py`, `scripts/apex_pipeline.py` (one command A→B→C);
+  bridge no longer injects propensity (white_queen estimates). **Everything-enabled apex card:
+  B SOLVED, U 0.65→0.88, all 5 use-cases DEPLOY, white_queen E-policy+oracle DEPLOY, all nulls HOLD**;
+  train 441s. Supervised gate: churn .58 / return .69 / LTV .45 (cov .90); unsupervised: silhouette
+  .40 / ANOVA F=472 / lookalike 3.1×. `measure_dim` now defaults to FULL (lossless). **420 fast tests.**
+
 - **APEX card ALL GREEN (DEC-182/183).** `looking_glass/foundation_report --white-queen --truth ...`
   emits the full apex card: **B SOLVED ✅ · USE-CASES DEPLOY** (freq, hour) **· B+C DEPLOY · WHITE_QUEEN
   DEPLOY** (E-policy DR 47.0 > bar 42.23) **+ ORACLE DEPLOY ✅ · CONTROLS** (null) shown. **Key fix
