@@ -153,7 +153,9 @@ def certify_roster(
         cu, A, y = cu[sel], A[sel], y[sel]
     Zrow = Z[[ci[c] for c in cu]]
     Zs = StandardScaler().fit_transform(Zrow)
-    Er = PCA(n_components=min(64, Zs.shape[1], len(A) - 1), random_state=0).fit_transform(Zs)
+    # DEC-194: a 64-dim reduction is LOSSY (drops the response); keep up to 128 dims so the
+    # candidates see the same signal the bridge's full-E policy does.
+    Er = PCA(n_components=min(128, Zs.shape[1], len(A) - 1), random_state=0).fit_transform(Zs)
     roster, mean, std = build_roster(Er, A, y)
     ctx = np.column_stack([np.arange(len(A)), Er]).astype(np.float32)
     src = {"obs": ctx, "action": A, "reward": y}  # no propensity (estimated)
