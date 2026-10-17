@@ -103,6 +103,71 @@ def _conformal_split(pred, y, groups, alpha=0.1):
     return coverage, width
 
 
+def _metric_value(pred, y, kind, metric):
+    from sklearn.metrics import accuracy_score, r2_score, roc_auc_score
+
+    if kind == "clf":
+        if metric == "auc":
+            if len(np.unique(y)) < 2:
+                return float("nan")
+            return float(roc_auc_score(y, pred))
+        return float(accuracy_score(y, pred))
+    return float(r2_score(y, pred))
+
+
+def _bootstrap_skill(pred, y, kind, metric, baseline, n_boot=500, seed=0):
+    """Bootstrap 95% CI of held-out skill by resampling customers (NO refit).
+
+    Returns ``(skill, lo, hi, verdict)``; PASS iff the lower bound is strictly
+    above the model-free baseline.
+    """
+    pred = np.asarray(pred, dtype=float).ravel()
+    y = np.asarray(y).ravel()
+    if pred.shape[0] != y.shape[0]:
+        raise ValueError("pred and y must have the same length")
+    if pred.size == 0:
+        return float("nan"), float("nan"), float("nan"), "FAIL"
+    skill = _metric_value(pred, y, kind, metric)
+    rng = np.random.default_rng(seed)
+    n = len(y)
+    boot = []
+    for _ in range(int(n_boot)):
+        idx = rng.integers(0, n, n)
+        value = _metric_value(pred[idx], y[idx], kind, metric)
+        if np.isfinite(value):
+            boot.append(value)
+    if boot:
+        lo, hi = np.percentile(boot, [2.5, 97.5])
+    else:
+        lo = hi = float("nan")
+    verdict = "PASS" if np.isfinite(lo) and lo > baseline else "FAIL"
+    return float(skill), float(lo), float(hi), verdict
+
+
+def _load_null_model(cfg, null):
+    """Load the null-control encoder on the same data window/split as ``cfg``."""
+    from looking_glass.cfm_state import load_frozen_encoder
+
+    db, tag, ckpt_dir = null
+    model, null_cfg = load_frozen_encoder(tag, ckpt_dir)
+    null_cfg.attr_fields = tuple(getattr(model, "attr_fields", ()) or ())
+    null_cfg.numeric_fields = tuple(getattr(model, "numeric_fields", ()) or ())
+    null_cfg.db = db
+    for key in ("as_of", "sample_customers", "split_seed", "split_a_frac"):
+        if hasattr(cfg, key):
+            setattr(null_cfg, key, getattr(cfg, key))
+    return model, null_cfg
+
+
+class SupervisedGateResult(list):
+    """Per-target gate rows plus optional null-control metadata."""
+
+    def __init__(self, rows=(), null_ok=None, null_rows=None):
+        super().__init__(rows)
+        self.null_ok = null_ok
+        self.null_rows = null_rows
+
+
 def _states(model, cfg, keys):
     import torch
 
@@ -123,9 +188,8 @@ def _states(model, cfg, keys):
     return np.concatenate(Z, 0), C
 
 
-def run_supervised(model, cfg, horizon_days=90, seed=0):
+def _run_supervised(model, cfg, horizon_days=90, seed=0):
     from sklearn.ensemble import HistGradientBoostingClassifier, HistGradientBoostingRegressor
-    from sklearn.metrics import accuracy_score, r2_score, roc_auc_score
     from sklearn.model_selection import GroupKFold
 
     import looking_glass.cfm_data as _d
@@ -162,35 +226,45 @@ def run_supervised(model, cfg, horizon_days=90, seed=0):
                         "n_classes": len(classes),
                         "coverage90": None,
                         "width90": None,
+                        "skill_lo": float("nan"),
+                        "skill_hi": float("nan"),
+                        "verdict": "FAIL",
                     }
                 )
                 continue
         else:
             y = np.array([float(v) for v in yv[ok]], dtype=float)
         nf = max(2, min(5, len(np.unique(cu))))
-        aucs, accs, r2s, base = [], [], [], []
+        oof_pred, oof_y, base = [], [], []
         covs, widths = [], []
         for tr, va in GroupKFold(nf).split(X, groups=cu):
             if kind == "clf":
                 m = HistGradientBoostingClassifier(max_iter=200).fit(X[tr], y[tr])
                 if metric == "auc":
-                    if len(set(y[va])) < 2:
-                        continue
-                    aucs.append(roc_auc_score(y[va], m.predict_proba(X[va])[:, 1]))
+                    if len(getattr(m, "classes_", ())) < 2:
+                        pv = np.zeros(len(va), dtype=float)
+                    else:
+                        pv = m.predict_proba(X[va])[:, 1]
                 else:
-                    accs.append(accuracy_score(y[va], m.predict(X[va])))
+                    pv = m.predict(X[va])
                     base.append(float(np.bincount(y[tr]).max()) / len(tr))
             else:
                 m = HistGradientBoostingRegressor(max_iter=200).fit(X[tr], y[tr])
                 pv = m.predict(X[va])
-                r2s.append(r2_score(y[va], pv))
                 base.append(0.0)
                 cov, width = _conformal_split(pv, y[va], cu[va], alpha=0.1)
                 covs.append(cov)
                 widths.append(width)
+            oof_pred.append(np.asarray(pv, dtype=float))
+            oof_y.append(np.asarray(y[va]))
         if kind == "clf":
-            skill = float(np.mean(aucs)) if metric == "auc" else float(np.mean(accs))
-            b = float(np.mean(base)) if base else 0.5
+            b = float(np.mean(base)) if base else (0.5 if metric == "auc" else float("nan"))
+        else:
+            b = 0.0
+        pred = np.concatenate(oof_pred) if oof_pred else np.array([])
+        y_oof = np.concatenate(oof_y) if oof_y else np.array([])
+        skill, lo, hi, verdict = _bootstrap_skill(pred, y_oof, kind, metric, b, seed=seed)
+        if kind == "clf":
             rows.append(
                 {
                     "name": name,
@@ -200,6 +274,9 @@ def run_supervised(model, cfg, horizon_days=90, seed=0):
                     "n_classes": len(set(y)),
                     "coverage90": None,
                     "width90": None,
+                    "skill_lo": round(lo, 4),
+                    "skill_hi": round(hi, 4),
+                    "verdict": verdict,
                 }
             )
         else:
@@ -209,14 +286,51 @@ def run_supervised(model, cfg, horizon_days=90, seed=0):
                 {
                     "name": name,
                     "metric": metric,
-                    "skill": round(float(np.mean(r2s)), 4),
+                    "skill": round(skill, 4),
                     "baseline": 0.0,
                     "n_classes": -1,
                     "coverage90": round(float(np.mean(covs)), 4) if covs else float("nan"),
                     "width90": round(float(np.mean(widths)), 4) if widths else float("nan"),
+                    "skill_lo": round(lo, 4),
+                    "skill_hi": round(hi, 4),
+                    "verdict": verdict,
                 }
             )
     return rows
+
+
+def run_supervised(model, cfg, horizon_days=90, seed=0, null=None):
+    """Grade supervised targets on held-out customers, with a bootstrap verdict.
+
+    With ``null=(db, tag, ckpt_dir)``, the same targets are also run on a null
+    encoder; ``null_ok`` is True iff every null target FAILs (no skill).
+    """
+    rows = _run_supervised(model, cfg, horizon_days=horizon_days, seed=seed)
+    if null is None:
+        return SupervisedGateResult(rows)
+    null_model, null_cfg = _load_null_model(cfg, null)
+    null_rows = _run_supervised(null_model, null_cfg, horizon_days=horizon_days, seed=seed)
+    by_name = {r["name"]: r for r in null_rows}
+    null_ok = all(r["verdict"] == "FAIL" for r in null_rows)
+    for row in rows:
+        nr = by_name.get(row["name"])
+        row["null_skill"] = nr["skill"] if nr is not None else None
+        row["null_verdict"] = nr["verdict"] if nr is not None else "FAIL"
+        row["null_ok"] = null_ok
+    return SupervisedGateResult(rows, null_ok=null_ok, null_rows=null_rows)
+
+
+def _print_rows(rows, title):
+    print(title)
+    for row in rows:
+        extra = ""
+        if row["coverage90"] is not None:
+            extra = f"  coverage90={row['coverage90']:.4f}  width90={row['width90']:.4f}"
+        print(
+            f"  {row['name']:16s} {row['metric']:4s} skill={row['skill']:+.4f}  "
+            f"[{row['skill_lo']:+.4f}, {row['skill_hi']:+.4f}]  "
+            f"baseline={row['baseline']:.4f}  {row['verdict']}  classes={row['n_classes']}{extra}"
+        )
 
 
 def main(argv=None):
@@ -227,20 +341,24 @@ def main(argv=None):
     ap.add_argument("--as-of", required=True, dest="as_of")
     ap.add_argument("--horizon-days", type=int, default=90, dest="horizon_days")
     ap.add_argument("--customers", type=int, default=12000)
+    ap.add_argument("--null-db", dest="null_db")
+    ap.add_argument("--null-tag", dest="null_tag")
+    ap.add_argument("--null-ckpt-dir", dest="null_ckpt_dir")
     a = ap.parse_args(argv)
+    null = None
+    if any((a.null_db, a.null_tag, a.null_ckpt_dir)):
+        if not all((a.null_db, a.null_tag, a.null_ckpt_dir)):
+            ap.error("--null-db, --null-tag and --null-ckpt-dir must be given together")
+        null = (a.null_db, a.null_tag, a.null_ckpt_dir)
     model, cfg = load_frozen_encoder(a.tag, a.ckpt_dir)
     cfg.attr_fields = tuple(getattr(model, "attr_fields", ()) or ())
     cfg.numeric_fields = tuple(getattr(model, "numeric_fields", ()) or ())
     cfg.db, cfg.as_of, cfg.sample_customers = a.db, a.as_of, a.customers
-    print("# SUPERVISED PLUGIN GATE (held-out, head on E)")
-    for row in run_supervised(model, cfg, a.horizon_days):
-        extra = ""
-        if row["coverage90"] is not None:
-            extra = f"  coverage90={row['coverage90']:.4f}  width90={row['width90']:.4f}"
-        print(
-            f"  {row['name']:16s} {row['metric']:4s} skill={row['skill']:+.4f}  "
-            f"baseline={row['baseline']:.4f}  classes={row['n_classes']}{extra}"
-        )
+    result = run_supervised(model, cfg, a.horizon_days, null=null)
+    _print_rows(result, "# SUPERVISED PLUGIN GATE (held-out, head on E)")
+    if result.null_rows is not None:
+        _print_rows(result.null_rows, "# NULL CONTROL (same targets, null encoder)")
+        print(f"  null_ok={result.null_ok}")
 
 
 if __name__ == "__main__":

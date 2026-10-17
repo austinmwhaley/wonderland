@@ -84,6 +84,22 @@ def _top_decile_mask(y):
     return mask
 
 
+def _verdict(metrics):
+    """PASS iff the geometry shows separation, value differentiation, and lookalike structure."""
+    silhouette = metrics.get("silhouette")
+    anova_p = metrics.get("anova_p")
+    enrichment = metrics.get("lookalike_enrichment")
+    ok = (
+        silhouette is not None
+        and silhouette > 0
+        and anova_p is not None
+        and anova_p < 0.05
+        and enrichment is not None
+        and enrichment > 1.0
+    )
+    return "PASS" if ok else "FAIL"
+
+
 def _truth_segments(cfg):
     """Load {customer: latent segment} from the stream's truth receipt, if present."""
     p = Path(str(cfg.db))
@@ -139,7 +155,7 @@ def _eta_squared(labels, y):
     return float(ssb / max(sst, 1e-12))
 
 
-def run_unsupervised(model, cfg, max_k=8, seed=0):
+def _run_unsupervised(model, cfg, max_k=8, seed=0):
     """Certify segmentation + lookalike geometry on the held-out (split-B) embedding."""
     from looking_glass.head_battery import _b_states
     from looking_glass.supervised_gate import _labels
@@ -175,7 +191,7 @@ def run_unsupervised(model, cfg, max_k=8, seed=0):
 
     sizes = [int((lab == c).sum()) for c in range(k)]
     means = [float(ltv[lab == c].mean()) for c in range(k)]
-    return {
+    metrics = {
         "n_customers": int(n),
         "pca_components": int(X.shape[1]),
         "k": int(k),
@@ -193,6 +209,33 @@ def run_unsupervised(model, cfg, max_k=8, seed=0):
         "lookalike_base_rate": round(float(seed_mask.mean()), 4),
         "lookalike_enrichment": None if np.isnan(enrichment) else round(enrichment, 4),
     }
+    metrics["verdict"] = _verdict(metrics)
+    return metrics
+
+
+def run_unsupervised(model, cfg, max_k=8, seed=0, null=None):
+    """Certify geometry; with ``null=(db, tag, ckpt_dir)`` also run a null control.
+
+    ``null_ok`` is True iff the null encoder's verdict is FAIL (no skill).
+    """
+    metrics = _run_unsupervised(model, cfg, max_k=max_k, seed=seed)
+    if null is None:
+        return metrics
+    from looking_glass.supervised_gate import _load_null_model
+
+    null_model, null_cfg = _load_null_model(cfg, null)
+    null_metrics = _run_unsupervised(null_model, null_cfg, max_k=max_k, seed=seed)
+    metrics["null_metrics"] = null_metrics
+    metrics["null_ok"] = null_metrics["verdict"] == "FAIL"
+    return metrics
+
+
+def _print_metrics(metrics, title):
+    print(title)
+    for key, value in metrics.items():
+        if key in ("null_metrics", "null_ok"):
+            continue
+        print(f"  {key:26s} {value}")
 
 
 def main(argv=None):
@@ -206,15 +249,24 @@ def main(argv=None):
     ap.add_argument("--customers", type=int, default=12000)
     ap.add_argument("--max-k", type=int, default=8, dest="max_k")
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--null-db", dest="null_db")
+    ap.add_argument("--null-tag", dest="null_tag")
+    ap.add_argument("--null-ckpt-dir", dest="null_ckpt_dir")
     a = ap.parse_args(argv)
+    null = None
+    if any((a.null_db, a.null_tag, a.null_ckpt_dir)):
+        if not all((a.null_db, a.null_tag, a.null_ckpt_dir)):
+            ap.error("--null-db, --null-tag and --null-ckpt-dir must be given together")
+        null = (a.null_db, a.null_tag, a.null_ckpt_dir)
     model, cfg = load_frozen_encoder(a.tag, a.ckpt_dir)
     cfg.attr_fields = tuple(getattr(model, "attr_fields", ()) or ())
     cfg.numeric_fields = tuple(getattr(model, "numeric_fields", ()) or ())
     cfg.db, cfg.as_of, cfg.sample_customers = a.db, a.as_of, a.customers
-    metrics = run_unsupervised(model, cfg, max_k=a.max_k, seed=a.seed)
-    print("# UNSUPERVISED PLUGIN GATE (held-out E)")
-    for key, value in metrics.items():
-        print(f"  {key:26s} {value}")
+    metrics = run_unsupervised(model, cfg, max_k=a.max_k, seed=a.seed, null=null)
+    _print_metrics(metrics, "# UNSUPERVISED PLUGIN GATE (held-out E)")
+    if "null_metrics" in metrics:
+        _print_metrics(metrics["null_metrics"], "# NULL CONTROL (same targets, null encoder)")
+        print(f"  null_ok={metrics['null_ok']}")
 
 
 if __name__ == "__main__":

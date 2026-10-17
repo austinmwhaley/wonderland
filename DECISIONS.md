@@ -4145,3 +4145,19 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - **Why it matters:** minimality (a 6.3× smaller embedding) AND speed (the gates' cross-fit was
   O(2141) — now O(338)); also removes a redundant hand-feature block from the universal donor.
 - **Tests:** green.
+
+## DEC-199 — Items 3/4/5: explicit plugin gates+null, generic plugin contract, real-data onboarding
+
+- **#3 (`supervised_gate`/`unsupervised_gate`):** per-target **PASS/FAIL** verdicts — supervised PASS
+  iff the bootstrap-95% `skill_lo > baseline` (regression: >0); unsupervised PASS iff silhouette>0 AND
+  ANOVA p<0.05 AND lookalike enrichment>1. Optional **NULL control** (`null=(db,tag,ckpt)`) runs the
+  same targets on the snr=0 encoder and flags `null_ok` (the null must show NO skill).
+- **#4 (`plugin_contract.py`):** ONE `Plugin` contract (fit/infer/save/load/freeze) with adapters
+  `SupervisedPlugin` / `UnsupervisedPlugin` / `DecisionPlugin` + a `PluginRegistry`; `fit_and_freeze`
+  yields a frozen, persisted plugin reused for new customers/times (train AND inference unified).
+- **#5 (`onboard.py`):** a Layer-A mapper from an arbitrary table (parquet/duckdb/csv/arrow/df) to the
+  canonical stream + `onboard_meta.json` (auto-detect customer/time/event/value, action keys, reward
+  event, cadence; drop+report null rows). The "point it at your logs" step.
+- **Card speed (#1):** memoized `_b_states` (per model/stream/as_of/sampling) and `_period_rows`
+  (per stream/as_of/customers/action) — the card/gates/white_queen re-called them ~15×.
+- **Tests:** +14 (gates/contract/onboard).

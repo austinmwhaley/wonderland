@@ -27,9 +27,25 @@ from looking_glass.cfm_state import load_frozen_encoder
 from looking_glass.head_battery import _b_states
 
 
+_PERIOD_CACHE: dict = {}
+
+
 def _period_rows(cfg, cust, action_key, reward_event="purchase", period_secs=604800.0):
     """(customer, action) rows at the stream's own cadence: the randomized action per
-    (customer, period) from sends, reward = did the reward event fire that period."""
+    (customer, period) from sends, reward = did the reward event fire that period.
+
+    CACHED per (stream, as_of, customers, action, period): the card runs each action many times."""
+    _pkey = (
+        str(cfg.db),
+        str(getattr(cfg, "as_of", None)),
+        tuple(map(str, cust)),
+        str(action_key),
+        str(reward_event),
+        float(period_secs),
+    )
+    _phit = _PERIOD_CACHE.get(_pkey)
+    if _phit is not None:
+        return _phit
     import duckdb
     import polars as pl
 
@@ -69,6 +85,7 @@ def _period_rows(cfg, cust, action_key, reward_event="purchase", period_secs=604
     ).pl()
     con.close()
     j = snd.join(evt, on=["customer_key", "period"], how="left").fill_null(0.0)
+    _PERIOD_CACHE[_pkey] = j
     return j
 
 

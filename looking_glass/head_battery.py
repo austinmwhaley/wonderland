@@ -75,8 +75,32 @@ def _folds(customers, n=N_FOLDS, seed=1):
     return np.array_split(np.asarray(cs, dtype=object), n)
 
 
+_BSTATE_CACHE: dict = {}
+
+
 def _b_states(model, cfg, batch=512):
-    """Frozen donor states for HELD-OUT customers (split B) only."""
+    """Frozen donor states for HELD-OUT customers (split B) only.
+
+    CACHED per (model, stream, as_of, sampling): the report card / gates / white_queen call this
+    ~15+ times with the SAME inputs — recomputing the read + encode each time was the dominant
+    card cost."""
+    _key = (
+        id(model),
+        str(cfg.db),
+        str(getattr(cfg, "as_of", None)),
+        int(getattr(cfg, "sample_customers", 0) or 0),
+        int(getattr(cfg, "split_seed", 0) or 0),
+        int(getattr(cfg, "seq_len", 0) or 0),
+        tuple(getattr(cfg, "effect_actions", ()) or ()),
+        tuple(getattr(cfg, "action_fields", ()) or ()),
+        bool(getattr(cfg, "use_measure", False)),
+        id(getattr(model, "layer_b", None)),
+        bool(getattr(model, "accumulator_on", False)),
+        bool(getattr(model, "counter_on", False)),
+    )
+    _hit = _BSTATE_CACHE.get(_key)
+    if _hit is not None:
+        return _hit
     df = _read_stream(cfg)
     keys = _customer_keys(df, cfg)
     split = assign_split(keys, cfg)
@@ -89,7 +113,9 @@ def _b_states(model, cfg, batch=512):
                 model, seqs[i : i + batch], cfg=cfg, lb=getattr(model, "layer_b", None)
             )  # consumed embedding
         Z.append(z.detach().float().cpu().numpy())
-    return np.array([s["customer"] for s in seqs]), np.concatenate(Z, 0)
+    _res = (np.array([s["customer"] for s in seqs]), np.concatenate(Z, 0))
+    _BSTATE_CACHE[_key] = _res
+    return _res
 
 
 def _rfm_targets(cfg, horizon_days, lookback_days=365):
