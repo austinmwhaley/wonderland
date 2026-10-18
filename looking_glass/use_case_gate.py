@@ -30,7 +30,15 @@ from looking_glass.head_battery import _b_states
 _PERIOD_CACHE: dict = {}
 
 
-def _period_rows(cfg, cust, action_key, reward_event="purchase", period_secs=604800.0):
+def _period_rows(
+    cfg,
+    cust,
+    action_key,
+    reward_event="purchase",
+    period_secs=604800.0,
+    future=True,
+    horizon_days=90,
+):
     """(customer, action) rows at the stream's own cadence: the randomized action per
     (customer, period) from sends, reward = did the reward event fire that period.
 
@@ -42,6 +50,8 @@ def _period_rows(cfg, cust, action_key, reward_event="purchase", period_secs=604
         str(action_key),
         str(reward_event),
         float(period_secs),
+        bool(future),
+        int(horizon_days),
     )
     _phit = _PERIOD_CACHE.get(_pkey)
     if _phit is not None:
@@ -65,6 +75,11 @@ def _period_rows(cfg, cust, action_key, reward_event="purchase", period_secs=604
             f"WHERE epoch(CAST(event_ts AS TIMESTAMPTZ)) <= {tc}"
         ).fetchone()[0]
     )
+    # POINT-IN-TIME (DEC-217): the action/outcome must lie in the FUTURE window
+    # (t > as_of), while E is frozen at as_of. Evaluating PAST periods against the
+    # as-of E is lookahead (the measure already contains their outcomes).
+    hi = float(tc) + float(horizon_days) * 86400.0
+    _tw = f"> {tc} AND epoch(CAST(event_ts AS TIMESTAMPTZ)) <= {hi}" if future else f"<= {tc}"
     # randomized action per (customer, period): period = a rounded time bucket (data-derived)
     snd = con.execute(
         f"SELECT customer_key, "
@@ -72,7 +87,7 @@ def _period_rows(cfg, cust, action_key, reward_event="purchase", period_secs=604
         f"arg_max(TRY_CAST(json_extract_string(event_attributes,'$.{key}') AS DOUBLE), "
         f"epoch(CAST(event_ts AS TIMESTAMPTZ))) AS action "
         f"FROM {src} WHERE event_type LIKE '%send%' "
-        f"AND epoch(CAST(event_ts AS TIMESTAMPTZ)) <= {tc} "
+        f"AND epoch(CAST(event_ts AS TIMESTAMPTZ)) {_tw} "
         f"AND json_extract_string(event_attributes,'$.{key}') IS NOT NULL "
         f"AND customer_key IN (SELECT customer_key FROM _cust) GROUP BY 1,2"
     ).pl()
@@ -80,7 +95,7 @@ def _period_rows(cfg, cust, action_key, reward_event="purchase", period_secs=604
         f"SELECT customer_key, "
         f"CAST(floor((epoch(CAST(event_ts AS TIMESTAMPTZ)) - {t0}) / {period_secs}) AS BIGINT) AS period, "
         f"count(*) AS y FROM {src} WHERE event_type = '{reward_event}' "
-        f"AND epoch(CAST(event_ts AS TIMESTAMPTZ)) <= {tc} "
+        f"AND epoch(CAST(event_ts AS TIMESTAMPTZ)) {_tw} "
         f"AND customer_key IN (SELECT customer_key FROM _cust) GROUP BY 1,2"
     ).pl()
     con.close()

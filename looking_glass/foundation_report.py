@@ -87,6 +87,8 @@ def build_card(
     null_lines = []
     null_verdicts = {}
     null_deltas = {}
+    null_lo = {}
+    null_hi = {}
     if null is not None:
         try:
             from looking_glass.cfm_state import load_frozen_encoder as _lfe
@@ -106,8 +108,11 @@ def build_card(
                     nr = _ruc(n_model, n_cfg, k)
                     null_verdicts[k] = nr["verdict"]
                     null_deltas[k] = float(nr["delta"])
+                    null_lo[k] = float(nr["lo"])
+                    null_hi[k] = float(nr["hi"])
                     null_lines.append(
-                        f"- null `{k}`: policy-from-E Δ={nr['delta']:+.3f} → **{nr['verdict']}**"
+                        f"- null `{k}`: policy-from-E Δ={nr['delta']:+.3f} "
+                        f"CI[{nr['lo']:+.3f},{nr['hi']:+.3f}] → **{nr['verdict']}**"
                     )
                 except Exception:
                     pass
@@ -175,19 +180,38 @@ def build_card(
     use_lines = []
     _dep_cal = 0
     _dep_uncal = 0
+    _rows = {}
     for _k, _r in uses:
-        # MAGNITUDE-MATCHED null control: a real effect must EXCEED the null's
-        # own spurious lift. A binary null verdict is too coarse (a null noise
-        # DEPLOY of +0.004 must not veto a real +0.028 effect).
-        _nd = null_deltas.get(_k)
-        _cal = (not null_verdicts) or (_nd is None) or (_r["delta"] > max(0.0, _nd))
+        # DIFFERENCE-IN-DIFFERENCES null control (DEC-217): the real effect must
+        # exceed the null's lift with a strictly positive CONSERVATIVE lower bound
+        # real_lo - null_hi > 0. A point-estimate comparison is not enough when the
+        # null itself has a large lift (the null can DEPLOY or have a wide CI).
+        _nlo, _nhi = null_lo.get(_k), null_hi.get(_k)
+        _diff_lo = float(_r["lo"] - _nhi) if _nhi is not None else None
+        _cal = (not null_verdicts) or (_nhi is None) or (_diff_lo is not None and _diff_lo > 0.0)
         _final = "DEPLOY" if (_r["verdict"] == "DEPLOY" and _cal) else "HOLD"
         if _r["verdict"] == "DEPLOY":
             if _cal:
                 _dep_cal += 1
             else:
                 _dep_uncal += 1
-        _suf = "" if _cal else " (real effect <= null noise -> HOLD)"
+        _rows[_k] = {
+            "real_delta": float(_r["delta"]),
+            "real_lo": float(_r["lo"]),
+            "real_hi": float(_r["hi"]),
+            "null_delta": null_deltas.get(_k),
+            "null_lo": _nlo,
+            "null_hi": _nhi,
+            "diff_lo": _diff_lo,
+            "final": _final,
+        }
+        _suf = (
+            ""
+            if _cal
+            else f" (real_lo - null_hi = {_diff_lo:+.3f} <= 0 -> HOLD)"
+            if _diff_lo is not None
+            else " (no null CI -> HOLD)"
+        )
         use_lines.append(
             f"- **{_k}**: dose-response argmax={_r['dose_argmax']} over {_r['n_actions']} actions · "
             f"policy-from-E Δ={_r['delta']:+.3f} CI[{_r['lo']:+.3f},{_r['hi']:+.3f}] -> **{_final}**{_suf}"
@@ -260,6 +284,8 @@ def build_card(
             "hold": int(len(uses) - _dep_cal),
             "nulls_hold": int(sum(1 for v in null_verdicts.values() if v == "HOLD")),
             "nulls_total": int(len(null_verdicts)),
+            "rule": "DEPLOY iff real gate DEPLOY AND real_lo - null_hi > 0",
+            "rows": _rows,
         }
         if _sup is not None:
             _cov = [r["coverage90"] for r in _sup if r.get("coverage90") is not None]

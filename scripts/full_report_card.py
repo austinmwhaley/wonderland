@@ -619,7 +619,8 @@ def build(args):
     md.append("")
     if mini:
         md.append(
-            f"- joint PCA: k={mini.get('measure_dim')} of {mini.get('full_dim')}; "
+            f"- served block-wise: {mini.get('measure_dim')} of {mini.get('full_dim')} "
+            f"(joint unconstrained min {mini.get('joint_min', '—')}); "
             f"worst R² {_fmt(mini.get('retained_worst_r2'))} vs {_fmt(mini.get('full_worst_r2'))}; "
             f"mean R² {_fmt(mini.get('retained_mean_r2'))} vs {_fmt(mini.get('full_mean_r2'))}"
         )

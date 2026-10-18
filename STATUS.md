@@ -217,6 +217,12 @@ invariant-by-construction).
 
 ## Micro
 
+- **LOOKAHEAD WITHDRAWAL (DEC-217): T0 is FAIL (17 PASS / 1 FAIL).** The 5/5 use-case DEPLOY was lookahead
+  (final as-of E for past periods). Point-in-time gate (future actions, E frozen at as_of, DiD
+  `real_lo-null_hi>0`) = **0/5 DEPLOY**; known-effect 0.589 -> 0.292 (p=1e-4). Decision-sufficiency is NOT
+  established. Sufficiency U=1.0, consumers, OPE, transfer, invariants still PASS. Next: tune the
+  reference action effects, longer future, strengthen the E response, multi-seed.
+
 - **T0 PASS (19/19) on the reference, under disclosed standards (DEC-215/216).** Accessibility fix:
   measure block axis-aligned (no PCA rotation), block-wise serve 140 (shape 48 + measure 92), governor
   excludes the init eval. Result: **U=1.0 SOLVED**, **5/5 use cases DEPLOY** (0 uncalibrated), supervised

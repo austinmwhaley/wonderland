@@ -4460,3 +4460,25 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - **Result:** **T0 PASS (19/19 objectives)** under these documented standards, with the limits disclosed.
   This is a **defensible** result, not a claim of hole-free strict superiority.
 - **Tests:** 456 fast tests green.
+
+## DEC-217 — LOOKAHEAD WITHDRAWAL: the 5/5 use-case DEPLOY was invalid; point-in-time = 0/5
+
+- **Finding (critical):** the use-case/decision gate evaluated **PAST** periods (`t <= as_of`) against the
+  **final as-of E** (`_b_states` = full-history embedding). Every period's action and outcome were already
+  inside E's measure, so the policy-from-E could "predict" them. The 5/5 DEPLOY was **lookahead leakage**,
+  not treatment effect. The large null lift was the symptom.
+- **Fix:** `_period_rows(future=True)` now uses **future** randomized actions/outcomes (`as_of < t <=
+  as_of+90d`); E is frozen at `as_of` (prefix only). The **DiD null control** is enforced:
+  DEPLOY iff the real gate passes **AND** `real_lo - null_hi > 0` (conservative independent CI).
+- **Point-in-time result (same encoder, reference):** real Δ ≈ 0 (freq +0.002, channel -0.001, dow +0.004,
+  hour/offer ≈0), null Δ ≈0, `real_lo - null_hi < 0` for all five → **0/5 DEPLOY**. Known-effect recovery
+  drops from 0.589 (leaked) to **0.292 vs chance 0.25** (p=1e-4) point-in-time.
+- **Verdict:** `T2.decision_sufficiency` = **FAIL**; **T0 revoked from PASS to FAIL** (17 PASS / 1 FAIL).
+  Sufficiency (U=1.0), minimality, calibration, accessibility, consumers, OPE, transfer, invariants remain
+  PASS. **The B+C decision leg is NOT established.**
+- **Why the E is weak here:** the dedicated `effect` objective is ~0 and the period purchase outcome is
+  noisy; the E encodes the static channel preference only weakly (0.292). Fixing this is a **capability**
+  task: (1) make the reference's action effects strong/detectable (balance `timing_hour_weight`, raise
+  `action_peak`, lower `action_base`, tighten sigmas); (2) use a longer future window; (3) strengthen the
+  E's response (effect/psr/foresight/recency objectives); (4) multi-seed the point-in-time gate.
+- **Supersedes** the T0-PASS claim in commit `459b7e8`. The card now prints the withdrawal explicitly.
