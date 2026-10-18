@@ -24,6 +24,20 @@ def data_revision(df) -> tuple[int, str]:
     stream, so a retrain on different data is a different artifact."""
     import hashlib
 
+    def _mass() -> float:
+        # The stream's dominant numeric quantity (no hardcoded `value` field).
+        cands = [
+            c
+            for c in df.columns
+            if c not in ("customer_key", "event_ts", "event_type", "event_attributes")
+            and df[c].dtype.is_numeric()
+        ]
+        if not cands:
+            return 0.0
+        sums = {c: float(df[c].cast(float, strict=False).fill_null(0).abs().sum()) for c in cands}
+        best = max(sorted(sums), key=lambda c: sums[c])
+        return float(df[best].cast(float, strict=False).fill_null(0).sum())
+
     sig = "|".join(
         str(x)
         for x in (
@@ -32,7 +46,7 @@ def data_revision(df) -> tuple[int, str]:
             df["event_type"].n_unique(),
             str(df["event_ts"][0]),
             str(df["event_ts"][-1]),
-            int(round(float(df["value"].fill_null(0).sum()))),
+            int(round(_mass())),
         )
     )
     h = hashlib.sha1(sig.encode()).hexdigest()

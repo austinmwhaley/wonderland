@@ -73,6 +73,10 @@ def freeze_encoder(model):
 def _encode(model, vocab, seqs, batch=128, mask_frac=0.15, seed=0):
     dev = model._dev()
     NE = vocab.n_et
+    # Generic categorical target for the `entity` probe: the first discovered
+    # attribute field, else the event type itself. No named JSON keys.
+    cat_field = next(iter(getattr(vocab, "attrs", {}) or {}), None)
+    en_oov = vocab.n_attr[cat_field] if cat_field else vocab.n_et
     rows = []
     for i in range(0, len(seqs), batch):
         chunk = seqs[i : i + batch]
@@ -83,28 +87,28 @@ def _encode(model, vocab, seqs, batch=128, mask_frac=0.15, seed=0):
             t2 = dict(t)
             t2["et"] = torch.where(rand, torch.full_like(t["et"], NE), t["et"])
             # Redact ALL content channels at the masked position (not just the
-            # event type) — otherwise brand/entity/value leak the masked event
-            # through the readout (measured: mask probe CE 0.47 vs unigram 1.10 on
-            # the L0 negative control). Matches training `_masked_forward`.
-            t2["br"] = torch.where(rand, torch.full_like(t["br"], vocab.n_brand), t["br"])
-            t2["en"] = torch.where(rand, torch.full_like(t["en"], vocab.n_ent), t["en"])
+            # event type) — otherwise attributes/value leak the masked event
+            # through the readout. Matches training `_masked_forward`.
+            _en = t[cat_field] if (cat_field is not None and cat_field in t) else t["et"]
+            t2["en"] = torch.where(rand, torch.full_like(_en, en_oov), _en)
             t2["val"] = torch.where(rand.unsqueeze(-1), torch.zeros_like(t["val"]), t["val"])
-            if "eid" in t:
-                t2["eid"] = torch.where(rand, torch.full_like(t["eid"], vocab.n_eid), t["eid"])
+            for f in getattr(model, "attr_fields", ()):
+                if f in t2:
+                    t2[f] = torch.where(rand, torch.full_like(t2[f], vocab.n_attr.get(f, 0)), t2[f])
+            for f in getattr(model, "numeric_fields", ()):
+                if f in t2:
+                    t2[f] = torch.where(rand.unsqueeze(-1), torch.zeros_like(t2[f]), t2[f])
             y_m, _ = model.encode(t2)
         y = y.float().cpu().numpy()
         h = h.float().cpu().numpy()
         y_m = y_m.float().cpu().numpy()
         et = t["et"].cpu().numpy()
-        en = t["en"].cpu().numpy()
+        en = (t[cat_field] if (cat_field is not None and cat_field in t) else t["et"]).cpu().numpy()
         val = t["val"].squeeze(-1).cpu().numpy()
         dt = t["dt"].squeeze(-1).cpu().numpy()
         m = t["mask"].cpu().numpy()
         co = t["co"][:, :, 0].cpu().numpy()
         rmask = rand.cpu().numpy()
-        _pv = None
-        if getattr(model, "prod_vec_table", None) is not None and model.prod_vec_table.shape[1] > 0:
-            _pv = model.prod_vec_table[t["eid"]].float().cpu().numpy()
         for b in range(et.shape[0]):
             L = int(m[b].sum())
             if L < 3:
@@ -121,7 +125,6 @@ def _encode(model, vocab, seqs, batch=128, mask_frac=0.15, seed=0):
                     "val": val[b, :L],
                     "dt": dt[b, :L],
                     "co": co[b, :L],
-                    **({"pvec": _pv[b, :L]} if _pv is not None else {}),
                 }
             )
     return rows
@@ -152,7 +155,6 @@ def _build(name, rows, n_ent, n_ev, horizon):
             tau = np.cumsum(gap)
             w = np.zeros((L, n_ev))
             w[:, 0] = valr
-            _pvec = r.get("pvec")
             ok = (etr >= 0) & (etr < n_ev - 1)
             w[np.arange(L)[ok], 1 + etr[ok]] = 1.0
             gam, unit = 0.5, 86400.0
@@ -162,8 +164,6 @@ def _build(name, rows, n_ent, n_ev, horizon):
             ssum = np.zeros_like(w)
             ssum[:-1] = rc[1:]
             Rrow = ssum * (gam ** (-tau / unit))[:, None]
-            if _pvec is not None:
-                Rrow = np.concatenate([Rrow, _pvec], axis=1)
         for t in range(L):
             if r["co"][t] > 0:
                 continue
@@ -638,7 +638,8 @@ def run_probe_report(model, vocab, cfg, seqs, tag, light=False):
         raise RuntimeError("probe harness: encoder forward returned a grad tensor")
 
     rows = _encode(model, vocab, seqs)
-    n_ent = vocab.n_ent + 1
+    _cat_field = next(iter(getattr(vocab, "attrs", {}) or {}), None)
+    n_ent = (vocab.n_attr[_cat_field] + 1) if _cat_field else (vocab.n_et + 1)
     n_ev = vocab.n_et + 1
     horizon = max(1, int(np.median([len(r["et"]) for r in rows]) * 0.1))
     custs = sorted({r["cust"] for r in rows})

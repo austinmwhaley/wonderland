@@ -196,8 +196,10 @@ def test_new_event_sequences_only_strictly_new_events():
     seqs = new_event_sequences(df, as_of, _ep(2025, 11, 8), ("email_send",), seq_len=128)
     assert len(seqs) == 1
     types = list(seqs[0]["event_type"])
-    assert "email_send" not in types  # company action is a covariate, not a token
-    assert types == ["order"]  # only 11-07 (strictly after as_of, <= upto)
+    # only events strictly after as_of and <= upto are absorbed (11-07 order);
+    # the action at 11-03 is not part of this tail.
+    assert types == ["order"]
+    assert not bool(seqs[0]["is_action"].any())
     assert len(seqs[0]["ts"]) == 1
 
 

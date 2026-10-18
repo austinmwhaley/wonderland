@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 from pathlib import Path
+from types import SimpleNamespace
 
 import torch
 
@@ -43,18 +44,27 @@ def absorb(model: CFM, seq, h0: torch.Tensor | None = None, as_of_epoch: float |
         return h, model.embed(h)
 
 
-def new_event_sequences(df, as_of_by_key, upto_epoch, company, seq_len):
+def new_event_sequences(
+    df,
+    as_of_by_key,
+    upto_epoch,
+    company,
+    seq_len,
+    action_fields=(),
+    attr_fields=(),
+    numeric_fields=(),
+):
     """Sequences of ONLY the events in ``(as_of_by_key[k], upto_epoch]``.
 
     The live-advance primitive: the stored state already covers each customer's
     history up to its ``as_of_epoch``, so only that new tail may be absorbed —
-    feeding full history would double-count it. Company actions ride along as
-    covariates and are never tokens (same rule as build_sequences).
+    feeding full history would double-count it. ALL events are tokens (actions
+    included as INPUT channels), matching training's build_sequences.
     """
     import numpy as np
     import polars as pl
 
-    from looking_glass.cfm_data import _covariates
+    from looking_glass.cfm_data import _action_flags, _covariates, _primary_numeric_field
 
     if not as_of_by_key:
         return []
@@ -80,26 +90,59 @@ def new_event_sequences(df, as_of_by_key, upto_epoch, company, seq_len):
         .filter(pl.col("_ts") > pl.col("as_of_epoch"))
         .sort(["customer_key", "_ts"])
     )
+
+    _F = SimpleNamespace(exogenous_events=tuple(company), action_fields=tuple(action_fields))
+
+    value_col = _primary_numeric_field(d, None)
     seqs = []
     for g in d.partition_by("customer_key", maintain_order=True):
         et_arr = g["event_type"].to_numpy()
         ts_all = g["_ts"].to_numpy()
-        val = g["value"].cast(pl.Float64, strict=False).fill_null(0.0).to_numpy()
-        co = _covariates(et_arr, ts_all, company)
-        ki = np.flatnonzero(~np.isin(et_arr, list(company)))
-        if ki.size < 1:
+        is_action = _action_flags(g, _F)
+        co = _covariates(et_arr, ts_all, company, is_action=is_action)
+        n = et_arr.size
+        if n < 1:
             continue
-        ki = ki[max(0, ki.size - int(seq_len)) :]
+        ki = np.arange(max(0, n - int(seq_len)), n)
+        L = ki.size
+
+        def _col(name, default):
+            return (
+                g[name].to_numpy()
+                if name in g.columns
+                else np.full(g.height, default, dtype=object)
+            )
+
+        if value_col is not None and value_col in g.columns:
+            val = g[value_col].cast(pl.Float64, strict=False).fill_null(0.0).to_numpy()
+        else:
+            val = np.zeros(g.height)
         seqs.append(
             {
                 "customer": g["customer_key"][0],
                 "group": "B",
                 "anchor_epoch": None,
                 "event_type": et_arr[ki],
-                "brand": g["brand"].to_numpy()[ki],
-                "entity_type": g["entity_type"].to_numpy()[ki],
-                "entity_id": g["entity_id"].to_numpy()[ki],
+                "attrs": {c: _col(c, "none")[ki] for c in (attr_fields or ())},
+                "numeric": {
+                    c: (
+                        g[c].cast(pl.Float64, strict=False).fill_null(0.0).to_numpy()[ki]
+                        if c in g.columns
+                        else np.zeros(L)
+                    )
+                    for c in (numeric_fields or ())
+                },
+                "numeric_mask": {
+                    c: (
+                        g[c].is_not_null().to_numpy()[ki]
+                        if c in g.columns
+                        else np.zeros(L, dtype=bool)
+                    )
+                    for c in (numeric_fields or ())
+                },
+                "is_action": is_action[ki],
                 "value": val[ki],
+                "primary_numeric": value_col,
                 "event_ts": g["event_ts"].to_numpy()[ki],
                 "ts": ts_all[ki].tolist(),
                 "co": co[ki].tolist(),
@@ -117,7 +160,14 @@ def advance_to_date(store, cfg, df, upto_epoch):
     rows = store.con.execute("SELECT customer_key, as_of_epoch FROM customer_state").fetchall()
     as_of_by_key = {k: a for k, a in rows}
     seqs = new_event_sequences(
-        df, as_of_by_key, upto_epoch, getattr(cfg, "exogenous_events", ()), cfg.seq_len
+        df,
+        as_of_by_key,
+        upto_epoch,
+        getattr(cfg, "exogenous_events", ()),
+        cfg.seq_len,
+        action_fields=tuple(getattr(cfg, "action_fields", ()) or ()),
+        attr_fields=tuple(getattr(cfg, "attr_fields", ()) or ()),
+        numeric_fields=tuple(getattr(cfg, "numeric_fields", ()) or ()),
     )
     if seqs:
         store.advance(seqs, incremental=True)
@@ -148,12 +198,13 @@ def load_frozen_encoder(tag: str, cfm_dir):
     if not ckpt.exists():
         raise FileNotFoundError(f"encoder checkpoint for pin {tag} not found: {ckpt}")
     blob = torch.load(ckpt, map_location="cpu", weights_only=False)
+    _v = blob["vocab"]
     vocab = EventVocab(
-        blob["vocab"]["et"],
-        blob["vocab"]["brand"],
-        blob["vocab"]["ent"],
-        blob["vocab"].get("eid"),
-        blob["vocab"].get("attrs"),
+        _v["et"],
+        _v.get("attrs"),
+        numeric_fields=tuple(_v.get("numeric_fields", ()) or ()),
+        numeric_stats=_v.get("numeric_stats"),
+        primary_numeric=_v.get("primary_numeric") or blob.get("primary_numeric"),
     )
     model = CFM(
         vocab,
@@ -169,14 +220,13 @@ def load_frozen_encoder(tag: str, cfm_dir):
         input_norm=bool(blob.get("input_norm", False)),
         readout_skip=bool(blob.get("readout_skip", False)),
         event_residual=bool(blob.get("event_residual", False)),
-        entity_id_embed=bool(blob.get("entity_id_embed", False)),
         readout_scale=bool(blob.get("readout_scale", False)),
-        prod_dim=int(blob.get("prod_embed_dim", 0)),
         stats_pathway=bool(blob.get("stats_pathway", False)),
         continuous_time=bool(blob.get("continuous_time", False)),
         counter=bool(blob.get("counter", False)),
         counter_registers=int(blob.get("counter_registers", 1)),
         numeric_fields=tuple(blob.get("numeric_fields", ()) or ()),
+        action_fields=tuple(blob.get("action_fields", ()) or ()),
         effect_dim=int(blob.get("effect_dim", 0) or 0),
     )
     # tolerate checkpoints from earlier revisions (e.g. a head added later):
@@ -199,6 +249,8 @@ def load_frozen_encoder(tag: str, cfm_dir):
     # the same action-conditioned response block the Layer-B compression was fit on.
     cfg.effect_actions = tuple(blob.get("effect_actions", ()) or ())
     cfg.action_fields = tuple(blob.get("action_fields", ()) or ())
+    cfg.numeric_fields = tuple(vocab.numeric_fields)
+    cfg.attr_fields = tuple(vocab.attrs)
     reg = cfm_dir / f"registry_{tag.replace('.', '_')}.json"
     if reg.exists():
         meta = json.loads(reg.read_text())
@@ -244,15 +296,6 @@ def load_frozen_encoder(tag: str, cfm_dir):
 
         model.layer_b = LayerBEmbedder.load(_lb_path)
         cfg.use_measure = True
-    # attach model-free product vectors for the SF phi if the run used them
-    if getattr(cfg, "prod_embed_path", "") and model.prod_vec_table.shape[1] == 0:
-        try:
-            import numpy as _np
-
-            _pe = _np.load(cfg.prod_embed_path, allow_pickle=True)
-            model.set_product_embeddings(_pe["ids"], _pe["vec"])
-        except Exception:  # noqa: BLE001
-            pass
     return model, cfg
 
 

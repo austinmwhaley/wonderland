@@ -141,7 +141,9 @@ from looking_glass.plugin_contract import SupervisedPlugin, fit_and_freeze
 
 plugin = fit_and_freeze(
     SupervisedPlugin(HistGradientBoostingRegressor(), target="ltv"),
-    E, y, "artifacts/plugins",
+    E,
+    y,
+    "artifacts/plugins",
 )
 ```
 

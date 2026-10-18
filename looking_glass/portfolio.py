@@ -369,6 +369,14 @@ def evaluate(
     fold_ids = np.array_split(np.array(customers, dtype=object), min(folds, len(customers)))
 
     gated = [o for o in cfg.objectives if o not in GATED_EXCLUSIONS]
+    # Grade the GENERIC per-field self-supervision too (DEC-210): the `entity` /
+    # `value` objective names are family switches, and the actual trained losses
+    # are `attr_next:<field>` / `num_next:<field>`. Without this they would be
+    # trained but never measured (a false-green risk).
+    if "entity" in cfg.objectives:
+        gated += [f"attr_next:{f}" for f in (getattr(vocab, "attrs", {}) or {})]
+    if "value" in cfg.objectives:
+        gated += [f"num_next:{f}" for f in (getattr(vocab, "numeric_fields", ()) or ())]
     measured = sorted(set(gated) | YARDSTICK_PENDING)
     tr_seqs = [seqs[int(i)] for i in _tr_idx]
     ident = _identifiability(tr_seqs, val, fold_ids, seed)

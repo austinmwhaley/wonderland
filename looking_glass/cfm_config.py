@@ -278,6 +278,11 @@ class CFMConfig:
     # generic NUMERIC attribute fields to consume as raw scalars (the counter's raw
     # quantities + the model's numeric inputs). Discovered generically from the stream.
     numeric_fields: tuple = ()
+    # Type inference is law-like, not thresholded: a field is NUMERIC iff EVERY
+    # observed non-null value parses as a finite float; any non-numeric observation
+    # means it is CATEGORICAL (fail safe). No fraction/sample literals.
+    # The dominant extensive numeric field (max total |mass|), derived from the data.
+    primary_numeric: str | None = None
     # DECISION-sufficiency (RL leg): declared RANDOMIZED action keys (JSON attribute keys on
     # the send/action events, e.g. `freq`, `hour`). When set, the encoder trains a generic
     # counterfactual/dose-response objective (`effect`) so `E` exposes the treatment
@@ -299,22 +304,11 @@ class CFMConfig:
     # Adds a CLEAN, linearly-usable event path (the generic token skip mixes
     # emb(event) with brand/value/dt). No loss hack; SSM stays contractive.
     event_residual: bool = False
-    # v8 capability-first: consume the high-cardinality product/ENTITY IDENTITY
-    # (the stream carries `entity_id`; it was previously dropped). Adds an
-    # `emb_eid` over the (capped) entity-id vocab to the token input. Off by
-    # default so existing checkpoints are unchanged.
-    entity_id_embed: bool = False
-    # cap on the entity-id vocabulary (most FREQUENT ids; rest -> OOV bucket).
-    max_entity_vocab: int = 20000
-    # v8 (§20.2 relational): categorical ATTRIBUTE fields to consume as shared value
-    # encoders (category_code / aisle / department / ...). GENERALIZES to unseen
-    # entities via attributes (unlike a per-id table). Off by default.
+    # Categorical ATTRIBUTE fields to consume (discovered generically). 0 = derive
+    # the OOV budget from the data (singletons cannot be learned -> OOV); a positive
+    # value is an explicit, recorded override.
     attr_fields: tuple = ()
-    max_attr_vocab: int = 2000
-    # model-free product co-occurrence embeddings (npz from looking_glass.product_embed)
-    # folded into the SF phi so successor features carry product affinity. Off by default.
-    prod_embed_path: str = ""
-    prod_embed_dim: int = 16  # dim of the product vectors (must match the npz)
+    max_attr_vocab: int = 0
     # DEC-028: condition cap for the boundary whitening — eigenvalues of the
     # state covariance are floored at this fraction of the largest, bounding
     # kappa(Sigma^{-1/2}) <= 1/sqrt(whiten_cond_floor). Prevents near-null

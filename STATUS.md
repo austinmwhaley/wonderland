@@ -217,6 +217,21 @@ invariant-by-construction).
 
 ## Micro
 
+- **Objectives scorecard (DEC-211).** `looking_glass/objectives.py`: 20 objectives across 5 tiers
+  (T0 North Star derived from certificates; T1 Foundation; T2 Certificates; T3 Consumers veto-only;
+  T4 Invariants), assembled from a JSON receipt contract, UNKNOWN when absent, per-tier roll-up with
+  no composite. CLI `python3 -m looking_glass.objectives --artifacts ...`. Current reference:
+  T1 6/6, T2 4/5, T3 2/4, T4 4/4, T0 PARTIAL (joint minimality). **448 fast tests.**
+
+- **Role-free Layer B + 8-principle audit (DEC-210).** Deleted the named field roles
+  (`brand/entity_type/entity_id/value`); one uniform token over ALL discovered attributes;
+  law-like numeric typing (every non-null value must parse); derived OOV budget (singletons
+  unlearnable); exogenous actions are INPUT tokens with next-action targets masked; SHARED
+  field-conditioned heads (bounded capacity, permutation-equivariant); per-field objectives
+  graded in the portfolio; field/action receipts. New tests: heterogeneous fields
+  (parquet+feather), action masking, per-field simple-probe recovery, bounded head capacity.
+  `ruff` clean; **440 fast tests**. Pre-DEC-210 checkpoints are incompatible (re-train needed).
+
 - **Improvements batch + everything-enabled (DEC-187..195).** Adopted **A1** (deterministic-measure
   cache), **A2** (compiled scan, ~5×, equivalence-tested, `LG_SCAN`), **A3** (bf16 default), **B5**
   (multi-token prediction, opt-in `mtp_k`). **B4** (SSD/Mamba-2) implemented+benchmarked and

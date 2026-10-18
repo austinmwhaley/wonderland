@@ -447,11 +447,13 @@ def test_model_readout_is_normalized_by_construction():
     with _t.no_grad():
         y, _ = m.ssm(m.tokens_batch(t), mask=t["mask"])
     assert_readout_health(y)  # must NOT raise despite 1e6 inputs
-    # an unnormalized encoder on the same huge inputs explodes -> guard fires
+    # an unnormalized encoder on a genuinely unbounded input explodes -> guard fires.
+    # (Numeric fields are standardized at the tokenizer now, so the old raw-1e6
+    # trigger is bounded; scale the whole token stream to test the guard itself.)
     m2 = CFM(vocab, dim=16, n_experts=1, readout_norm=False, input_norm=False)
     m2.eval()
     with _t.no_grad():
-        y2, _ = m2.ssm(m.tokens_batch(t), mask=t["mask"])
+        y2, _ = m2.ssm(m2.tokens_batch(t) * 1e6, mask=t["mask"])
     with pytest.raises(RuntimeError):
         assert_readout_health(y2)
 

@@ -28,6 +28,7 @@ from looking_glass.cfm_config import (
 from looking_glass.cfm_data import (
     _apply_data_revision,
     _customer_keys,
+    _primary_numeric_field,
     _read_stream,
     assign_split,
     build_sequences,
@@ -116,10 +117,14 @@ def train_cfm(cfg: CFMConfig):
     # proportional to data) — which is exactly what makes the sample_A ladder
     # scale honestly (small samples train cheaply and stop at convergence).
     apply_set_overrides(cfg)  # explicit --set wins; resolve records the rest
+
+    def _nunique(c):
+        return int(df[c].n_unique()) if c in df.columns else 0
+
     vocab_sizes = (
-        df["event_type"].n_unique(),
-        df["brand"].n_unique(),
-        df["entity_type"].n_unique(),
+        _nunique("event_type"),
+        sum(_nunique(c) for c in (getattr(cfg, "attr_fields", ()) or ())),
+        len(getattr(cfg, "numeric_fields", ()) or ()),
     )
     res_all = AT.resolve_cfm(cfg, df, keys, vocab_sizes)
     res = AT.resolve_cfm(cfg, df, a_keys, vocab_sizes)
@@ -139,11 +144,13 @@ def train_cfm(cfg: CFMConfig):
     if int(getattr(cfg, "mtp_k", 0) or 0) > 0 and "mtp" not in cfg.objectives:
         cfg.objectives = (*cfg.objectives, "mtp")
     a_seqs = build_sequences(df, a_keys, cfg, split, with_anchors=False)
+    cfg.primary_numeric = _primary_numeric_field(df, cfg)
     vocab = EventVocab.build(
         a_seqs,
-        max_eid=getattr(cfg, "max_entity_vocab", 0),
         attr_fields=getattr(cfg, "attr_fields", ()) or (),
         max_attr=getattr(cfg, "max_attr_vocab", 0),
+        numeric_fields=getattr(cfg, "numeric_fields", ()) or (),
+        primary_numeric=cfg.primary_numeric,
     )
     device = torch.device(cfg.device)
     K = max(1, int(cfg.n_experts))
@@ -163,28 +170,19 @@ def train_cfm(cfg: CFMConfig):
         input_norm=getattr(cfg, "input_norm", True),
         readout_skip=getattr(cfg, "readout_skip", True),
         event_residual=getattr(cfg, "event_residual", False),
-        entity_id_embed=getattr(cfg, "entity_id_embed", False),
         readout_scale=getattr(cfg, "readout_scale", False),
-        prod_dim=(getattr(cfg, "prod_embed_dim", 0) if getattr(cfg, "prod_embed_path", "") else 0),
         stats_pathway=getattr(cfg, "stats_pathway", False),
         continuous_time=getattr(cfg, "continuous_time", False),
         accumulator=getattr(cfg, "use_accumulator", True),
         counter=getattr(cfg, "use_counter", False),
         counter_registers=getattr(cfg, "counter_registers", 1),
         numeric_fields=getattr(cfg, "numeric_fields", ()),
+        action_fields=getattr(cfg, "action_fields", ()),
         effect_dim=getattr(cfg, "_effect_dim", 0),
         mtp_k=getattr(cfg, "mtp_k", 0),
     ).to(device)
     # v4.0: differentiable ZCA in the forward during training (gradients shape the
     # consumed isotropy); off at eval/save so the frozen transform is used.
-    if getattr(cfg, "prod_embed_path", ""):
-        import numpy as _np
-
-        _pe = _np.load(cfg.prod_embed_path, allow_pickle=True)
-        _hit = model.set_product_embeddings(_pe["ids"], _pe["vec"])
-        print(
-            f"[prod-embed] attached {_hit} product vectors (dim {_pe['vec'].shape[1]})", flush=True
-        )
     model.zca_train = bool(getattr(cfg, "zca", False))
     cfg._aib_beta = 0.0
     model.half_life_days = cfg.state_half_life_days
@@ -230,8 +228,8 @@ def train_cfm(cfg: CFMConfig):
             ckpt = out_w / f"cfm_{cand_tag.replace('.', '_')}.pt"
             sizes_ok = meta.get("vocab_sizes") == {
                 "et": len(vocab.et),
-                "brand": len(vocab.brand),
-                "ent": len(vocab.ent),
+                "attr": sum(len(v) for v in vocab.attrs.values()),
+                "numeric": len(vocab.numeric_fields),
             }
             blob = (
                 torch.load(ckpt, map_location="cpu", weights_only=False) if ckpt.exists() else None
@@ -244,7 +242,13 @@ def train_cfm(cfg: CFMConfig):
                 )
                 print(f"[warm-start] {cand_tag} rejected ({why}) -> scratch", flush=True)
             else:
-                model.load_state_dict(blob["state"])
+                missing, unexpected = model.load_state_dict(blob["state"], strict=False)
+                if missing or unexpected:
+                    print(
+                        f"[warm-start] {cand_tag}: missing={len(missing)} "
+                        f"unexpected={len(unexpected)} keys",
+                        flush=True,
+                    )
                 cfg.warm_from = cand_tag
                 print(f"[warm-start] from {cand_tag} (as_of={meta.get('as_of')})", flush=True)
     params = [q for q in model.parameters() if q.requires_grad]
@@ -261,7 +265,12 @@ def train_cfm(cfg: CFMConfig):
         else torch.float16
     )
     scaler = torch.amp.GradScaler("cuda", enabled=(use_amp and _amp_dtype is torch.float16))
-    balancer = DWA(sorted(cfg.objectives), temp=cfg.dwa_temp)
+    _field_tasks = []
+    if "entity" in cfg.objectives:
+        _field_tasks += [f"attr_next:{f}" for f in vocab.attrs]
+    if "value" in cfg.objectives:
+        _field_tasks += [f"num_next:{f}" for f in vocab.numeric_fields]
+    balancer = DWA(sorted(set(cfg.objectives) | set(_field_tasks)), temp=cfg.dwa_temp)
     # FR v2.0 Path 2 (DEC-045): NO curvature-seeded lr. The init-curvature `L`
     # of a random deep net overestimates the safe step by orders of magnitude
     # (measured L~1e6 -> lr~1e-7 -> frozen). Stability is provided by the
@@ -586,19 +595,20 @@ def train_cfm(cfg: CFMConfig):
             "input_norm": bool(getattr(cfg, "input_norm", True)),
             "readout_skip": bool(getattr(cfg, "readout_skip", True)),
             "event_residual": bool(getattr(cfg, "event_residual", False)),
-            "entity_id_embed": bool(getattr(cfg, "entity_id_embed", False)),
             "readout_scale": bool(getattr(cfg, "readout_scale", False)),
             "stats_pathway": bool(getattr(cfg, "stats_pathway", False)),
             "continuous_time": bool(getattr(cfg, "continuous_time", False)),
             "counter": bool(getattr(cfg, "use_counter", False)),
             "counter_registers": int(getattr(cfg, "counter_registers", 1)),
             "numeric_fields": list(getattr(cfg, "numeric_fields", ()) or ()),
+            "attr_fields": list(getattr(cfg, "attr_fields", ()) or ()),
+            "numeric_stats": dict(getattr(vocab, "numeric_stats", {}) or {}),
+            "field_receipt": dict(getattr(cfg, "_field_receipt", {}) or {}),
+            "action_receipt": dict(getattr(cfg, "_action_receipt", {}) or {}),
             "effect_dim": int(getattr(cfg, "_effect_dim", 0) or 0),
             "effect_actions": list(getattr(cfg, "effect_actions", ()) or ()),
             "action_fields": list(getattr(cfg, "action_fields", ()) or ()),
-            "prod_embed_dim": int(getattr(cfg, "prod_embed_dim", 0))
-            if getattr(cfg, "prod_embed_path", "")
-            else 0,
+            "primary_numeric": getattr(cfg, "primary_numeric", None),
             "whiten_mean": (model.whiten_mean if getattr(model, "whiten_on", False) else None),
             "whiten_W": (model.whiten_W if getattr(model, "whiten_on", False) else None),
         },
@@ -680,18 +690,17 @@ def _collate(seqs, vocab, device):
     B = len(seqs)
     T = max(len(s["event_type"]) for s in seqs)
     et = torch.full((B, T), vocab.n_et, dtype=torch.long, device=device)
-    br = torch.full((B, T), vocab.n_brand, dtype=torch.long, device=device)
-    en = torch.full((B, T), vocab.n_ent, dtype=torch.long, device=device)
-    eid = torch.full((B, T), vocab.n_eid, dtype=torch.long, device=device)
     attr_t = {
         f: torch.full((B, T), vocab.n_attr[f], dtype=torch.long, device=device)
         for f in (getattr(vocab, "attrs", {}) or {})
     }
-    num_t = (
-        {c: torch.zeros(B, T, device=device) for c in (seqs[0].get("numeric") or {})}
-        if seqs
-        else {}
-    )
+    num_t = {
+        c: torch.zeros(B, T, device=device) for c in (getattr(vocab, "numeric_fields", ()) or ())
+    }
+    num_mask_t = {
+        c: torch.zeros(B, T, device=device) for c in (getattr(vocab, "numeric_fields", ()) or ())
+    }
+    is_action = torch.zeros(B, T, device=device)
     val = torch.zeros(B, T, 1, device=device)
     dt = torch.zeros(B, T, 1, device=device)
     tod = torch.zeros(B, T, 4, device=device)  # periodic timestamp features (spec §1)
@@ -702,27 +711,6 @@ def _collate(seqs, vocab, device):
         L = len(sq["event_type"])
         et[i, :L] = torch.tensor(
             [vocab.et.get(str(x), vocab.n_et) for x in sq["event_type"]], device=device
-        )
-        br[i, :L] = torch.tensor(
-            [
-                vocab.brand.get(str(b) if b is not None else "none", vocab.n_brand)
-                for b in sq["brand"]
-            ],
-            device=device,
-        )
-        en[i, :L] = torch.tensor(
-            [
-                vocab.ent.get(str(e) if e is not None else "none", vocab.n_ent)
-                for e in sq["entity_type"]
-            ],
-            device=device,
-        )
-        _eids = sq.get("entity_id")
-        if _eids is None:
-            _eids = [None] * L
-        eid[i, :L] = torch.tensor(
-            [vocab.eid.get(str(x) if x is not None else "none", vocab.n_eid) for x in _eids],
-            device=device,
         )
         for f, ten in attr_t.items():
             vals = (sq.get("attrs") or {}).get(f)
@@ -740,9 +728,15 @@ def _collate(seqs, vocab, device):
                 ten[i, :L] = torch.tensor(
                     [float(v) for v in vals], dtype=torch.float32, device=device
                 )
+            nm = (sq.get("numeric_mask") or {}).get(c)
+            if nm is not None and len(nm) == L:
+                num_mask_t[c][i, :L] = torch.tensor(np.asarray(nm, dtype=np.float32), device=device)
         val[i, :L, 0] = torch.tensor(
-            [_f(v) for v in sq["value"]], dtype=torch.float32, device=device
+            [_f(v) for v in sq.get("value", [0.0] * L)], dtype=torch.float32, device=device
         )
+        _act = sq.get("is_action")
+        if _act is not None:
+            is_action[i, :L] = torch.tensor(np.asarray(_act, dtype=np.float32), device=device)
         ts = np.asarray(sq.get("ts") or [_to_epoch(x) for x in sq["event_ts"]], dtype=np.float64)
         d = np.zeros(L)
         d[1:] = np.maximum(ts[1:] - ts[:-1], 0.0)
@@ -754,11 +748,10 @@ def _collate(seqs, vocab, device):
         cut[i] = min(L - 1, max(1, int(0.6 * L)))
     out = {
         "et": et,
-        "br": br,
-        "en": en,
-        "eid": eid,
         **attr_t,
         **num_t,
+        "num_mask": num_mask_t,
+        "is_action": is_action,
         "val": val,
         "dt": dt,
         "tod": tod,
@@ -797,8 +790,8 @@ def _masked_forward(model, vocab, t, cfg, dev):
     sit later in the input and cannot influence earlier states. This is not
     BERT: there is no right context, at training or at serving.
 
-    ALL content channels at the masked position are redacted (type, brand,
-    entity, value) — feeding the true entity/value would let the model
+    ALL content channels at the masked position are redacted (event type, every
+    attribute, every numeric field) — feeding the true content would let the model
     shortcut the task from sibling channels instead of learning dynamics.
     Arrival timing (dt) and exogenous covariates (co) stay: the task is
     "an event of unknown kind arrives after this gap", which is exactly the
@@ -812,30 +805,17 @@ def _masked_forward(model, vocab, t, cfg, dev):
         return None, None, rand
     et2 = t["et"].clone()
     et2[rand] = vocab.n_et
-    br2 = t["br"].clone()
-    br2[rand] = vocab.n_brand
-    en2 = t["en"].clone()
-    en2[rand] = vocab.n_ent
-    v2 = t["val"].clone()
-    v2[rand] = 0.0
-    x2 = (
-        model.emb_et(et2)
-        + model.emb_brand(br2)
-        + model.emb_ent(en2)
-        + model.w_val(v2)
-        + model.w_dt(t["dt"])
-        + model.w_co(t["co"])
-        + model.w_tod(t["tod"])
-    )
-    if getattr(model, "eid_embed_on", False) and "eid" in t:
-        eid2 = t["eid"].clone()
-        eid2[rand] = vocab.n_eid
-        x2 = x2 + model.emb_eid(eid2)
+    x2 = model.emb_et(et2) + model.w_dt(t["dt"]) + model.w_co(t["co"]) + model.w_tod(t["tod"])
     for f in getattr(model, "attr_fields", ()):
         if f in t:
             a2 = t[f].clone()
             a2[rand] = vocab.n_attr[f]
             x2 = x2 + model.emb_attr[f](a2)
+    for f in getattr(model, "numeric_fields", ()):
+        if f in t:
+            n2 = t[f].clone()
+            n2[rand] = 0.0
+            x2 = x2 + model.w_num[f](model._numeric_feature(f, n2).unsqueeze(-1))
     y2, _ = model.encode_ev(x2, {**t, "et": et2})
     return y2, t["et"], rand
 
@@ -904,18 +884,26 @@ def task_losses_chunked(model, vocab, seqs, cfg, batch: int = 128, aux: dict | N
     return {k: v / max(n, 1) for k, v in totals.items()}
 
 
+def _target_valid_mask(t, vocab):
+    """Positions whose NEXT event may be predicted: real left context, real
+    (non-pad) target, and the target is NOT an exogenous action."""
+    _next_is_pad = (t["et"][:, 1:] == vocab.n_et).float()
+    if "is_action" in t:
+        _next_is_action = t["is_action"][:, 1:].to(_next_is_pad.dtype)
+    else:
+        _next_is_action = torch.zeros_like(_next_is_pad)
+    return t["mask"][:, :-1] * (1.0 - _next_is_action) * (1.0 - _next_is_pad)
+
+
 def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
     dev = model._dev()
     t = _collate(items, vocab, dev)
     x = model.tokens_batch(t)
     y, h = model.encode(t)
     B, T, _ = y.shape
-    # Targets at company-action positions are exogenous; never predict them.
-    # Also exclude positions whose NEXT target is a pad (end-of-sequence): the
-    # "next event type" task is over real events only, matching the model-free
-    # baseline (spec §4) — otherwise a pad-dominated tail inflates the CE.
-    _next_is_pad = (t["et"][:, 1:] == vocab.n_et).float()
-    valid_t = t["mask"][:, :-1] * (1.0 - t["co"][:, 1:, 0]) * (1.0 - _next_is_pad)
+    # Targets whose NEXT event is an exogenous ACTION are never predicted (the model
+    # predicts the next BEHAVIOUR event). Pad targets stay masked too.
+    valid_t = _target_valid_mask(t, vocab)
     valid = valid_t.reshape(-1)
     nv = valid.sum().clamp(min=1)
 
@@ -935,14 +923,26 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
     # lr collapse. This is information-conservation / scale-free (no fixed units).
     _dt_full = t["dt"][:, 1:]
     dt_mu, dt_sd = _dt_full.mean(), _dt_full.std().clamp(min=1e-6)
-    _v_full = torch.log1p(t["val"][:, 1:].abs())
-    v_mu, v_sd = _v_full.mean(), _v_full.std().clamp(min=1e-6)
     T_ = {
         "next": mce(model.head_next(y[:, :-1]), t["et"][:, 1:]),
-        "entity": mce(model.head_ent(y[:, :-1]), t["en"][:, 1:]),
         "dt": mmse(model.head_dt(y[:, :-1]), (_dt_full - dt_mu) / dt_sd),
-        "value": mmse(model.head_val(y[:, :-1]), (_v_full - v_mu) / v_sd),
     }
+    # Generic per-field self-supervision (no named roles). The heads are SHARED and
+    # field-conditioned, so capacity is bounded and the schema is permutation-equivariant.
+    for f in getattr(model, "attr_fields", ()):
+        if f in t and model.head_attr is not None:
+            j = model._attr_index[f]
+            logits = model.head_attr(y[:, :-1] + model.attr_field_emb.weight[j])
+            T_[f"attr_next:{f}"] = mce(logits, t[f][:, 1:])
+    for f in getattr(model, "numeric_fields", ()):
+        if f in t and model.head_num is not None:
+            nm = (t.get("num_mask") or {}).get(f)
+            m = valid_t * (nm[:, 1:].to(valid_t.dtype) if nm is not None else 1.0)
+            tgt = model._numeric_feature(f, t[f][:, 1:])
+            j = model._num_index[f]
+            pred = model.head_num(y[:, :-1] + model.num_field_emb.weight[j]).squeeze(-1)
+            loss = F.mse_loss(pred, tgt, reduction="none")
+            T_[f"num_next:{f}"] = (loss * m).sum() / m.sum().clamp(min=1)
     # Occurrence horizon derived from the data (median gap) so classes balance,
     # not a fixed window that a frequent exogenous event can saturate.
     g = t["dt"][:, 1:].squeeze(-1)
@@ -970,7 +970,12 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
                 break
             tgt = t["et"][:, j:]
             logits = head(y[:, : T - j])
-            vj = t["mask"][:, : T - j] * (tgt != vocab.n_et).float() * (1.0 - t["co"][:, j:, 0])
+            _next_act = (
+                t["is_action"][:, j:].float()
+                if "is_action" in t
+                else torch.zeros_like(tgt, dtype=torch.float32)
+            )
+            vj = t["mask"][:, : T - j] * (tgt != vocab.n_et).float() * (1.0 - _next_act)
             mj = F.cross_entropy(
                 logits.reshape(-1, logits.shape[-1]), tgt.reshape(-1), reduction="none"
             )
@@ -1143,8 +1148,9 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
         tgt_dt = ((t["dt"][rows, i_next] - dt_mu) / dt_sd).reshape(-1)  # scale-free
         mse_q = F.mse_loss(model.head_dt(h_q).squeeze(-1), tgt_dt, reduction="none")
         w = m_i.clamp(min=0)
-        # ignore pad targets (et == n_et) and future company actions
-        w = w * (1.0 - t["co"][rows, i_next, 0])
+        # ignore pad targets (et == n_et) and future exogenous actions
+        _next_act = t["is_action"][rows, i_next] if "is_action" in t else torch.zeros_like(m_i)
+        w = w * (1.0 - _next_act)
         denom = w.sum().clamp(min=1)
         T_["query"] = ((ce_q + mse_q) * w).sum() / denom
     # ---- variance floor (VICReg-style, DEC-015) ---------------------------
@@ -1191,8 +1197,8 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
             ar = torch.arange(Tt, device=dev)
             jj = torch.randint(0, Tt, (Bt, Tt), device=dev)
             bb = torch.arange(Bt, device=dev).unsqueeze(1).expand(Bt, Tt)
-            i_en = t["en"][bb, ar.unsqueeze(0).expand(Bt, Tt)]
-            j_en = t["en"][bb, jj]
+            i_en = t["et"][bb, ar.unsqueeze(0).expand(Bt, Tt)]
+            j_en = t["et"][bb, jj]
             valid = (t["mask"] > 0) & (t["mask"][bb, jj] > 0) & (i_en != j_en)
             di, ci = dd[bb, ar.unsqueeze(0).expand(Bt, Tt)], cc[bb, ar.unsqueeze(0).expand(Bt, Tt)]
             dj, cj = dd[bb, jj], cc[bb, jj]
@@ -1367,9 +1373,6 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
     # deleted; the vocabulary is the only source of event identity.)
     et_oh = F.one_hot(t["et"].clamp(max=vocab.n_et - 1), num_classes=vocab.n_et).float()
     phi = torch.cat([v, et_oh], dim=-1)  # (B,T,1+E)
-    if model.prod_vec_table.shape[1] > 0 and "eid" in t:
-        # model-free product affinity in the successor features (§20.2)
-        phi = torch.cat([phi, model.prod_vec_table[t["eid"]]], dim=-1)
     PD = phi.shape[-1]
     de = dt_days.unsqueeze(1).expand(B, GAMS, T, 1).reshape(B * GAMS, T, 1)
     g = gamma.view(B, GAMS, 1, 1).expand(B, GAMS, T, 1).reshape(B * GAMS, T, 1) ** de
@@ -1555,6 +1558,13 @@ def _combine(model, T, cfg, weights: dict | None = None, scales: dict | None = N
     Pareto coordinate for the skills-vs-headroom frontier. v4.0 (DEC-029) adds
     the AIB compression term with a self-tuned multiplier `_aib_beta`."""
     keys = [k for k in cfg.objectives if k in T]
+    # Generic families: the legacy objective names are FAMILY SWITCHES. Per-field
+    # `attr_next:<field>` / `num_next:<field>` losses follow the `entity` / `value`
+    # switches, so adding schema fields needs no config change.
+    if "entity" in cfg.objectives:
+        keys += sorted(k for k in T if k.startswith("attr_next:"))
+    if "value" in cfg.objectives:
+        keys += sorted(k for k in T if k.startswith("num_next:"))
     boost = float(getattr(cfg, "geometry_boost", 1.0) or 1.0)
     _ob = getattr(cfg, "objective_boost", None) or {}
     sc = scales or getattr(cfg, "final_loss_scales", None) or {}
@@ -1900,6 +1910,7 @@ def _registry(
                 "n_customers": n_keys,
                 "n_train_sequences": n_train,
                 "config": asdict(cfg),
+                "fields": dict(getattr(cfg, "_field_receipt", {}) or {}),
                 "vocab_sizes": {k: len(v) for k, v in vocab.dumps().items()},
                 "derived": (derived or {}).get("derived", {}),
                 "overrides": (derived or {}).get("overrides", {}),

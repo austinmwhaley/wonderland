@@ -16,55 +16,121 @@ from looking_glass.cfm_config import _f, _to_epoch
 # vocab + tokenizer
 # ---------------------------------------------------------------------------
 class EventVocab:
-    def __init__(self, et, brand, ent, eid=None, attrs=None):
+    """Event vocabulary: event types, categorical attributes, numeric fields.
+
+    Role-free by construction: no attribute is named ``brand``/``entity``/
+    ``value``. Every discovered field is encoded uniformly; categorical fields
+    share one prediction head and numeric fields share another (field-conditioned),
+    so the schema is permutation-equivariant and capacity does not grow with it.
+    """
+
+    def __init__(
+        self,
+        et,
+        attrs=None,
+        numeric_fields=(),
+        numeric_stats=None,
+        primary_numeric=None,
+    ):
         self.et = {v: i for i, v in enumerate(et)}
-        self.brand = {v: i for i, v in enumerate(brand)}
-        self.ent = {v: i for i, v in enumerate(ent)}
-        self.eid = {v: i for i, v in enumerate(eid or [])}
-        self.n_et, self.n_brand, self.n_ent, self.n_eid = (
-            len(et),
-            len(brand),
-            len(ent),
-            len(self.eid),
-        )
+        self.n_et = len(et)
         # shared value encoders (§20.2): field -> {value -> idx}
         self.attrs = {f: {v: i for i, v in enumerate(vals)} for f, vals in (attrs or {}).items()}
         self.n_attr = {f: len(v) for f, v in self.attrs.items()}
+        # generic numeric channels: field -> standardization stats (data-derived)
+        self.numeric_fields = tuple(numeric_fields or ())
+        self.primary_numeric = primary_numeric
+        self.numeric_stats = {}
+        for f in self.numeric_fields:
+            st = (numeric_stats or {}).get(f) or {}
+            self.numeric_stats[f] = {
+                "mean": float(st.get("mean", 0.0)),
+                "sd": float(st.get("sd", 1.0)) or 1.0,
+                "log1p": bool(st.get("log1p", False)),
+            }
 
     @staticmethod
-    def build(seqs, max_eid=0, attr_fields=(), max_attr=0):
+    def _frequency_vocab(counter, cap: int = 0):
+        """Frequency-ranked, deterministic vocabulary (seeded tie-break by value).
+
+        ``cap > 0`` is an explicit, recorded override. Otherwise the OOV budget is
+        DERIVED: a value seen only once cannot be learned (no second example to
+        generalize from), so singletons map to the OOV index. If every value is a
+        singleton, keep the single most frequent one so the field still has a
+        non-OOV class.
+        """
+        items = sorted(counter.items(), key=lambda kv: (-kv[1], kv[0]))
+        vals = [v for v, _ in items]
+        if cap and cap > 0:
+            return vals[:cap] if len(vals) > cap else vals
+        learned = [v for v, c in items if c >= 2]
+        return learned or vals[:1]
+
+    @staticmethod
+    def _numeric_stats(values) -> dict:
+        arrs = [np.asarray(v, dtype=np.float64) for v in values if v is not None]
+        arr = np.concatenate(arrs) if arrs else np.zeros(0)
+        arr = arr[np.isfinite(arr)]
+        if arr.size == 0:
+            return {"mean": 0.0, "sd": 1.0, "log1p": False}
+        log1p = bool(arr.min() >= 0)
+        z = np.log1p(arr) if log1p else arr
+        sd = float(z.std())
+        if not np.isfinite(sd) or sd < 1e-6:
+            sd = 1.0
+        return {"mean": float(z.mean()), "sd": sd, "log1p": log1p}
+
+    @staticmethod
+    def build(seqs, attr_fields=(), max_attr=0, numeric_fields=(), primary_numeric=None):
         from collections import Counter
 
-        et, br, en = set(), set(), set()
-        eidc: Counter = Counter()
-        attrc: dict = {f: Counter() for f in attr_fields}
+        et = set()
+        fields = list(
+            dict.fromkeys(
+                [
+                    *(attr_fields or ()),
+                    *(k for s in seqs for k in (s.get("attrs") or {})),
+                ]
+            )
+        )
+        attrc: dict = {f: Counter() for f in fields}
+        num_fields = list(
+            dict.fromkeys(
+                [
+                    *(numeric_fields or ()),
+                    *(k for s in seqs for k in (s.get("numeric") or {})),
+                ]
+            )
+        )
+        numvals: dict = {f: [] for f in num_fields}
         for s in seqs:
             et.update(map(str, s["event_type"]))
-            br.update(str(b) if b is not None else "none" for b in s["brand"])
-            en.update(str(e) if e is not None else "none" for e in s["entity_type"])
-            _eids = s.get("entity_id")
-            if _eids is not None:
-                for e in _eids:
-                    eidc[str(e) if e is not None else "none"] += 1
             for f, vals in (s.get("attrs") or {}).items():
                 for v in vals:
                     attrc[f][str(v) if v is not None else "none"] += 1
-        # high-cardinality product/entity identity, capped to the most FREQUENT
-        # `max_eid` ids (data-derived); the rest fall to the OOV index n_eid.
-        eid = [v for v, _ in eidc.most_common(max_eid)] if max_eid else sorted(eidc)
-        attrs = {
-            f: ([v for v, _ in c.most_common(max_attr)] if max_attr else sorted(c))
-            for f, c in attrc.items()
-        }
-        return EventVocab(sorted(et), sorted(br), sorted(en), eid, attrs)
+            for f, vals in (s.get("numeric") or {}).items():
+                mask = (s.get("numeric_mask") or {}).get(f)
+                arr = np.asarray(vals, dtype=np.float64)
+                if mask is not None and len(mask) == len(arr):
+                    arr = arr[np.asarray(mask, dtype=bool)]
+                numvals.setdefault(f, []).append(arr)
+        attrs = {f: EventVocab._frequency_vocab(c, max_attr) for f, c in attrc.items()}
+        numeric_stats = {f: EventVocab._numeric_stats(numvals.get(f, [])) for f in num_fields}
+        return EventVocab(
+            sorted(et),
+            attrs,
+            numeric_fields=num_fields,
+            numeric_stats=numeric_stats,
+            primary_numeric=primary_numeric,
+        )
 
     def dumps(self):
         return {
             "et": list(self.et),
-            "brand": list(self.brand),
-            "ent": list(self.ent),
-            "eid": list(self.eid),
             "attrs": {f: list(v) for f, v in self.attrs.items()},
+            "numeric_fields": list(self.numeric_fields),
+            "numeric_stats": {f: dict(v) for f, v in self.numeric_stats.items()},
+            "primary_numeric": self.primary_numeric,
         }
 
 
@@ -688,15 +754,14 @@ class CFM(nn.Module):
         input_norm: bool = True,
         readout_skip: bool = False,
         event_residual: bool = False,
-        entity_id_embed: bool = False,
         readout_scale: bool = False,
-        prod_dim: int = 0,
         stats_pathway: bool = False,
         continuous_time: bool = False,
         accumulator: bool = True,
         counter: bool = False,
         counter_registers: int = 1,
         numeric_fields: tuple = (),
+        action_fields: tuple = (),
         effect_dim: int = 0,
         mtp_k: int = 0,
     ):
@@ -710,10 +775,6 @@ class CFM(nn.Module):
         self.input_norm_on = bool(input_norm)
         self.readout_skip_on = bool(readout_skip)
         self.event_residual_on = bool(event_residual)
-        self.eid_embed_on = bool(entity_id_embed) and vocab.n_eid > 0
-        # model-free PRODUCT vectors (co-occurrence; §20.2) for the SF phi — a fixed
-        # table aligned to the entity-id vocab, set after construction. 0 cols = off.
-        self.register_buffer("prod_vec_table", torch.zeros(vocab.n_eid + 1, int(prod_dim)))
         self.readout_scale_on = bool(readout_scale)
         self.stats_pathway_on = bool(stats_pathway)
         self.continuous_time_on = bool(continuous_time)
@@ -730,21 +791,48 @@ class CFM(nn.Module):
         # DEC-009) or the legacy purchase-named 4-dim phi — never both.
         self.sf_mode = sf_mode
         self.sf_dim = 1 + vocab.n_et
+        self.primary_numeric = getattr(vocab, "primary_numeric", None)
         self.emb_et = nn.Embedding(vocab.n_et + 1, self.chan)
-        self.emb_brand = nn.Embedding(vocab.n_brand + 1, self.chan)
-        self.emb_ent = nn.Embedding(vocab.n_ent + 1, self.chan)
-        # high-cardinality product/entity identity (the stream carries it; use it)
-        if self.eid_embed_on:
-            self.emb_eid = nn.Embedding(vocab.n_eid + 1, self.chan)
-        # shared value encoders (§20.2): categorical attributes -> embeddings, which
-        # GENERALIZE to unseen entities (an unseen product still has a category/aisle)
+        # Shared value encoders (§20.2): categorical attributes -> embeddings.
+        # No attribute is named: every discovered field is encoded uniformly.
         self.attr_fields = tuple(getattr(vocab, "attrs", {}) or {})
-        self.numeric_fields = tuple(numeric_fields or ())
+        self.numeric_fields = tuple(numeric_fields or getattr(vocab, "numeric_fields", ()) or ())
+        self.action_fields = tuple(action_fields or ())
+        self.numeric_stats = {
+            f: (getattr(vocab, "numeric_stats", {}) or {}).get(f)
+            or {"mean": 0.0, "sd": 1.0, "log1p": False}
+            for f in self.numeric_fields
+        }
+        # INPUT channels stay per-field (each field owns its value space).
         if self.attr_fields:
             self.emb_attr = nn.ModuleDict(
                 {f: nn.Embedding(vocab.n_attr[f] + 1, self.chan) for f in self.attr_fields}
             )
-        self.w_val = nn.Linear(1, self.chan)
+        else:
+            self.emb_attr = nn.ModuleDict()
+        if self.numeric_fields:
+            self.w_num = nn.ModuleDict({f: nn.Linear(1, self.chan) for f in self.numeric_fields})
+        else:
+            self.w_num = nn.ModuleDict()
+        # PREDICTION heads are SHARED and field-conditioned: one categorical head
+        # over (state + field id) and one numeric head over (state + field id), so
+        # capacity is bounded and the schema is permutation-equivariant.
+        self._attr_index = {f: i for i, f in enumerate(self.attr_fields)}
+        if self.attr_fields:
+            self.attr_field_emb = nn.Embedding(len(self.attr_fields), dim)
+            self._attr_out = max(vocab.n_attr[f] for f in self.attr_fields) + 1
+            self.head_attr = nn.Linear(dim, self._attr_out)
+        else:
+            self.attr_field_emb = None
+            self._attr_out = 0
+            self.head_attr = None
+        self._num_index = {f: i for i, f in enumerate(self.numeric_fields)}
+        if self.numeric_fields:
+            self.num_field_emb = nn.Embedding(len(self.numeric_fields), dim)
+            self.head_num = nn.Linear(dim, 1)
+        else:
+            self.num_field_emb = None
+            self.head_num = None
         self.w_dt = nn.Linear(1, self.chan)
         self.w_co = nn.Linear(2, self.chan)  # exogenous covariates
         # v6.4 (DEC-050): periodic (Fourier) timestamp encoding — time-of-day
@@ -781,7 +869,6 @@ class CFM(nn.Module):
         # the clean-input `next` head to the marginal (measured: model head_next
         # CE 0.287 vs a fresh probe 0.219 on the SAME readout, 1-gram 0.230).
         self.head_mask = nn.Linear(dim, vocab.n_et + 1)
-        self.head_ent = nn.Linear(dim, vocab.n_ent + 1)  # next entity type
         self.head_dt = nn.Linear(dim, 1)  # log1p(dt_next)
         self.head_occ = nn.Linear(dim, 1)  # next event within horizon?
         self.head_recency = nn.Linear(dim, 1)  # recent-activity level (velocity)
@@ -809,9 +896,8 @@ class CFM(nn.Module):
             else None
         )
         self.effect_dim = int(effect_dim)
-        self.head_val = nn.Linear(dim, 1)  # next event value (monetary)
         self.head_sf = nn.Sequential(
-            nn.Linear(dim + 1, dim), nn.ReLU(), nn.Linear(dim, self.sf_dim + int(prod_dim))
+            nn.Linear(dim + 1, dim), nn.ReLU(), nn.Linear(dim, self.sf_dim)
         )
         # exact multi-horizon window targets (count, value-sum) for `agg`
         self.head_agg = nn.Linear(dim + 1, 2)  # successor features
@@ -827,7 +913,7 @@ class CFM(nn.Module):
         self.counter_on = bool(counter)
         self.counter_registers = int(max(1, counter_registers))
         if self.counter_on:
-            raw_dim = 1 + (self.vocab.n_et + 1) + (self.vocab.n_brand + 1) + (self.vocab.n_ent + 1)
+            raw_dim = 1 + (self.vocab.n_et + 1)
             for f in self.attr_fields:
                 raw_dim += self.vocab.n_attr.get(f, 0) + 1
             raw_dim += 4  # value, log1p|value|, gap, log1p(gap)
@@ -846,17 +932,12 @@ class CFM(nn.Module):
             )
             if self.proj.bias is not None:
                 self.proj.bias.zero_()
-        # M3: entity-aware donor — pools step outputs per entity type.
-        self.proj_ent = nn.Linear((vocab.n_ent + 1) * dim, dim)
         # JEPA: EMA target encoder + predictor (latent future prediction).
         import copy as _copy
 
         self.t_emb_et = _copy.deepcopy(self.emb_et)
-        self.t_emb_brand = _copy.deepcopy(self.emb_brand)
-        self.t_emb_ent = _copy.deepcopy(self.emb_ent)
-        if self.eid_embed_on:
-            self.t_emb_eid = _copy.deepcopy(self.emb_eid)
-        self.t_w_val = _copy.deepcopy(self.w_val)
+        self.t_emb_attr = _copy.deepcopy(self.emb_attr)
+        self.t_w_num = _copy.deepcopy(self.w_num)
         self.t_w_dt = _copy.deepcopy(self.w_dt)
         self.t_w_co = _copy.deepcopy(self.w_co)
         self.t_w_tod = _copy.deepcopy(self.w_tod)
@@ -895,6 +976,8 @@ class CFM(nn.Module):
                     "ortho",
                     "effect",
                     "mtp",
+                    *(f"attr_next:{f}" for f in self.attr_fields),
+                    *(f"num_next:{f}" for f in self.numeric_fields),
                 )
             }
         )
@@ -902,28 +985,18 @@ class CFM(nn.Module):
     def _dev(self):
         return next(self.parameters()).device
 
+    def _numeric_feature(self, field: str, x: "torch.Tensor") -> "torch.Tensor":
+        """Data-derived standardization (log1p first for non-negative fields)."""
+        st = self.numeric_stats.get(field) or {}
+        if st.get("log1p", False):
+            x = torch.log1p(x.clamp(min=0.0))
+        return (x - float(st.get("mean", 0.0))) / max(float(st.get("sd", 1.0)), 1e-6)
+
     def tokens(self, seq):
         dev = self._dev()
         et = torch.tensor(
             [self.vocab.et.get(str(x), self.vocab.n_et) for x in seq["event_type"]], device=dev
         )
-        br = torch.tensor(
-            [
-                self.vocab.brand.get(str(b) if b is not None else "none", self.vocab.n_brand)
-                for b in seq["brand"]
-            ],
-            device=dev,
-        )
-        en = torch.tensor(
-            [
-                self.vocab.ent.get(str(e) if e is not None else "none", self.vocab.n_ent)
-                for e in seq["entity_type"]
-            ],
-            device=dev,
-        )
-        val = torch.tensor(
-            [_f(v) for v in seq["value"]], dtype=torch.float32, device=dev
-        ).unsqueeze(1)
         ts = np.array([_to_epoch(x) for x in seq["event_ts"]], dtype=np.float64)
         dt = np.zeros_like(ts)
         dt[1:] = np.maximum(ts[1:] - ts[:-1], 0.0)
@@ -933,23 +1006,10 @@ class CFM(nn.Module):
         co = torch.tensor(co, dtype=torch.float32, device=dev)
         out = (
             self.emb_et(et)
-            + self.emb_brand(br)
-            + self.emb_ent(en)
-            + self.w_val(val)
             + self.w_dt(dt)
             + self.w_co(co)
             + self.w_tod(torch.tensor(_tod(ts), dtype=torch.float32, device=dev))
         )
-        if self.eid_embed_on and seq.get("entity_id") is not None:
-            eids = seq["entity_id"]
-            eid = torch.tensor(
-                [
-                    self.vocab.eid.get(str(x) if x is not None else "none", self.vocab.n_eid)
-                    for x in eids
-                ],
-                device=dev,
-            )
-            out = out + self.emb_eid(eid)
         for f in self.attr_fields:
             vals = (seq.get("attrs") or {}).get(f)
             if vals is not None:
@@ -963,6 +1023,11 @@ class CFM(nn.Module):
                     device=dev,
                 )
                 out = out + self.emb_attr[f](idx)
+        for f in self.numeric_fields:
+            vals = (seq.get("numeric") or {}).get(f)
+            if vals is not None:
+                x = torch.tensor([_f(v) for v in vals], dtype=torch.float32, device=dev)
+                out = out + self.w_num[f](self._numeric_feature(f, x).unsqueeze(1))
         return out
 
     def forward(self, seq, h0=None):
@@ -992,9 +1057,8 @@ class CFM(nn.Module):
     def _target_params(self):
         return (
             list(self.t_emb_et.parameters())
-            + list(self.t_emb_brand.parameters())
-            + list(self.t_emb_ent.parameters())
-            + list(self.t_w_val.parameters())
+            + list(self.t_emb_attr.parameters())
+            + list(self.t_w_num.parameters())
             + list(self.t_w_dt.parameters())
             + list(self.t_w_co.parameters())
             + list(self.t_w_tod.parameters())
@@ -1007,9 +1071,8 @@ class CFM(nn.Module):
             zip(
                 self._target_params(),
                 list(self.emb_et.parameters())
-                + list(self.emb_brand.parameters())
-                + list(self.emb_ent.parameters())
-                + list(self.w_val.parameters())
+                + list(self.emb_attr.parameters())
+                + list(self.w_num.parameters())
                 + list(self.w_dt.parameters())
                 + list(self.w_co.parameters())
                 + list(self.w_tod.parameters())
@@ -1022,34 +1085,28 @@ class CFM(nn.Module):
                 pt.data.mul_(1 - tau).add_(ps.data, alpha=tau)
 
     def tokens_batch(self, t):
-        out = (
-            self.emb_et(t["et"])
-            + self.emb_brand(t["br"])
-            + self.emb_ent(t["en"])
-            + self.w_val(t["val"])
-            + self.w_dt(t["dt"])
-            + self.w_co(t["co"])
-            + self.w_tod(t["tod"])
-        )
-        if self.eid_embed_on and "eid" in t:
-            out = out + self.emb_eid(t["eid"])
+        out = self.emb_et(t["et"]) + self.w_dt(t["dt"]) + self.w_co(t["co"]) + self.w_tod(t["tod"])
         for f in self.attr_fields:
             if f in t:
                 out = out + self.emb_attr[f](t[f])
+        for f in self.numeric_fields:
+            if f in t:
+                out = out + self.w_num[f](self._numeric_feature(f, t[f]).unsqueeze(-1))
         return out
 
     def target_tokens_batch(self, t):
         out = (
             self.t_emb_et(t["et"])
-            + self.t_emb_brand(t["br"])
-            + self.t_emb_ent(t["en"])
-            + self.t_w_val(t["val"])
             + self.t_w_dt(t["dt"])
             + self.t_w_co(t["co"])
             + self.t_w_tod(t["tod"])
         )
-        if self.eid_embed_on and "eid" in t:
-            out = out + self.t_emb_eid(t["eid"])
+        for f in self.attr_fields:
+            if f in t:
+                out = out + self.t_emb_attr[f](t[f])
+        for f in self.numeric_fields:
+            if f in t:
+                out = out + self.t_w_num[f](self._numeric_feature(f, t[f]).unsqueeze(-1))
         return out
 
     def _event_residual_inputs(self, t, emb_et=None):
@@ -1138,22 +1195,6 @@ class CFM(nn.Module):
         v = self.proj(x) if x.dim() == 1 else self.proj(x.mean(0))
         return self._boundary(v)
 
-    def set_product_embeddings(self, ids, vec):
-        """Attach model-free product vectors (co-occurrence; §20.2) for the SF phi,
-        aligned to the entity-id vocab. Returns how many ids matched."""
-        import numpy as _np
-
-        d = int(vec.shape[1])
-        tab = torch.zeros(self.vocab.n_eid + 1, d)
-        hit = 0
-        for i, pid in enumerate(ids):
-            j = self.vocab.eid.get(str(pid))
-            if j is not None:
-                tab[j] = torch.tensor(_np.asarray(vec[i], dtype=_np.float32))
-                hit += 1
-        self.prod_vec_table = tab.to(next(self.parameters()).device)
-        return hit
-
     def accumulator(self, tok, t):
         """Cumulative statistics exposed in the consumed embedding (contractive
         trunk cannot hold running totals). Learned token-drive totals + recency
@@ -1199,29 +1240,42 @@ class CFM(nn.Module):
         m = t["mask"]  # (B,T)
         cnt = m.sum(1, keepdim=True)  # (B,1)
         feats = [torch.log1p(cnt)]
-        for key, n in (
-            ("et", self.vocab.n_et + 1),
-            ("br", self.vocab.n_brand + 1),
-            ("en", self.vocab.n_ent + 1),
-        ):
-            if key in t:
-                oh = F.one_hot(t[key].clamp(max=n - 1), n).to(m.dtype)  # (B,T,n)
-                feats.append(torch.log1p((oh * m.unsqueeze(-1)).sum(1)))
-        # every consumed attribute field -> per-value counts (generic, no domain literals)
+        _n_et = self.vocab.n_et + 1
+        oh = F.one_hot(t["et"].clamp(max=_n_et - 1), _n_et).to(m.dtype)
+        feats.append(torch.log1p((oh * m.unsqueeze(-1)).sum(1)))
+        # every consumed attribute field -> per-value counts (generic, no domain literals).
+        # Declared ACTION fields are excluded (leak guard: the measure must not carry the
+        # logged treatment into the OPE).
+        _actions = set(getattr(self, "action_fields", ()) or ())
         for f in getattr(self, "attr_fields", ()):
-            if f in t:
+            if f in t and f not in _actions:
                 nf = self.vocab.n_attr.get(f, 0) + 1
                 if nf > 1:
                     oh = F.one_hot(t[f].clamp(max=nf - 1), nf).to(m.dtype)
                     feats.append(torch.log1p((oh * m.unsqueeze(-1)).sum(1)))
         gap = torch.expm1(t["dt"]).squeeze(-1)
         last_idx = (m.sum(1).long() - 1).clamp(min=0).unsqueeze(1)
-        for x in (torch.log1p(t["val"].abs().squeeze(-1)), gap):
-            s = (x * m).sum(1, keepdim=True)
-            mu = s / cnt.clamp(min=1)
-            var = (((x - mu) ** 2) * m).sum(1, keepdim=True) / cnt.clamp(min=1)
-            last = (x * m).gather(1, last_idx)
+        # Every inferred NUMERIC field -> count/sum/mean/std/last (all fields, action
+        # fields excluded by the same leak guard). Missing values are masked out.
+        num_feats = [
+            (c, self._numeric_feature(c, t[c]), t.get("num_mask", {}).get(c))
+            for c in self.numeric_fields
+            if c in t and c not in _actions
+        ]
+        if self.primary_numeric is None or self.primary_numeric not in self.numeric_fields:
+            num_feats.append(("value", torch.log1p(t["val"].abs().squeeze(-1)), None))
+        for c, x, valid in num_feats:
+            vmask = m if valid is None else m * valid.to(m.dtype)
+            vc = vmask.sum(1, keepdim=True).clamp(min=1)
+            s = (x * vmask).sum(1, keepdim=True)
+            mu = s / vc
+            var = (((x - mu) ** 2) * vmask).sum(1, keepdim=True) / vc
+            last = (x * vmask).gather(1, last_idx)
             feats += [torch.log1p(s.abs()), mu, var.clamp(min=0).sqrt(), last]
+        s = (gap * m).sum(1, keepdim=True)
+        mu = s / cnt.clamp(min=1)
+        var = (((gap - mu) ** 2) * m).sum(1, keepdim=True) / cnt.clamp(min=1)
+        feats += [torch.log1p(s.abs()), mu, var.clamp(min=0).sqrt(), (gap * m).gather(1, last_idx)]
         return torch.cat(feats, dim=-1)
 
     def raw_fields(self, t):
@@ -1231,15 +1285,8 @@ class CFM(nn.Module):
         dev = t["mask"].device
         B, T = t["mask"].shape
         feats = [torch.ones(B, T, 1, device=dev, dtype=torch.float32)]
-        for key, n in (
-            ("et", self.vocab.n_et + 1),
-            ("br", self.vocab.n_brand + 1),
-            ("en", self.vocab.n_ent + 1),
-        ):
-            if key in t:
-                feats.append(F.one_hot(t[key].clamp(max=n - 1), n).to(torch.float32))
-            else:
-                feats.append(torch.zeros(B, T, n, device=dev, dtype=torch.float32))
+        n_et = self.vocab.n_et + 1
+        feats.append(F.one_hot(t["et"].clamp(max=n_et - 1), n_et).to(torch.float32))
         for f in self.attr_fields:
             if f in t:
                 nf = self.vocab.n_attr.get(f, 0) + 1
@@ -1311,21 +1358,3 @@ class CFM(nn.Module):
         if reward_weight is not None:
             return (sf * torch.as_tensor(reward_weight, device=state.device)).sum(-1)
         return sf
-
-    def donor_seq(self, y, h, seq):
-        """M3 multi-entity donor: [timescale state | entity-pooled summary].
-        Pools per-step outputs by entity type (customer/product/session/...)."""
-        et = seq.get("entity_type")
-        if et is None or len(et) == 0:
-            return self.donor(h)
-        dev = y.device
-        ids = torch.tensor(
-            [self.vocab.ent.get(str(e) if e is not None else "none", self.vocab.n_ent) for e in et],
-            device=dev,
-        )
-        P = torch.zeros(self.vocab.n_ent + 1, y.shape[-1], device=dev)
-        C = torch.zeros(self.vocab.n_ent + 1, device=dev)
-        P.index_add_(0, ids, y)
-        C.index_add_(0, ids, torch.ones_like(ids, dtype=y.dtype))
-        P = P / C.clamp(min=1).unsqueeze(1)
-        return torch.cat([self.proj(h), self.proj_ent(P.reshape(-1))])

@@ -4277,3 +4277,73 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   are an **estimator-variance / risk-appetite** trade — documented, **not weakened to pass**.
 - **Top priority (apex A→B→C) is DONE and defensible** (DEC-208): B SOLVED, 3 use-cases DEPLOY with
   all nulls HOLD, hour/dow honest HOLD.
+
+## DEC-210 — Role-free Layer B: whole-`event_attributes` typing, action-input tokens, shared heads; 8-principle audit fixes
+
+- **Context:** after the generic-attribute step, the tokenizer still carried named channels
+  (`brand`/`entity_type`/`entity_id`/`value`) beside the generic ones — accretion, not deletion
+  (violated *simpler*, *universal*, *single source of truth*). A principles audit also found
+  magic literals, ungraded per-field objectives, non-equivariant per-field heads, and no
+  receipts for the new axes.
+- **Decision (role-free encoder):**
+  1. **Delete every named field role.** One token = `event_type + time features + Σ categorical
+     attribute embeddings + Σ numeric attribute channels`. No field is special.
+     `value` survives only as a **derived alias** for the dominant extensive numeric field
+     (`_primary_numeric_field`, max total |mass|).
+  2. **Whole-`event_attributes` typing is law-like:** a field is NUMERIC iff **every** non-null
+     value parses as a finite float; otherwise CATEGORICAL (fail safe; mixed columns flagged
+     `dirty` in the receipt). No fraction/sample literals.
+  3. **Vocab OOV budget derived:** values seen once cannot be learned → OOV; a positive
+     `max_attr_vocab` remains an explicit recorded override.
+  4. **Exogenous actions are INPUT tokens, never targets.** Detection = `event_type ∈
+     exogenous_events` OR any declared `action_field` non-null; partial presence is detected
+     (fail safe) and counted in the action receipt. Targets whose next event is an action are
+     masked. `action_fields` stay excluded from the measure (leak guard).
+  5. **Shared, field-conditioned prediction heads:** one categorical head over `state +
+     field-id` and one numeric head over `state + field-id`. Capacity is bounded and the schema
+     is permutation-equivariant; per-field input embeddings remain (each field owns its value
+     space).
+  6. **Per-field objectives are graded** in the portfolio (the `entity`/`value` names are family
+     switches for `attr_next:*` / `num_next:*`), so they can no longer be trained-but-unmeasured.
+  7. **Receipts:** `_field_receipt` (per-field kind, parse fraction, dirty/ambiguous) and
+     `_action_receipt` (rule, counts, fraction, partial-presence count) are written to the
+     registry.
+- **Principles:** *Universal/Adaptive* (any schema, no named keys), *Lawful* (field-permutation
+  equivariance; additive measure; actions as causes not effects), *Efficient* (bounded heads),
+  *Robust* (fail-safe typing; actions never predicted), *Honest* (every objective graded;
+  receipts), *Accessible* (per-field simple-probe recovery test), *Diagnosable* (axis receipts).
+- **Verification:** `ruff check` + `ruff format --check` clean; **439 passed** fast tier.
+  New tests: heterogeneous-field encoding (parquet + feather), action-input/target-masking,
+  simple-probe per-field recovery, bounded shared-head capacity.
+- **Trade-offs:** pre-DEC-210 checkpoints are incompatible (heads/vocab changed); re-train before
+  re-certifying `U`. Per-field input embeddings grow with schema breadth (small, `chan` each);
+  the *prediction* heads do not.
+
+## DEC-211 — Machine-readable objectives scorecard (tiers T0–T4; consumers included)
+
+- **Context:** progress was spread across cards, portfolio rows, gate receipts, and prose. The
+  operator asked for a structured list of objectives that tiers up to the project goal and a way
+  to QUANTIFY progress without a single composite hiding a failure.
+- **Decision:** `looking_glass/objectives.py` defines **20 objectives in 5 tiers**:
+  - **T0 North Star** (1): minimal, bounded, universal sufficient statistic — *derived* from the
+    T1/T2 certificates (PASS iff sufficiency + minimality + decision-sufficiency all PASS).
+  - **T1 Foundation** (6): schema-universal ingestion, self-supervised only, frozen donor,
+    sufficiency U, shared geometry, transfer above raw.
+  - **T2 Certificates** (5): sufficiency, joint minimality, decision-sufficiency, calibration,
+    accessibility.
+  - **T3 Consumers** (4, **veto only**): supervised, unsupervised, decision/OPE, known-effect.
+  - **T4 Invariants** (4): robustness, efficiency, reproducibility, honest gates.
+  Each objective = ONE metric + ONE ground-truth gate + a control + the axis it diagnoses + the
+  proving artifact. The scorecard is assembled from a JSON receipt contract; a missing artifact is
+  **UNKNOWN, never green**; a producer may emit an explicit `status` override.
+- **Output:** per-objective records + **per-tier PASS/PARTIAL/FAIL/UNKNOWN counts** (no composite).
+  CLI: `python3 -m looking_glass.objectives --artifacts receipts.json [--json out] [--markdown out]`.
+- **Current reference roll-up (from existing receipts):** T0 **PARTIAL** (joint minimality open);
+  T1 **6/6 PASS**; T2 **4 PASS / 1 PARTIAL** (minimality); T3 **2 PASS / 2 PARTIAL** (supervised
+  2/4; OPE 8/10); T4 **4/4 PASS**. This matches the honest state: the foundation is certified;
+  the remaining gaps are *joint minimality* and *broad consumer precision/recall*.
+- **Principles:** *Honest* (no composite; UNKNOWN is honest), *Diagnosable* (axis per objective),
+  *Accessible* (machine-readable), *Universal* (artifact-driven, not hand-maintained).
+- **Tests:** `tests/test_objectives.py` (8): tier structure, UNKNOWN-when-absent, all-PASS roll-up,
+  partial-minimality propagates to T0, incomplete null control → PARTIAL, no-DEPLOY → FAIL,
+  explicit overrides, markdown/JSON round-trip. **448 fast tests** green.
