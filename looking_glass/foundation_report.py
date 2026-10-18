@@ -166,15 +166,22 @@ def build_card(
         try:
             from looking_glass.supervised_gate import run_supervised as _rs
 
-            for r in _rs(model, cfg, horizon_days=int(max(horizons)), fast=fast):
+            _sup = _rs(model, cfg, horizon_days=int(max(horizons)), fast=fast)
+            for r in _sup:
                 extra = (
                     f" cov90={r['coverage90']:.3f} w90={r['width90']:.1f}"
                     if r.get("coverage90") is not None
                     else ""
                 )
+                _vd = f" · {r.get('verdict')}" if r.get("verdict") else ""
                 sup_lines.append(
                     f"- {r['name']}: {r['metric']} **{r['skill']:+.3f}** "
-                    f"(baseline {r['baseline']:.3f}){extra}"
+                    f"(baseline {r['baseline']:.3f}){extra}{_vd}"
+                )
+            if getattr(_sup, "calibration_ok", None) is not None:
+                sup_lines.append(
+                    f"- **calibration: {'PASS' if _sup.calibration_ok else 'FAIL'}** "
+                    "(conformal 90% coverage)"
                 )
         except Exception as _e:  # noqa: BLE001
             sup_lines = [f"- (supervised gate unavailable: {_e})"]

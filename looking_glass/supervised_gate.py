@@ -162,10 +162,11 @@ def _load_null_model(cfg, null):
 class SupervisedGateResult(list):
     """Per-target gate rows plus optional null-control metadata."""
 
-    def __init__(self, rows=(), null_ok=None, null_rows=None):
+    def __init__(self, rows=(), null_ok=None, null_rows=None, calibration_ok=None):
         super().__init__(rows)
         self.null_ok = null_ok
         self.null_rows = null_rows
+        self.calibration_ok = calibration_ok
 
 
 def _states(model, cfg, keys):
@@ -306,8 +307,12 @@ def run_supervised(model, cfg, horizon_days=90, seed=0, null=None, fast=False):
     encoder; ``null_ok`` is True iff every null target FAILs (no skill).
     """
     rows = _run_supervised(model, cfg, horizon_days=horizon_days, seed=seed, fast=fast)
+    # C7 CALIBRATION GATE: every regression target's conformal 90% interval must COVER ~90% of the
+    # held-out points (tolerance 0.05). A model whose intervals under/over-cover is mis-calibrated.
+    _cov = [r["coverage90"] for r in rows if r.get("coverage90") is not None]
+    calibration_ok = bool(_cov) and all(0.85 <= c <= 0.98 for c in _cov)
     if null is None:
-        return SupervisedGateResult(rows)
+        return SupervisedGateResult(rows, calibration_ok=calibration_ok)
     null_model, null_cfg = _load_null_model(cfg, null)
     null_rows = _run_supervised(
         null_model, null_cfg, horizon_days=horizon_days, seed=seed, fast=fast
@@ -319,7 +324,9 @@ def run_supervised(model, cfg, horizon_days=90, seed=0, null=None, fast=False):
         row["null_skill"] = nr["skill"] if nr is not None else None
         row["null_verdict"] = nr["verdict"] if nr is not None else "FAIL"
         row["null_ok"] = null_ok
-    return SupervisedGateResult(rows, null_ok=null_ok, null_rows=null_rows)
+    return SupervisedGateResult(
+        rows, null_ok=null_ok, null_rows=null_rows, calibration_ok=calibration_ok
+    )
 
 
 def _print_rows(rows, title):
