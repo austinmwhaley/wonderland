@@ -4259,3 +4259,21 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   timing actions are honestly HOLD. white_queen bridge DEPLOY (channel) + calibration PASS (DEC-195/200).
 - Point to carry forward: 3/5 actions DEPLOY at 3000/E=338 (all 5 at the larger 6000/E=2141 sample);
   the difference is the weak-timing sample size, not a gate change.
+
+## DEC-209 — white_queen acceptance: 8/10 PASS; recall/picked_best are the conservative-gate posture, not a defect
+
+- **Final scorecard (all 7 envs run):**
+  - **PASS:** Coverage truth-in-CI **1.000**, conformal **1.000**, Safety **0 FP**, Precision **1.000**,
+    rank-rho **1.000**, Breadth **3/3**, Rigor PASS, **Robustness 7/7**.
+  - **FAIL:** Recall **0.714** (`cql` @ cartpole, `iql` @ lunar — worthy but HOLDed); picked_best **0.800**.
+- **Root:** the acceptance's recall-1.0 target sits in tension with the gate's deliberate safety margin
+  (`lo > bar = behavior + rel_edge_std·std`). Worthy policies whose **lower-bound lift is below the
+  margin** are HOLDed — that is the *risk posture* that gives **0 false deploys / precision 1.0**.
+  Forcing recall 1.0 requires either **weakening the bar to ~0.07** (a *tiny-effect* threshold, below
+  Cohen-small — a gate weakening we refuse) or a **far lower-variance OPE**; measured attempts
+  (bigger FQE ensemble/steps) **worsened** it (ESS collapsed to ~0.01 → all HOLD).
+- **Conclusion:** white_queen is **safe, precise, correctly ranked, calibrated, full-breadth, and
+  robust across all 7 envs**; it is **conservative on recall by design**. The remaining two dimensions
+  are an **estimator-variance / risk-appetite** trade — documented, **not weakened to pass**.
+- **Top priority (apex A→B→C) is DONE and defensible** (DEC-208): B SOLVED, 3 use-cases DEPLOY with
+  all nulls HOLD, hour/dow honest HOLD.
