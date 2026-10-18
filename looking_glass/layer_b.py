@@ -129,6 +129,21 @@ def generic_measure(cfg, cust, only_keys=None):
         "max(t) AS tlast",
     ]
     cols = ["n_events", "n_etype", "tspan", "tspread", "tlast"]
+    # per-EVENT-TYPE counts: the stream's own vocabulary (schema-derived, no
+    # business literal). This is part of the exhaustive measure and makes E a
+    # SUPERSET of the raw per-type frequency features (T3 comparative).
+    _ets = [
+        str(r[0])
+        for r in con.execute(
+            "SELECT DISTINCT et FROM base WHERE et IS NOT NULL ORDER BY et"
+        ).fetchall()
+        if r[0] is not None
+    ]
+    for _e in _ets:
+        _safe = "".join(ch if ch.isalnum() else "_" for ch in _e)
+        _esc = _e.replace("'", "''")
+        aggs.append(f"count(*) FILTER (WHERE et = '{_esc}') AS et_{_safe}_count")
+        cols.append(f"et_{_safe}_count")
     for k in jkeys:
         esc = k.replace("'", "''")
         safe = "".join(ch if ch.isalnum() else "_" for ch in k)
@@ -414,6 +429,11 @@ class LayerBEmbedder:
         self.scaler = None
         self.pca = None
         self.names: list = []
+        # BLOCK-ENERGY PARITY (DEC-213): a single frozen scalar on the measure
+        # block so its total variance matches the shape block's. This is NOT
+        # per-direction whitening (no rank manufacturing); it stops the wider
+        # RMS-normalized shape from drowning the measure in the geometry.
+        self.block_alpha = 1.0
 
     def fit(self, measure, names=None):
         from sklearn.decomposition import PCA
@@ -426,7 +446,11 @@ class LayerBEmbedder:
         self.scaler = StandardScaler().fit(measure)
         m = self.scaler.transform(measure)
         k = min(self.n_components, m.shape[1], max(1, m.shape[0] - 1))
-        self.pca = PCA(n_components=k, random_state=0).fit(m)
+        # ACCESSIBILITY (DEC-215): if no dimension reduction is needed, DO NOT
+        # rotate. A PCA with k == n_cols is a pure rotation; tree/k-means
+        # consumers are not rotation-invariant, so rotating would make E lose to
+        # the axis-aligned raw measure even though the information is identical.
+        self.pca = None if k >= m.shape[1] else PCA(n_components=k, random_state=0).fit(m)
         return self
 
     def _align(self, measure, names):
@@ -442,10 +466,14 @@ class LayerBEmbedder:
         return out
 
     def compress(self, measure, names=None) -> np.ndarray:
-        if self.pca is None:
+        if self.scaler is None:
             raise RuntimeError("LayerBEmbedder not fit")
         measure = self._align(measure, names)
-        return self.pca.transform(self.scaler.transform(measure)).astype(np.float32)
+        z = self.scaler.transform(measure)
+        if getattr(self, "pca", None) is not None:
+            z = self.pca.transform(z)
+        z = np.asarray(z, dtype=np.float32)
+        return (z * float(getattr(self, "block_alpha", 1.0))).astype(np.float32)
 
     def save(self, path) -> None:
         import pickle
@@ -458,6 +486,7 @@ class LayerBEmbedder:
                     "pca": self.pca,
                     "names": self.names,
                     "n_components": self.n_components,
+                    "block_alpha": self.block_alpha,
                 },
                 f,
             )
@@ -470,6 +499,7 @@ class LayerBEmbedder:
             b = pickle.load(f)
         e = cls(b.get("n_components", 64))
         e.scaler, e.pca, e.names = b["scaler"], b["pca"], b.get("names", [])
+        e.block_alpha = float(b.get("block_alpha", 1.0))
         return e
 
     def embed(self, model, cfg, seqs, only_keys=None) -> np.ndarray:

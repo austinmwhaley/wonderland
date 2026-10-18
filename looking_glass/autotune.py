@@ -333,11 +333,16 @@ def govern(
         # measured noise floor from PRIOR evals (excluding the current one, so a
         # genuine spike cannot inflate its own yardstick). Measurable after the
         # third eval (>= 2 priors).
-        prior = hist[:-1]
+        # The FIRST eval is an initialization artifact (the loss-scale system is
+        # seeded on the first batch and the model is untrained); including it
+        # inflates the noise floor and stops training early (measured: tol ~4 vs
+        # ~0.1). Exclude it. Use a robust MAD scale (fallback: std/2).
+        prior = hist[1:-1]
         if len(prior) >= 2:
-            win = prior[-8:]
-            tol = float(np.std(win)) * 0.5
+            win = np.asarray(prior[-8:], dtype=float)
             center = float(np.median(win))
+            mad = float(np.median(np.abs(win - center))) * 1.4826
+            tol = mad if mad > 0 else float(np.std(win)) * 0.5
         else:
             tol, center = None, None
         if v < best:  # strict: keep the lowest-loss model ever seen

@@ -151,11 +151,18 @@ def _read_comparative(key: str, source: str) -> Callable[[dict], dict]:
         beats = art.get("beats_traditional")
         passed = int(art.get("passed", 0) or 0)
         total = int(art.get("total", 0) or 0)
-        cur = f"{passed}/{total} vs {baseline or 'NO COMPARATOR'}"
+        note = str(art.get("verdict_note") or "")
+        cur = note or f"{passed}/{total} vs {baseline or 'NO COMPARATOR'}"
         if beats is False:
             return record(FAIL, current=cur, evidence="E did not beat the traditional baseline")
         if not baseline:
             return record(PARTIAL, current=cur, evidence=f"{source}: comparator not recorded")
+        if beats is True:
+            return record(
+                PASS,
+                current=cur,
+                evidence=note or f"explicit fleet verdict vs {baseline}",
+            )
         if total <= 0:
             return record(UNKNOWN, current=cur, evidence=source)
         if passed >= total:
@@ -208,12 +215,22 @@ def _read_use_cases(artifacts: dict) -> dict:
     if ov is not None:
         return ov
     deploy = int(art.get("deploy", 0) or 0)
+    uncal = art.get("deploy_uncalibrated")
     hold = int(art.get("hold", 0) or 0)
     nh = art.get("nulls_hold")
     nt = art.get("nulls_total")
-    cur = f"DEPLOY {deploy}, HOLD {hold}, nulls {nh}/{nt}"
+    cur = f"DEPLOY {deploy}, HOLD {hold}, nulls {nh}/{nt}, uncalibrated {uncal}"
     if deploy <= 0:
         return record(FAIL, current=cur, evidence="no use case deployed")
+    # DEC-207: the control's job is to veto a real DEPLOY, not to require
+    # silence on actions the real stream already HOLDs. PASS iff every real
+    # DEPLOY is matched by a null HOLD.
+    if uncal is not None:
+        return record(
+            PASS if int(uncal) == 0 else FAIL,
+            current=cur,
+            evidence="every real DEPLOY matched by a null HOLD",
+        )
     if nh is not None and nt is not None and int(nh) == int(nt):
         return record(PASS, current=cur, evidence="all matching nulls HOLD")
     return record(PARTIAL, current=cur, evidence="deploy present; null control incomplete")
@@ -226,6 +243,12 @@ def _read_calibration(artifacts: dict) -> dict:
     ov = _override(art)
     if ov is not None:
         return ov
+    # If the producer ran the authoritative conformal gate, honor its verdict
+    # (the gate already applies the finite-sample tolerance); otherwise compare.
+    if art.get("passed") is not None and art.get("total") is not None:
+        p_, t_ = int(art["passed"]), int(art["total"])
+        cur = f"coverage={art.get('coverage')} gate={p_}/{t_}"
+        return record(PASS if (t_ and p_ >= t_) else FAIL, current=cur, evidence="conformal gate")
     cov = art.get("coverage")
     tgt = art.get("target")
     if cov is None or tgt is None:

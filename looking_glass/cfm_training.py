@@ -1863,6 +1863,10 @@ def forward_embedding(model, seqs, h0s=None, chunk: int = 2048, cfg=None, lb=Non
             out = torch.cat(
                 [out, torch.as_tensor(lb.compress(m, _mnames), device=out.device)], dim=-1
             )
+    # CERTIFIED MINIMAL SERVE PROJECTION (DEC-213): apply the frozen linear map
+    # E -> minimal sufficient rank at the very end (after shape || counter || measure).
+    if hasattr(model, "serve_project"):
+        out = model.serve_project(out)
     return out
 
 

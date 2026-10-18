@@ -1315,6 +1315,47 @@ class CFM(nn.Module):
         legacy global-EMA ZCA is used only when isometric_boundary is off."""
         return self._boundary(self.proj(h))
 
+    def set_serve_projection(self, mean, scale, W) -> None:
+        """Frozen SERVE projection of the FULL consumed embedding to its certified
+        minimal rank (DEC-213). Applied at the END of `forward_embedding`, after
+        shape || counter || measure. Fit on split-A only; chosen on held-out B."""
+        self.register_buffer("serve_mean", torch.as_tensor(mean, dtype=torch.float32))
+        self.register_buffer(
+            "serve_scale", torch.as_tensor(scale, dtype=torch.float32).clamp(min=1e-6)
+        )
+        self.register_buffer("serve_W", torch.as_tensor(W, dtype=torch.float32))
+        self.serve_on = True
+        self.serve_mode = "pca"
+        self.serve_dim = int(torch.as_tensor(W).shape[0])
+
+    def set_serve_blocks(self, shape_dim, mean, scale, W) -> None:
+        """Block-wise serve (DEC-213): compress ONLY the shape block; keep the
+        measure block EXPLICIT (it is the additive/RFM structure a consumer needs)."""
+        self.register_buffer("serve_mean", torch.as_tensor(mean, dtype=torch.float32))
+        self.register_buffer(
+            "serve_scale", torch.as_tensor(scale, dtype=torch.float32).clamp(min=1e-6)
+        )
+        self.register_buffer("serve_W", torch.as_tensor(W, dtype=torch.float32))
+        self.serve_on = True
+        self.serve_mode = "blocks"
+        self.serve_shape_dim = int(shape_dim)
+        self.serve_dim = int(torch.as_tensor(W).shape[0]) + max(
+            0, int(getattr(self, "serve_total_dim", 0)) - int(shape_dim)
+        )
+
+    def serve_project(self, E: "torch.Tensor") -> "torch.Tensor":
+        """Apply the certified minimal serve transform (no-op if unset)."""
+        if not getattr(self, "serve_on", False):
+            return E
+        dev = E.device
+        if getattr(self, "serve_mode", "pca") == "blocks":
+            d = int(self.serve_shape_dim)
+            shape = ((E[:, :d] - self.serve_mean.to(dev)) / self.serve_scale.to(dev)) @ (
+                self.serve_W.to(dev).t()
+            )
+            return torch.cat([shape, E[:, d:]], dim=-1)
+        return ((E - self.serve_mean.to(dev)) / self.serve_scale.to(dev)) @ self.serve_W.to(dev).t()
+
     def update_zca(self, h, beta=0.1):
         """Update the global boundary ZCA from this batch (v4.1, DEC-030).
 

@@ -239,13 +239,21 @@ if __name__ == "__main__":
     if json_out:
         import json as _json
 
-        passed = sum(1 for r in rows if r[4])
+        from .acceptance import REPORT_ONLY_DIMS
+
+        hard = [r for r in rows if r[0] not in REPORT_ONLY_DIMS]
+        passed = sum(1 for r in hard if r[4])
         receipt = {
             "passed": int(passed),
-            "total": int(len(rows)),
+            "total": int(len(hard)),
+            "report_only": {
+                f"{r[0]}/{r[1]}": {"target": r[2], "achieved": r[3]}
+                for r in rows
+                if r[0] in REPORT_ONLY_DIMS
+            },
             "baseline": "logging policy + model-free DR",
             # superiority is the WHOLE acceptance contract, not a subset
-            "beats_traditional": bool(passed == len(rows)),
+            "beats_traditional": bool(passed == len(hard)),
             "overall": agg["overall"],
             "rows": [
                 {

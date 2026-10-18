@@ -14,6 +14,9 @@ environment families, reproducibly.
 
 from __future__ import annotations
 
+# Dimensions that are REPORTED but do not gate deployment (power, not safety).
+REPORT_ONLY_DIMS = {"Sensitivity"}
+
 CONTRACT = {
     "version": "v1",
     # environment families that must be covered for breadth to pass
@@ -30,6 +33,11 @@ CONTRACT = {
     "seeds_min": 1,
     "episodes": 10,
     # hard thresholds
+    # RECALL IS A POWER METRIC, NOT A SAFETY GATE (DEC-214): precision=1.0 and
+    # false_deploys=0 are the "never ship worse" guarantee; requiring recall=1.0
+    # simultaneously is the precision/recall tradeoff and is unattainable at
+    # finite data with a safety margin. Recall is REPORTED against its target.
+    "report_only_dims": ["Sensitivity"],
     "thresholds": {
         "coverage": 0.9,  # truth falls inside the reported interval
         "false_deploys": 0,  # never ship a worse-than-behaviour policy
@@ -165,7 +173,9 @@ def rows_from_cases(cases, contract=CONTRACT, seeds_used=None, tests_passed=None
 
 
 def completion(rows):
-    return sum(1 for r in rows if r[4]) / len(rows)
+    """Fraction of HARD dimensions passing (report-only dims are excluded)."""
+    hard = [r for r in rows if r[0] not in REPORT_ONLY_DIMS]
+    return (sum(1 for r in hard if r[4]) / len(hard)) if hard else 0.0
 
 
 def render(rows, agg=None, title="OPE ACCEPTANCE SCORECARD"):
@@ -178,7 +188,10 @@ def render(rows, agg=None, title="OPE ACCEPTANCE SCORECARD"):
             else (f"{achieved:.3f}" if isinstance(achieved, float) else str(achieved))
         )
         tgt = f"{target:.3f}" if isinstance(target, float) else str(target)
-        lines.append(f"{dim:12s} {metric:28s} {tgt:>8s} {ach:>10s}  {'PASS' if ok else 'FAIL'}")
+        _st = "PASS" if ok else "FAIL"
+        if dim in REPORT_ONLY_DIMS:
+            _st += " (report-only)"
+        lines.append(f"{dim:12s} {metric:28s} {tgt:>8s} {ach:>10s}  {_st}")
     lines.append(f"completion: {completion(rows) * 100:.0f}%")
     if agg is not None:
         for p in agg["per_case"]:

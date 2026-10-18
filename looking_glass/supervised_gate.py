@@ -326,11 +326,15 @@ def _run_supervised(model, cfg, horizon_days=90, seed=0, fast=False):
     RAW, _rpos = _raw_features(d, need, cfg)
     RAW_C = RAW[[_rpos[c] for c in C]]
     lab = _labels(cfg, C, horizon_days)
-    # reduce the ~2141-d E to a compact subspace so the head fits are fast and stable
+    # Compress ONLY if E is genuinely wide (legacy 2141-d accumulator). The served
+    # E is ~338 (or the certified minimal rank), so a fixed PCA-128 would discard
+    # signal the head can use; the threshold mirrors the use-case gate (DEC-198).
     from sklearn.decomposition import PCA
     from sklearn.preprocessing import StandardScaler
 
-    Z = PCA(n_components=128, random_state=seed).fit_transform(StandardScaler().fit_transform(Z))
+    Z = StandardScaler().fit_transform(Z)
+    if Z.shape[1] > 512:
+        Z = PCA(n_components=256, random_state=seed).fit_transform(Z)
     rows = []
     for name, (kind, metric, _base) in TARGETS.items():
         _src = "next_purchase" if name == "reactivation" else name

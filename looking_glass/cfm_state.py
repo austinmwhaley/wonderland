@@ -296,6 +296,25 @@ def load_frozen_encoder(tag: str, cfm_dir):
 
         model.layer_b = LayerBEmbedder.load(_lb_path)
         cfg.use_measure = True
+    # CERTIFIED MINIMAL SERVE PROJECTION (DEC-213): if fitted, the consumed E is
+    # the frozen projection to its minimal sufficient rank.
+    _proj = cfm_dir / f"serve_proj_{tag.replace('.', '_')}.npz"
+    if _proj.exists():
+        import numpy as _np
+
+        _z = _np.load(_proj)
+        if str(_z.get("mode", "pca")) == "blocks":
+            d = int(_z["shape_dim"])
+            model.serve_total_dim = int(_z.get("total_dim", d))
+            model.set_serve_blocks(d, _z["mean"], _z["scale"], _z["W"])
+            print(
+                f"[load] block-wise serve: shape->{int(_z['W'].shape[0])} + measure "
+                f"-> {int(model.serve_total_dim) - d} dims",
+                flush=True,
+            )
+        else:
+            model.set_serve_projection(_z["mean"], _z["scale"], _z["W"])
+            print(f"[load] serve projection: E -> {int(_z['W'].shape[0])} dims", flush=True)
     return model, cfg
 
 

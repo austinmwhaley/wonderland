@@ -89,8 +89,9 @@ def test_govern_patience_waits_for_measurable_noise(capsys):
         return v, v
 
     gov, best = govern(lambda n: None, val_metric, 10_000, 10, patience=3)
-    # earliest stop = 3 evals (floor measurable) + patience-1 -> 5 evals
-    assert gov["steps"] == 50 and gov["evals"] == 5
+    # DEC-215: the FIRST eval is excluded from the noise floor (init artifact), so
+    # the floor is measurable after 3 prior-comparable evals; +patience -> 6 evals.
+    assert gov["steps"] == 60 and gov["evals"] == 6
     assert gov["stopped"] == "converged"
     assert best == 4.0
     assert "[govern]" in capsys.readouterr().out  # progress prints

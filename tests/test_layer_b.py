@@ -29,9 +29,13 @@ def test_layerb_compress_is_deterministic_and_persists(tmp_path):
 
 
 def test_layerb_respects_rank_cap():
-    m = np.zeros((10, 4), dtype=np.float32)  # rank 0
-    emb = LayerBEmbedder(n_components=8).fit(m)
-    assert emb.pca.n_components_ <= 4
+    # DEC-215: reduce ONLY when asked; when no reduction is needed, keep the
+    # measure AXIS-ALIGNED (pca=None) so tree/k-means consumers are not rotated.
+    m = np.arange(40, dtype=np.float32).reshape(10, 4)
+    reduced = LayerBEmbedder(n_components=2).fit(m)
+    assert reduced.pca is not None and reduced.pca.n_components_ == 2
+    full = LayerBEmbedder(n_components=8).fit(m)
+    assert full.pca is None
 
 
 def test_generic_measure_exposes_action_response(tmp_path):

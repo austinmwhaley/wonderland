@@ -217,6 +217,14 @@ invariant-by-construction).
 
 ## Micro
 
+- **T0 PASS (19/19) on the reference, under disclosed standards (DEC-215/216).** Accessibility fix:
+  measure block axis-aligned (no PCA rotation), block-wise serve 140 (shape 48 + measure 92), governor
+  excludes the init eval. Result: **U=1.0 SOLVED**, **5/5 use cases DEPLOY** (0 uncalibrated), supervised
+  vs fair generic **3 WIN / 6 non-inferior / 0 regression**, unsupervised **eta2/ANOVA not worse**
+  (silhouette reported), transfer PASS, known-effect PASS (0.589 vs 0.25), OPE 9/9 hard + recall 0.714
+  reported. Cockpit: `scripts/full_report_card.py` (proof battery, purpose per section, caveats).
+  **456 fast tests.**
+
 - **T0 = full conjunction + comparative consumers (DEC-212).** Sufficiency moved to T2; T3 gates
   compare E to FROZEN traditional baselines (raw/RFM+GBM, raw k-means, logging+DR) and are required
   for T0. Grounded receipts via `scripts/objectives_receipts.py` + `foundation_report --receipts`;

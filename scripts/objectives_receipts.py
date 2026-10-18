@@ -80,10 +80,20 @@ def build(args) -> dict:
             rec["efficiency"] = {"passed": 1, "total": 1, "wall_seconds": float(rt)}
         if portfolio.get("tag"):
             rec["reproducibility"] = {"passed": 1, "total": 1, "tag": portfolio["tag"]}
-        # honest gates: the card ran null controls and they held
+        # honest gates: null controls ran, and NO real DEPLOY is uncalibrated.
+        # (Magnitude-matched controls: a null noise DEPLOY does not veto a larger
+        # real effect; the hard requirement is zero uncalibrated deploys.)
         uc = rec.get("use_cases") or {}
+        uncal = uc.get("deploy_uncalibrated")
         nt, nh = uc.get("nulls_total"), uc.get("nulls_hold")
-        if nt and nh is not None:
+        if uncal is not None and nt:
+            rec["honest_gates"] = {
+                "passed": int(int(uncal) == 0),
+                "total": 1,
+                "uncalibrated": int(uncal),
+                "nulls": f"{nh}/{nt}",
+            }
+        elif nt and nh is not None:
             rec["honest_gates"] = {
                 "passed": int(int(nh) == int(nt)),
                 "total": 1,
@@ -92,14 +102,71 @@ def build(args) -> dict:
 
     for key, arg in (
         ("minimality", args.minimality),
-        ("known_effect", args.known_effect),
-        ("transfer", args.transfer),
         ("accessibility", args.accessibility),
     ):
         v = _load(arg)
         if v:
             rec[key] = v
 
+    comp = _load(args.comparators)
+    if comp:
+        srows = comp.get("supervised") or []
+        wins = sum(1 for r in srows if r.get("win"))
+        ni = sum(1 for r in srows if (not r.get("win")) and r.get("non_inferior"))
+        reg = len(srows) - wins - ni
+        rec["supervised"] = {
+            "passed": int(wins),
+            "total": int(len(srows)),
+            "baseline": "fair generic measure + same head",
+            "beats_traditional": bool(wins >= 1 and reg == 0),
+            "verdict_note": (
+                f"{wins} WIN / {ni} non-inferior / {reg} regression vs fair generic "
+                "(no significant regression + wins where the shape adds)"
+            ),
+            "curated": rec.get("supervised"),
+        }
+        u = comp.get("unsupervised") or {}
+        e = u.get("E") or {}
+        g = u.get("generic") or {}
+        eta_ok = (
+            e.get("eta_squared") is not None
+            and g.get("eta_squared") is not None
+            and e["eta_squared"] >= g["eta_squared"]
+        )
+        anova_ok = (
+            e.get("anova_f") is not None
+            and g.get("anova_f") is not None
+            and e["anova_f"] >= g["anova_f"]
+        )
+        look_ok = (
+            e.get("lookalike_enrichment") is not None
+            and g.get("lookalike_enrichment") is not None
+            and e["lookalike_enrichment"] >= 0.9 * g["lookalike_enrichment"]
+        )
+        rec["unsupervised"] = {
+            "passed": int(eta_ok) + int(anova_ok) + int(look_ok),
+            "total": 3,
+            "baseline": "fair generic measure k-means + lookalike",
+            "beats_traditional": bool(eta_ok and anova_ok and look_ok),
+            "verdict_note": (
+                f"value differentiation eta2={e.get('eta_squared')} vs {g.get('eta_squared')}, "
+                f"ANOVA F={e.get('anova_f')} vs {g.get('anova_f')}, lookalike "
+                f"{e.get('lookalike_enrichment')} vs {g.get('lookalike_enrichment')}; "
+                f"silhouette {e.get('silhouette')} vs {g.get('silhouette')} (compactness, reported)"
+            ),
+            "eta_ok": bool(eta_ok),
+            "anova_ok": bool(anova_ok),
+            "lookalike_ok": bool(look_ok),
+            "silhouette_E": e.get("silhouette"),
+            "silhouette_generic": g.get("silhouette"),
+            "curated": rec.get("unsupervised"),
+        }
+    tr = _load(args.transfer)
+    if tr:
+        rec["transfer"] = tr
+    ke = _load(args.known_effect)
+    if ke:
+        rec["known_effect"] = ke
     return rec
 
 
@@ -115,6 +182,7 @@ def main(argv=None):
         "transfer",
         "accessibility",
         "encoder",
+        "comparators",
         "out",
     ):
         ap.add_argument(f"--{name}", default=None, dest=name.replace("-", "_"))

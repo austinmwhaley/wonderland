@@ -362,8 +362,20 @@ def judge_diet(
         #  (b) the certificate must clear the DERIVED BAR (see certify_row):
         #      behavior-clones have truth == bar, so lo > bar is structurally
         #      ~impossible for them; `lo > behavior` was certifying them.
-        deploy = bool((_cert["deploy"] or _adv["deploy"]) and witnesses >= 2)
-        if _adv["deploy"] and not _cert["deploy"]:
+        # THIRD deploy source (v21, estimand-correct): the ARGMAX certificate.
+        # The truth is the deterministic policy's return; FQE-argmax and
+        # MB-argmax are two INDEPENDENT estimators of that same estimand. When
+        # both clear the bar, the soft-proxy certificate (which can be invalid
+        # at low ESS) must not veto a valid two-witness argmax call. This is
+        # still corroboration (two witnesses), never a single-witness deploy.
+        _argmax_cert = bool(sh_pass and mbs_pass)
+        deploy = bool((_cert["deploy"] or _adv["deploy"] or _argmax_cert) and witnesses >= 2)
+        if _argmax_cert and not (_cert["deploy"] or _adv["deploy"]):
+            rule = (
+                "argmax certificate: FQE-argmax and MB-argmax both clear the bar "
+                "(two independent estimators of the shippable policy)"
+            )
+        elif _adv["deploy"] and not _cert["deploy"]:
             rule = "advantage certificate: Delta %s CI [%s, %s] > 0 (n=%d, bias %s)" % (
                 _adv["adv"],
                 _adv["lo"],

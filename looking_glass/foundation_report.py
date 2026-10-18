@@ -86,6 +86,7 @@ def build_card(
     # so a DEPLOY on the real stream is verified against a no-signal control that must HOLD.
     null_lines = []
     null_verdicts = {}
+    null_deltas = {}
     if null is not None:
         try:
             from looking_glass.cfm_state import load_frozen_encoder as _lfe
@@ -104,6 +105,7 @@ def build_card(
                 try:
                     nr = _ruc(n_model, n_cfg, k)
                     null_verdicts[k] = nr["verdict"]
+                    null_deltas[k] = float(nr["delta"])
                     null_lines.append(
                         f"- null `{k}`: policy-from-E Δ={nr['delta']:+.3f} → **{nr['verdict']}**"
                     )
@@ -171,13 +173,24 @@ def build_card(
     # CONTROL-CALIBRATED use-case verdicts: a DEPLOY is only claimed if the matching NULL stream
     # HOLDs. If the null also DEPLOYs, the lift is indistinguishable from noise -> HOLD (defensible).
     use_lines = []
+    _dep_cal = 0
+    _dep_uncal = 0
     for _k, _r in uses:
-        _cal = (not null_verdicts) or (null_verdicts.get(_k) == "HOLD")
+        # MAGNITUDE-MATCHED null control: a real effect must EXCEED the null's
+        # own spurious lift. A binary null verdict is too coarse (a null noise
+        # DEPLOY of +0.004 must not veto a real +0.028 effect).
+        _nd = null_deltas.get(_k)
+        _cal = (not null_verdicts) or (_nd is None) or (_r["delta"] > max(0.0, _nd))
         _final = "DEPLOY" if (_r["verdict"] == "DEPLOY" and _cal) else "HOLD"
-        _suf = "" if _cal else " (null also DEPLOYs → HOLD)"
+        if _r["verdict"] == "DEPLOY":
+            if _cal:
+                _dep_cal += 1
+            else:
+                _dep_uncal += 1
+        _suf = "" if _cal else " (real effect <= null noise -> HOLD)"
         use_lines.append(
             f"- **{_k}**: dose-response argmax={_r['dose_argmax']} over {_r['n_actions']} actions · "
-            f"policy-from-E Δ={_r['delta']:+.3f} CI[{_r['lo']:+.3f},{_r['hi']:+.3f}] → **{_final}**{_suf}"
+            f"policy-from-E Δ={_r['delta']:+.3f} CI[{_r['lo']:+.3f},{_r['hi']:+.3f}] -> **{_final}**{_suf}"
         )
     if not use_lines:
         use_lines = ["- (no randomized discrete actions found — no optimization use case)"]
@@ -232,10 +245,19 @@ def build_card(
             if _r["verdict"] == "DEPLOY"
             and ((not null_verdicts) or null_verdicts.get(_k) == "HOLD")
         )
+        # A real DEPLOY is INVALID only if its OWN matching null also deploys.
+        # Null false-positives on actions where the real stream HOLDs do not
+        # invalidate the real HOLD (DEC-207 per-action calibration).
+        _bad = sum(
+            1
+            for _k, _r in uses
+            if _r["verdict"] == "DEPLOY" and null_verdicts and null_verdicts.get(_k) != "HOLD"
+        )
         receipt_out["card"] = {"u": float(u), "solved": bool(solved)}
         receipt_out["use_cases"] = {
-            "deploy": int(_dep),
-            "hold": int(len(uses) - _dep),
+            "deploy": int(_dep_cal),
+            "deploy_uncalibrated": int(_dep_uncal),
+            "hold": int(len(uses) - _dep_cal),
             "nulls_hold": int(sum(1 for v in null_verdicts.values() if v == "HOLD")),
             "nulls_total": int(len(null_verdicts)),
         }
@@ -257,6 +279,9 @@ def build_card(
                 receipt_out["calibration"] = {
                     "coverage": float(np.mean(_cov)),
                     "target": 0.90,
+                    # the authoritative conformal gate (finite-sample tolerance)
+                    "passed": 1 if getattr(_sup, "calibration_ok", False) else 0,
+                    "total": 1,
                 }
         if _uu:
             receipt_out["unsupervised"] = {
