@@ -4198,3 +4198,17 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - **The honest conflict:** coverage wants a **wider** interval; recall wants a **higher lo** (narrower).
   Only a **less-variance / less-biased estimator** satisfies both — deeper white_queen work, not a knob.
 - **Status:** #1–#6 done; **#7 open** (research item). Not weakened to pass.
+
+## DEC-204 — #1 red_king validated + #2 red_queen NBA plan; wide-DB path/propensity fixes
+
+- **#1 red_king (`red_king/validate_known.py`):** on the randomized-arm business stream, red_king's
+  IMAGINED arm values recover the KNOWN causal ordering (IPW truth) at **Spearman 0.80 / Pearson
+  0.82** (arms monotone: 58.5 / 93.6 / 146.5 / 210.6; red_king preserves the order). The decisive
+  red_king↔white_queen "with vs without" A/B (`ab_witness`) is running (5 sequential cells).
+- **#2 red_queen (`red_queen/nba.py`):** produces a **budget-constrained next-best-action plan**
+  (7470 customers, budget 1000 sends/wk → 999.8 used, arm_mix, expected weekly GP) → `nba_plan.json`.
+- **Fixes:** `validate_known` pointed at the `.parquet` (a table query would fail) → the wide
+  `.duckdb`; `email_arm` has NO `propensity` (randomized arms) → use the uniform propensity
+  `1/#arms` (the user's point: no logged propensity; random is the model).
+- **Status:** #1 (recovery) + #2 + #7-calibration + #12 docs done this batch; full card, #6 LOO,
+  #8 zoo, #7-acceptance, #5-shrink in progress/queued.

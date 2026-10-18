@@ -14,7 +14,7 @@ import numpy as np
 
 WORK = Path(__file__).resolve().parents[1]
 CFM = WORK / "looking_glass" / "artifacts" / "cfm" / "cfm_products.duckdb"
-STREAM = WORK / "rabbit_hole" / "data" / "duckdb" / "customer_event_stream.parquet"
+STREAM = WORK / "rabbit_hole" / "data" / "duckdb" / "customer_event_stream.duckdb"
 
 
 def _facts():
@@ -22,7 +22,10 @@ def _facts():
 
     sc = duckdb.connect(str(STREAM), read_only=True)
     try:
-        arm = sc.execute("SELECT customer_id AS customer_key, arm, propensity FROM email_arm").pl()
+        arm = sc.execute(
+            "SELECT customer_id AS customer_key, arm, "
+            "1.0 / (SELECT count(DISTINCT arm) FROM email_arm) AS propensity FROM email_arm"
+        ).pl()
         inc = sc.execute("""
 			SELECT s.customer_id AS customer_key, SUM(o.gross_margin) g
 			FROM email_sends s JOIN orders o
