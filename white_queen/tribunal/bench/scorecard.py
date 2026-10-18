@@ -113,13 +113,14 @@ def _bandit_case(seed=0):
     best.name = "best"
     hold = info["logging_policy"]
     hold.name = "logging"
+    # Proper FQE budget (NOT under-budget): a 500-step FQE under-estimates the value, which
+    # pushes the truth ABOVE the reported CI (coverage FAIL). 4000 steps covers.
     tiny = {
-        "steps_max": 500,
-        "eval_every": 250,
+        "steps_max": 4000,
+        "eval_every": 500,
         "patience": 4,
         "batch": 128,
         "hidden": 64,
-        "allow_under_budget": True,
     }
     rb = evaluate(
         logs, best, nA=info["nA"], estimate_propensity=True, fast=True, fqe_cfg=dict(tiny)

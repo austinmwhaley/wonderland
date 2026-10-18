@@ -4225,3 +4225,16 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - **Speed:** full card = **1724 s (~29 min)** — white_queen + supervised dominate; the fast core card
   (B+use-cases+null) is 202 s. `ab_witness` (red_king↔white_queen A/B) timed out at 20 min (~2.5/5
   cells, ~8 min/cell).
+
+## DEC-206 — white_queen acceptance: Coverage PASS (1.0) + Breadth PASS (3/3) fixed
+
+- **Coverage fix (real bug):** the bandit acceptance used an **under-budget FQE** (`steps_max=500`,
+  `allow_under_budget`) → biased-LOW value → truth above the reported CI (coverage 0.60 FAIL).
+  Raising to a proper budget (4000) makes the CI cover (both bandit cells now covered). **Coverage
+  1.000 PASS.**
+- **Breadth fix:** ran the continuous family (`mountaincar_continuous`, `pendulum`) — the scorecard
+  CLI needs `--run <envs>` (I'd omitted it). **Breadth 3/3 PASS.** Robustness: running
+  `mountaincar`, `acrobot`, `lunar` (matrix envs are ~30 min each).
+- **Remaining:** **recall 0.833** — `cql` on cartpole is the lone false-negative (truth 82.6 >
+  anchor 66.5, but level-cert lo 68.67 < bar 72.63; the judge's ADVANTAGE certificate could deploy it
+  if its Delta CI > 0 with >=2 witnesses — diagnosing). Not weakening the gate.
