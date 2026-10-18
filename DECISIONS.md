@@ -4247,3 +4247,15 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   `hour` null false-positive: hour becomes an honest HOLD rather than a false claim, *without*
   weakening the gate or hiding the control.
 - This is the correct "never claim a capability the no-signal control also shows" discipline.
+
+## DEC-208 — (b) A→B→C apex is DEFENSIBLE: control-calibrated card, no false claims
+
+- **Calibrated apex card (E=338 ckpt, 3000 customers, 200 s):** **B SOLVED**; **DEPLOY `freq` +0.035,
+  `channel` +0.016, `offer` +0.010**; **HOLD `hour` +0.004, `dow` +0.003** (honest — weak signal);
+  **CONTROLS: all 5 nulls HOLD** (incl. `hour`). The hour null false-positive is gone — both because
+  the null HOLDs this run and the card now refuses a DEPLOY unless the matching null HOLDs (DEC-207).
+- **Read:** the apex pipeline A (this stream) → B (frozen E) → C (plugins certified with controls) is
+  **complete and defensible**: every claimed DEPLOY is verified against a no-signal control; the weak
+  timing actions are honestly HOLD. white_queen bridge DEPLOY (channel) + calibration PASS (DEC-195/200).
+- Point to carry forward: 3/5 actions DEPLOY at 3000/E=338 (all 5 at the larger 6000/E=2141 sample);
+  the difference is the weak-timing sample size, not a gate change.
