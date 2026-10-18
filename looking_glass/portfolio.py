@@ -368,15 +368,19 @@ def evaluate(
     rng.shuffle(customers)
     fold_ids = np.array_split(np.array(customers, dtype=object), min(folds, len(customers)))
 
-    gated = [o for o in cfg.objectives if o not in GATED_EXCLUSIONS]
-    # Grade the GENERIC per-field self-supervision too (DEC-210): the `entity` /
-    # `value` objective names are family switches, and the actual trained losses
-    # are `attr_next:<field>` / `num_next:<field>`. Without this they would be
-    # trained but never measured (a false-green risk).
+    # `entity` / `value` are FAMILY SWITCHES, not loss keys: they enable the
+    # per-field losses below and must not be reported as "missing" objectives.
+    _family = {"entity", "value"}
+    gated = [o for o in cfg.objectives if o not in GATED_EXCLUSIONS and o not in _family]
+    # Grade the GENERIC per-field self-supervision too (DEC-210). ACTION fields are
+    # inputs, not behaviour targets — never grade their prediction (it is masked).
     if "entity" in cfg.objectives:
         gated += [f"attr_next:{f}" for f in (getattr(vocab, "attrs", {}) or {})]
     if "value" in cfg.objectives:
-        gated += [f"num_next:{f}" for f in (getattr(vocab, "numeric_fields", ()) or ())]
+        _act = set(getattr(cfg, "action_fields", ()) or ())
+        gated += [
+            f"num_next:{f}" for f in (getattr(vocab, "numeric_fields", ()) or ()) if f not in _act
+        ]
     measured = sorted(set(gated) | YARDSTICK_PENDING)
     tr_seqs = [seqs[int(i)] for i in _tr_idx]
     ident = _identifiability(tr_seqs, val, fold_ids, seed)
@@ -592,7 +596,7 @@ def evaluate(
                     "ok": bool(canaries["period_acc"] < 1.5 * canaries["period_chance"]),
                 }
             )
-    missing = sorted(set(cfg.objectives) - seen - GATED_EXCLUSIONS - YARDSTICK_PENDING)
+    missing = sorted(set(cfg.objectives) - _family - seen - GATED_EXCLUSIONS - YARDSTICK_PENDING)
     # per-task contribution at the kept state, in the CURRENT balance mode
     # (DEC-014): DWA -> w_k*L_k with the final learned rate-weights; Kendall
     # (uncertainty mode) -> 0.5*exp(-s_k)*L_k. Recorded either way.

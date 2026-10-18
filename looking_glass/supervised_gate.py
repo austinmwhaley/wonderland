@@ -160,13 +160,25 @@ def _load_null_model(cfg, null):
 
 
 class SupervisedGateResult(list):
-    """Per-target gate rows plus optional null-control metadata."""
+    """Per-target gate rows plus optional null-control / comparative metadata."""
 
-    def __init__(self, rows=(), null_ok=None, null_rows=None, calibration_ok=None):
+    def __init__(
+        self,
+        rows=(),
+        null_ok=None,
+        null_rows=None,
+        calibration_ok=None,
+        comparative_passed=None,
+        comparative_total=None,
+        baseline="raw/RFM aggregates + GBM",
+    ):
         super().__init__(rows)
         self.null_ok = null_ok
         self.null_rows = null_rows
         self.calibration_ok = calibration_ok
+        self.comparative_passed = comparative_passed
+        self.comparative_total = comparative_total
+        self.baseline = baseline
 
 
 def _states(model, cfg, keys):
@@ -189,6 +201,117 @@ def _states(model, cfg, keys):
     return np.concatenate(Z, 0), C
 
 
+def _bootstrap_delta(pred_e, pred_raw, y, kind, metric, n_boot=400, seed=0):
+    """Paired bootstrap of (E - traditional) on the SAME held-out resamples."""
+    pred_e = np.asarray(pred_e, dtype=float).ravel()
+    pred_raw = np.asarray(pred_raw, dtype=float).ravel()
+    y = np.asarray(y).ravel()
+    rng = np.random.default_rng(seed + 991)
+    n = len(y)
+    boot = []
+    for _ in range(int(n_boot)):
+        idx = rng.integers(0, n, n)
+        me = _metric_value(pred_e[idx], y[idx], kind, metric)
+        mr = _metric_value(pred_raw[idx], y[idx], kind, metric)
+        if np.isfinite(me) and np.isfinite(mr):
+            boot.append(me - mr)
+    if not boot:
+        return float("nan"), float("nan"), float("nan")
+    lo, hi = np.percentile(boot, [2.5, 97.5])
+    return float(np.mean(boot)), float(lo), float(hi)
+
+
+def _raw_features(d, keys, cfg):
+    """Traditional RFM / aggregate features (NO E) for the comparator baseline.
+
+    Schema-derived: frequency, monetary aggregates, recency/tenure, gap moments,
+    distinct-cardinality, and per-event-type counts. This is the frozen
+    "raw/RFM aggregates + GBM" comparator (DEC-212).
+    """
+    import polars as pl
+
+    df = d.filter(pl.col("customer_key").is_in(list(keys))).with_columns(
+        pl.col("event_ts")
+        .str.to_datetime(time_zone="UTC", strict=False)
+        .dt.epoch("s")
+        .alias("_ts"),
+        pl.col("value").cast(pl.Float64, strict=False).fill_null(0.0).alias("_v"),
+    )
+
+    def _nuniq(col):
+        if col in df.columns:
+            return pl.col(col).n_unique().alias(f"n_{col}")
+        return pl.lit(0.0).alias(f"n_{col}")
+
+    base = (
+        df.group_by("customer_key")
+        .agg(
+            [
+                pl.len().alias("n"),
+                pl.col("_v").sum().alias("v_sum"),
+                pl.col("_v").mean().alias("v_mean"),
+                pl.col("_v").std().fill_null(0.0).alias("v_std"),
+                pl.col("_v").max().alias("v_max"),
+                pl.col("_ts").min().alias("t_min"),
+                pl.col("_ts").max().alias("t_max"),
+                pl.col("event_type").n_unique().alias("n_et"),
+                _nuniq("entity_id"),
+                _nuniq("entity_type"),
+                _nuniq("category_code"),
+            ]
+        )
+        .sort("customer_key")
+    )
+    gaps = (
+        df.sort(["customer_key", "_ts"])
+        .with_columns(pl.col("_ts").diff().over("customer_key").alias("_gap"))
+        .group_by("customer_key")
+        .agg(
+            [
+                pl.col("_gap").mean().fill_null(0.0).alias("gap_mean"),
+                pl.col("_gap").std().fill_null(0.0).alias("gap_std"),
+            ]
+        )
+        .sort("customer_key")
+    )
+    base = base.join(gaps, on="customer_key", how="left")
+    cut = float(as_of_epoch(cfg.as_of))
+    base = base.with_columns(
+        [
+            (cut - pl.col("t_max")).alias("recency"),
+            (cut - pl.col("t_min")).alias("tenure"),
+        ]
+    )
+    ks = base["customer_key"].to_list()
+    pos = {k: i for i, k in enumerate(ks)}
+    cols = [
+        "n",
+        "v_sum",
+        "v_mean",
+        "v_std",
+        "v_max",
+        "n_et",
+        "n_entity_id",
+        "n_entity_type",
+        "n_category_code",
+        "gap_mean",
+        "gap_std",
+        "recency",
+        "tenure",
+    ]
+    X = np.column_stack([base[c].to_numpy() for c in cols]).astype(float)
+    ets = sorted(df["event_type"].unique().to_list())
+    ep = {e: i for i, e in enumerate(ets)}
+    E = np.zeros((len(ks), len(ets)))
+    cnt = df.group_by(["customer_key", "event_type"]).len()
+    for row in cnt.iter_rows(named=True):
+        E[pos[row["customer_key"]], ep[row["event_type"]]] = float(row["len"])
+    X = np.column_stack([X, E])
+    from sklearn.preprocessing import StandardScaler
+
+    return StandardScaler().fit_transform(X), pos
+
+
 def _run_supervised(model, cfg, horizon_days=90, seed=0, fast=False):
     from sklearn.ensemble import HistGradientBoostingClassifier, HistGradientBoostingRegressor
     from sklearn.model_selection import GroupKFold
@@ -200,6 +323,8 @@ def _run_supervised(model, cfg, horizon_days=90, seed=0, fast=False):
     split = _d.assign_split(keys, cfg)
     need = [k for k in keys if split.get(k) in ("A", "B")]
     Z, C = _states(model, cfg, need)
+    RAW, _rpos = _raw_features(d, need, cfg)
+    RAW_C = RAW[[_rpos[c] for c in C]]
     lab = _labels(cfg, C, horizon_days)
     # reduce the ~2141-d E to a compact subspace so the head fits are fast and stable
     from sklearn.decomposition import PCA
@@ -235,11 +360,23 @@ def _run_supervised(model, cfg, horizon_days=90, seed=0, fast=False):
                 continue
         else:
             y = np.array([float(v) for v in yv[ok]], dtype=float)
+        Xr = RAW_C[ok]
         nf = max(2, min(3 if fast else 5, len(np.unique(cu))))
-        oof_pred, oof_y, base = [], [], []
+        oof_pred, oof_raw, oof_y, base = [], [], [], []
         covs, widths = [], []
         for tr, va in GroupKFold(nf).split(X, groups=cu):
             if kind == "clf":
+                _mr = HistGradientBoostingClassifier(max_iter=(80 if fast else 200)).fit(
+                    Xr[tr], y[tr]
+                )
+                if metric == "auc":
+                    rp = (
+                        _mr.predict_proba(Xr[va])[:, 1]
+                        if len(getattr(_mr, "classes_", ())) >= 2
+                        else np.zeros(len(va), dtype=float)
+                    )
+                else:
+                    rp = _mr.predict(Xr[va])
                 m = HistGradientBoostingClassifier(max_iter=(80 if fast else 200)).fit(X[tr], y[tr])
                 if metric == "auc":
                     if len(getattr(m, "classes_", ())) < 2:
@@ -250,6 +387,10 @@ def _run_supervised(model, cfg, horizon_days=90, seed=0, fast=False):
                     pv = m.predict(X[va])
                     base.append(float(np.bincount(y[tr]).max()) / len(tr))
             else:
+                _mr = HistGradientBoostingRegressor(max_iter=(80 if fast else 200)).fit(
+                    Xr[tr], y[tr]
+                )
+                rp = _mr.predict(Xr[va])
                 m = HistGradientBoostingRegressor(max_iter=(80 if fast else 200)).fit(X[tr], y[tr])
                 pv = m.predict(X[va])
                 base.append(0.0)
@@ -257,14 +398,20 @@ def _run_supervised(model, cfg, horizon_days=90, seed=0, fast=False):
                 covs.append(cov)
                 widths.append(width)
             oof_pred.append(np.asarray(pv, dtype=float))
+            oof_raw.append(np.asarray(rp, dtype=float))
             oof_y.append(np.asarray(y[va]))
         if kind == "clf":
             b = float(np.mean(base)) if base else (0.5 if metric == "auc" else float("nan"))
         else:
             b = 0.0
         pred = np.concatenate(oof_pred) if oof_pred else np.array([])
+        pred_raw = np.concatenate(oof_raw) if oof_raw else np.array([])
         y_oof = np.concatenate(oof_y) if oof_y else np.array([])
         skill, lo, hi, verdict = _bootstrap_skill(pred, y_oof, kind, metric, b, seed=seed)
+        raw_metric = _metric_value(pred_raw, y_oof, kind, metric) if pred_raw.size else float("nan")
+        d_raw, d_lo, d_hi = _bootstrap_delta(pred, pred_raw, y_oof, kind, metric, seed=seed)
+        beats_raw = bool(np.isfinite(d_raw) and d_raw > 0.0 and np.isfinite(d_lo) and d_lo >= 0.0)
+        trad_verdict = "PASS" if (verdict == "PASS" and beats_raw) else "FAIL"
         if kind == "clf":
             rows.append(
                 {
@@ -278,6 +425,13 @@ def _run_supervised(model, cfg, horizon_days=90, seed=0, fast=False):
                     "skill_lo": round(lo, 4),
                     "skill_hi": round(hi, 4),
                     "verdict": verdict,
+                    "raw_metric": None
+                    if not np.isfinite(raw_metric)
+                    else round(float(raw_metric), 4),
+                    "delta_vs_raw": None if not np.isfinite(d_raw) else round(float(d_raw), 4),
+                    "raw_ci_lo": None if not np.isfinite(d_lo) else round(float(d_lo), 4),
+                    "raw_ci_hi": None if not np.isfinite(d_hi) else round(float(d_hi), 4),
+                    "verdict_traditional": trad_verdict,
                 }
             )
         else:
@@ -295,6 +449,13 @@ def _run_supervised(model, cfg, horizon_days=90, seed=0, fast=False):
                     "skill_lo": round(lo, 4),
                     "skill_hi": round(hi, 4),
                     "verdict": verdict,
+                    "raw_metric": None
+                    if not np.isfinite(raw_metric)
+                    else round(float(raw_metric), 4),
+                    "delta_vs_raw": None if not np.isfinite(d_raw) else round(float(d_raw), 4),
+                    "raw_ci_lo": None if not np.isfinite(d_lo) else round(float(d_lo), 4),
+                    "raw_ci_hi": None if not np.isfinite(d_hi) else round(float(d_hi), 4),
+                    "verdict_traditional": trad_verdict,
                 }
             )
     return rows
@@ -307,12 +468,20 @@ def run_supervised(model, cfg, horizon_days=90, seed=0, null=None, fast=False):
     encoder; ``null_ok`` is True iff every null target FAILs (no skill).
     """
     rows = _run_supervised(model, cfg, horizon_days=horizon_days, seed=seed, fast=fast)
+    _cmp = [r for r in rows if r.get("verdict_traditional") is not None]
+    comparative_passed = sum(1 for r in _cmp if r["verdict_traditional"] == "PASS")
+    comparative_total = len(_cmp)
     # C7 CALIBRATION GATE: every regression target's conformal 90% interval must COVER ~90% of the
     # held-out points (tolerance 0.05). A model whose intervals under/over-cover is mis-calibrated.
     _cov = [r["coverage90"] for r in rows if r.get("coverage90") is not None]
     calibration_ok = bool(_cov) and all(0.85 <= c <= 0.98 for c in _cov)
     if null is None:
-        return SupervisedGateResult(rows, calibration_ok=calibration_ok)
+        return SupervisedGateResult(
+            rows,
+            calibration_ok=calibration_ok,
+            comparative_passed=comparative_passed,
+            comparative_total=comparative_total,
+        )
     null_model, null_cfg = _load_null_model(cfg, null)
     null_rows = _run_supervised(
         null_model, null_cfg, horizon_days=horizon_days, seed=seed, fast=fast
@@ -325,7 +494,12 @@ def run_supervised(model, cfg, horizon_days=90, seed=0, null=None, fast=False):
         row["null_verdict"] = nr["verdict"] if nr is not None else "FAIL"
         row["null_ok"] = null_ok
     return SupervisedGateResult(
-        rows, null_ok=null_ok, null_rows=null_rows, calibration_ok=calibration_ok
+        rows,
+        null_ok=null_ok,
+        null_rows=null_rows,
+        calibration_ok=calibration_ok,
+        comparative_passed=comparative_passed,
+        comparative_total=comparative_total,
     )
 
 

@@ -4347,3 +4347,43 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - **Tests:** `tests/test_objectives.py` (8): tier structure, UNKNOWN-when-absent, all-PASS roll-up,
   partial-minimality propagates to T0, incomplete null control → PARTIAL, no-DEPLOY → FAIL,
   explicit overrides, markdown/JSON round-trip. **448 fast tests** green.
+
+## DEC-212 — T0 as the FULL conjunction + comparative consumer baselines (honest scorecard)
+
+- **Context:** the operator required that if all tiers PASS then T0 means exactly: "any stream →
+  one foundation model → foundational embeddings that support all supervised/unsupervised/RL
+  plugins at quality EXCEEDING traditional plugins." The previous T0 was a 3-item conjunction and
+  T3 only compared to nulls, so that sentence was not encoded.
+- **Decision:**
+  1. **T0 = conjunction of EVERY T1-T4 objective** (mechanical; no hidden subset).
+  2. **Sufficiency lives only in T2** (Layer 1 is certification, per doctrine; T1 is the Layer-0
+     definition: schema-universal, self-supervised, frozen, transferable, shared geometry).
+  3. **T3 is comparative** against FROZEN traditional baselines:
+     supervised = raw/RFM aggregates + GBM; unsupervised = raw-feature k-means + lookalike;
+     decision = logging policy + model-free DR. A gate that passes its internal heads but records
+     no comparator is PARTIAL, never PASS. T3 still vetoes; it never shapes training.
+  4. **Honest scope is part of T0:** per-stream; fixed capacity; observed stream only; "any
+     stream" = canonical 4-column interface; "all plugins" = by-construction coverage for unknown
+     consumers + realized superiority on the declared battery.
+  5. **Grounded receipts only:** `scripts/objectives_receipts.py` assembles the scorecard from run
+     artifacts; missing artifacts stay UNKNOWN. `foundation_report --receipts` now emits structured
+     U / use-case / supervised / unsupervised / calibration / OPE results.
+- **Bugs found and fixed while closing the loop:**
+  - `_picked_best_rate` treated rank `0` (the best rank) as `1e9`, and counted zero-spread cases
+    as ranking failures. Fixed: rank `0` is valid; a case with no truth spread has no "best" and is
+    skipped (like rank correlation). Acceptance 8/10 → **9/10** (only recall remains).
+  - The portfolio reported the `entity`/`value` family switches as "missing" and graded action
+    fields as behaviour targets. Fixed.
+  - `as_of=2025-07-01` leaves almost no future window before the stream end (2025-07-13), so the
+    supervised gate had zero labels. Gate runs must train with an as_of that leaves the full
+    horizon (e.g. 2025-01-01); this is a measurement-configuration fix, not a gate change.
+- **Measured (post-DEC-210 encoder, 3000 customers, as_of 2025-07-01):** U = **1.0 (SOLVED)**;
+  use cases **5/5 DEPLOY with all 5 nulls HOLD**; joint minimality: E(338) compresses to **k=96**
+  (worst-case R² 0.9986 vs 0.9998) → served E is NOT yet minimal (serve projection required);
+  unsupervised at 3000 customers is below raw (needs the 6000 rung); OPE acceptance **9/10**
+  (recall 0.714: `cql`@cartpole 4 pts under the bar, `iql`@lunar biased/wide).
+- **Current T0:** **FAIL** = 11 PASS / 1 PARTIAL / 2 FAIL / 4 UNKNOWN. Remaining: serve projection
+  (minimality), 6000-rung + proper as_of (supervised/calibration/unsupervised), transfer &
+  known-effect receipts, and OPE recall (the one genuine decision: estimator research vs a
+  statistically coherent contract revision — NOT a silent weakening).
+- **Tests:** **456 fast tests** green; ruff clean.

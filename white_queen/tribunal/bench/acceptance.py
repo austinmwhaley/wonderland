@@ -42,12 +42,23 @@ CONTRACT = {
 
 
 def _picked_best_rate(cases):
+    """Fraction of IDENTIFIABLE cases where the top-ranked candidate is the best.
+
+    A case whose candidates are all (statistically) equivalent has no "best" to
+    pick — like rank correlation, it is not a ranking test. Skipped, not counted
+    as a failure. Tolerance is relative to the case's own scale (no literal).
+    """
     hit = tot = 0
     for c in cases:
         if len(c.cells) < 2:
             continue
+        truths = [float(x.truth) for x in c.cells]
+        spread = max(truths) - min(truths)
+        scale = max(1.0, max(abs(t) for t in truths))
+        if spread <= 1e-9 * scale:
+            continue
         tot += 1
-        top = min(c.cells, key=lambda x: x.rank if x.rank else 1e9)
+        top = min(c.cells, key=lambda x: x.rank if x.rank is not None else 1e9)
         best = max(c.cells, key=lambda x: x.truth)
         if top.candidate == best.candidate:
             hit += 1

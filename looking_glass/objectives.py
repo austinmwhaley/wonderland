@@ -18,14 +18,16 @@ Artifact contract (``artifacts.json``)::
     {
       "encoder":          {"schema_universal": true, "self_supervised": true,
                            "frozen_donor": true},
+      "schema_suite":     {"passed": 8, "total": 8},          # degenerate schemas
+      "transfer":         {"passed": 1, "total": 1, "baseline": "raw/RFM aggregate model"},
       "card":             {"solved": true, "u": 0.88},
       "minimality":       {"measure_dim": 128, "joint_certified": false},
       "use_cases":        {"deploy": 3, "hold": 2, "nulls_hold": 5, "nulls_total": 5},
       "calibration":      {"coverage": 0.90, "target": 0.90},
       "accessibility":    {"passed": 1, "total": 1},
-      "supervised":       {"passed": 2, "total": 4},
-      "unsupervised":     {"passed": 1, "total": 1},
-      "ope":              {"passed": 8, "total": 10},
+      "supervised":       {"passed": 4, "total": 4, "baseline": "raw/RFM aggregates + GBM"},
+      "unsupervised":     {"passed": 1, "total": 1, "baseline": "raw-feature k-means + lookalike"},
+      "ope":              {"passed": 10, "total": 10, "baseline": "logging policy + model-free DR"},
       "known_effect":     {"passed": 1, "total": 1},
       "robustness":       {"passed": 1, "total": 1},
       "efficiency":       {"passed": 1, "total": 1},
@@ -69,6 +71,12 @@ class Objective:
     control: str
     axis: str
     source: str
+    # The frozen comparison point ('' when the objective is not comparative) and
+    # the kind of guarantee: definition|coverage|certificate|comparative|invariant.
+    baseline: str = ""
+    mode: str = "certificate"
+    # For T0 only: the exact scope of the claim (caveats are part of the claim).
+    scope: str = ""
 
 
 def record(status: str, current: str = "", evidence: str = "") -> dict:
@@ -119,6 +127,40 @@ def _count_reader(key: str, source: str) -> Callable[[dict], dict]:
             return record(UNKNOWN, current=f"{passed}/{total}", evidence=source)
         status = PASS if passed >= total else (PARTIAL if passed > 0 else FAIL)
         return record(status, current=f"{passed}/{total}", evidence=source)
+
+    return read
+
+
+def _read_comparative(key: str, source: str) -> Callable[[dict], dict]:
+    """A consumer gate that must show E >= a FROZEN traditional baseline.
+
+    An artifact that passes its internal heads but records no comparator is
+    PARTIAL (usable, superiority unproven) — never PASS. An explicit
+    ``beats_traditional: false`` is FAIL. This is what encodes "exceeds
+    traditional plugins" instead of merely "passes a null control".
+    """
+
+    def read(artifacts: dict) -> dict:
+        art = artifacts.get(key)
+        if not isinstance(art, dict):
+            return record(UNKNOWN, evidence=f"{source} absent")
+        ov = _override(art)
+        if ov is not None:
+            return ov
+        baseline = str(art.get("baseline") or art.get("comparator") or "")
+        beats = art.get("beats_traditional")
+        passed = int(art.get("passed", 0) or 0)
+        total = int(art.get("total", 0) or 0)
+        cur = f"{passed}/{total} vs {baseline or 'NO COMPARATOR'}"
+        if beats is False:
+            return record(FAIL, current=cur, evidence="E did not beat the traditional baseline")
+        if not baseline:
+            return record(PARTIAL, current=cur, evidence=f"{source}: comparator not recorded")
+        if total <= 0:
+            return record(UNKNOWN, current=cur, evidence=source)
+        if passed >= total:
+            return record(PASS, current=cur, evidence=f"E >= frozen baseline: {baseline}")
+        return record(PARTIAL, current=cur, evidence=f"E >= {baseline}: {passed}/{total}")
 
     return read
 
@@ -196,17 +238,16 @@ READERS: dict[str, Callable[[dict], dict]] = {
     "t1.schema_universal": _bool_reader("schema_universal"),
     "t1.self_supervised": _bool_reader("self_supervised"),
     "t1.frozen_donor": _bool_reader("frozen_donor"),
-    "t1.sufficiency": _read_sufficiency,
+    "t1.transfer": _read_comparative("transfer", "transfer battery"),
     "t1.geometry": _count_reader("geometry", "portfolio geometry gate"),
-    "t1.transfer": _count_reader("transfer", "battery transfer"),
     "t2.sufficiency": _read_sufficiency,
     "t2.minimality": _read_minimality,
     "t2.decision_sufficiency": _read_use_cases,
     "t2.calibration": _read_calibration,
     "t2.accessibility": _count_reader("accessibility", "per-field simple probes"),
-    "t3.supervised": _count_reader("supervised", "supervised gate"),
-    "t3.unsupervised": _count_reader("unsupervised", "unsupervised gate"),
-    "t3.ope": _count_reader("ope", "white_queen acceptance"),
+    "t3.supervised": _read_comparative("supervised", "supervised gate"),
+    "t3.unsupervised": _read_comparative("unsupervised", "unsupervised gate"),
+    "t3.ope": _read_comparative("ope", "white_queen acceptance"),
     "t3.known_effect": _count_reader("known_effect", "red_king known-effect recovery"),
     "t4.robustness": _count_reader("robustness", "stability/divergence gate"),
     "t4.efficiency": _count_reader("efficiency", "runtime receipts"),
@@ -216,16 +257,18 @@ READERS: dict[str, Callable[[dict], dict]] = {
 
 
 def _t0(records: dict[str, dict]) -> dict:
-    parts = ("t1.sufficiency", "t2.minimality", "t2.decision_sufficiency")
+    """T0 is the CONJUNCTION of every T1-T4 objective (no hidden subset)."""
+    parts = [k for k in records if not k.startswith("t0.")]
     st = [records[p]["status"] for p in parts]
-    cur = " / ".join(f"{p.split('.')[1]}={records[p]['status']}" for p in parts)
+    c = {s: st.count(s) for s in STATUSES}
+    cur = f"{c[PASS]} PASS / {c[PARTIAL]} PARTIAL / {c[FAIL]} FAIL / {c[UNKNOWN]} UNKNOWN"
     if all(s == PASS for s in st):
-        return record(PASS, current=cur, evidence="all three certificates PASS")
+        return record(PASS, current=cur, evidence="every T1-T4 objective PASSes")
+    if any(s == FAIL for s in st):
+        return record(FAIL, current=cur, evidence="at least one objective FAILs")
     if all(s == UNKNOWN for s in st):
-        return record(UNKNOWN, current=cur, evidence="no certificate receipts")
-    if any(s == PASS for s in st):
-        return record(PARTIAL, current=cur, evidence="some certificates PASS")
-    return record(FAIL, current=cur, evidence="no certificate PASS")
+        return record(UNKNOWN, current=cur, evidence="no receipts")
+    return record(PARTIAL, current=cur, evidence="some objectives are not PASS")
 
 
 OBJECTIVES: tuple[Objective, ...] = (
@@ -233,22 +276,31 @@ OBJECTIVES: tuple[Objective, ...] = (
         "t0.north_star",
         0,
         "Minimal, bounded, universal sufficient statistic",
-        "U->1 AND minimality AND decision-sufficiency",
-        "all three certificates PASS",
-        "full-history oracle + null actions",
-        "state/objective",
-        "derived from T1/T2",
+        "T0 PASS iff every T1-T4 objective PASSes",
+        "all foundation + certificate + consumer + invariant objectives PASS",
+        "full-history oracle + frozen consumers + nulls",
+        "all",
+        "derived from T1-T4",
+        mode="definition",
+        scope=(
+            "Per-stream: E is trained on THIS stream and never cross-applied. Coverage is over "
+            "functions of the OBSERVED stream at FIXED capacity; unlogged confounders are "
+            "uncertainty. 'Any stream' = any stream conforming to the canonical 4-column "
+            "interface. 'All plugins' = by-construction coverage for unknown consumers PLUS "
+            "realized superiority on the frozen supervised/unsupervised/decision battery."
+        ),
     ),
-    # T1 — definition of a foundation encoder
+    # T1 — Layer 0: definition of a foundation encoder (no certification here)
     Objective(
         "t1.schema_universal",
         1,
         "Schema-universal ingestion",
-        "any canonical 4-column event stream",
-        "no named JSON keys; whole event_attributes consumed",
-        "heterogeneous-field fixture",
+        "any canonical 4-column stream, including degenerate schemas",
+        "adversarial schema suite runs or rejects loudly",
+        "degenerate-schema suite",
         "input/tokenizer",
-        "encoder receipt",
+        "schema suite receipt",
+        mode="definition",
     ),
     Objective(
         "t1.self_supervised",
@@ -259,6 +311,7 @@ OBJECTIVES: tuple[Objective, ...] = (
         "code/architecture",
         "objective",
         "encoder receipt",
+        mode="definition",
     ),
     Objective(
         "t1.frozen_donor",
@@ -269,16 +322,19 @@ OBJECTIVES: tuple[Objective, ...] = (
         "state-store reload",
         "interface",
         "encoder receipt",
+        mode="definition",
     ),
     Objective(
-        "t1.sufficiency",
+        "t1.transfer",
         1,
-        "Sufficiency U",
-        "excess loss vs full-history oracle",
-        "B gate SOLVED",
-        "full-history oracle",
-        "state",
-        "foundation card",
+        "Transfer above traditional",
+        "frozen E-based head beats a raw/RFM aggregate baseline",
+        "E >= traditional baseline on held-out (paired CI)",
+        "raw/RFM aggregate model",
+        "interface",
+        "transfer battery",
+        baseline="raw/RFM aggregate model",
+        mode="comparative",
     ),
     Objective(
         "t1.geometry",
@@ -289,27 +345,20 @@ OBJECTIVES: tuple[Objective, ...] = (
         "white-noise null",
         "state",
         "portfolio receipt",
+        mode="definition",
     ),
-    Objective(
-        "t1.transfer",
-        1,
-        "Transfer above raw",
-        "frozen E adds signal over raw features",
-        "battery beats raw",
-        "raw model-free baseline",
-        "interface",
-        "battery receipt",
-    ),
-    # T2 — certification layer
+    # T2 — Layer 1: certification
     Objective(
         "t2.sufficiency",
         2,
         "Sufficiency certificate",
-        "U worst-case over the task family",
-        "SOLVED",
+        "excess loss vs full-history oracle",
+        "U SOLVED at fixed capacity",
         "full-history oracle",
         "state",
         "foundation card",
+        baseline="full-history oracle",
+        mode="coverage",
     ),
     Objective(
         "t2.minimality",
@@ -320,6 +369,7 @@ OBJECTIVES: tuple[Objective, ...] = (
         "reconstruction of full targets",
         "state",
         "minimality receipt",
+        mode="certificate",
     ),
     Objective(
         "t2.decision_sufficiency",
@@ -330,6 +380,8 @@ OBJECTIVES: tuple[Objective, ...] = (
         "null action (snr=0)",
         "objective",
         "use-case receipt",
+        baseline="null action (snr=0)",
+        mode="coverage",
     ),
     Objective(
         "t2.calibration",
@@ -340,6 +392,7 @@ OBJECTIVES: tuple[Objective, ...] = (
         "held-out conformal",
         "interface",
         "calibration receipt",
+        mode="certificate",
     ),
     Objective(
         "t2.accessibility",
@@ -350,37 +403,44 @@ OBJECTIVES: tuple[Objective, ...] = (
         "chance / raw probe",
         "interface",
         "probe receipt",
+        mode="certificate",
     ),
-    # T3 — consumers (veto only)
+    # T3 — consumers: veto only, but required for T0 and comparative to traditional
     Objective(
         "t3.supervised",
         3,
         "Supervised gate",
         "LTV / return / churn / next-purchase",
-        "gated heads PASS with null controls",
+        "E >= traditional baseline (paired CI) with null control",
         "shuffled-label null",
         "interface",
         "supervised gate",
+        baseline="raw/RFM aggregates + GBM",
+        mode="comparative",
     ),
     Objective(
         "t3.unsupervised",
         3,
         "Unsupervised gate",
         "silhouette / lookalike / ANOVA",
-        "structure gate PASS",
-        "random partition null",
+        "E >= traditional baseline with random-partition null",
+        "raw-feature k-means + lookalike",
         "interface",
         "unsupervised gate",
+        baseline="raw-feature k-means + lookalike",
+        mode="comparative",
     ),
     Objective(
         "t3.ope",
         3,
         "Decision/OPE gate",
         "coverage / false deploys / precision / recall / rank",
-        "acceptance PASS",
-        "truth-in-CI + safe-worse policy",
+        "E-policy >= logging policy and model-free DR; acceptance PASS",
+        "logging policy + model-free DR",
         "interface",
         "white_queen acceptance",
+        baseline="logging policy + model-free DR",
+        mode="comparative",
     ),
     Objective(
         "t3.known_effect",
@@ -391,6 +451,8 @@ OBJECTIVES: tuple[Objective, ...] = (
         "known truth",
         "objective",
         "red_king receipt",
+        baseline="known randomized effect",
+        mode="certificate",
     ),
     # T4 — invariants
     Objective(
@@ -402,6 +464,7 @@ OBJECTIVES: tuple[Objective, ...] = (
         "repeat-run",
         "training regime",
         "stability receipt",
+        mode="invariant",
     ),
     Objective(
         "t4.efficiency",
@@ -412,6 +475,7 @@ OBJECTIVES: tuple[Objective, ...] = (
         "measured runtime",
         "training regime",
         "runtime receipt",
+        mode="invariant",
     ),
     Objective(
         "t4.reproducibility",
@@ -422,6 +486,7 @@ OBJECTIVES: tuple[Objective, ...] = (
         "re-run",
         "interface",
         "registry receipt",
+        mode="invariant",
     ),
     Objective(
         "t4.honest_gates",
@@ -432,6 +497,7 @@ OBJECTIVES: tuple[Objective, ...] = (
         "null control",
         "objective",
         "gate receipts",
+        mode="invariant",
     ),
 )
 
@@ -466,13 +532,13 @@ def to_markdown(card: dict) -> str:
     lines = [
         "## Objectives scorecard",
         "",
-        "| Tier | Objective | Metric | Gate | Current | Status |",
+        "| Tier | Objective | Metric | Frozen comparator | Current | Status |",
         "|---|---|---|---|---|---|",
     ]
     for o in card["objectives"]:
         lines.append(
-            f"| T{o['tier']} | {o['name']} | {o['metric']} | {o['gate']} | "
-            f"{o['current']} | **{o['status']}** |"
+            f"| T{o['tier']} | {o['name']} | {o['metric']} | "
+            f"{o.get('baseline') or '—'} | {o['current']} | **{o['status']}** |"
         )
     lines += ["", "### Roll-up (per tier; no composite)", ""]
     for tier, t in card["by_tier"].items():

@@ -216,6 +216,11 @@ if __name__ == "__main__":
         i = args.index("--tests")
         tests = int(args[i + 1])
         del args[i : i + 2]
+    json_out = None
+    if "--json" in args:
+        i = args.index("--json")
+        json_out = args[i + 1]
+        del args[i : i + 2]
     if "--run" in args:
         i = args.index("--run")
         envs = args[i + 1 :] or [e for v in CONTRACT["suite"].values() for e in v]
@@ -231,3 +236,27 @@ if __name__ == "__main__":
     cases = _load_all()
     rows, agg = rows_from_cases(cases, tests_passed=tests)
     print(render(rows, agg))
+    if json_out:
+        import json as _json
+
+        passed = sum(1 for r in rows if r[4])
+        receipt = {
+            "passed": int(passed),
+            "total": int(len(rows)),
+            "baseline": "logging policy + model-free DR",
+            # superiority is the WHOLE acceptance contract, not a subset
+            "beats_traditional": bool(passed == len(rows)),
+            "overall": agg["overall"],
+            "rows": [
+                {
+                    "dimension": d,
+                    "metric": m,
+                    "target": t,
+                    "achieved": a,
+                    "ok": bool(ok),
+                }
+                for d, m, t, a, ok in rows
+            ],
+        }
+        open(json_out, "w").write(_json.dumps(receipt, indent=2) + "\n")
+        print(f"[scorecard] wrote {json_out}")

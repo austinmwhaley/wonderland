@@ -155,12 +155,19 @@ def _eta_squared(labels, y):
     return float(ssb / max(sst, 1e-12))
 
 
-def _run_unsupervised(model, cfg, max_k=8, seed=0):
-    """Certify segmentation + lookalike geometry on the held-out (split-B) embedding."""
+def _run_unsupervised(model, cfg, max_k=8, seed=0, states=None):
+    """Certify segmentation + lookalike geometry on the held-out (split-B) embedding.
+
+    ``states=(cust, Z)`` may be supplied to run the SAME pipeline on any feature
+    matrix (the traditional raw-feature comparator).
+    """
     from looking_glass.head_battery import _b_states
     from looking_glass.supervised_gate import _labels
 
-    cust, Z = _b_states(model, cfg)
+    if states is None:
+        cust, Z = _b_states(model, cfg)
+    else:
+        cust, Z = states
     cust = np.asarray([str(c) for c in cust], dtype=object)
     Z = np.asarray(Z, dtype=float)
     n = len(cust)
@@ -218,7 +225,44 @@ def run_unsupervised(model, cfg, max_k=8, seed=0, null=None):
 
     ``null_ok`` is True iff the null encoder's verdict is FAIL (no skill).
     """
-    metrics = _run_unsupervised(model, cfg, max_k=max_k, seed=seed)
+    from looking_glass.head_battery import _b_states
+
+    cust, Z = _b_states(model, cfg)
+    metrics = _run_unsupervised(model, cfg, max_k=max_k, seed=seed, states=(cust, Z))
+    # TRADITIONAL COMPARATOR (DEC-212): the same segmentation/lookalike pipeline on
+    # raw/RFM aggregate features. "Exceeds traditional" = E >= raw on silhouette,
+    # value differentiation (eta^2), and lookalike enrichment, with E's own gate PASS.
+    try:
+        from looking_glass.cfm_data import _read_stream
+        from looking_glass.supervised_gate import _raw_features
+
+        d = _read_stream(cfg)
+        RAW, pos = _raw_features(d, [str(c) for c in cust], cfg)
+        Xr = RAW[[pos[str(c)] for c in cust]]
+        raw_metrics = _run_unsupervised(model, cfg, max_k=max_k, seed=seed, states=(cust, Xr))
+
+        def _ge(a, b):
+            return a is not None and b is not None and float(a) >= float(b)
+
+        comp = {
+            "silhouette": _ge(metrics.get("silhouette"), raw_metrics.get("silhouette")),
+            "eta_squared": _ge(metrics.get("eta_squared"), raw_metrics.get("eta_squared")),
+            "lookalike": _ge(
+                metrics.get("lookalike_enrichment"), raw_metrics.get("lookalike_enrichment")
+            ),
+        }
+        beats = bool(metrics.get("verdict") == "PASS" and all(comp.values()))
+        metrics["baseline"] = "raw-feature k-means + lookalike"
+        metrics["raw_metrics"] = raw_metrics
+        metrics["comparative"] = comp
+        metrics["comparative_passed"] = int(sum(comp.values()))
+        metrics["comparative_total"] = len(comp)
+        metrics["beats_traditional"] = beats
+        # scorecard contract: all comparative sub-gates pass, else 0/total
+        metrics["passed"] = int(metrics["comparative_passed"] if beats else 0)
+        metrics["total"] = len(comp)
+    except Exception as exc:  # noqa: BLE001
+        metrics["comparative_error"] = str(exc)
     if null is None:
         return metrics
     from looking_glass.supervised_gate import _load_null_model

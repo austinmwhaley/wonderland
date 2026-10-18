@@ -217,6 +217,13 @@ invariant-by-construction).
 
 ## Micro
 
+- **T0 = full conjunction + comparative consumers (DEC-212).** Sufficiency moved to T2; T3 gates
+  compare E to FROZEN traditional baselines (raw/RFM+GBM, raw k-means, logging+DR) and are required
+  for T0. Grounded receipts via `scripts/objectives_receipts.py` + `foundation_report --receipts`;
+  joint minimality script; acceptance `picked_best` rank-0/tie bug fixed (8→9/10). Measured: U=1.0,
+  5/5 use cases DEPLOY + 5/5 nulls HOLD, E(338)→k=96 compressible, OPE 9/10 (recall). Current T0:
+  FAIL (11 PASS/1 PARTIAL/2 FAIL/4 UNKNOWN). 456 fast tests.
+
 - **Objectives scorecard (DEC-211).** `looking_glass/objectives.py`: 20 objectives across 5 tiers
   (T0 North Star derived from certificates; T1 Foundation; T2 Certificates; T3 Consumers veto-only;
   T4 Invariants), assembled from a JSON receipt contract, UNKNOWN when absent, per-tier roll-up with

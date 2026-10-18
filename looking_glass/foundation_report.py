@@ -14,6 +14,8 @@ from __future__ import annotations
 
 import argparse
 import subprocess
+
+import numpy as np
 from pathlib import Path
 
 from looking_glass.cfm_state import load_frozen_encoder
@@ -39,7 +41,12 @@ def build_card(
     supervised=False,
     unsupervised=False,
     fast=False,
+    receipt_out=None,
 ):
+    _sup = None
+    _uu = None
+    wqr = None
+    wqor = None
     # 1) the pipeline (shape + learned-compressed measure)
     model.accumulator_on = False
     lb = getattr(model, "layer_b", None)
@@ -218,6 +225,57 @@ def build_card(
         except Exception as _e:  # noqa: BLE001
             unsup_lines = [f"- (unsupervised gate unavailable: {_e})"]
 
+    if receipt_out is not None:
+        _dep = sum(
+            1
+            for _k, _r in uses
+            if _r["verdict"] == "DEPLOY"
+            and ((not null_verdicts) or null_verdicts.get(_k) == "HOLD")
+        )
+        receipt_out["card"] = {"u": float(u), "solved": bool(solved)}
+        receipt_out["use_cases"] = {
+            "deploy": int(_dep),
+            "hold": int(len(uses) - _dep),
+            "nulls_hold": int(sum(1 for v in null_verdicts.values() if v == "HOLD")),
+            "nulls_total": int(len(null_verdicts)),
+        }
+        if _sup is not None:
+            _cov = [r["coverage90"] for r in _sup if r.get("coverage90") is not None]
+            receipt_out["supervised"] = {
+                "passed": int(getattr(_sup, "comparative_passed", 0) or 0),
+                "total": int(getattr(_sup, "comparative_total", 0) or 0),
+                "baseline": getattr(_sup, "baseline", "raw/RFM aggregates + GBM"),
+                "beats_traditional": bool(
+                    getattr(_sup, "comparative_total", 0)
+                    and getattr(_sup, "comparative_passed", 0)
+                    == getattr(_sup, "comparative_total", 0)
+                ),
+                "calibration_ok": getattr(_sup, "calibration_ok", None),
+                "rows": list(_sup),
+            }
+            if _cov:
+                receipt_out["calibration"] = {
+                    "coverage": float(np.mean(_cov)),
+                    "target": 0.90,
+                }
+        if _uu:
+            receipt_out["unsupervised"] = {
+                "passed": int(_uu.get("passed", 0) or 0),
+                "total": int(_uu.get("total", 0) or 0),
+                "baseline": _uu.get("baseline", "raw-feature k-means + lookalike"),
+                "beats_traditional": bool(_uu.get("beats_traditional", False)),
+                "metrics": _uu,
+            }
+        if wqr is not None:
+            receipt_out["ope"] = {
+                "passed": 1 if wqr.get("deploy") else 0,
+                "total": 1,
+                "baseline": "logging policy + model-free DR",
+                "beats_traditional": bool(wqr.get("deploy")),
+                "estimates": wqr.get("estimates"),
+                "behavior_mean": wqr.get("behavior_mean"),
+                "bar": wqr.get("bar"),
+            }
     lines = [
         f"# Foundation-Model Report Card — `{stream}`",
         "",
@@ -339,6 +397,7 @@ def main(argv=None):
     ap.add_argument("--horizons", default="30")
     ap.add_argument("--seeds", default="0")
     ap.add_argument("--out", default=None)
+    ap.add_argument("--receipts", default=None, help="write a structured JSON receipt here")
     ap.add_argument("--null-db", default=None, dest="null_db")
     ap.add_argument("--null-tag", default=None, dest="null_tag")
     ap.add_argument("--null-ckpt-dir", default=None, dest="null_ckpt_dir")
@@ -362,6 +421,7 @@ def main(argv=None):
         if (a.null_db and a.null_tag and a.null_ckpt_dir)
         else None
     )
+    _rec: dict = {}
     card, u, solved = build_card(
         stream,
         a.tag,
@@ -376,10 +436,15 @@ def main(argv=None):
         supervised=a.supervised,
         unsupervised=a.unsupervised,
         fast=a.fast,
+        receipt_out=_rec,
     )
     print(card)
     if a.out:
         Path(a.out).write_text(card)
+    if a.receipts:
+        import json as _json
+
+        Path(a.receipts).write_text(_json.dumps(_rec, indent=2) + "\n")
     return {"U": u, "solved": solved}
 
 
