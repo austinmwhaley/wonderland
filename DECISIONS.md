@@ -4212,3 +4212,16 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   `1/#arms` (the user's point: no logged propensity; random is the model).
 - **Status:** #1 (recovery) + #2 + #7-calibration + #12 docs done this batch; full card, #6 LOO,
   #8 zoo, #7-acceptance, #5-shrink in progress/queued.
+
+## DEC-205 — #9 full card: all 5 use-cases DEPLOY, white_queen + calibration PASS; null `hour` FP
+
+- **Full card (apex_everything 0.6.4r364731, 3000 customers, 29 min):** **B SOLVED**; **all 5 use-cases
+  DEPLOY** (freq +0.031, channel +0.022, hour +0.006, dow +0.006, offer +0.006); **white_queen
+  E-policy DEPLOY** (DR 0.5 vs bar 0.5); **supervised calibration PASS**; unsupervised section rendered.
+- **Control issue:** null `hour` **DEPLOYs** (+0.004) — the weak timing signal's residual bias crosses 0
+  on the snr=0 null at 3000 customers (the DEC-178 g-computation residual; the other 4 nulls HOLD).
+  This is the same class as the white_queen-acceptance calibration gap: the **timing** channel is the
+  weak one and its null baseline needs a bigger sample / lower-variance estimator.
+- **Speed:** full card = **1724 s (~29 min)** — white_queen + supervised dominate; the fast core card
+  (B+use-cases+null) is 202 s. `ab_witness` (red_king↔white_queen A/B) timed out at 20 min (~2.5/5
+  cells, ~8 min/cell).
