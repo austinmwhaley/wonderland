@@ -78,6 +78,7 @@ def build_card(
     # CONTROLS — run the SAME capability + decision gates on an optional NULL stream (snr=0),
     # so a DEPLOY on the real stream is verified against a no-signal control that must HOLD.
     null_lines = []
+    null_verdicts = {}
     if null is not None:
         try:
             from looking_glass.cfm_state import load_frozen_encoder as _lfe
@@ -95,6 +96,7 @@ def build_card(
             for k in _akeys:
                 try:
                     nr = _ruc(n_model, n_cfg, k)
+                    null_verdicts[k] = nr["verdict"]
                     null_lines.append(
                         f"- null `{k}`: policy-from-E Δ={nr['delta']:+.3f} → **{nr['verdict']}**"
                     )
@@ -159,6 +161,19 @@ def build_card(
         ["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True
     ).stdout.strip()
     verdict = "SOLVED ✅" if solved else "NOT YET ❌"
+    # CONTROL-CALIBRATED use-case verdicts: a DEPLOY is only claimed if the matching NULL stream
+    # HOLDs. If the null also DEPLOYs, the lift is indistinguishable from noise -> HOLD (defensible).
+    use_lines = []
+    for _k, _r in uses:
+        _cal = (not null_verdicts) or (null_verdicts.get(_k) == "HOLD")
+        _final = "DEPLOY" if (_r["verdict"] == "DEPLOY" and _cal) else "HOLD"
+        _suf = "" if _cal else " (null also DEPLOYs → HOLD)"
+        use_lines.append(
+            f"- **{_k}**: dose-response argmax={_r['dose_argmax']} over {_r['n_actions']} actions · "
+            f"policy-from-E Δ={_r['delta']:+.3f} CI[{_r['lo']:+.3f},{_r['hi']:+.3f}] → **{_final}**{_suf}"
+        )
+    if not use_lines:
+        use_lines = ["- (no randomized discrete actions found — no optimization use case)"]
 
     # SUPERVISED plugin family (optional): heads on `E` vs held-out future targets.
     sup_lines = []
@@ -272,15 +287,7 @@ def build_card(
         "as non-informative, never faked.",
         "",
         "## USE CASES — optimization capabilities of THIS stream",
-        *(
-            [
-                f"- **{k}**: dose-response argmax={r['dose_argmax']} over {r['n_actions']} actions · "
-                f"policy-from-E Δ={r['delta']:+.3f} CI[{r['lo']:+.3f},{r['hi']:+.3f}] → **{r['verdict']}**"
-                for k, r in uses
-            ]
-            if uses
-            else ["- (no randomized discrete actions found — no optimization use case)"]
-        ),
+        *use_lines,
         "",
         "## B+C — decision certification (RL arm of rabbit_hole + looking_glass)",
         *bc_lines,

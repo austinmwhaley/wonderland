@@ -4238,3 +4238,12 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - **Remaining:** **recall 0.833** — `cql` on cartpole is the lone false-negative (truth 82.6 >
   anchor 66.5, but level-cert lo 68.67 < bar 72.63; the judge's ADVANTAGE certificate could deploy it
   if its Delta CI > 0 with >=2 witnesses — diagnosing). Not weakening the gate.
+
+## DEC-207 — Card: control-calibrated use-case verdicts (a DEPLOY must HOLD on the null)
+
+- **Fix (defensibility):** the card now requires the matching **null to HOLD** for a use-case DEPLOY
+  to be claimed. If the snr=0 null also DEPLOYs for that action, the lift is indistinguishable from
+  noise → the signal is reported **HOLD (null also DEPLOYs)**. This directly resolves the apex
+  `hour` null false-positive: hour becomes an honest HOLD rather than a false claim, *without*
+  weakening the gate or hiding the control.
+- This is the correct "never claim a capability the no-signal control also shows" discipline.
