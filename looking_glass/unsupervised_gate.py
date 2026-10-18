@@ -3,7 +3,7 @@
 Certifies the label-free geometry of the frozen, held-out embedding `E`:
 
 * **Segmentation** -- KMeans over a standardized PCA subspace of `E`, with k chosen by
-  silhouette. When a truth receipt (`<stream_dir>/apex_truth.json` or `*_truth.json`)
+  silhouette. When a truth receipt (`<stream_dir>/reference_truth.json` or `*_truth.json`)
   exists, the discovered clusters are checked against the latent `segment` (ARI). The
   clusters are also checked for VALUE differentiation (ANOVA on realized 90d margin).
 * **Lookalike** -- the top-decile-LTV seed class is enriched among each seed member's
@@ -104,7 +104,7 @@ def _truth_segments(cfg):
     """Load {customer: latent segment} from the stream's truth receipt, if present."""
     p = Path(str(cfg.db))
     stream_dir = p if p.is_dir() else p.parent
-    candidates = [stream_dir / "apex_truth.json", *sorted(stream_dir.glob("*_truth.json"))]
+    candidates = [stream_dir / "reference_truth.json", *sorted(stream_dir.glob("*_truth.json"))]
     seen = set()
     for path in candidates:
         key = str(path)

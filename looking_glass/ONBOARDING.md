@@ -155,12 +155,12 @@ python3 -m looking_glass.foundation_report --db <stream> --ckpt-dir <dir> --tag 
 ```
 
 `--fast` skips the bare/accumulator comparison U runs. `--full` belongs to
-`scripts/apex_pipeline.py`; it adds white_queen, supervised, and unsupervised to the card.
+`scripts/reference_pipeline.py`; it adds white_queen, supervised, and unsupervised to the card.
 
 For a full one-command demo on generated data:
 
 ```bash
-python3 scripts/apex_pipeline.py --as-of <date> [--full]
+python3 scripts/reference_pipeline.py --as-of <date> [--full]
 ```
 
 ## Checklist

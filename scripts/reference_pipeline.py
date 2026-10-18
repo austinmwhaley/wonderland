@@ -1,8 +1,8 @@
-"""One-command orchestration of the APEX Layer-A -> Layer-B -> report-card pipeline.
+"""One-command orchestration of the REFERENCE Layer-A -> Layer-B -> report-card pipeline.
 
 Stages:
-  1. generate the APEX stream (real signal)
-  2. generate the APEX NULL control (snr=0)
+  1. generate the REFERENCE stream (real signal)
+  2. generate the REFERENCE NULL control (snr=0)
   3. train the foundation model on the real stream
   4. train the foundation model on the null stream
   5. emit the B & B+C report card (white_queen + null controls)
@@ -34,15 +34,15 @@ def build_commands(
     max_steps,
     full=False,
 ) -> list[list[str]]:
-    apex = f"{out_root}/apex"
-    apex_null = f"{out_root}/apex_null"
-    cfm = f"{out_root}/apex_cfm"
-    cfm_null = f"{out_root}/apex_null_cfm"
+    reference = f"{out_root}/reference"
+    reference_null = f"{out_root}/reference_null"
+    cfm = f"{out_root}/reference_cfm"
+    cfm_null = f"{out_root}/reference_null_cfm"
     return [
         [
             sys.executable,
             "-m",
-            "rabbit_hole.generators.apex",
+            "rabbit_hole.generators.reference",
             "--n-customers",
             str(n_customers),
             "--window-days",
@@ -50,12 +50,12 @@ def build_commands(
             "--seed",
             str(seed),
             "--out",
-            apex,
+            reference,
         ],
         [
             sys.executable,
             "-m",
-            "rabbit_hole.generators.apex",
+            "rabbit_hole.generators.reference",
             "--n-customers",
             str(n_customers),
             "--window-days",
@@ -65,7 +65,7 @@ def build_commands(
             "--snr",
             "0",
             "--out",
-            apex_null,
+            reference_null,
         ],
         [
             sys.executable,
@@ -73,7 +73,7 @@ def build_commands(
             "looking_glass.customer_foundation_model",
             "train",
             "--db",
-            f"{apex}/customer_event_stream.parquet",
+            f"{reference}/customer_event_stream.parquet",
             "--customers",
             str(customers),
             "--sample-a",
@@ -101,7 +101,7 @@ def build_commands(
             "looking_glass.customer_foundation_model",
             "train",
             "--db",
-            f"{apex_null}/customer_event_stream.parquet",
+            f"{reference_null}/customer_event_stream.parquet",
             "--customers",
             str(customers),
             "--sample-a",
@@ -128,7 +128,7 @@ def build_commands(
             "-m",
             "looking_glass.foundation_report",
             "--db",
-            f"{apex}/customer_event_stream.parquet",
+            f"{reference}/customer_event_stream.parquet",
             "--ckpt-dir",
             cfm,
             "--tag",
@@ -136,7 +136,7 @@ def build_commands(
             "--as-of",
             as_of,
             "--stream",
-            "apex",
+            "reference",
             "--customers",
             str(customers),
             "--horizons",
@@ -144,15 +144,15 @@ def build_commands(
             "--fast",
             *(["--white-queen", "--supervised", "--unsupervised"] if full else []),
             "--truth",
-            f"{apex}/apex_truth.json",
+            f"{reference}/reference_truth.json",
             "--null-db",
-            f"{apex_null}/customer_event_stream.parquet",
+            f"{reference_null}/customer_event_stream.parquet",
             "--null-tag",
             NULL_TAG,
             "--null-ckpt-dir",
             cfm_null,
             "--out",
-            f"{out_root}/card_apex.md",
+            f"{out_root}/card_reference.md",
         ],
     ]
 
@@ -172,8 +172,8 @@ def _fill(cmd: list[str], token: str, value: str) -> list[str]:
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(description="APEX end-to-end pipeline")
-    ap.add_argument("--out-root", default="rabbit_hole/data/apex_pipeline")
+    ap = argparse.ArgumentParser(description="REFERENCE end-to-end pipeline")
+    ap.add_argument("--out-root", default="rabbit_hole/data/reference_pipeline")
     ap.add_argument("--n-customers", type=int, default=20000)
     ap.add_argument("--window-days", type=int, default=540)
     ap.add_argument("--seed", type=int, default=17)
@@ -207,13 +207,13 @@ def main(argv=None):
         return 0
 
     for i, cmd in enumerate(commands[:4], start=1):
-        print(f"[apex-pipeline] stage {i}: {' '.join(cmd)}", flush=True)
+        print(f"[reference-pipeline] stage {i}: {' '.join(cmd)}", flush=True)
         subprocess.run(cmd, check=True)
 
     tag = _resolve_tag(commands[2][commands[2].index("--out-dir") + 1])
     null_tag = _resolve_tag(commands[3][commands[3].index("--out-dir") + 1])
     card = _fill(_fill(commands[4], TAG, tag), NULL_TAG, null_tag)
-    print(f"[apex-pipeline] stage 5: {' '.join(card)}", flush=True)
+    print(f"[reference-pipeline] stage 5: {' '.join(card)}", flush=True)
     subprocess.run(card, check=True)
     return 0
 

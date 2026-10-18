@@ -222,27 +222,27 @@ invariant-by-construction).
   (multi-token prediction, opt-in `mtp_k`). **B4** (SSD/Mamba-2) implemented+benchmarked and
   **rejected** (2–3× slower than the compiled scan). Added **C6** `objective_pruning.py`, **C7**
   `conformal.py` (coverage 0.90 verified), **C8** `distill.py` (minimality), `candidate_roster.py`
-  (value/bc/iql/cql/dt), `unsupervised_gate.py`, `scripts/apex_pipeline.py` (one command A→B→C);
-  bridge no longer injects propensity (white_queen estimates). **Everything-enabled apex card:
+  (value/bc/iql/cql/dt), `unsupervised_gate.py`, `scripts/reference_pipeline.py` (one command A→B→C);
+  bridge no longer injects propensity (white_queen estimates). **Everything-enabled reference card:
   B SOLVED, U 0.65→0.88, all 5 use-cases DEPLOY, white_queen E-policy+oracle DEPLOY, all nulls HOLD**;
   train 441s. Supervised gate: churn .58 / return .69 / LTV .45 (cov .90); unsupervised: silhouette
   .40 / ANOVA F=472 / lookalike 3.1×. `measure_dim` now defaults to FULL (lossless). **420 fast tests.**
 
-- **APEX card ALL GREEN (DEC-182/183).** `looking_glass/foundation_report --white-queen --truth ...`
-  emits the full apex card: **B SOLVED ✅ · USE-CASES DEPLOY** (freq, hour) **· B+C DEPLOY · WHITE_QUEEN
+- **REFERENCE card ALL GREEN (DEC-182/183).** `looking_glass/foundation_report --white-queen --truth ...`
+  emits the full reference card: **B SOLVED ✅ · USE-CASES DEPLOY** (freq, hour) **· B+C DEPLOY · WHITE_QUEEN
   DEPLOY** (E-policy DR 47.0 > bar 42.23) **+ ORACLE DEPLOY ✅ · CONTROLS** (null) shown. **Key fix
   (DEC-182):** `E` was LEAKING the logged action (`E→arm` acc **0.999**, via `discount_pct=0.05·arm`
   in the measure) → `V(E,a)` ignored `a`; a **leakage guard** excludes declared action fields from
   `generic_measure` (`cfg.action_fields`, persisted) → `E→arm` chance → white_queen certifies the
   `E`-policy. `looking_glass/white_queen_bridge.py` runs the REAL tribunal. Fast gate **294**.
-  Remaining: null `freq` residual (+0.030, DEC-178); lab→apex unification + one-command reproduce;
+  Remaining: null `freq` residual (+0.030, DEC-178); lab→reference unification + one-command reproduce;
   minimality/calibration/geometry rows.
 
-- **APEX dataset (DEC-177).** Built `rabbit_hole/generators/apex.py` — one COMPOSITE controlled stream
-  (lab = per-dimension ontology; apex = all dimensions at once: multi-domain events, rate/transition/
+- **REFERENCE dataset (DEC-177).** Built `rabbit_hole/generators/reference.py` — one COMPOSITE controlled stream
+  (lab = per-dimension ontology; reference = all dimensions at once: multi-domain events, rate/transition/
   intent/trend/entity/seasonality/churn, randomized weekly freq+hour actions, and a randomized
   per-customer ARM with a personalizable treatment that kicks in after as_of → pre-treatment `E`, a
-  valid OPE). Known-truth receipt for everything; `--snr 0` = null. **On apex (30k customers):**
+  valid OPE). Known-truth receipt for everything; `--snr 0` = null. **On reference (30k customers):**
   **B: SOLVED ✅ U=0.6521**, **USE CASES: DEPLOY** (freq +0.188, hour +0.153), **B+C arm OPE: DEPLOY ✅**
   (Δ=+0.495 CI[+0.257,+0.731]). Fixed real `decision_certify` bugs (cross-fit V, marginal propensity,
   PCA denoise, doubly-robust). Fast gate **293**. Next: null control (snr=0) end-to-end; broaden.

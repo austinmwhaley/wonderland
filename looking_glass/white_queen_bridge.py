@@ -1,14 +1,14 @@
 """Bridge: certify a looking_glass `E`-policy with the REAL white_queen OPE library.
 
 `looking_glass.decision_certify` is an in-house OPE; this module puts the **white_queen**
-tribunal (`white_queen.tribunal.ope.api.evaluate`) directly in the loop, so the apex report
+tribunal (`white_queen.tribunal.ope.api.evaluate`) directly in the loop, so the reference report
 card reports the actual white_queen verdict alongside the in-house one.
 
 Design: build the logged dataset the tribunal expects from the stream —
     context = the frozen embedding `E` (so FQE/DR can use it), action = the randomized ARM,
     reward = logged future margin, propensity = the empirical marginal (randomized arms).
 The candidate policy reads `E` (a value model `V(E,a)` -> argmax). `oracle_policy` optionally
-certifies the KNOWN-truth policy (the apex's `arm_pref`) as a positive control.
+certifies the KNOWN-truth policy (the reference's `arm_pref`) as a positive control.
 
 Deploy is decided by white_queen (never-ship-worse + its conservative bar); we only pass it E.
 """
@@ -129,7 +129,7 @@ def certify_period(
 
 
 def certify(model, cfg, horizon_days: int = 90, risk_aversion: float = 0.5, fast: bool = True):
-    """Run the white_queen tribunal on an `E`-policy + the apex arm log. Returns its verdict."""
+    """Run the white_queen tribunal on an `E`-policy + the reference arm log. Returns its verdict."""
     from sklearn.ensemble import HistGradientBoostingRegressor
 
     from looking_glass.decision_certify import _arms_rewards

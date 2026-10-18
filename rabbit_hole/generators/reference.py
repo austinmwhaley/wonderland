@@ -1,4 +1,4 @@
-"""rabbit_hole APEX — the canonical, controlled, apparel omni-channel event stream.
+"""rabbit_hole REFERENCE — the canonical, controlled, apparel omni-channel event stream.
 
 The single fixture that must be able to train **any** Layer-C plugin off the frozen Layer-B
 foundation model. It models an omni-channel **clothing retailer**: a product catalogue
@@ -23,9 +23,9 @@ Dimensions a plugin can rely on (all present, all dialed by `snr`):
     category-affinity / item-affinity targets are all derivable.
 
 Run:
-  python3 -m rabbit_hole.generators.apex --n-customers 20000 --window-days 540 \
-      --out rabbit_hole/data/apex
-  python3 -m rabbit_hole.generators.apex --n-customers 20000 --snr 0 --out rabbit_hole/data/apex_null
+  python3 -m rabbit_hole.generators.reference --n-customers 20000 --window-days 540 \
+      --out rabbit_hole/data/reference
+  python3 -m rabbit_hole.generators.reference --n-customers 20000 --snr 0 --out rabbit_hole/data/reference_null
 """
 
 from __future__ import annotations
@@ -58,7 +58,7 @@ REF_START = datetime(2024, 1, 1, tzinfo=timezone.utc)
 
 
 @dataclass
-class ApexSpec:
+class ReferenceSpec:
     n_customers: int = 20000
     window_days: int = 540
     seed: int = 17
@@ -111,7 +111,7 @@ def _transition(scale: float) -> np.ndarray:
     return (1.0 - scale) * u + scale * P_FIXED
 
 
-def build_apex(spec: ApexSpec):
+def build_reference(spec: ReferenceSpec):
     eff = spec.eff()
     rng = np.random.default_rng(spec.seed)
     T = spec.window_days
@@ -143,7 +143,7 @@ def build_apex(spec: ApexSpec):
         rows["brand"].append(brand)
         rows["entity_type"].append(ent_type)
         rows["entity_id"].append(ent_id)
-        rows["source_table"].append("apex")
+        rows["source_table"].append("reference")
         rows["value"].append(float(value))
         av = dict(a)
         if value:
@@ -396,7 +396,7 @@ def build_apex(spec: ApexSpec):
         )
     df = pl.DataFrame(rows).with_columns(pl.Series("event_attributes", attrs))
     meta = {
-        "name": "apex",
+        "name": "reference",
         "spec": asdict(spec),
         "effective": eff,
         "transition_matrix": P.tolist(),
@@ -441,7 +441,7 @@ def build_apex(spec: ApexSpec):
             "quality(freq/channel/offer, additive soft bowls) x (ungated floor + timing-gated gain); "
             "the winning send carries the outcome. No single factor's optimum is diluted.",
         },
-        "note": "APEX apparel omni-channel composite: every latent dimension a Layer-C plugin "
+        "note": "REFERENCE apparel omni-channel composite: every latent dimension a Layer-C plugin "
         "needs, with a known-truth receipt. snr=0 = the NULL control.",
     }
     return df, {"meta": meta, "customers": cust_truth}
@@ -453,17 +453,19 @@ def main(argv=None):
     ap.add_argument("--window-days", type=int, default=540, dest="window_days")
     ap.add_argument("--seed", type=int, default=17)
     ap.add_argument("--snr", type=float, default=1.0)
-    ap.add_argument("--out", default="rabbit_hole/data/apex")
+    ap.add_argument("--out", default="rabbit_hole/data/reference")
     a = ap.parse_args(argv)
-    spec = ApexSpec(n_customers=a.n_customers, window_days=a.window_days, seed=a.seed, snr=a.snr)
-    df, truth = build_apex(spec)
+    spec = ReferenceSpec(
+        n_customers=a.n_customers, window_days=a.window_days, seed=a.seed, snr=a.snr
+    )
+    df, truth = build_reference(spec)
     d = Path(a.out)
     d.mkdir(parents=True, exist_ok=True)
     df.write_parquet(d / "customer_event_stream.parquet", compression="zstd")
-    name = "apex_null" if a.snr < 1.0 else "apex"
+    name = "reference_null" if a.snr < 1.0 else "reference"
     (d / f"{name}_truth.json").write_text(json.dumps(truth, indent=1))
     print(
-        f"[apex] {df.height} events, {a.n_customers} customers, snr={a.snr} -> {d} "
+        f"[reference] {df.height} events, {a.n_customers} customers, snr={a.snr} -> {d} "
         f"({len(set(df['event_type'].to_list()))} event types)"
     )
     return d

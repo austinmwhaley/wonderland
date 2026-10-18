@@ -1,7 +1,7 @@
 """Candidate roster (Layer C): several offline policies that read the frozen `E`, each a
 white_queen `CandidateProtocol` (act / action_probs). white_queen ranks + certifies them.
 
-For a per-period contextual-bandit decision (the apex case) the offline-RL families collapse to
+For a per-period contextual-bandit decision (the reference case) the offline-RL families collapse to
 `argmax_a f(E, a)` with different `f`:
   * value  — regression V(E,a)->reward, act = argmax V
   * bc     — behaviour cloning: P(logged action | E), act = argmax P (imitate the log)

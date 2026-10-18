@@ -106,7 +106,7 @@ i.e. ~338 dims. The **accumulator is the hand-RFM baseline** (token-drive sum/me
 multiple timescales), not part of the production pipeline; it is switched on only for the
 report card's "hand features" comparison row. `measure_dim=0` (default) keeps the measure
 **full/lossless** (all measure columns; DEC-195). A positive value is explicit compression.
-`scripts/apex_pipeline.py` requests `measure_dim=128`; with 82 available measure columns,
+`scripts/reference_pipeline.py` requests `measure_dim=128`; with 82 available measure columns,
 `LayerBEmbedder.fit()` caps components at 82, so the served pipeline `E` remains ~338.
 `use_measure=True` activates the learned measure; `effect_actions` activates the
 action-conditioned response objective; `action_fields` excludes logged action columns from
@@ -214,24 +214,24 @@ python3 -m looking_glass.foundation_report --db <stream> --ckpt-dir <dir> --tag 
 ```
 
 `--fast` skips the bare/accumulator comparison U runs (the dominant cost); `--full` is **not**
-a `foundation_report` flag. It is the `scripts/apex_pipeline.py` flag that adds white_queen,
-supervised, and unsupervised to the card. Without it the apex card runs the fast core
+a `foundation_report` flag. It is the `scripts/reference_pipeline.py` flag that adds white_queen,
+supervised, and unsupervised to the card. Without it the reference card runs the fast core
 (B + use-cases + null controls).
 
 ## One command
 
 ```bash
-python3 scripts/apex_pipeline.py --as-of <date> [--full] [--dry-run]
+python3 scripts/reference_pipeline.py --as-of <date> [--full] [--dry-run]
 ```
 
-Stages in `scripts/apex_pipeline.py`:
+Stages in `scripts/reference_pipeline.py`:
 
-1. generate the APEX stream (real signal);
-2. generate the APEX null control (`--snr 0`);
+1. generate the REFERENCE stream (real signal);
+2. generate the REFERENCE null control (`--snr 0`);
 3. train the foundation model on the real stream;
 4. train the foundation model on the null stream;
-5. emit `card_apex.md` from the B & B+C gates, resolving the data-derived tags from the newest
+5. emit `card_reference.md` from the B & B+C gates, resolving the data-derived tags from the newest
    registry in each checkpoint directory.
 
 `--full` adds white_queen/supervised/unsupervised and is slow; `--dry-run` prints the commands
-without running them. Outputs live under `rabbit_hole/data/apex_pipeline` by default.
+without running them. Outputs live under `rabbit_hole/data/reference_pipeline` by default.

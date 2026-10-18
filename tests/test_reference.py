@@ -1,6 +1,6 @@
-"""Tests for the rabbit_hole APEX apparel omni-channel stream (rabbit_hole/generators/apex.py).
+"""Tests for the rabbit_hole REFERENCE apparel omni-channel stream (rabbit_hole/generators/reference.py).
 
-The apex is the canonical controlled Layer-A fixture: it must carry a KNOWN-TRUTH signal for
+The reference is the canonical controlled Layer-A fixture: it must carry a KNOWN-TRUTH signal for
 every Layer-C plugin (supervised / unsupervised / decision). These tests pin determinism, the
 schema, the action-key declaration, and the recoverability of the decision optima, the category
 affinity, and the clean (pre/post treatment_day) OPE structure.
@@ -10,17 +10,17 @@ from __future__ import annotations
 
 import polars as pl
 
-from rabbit_hole.generators.apex import ApexSpec, build_apex
+from rabbit_hole.generators.reference import ReferenceSpec, build_reference
 
 
 def _json_path(df, col, path):
     return df.with_columns(pl.col("event_attributes").str.json_path_match(path).alias(col))
 
 
-def test_apex_deterministic_and_schema():
-    s = ApexSpec(n_customers=150, window_days=240, seed=3)
-    df1, t1 = build_apex(s)
-    df2, _ = build_apex(s)
+def test_reference_deterministic_and_schema():
+    s = ReferenceSpec(n_customers=150, window_days=240, seed=3)
+    df1, t1 = build_reference(s)
+    df2, _ = build_reference(s)
     assert df1.equals(df2)
     assert {
         "customer_key",
@@ -80,10 +80,10 @@ def _weekly_actions(df):
     return d
 
 
-def test_apex_decision_action_optima_recoverable():
+def test_reference_decision_action_optima_recoverable():
     """The randomized weekly freq is peaked at x0 per customer; offer at offer_opt."""
-    s = ApexSpec(n_customers=4000, window_days=540, seed=5)
-    df, truth = build_apex(s)
+    s = ReferenceSpec(n_customers=4000, window_days=540, seed=5)
+    df, truth = build_reference(s)
     C = {c["customer"]: c for c in truth["customers"]}
     d = _weekly_actions(df)
     rew = (
@@ -120,9 +120,9 @@ def test_apex_decision_action_optima_recoverable():
     assert ok_o / tot_o > 0.28  # vs ~0.25 chance
 
 
-def test_apex_category_affinity_recoverable():
-    s = ApexSpec(n_customers=500, window_days=400, seed=7)
-    df, truth = build_apex(s)
+def test_reference_category_affinity_recoverable():
+    s = ReferenceSpec(n_customers=500, window_days=400, seed=7)
+    df, truth = build_reference(s)
     C = {c["customer"]: c for c in truth["customers"]}
     pur = df.filter(pl.col("event_type") == "purchase").pipe(_json_path, "cat", r"$.category_code")
     agg = pur.filter(pl.col("cat") != "").group_by(["customer_key", "cat"]).agg(pl.len().alias("n"))
@@ -136,11 +136,11 @@ def test_apex_category_affinity_recoverable():
     assert ok / tot > 0.5  # vs ~1/6 chance
 
 
-def test_apex_contacts_have_no_effect_before_treatment_day():
+def test_reference_contacts_have_no_effect_before_treatment_day():
     """Clean OPE: contact response only exists AFTER treatment_day, so `E` at a pre-treatment
     as_of carries no treatment. Pre-treatment contact weeks must have ~no incremental conversion."""
-    s = ApexSpec(n_customers=1500, window_days=540, seed=9, treatment_day=180)
-    df, _ = build_apex(s)
+    s = ReferenceSpec(n_customers=1500, window_days=540, seed=9, treatment_day=180)
+    df, _ = build_reference(s)
     from datetime import datetime, timezone
 
     t0 = int(datetime(2024, 1, 1, tzinfo=timezone.utc).timestamp())
