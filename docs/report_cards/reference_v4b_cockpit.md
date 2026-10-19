@@ -1,6 +1,6 @@
 # Foundation Encoder — Report Card (cockpit) — `reference`
 
-tag `0.6.4r776750s2000` · as_of `2025-01-01` · git `c1fc540` · self-supervised=True · frozen=True · schema-universal=True
+tag `0.6.4r776750s2000` · as_of `2025-01-01` · git `40b052b` · self-supervised=True · frozen=True · schema-universal=True
 
 > **Purpose.** One frozen encoder per event stream; this card proves what it is, what it learned, what it is sufficient for, and where it is not yet good enough.
 >
@@ -68,15 +68,17 @@ tag `0.6.4r776750s2000` · as_of `2025-01-01` · git `c1fc540` · self-supervise
 
 | objective | family | real | destroyed | skill | ±SE | verdict | what it proves | if FAIL |
 |---|---|---|---|---|---|---|---|---|
-| agg | window aggregates | 0.3291 | 2.0162 | 1.6871 | ±0.0218 | strong | **PASS** | the state predicts future window aggregates (count/value) | state/objective (mass in the measure) |
+| agg | window aggregates | 0.3291 | 2.0163 | 1.6871 | ±0.0218 | strong | **PASS** | the state predicts future window aggregates (count/value) | state/objective (mass in the measure) |
 | dt | inter-arrival timing | 0.0694 | 1.6089 | 1.5395 | ±0.0487 | strong | NO_SIGNAL | the state carries event cadence/timing | dynamics (continuous-time); or accept 1-gram ceiling |
+| effect | action response (RL leg) | 0.0000 | 0.0000 | -0.0000 | ±0.0000 | none | **FAIL** | the state exposes the action-conditioned response | objective/measure (strengthen response block; more randomized periods) |
 | jepa | latent future | 0.0275 | 0.0324 | 0.0049 | ±0.0005 | weak-but-real | NO_SIGNAL | the state predicts its own future latent | objective/training (longer horizons) |
-| mask | masked reconstruction | 0.9522 | 1.8896 | 0.9374 | ±0.0142 | strong | NO_SIGNAL | the state can reconstruct a masked event from left context | objective/stream (1-gram ceiling; no action) |
+| mask | masked reconstruction | 0.9522 | 1.8894 | 0.9372 | ±0.0141 | strong | NO_SIGNAL | the state can reconstruct a masked event from left context | objective/stream (1-gram ceiling; no action) |
+| mtp | multi-token prediction | 0.2111 | 10.1528 | 9.9417 | ±0.0787 | strong | **PASS** | the state carries multi-step future tokens | objective/training |
 | next | event-type transition | 0.2208 | 10.7930 | 10.5721 | ±0.0782 | strong | NO_SIGNAL | the state carries the next-event transition (Markov structure) | objective/stream (1-gram ceiling; no action) |
 | occur | occurrence horizon | 0.6936 | 0.6841 | -0.0095 | ±0.0191 | none | NO_SIGNAL | the state carries near-future occurrence | objective/stream (1-gram ceiling; no action) |
 | order | temporal order | 0.4701 | 46.4251 | 45.9549 | ±1.8751 | strong | NO_SIGNAL | the state distinguishes true temporal order from shuffled order | objective/stream (1-gram ceiling; no action) |
 | query | query-time next | 0.0000 | 0.0000 | 0.0000 | ±0.0000 | none | NO_SIGNAL | the state predicts the next event from a faded state | objective/stream (faded-state marginal; no action) |
-| sf | successor features | 0.6670 | 1.2081 | 0.4743 | ±0.0076 | strong | **PASS** | the state carries discounted future feature mass | state/objective |
+| sf | successor features | 0.6670 | 1.2081 | 0.4744 | ±0.0076 | strong | **PASS** | the state carries discounted future feature mass | state/objective |
 | per-field heads (diagnostic) | per-field next-value | — | — | — | — | 11P / 8F / 0N | reported | field-level probe: whether E carries each discovered field individually | field-specific; NOT part of the universal per-stream claim (see receipt) |
 
 ### 3.2 If the encoder were not working, how would we know? (failure → lever)
@@ -330,7 +332,7 @@ _The v4 reference randomizes **one factor per day** (others at the customer opti
 | t4.reproducibility | Reproducibility | deterministic re-run + versioned identity | — | 1/1 | **PASS** | registry receipt |
 | t4.honest_gates | Honest gates | null controls; never weaken a gate | — | 1/1 | **PASS** | gate receipts |
 
-- runtime: inference 0.9219 s (deterministic receipt); portfolio eval 50.97 s
+- runtime: inference 0.9219 s (deterministic receipt); portfolio eval 17.71 s
 
 ## 7. What this card does NOT prove (disclosed, not hidden)
 
@@ -368,10 +370,10 @@ A green T0 is **conditional on the documented definitions below**. These are the
 - **stream**: `reference`
 - **tag**: `0.6.4r776750s2000`
 - **as_of**: `2025-01-01`
-- **git**: `c1fc540`
+- **git**: `40b052b`
 - **card receipts**: `/tmp/opencode/t0_loop/card_v4b_receipts.json`
 - **objectives**: `/tmp/opencode/t0_loop/objectives_v4b.json`
-- **portfolio**: `looking_glass/artifacts/cfm/portfolio/portfolio_0_6_4r776750s2000_20261019T213645Z.json`
+- **portfolio**: `looking_glass/artifacts/cfm/portfolio/portfolio_0_6_4r776750s2000_20261019T152125Z.json`
 - **minimality joint**: `/tmp/opencode/t0_loop/minimality_v4b.json`
 - **minimality shape**: `/tmp/opencode/t0_loop/minimality_v4b_shape_served.json`
 - **serve projection**: `/tmp/opencode/t0_loop/serve_v4b_real.json`
