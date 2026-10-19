@@ -4617,3 +4617,47 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
      sufficiency.
   5. `item_next` is a rare-class accuracy target and is degenerate at this horizon.
   6. The stream bridge (white_queen) and the response-block gate disagree; reconcile estimators.
+
+## DEC-222 — cudf-polars evaluated: works, but NOT adopted (DuckDB is the hot path; VRAM/dependency cost)
+
+- **Context:** the operator asked whether Polars can be GPU-accelerated with `cudf-polars` and
+  whether that is better for this project.
+- **Compatibility check:** RAPIDS **cudf-polars-cu12 26.10.0** pins **polars 1.44.2 — exactly our
+  version**, and runs on the RTX 2080 (sm_75, 8 GiB) under driver 580 (CUDA 12.9 libs, backward
+  compatible). Verified in an isolated uv venv (`/tmp/opencode/cudf_venv_uv`), not the system env.
+- **Benchmark** (`scripts/bench_polars_gpu.py`, 13.6M flat events, median of 3; correctness checked,
+  GPU float reductions within 1e-9):
+  | query | CPU Polars | GPU Polars | speedup | DuckDB |
+  |---|---|---|---|---|
+  | full customer group-by | 0.346 s | **0.093 s** | 3.74× | **0.112 s** |
+  | purchase group-by | 0.065 s | 0.069 s | 0.95× | **0.044 s** |
+  | event-type group-by | 0.334 s | **0.054 s** | 6.15× | — |
+  | join + group-by | 0.211 s | **0.077 s** | 2.74× | — |
+  | string-prefix group-by | 0.156 s | **0.041 s** | 3.81× | — |
+  Peak GPU memory for the full-frame group-by: **~1.3 GiB**.
+- **Why not adopt:**
+  1. The pipeline's heavy data path is **DuckDB SQL** (JSON/date extraction, generic measure,
+     period rows), which is already **as fast or faster** than GPU Polars on the same group-bys, and
+     the remaining minutes are per-customer sequence building + **PyTorch** (already GPU).
+  2. The GPU engine supports a **subset**: timestamp casts (`from_epoch`) are unsupported, and the
+     JSON path work stays in DuckDB; unsupported ops fall back/raise.
+  3. **VRAM:** ~1.3 GiB for the full frame competes with the ~7 GiB training/model footprint on an
+     8 GiB card.
+  4. **Dependency conflict:** cudf-polars 26.10 pins `cuda-bindings 12.9.10` while torch 2.11
+     requires `>=13.0.3`; they cannot coexist in one environment. It would need a separate venv and
+     a process boundary.
+- **Decision:** keep `scripts/bench_polars_gpu.py` as a reproducible receipt; **do not add
+  cudf-polars as a dependency**. If a future pure-Polars numeric/string group-by becomes a measured
+  bottleneck, add an **opt-in** GPU engine (CPU fallback) gated on >2× measured speedup and never
+  while the model is resident.
+
+## DEC-223 — Independent peer-review prompt added
+
+- **Artifact:** `docs/PEER_REVIEW_PROMPT.md` — an adversarial, evidence-first review prompt that
+  makes an agent take the position of an **independent peer reviewer** (not the builder), reproduce
+  T0 from receipts, and hunt for leakage/circularity/degenerate targets/gate weakening/stale
+  artifacts. It includes mandatory checks (data/identifiability, sufficiency oracle + power
+  controls, minimality-before-serve, point-in-time decisions, fair consumers, OPE, calibration,
+  invariants, governance, tests), a red-flag list, and a required findings/evidence output format.
+- **Use:** paste the prompt into a fresh session (or attach the repo + card) for an independent
+  review; the reviewer must not edit code and must report BLOCKER/MAJOR/MINOR/NIT with evidence.

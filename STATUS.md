@@ -217,6 +217,15 @@ invariant-by-construction).
 
 ## Micro
 
+- **cudf-polars evaluated (DEC-222): works (RAPIDS 26.10 pins our polars 1.44.2) but NOT adopted.**
+  GPU Polars is 3.7–6.2× faster than CPU Polars on group-bys/joins, but DuckDB (the pipeline's
+  engine) is equal/faster on the same ops, timestamp casts are unsupported, ~1.3 GiB VRAM competes
+  with the 7 GiB model, and cudf-polars' `cuda-bindings 12.9` conflicts with torch 2.11 (>=13.0.3).
+  Receipt: `scripts/bench_polars_gpu.py` + `/tmp/opencode/t0_loop/bench_polars_gpu.json`.
+
+- **Independent peer-review prompt:** `docs/PEER_REVIEW_PROMPT.md` (adversarial reviewer stance,
+  mandatory checks, red flags, findings/evidence format).
+
 - **T0 PASS, HONEST SUFFICIENCY + CONSUMER SWEEP, on the 2000-sample `reference_v4` model (DEC-221).**
   Retrained real+null with `--sample-a 2000`; shape rank 128 certified on the unserved trunk, served
   **201 = shape 128 ‖ measure 73**, joint min 160. **U=1.0 is now attributable:** power controls
