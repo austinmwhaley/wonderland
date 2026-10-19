@@ -822,8 +822,16 @@ def build(args):
         md.append("")
         _nseed = max((r.get("seeds") or 0) for r in comp_rows) if comp_rows else 0
         md.append(
-            f"**vs generic: {comp_wins}/{len(comp_rows)} WIN across {_nseed} seed(s)"
+            f"**vs generic: {comp_wins}/{len(comp_rows)} significant WIN across {_nseed} seed(s)"
             f"{f' · {_comp_degen} degenerate excluded' if _comp_degen else ''}.**"
+        )
+        _pos = sum(
+            1 for r in comp_rows if r.get("delta") is not None and float(r.get("delta")) > 0.0
+        )
+        md.append(
+            f"**Point-estimate: E > generic on {_pos}/{len(comp_rows)} valid heads**; the "
+            "significant wins are where the learned shape adds (channel/category); the rest are "
+            "measure-carried sufficiency ties (see the ablation ladder)."
         )
     else:
         md.append(
