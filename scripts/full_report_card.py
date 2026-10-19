@@ -267,6 +267,11 @@ def build(args):
         or "—"
     )
 
+    _recall = next(
+        (r.get("achieved") for r in (acc.get("rows") or []) if r.get("dimension") == "Sensitivity"),
+        None,
+    )
+    _wq = card.get("ope") or {}
     uc = card.get("use_cases") or {}
     sup = card.get("supervised") or {}
     _sup_all = sup.get("rows") or []
@@ -1071,7 +1076,10 @@ def build(args):
             ],
         )
     md.append("")
-    md.append(f"- runtime: {port.get('wall_seconds', '—')} s")
+    md.append(
+        f"- runtime: inference {_fmt(repro.get('infer_wall_seconds', repro.get('wall_seconds')))} s "
+        f"(deterministic receipt); portfolio eval {port.get('wall_seconds', '—')} s"
+    )
     md.append("")
 
     # 6b. caveats
@@ -1123,7 +1131,7 @@ def build(args):
                 "T2 minimality note",
             ],
             [
-                "OPE recall = 0.714",
+                f"OPE recall = {_fmt(_recall)}",
                 "Safety-first gate: recall is a POWER metric, not a deploy gate (DEC-214).",
                 "T3 OPE: 9/9 hard, recall reported",
             ],
@@ -1139,7 +1147,12 @@ def build(args):
                 "T1 objective battery",
             ],
             [
-                "white_queen stream bridge HOLDs (DR 0.5 vs bar 0.52)",
+                (
+                    f"white_queen stream bridge HOLDs (DR "
+                    f"{_fmt((_wq.get('estimates') or {}).get('dr'))} vs bar {_fmt(_wq.get('bar'))})"
+                    if _wq
+                    else "white_queen stream bridge not run"
+                ),
                 "The broad OPE acceptance (benchmark) is the hard gate; the stream bridge is a "
                 "second, more conservative estimator and is reported, not used to override T3.",
                 "OPE provenance",
