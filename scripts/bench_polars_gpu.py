@@ -26,13 +26,17 @@ import polars as pl
 
 def _queries():
     def full(lf):
-        return lf.group_by("customer_key").agg(
-            pl.len().alias("n"),
-            pl.col("v").sum().alias("sv"),
-            pl.col("v").mean().alias("mv"),
-            pl.col("t").min().alias("tmin"),
-            pl.col("t").max().alias("tmax"),
-        ).sort("customer_key")
+        return (
+            lf.group_by("customer_key")
+            .agg(
+                pl.len().alias("n"),
+                pl.col("v").sum().alias("sv"),
+                pl.col("v").mean().alias("mv"),
+                pl.col("t").min().alias("tmin"),
+                pl.col("t").max().alias("tmax"),
+            )
+            .sort("customer_key")
+        )
 
     def purchase(lf):
         return (
@@ -51,7 +55,10 @@ def _queries():
 
     def joinseg(lf):
         cust = pl.DataFrame(
-            {"customer_key": [f"ap{i:07d}" for i in range(12000)], "seg": [i % 5 for i in range(12000)]}
+            {
+                "customer_key": [f"ap{i:07d}" for i in range(12000)],
+                "seg": [i % 5 for i in range(12000)],
+            }
         ).lazy()
         return (
             lf.join(cust, on="customer_key", how="left")

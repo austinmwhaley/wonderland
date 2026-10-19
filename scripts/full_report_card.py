@@ -252,9 +252,14 @@ def build(args):
     known = _load(args.known_effect) or {}
     comp = _load(args.comparators) or {}
     abl = _load(args.ablation) or {}
+    repro = _load(args.reproducibility) or {}
     truth = _load(args.truth) or {}
     urows = _u_rows(args)
     uctl = _load(args.u_controls) or {}
+    _rc = next(
+        (r for r in (port.get("rows") or []) if "conservation" in str(r.get("check", ""))),
+        {},
+    )
     git = (
         subprocess.run(
             ["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True
@@ -370,7 +375,11 @@ def build(args):
                 [
                     "Minimality (served / joint min)",
                     f"served {proj.get('served_dim', '—')} (joint min {mini.get('joint_min', '—')})",
-                    _sc(PASS if mini.get("joint_certified") else PARTIAL),
+                    _sc(
+                        PASS
+                        if (mini.get("block_wise_certified") or mini.get("joint_certified"))
+                        else PARTIAL
+                    ),
                 ],
                 [
                     "Supervised vs FAIR generic (GATE)",
@@ -464,6 +473,11 @@ def build(args):
     md.append("")
 
     # 3. T1 PROOF
+    if obj:
+        _t0o = next((o for o in obj["objectives"] if o["id"] == "t0.north_star"), None)
+        if _t0o and _t0o.get("scope"):
+            md.append(f"> **Scope of the T0 claim.** {_t0o['scope']}")
+            md.append("")
     md.append("## 3. T1 — Foundation (Layer 0) — THE PROOF")
     md.append("")
     _purpose(
@@ -585,8 +599,12 @@ def build(args):
     md.append("")
     if transfer:
         md.append(
-            f"**{transfer.get('passed')}/{transfer.get('total')}** vs `{transfer.get('baseline')}` "
-            f"(adds on {transfer.get('heads_pass', '—')}, hurts on {transfer.get('heads_fail', '—')})."
+            f"**{transfer.get('passed')}/{transfer.get('total')}** vs `{transfer.get('baseline')}` — "
+            f"supervised: {transfer.get('supervised_heads_pass', '—')} add / "
+            f"{transfer.get('supervised_heads_no_signal', '—')} NO_SIGNAL / "
+            f"{transfer.get('supervised_heads_fail', '—')} fail; "
+            f"unsupervised segmentation: "
+            f"{'PASS' if transfer.get('unsupervised_heads_pass') else 'NO_SIGNAL'}."
         )
     else:
         md.append("_Not measured (head battery receipt missing)._")
@@ -666,7 +684,9 @@ def build(args):
                     _fmt((_worst or {}).get("norm_gap")),
                 ]
             )
-        md.append("**U power controls (the 1.0 is attributable):**")
+        md.append(
+            "**U power controls (measure-oracle; the main U uses the independent sequence oracle):**"
+        )
         md.append("")
         md += _table(["variant", "U", "worst member", "gap"], _rows)
         md.append("")
@@ -1088,6 +1108,14 @@ def build(args):
                 "T3 unsupervised: measure-block gate; full-concat lookalike reported",
             ],
             [
+                f"Conservation: {_rc.get('achieved', 'not measured')} "
+                f"({'ok' if _rc.get('ok') else 'outside tolerance'})",
+                "Energy conservation is a v6 state/readout diagnostic; it was previously hidden "
+                "by a 0.25 escape hatch (now removed). T1.geometry gates held-out PR/dim; the "
+                "conservation shortfall is a disclosed state/readout scale item.",
+                "T1 geometry table / portfolio receipt",
+            ],
+            [
                 f"Minimality is block-wise ({mini.get('measure_dim', '—')}), not the unconstrained "
                 f"{mini.get('joint_min', '—')}",
                 f"The +{int(mini.get('measure_dim', 0) or 0) - int(mini.get('joint_min', 0) or 0)} is the "
@@ -1100,7 +1128,7 @@ def build(args):
                 "T3 OPE: 9/9 hard, recall reported",
             ],
             [
-                "Consumer gates use 2 fold/bootstrap seeds",
+                "Consumer gates use 3 fold/bootstrap seeds",
                 "Multi-seed mean ± SE is reported; more seeds would tighten the intervals.",
                 "T3 consumer rows (seeds column)",
             ],
@@ -1167,6 +1195,25 @@ def build(args):
         ("OPE acceptance", args.acceptance),
         ("schema suite", args.schema_suite),
         ("encoder", args.encoder),
+        (
+            "model identity",
+            (
+                f"tag={enc.get('identity', {}).get('tag')} · "
+                f"sample_a={enc.get('identity', {}).get('sample_a_customers')} · "
+                f"ckpt={enc.get('identity', {}).get('ckpt_dir')}"
+                if enc.get("identity")
+                else None
+            ),
+        ),
+        (
+            "determinism",
+            (
+                f"embedding_sha256={repro.get('embedding_sha256')} · "
+                f"infer={repro.get('infer_wall_seconds')}s"
+                if repro
+                else None
+            ),
+        ),
         ("accessibility", args.accessibility),
         ("transfer", args.transfer),
         ("known effect", args.known_effect),
@@ -1195,7 +1242,7 @@ def _case_what(c):
 
 _NEXT = {
     "t0.north_star": "Close every T1–T4 red/partial/unknown.",
-    "t1.transfer": "Run the head battery and emit the transfer receipt.",
+    "t1.transfer": "Report supervised vs unsupervised split; require adds-on >=1 head and zero FAIL.",
     "t2.minimality": "Re-certify the block-wise served E (shape rank + explicit measure) after representation changes.",
     "t2.decision_sufficiency": "Keep the point-in-time response-block gate + DiD null; re-run after representation changes.",
     "t3.supervised": "Hold the fair-generic fleet verdict (no regression + wins) across seeds.",
@@ -1238,6 +1285,7 @@ def main(argv=None):
         "known-effect",
         "comparators",
         "ablation",
+        "reproducibility",
         "u-table",
         "u-controls",
         "card-md",

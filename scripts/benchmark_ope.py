@@ -17,7 +17,9 @@ if str(ROOT) not in sys.path:
 
 import json
 import os
+import subprocess
 import sys
+from datetime import datetime, timezone
 
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -34,6 +36,7 @@ def _case_from_matrix(r):
     rank = r.get("rank") or list(r["candidates"])
     order = {n: i + 1 for i, n in enumerate(rank)}
     for n, c in r["candidates"].items():
+        _cert = (r.get("certificates") or {}).get(n) or {}
         cells.append(
             Cell(
                 candidate=n,
@@ -42,9 +45,11 @@ def _case_from_matrix(r):
                 anchor=float(r["behavior_mean"]),
                 bar=float(r["bar"]),
                 rank=order.get(n, 999),
+                lo=_cert.get("lo"),
+                hi=_cert.get("hi"),
             )
         )
-    return Case(r["env"], cells, meta={"type": "discrete", "N": r["N"]})
+    return Case(r["env"], cells, meta={"type": "discrete", "family": "discrete", "N": r["N"]})
 
 
 def _case_from_continuous(r):
@@ -58,9 +63,11 @@ def _case_from_continuous(r):
                 anchor=float(r["behavior_mean"]),
                 bar=float(r["bar"]),
                 rank=1,
+                lo=r.get("cert_lo"),
+                hi=r.get("cert_hi"),
             )
         ],
-        meta={"type": "continuous", "N": r["N"]},
+        meta={"type": "continuous", "family": "continuous", "N": r["N"]},
     )
 
 
@@ -80,11 +87,57 @@ if __name__ == "__main__":
             continue
         print(f"[bench] {e} ...", flush=True)
         cases.append(_case_from_continuous(SC.survey_env(e)))
+    if not want:
+        from white_queen.tribunal.bench.scorecard import _bandit_case
+
+        print("[bench] bandit_synth ...", flush=True)
+        cases.append(_bandit_case(0))
 
     report = summarize(cases)
     os.makedirs(OUT, exist_ok=True)
     with open(os.path.join(OUT, "benchmark.json"), "w") as f:
         json.dump(report, f, indent=1, default=str)
+    # ACCEPTANCE RECEIPT with provenance (the hard gate the card consumes).
+    from white_queen.tribunal.bench.acceptance import (
+        CONTRACT,
+        REPORT_ONLY_DIMS,
+        rows_from_cases,
+    )
+
+    rows, _agg = rows_from_cases(cases, seeds_used=CONTRACT["seeds_min"])
+    hard = [r for r in rows if r[0] not in REPORT_ONLY_DIMS]
+    report_only = {
+        f"{r[0]}/{r[1]}": {"target": r[2], "achieved": r[3]}
+        for r in rows
+        if r[0] in REPORT_ONLY_DIMS
+    }
+    acc = {
+        "passed": int(sum(1 for r in hard if r[4])),
+        "total": int(len(hard)),
+        "report_only": report_only,
+        "baseline": "logging policy + model-free DR",
+        "beats_traditional": bool(hard and all(r[4] for r in hard)),
+        "overall": report["overall"],
+        "rows": [
+            {
+                "dimension": r[0],
+                "metric": r[1],
+                "target": r[2],
+                "achieved": r[3],
+                "ok": bool(r[4]),
+            }
+            for r in rows
+        ],
+        "provenance": {
+            "git_sha": subprocess.run(
+                ["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True
+            ).stdout.strip(),
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "envs": list(want) if want else DISCRETE + CONTINUOUS + ["bandit_synth"],
+        },
+    }
+    with open(os.path.join(OUT, "acceptance.json"), "w") as f:
+        json.dump(acc, f, indent=1, default=str)
     print("\n== OPE GROUND-TRUTH BENCHMARK ==")
     for p in report["per_case"]:
         print(

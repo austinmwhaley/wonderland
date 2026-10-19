@@ -571,12 +571,14 @@ def evaluate(
         # conservation ratio (v6 Stage 3): energy in = energy out, ~1 for any
         # stream. Tolerance is finite-sample (2 sigma ~ 1/sqrt(N)), not a literal.
         if r_cons is not None:
+            # finite-sample tolerance (2 sigma); NO literal 0.25 escape hatch —
+            # a 24% energy excess is a real diagnostic, not a pass.
             tol = 2.0 / float(np.sqrt(max(len(z), 1)))
             rows.append(
                 {
                     "check": "geometry: conservation ratio Tr(Sigma_readout)/P_in ~ 1",
                     "achieved": f"R_cons {r_cons:.3f} (tol {tol:.3f})",
-                    "ok": bool(abs(r_cons - 1.0) <= max(tol, 0.25)),
+                    "ok": bool(abs(r_cons - 1.0) <= tol),
                 }
             )
     if canaries:
