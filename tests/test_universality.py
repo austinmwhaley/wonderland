@@ -69,11 +69,22 @@ def test_history_features_columns():
 
 
 def test_future_family_is_self_supervised_and_typed():
-    j = pl.DataFrame({"orders": [0.0, 2.0], "ltv": [0.0, 5.0], "next_v": [0.0, 9.0]})
+    j = pl.DataFrame(
+        {
+            "orders": [0.0, 2.0],
+            "ltv": [0.0, 5.0],
+            "next_v": [0.0, 9.0],
+            "next_delay_days": [30.0, 1.5],
+            "repeat_last_type": [0.0, 1.0],
+        }
+    )
     fam = _future_family(j)
     # every member is a future observable, labelled reg/clf
     assert all(kind in ("reg", "clf") for _, kind in fam.values())
     assert "LTV (future log-margin)" in fam and fam["LTV (future log-margin)"][1] == "reg"
+    assert fam["next-event delay (days)"][1] == "reg"
+    assert fam["repeat last event type"][1] == "clf"
+    assert fam["repeat last event type"][0].tolist() == [0.0, 1.0]
     p = fam["propensity (order in horizon)"][0]
     c = fam["churn (no order in horizon)"][0]
     assert p.tolist() == [0.0, 1.0]
