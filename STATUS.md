@@ -217,6 +217,21 @@ invariant-by-construction).
 
 ## Micro
 
+- **T0 PASS, HONEST SUFFICIENCY + CONSUMER SWEEP, on the 2000-sample `reference_v4` model (DEC-221).**
+  Retrained real+null with `--sample-a 2000`; shape rank 128 certified on the unserved trunk, served
+  **201 = shape 128 ‖ measure 73**, joint min 160. **U=1.0 is now attributable:** power controls
+  E=1.000, measure-only=1.000, shape-only=0.256, destroyed=0.000 (independent seq-oracle + order-aware
+  members). Universal card no longer lists per-field heads (one diagnostic row). Consumer honesty:
+  **degenerate 90d-purchase targets excluded** (5 minority examples), multi-seed (2), ablation ladder
+  E 0.515 > generic 0.434 > measure 0.432 > raw 0.417 > shape 0.398; **2 WIN / 3 tie / 0 regression**
+  on 5 valid heads (4 degenerate excluded); known-effect **5/5 arms**; white_queen stream bridge
+  **HOLDs** (DR 0.50 vs bar 0.53, not a stub); OPE 9/9 hard; calibration 0.890; decision 5/5 PIT with
+  5/5 null HOLD. Cockpit wired into `scripts/reference_pipeline.py`. **456 fast tests, ruff clean.**
+  Artifacts: `/tmp/opencode/t0_loop/{card_v4b,objectives_v4b,cockpit_v4b,comparators_v4b,ablation_v4b,
+  minimality_v4b,known_effect_v4b,transfer_v4b,u_controls_v4b}.*`. Sweep: tag does not encode sample_a;
+  90d purchase degenerate; effect head ~0; U is measure-carried; reconcile stream-bridge vs
+  response-block OPE.
+
 - **T0 PASS RE-ESTABLISHED, POINT-IN-TIME, on `reference_v4` (DEC-218/219/220).** The reference was
   redesigned to make per-customer action response estimable: one randomized factor per day (others at
   the customer optimum), daily cadence (`action_period_seconds=86400`), 4-level hour, `target_key` on

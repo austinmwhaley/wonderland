@@ -4553,3 +4553,67 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   response block); known-effect is channel-oracle recovery, not red_king arm-value; block-wise
   minimality (+25 explicit measure); full-concat unsupervised lookalike is lower (measure-block gate).
 - **Supersedes** the DEC-217 FAIL (which remains the correct withdrawal of the leaked 459b7e8 claim).
+
+## DEC-221 — Honest sufficiency/consumer sweep: U is measure-carried (power controls), per-field heads leave the universal card, degenerate targets excluded, multi-seed + ablation + all-arm known-effect
+
+- **Context:** the user flagged U=1.0000 as "too good" and asked why the universal card lists
+  `attr_next:*` per-field heads; 5.1 showed `non-inferior` where a 9.6-point AUC deficit was being
+  called a tie; and the operating contract now requires the cockpit to be the steering artifact.
+- **U honesty (no gate weakened, no fabricated 1.0):**
+  1. The card's sufficiency certificate now runs the **independent learned sequence oracle**
+     (`run_universality(use_seq=True)`), not only the aggregate-measure oracle. Using the measure
+     oracle alone was circular because E's measure block IS that measure.
+  2. Added two **order-aware adversarial members** to the future family: `next-event delay (days)`
+     and `repeat last event type` — the aggregate measure cannot represent the last/next event
+     identity, so they probe sequence order.
+  3. Added **U power controls** (`scripts/u_controls_receipt.py`): same machinery on E, measure-only,
+     shape-only, and row-shuffled E. Measured on the 2000-sample model: **E=1.000, measure=1.000,
+     shape=0.256, destroyed=0.000**. The 1.0 is therefore **attributable to the exhaustive measure
+     block**, not to the learned shape; the destroyed control proves the test has power. Disclosed on
+     the card.
+- **Universal card cleanup:** `attr_next:*` / `num_next:*` per-field heads are **aggregated into one
+  diagnostic row** (e.g. `11P / 8F / 0N`) and labelled "field-specific; NOT part of the universal
+  per-stream claim". The main battery table now contains only universal families.
+- **Consumer honesty (5.1):**
+  1. **Degenerate class guard:** on the reference, 90d purchase is ~99.9% (daily actions), so
+     churn/propensity have **5 minority examples** and item_next 4 — an unstable AUC that can read
+     <0.5. These are reported `DEGENERATE` and **excluded** from the gate instead of calling a
+     10-point deficit "non-inferior". The gate now has 5 valid heads.
+  2. **Multi-seed:** `consumer_comparators --seeds 0,1` reports per-head mean ± SE and requires the
+     fleet verdict to hold across seeds; the card shows the seed count.
+  3. **Ablation ladder** (`scripts/ablation_ladder.py`): E vs shape-only vs measure-only vs raw vs
+     generic on the same head/folds. Mean over valid heads: **E 0.515 > generic 0.434 > measure
+     0.432 > raw 0.417 > shape 0.398**; per head, E ≥ every component on all valid heads, with
+     significant wins on channel_next (Δ +0.188) and category_next (Δ +0.206). Ties are
+     **measure-carried sufficiency ties**, not weak wins.
+  4. **Known-effect all arms:** the response block recovers **5/5** known per-action optima —
+     channel 0.515, offer 0.481, freq 0.569, hour 0.359, dow 0.329 (chance 0.25/0.25/0.333/0.25/0.143;
+     all p<1e-24). Previously only channel was tested.
+- **Bigger encoder:** retrained real+null with `--sample-a 2000` (from 400). The shape rank certified
+  on the **unserved trunk** is **128** (was 48); served **201 = shape 128 ‖ measure 73**; joint
+  unconstrained minimum **160** (the +41 explicit measure, DEC-215). The self-supervised battery
+  improved (`next` now beats unigram/gram1; more per-field passes; geometry eff-rank 14.15).
+- **white_queen stream bridge:** cadence-aware (`action_period_seconds`) and actually run: it
+  **HOLDs** (DR 0.50, behavior 0.43, bar 0.53). This is a real conservative OPE estimate, not a
+  `dr=0.5` stub; the broad acceptance (9/9) remains the hard T3.ope gate. The mismatch with the
+  response-block DEPLOY is disclosed as a reconcile-next item.
+- **Pipeline:** the cockpit is wired into `scripts/reference_pipeline.py` (refit → shape cert → serve
+  → foundation card → transfer/comparators/ablation/known-effect/minimality/U-controls → quality
+  receipts → objectives → cockpit). `--dry-run` verified.
+- **Result:** **T0 PASS — 18/18 T1–T4** on the 2000-sample model: U=1.0 (measure-attributed),
+  minimal 201 (joint 160), decision 5/5 with 5/5 null HOLD/0 uncalibrated, calibration 0.890,
+  supervised **2 WIN / 3 tie / 0 regression** over 5 valid heads (4 degenerate excluded),
+  unsupervised value gate PASS on the accessible measure, OPE 9/9 hard, transfer 1/1,
+  known-effect 5/5, invariants 4/4. **456 fast tests green; ruff clean.**
+- **Sweep findings / improvements (disclosed):**
+  1. The model tag does **not** encode `sample_a`, so a 400- and a 2000-sample run can share a tag
+     (they did). Improvement: include the training sample in the revision/tag.
+  2. 90d purchase is near-degenerate; prefer a shorter horizon or an action-conditioned churn target
+     for the consumer gate (the degenerate guard now makes this visible rather than misleading).
+  3. The `effect` self-supervised head is ~0; decision-sufficiency comes from the measure response
+     block. A learned effect head remains a frontier item.
+  4. U is measure-carried for the declared (RFM/aggregate-like) family; the order-aware members still
+     do not expose a shape gap. Broaden the family further before claiming shape-specific universal
+     sufficiency.
+  5. `item_next` is a rare-class accuracy target and is degenerate at this horizon.
+  6. The stream bridge (white_queen) and the response-block gate disagree; reconcile estimators.
