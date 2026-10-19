@@ -1004,6 +1004,7 @@ def build(args):
         md.append(f"**{known.get('passed')}/{known.get('total')}** — {known.get('evidence', '')}")
         _acts = known.get("actions") or {}
         if _acts:
+            md.append("")
             md += _table(
                 ["action", "accuracy", "chance", "n", "binomial p"],
                 [
@@ -1012,7 +1013,7 @@ def build(args):
                         _fmt(v.get("accuracy")),
                         _fmt(v.get("chance")),
                         v.get("n_customers", "—"),
-                        _fmt(v.get("binom_p"), 6),
+                        f"{v.get('binom_p'):.2e}" if v.get("binom_p") is not None else "—",
                     ]
                     for k, v in _acts.items()
                 ],
@@ -1065,7 +1066,7 @@ def build(args):
         [
             [
                 "U=1.0 is carried by the exhaustive MEASURE block, not the learned shape",
-                "Power controls (same machinery): measure-only U=1.0, shape-only U≈0.20, "
+                "Power controls (same machinery): measure-only U=1.0, shape-only U≈0.26, "
                 "destroyed E U=0.0. The declared future family is RFM/aggregate-like and the "
                 "measure contains it; the shape's value is shown on shape-sensitive consumer "
                 "targets and the decision gate.",
