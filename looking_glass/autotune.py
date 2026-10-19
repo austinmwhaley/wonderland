@@ -140,7 +140,7 @@ def derive_batch(n_seqs, seq_len: int = 0) -> tuple[int, dict]:
     else:
         cap = 32
     val = int(clip(2 ** round(math.log2(max(n_seqs / 32.0, 8.0))), 8, cap))
-    token_cap = max(8, int(65536 // max(int(seq_len or 1), 1)))
+    token_cap = max(8, int(16384 // max(int(seq_len or 1), 1)))
     val = int(min(val, cap, token_cap))
     return val, {"batch": f"n_seqs={n_seqs} seq_len={seq_len} hw_cap={cap} -> {val}"}
 
