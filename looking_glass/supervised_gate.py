@@ -185,19 +185,20 @@ def _states(model, cfg, keys):
     import torch
 
     from looking_glass.cfm_data import _read_stream, build_sequences
-    from looking_glass.cfm_training import forward_embedding
+    from looking_glass.cfm_training import embed_batch_size, forward_embedding
 
     df = _read_stream(cfg)
     split = {k: "A" for k in keys}
     seqs = build_sequences(df, list(keys), cfg, split, with_anchors=False)
+    batch = embed_batch_size(cfg)
     Z, C = [], []
-    for i in range(0, len(seqs), 512):
+    for i in range(0, len(seqs), batch):
         with torch.no_grad():
             z = forward_embedding(
-                model, seqs[i : i + 512], cfg=cfg, lb=getattr(model, "layer_b", None)
+                model, seqs[i : i + batch], cfg=cfg, lb=getattr(model, "layer_b", None)
             )
         Z.append(z.detach().float().cpu().numpy())
-        C += [s["customer"] for s in seqs[i : i + 512]]
+        C += [s["customer"] for s in seqs[i : i + batch]]
     return np.concatenate(Z, 0), C
 
 

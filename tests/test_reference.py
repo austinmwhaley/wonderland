@@ -73,6 +73,7 @@ def _weekly_actions(df):
                 .str.json_path_match(r"$.channel")
                 .cast(pl.Float64)
                 .alias("ch"),
+                pl.col("event_attributes").str.json_path_match(r"$.target_key").alias("tk"),
             ]
         )
         .filter(pl.col("f").is_not_null() & (pl.col("event_type") != "purchase"))
@@ -81,7 +82,9 @@ def _weekly_actions(df):
 
 
 def test_reference_decision_action_optima_recoverable():
-    """The randomized weekly freq is peaked at x0 per customer; offer at offer_opt."""
+    """One-factor-daily design: condition on the randomized key (target_key) for each
+    action, exactly as the served response block does. The randomized freq is peaked at
+    x0 per customer; offer at offer_opt."""
     s = ReferenceSpec(n_customers=4000, window_days=540, seed=5)
     df, truth = build_reference(s)
     C = {c["customer"]: c for c in truth["customers"]}
@@ -95,14 +98,23 @@ def test_reference_decision_action_optima_recoverable():
         .agg(pl.lit(1.0).alias("y"))
     )
     j = (
-        d.group_by(["customer_key", "wk"])
+        d.filter(pl.col("tk").is_in(["freq", "offer"]))
+        .group_by(["customer_key", "wk", "tk"])
         .agg(pl.col("f").last(), pl.col("o").last())
         .join(rew.select(["customer_key", "wk", "y"]), on=["customer_key", "wk"], how="left")
         .fill_null(0.0)
     )
     # per-(customer, action) MEAN reward = the empirical dose-response, then argmax
-    agg_f = j.group_by(["customer_key", "f"]).agg(pl.col("y").mean().alias("r"))
-    agg_o = j.group_by(["customer_key", "o"]).agg(pl.col("y").mean().alias("r"))
+    agg_f = (
+        j.filter(pl.col("tk") == "freq")
+        .group_by(["customer_key", "f"])
+        .agg(pl.col("y").mean().alias("r"))
+    )
+    agg_o = (
+        j.filter(pl.col("tk") == "offer")
+        .group_by(["customer_key", "o"])
+        .agg(pl.col("y").mean().alias("r"))
+    )
     ok_f = tot_f = ok_o = tot_o = 0
     for c, sub in agg_f.group_by("customer_key"):
         c = c[0]

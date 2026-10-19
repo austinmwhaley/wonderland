@@ -292,6 +292,8 @@ class CFMConfig:
     # hence `E` — from carrying the logged action, which would leak the treatment into the OPE).
     # Declared separately from `effect_actions` so the action's RESPONSE is still exposed.
     action_fields: tuple = ()
+    # Declared action cadence (seconds). None -> the documented weekly fallback.
+    action_period_seconds: float | None = None
     # Layer-B MEASURE pipeline: append a learned compression of the generic full-history
     # measure to the consumed embedding (the ~0.9 object). Fit at train, frozen at serve.
     use_measure: bool = False

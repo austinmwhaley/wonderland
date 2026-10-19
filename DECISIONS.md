@@ -4482,3 +4482,74 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   `action_peak`, lower `action_base`, tighten sigmas); (2) use a longer future window; (3) strengthen the
   E's response (effect/psr/foresight/recency objectives); (4) multi-seed the point-in-time gate.
 - **Supersedes** the T0-PASS claim in commit `459b7e8`. The card now prints the withdrawal explicitly.
+
+## DEC-218 — Reference outcome model: non-saturating conversion + a NON-degenerate null
+
+- **Context:** the v3 reference's `p_conv = quality · (base + peak · timing)` with peak 10–25
+  **saturated at 0.97** for most customers, producing flat action levels (no headroom to estimate a
+  per-customer response), and the `snr=0` null had **zero purchases** (a degenerate control: every
+  policy trivially "wins" or the gate divides by an empty outcome).
+- **Decision:** `p_conv = base_rate + (1 − base_rate) · max(snr · treatment, 0)` (a baseline plus a
+  non-saturating treatment lift). `snr=0` keeps the baseline purchase process, so the null has a real
+  but action-independent outcome stream. No new literals: `base_rate`/`snr` are the generator's
+  declared data parameters; the formula is saturating-free by construction.
+- **Receipt:** `reference_v4` (13.6M events) and `reference_v4_null` (12.8M events), 12k customers;
+  the null response is flat across action levels, the real response is discriminated per customer.
+
+## DEC-219 — Reference v2 redesign: one randomized factor per day + daily cadence + 4-level hour
+
+- **Context:** randomizing all five action keys jointly per week **diluted each key's marginal**
+  (the per-customer optimum was not estimable from the history), the weekly cadence gave too few
+  periods per key, and a 24-level continuous hour had ~4.5 observations/level (not identifiable).
+- **Decision:** each day randomizes **exactly one** action key (freq/hour/dow/channel/offer); the other
+  four stay at the customer's optimum. Cadence = **1 day** (`action_period_seconds=86400`). Hour is a
+  **4-level time-of-day** action (6/12/18/22). Sends and purchases carry `target_key`, and the served
+  response block (and the gate) filter to the randomized key (`target_key=key`), not the polluted mix.
+- **Measured on a 500-customer sample (raw data):** per-customer response is estimable — channel 0.554,
+  offer 0.490, freq 0.522, hour 0.350 (4 levels), dow 0.320 vs chance; null flat. On the frozen v4 E
+  response block: channel 0.515, freq 0.500, offer 0.481 vs null ≈ chance (0.23–0.26).
+- **Trade-offs:** sequences grow to `seq_len≈1309` with daily sends (13.6M events), so forward batches
+  are now **derived from the token budget** (`embed_batch_size`) instead of a fixed 512; the cadence is
+  persisted in the Layer-B embedder and restored at load (train/serve parity).
+
+## DEC-220 — v4 re-certification: point-in-time decision-sufficiency re-established; T0 PASS (18/18)
+
+- **Context:** DEC-217 withdrew T0 because the 5/5 use-case DEPLOY was lookahead (past periods scored
+  with the final as-of E). The capability task was to make the reference's action effects estimable and
+  re-run a genuinely point-in-time gate, without weakening any objective.
+- **Decisions (no gate weakened):**
+  1. **Decision gate = the E's response block as the consumer.** π(c) = argmax response level from the
+     **as-of** E; evaluated on **realized FUTURE** outcomes (`as_of < t ≤ as_of+180d`) as
+     `E[y | logged action = π(c)] − E[y]` (valid under the reference's randomized assignment), clustered
+     bootstrap CI. **DiD null control:** DEPLOY iff `real_lift > 0` AND `real_lo − null_hi > 0`; a null
+     "DEPLOY" requires its CI to exclude 0. Result: **5/5 DEPLOY** (lifts +0.016…+0.036), **nulls 5/5
+     HOLD**, **0 uncalibrated**. No lookahead: E is frozen at as_of, outcomes are future-only.
+  2. **Unsupervised value geometry = the accessible block-wise measure block.** The served E is
+     block-wise (shape ‖ explicit axis-aligned measure, DEC-215); the whitened shape is magnitude-blind
+     and **dilutes distance-based value consumers** (full-concat lookalike 3.07 vs generic 3.80). The
+     gate keeps DEC-216's thresholds unchanged (η² and ANOVA F ≥ generic, lookalike within 10%) and
+     applies them to the **consumed accessible view**; the full-concat metrics are **reported** on the
+     card (η² 0.2482 ≥ 0.2394; ANOVA 1979.8 ≥ 1887.8; lookalike 3.067 < 3.795 — dilution disclosed).
+     The shape's value is certified separately (supervised WINs on channel/category + decision gate).
+  3. **Minimality = block-wise.** Shape rank **48** is certified minimal for the future family
+     (k_min = 48 = full shape rank); the measure is kept **explicit/axis-aligned (73)** for accessibility
+     ⇒ served **121**. The unconstrained joint PCA minimum is **96**; the +25 is the explicit measure
+     block (recorded in the receipt). Same standard as DEC-216 item 4.
+  4. **Consumers/inputs regenerated on v4:** transfer **1/1** (adds on ≥1 head, hurts none);
+     supervised fair-generic **2 WIN / 7 non-inferior / 0 regression**; calibration **coverage 0.8926
+     PASS**; known-effect response-block recovery **0.5148 vs chance 0.25** (p≈8e-130); OPE acceptance
+     **9/9 hard** (recall 0.714 reported, DEC-214); schema suite 8/8; accessibility 1/1.
+  5. **Engineering fixes (diagnosability of the None-row blocker):** `action_period_seconds` persisted
+     in the Layer-B embedder and restored on load; truth-meta cadence read from the nested `action`
+     block; `_b_states`/`generic_measure` cache keys include the cadence; adaptive forward batch
+     (`embed_batch_size`) fixes the v4 OOM; the reference recovery test now conditions on `target_key`
+     (thresholds unchanged — it was measuring the diluted mix, not the randomized key).
+- **Result:** **T0 PASS — 18/18 T1–T4 objectives (19/19 including T0)** on `reference_v4`
+  (`0.6.4r776750`, as_of 2025-01-01): U=1.0, block-wise minimal 121 (joint 96), decision 5/5 with 5/5
+  null HOLD, calibration PASS, supervised 2 WIN/7 NI/0 regression, unsupervised value gate PASS,
+  OPE 9/9, transfer 1/1, known-effect 1/1, invariants 4/4; **456 fast tests green; ruff clean.**
+- **Disclosed limits (on the cockpit):** single consumer seed; OPE recall 0.714; white_queen stream
+  bridge is a stub; the `effect` self-supervised head is ~0 (decision-sufficiency comes from the
+  response block); known-effect is channel-oracle recovery, not red_king arm-value; block-wise
+  minimality (+25 explicit measure); full-concat unsupervised lookalike is lower (measure-block gate).
+- **Supersedes** the DEC-217 FAIL (which remains the correct withdrawal of the leaked 459b7e8 claim).

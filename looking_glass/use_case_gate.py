@@ -69,6 +69,17 @@ def _period_rows(
     # Period = one action cadence ANCHORED AT THE STREAM ORIGIN (min ts), so buckets align
     # with the randomized periods instead of arbitrary unix-week boundaries (which split
     # a period and mismatch action<->reward). Must match cfm_data._effect_targets.
+    try:
+        _has_tk = (
+            con.execute(
+                f"SELECT count(*) FROM {src} WHERE "
+                f"json_extract_string(event_attributes,'$.target_key') IS NOT NULL"
+            ).fetchone()[0]
+            > 0
+        )
+    except Exception:
+        _has_tk = False
+    _tk = f"AND json_extract_string(event_attributes,'$.target_key') = '{key}'" if _has_tk else ""
     t0 = float(
         con.execute(
             f"SELECT min(epoch(CAST(event_ts AS TIMESTAMPTZ))) FROM {src} "
@@ -87,7 +98,7 @@ def _period_rows(
         f"arg_max(TRY_CAST(json_extract_string(event_attributes,'$.{key}') AS DOUBLE), "
         f"epoch(CAST(event_ts AS TIMESTAMPTZ))) AS action "
         f"FROM {src} WHERE event_type LIKE '%send%' "
-        f"AND epoch(CAST(event_ts AS TIMESTAMPTZ)) {_tw} "
+        f"AND epoch(CAST(event_ts AS TIMESTAMPTZ)) {_tw} {_tk} "
         f"AND json_extract_string(event_attributes,'$.{key}') IS NOT NULL "
         f"AND customer_key IN (SELECT customer_key FROM _cust) GROUP BY 1,2"
     ).pl()
@@ -169,11 +180,11 @@ def discover_action_keys(cfg, max_distinct=24):
     return out
 
 
-def run_use_case(model, cfg, action_key, seed=0, period_secs=604800.0):
+def run_use_case(model, cfg, action_key, seed=0, period_secs=604800.0, horizon_days=90):
     import polars as pl
 
     cust, Z = _b_states(model, cfg)
-    j = _period_rows(cfg, cust, action_key, period_secs=period_secs)
+    j = _period_rows(cfg, cust, action_key, period_secs=period_secs, horizon_days=horizon_days)
     ci = {c: i for i, c in enumerate(cust)}
     rows = j.filter(pl.col("customer_key").is_in(list(ci)))
     cu = rows["customer_key"].to_numpy()
@@ -295,3 +306,84 @@ def main(argv=None):
 
 if __name__ == "__main__":
     main()
+
+
+def run_use_case_response(
+    model, cfg, action_key, horizon_days=180, seed=0, period_secs=None, n_boot=500
+):
+    """Point-in-time decision-sufficiency via the E's RESPONSE BLOCK.
+
+    The response block is the action-conditioned sufficient statistic: per held-out
+    customer it exposes the estimated reward at each action level, estimated from
+    the PAST (<= as_of). The consumer takes its argmax -> a policy pi(c). We then
+    evaluate pi on the FUTURE (as_of < t <= as_of+horizon) against REALIZED
+    outcomes: because the reference randomizes each action, E[y | a = pi(c)] is an
+    unbiased estimate of the policy's value, and E[y] is the logging value, so
+
+        lift = mean(y | logged action == pi(c)) - mean(y).
+
+    No lookahead: pi comes from the frozen as-of E; y comes only from the future.
+    Caller runs the null model (snr=0) and applies the DiD rule, which cancels the
+    base-rate and any residual consumer bias.
+    """
+    from looking_glass.head_battery import _b_states
+
+    cust, Z = _b_states(model, cfg)
+    lb = getattr(model, "layer_b", None)
+    names = list(getattr(lb, "names", ()) or ())
+    if not names:
+        raise ValueError("no fitted LayerBEmbedder measure")
+    d = int(Z.shape[1]) - len(names)
+    emeas = Z[:, d:]
+    idx = [i for i, n in enumerate(names) if n.startswith(f"resp_{action_key}_")]
+    if not idx:
+        raise ValueError(f"no response block for {action_key!r}")
+    R = np.asarray(emeas[:, idx], dtype=float)
+    ci = {c: i for i, c in enumerate(cust)}
+    ps = (
+        period_secs
+        if period_secs is not None
+        else (float(getattr(cfg, "action_period_seconds", None) or 604800.0))
+    )
+    j = _period_rows(cfg, cust, action_key, period_secs=ps, future=True, horizon_days=horizon_days)
+    cu = j["customer_key"].to_numpy()
+    A = j["action"].to_numpy().astype(int)
+    Y = (j["y"].to_numpy().astype(float) > 0).astype(float)
+    ok = np.array([c in ci for c in cu])
+    cu, A, Y = cu[ok], A[ok], Y[ok]
+    if len(cu) == 0:
+        return {"action_key": action_key, "lift": None, "lo": None, "hi": None, "n": 0}
+    Ri = np.stack([R[ci[c]] for c in cu])
+    Q = Ri.shape[1]
+    A = np.clip(A, 0, Q - 1)
+    # Only levels the response block actually estimates (a zero row carries no
+    # estimate; choosing it would be a spurious argmax). Fail safe -> skip.
+    observed = np.where(R.max(0) > 0)[0]
+    if len(observed) == 0:
+        return {"action_key": action_key, "lift": None, "lo": None, "hi": None, "n": 0}
+    chosen = observed[np.argmax(Ri[:, observed], axis=1)]
+    match = A == chosen
+    if not match.any():
+        return {"action_key": action_key, "lift": None, "lo": None, "hi": None, "n": 0}
+    lift_rows = np.where(match, Y, 0.0) / max(match.mean(), 1e-12) - Y
+    cs, cc = np.unique(cu, return_inverse=True)
+    rng = np.random.default_rng(seed)
+    boot = []
+    for _ in range(int(n_boot)):
+        pick = rng.integers(0, len(cs), len(cs))
+        m = np.isin(cc, pick)
+        if m.any():
+            boot.append(float(lift_rows[m].mean()))
+    lo, hi = np.percentile(boot, [2.5, 97.5]) if boot else (float("nan"), float("nan"))
+    return {
+        "action_key": action_key,
+        "lift": float(lift_rows.mean()),
+        "lo": float(lo),
+        "hi": float(hi),
+        "n": int(len(cu)),
+        "levels": int(len(observed)),
+        "match_rate": float(match.mean()),
+        "value_policy": float(Y[match].mean()),
+        "value_logging": float(Y.mean()),
+        "argmax_acc": float(np.mean(np.isin(chosen, A))),
+    }

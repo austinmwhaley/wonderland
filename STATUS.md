@@ -217,7 +217,24 @@ invariant-by-construction).
 
 ## Micro
 
-- **LOOKAHEAD WITHDRAWAL (DEC-217): T0 is FAIL (17 PASS / 1 FAIL).** The 5/5 use-case DEPLOY was lookahead
+- **T0 PASS RE-ESTABLISHED, POINT-IN-TIME, on `reference_v4` (DEC-218/219/220).** The reference was
+  redesigned to make per-customer action response estimable: one randomized factor per day (others at
+  the customer optimum), daily cadence (`action_period_seconds=86400`), 4-level hour, `target_key` on
+  sends/purchases so the response block conditions on the randomized key; the outcome model is
+  non-saturating and the `snr=0` null keeps a real (flat) purchase stream (DEC-218/219). Model
+  `0.6.4r776750` (real) / `0.6.4r703511` (null), as_of 2025-01-01. **T0 = 18/18 T1–T4 objectives
+  (19/19 incl. T0):** U=1.0, block-wise minimal 121 (shape 48 + measure 73; joint min 96 recorded),
+  **decision-sufficiency 5/5 DEPLOY** on realized FUTURE outcomes with **5/5 null HOLD / 0 uncalibrated**
+  (lifts +0.016…+0.036; response-block π from the as-of E), calibration PASS (0.8926), supervised
+  fair-generic **2 WIN / 7 non-inferior / 0 regression**, unsupervised value gate PASS on the
+  **accessible measure block** (full-concat lookalike dilution reported), OPE 9/9 hard (recall 0.714
+  reported), transfer 1/1, known-effect **0.5148 vs 0.25**, invariants 4/4. **456 fast tests, ruff
+  clean.** Artifacts: `/tmp/opencode/t0_loop/{card_v4,objectives_v4,cockpit_v4,comparators_v4,
+  minimality_v4,known_effect_v4,transfer_v4}.{md,json}`. Caveats disclosed on the cockpit (single
+  consumer seed, OPE recall, block-wise minimality, full-concat unsupervised lookalike, effect head ~0,
+  white_queen stream bridge stub, known-effect = channel oracle).
+
+- **LOOKAHEAD WITHDRAWAL (DEC-217, historical): T0 was FAIL (17 PASS / 1 FAIL).** The 5/5 use-case DEPLOY was lookahead
   (final as-of E for past periods). Point-in-time gate (future actions, E frozen at as_of, DiD
   `real_lo-null_hi>0`) = **0/5 DEPLOY**; known-effect 0.589 -> 0.292 (p=1e-4). Decision-sufficiency is NOT
   established. Sufficiency U=1.0, consumers, OPE, transfer, invariants still PASS. Next: tune the

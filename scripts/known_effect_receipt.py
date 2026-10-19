@@ -1,13 +1,16 @@
-"""Known-effect recovery: the E-policy must recover the reference's KNOWN per-customer
-channel optimum (`channel_pref`) above chance (binomial test). This is a direct
-positive control, independent of the (stub) white_queen bridge."""
+"""Known-effect recovery: the E's action-conditioned RESPONSE BLOCK must recover the
+reference's KNOWN per-customer channel optimum (`channel_pref`) above chance.
+
+This is a direct positive control on the sufficient statistic itself (the response
+block estimates the reward at each action level from the as-of history), graded
+against generator truth that the encoder never saw. Binomial test vs chance.
+"""
 
 from __future__ import annotations
 
 import argparse
 import json
 import sys
-import zlib
 from pathlib import Path
 
 import numpy as np
@@ -23,73 +26,72 @@ def main(argv=None):
     ap.add_argument("--as-of", required=True, dest="as_of")
     ap.add_argument("--truth", required=True)
     ap.add_argument("--customers", type=int, default=6000)
+    ap.add_argument("--action-key", default="channel", dest="action_key")
     ap.add_argument("--out", required=True)
     a = ap.parse_args(argv)
 
-    import polars as pl
     from scipy.stats import binomtest
-    from sklearn.ensemble import HistGradientBoostingRegressor
-    from sklearn.preprocessing import StandardScaler
 
     from looking_glass.cfm_state import load_frozen_encoder
     from looking_glass.head_battery import _b_states
-    from looking_glass.use_case_gate import _period_rows
 
     model, cfg = load_frozen_encoder(a.tag, a.ckpt_dir)
     cfg.attr_fields = tuple(getattr(model, "attr_fields", ()) or ())
     cfg.numeric_fields = tuple(getattr(model, "numeric_fields", ()) or ())
     cfg.db, cfg.as_of, cfg.sample_customers = a.db, a.as_of, a.customers
     cust, Z = _b_states(model, cfg)
-    j = _period_rows(cfg, cust, "channel")
-    ci = {c: i for i, c in enumerate(cust)}
-    rows = j.filter(pl.col("customer_key").is_in(list(ci)))
-    cu = rows["customer_key"].to_numpy()
-    A = rows["action"].to_numpy().astype(int)
-    y = (rows["y"].to_numpy().astype(float) > 0).astype(float)
-    Q = int(A.max()) + 1
-    N = len(A)
-    Zs = StandardScaler().fit_transform(np.stack([Z[ci[c]] for c in cu]))
+    lb = getattr(model, "layer_b", None)
+    names = list(getattr(lb, "names", ()) or ())
+    if not names:
+        raise SystemExit("no fitted LayerBEmbedder measure")
+    d = int(Z.shape[1]) - len(names)
+    idx = [i for i, n in enumerate(names) if n.startswith(f"resp_{a.action_key}_")]
+    if not idx:
+        raise SystemExit(f"no response block for {a.action_key!r}")
+    R = np.asarray(Z[:, d:][:, idx], dtype=float)
+    observed = np.where(R.max(0) > 0)[0]
+    if len(observed) == 0:
+        chosen = np.zeros(len(cust), dtype=int)
+    else:
+        chosen = observed[np.argmax(R[:, observed], axis=1)]
 
-    # cross-half V(E,a) -> argmax policy (never scores a row with a model that saw it)
-    half = np.array([zlib.crc32(str(c).encode()) % 2 for c in cu])
-    cand = np.empty(N, dtype=int)
-    logged = np.unique(A)
-    for h in (0, 1):
-        tr = np.where(half != h)[0]
-        va = np.where(half == h)[0]
-        m = HistGradientBoostingRegressor(max_iter=200, min_samples_leaf=50).fit(
-            np.column_stack([Zs[tr], A[tr].astype(float)]), y[tr]
-        )
-        Vh = np.column_stack(
-            [m.predict(np.column_stack([Zs[va], np.full(len(va), float(k))])) for k in range(Q)]
-        )
-        cand[va] = logged[np.argmax(Vh[:, logged], axis=1)]
-
-    # per-customer mode of the chosen action
-    by_cust: dict = {}
-    for c, act in zip(cu, cand):
-        by_cust.setdefault(c, []).append(int(act))
-    chosen = {c: int(np.bincount(v).argmax()) for c, v in by_cust.items()}
-    T = {c["customer"]: c for c in json.loads(Path(a.truth).read_text())["customers"]}
-    ch = ("email", "sms", "push", "direct_mail")
-    truth = {c: ch.index(v["channel_pref"]) for c, v in T.items() if "channel_pref" in v}
-    common = [c for c in chosen if c in truth]
-    hits = sum(1 for c in common if chosen[c] == truth[c])
-    n = len(common)
-    chance = 1.0 / Q
+    meta = json.loads(Path(a.truth).read_text())
+    T = {c["customer"]: c for c in meta.get("customers", [])}
+    channels = (meta.get("meta") or {}).get("contact_channels") or [
+        "email",
+        "sms",
+        "push",
+        "direct_mail",
+    ]
+    cmap = {str(ch): i for i, ch in enumerate(channels)}
+    truth = {
+        c: cmap.get(str(v.get("channel_pref")), -1)
+        for c, v in T.items()
+        if v.get("channel_pref") is not None
+    }
+    pairs = [(int(ch), truth[c]) for c, ch in zip(cust, chosen) if c in truth]
+    pairs = [(p, t) for p, t in pairs if 0 <= t < len(channels)]
+    n = len(pairs)
+    hits = sum(1 for p, t in pairs if p == t)
+    chance = 1.0 / max(len(observed), 1)
     acc = hits / max(n, 1)
     p = float(binomtest(hits, n, chance, alternative="greater").pvalue) if n else 1.0
     passed = bool(n > 0 and acc > chance and p < 0.01)
     rec = {
         "passed": int(passed),
         "total": 1,
-        "baseline": "known randomized effect (channel_pref)",
+        "baseline": f"known randomized effect ({a.action_key}_pref)",
         "beats_traditional": passed,
-        "evidence": "E-policy argmax recovers the reference's known channel optimum",
+        "evidence": (
+            f"E response-block argmax recovers the reference's known {a.action_key} optimum"
+        ),
+        "action_key": a.action_key,
         "accuracy": round(acc, 4),
         "chance": round(chance, 4),
         "n_customers": int(n),
+        "hits": int(hits),
         "binom_p": p,
+        "levels": int(len(observed)),
     }
     Path(a.out).write_text(json.dumps(rec, indent=2) + "\n")
     print(json.dumps(rec, indent=2))

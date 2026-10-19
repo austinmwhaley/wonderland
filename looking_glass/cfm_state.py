@@ -296,6 +296,10 @@ def load_frozen_encoder(tag: str, cfm_dir):
 
         model.layer_b = LayerBEmbedder.load(_lb_path)
         cfg.use_measure = True
+        # Restore the cadence the response block was fit on (train/serve parity).
+        _aps = getattr(model.layer_b, "action_period_seconds", None)
+        if _aps is not None:
+            cfg.action_period_seconds = float(_aps)
     # CERTIFIED MINIMAL SERVE PROJECTION (DEC-213): if fitted, the consumed E is
     # the frozen projection to its minimal sufficient rank.
     _proj = cfm_dir / f"serve_proj_{tag.replace('.', '_')}.npz"

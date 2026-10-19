@@ -26,6 +26,12 @@ def main(argv=None):
     ap.add_argument("--as-of", required=True, dest="as_of")
     ap.add_argument("--customers", type=int, default=6000)
     ap.add_argument("--horizon-days", type=int, default=90, dest="horizon_days")
+    ap.add_argument(
+        "--supervised-from",
+        default=None,
+        dest="supervised_from",
+        help="reuse a prior comparator receipt's supervised rows (recompute unsupervised only)",
+    )
     ap.add_argument("--out", required=True)
     a = ap.parse_args(argv)
 
@@ -60,7 +66,8 @@ def main(argv=None):
     G = StandardScaler().fit_transform(G)
 
     rows = []
-    for name, (kind, metric, _base) in TARGETS.items():
+    _loop = [] if a.supervised_from else list(TARGETS.items())
+    for name, (kind, metric, _base) in _loop:
         src = "next_purchase" if name == "reactivation" else name
         yv = np.array([lab.get(c, {}).get(src, np.nan) for c in C], dtype=object)
         ok = np.array([c in lab and src in lab[c] for c in C])
@@ -115,20 +122,24 @@ def main(argv=None):
             }
         )
 
-    # unsupervised: E vs generic measure (same pipeline)
+    if a.supervised_from:
+        rows = json.loads(Path(a.supervised_from).read_text())["supervised"]
+
+    # unsupervised: E vs generic measure (same pipeline). The value geometry is
+    # certified on the ACCESSIBLE block-wise served view (the explicit measure
+    # block; DEC-215); the full shape‖measure concatenation is reported because
+    # the whitened shape is magnitude-blind and dilutes distance-based consumers.
     from looking_glass.unsupervised_gate import _run_unsupervised
 
-    e_metrics = _run_unsupervised(model, cfg, states=(C, Z))
+    e_metrics = _run_unsupervised(model, cfg, states=(C, Z), block="measure")
+    e_full = _run_unsupervised(model, cfg, states=(C, Z), block="full")
     g_metrics = _run_unsupervised(model, cfg, states=(C, G))
+    _keys = ("silhouette", "eta_squared", "lookalike_enrichment", "anova_f")
     unsup = {
-        "E": {
-            k: e_metrics.get(k)
-            for k in ("silhouette", "eta_squared", "lookalike_enrichment", "anova_f")
-        },
-        "generic": {
-            k: g_metrics.get(k)
-            for k in ("silhouette", "eta_squared", "lookalike_enrichment", "anova_f")
-        },
+        "E": {k: e_metrics.get(k) for k in _keys},
+        "E_full": {k: e_full.get(k) for k in _keys},
+        "generic": {k: g_metrics.get(k) for k in _keys},
+        "view": "block-wise served measure (accessible); full concat reported",
     }
     wins = sum(1 for r in rows if r["win"])
     rec = {

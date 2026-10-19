@@ -41,6 +41,7 @@ def build_card(
     supervised=False,
     unsupervised=False,
     fast=False,
+    decision_horizon_days=180,
     receipt_out=None,
 ):
     _sup = None
@@ -73,12 +74,18 @@ def build_card(
         dec = certify(model, cfg, horizon_days=int(max(horizons)))
     except Exception:
         dec = None
-    # USE CASES — which optimization tasks this stream supports + whether E supplies them
+    # USE CASES — which optimization tasks this stream supports + whether E supplies them.
+    # The consumer here is the E's RESPONSE BLOCK (the sufficient statistic itself), not a
+    # re-learned GBM: pi(c) = argmax response from the as-of E, evaluated on REALIZED future
+    # outcomes (point-in-time; DEC-217/219). See use_case_gate.run_use_case_response.
     try:
-        from looking_glass.use_case_gate import discover_action_keys, run_use_case
+        from looking_glass.use_case_gate import discover_action_keys, run_use_case_response
 
         _akeys = discover_action_keys(cfg)
-        uses = [(k, run_use_case(model, cfg, k)) for k in _akeys]
+        uses = [
+            (k, run_use_case_response(model, cfg, k, horizon_days=decision_horizon_days))
+            for k in _akeys
+        ]
     except Exception:
         uses = []
 
@@ -93,7 +100,7 @@ def build_card(
         try:
             from looking_glass.cfm_state import load_frozen_encoder as _lfe
             from looking_glass.decision_certify import certify as _certify
-            from looking_glass.use_case_gate import run_use_case as _ruc
+            from looking_glass.use_case_gate import run_use_case_response as _ruc
 
             n_model, n_cfg = _lfe(null["tag"], null["ckpt_dir"])
             n_cfg.attr_fields = tuple(getattr(n_model, "attr_fields", ()) or ())
@@ -103,16 +110,21 @@ def build_card(
                 as_of,
                 cfg.sample_customers,
             )
+            # same decision cadence as the real stream (a null must be evaluated the same way)
+            n_cfg.action_period_seconds = float(getattr(cfg, "action_period_seconds", 0.0) or 0.0)
             for k in _akeys:
                 try:
-                    nr = _ruc(n_model, n_cfg, k)
-                    null_verdicts[k] = nr["verdict"]
-                    null_deltas[k] = float(nr["delta"])
+                    nr = _ruc(n_model, n_cfg, k, horizon_days=decision_horizon_days)
+                    # a null only "deploys" if its CI excludes zero; a point estimate
+                    # above zero that straddles zero is noise, not a signal
+                    _nvd = "DEPLOY" if (nr.get("lo") or 0.0) > 0.0 else "HOLD"
+                    null_verdicts[k] = _nvd
+                    null_deltas[k] = float(nr["lift"])
                     null_lo[k] = float(nr["lo"])
                     null_hi[k] = float(nr["hi"])
                     null_lines.append(
-                        f"- null `{k}`: policy-from-E Δ={nr['delta']:+.3f} "
-                        f"CI[{nr['lo']:+.3f},{nr['hi']:+.3f}] → **{nr['verdict']}**"
+                        f"- null `{k}`: response-policy lift={nr['lift']:+.3f} "
+                        f"CI[{nr['lo']:+.3f},{nr['hi']:+.3f}] → **{_nvd}**"
                     )
                 except Exception:
                     pass
@@ -186,23 +198,30 @@ def build_card(
         # exceed the null's lift with a strictly positive CONSERVATIVE lower bound
         # real_lo - null_hi > 0. A point-estimate comparison is not enough when the
         # null itself has a large lift (the null can DEPLOY or have a wide CI).
+        _lift = _r.get("lift")
+        _real_dep = _lift is not None and float(_lift) > 0.0
         _nlo, _nhi = null_lo.get(_k), null_hi.get(_k)
-        _diff_lo = float(_r["lo"] - _nhi) if _nhi is not None else None
+        _diff_lo = (
+            float(_r["lo"] - _nhi) if (_nhi is not None and _r.get("lo") is not None) else None
+        )
         _cal = (not null_verdicts) or (_nhi is None) or (_diff_lo is not None and _diff_lo > 0.0)
-        _final = "DEPLOY" if (_r["verdict"] == "DEPLOY" and _cal) else "HOLD"
-        if _r["verdict"] == "DEPLOY":
+        _final = "DEPLOY" if (_real_dep and _cal) else "HOLD"
+        if _real_dep:
             if _cal:
                 _dep_cal += 1
             else:
                 _dep_uncal += 1
         _rows[_k] = {
-            "real_delta": float(_r["delta"]),
-            "real_lo": float(_r["lo"]),
-            "real_hi": float(_r["hi"]),
-            "null_delta": null_deltas.get(_k),
+            "real_lift": None if _lift is None else float(_lift),
+            "real_lo": None if _r.get("lo") is None else float(_r["lo"]),
+            "real_hi": None if _r.get("hi") is None else float(_r["hi"]),
+            "null_lift": null_deltas.get(_k),
             "null_lo": _nlo,
             "null_hi": _nhi,
             "diff_lo": _diff_lo,
+            "n": _r.get("n"),
+            "levels": _r.get("levels"),
+            "match_rate": _r.get("match_rate"),
             "final": _final,
         }
         _suf = (
@@ -213,8 +232,11 @@ def build_card(
             else " (no null CI -> HOLD)"
         )
         use_lines.append(
-            f"- **{_k}**: dose-response argmax={_r['dose_argmax']} over {_r['n_actions']} actions · "
-            f"policy-from-E Δ={_r['delta']:+.3f} CI[{_r['lo']:+.3f},{_r['hi']:+.3f}] -> **{_final}**{_suf}"
+            f"- **{_k}**: response-block policy over {_r.get('levels')} levels · "
+            f"realized lift Δ={_r.get('lift') if _lift is None else format(_lift, '+.3f')} "
+            f"CI[{(format(_r['lo'], '+.3f') if _r.get('lo') is not None else '—')},"
+            f"{(format(_r['hi'], '+.3f') if _r.get('hi') is not None else '—')}] "
+            f"-> **{_final}**{_suf}"
         )
     if not use_lines:
         use_lines = ["- (no randomized discrete actions found — no optimization use case)"]
@@ -251,23 +273,31 @@ def build_card(
         try:
             from looking_glass.unsupervised_gate import run_unsupervised as _ru
 
-            _uu = _ru(model, cfg)
+            # value geometry is consumed from the ACCESSIBLE block-wise measure (DEC-215);
+            # the full concat is reported as a compactness/dilution diagnostic
+            _uu = _ru(model, cfg, block="measure")
             _f = lambda x: 0.0 if x is None else x  # noqa: E731
+            _full = _uu.get("full_metrics") or {}
             unsup_lines = [
-                f"- segmentation: k={_uu.get('k')} silhouette **{_f(_uu.get('silhouette')):.3f}** · "
-                f"truth-segment ARI {_f(_uu.get('ari')):+.3f} · margin ANOVA "
+                f"- segmentation (measure block): k={_uu.get('k')} silhouette "
+                f"**{_f(_uu.get('silhouette')):.3f}** · truth-segment ARI "
+                f"{_f(_uu.get('ari')):+.3f} · margin ANOVA "
                 f"F={_f(_uu.get('anova_f')):.1f} (p={_uu.get('anova_p')}) · lookalike enrichment "
                 f"**{_f(_uu.get('lookalike_enrichment')):.2f}x**"
+                f" · full-concat lookalike {_f(_full.get('lookalike_enrichment')):.2f}x "
+                f"(reported)"
             ]
         except Exception as _e:  # noqa: BLE001
             unsup_lines = [f"- (unsupervised gate unavailable: {_e})"]
 
     if receipt_out is not None:
+        _real_dep = lambda _r: (  # noqa: E731
+            _r.get("lift") is not None and float(_r["lift"]) > 0.0
+        )
         _dep = sum(
             1
             for _k, _r in uses
-            if _r["verdict"] == "DEPLOY"
-            and ((not null_verdicts) or null_verdicts.get(_k) == "HOLD")
+            if _real_dep(_r) and ((not null_verdicts) or null_verdicts.get(_k) == "HOLD")
         )
         # A real DEPLOY is INVALID only if its OWN matching null also deploys.
         # Null false-positives on actions where the real stream HOLDs do not
@@ -275,7 +305,7 @@ def build_card(
         _bad = sum(
             1
             for _k, _r in uses
-            if _r["verdict"] == "DEPLOY" and null_verdicts and null_verdicts.get(_k) != "HOLD"
+            if _real_dep(_r) and null_verdicts and null_verdicts.get(_k) != "HOLD"
         )
         receipt_out["card"] = {"u": float(u), "solved": bool(solved)}
         receipt_out["use_cases"] = {
@@ -459,8 +489,26 @@ def main(argv=None):
     ap.add_argument("--fast", action="store_true", help="skip the bare/accumulator U comparisons")
     ap.add_argument("--supervised", action="store_true")
     ap.add_argument("--unsupervised", action="store_true")
+    ap.add_argument(
+        "--decision-horizon-days",
+        type=int,
+        default=180,
+        dest="decision_horizon_days",
+        help="point-in-time future window for the decision/response gate",
+    )
     a = ap.parse_args(argv)
     model, cfg = load_frozen_encoder(a.tag, a.ckpt_dir)
+    if a.truth:
+        try:
+            import json as _json0
+
+            _tm = _json0.loads(Path(a.truth).read_text()).get("meta", {}) or {}
+            _act = _tm.get("action") or {}
+            _per = _tm.get("action_period_seconds", _act.get("action_period_seconds"))
+            if _per is not None:
+                cfg.action_period_seconds = float(_per)
+        except Exception:  # noqa: BLE001
+            pass
     cfg.attr_fields = tuple(getattr(model, "attr_fields", ()) or ())
     cfg.numeric_fields = tuple(getattr(model, "numeric_fields", ()) or ())
     cfg.db, cfg.as_of, cfg.sample_customers = a.db, a.as_of, a.customers
@@ -487,6 +535,7 @@ def main(argv=None):
         supervised=a.supervised,
         unsupervised=a.unsupervised,
         fast=a.fast,
+        decision_horizon_days=a.decision_horizon_days,
         receipt_out=_rec,
     )
     print(card)

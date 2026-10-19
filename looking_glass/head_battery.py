@@ -39,7 +39,7 @@ from looking_glass.cfm_data import (
     assign_split,
     build_sequences,
 )
-from looking_glass.cfm_training import forward_embedding
+from looking_glass.cfm_training import embed_batch_size, forward_embedding
 from looking_glass.probes import freeze_encoder
 
 # ---- PRE-REGISTERED GATE (fixed before evaluation) --------------------------
@@ -78,12 +78,17 @@ def _folds(customers, n=N_FOLDS, seed=1):
 _BSTATE_CACHE: dict = {}
 
 
-def _b_states(model, cfg, batch=512):
+def _b_states(model, cfg, batch=None):
     """Frozen donor states for HELD-OUT customers (split B) only.
 
     CACHED per (model, stream, as_of, sampling): the report card / gates / white_queen call this
     ~15+ times with the SAME inputs — recomputing the read + encode each time was the dominant
-    card cost."""
+    card cost.
+
+    Batch size is derived from the sequence budget (a fixed token count), not a
+    literal: long-cadence streams (seq_len in the thousands) would OOM the GPU at
+    a fixed 512, short ones would under-utilize it. Memory scales with
+    batch * seq_len, so cap the per-step token count and let batch float."""
     _key = (
         id(model),
         str(cfg.db),
@@ -93,6 +98,7 @@ def _b_states(model, cfg, batch=512):
         int(getattr(cfg, "seq_len", 0) or 0),
         tuple(getattr(cfg, "effect_actions", ()) or ()),
         tuple(getattr(cfg, "action_fields", ()) or ()),
+        float(getattr(cfg, "action_period_seconds", 0.0) or 0.0),
         bool(getattr(cfg, "use_measure", False)),
         id(getattr(model, "layer_b", None)),
         bool(getattr(model, "accumulator_on", False)),
@@ -106,6 +112,8 @@ def _b_states(model, cfg, batch=512):
     split = assign_split(keys, cfg)
     bkeys = [k for k in keys if split.get(k) == "B"]
     seqs = build_sequences(df, bkeys, cfg, split, with_anchors=False)
+    if batch is None:
+        batch = embed_batch_size(cfg)
     Z = []
     for i in range(0, len(seqs), batch):
         with torch.no_grad():

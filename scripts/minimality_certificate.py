@@ -57,7 +57,7 @@ def main(argv=None):
     import torch
 
     from looking_glass.cfm_state import load_frozen_encoder
-    from looking_glass.cfm_training import forward_embedding
+    from looking_glass.cfm_training import embed_batch_size, forward_embedding
     from looking_glass.supervised_gate import _stable_bucket
     from looking_glass.universality import (
         _b_sequences,
@@ -74,15 +74,20 @@ def main(argv=None):
     seqs = _b_sequences(cfg)
     cust = np.array([str(s["customer"]) for s in seqs])
     zs = []
-    for i in range(0, len(seqs), 256):
+    _bs = embed_batch_size(cfg)
+    for i in range(0, len(seqs), _bs):
         with torch.no_grad():
             z = forward_embedding(
-                model, seqs[i : i + 256], cfg=cfg, lb=getattr(model, "layer_b", None)
+                model, seqs[i : i + _bs], cfg=cfg, lb=getattr(model, "layer_b", None)
             )
         zs.append(z.detach().float().cpu().numpy())
     Z = np.concatenate(zs, 0) if zs else np.zeros((0, 1))
     if a.block == "shape":
-        Z = Z[:, : int(model.dim)]
+        # served shape block = the first rank(serve_W) columns (48 after DEC-215);
+        # fall back to the trunk dim only when no block-wise serve is set.
+        _W = getattr(model, "serve_W", None)
+        _sd = int(_W.shape[0]) if _W is not None else min(int(model.dim), Z.shape[1])
+        Z = Z[:, : min(_sd, Z.shape[1])]
     full_dim = int(Z.shape[1])
 
     # ---- joint targets: future family + full-history measure -----------------

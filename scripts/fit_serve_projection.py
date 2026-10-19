@@ -27,6 +27,7 @@ def main(argv=None):
     ap.add_argument("--customers", type=int, default=6000)
     ap.add_argument("--k", type=int, required=True)
     ap.add_argument("--out", required=True)
+    ap.add_argument("--period-seconds", type=float, default=None, dest="period_seconds")
     ap.add_argument("--receipt", default=None)
     ap.add_argument("--mode", choices=("pca", "blocks"), default="pca")
     a = ap.parse_args(argv)
@@ -43,6 +44,8 @@ def main(argv=None):
     cfg.attr_fields = tuple(getattr(model, "attr_fields", ()) or ())
     cfg.numeric_fields = tuple(getattr(model, "numeric_fields", ()) or ())
     cfg.db, cfg.as_of, cfg.sample_customers = a.db, a.as_of, a.customers
+    if getattr(a, "period_seconds", None) is not None:
+        cfg.action_period_seconds = float(a.period_seconds)
     df = _read_stream(cfg)
     keys = _customer_keys(df, cfg)
     split = assign_split(keys, cfg)

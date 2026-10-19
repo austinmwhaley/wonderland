@@ -1819,6 +1819,16 @@ def forward_states(model, seqs, h0s=None):
     return h
 
 
+def embed_batch_size(cfg, budget: int = 65536, cap: int = 512, floor: int = 8) -> int:
+    """Memory-safe forward batch derived from the stream's sequence length.
+
+    Activation memory scales with batch * seq_len. A fixed 512 OOMs on
+    daily-cadence streams (seq_len in the thousands) and under-uses the card on
+    short ones, so cap the per-forward TOKEN count and let batch float."""
+    seq_len = max(1, int(getattr(cfg, "seq_len", 128) or 128))
+    return max(int(floor), min(int(cap), int(budget) // seq_len))
+
+
 def forward_embedding(model, seqs, h0s=None, chunk: int = 2048, cfg=None, lb=None):
     """The CONSUMED embedding(customer, t): contractive state (shape) ++ the anchored
     counter totals (magnitude) ++ (optional) a LEARNED compression of the generic

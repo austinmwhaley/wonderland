@@ -71,17 +71,17 @@ class ReferenceSpec:
     seasonality: float = 0.6
     n_items: int = 400
     # contacts / actions
-    action_peak: float = 10.0  # timing-gated response gain at the customer's optimal tuple
-    action_base: float = 0.12  # ungated response floor (scaled by snr -> 0 at snr=0)
-    action_floor: float = 0.06  # per-factor soft floor so off-optimal arms still convert
-    sigma_f: float = 0.38
-    sigma_h: float = 1.05
-    sigma_d: float = 0.95
-    sigma_o: float = 0.4
+    action_peak: float = 0.8  # timing-gated response gain at the customer's optimal tuple
+    action_base: float = 0.05  # ungated response floor (scaled by snr -> 0 at snr=0)
+    action_floor: float = 0.02  # per-factor soft floor so off-optimal arms still convert
+    sigma_f: float = 0.40
+    sigma_h: float = 0.80
+    sigma_d: float = 0.80
+    sigma_o: float = 0.40
     channel_base_aff: float = 0.0  # non-preferred-channel relative response
     action_weights: tuple = (0.45, 0.275, 0.275)  # (freq, channel, offer) additive weights
-    timing_floor: float = 0.04  # timing-gate floor (off-timing weeks still convert via base)
-    timing_hour_weight: float = 0.86  # hour vs dow share of the timing gate
+    timing_floor: float = 0.10  # timing-gate floor (off-timing weeks still convert via base)
+    timing_hour_weight: float = 0.50  # hour vs dow share of the timing gate
     offer_gain: float = 0.6  # margin gain at the customer's optimal depth
     treatment_day: int = 0  # contacts respond throughout (E excludes action fields -> no leak)
     # observation
@@ -159,7 +159,7 @@ def build_reference(spec: ReferenceSpec):
         return int(rng.integers(0, n_items))
 
     mean_ev = spec.base_rate * T * np.exp(0.5 * eff["rate"] ** 2)
-    per_days = 7.0  # weekly action period: aligns with generic_measure's 7-day period bins
+    per_days = 1.0  # DAILY action period (one-factor design, DEC-219)
     n_per = max(2, int(T // per_days))
     for c in range(spec.n_customers):
         key = f"ap{c:07d}"
@@ -289,26 +289,51 @@ def build_reference(spec: ReferenceSpec):
                     **common,
                 )
         # ---- randomized weekly marketing ACTIONS (channel, freq, hour, dow, offer) ----
+        # ONE-FACTOR-AT-A-TIME, DAILY (DEC-219): each day randomizes exactly ONE
+        # action key; the other four stay at the customer's optimum. This makes the
+        # per-key response CONDITIONAL (estimable from the history) instead of a
+        # flat marginal (all keys randomized jointly).
+        ACTS = ("freq", "hour", "dow", "channel", "offer")
+        # HOUR is a 4-level TIME-OF-DAY action (estimable from the history; the
+        # 24-level continuous hour had ~4.5 obs/level and was not identifiable).
+        HOUR_BUCKETS = (6, 12, 18, 22)
+        freq_opt = int(np.clip(round(x0), 1, 3))
+        hour_opt = int(np.argmin([abs(h0 - b) for b in HOUR_BUCKETS]))
+        dow_opt = int(np.clip(round(d0), 0, 6))
         for p in range(n_per):
-            day0 = p * per_days
-            if day0 > churn_day:
+            if p > churn_day:
                 break
-            chan = int(rng.integers(0, len(CONTACT)))  # randomized channel
-            freq = int(rng.integers(0, 4))  # randomized weekly frequency (0 = no send)
-            offer = int(rng.integers(0, 4))  # randomized discount depth
-            if freq == 0:
-                continue
+            tkey = ACTS[p % len(ACTS)]
             SOFT = spec.action_floor
-            # hour/dow are part of the WEEKLY action tuple (drawn once, shared by the week's sends)
-            win_h = int(rng.integers(0, 24))
-            win_d = int(rng.integers(0, 7))
-            h_q = float(np.exp(-(((win_h - h0) / spec.sigma_h) ** 2)))
+            chan = int(chan_pref)
+            freq = int(freq_opt)
+            offer = int(offer_opt)
+            win_h = int(hour_opt)
+            win_d = int(dow_opt)
+            if tkey == "channel":
+                chan = int(rng.integers(0, len(CONTACT)))
+            elif tkey == "freq":
+                freq = int(rng.integers(1, 4))
+            elif tkey == "offer":
+                offer = int(rng.integers(0, 4))
+            elif tkey == "hour":
+                win_h = int(rng.integers(0, len(HOUR_BUCKETS)))
+            elif tkey == "dow":
+                win_d = int(rng.integers(0, 7))
+            day0 = float(p)
+            sd = day0
+            if tkey == "dow":
+                cur = (int(p) + REF_START.weekday()) % 7
+                sd = day0 + float((win_d - cur) % 7)
+            if sd > churn_day:
+                continue
+            send_h = float(HOUR_BUCKETS[win_h])
+            h_q = float(np.exp(-(((send_h - h0) / spec.sigma_h) ** 2)))
             d_q = float(np.exp(-(((win_d - d0) / spec.sigma_d) ** 2)))
-            # timing quality of the week's tuple (freq-independent -> no confound with the others)
             best_t = spec.timing_hour_weight * h_q + (1.0 - spec.timing_hour_weight) * d_q
-            win_ts = day0
+            win_ts = sd + send_h / 24.0
             for j in range(freq):
-                ts_j = day0 + float(rng.uniform(0.0, per_days))
+                ts_j = sd + send_h / 24.0 + float(rng.uniform(0.0, 1.0 / 24.0))
                 if j == 0:
                     win_ts = ts_j
                 emit(
@@ -325,15 +350,10 @@ def build_reference(spec: ReferenceSpec):
                     discount_pct=round(0.05 * offer, 2),
                     week=p,
                     send_idx=j,
+                    target_key=tkey,
                 )
-            if day0 <= spec.treatment_day:
-                continue  # clean OPE: contacts have NO effect before treatment_day
-            # conversion = quality(freq/channel/offer) x (ungated floor + timing-gated gain).
-            # The freq/channel/offer score is ADDITIVE over per-factor soft bowls so no factor's
-            # per-customer optimum is diluted by the others' randomization; the soft floor keeps
-            # off-optimal arms converting enough to estimate. The timing gate concentrates the
-            # extra conversions on weeks whose (hour,dow) tuple is near the optimum, so the
-            # attributed winning send carries the full tuple (channel/freq/hour/dow/offer).
+            if sd <= spec.treatment_day:
+                continue
             f_q = SOFT + (1 - SOFT) * float(np.exp(-(((freq - x0) / spec.sigma_f) ** 2)))
             c_q = 1.0 if chan == chan_pref else spec.channel_base_aff
             o_q = SOFT + (1 - SOFT) * float(np.exp(-(((offer - offer_opt) / spec.sigma_o) ** 2)))
@@ -341,8 +361,9 @@ def build_reference(spec: ReferenceSpec):
             wsum = max(wf + wc + wo, 1e-9)
             quality = (wf * f_q + wc * c_q + wo * o_q) / wsum
             timing_gate = spec.timing_floor + (1 - spec.timing_floor) * max(best_t, 0.0)
-            p_hi = eff["action_peak"] * (0.7 + 0.3 * price_sens)  # discount-sensitive respond more
-            p_conv = quality * (eff["action_base"] + max(p_hi, 0.0) * timing_gate)
+            p_hi = eff["action_peak"] * (0.7 + 0.3 * price_sens)
+            p_treat = quality * (eff["action_base"] + max(p_hi, 0.0) * timing_gate)
+            p_conv = spec.base_rate + (1.0 - spec.base_rate) * max(p_treat, 0.0)
             if rng.random() < min(p_conv, 0.97):
                 pid = _pick_item(dept_pref, item_pref, 0.6 if eff["transition"] > 0 else 0.0)
                 touch = int(np.argmax(touch_w))
@@ -368,6 +389,7 @@ def build_reference(spec: ReferenceSpec):
                     size=SIZES[body_size],
                     color=COLORS[int(item_color[pid])],
                     category_code=CATEGORIES[int(item_cat[pid])],
+                    target_key=tkey,
                 )
         if churn_day < T:
             emit(key, churn_day, "loyalty_change", ent_type="customer", ent_id=key, to_tier="none")
@@ -435,6 +457,8 @@ def build_reference(spec: ReferenceSpec):
             "channel_base_aff": spec.channel_base_aff,
             "timing_floor": spec.timing_floor,
             "timing_hour_weight": spec.timing_hour_weight,
+            "action_period_seconds": 86400.0,
+            "action_design": "one_factor_daily",
             "weights": list(spec.action_weights),
             "note": "weekly randomized channel x freq(0..3) x hour(0..23) x dow(0..6) x offer(0..3); "
             "hour/dow are part of the weekly tuple (shared by the week's sends). Conversion = "

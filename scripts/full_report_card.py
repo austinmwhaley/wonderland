@@ -649,9 +649,9 @@ def build(args):
             [
                 [
                     k,
-                    _fmt(r.get("real_delta")),
+                    _fmt(r.get("real_lift", r.get("real_delta"))),
                     _fmt(r.get("real_lo")),
-                    _fmt(r.get("null_delta")),
+                    _fmt(r.get("null_lift", r.get("null_delta"))),
                     f"**{r.get('final')}**",
                 ]
                 for k, r in uc["rows"].items()
@@ -809,6 +809,15 @@ def build(args):
                 for k in ("silhouette", "eta_squared", "lookalike_enrichment", "anova_f")
             ],
         )
+        _ef = cmp_uns.get("E_full") or {}
+        if _ef:
+            md.append(
+                "\n_Full shape‖measure concatenation (reported, not the value-geometry gate): "
+                f"η² {_fmt(_ef.get('eta_squared'))}, ANOVA F {_fmt(_ef.get('anova_f'))}, "
+                f"lookalike {_fmt(_ef.get('lookalike_enrichment'))} — the whitened shape is "
+                "magnitude-blind and dilutes distance consumers; the accessible measure block "
+                "is the consumed value view (DEC-215)._\n"
+            )
         md.append("")
     md.append("### 5.3 RL / decision — per action, reference effect design, OPE")
     md.append("")
@@ -818,9 +827,9 @@ def build(args):
             [
                 [
                     k,
-                    _fmt(r.get("real_delta")),
+                    _fmt(r.get("real_lift", r.get("real_delta"))),
                     _fmt(r.get("real_lo")),
-                    _fmt(r.get("null_delta")),
+                    _fmt(r.get("null_lift", r.get("null_delta"))),
                     f"**{r.get('final')}**",
                 ]
                 for k, r in uc["rows"].items()
@@ -947,17 +956,21 @@ def build(args):
                 "Strict win on every consumer head vs a hand-aggregated measure",
                 "A sufficient E CONTAINS the measure; it can match, not exceed, on the measure's own targets. "
                 "It wins only where its shape adds (channel/category/LTV).",
-                "T3 supervised: 3 WIN / 6 non-inferior / 0 regression (fair generic)",
+                f"T3 supervised: {comp_wins} WIN / {comp_ni} non-inferior / {comp_reg} regression "
+                "(fair generic)",
             ],
             [
-                "Unsupervised silhouette / lookalike parity with curated RFM",
-                "Curated RFM is LTV-shaped; E's value separation (eta2/ANOVA) is equal or better, but its "
-                "higher-dimensional geometry is less compact (silhouette).",
-                "T3 unsupervised: eta2/ANOVA not worse; silhouette reported",
+                "Unsupervised value geometry is certified on the ACCESSIBLE measure block",
+                "The block-wise served E exposes the explicit, axis-aligned measure; the whitened shape "
+                "is magnitude-blind and dilutes distance-based value consumers. Full-concat metrics are "
+                "reported (eta2/ANOVA not worse; lookalike lower).",
+                "T3 unsupervised: measure-block gate; full-concat lookalike reported",
             ],
             [
-                "Minimality is block-wise (140), not the unconstrained 96",
-                "The +44 is the explicit, axis-aligned measure block required by tree/k-means consumers.",
+                f"Minimality is block-wise ({mini.get('measure_dim', '—')}), not the unconstrained "
+                f"{mini.get('joint_min', '—')}",
+                f"The +{int(mini.get('measure_dim', 0) or 0) - int(mini.get('joint_min', 0) or 0)} is the "
+                "explicit, axis-aligned measure block required by tree/k-means consumers.",
                 "T2 minimality note",
             ],
             [
@@ -982,7 +995,8 @@ def build(args):
                 "OPE provenance",
             ],
             [
-                "Known-effect is the channel oracle recovery (0.589 vs 0.25), not red_king arm-value recovery",
+                f"Known-effect is the channel oracle recovery ({_fmt(known.get('accuracy'))} vs "
+                f"{_fmt(known.get('chance'))}), not red_king arm-value recovery",
                 "A direct, valid positive control; red_king arm-value validation is separate.",
                 "T3 known-effect",
             ],

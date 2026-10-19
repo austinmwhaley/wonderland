@@ -21,13 +21,14 @@ def main(argv=None):
     ap.add_argument("--as-of", required=True, dest="as_of")
     ap.add_argument("--customers", type=int, default=6000)
     ap.add_argument("--out", required=True)
+    ap.add_argument("--period-seconds", type=float, default=None, dest="period_seconds")
     a = ap.parse_args(argv)
 
     import torch
 
     from looking_glass.cfm_data import _customer_keys, _read_stream, assign_split, build_sequences
     from looking_glass.cfm_state import load_frozen_encoder
-    from looking_glass.cfm_training import forward_embedding
+    from looking_glass.cfm_training import embed_batch_size, forward_embedding
     from looking_glass.layer_b import generic_measure
 
     model, cfg = load_frozen_encoder(a.tag, a.ckpt_dir)
@@ -37,6 +38,8 @@ def main(argv=None):
     cfg.attr_fields = tuple(getattr(model, "attr_fields", ()) or ())
     cfg.numeric_fields = tuple(getattr(model, "numeric_fields", ()) or ())
     cfg.db, cfg.as_of, cfg.sample_customers = a.db, a.as_of, a.customers
+    if getattr(a, "period_seconds", None) is not None:
+        cfg.action_period_seconds = float(a.period_seconds)
     df = _read_stream(cfg)
     keys = _customer_keys(df, cfg)
     split = assign_split(keys, cfg)
@@ -51,9 +54,10 @@ def main(argv=None):
     was = getattr(model, "serve_on", False)
     model.serve_on = False
     zs = []
-    for i in range(0, len(seqs), 256):
+    _bs = embed_batch_size(cfg)
+    for i in range(0, len(seqs), _bs):
         with torch.no_grad():
-            z = forward_embedding(model, seqs[i : i + 256], cfg=cfg, lb=model.layer_b)
+            z = forward_embedding(model, seqs[i : i + _bs], cfg=cfg, lb=model.layer_b)
         zs.append(z.detach().float().cpu().numpy())
     model.serve_on = was
     Z = np.concatenate(zs, 0) if zs else np.zeros((0, 1))
@@ -61,12 +65,17 @@ def main(argv=None):
     v_shape = float(np.var(Z[:, :d], axis=0).sum())
     v_meas = float(np.var(Z[:, d:], axis=0).sum())
     lb.block_alpha = float(np.sqrt(max(v_shape, 1e-12) / max(v_meas, 1e-12)))
+    # persist the response cadence so serve rebuilds the same response block
+    lb.action_period_seconds = (
+        None if getattr(a, "period_seconds", None) is None else float(a.period_seconds)
+    )
     lb.save(a.out)
     rec = {
         "tag": a.tag,
         "measure_cols": int(m.shape[1]),
         "pca": "none (axis-aligned)" if lb.pca is None else f"k={lb.pca.n_components_}",
         "block_alpha": round(lb.block_alpha, 6),
+        "action_period_seconds": lb.action_period_seconds,
         "var_shape": round(v_shape, 4),
         "var_measure": round(v_meas, 4),
         "out": str(a.out),

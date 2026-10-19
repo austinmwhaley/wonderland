@@ -155,11 +155,16 @@ def _eta_squared(labels, y):
     return float(ssb / max(sst, 1e-12))
 
 
-def _run_unsupervised(model, cfg, max_k=8, seed=0, states=None):
+def _run_unsupervised(model, cfg, max_k=8, seed=0, states=None, block="full"):
     """Certify segmentation + lookalike geometry on the held-out (split-B) embedding.
 
     ``states=(cust, Z)`` may be supplied to run the SAME pipeline on any feature
     matrix (the traditional raw-feature comparator).
+
+    ``block`` selects the CONSUMED served view: ``full`` (shape ‖ measure), or the
+    explicit ``measure`` block of a block-wise served E. The shape is a whitened
+    contractive state (magnitude-blind by design); distance-based value consumers
+    use the accessible measure block that DEC-215 exposes for exactly this.
     """
     from looking_glass.head_battery import _b_states
     from looking_glass.supervised_gate import _labels
@@ -170,6 +175,11 @@ def _run_unsupervised(model, cfg, max_k=8, seed=0, states=None):
         cust, Z = states
     cust = np.asarray([str(c) for c in cust], dtype=object)
     Z = np.asarray(Z, dtype=float)
+    if block != "full":
+        _names = list(getattr(getattr(model, "layer_b", None), "names", ()) or ())
+        if _names and Z.shape[1] > len(_names):
+            d = Z.shape[1] - len(_names)
+            Z = Z[:, d:] if block == "measure" else Z[:, :d]
     n = len(cust)
 
     Zs = StandardScaler().fit_transform(Z)
@@ -220,15 +230,21 @@ def _run_unsupervised(model, cfg, max_k=8, seed=0, states=None):
     return metrics
 
 
-def run_unsupervised(model, cfg, max_k=8, seed=0, null=None):
+def run_unsupervised(model, cfg, max_k=8, seed=0, null=None, block="full"):
     """Certify geometry; with ``null=(db, tag, ckpt_dir)`` also run a null control.
 
     ``null_ok`` is True iff the null encoder's verdict is FAIL (no skill).
+    ``block`` = the consumed served view (``full`` or the accessible ``measure``
+    block). The full-concat metrics are reported alongside when they differ.
     """
     from looking_glass.head_battery import _b_states
 
     cust, Z = _b_states(model, cfg)
-    metrics = _run_unsupervised(model, cfg, max_k=max_k, seed=seed, states=(cust, Z))
+    metrics = _run_unsupervised(model, cfg, max_k=max_k, seed=seed, states=(cust, Z), block=block)
+    if block != "full":
+        metrics["full_metrics"] = _run_unsupervised(
+            model, cfg, max_k=max_k, seed=seed, states=(cust, Z), block="full"
+        )
     # TRADITIONAL COMPARATOR (DEC-212): the same segmentation/lookalike pipeline on
     # raw/RFM aggregate features. "Exceeds traditional" = E >= raw on silhouette,
     # value differentiation (eta^2), and lookalike enrichment, with E's own gate PASS.

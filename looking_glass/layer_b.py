@@ -81,6 +81,7 @@ def generic_measure(cfg, cust, only_keys=None):
         str(getattr(cfg, "as_of", None)),
         tuple(getattr(cfg, "effect_actions", ()) or ()),
         tuple(getattr(cfg, "action_fields", ()) or ()),
+        float(getattr(cfg, "action_period_seconds", 0.0) or 0.0),
         str(only_keys),
         tuple(map(str, cust)),
     )
@@ -174,6 +175,17 @@ def generic_measure(cfg, cust, only_keys=None):
     if acts:
         from looking_glass.cfm_data import ACTION_PERIOD_S
 
+        _per = float(getattr(cfg, "action_period_seconds", None) or ACTION_PERIOD_S)
+        try:
+            _has_tk = (
+                con.execute(
+                    "SELECT count(*) FROM base "
+                    "WHERE json_extract_string(attrs,'$.target_key') IS NOT NULL"
+                ).fetchone()[0]
+                > 0
+            )
+        except Exception:
+            _has_tk = False
         _t0 = con.execute("SELECT min(t) FROM base").fetchone()[0]
         if _t0 is not None:
             t0 = float(_t0)
@@ -184,18 +196,19 @@ def generic_measure(cfg, cust, only_keys=None):
                 a = f"TRY_CAST(json_extract_string(attrs,'$.{esc}') AS DOUBLE)"
                 mxr = con.execute(
                     f"SELECT max(TRY_CAST(json_extract_string(attrs,'$.{esc}') AS BIGINT)) "
-                    f"FROM base WHERE {a} IS NOT NULL"
+                    f"FROM base WHERE {a} IS NOT NULL AND et LIKE '%send%'"
                 ).fetchone()[0]
                 if mxr is None:
                     continue
                 Q = int(mxr) + 1
+                _tk = f"AND json_extract_string(attrs,'$.target_key') = '{esc}'" if _has_tk else ""
                 dfk = con.execute(
                     f"WITH per AS (SELECT ck, "
-                    f"CAST(floor((t - {t0})/{ACTION_PERIOD_S}) AS BIGINT) AS per, "
+                    f"CAST(floor((t - {t0})/{_per}) AS BIGINT) AS per, "
                     f"max(TRY_CAST(json_extract_string(attrs,'$.{esc}') AS BIGINT)) AS act "
-                    f"FROM base WHERE {a} IS NOT NULL GROUP BY 1,2), "
+                    f"FROM base WHERE {a} IS NOT NULL AND et LIKE '%send%' {_tk} GROUP BY 1,2), "
                     f"rew AS (SELECT ck, "
-                    f"CAST(floor((t - {t0})/{ACTION_PERIOD_S}) AS BIGINT) AS per, 1.0 AS y "
+                    f"CAST(floor((t - {t0})/{_per}) AS BIGINT) AS per, 1.0 AS y "
                     f"FROM base WHERE {val} IS NOT NULL AND {val} != 0 GROUP BY 1,2) "
                     f"SELECT per.ck AS ck, per.act AS act, avg(COALESCE(rew.y,0.0)) AS r "
                     f"FROM per LEFT JOIN rew ON per.ck=rew.ck AND per.per=rew.per GROUP BY 1,2"
@@ -434,6 +447,9 @@ class LayerBEmbedder:
         # per-direction whitening (no rank manufacturing); it stops the wider
         # RMS-normalized shape from drowning the measure in the geometry.
         self.block_alpha = 1.0
+        # The action cadence the response block was FIT on. Restored at serve so the
+        # consumer rebuilds the SAME response block (train/serve parity; DEC-219).
+        self.action_period_seconds = None
 
     def fit(self, measure, names=None):
         from sklearn.decomposition import PCA
@@ -487,6 +503,7 @@ class LayerBEmbedder:
                     "names": self.names,
                     "n_components": self.n_components,
                     "block_alpha": self.block_alpha,
+                    "action_period_seconds": self.action_period_seconds,
                 },
                 f,
             )
@@ -500,6 +517,8 @@ class LayerBEmbedder:
         e = cls(b.get("n_components", 64))
         e.scaler, e.pca, e.names = b["scaler"], b["pca"], b.get("names", [])
         e.block_alpha = float(b.get("block_alpha", 1.0))
+        _aps = b.get("action_period_seconds")
+        e.action_period_seconds = None if _aps is None else float(_aps)
         return e
 
     def embed(self, model, cfg, seqs, only_keys=None) -> np.ndarray:
