@@ -110,6 +110,9 @@ def main(argv=None):
                 continue
             cmap = {c: i for i, c in enumerate(classes)}
             y = np.array([cmap[str(v)] for v in yv[ok]], dtype=int)
+            if int(np.bincount(y, minlength=2).min()) < max(20, int(0.02 * len(y))):
+                rows.append({"head": name, "metric": metric, "scores": {}, "degenerate": True})
+                continue
         else:
             y = np.array([float(v) for v in yv[ok]], dtype=float)
         nf = max(2, min(5, len(np.unique(cu))))

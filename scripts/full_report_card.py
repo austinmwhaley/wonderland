@@ -652,7 +652,8 @@ def build(args):
             ("shape", "shape block only"),
             ("destroyed", "DESTROYED E (row-shuffled)"),
         ):
-            _rs = uctl.get(_name) or []
+            _blob = uctl.get(_name)
+            _rs = _blob.get("rows", []) if isinstance(_blob, dict) else (_blob or [])
             _inf = [r for r in _rs if r.get("informative")]
             _u = 1.0 - max((r.get("norm_gap", 0.0) for r in _inf), default=0.0) if _inf else 0.0
             _worst = max(_inf, key=lambda r: r.get("norm_gap", 0.0)) if _inf else None
@@ -1065,7 +1066,7 @@ def build(args):
             [
                 "Strict win on every consumer head vs a hand-aggregated measure",
                 "A sufficient E CONTAINS the measure; it can match, not exceed, on the measure's own targets. "
-                "It wins only where its shape adds (channel/category/LTV).",
+                "It wins only where its shape adds (channel/category).",
                 f"T3 supervised: {comp_wins} WIN / {comp_ni} tie (measure-carried) / {comp_reg} regression "
                 "(fair generic)",
             ],
@@ -1089,9 +1090,9 @@ def build(args):
                 "T3 OPE: 9/9 hard, recall reported",
             ],
             [
-                "Single seed for consumer gates",
-                "Repeatability across seeds is not yet measured.",
-                "All T3 consumer rows",
+                "Consumer gates use 2 fold/bootstrap seeds",
+                "Multi-seed mean ± SE is reported; more seeds would tighten the intervals.",
+                "T3 consumer rows (seeds column)",
             ],
             [
                 "`effect` self-supervised objective is ~0",
@@ -1195,12 +1196,13 @@ _NEXT = {
 }
 
 _RECS = [
-    "**Multiple seeds for consumer gates:** one seed is not defensible at this maturity; report mean ± SE "
-    "per head and require the fleet verdict to hold across seeds.",
-    "**Ablation ladder:** E vs shape-only vs measure-only vs raw, same head — proves which component adds "
-    "and quantifies the shape's contribution on shape-sensitive targets (channel/category).",
-    "**Freeze a benchmark snapshot** and wire the cockpit into `scripts/reference_pipeline.py` so every run "
-    "emits this card mechanically; the card is the default steering artifact (print the full card per chunk).",
+    "**More consumer seeds:** the gate now runs multi-seed (mean ± SE, all-seed wins); add seeds as budget "
+    "allows to tighten the intervals.",
+    "**Keep the frozen benchmark snapshot current:** the cockpit is wired into "
+    "`scripts/reference_pipeline.py`; refresh the snapshot after every behavior change.",
+    "**Close the shape's remaining tie gap:** the ablation shows E ≥ every component on all valid heads; "
+    "significant wins are on channel/category. Push next_value/return with a stronger shape objective "
+    "rather than a weaker gate.",
     "**Strengthen the self-supervised `effect` head / add red_king arm-value recovery:** decision-sufficiency "
     "currently comes from the measure response block; the dedicated effect head is ~0.",
     "**Diagnose the stream-bridge HOLD vs the response-block DEPLOY** (DR 0.5 vs bar 0.52): "

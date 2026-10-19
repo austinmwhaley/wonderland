@@ -167,10 +167,7 @@ def _rfm_targets(cfg, horizon_days, lookback_days=365):
     # ORDER-AWARE targets (adversarial sufficiency family): the aggregate measure
     # has event-type COUNTS but not the last/next type, so these probe whether the
     # learned shape actually carries sequence order (not just stationary mass).
-    anyev = (
-        f"SELECT customer_key, event_type et, epoch(CAST(event_ts AS TIMESTAMPTZ)) t "
-        f"FROM {src}"
-    )
+    anyev = f"SELECT customer_key, event_type et, epoch(CAST(event_ts AS TIMESTAMPTZ)) t FROM {src}"
     past_any = con.execute(
         f"SELECT customer_key, arg_max(et, t) last_et, max(t) last_any_t "
         f"FROM ({anyev}) WHERE t<={tc} GROUP BY 1"

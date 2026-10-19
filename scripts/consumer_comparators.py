@@ -213,12 +213,14 @@ def main(argv=None):
         "seeds": len(seeds),
         "view": "block-wise served measure (accessible); full concat reported",
     }
-    wins = sum(1 for r in rows if r["win"])
+    _valid = [r for r in rows if not r.get("degenerate")]
+    wins = sum(1 for r in _valid if r["win"])
     rec = {
         "baseline": "generic full-history measure + same head",
         "supervised": rows,
         "supervised_wins": wins,
-        "supervised_total": len(rows),
+        "supervised_total": len(_valid),
+        "supervised_degenerate_excluded": len(rows) - len(_valid),
         "unsupervised": unsup,
     }
     Path(a.out).write_text(json.dumps(rec, indent=2) + "\n")
