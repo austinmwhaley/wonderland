@@ -404,8 +404,13 @@ Source of truth: **https://github.com/austinmwhaley/wonderland** (branch `main`)
   tests skip when generated data is absent), `ruff check .`, `ruff format --check .`.
   CI runs the same gates on push/PR. Dependencies live in `pyproject.toml`
   (mirrored by `requirements*.txt` for pip).
-- **Workflow:** `git pull --rebase` -> make changes -> `git add -A` -> `git commit`
-  -> `git push`. One repo, one history; do not create nested `.git` directories.
+- **Commit cadence (operator policy):** **every coherent chunk of work is committed** as soon as it
+  is verified — code + docs only, never the artifacts above. Do not accumulate uncommitted chunks.
+- **Push permission:** commits stay **local** until the operator explicitly asks to push. Pushing is
+  the only git action that needs permission; `git add`/`git commit` do not.
+- **Workflow:** make changes -> run the gates -> `git add` the intended code/docs -> `git commit`
+  (one chunk, one commit) -> **wait for explicit permission to `git push`**. One repo, one history;
+  do not create nested `.git` directories.
 - **Large data lives only locally** (or a separate storage/DVC), never in this repo.
 
 ---
