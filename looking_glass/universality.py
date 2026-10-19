@@ -173,6 +173,10 @@ def _future_family(j):
         "propensity (order in horizon)": ((orders > 0).astype(float), "clf"),
         "churn (no order in horizon)": ((orders == 0).astype(float), "clf"),
         "next-order value": (j["next_v"].to_numpy().astype(float), "reg"),
+        # ORDER-AWARE (adversarial) members: the aggregate measure cannot represent
+        # the last/next event identity, so these expose whether the shape carries order.
+        "next-event delay (days)": (j["next_delay_days"].to_numpy().astype(float), "reg"),
+        "repeat last event type": (j["repeat_last_type"].to_numpy().astype(float), "clf"),
     }
 
 

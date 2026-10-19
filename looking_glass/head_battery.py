@@ -129,6 +129,7 @@ def _b_states(model, cfg, batch=None):
 def _rfm_targets(cfg, horizon_days, lookback_days=365):
     """Per-customer RFM (past) + future targets (SQL, canonical stream)."""
     import duckdb
+    import polars as pl
 
     con = duckdb.connect()
     con.execute("SET threads TO 8")
@@ -163,6 +164,40 @@ def _rfm_targets(cfg, horizon_days, lookback_days=365):
         f" FROM ({base}) WHERE t>{lo} AND t<={tc} GROUP BY 1",
         [order_event],
     ).pl()
+    # ORDER-AWARE targets (adversarial sufficiency family): the aggregate measure
+    # has event-type COUNTS but not the last/next type, so these probe whether the
+    # learned shape actually carries sequence order (not just stationary mass).
+    anyev = (
+        f"SELECT customer_key, event_type et, epoch(CAST(event_ts AS TIMESTAMPTZ)) t "
+        f"FROM {src}"
+    )
+    past_any = con.execute(
+        f"SELECT customer_key, arg_max(et, t) last_et, max(t) last_any_t "
+        f"FROM ({anyev}) WHERE t<={tc} GROUP BY 1"
+    ).pl()
+    fut_any = con.execute(
+        f"SELECT customer_key, arg_min(et, t) next_et, min(t) next_any_t "
+        f"FROM ({anyev}) WHERE t>{tc} AND t<={hi} GROUP BY 1"
+    ).pl()
+    # drive from ALL customers with a past event so a customer with no future
+    # event still gets a censored delay (horizon), not a spurious 0
+    fut = past_any.join(fut, on="customer_key", how="left").join(
+        fut_any, on="customer_key", how="left"
+    )
+    # censored next-event delay: no future event within the horizon -> horizon
+    fut = fut.with_columns(
+        pl.when(pl.col("next_any_t").is_not_null())
+        .then((pl.col("next_any_t") - tc) / 86400.0)
+        .otherwise(float(horizon_days))
+        .alias("next_delay_days"),
+        (
+            (pl.col("next_et").is_not_null())
+            & (pl.col("last_et").is_not_null())
+            & (pl.col("next_et") == pl.col("last_et"))
+        )
+        .cast(pl.Float64)
+        .alias("repeat_last_type"),
+    )
     con.close()
     return fut, past, tc
 

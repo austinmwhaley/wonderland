@@ -23,7 +23,11 @@ from looking_glass.universality import run_universality
 
 
 def _u(model, cfg, horizons, seeds):
-    rows, u, n, solved = run_universality(model, cfg, horizons, seeds, use_seq=False)
+    # HONEST sufficiency: the oracle ceiling is raised by the INDEPENDENT learned
+    # sequence oracle over the raw history (`use_seq=True`). Using only the
+    # aggregate-measure oracle is circular when E's measure block IS that measure,
+    # which forced U=1.0 by construction.
+    rows, u, n, solved = run_universality(model, cfg, horizons, seeds, use_seq=True)
     return rows, u, n, solved
 
 

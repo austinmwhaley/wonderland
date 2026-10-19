@@ -130,13 +130,21 @@ def _battery(port):
     failed = set(cert.get("failed") or [])
     nosig = set(cert.get("no_identifiable_signal") or [])
     rows = []
+    _field = {"pass": 0, "fail": 0, "ns": 0, "total": 0}
     for o in port.get("objectives") or []:
         name = o.get("objective")
-        if name in ("num_next:send_idx", "num_next:week"):
-            continue  # action fields / degenerate targets
-        fam = _FAMILY.get(name, "field self-supervision")
+        # PER-FIELD heads are field-specific, not part of a UNIVERSAL claim. Aggregate
+        # them into ONE diagnostic row below instead of listing individual fields.
         if name.startswith("attr_next:") or name.startswith("num_next:"):
-            fam = "per-field next-value"
+            _field["total"] += 1
+            if name in passed:
+                _field["pass"] += 1
+            elif name in failed:
+                _field["fail"] += 1
+            elif name in nosig:
+                _field["ns"] += 1
+            continue
+        fam = _FAMILY.get(name, "field self-supervision")
         if name in passed:
             verdict = PASS
         elif name in failed:
@@ -164,6 +172,21 @@ def _battery(port):
                 _sc(verdict),
                 _PROVES.get(fam, "self-supervised capability"),
                 _LEVER.get(fam, "see axis"),
+            ]
+        )
+    if _field["total"]:
+        rows.append(
+            [
+                "per-field heads (diagnostic)",
+                "per-field next-value",
+                "—",
+                "—",
+                "—",
+                "—",
+                f"{_field['pass']}P / {_field['fail']}F / {_field['ns']}N",
+                "reported",
+                "field-level probe: whether E carries each discovered field individually",
+                "field-specific; NOT part of the universal per-stream claim (see receipt)",
             ]
         )
     return rows
@@ -230,6 +253,7 @@ def build(args):
     comp = _load(args.comparators) or {}
     truth = _load(args.truth) or {}
     urows = _u_rows(args)
+    uctl = _load(args.u_controls) or {}
     git = (
         subprocess.run(
             ["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True
@@ -615,6 +639,30 @@ def build(args):
         f"**{(card.get('card') or {}).get('solved')}**."
     )
     md.append("")
+    if uctl:
+        _rows = []
+        for _name, _label in (
+            ("E", "E (shape ‖ measure)"),
+            ("measure", "measure block only"),
+            ("shape", "shape block only"),
+            ("destroyed", "DESTROYED E (row-shuffled)"),
+        ):
+            _rs = uctl.get(_name) or []
+            _inf = [r for r in _rs if r.get("informative")]
+            _u = 1.0 - max((r.get("norm_gap", 0.0) for r in _inf), default=0.0) if _inf else 0.0
+            _worst = max(_inf, key=lambda r: r.get("norm_gap", 0.0)) if _inf else None
+            _rows.append(
+                [
+                    _label,
+                    _fmt(_u),
+                    (_worst or {}).get("target", "—"),
+                    _fmt((_worst or {}).get("norm_gap")),
+                ]
+            )
+        md.append("**U power controls (the 1.0 is attributable):**")
+        md.append("")
+        md += _table(["variant", "U", "worst member", "gap"], _rows)
+        md.append("")
     md.append("### 4.2 Minimality — joint, shape, served")
     md.append("")
     if mini:
@@ -953,6 +1001,14 @@ def build(args):
         ["Limit", "Why", "Where it shows"],
         [
             [
+                "U=1.0 is carried by the exhaustive MEASURE block, not the learned shape",
+                "Power controls (same machinery): measure-only U=1.0, shape-only U≈0.20, "
+                "destroyed E U=0.0. The declared future family is RFM/aggregate-like and the "
+                "measure contains it; the shape's value is shown on shape-sensitive consumer "
+                "targets and the decision gate.",
+                "T2 sufficiency: U + §4.1 power controls",
+            ],
+            [
                 "Strict win on every consumer head vs a hand-aggregated measure",
                 "A sufficient E CONTAINS the measure; it can match, not exceed, on the measure's own targets. "
                 "It wins only where its shape adds (channel/category/LTV).",
@@ -1115,6 +1171,7 @@ def main(argv=None):
         "known-effect",
         "comparators",
         "u-table",
+        "u-controls",
         "card-md",
         "truth",
     ):
