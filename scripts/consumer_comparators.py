@@ -94,6 +94,26 @@ def main(argv=None):
             y = np.array([cmap[str(v)] for v in yv[ok]], dtype=int)
             if len(classes) < 2:
                 continue
+            _min_class = int(np.bincount(y, minlength=2).min())
+            if _min_class < max(20, int(0.02 * len(y))):
+                rows.append(
+                    {
+                        "head": name,
+                        "E": None,
+                        "generic": None,
+                        "delta": None,
+                        "delta_se": None,
+                        "lo": None,
+                        "hi": None,
+                        "win": False,
+                        "non_inferior": False,
+                        "degenerate": True,
+                        "minority": _min_class,
+                        "minority_frac": round(_min_class / max(len(y), 1), 5),
+                        "n": int(len(y)),
+                    }
+                )
+                continue
         else:
             y = np.array([float(v) for v in yv[ok]], dtype=float)
         nf = max(2, min(5, len(np.unique(cu))))

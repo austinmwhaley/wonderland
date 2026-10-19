@@ -264,7 +264,9 @@ def build(args):
 
     uc = card.get("use_cases") or {}
     sup = card.get("supervised") or {}
-    suprows = sup.get("rows") or []
+    _sup_all = sup.get("rows") or []
+    suprows = [r for r in _sup_all if not r.get("degenerate")]
+    _sup_degen = len(_sup_all) - len(suprows)
     uns = card.get("unsupervised") or {}
     um = uns.get("metrics") or {}
     spec = (truth.get("meta") or {}).get("spec") or {}
@@ -280,7 +282,9 @@ def build(args):
         )
     )
     noninf = len(suprows) - wins - regressions
-    comp_rows = comp.get("supervised") or []
+    _comp_all = comp.get("supervised") or []
+    comp_rows = [r for r in _comp_all if not r.get("degenerate")]
+    _comp_degen = len(_comp_all) - len(comp_rows)
     comp_wins = sum(1 for r in comp_rows if r.get("win"))
     comp_ni = sum(1 for r in comp_rows if (not r.get("win")) and r.get("non_inferior"))
     comp_reg = len(comp_rows) - comp_wins - comp_ni
@@ -781,7 +785,8 @@ def build(args):
         )
         md.append("")
         md.append(
-            f"**vs curated RFM: {wins} WIN · {noninf} tie/not-worse · {regressions} regression.**"
+            f"**vs curated RFM: {wins} WIN · {noninf} tie/not-worse · {regressions} regression"
+            f"{f' · {_sup_degen} degenerate excluded' if _sup_degen else ''}.**"
         )
     else:
         md.append("_Supervised receipt not supplied._")
@@ -815,7 +820,10 @@ def build(args):
         )
         md.append("")
         _nseed = max((r.get("seeds") or 0) for r in comp_rows) if comp_rows else 0
-        md.append(f"**vs generic: {comp_wins}/{len(comp_rows)} WIN across {_nseed} seed(s).**")
+        md.append(
+            f"**vs generic: {comp_wins}/{len(comp_rows)} WIN across {_nseed} seed(s)"
+            f"{f' · {_comp_degen} degenerate excluded' if _comp_degen else ''}.**"
+        )
     else:
         md.append(
             "_Fair generic comparator: not measured (run `scripts/consumer_comparators.py`)._"
@@ -1092,8 +1100,9 @@ def build(args):
                 "T1 objective battery",
             ],
             [
-                "white_queen bridge on this stream returns a stub (dr=0.5)",
-                "The broad OPE acceptance (benchmark) is the real gate; the stream bridge is not used for T3.",
+                "white_queen stream bridge HOLDs (DR 0.5 vs bar 0.52)",
+                "The broad OPE acceptance (benchmark) is the hard gate; the stream bridge is a "
+                "second, more conservative estimator and is reported, not used to override T3.",
                 "OPE provenance",
             ],
             [
@@ -1194,8 +1203,8 @@ _RECS = [
     "emits this card mechanically; the card is the default steering artifact (print the full card per chunk).",
     "**Strengthen the self-supervised `effect` head / add red_king arm-value recovery:** decision-sufficiency "
     "currently comes from the measure response block; the dedicated effect head is ~0.",
-    "**Replace the white_queen stream bridge stub (dr=0.5)** and re-run the full acceptance on the v4 stream "
-    "(the broad OPE benchmark is the current hard gate).",
+    "**Diagnose the stream-bridge HOLD vs the response-block DEPLOY** (DR 0.5 vs bar 0.52): "
+    "reconcile the estimators (horizon, overlap, reward scale) before treating either as sole truth.",
     "**Diagnose with axes:** when a metric is red, use §3.2 to name the axis before changing code.",
 ]
 

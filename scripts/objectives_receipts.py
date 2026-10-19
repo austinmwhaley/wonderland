@@ -110,13 +110,16 @@ def build(args) -> dict:
 
     comp = _load(args.comparators)
     if comp:
-        srows = comp.get("supervised") or []
+        _all = comp.get("supervised") or []
+        srows = [r for r in _all if not r.get("degenerate")]
+        _degen = len(_all) - len(srows)
         wins = sum(1 for r in srows if r.get("win"))
         ni = sum(1 for r in srows if (not r.get("win")) and r.get("non_inferior"))
         reg = len(srows) - wins - ni
         rec["supervised"] = {
             "passed": int(wins),
             "total": int(len(srows)),
+            "degenerate_excluded": int(_degen),
             "baseline": "fair generic measure + same head",
             "beats_traditional": bool(wins >= 1 and reg == 0),
             "verdict_note": (

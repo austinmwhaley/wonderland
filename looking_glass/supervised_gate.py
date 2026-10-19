@@ -347,6 +347,31 @@ def _run_supervised(model, cfg, horizon_days=90, seed=0, fast=False):
             classes = sorted({str(v) for v in yv[ok]})
             cmap = {c: i for i, c in enumerate(classes)}
             y = np.array([cmap[str(v)] for v in yv[ok]], dtype=int)
+            # DEGENERATE TARGET GUARD: an AUC needs enough of BOTH classes. On the
+            # reference, 90d purchase is ~99.9% (daily actions), so churn/propensity
+            # have 5 minority examples -> an unstable AUC (can even read <0.5). Report
+            # and EXCLUDE rather than call a 10-point deficit "non-inferior".
+            _min_class = int(np.bincount(y, minlength=2).min()) if len(y) else 0
+            if len(classes) >= 2 and _min_class < max(20, int(0.02 * len(y))):
+                rows.append(
+                    {
+                        "name": name,
+                        "metric": metric,
+                        "skill": float("nan"),
+                        "baseline": float("nan"),
+                        "n_classes": len(classes),
+                        "coverage90": None,
+                        "width90": None,
+                        "skill_lo": float("nan"),
+                        "skill_hi": float("nan"),
+                        "verdict": "DEGENERATE",
+                        "degenerate": True,
+                        "minority": _min_class,
+                        "minority_frac": round(_min_class / max(len(y), 1), 5),
+                        "n": int(len(y)),
+                    }
+                )
+                continue
             if len(classes) < 2:
                 rows.append(
                     {
