@@ -273,6 +273,134 @@ def build(args):
     )
     _wq = card.get("ope") or {}
     uc = card.get("use_cases") or {}
+
+    # ---- SOLVE assessment (a higher bar than T0 certification) -----------------
+    _noise = 0.05
+    for _r in urows or []:
+        try:
+            _noise = max(_noise, float(_r.get("noise")))
+        except Exception:  # noqa: BLE001
+            pass
+    _u_shape = (uctl.get("shape") or {}).get("u")
+    _uns = comp.get("unsupervised") or {}
+    _e_full = (_uns.get("E_full") or {}).get("lookalike_enrichment")
+    _g_look = (_uns.get("generic") or {}).get("lookalike_enrichment")
+    _e_ratio = (float(_e_full) / float(_g_look)) if (_e_full and _g_look) else None
+    _sup_add = transfer.get("supervised_heads_pass")
+    _sup_ns = transfer.get("supervised_heads_no_signal")
+    _cons_ok = _rc.get("ok")
+    _cons_ach = _rc.get("achieved", "—")
+    _eff = next((o for o in (port.get("objectives") or []) if o.get("objective") == "effect"), {})
+    _eff_skill = _eff.get("skill")
+    _eff_se = _eff.get("skill_se")
+    _degen = comp.get("supervised_degenerate_excluded")
+    _nseed = max((r.get("seeds") or 0) for r in (comp.get("supervised") or [])) if comp else 0
+    _bridge_deploy = (
+        _wq.get("deploy")
+        if (_wq and "deploy" in _wq)
+        else (bool(_wq.get("passed")) if _wq else None)
+    )
+    _rb_deploy = int(uc.get("deploy", 0) or 0)
+    _bridge_dr = (_wq.get("estimates") or {}).get("dr") if _wq else None
+    _bridge_bar = _wq.get("bar") if _wq else None
+
+    def _status(ok):
+        return "CLOSED" if ok else "OPEN"
+
+    _frontier = [
+        {
+            "item": "Learned-shape sufficiency",
+            "axis": "state / objective",
+            "current": (
+                f"U(shape-only)={_fmt(_u_shape)} vs full U=1.0 (U noise {_fmt(_noise)})"
+                if _u_shape is not None
+                else "shape-only U not measured"
+            ),
+            "criterion": f"U(shape-only) >= {_fmt(1.0 - _noise)} (within the U noise floor)",
+            "status": _status(_u_shape is not None and float(_u_shape) >= 1.0 - _noise),
+            "next": "Push order/value into the shape (objectives/state), then re-run the shape-U control.",
+        },
+        {
+            "item": "Full-E value geometry",
+            "axis": "accessibility / measure",
+            "current": (
+                f"lookalike {_fmt(_e_full)} vs generic {_fmt(_g_look)} ({_fmt(_e_ratio)}x)"
+                if _e_ratio is not None
+                else "not measured"
+            ),
+            "criterion": ">= 0.90x the generic measure (DEC-216)",
+            "status": _status(_e_ratio is not None and _e_ratio >= 0.90),
+            "next": "Make the shape value-aware or study block weights; do not weaken the gate.",
+        },
+        {
+            "item": "Supervised transfer",
+            "axis": "objective / interface",
+            "current": (
+                f"supervised: {_sup_add if _sup_add is not None else '—'} add / "
+                f"{_sup_ns if _sup_ns is not None else '—'} NO_SIGNAL"
+            ),
+            "criterion": ">= 1 supervised head beats the raw/RFM baseline",
+            "status": _status(_sup_add is not None and int(_sup_add) >= 1),
+            "next": "Strengthen the shape's mass/velocity signal; keep the same fair head.",
+        },
+        {
+            "item": "Conservation (state/readout energy)",
+            "axis": "state / dynamics",
+            "current": _cons_ach,
+            "criterion": "|R_cons - 1| <= finite-sample tolerance",
+            "status": _status(bool(_cons_ok)),
+            "next": "Audit the readout scale/energy; retrain with the conservation pressure if needed.",
+        },
+        {
+            "item": "Self-supervised effect head",
+            "axis": "objective / measure",
+            "current": (
+                f"skill={_fmt(_eff_skill)} ± {_fmt(_eff_se)}"
+                if _eff_skill is not None
+                else "not measured"
+            ),
+            "criterion": "skill > 2*SE (a real action-response head)",
+            "status": _status(
+                _eff_skill is not None
+                and float(_eff_skill) > 2.0 * float(_eff_se or 0.0)
+                and float(_eff_skill) > 0.0
+            ),
+            "next": "Strengthen the response/effect objective; decision currently uses the measure block.",
+        },
+        {
+            "item": "OPE stream bridge reconciliation",
+            "axis": "interface",
+            "current": (
+                f"bridge {'DEPLOY' if _bridge_deploy else 'HOLD'} "
+                f"(DR {_fmt(_bridge_dr)}/bar {_fmt(_bridge_bar)}) vs response-block "
+                f"{_rb_deploy}/{uc.get('deploy', 0) + uc.get('hold', 0)} DEPLOY"
+            ),
+            "criterion": "bridge and response-block gate agree, or the difference is explained in a receipt",
+            "status": _status(
+                _bridge_deploy is None
+                or (bool(_bridge_deploy) and _rb_deploy > 0)
+                or ((not bool(_bridge_deploy)) and _rb_deploy == 0)
+            ),
+            "next": "Reconcile horizon/overlap/reward-scale; do not override either with the other.",
+        },
+        {
+            "item": "Reference label degeneracy",
+            "axis": "input / data",
+            "current": f"{_degen if _degen is not None else '—'} heads excluded (90d purchase ~99.9% one class)",
+            "criterion": "no valid head excluded: min class >= 20 and >= 2%",
+            "status": _status(_degen is not None and int(_degen) == 0),
+            "next": "Shorten the horizon or define an action-conditioned churn target.",
+        },
+        {
+            "item": "Consumer seed coverage",
+            "axis": "training regime",
+            "current": f"{_nseed} seeds",
+            "criterion": ">= 3 fold/bootstrap seeds",
+            "status": _status(_nseed >= 3),
+            "next": "Add seeds as budget allows (already at 3).",
+        },
+    ]
+
     sup = card.get("supervised") or {}
     _sup_all = sup.get("rows") or []
     suprows = [r for r in _sup_all if not r.get("degenerate")]
@@ -450,6 +578,21 @@ def build(args):
         md.append("")
 
     # 2. T0
+    _open = [f for f in _frontier if f["status"] == "OPEN"]
+    _t0o = next(
+        (o for o in ((obj or {}).get("objectives") or []) if o["id"] == "t0.north_star"),
+        None,
+    )
+    _project_solved = bool(_t0o and _t0o["status"] == PASS and not _open)
+    md.append(
+        f"**ASSESSMENT — certification vs project goal.** T0 certification: "
+        f"**{'PASS' if (_t0o and _t0o['status'] == PASS) else 'NOT PASS'}** (scoped). "
+        f"Project goal (universal sufficient statistic of the full E): "
+        f"**{'SOLVED' if _project_solved else 'NOT SOLVED'}** — {len(_open)} open frontier "
+        "item(s) (§8). SOLVED requires T0 PASS AND every frontier item closed; no gate may be "
+        "weakened to close one."
+    )
+    md.append("")
     md.append("## 2. T0 — North Star")
     md.append("")
     _purpose(
@@ -1168,22 +1311,57 @@ def build(args):
     md.append("")
 
     # 7. opportunity board
-    md.append("## 8. Opportunity board — every non-PASS and the exact next action")
+    md.append("## 8. Capability frontier — what still blocks SOLVED")
     md.append("")
-    if obj:
-        md += _table(
-            ["objective", "status", "current", "next action"],
-            [
-                [
-                    o["id"],
-                    _sc(o["status"]),
-                    o["current"],
-                    _NEXT.get(o["id"], "See its evidence section."),
-                ]
-                for o in obj["objectives"]
-                if o["status"] != PASS
-            ],
+    _obj_rows = [
+        [
+            o["id"],
+            _sc(o["status"]),
+            o["current"],
+            _NEXT.get(o["id"], "See its evidence section."),
+        ]
+        for o in ((obj or {}).get("objectives") or [])
+        if o["status"] != PASS
+    ]
+    if _obj_rows:
+        md.append("**T0 objectives still not PASS:**")
+        md.append("")
+        md += _table(["objective", "status", "current", "next action"], _obj_rows)
+    else:
+        md.append(
+            "_No T0 objective is failing. The open items below are the HIGHER solve bar, not "
+            "certification failures._"
         )
+    md.append("")
+    md.append(
+        "**Solve conditions (a HIGHER bar than T0; T0 = certification, SOLVED = T0 + all "
+        "frontier items closed):**"
+    )
+    md.append("")
+    md += _table(
+        ["item", "axis", "current", "solve criterion", "status", "next experiment"],
+        [
+            [
+                f["item"],
+                f["axis"],
+                f["current"],
+                f["criterion"],
+                f"**{f['status']}**" if f["status"] == "OPEN" else f["status"],
+                f["next"],
+            ]
+            for f in _frontier
+        ],
+    )
+    md.append("")
+    md.append(
+        f"**Frontier: {len(_open)}/{len(_frontier)} open; SOLVED = {_project_solved}.** "
+        "The top assessment is the decision; this table is the investigation queue."
+    )
+    md.append("")
+    md.append(
+        "**Closed since the review:** tag identity, deterministic reproducibility, reproducible "
+        "block-wise minimality, 3-seed consumers, OPE acceptance provenance, archived card."
+    )
     md.append("")
     md.append("### Recommendations to be successful")
     md.append("")
@@ -1275,7 +1453,7 @@ _RECS = [
     "rather than a weaker gate.",
     "**Strengthen the self-supervised `effect` head / add red_king arm-value recovery:** decision-sufficiency "
     "currently comes from the measure response block; the dedicated effect head is ~0.",
-    "**Diagnose the stream-bridge HOLD vs the response-block DEPLOY** (DR 0.5 vs bar 0.52): "
+    "**Diagnose the stream-bridge HOLD vs the response-block DEPLOY** (DR 0.50 vs bar 0.53): "
     "reconcile the estimators (horizon, overlap, reward scale) before treating either as sole truth.",
     "**Diagnose with axes:** when a metric is red, use §3.2 to name the axis before changing code.",
 ]
