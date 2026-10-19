@@ -53,6 +53,10 @@ def main(argv=None):
         "shape_rank": int(shape["measure_dim"]),
         "measure_cols": measure_cols,
         "action_period_seconds": lb.get("action_period_seconds"),
+        "retained_worst_r2": joint.get("retained_worst_r2"),
+        "retained_mean_r2": joint.get("retained_mean_r2"),
+        "full_worst_r2": joint.get("full_worst_r2"),
+        "full_mean_r2": joint.get("full_mean_r2"),
         "rule": (
             "block-wise minimal for the SERVED accessible form: shape rank "
             f"{int(shape['measure_dim'])} (future family within noise) + measure "
