@@ -186,10 +186,13 @@ def main(argv=None):
         action="store_true",
         help="include white_queen + supervised + unsupervised (slow)",
     )
+    ap.add_argument("--shape-rank", type=int, default=48, dest="shape_rank")
+    ap.add_argument("--seeds", default="0,1,2", help="consumer-gate seeds")
+    ap.add_argument("--acceptance", default=None, help="OPE acceptance receipt (optional)")
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args(argv)
 
-    commands = build_commands(
+    train = build_commands(
         a.n_customers,
         a.window_days,
         a.seed,
@@ -200,22 +203,345 @@ def main(argv=None):
         a.max_steps,
         full=a.full,
     )
+    period = _period_from_truth(f"{a.out_root}/reference/reference_truth.json")
+    post = cockpit_commands(
+        a.out_root,
+        a.as_of,
+        a.customers,
+        a.shape_rank,
+        period,
+        a.seeds,
+        a.acceptance,
+    )
 
     if a.dry_run:
-        for cmd in commands:
+        for cmd in train + post:
             print(" ".join(cmd))
         return 0
 
-    for i, cmd in enumerate(commands[:4], start=1):
+    for i, cmd in enumerate(train[:4], start=1):
         print(f"[reference-pipeline] stage {i}: {' '.join(cmd)}", flush=True)
         subprocess.run(cmd, check=True)
 
-    tag = _resolve_tag(commands[2][commands[2].index("--out-dir") + 1])
-    null_tag = _resolve_tag(commands[3][commands[3].index("--out-dir") + 1])
-    card = _fill(_fill(commands[4], TAG, tag), NULL_TAG, null_tag)
-    print(f"[reference-pipeline] stage 5: {' '.join(card)}", flush=True)
-    subprocess.run(card, check=True)
+    tag = _resolve_tag(train[2][train[2].index("--out-dir") + 1])
+    null_tag = _resolve_tag(train[3][train[3].index("--out-dir") + 1])
+    portfolio = _newest_portfolio(tag) or ""
+    for i, cmd in enumerate(post, start=5):
+        cmd = _fill(_fill(cmd, TAG, tag), NULL_TAG, null_tag)
+        cmd = [portfolio if x == "<PORTFOLIO>" else x for x in cmd]
+        print(f"[reference-pipeline] stage {i}: {' '.join(cmd)}", flush=True)
+        subprocess.run(cmd, check=True)
     return 0
+
+
+def _period_from_truth(path: str) -> float:
+    try:
+        meta = json.loads(Path(path).read_text()).get("meta", {}) or {}
+        act = meta.get("action") or {}
+        return float(
+            act.get("action_period_seconds") or meta.get("action_period_seconds") or 86400.0
+        )
+    except Exception:  # noqa: BLE001
+        return 86400.0
+
+
+def cockpit_commands(
+    out_root: str,
+    as_of: str,
+    customers: int,
+    shape_rank: int,
+    period: float,
+    seeds: str,
+    acceptance: str | None,
+    tag: str = TAG,
+    null_tag: str = NULL_TAG,
+) -> list[list[str]]:
+    """The full steering chain: receipts -> objectives -> cockpit report card.
+
+    Every consumer/decision receipt is produced by a real run; the cockpit is the
+    final artifact. `tag`/`null_tag` are resolved from the training registries.
+    """
+    ref = f"{out_root}/reference"
+    ref_null = f"{out_root}/reference_null"
+    cfm = f"{out_root}/reference_cfm"
+    cfm_null = f"{out_root}/reference_null_cfm"
+    db = f"{ref}/customer_event_stream.parquet"
+    ndb = f"{ref_null}/customer_event_stream.parquet"
+    truth = f"{ref}/reference_truth.json"
+    py = sys.executable
+    common = [
+        "--db",
+        db,
+        "--ckpt-dir",
+        cfm,
+        "--tag",
+        tag,
+        "--as-of",
+        as_of,
+        "--customers",
+        str(customers),
+    ]
+    cmds = [
+        [
+            py,
+            "scripts/refit_measure.py",
+            *common,
+            "--period-seconds",
+            f"{period}",
+            "--out",
+            f"{cfm}/layer_b_{tag.replace('.', '_')}.pkl",
+        ],
+        [
+            py,
+            "scripts/refit_measure.py",
+            "--db",
+            ndb,
+            "--ckpt-dir",
+            cfm_null,
+            "--tag",
+            null_tag,
+            "--as-of",
+            as_of,
+            "--customers",
+            str(customers),
+            "--period-seconds",
+            f"{period}",
+            "--out",
+            f"{cfm_null}/layer_b_{null_tag.replace('.', '_')}.pkl",
+        ],
+        [
+            py,
+            "scripts/minimality_certificate.py",
+            *common,
+            "--horizons",
+            "30,90",
+            "--targets",
+            "future",
+            "--block",
+            "shape",
+            "--out",
+            f"{out_root}/minimality_shape.json",
+        ],
+        [
+            py,
+            "scripts/fit_serve_projection.py",
+            *common,
+            "--k",
+            str(shape_rank),
+            "--mode",
+            "blocks",
+            "--period-seconds",
+            f"{period}",
+            "--out",
+            f"{cfm}/serve_proj_{tag.replace('.', '_')}.npz",
+            "--receipt",
+            f"{out_root}/serve_real.json",
+        ],
+        [
+            py,
+            "scripts/fit_serve_projection.py",
+            "--db",
+            ndb,
+            "--ckpt-dir",
+            cfm_null,
+            "--tag",
+            null_tag,
+            "--as-of",
+            as_of,
+            "--customers",
+            str(customers),
+            "--k",
+            str(shape_rank),
+            "--mode",
+            "blocks",
+            "--period-seconds",
+            f"{period}",
+            "--out",
+            f"{cfm_null}/serve_proj_{null_tag.replace('.', '_')}.npz",
+            "--receipt",
+            f"{out_root}/serve_null.json",
+        ],
+        [
+            py,
+            "-m",
+            "looking_glass.foundation_report",
+            *common,
+            "--horizons",
+            "30,90",
+            "--fast",
+            "--white-queen",
+            "--supervised",
+            "--unsupervised",
+            "--truth",
+            truth,
+            "--null-db",
+            ndb,
+            "--null-tag",
+            null_tag,
+            "--null-ckpt-dir",
+            cfm_null,
+            "--out",
+            f"{out_root}/card.md",
+            "--receipts",
+            f"{out_root}/card_receipts.json",
+        ],
+        [
+            py,
+            "scripts/transfer_receipt.py",
+            *common,
+            "--horizon-days",
+            "90",
+            "--out",
+            f"{out_root}/transfer.json",
+        ],
+        [
+            py,
+            "scripts/consumer_comparators.py",
+            *common,
+            "--horizon-days",
+            "90",
+            "--seeds",
+            seeds,
+            "--out",
+            f"{out_root}/comparators.json",
+        ],
+        [
+            py,
+            "scripts/ablation_ladder.py",
+            *common,
+            "--horizon-days",
+            "90",
+            "--seed",
+            "0",
+            "--out",
+            f"{out_root}/ablation.json",
+        ],
+        [
+            py,
+            "scripts/known_effect_receipt.py",
+            *common,
+            "--truth",
+            truth,
+            "--out",
+            f"{out_root}/known_effect.json",
+        ],
+        [
+            py,
+            "scripts/minimality_certificate.py",
+            *common,
+            "--horizons",
+            "30,90",
+            "--targets",
+            "joint",
+            "--block",
+            "full",
+            "--out",
+            f"{out_root}/minimality_joint.json",
+        ],
+        [
+            py,
+            "scripts/u_controls_receipt.py",
+            *common,
+            "--horizons",
+            "30,90",
+            "--out",
+            f"{out_root}/u_controls.json",
+        ],
+        [py, "scripts/quality_receipts.py", "--out-dir", str(out_root)],
+        [
+            py,
+            "scripts/objectives_receipts.py",
+            "--card",
+            f"{out_root}/card_receipts.json",
+            "--portfolio",
+            "<PORTFOLIO>",
+            "--minimality",
+            f"{out_root}/minimality_joint.json",
+            "--known-effect",
+            f"{out_root}/known_effect.json",
+            "--schema-suite",
+            f"{out_root}/schema_suite.json",
+            "--transfer",
+            f"{out_root}/transfer.json",
+            "--accessibility",
+            f"{out_root}/accessibility.json",
+            "--encoder",
+            f"{out_root}/encoder.json",
+            "--comparators",
+            f"{out_root}/comparators.json",
+            *(["--acceptance", acceptance] if acceptance else []),
+            "--out",
+            f"{out_root}/objectives_inputs.json",
+        ],
+        [
+            py,
+            "-m",
+            "looking_glass.objectives",
+            "--artifacts",
+            f"{out_root}/objectives_inputs.json",
+            "--json",
+            f"{out_root}/objectives.json",
+            "--markdown",
+            f"{out_root}/objectives.md",
+        ],
+        [
+            py,
+            "scripts/full_report_card.py",
+            "--card",
+            f"{out_root}/card_receipts.json",
+            "--objectives",
+            f"{out_root}/objectives.json",
+            "--portfolio",
+            "<PORTFOLIO>",
+            "--minimality",
+            f"{out_root}/minimality_joint.json",
+            "--minimality-shape",
+            f"{out_root}/minimality_shape.json",
+            "--serve-projection",
+            f"{out_root}/serve_real.json",
+            "--acceptance",
+            acceptance or "",
+            "--schema-suite",
+            f"{out_root}/schema_suite.json",
+            "--encoder",
+            f"{out_root}/encoder.json",
+            "--accessibility",
+            f"{out_root}/accessibility.json",
+            "--transfer",
+            f"{out_root}/transfer.json",
+            "--known-effect",
+            f"{out_root}/known_effect.json",
+            "--comparators",
+            f"{out_root}/comparators.json",
+            "--ablation",
+            f"{out_root}/ablation.json",
+            "--u-controls",
+            f"{out_root}/u_controls.json",
+            "--card-md",
+            f"{out_root}/card.md",
+            "--truth",
+            truth,
+            "--stream",
+            "reference",
+            "--tag",
+            tag,
+            "--as-of",
+            as_of,
+            "--out-md",
+            f"{out_root}/cockpit.md",
+            "--out-json",
+            f"{out_root}/cockpit.json",
+        ],
+    ]
+    return cmds
+
+
+def _newest_portfolio(tag: str) -> str | None:
+    root = Path("looking_glass/artifacts/cfm/portfolio")
+    hits = sorted(
+        root.glob(f"portfolio_{tag.replace('.', '_')}_*.json"), key=lambda p: p.stat().st_mtime
+    )
+    return str(hits[-1]) if hits else None
 
 
 if __name__ == "__main__":

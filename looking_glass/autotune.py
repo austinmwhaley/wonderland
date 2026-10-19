@@ -125,9 +125,12 @@ def derive_lr(input_power: float | None = None) -> tuple[float, dict]:
     return val, {"lr": f"P_in={input_power:.3f} -> {val:.2e}"}
 
 
-def derive_batch(n_seqs) -> tuple[int, dict]:
-    """Batch scales with data but is BOUNDED BY HARDWARE (speed principle).
-    An unbounded derived batch makes large runs blow up superlinearly."""
+def derive_batch(n_seqs, seq_len: int = 0) -> tuple[int, dict]:
+    """Batch scales with data but is BOUNDED BY HARDWARE *and* sequence length.
+
+    Activation memory scales with batch x seq_len: a daily-cadence stream
+    (seq_len in the thousands) OOMs at a batch sized only by n_seqs. Cap the
+    per-step token count so the derived batch is safe on the card."""
     import torch
 
     if torch.cuda.is_available():
@@ -137,7 +140,9 @@ def derive_batch(n_seqs) -> tuple[int, dict]:
     else:
         cap = 32
     val = int(clip(2 ** round(math.log2(max(n_seqs / 32.0, 8.0))), 8, cap))
-    return val, {"batch": f"n_seqs={n_seqs} hw_cap={cap} -> {val}"}
+    token_cap = max(8, int(65536 // max(int(seq_len or 1), 1)))
+    val = int(min(val, cap, token_cap))
+    return val, {"batch": f"n_seqs={n_seqs} seq_len={seq_len} hw_cap={cap} -> {val}"}
 
 
 def within_customer_gaps(df):
@@ -223,7 +228,7 @@ def resolve_cfm(base, df, keys, vocab_sizes) -> ResolvedCFM:
     total = int(sum(lengths)) if lengths else 0
     et_H = event_type_entropy(df)
     dim, r2 = derive_dim(len(keys), total, vocab_sizes, et_entropy=et_H)
-    batch, r3 = derive_batch(len(keys))
+    batch, r3 = derive_batch(len(keys), seq_len=seq_len)
     hl, r4 = derive_half_life(df)
     budget, r5 = derive_budget(len(keys), batch, dim)
     # eval cadence: enough evals to detect a plateau inside the budget.

@@ -27,6 +27,11 @@ def main(argv=None):
     ap.add_argument("--customers", type=int, default=6000)
     ap.add_argument("--horizon-days", type=int, default=90, dest="horizon_days")
     ap.add_argument(
+        "--seeds",
+        default="0",
+        help="comma list of fold/bootstrap seeds (multi-seed consumer gate)",
+    )
+    ap.add_argument(
         "--supervised-from",
         default=None,
         dest="supervised_from",
@@ -36,7 +41,6 @@ def main(argv=None):
     a = ap.parse_args(argv)
 
     from sklearn.ensemble import HistGradientBoostingClassifier, HistGradientBoostingRegressor
-    from sklearn.model_selection import GroupKFold
     from sklearn.preprocessing import StandardScaler
 
     from looking_glass.cfm_state import load_frozen_encoder
@@ -65,6 +69,15 @@ def main(argv=None):
     Z = StandardScaler().fit_transform(Z)
     G = StandardScaler().fit_transform(G)
 
+    def _group_folds(groups, nf, seed):
+        """Customer-disjoint folds with a SEEDED group order (multi-seed gate)."""
+        cs = np.array(sorted(set(groups)))
+        rng = np.random.default_rng(seed)
+        rng.shuffle(cs)
+        fo = {c: i % nf for i, c in enumerate(cs)}
+        return np.array([fo[c] for c in groups])
+
+    seeds = [int(x) for x in str(a.seeds).split(",") if str(x).strip()]
     rows = []
     _loop = [] if a.supervised_from else list(TARGETS.items())
     for name, (kind, metric, _base) in _loop:
@@ -84,41 +97,63 @@ def main(argv=None):
         else:
             y = np.array([float(v) for v in yv[ok]], dtype=float)
         nf = max(2, min(5, len(np.unique(cu))))
-        oof_e, oof_g, oof_y = [], [], []
-        for tr, va in GroupKFold(nf).split(Xe, groups=cu):
-            if kind == "clf":
-                me = HistGradientBoostingClassifier(max_iter=200).fit(Xe[tr], y[tr])
-                mg = HistGradientBoostingClassifier(max_iter=200).fit(Xg[tr], y[tr])
-                if metric == "auc":
-                    pe = me.predict_proba(Xe[va])[:, 1]
-                    pg = mg.predict_proba(Xg[va])[:, 1]
+        per_seed = []
+        for seed in seeds:
+            fold = _group_folds(cu, nf, seed)
+            oof_e, oof_g, oof_y = [], [], []
+            for fi in range(nf):
+                tr, va = fold != fi, fold == fi
+                if not tr.any() or not va.any():
+                    continue
+                if kind == "clf":
+                    me = HistGradientBoostingClassifier(max_iter=200).fit(Xe[tr], y[tr])
+                    mg = HistGradientBoostingClassifier(max_iter=200).fit(Xg[tr], y[tr])
+                    if metric == "auc":
+                        pe = me.predict_proba(Xe[va])[:, 1]
+                        pg = mg.predict_proba(Xg[va])[:, 1]
+                    else:
+                        pe = me.predict(Xe[va])
+                        pg = mg.predict(Xg[va])
                 else:
+                    me = HistGradientBoostingRegressor(max_iter=200).fit(Xe[tr], y[tr])
+                    mg = HistGradientBoostingRegressor(max_iter=200).fit(Xg[tr], y[tr])
                     pe = me.predict(Xe[va])
                     pg = mg.predict(Xg[va])
-            else:
-                me = HistGradientBoostingRegressor(max_iter=200).fit(Xe[tr], y[tr])
-                mg = HistGradientBoostingRegressor(max_iter=200).fit(Xg[tr], y[tr])
-                pe = me.predict(Xe[va])
-                pg = mg.predict(Xg[va])
-            oof_e.append(np.asarray(pe, float))
-            oof_g.append(np.asarray(pg, float))
-            oof_y.append(np.asarray(y[va]))
-        predE = np.concatenate(oof_e)
-        predG = np.concatenate(oof_g)
-        y_oof = np.concatenate(oof_y)
-        mE = _metric_value(predE, y_oof, kind, metric)
-        mG = _metric_value(predG, y_oof, kind, metric)
-        dlt, lo, hi = _bootstrap_delta(predE, predG, y_oof, kind, metric)
+                oof_e.append(np.asarray(pe, float))
+                oof_g.append(np.asarray(pg, float))
+                oof_y.append(np.asarray(y[va]))
+            if not oof_y:
+                continue
+            predE = np.concatenate(oof_e)
+            predG = np.concatenate(oof_g)
+            y_oof = np.concatenate(oof_y)
+            mE = _metric_value(predE, y_oof, kind, metric)
+            mG = _metric_value(predG, y_oof, kind, metric)
+            dlt, lo, hi = _bootstrap_delta(predE, predG, y_oof, kind, metric)
+            per_seed.append((float(mE), float(mG), float(dlt), float(lo), float(hi)))
+        if not per_seed:
+            continue
+        arr = np.asarray(per_seed, float)
+        dmean = float(arr[:, 2].mean())
+        dse = float(arr[:, 2].std(ddof=1) / np.sqrt(len(arr))) if len(arr) > 1 else 0.0
+        lo_worst = float(arr[:, 3].min())
+        hi_worst = float(arr[:, 4].min())
+        win_seeds = int(sum(1 for r in per_seed if r[2] > 0 and r[3] >= 0))
+        ni_seeds = int(sum(1 for r in per_seed if r[4] >= 0))
         rows.append(
             {
                 "head": name,
-                "E": round(float(mE), 4),
-                "generic": round(float(mG), 4),
-                "delta": round(float(dlt), 4),
-                "lo": round(float(lo), 4),
-                "hi": round(float(hi), 4),
-                "win": bool(dlt > 0 and lo >= 0),
-                "non_inferior": bool(hi >= 0),
+                "E": round(float(arr[:, 0].mean()), 4),
+                "generic": round(float(arr[:, 1].mean()), 4),
+                "delta": round(dmean, 4),
+                "delta_se": round(dse, 4),
+                "lo": round(lo_worst, 4),
+                "hi": round(hi_worst, 4),
+                "win": bool(dmean > 0 and lo_worst >= 0 and win_seeds == len(per_seed)),
+                "non_inferior": bool(hi_worst >= 0 and ni_seeds == len(per_seed)),
+                "seeds": len(per_seed),
+                "win_seeds": win_seeds,
+                "non_inferior_seeds": ni_seeds,
             }
         )
 
@@ -131,14 +166,31 @@ def main(argv=None):
     # the whitened shape is magnitude-blind and dilutes distance-based consumers.
     from looking_glass.unsupervised_gate import _run_unsupervised
 
-    e_metrics = _run_unsupervised(model, cfg, states=(C, Z), block="measure")
-    e_full = _run_unsupervised(model, cfg, states=(C, Z), block="full")
-    g_metrics = _run_unsupervised(model, cfg, states=(C, G))
     _keys = ("silhouette", "eta_squared", "lookalike_enrichment", "anova_f")
+
+    def _avg_unsup(block, seed):
+        r = _run_unsupervised(model, cfg, states=(C, Z), block=block, seed=seed)
+        return {k: r.get(k) for k in _keys}
+
+    def _avg_generic(seed):
+        r = _run_unsupervised(model, cfg, states=(C, G), seed=seed)
+        return {k: r.get(k) for k in _keys}
+
+    def _mean_metrics(dicts):
+        out = {}
+        for k in _keys:
+            vals = [d[k] for d in dicts if d.get(k) is not None]
+            out[k] = round(float(np.mean(vals)), 4) if vals else None
+        return out
+
+    e_per_seed = [_avg_unsup("measure", s) for s in seeds]
+    e_full_per_seed = [_avg_unsup("full", s) for s in seeds]
+    g_per_seed = [_avg_generic(s) for s in seeds]
     unsup = {
-        "E": {k: e_metrics.get(k) for k in _keys},
-        "E_full": {k: e_full.get(k) for k in _keys},
-        "generic": {k: g_metrics.get(k) for k in _keys},
+        "E": _mean_metrics(e_per_seed),
+        "E_full": _mean_metrics(e_full_per_seed),
+        "generic": _mean_metrics(g_per_seed),
+        "seeds": len(seeds),
         "view": "block-wise served measure (accessible); full concat reported",
     }
     wins = sum(1 for r in rows if r["win"])

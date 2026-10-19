@@ -107,8 +107,9 @@ def test_dry_run_prints_without_executing(monkeypatch, capsys):
     out = capsys.readouterr().out
     assert rc == 0
     lines = out.strip().splitlines()
-    assert len(lines) == 5
+    assert len(lines) >= 5
     assert "rabbit_hole.generators.reference" in lines[0]
-    assert "looking_glass.foundation_report" in lines[4]
-    assert "<TAG>" in lines[4] and "<NULLTAG>" in lines[4]
-    assert "/tmp/dry/card_reference.md" in lines[4]
+    assert any("looking_glass.foundation_report" in ln for ln in lines)
+    assert any("scripts/full_report_card.py" in ln for ln in lines)
+    assert any("<TAG>" in ln and "<NULLTAG>" in ln for ln in lines)
+    assert any("/tmp/dry/cockpit.md" in ln for ln in lines)

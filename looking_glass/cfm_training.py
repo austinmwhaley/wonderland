@@ -444,7 +444,7 @@ def train_cfm(cfg: CFMConfig):
         # metric = the SAME weighted objective training optimizes (DEC-008).
         # Per-task held-out losses update the DWA balancer AFTER scoring
         # (weights come from the past; today's losses are tomorrow's rates).
-        vi = val_idx[:256]
+        vi = val_idx[: min(len(val_idx), embed_batch_size(cfg))]
         torch.manual_seed(cfg.seed)
         with torch.no_grad():
             T_ = _task_losses(model, vocab, [a_seqs[i] for i in vi], cfg)
@@ -535,7 +535,9 @@ def train_cfm(cfg: CFMConfig):
     # (measured: instacart/rabbit_hole best == step 411, ~0.15 of budget).
     torch.manual_seed(cfg.seed)
     with torch.no_grad():
-        _seed_T = _task_losses(model, vocab, [a_seqs[i] for i in tr_idx[:256]], cfg)
+        _seed_T = _task_losses(
+            model, vocab, [a_seqs[i] for i in tr_idx[: embed_batch_size(cfg)]], cfg
+        )
     _update_scales({k: float(v) for k, v in _seed_T.items()})
     print(f"[scale] seeded loss_scales from {len(_seed_T)} tasks", flush=True)
     gov, best_state = AT.govern(

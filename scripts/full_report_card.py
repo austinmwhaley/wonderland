@@ -251,6 +251,7 @@ def build(args):
     transfer = _load(args.transfer) or {}
     known = _load(args.known_effect) or {}
     comp = _load(args.comparators) or {}
+    abl = _load(args.ablation) or {}
     truth = _load(args.truth) or {}
     urows = _u_rows(args)
     uctl = _load(args.u_controls) or {}
@@ -369,7 +370,7 @@ def build(args):
                 ],
                 [
                     "Supervised vs FAIR generic (GATE)",
-                    f"{comp_wins} WIN · {comp_ni} non-inferior · {comp_reg} regression"
+                    f"{comp_wins} WIN · {comp_ni} tie (measure-carried) · {comp_reg} regression"
                     if comp_rows
                     else "not measured",
                     _sc(
@@ -395,7 +396,7 @@ def build(args):
                 ],
                 [
                     "Supervised vs curated RFM (reported)",
-                    f"{wins} WIN · {noninf} non-inferior · {regressions} regression",
+                    f"{wins} WIN · {noninf} tie/not-worse · {regressions} regression",
                     "reported",
                 ],
                 [
@@ -768,7 +769,7 @@ def build(args):
                     "WIN"
                     if r.get("verdict_traditional") == "PASS"
                     else (
-                        "non-inferior"
+                        "tie (not worse)"
                         if (r.get("raw_ci_lo") is not None and r.get("raw_ci_lo") > -1e-9)
                         or (r.get("raw_ci_hi") is not None and r.get("raw_ci_hi") >= 0)
                         else "regression"
@@ -780,7 +781,7 @@ def build(args):
         )
         md.append("")
         md.append(
-            f"**vs curated RFM: {wins} WIN · {noninf} non-inferior · {regressions} regression.**"
+            f"**vs curated RFM: {wins} WIN · {noninf} tie/not-worse · {regressions} regression.**"
         )
     else:
         md.append("_Supervised receipt not supplied._")
@@ -791,28 +792,58 @@ def build(args):
         )
         md.append("")
         md += _table(
-            ["head", "E", "generic", "Δ", "95% CI", "result"],
+            ["head", "E", "generic", "Δ ± SE", "95% CI (worst seed)", "result"],
             [
                 [
                     r.get("head"),
                     _fmt(r.get("E")),
                     _fmt(r.get("generic")),
-                    _fmt(r.get("delta")),
+                    f"{_fmt(r.get('delta'))} ± {_fmt(r.get('delta_se'))}",
                     f"[{_fmt(r.get('lo'))}, {_fmt(r.get('hi'))}]",
-                    "WIN"
-                    if r.get("win")
-                    else ("non-inferior" if r.get("non_inferior") else "regression"),
+                    (
+                        f"WIN ({r.get('win_seeds', '—')}/{r.get('seeds', '—')})"
+                        if r.get("win")
+                        else (
+                            f"tie ({r.get('non_inferior_seeds', '—')}/{r.get('seeds', '—')})"
+                            if r.get("non_inferior")
+                            else "regression"
+                        )
+                    ),
                 ]
                 for r in comp_rows
             ],
         )
         md.append("")
-        md.append(f"**vs generic: {comp_wins}/{len(comp_rows)} WIN.**")
+        _nseed = max((r.get("seeds") or 0) for r in comp_rows) if comp_rows else 0
+        md.append(f"**vs generic: {comp_wins}/{len(comp_rows)} WIN across {_nseed} seed(s).**")
     else:
         md.append(
             "_Fair generic comparator: not measured (run `scripts/consumer_comparators.py`)._"
         )
     md.append("")
+    if abl and abl.get("rows"):
+        md.append("**Ablation ladder (same head, same folds; which block carries the signal):**")
+        md.append("")
+        md += _table(
+            ["head", "E", "shape", "measure", "raw", "generic"],
+            [
+                [
+                    r.get("head"),
+                    _fmt((r.get("scores") or {}).get("E")),
+                    _fmt((r.get("scores") or {}).get("shape")),
+                    _fmt((r.get("scores") or {}).get("measure")),
+                    _fmt((r.get("scores") or {}).get("raw")),
+                    _fmt((r.get("scores") or {}).get("generic")),
+                ]
+                for r in abl["rows"]
+            ],
+        )
+        md.append("")
+        md.append(
+            "_Interpretation: where `measure` ≈ `E` and the head is a mass/recency target, the tie "
+            "is sufficiency (E contains the measure); where `E` > `generic` the learned shape adds._"
+        )
+        md.append("")
     md.append("### 5.2 Unsupervised — E vs curated RFM and vs generic")
     md.append("")
     if um:
@@ -1012,7 +1043,7 @@ def build(args):
                 "Strict win on every consumer head vs a hand-aggregated measure",
                 "A sufficient E CONTAINS the measure; it can match, not exceed, on the measure's own targets. "
                 "It wins only where its shape adds (channel/category/LTV).",
-                f"T3 supervised: {comp_wins} WIN / {comp_ni} non-inferior / {comp_reg} regression "
+                f"T3 supervised: {comp_wins} WIN / {comp_ni} tie (measure-carried) / {comp_reg} regression "
                 "(fair generic)",
             ],
             [
@@ -1170,6 +1201,7 @@ def main(argv=None):
         "transfer",
         "known-effect",
         "comparators",
+        "ablation",
         "u-table",
         "u-controls",
         "card-md",

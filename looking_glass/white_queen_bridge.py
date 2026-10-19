@@ -73,11 +73,13 @@ def certify_period(
     the outcome fired that period. The candidate policy reads `E` (V(E,a)->argmax)."""
     from sklearn.ensemble import HistGradientBoostingRegressor
 
+    from looking_glass.cfm_data import ACTION_PERIOD_S
     from looking_glass.use_case_gate import _period_rows
     from white_queen.tribunal.ope.api import evaluate
 
     cust, Z = _b_states(model, cfg)
-    j = _period_rows(cfg, cust, action_key)
+    _ps = float(getattr(cfg, "action_period_seconds", None) or ACTION_PERIOD_S)
+    j = _period_rows(cfg, cust, action_key, period_secs=_ps, horizon_days=180)
     ci = {c: i for i, c in enumerate(cust)}
     cu = j["customer_key"].to_numpy()
     A = j["action"].to_numpy().astype(int)

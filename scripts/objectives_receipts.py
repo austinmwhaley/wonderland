@@ -120,7 +120,7 @@ def build(args) -> dict:
             "baseline": "fair generic measure + same head",
             "beats_traditional": bool(wins >= 1 and reg == 0),
             "verdict_note": (
-                f"{wins} WIN / {ni} non-inferior / {reg} regression vs fair generic "
+                f"{wins} WIN / {ni} tie (measure-carried) / {reg} regression vs fair generic "
                 "(no significant regression + wins where the shape adds)"
             ),
             "curated": rec.get("supervised"),
