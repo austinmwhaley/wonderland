@@ -1,6 +1,6 @@
 # Foundation Encoder — Report Card (cockpit) — `reference`
 
-tag `0.6.4r776750s2000` · as_of `2025-01-01` · git `40b052b` · self-supervised=True · frozen=True · schema-universal=True
+tag `0.6.4r776750s2000` · as_of `2025-01-01` · git `5edd9c7` · self-supervised=True · frozen=True · schema-universal=True
 
 > **Purpose.** One frozen encoder per event stream; this card proves what it is, what it learned, what it is sufficient for, and where it is not yet good enough.
 >
@@ -35,6 +35,8 @@ tag `0.6.4r776750s2000` · as_of `2025-01-01` · git `40b052b` · self-supervise
 | RL use cases | 5 DEPLOY · 0 HOLD | **PASS** |
 | OPE acceptance | 9/9 hard | **PASS** |
 | Transfer / known-effect | 1 / 5 | **PASS** |
+
+**ASSESSMENT — certification vs project goal.** T0 certification: **PASS** (scoped). Project goal (universal sufficient statistic of the full E): **NOT SOLVED** — 7 open frontier item(s) (§8). SOLVED requires T0 PASS AND every frontier item closed; no gate may be weakened to close one.
 
 ## 2. T0 — North Star
 
@@ -351,10 +353,26 @@ A green T0 is **conditional on the documented definitions below**. These are the
 | white_queen stream bridge HOLDs (DR 0.5000 vs bar 0.5300) | The broad OPE acceptance (benchmark) is the hard gate; the stream bridge is a second, more conservative estimator and is reported, not used to override T3. | OPE provenance |
 | Known-effect is response-block recovery of the known per-action optima (5/5 arms), not a full red_king arm-value model | A direct, valid positive control; red_king arm-value validation is separate. | T3 known-effect |
 
-## 8. Opportunity board — every non-PASS and the exact next action
+## 8. Capability frontier — what still blocks SOLVED
 
-| objective | status | current | next action |
-|---|---|---|---|
+_No T0 objective is failing. The open items below are the HIGHER solve bar, not certification failures._
+
+**Solve conditions (a HIGHER bar than T0; T0 = certification, SOLVED = T0 + all frontier items closed):**
+
+| item | axis | current | solve criterion | status | next experiment |
+|---|---|---|---|---|---|
+| Learned-shape sufficiency | state / objective | U(shape-only)=0.2562 vs full U=1.0 (U noise 0.0637) | U(shape-only) >= 0.9363 (within the U noise floor) | **OPEN** | Push order/value into the shape (objectives/state), then re-run the shape-U control. |
+| Full-E value geometry | accessibility / measure | lookalike 3.1000 vs generic 3.7950 (0.8169x) | >= 0.90x the generic measure (DEC-216) | **OPEN** | Make the shape value-aware or study block weights; do not weaken the gate. |
+| Supervised transfer | objective / interface | supervised: 0 add / 5 NO_SIGNAL | >= 1 supervised head beats the raw/RFM baseline | **OPEN** | Strengthen the shape's mass/velocity signal; keep the same fair head. |
+| Conservation (state/readout energy) | state / dynamics | R_cons 1.244 (tol 0.115) | |R_cons - 1| <= finite-sample tolerance | **OPEN** | Audit the readout scale/energy; retrain with the conservation pressure if needed. |
+| Self-supervised effect head | objective / measure | skill=-0.0000 ± 0.0000 | skill > 2*SE (a real action-response head) | **OPEN** | Strengthen the response/effect objective; decision currently uses the measure block. |
+| OPE stream bridge reconciliation | interface | bridge HOLD (DR 0.5000/bar 0.5300) vs response-block 5/5 DEPLOY | bridge and response-block gate agree, or the difference is explained in a receipt | **OPEN** | Reconcile horizon/overlap/reward-scale; do not override either with the other. |
+| Reference label degeneracy | input / data | 4 heads excluded (90d purchase ~99.9% one class) | no valid head excluded: min class >= 20 and >= 2% | **OPEN** | Shorten the horizon or define an action-conditioned churn target. |
+| Consumer seed coverage | training regime | 3 seeds | >= 3 fold/bootstrap seeds | CLOSED | Add seeds as budget allows (already at 3). |
+
+**Frontier: 7/8 open; SOLVED = False.** The top assessment is the decision; this table is the investigation queue.
+
+**Closed since the review:** tag identity, deterministic reproducibility, reproducible block-wise minimality, 3-seed consumers, OPE acceptance provenance, archived card.
 
 ### Recommendations to be successful
 
@@ -362,7 +380,7 @@ A green T0 is **conditional on the documented definitions below**. These are the
 - **Keep the frozen benchmark snapshot current:** the cockpit is wired into `scripts/reference_pipeline.py`; refresh the snapshot after every behavior change.
 - **Close the shape's remaining tie gap:** the ablation shows E ≥ every component on all valid heads; significant wins are on channel/category. Push next_value/return with a stronger shape objective rather than a weaker gate.
 - **Strengthen the self-supervised `effect` head / add red_king arm-value recovery:** decision-sufficiency currently comes from the measure response block; the dedicated effect head is ~0.
-- **Diagnose the stream-bridge HOLD vs the response-block DEPLOY** (DR 0.5 vs bar 0.52): reconcile the estimators (horizon, overlap, reward scale) before treating either as sole truth.
+- **Diagnose the stream-bridge HOLD vs the response-block DEPLOY** (DR 0.50 vs bar 0.53): reconcile the estimators (horizon, overlap, reward scale) before treating either as sole truth.
 - **Diagnose with axes:** when a metric is red, use §3.2 to name the axis before changing code.
 
 ## 9. Provenance
@@ -370,7 +388,7 @@ A green T0 is **conditional on the documented definitions below**. These are the
 - **stream**: `reference`
 - **tag**: `0.6.4r776750s2000`
 - **as_of**: `2025-01-01`
-- **git**: `40b052b`
+- **git**: `5edd9c7`
 - **card receipts**: `/tmp/opencode/t0_loop/card_v4b_receipts.json`
 - **objectives**: `/tmp/opencode/t0_loop/objectives_v4b.json`
 - **portfolio**: `looking_glass/artifacts/cfm/portfolio/portfolio_0_6_4r776750s2000_20261019T152125Z.json`
