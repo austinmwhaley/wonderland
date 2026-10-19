@@ -872,10 +872,10 @@ def build(args):
         )
         md.append("")
         md.append(
-            "_`dow` is only ~14% of the timing gate by construction; its true effect is small, so a HOLD "
-            "there is honest. To make **all five** actions a meaningful DEPLOY test, the reference should "
-            "give each action a detectable effect (e.g., balance `timing_hour_weight` toward 0.5 and/or "
-            "raise the timing gain), then re-run._"
+            "_The v4 reference randomizes **one factor per day** (others at the customer optimum) and tags "
+            "each send with `target_key`, so the response block estimates the CONDITIONAL per-customer "
+            "effect of each action rather than a diluted joint marginal. All five actions are therefore "
+            "estimable and DEPLOY point-in-time; the earlier weak-timing caveat no longer applies._"
         )
         md.append("")
     if acc.get("rows"):
@@ -1074,28 +1074,26 @@ def _case_what(c):
 _NEXT = {
     "t0.north_star": "Close every T1–T4 red/partial/unknown.",
     "t1.transfer": "Run the head battery and emit the transfer receipt.",
-    "t2.minimality": "Serve the 140-dim block-wise E and re-certify minimality.",
-    "t2.decision_sufficiency": "Keep magnitude-matched nulls; re-run after representation changes.",
-    "t3.supervised": "Add the fair generic comparator; close the WIN gap (data/head/measure).",
-    "t3.unsupervised": "Add the fair generic comparator; expose the measure block for geometry.",
+    "t2.minimality": "Re-certify the block-wise served E (shape rank + explicit measure) after representation changes.",
+    "t2.decision_sufficiency": "Keep the point-in-time response-block gate + DiD null; re-run after representation changes.",
+    "t3.supervised": "Hold the fair-generic fleet verdict (no regression + wins) across seeds.",
+    "t3.unsupervised": "Hold the accessible-measure value gate; report full-concat dilution.",
     "t3.ope": "Hold hard gates; recall is reported (DEC-214).",
     "t3.known_effect": "Run the known-effect recovery receipt.",
     "t4.robustness": "Keep divergence=failure and the init-eval exclusion.",
 }
 
 _RECS = [
-    "**Reference testability:** give all five actions a detectable effect (balance `timing_hour_weight`; "
-    "raise timing gain), then require 5/5 DEPLOY on the reference. A weak `dow` is a reference design "
-    "issue, not an encoder result.",
-    "**Define WIN explicitly:** strict WIN = Δ > 0 with 95% lower bound ≥ 0. Report both WIN and "
-    "non-inferiority; decide which one gates T3.",
-    "**Judge against the FAIR comparator:** E vs the generic measure with the same head. The curated "
-    "RFM is task-shaped; E should dominate the fair one.",
-    "**Close the evidence gaps:** transfer (head battery) and known-effect receipts; serve the 140-dim E.",
-    "**Multiple seeds for consumer gates:** one seed is not defensible; report mean ± SE per head.",
-    "**Ablation ladder:** E vs shape-only vs measure-only vs raw, same head — proves which component adds.",
-    "**Freeze a benchmark snapshot** and wire the cockpit into `scripts/reference_pipeline.py` so every "
-    "run emits this card and regressions are caught mechanically.",
+    "**Multiple seeds for consumer gates:** one seed is not defensible at this maturity; report mean ± SE "
+    "per head and require the fleet verdict to hold across seeds.",
+    "**Ablation ladder:** E vs shape-only vs measure-only vs raw, same head — proves which component adds "
+    "and quantifies the shape's contribution on shape-sensitive targets (channel/category).",
+    "**Freeze a benchmark snapshot** and wire the cockpit into `scripts/reference_pipeline.py` so every run "
+    "emits this card mechanically; the card is the default steering artifact (print the full card per chunk).",
+    "**Strengthen the self-supervised `effect` head / add red_king arm-value recovery:** decision-sufficiency "
+    "currently comes from the measure response block; the dedicated effect head is ~0.",
+    "**Replace the white_queen stream bridge stub (dr=0.5)** and re-run the full acceptance on the v4 stream "
+    "(the broad OPE benchmark is the current hard gate).",
     "**Diagnose with axes:** when a metric is red, use §3.2 to name the axis before changing code.",
 ]
 
