@@ -599,8 +599,9 @@ def build(args):
         md,
         "Prove the embedding is a certified statistic: sufficient (U), bounded (minimality), "
         "decision-sufficient (actions), calibrated, and accessible to simple probes.",
-        "U is the single most important number in the project. Minimality is a documented 96↔140 "
-        "trade. Decision-sufficiency must show calibrated DEPLOYs against a matched null.",
+        "U is the single most important number in the project. Minimality is a documented "
+        "joint↔served trade (the explicit accessible measure). Decision-sufficiency must show "
+        "calibrated DEPLOYs against a matched null.",
     )
     if obj:
         md += _table(
