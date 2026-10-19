@@ -385,6 +385,8 @@ fallbacks) → `Stage 3: Scale` (optimize only where measured data justifies).
   **The whole project is steered from the card:** every milestone/chunk ends by
   **printing the full card** (T0 + tier matrix + proof sections + caveats), and the
   card — not a hand summary — is the source of truth for what is PASS and what is next.
+  Print it as **rendered Markdown** (never wrap the whole card in a fenced code block:
+  that suppresses table rendering).
 
 ### Decision self-check (before non-trivial action)
 
