@@ -1,6 +1,6 @@
 # Foundation Encoder — Report Card (cockpit) — `reference`
 
-tag `0.6.4r776750s2000` · as_of `2025-01-01` · git `daf199c` · self-supervised=True · frozen=True · schema-universal=True
+tag `0.6.4r776750s2000` · as_of `2025-01-01` · git `e76a7fc` · self-supervised=True · frozen=True · schema-universal=True
 
 > **Purpose.** One frozen encoder per event stream; this card proves what it is, what it learned, what it is sufficient for, and where it is not yet good enough.
 >
@@ -171,7 +171,7 @@ This proves the **pipeline** accepts any canonical stream (the *input* axis), in
 
 ### 4.2 Minimality — joint, shape, served
 
-- served block-wise: 201 of 201 (joint unconstrained min 160); worst R² — vs —; mean R² — vs —
+- served block-wise: 201 of 201 (joint unconstrained min 160); worst R² 0.1892 vs 0.1911; mean R² 0.9120 vs 0.9353
 - shape-only: rank 128 of 128; mean R² 0.4779 vs 0.4779
 - served: 201 = shape 128 ‖ measure 73 (explicit measure for accessibility)
 
@@ -368,7 +368,7 @@ A green T0 is **conditional on the documented definitions below**. These are the
 - **stream**: `reference`
 - **tag**: `0.6.4r776750s2000`
 - **as_of**: `2025-01-01`
-- **git**: `daf199c`
+- **git**: `e76a7fc`
 - **card receipts**: `/tmp/opencode/t0_loop/card_v4b_receipts.json`
 - **objectives**: `/tmp/opencode/t0_loop/objectives_v4b.json`
 - **portfolio**: `looking_glass/artifacts/cfm/portfolio/portfolio_0_6_4r776750s2000_20261019T213645Z.json`
