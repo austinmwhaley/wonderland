@@ -1,6 +1,6 @@
 # Foundation Encoder — Report Card (cockpit) — `reference`
 
-tag `0.6.4r776750s2000` · as_of `2025-01-01` · git `e76a7fc` · self-supervised=True · frozen=True · schema-universal=True
+tag `0.6.4r776750s2000` · as_of `2025-01-01` · git `c1fc540` · self-supervised=True · frozen=True · schema-universal=True
 
 > **Purpose.** One frozen encoder per event stream; this card proves what it is, what it learned, what it is sufficient for, and where it is not yet good enough.
 >
@@ -330,7 +330,7 @@ _The v4 reference randomizes **one factor per day** (others at the customer opti
 | t4.reproducibility | Reproducibility | deterministic re-run + versioned identity | — | 1/1 | **PASS** | registry receipt |
 | t4.honest_gates | Honest gates | null controls; never weaken a gate | — | 1/1 | **PASS** | gate receipts |
 
-- runtime: 50.97 s
+- runtime: inference 0.9219 s (deterministic receipt); portfolio eval 50.97 s
 
 ## 7. What this card does NOT prove (disclosed, not hidden)
 
@@ -343,10 +343,10 @@ A green T0 is **conditional on the documented definitions below**. These are the
 | Unsupervised value geometry is certified on the ACCESSIBLE measure block | The block-wise served E exposes the explicit, axis-aligned measure; the whitened shape is magnitude-blind and dilutes distance-based value consumers. Full-concat metrics are reported (eta2/ANOVA not worse; lookalike lower). | T3 unsupervised: measure-block gate; full-concat lookalike reported |
 | Conservation: R_cons 1.244 (tol 0.115) (outside tolerance) | Energy conservation is a v6 state/readout diagnostic; it was previously hidden by a 0.25 escape hatch (now removed). T1.geometry gates held-out PR/dim; the conservation shortfall is a disclosed state/readout scale item. | T1 geometry table / portfolio receipt |
 | Minimality is block-wise (201), not the unconstrained 160 | The +41 is the explicit, axis-aligned measure block required by tree/k-means consumers. | T2 minimality note |
-| OPE recall = 0.714 | Safety-first gate: recall is a POWER metric, not a deploy gate (DEC-214). | T3 OPE: 9/9 hard, recall reported |
+| OPE recall = 0.8570 | Safety-first gate: recall is a POWER metric, not a deploy gate (DEC-214). | T3 OPE: 9/9 hard, recall reported |
 | Consumer gates use 3 fold/bootstrap seeds | Multi-seed mean ± SE is reported; more seeds would tighten the intervals. | T3 consumer rows (seeds column) |
 | `effect` self-supervised objective is ~0 | The dedicated action-response head did not add; decision-sufficiency comes from the measure response block. | T1 objective battery |
-| white_queen stream bridge HOLDs (DR 0.5 vs bar 0.52) | The broad OPE acceptance (benchmark) is the hard gate; the stream bridge is a second, more conservative estimator and is reported, not used to override T3. | OPE provenance |
+| white_queen stream bridge HOLDs (DR 0.5000 vs bar 0.5300) | The broad OPE acceptance (benchmark) is the hard gate; the stream bridge is a second, more conservative estimator and is reported, not used to override T3. | OPE provenance |
 | Known-effect is response-block recovery of the known per-action optima (5/5 arms), not a full red_king arm-value model | A direct, valid positive control; red_king arm-value validation is separate. | T3 known-effect |
 
 ## 8. Opportunity board — every non-PASS and the exact next action
@@ -368,7 +368,7 @@ A green T0 is **conditional on the documented definitions below**. These are the
 - **stream**: `reference`
 - **tag**: `0.6.4r776750s2000`
 - **as_of**: `2025-01-01`
-- **git**: `e76a7fc`
+- **git**: `c1fc540`
 - **card receipts**: `/tmp/opencode/t0_loop/card_v4b_receipts.json`
 - **objectives**: `/tmp/opencode/t0_loop/objectives_v4b.json`
 - **portfolio**: `looking_glass/artifacts/cfm/portfolio/portfolio_0_6_4r776750s2000_20261019T213645Z.json`
