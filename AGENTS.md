@@ -379,6 +379,12 @@ fallbacks) → `Stage 3: Scale` (optimize only where measured data justifies).
 - **`DECISIONS.md`** — append-only decision log (context / alternatives /
   decision+principle / trade-offs). Check it before non-trivial changes;
   log every non-trivial decision so choices are never re-litigated.
+- **Cockpit report card (PRIMARY steering artifact)** — `scripts/full_report_card.py`
+  composed from real receipts (`foundation_report --receipts`, `objectives_receipts.py`,
+  portfolio, minimality, comparators, transfer, known-effect, acceptance, schema suite).
+  **The whole project is steered from the card:** every milestone/chunk ends by
+  **printing the full card** (T0 + tier matrix + proof sections + caveats), and the
+  card — not a hand summary — is the source of truth for what is PASS and what is next.
 
 ### Decision self-check (before non-trivial action)
 
