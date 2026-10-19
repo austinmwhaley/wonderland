@@ -49,7 +49,13 @@ def main(argv=None):
         "--block",
         choices=("full", "shape"),
         default="full",
-        help="full E, or only the shape block (first model.dim columns)",
+        help="full E, or only the shape block (served rank, or the trunk with --unserved-shape)",
+    )
+    ap.add_argument(
+        "--unserved-shape",
+        action="store_true",
+        dest="unserved_shape",
+        help="disable the serve projection and certify the TRUNK shape rank (use before fitting serve)",
     )
     a = ap.parse_args(argv)
 
@@ -67,6 +73,8 @@ def main(argv=None):
     )
 
     model, cfg = load_frozen_encoder(a.tag, a.ckpt_dir)
+    if getattr(a, "unserved_shape", False):
+        model.serve_on = False
     cfg.attr_fields = tuple(getattr(model, "attr_fields", ()) or ())
     cfg.numeric_fields = tuple(getattr(model, "numeric_fields", ()) or ())
     cfg.db, cfg.as_of, cfg.sample_customers = a.db, a.as_of, a.customers
@@ -83,10 +91,12 @@ def main(argv=None):
         zs.append(z.detach().float().cpu().numpy())
     Z = np.concatenate(zs, 0) if zs else np.zeros((0, 1))
     if a.block == "shape":
-        # served shape block = the first rank(serve_W) columns (48 after DEC-215);
-        # fall back to the trunk dim only when no block-wise serve is set.
-        _W = getattr(model, "serve_W", None)
-        _sd = int(_W.shape[0]) if _W is not None else min(int(model.dim), Z.shape[1])
+        if getattr(a, "unserved_shape", False):
+            _sd = min(int(model.dim), Z.shape[1])
+        else:
+            # served shape block = the first rank(serve_W) columns (48 after DEC-215)
+            _W = getattr(model, "serve_W", None)
+            _sd = int(_W.shape[0]) if _W is not None else min(int(model.dim), Z.shape[1])
         Z = Z[:, : min(_sd, Z.shape[1])]
     full_dim = int(Z.shape[1])
 

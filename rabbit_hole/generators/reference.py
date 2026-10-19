@@ -48,6 +48,7 @@ ACQ = ("organic", "paid_search", "social", "referral", "store")
 LOYALTY = ("none", "silver", "gold", "platinum")
 INCOME = ("low", "mid", "high")
 CONTACT = ("email", "sms", "push", "direct_mail")  # marketing-contact channels
+HOUR_BUCKETS = (6, 12, 18, 22)  # 4-level time-of-day action (DEC-219)
 TOUCH = ("web", "app", "store")  # where a purchase happens
 RETURN_REASONS = ("fit_small", "fit_large", "color", "quality", "changed_mind")
 TYPES = ("view", "cart", "purchase")  # organic shopping funnel
@@ -296,7 +297,6 @@ def build_reference(spec: ReferenceSpec):
         ACTS = ("freq", "hour", "dow", "channel", "offer")
         # HOUR is a 4-level TIME-OF-DAY action (estimable from the history; the
         # 24-level continuous hour had ~4.5 obs/level and was not identifiable).
-        HOUR_BUCKETS = (6, 12, 18, 22)
         freq_opt = int(np.clip(round(x0), 1, 3))
         hour_opt = int(np.argmin([abs(h0 - b) for b in HOUR_BUCKETS]))
         dow_opt = int(np.clip(round(d0), 0, 6))

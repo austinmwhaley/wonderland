@@ -985,6 +985,21 @@ def build(args):
     md.append("")
     if known:
         md.append(f"**{known.get('passed')}/{known.get('total')}** — {known.get('evidence', '')}")
+        _acts = known.get("actions") or {}
+        if _acts:
+            md += _table(
+                ["action", "accuracy", "chance", "n", "binomial p"],
+                [
+                    [
+                        k,
+                        _fmt(v.get("accuracy")),
+                        _fmt(v.get("chance")),
+                        v.get("n_customers", "—"),
+                        _fmt(v.get("binom_p"), 6),
+                    ]
+                    for k, v in _acts.items()
+                ],
+            )
     else:
         md.append("_Not measured._")
     md.append("")
@@ -1082,8 +1097,8 @@ def build(args):
                 "OPE provenance",
             ],
             [
-                f"Known-effect is the channel oracle recovery ({_fmt(known.get('accuracy'))} vs "
-                f"{_fmt(known.get('chance'))}), not red_king arm-value recovery",
+                f"Known-effect is response-block recovery of the known per-action optima "
+                f"({known.get('passed')}/{known.get('total')} arms), not a full red_king arm-value model",
                 "A direct, valid positive control; red_king arm-value validation is separate.",
                 "T3 known-effect",
             ],
