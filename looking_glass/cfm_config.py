@@ -376,7 +376,11 @@ class CFMConfig:
 
     @property
     def tag(self) -> str:
-        return f"{self.version}r{self.revision}"
+        # Artifact identity: the data revision alone is NOT enough — two runs with
+        # different training samples (e.g. 400 vs 2000) otherwise share a tag.
+        base = f"{self.version}r{self.revision}"
+        n = getattr(self, "sample_a_customers", None)
+        return f"{base}s{int(n)}" if n else base
 
 
 def sample_a(n_customers: int, n_anchors: int, **kw):

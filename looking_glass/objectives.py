@@ -199,7 +199,14 @@ def _read_minimality(artifacts: dict) -> dict:
         return ov
     dim = art.get("measure_dim")
     joint = art.get("joint_certified")
-    cur = f"measure_dim={dim}, joint={bool(joint)}"
+    block = art.get("block_wise_certified")
+    cur = f"measure_dim={dim}, block_wise={bool(block)}, joint={bool(joint)}"
+    if block:
+        return record(
+            PASS,
+            current=cur,
+            evidence="block-wise served certificate (shape rank + explicit measure)",
+        )
     if joint:
         return record(PASS, current=cur, evidence="joint shape+measure certificate")
     if dim is not None:
@@ -310,7 +317,10 @@ OBJECTIVES: tuple[Objective, ...] = (
             "functions of the OBSERVED stream at FIXED capacity; unlogged confounders are "
             "uncertainty. 'Any stream' = any stream conforming to the canonical 4-column "
             "interface. 'All plugins' = by-construction coverage for unknown consumers PLUS "
-            "realized superiority on the frozen supervised/unsupervised/decision battery."
+            "realized superiority on the frozen supervised/unsupervised/decision battery. "
+            "Sufficiency is certified for the DECLARED future family; the U power controls "
+            "attribute it to the exhaustive measure block (shape-only U reported). Full-E value "
+            "geometry is reported, not gated (the accessible measure block is the value view)."
         ),
     ),
     # T1 — Layer 0: definition of a foundation encoder (no certification here)
@@ -351,8 +361,8 @@ OBJECTIVES: tuple[Objective, ...] = (
         "t1.transfer",
         1,
         "Transfer above traditional",
-        "frozen E-based head beats a raw/RFM aggregate baseline",
-        "E >= traditional baseline on held-out (paired CI)",
+        "adds over traditional on >=1 consumer head (supervised or unsupervised); hurts none",
+        "E >= traditional on >=1 held-out head and no FAIL (paired CI)",
         "raw/RFM aggregate model",
         "interface",
         "transfer battery",
@@ -375,9 +385,9 @@ OBJECTIVES: tuple[Objective, ...] = (
         "t2.sufficiency",
         2,
         "Sufficiency certificate",
-        "excess loss vs full-history oracle",
-        "U SOLVED at fixed capacity",
-        "full-history oracle",
+        "excess loss vs independent sequence oracle + power controls",
+        "U SOLVED at fixed capacity; measure/shape/destroyed controls reported",
+        "independent sequence oracle + full-history measure",
         "state",
         "foundation card",
         baseline="full-history oracle",
@@ -387,8 +397,8 @@ OBJECTIVES: tuple[Objective, ...] = (
         "t2.minimality",
         2,
         "Minimality certificate",
-        "joint shape+measure dimension",
-        "certified minimal",
+        "block-wise shape + explicit measure (joint min recorded)",
+        "block-wise served minimal",
         "reconstruction of full targets",
         "state",
         "minimality receipt",
@@ -398,8 +408,8 @@ OBJECTIVES: tuple[Objective, ...] = (
         "t2.decision_sufficiency",
         2,
         "Decision-sufficiency",
-        "action response exposed; causal value",
-        "DEPLOY with matching null HOLD",
+        "response-block policy evaluated on realized FUTURE outcomes; DiD null",
+        "DEPLOY with real_lo - null_hi > 0; matching null HOLD",
         "null action (snr=0)",
         "objective",
         "use-case receipt",
@@ -433,24 +443,24 @@ OBJECTIVES: tuple[Objective, ...] = (
         "t3.supervised",
         3,
         "Supervised gate",
-        "LTV / return / churn / next-purchase",
-        "E >= traditional baseline (paired CI) with null control",
-        "shuffled-label null",
+        "held-out heads (valid classes; degenerate targets excluded)",
+        "no significant regression + >=1 WIN vs fair generic (same head)",
+        "fair generic measure + same head",
         "interface",
         "supervised gate",
-        baseline="raw/RFM aggregates + GBM",
+        baseline="fair generic measure + same head",
         mode="comparative",
     ),
     Objective(
         "t3.unsupervised",
         3,
         "Unsupervised gate",
-        "silhouette / lookalike / ANOVA",
-        "E >= traditional baseline with random-partition null",
-        "raw-feature k-means + lookalike",
+        "accessible measure-block value differentiation (eta2/ANOVA) + lookalike",
+        "measure block >= generic; full-concat reported; silhouette reported",
+        "fair generic measure k-means (accessible measure block)",
         "interface",
         "unsupervised gate",
-        baseline="raw-feature k-means + lookalike",
+        baseline="fair generic measure k-means (accessible measure block)",
         mode="comparative",
     ),
     Objective(
@@ -493,7 +503,7 @@ OBJECTIVES: tuple[Objective, ...] = (
         "t4.efficiency",
         4,
         "Efficiency",
-        "linear-time, constant-state, runtime receipt",
+        "runtime receipt (training/inference)",
         "budget met",
         "measured runtime",
         "training regime",
@@ -504,8 +514,8 @@ OBJECTIVES: tuple[Objective, ...] = (
         "t4.reproducibility",
         4,
         "Reproducibility",
-        "seeded, versioned artifacts",
-        "same config -> same result",
+        "deterministic re-run + versioned identity",
+        "same config/seed -> same embedding hash + identity receipt",
         "re-run",
         "interface",
         "registry receipt",

@@ -168,7 +168,7 @@ def _resolve_tag(out_dir: str) -> str:
 
 
 def _fill(cmd: list[str], token: str, value: str) -> list[str]:
-    return [value if arg == token else arg for arg in cmd]
+    return [str(arg).replace(token, value) for arg in cmd]
 
 
 def main(argv=None):
@@ -186,7 +186,13 @@ def main(argv=None):
         action="store_true",
         help="include white_queen + supervised + unsupervised (slow)",
     )
-    ap.add_argument("--shape-rank", type=int, default=48, dest="shape_rank")
+    ap.add_argument(
+        "--shape-rank",
+        type=int,
+        default=None,
+        dest="shape_rank",
+        help="override; default reads the certified rank from the shape certificate",
+    )
     ap.add_argument("--seeds", default="0,1,2", help="consumer-gate seeds")
     ap.add_argument("--acceptance", default=None, help="OPE acceptance receipt (optional)")
     ap.add_argument("--dry-run", action="store_true")
@@ -208,7 +214,7 @@ def main(argv=None):
         a.out_root,
         a.as_of,
         a.customers,
-        a.shape_rank,
+        a.shape_rank if a.shape_rank is not None else "<SHAPE_RANK>",
         period,
         a.seeds,
         a.acceptance,
@@ -226,8 +232,22 @@ def main(argv=None):
     tag = _resolve_tag(train[2][train[2].index("--out-dir") + 1])
     null_tag = _resolve_tag(train[3][train[3].index("--out-dir") + 1])
     portfolio = _newest_portfolio(tag) or ""
-    for i, cmd in enumerate(post, start=5):
+    # Stage 5-7: refit real/null + certify the TRUNK shape rank.
+    for i, cmd in enumerate(post[:3], start=5):
         cmd = _fill(_fill(cmd, TAG, tag), NULL_TAG, null_tag)
+        cmd = [portfolio if x == "<PORTFOLIO>" else x for x in cmd]
+        print(f"[reference-pipeline] stage {i}: {' '.join(cmd)}", flush=True)
+        subprocess.run(cmd, check=True)
+    rank_path = Path(a.out_root) / "minimality_shape_unserved.json"
+    rank = (
+        int(a.shape_rank)
+        if a.shape_rank is not None
+        else int(json.loads(rank_path.read_text())["measure_dim"])
+    )
+    print(f"[reference-pipeline] certified shape rank = {rank}", flush=True)
+    for i, cmd in enumerate(post[3:], start=8):
+        cmd = _fill(_fill(cmd, TAG, tag), NULL_TAG, null_tag)
+        cmd = _fill(cmd, "<SHAPE_RANK>", str(rank))
         cmd = [portfolio if x == "<PORTFOLIO>" else x for x in cmd]
         print(f"[reference-pipeline] stage {i}: {' '.join(cmd)}", flush=True)
         subprocess.run(cmd, check=True)
@@ -249,7 +269,7 @@ def cockpit_commands(
     out_root: str,
     as_of: str,
     customers: int,
-    shape_rank: int,
+    shape_rank,
     period: float,
     seeds: str,
     acceptance: str | None,
@@ -259,7 +279,8 @@ def cockpit_commands(
     """The full steering chain: receipts -> objectives -> cockpit report card.
 
     Every consumer/decision receipt is produced by a real run; the cockpit is the
-    final artifact. `tag`/`null_tag` are resolved from the training registries.
+    final artifact. `shape_rank` may be `<SHAPE_RANK>` (filled from the certified
+    shape receipt after it runs). `tag`/`null_tag` are resolved from the registries.
     """
     ref = f"{out_root}/reference"
     ref_null = f"{out_root}/reference_null"
@@ -269,6 +290,7 @@ def cockpit_commands(
     ndb = f"{ref_null}/customer_event_stream.parquet"
     truth = f"{ref}/reference_truth.json"
     py = sys.executable
+    acc_path = acceptance or f"{out_root}/acceptance.json"
     common = [
         "--db",
         db,
@@ -276,6 +298,18 @@ def cockpit_commands(
         cfm,
         "--tag",
         tag,
+        "--as-of",
+        as_of,
+        "--customers",
+        str(customers),
+    ]
+    null_common = [
+        "--db",
+        ndb,
+        "--ckpt-dir",
+        cfm_null,
+        "--tag",
+        null_tag,
         "--as-of",
         as_of,
         "--customers",
@@ -294,16 +328,7 @@ def cockpit_commands(
         [
             py,
             "scripts/refit_measure.py",
-            "--db",
-            ndb,
-            "--ckpt-dir",
-            cfm_null,
-            "--tag",
-            null_tag,
-            "--as-of",
-            as_of,
-            "--customers",
-            str(customers),
+            *null_common,
             "--period-seconds",
             f"{period}",
             "--out",
@@ -319,8 +344,9 @@ def cockpit_commands(
             "future",
             "--block",
             "shape",
+            "--unserved-shape",
             "--out",
-            f"{out_root}/minimality_shape.json",
+            f"{out_root}/minimality_shape_unserved.json",
         ],
         [
             py,
@@ -340,16 +366,7 @@ def cockpit_commands(
         [
             py,
             "scripts/fit_serve_projection.py",
-            "--db",
-            ndb,
-            "--ckpt-dir",
-            cfm_null,
-            "--tag",
-            null_tag,
-            "--as-of",
-            as_of,
-            "--customers",
-            str(customers),
+            *null_common,
             "--k",
             str(shape_rank),
             "--mode",
@@ -360,6 +377,44 @@ def cockpit_commands(
             f"{cfm_null}/serve_proj_{null_tag.replace('.', '_')}.npz",
             "--receipt",
             f"{out_root}/serve_null.json",
+        ],
+        [
+            py,
+            "scripts/minimality_certificate.py",
+            *common,
+            "--horizons",
+            "30,90",
+            "--targets",
+            "future",
+            "--block",
+            "shape",
+            "--out",
+            f"{out_root}/minimality_shape_served.json",
+        ],
+        [
+            py,
+            "scripts/minimality_certificate.py",
+            *common,
+            "--horizons",
+            "30,90",
+            "--targets",
+            "joint",
+            "--block",
+            "full",
+            "--out",
+            f"{out_root}/minimality_joint.json",
+        ],
+        [
+            py,
+            "scripts/minimality_blocks.py",
+            "--shape",
+            f"{out_root}/minimality_shape_served.json",
+            "--joint",
+            f"{out_root}/minimality_joint.json",
+            "--layer-b-json",
+            f"{cfm}/layer_b_{tag.replace('.', '_')}.pkl.json",
+            "--out",
+            f"{out_root}/minimality.json",
         ],
         [
             py,
@@ -427,19 +482,6 @@ def cockpit_commands(
         ],
         [
             py,
-            "scripts/minimality_certificate.py",
-            *common,
-            "--horizons",
-            "30,90",
-            "--targets",
-            "joint",
-            "--block",
-            "full",
-            "--out",
-            f"{out_root}/minimality_joint.json",
-        ],
-        [
-            py,
             "scripts/u_controls_receipt.py",
             *common,
             "--horizons",
@@ -447,7 +489,36 @@ def cockpit_commands(
             "--out",
             f"{out_root}/u_controls.json",
         ],
-        [py, "scripts/quality_receipts.py", "--out-dir", str(out_root)],
+        [
+            py,
+            "scripts/reproducibility_receipt.py",
+            *common,
+            "--out",
+            f"{out_root}/reproducibility.json",
+        ],
+        [
+            py,
+            "scripts/quality_receipts.py",
+            "--out-dir",
+            str(out_root),
+            "--ckpt-dir",
+            cfm,
+            "--tag",
+            tag,
+        ],
+    ]
+    if not acceptance:
+        cmds += [
+            [py, "scripts/benchmark_ope.py"],
+            [
+                py,
+                "-c",
+                "import shutil,sys; shutil.copy(sys.argv[1], sys.argv[2])",
+                "/tmp/opencode/white_queen_matrix/acceptance.json",
+                acc_path,
+            ],
+        ]
+    cmds += [
         [
             py,
             "scripts/objectives_receipts.py",
@@ -456,7 +527,9 @@ def cockpit_commands(
             "--portfolio",
             "<PORTFOLIO>",
             "--minimality",
-            f"{out_root}/minimality_joint.json",
+            f"{out_root}/minimality.json",
+            "--acceptance",
+            acc_path,
             "--known-effect",
             f"{out_root}/known_effect.json",
             "--schema-suite",
@@ -469,7 +542,10 @@ def cockpit_commands(
             f"{out_root}/encoder.json",
             "--comparators",
             f"{out_root}/comparators.json",
-            *(["--acceptance", acceptance] if acceptance else []),
+            "--reproducibility",
+            f"{out_root}/reproducibility.json",
+            "--efficiency",
+            f"{out_root}/efficiency.json",
             "--out",
             f"{out_root}/objectives_inputs.json",
         ],
@@ -494,13 +570,13 @@ def cockpit_commands(
             "--portfolio",
             "<PORTFOLIO>",
             "--minimality",
-            f"{out_root}/minimality_joint.json",
+            f"{out_root}/minimality.json",
             "--minimality-shape",
-            f"{out_root}/minimality_shape.json",
+            f"{out_root}/minimality_shape_served.json",
             "--serve-projection",
             f"{out_root}/serve_real.json",
             "--acceptance",
-            acceptance or "",
+            acc_path,
             "--schema-suite",
             f"{out_root}/schema_suite.json",
             "--encoder",
@@ -517,6 +593,8 @@ def cockpit_commands(
             f"{out_root}/ablation.json",
             "--u-controls",
             f"{out_root}/u_controls.json",
+            "--reproducibility",
+            f"{out_root}/reproducibility.json",
             "--card-md",
             f"{out_root}/card.md",
             "--truth",

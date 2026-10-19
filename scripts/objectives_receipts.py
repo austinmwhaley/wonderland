@@ -75,11 +75,15 @@ def build(args) -> dict:
         st = _row_ok(portfolio, "trajectory stable")
         if st is not None:
             rec["robustness"] = {"passed": int(bool(st)), "total": 1}
-        rt = portfolio.get("wall_seconds")
-        if rt is not None:
-            rec["efficiency"] = {"passed": 1, "total": 1, "wall_seconds": float(rt)}
-        if portfolio.get("tag"):
-            rec["reproducibility"] = {"passed": 1, "total": 1, "tag": portfolio["tag"]}
+        # REAL reproducibility/efficiency receipts (deterministic re-run + measured
+        # inference time). Tag presence alone is NOT evidence (it passed before even
+        # when the tag did not encode the training sample).
+        rp = _load(args.reproducibility)
+        if rp:
+            rec["reproducibility"] = rp
+        ef = _load(args.efficiency)
+        if ef:
+            rec["efficiency"] = ef
         # honest gates: null controls ran, and NO real DEPLOY is uncalibrated.
         # (Magnitude-matched controls: a null noise DEPLOY does not veto a larger
         # real effect; the hard requirement is zero uncalibrated deploys.)
@@ -186,6 +190,8 @@ def main(argv=None):
         "accessibility",
         "encoder",
         "comparators",
+        "reproducibility",
+        "efficiency",
         "out",
     ):
         ap.add_argument(f"--{name}", default=None, dest=name.replace("-", "_"))

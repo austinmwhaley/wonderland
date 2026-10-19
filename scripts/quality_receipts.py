@@ -28,6 +28,8 @@ def _run(*args: str) -> int:
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--out-dir", required=True, dest="out_dir")
+    ap.add_argument("--ckpt-dir", default=None, dest="ckpt_dir")
+    ap.add_argument("--tag", default=None)
     a = ap.parse_args(argv)
     out = Path(a.out_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -75,15 +77,38 @@ def main(argv=None):
         )
         + "\n"
     )
-    (out / "encoder.json").write_text(
-        json.dumps(
-            {"schema_universal": bool(schema_ok), "self_supervised": True, "frozen_donor": True},
-            indent=1,
+    if a.ckpt_dir and a.tag:
+        rc = subprocess.run(
+            [
+                sys.executable,
+                str(ROOT / "scripts" / "encoder_receipt.py"),
+                "--ckpt-dir",
+                a.ckpt_dir,
+                "--tag",
+                a.tag,
+                "--schema-suite",
+                str(out / "schema_suite.json"),
+                "--out",
+                str(out / "encoder.json"),
+            ],
+            cwd=ROOT,
+        ).returncode
+    else:
+        (out / "encoder.json").write_text(
+            json.dumps(
+                {
+                    "schema_universal": bool(schema_ok),
+                    "self_supervised": False,
+                    "frozen_donor": False,
+                    "error": "pass --ckpt-dir/--tag for a measured encoder receipt",
+                },
+                indent=1,
+            )
+            + "\n"
         )
-        + "\n"
-    )
-    print(json.dumps({"schema_ok": schema_ok, "access_ok": access_ok}, indent=1))
-    return 0 if (schema_ok and access_ok) else 1
+        rc = 1
+    print(json.dumps({"schema_ok": schema_ok, "access_ok": access_ok, "encoder_rc": rc}, indent=1))
+    return 0 if (schema_ok and access_ok and rc == 0) else 1
 
 
 if __name__ == "__main__":
