@@ -1,0 +1,60 @@
+{
+  "tag": "0.6.4r776750s2000",
+  "as_of": "2025-01-01",
+  "git": "ef51e76",
+  "model_identity": {
+    "tag": "0.6.4r776750s2000",
+    "ckpt_dir": "/tmp/opencode/t0_loop/reference_v4b_cfm",
+    "sample_a_customers": 2000,
+    "n_train_sequences": 2000,
+    "data_signature": "fffe2e9aa4b7",
+    "revision": 776750,
+    "file_sha256": {
+      "cfm_0_6_4r776750s2000.pt": "bcc2be03c97499a909410b5f4d4f4dbf61844eb6b39d10f484d69634115f8085",
+      "layer_b_0_6_4r776750s2000.pkl": "018fd316d173084b60b7d353c34355fea7c77591f351753b0ce47accb6a8963d",
+      "serve_proj_0_6_4r776750s2000.npz": "ba6b335bff6a578b62ee204ca5d8b532cbd8643b3fbe2ab0f554d36751913be3"
+    }
+  },
+  "determinism": {
+    "embedding_sha256": "f9881bcf2e8045e1087e8768c1b6304b1a3ef0dc25874e24d24b4a962a287b75",
+    "infer_wall_seconds": 0.921874
+  },
+  "acceptance_provenance": {
+    "git_sha": "ef51e76",
+    "generated_at": "2026-10-19T22:15:34.509069+00:00",
+    "envs": [
+      "cartpole",
+      "mountaincar",
+      "acrobot",
+      "lunar",
+      "mountaincar_continuous",
+      "pendulum",
+      "bandit_synth"
+    ]
+  },
+  "archived": {
+    "cockpit": {
+      "path": "docs/report_cards/reference_v4b_cockpit.md",
+      "sha256": "f3eac6dc78789dfd28fd408da3c08e1a934c4086ad6a8b99df419ee92ba422ef"
+    },
+    "objectives": {
+      "path": "docs/report_cards/reference_v4b_objectives.json",
+      "sha256": "3084d7e4f07b2821bb88bdc064a5915c54c9eebd2c1b6dec165d301c55b0e9ca"
+    }
+  },
+  "full_receipts": {
+    "card_receipts": "/tmp/opencode/t0_loop/card_v4b_receipts.json",
+    "comparators": "/tmp/opencode/t0_loop/comparators_v4b.json",
+    "transfer": "/tmp/opencode/t0_loop/transfer_v4b.json",
+    "known_effect": "/tmp/opencode/t0_loop/known_effect_v4b.json",
+    "ablation": "/tmp/opencode/t0_loop/ablation_v4b.json",
+    "u_controls": "/tmp/opencode/t0_loop/u_controls_v4b.json",
+    "minimality": "/tmp/opencode/t0_loop/minimality_v4b.json",
+    "reproducibility": "/tmp/opencode/t0_loop/reproducibility_v4b.json",
+    "acceptance": "/tmp/opencode/t0_loop/acceptance_v4b.json",
+    "encoder": "/tmp/opencode/t0_loop/quality_v4b/encoder.json",
+    "schema_suite": "/tmp/opencode/t0_loop/quality_v4b/schema_suite.json",
+    "accessibility": "/tmp/opencode/t0_loop/quality_v4b/accessibility.json"
+  },
+  "note": "Archived card/objectives snapshot. Full receipts are regenerable with scripts/reference_pipeline.py; the receipt paths above are the run that produced this snapshot."
+}

@@ -217,6 +217,18 @@ invariant-by-construction).
 
 ## Micro
 
+- **PEER-REVIEW RESOLUTIONS (DEC-224).** Fixed every review finding: reproducible block-wise minimality
+  (`scripts/minimality_blocks.py`; joint honestly false, block-wise true; pipeline certifies rank →
+  serve → block-wise receipt); sample-encoded tags + `scripts/retag_model.py` (real
+  `0.6.4r776750s2000`, null `0.6.4r703511s2000`); measured encoder (freeze state hash, no label
+  objectives, file SHA identity); byte-identical determinism + inference runtime receipt; transfer
+  split (supervised 0 add / 5 NO_SIGNAL / 0 fail; unsupervised segmentation PASS); objective definitions
+  aligned to the fair-generic/valid-head/block-wise/accessible contracts; OPE acceptance runner fixed
+  (intervals + families + bandit) and re-run fresh **9/9 hard** (recall 0.857 reported, git-stamped);
+  conservation escape hatch removed (`R_cons 1.244` now FAIL, disclosed; T1.geometry gates PR/dim);
+  card T0 scope explicit + archived card/manifest in `docs/report_cards/`. **T0 PASS 18/18** under the
+  documented scope; **456 fast tests; ruff clean.**
+
 - **cudf-polars evaluated (DEC-222): works (RAPIDS 26.10 pins our polars 1.44.2) but NOT adopted.**
   GPU Polars is 3.7–6.2× faster than CPU Polars on group-bys/joins, but DuckDB (the pipeline's
   engine) is equal/faster on the same ops, timestamp casts are unsupported, ~1.3 GiB VRAM competes
