@@ -71,7 +71,7 @@ Your stance:
 ## Red flags to hunt (non-exhaustive)
 
 - U=1 because the "oracle" is the measure already inside E; missing power controls.
-- `as_of` leakage (past periods scored with a future/ final E); cadence mismatch (weekly vs daily);
+- `as_of` leakage (past periods scored with a future/final E); cadence mismatch (weekly vs daily);
   `target_key` filtering missing; response block polluted by other actions.
 - Degenerate labels (e.g. 90-day purchase ≈99.9% one class) driving AUC; `non-inferior` with a wide
   CI over a large point deficit; unstated target exclusions.
