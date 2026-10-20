@@ -217,6 +217,12 @@ invariant-by-construction).
 
 ## Micro
 
+- **SHAPE-DISTILLATION EXPERIMENT (DEC-226): conservation 0.905, shape U 0.332, full-E 0.780 (regression) — opt-in only.**
+  The v0.7.0 experiment (shape→measure distillation, 2000 A) fixed conservation and improved shape-only
+  U (0.256→0.332) but **regressed full-E lookalike** (3.10→2.96; 0.78× vs 0.90× bar). Not adopted;
+  certified default remains 0.6.4 with the three frontier items open. Root cause: the missing
+  **counter/ledger mass axis** in the shape. Next: counter/ledger retrain, then shape-U/full-E.
+
 - **FRONTIER LOOP (DEC-225): 5/8 closed, 3 model-capability items open.** Closed: reference degeneracy
   (per-target 3d purchase / 90d value; 8 valid heads, 0 excluded; pipeline derives the horizon), OPE
   bridge reconciliation (same response-block policy; white_queen HOLD vs response-block DEPLOY;

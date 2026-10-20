@@ -93,6 +93,8 @@ def build_commands(
             "--set",
             "action_fields=('freq','hour','dow','channel','offer','discount_pct')",
             "--set",
+            "action_period_seconds=86400",
+            "--set",
             f"max_steps={max_steps}",
         ],
         [
@@ -120,6 +122,8 @@ def build_commands(
             "effect_actions=('freq','hour','dow','channel','offer')",
             "--set",
             "action_fields=('freq','hour','dow','channel','offer','discount_pct')",
+            "--set",
+            "action_period_seconds=86400",
             "--set",
             f"max_steps={max_steps}",
         ],

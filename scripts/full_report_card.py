@@ -71,6 +71,7 @@ def _purpose(md, purpose, look):
 
 # ---- objective battery ------------------------------------------------------
 _FAMILY = {
+    "distill_measure": "shape→measure distillation",
     "next": "event-type transition",
     "mask": "masked reconstruction",
     "order": "temporal order",
@@ -88,6 +89,7 @@ _FAMILY = {
 }
 
 _PROVES = {
+    "shape→measure distillation": "the SHAPE block carries the exhaustive measure (value/order), not only the separate measure block",
     "event-type transition": "the state carries the next-event transition (Markov structure)",
     "masked reconstruction": "the state can reconstruct a masked event from left context",
     "temporal order": "the state distinguishes true temporal order from shuffled order",
@@ -105,6 +107,7 @@ _PROVES = {
 }
 
 _LEVER = {
+    "shape→measure distillation": "state/objective (distillation weight/capacity)",
     "event-type transition": "objective/stream (1-gram ceiling; no action)",
     "masked reconstruction": "objective/stream (1-gram ceiling; no action)",
     "temporal order": "objective/stream (1-gram ceiling; no action)",

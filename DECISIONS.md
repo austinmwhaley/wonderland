@@ -4749,3 +4749,30 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
      verify on B, or retrain with the conservation pressure on the full A distribution.
 - **Verdict:** T0 **PASS** (scoped); project **NOT SOLVED** — **3/8** frontier items open. All closures
   are receipt-backed; no gate was weakened.
+
+## DEC-226 — Opt-in shape distillation experiment (v0.7.0): conservation fixed, shape improved, full-E geometry regressed — NOT adopted as default
+
+- **Experiment:** added an opt-in self-supervised **shape→measure distillation** (`distill_measure`,
+  default **False**; v0.7.0 tag via `--set version=0.7.0`). The shape/donor head predicts the
+  exhaustive generic measure (73 columns) for the same customer; trained 2000 sample-A customers.
+- **Results (real model `0.7.0r776750s2000`, 2000 A, daily cadence):**
+  - **Conservation:** `R_cons 0.905` (tol 0.115) → **PASS** (the 0.6.4 model was 1.244).
+  - **Shape-only U:** 0.2562 → **0.3325** (improved, but far below the 0.9363 solve bar).
+  - **Full-E value geometry:** lookalike **2.9617** vs generic 3.795 → **0.780×**, a **regression**
+    from 3.1017 (0.817×). The shape now carries more measure/value information, but that dilutes the
+    full-concat PCA geometry further; the accessible measure block is unchanged at 3.795.
+  - T3 supervised stays 2 WIN/0 regression (the measure block), decision/known-effect unchanged.
+- **Trade-off:** the distillation adds value/mass to the shape (shape U +0.076) but makes the full-E
+  concat **worse** for distance consumers; it also changes conservation (model-specific retrain).
+  It does not close the learned-shape or full-E frontier items. The root cause is the **magnitude/mass
+  axis**: a contractive/whitened state cannot carry unbounded extensive mass, and the shape adds
+  correlated value directions that dilute the full geometry.
+- **Decision:** keep the capability **opt-in** (`distill_measure=False` default; version stays
+  **0.6.4**); the certified card remains the 0.6.4 model. Do **not** adopt the regression just to
+  close conservation.
+- **Next architectural experiment (the remaining frontier):** add a **counter/ledger mass axis** to the
+  shape (additive constant-state memory, trained by the ledger objective) so the shape carries
+  cumulative value/count; then re-run shape-U and full-E; pair with a value-aware/block-aware geometry
+  consumer only if it does not weaken the gate. Conservation is then re-checked on the retrained model.
+- **Tests:** 456 fast tests green; ruff clean. The 0.7.0 experiment artifacts live in
+  `/tmp/opencode/t0_loop/reference_v4c_cfm` (not the certified artifact).

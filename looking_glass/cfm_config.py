@@ -297,6 +297,11 @@ class CFMConfig:
     # Layer-B MEASURE pipeline: append a learned compression of the generic full-history
     # measure to the consumed embedding (the ~0.9 object). Fit at train, frozen at serve.
     use_measure: bool = False
+    # Self-supervised shape distillation (v0.7): the learned shape readout predicts
+    # the exhaustive generic measure for the same customer. This pressures the SHAPE
+    # block to carry the value/order information instead of leaving it only in the
+    # explicit measure block (shape-only U / full-E geometry frontier).
+    distill_measure: bool = False
     # Layer-B measure compression width. 0 = FULL (all measure columns, lossless) — the
     # default, because a smaller PCA silently LOSES sufficiency (measured: U 0.65 at 64 dims
     # vs 0.88 full). A positive value is an explicit compression (minimality trade).
