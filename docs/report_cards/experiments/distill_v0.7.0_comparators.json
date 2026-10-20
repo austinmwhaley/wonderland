@@ -1,0 +1,146 @@
+{
+  "baseline": "generic full-history measure + same head",
+  "horizon_days": "3d purchase / 90d value (per-target)",
+  "retired_heads": [
+    "item_next"
+  ],
+  "supervised": [
+    {
+      "head": "churn",
+      "E": 0.5924,
+      "generic": 0.5835,
+      "delta": 0.0088,
+      "delta_se": 0.0086,
+      "lo": -0.017,
+      "hi": 0.015,
+      "win": false,
+      "non_inferior": true,
+      "seeds": 3,
+      "win_seeds": 1,
+      "non_inferior_seeds": 3
+    },
+    {
+      "head": "reactivation",
+      "E": 0.5924,
+      "generic": 0.5835,
+      "delta": 0.0088,
+      "delta_se": 0.0086,
+      "lo": -0.017,
+      "hi": 0.015,
+      "win": false,
+      "non_inferior": true,
+      "seeds": 3,
+      "win_seeds": 1,
+      "non_inferior_seeds": 3
+    },
+    {
+      "head": "next_purchase",
+      "E": 0.5924,
+      "generic": 0.5835,
+      "delta": 0.0088,
+      "delta_se": 0.0086,
+      "lo": -0.017,
+      "hi": 0.015,
+      "win": false,
+      "non_inferior": true,
+      "seeds": 3,
+      "win_seeds": 1,
+      "non_inferior_seeds": 3
+    },
+    {
+      "head": "return",
+      "E": 0.673,
+      "generic": 0.6641,
+      "delta": 0.0091,
+      "delta_se": 0.0017,
+      "lo": -0.0077,
+      "hi": 0.0174,
+      "win": false,
+      "non_inferior": true,
+      "seeds": 3,
+      "win_seeds": 0,
+      "non_inferior_seeds": 3
+    },
+    {
+      "head": "ltv",
+      "E": 0.64,
+      "generic": 0.6364,
+      "delta": 0.0035,
+      "delta_se": 0.001,
+      "lo": -0.0103,
+      "hi": 0.0138,
+      "win": false,
+      "non_inferior": true,
+      "seeds": 3,
+      "win_seeds": 0,
+      "non_inferior_seeds": 3
+    },
+    {
+      "head": "next_value",
+      "E": 0.1575,
+      "generic": 0.1445,
+      "delta": 0.0135,
+      "delta_se": 0.0129,
+      "lo": -0.0293,
+      "hi": 0.0232,
+      "win": false,
+      "non_inferior": true,
+      "seeds": 3,
+      "win_seeds": 1,
+      "non_inferior_seeds": 3
+    },
+    {
+      "head": "channel_next",
+      "E": 0.7797,
+      "generic": 0.5197,
+      "delta": 0.26,
+      "delta_se": 0.0035,
+      "lo": 0.2383,
+      "hi": 0.2675,
+      "win": true,
+      "non_inferior": true,
+      "seeds": 3,
+      "win_seeds": 3,
+      "non_inferior_seeds": 3
+    },
+    {
+      "head": "category_next",
+      "E": 0.4512,
+      "generic": 0.187,
+      "delta": 0.2644,
+      "delta_se": 0.0017,
+      "lo": 0.2442,
+      "hi": 0.2771,
+      "win": true,
+      "non_inferior": true,
+      "seeds": 3,
+      "win_seeds": 3,
+      "non_inferior_seeds": 3
+    }
+  ],
+  "supervised_wins": 2,
+  "supervised_total": 8,
+  "supervised_degenerate_excluded": 0,
+  "unsupervised": {
+    "E": {
+      "silhouette": 0.367,
+      "eta_squared": 0.239,
+      "lookalike_enrichment": 3.795,
+      "anova_f": 1883.7282
+    },
+    "E_full": {
+      "silhouette": 0.2666,
+      "eta_squared": 0.2466,
+      "lookalike_enrichment": 2.9617,
+      "anova_f": 1963.2535
+    },
+    "generic": {
+      "silhouette": 0.367,
+      "eta_squared": 0.239,
+      "lookalike_enrichment": 3.795,
+      "anova_f": 1883.7282
+    },
+    "seeds": 3,
+    "view": "block-wise served measure (accessible); full concat reported"
+  }
+}

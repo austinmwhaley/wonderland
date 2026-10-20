@@ -1,0 +1,51 @@
+{
+  "experiments": [
+    {
+      "name": "0.7.0 shape->measure distillation",
+      "command": "python3 -m looking_glass.customer_foundation_model train --db /tmp/opencode/t0_loop/reference_v4/customer_event_stream.parquet --customers 6000 --sample-a 2000 --as-of 2025-01-01 --out-dir /tmp/opencode/t0_loop/reference_v4c_cfm --set version=0.7.0 --set distill_measure=True --set use_measure=True --set measure_dim=128 --set use_counter=False --set batch=12 --set action_period_seconds=86400",
+      "result": {
+        "conservation_R_cons": 0.905,
+        "shape_U": 0.3325,
+        "full_E_lookalike_ratio": 0.7805,
+        "adopted": false,
+        "receipts": [
+          "docs/report_cards/experiments/distill_v0.7.0_comparators.json",
+          "docs/report_cards/experiments/distill_v0.7.0_portfolio.json"
+        ]
+      }
+    },
+    {
+      "name": "0.8.0 counter/ledger",
+      "command": "python3 -m looking_glass.customer_foundation_model train --db /tmp/opencode/t0_loop/reference_v4/customer_event_stream.parquet --customers 6000 --sample-a 2000 --as-of 2025-01-01 --out-dir /tmp/opencode/t0_loop/reference_v4d_cfm --set version=0.8.0 --set batch=8 --set use_counter=True --set counter_registers=1 --set \"objectives=(...+ledger)\" --set action_period_seconds=86400",
+      "result": {
+        "status": "diverged",
+        "val_sequence": [
+          4.391,
+          5.9015,
+          5.1522,
+          7.9568
+        ],
+        "checkpoint_saved": false,
+        "note": "first attempt OOM in eval counter readout; adaptive eval batch fixed; second diverged",
+        "receipts": [
+          "docs/report_cards/experiments/counter_ledger_v0.8.0.log"
+        ]
+      }
+    },
+    {
+      "name": "GPU GBM head benchmark",
+      "command": "python3 scripts/gpu_probe.py --bench-xgb",
+      "result": {
+        "sklearn_cpu_s": 1.87,
+        "xgboost_gpu_s": 0.87,
+        "speedup": 2.14,
+        "sklearn_auc": 0.9326,
+        "xgboost_auc": 0.928,
+        "n": 6000,
+        "d": 201,
+        "integrated_into_gates": false
+      }
+    }
+  ],
+  "note": "Research experiments only; not T0 gates. The 0.7.0/0.8.0 models are not certified; the certified card remains 0.6.4r776750s2000."
+}

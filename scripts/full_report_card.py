@@ -609,16 +609,17 @@ def build(args):
         (o for o in ((obj or {}).get("objectives") or []) if o["id"] == "t0.north_star"),
         None,
     )
-    # OPERATOR DEFINITION (DEC-227): SOLVED = the report card is all-green + T0 PASS.
-    # The research board below is NOT a T0 gate.
-    _project_solved = bool(_t0o and _t0o["status"] == PASS)
+    # The operator's solved definition is the whole report card all-green + T0 PASS.
+    # The card is NOT all-green while the frontier items are open (DEC-228 reverts
+    # the DEC-227 SOLVED label; labeling an open frontier "solved" is a goalpost move).
+    _project_solved = bool(_t0o and _t0o["status"] == PASS and not _open)
     md.append(
-        f"**ASSESSMENT — project solved.** T0 certification: "
+        f"**ASSESSMENT — certification vs project goal.** T0 certification: "
         f"**{'PASS' if (_t0o and _t0o['status'] == PASS) else 'NOT PASS'}** (scoped). "
-        f"**PROJECT {'SOLVED' if _project_solved else 'NOT SOLVED'}** under the operator "
-        "definition: **report card all-green + T0 PASS** (DEC-227). "
-        f"{len(_open)} research opportunity(ies) remain in §8 — these are **not T0 gates** "
-        "and do not invalidate the certification."
+        f"**PROJECT {'SOLVED' if _project_solved else 'NOT SOLVED'}** — {len(_open)} open "
+        "frontier item(s) (§8). The operator definition is the report card all-green + "
+        "T0 PASS; the card still contains a conservation FAIL and the open frontier, so it "
+        "is **NOT all-green**. SOLVED requires T0 PASS AND every frontier item closed."
     )
     md.append("")
     md.append("## 2. T0 — North Star")
@@ -1345,7 +1346,7 @@ def build(args):
     md.append("")
 
     # 7. opportunity board
-    md.append("## 8. Research opportunities — not T0 gates (the card is SOLVED)")
+    md.append("## 8. Capability frontier — what still blocks SOLVED")
     md.append("")
     _obj_rows = [
         [
@@ -1363,13 +1364,13 @@ def build(args):
         md += _table(["objective", "status", "current", "next action"], _obj_rows)
     else:
         md.append(
-            "_No T0 objective is failing. The items below are research opportunities, not "
-            "certification failures; the project is SOLVED under the operator definition._"
+            "_No T0 objective is failing, but the frontier below is not T0: the project is "
+            "NOT SOLVED until these are closed (the card is not all-green)._"
         )
     md.append("")
     md.append(
-        "**Research opportunities (NOT T0 gates; the operator's solved definition is the "
-        "report card all-green + T0 PASS):**"
+        "**Solve conditions (the whole report card must be all-green; T0 PASS alone is not "
+        "enough):**"
     )
     md.append("")
     md += _table(
@@ -1388,9 +1389,9 @@ def build(args):
     )
     md.append("")
     md.append(
-        f"**Research opportunities open: {len(_open)}/{len(_frontier)}; T0 certification: "
+        f"**Frontier: {len(_open)}/{len(_frontier)} open; T0 certification: "
         f"**{'PASS' if (_t0o and _t0o['status'] == PASS) else 'NOT PASS'}**; "
-        f"SOLVED = {_project_solved}.** This table is a research queue, not a T0 gate."
+        f"SOLVED = {_project_solved}.** The card is not all-green until these close."
     )
     md.append("")
     md.append("**Recent research experiments (not T0 gates):**")
@@ -1406,6 +1407,10 @@ def build(args):
     md.append(
         "- **GPU heads:** xgboost GPU 2.14× (0.87 vs 1.87 s on 6000×201); integration is a "
         "performance opportunity under the AGENTS GPU-first policy."
+    )
+    md.append(
+        "_Experiment receipts: `docs/report_cards/reference_v4b_experiments.json` "
+        "(0.7.0 comparators/portfolio, 0.8.0 log, GPU benchmark). These are not T0 gates._"
     )
     md.append("")
     md.append(

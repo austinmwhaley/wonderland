@@ -36,6 +36,19 @@ def main(argv=None):
         except Exception as e:  # noqa: BLE001
             out[mod] = f"missing/unavailable: {str(e)[:80]}"
     if a.bench_xgb:
+        # Do not compete with a resident training/inference job on the 8 GiB card.
+        try:
+            import torch
+
+            _free = torch.cuda.mem_get_info()[0] / 1e9 if torch.cuda.is_available() else 0.0
+        except Exception:  # noqa: BLE001
+            _free = 0.0
+        if _free < 2.0:
+            out["xgb_bench"] = {
+                "skipped": f"only {_free:.1f} GiB free; GPU is occupied (one-job policy)"
+            }
+            print(json.dumps(out, indent=1))
+            return out
         try:
             import xgboost as xgb
             from sklearn.ensemble import HistGradientBoostingClassifier

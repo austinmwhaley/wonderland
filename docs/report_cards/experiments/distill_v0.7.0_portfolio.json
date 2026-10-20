@@ -1,0 +1,33 @@
+{
+  "tag": "0.7.0r776750s2000",
+  "n_seqs": 2000,
+  "rows": [
+    {
+      "check": "geometry: conservation ratio Tr(Sigma_readout)/P_in ~ 1",
+      "achieved": "R_cons 0.905 (tol 0.115)",
+      "ok": true
+    }
+  ],
+  "objectives": [
+    {
+      "objective": "agg",
+      "skill": 1.75867,
+      "skill_se": 0.02372
+    },
+    {
+      "objective": "effect",
+      "skill": -0.0,
+      "skill_se": 0.0
+    },
+    {
+      "objective": "mtp",
+      "skill": 9.90969,
+      "skill_se": 0.03349
+    },
+    {
+      "objective": "sf",
+      "skill": 0.33092,
+      "skill_se": 0.00609
+    }
+  ]
+}
