@@ -1,7 +1,7 @@
 {
   "tag": "0.6.4r776750s2000",
   "as_of": "2025-01-01",
-  "git": "e5129da",
+  "git": "e315111",
   "model_identity": {
     "tag": "0.6.4r776750s2000",
     "ckpt_dir": "/tmp/opencode/t0_loop/reference_v4b_cfm",
@@ -35,7 +35,7 @@
   "archived": {
     "cockpit": {
       "path": "docs/report_cards/reference_v4b_cockpit.md",
-      "sha256": "53366153491bfe22caadc7ba80d1991f705d0b2ae61ca6486d6c7d31838c4c8b"
+      "sha256": "3b3cc97e4213c689d03e8fe515e34199158ac4482b06d152184e84fd98653831"
     },
     "objectives": {
       "path": "docs/report_cards/reference_v4b_objectives.json",
