@@ -16,7 +16,7 @@
     },
     {
       "name": "0.8.0 counter/ledger",
-      "command": "python3 -m looking_glass.customer_foundation_model train --db /tmp/opencode/t0_loop/reference_v4/customer_event_stream.parquet --customers 6000 --sample-a 2000 --as-of 2025-01-01 --out-dir /tmp/opencode/t0_loop/reference_v4d_cfm --set version=0.8.0 --set batch=8 --set use_counter=True --set counter_registers=1 --set \"objectives=(...+ledger)\" --set action_period_seconds=86400",
+      "command": "python3 -m looking_glass.customer_foundation_model train --db /tmp/opencode/t0_loop/reference_v4/customer_event_stream.parquet --customers 6000 --sample-a 2000 --anchors 3 --epochs 3 --as-of 2025-01-01 --out-dir /tmp/opencode/t0_loop/reference_v4d_cfm --warm-start none --set version=0.8.0 --set batch=8 --set use_measure=True --set measure_dim=128 --set use_counter=True --set counter_registers=1 --set \"objectives=('next','entity','dt','value','mask','contrast','occur','order','jepa','sf','query','agg','ledger')\" --set \"effect_actions=('freq','hour','dow','channel','offer')\" --set \"action_fields=('freq','hour','dow','channel','offer','discount_pct')\" --set action_period_seconds=86400",
       "result": {
         "status": "diverged",
         "val_sequence": [

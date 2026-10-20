@@ -217,6 +217,11 @@ invariant-by-construction).
 
 ## Micro
 
+- **REVIEW CORRECTION (DEC-228): the card was NOT all-green; the DEC-227 "SOLVED" label is reverted.**
+  **T0 CERTIFIED (scoped, 18/18); PROJECT NOT SOLVED — 3 open frontier items** (shape U 0.2562, full-E
+  0.8173×, conservation 1.244) plus the GPU-head integration (2.14× measured, still CPU). The card now
+  says so; the experiments are committed as receipts; `gpu_probe` is memory-safe. 456 tests green.
+
 - **PROJECT SOLVED (DEC-227, operator definition): report card all-green + T0 PASS.** T0 **18/18**
   under the documented scope (measure-carried sufficiency, accessible measure geometry, block-wise
   minimality, per-target horizons, 3 seeds, PIT decision, stamped OPE). The report card now says

@@ -4801,3 +4801,23 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   `395fb1b`.
 - **Result:** **PROJECT SOLVED — T0 PASS 18/18 (scoped), report card all-green.** 456 fast tests green;
   ruff clean.
+
+## DEC-228 — Revert the false "SOLVED" label: the report card was NOT all-green; T0 is scoped, the frontier is open
+
+- **Review finding:** DEC-227 declared "PROJECT SOLVED — report card all-green + T0 PASS" while the
+  same card contains a **conservation FAIL** (`R_cons 1.244`, tol 0.115) and **3 OPEN frontier items**
+  (shape-only U 0.2562, full-E 0.8173×, conservation). The prior card (before DEC-227) correctly said
+  **NOT SOLVED — 3 open**. Relabeling the open frontier as "research opportunities" after the result
+  is a **goalpost move** and the "all-green" claim was factually contradicted by the card.
+- **Decision:** **revert DEC-227.** The card now reads **T0 CERTIFIED (scoped); PROJECT NOT SOLVED —
+  3 open frontier items; SOLVED requires T0 PASS AND every frontier item closed.** The T0 PASS
+  (18/18) stands under its documented scope; no gate was weakened. The frontier remains the
+  investigation queue (shape/mass axis, full-E value geometry, conservation).
+- **Governance fixes:** the 0.7.0/0.8.0/GPU experiments are now committed as receipts
+  (`docs/report_cards/reference_v4b_experiments.json`, the 0.7.0 comparators/portfolio, the 0.8.0
+  divergence log `.txt`), and `scripts/gpu_probe.py` refuses to run the GPU benchmark while the
+  8 GiB card is occupied. Provenance points at this commit.
+- **Still open (not resolved by this decision):** the 3 capability items above and the **GPU-head
+  integration** into the consumer/ablation gates (measured 2.14×; still sklearn CPU). The project is
+  **NOT SOLVED**; the loop continues on the mass-axis/full-E/consumption and GPU integration.
+- **Tests:** 456 fast tests green; ruff clean.

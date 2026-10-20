@@ -1,0 +1,18 @@
+point-in-time as_of=2025-01-01  split_seed=6529885151769
+[fields] numeric=9 categorical=16 skipped_nested=0
+[sample] encoder trains on 2000 of population A
+[set] explicit overrides applied: {'version': '0.8.0', 'batch': 8, 'use_measure': True, 'measure_dim': 128, 'use_counter': True, 'counter_registers': 1, 'objectives': ('next', 'entity', 'dt', 'value', 'mask', 'contrast', 'occur', 'order', 'jepa', 'sf', 'query', 'agg', 'ledger'), 'effect_actions': ('freq', 'hour', 'dow', 'channel', 'offer'), 'action_fields': ('freq', 'hour', 'dow', 'channel', 'offer', 'discount_pct'), 'action_period_seconds': 86400}
+[set] explicit overrides applied: {'version': '0.8.0', 'batch': 8, 'use_measure': True, 'measure_dim': 128, 'use_counter': True, 'counter_registers': 1, 'objectives': ('next', 'entity', 'dt', 'value', 'mask', 'contrast', 'occur', 'order', 'jepa', 'sf', 'query', 'agg', 'ledger'), 'effect_actions': ('freq', 'hour', 'dow', 'channel', 'offer'), 'action_fields': ('freq', 'hour', 'dow', 'channel', 'offer', 'discount_pct'), 'action_period_seconds': 86400}
+[set] explicit overrides applied: {'version': '0.8.0', 'batch': 8, 'use_measure': True, 'measure_dim': 128, 'use_counter': True, 'counter_registers': 1, 'objectives': ('next', 'entity', 'dt', 'value', 'mask', 'contrast', 'occur', 'order', 'jepa', 'sf', 'query', 'agg', 'ledger'), 'effect_actions': ('freq', 'hour', 'dow', 'channel', 'offer'), 'action_fields': ('freq', 'hour', 'dow', 'channel', 'offer', 'discount_pct'), 'action_period_seconds': 86400}
+[profile] input low-pass retention (slow band) = 0.715
+[health] {'readout_rms': 1.0, 'readout_absmax': 3.965, 'dim': 256, 'decay_max': 0.99966, 'eff_rank': 8.599, 'deterministic': True}
+[scale] seeded loss_scales from 41 tasks
+W1019 21:10:14.458000 1584249 torch/_dynamo/convert_frame.py:1743] [0/8] torch._dynamo hit config.recompile_limit (8)
+W1019 21:10:14.458000 1584249 torch/_dynamo/convert_frame.py:1743] [0/8]    function: '_scan_eager' (/home/austin-whaley/Documents/wonderland/looking_glass/cfm_model.py:140)
+W1019 21:10:14.458000 1584249 torch/_dynamo/convert_frame.py:1743] [0/8]    last reason: 0/7: b.size()[2] == d.size()[2]  # (unknown var s16, please file a bug)
+W1019 21:10:14.458000 1584249 torch/_dynamo/convert_frame.py:1743] [0/8] To log all recompilation reasons, use TORCH_LOGS="recompiles".
+W1019 21:10:14.458000 1584249 torch/_dynamo/convert_frame.py:1743] [0/8] To diagnose recompilation issues, see https://docs.pytorch.org/docs/main/user_guide/torch_compiler/compile/programming_model.recompilation.html
+[govern] step 250/5010  val 4.3910  eval 1
+[govern] step 500/5010  val 5.9015  eval 2
+[govern] step 750/5010  val 5.1522  eval 3
+[govern] step 1000/5010  val 7.9568  best 4.3910  tol 0.5555  no_improve 1/4
