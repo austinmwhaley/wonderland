@@ -32,6 +32,17 @@
       "mass_rank": 11,
       "donor_rank": 37,
       "note": "compressing mass PCs regressed U to 0.6681: the mass axes carry the value signal; rejected"
+    },
+    "0.9.0_cotrained_counter": {
+      "shape_U": 0.6376,
+      "shape_rank": 64,
+      "served": "shape 64 + measure 73 = 137",
+      "val_best": 2.3135,
+      "note": "compact event-type counter co-trained inside the shape (w_counter nonzero, use_counter=True). Training stable (early stop 1750, val 2.31 vs 3.13 for 0.7.0) but shape-U 0.6376: the learned gate/readout loses the exactness that makes the deterministic counter work. Not adopted.",
+      "receipts": [
+        "/tmp/opencode/t0_loop/u_controls_v4j.json",
+        "/tmp/opencode/t0_loop/serve_v4j.json"
+      ]
     }
   },
   "receipts": [

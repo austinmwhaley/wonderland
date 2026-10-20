@@ -217,6 +217,10 @@ invariant-by-construction).
 
 ## Micro
 
+- **0.9.0 CO-TRAINED COUNTER (DEC-232): stable (val 2.31) but shape-U 0.6376 — worse than the deterministic counter (0.8210).**
+  Trainer metadata bug fixed (counter_compact/event_types/type_values now persisted). Frontier best:
+  shape-U 0.8210, full-E 0.8744× — both bars still open. 0.8.3 remains T0-certified.
+
 - **FRONTIER EXPERIMENTS (DEC-231): 0.8.4 event-type counter raises shape-U 0.6504→0.8210 but full-E slips 0.8744→0.8661;**
   0.8.5 per-type value 0.8181 (no gain); split-serving regressed to 0.6681 (mass axes carry the value).
   Not adopted; 0.8.3 remains the T0-certified card. Bars unchanged. The remaining shape-U gap is

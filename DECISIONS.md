@@ -4910,3 +4910,21 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - **Code (opt-in, default off):** `counter_event_types`, `counter_type_values` (config/model/
   state/training + `scripts/augment_counter.py --event-types/--type-values`), and a `split`
   serve mode (`fit_serve_projection --mode split`, `set_serve_split`). 456 fast tests green.
+
+## DEC-232 — 0.9.0 co-trained compact counter: stable, but shape-U 0.6376 (deterministic exactness wins); trainer metadata bug fixed
+
+- **Experiment:** train the compact event-type counter **inside** the shape (use_counter=True,
+  counter_compact=True, counter_event_types=True, w_counter nonzero) so the counter co-evolves with
+  the self-supervised objectives and the distill head sees it. Stable run: early stop at step 1750,
+  best val **2.3135** (0.7.0 base: 3.1273).
+- **Result:** shape rank certifies at **64** (served 137 = 64 + 73); **shape-U 0.6376** — worse than
+  the deterministic post-hoc counter (0.8.3: 0.6504; 0.8.4: 0.8210). The learned gate/readout loses
+  the exact cumulative-sum property that makes the anchored counter useful; lower training loss does
+  not imply future-family sufficiency.
+- **Bug fixed (real):** `train_cfm` did not persist `counter_compact` / `counter_event_types` /
+  `counter_type_values` in the checkpoint blob (only the augment script did), so loading a trained
+  compact counter reconstructed the **2566-dim** full counter and crashed. The save path now records
+  the flags; the 0.9.0 blob/registry were backfilled (metadata only).
+- **Frontier status unchanged:** shape-U best = **0.8210** (0.8.4), full-E best = **0.8744×** (0.8.3);
+  both bars open. Four architecture variants (0.8.4 event types, 0.8.5 per-type value, split serve,
+  0.9.0 co-training) do not close them. 0.8.3 remains the T0-certified card. No gate weakened.
