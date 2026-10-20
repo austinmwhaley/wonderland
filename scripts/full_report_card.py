@@ -958,7 +958,7 @@ def build(args):
     md.append("")
     if comp.get("horizon_days"):
         md.append(
-            f"**Consumer horizon: {comp['horizon_days']}d** (chosen so the label balance is "
+            f"**Consumer horizon: {comp['horizon_days']}** (chosen so the label balance is "
             "valid; degenerate heads are excluded, not called ties)."
         )
         md.append("")
