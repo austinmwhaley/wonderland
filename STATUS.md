@@ -217,6 +217,10 @@ invariant-by-construction).
 
 ## Micro
 
+- **FRONTIER EXPERIMENTS (DEC-231): 0.8.4 event-type counter raises shape-U 0.6504→0.8210 but full-E slips 0.8744→0.8661;**
+  0.8.5 per-type value 0.8181 (no gain); split-serving regressed to 0.6681 (mass axes carry the value).
+  Not adopted; 0.8.3 remains the T0-certified card. Bars unchanged. The remaining shape-U gap is
+  recency/categorical-variety, which would make the shape ≈ the measure (invalidating the learned-shape claim).
 - **0.8.3 CERTIFIED (DEC-230): T0 PASS 18/18 (scoped) with a matched null twin; NOT SOLVED (2 frontier items).**
   Real `0.8.3r776750s2000` + null `0.8.3r703511s2000`, 6000 customers (12k OOM-killed): U=1.0,
   decision 5/5 DEPLOY with nulls 5/5 HOLD/0 uncalibrated, minimality 105 = 32+73, conservation 0.905,

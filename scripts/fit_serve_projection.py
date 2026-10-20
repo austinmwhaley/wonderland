@@ -29,7 +29,7 @@ def main(argv=None):
     ap.add_argument("--out", required=True)
     ap.add_argument("--period-seconds", type=float, default=None, dest="period_seconds")
     ap.add_argument("--receipt", default=None)
-    ap.add_argument("--mode", choices=("pca", "blocks"), default="pca")
+    ap.add_argument("--mode", choices=("pca", "blocks", "split"), default="pca")
     a = ap.parse_args(argv)
 
     import torch
@@ -68,7 +68,60 @@ def main(argv=None):
     Z = np.concatenate(zs, 0) if zs else np.zeros((0, 1))
     if Z.shape[0] < 10:
         raise SystemExit("too few split-A embeddings to fit the projection")
-    if a.mode == "blocks":
+    if a.mode == "split":
+        # MASS-AWARE serve: the counter's many correlated mass axes can crowd the
+        # timing/dynamics axes out of a single shape PCA. Compress the mass block to
+        # the smallest number of PCs explaining 95% of its variance (data-derived),
+        # and give the remaining rank to the donor state.
+        _names = list(getattr(getattr(model, "layer_b", None), "names", ()) or ())
+        d = int(Z.shape[1] - len(_names)) if _names else int(model.dim)
+        _c = int(getattr(model, "counter_raw_dim", 0) or 0)
+        if _c <= 0 or _c >= d:
+            raise SystemExit(
+                "split serve requires an enabled counter with 0 < counter_dim < shape_dim"
+            )
+        k = int(min(a.k, d))
+        Zd, Zm = Z[:, : d - _c], Z[:, d - _c : d]
+        scl_m = StandardScaler().fit(Zm)
+        _mm = min(_c, k - 1, Zm.shape[0] - 1)
+        _pm = PCA(n_components=_mm, random_state=0).fit(scl_m.transform(Zm))
+        _cum = np.cumsum(_pm.explained_variance_ratio_)
+        n_m = int(np.searchsorted(_cum, 0.95) + 1)
+        n_m = max(1, min(n_m, k - 1))
+        n_d = k - n_m
+        pca_m = PCA(n_components=n_m, random_state=0).fit(scl_m.transform(Zm))
+        scl_d = StandardScaler().fit(Zd)
+        pca_d = PCA(n_components=n_d, random_state=0).fit(scl_d.transform(Zd))
+        np.savez(
+            a.out,
+            mode="split",
+            shape_dim=d,
+            counter_dim=_c,
+            total_dim=int(Z.shape[1]),
+            mean_d=scl_d.mean_,
+            scale_d=scl_d.scale_,
+            W_d=pca_d.components_[:n_d],
+            mean_m=scl_m.mean_,
+            scale_m=scl_m.scale_,
+            W_m=pca_m.components_[:n_m],
+        )
+        served = k + (Z.shape[1] - d)
+        rec = {
+            "tag": a.tag,
+            "mode": "split",
+            "source_dim": int(Z.shape[1]),
+            "shape_dim": d,
+            "counter_dim": _c,
+            "donor_rank": int(n_d),
+            "mass_rank": int(n_m),
+            "mass_var_explained": float(_cum[n_m - 1]),
+            "shape_rank": int(k),
+            "measure_dim": int(Z.shape[1] - d),
+            "served_dim": int(served),
+            "n_train": int(Z.shape[0]),
+            "out": str(a.out),
+        }
+    elif a.mode == "blocks":
         # The SHAPE block is everything before the Layer-B measure (donor + counter
         # + accumulator when enabled), not just the donor dim.
         _names = list(getattr(getattr(model, "layer_b", None), "names", ()) or ())

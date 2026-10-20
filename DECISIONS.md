@@ -4882,3 +4882,31 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - **Archived:** `docs/report_cards/reference_v4g_cockpit.md` (+ `_objectives.json`, `_manifest.json`);
   full receipts under `/tmp/opencode/t0_loop/v4g_run/`; experiment receipt updated in
   `docs/report_cards/reference_v4b_experiments.json`.
+
+## DEC-231 — Frontier experiments 0.8.4/0.8.5: event-type mass raises shape-U to 0.821 but trades full-E; split-serving rejected
+
+- **0.8.4 (event-type counts, raw 34):** deterministic compact counter + the stream's own
+  **event-type counts** (no attribute one-hots) on the 0.7.0-distill base. Shape rank certifies
+  at **48**; served **121 = 48 + 73**.
+  - **Shape-only U: 0.8210** (0.8.3: 0.6504) — the largest gain yet; worst member is
+    **next-event delay (0.820 vs oracle 0.999)**; LTV/order-count gaps remain ~0.16.
+  - **Full-E lookalike: 3.2867 / 3.795 = 0.8661×** (0.8.3: 0.8744×) — a small **regression**.
+  - Conservation 0.905 PASS; T3 2 WIN / 8 (0 regression). **Not adopted**: the two bars are
+    still open and the full-E trade is negative.
+- **0.8.5 (per-type cumulative value, raw 45):** shape-U **0.8181** — no improvement over 0.8.4.
+  Not adopted.
+- **Split-serving test (rejected):** compress the mass block to the smallest 95%-variance PCs
+  (11) and give the remaining rank (37) to the donor, to stop redundant mass axes crowding out
+  timing dims. Shape-U **regressed to 0.6681** (worst: next-order value). Conclusion: the mass
+  axes **carry the value signal**; the bottleneck is not PCA crowding.
+- **What this establishes:** the learned shape + anchored mass counter can reach ~0.82 on the
+  declared future family, but closing the last ~0.09 requires the shape to carry the measure's
+  **recency/categorical-variety** information. Adding those deterministic columns to the shape
+  would make the shape ≈ the measure, invalidating the "learned-shape" claim and the block-wise
+  minimality interpretation. This is the documented **architecture tension**, not a gate bug.
+- **Decision:** keep 0.8.3 as the certified card (`T0 PASS 18/18`); 0.8.4/0.8.5 are research
+  receipts (`docs/report_cards/experiments/event_type_counter_v0.8.4.json`). **Do not weaken**
+  the shape-U or full-E bars. No gate changed.
+- **Code (opt-in, default off):** `counter_event_types`, `counter_type_values` (config/model/
+  state/training + `scripts/augment_counter.py --event-types/--type-values`), and a `split`
+  serve mode (`fit_serve_projection --mode split`, `set_serve_split`). 456 fast tests green.

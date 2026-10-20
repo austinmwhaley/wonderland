@@ -1,0 +1,44 @@
+{
+  "tag": "0.8.4r776750s2000",
+  "base": "0.7.0r776750s2000 + compact counter + event-type counts (raw 34)",
+  "shape_U": 0.821,
+  "shape_worst": {
+    "target": "next-event delay (days) @ 30d",
+    "e_alone": 0.8202,
+    "oracle": 0.9991,
+    "norm_gap": 0.17901,
+    "solved": false,
+    "informative": true
+  },
+  "full_E_lookalike": 3.2867,
+  "generic_lookalike": 3.795,
+  "full_E_ratio": 0.8661,
+  "T3": {
+    "wins": 2,
+    "total": 8
+  },
+  "minimality_k_min": 48,
+  "served": "shape 48 + measure 73 = 121",
+  "conservation_R_cons": 0.905,
+  "adopted": false,
+  "verdict": "event-type counts raise shape-U 0.6504->0.8210 but full-E slips 0.8744->0.8661; both frontier bars still open",
+  "variants": {
+    "0.8.5_type_values": {
+      "shape_U": 0.8181,
+      "note": "per-type cumulative value did not help (0.8181); not adopted"
+    },
+    "0.8.4_split_serve": {
+      "shape_U": 0.6681,
+      "mass_rank": 11,
+      "donor_rank": 37,
+      "note": "compressing mass PCs regressed U to 0.6681: the mass axes carry the value signal; rejected"
+    }
+  },
+  "receipts": [
+    "/tmp/opencode/t0_loop/u_controls_v4h.json",
+    "/tmp/opencode/t0_loop/comparators_v4h_pertarget.json",
+    "/tmp/opencode/t0_loop/u_controls_v4i.json",
+    "/tmp/opencode/t0_loop/u_controls_v4h_split.json",
+    "/tmp/opencode/t0_loop/serve_v4h_split.json"
+  ]
+}

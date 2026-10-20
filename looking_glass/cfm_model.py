@@ -762,6 +762,7 @@ class CFM(nn.Module):
         counter_registers: int = 1,
         counter_compact: bool = False,
         counter_event_types: bool = False,
+        counter_type_values: bool = False,
         numeric_fields: tuple = (),
         action_fields: tuple = (),
         effect_dim: int = 0,
@@ -916,6 +917,7 @@ class CFM(nn.Module):
         self.counter_registers = int(max(1, counter_registers))
         self.counter_compact = bool(counter_compact)
         self.counter_event_types = bool(counter_event_types)
+        self.counter_type_values = bool(counter_type_values)
         if self.counter_on:
             if self.counter_compact:
                 # MASS axis only: count + each numeric field (x, x^2) + value/gap.
@@ -923,6 +925,8 @@ class CFM(nn.Module):
                 # optional moderate event-type counts (the stream's own vocabulary).
                 raw_dim = 1 + 4 + 2 * len(self.numeric_fields)
                 if self.counter_event_types:
+                    raw_dim += self.vocab.n_et + 1
+                if self.counter_type_values:
                     raw_dim += self.vocab.n_et + 1
             else:
                 raw_dim = 1 + (self.vocab.n_et + 1)
@@ -1307,6 +1311,10 @@ class CFM(nn.Module):
                 n_et = self.vocab.n_et + 1
                 feats.append(F.one_hot(t["et"].clamp(max=n_et - 1), n_et).to(torch.float32))
             v = t["val"].to(torch.float32)
+            if self.counter_type_values:
+                n_et = self.vocab.n_et + 1
+                _oh = F.one_hot(t["et"].clamp(max=n_et - 1), n_et).to(torch.float32)
+                feats.append(_oh * v)
             dt = t["dt"].to(torch.float32)
             feats += [v, torch.log1p(v.abs()), dt, torch.log1p(dt)]
             raw = torch.cat(feats, dim=-1)
@@ -1369,11 +1377,44 @@ class CFM(nn.Module):
             0, int(getattr(self, "serve_total_dim", 0)) - int(shape_dim)
         )
 
+    def set_serve_split(self, shape_dim, counter_dim, mean_d, scale_d, W_d, mean_m, scale_m, W_m):
+        """Split serve: compress the MASS (counter) part and the DONOR part separately so
+        the redundant mass axes cannot crowd the timing/dynamics axes out of the shape rank."""
+        self.register_buffer("serve_mean_d", torch.as_tensor(mean_d, dtype=torch.float32))
+        self.register_buffer(
+            "serve_scale_d", torch.as_tensor(scale_d, dtype=torch.float32).clamp(min=1e-6)
+        )
+        self.register_buffer("serve_W_d", torch.as_tensor(W_d, dtype=torch.float32))
+        self.register_buffer("serve_mean_m", torch.as_tensor(mean_m, dtype=torch.float32))
+        self.register_buffer(
+            "serve_scale_m", torch.as_tensor(scale_m, dtype=torch.float32).clamp(min=1e-6)
+        )
+        self.register_buffer("serve_W_m", torch.as_tensor(W_m, dtype=torch.float32))
+        self.serve_on = True
+        self.serve_mode = "split"
+        self.serve_shape_dim = int(shape_dim)
+        self.serve_counter_dim = int(counter_dim)
+        self.serve_dim = (
+            int(torch.as_tensor(W_d).shape[0])
+            + int(torch.as_tensor(W_m).shape[0])
+            + max(0, int(getattr(self, "serve_total_dim", 0)) - int(shape_dim))
+        )
+
     def serve_project(self, E: "torch.Tensor") -> "torch.Tensor":
         """Apply the certified minimal serve transform (no-op if unset)."""
         if not getattr(self, "serve_on", False):
             return E
         dev = E.device
+        if getattr(self, "serve_mode", "pca") == "split":
+            d = int(self.serve_shape_dim)
+            c = int(self.serve_counter_dim)
+            donor = ((E[:, : d - c] - self.serve_mean_d.to(dev)) / self.serve_scale_d.to(dev)) @ (
+                self.serve_W_d.to(dev).t()
+            )
+            mass = ((E[:, d - c : d] - self.serve_mean_m.to(dev)) / self.serve_scale_m.to(dev)) @ (
+                self.serve_W_m.to(dev).t()
+            )
+            return torch.cat([donor, mass, E[:, d:]], dim=-1)
         if getattr(self, "serve_mode", "pca") == "blocks":
             d = int(self.serve_shape_dim)
             shape = ((E[:, :d] - self.serve_mean.to(dev)) / self.serve_scale.to(dev)) @ (

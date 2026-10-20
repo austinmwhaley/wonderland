@@ -227,6 +227,7 @@ def load_frozen_encoder(tag: str, cfm_dir):
         counter_registers=int(blob.get("counter_registers", 1)),
         counter_compact=bool(blob.get("counter_compact", False)),
         counter_event_types=bool(blob.get("counter_event_types", False)),
+        counter_type_values=bool(blob.get("counter_type_values", False)),
         numeric_fields=tuple(blob.get("numeric_fields", ()) or ()),
         action_fields=tuple(blob.get("action_fields", ()) or ()),
         effect_dim=int(blob.get("effect_dim", 0) or 0),
@@ -309,7 +310,25 @@ def load_frozen_encoder(tag: str, cfm_dir):
         import numpy as _np
 
         _z = _np.load(_proj)
-        if str(_z.get("mode", "pca")) == "blocks":
+        if str(_z.get("mode", "pca")) == "split":
+            d = int(_z["shape_dim"])
+            model.serve_total_dim = int(_z.get("total_dim", d))
+            model.set_serve_split(
+                d,
+                int(_z["counter_dim"]),
+                _z["mean_d"],
+                _z["scale_d"],
+                _z["W_d"],
+                _z["mean_m"],
+                _z["scale_m"],
+                _z["W_m"],
+            )
+            print(
+                f"[load] split serve: shape->{int(_z['W_d'].shape[0])}+{int(_z['W_m'].shape[0])} "
+                f"+ measure -> {int(model.serve_total_dim) - d} dims",
+                flush=True,
+            )
+        elif str(_z.get("mode", "pca")) == "blocks":
             d = int(_z["shape_dim"])
             model.serve_total_dim = int(_z.get("total_dim", d))
             model.set_serve_blocks(d, _z["mean"], _z["scale"], _z["W"])

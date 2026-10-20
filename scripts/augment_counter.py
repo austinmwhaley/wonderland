@@ -40,6 +40,12 @@ def main(argv=None):
     ap.add_argument("--dst-tag", required=True, dest="dst_tag")
     ap.add_argument("--version", default="0.8.2")
     ap.add_argument(
+        "--type-values",
+        action="store_true",
+        dest="type_values",
+        help="add per-event-type cumulative VALUE (one-hot(et) * value) to the compact counter",
+    )
+    ap.add_argument(
         "--event-types",
         action="store_true",
         dest="event_types",
@@ -60,9 +66,12 @@ def main(argv=None):
     raw_dim = 1 + 4 + 2 * len(model.numeric_fields)
     if a.event_types:
         raw_dim += int(model.vocab.n_et) + 1
+    if a.type_values:
+        raw_dim += int(model.vocab.n_et) + 1
     model.counter_registers = 1
     model.counter_compact = True
     model.counter_event_types = bool(a.event_types)
+    model.counter_type_values = bool(a.type_values)
     model.counter_raw_dim = int(raw_dim)
     model.counter = CounterBlock(model.chan, raw_dim, n_registers=1).to(device)
     model.w_counter = torch.nn.Linear(raw_dim, model.dim).to(device)
@@ -84,6 +93,7 @@ def main(argv=None):
     blob["counter_registers"] = 1
     blob["counter_compact"] = True
     blob["counter_event_types"] = bool(a.event_types)
+    blob["counter_type_values"] = bool(a.type_values)
     torch.save(blob, dst / f"cfm_{_d}.pt")
 
     # Layer-B measure (unchanged) + registry (new tag/version)
@@ -98,6 +108,7 @@ def main(argv=None):
     reg["counter"] = True
     reg["counter_compact"] = True
     reg["counter_event_types"] = bool(a.event_types)
+    reg["counter_type_values"] = bool(a.type_values)
     reg["counter_raw_dim"] = int(raw_dim)
     (dst / f"registry_{_d}.json").write_text(json.dumps(reg, indent=1) + "\n")
     print(
@@ -109,6 +120,7 @@ def main(argv=None):
                 "dst_tag": a.dst_tag,
                 "counter_raw_dim": int(raw_dim),
                 "counter_event_types": bool(a.event_types),
+                "counter_type_values": bool(a.type_values),
                 "shape_source_dim": int(model.dim + raw_dim),
                 "w_counter_zero": True,
             },
