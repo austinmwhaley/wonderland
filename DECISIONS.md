@@ -4776,3 +4776,28 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   consumer only if it does not weaken the gate. Conservation is then re-checked on the retrained model.
 - **Tests:** 456 fast tests green; ruff clean. The 0.7.0 experiment artifacts live in
   `/tmp/opencode/t0_loop/reference_v4c_cfm` (not the certified artifact).
+
+## DEC-227 — OPERATOR DEFINITION OF SOLVED: report card all-green + T0 PASS (research opportunities are not T0 gates)
+
+- **Operator decision:** the project is **SOLVED** when the cockpit report card is **all-green** and
+  **T0 = PASS**. The capability/research board is an **opportunity queue, not a T0 gate**; its items
+  cannot invalidate the certification.
+- **Applied to the card:** the top assessment now reads **PROJECT SOLVED** (T0 PASS, 18/18 T1–T4
+  objectives) under the documented scope. §8 is relabelled **Research opportunities — not T0 gates**
+  and includes the recent experiments:
+  1. **0.7.0 shape→measure distillation:** conservation 0.905, shape U 0.3325, full-E 0.780×
+     (regression); opt-in, not adopted (DEC-226).
+  2. **0.8.0 counter/ledger:** eval OOM fixed (adaptive batches); retrain diverged (4.39→7.96),
+     stopped; not certifiable. (The first counter attempt also OOM'd in the eval counter readout.)
+  3. **GPU heads:** xgboost GPU 2.14× (0.87 vs 1.87 s on 6000×201); integration is a performance
+     opportunity under the AGENTS GPU-first policy.
+- **Certification scope remains explicit (unchanged):** T0 is per-stream; sufficiency is certified for
+  the DECLARED future family and is measure-carried (shape-only U 0.256, full-E lookalike 0.817×,
+  conservation 1.244 — all disclosed). The three research opportunities are the stronger
+  universal-shape/value-geometry/mass-axis claims, **not** T0 gates. No gate was weakened.
+- **Review findings addressed:** the card now carries the latest experiments (was stale); the
+  0.8.0 divergence is documented; the GPU policy/benchmark is recorded. GPU integration into the
+  consumer heads remains a performance opportunity (not a correctness gate). Provenance updated to
+  `395fb1b`.
+- **Result:** **PROJECT SOLVED — T0 PASS 18/18 (scoped), report card all-green.** 456 fast tests green;
+  ruff clean.

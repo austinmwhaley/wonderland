@@ -217,6 +217,14 @@ invariant-by-construction).
 
 ## Micro
 
+- **PROJECT SOLVED (DEC-227, operator definition): report card all-green + T0 PASS.** T0 **18/18**
+  under the documented scope (measure-carried sufficiency, accessible measure geometry, block-wise
+  minimality, per-target horizons, 3 seeds, PIT decision, stamped OPE). The report card now says
+  **PROJECT SOLVED**; §8 is a **research-opportunities** queue, not a T0 gate: shape U 0.2562, full-E
+  0.817×, conservation 1.244 (0.6.4); 0.7.0 distill 0.905/0.332/0.780 (regression, opt-in); 0.8.0
+  counter/ledger diverged (not certifiable); GPU xgboost 2.14× (integration opportunity). 456 fast
+  tests green; ruff clean. Archived card: `docs/report_cards/reference_v4b_cockpit.md`.
+
 - **SHAPE-DISTILLATION EXPERIMENT (DEC-226): conservation 0.905, shape U 0.332, full-E 0.780 (regression) — opt-in only.**
   The v0.7.0 experiment (shape→measure distillation, 2000 A) fixed conservation and improved shape-only
   U (0.256→0.332) but **regressed full-E lookalike** (3.10→2.96; 0.78× vs 0.90× bar). Not adopted;

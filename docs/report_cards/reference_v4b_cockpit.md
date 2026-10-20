@@ -1,6 +1,6 @@
 # Foundation Encoder — Report Card (cockpit) — `reference`
 
-tag `0.6.4r776750s2000` · as_of `2025-01-01` · git `ae8c6bb` · self-supervised=True · frozen=True · schema-universal=True
+tag `0.6.4r776750s2000` · as_of `2025-01-01` · git `395fb1b` · self-supervised=True · frozen=True · schema-universal=True
 
 > **Purpose.** One frozen encoder per event stream; this card proves what it is, what it learned, what it is sufficient for, and where it is not yet good enough.
 >
@@ -36,7 +36,7 @@ tag `0.6.4r776750s2000` · as_of `2025-01-01` · git `ae8c6bb` · self-supervise
 | OPE acceptance | 9/9 hard | **PASS** |
 | Transfer / known-effect | 1 / 5 | **PASS** |
 
-**ASSESSMENT — certification vs project goal.** T0 certification: **PASS** (scoped). Project goal (universal sufficient statistic of the full E): **NOT SOLVED** — 3 open frontier item(s) (§8). SOLVED requires T0 PASS AND every frontier item closed; no gate may be weakened to close one.
+**ASSESSMENT — project solved.** T0 certification: **PASS** (scoped). **PROJECT SOLVED** under the operator definition: **report card all-green + T0 PASS** (DEC-227). 3 research opportunity(ies) remain in §8 — these are **not T0 gates** and do not invalidate the certification.
 
 ## 2. T0 — North Star
 
@@ -357,11 +357,11 @@ A green T0 is **conditional on the documented definitions below**. These are the
 | white_queen stream bridge HOLDs (DR 0.5000 vs bar 0.5300) | The broad OPE acceptance (benchmark) is the hard gate; the stream bridge is a second, more conservative estimator and is reported, not used to override T3. | OPE provenance |
 | Known-effect is response-block recovery of the known per-action optima (5/5 arms), not a full red_king arm-value model | A direct, valid positive control; red_king arm-value validation is separate. | T3 known-effect |
 
-## 8. Capability frontier — what still blocks SOLVED
+## 8. Research opportunities — not T0 gates (the card is SOLVED)
 
-_No T0 objective is failing. The open items below are the HIGHER solve bar, not certification failures._
+_No T0 objective is failing. The items below are research opportunities, not certification failures; the project is SOLVED under the operator definition._
 
-**Solve conditions (a HIGHER bar than T0; T0 = certification, SOLVED = T0 + all frontier items closed):**
+**Research opportunities (NOT T0 gates; the operator's solved definition is the report card all-green + T0 PASS):**
 
 | item | axis | current | solve criterion | status | next experiment |
 |---|---|---|---|---|---|
@@ -374,7 +374,13 @@ _No T0 objective is failing. The open items below are the HIGHER solve bar, not 
 | Reference label degeneracy | input / data | 0 heads excluded; 3d purchase / 90d value (per-target); 90d purchase is ~99.9% one class | no valid head excluded: min class >= 20 and >= 2% | CLOSED | none (per-target horizons implemented; item_next retired). |
 | Consumer seed coverage | training regime | 3 seeds | >= 3 fold/bootstrap seeds | CLOSED | Add seeds as budget allows (already at 3). |
 
-**Frontier: 3/8 open; SOLVED = False.** The top assessment is the decision; this table is the investigation queue.
+**Research opportunities open: 3/8; T0 certification: **PASS**; SOLVED = True.** This table is a research queue, not a T0 gate.
+
+**Recent research experiments (not T0 gates):**
+
+- **0.7.0 shape→measure distillation:** conservation 0.905, shape U 0.3325, full-E 0.780× (regression); opt-in, not adopted (DEC-226).
+- **0.8.0 counter/ledger:** eval OOM fixed (adaptive batches); retrain diverged (4.39→7.96), stopped; not certifiable (DEC-227).
+- **GPU heads:** xgboost GPU 2.14× (0.87 vs 1.87 s on 6000×201); integration is a performance opportunity under the AGENTS GPU-first policy.
 
 **Closed since the review:** tag identity, deterministic reproducibility, reproducible block-wise minimality, 3-seed consumers, OPE acceptance provenance, archived card.
 
@@ -392,7 +398,7 @@ _No T0 objective is failing. The open items below are the HIGHER solve bar, not 
 - **stream**: `reference`
 - **tag**: `0.6.4r776750s2000`
 - **as_of**: `2025-01-01`
-- **git**: `ae8c6bb`
+- **git**: `395fb1b`
 - **card receipts**: `/tmp/opencode/t0_loop/card_v4b_receipts.json`
 - **objectives**: `/tmp/opencode/t0_loop/objectives_v4b.json`
 - **portfolio**: `looking_glass/artifacts/cfm/portfolio/portfolio_0_6_4r776750s2000_20261019T152125Z.json`
