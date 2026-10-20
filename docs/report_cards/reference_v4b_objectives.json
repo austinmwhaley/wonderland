@@ -190,8 +190,8 @@
       "mode": "comparative",
       "scope": "",
       "status": "PASS",
-      "current": "2 WIN / 3 tie (measure-carried) / 0 regression vs fair generic (no significant regression + wins where the shape adds)",
-      "evidence": "2 WIN / 3 tie (measure-carried) / 0 regression vs fair generic (no significant regression + wins where the shape adds)"
+      "current": "2 WIN / 6 tie (measure-carried) / 0 regression vs fair generic (no significant regression + wins where the shape adds)",
+      "evidence": "2 WIN / 6 tie (measure-carried) / 0 regression vs fair generic (no significant regression + wins where the shape adds)"
     },
     {
       "id": "t3.unsupervised",

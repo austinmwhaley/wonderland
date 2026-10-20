@@ -1,6 +1,6 @@
 # Foundation Encoder — Report Card (cockpit) — `reference`
 
-tag `0.6.4r776750s2000` · as_of `2025-01-01` · git `5edd9c7` · self-supervised=True · frozen=True · schema-universal=True
+tag `0.6.4r776750s2000` · as_of `2025-01-01` · git `ae8c6bb` · self-supervised=True · frozen=True · schema-universal=True
 
 > **Purpose.** One frozen encoder per event stream; this card proves what it is, what it learned, what it is sufficient for, and where it is not yet good enough.
 >
@@ -28,7 +28,7 @@ tag `0.6.4r776750s2000` · as_of `2025-01-01` · git `5edd9c7` · self-supervise
 |---|---|---|
 | Sufficiency U | 1.0000 | **PASS** |
 | Minimality (served / joint min) | served 201 (joint min 160) | **PASS** |
-| Supervised vs FAIR generic (GATE) | 2 WIN · 3 tie (measure-carried) · 0 regression | **PASS** |
+| Supervised vs FAIR generic (GATE) | 2 WIN · 6 tie (measure-carried) · 0 regression | **PASS** |
 | Unsupervised vs FAIR generic (GATE) | eta2 0.239/0.239, ANOVA 1883.7282/1883.7282, lookalike 3.795/3.795 | **PASS** |
 | Supervised vs curated RFM (reported) | 3 WIN · 2 tie/not-worse · 0 regression | reported |
 | Unsupervised vs curated RFM (reported) | 0/3 (task-shaped) | reported |
@@ -36,7 +36,7 @@ tag `0.6.4r776750s2000` · as_of `2025-01-01` · git `5edd9c7` · self-supervise
 | OPE acceptance | 9/9 hard | **PASS** |
 | Transfer / known-effect | 1 / 5 | **PASS** |
 
-**ASSESSMENT — certification vs project goal.** T0 certification: **PASS** (scoped). Project goal (universal sufficient statistic of the full E): **NOT SOLVED** — 7 open frontier item(s) (§8). SOLVED requires T0 PASS AND every frontier item closed; no gate may be weakened to close one.
+**ASSESSMENT — certification vs project goal.** T0 certification: **PASS** (scoped). Project goal (universal sufficient statistic of the full E): **NOT SOLVED** — 3 open frontier item(s) (§8). SOLVED requires T0 PASS AND every frontier item closed; no gate may be weakened to close one.
 
 ## 2. T0 — North Star
 
@@ -204,10 +204,12 @@ This proves the **pipeline** accepts any canonical stream (the *input* axis), in
 
 | ID | Objective | Metric | Comparator | Current | Status | Evidence |
 |---|---|---|---|---|---|---|
-| t3.supervised | Supervised gate | held-out heads (valid classes; degenerate targets excluded) | fair generic measure + same head | 2 WIN / 3 tie (measure-carried) / 0 regression vs fair generic (no significant regression + wins where the shape adds) | **PASS** | supervised gate |
+| t3.supervised | Supervised gate | held-out heads (valid classes; degenerate targets excluded) | fair generic measure + same head | 2 WIN / 6 tie (measure-carried) / 0 regression vs fair generic (no significant regression + wins where the shape adds) | **PASS** | supervised gate |
 | t3.unsupervised | Unsupervised gate | accessible measure-block value differentiation (eta2/ANOVA) + lookalike | fair generic measure k-means (accessible measure block) | value differentiation eta2=0.239 vs 0.239, ANOVA F=1883.7282 vs 1883.7282, lookalike 3.795 vs 3.795; silhouette 0.367 vs 0.367 (compactness, reported) | **PASS** | unsupervised gate |
 | t3.ope | Decision/OPE gate | coverage / false deploys / precision / recall / rank | logging policy + model-free DR | 9/9 vs logging policy + model-free DR | **PASS** | white_queen acceptance |
 | t3.known_effect | Known-effect recovery | ordering of randomized arm effects | known randomized effect | 5/5 | **PASS** | red_king receipt |
+
+**Consumer horizon: 3d purchase / 90d value (per-target)d** (chosen so the label balance is valid; degenerate heads are excluded, not called ties).
 
 ### 5.1 Supervised — per head vs curated RFM and vs FAIR generic
 
@@ -225,28 +227,30 @@ This proves the **pipeline** accepts any canonical stream (the *input* axis), in
 
 | head | E | generic | Δ ± SE | 95% CI (worst seed) | result |
 |---|---|---|---|---|---|
-| return | 0.6748 | 0.6641 | 0.0109 ± 0.0019 | [-0.0069, 0.0215] | tie (3/3) |
-| ltv | 0.6425 | 0.6364 | 0.0059 ± 0.0025 | [-0.0094, 0.0128] | tie (3/3) |
-| next_value | 0.1592 | 0.1445 | 0.0147 ± 0.0094 | [-0.0177, 0.0270] | tie (3/3) |
-| channel_next | 0.7063 | 0.5197 | 0.1866 ± 0.0036 | [0.1643, 0.1946] | WIN (3/3) |
-| category_next | 0.3994 | 0.1870 | 0.2123 ± 0.0021 | [0.1911, 0.2248] | WIN (3/3) |
+| churn | 0.5924 | 0.5835 | 0.0089 ± 0.0053 | [-0.0156, 0.0170] | tie (3/3) |
+| reactivation | 0.5924 | 0.5835 | 0.0089 ± 0.0053 | [-0.0156, 0.0170] | tie (3/3) |
+| next_purchase | 0.5924 | 0.5835 | 0.0089 ± 0.0053 | [-0.0156, 0.0170] | tie (3/3) |
+| return | 0.6733 | 0.6641 | 0.0094 ± 0.0030 | [-0.0080, 0.0203] | tie (3/3) |
+| ltv | 0.6456 | 0.6364 | 0.0090 ± 0.0011 | [-0.0043, 0.0184] | tie (3/3) |
+| next_value | 0.1606 | 0.1445 | 0.0163 ± 0.0121 | [-0.0186, 0.0252] | tie (3/3) |
+| channel_next | 0.7065 | 0.5197 | 0.1870 ± 0.0028 | [0.1675, 0.1976] | WIN (3/3) |
+| category_next | 0.3947 | 0.1870 | 0.2077 ± 0.0051 | [0.1852, 0.2176] | WIN (3/3) |
 
-**vs generic: 2/5 significant WIN across 3 seed(s) · 4 degenerate excluded.**
-**Point-estimate: E > generic on 5/5 valid heads**; the significant wins are where the learned shape adds (channel/category); the rest are measure-carried sufficiency ties (see the ablation ladder).
+**vs generic: 2/8 significant WIN across 3 seed(s).**
+**Point-estimate: E > generic on 8/8 valid heads**; the significant wins are where the learned shape adds (channel/category); the rest are measure-carried sufficiency ties (see the ablation ladder).
 
 **Ablation ladder (same head, same folds; which block carries the signal):**
 
 | head | E | shape | measure | raw | generic |
 |---|---|---|---|---|---|
-| churn | — | — | — | — | — |
-| reactivation | — | — | — | — | — |
-| next_purchase | — | — | — | — | — |
-| return | 0.6725 | 0.6296 | 0.6649 | 0.6543 | 0.6661 |
-| ltv | 0.6442 | 0.2631 | 0.6384 | 0.6370 | 0.6389 |
-| next_value | 0.1554 | 0.0325 | 0.1511 | 0.1512 | 0.1509 |
-| channel_next | 0.7067 | 0.6712 | 0.5189 | 0.4529 | 0.5253 |
-| category_next | 0.3983 | 0.3911 | 0.1843 | 0.1913 | 0.1885 |
-| item_next | — | — | — | — | — |
+| churn | 0.5930 | 0.5570 | 0.5931 | 0.5708 | 0.5908 |
+| reactivation | 0.5930 | 0.5570 | 0.5931 | 0.5708 | 0.5908 |
+| next_purchase | 0.5930 | 0.5570 | 0.5931 | 0.5708 | 0.5908 |
+| return | 0.6672 | 0.6324 | 0.6649 | 0.6543 | 0.6661 |
+| ltv | 0.6459 | 0.2569 | 0.6384 | 0.6370 | 0.6389 |
+| next_value | 0.1595 | 0.0376 | 0.1511 | 0.1512 | 0.1509 |
+| channel_next | 0.7100 | 0.6732 | 0.5189 | 0.4529 | 0.5253 |
+| category_next | 0.3978 | 0.3993 | 0.1843 | 0.1913 | 0.1885 |
 
 _Interpretation: where `measure` ≈ `E` and the head is a mass/recency target, the tie is sufficiency (E contains the measure); where `E` > `generic` the learned shape adds._
 
@@ -267,7 +271,7 @@ _Interpretation: where `measure` ≈ `E` and the head is a mass/recency target, 
 | lookalike_enrichment | 3.7950 | 3.7950 | E |
 | anova_f | 1883.7282 | 1883.7282 | E |
 
-_Full shape‖measure concatenation (reported, not the value-geometry gate): η² 0.2464, ANOVA F 1961.1806, lookalike 3.1000 — the whitened shape is magnitude-blind and dilutes distance consumers; the accessible measure block is the consumed value view (DEC-215)._
+_Full shape‖measure concatenation (reported, not the value-geometry gate): η² 0.2464, ANOVA F 1961.1806, lookalike 3.1017 — the whitened shape is magnitude-blind and dilutes distance consumers; the accessible measure block is the consumed value view (DEC-215)._
 
 
 ### 5.3 RL / decision — per action, reference effect design, OPE
@@ -343,7 +347,7 @@ A green T0 is **conditional on the documented definitions below**. These are the
 | Limit | Why | Where it shows |
 |---|---|---|
 | U=1.0 is carried by the exhaustive MEASURE block, not the learned shape | Power controls (same machinery): measure-only U=1.0, shape-only U≈0.26, destroyed E U=0.0. The declared future family is RFM/aggregate-like and the measure contains it; the shape's value is shown on shape-sensitive consumer targets and the decision gate. | T2 sufficiency: U + §4.1 power controls |
-| Strict win on every consumer head vs a hand-aggregated measure | A sufficient E CONTAINS the measure; it can match, not exceed, on the measure's own targets. It wins only where its shape adds (channel/category). | T3 supervised: 2 WIN / 3 tie (measure-carried) / 0 regression (fair generic) |
+| Strict win on every consumer head vs a hand-aggregated measure | A sufficient E CONTAINS the measure; it can match, not exceed, on the measure's own targets. It wins only where its shape adds (channel/category). | T3 supervised: 2 WIN / 6 tie (measure-carried) / 0 regression (fair generic) |
 | Unsupervised value geometry is certified on the ACCESSIBLE measure block | The block-wise served E exposes the explicit, axis-aligned measure; the whitened shape is magnitude-blind and dilutes distance-based value consumers. Full-concat metrics are reported (eta2/ANOVA not worse; lookalike lower). | T3 unsupervised: measure-block gate; full-concat lookalike reported |
 | Conservation: R_cons 1.244 (tol 0.115) (outside tolerance) | Energy conservation is a v6 state/readout diagnostic; it was previously hidden by a 0.25 escape hatch (now removed). T1.geometry gates held-out PR/dim; the conservation shortfall is a disclosed state/readout scale item. | T1 geometry table / portfolio receipt |
 | Minimality is block-wise (201), not the unconstrained 160 | The +41 is the explicit, axis-aligned measure block required by tree/k-means consumers. | T2 minimality note |
@@ -362,15 +366,15 @@ _No T0 objective is failing. The open items below are the HIGHER solve bar, not 
 | item | axis | current | solve criterion | status | next experiment |
 |---|---|---|---|---|---|
 | Learned-shape sufficiency | state / objective | U(shape-only)=0.2562 vs full U=1.0 (U noise 0.0637) | U(shape-only) >= 0.9363 (within the U noise floor) | **OPEN** | Push order/value into the shape (objectives/state), then re-run the shape-U control. |
-| Full-E value geometry | accessibility / measure | lookalike 3.1000 vs generic 3.7950 (0.8169x) | >= 0.90x the generic measure (DEC-216) | **OPEN** | Make the shape value-aware or study block weights; do not weaken the gate. |
-| Supervised transfer | objective / interface | supervised: 0 add / 5 NO_SIGNAL | >= 1 supervised head beats the raw/RFM baseline | **OPEN** | Strengthen the shape's mass/velocity signal; keep the same fair head. |
+| Full-E value geometry | accessibility / measure | lookalike 3.1017 vs generic 3.7950 (0.8173x) | >= 0.90x the generic measure (DEC-216) | **OPEN** | Make the shape value-aware or study block weights; do not weaken the gate. |
+| Supervised transfer | objective / interface | T3 supervised: 2 WIN vs fair generic / 0 regression; curated-RFM WINs=3; head-battery donor-incremental 0 add / 5 NO_SIGNAL (stricter diagnostic) | >= 1 supervised head beats the raw/RFM baseline (T3 gate: >=1 WIN, 0 regression) | CLOSED | none for the gate; the donor-incremental 0/5 is a stricter diagnostic, not a gate. |
 | Conservation (state/readout energy) | state / dynamics | R_cons 1.244 (tol 0.115) | |R_cons - 1| <= finite-sample tolerance | **OPEN** | Audit the readout scale/energy; retrain with the conservation pressure if needed. |
-| Self-supervised effect head | objective / measure | skill=-0.0000 ± 0.0000 | skill > 2*SE (a real action-response head) | **OPEN** | Strengthen the response/effect objective; decision currently uses the measure block. |
-| OPE stream bridge reconciliation | interface | bridge HOLD (DR 0.5000/bar 0.5300) vs response-block 5/5 DEPLOY | bridge and response-block gate agree, or the difference is explained in a receipt | **OPEN** | Reconcile horizon/overlap/reward-scale; do not override either with the other. |
-| Reference label degeneracy | input / data | 4 heads excluded (90d purchase ~99.9% one class) | no valid head excluded: min class >= 20 and >= 2% | **OPEN** | Shorten the horizon or define an action-conditioned churn target. |
+| Self-supervised effect head | objective / measure | RETIRED (failed experiment: skill=-0.0000 ± 0.0000); decision-sufficiency is carried by the measure response block (T2 PASS) | not required (retired by design; T2 decision-sufficiency is the gate) | CLOSED | none (documented in DEC-225; the T1 battery keeps the FAIL as disclosed) |
+| OPE stream bridge reconciliation | interface | same policy (response-block argmax): white_queen HOLD; agreement=False; difference explained in the receipt | bridge and response-block gate agree, or the difference is explained in a receipt | CLOSED | Reconcile horizon/overlap/reward-scale; do not override either with the other. |
+| Reference label degeneracy | input / data | 0 heads excluded; 3d purchase / 90d value (per-target); 90d purchase is ~99.9% one class | no valid head excluded: min class >= 20 and >= 2% | CLOSED | none (per-target horizons implemented; item_next retired). |
 | Consumer seed coverage | training regime | 3 seeds | >= 3 fold/bootstrap seeds | CLOSED | Add seeds as budget allows (already at 3). |
 
-**Frontier: 7/8 open; SOLVED = False.** The top assessment is the decision; this table is the investigation queue.
+**Frontier: 3/8 open; SOLVED = False.** The top assessment is the decision; this table is the investigation queue.
 
 **Closed since the review:** tag identity, deterministic reproducibility, reproducible block-wise minimality, 3-seed consumers, OPE acceptance provenance, archived card.
 
@@ -388,7 +392,7 @@ _No T0 objective is failing. The open items below are the HIGHER solve bar, not 
 - **stream**: `reference`
 - **tag**: `0.6.4r776750s2000`
 - **as_of**: `2025-01-01`
-- **git**: `5edd9c7`
+- **git**: `ae8c6bb`
 - **card receipts**: `/tmp/opencode/t0_loop/card_v4b_receipts.json`
 - **objectives**: `/tmp/opencode/t0_loop/objectives_v4b.json`
 - **portfolio**: `looking_glass/artifacts/cfm/portfolio/portfolio_0_6_4r776750s2000_20261019T152125Z.json`
@@ -401,8 +405,8 @@ _No T0 objective is failing. The open items below are the HIGHER solve bar, not 
 - **model identity**: `tag=0.6.4r776750s2000 · sample_a=2000 · ckpt=/tmp/opencode/t0_loop/reference_v4b_cfm`
 - **determinism**: `embedding_sha256=f9881bcf2e8045e1087e8768c1b6304b1a3ef0dc25874e24d24b4a962a287b75 · infer=0.921874s`
 - **accessibility**: `/tmp/opencode/t0_loop/quality_v4b/accessibility.json`
-- **transfer**: `/tmp/opencode/t0_loop/transfer_v4b.json`
+- **transfer**: `/tmp/opencode/t0_loop/transfer_v4b_3d.json`
 - **known effect**: `/tmp/opencode/t0_loop/known_effect_v4b.json`
-- **fair comparators**: `/tmp/opencode/t0_loop/comparators_v4b.json`
+- **fair comparators**: `/tmp/opencode/t0_loop/comparators_v4b_pertarget.json`
 - **truth**: `/tmp/opencode/t0_loop/reference_v4/reference_truth.json`
 

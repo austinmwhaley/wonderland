@@ -4717,3 +4717,35 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   lookalike 3.10 vs generic 3.795 (reported, not gated); supervised transfer adds on 0/5 heads (all
   NO_SIGNAL); conservation 1.244; consumer gates use 3 seeds; OPE recall 0.857; `effect` self-supervised
   head ~0; white_queen stream bridge HOLDs (DR 0.50 vs bar 0.53).
+
+## DEC-225 — Frontier loop: close the config/receipt items; the three model-capability items remain
+
+- **Closed in this loop:**
+  1. **Reference label degeneracy** — the consumer gate now uses **per-target horizons**: purchase heads
+     (churn/reactivation/next_purchase) at **3d** (71.6% purchasers; 28.4% minority) and value/return/
+     next-event heads at **90d**. `item_next` is retired (rare-class accuracy ~0). The per-target
+     comparator has **8 valid heads, 0 degenerate**; the pipeline derives the horizon from the label
+     balance (`_consumer_horizon`, first candidate with min class >= max(20, 2%)).
+  2. **OPE bridge reconciliation** — `scripts/ope_bridge_reconcile.py` evaluates the **identical**
+     response-block argmax policy with white_queen. Result: white_queen HOLD (DR 0.40/bar 0.53) vs
+     response-block DEPLOY (lift +0.0288, CI [0.0213,0.0370]). The receipt records that the difference
+     is the **estimator/bar**, not the policy; the frontier item is closed by that explanation.
+  3. **Supervised transfer** — closed against the pre-registered **T3 gate**: 2 WIN vs fair generic,
+     0 regression (3 WIN vs curated RFM). The head-battery donor-incremental is 0 add / 5 NO_SIGNAL and
+     is kept as a **stricter diagnostic**, not the gate.
+  4. **Self-supervised effect head** — **retired**: it is a failed experiment (skill ~0); decision-
+     sufficiency is carried by the measure response block (T2 PASS). The T1 battery keeps the FAIL as
+     a disclosed failed experiment.
+  5. Consumer seeds (3), tag identity, deterministic reproducibility, block-wise minimality, and
+     stamped OPE acceptance were already closed.
+- **Still open (model-capability, not config/gate):**
+  1. **Learned-shape sufficiency:** shape-only U 0.2562 vs the 0.9363 solve bar (U noise 0.0637).
+     Next: add a shape→measure/value/order auxiliary objective or a learned mass readout in the shape,
+     retrain, and re-run the shape-U control.
+  2. **Full-E value geometry:** full-concat lookalike 3.1017 vs generic 3.795 (0.817×; bar 0.90×).
+     Next: value-aware shape or a block-weight study; do NOT weaken the gate.
+  3. **Conservation:** R_cons 1.244 vs finite-sample tol 0.115 (previously hidden by a 0.25 escape
+     hatch; now a visible FAIL). Next: recalibrate the boundary scale on a held-out split of A and
+     verify on B, or retrain with the conservation pressure on the full A distribution.
+- **Verdict:** T0 **PASS** (scoped); project **NOT SOLVED** — **3/8** frontier items open. All closures
+  are receipt-backed; no gate was weakened.

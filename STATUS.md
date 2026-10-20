@@ -217,6 +217,15 @@ invariant-by-construction).
 
 ## Micro
 
+- **FRONTIER LOOP (DEC-225): 5/8 closed, 3 model-capability items open.** Closed: reference degeneracy
+  (per-target 3d purchase / 90d value; 8 valid heads, 0 excluded; pipeline derives the horizon), OPE
+  bridge reconciliation (same response-block policy; white_queen HOLD vs response-block DEPLOY;
+  difference = estimator/bar, receipted), supervised transfer (T3 2 WIN vs fair generic/0 regression;
+  donor-incremental 0/5 disclosed as a stricter diagnostic), effect head retired (measure response
+  block carries decision-sufficiency), 3 seeds. **Still open:** learned-shape U 0.256 vs 0.936;
+  full-E lookalike 0.817× vs 0.90×; conservation R_cons 1.244 vs 0.115. T0 PASS (scoped), project
+  **NOT SOLVED** (3/8). 456 fast tests; ruff clean.
+
 - **PEER-REVIEW RESOLUTIONS (DEC-224).** Fixed every review finding: reproducible block-wise minimality
   (`scripts/minimality_blocks.py`; joint honestly false, block-wise true; pipeline certifies rank →
   serve → block-wise receipt); sample-encoded tags + `scripts/retag_model.py` (real

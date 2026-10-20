@@ -1,7 +1,7 @@
 {
   "tag": "0.6.4r776750s2000",
   "as_of": "2025-01-01",
-  "git": "5edd9c7",
+  "git": "ae8c6bb",
   "model_identity": {
     "tag": "0.6.4r776750s2000",
     "ckpt_dir": "/tmp/opencode/t0_loop/reference_v4b_cfm",
@@ -35,11 +35,11 @@
   "archived": {
     "cockpit": {
       "path": "docs/report_cards/reference_v4b_cockpit.md",
-      "sha256": "4c9ee31d656f54e9591ed7acd07d2f1ada15e395a41563982e7cba668b0e7989"
+      "sha256": "8aa0fcf16b00a1e8c4623d04b4059d0b973d5fec36e8e3386c3909706105c662"
     },
     "objectives": {
       "path": "docs/report_cards/reference_v4b_objectives.json",
-      "sha256": "3084d7e4f07b2821bb88bdc064a5915c54c9eebd2c1b6dec165d301c55b0e9ca"
+      "sha256": "20285e9caa3eeb1269553785a50f5dc8350e13da1f9df967e9169537509b4fe1"
     }
   },
   "full_receipts": {
