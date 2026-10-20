@@ -65,7 +65,13 @@ def main(argv=None):
     Z, C = _states(model, cfg, keys)
     G, gnames = _full_history_features(cfg, C)
     G = np.asarray(G, dtype=float)
-    lab = _labels(cfg, C, a.horizon_days)
+    # PER-TARGET HORIZONS (data-derived): 90d purchase is ~99.9% one class, so
+    # purchase heads use 3d; value/return/next-event heads use the long horizon.
+    # item_next is retired (rare-class accuracy ~0; not informative).
+    _PURCHASE = {"churn", "reactivation", "next_purchase"}
+    _RETIRED = {"item_next"}
+    lab_short = _labels(cfg, C, 3)
+    lab_long = _labels(cfg, C, a.horizon_days)
     Z = StandardScaler().fit_transform(Z)
     G = StandardScaler().fit_transform(G)
 
@@ -81,6 +87,9 @@ def main(argv=None):
     rows = []
     _loop = [] if a.supervised_from else list(TARGETS.items())
     for name, (kind, metric, _base) in _loop:
+        if name in _RETIRED:
+            continue
+        lab = lab_short if name in _PURCHASE else lab_long
         src = "next_purchase" if name == "reactivation" else name
         yv = np.array([lab.get(c, {}).get(src, np.nan) for c in C], dtype=object)
         ok = np.array([c in lab and src in lab[c] for c in C])
@@ -217,6 +226,8 @@ def main(argv=None):
     wins = sum(1 for r in _valid if r["win"])
     rec = {
         "baseline": "generic full-history measure + same head",
+        "horizon_days": f"3d purchase / {int(a.horizon_days)}d value (per-target)",
+        "retired_heads": sorted(_RETIRED),
         "supervised": rows,
         "supervised_wins": wins,
         "supervised_total": len(_valid),

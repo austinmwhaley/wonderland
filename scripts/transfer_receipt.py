@@ -44,6 +44,7 @@ def main(argv=None):
     # pass is never mistaken for supervised transfer.
     beats = bool(n_add > 0 and n_fail == 0)
     rec = {
+        "horizon_days": int(a.horizon_days),
         "passed": int(beats),
         "total": 1,
         "baseline": "RFM/raw aggregates + GBM",

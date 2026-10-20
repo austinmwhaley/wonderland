@@ -194,6 +194,13 @@ def main(argv=None):
         help="override; default reads the certified rank from the shape certificate",
     )
     ap.add_argument("--seeds", default="0,1,2", help="consumer-gate seeds")
+    ap.add_argument(
+        "--consumer-horizon-days",
+        type=int,
+        default=None,
+        dest="consumer_horizon_days",
+        help="override; default derives the shortest non-degenerate purchase horizon",
+    )
     ap.add_argument("--acceptance", default=None, help="OPE acceptance receipt (optional)")
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args(argv)
@@ -210,6 +217,16 @@ def main(argv=None):
         full=a.full,
     )
     period = _period_from_truth(f"{a.out_root}/reference/reference_truth.json")
+    _db_path = f"{a.out_root}/reference/customer_event_stream.parquet"
+    horizon = (
+        int(a.consumer_horizon_days)
+        if a.consumer_horizon_days is not None
+        else (
+            _consumer_horizon(_db_path, a.as_of)
+            if Path(_db_path).exists()
+            else 3  # dry-run with no generated stream: documented fallback
+        )
+    )
     post = cockpit_commands(
         a.out_root,
         a.as_of,
@@ -217,6 +234,7 @@ def main(argv=None):
         a.shape_rank if a.shape_rank is not None else "<SHAPE_RANK>",
         period,
         a.seeds,
+        horizon,
         a.acceptance,
     )
 
@@ -254,6 +272,37 @@ def main(argv=None):
     return 0
 
 
+def _consumer_horizon(db: str, as_of: str, candidates=(3, 7, 14, 30, 90)) -> int:
+    """Pick the shortest consumer horizon whose purchase label is not degenerate.
+
+    A 90d purchase label on the reference is ~99.9% one class (daily sends); an AUC
+    on 5 minority examples is noise. The horizon is DATA-DERIVED: the first
+    candidate with min(class) >= max(20, 2% of n). Falls back to the last candidate.
+    """
+    import duckdb
+
+    from looking_glass.cfm_config import as_of_epoch
+
+    src = f"read_parquet('{db}')" if db.endswith((".parquet", ".pq")) else db
+    tc = float(as_of_epoch(as_of))
+    con = duckdb.connect()
+    try:
+        for h in candidates:
+            row = con.execute(
+                f"SELECT count(*) FILTER (WHERE has) purchasers, count(*) n FROM ("
+                f"SELECT customer_key, max(CASE WHEN event_type='purchase' THEN 1 ELSE 0 END) has "
+                f"FROM {src} WHERE epoch(CAST(event_ts AS TIMESTAMPTZ))>{tc} "
+                f"AND epoch(CAST(event_ts AS TIMESTAMPTZ))<={tc + h * 86400.0} GROUP BY 1)"
+            ).fetchone()
+            pos, n = int(row[0] or 0), int(row[1] or 0)
+            minority = min(pos, n - pos)
+            if n and minority >= max(20, int(0.02 * n)):
+                return int(h)
+    finally:
+        con.close()
+    return int(candidates[-1])
+
+
 def _period_from_truth(path: str) -> float:
     try:
         meta = json.loads(Path(path).read_text()).get("meta", {}) or {}
@@ -272,6 +321,7 @@ def cockpit_commands(
     shape_rank,
     period: float,
     seeds: str,
+    consumer_horizon: int,
     acceptance: str | None,
     tag: str = TAG,
     null_tag: str = NULL_TAG,
@@ -445,7 +495,7 @@ def cockpit_commands(
             "scripts/transfer_receipt.py",
             *common,
             "--horizon-days",
-            "90",
+            str(consumer_horizon),
             "--out",
             f"{out_root}/transfer.json",
         ],
@@ -454,7 +504,7 @@ def cockpit_commands(
             "scripts/consumer_comparators.py",
             *common,
             "--horizon-days",
-            "90",
+            str(consumer_horizon),
             "--seeds",
             seeds,
             "--out",
@@ -465,7 +515,7 @@ def cockpit_commands(
             "scripts/ablation_ladder.py",
             *common,
             "--horizon-days",
-            "90",
+            str(consumer_horizon),
             "--seed",
             "0",
             "--out",
@@ -488,6 +538,15 @@ def cockpit_commands(
             "30,90",
             "--out",
             f"{out_root}/u_controls.json",
+        ],
+        [
+            py,
+            "scripts/ope_bridge_reconcile.py",
+            *common,
+            "--action-key",
+            "channel",
+            "--out",
+            f"{out_root}/ope_reconcile.json",
         ],
         [
             py,
@@ -595,6 +654,8 @@ def cockpit_commands(
             f"{out_root}/u_controls.json",
             "--reproducibility",
             f"{out_root}/reproducibility.json",
+            "--ope-reconcile",
+            f"{out_root}/ope_reconcile.json",
             "--card-md",
             f"{out_root}/card.md",
             "--truth",

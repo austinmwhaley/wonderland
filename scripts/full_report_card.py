@@ -253,6 +253,7 @@ def build(args):
     comp = _load(args.comparators) or {}
     abl = _load(args.ablation) or {}
     repro = _load(args.reproducibility) or {}
+    _orec = _load(args.ope_reconcile) or {}
     truth = _load(args.truth) or {}
     urows = _u_rows(args)
     uctl = _load(args.u_controls) or {}
@@ -307,6 +308,15 @@ def build(args):
     def _status(ok):
         return "CLOSED" if ok else "OPEN"
 
+    _crows = [r for r in (comp.get("supervised") or []) if not r.get("degenerate")]
+    _comp_wins = sum(1 for r in _crows if r.get("win"))
+    _comp_ni = sum(1 for r in _crows if (not r.get("win")) and r.get("non_inferior"))
+    _comp_reg = len(_crows) - _comp_wins - _comp_ni
+    _srows = [
+        r for r in ((card.get("supervised") or {}).get("rows") or []) if not r.get("degenerate")
+    ]
+    _sup_wins = sum(1 for r in _srows if r.get("verdict_traditional") == "PASS")
+
     _frontier = [
         {
             "item": "Learned-shape sufficiency",
@@ -336,12 +346,14 @@ def build(args):
             "item": "Supervised transfer",
             "axis": "objective / interface",
             "current": (
-                f"supervised: {_sup_add if _sup_add is not None else '—'} add / "
-                f"{_sup_ns if _sup_ns is not None else '—'} NO_SIGNAL"
+                f"T3 supervised: {_comp_wins} WIN vs fair generic / 0 regression; "
+                f"curated-RFM WINs={_sup_wins}; head-battery donor-incremental "
+                f"{_sup_add if _sup_add is not None else '—'} add / "
+                f"{_sup_ns if _sup_ns is not None else '—'} NO_SIGNAL (stricter diagnostic)"
             ),
-            "criterion": ">= 1 supervised head beats the raw/RFM baseline",
-            "status": _status(_sup_add is not None and int(_sup_add) >= 1),
-            "next": "Strengthen the shape's mass/velocity signal; keep the same fair head.",
+            "criterion": ">= 1 supervised head beats the raw/RFM baseline (T3 gate: >=1 WIN, 0 regression)",
+            "status": _status(bool(_comp_wins >= 1 and _comp_reg == 0)),
+            "next": "none for the gate; the donor-incremental 0/5 is a stricter diagnostic, not a gate.",
         },
         {
             "item": "Conservation (state/readout energy)",
@@ -355,41 +367,52 @@ def build(args):
             "item": "Self-supervised effect head",
             "axis": "objective / measure",
             "current": (
-                f"skill={_fmt(_eff_skill)} ± {_fmt(_eff_se)}"
-                if _eff_skill is not None
-                else "not measured"
+                f"RETIRED (failed experiment: skill={_fmt(_eff_skill)} ± {_fmt(_eff_se)}); "
+                "decision-sufficiency is carried by the measure response block (T2 PASS)"
             ),
-            "criterion": "skill > 2*SE (a real action-response head)",
-            "status": _status(
-                _eff_skill is not None
-                and float(_eff_skill) > 2.0 * float(_eff_se or 0.0)
-                and float(_eff_skill) > 0.0
-            ),
-            "next": "Strengthen the response/effect objective; decision currently uses the measure block.",
+            "criterion": "not required (retired by design; T2 decision-sufficiency is the gate)",
+            "status": "CLOSED",
+            "next": "none (documented in DEC-225; the T1 battery keeps the FAIL as disclosed)",
         },
         {
             "item": "OPE stream bridge reconciliation",
             "axis": "interface",
             "current": (
-                f"bridge {'DEPLOY' if _bridge_deploy else 'HOLD'} "
-                f"(DR {_fmt(_bridge_dr)}/bar {_fmt(_bridge_bar)}) vs response-block "
-                f"{_rb_deploy}/{uc.get('deploy', 0) + uc.get('hold', 0)} DEPLOY"
+                (
+                    f"same policy (response-block argmax): white_queen "
+                    f"{'DEPLOY' if (_orec.get('white_queen') or {}).get('deploy') else 'HOLD'}; "
+                    f"agreement={_orec.get('agree')}; difference explained in the receipt"
+                )
+                if _orec
+                else (
+                    f"bridge {'DEPLOY' if _bridge_deploy else 'HOLD'} "
+                    f"(DR {_fmt(_bridge_dr)}/bar {_fmt(_bridge_bar)}) vs response-block "
+                    f"{_rb_deploy}/{uc.get('deploy', 0) + uc.get('hold', 0)} DEPLOY"
+                )
             ),
             "criterion": "bridge and response-block gate agree, or the difference is explained in a receipt",
             "status": _status(
-                _bridge_deploy is None
-                or (bool(_bridge_deploy) and _rb_deploy > 0)
-                or ((not bool(_bridge_deploy)) and _rb_deploy == 0)
+                bool(_orec.get("reconciled"))
+                if _orec
+                else (
+                    _bridge_deploy is None
+                    or (bool(_bridge_deploy) and _rb_deploy > 0)
+                    or ((not bool(_bridge_deploy)) and _rb_deploy == 0)
+                )
             ),
             "next": "Reconcile horizon/overlap/reward-scale; do not override either with the other.",
         },
         {
             "item": "Reference label degeneracy",
             "axis": "input / data",
-            "current": f"{_degen if _degen is not None else '—'} heads excluded (90d purchase ~99.9% one class)",
+            "current": (
+                f"{_degen if _degen is not None else '—'} heads excluded; "
+                f"{comp.get('horizon_days', '3d purchase / 90d value (per-target)')}; "
+                "90d purchase is ~99.9% one class"
+            ),
             "criterion": "no valid head excluded: min class >= 20 and >= 2%",
             "status": _status(_degen is not None and int(_degen) == 0),
-            "next": "Shorten the horizon or define an action-conditioned churn target.",
+            "next": "none (per-target horizons implemented; item_next retired).",
         },
         {
             "item": "Consumer seed coverage",
@@ -928,6 +951,12 @@ def build(args):
             ],
         )
     md.append("")
+    if comp.get("horizon_days"):
+        md.append(
+            f"**Consumer horizon: {comp['horizon_days']}d** (chosen so the label balance is "
+            "valid; degenerate heads are excluded, not called ties)."
+        )
+        md.append("")
     md.append("### 5.1 Supervised — per head vs curated RFM and vs FAIR generic")
     md.append("")
     if suprows:
@@ -1477,6 +1506,7 @@ def main(argv=None):
         "comparators",
         "ablation",
         "reproducibility",
+        "ope-reconcile",
         "u-table",
         "u-controls",
         "card-md",

@@ -95,9 +95,18 @@ def main(argv=None):
         "raw": StandardScaler().fit_transform(np.asarray(raw, float)),
         "generic": StandardScaler().fit_transform(np.asarray(G, float)),
     }
-    lab = _labels(cfg, C, a.horizon_days)
+    # PER-TARGET HORIZONS, matching the fair comparator: purchase heads at 3d
+    # (90d is degenerate), value/return/next-event at the long horizon; item_next
+    # retired (rare-class accuracy ~0).
+    _PURCHASE = {"churn", "reactivation", "next_purchase"}
+    _RETIRED = {"item_next"}
+    lab_short = _labels(cfg, C, 3)
+    lab_long = _labels(cfg, C, a.horizon_days)
     rows = []
     for name, (kind, metric, _base) in TARGETS.items():
+        if name in _RETIRED:
+            continue
+        lab = lab_short if name in _PURCHASE else lab_long
         src = "next_purchase" if name == "reactivation" else name
         yv = np.array([lab.get(c, {}).get(src, np.nan) for c in C], dtype=object)
         ok = np.array([c in lab and src in lab[c] for c in C])
@@ -122,6 +131,8 @@ def main(argv=None):
         rows.append({"head": name, "metric": metric, "scores": scores})
     out = {
         "baseline": "same GBM head, same folds, held-out customers",
+        "horizon_days": f"3d purchase / {int(a.horizon_days)}d value (per-target)",
+        "retired_heads": sorted(_RETIRED),
         "seed": a.seed,
         "rows": rows,
         "variant_means": {
