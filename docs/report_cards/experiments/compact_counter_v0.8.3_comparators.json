@@ -1,0 +1,146 @@
+{
+  "baseline": "generic full-history measure + same head",
+  "horizon_days": "3d purchase / 90d value (per-target)",
+  "retired_heads": [
+    "item_next"
+  ],
+  "supervised": [
+    {
+      "head": "churn",
+      "E": 0.5747,
+      "generic": 0.5835,
+      "delta": -0.009,
+      "delta_se": 0.0013,
+      "lo": -0.0262,
+      "hi": 0.002,
+      "win": false,
+      "non_inferior": true,
+      "seeds": 3,
+      "win_seeds": 0,
+      "non_inferior_seeds": 3
+    },
+    {
+      "head": "reactivation",
+      "E": 0.5747,
+      "generic": 0.5835,
+      "delta": -0.009,
+      "delta_se": 0.0013,
+      "lo": -0.0262,
+      "hi": 0.002,
+      "win": false,
+      "non_inferior": true,
+      "seeds": 3,
+      "win_seeds": 0,
+      "non_inferior_seeds": 3
+    },
+    {
+      "head": "next_purchase",
+      "E": 0.5747,
+      "generic": 0.5835,
+      "delta": -0.009,
+      "delta_se": 0.0013,
+      "lo": -0.0262,
+      "hi": 0.002,
+      "win": false,
+      "non_inferior": true,
+      "seeds": 3,
+      "win_seeds": 0,
+      "non_inferior_seeds": 3
+    },
+    {
+      "head": "return",
+      "E": 0.6712,
+      "generic": 0.6641,
+      "delta": 0.0075,
+      "delta_se": 0.0032,
+      "lo": -0.0092,
+      "hi": 0.0133,
+      "win": false,
+      "non_inferior": true,
+      "seeds": 3,
+      "win_seeds": 1,
+      "non_inferior_seeds": 3
+    },
+    {
+      "head": "ltv",
+      "E": 0.6411,
+      "generic": 0.6364,
+      "delta": 0.0046,
+      "delta_se": 0.0003,
+      "lo": -0.0043,
+      "hi": 0.0113,
+      "win": false,
+      "non_inferior": true,
+      "seeds": 3,
+      "win_seeds": 0,
+      "non_inferior_seeds": 3
+    },
+    {
+      "head": "next_value",
+      "E": 0.1467,
+      "generic": 0.1445,
+      "delta": 0.0019,
+      "delta_se": 0.0042,
+      "lo": -0.0277,
+      "hi": 0.016,
+      "win": false,
+      "non_inferior": true,
+      "seeds": 3,
+      "win_seeds": 0,
+      "non_inferior_seeds": 3
+    },
+    {
+      "head": "channel_next",
+      "E": 0.6669,
+      "generic": 0.5197,
+      "delta": 0.1475,
+      "delta_se": 0.0062,
+      "lo": 0.122,
+      "hi": 0.1501,
+      "win": true,
+      "non_inferior": true,
+      "seeds": 3,
+      "win_seeds": 3,
+      "non_inferior_seeds": 3
+    },
+    {
+      "head": "category_next",
+      "E": 0.2755,
+      "generic": 0.187,
+      "delta": 0.0887,
+      "delta_se": 0.0014,
+      "lo": 0.0725,
+      "hi": 0.1009,
+      "win": true,
+      "non_inferior": true,
+      "seeds": 3,
+      "win_seeds": 3,
+      "non_inferior_seeds": 3
+    }
+  ],
+  "supervised_wins": 2,
+  "supervised_total": 8,
+  "supervised_degenerate_excluded": 0,
+  "unsupervised": {
+    "E": {
+      "silhouette": 0.367,
+      "eta_squared": 0.239,
+      "lookalike_enrichment": 3.795,
+      "anova_f": 1883.7282
+    },
+    "E_full": {
+      "silhouette": 0.2985,
+      "eta_squared": 0.2369,
+      "lookalike_enrichment": 3.3183,
+      "anova_f": 1861.7322
+    },
+    "generic": {
+      "silhouette": 0.367,
+      "eta_squared": 0.239,
+      "lookalike_enrichment": 3.795,
+      "anova_f": 1883.7282
+    },
+    "seeds": 3,
+    "view": "block-wise served measure (accessible); full concat reported"
+  }
+}

@@ -61,7 +61,9 @@ def main(argv=None):
         zs.append(z.detach().float().cpu().numpy())
     model.serve_on = was
     Z = np.concatenate(zs, 0) if zs else np.zeros((0, 1))
-    d = int(model.dim)
+    # shape block = everything before the Layer-B measure (donor + counter + ...)
+    _names = list(getattr(lb, "names", ()) or ())
+    d = int(Z.shape[1] - len(_names)) if _names else int(model.dim)
     v_shape = float(np.var(Z[:, :d], axis=0).sum())
     v_meas = float(np.var(Z[:, d:], axis=0).sum())
     lb.block_alpha = float(np.sqrt(max(v_shape, 1e-12) / max(v_meas, 1e-12)))

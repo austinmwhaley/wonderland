@@ -275,6 +275,9 @@ class CFMConfig:
     use_counter: bool = False
     # S2: number of content-addressed registers for the counter (1 = S1; >1 = S2 routing).
     counter_registers: int = 1
+    # Compact counter (mass axis): cumulative count + numeric fields + value/gap only,
+    # NOT the high-cardinality one-hot attr/event columns (which explode the shape).
+    counter_compact: bool = False
     # generic NUMERIC attribute fields to consume as raw scalars (the counter's raw
     # quantities + the model's numeric inputs). Discovered generically from the stream.
     numeric_fields: tuple = ()

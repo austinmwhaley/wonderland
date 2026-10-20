@@ -45,6 +45,25 @@
         "d": 201,
         "integrated_into_gates": false
       }
+    },
+    {
+      "name": "0.8.3 compact counter + distill",
+      "command": "python3 scripts/augment_counter.py --src-dir /tmp/opencode/t0_loop/reference_v4c_cfm --src-tag 0.7.0r776750s2000 --dst-dir /tmp/opencode/t0_loop/reference_v4g_cfm --dst-tag 0.8.3r776750s2000 --version 0.8.3",
+      "result": {
+        "conservation_R_cons": 0.905,
+        "shape_U": 0.6504,
+        "full_E_lookalike_ratio": 0.8744,
+        "T3": "2 WIN / 6 tie / 0 regression",
+        "certified": false,
+        "open_frontier": [
+          "learned-shape sufficiency",
+          "full-E value geometry"
+        ],
+        "receipts": [
+          "docs/report_cards/experiments/compact_counter_v0.8.3_comparators.json",
+          "docs/report_cards/experiments/compact_counter_v0.8.3_portfolio.json"
+        ]
+      }
     }
   ],
   "note": "Research experiments only; not T0 gates. The 0.7.0/0.8.0 models are not certified; the certified card remains 0.6.4r776750s2000."

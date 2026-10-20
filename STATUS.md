@@ -217,6 +217,12 @@ invariant-by-construction).
 
 ## Micro
 
+- **COMPACT COUNTER + DISTILL (0.8.3, DEC-229): conservation CLOSED (0.905); shape U 0.6504; full-E 0.874×.**
+  The deterministic 23-dim mass counter on the 0.7.0 distill base closes conservation and improves
+  shape U (0.256→0.650) and full-E (0.817→0.874), but **2 research items remain** (shape ≥0.9363,
+  full-E ≥0.90×). Not certified; 0.8.3 is a research candidate. 0.6.4 remains the certified card
+  (T0 scoped, NOT SOLVED per all-green definition). Refit/minimality shape-source fixes recorded.
+
 - **REVIEW CORRECTION (DEC-228): the card was NOT all-green; the DEC-227 "SOLVED" label is reverted.**
   **T0 CERTIFIED (scoped, 18/18); PROJECT NOT SOLVED — 3 open frontier items** (shape U 0.2562, full-E
   0.8173×, conservation 1.244) plus the GPU-head integration (2.14× measured, still CPU). The card now

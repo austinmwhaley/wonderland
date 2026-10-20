@@ -760,6 +760,7 @@ class CFM(nn.Module):
         accumulator: bool = True,
         counter: bool = False,
         counter_registers: int = 1,
+        counter_compact: bool = False,
         numeric_fields: tuple = (),
         action_fields: tuple = (),
         effect_dim: int = 0,
@@ -912,12 +913,18 @@ class CFM(nn.Module):
         # readout projection train under the same objectives).
         self.counter_on = bool(counter)
         self.counter_registers = int(max(1, counter_registers))
+        self.counter_compact = bool(counter_compact)
         if self.counter_on:
-            raw_dim = 1 + (self.vocab.n_et + 1)
-            for f in self.attr_fields:
-                raw_dim += self.vocab.n_attr.get(f, 0) + 1
-            raw_dim += 4  # value, log1p|value|, gap, log1p(gap)
-            raw_dim += 2 * len(self.numeric_fields)  # each numeric field: x, x^2
+            if self.counter_compact:
+                # MASS axis only: count + each numeric field (x, x^2) + value/gap.
+                # Deliberately NO event/attr one-hot (entity_id etc. explode to 2566 dims).
+                raw_dim = 1 + 4 + 2 * len(self.numeric_fields)
+            else:
+                raw_dim = 1 + (self.vocab.n_et + 1)
+                for f in self.attr_fields:
+                    raw_dim += self.vocab.n_attr.get(f, 0) + 1
+                raw_dim += 4  # value, log1p|value|, gap, log1p(gap)
+                raw_dim += 2 * len(self.numeric_fields)  # each numeric field: x, x^2
             self.counter_raw_dim = raw_dim
             self.counter = CounterBlock(self.chan, raw_dim, n_registers=self.counter_registers)
             self.w_counter = nn.Linear(self.counter_registers * raw_dim, dim)
@@ -1285,6 +1292,17 @@ class CFM(nn.Module):
         dev = t["mask"].device
         B, T = t["mask"].shape
         feats = [torch.ones(B, T, 1, device=dev, dtype=torch.float32)]
+        if self.counter_compact:
+            # MASS axis only (no high-cardinality one-hots)
+            for c in self.numeric_fields:
+                if c in t:
+                    xc = t[c].unsqueeze(-1).to(torch.float32)
+                    feats += [xc, xc * xc]
+            v = t["val"].to(torch.float32)
+            dt = t["dt"].to(torch.float32)
+            feats += [v, torch.log1p(v.abs()), dt, torch.log1p(dt)]
+            raw = torch.cat(feats, dim=-1)
+            return raw * t["mask"].unsqueeze(-1)
         n_et = self.vocab.n_et + 1
         feats.append(F.one_hot(t["et"].clamp(max=n_et - 1), n_et).to(torch.float32))
         for f in self.attr_fields:

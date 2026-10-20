@@ -1405,6 +1405,10 @@ def build(args):
         "(4.39→7.96), stopped; not certifiable (DEC-227)."
     )
     md.append(
+        "- **0.8.3 compact counter + distill:** conservation **0.905 PASS**, shape U **0.6504**, "
+        "full-E **0.874×**, T3 2 WIN/6 tie/0 regression; **not certified** (2 research items open)."
+    )
+    md.append(
         "- **GPU heads:** xgboost GPU 2.14× (0.87 vs 1.87 s on 6000×201); integration is a "
         "performance opportunity under the AGENTS GPU-first policy."
     )

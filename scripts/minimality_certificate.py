@@ -146,6 +146,9 @@ def main(argv=None):
     from sklearn.linear_model import RidgeCV
     from sklearn.preprocessing import StandardScaler
 
+    # PCA cannot exceed the number of training samples; the shape source can be
+    # wider than n_train (counter/one-hot blocks), so cap the certificate rank.
+    full_dim = int(min(full_dim, max(2, int(tr.sum()) - 1)))
     scl = StandardScaler().fit(Z[tr])
     Ztr, Zte = scl.transform(Z[tr]), scl.transform(Z[te])
     pca = PCA(n_components=full_dim, random_state=0).fit(Ztr)

@@ -178,6 +178,7 @@ def train_cfm(cfg: CFMConfig):
         accumulator=getattr(cfg, "use_accumulator", True),
         counter=getattr(cfg, "use_counter", False),
         counter_registers=getattr(cfg, "counter_registers", 1),
+        counter_compact=getattr(cfg, "counter_compact", False),
         numeric_fields=getattr(cfg, "numeric_fields", ()),
         action_fields=getattr(cfg, "action_fields", ()),
         effect_dim=getattr(cfg, "_effect_dim", 0),

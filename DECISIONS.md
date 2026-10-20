@@ -4821,3 +4821,28 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   integration** into the consumer/ablation gates (measured 2.14×; still sklearn CPU). The project is
   **NOT SOLVED**; the loop continues on the mass-axis/full-E/consumption and GPU integration.
 - **Tests:** 456 fast tests green; ruff clean.
+
+## DEC-229 — Compact counter + distillation (0.8.3): conservation CLOSED; shape U 0.650, full-E 0.874 — 2 research items remain
+
+- **Experiment:** add a **deterministic compact counter** (count + numeric fields + value/gap, 23 dims;
+  no high-cardinality one-hots) to the **0.7.0 distill** base. The full counter (one-hots, 2566 dims)
+  forced a 917-rank shape and is not usable; the compact mass axis is 23 dims. The counter gate is
+  exact (W_g=0, bias=20), `w_counter=0`; the frozen base is unchanged.
+- **Results (`0.8.3r776750s2000`):**
+  - **Conservation: 0.905 (tol 0.115) → PASS** (the first model to close it).
+  - **Shape-only U: 0.6504** (0.6.4: 0.2562; 0.7.0: 0.3325) — a large gain, still below 0.9363.
+  - **Full-E value geometry: 3.3183/3.795 = 0.874×** (0.6.4: 0.817×; 0.7.0: 0.780×) — improved,
+    still below the 0.90× bar.
+  - **T3 supervised:** 2 WIN / 6 tie / 0 regression (same fair-generic head).
+  - Served shape rank **32** (unserved k_min; shape 32 + measure 73 = **105**).
+- **What closed:** **conservation** (0.905). **Still open:** learned-shape sufficiency (0.6504 vs 0.9363)
+  and full-E value geometry (0.874× vs 0.90×). The project is **NOT SOLVED**; 0.8.3 is a research
+  candidate, not yet certified (T0/card not re-run for it).
+- **Trade-off:** the remaining two bars are in tension with the block-wise minimality: a larger shape
+  raises shape U but dilutes full-E; the minimal shape rank is 32. The accessible measure block remains
+  the value view. The next experiments: add the moderate event-type counts to the compact counter
+  (34 dims) and/or certify the 0.8.3 T0 card; test whether the full-E 0.874→0.90 without losing
+  minimality. Do not weaken the bars.
+- **Fix recorded:** `refit_measure` and `minimality_certificate` now use the **source shape**
+  (donor + counter + …) before the Layer-B measure, not `model.dim`; the shape certificate caps PCA
+  at n_train−1. `scripts/augment_counter.py` is the reproducible counter add-on.

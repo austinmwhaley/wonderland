@@ -1,0 +1,16 @@
+{
+  "tag": "0.8.3r776750s2000",
+  "n_seqs": 2000,
+  "rows": [
+    {
+      "check": "geometry: held-out PR/dim >= 0.60 x stream capacity",
+      "achieved": "PR/dim 0.0474 (capacity 0.0492, floor 0.0295)",
+      "ok": true
+    },
+    {
+      "check": "geometry: conservation ratio Tr(Sigma_readout)/P_in ~ 1",
+      "achieved": "R_cons 0.905 (tol 0.115)",
+      "ok": true
+    }
+  ]
+}
