@@ -48,23 +48,28 @@
     },
     {
       "name": "0.8.3 compact counter + distill",
-      "command": "python3 scripts/augment_counter.py --src-dir /tmp/opencode/t0_loop/reference_v4c_cfm --src-tag 0.7.0r776750s2000 --dst-dir /tmp/opencode/t0_loop/reference_v4g_cfm --dst-tag 0.8.3r776750s2000 --version 0.8.3",
+      "command": "python3 scripts/augment_counter.py --src-dir /tmp/opencode/t0_loop/reference_v4c_cfm --src-tag 0.7.0r776750s2000 --dst-dir /tmp/opencode/t0_loop/reference_v4g_cfm --dst-tag 0.8.3r776750s2000 --version 0.8.3\n# certified null twin (same action declarations; the first attempt omitted them):\npython3 -m looking_glass.customer_foundation_model train --db /tmp/opencode/t0_loop/reference_v4_null/customer_event_stream.parquet --customers 6000 --sample-a 2000 --as-of 2025-01-01 --out-dir /tmp/opencode/t0_loop/reference_v4c_null_cfm --warm-start none --set version=0.7.0 --set distill_measure=True --set use_measure=True --set measure_dim=128 --set use_counter=False --set batch=12 --set action_period_seconds=86400 --set \"effect_actions=('freq','hour','dow','channel','offer')\" --set \"action_fields=('freq','hour','dow','channel','offer','discount_pct')\"",
       "result": {
         "conservation_R_cons": 0.905,
         "shape_U": 0.6504,
         "full_E_lookalike_ratio": 0.8744,
         "T3": "2 WIN / 6 tie / 0 regression",
-        "certified": false,
+        "certified": true,
         "open_frontier": [
           "learned-shape sufficiency",
           "full-E value geometry"
         ],
         "receipts": [
-          "docs/report_cards/experiments/compact_counter_v0.8.3_comparators.json",
-          "docs/report_cards/experiments/compact_counter_v0.8.3_portfolio.json"
-        ]
+          "docs/report_cards/reference_v4g_cockpit.md",
+          "docs/report_cards/reference_v4g_manifest.json",
+          "docs/report_cards/reference_v4g_objectives.json"
+        ],
+        "t0": "PASS 18/18 (scoped)",
+        "customers": 6000,
+        "null_twin": "0.8.3r703511s2000 (71 measure cols incl. 23 response cols)",
+        "note": "First null twin omitted effect_actions -> 90-col measure with 0 response columns and nulls 0/0 (t4.honest_gates UNKNOWN). Retrained with the same declared action family -> 71 cols / 23 response -> nulls 5/5. The 12k-customer card was OOM-killed (~1h11m); the certified card uses 6000 customers (stable, ~3 GB RSS)."
       }
     }
   ],
-  "note": "Research experiments only; not T0 gates. The 0.7.0/0.8.0 models are not certified; the certified card remains 0.6.4r776750s2000."
+  "note": "Research experiments plus the T0-certified 0.8.3 card. T0 PASS (18/18, scoped) is not SOLVED: the two frontier items (learned-shape sufficiency, full-E value geometry) remain open."
 }

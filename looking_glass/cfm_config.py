@@ -278,6 +278,9 @@ class CFMConfig:
     # Compact counter (mass axis): cumulative count + numeric fields + value/gap only,
     # NOT the high-cardinality one-hot attr/event columns (which explode the shape).
     counter_compact: bool = False
+    # Moderate extension: add the stream's own EVENT-TYPE counts (n_et+1) to the compact
+    # counter. This is the vocabulary axis WITHOUT the high-cardinality attribute one-hots.
+    counter_event_types: bool = False
     # generic NUMERIC attribute fields to consume as raw scalars (the counter's raw
     # quantities + the model's numeric inputs). Discovered generically from the stream.
     numeric_fields: tuple = ()

@@ -761,6 +761,7 @@ class CFM(nn.Module):
         counter: bool = False,
         counter_registers: int = 1,
         counter_compact: bool = False,
+        counter_event_types: bool = False,
         numeric_fields: tuple = (),
         action_fields: tuple = (),
         effect_dim: int = 0,
@@ -914,11 +915,15 @@ class CFM(nn.Module):
         self.counter_on = bool(counter)
         self.counter_registers = int(max(1, counter_registers))
         self.counter_compact = bool(counter_compact)
+        self.counter_event_types = bool(counter_event_types)
         if self.counter_on:
             if self.counter_compact:
                 # MASS axis only: count + each numeric field (x, x^2) + value/gap.
-                # Deliberately NO event/attr one-hot (entity_id etc. explode to 2566 dims).
+                # Deliberately NO attr one-hot (entity_id etc. explode to 2566 dims);
+                # optional moderate event-type counts (the stream's own vocabulary).
                 raw_dim = 1 + 4 + 2 * len(self.numeric_fields)
+                if self.counter_event_types:
+                    raw_dim += self.vocab.n_et + 1
             else:
                 raw_dim = 1 + (self.vocab.n_et + 1)
                 for f in self.attr_fields:
@@ -1293,11 +1298,14 @@ class CFM(nn.Module):
         B, T = t["mask"].shape
         feats = [torch.ones(B, T, 1, device=dev, dtype=torch.float32)]
         if self.counter_compact:
-            # MASS axis only (no high-cardinality one-hots)
+            # MASS axis only (no high-cardinality attr one-hots)
             for c in self.numeric_fields:
                 if c in t:
                     xc = t[c].unsqueeze(-1).to(torch.float32)
                     feats += [xc, xc * xc]
+            if self.counter_event_types:
+                n_et = self.vocab.n_et + 1
+                feats.append(F.one_hot(t["et"].clamp(max=n_et - 1), n_et).to(torch.float32))
             v = t["val"].to(torch.float32)
             dt = t["dt"].to(torch.float32)
             feats += [v, torch.log1p(v.abs()), dt, torch.log1p(dt)]

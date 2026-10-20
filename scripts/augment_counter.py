@@ -39,6 +39,12 @@ def main(argv=None):
     ap.add_argument("--dst-dir", required=True, dest="dst_dir")
     ap.add_argument("--dst-tag", required=True, dest="dst_tag")
     ap.add_argument("--version", default="0.8.2")
+    ap.add_argument(
+        "--event-types",
+        action="store_true",
+        dest="event_types",
+        help="add the stream's own EVENT-TYPE counts (n_et+1) to the compact counter",
+    )
     a = ap.parse_args(argv)
 
     from looking_glass.cfm_model import CounterBlock
@@ -52,8 +58,11 @@ def main(argv=None):
     # COMPACT MASS AXIS: count + numeric fields (x, x^2) + value/gap; no one-hots
     # (the full counter was 2566 dims and forced a 917-rank shape / OOM).
     raw_dim = 1 + 4 + 2 * len(model.numeric_fields)
+    if a.event_types:
+        raw_dim += int(model.vocab.n_et) + 1
     model.counter_registers = 1
     model.counter_compact = True
+    model.counter_event_types = bool(a.event_types)
     model.counter_raw_dim = int(raw_dim)
     model.counter = CounterBlock(model.chan, raw_dim, n_registers=1).to(device)
     model.w_counter = torch.nn.Linear(raw_dim, model.dim).to(device)
@@ -74,6 +83,7 @@ def main(argv=None):
     blob["counter"] = True
     blob["counter_registers"] = 1
     blob["counter_compact"] = True
+    blob["counter_event_types"] = bool(a.event_types)
     torch.save(blob, dst / f"cfm_{_d}.pt")
 
     # Layer-B measure (unchanged) + registry (new tag/version)
@@ -87,6 +97,7 @@ def main(argv=None):
     reg["version"] = a.version
     reg["counter"] = True
     reg["counter_compact"] = True
+    reg["counter_event_types"] = bool(a.event_types)
     reg["counter_raw_dim"] = int(raw_dim)
     (dst / f"registry_{_d}.json").write_text(json.dumps(reg, indent=1) + "\n")
     print(
@@ -97,6 +108,7 @@ def main(argv=None):
                 "src_tag": a.src_tag,
                 "dst_tag": a.dst_tag,
                 "counter_raw_dim": int(raw_dim),
+                "counter_event_types": bool(a.event_types),
                 "shape_source_dim": int(model.dim + raw_dim),
                 "w_counter_zero": True,
             },

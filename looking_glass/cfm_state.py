@@ -226,6 +226,7 @@ def load_frozen_encoder(tag: str, cfm_dir):
         counter=bool(blob.get("counter", False)),
         counter_registers=int(blob.get("counter_registers", 1)),
         counter_compact=bool(blob.get("counter_compact", False)),
+        counter_event_types=bool(blob.get("counter_event_types", False)),
         numeric_fields=tuple(blob.get("numeric_fields", ()) or ()),
         action_fields=tuple(blob.get("action_fields", ()) or ()),
         effect_dim=int(blob.get("effect_dim", 0) or 0),

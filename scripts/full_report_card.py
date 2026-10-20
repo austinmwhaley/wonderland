@@ -618,8 +618,8 @@ def build(args):
         f"**{'PASS' if (_t0o and _t0o['status'] == PASS) else 'NOT PASS'}** (scoped). "
         f"**PROJECT {'SOLVED' if _project_solved else 'NOT SOLVED'}** — {len(_open)} open "
         "frontier item(s) (§8). The operator definition is the report card all-green + "
-        "T0 PASS; the card still contains a conservation FAIL and the open frontier, so it "
-        "is **NOT all-green**. SOLVED requires T0 PASS AND every frontier item closed."
+        "T0 PASS; the card is **NOT all-green** while any frontier item remains open. "
+        "SOLVED requires T0 PASS AND every frontier item closed."
     )
     md.append("")
     md.append("## 2. T0 — North Star")

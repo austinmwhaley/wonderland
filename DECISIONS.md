@@ -4846,3 +4846,39 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - **Fix recorded:** `refit_measure` and `minimality_certificate` now use the **source shape**
   (donor + counter + …) before the Layer-B measure, not `model.dim`; the shape certificate caps PCA
   at n_train−1. `scripts/augment_counter.py` is the reproducible counter add-on.
+
+## DEC-230 — 0.8.3 CERTIFIED: T0 PASS 18/18 (scoped) with a matched null twin; PROJECT NOT SOLVED (2 frontier items)
+
+- **Certification run:** real `0.8.3r776750s2000` + a **matched null twin** `0.8.3r703511s2000`
+  (same 0.7.0-distill recipe + compact counter, trained on the snr=0 stream), as_of `2025-01-01`,
+  3 consumer seeds, per-target horizons (3d purchase / 90d value), **6000 customers**. The 12k
+  card was **OOM-killed** (~1h11m, SIGKILL); 6k is the largest stable sample on this host
+  (~3 GB RSS) and is disclosed in the manifest.
+- **Result: T0 = PASS, 18/18 objectives (0 PARTIAL / 0 FAIL / 0 UNKNOWN).**
+  - Sufficiency **U = 1.0**; power controls: measure-only 1.0, shape-only **0.6504**, destroyed 0.0.
+  - Decision-sufficiency: **5/5 DEPLOY, nulls 5/5 HOLD, 0 uncalibrated**.
+  - Minimality: served **105 = shape 32 ‖ measure 73** (joint unconstrained 64).
+  - Conservation **R_cons 0.905** (tol 0.115) → PASS. Calibration coverage 0.8831 (gate PASS).
+  - T3: supervised **2 WIN / 6 tie / 0 regression** vs fair generic; unsupervised measure-block tie;
+    OPE acceptance **9/9 hard** (recall 0.857 report-only); known-effect **5/5**.
+  - Reproducibility: deterministic embedding sha256 `792ffc7f…`, inference 0.448 s.
+- **Null-twin bug found and fixed:** the first null was trained **without `effect_actions`**, so its
+  measured action fields were not excluded; it produced a **90-column** measure with **zero response
+  columns**, so the null arms silently returned nothing (`nulls 0/0`) and `t4.honest_gates` was
+  UNKNOWN. Retraining the null with the same declared action family produced a **71-column** measure
+  with **23 response columns** (mirroring the real 73/23 minus one categorical field), and the null
+  arms returned 5/5 HOLD. This is an ingestion/config-parity bug, not a gate change.
+- **Card-text fix:** `scripts/full_report_card.py` no longer hardcodes “the card still contains a
+  conservation FAIL” (stale after conservation closed); the assessment now states only the generic
+  all-green condition.
+- **Opt-in next-experiment plumbing (not run):** `counter_event_types` (default False) adds the
+  stream's own event-type counts (`n_et+1`) to the compact counter — the moderate vocabulary axis
+  **without** the attribute one-hots that blew up the full counter. Threaded through
+  `CFMConfig`/`CFM`/`cfm_state`/`cfm_training`; `scripts/augment_counter.py --event-types` builds it
+  deterministically on a frozen base.
+- **Status:** **T0 CERTIFIED (scoped); PROJECT NOT SOLVED.** Frontier remains **2/8 open**:
+  learned-shape sufficiency (`U_shape 0.6504 < 0.9152`) and full-E value geometry (`0.8744× < 0.90×`).
+  No gate weakened. Fast gate: **456 passed**, ruff clean, 377 files formatted.
+- **Archived:** `docs/report_cards/reference_v4g_cockpit.md` (+ `_objectives.json`, `_manifest.json`);
+  full receipts under `/tmp/opencode/t0_loop/v4g_run/`; experiment receipt updated in
+  `docs/report_cards/reference_v4b_experiments.json`.

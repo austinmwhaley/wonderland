@@ -1,0 +1,78 @@
+{
+  "tag": "0.8.3r776750s2000",
+  "null_tag": "0.8.3r703511s2000",
+  "as_of": "2025-01-01",
+  "git": "2601680",
+  "customers": 6000,
+  "t0": "PASS 18/18 (scoped)",
+  "project_solved": false,
+  "open_frontier": [
+    "learned-shape sufficiency (U_shape 0.6504 < 0.9152)",
+    "full-E value geometry (0.8744x < 0.90x)"
+  ],
+  "model_identity": {
+    "tag": "0.8.3r776750s2000",
+    "ckpt_dir": "/tmp/opencode/t0_loop/reference_v4g_cfm",
+    "sample_a_customers": 2000,
+    "n_train_sequences": 2000,
+    "data_signature": "fffe2e9aa4b7",
+    "revision": 776750,
+    "file_sha256": {
+      "cfm_0_8_3r776750s2000.pt": "a65443b5966ada37762875ef16ff75b05f2a9ee9c5ead25241040da66dbdc677",
+      "layer_b_0_8_3r776750s2000.pkl": "34aa0af0462e02dafd5e30b828f25d51517eea52c7c759e749d13bbaccf644a2",
+      "serve_proj_0_8_3r776750s2000.npz": "a121289e06fb017ff13770e23d319c8b0a806e298a927ea51ec33d43be5abffd"
+    },
+    "null_ckpt_dir": "/tmp/opencode/t0_loop/reference_v4g_null_cfm",
+    "null_file_sha256": {
+      "cfm_0_8_3r703511s2000.pt": "0a6c312feda39ed8550a944c10394e2caaedc9cb63c25ea2dc57cde4d4a0df6b",
+      "layer_b_0_8_3r703511s2000.pkl": "d263179c08815c163a794d1d4f2ddbe70b057e1807d3a5cb8662722d5fecfd85",
+      "serve_proj_0_8_3r703511s2000.npz": "11e86e1b7b93e6528625e6b927f9f3fc6a0a53a2c45522f7280fb58b5bce82ef"
+    }
+  },
+  "determinism": {
+    "embedding_sha256": "792ffc7fdf0020503e454745c1cc6cba87d9933c67ac7c4bd6de7181a5956d5d",
+    "infer_wall_seconds": 0.448256
+  },
+  "acceptance_provenance": {
+    "git_sha": "2601680",
+    "generated_at": "2026-10-20T19:35:05.681616+00:00",
+    "envs": [
+      "cartpole",
+      "mountaincar",
+      "acrobot",
+      "lunar",
+      "mountaincar_continuous",
+      "pendulum",
+      "bandit_synth"
+    ]
+  },
+  "archived": {
+    "cockpit": {
+      "path": "docs/report_cards/reference_v4g_cockpit.md",
+      "sha256": "f83430e66a9fb13ea689f0c5ca870919d70559dc785097dde1a144784bc3599f"
+    },
+    "objectives": {
+      "path": "docs/report_cards/reference_v4g_objectives.json",
+      "sha256": "b75d3ad6eadaf547b663ff475d0b320946aeff2378b5cd9a8201297a646f6646"
+    }
+  },
+  "full_receipts": {
+    "card_receipts": "/tmp/opencode/t0_loop/v4g_run/card_receipts.json",
+    "comparators": "/tmp/opencode/t0_loop/v4g_run/comparators.json",
+    "transfer": "/tmp/opencode/t0_loop/v4g_run/transfer.json",
+    "known_effect": "/tmp/opencode/t0_loop/v4g_run/known_effect.json",
+    "ablation": "/tmp/opencode/t0_loop/v4g_run/ablation.json",
+    "u_controls": "/tmp/opencode/t0_loop/v4g_run/u_controls.json",
+    "minimality": "/tmp/opencode/t0_loop/v4g_run/minimality.json",
+    "minimality_shape_served": "/tmp/opencode/t0_loop/v4g_run/minimality_shape_served.json",
+    "serve_real": "/tmp/opencode/t0_loop/v4g_run/serve_real.json",
+    "serve_null": "/tmp/opencode/t0_loop/v4g_run/serve_null.json",
+    "reproducibility": "/tmp/opencode/t0_loop/v4g_run/reproducibility.json",
+    "acceptance": "/tmp/opencode/t0_loop/v4g_run/acceptance.json",
+    "encoder": "/tmp/opencode/t0_loop/v4g_run/encoder.json",
+    "schema_suite": "/tmp/opencode/t0_loop/v4g_run/schema_suite.json",
+    "accessibility": "/tmp/opencode/t0_loop/v4g_run/accessibility.json",
+    "ope_reconcile": "/tmp/opencode/t0_loop/v4g_run/ope_reconcile.json"
+  },
+  "note": "T0-certified 0.8.3 card (18/18). Project NOT SOLVED: 2 frontier items remain. Receipts regenerable with scripts/reference_pipeline.py + scripts/augment_counter.py; archived card/objectives are the run snapshot."
+}

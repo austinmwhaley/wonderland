@@ -217,11 +217,13 @@ invariant-by-construction).
 
 ## Micro
 
-- **COMPACT COUNTER + DISTILL (0.8.3, DEC-229): conservation CLOSED (0.905); shape U 0.6504; full-E 0.874×.**
-  The deterministic 23-dim mass counter on the 0.7.0 distill base closes conservation and improves
-  shape U (0.256→0.650) and full-E (0.817→0.874), but **2 research items remain** (shape ≥0.9363,
-  full-E ≥0.90×). Not certified; 0.8.3 is a research candidate. 0.6.4 remains the certified card
-  (T0 scoped, NOT SOLVED per all-green definition). Refit/minimality shape-source fixes recorded.
+- **0.8.3 CERTIFIED (DEC-230): T0 PASS 18/18 (scoped) with a matched null twin; NOT SOLVED (2 frontier items).**
+  Real `0.8.3r776750s2000` + null `0.8.3r703511s2000`, 6000 customers (12k OOM-killed): U=1.0,
+  decision 5/5 DEPLOY with nulls 5/5 HOLD/0 uncalibrated, minimality 105 = 32+73, conservation 0.905,
+  T3 2 WIN/6 tie/0 regression, OPE 9/9, known-effect 5/5. Frontier remains **open**: shape U 0.6504
+  (<0.9152) and full-E 0.8744× (<0.90×). Archived card/manifest/objectives under
+  `docs/report_cards/reference_v4g_*`. The first null omitted `effect_actions` (90 cols, no response
+  block, nulls 0/0) — retrained correctly (71 cols/23 response). Opt-in `counter_event_types` added.
 
 - **REVIEW CORRECTION (DEC-228): the card was NOT all-green; the DEC-227 "SOLVED" label is reverted.**
   **T0 CERTIFIED (scoped, 18/18); PROJECT NOT SOLVED — 3 open frontier items** (shape U 0.2562, full-E
