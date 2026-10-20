@@ -92,7 +92,8 @@ def main(argv=None):
     Z = np.concatenate(zs, 0) if zs else np.zeros((0, 1))
     if a.block == "shape":
         if getattr(a, "unserved_shape", False):
-            _sd = min(int(model.dim), Z.shape[1])
+            _names = list(getattr(getattr(model, "layer_b", None), "names", ()) or ())
+            _sd = int(Z.shape[1] - len(_names)) if _names else min(int(model.dim), Z.shape[1])
         else:
             # served shape block = the first rank(serve_W) columns (48 after DEC-215)
             _W = getattr(model, "serve_W", None)

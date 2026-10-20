@@ -423,9 +423,12 @@ def evaluate(
 
         # geometry on held-out final states (chunked)
         states = []
-        for i in range(0, len(val), 256):
+        from looking_glass.cfm_training import embed_batch_size
+
+        _bs = embed_batch_size(cfg)
+        for i in range(0, len(val), _bs):
             with torch.no_grad():
-                h = forward_states(model, val[i : i + 256])
+                h = forward_states(model, val[i : i + _bs])
             # grade the CONSUMED representation (donor boundary, DEC-022):
             # whitened when the transform is set — this is what every
             # downstream head actually reads

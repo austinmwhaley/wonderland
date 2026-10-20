@@ -55,10 +55,13 @@ def main(argv=None):
     _was = getattr(model, "serve_on", False)
     model.serve_on = False
     zs = []
-    for i in range(0, len(seqs), 256):
+    from looking_glass.cfm_training import embed_batch_size
+
+    _bs = embed_batch_size(cfg)
+    for i in range(0, len(seqs), _bs):
         with torch.no_grad():
             z = forward_embedding(
-                model, seqs[i : i + 256], cfg=cfg, lb=getattr(model, "layer_b", None)
+                model, seqs[i : i + _bs], cfg=cfg, lb=getattr(model, "layer_b", None)
             )
         zs.append(z.detach().float().cpu().numpy())
     model.serve_on = _was
@@ -66,7 +69,10 @@ def main(argv=None):
     if Z.shape[0] < 10:
         raise SystemExit("too few split-A embeddings to fit the projection")
     if a.mode == "blocks":
-        d = int(model.dim)
+        # The SHAPE block is everything before the Layer-B measure (donor + counter
+        # + accumulator when enabled), not just the donor dim.
+        _names = list(getattr(getattr(model, "layer_b", None), "names", ()) or ())
+        d = int(Z.shape[1] - len(_names)) if _names else int(model.dim)
         Zb = Z[:, :d]
         scl = StandardScaler().fit(Zb)
         k = int(min(a.k, Zb.shape[1]))

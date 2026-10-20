@@ -482,7 +482,10 @@ def train_cfm(cfg: CFMConfig):
         if getattr(cfg, "aib", False):
             try:
                 with torch.no_grad():
-                    _hb = forward_states(model, [a_seqs[i] for i in val_idx[:512]])
+                    _hb = forward_states(
+                        model,
+                        [a_seqs[i] for i in val_idx[: embed_batch_size(cfg)]],
+                    )
                     _z = model.proj(_hb).float().cpu()
                     _z = _z - _z.mean(0, keepdim=True)
                     _c = (_z.T @ _z) / max(_z.shape[0] - 1, 1)
@@ -508,7 +511,7 @@ def train_cfm(cfg: CFMConfig):
             # share the same (frozen) scale.
             try:
                 with torch.no_grad():
-                    _s = [a_seqs[i] for i in tr_idx[:512]]
+                    _s = [a_seqs[i] for i in tr_idx[: embed_batch_size(cfg)]]
                     _t = _collate(_s, vocab, device)
                     _x = model.tokens_batch(_t).reshape(-1, model.chan).float()
                     pin = _x.var(0).sum()
@@ -520,14 +523,14 @@ def train_cfm(cfg: CFMConfig):
         elif getattr(cfg, "zca", False):
             try:
                 with torch.no_grad():
-                    _h = forward_states(model, [a_seqs[i] for i in tr_idx[:512]])
+                    _h = forward_states(model, [a_seqs[i] for i in tr_idx[: embed_batch_size(cfg)]])
                 model.update_zca(_h)
             except (RuntimeError, Exception):
                 pass  # retry next eval
         elif getattr(cfg, "donor_whiten", True) and not getattr(model, "whiten_on", False):
             try:
                 with torch.no_grad():
-                    _h = forward_states(model, [a_seqs[i] for i in tr_idx[:512]])
+                    _h = forward_states(model, [a_seqs[i] for i in tr_idx[: embed_batch_size(cfg)]])
                 model.update_zca(_h)  # single whitening path (Newton-Schulz)
             except (RuntimeError, Exception):
                 pass  # whitening failed — retry next eval
@@ -1784,9 +1787,10 @@ def compute_whitening(model, vocab, cfg, seqs, n: int | None = None) -> dict:
     was_on = getattr(model, "whiten_on", False)
     model.whiten_on = False
     try:
-        for i in range(0, len(idx), 256):
+        _bs = embed_batch_size(cfg)
+        for i in range(0, len(idx), _bs):
             with torch.no_grad():
-                h = forward_states(model, [seqs[int(j)] for j in idx[i : i + 256]])
+                h = forward_states(model, [seqs[int(j)] for j in idx[i : i + _bs]])
             states.append(model.donor_batch(h).detach().float().cpu())
     finally:
         model.whiten_on = was_on

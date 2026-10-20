@@ -397,6 +397,23 @@ updated?).
 
 ---
 
+## GPU-first execution (operator policy)
+
+Use the **GPU for any hot path where a measured benchmark shows a material speedup**. Install the
+CUDA-X / NVIDIA libraries needed (`cupy-cuda13x`, `cuda-python`, `nvidia-ml-py`, GPU-capable
+`xgboost`, RAPIDS where it fits) rather than leaving performant work on the CPU.
+
+- **Measure before adopting.** Record a CPU-vs-GPU benchmark (e.g. `scripts/bench_polars_gpu.py`) and
+  keep the CPU fallback. A GPU path that is slower, numerically different beyond tolerance, or that
+  regresses a gate is not adopted.
+- **Respect the 8 GiB card.** One GPU job at a time; derive batches from VRAM/sequence length; use
+  AMP/bf16 and compiled scans; never trade correctness for speed. cuPy/RAPIDS cannot allocate while
+  a 7 GiB training job is resident.
+- **Dependency conflicts are isolated, not ignored.** RAPIDS cu12 packages pin `cuda-bindings 12.9`,
+  while torch cu13 needs `>=13.0.3`; install RAPIDS in a dedicated venv (as `cudf-polars` was) and
+  use it through a process boundary. Do not downgrade the main env.
+- **Record the runtime/GPU receipt** for every GPU-accelerated gate or benchmark.
+
 ## Repository & git workflow
 
 Source of truth: **https://github.com/austinmwhaley/wonderland** (branch `main`).
