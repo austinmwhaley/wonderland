@@ -1,6 +1,6 @@
 # Foundation Encoder — Report Card (cockpit) — `reference`
 
-tag `0.6.4r776750s2000` · as_of `2025-01-01` · git `395fb1b` · self-supervised=True · frozen=True · schema-universal=True
+tag `0.6.4r776750s2000` · as_of `2025-01-01` · git `e315111` · self-supervised=True · frozen=True · schema-universal=True
 
 > **Purpose.** One frozen encoder per event stream; this card proves what it is, what it learned, what it is sufficient for, and where it is not yet good enough.
 >
@@ -209,7 +209,7 @@ This proves the **pipeline** accepts any canonical stream (the *input* axis), in
 | t3.ope | Decision/OPE gate | coverage / false deploys / precision / recall / rank | logging policy + model-free DR | 9/9 vs logging policy + model-free DR | **PASS** | white_queen acceptance |
 | t3.known_effect | Known-effect recovery | ordering of randomized arm effects | known randomized effect | 5/5 | **PASS** | red_king receipt |
 
-**Consumer horizon: 3d purchase / 90d value (per-target)d** (chosen so the label balance is valid; degenerate heads are excluded, not called ties).
+**Consumer horizon: 3d purchase / 90d value (per-target)** (chosen so the label balance is valid; degenerate heads are excluded, not called ties).
 
 ### 5.1 Supervised — per head vs curated RFM and vs FAIR generic
 
@@ -398,7 +398,7 @@ _No T0 objective is failing. The items below are research opportunities, not cer
 - **stream**: `reference`
 - **tag**: `0.6.4r776750s2000`
 - **as_of**: `2025-01-01`
-- **git**: `395fb1b`
+- **git**: `e315111`
 - **card receipts**: `/tmp/opencode/t0_loop/card_v4b_receipts.json`
 - **objectives**: `/tmp/opencode/t0_loop/objectives_v4b.json`
 - **portfolio**: `looking_glass/artifacts/cfm/portfolio/portfolio_0_6_4r776750s2000_20261019T152125Z.json`

@@ -1,7 +1,7 @@
 {
   "tag": "0.6.4r776750s2000",
   "as_of": "2025-01-01",
-  "git": "395fb1b",
+  "git": "e5129da",
   "model_identity": {
     "tag": "0.6.4r776750s2000",
     "ckpt_dir": "/tmp/opencode/t0_loop/reference_v4b_cfm",
