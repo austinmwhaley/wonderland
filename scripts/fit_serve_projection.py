@@ -29,7 +29,7 @@ def main(argv=None):
     ap.add_argument("--out", required=True)
     ap.add_argument("--period-seconds", type=float, default=None, dest="period_seconds")
     ap.add_argument("--receipt", default=None)
-    ap.add_argument("--mode", choices=("pca", "blocks", "split"), default="pca")
+    ap.add_argument("--mode", choices=("pca", "blocks", "split", "explicit"), default="pca")
     a = ap.parse_args(argv)
 
     import torch
@@ -68,7 +68,41 @@ def main(argv=None):
     Z = np.concatenate(zs, 0) if zs else np.zeros((0, 1))
     if Z.shape[0] < 10:
         raise SystemExit("too few split-A embeddings to fit the projection")
-    if a.mode == "split":
+    if a.mode == "explicit":
+        # EXPLICIT-SUMMARY serve: compress only the learned donor to k PCs; keep the
+        # deterministic counter + schema summary (and the measure) axis-aligned.
+        _names = list(getattr(getattr(model, "layer_b", None), "names", ()) or ())
+        d = int(Z.shape[1] - len(_names)) if _names else int(model.dim)
+        dd = int(model.dim)
+        k = int(min(a.k, dd))
+        scl = StandardScaler().fit(Z[:, :dd])
+        pca = PCA(n_components=k, random_state=0).fit(scl.transform(Z[:, :dd])) if k >= 1 else None
+        W = pca.components_[:k] if pca is not None else np.zeros((0, dd), dtype=np.float32)
+        np.savez(
+            a.out,
+            mode="explicit",
+            shape_dim=d,
+            donor_dim=dd,
+            total_dim=int(Z.shape[1]),
+            mean_d=scl.mean_,
+            scale_d=scl.scale_,
+            W_d=W,
+        )
+        served = k + (Z.shape[1] - dd)
+        rec = {
+            "tag": a.tag,
+            "mode": "explicit",
+            "source_dim": int(Z.shape[1]),
+            "shape_dim": d,
+            "donor_dim": dd,
+            "donor_rank": int(k),
+            "explicit_shape_dims": int(d - dd),
+            "measure_dim": int(Z.shape[1] - d),
+            "served_dim": int(served),
+            "n_train": int(Z.shape[0]),
+            "out": str(a.out),
+        }
+    elif a.mode == "split":
         # MASS-AWARE serve: the counter's many correlated mass axes can crowd the
         # timing/dynamics axes out of a single shape PCA. Compress the mass block to
         # the smallest number of PCs explaining 95% of its variance (data-derived),

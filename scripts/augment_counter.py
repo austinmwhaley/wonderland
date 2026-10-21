@@ -46,6 +46,12 @@ def main(argv=None):
         help="add per-event-type cumulative VALUE (one-hot(et) * value) to the compact counter",
     )
     ap.add_argument(
+        "--schema-summary",
+        action="store_true",
+        dest="schema_summary",
+        help="append deterministic recency/span + categorical distinct-count axes to the shape",
+    )
+    ap.add_argument(
         "--event-types",
         action="store_true",
         dest="event_types",
@@ -72,6 +78,7 @@ def main(argv=None):
     model.counter_compact = True
     model.counter_event_types = bool(a.event_types)
     model.counter_type_values = bool(a.type_values)
+    model.schema_summary = bool(a.schema_summary)
     model.counter_raw_dim = int(raw_dim)
     model.counter = CounterBlock(model.chan, raw_dim, n_registers=1).to(device)
     model.w_counter = torch.nn.Linear(raw_dim, model.dim).to(device)
@@ -94,6 +101,7 @@ def main(argv=None):
     blob["counter_compact"] = True
     blob["counter_event_types"] = bool(a.event_types)
     blob["counter_type_values"] = bool(a.type_values)
+    blob["schema_summary"] = bool(a.schema_summary)
     torch.save(blob, dst / f"cfm_{_d}.pt")
 
     # Layer-B measure (unchanged) + registry (new tag/version)
@@ -109,6 +117,7 @@ def main(argv=None):
     reg["counter_compact"] = True
     reg["counter_event_types"] = bool(a.event_types)
     reg["counter_type_values"] = bool(a.type_values)
+    reg["schema_summary"] = bool(a.schema_summary)
     reg["counter_raw_dim"] = int(raw_dim)
     (dst / f"registry_{_d}.json").write_text(json.dumps(reg, indent=1) + "\n")
     print(
@@ -121,6 +130,7 @@ def main(argv=None):
                 "counter_raw_dim": int(raw_dim),
                 "counter_event_types": bool(a.event_types),
                 "counter_type_values": bool(a.type_values),
+                "schema_summary": bool(a.schema_summary),
                 "shape_source_dim": int(model.dim + raw_dim),
                 "w_counter_zero": True,
             },

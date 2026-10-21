@@ -763,6 +763,7 @@ class CFM(nn.Module):
         counter_compact: bool = False,
         counter_event_types: bool = False,
         counter_type_values: bool = False,
+        schema_summary: bool = False,
         numeric_fields: tuple = (),
         action_fields: tuple = (),
         effect_dim: int = 0,
@@ -918,6 +919,7 @@ class CFM(nn.Module):
         self.counter_compact = bool(counter_compact)
         self.counter_event_types = bool(counter_event_types)
         self.counter_type_values = bool(counter_type_values)
+        self.schema_summary = bool(schema_summary)
         if self.counter_on:
             if self.counter_compact:
                 # MASS axis only: count + each numeric field (x, x^2) + value/gap.
@@ -1400,11 +1402,33 @@ class CFM(nn.Module):
             + max(0, int(getattr(self, "serve_total_dim", 0)) - int(shape_dim))
         )
 
+    def set_serve_explicit(self, shape_dim, donor_dim, mean_d, scale_d, W_d):
+        """Explicit-summary serve: compress ONLY the learned donor; keep the deterministic
+        counter + schema-summary axes axis-aligned (they are the sufficient value/mass view)."""
+        self.register_buffer("serve_mean_d", torch.as_tensor(mean_d, dtype=torch.float32))
+        self.register_buffer(
+            "serve_scale_d", torch.as_tensor(scale_d, dtype=torch.float32).clamp(min=1e-6)
+        )
+        self.register_buffer("serve_W_d", torch.as_tensor(W_d, dtype=torch.float32))
+        self.serve_on = True
+        self.serve_mode = "explicit"
+        self.serve_shape_dim = int(shape_dim)
+        self.serve_donor_dim = int(donor_dim)
+        self.serve_dim = int(torch.as_tensor(W_d).shape[0]) + max(
+            0, int(getattr(self, "serve_total_dim", 0)) - int(donor_dim)
+        )
+
     def serve_project(self, E: "torch.Tensor") -> "torch.Tensor":
         """Apply the certified minimal serve transform (no-op if unset)."""
         if not getattr(self, "serve_on", False):
             return E
         dev = E.device
+        if getattr(self, "serve_mode", "pca") == "explicit":
+            dd = int(self.serve_donor_dim)
+            donor = ((E[:, :dd] - self.serve_mean_d.to(dev)) / self.serve_scale_d.to(dev)) @ (
+                self.serve_W_d.to(dev).t()
+            )
+            return torch.cat([donor, E[:, dd:]], dim=-1)
         if getattr(self, "serve_mode", "pca") == "split":
             d = int(self.serve_shape_dim)
             c = int(self.serve_counter_dim)

@@ -181,6 +181,7 @@ def train_cfm(cfg: CFMConfig):
         counter_compact=getattr(cfg, "counter_compact", False),
         counter_event_types=getattr(cfg, "counter_event_types", False),
         counter_type_values=getattr(cfg, "counter_type_values", False),
+        schema_summary=getattr(cfg, "schema_summary", False),
         numeric_fields=getattr(cfg, "numeric_fields", ()),
         action_fields=getattr(cfg, "action_fields", ()),
         effect_dim=getattr(cfg, "_effect_dim", 0),
@@ -639,6 +640,7 @@ def train_cfm(cfg: CFMConfig):
             "counter_compact": bool(getattr(cfg, "counter_compact", False)),
             "counter_event_types": bool(getattr(cfg, "counter_event_types", False)),
             "counter_type_values": bool(getattr(cfg, "counter_type_values", False)),
+            "schema_summary": bool(getattr(cfg, "schema_summary", False)),
             "numeric_fields": list(getattr(cfg, "numeric_fields", ()) or ()),
             "attr_fields": list(getattr(cfg, "attr_fields", ()) or ()),
             "numeric_stats": dict(getattr(vocab, "numeric_stats", {}) or {}),
@@ -1929,6 +1931,22 @@ def forward_embedding(model, seqs, h0s=None, chunk: int = 2048, cfg=None, lb=Non
 
             keys = [s["customer"] for s in seqs]
             m, _mnames = generic_measure(cfg, keys)
+            if getattr(model, "schema_summary", False):
+                # SCHEMA SUMMARY (operator-approved): the FULL exhaustive, schema-derived
+                # measure EXCEPT the action-conditioned response block (which stays in the
+                # explicit measure block for decision-sufficiency). Deterministic, label-free:
+                # recency/span + every field aggregate + every categorical distinct count.
+                # Exclude per-batch event-type columns (the counter carries those) so the
+                # summary width is schema-stable across batches; keep the stable numeric,
+                # categorical, timing and recency axes.
+                _idx = [
+                    i
+                    for i, n in enumerate(_mnames)
+                    if not str(n).startswith("resp_") and not str(n).startswith("et_")
+                ]
+                if _idx:
+                    _sm = torch.as_tensor(m[:, _idx], dtype=torch.float32, device=out.device)
+                    out = torch.cat([out, signed_log1p(_sm)], dim=-1)
             out = torch.cat(
                 [out, torch.as_tensor(lb.compress(m, _mnames), device=out.device)], dim=-1
             )

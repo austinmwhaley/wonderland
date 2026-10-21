@@ -95,9 +95,13 @@ def main(argv=None):
             _names = list(getattr(getattr(model, "layer_b", None), "names", ()) or ())
             _sd = int(Z.shape[1] - len(_names)) if _names else min(int(model.dim), Z.shape[1])
         else:
-            # served shape block = the first rank(serve_W) columns (48 after DEC-215)
-            _W = getattr(model, "serve_W", None)
-            _sd = int(_W.shape[0]) if _W is not None else min(int(model.dim), Z.shape[1])
+            # served shape block = served E dims minus the measure block. This works for
+            # pca/blocks/split/explicit serve modes (all set model.serve_dim).
+            _names = list(getattr(getattr(model, "layer_b", None), "names", ()) or ())
+            _sd = int(getattr(model, "serve_dim", 0) or 0) - len(_names)
+            if _sd <= 0:
+                _W = getattr(model, "serve_W", None)
+                _sd = int(_W.shape[0]) if _W is not None else min(int(model.dim), Z.shape[1])
         Z = Z[:, : min(_sd, Z.shape[1])]
     full_dim = int(Z.shape[1])
 

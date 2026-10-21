@@ -228,6 +228,7 @@ def load_frozen_encoder(tag: str, cfm_dir):
         counter_compact=bool(blob.get("counter_compact", False)),
         counter_event_types=bool(blob.get("counter_event_types", False)),
         counter_type_values=bool(blob.get("counter_type_values", False)),
+        schema_summary=bool(blob.get("schema_summary", False)),
         numeric_fields=tuple(blob.get("numeric_fields", ()) or ()),
         action_fields=tuple(blob.get("action_fields", ()) or ()),
         effect_dim=int(blob.get("effect_dim", 0) or 0),
@@ -310,7 +311,18 @@ def load_frozen_encoder(tag: str, cfm_dir):
         import numpy as _np
 
         _z = _np.load(_proj)
-        if str(_z.get("mode", "pca")) == "split":
+        if str(_z.get("mode", "pca")) == "explicit":
+            d = int(_z["shape_dim"])
+            model.serve_total_dim = int(_z.get("total_dim", d))
+            model.set_serve_explicit(
+                d, int(_z["donor_dim"]), _z["mean_d"], _z["scale_d"], _z["W_d"]
+            )
+            print(
+                f"[load] explicit serve: donor->{int(_z['W_d'].shape[0])} + explicit "
+                f"{int(model.serve_total_dim) - int(_z['donor_dim'])} dims",
+                flush=True,
+            )
+        elif str(_z.get("mode", "pca")) == "split":
             d = int(_z["shape_dim"])
             model.serve_total_dim = int(_z.get("total_dim", d))
             model.set_serve_split(

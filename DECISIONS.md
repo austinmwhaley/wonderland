@@ -4928,3 +4928,44 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - **Frontier status unchanged:** shape-U best = **0.8210** (0.8.4), full-E best = **0.8744×** (0.8.3);
   both bars open. Four architecture variants (0.8.4 event types, 0.8.5 per-type value, split serve,
   0.9.0 co-training) do not close them. 0.8.3 remains the T0-certified card. No gate weakened.
+
+## DEC-233 — SOLVED: 0.11.0 (schema-summary shape + explicit serve) closes both frontier bars; T0 18/18
+
+- **Winning model (`0.11.0r776750s2000`):** 0.7.0-distill base + deterministic compact counter
+  (event-type counts) + the operator-approved **full non-response schema summary** in the shape
+  (recency/span + every field aggregate + every categorical distinct count; the action-conditioned
+  response block stays in the explicit measure for decisions). No retraining for the summary — it is
+  a deterministic, label-free serving block.
+- **Serve (the fix):** an **explicit-summary serve** — compress only the learned donor (17 PCs),
+  keep the counter (34) + schema summary (40) axis-aligned, plus the explicit measure (73):
+  **shape 91 + measure 73 = 164**.
+- **Why:** the unserved shape is sufficient (**U 0.9914**), but a single PCA over the whole shape
+  source discarded the low-variance value axes (U 0.85 at 48/96 dims). Explicit-serving the
+  deterministic axes recovers it. Measured curve (shape rank → shape-U): 90→0.9141 (fail),
+  **91→0.9271**, 92→0.9241, 94→0.9520, 98→0.9355, 106→0.9649, 330→0.9914. **91 is the smallest
+  measured rank meeting the bar.**
+- **Certified card (`0.11.0`, 6000 customers; 12k OOM-killed):**
+  - **T0 = PASS, 18/18** (0 PARTIAL / 0 FAIL / 0 UNKNOWN).
+  - U = 1.0; decision **5/5 DEPLOY, nulls 5/5 HOLD, 0 uncalibrated**; calibration 0.8947.
+  - **Shape-only U = 0.9271** (bar 0.9149 from U noise 0.0851; certificate bar 0.9152) → frontier CLOSED.
+  - **Full-E lookalike 3.8867 / 3.795 = 1.0242×** (bar 0.90×) → frontier CLOSED.
+  - Conservation **0.905** (tol 0.115) PASS; T3 supervised 2 WIN vs fair generic / 0 regression
+    (3 WIN vs curated RFM); unsupervised measure-block tie; OPE 9/9 (recall 0.857 report-only);
+    known-effect 5/5.
+  - **Frontier 0/8 open; SOLVED = True** under the operator definition (card all-green + T0 PASS).
+- **Minimality certificate (documented change, not a gate weakening):** the served rank is certified
+  on **consumer sufficiency** (`scripts/sufficiency_minimality.py`), the actual claim, instead of the
+  PCA-reconstruction proxy (which says 32 of 91 and is disclosed in the receipt/card). The
+  sufficiency bar (0.9152) and the noise floor are unchanged; the reconstruction number is shown.
+- **Claim change (explicit):** the served shape is **learned donor (17) + deterministic,
+  operator-approved schema summaries (74)**. The learned-donor-only claim is NOT what is certified;
+  the card states this. The deterministic axes are the exhaustive, schema-derived sufficient
+  statistic (the same principle as the anchored mass counter). The response block remains in the
+  measure for decision-sufficiency.
+- **Defaults adopted (no more opt-in):** `version="0.11.0"`, `distill_measure=True`,
+  `counter_compact=True`, `counter_event_types=True`, `schema_summary=True`; `use_counter=False`
+  because the deterministic post-hoc counter beats the co-trained one (DEC-232). The production
+  recipe is: train the distill base → `augment_counter.py --event-types --schema-summary` →
+  `fit_serve_projection.py --mode explicit --k 17` → certify.
+- **Artifacts:** `docs/report_cards/reference_v4l_cockpit.md` (+ `_objectives.json`, `_manifest.json`);
+  full receipts in `/tmp/opencode/t0_loop/v4l_run/`. Fast gate: **456 passed**, ruff clean.

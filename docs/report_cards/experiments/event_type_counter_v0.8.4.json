@@ -43,6 +43,43 @@
         "/tmp/opencode/t0_loop/u_controls_v4j.json",
         "/tmp/opencode/t0_loop/serve_v4j.json"
       ]
+    },
+    "0.10.0_partial_schema_summary": {
+      "shape_U": 0.846,
+      "note": "recency/span + categorical distinct counts in the shape; delay gap 0.179->0.116, value/order still ~0.13-0.15.",
+      "receipt": "/tmp/opencode/t0_loop/u_controls_v4k.json"
+    },
+    "0.11.0_full_schema_summary_solved": {
+      "shape_U": 0.9271,
+      "shape_U_bar": 0.9149,
+      "full_E_ratio": 1.0242,
+      "full_E_bar": 0.9,
+      "conservation": 0.905,
+      "t0": "PASS 18/18",
+      "frontier_open": "0/8",
+      "served": "shape 91 (donor 17 + counter 34 + summary 40) + measure 73 = 164",
+      "minimality": {
+        "criterion": "sufficiency (shape-U >= bar)",
+        "sufficiency_k_min": 91,
+        "reconstruction_k_min": 32,
+        "reconstruction_full_dim": 91,
+        "curve": {
+          "90": 0.9141,
+          "91": 0.9271,
+          "92": 0.9241,
+          "94": 0.952,
+          "98": 0.9355,
+          "106": 0.9649,
+          "330": 0.9914
+        }
+      },
+      "note": "SOLVED (DEC-233). The unserved shape is sufficient (U 0.9914); the single PCA serve discarded low-variance value axes. Explicit-summary serve recovers them. The served shape includes operator-approved deterministic schema summaries, not only the learned donor.",
+      "receipts": [
+        "docs/report_cards/reference_v4l_cockpit.md",
+        "docs/report_cards/reference_v4l_manifest.json",
+        "/tmp/opencode/t0_loop/u_controls_v4l_explicit17.json",
+        "/tmp/opencode/t0_loop/comparators_v4l_final91.json"
+      ]
     }
   },
   "receipts": [

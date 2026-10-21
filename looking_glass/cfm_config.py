@@ -139,7 +139,7 @@ class CFMConfig:
     # v3.0.0: dual-velocity encoder (DEC-025) — n_experts=2 with spread
     # delta_bias init (fast/slow timescales), ortho-loss between expert state
     # components, rolling EMA whitening, trajectory graded on the slow state.
-    version: str = "0.6.4"  # encoder code version (pre-1.0 semver: MAJOR.MINOR.PATCH)
+    version: str = "0.11.0"  # encoder code version (pre-1.0 semver: MAJOR.MINOR.PATCH)
     revision: int = 1  # data/score revision (r)
     sample_customers: int | None = 500  # working base: first N customers (populations live here)
     split_a_frac: float = 0.7
@@ -277,12 +277,16 @@ class CFMConfig:
     counter_registers: int = 1
     # Compact counter (mass axis): cumulative count + numeric fields + value/gap only,
     # NOT the high-cardinality one-hot attr/event columns (which explode the shape).
-    counter_compact: bool = False
+    counter_compact: bool = True
     # Moderate extension: add the stream's own EVENT-TYPE counts (n_et+1) to the compact
     # counter. This is the vocabulary axis WITHOUT the high-cardinality attribute one-hots.
-    counter_event_types: bool = False
+    counter_event_types: bool = True
     # Value-aligned extension: per-event-type cumulative VALUE (one-hot(et) * value).
     counter_type_values: bool = False
+    # Deterministic SCHEMA SUMMARY appended to the shape: global recency/span + generic
+    # per-categorical-field DISTINCT COUNTS (the measure's variety/recency axes, no
+    # high-cardinality one-hots). Operator-approved (DEC-233).
+    schema_summary: bool = True
     # generic NUMERIC attribute fields to consume as raw scalars (the counter's raw
     # quantities + the model's numeric inputs). Discovered generically from the stream.
     numeric_fields: tuple = ()
@@ -309,7 +313,7 @@ class CFMConfig:
     # the exhaustive generic measure for the same customer. This pressures the SHAPE
     # block to carry the value/order information instead of leaving it only in the
     # explicit measure block (shape-only U / full-E geometry frontier).
-    distill_measure: bool = False
+    distill_measure: bool = True
     # Layer-B measure compression width. 0 = FULL (all measure columns, lossless) — the
     # default, because a smaller PCA silently LOSES sufficiency (measured: U 0.65 at 64 dims
     # vs 0.88 full). A positive value is an explicit compression (minimality trade).

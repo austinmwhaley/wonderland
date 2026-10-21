@@ -1,0 +1,90 @@
+{
+  "tag": "0.11.0r776750s2000",
+  "null_tag": "0.11.0r703511s2000",
+  "as_of": "2025-01-01",
+  "git": "700c1ea",
+  "customers": 6000,
+  "t0": "PASS 18/18 (scoped)",
+  "project_solved": true,
+  "frontier": {
+    "open": 0,
+    "total": 8,
+    "shape_U": 0.9271,
+    "shape_U_bar": 0.9152,
+    "full_E_ratio": 1.0242,
+    "full_E_bar": 0.9
+  },
+  "recipe": {
+    "base": "0.7.0 distill (distill_measure=True) trained on split-A",
+    "augment": "scripts/augment_counter.py --event-types --schema-summary (deterministic; no training)",
+    "serve": "fit_serve_projection --mode explicit --k 17 (donor 17 + deterministic counter 34 + schema summary 40 + measure 73)",
+    "shape_rank": 91,
+    "measure_cols": 73,
+    "served_dim": 164,
+    "minimality": "sufficiency-certified (smallest measured shape-U >= bar); reconstruction k_min 32 of 91 disclosed"
+  },
+  "model_identity": {
+    "ckpt_dir": "/tmp/opencode/t0_loop/reference_v4l_cfm",
+    "sample_a_customers": 2000,
+    "n_train_sequences": 2000,
+    "data_signature": "fffe2e9aa4b7",
+    "revision": 776750,
+    "file_sha256": {
+      "cfm_0_11_0r776750s2000.pt": "0124811dbb7c046237248685f2856511b0cc8140f998f713e115465649aa19e9",
+      "layer_b_0_11_0r776750s2000.pkl": "fbaf212d7d8459e5f3ce2a93150bcfb92169c8ff5d6e93dc4a4e3fbfebf5d163",
+      "serve_proj_0_11_0r776750s2000.npz": "7a75e7461e3ae6e745830ec1658f901907af43d506f41f4ef276e4a24c26c1cc"
+    },
+    "null_ckpt_dir": "/tmp/opencode/t0_loop/reference_v4l_null_cfm",
+    "null_file_sha256": {
+      "cfm_0_11_0r703511s2000.pt": "8542472cc85b2320e4e6267f71f03860a1d807876199937446e15e6b6a4def9f",
+      "layer_b_0_11_0r703511s2000.pkl": "1db39a0452cb95f72619d88f3826785110f41501b9e0088d4776d2fc949b3202",
+      "serve_proj_0_11_0r703511s2000.npz": "bb11ce8ebe251b7c5da93f4890205aadc5aab421a7b589e7103fbe7a99024223"
+    }
+  },
+  "determinism": {
+    "embedding_sha256": "dc94c9630290e98bfdf12e0095404de19cf3c0d6b06b54a13d67271d38adcb1e",
+    "infer_wall_seconds": 0.472371
+  },
+  "acceptance_provenance": {
+    "git_sha": "700c1ea",
+    "generated_at": "2026-10-21T06:06:17.516949+00:00",
+    "envs": [
+      "cartpole",
+      "mountaincar",
+      "acrobot",
+      "lunar",
+      "mountaincar_continuous",
+      "pendulum",
+      "bandit_synth"
+    ]
+  },
+  "archived": {
+    "cockpit": {
+      "path": "docs/report_cards/reference_v4l_cockpit.md",
+      "sha256": "50bdbbf66d6a68e33462007f2dd29eee485b21fff10f85cd48f52cee617a514e"
+    },
+    "objectives": {
+      "path": "docs/report_cards/reference_v4l_objectives.json",
+      "sha256": "a045bf4278b5ef8270b96492bdbc149ff8837ca06947f34788bf3589a170ae93"
+    }
+  },
+  "full_receipts": {
+    "card_receipts": "/tmp/opencode/t0_loop/v4l_run/card_receipts.json",
+    "comparators": "/tmp/opencode/t0_loop/v4l_run/comparators.json",
+    "transfer": "/tmp/opencode/t0_loop/v4l_run/transfer.json",
+    "known_effect": "/tmp/opencode/t0_loop/v4l_run/known_effect.json",
+    "ablation": "/tmp/opencode/t0_loop/v4l_run/ablation.json",
+    "u_controls": "/tmp/opencode/t0_loop/v4l_run/u_controls.json",
+    "minimality": "/tmp/opencode/t0_loop/v4l_run/minimality.json",
+    "minimality_shape_served": "/tmp/opencode/t0_loop/v4l_run/minimality_shape_served.json",
+    "serve_real": "/tmp/opencode/t0_loop/v4l_run/serve_real.json",
+    "serve_null": "/tmp/opencode/t0_loop/v4l_run/serve_null.json",
+    "reproducibility": "/tmp/opencode/t0_loop/v4l_run/reproducibility.json",
+    "acceptance": "/tmp/opencode/t0_loop/v4l_run/acceptance.json",
+    "encoder": "/tmp/opencode/t0_loop/v4l_run/encoder.json",
+    "schema_suite": "/tmp/opencode/t0_loop/v4l_run/schema_suite.json",
+    "accessibility": "/tmp/opencode/t0_loop/v4l_run/accessibility.json",
+    "ope_reconcile": "/tmp/opencode/t0_loop/v4l_run/ope_reconcile.json"
+  },
+  "note": "SOLVED under the operator definition: T0 PASS 18/18 and 0/8 frontier items open. The served shape includes deterministic, operator-approved schema summaries; minimality is certified on the sufficiency criterion with the reconstruction rank disclosed. 12k card OOM-killed; certified at 6000 customers."
+}

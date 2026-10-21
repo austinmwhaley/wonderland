@@ -217,6 +217,14 @@ invariant-by-construction).
 
 ## Micro
 
+- **PROJECT SOLVED (DEC-233): 0.11.0 — T0 PASS 18/18, frontier 0/8 open, card all-green.**
+  Winner: 0.7.0-distill base + deterministic compact event-type counter + full non-response
+  **schema summary** in the shape; **explicit-summary serve** (donor 17 + counter 34 + summary 40
+  + measure 73 = 164). Shape U **0.9271** (bar 0.9149), full-E **1.0242×** (bar 0.90×),
+  conservation 0.905, decision 5/5 with nulls 5/5, calibration 0.8947, T3 2 WIN/0 regression,
+  OPE 9/9, known-effect 5/5. Served on the **sufficiency-minimal** rank (91; reconstruction 32
+  disclosed). 6000 customers (12k OOM). Defaults now encode the winning training config; 456 tests.
+
 - **0.9.0 CO-TRAINED COUNTER (DEC-232): stable (val 2.31) but shape-U 0.6376 — worse than the deterministic counter (0.8210).**
   Trainer metadata bug fixed (counter_compact/event_types/type_values now persisted). Frontier best:
   shape-U 0.8210, full-E 0.8744× — both bars still open. 0.8.3 remains T0-certified.

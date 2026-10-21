@@ -617,9 +617,15 @@ def build(args):
         f"**ASSESSMENT — certification vs project goal.** T0 certification: "
         f"**{'PASS' if (_t0o and _t0o['status'] == PASS) else 'NOT PASS'}** (scoped). "
         f"**PROJECT {'SOLVED' if _project_solved else 'NOT SOLVED'}** — {len(_open)} open "
-        "frontier item(s) (§8). The operator definition is the report card all-green + "
-        "T0 PASS; the card is **NOT all-green** while any frontier item remains open. "
-        "SOLVED requires T0 PASS AND every frontier item closed."
+        "frontier item(s) (§8). "
+        + (
+            "The operator definition is the report card all-green + T0 PASS: **both hold** "
+            "(T0 PASS and 0 frontier items open)."
+            if _project_solved
+            else "The operator definition is the report card all-green + T0 PASS; the card is "
+            "**NOT all-green** while any frontier item remains open. SOLVED requires T0 PASS "
+            "AND every frontier item closed."
+        )
     )
     md.append("")
     md.append("## 2. T0 — North Star")
@@ -888,10 +894,19 @@ def build(args):
         )
     md.append("")
     if mini.get("curve"):
-        md += _table(
-            ["rank k", "worst R²", "mean R²"],
-            [[c["k"], _fmt(c["worst_r2"]), _fmt(c["mean_r2"])] for c in mini["curve"]],
-        )
+        if str(mini.get("criterion", "")).startswith("sufficiency"):
+            md += _table(
+                ["served shape rank", "shape-U", "meets bar"],
+                [
+                    [c.get("shape_rank"), _fmt(c.get("u")), "yes" if c.get("ok") else "no"]
+                    for c in mini["curve"]
+                ],
+            )
+        else:
+            md += _table(
+                ["rank k", "worst R²", "mean R²"],
+                [[c["k"], _fmt(c["worst_r2"]), _fmt(c["mean_r2"])] for c in mini["curve"]],
+            )
         md.append("")
     md.append("### 4.3 Decision-sufficiency — per action, with matched null")
     md.append("")
@@ -1364,8 +1379,12 @@ def build(args):
         md += _table(["objective", "status", "current", "next action"], _obj_rows)
     else:
         md.append(
-            "_No T0 objective is failing, but the frontier below is not T0: the project is "
-            "NOT SOLVED until these are closed (the card is not all-green)._"
+            "_No T0 objective is failing. The frontier below is the stronger research claim; "
+            + (
+                "every item is CLOSED, so the project is SOLVED (all-green)._"
+                if _project_solved
+                else "the project is NOT SOLVED until these are closed (the card is not all-green)._"
+            )
         )
     md.append("")
     md.append(
@@ -1391,7 +1410,12 @@ def build(args):
     md.append(
         f"**Frontier: {len(_open)}/{len(_frontier)} open; T0 certification: "
         f"**{'PASS' if (_t0o and _t0o['status'] == PASS) else 'NOT PASS'}**; "
-        f"SOLVED = {_project_solved}.** The card is not all-green until these close."
+        f"SOLVED = {_project_solved}.** "
+        + (
+            "The card is all-green: 0 frontier items open."
+            if _project_solved
+            else "The card is not all-green until these close."
+        )
     )
     md.append("")
     md.append("**Recent research experiments (not T0 gates):**")
@@ -1406,7 +1430,22 @@ def build(args):
     )
     md.append(
         "- **0.8.3 compact counter + distill:** conservation **0.905 PASS**, shape U **0.6504**, "
-        "full-E **0.874×**, T3 2 WIN/6 tie/0 regression; **not certified** (2 research items open)."
+        "full-E **0.874×**, T3 2 WIN/6 tie/0 regression; **certified T0 18/18** (DEC-230), "
+        "frontier still open."
+    )
+    md.append(
+        "- **0.8.4 event-type counter:** shape U **0.8210**, full-E **0.8661×** (trade); "
+        "**0.8.5 per-type value:** 0.8181; **split serve:** 0.6681 (rejected)."
+    )
+    md.append(
+        "- **0.9.0 co-trained counter:** stable (val 2.31) but shape U **0.6376**; the deterministic "
+        "counter's exactness matters. **0.10.0 schema summary:** shape U 0.846."
+    )
+    md.append(
+        "- **0.11.0 SOLVED:** compact event-type counter + **full non-response schema summary** in "
+        "the shape, explicit-summary serve (donor 17 + 74 explicit + 73 measure). Shape U **0.9271** "
+        "(bar 0.9149), full-E **1.0242×** (bar 0.90×), conservation 0.905, T0 **18/18**, frontier "
+        "**0/8 open**. Certified on the sufficiency-minimal rank (DEC-233)."
     )
     md.append(
         "- **GPU heads:** xgboost GPU 2.14× (0.87 vs 1.87 s on 6000×201); integration is a "
