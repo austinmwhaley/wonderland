@@ -33,7 +33,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from scripts.reference_pipeline import cockpit_commands  # noqa: E402
+from scripts.reference_pipeline import _newest_portfolio, cockpit_commands  # noqa: E402
 
 
 def main(argv=None):
@@ -120,9 +120,11 @@ def main(argv=None):
     )
 
     cmds = _build(rank)
+    portfolio = _newest_portfolio(a.real_tag) or ""
     for i, cmd in enumerate(cmds):
         if i == 2:  # already run
             continue
+        cmd = [portfolio if x == "<PORTFOLIO>" else x for x in cmd]
         print(f"[certify] stage {i}", flush=True)
         subprocess.run(cmd, check=True, cwd=str(ROOT))
     print("[certify] DONE", flush=True)
