@@ -22,7 +22,7 @@ python3 -m rabbit_hole.generators.relational_reference \
   --out /tmp/opencode/t0_loop/relational_v1
 ```
 
-Current build: 2,000 customers, 1,099,373 events, 123,793 orders, 14,951 returns.
+Current build: 2,000 customers, 1,119,402 events, 128,190 orders, 15,499 returns.
 The build runs the PATH A gate (`scripts/validate_path_a.py`) and writes
 `path_a_validation.json`; it fails if the supervised view regresses (constant features,
 leakage, degenerate labels, no signal, action imbalance). Use `--no-validate` only for
@@ -35,14 +35,14 @@ debugging.
 | `path_a/customer_features.parquet` | 2000 × 41 | point-in-time features (`<= as_of`) |
 | `path_a/customer_labels.parquet` | 2000 × 11 | future labels (`> as_of`, 30/90d) |
 | `path_a/path_a_wide_table.parquet` | 2000 × 51 | features + labels (the supervised table) |
-| `path_b/path_b_customer_event_stream.parquet` | 1,099,373 × 4 | the canonical event stream |
+| `path_b/path_b_customer_event_stream.parquet` | 1,119,402 × 4 | the canonical event stream |
 | `relational/customers.parquet` | 2000 × 6 | observable customer attributes |
 | `relational/products.parquet` | 80 × 5 | product catalog |
-| `relational/orders.parquet` | 123,793 × 8 | orders (time, channel, discount, total, margin) |
-| `relational/order_items.parquet` | 123,793 × 6 | order lines (product, qty, price, discount) |
-| `relational/events.parquet` | 1,099,373 × 16 | observed event log (pre-unification) |
+| `relational/orders.parquet` | 128,190 × 8 | orders (time, channel, discount, total, margin) |
+| `relational/order_items.parquet` | 128,190 × 6 | order lines (product, qty, price, discount) |
+| `relational/events.parquet` | 1,119,402 × 16 | observed event log (pre-unification) |
 | `relational/campaigns.parquet` | 24 × 5 | campaign calendar |
-| `relational/returns.parquet` | 14,951 × 5 | returns |
+| `relational/returns.parquet` | 15,499 × 5 | returns |
 | `relational/support.parquet` | 68,144 × 4 | support tickets |
 | `manifest.json` | — | keys, counts, paths, as_of |
 | `reference_truth.json` | — | known-truth latent receipt (action optima, segments) |
@@ -71,8 +71,9 @@ recompute from PATH B, label balance, feature ranges, GBM signal vs a shuffled-l
 temporal stability, and PATH B action-level coverage. Results land in
 `path_a_validation.json`.
 
-Current result: **ok, 0 failures** (churn90 AUC 0.966; value90 R² 0.367; null AUC 0.393;
-temporal 0.960 / 0.352).
+Layer A certificate (PATH A + PATH B, with sequence-headroom evidence):
+`docs/LAYER_A_CERTIFICATE.md`. Current PATH A gate result: **ok, 0 failures** (churn90 AUC 0.936; value90 R² 0.374; null AUC 0.476;
+temporal 0.934 / 0.406).
 
 ## Rules
 
@@ -91,5 +92,6 @@ temporal 0.960 / 0.352).
   one-send-per-day stream was removed because it made `n_sends` and `recency` perfectly
   correlated.
 - Campaign IDs are attached to a fraction of sends/purchases; sessions are not yet modeled.
-- This is a testbed, not a claim that the encoder wins. The next check is whether a sequence
-  oracle beats PATH A + GBM on the 90d value/order labels.
+- This is a testbed, not a claim that the encoder wins. **Churn is table-solved** (AUC 0.936;
+  sequence features add −0.006). The measured headroom is on **value** (R² +0.076 from sequence
+  features). The next check is whether a trained sequence model beats PATH A on value/orders.

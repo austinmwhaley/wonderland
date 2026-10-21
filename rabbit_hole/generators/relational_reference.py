@@ -183,6 +183,9 @@ def build_relational(spec: RelationalSpec):
         P = rng.dirichlet(np.full(len(REGIMES), 1.2), size=len(REGIMES))
         P = 0.93 * np.eye(len(REGIMES)) + 0.07 * P
         regime = int(rng.integers(0, len(REGIMES)))
+        _regime_runs: list[list] = []
+        _last_regime = regime
+        _run_len = 0
         # long-memory promo shock: starts on a random day, decays
         shock_day = float(rng.uniform(0.1 * T, 0.8 * T))
         shock_amp = float(rng.uniform(0.3, 1.2))
@@ -209,12 +212,20 @@ def build_relational(spec: RelationalSpec):
         )
 
         last_event = "signup"
+        prev1 = "signup"
+        prev2 = "signup"
         for day in range(T):
             if day >= churn_day:
                 break
             # regime switch + long-memory shock
             if rng.random() < 0.035:
                 regime = int(rng.choice(len(REGIMES), p=P[regime]))
+            if regime == _last_regime:
+                _run_len += 1
+            else:
+                _regime_runs.append([REGIMES[_last_regime], _run_len])
+                _last_regime = regime
+                _run_len = 1
             shock = 0.0
             if day >= shock_day:
                 shock = shock_amp * np.exp(-(day - shock_day) / max(shock_tau, 1.0))
@@ -279,6 +290,18 @@ def build_relational(spec: RelationalSpec):
             path = {"add_to_cart": 1.6, "view": 1.15, "return": 0.65, "purchase": 0.85}.get(
                 last_event, 1.0
             )
+            # ORDER-DEPENDENT effect: the table (counts/sums/recency) cannot see this.
+            pattern = 1.0
+            if last_event == "add_to_cart" and prev1 == "view" and prev2 == "search":
+                pattern *= 1.15
+            elif last_event == "add_to_cart" and prev1 == "view":
+                pattern *= 1.35
+            elif last_event == "view" and prev1 == "add_to_cart":
+                pattern *= 0.75
+            elif last_event == "purchase" and prev1 == "add_to_cart":
+                pattern *= 1.20
+            pattern = 1.0 + s * (pattern - 1.0)
+            path *= pattern
             path = 1.0 + s * (path - 1.0)
             # action effects only when a send actually occurs
             if sent:
@@ -358,6 +381,7 @@ def build_relational(spec: RelationalSpec):
                         "value": value,
                     }
                 )
+                prev2, prev1 = prev1, last_event
                 last_event = "purchase"
                 if rng.random() < s * return_prone * 0.6:
                     rday = day + float(rng.uniform(1, 6))
@@ -385,6 +409,7 @@ def build_relational(spec: RelationalSpec):
                                 "reason": "size",
                             }
                         )
+                        prev2, prev1 = prev1, last_event
                         last_event = "return"
             if not made_purchase and rng.random() < s * spec.base_activity * regime_mult:
                 # organic funnel: path-dependent event choice
@@ -414,6 +439,7 @@ def build_relational(spec: RelationalSpec):
                     keep=keep,
                     **_camp_extra,
                 )
+                prev2, prev1 = prev1, last_event
                 last_event = et
                 if et == "support_ticket":
                     support_rows.append(
@@ -424,6 +450,8 @@ def build_relational(spec: RelationalSpec):
                             "reason": "delivery",
                         }
                     )
+        if _run_len:
+            _regime_runs.append([REGIMES[_last_regime], _run_len])
         customers_truth.append(
             {
                 "customer": key,
@@ -435,6 +463,10 @@ def build_relational(spec: RelationalSpec):
                 "segment": segment,
                 "churn_day": round(churn_day, 2),
                 "regime0": REGIMES[regime],
+                "regime_runs": _regime_runs,
+                "price_sensitivity": round(price_sens, 4),
+                "return_proneness": round(return_prone, 4),
+                "touch_pref": [round(float(x), 4) for x in touch_pref],
                 "category_pref": CATEGORIES[int(np.argmax(cust_cat))],
             }
         )

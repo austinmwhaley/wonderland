@@ -1,0 +1,215 @@
+{
+  "dir": "/tmp/opencode/t0_loop/relational_v1",
+  "as_of": "2025-01-01",
+  "join_key": "customer_key",
+  "path_a": {
+    "ok": true,
+    "failures": [],
+    "baseline": {
+      "churn90_auc": 0.9364,
+      "churn90_ap": 0.8911,
+      "churn90_brier": 0.012,
+      "churn90_null_auc": 0.4762,
+      "value90_r2": 0.3735,
+      "value90_mae": 540.77,
+      "value90_null_r2": -0.1457
+    }
+  },
+  "path_b": {
+    "columns": [
+      "customer_key",
+      "event_ts",
+      "event_type",
+      "event_attributes"
+    ],
+    "rows": 1119402,
+    "customers": 2000,
+    "sorted": true,
+    "seq_len": {
+      "min": 117,
+      "median": 556.5,
+      "max": 975,
+      "mean": 559.7
+    },
+    "event_types": {
+      "email_send": 518052,
+      "purchase": 128190,
+      "remove_from_cart": 104364,
+      "search": 78425,
+      "add_to_cart": 78386,
+      "review": 68464,
+      "support_ticket": 68243,
+      "view": 57779,
+      "return": 15499,
+      "customer_signup": 2000
+    },
+    "duplicate_timestamps": 3,
+    "prefix_rows": 789994,
+    "future_rows": 329408
+  },
+  "actions": {
+    "offer": {
+      "n": {
+        "3": 2056,
+        "0": 1985,
+        "2": 1962,
+        "1": 1992
+      },
+      "conversion": {
+        "3": 0.1445,
+        "0": 0.1254,
+        "2": 0.1356,
+        "1": 0.1376
+      },
+      "spread": 0.0191
+    },
+    "hour": {
+      "n": {
+        "19": 316,
+        "3": 357,
+        "12": 315,
+        "4": 352,
+        "17": 321,
+        "14": 304,
+        "0": 334,
+        "9": 316,
+        "16": 336,
+        "5": 336,
+        "11": 337,
+        "6": 347,
+        "15": 337,
+        "10": 342,
+        "8": 344,
+        "21": 318,
+        "23": 306,
+        "20": 334,
+        "1": 337,
+        "7": 342,
+        "2": 346,
+        "22": 326,
+        "13": 368,
+        "18": 355
+      },
+      "conversion": {
+        "19": 0.1076,
+        "3": 0.084,
+        "12": 0.1143,
+        "4": 0.0909,
+        "17": 0.0748,
+        "14": 0.1118,
+        "0": 0.1018,
+        "9": 0.1266,
+        "16": 0.0982,
+        "5": 0.1101,
+        "11": 0.1187,
+        "6": 0.1037,
+        "15": 0.1276,
+        "10": 0.0965,
+        "8": 0.1221,
+        "21": 0.1006,
+        "23": 0.1176,
+        "20": 0.0898,
+        "1": 0.1039,
+        "7": 0.1111,
+        "2": 0.0896,
+        "22": 0.0736,
+        "13": 0.1087,
+        "18": 0.0958
+      },
+      "spread": 0.054
+    },
+    "freq": {
+      "n": {
+        "3": 3200,
+        "1": 1574,
+        "0": 848,
+        "2": 2385
+      },
+      "conversion": {
+        "3": 0.1197,
+        "1": 0.1277,
+        "0": 0.1061,
+        "2": 0.13
+      },
+      "spread": 0.0239
+    },
+    "dow": {
+      "n": {
+        "6": 1125,
+        "3": 1155,
+        "5": 1138,
+        "4": 1189,
+        "2": 1089,
+        "0": 1132,
+        "1": 1159
+      },
+      "conversion": {
+        "6": 0.1173,
+        "3": 0.1169,
+        "5": 0.1142,
+        "4": 0.1194,
+        "2": 0.1047,
+        "0": 0.106,
+        "1": 0.1001
+      },
+      "spread": 0.0193
+    },
+    "channel": {
+      "n": {
+        "3": 1989,
+        "1": 1977,
+        "0": 1997,
+        "2": 2022
+      },
+      "conversion": {
+        "3": 0.1197,
+        "1": 0.0946,
+        "0": 0.1072,
+        "2": 0.1078
+      },
+      "spread": 0.0251
+    }
+  },
+  "ingestion": {
+    "read_rows": 789323,
+    "customers": 2000,
+    "measure_cols": 103,
+    "response_cols": 43,
+    "target_key_in_measure": false,
+    "actions": [
+      "channel",
+      "dow",
+      "freq",
+      "hour",
+      "offer"
+    ]
+  },
+  "sequence_headroom": {
+    "churn90_base_auc": 0.9364,
+    "churn90_seq_auc": 0.93,
+    "churn90_delta_auc": -0.0064,
+    "value90_base_r2": 0.3735,
+    "value90_seq_r2": 0.45,
+    "value90_delta_r2": 0.0764
+  },
+  "truth": {
+    "customers": 2000,
+    "known_effect_fields_ok": true,
+    "regime_diagnostics": true
+  },
+  "hashes": {
+    "path_a_wide_table.parquet": "6f0feafb710a68808ad631d32c62567e5759a8a911ec350d0fca11f9ddfda278",
+    "path_b_customer_event_stream.parquet": "1122c40a31a900933802cdba93aae37163dd3b9618016a75f926692f17a6da25",
+    "reference_truth.json": "b0bbed3556655263cdc3a127c5f8d33a7da6d3822a3174a0e53626a15415187e",
+    "manifest.json": "c09f1cfd8de77dc73a8de6c2bb8d789e69ae47e1a0360e91feca800d4092857c"
+  },
+  "reproducible": true,
+  "repro_files": {
+    "path_a/path_a_wide_table.parquet": true,
+    "path_b/path_b_customer_event_stream.parquet": true,
+    "reference_truth.json": true,
+    "manifest.json": true
+  },
+  "failures": [],
+  "certified": true
+}

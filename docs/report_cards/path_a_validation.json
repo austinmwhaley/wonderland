@@ -1,0 +1,157 @@
+{
+  "shape": [
+    2000,
+    51
+  ],
+  "features": [
+    "segment",
+    "region",
+    "acquisition_channel",
+    "loyalty_tier",
+    "n_events",
+    "n_orders",
+    "n_returns",
+    "n_support",
+    "n_sends",
+    "n_views",
+    "n_carts",
+    "n_searches",
+    "purchase_value",
+    "purchase_margin",
+    "return_value",
+    "value_30d",
+    "value_90d",
+    "n_products",
+    "n_channels",
+    "n_campaigns",
+    "discount_mean",
+    "qty_sum",
+    "hist_cat_apparel",
+    "hist_cat_footwear",
+    "hist_cat_accessories",
+    "hist_cat_beauty",
+    "hist_cat_home",
+    "hist_cat_outdoor",
+    "hist_channel_web",
+    "hist_channel_app",
+    "hist_channel_store",
+    "recency_days",
+    "days_since_last_purchase",
+    "avg_order_value",
+    "return_rate",
+    "net_value",
+    "tenure_days",
+    "purchase_rate",
+    "category_entropy"
+  ],
+  "labels": [
+    "y_orders_30",
+    "y_value_30",
+    "y_margin_30",
+    "y_next_days_30",
+    "y_churn_30",
+    "y_orders_90",
+    "y_value_90",
+    "y_margin_90",
+    "y_next_days_90",
+    "y_churn_90"
+  ],
+  "label_nulls": {
+    "y_orders_30": 0,
+    "y_value_30": 0,
+    "y_margin_30": 0,
+    "y_next_days_30": 0,
+    "y_churn_30": 0,
+    "y_orders_90": 0,
+    "y_value_90": 0,
+    "y_margin_90": 0,
+    "y_next_days_90": 0,
+    "y_churn_90": 0
+  },
+  "join_ok": true,
+  "constant_features": [],
+  "near_duplicate_pairs": [],
+  "recompute_ok": {
+    "n_orders": true,
+    "purchase_value": true,
+    "y_orders_30": true,
+    "y_value_30": true
+  },
+  "label_balance": {
+    "churn90_positive": 159,
+    "churn90_rate": 0.0795
+  },
+  "net_value_identity_maxerr": 0.0,
+  "bad_ranges": {},
+  "baseline": {
+    "churn90_auc": 0.9364,
+    "churn90_ap": 0.8911,
+    "churn90_brier": 0.012,
+    "churn90_null_auc": 0.4762,
+    "value90_r2": 0.3735,
+    "value90_mae": 540.77,
+    "value90_null_r2": -0.1457
+  },
+  "temporal_split": {
+    "churn90_auc": 0.9339,
+    "value90_r2": 0.4063
+  },
+  "action_levels": {
+    "offer": [
+      "0",
+      "1",
+      "2",
+      "3"
+    ],
+    "hour": [
+      "0",
+      "1",
+      "10",
+      "11",
+      "12",
+      "13",
+      "14",
+      "15",
+      "16",
+      "17",
+      "18",
+      "19",
+      "2",
+      "20",
+      "21",
+      "22",
+      "23",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7",
+      "8",
+      "9"
+    ],
+    "freq": [
+      "0",
+      "1",
+      "2",
+      "3"
+    ],
+    "dow": [
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
+    "channel": [
+      "0",
+      "1",
+      "2",
+      "3"
+    ]
+  },
+  "action_levels_missing": {},
+  "failures": [],
+  "ok": true
+}
