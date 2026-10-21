@@ -5,9 +5,11 @@ actually has, then exposes **two views of the same source data**:
 
 - **PATH A — traditional supervised path.** One row per customer: features computed from
   history `<= as_of`, plus future labels `> as_of` (30d and 90d).
-- **PATH B — customer event stream.** One row per event, canonical schema
-  `customer_key, event_ts, event_type, event_attributes` (plus brand/entity/value).
-  The full window is stored; the encoder must use events `<= as_of`.
+- **PATH B — customer event stream.** One row per event, exactly the canonical schema
+  `customer_key, event_ts, event_type, event_attributes`. The full window is stored; the
+  encoder must use events `<= as_of`. Context (product, brand, order, value, action keys)
+  lives in the JSON `event_attributes`; the richer relational `events.parquet` keeps the
+  typed columns.
 
 Both join on **`customer_key`**. The relational tables join on their natural keys
 (`order_id`, `product_id`, `ticket_id`, `return_id`).
@@ -29,7 +31,7 @@ Current build: 2,000 customers, 1,615,278 events, 116,515 orders, 14,057 returns
 | `path_a/customer_features.parquet` | 2000 × 41 | point-in-time features (`<= as_of`) |
 | `path_a/customer_labels.parquet` | 2000 × 11 | future labels (`> as_of`, 30/90d) |
 | `path_a/path_a_wide_table.parquet` | 2000 × 51 | features + labels (the supervised table) |
-| `path_b/path_b_customer_event_stream.parquet` | 1,615,278 × 9 | the event stream |
+| `path_b/path_b_customer_event_stream.parquet` | 1,615,278 × 4 | the canonical event stream |
 | `relational/customers.parquet` | 2000 × 6 | observable customer attributes |
 | `relational/products.parquet` | 80 × 5 | product catalog |
 | `relational/orders.parquet` | 116,515 × 8 | orders (time, channel, discount, total, margin) |

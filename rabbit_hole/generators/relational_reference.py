@@ -118,6 +118,10 @@ def build_relational(spec: RelationalSpec):
         nonlocal event_id
         ts = start + timedelta(days=float(day))
         av = dict(a)
+        if brand:
+            av.setdefault("brand", brand)
+        if ent_type == "order" and ent_id:
+            av.setdefault("order_id", ent_id)
         if value:
             av["value"] = round(float(value), 2)
         event_id += 1
@@ -298,7 +302,6 @@ def build_relational(spec: RelationalSpec):
                     value=value,
                     product_id=f"p{pid:03d}",
                     category_code=CATEGORIES[int(prod_cat[pid])],
-                    brand_name=BRANDS[int(prod_brand[pid])],
                     price=unit,
                     qty=qty,
                     discount=round(discount, 3),
@@ -407,9 +410,11 @@ def build_relational(spec: RelationalSpec):
             }
         )
 
-    stream = pl.DataFrame(
-        {**rows, "event_attributes": attrs},
-    ).sort(["customer_key", "event_ts"])
+    stream = (
+        pl.DataFrame({**rows, "event_attributes": attrs})
+        .select(["customer_key", "event_ts", "event_type", "event_attributes"])
+        .sort(["customer_key", "event_ts"])
+    )
     base = pl.DataFrame(base_events).sort(["customer_key", "event_ts"])
     customers = pl.DataFrame(customer_rows)
 
