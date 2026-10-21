@@ -217,6 +217,15 @@ invariant-by-construction).
 
 ## Micro
 
+- **STRUCTURAL REVIEW (DEC-235):** `docs/STRUCTURAL_PROBLEMS.md`. The project bundles three
+  bets: (A) measure + point-in-time decision pipeline (**strong**), (B) learned encoder that
+  beats the measure (**unproven; donor-only U 0.358, transfer 0 add/5 NO_SIGNAL**), (C) universal
+  across streams (**weakest; per-stream training**). Open structural items: P2 measure-insufficient
+  testbed, P3 per-stream economics, P4 business metric (incremental margin). Governance fixed:
+  AGENTS certification-integrity + reader enforcement + one-command certifier. Honest state:
+  T0 FAIL (transfer), frontier open, **NOT SOLVED**. Two-track plan; B has a pre-registered kill
+  criterion.
+
 - **PROJECT SOLVED (DEC-233): 0.11.0 — T0 PASS 18/18, frontier 0/8 open, card all-green.**
   Winner: 0.7.0-distill base + deterministic compact event-type counter + full non-response
   **schema summary** in the shape; **explicit-summary serve** (donor 17 + counter 34 + summary 40

@@ -5012,3 +5012,35 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   gate before the result; T0 ≠ SOLVED; no receipt-defined criteria; no circular evaluation;
   finite/fair comparators; single-command reproducibility; card consistency; stop-and-ask
   triggers). 456 fast tests green; ruff clean.
+
+## DEC-235 — Structural review: unbundle the three bets; two-track plan; cheapest honest demo
+
+- **Document:** `docs/STRUCTURAL_PROBLEMS.md` (durable; binding until closed).
+- **The project bundles three bets:** (A) schema-agnostic measure + point-in-time decision
+  pipeline (**strong, the reliable asset**); (B) a learned self-supervised encoder that beats
+  the measure (**unproven; donor-only U 0.358, transfer 0 add/5 NO_SIGNAL**); (C) universal
+  across streams (**weakest; per-stream training means the pipeline, not the model, transfers**).
+  Past confusion came from treating A’s success as evidence for B and C.
+- **Structural problems (P1–P7):**
+  P1 oracle circularity (measure inside E defines the oracle; measure-carried U);
+  P2 testbed insufficiency (the reference is measure-like; many objectives saturated);
+  P3 per-stream economics / “universal” claim; P4 sufficiency ≠ usefulness (conversion lift ≠
+  incremental margin); P5 weak/tautological consumer evidence (transfer FAIL, measure-vs-measure
+  unsupervised, model-independent decision gate, stream OPE 0/1); P6 gate/claim drift (fixed by
+  the AGENTS certification-integrity protocol + reader enforcement + test); P7 reproducibility/
+  provenance (single-command certifier).
+- **Fixed now:** P6 (AGENTS.md + `objectives.py` rejects non-frozen minimality criteria + test);
+  P7 ( `scripts/reference_certify.py` ); P1/P5 disclosure and the fair transfer comparator.
+- **Open (require decisions/experiments, not more frontier tinkering):** P2 (build one
+  **measure-insufficient** stream: variable-order/long-memory, nonlinear interactions, exogenous
+  shocks, confounders); P3 (cost/value per stream; decide few-high-value vs many-cheap); P4
+  (business metric: incremental gross margin on a randomized holdout).
+- **Two-track plan:** A = measure-first product/demo (ship/validate now); B = one decisive
+  learned-encoder experiment with a **pre-registered kill criterion**: if learned E does not beat
+  measure+GBM on held-out value and incremental margin (CI excludes 0) on the measure-insufficient
+  stream, close B and ship A.
+- **Cheapest honest demo:** one command ingests a stream, builds point-in-time features + response
+  block + policy, runs a randomized-holdout lift (reference) or held-out prediction/segmentation
+  (real public data), prints the card with scope labels. Use the reference **labeled as a harness**
+  plus **one real public event stream**; do not wait for B. Do not call a harness demo business
+  value.
