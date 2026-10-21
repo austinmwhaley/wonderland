@@ -116,7 +116,7 @@ def build_relational(spec: RelationalSpec):
 
     def emit(key, day, etype, *, brand="", ent_type="", ent_id="", value=0.0, keep=True, **a):
         nonlocal event_id
-        ts = start + timedelta(days=float(day), seconds=float(rng.integers(0, 86400)))
+        ts = start + timedelta(days=float(day))
         av = dict(a)
         if value:
             av["value"] = round(float(value), 2)
@@ -243,7 +243,7 @@ def build_relational(spec: RelationalSpec):
             q *= 1.0 - 0.22 * abs(acts["offer"] - offer_opt)
             q = float(np.clip(1.0 + s * (q - 1.0), 0.05, 1.0))
             tkey = akey
-            ts = 6 + acts["hour"] + 0.01 * acts["freq"]
+            ts = acts["hour"] + 0.25  # action hour, within the day; purchase follows at +0.75
             emit(
                 key,
                 day + ts / 24.0,
@@ -287,7 +287,7 @@ def build_relational(spec: RelationalSpec):
                 margin = round(value * float(prod_margin[pid]), 2)
                 order_id += 1
                 oid = f"o{order_id:09d}"
-                day_ts = day + ts / 24.0
+                day_ts = day + (acts["hour"] + 0.75) / 24.0
                 emit(
                     key,
                     day_ts,
@@ -409,8 +409,8 @@ def build_relational(spec: RelationalSpec):
 
     stream = pl.DataFrame(
         {**rows, "event_attributes": attrs},
-    )
-    base = pl.DataFrame(base_events)
+    ).sort(["customer_key", "event_ts"])
+    base = pl.DataFrame(base_events).sort(["customer_key", "event_ts"])
     customers = pl.DataFrame(customer_rows)
 
     # ---- traditional wide table (the baseline view) ----------------------

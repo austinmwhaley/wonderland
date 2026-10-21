@@ -20,7 +20,7 @@ python3 -m rabbit_hole.generators.relational_reference \
   --out /tmp/opencode/t0_loop/relational_v1
 ```
 
-Current build: 2,000 customers, 1,623,475 events, 118,051 orders, 13,876 returns.
+Current build: 2,000 customers, 1,615,278 events, 116,515 orders, 14,057 returns.
 
 ## Files
 
@@ -29,14 +29,14 @@ Current build: 2,000 customers, 1,623,475 events, 118,051 orders, 13,876 returns
 | `path_a/customer_features.parquet` | 2000 × 41 | point-in-time features (`<= as_of`) |
 | `path_a/customer_labels.parquet` | 2000 × 11 | future labels (`> as_of`, 30/90d) |
 | `path_a/path_a_wide_table.parquet` | 2000 × 51 | features + labels (the supervised table) |
-| `path_b/path_b_customer_event_stream.parquet` | 1,623,475 × 9 | the event stream |
+| `path_b/path_b_customer_event_stream.parquet` | 1,615,278 × 9 | the event stream |
 | `relational/customers.parquet` | 2000 × 6 | observable customer attributes |
 | `relational/products.parquet` | 80 × 5 | product catalog |
-| `relational/orders.parquet` | 118,051 × 8 | orders (time, channel, discount, total, margin) |
-| `relational/order_items.parquet` | 118,051 × 6 | order lines (product, qty, price, discount) |
-| `relational/events.parquet` | 1,623,475 × 16 | observed event log (pre-unification) |
+| `relational/orders.parquet` | 116,515 × 8 | orders (time, channel, discount, total, margin) |
+| `relational/order_items.parquet` | 116,515 × 6 | order lines (product, qty, price, discount) |
+| `relational/events.parquet` | 1,615,278 × 16 | observed event log (pre-unification) |
 | `relational/campaigns.parquet` | 24 × 5 | campaign calendar |
-| `relational/returns.parquet` | 13,876 × 5 | returns |
+| `relational/returns.parquet` | 14,057 × 5 | returns |
 | `relational/support.parquet` | 68,144 × 4 | support tickets |
 | `manifest.json` | — | keys, counts, paths, as_of |
 | `reference_truth.json` | — | known-truth latent receipt (action optima, segments) |
