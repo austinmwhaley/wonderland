@@ -116,9 +116,11 @@ def generic_measure(cfg, cust, only_keys=None):
     # aggregated into the measure — otherwise `E` contains the logged action (E->arm acc 0.999),
     # `V(E,a)` reads it and ignores `a`, and the OPE is invalid. The RESPONSE block (built
     # separately from `effect_actions`) still exposes the action *response*.
-    _excl = {str(k) for k in (getattr(cfg, "effect_actions", ()) or ())} | {
-        str(k) for k in (getattr(cfg, "action_fields", ()) or ())
-    }
+    _excl = (
+        {str(k) for k in (getattr(cfg, "effect_actions", ()) or ())}
+        | {str(k) for k in (getattr(cfg, "action_fields", ()) or ())}
+        | {"target_key"}
+    )
     if _excl:
         jkeys = [k for k in jkeys if k not in _excl]
         numeric = [k for k in numeric if k not in _excl]

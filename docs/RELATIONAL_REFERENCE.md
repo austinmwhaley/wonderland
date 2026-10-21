@@ -22,7 +22,11 @@ python3 -m rabbit_hole.generators.relational_reference \
   --out /tmp/opencode/t0_loop/relational_v1
 ```
 
-Current build: 2,000 customers, 1,615,278 events, 116,515 orders, 14,057 returns.
+Current build: 2,000 customers, 1,099,373 events, 123,793 orders, 14,951 returns.
+The build runs the PATH A gate (`scripts/validate_path_a.py`) and writes
+`path_a_validation.json`; it fails if the supervised view regresses (constant features,
+leakage, degenerate labels, no signal, action imbalance). Use `--no-validate` only for
+debugging.
 
 ## Files
 
@@ -31,14 +35,14 @@ Current build: 2,000 customers, 1,615,278 events, 116,515 orders, 14,057 returns
 | `path_a/customer_features.parquet` | 2000 × 41 | point-in-time features (`<= as_of`) |
 | `path_a/customer_labels.parquet` | 2000 × 11 | future labels (`> as_of`, 30/90d) |
 | `path_a/path_a_wide_table.parquet` | 2000 × 51 | features + labels (the supervised table) |
-| `path_b/path_b_customer_event_stream.parquet` | 1,615,278 × 4 | the canonical event stream |
+| `path_b/path_b_customer_event_stream.parquet` | 1,099,373 × 4 | the canonical event stream |
 | `relational/customers.parquet` | 2000 × 6 | observable customer attributes |
 | `relational/products.parquet` | 80 × 5 | product catalog |
-| `relational/orders.parquet` | 116,515 × 8 | orders (time, channel, discount, total, margin) |
-| `relational/order_items.parquet` | 116,515 × 6 | order lines (product, qty, price, discount) |
-| `relational/events.parquet` | 1,615,278 × 16 | observed event log (pre-unification) |
+| `relational/orders.parquet` | 123,793 × 8 | orders (time, channel, discount, total, margin) |
+| `relational/order_items.parquet` | 123,793 × 6 | order lines (product, qty, price, discount) |
+| `relational/events.parquet` | 1,099,373 × 16 | observed event log (pre-unification) |
 | `relational/campaigns.parquet` | 24 × 5 | campaign calendar |
-| `relational/returns.parquet` | 14,057 × 5 | returns |
+| `relational/returns.parquet` | 14,951 × 5 | returns |
 | `relational/support.parquet` | 68,144 × 4 | support tickets |
 | `manifest.json` | — | keys, counts, paths, as_of |
 | `reference_truth.json` | — | known-truth latent receipt (action optima, segments) |
@@ -58,6 +62,18 @@ Compatibility aliases: `customer_event_stream.parquet` (= PATH B) and
   the others at the customer optimum, with `target_key` on `email_send`. The purchase outcome
   depends on action quality × regime × path × interactions × shock.
 
+## Build gate
+
+`python3 -m rabbit_hole.generators.relational_reference ...` runs
+`scripts/validate_path_a.py` after writing. The gate checks: unique keys, label nulls,
+A↔B join, no constant features, no near-duplicate features (|corr| > 0.999), point-in-time
+recompute from PATH B, label balance, feature ranges, GBM signal vs a shuffled-label null,
+temporal stability, and PATH B action-level coverage. Results land in
+`path_a_validation.json`.
+
+Current result: **ok, 0 failures** (churn90 AUC 0.966; value90 R² 0.367; null AUC 0.393;
+temporal 0.960 / 0.352).
+
 ## Rules
 
 - **PATH A features are point-in-time.** Never use `y_*` columns as features.
@@ -71,7 +87,9 @@ Compatibility aliases: `customer_event_stream.parquet` (= PATH B) and
 ## Caveats (first version)
 
 - One item per order; sessions are not yet modeled; campaign IDs are not yet attached to events.
-- The send stream is dense (one send per customer-day); this is intentional for the response
-  block, but it dominates the event count.
+- Send cadence varies with the `freq` action (probability 0.20 + 0.20 × freq); the old dense
+  one-send-per-day stream was removed because it made `n_sends` and `recency` perfectly
+  correlated.
+- Campaign IDs are attached to a fraction of sends/purchases; sessions are not yet modeled.
 - This is a testbed, not a claim that the encoder wins. The next check is whether a sequence
   oracle beats PATH A + GBM on the 90d value/order labels.

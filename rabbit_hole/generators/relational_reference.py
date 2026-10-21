@@ -24,6 +24,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
+import sys
 from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -92,6 +94,9 @@ def build_relational(spec: RelationalSpec):
             "duration_days": rng.integers(5, 30, 24),
         }
     )
+    _camp_start = campaigns["start_day"].to_numpy()
+    _camp_dur = campaigns["duration_days"].to_numpy()
+    _camp_disc = campaigns["discount"].to_numpy()
 
     rows = {
         k: []
@@ -213,6 +218,13 @@ def build_relational(spec: RelationalSpec):
             shock = 0.0
             if day >= shock_day:
                 shock = shock_amp * np.exp(-(day - shock_day) / max(shock_tau, 1.0))
+            _active = np.flatnonzero((_camp_start <= day) & (day < _camp_start + _camp_dur))
+            camp_id = None
+            camp_discount = 0.0
+            if _active.size and rng.random() < 0.25:
+                _ci = int(rng.choice(_active))
+                camp_id = f"cmp{_ci:03d}"
+                camp_discount = float(_camp_disc[_ci])
             regime_mult = {
                 0: 0.75,  # browse
                 1: 1.55,  # intent
@@ -248,34 +260,49 @@ def build_relational(spec: RelationalSpec):
             q = float(np.clip(1.0 + s * (q - 1.0), 0.05, 1.0))
             tkey = akey
             ts = acts["hour"] + 0.25  # action hour, within the day; purchase follows at +0.75
-            emit(
-                key,
-                day + ts / 24.0,
-                "email_send",
-                ent_type="customer",
-                ent_id=key,
-                touch=CHANNELS[acts["channel"]],
-                target_key=tkey,
-                **acts,
-            )
+            p_send = min(0.95, 0.20 + 0.20 * acts["freq"])
+            sent = rng.random() < p_send
+            _camp_extra = {"campaign_id": camp_id} if camp_id else {}
+            if sent:
+                emit(
+                    key,
+                    day + ts / 24.0,
+                    "email_send",
+                    ent_type="customer",
+                    ent_id=key,
+                    touch=CHANNELS[acts["channel"]],
+                    target_key=tkey,
+                    **_camp_extra,
+                    **acts,
+                )
             # path factor: last observed event changes the purchase propensity
             path = {"add_to_cart": 1.6, "view": 1.15, "return": 0.65, "purchase": 0.85}.get(
                 last_event, 1.0
             )
             path = 1.0 + s * (path - 1.0)
-            # interaction: channel effect is regime-dependent; discount interacts with price sensitivity
-            chan_regime = 1.0 + s * (
-                0.25 if (acts["channel"] == chan_pref) == (regime in (1, 2)) else -0.15
-            )
-            discount = 0.0 if acts["offer"] == 0 else 0.05 + 0.06 * acts["offer"]
-            price_fit = 1.0 + s * (0.35 * (discount * price_sens * 4.0) - 0.15 * price_sens)
+            # action effects only when a send actually occurs
+            if sent:
+                q_eff = q
+                chan_regime = 1.0 + s * (
+                    0.25 if (acts["channel"] == chan_pref) == (regime in (1, 2)) else -0.15
+                )
+                action_discount = 0.0 if acts["offer"] == 0 else 0.05 + 0.06 * acts["offer"]
+                price_fit = 1.0 + s * (
+                    0.35 * (action_discount * price_sens * 4.0) - 0.15 * price_sens
+                )
+            else:
+                q_eff = 1.0
+                chan_regime = 1.0
+                action_discount = 0.0
+                price_fit = 1.0
+            discount = max(action_discount, camp_discount)
             w = cust_cat[prod_cat] * (0.5 + prod_pop)
             w = w / w.sum()
             pid = int(rng.choice(spec.n_products, p=w))
             p_buy = (
                 spec.base_purchase
                 * regime_mult
-                * (0.55 + 0.45 * q)
+                * (0.55 + 0.45 * q_eff)
                 * path
                 * chan_regime
                 * price_fit
@@ -305,8 +332,9 @@ def build_relational(spec: RelationalSpec):
                     price=unit,
                     qty=qty,
                     discount=round(discount, 3),
-                    channel=TOUCH[int(rng.choice(len(TOUCH), p=touch_pref))],
+                    touch=TOUCH[int(rng.choice(len(TOUCH), p=touch_pref))],
                     margin=margin,
+                    **_camp_extra,
                 )
                 orders_rows.append(
                     {
@@ -382,8 +410,9 @@ def build_relational(spec: RelationalSpec):
                     ent_id=f"p{pid:03d}",
                     product_id=f"p{pid:03d}",
                     category_code=CATEGORIES[int(prod_cat[pid])],
-                    channel=TOUCH[int(rng.choice(len(TOUCH), p=touch_pref))],
+                    touch=TOUCH[int(rng.choice(len(TOUCH), p=touch_pref))],
                     keep=keep,
+                    **_camp_extra,
                 )
                 last_event = et
                 if et == "support_ticket":
@@ -508,7 +537,6 @@ def build_relational(spec: RelationalSpec):
             .sum()
             .alias("value_90d"),
             pl.col("product_id").n_unique().alias("n_products"),
-            pl.col("category_code").n_unique().alias("n_categories"),
             pl.col("channel").n_unique().alias("n_channels"),
             pl.col("campaign_id").n_unique().alias("n_campaigns"),
             pl.col("discount").mean().alias("discount_mean"),
@@ -521,7 +549,6 @@ def build_relational(spec: RelationalSpec):
         )
         .with_columns(
             ((pl.lit(as_of) - pl.col("last_event_ts")).dt.total_days()).alias("recency_days"),
-            ((pl.lit(as_of) - pl.col("first_event_ts")).dt.total_days()).alias("tenure_days"),
             ((pl.lit(as_of) - pl.col("last_purchase_ts")).dt.total_days()).alias(
                 "days_since_last_purchase"
             ),
@@ -529,13 +556,27 @@ def build_relational(spec: RelationalSpec):
             (pl.col("n_returns") / pl.col("n_orders").clip(1, None)).alias("return_rate"),
             (pl.col("purchase_value") + pl.col("return_value")).alias("net_value"),
         )
-        .with_columns(
-            (pl.col("n_orders") / pl.col("tenure_days").clip(1, None)).alias("purchase_rate"),
-        )
+        .with_columns()
         .drop(["last_event_ts", "first_event_ts", "last_purchase_ts"])
         .with_columns(pl.col("days_since_last_purchase").fill_null(999))
     )
     features = customers.join(per_cust, on="customer_key", how="left").fill_null(0.0)
+    features = (
+        features.with_columns(pl.col("signup_ts").str.to_datetime().alias("_signup_dt"))
+        .with_columns(
+            ((pl.lit(as_of) - pl.col("_signup_dt")).dt.total_days()).alias("tenure_days"),
+        )
+        .drop("_signup_dt")
+        .with_columns(
+            (pl.col("n_orders") / pl.col("tenure_days").clip(1, None)).alias("purchase_rate"),
+        )
+    )
+    _cat_cols = [f"hist_cat_{c}" for c in CATEGORIES]
+    _cat = features.select(_cat_cols).to_numpy()
+    _tot = _cat.sum(1, keepdims=True)
+    _p = np.divide(_cat, np.maximum(_tot, 1.0))
+    _ent = -np.sum(np.where(_p > 0, _p * np.log(_p), 0.0), axis=1)
+    features = features.with_columns(pl.Series("category_entropy", _ent))
     labels = customers.select("customer_key")
     for h in (30, 90):
         fh = fut.filter(pl.col("ts_dt") <= as_of + timedelta(days=h))
@@ -627,6 +668,7 @@ def main(argv=None):
     ap.add_argument("--name", default="relational_reference")
     ap.add_argument("--start-date", default="2024-01-01", dest="start_date")
     ap.add_argument("--as-of", default="2025-01-01", dest="as_of")
+    ap.add_argument("--no-validate", action="store_true", dest="no_validate")
     a = ap.parse_args(argv)
     spec = RelationalSpec(
         n_customers=a.n_customers,
@@ -684,6 +726,14 @@ def main(argv=None):
     }
     (d / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
     print(json.dumps(manifest["counts"] | {"wide_columns": path_a["wide"].width}, indent=1))
+    if not a.no_validate:
+        root = Path(__file__).resolve().parents[2]
+        rc = subprocess.run(
+            [sys.executable, str(root / "scripts/validate_path_a.py"), "--dir", str(d)],
+            check=False,
+        ).returncode
+        if rc != 0:
+            raise SystemExit("PATH A validation failed; see path_a_validation.json")
 
 
 if __name__ == "__main__":
