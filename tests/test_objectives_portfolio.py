@@ -593,3 +593,21 @@ def test_mtp_objective_present_and_trains():
     T_["mtp"].backward()
     assert model.head_mtp[0].weight.grad is not None
     assert model.emb_et.weight.grad is not None
+
+
+def test_minimality_reader_rejects_nonfrozen_criterion():
+    """A receipt may not self-certify with a new minimality criterion (DEC-234)."""
+    from looking_glass.objectives import _read_minimality
+
+    rec = _read_minimality(
+        {
+            "minimality": {
+                "measure_dim": 164,
+                "block_wise_certified": True,
+                "joint_certified": False,
+                "criterion": "sufficiency: shape-only U >= bar",
+            }
+        }
+    )
+    assert rec["status"] == "PARTIAL"
+    assert "non-frozen" in rec["evidence"]

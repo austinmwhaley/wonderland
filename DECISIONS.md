@@ -4969,3 +4969,46 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   `fit_serve_projection.py --mode explicit --k 17` → certify.
 - **Artifacts:** `docs/report_cards/reference_v4l_cockpit.md` (+ `_objectives.json`, `_manifest.json`);
   full receipts in `/tmp/opencode/t0_loop/v4l_run/`. Fast gate: **456 passed**, ruff clean.
+
+## DEC-234 — Peer-review corrections: withdraw 0.11.0 “SOLVED”; restore frozen minimality; fix transfer/OPE/card; add anti-self-deception protocol
+
+- **Review verdict:** the 0.11.0 `SOLVED` card was invalid under the frozen standards. Two
+  blockers: (1) `t2.minimality` was redefined after seeing the reconstruction result (served
+  shape 91 vs k_min 32), and (2) the frontier was closed by copying the non-response full-history
+  measure into the shape, making shape-U/full-E circular. Additional findings: a transfer PASS
+  with `raw=nan`, the stream OPE 0/1 hidden behind the broad acceptance, stale card text, and no
+  single reproducible command.
+- **F1 fixed — frozen minimality restored:** the served shape rank is the **reconstruction k_min**
+  (**48**), served **121 = 48 + 73**. The 91-dim explicit-summary serve is reclassified as a
+  research receipt, not a certificate. The objectives reader now **rejects** a
+  `block_wise_certified=true` receipt with a non-frozen `criterion` (test added).
+- **F2/F3 fixed — attribution:** `scripts/shape_attribution.py` reports **learned donor only U =
+  0.3576** (reproduced 0.3605), donor+measure U=1.0, and **donor+measure full-E = 0.7208×** (no
+  duplicated measure). The frontier is **OPEN**: shape-U **0.8730** (bar 0.9152), full-E **0.8726×**
+  (bar 0.90×). The card now labels the claim “measure-carried/served-statistic”, not learned-shape.
+- **F4 fixed — transfer:** the unsupervised row now uses a fair raw/RFM k-means comparator with a
+  paired bootstrap CI. Result: E eta² **0.2525** vs raw **0.2837**, CI **[-0.0606, -0.0051]** →
+  **FAIL**; supervised **0 add / 5 NO_SIGNAL**. **T1.transfer = FAIL** (the old PASS was a
+  hardcoded `raw=nan` row).
+- **F5** — decision gate is model-independent: the real lifts are bit-identical to 0.6.4
+  (`channel 0.028838807152848`, …); it is the measure response block, not the learned donor. The
+  card discloses this; a random-donor negative control is now required by AGENTS.md.
+- **F6** — the card shows the **stream** OPE **0/1** (DR 0.500, WIS 0.500, behavior 0.430, bar
+  0.530) separately from the broad 7-env acceptance **9/9**. No substitution.
+- **F7** — the unsupervised measure-block gate is a tautology (measure = generic by construction);
+  disclosed on the card, with the donor-only geometry reported separately.
+- **F8** — card text corrected: N=6000, calibration band [0.85, 0.98], stream OPE, learned-only
+  attribution, frozen minimality, no stale “shape-only 0.26”/“magnitude-blind”/“E ≥ every
+  component” claims.
+- **F9/F10** — one-command certifier `scripts/reference_certify.py` (refit → unserved rank →
+  explicit attribution → frozen serve → certificates → receipts → objectives → cockpit); the card
+  is regenerated at a recorded clean commit.
+- **F11** — no post-hoc rank selection: the served rank is the frozen reconstruction k_min.
+- **F12** — the calibration band is stated; **F13** — the generator note is daily, not weekly;
+  **F14** — N is on the card/manifest.
+- **Honest final state:** **T0 = FAIL** (T1 transfer), frontier **2/8 open** (shape-U 0.873,
+  full-E 0.873) → **PROJECT NOT SOLVED**. No gate was weakened.
+- **Governance:** `AGENTS.md` now has a binding **Certification integrity** protocol (freeze the
+  gate before the result; T0 ≠ SOLVED; no receipt-defined criteria; no circular evaluation;
+  finite/fair comparators; single-command reproducibility; card consistency; stop-and-ask
+  triggers). 456 fast tests green; ruff clean.

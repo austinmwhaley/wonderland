@@ -200,8 +200,17 @@ def _read_minimality(artifacts: dict) -> dict:
     dim = art.get("measure_dim")
     joint = art.get("joint_certified")
     block = art.get("block_wise_certified")
+    crit = str(art.get("criterion") or "")
     cur = f"measure_dim={dim}, block_wise={bool(block)}, joint={bool(joint)}"
     if block:
+        # FROZEN RULE (DEC-220/234): the served shape rank must be the reconstruction
+        # k_min. A receipt that introduces its own criterion may not self-certify.
+        if crit and "reconstruction" not in crit.lower():
+            return record(
+                PARTIAL,
+                current=cur,
+                evidence=f"non-frozen minimality criterion: {crit}",
+            )
         return record(
             PASS,
             current=cur,
