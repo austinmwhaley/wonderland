@@ -460,8 +460,9 @@ def build_reference(spec: ReferenceSpec):
             "action_period_seconds": 86400.0,
             "action_design": "one_factor_daily",
             "weights": list(spec.action_weights),
-            "note": "weekly randomized channel x freq(0..3) x hour(0..23) x dow(0..6) x offer(0..3); "
-            "hour/dow are part of the weekly tuple (shared by the week's sends). Conversion = "
+            "note": "daily one-factor randomized channel x freq(0..3) x hour(0..23) x dow(0..6) x "
+            "offer(0..3); exactly one action key is randomized per day (others at the customer "
+            "optimum). Conversion = "
             "quality(freq/channel/offer, additive soft bowls) x (ungated floor + timing-gated gain); "
             "the winning send carries the outcome. No single factor's optimum is diluted.",
         },

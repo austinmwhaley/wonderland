@@ -260,6 +260,7 @@ def build(args):
     truth = _load(args.truth) or {}
     urows = _u_rows(args)
     uctl = _load(args.u_controls) or {}
+    sattr = _load(args.shape_attribution) or {}
     _rc = next(
         (r for r in (port.get("rows") or []) if "conservation" in str(r.get("check", ""))),
         {},
@@ -476,6 +477,7 @@ def build(args):
     md.append("")
     md.append(
         f"tag `{args.tag}` · as_of `{args.as_of}` · git `{git}` · "
+        f"N={int(getattr(args, 'customers', 0) or 0)} stream customers · "
         f"self-supervised={enc.get('self_supervised')} · frozen={enc.get('frozen_donor')} · "
         f"schema-universal={enc.get('schema_universal')}"
     )
@@ -936,7 +938,8 @@ def build(args):
     cal = card.get("calibration") or {}
     md.append(
         f"- calibration: coverage {_fmt(cal.get('coverage'))} (target {_fmt(cal.get('target'))}); "
-        f"gate {'PASS' if cal.get('passed') else 'not measured'}"
+        f"gate {'PASS' if cal.get('passed') else 'not measured'} within the producer's finite-sample "
+        f"band [0.85, 0.98] (DEC-216/220; the band is the tolerance, not a target reduction)"
     )
     md.append(
         f"- accessibility: {accy.get('passed', '—')}/{accy.get('total', '—')} simple per-field probes"
@@ -1216,6 +1219,17 @@ def build(args):
             f"**{acc.get('passed')}/{acc.get('total')} hard gates PASS.** Recall is reported (power), not "
             "a deploy gate (DEC-214)."
         )
+        if _wq:
+            md.append("")
+            md.append(
+                f"**Stream bridge (this stream, separate from the broad contract): "
+                f"{_wq.get('passed')}/{_wq.get('total')}** — DR "
+                f"{_fmt((_wq.get('estimates') or {}).get('dr'))}, WIS "
+                f"{_fmt((_wq.get('estimates') or {}).get('wis'))}, behavior "
+                f"{_fmt(_wq.get('behavior_mean'))}, bar {_fmt(_wq.get('bar'))} → "
+                f"**{'PASS' if _wq.get('passed') else 'FAIL'}**. The table above is the broad "
+                "acceptance contract (DEC-225); it is not a result on this stream."
+            )
     md.append("")
     md.append("### 5.4 Known-effect recovery")
     md.append("")
@@ -1288,11 +1302,15 @@ def build(args):
         [
             [
                 "U=1.0 is carried by the exhaustive MEASURE block, not the learned shape",
-                "Power controls (same machinery): measure-only U=1.0, shape-only U≈0.26, "
-                "destroyed E U=0.0. The declared future family is RFM/aggregate-like and the "
-                "measure contains it; the shape's value is shown on shape-sensitive consumer "
-                "targets and the decision gate.",
-                "T2 sufficiency: U + §4.1 power controls",
+                f"Power controls (same machinery): measure-only "
+                f"U={_fmt(((uctl.get('measure') or {}).get('u')))}, shape-only "
+                f"U={_fmt(((uctl.get('shape') or {}).get('u')))}, destroyed "
+                f"U={_fmt(((uctl.get('destroyed') or {}).get('u')))}. "
+                f"Learned donor only (attribution receipt): U="
+                f"{_fmt((((sattr.get('shape_u') or {}).get('learned_donor_only') or {}).get('u')))}. "
+                "The served shape also contains deterministic summary axes, so shape-U is not a "
+                "learned-shape claim.",
+                "T2 sufficiency: U + §4.1 power controls + shape attribution",
             ],
             [
                 "Strict win on every consumer head vs a hand-aggregated measure",
@@ -1303,10 +1321,11 @@ def build(args):
             ],
             [
                 "Unsupervised value geometry is certified on the ACCESSIBLE measure block",
-                "The block-wise served E exposes the explicit, axis-aligned measure; the whitened shape "
-                "is magnitude-blind and dilutes distance-based value consumers. Full-concat metrics are "
-                "reported (eta2/ANOVA not worse; lookalike lower).",
-                "T3 unsupervised: measure-block gate; full-concat lookalike reported",
+                "The measure block IS the generic measure (axis-aligned), so this gate is a tautology "
+                "at the block scope; it cannot fail by construction. The learned donor's geometry is "
+                f"reported separately (donor+measure lookalike ratio "
+                f"{_fmt((sattr.get('geometry') or {}).get('ratio_donor_plus_measure'))}×).",
+                "T3 unsupervised: measure-block gate; shape attribution receipt",
             ],
             [
                 f"Conservation: {_rc.get('achieved', 'not measured')} "
@@ -1317,10 +1336,12 @@ def build(args):
                 "T1 geometry table / portfolio receipt",
             ],
             [
-                f"Minimality is block-wise ({mini.get('measure_dim', '—')}), not the unconstrained "
-                f"{mini.get('joint_min', '—')}",
-                f"The +{int(mini.get('measure_dim', 0) or 0) - int(mini.get('joint_min', 0) or 0)} is the "
-                "explicit, axis-aligned measure block required by tree/k-means consumers.",
+                f"Minimality is block-wise ({mini.get('measure_dim', '—')} = shape "
+                f"{mini.get('shape_rank', '—')} + measure {mini.get('measure_cols', '—')}), not the "
+                f"unconstrained joint minimum {mini.get('joint_min', '—')}",
+                "The served shape rank is the frozen reconstruction k_min; the premium is the explicit "
+                "axis-aligned measure block required by tree/k-means consumers. The served shape is not "
+                "the unconstrained joint optimum.",
                 "T2 minimality note",
             ],
             [
@@ -1442,10 +1463,11 @@ def build(args):
         "counter's exactness matters. **0.10.0 schema summary:** shape U 0.846."
     )
     md.append(
-        "- **0.11.0 SOLVED:** compact event-type counter + **full non-response schema summary** in "
-        "the shape, explicit-summary serve (donor 17 + 74 explicit + 73 measure). Shape U **0.9271** "
-        "(bar 0.9149), full-E **1.0242×** (bar 0.90×), conservation 0.905, T0 **18/18**, frontier "
-        "**0/8 open**. Certified on the sufficiency-minimal rank (DEC-233)."
+        "- **0.11.0 (review correction, DEC-234):** the 0.11.0 ‘SOLVED’ label is withdrawn. Under the "
+        "frozen reconstruction minimality the served shape is **48** (not 91); shape-U is **0.8730** "
+        "and full-E **0.8726×** — both bars open. The learned donor alone is **U 0.3576**; the frontier "
+        "was measure-carried. T1 transfer **FAILS** against a fair raw/RFM comparator, and the stream "
+        "OPE is **0/1**. The explicit-summary serve remains a research receipt."
     )
     md.append(
         "- **GPU heads:** xgboost GPU 2.14× (0.87 vs 1.87 s on 6000×201); integration is a "
@@ -1478,6 +1500,7 @@ def build(args):
         ("card receipts", args.card),
         ("objectives", args.objectives),
         ("portfolio", args.portfolio),
+        ("shape attribution", args.shape_attribution),
         ("minimality joint", args.minimality),
         ("minimality shape", args.minimality_shape),
         ("serve projection", args.serve_projection),
@@ -1546,9 +1569,9 @@ _RECS = [
     "allows to tighten the intervals.",
     "**Keep the frozen benchmark snapshot current:** the cockpit is wired into "
     "`scripts/reference_pipeline.py`; refresh the snapshot after every behavior change.",
-    "**Close the shape's remaining tie gap:** the ablation shows E ≥ every component on all valid heads; "
-    "significant wins are on channel/category. Push next_value/return with a stronger shape objective "
-    "rather than a weaker gate.",
+    "**Close the shape's remaining gap honestly:** the ablation shows the measure block alone often "
+    "matches or beats E (e.g. churn 0.5931 vs 0.5843); the significant wins are channel/category. "
+    "Push next_value/return with a stronger shape objective rather than a weaker gate.",
     "**Strengthen the self-supervised `effect` head / add red_king arm-value recovery:** decision-sufficiency "
     "currently comes from the measure response block; the dedicated effect head is ~0.",
     "**Diagnose the stream-bridge HOLD vs the response-block DEPLOY** (DR 0.50 vs bar 0.53): "
@@ -1578,10 +1601,12 @@ def main(argv=None):
         "ope-reconcile",
         "u-table",
         "u-controls",
+        "shape-attribution",
         "card-md",
         "truth",
     ):
         ap.add_argument(f"--{name}", default=None, dest=name.replace("-", "_"))
+    ap.add_argument("--customers", type=int, default=0)
     ap.add_argument("--stream", default="reference")
     ap.add_argument("--tag", default="unknown")
     ap.add_argument("--as-of", default="unknown", dest="as_of")

@@ -386,24 +386,39 @@ def run_head_battery(model, cfg, horizon_days=90, seeds=(0, 1, 2)):
                 "verdict": verdict,
             }
         )
-    # unsupervised
+    # unsupervised —— graded against a FAIR raw/RFM k-means, not against a literal.
+    # The old row hardcoded PASS with raw=nan and lo=hi; that is not transfer evidence.
     from sklearn.cluster import KMeans
+
+    def _eta2(labels, y):
+        groups = [y[labels == c] for c in np.unique(labels) if (labels == c).sum() > 1]
+        if not groups:
+            return 0.0
+        return float(1.0 - np.mean([g.var() for g in groups]) / max(y.var(), 1e-9))
 
     yv = yall["LTV (future log-margin)"][0]
     km = KMeans(n_clusters=4, n_init=5, random_state=0).fit(Z)
-    eta2 = 1.0 - np.mean(
-        [yv[km.labels_ == c].var() for c in range(4) if (km.labels_ == c).sum() > 1]
-    ) / max(yv.var(), 1e-9)
+    eta2 = _eta2(km.labels_, yv)
+    sc_raw = StandardScaler().fit(Xrich)
+    kmr = KMeans(n_clusters=4, n_init=5, random_state=0).fit(sc_raw.transform(Xrich))
+    eta2_raw = _eta2(kmr.labels_, yv)
+    rng_u = np.random.default_rng(0)
+    _diffs = []
+    for _ in range(200):
+        _ix = rng_u.integers(0, len(yv), len(yv))
+        _diffs.append(_eta2(km.labels_[_ix], yv[_ix]) - _eta2(kmr.labels_[_ix], yv[_ix]))
+    _lo, _hi = np.quantile(_diffs, [0.025, 0.975])
     rows.append(
         {
             "head": "unsupervised segmentation (eta^2 on LTV)",
             "n": len(cust),
-            "delta": float(eta2),
-            "lo": float(eta2),
-            "hi": float(eta2),
+            "delta": float(eta2 - eta2_raw),
+            "lo": float(_lo),
+            "hi": float(_hi),
             "e_alone": float(eta2),
-            "raw": float("nan"),
-            "verdict": "PASS" if eta2 > 0.02 else "NO_SIGNAL",
+            "raw": float(eta2_raw),
+            "raw_se": float(np.std(_diffs) / np.sqrt(max(len(_diffs), 1))),
+            "verdict": "PASS" if _lo > 0 else ("FAIL" if _hi < 0 else "NO_SIGNAL"),
         }
     )
     receipt = {

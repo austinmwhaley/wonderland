@@ -62,6 +62,8 @@ def build(args) -> dict:
 
     # OPE: the broad acceptance contract takes precedence over the single-stream bid.
     acc = _load(args.acceptance)
+    if card.get("ope"):
+        rec["ope_stream"] = card["ope"]
     if acc:
         rec["ope"] = acc
     elif card.get("ope"):
