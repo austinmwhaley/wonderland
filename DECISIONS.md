@@ -5071,3 +5071,13 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   horizon per batch failed acceptance (value/orders/anomaly regressed). The aligned design is a
   **multi-horizon future target vector**: predict the future summary at every bank horizon at once.
 - **Status:** short-horizon raw algebra restored (29e9fef); the horizon-vector implementation is next.
+
+## DEC-238 — Future multi-horizon rejected; past multi-horizon recency is the value lever
+
+- Sampling one future horizon (uniform/log-uniform) and the all-horizon future vector both failed the
+  pre-registered acceptance (value/orders/anomaly regressed vs short raw).
+- Reverted to short raw (`29e9fef`).
+- The table's value90 edge comes from recency windows. The E's past summary is total-history only.
+  Next aligned design: **multi-horizon past recency** — decayed raw extensive aggregates at every
+  data-derived horizon for all discovered numeric fields, plus the future summaries.
+- Acceptance: pure E value90/orders90 >= short raw and >= table; churn/anomaly not worse.
