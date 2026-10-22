@@ -1,0 +1,523 @@
+"""Principle-aligned auto encoder: all discovered fields, generic objectives, frozen E."""
+
+import collections
+import datetime
+import json
+import math
+import sys
+import zlib
+from pathlib import Path
+
+import numpy as np
+import polars as pl
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from looking_glass.cfm_model import _scan  # noqa: E402
+from sklearn.ensemble import HistGradientBoostingRegressor, HistGradientBoostingClassifier  # noqa: E402
+from sklearn.metrics import r2_score, roc_auc_score  # noqa: E402
+from sklearn.model_selection import KFold  # noqa: E402
+
+DEV = "cuda" if torch.cuda.is_available() else "cpu"
+AS_OF_TS = 0.0
+BATCH = 16
+LABELS = (
+    "y_value_30",
+    "y_orders_30",
+    "y_churn_30",
+    "y_value_90",
+    "y_orders_90",
+    "y_churn_90",
+    "y_margin_90",
+)
+
+
+def _vocab(vals):
+    u = sorted({str(v) for v in vals if v is not None and str(v) != ""})
+    m = {v: i + 1 for i, v in enumerate(u)}
+    m[""] = 0
+    return m
+
+
+def _is_ts(vals):
+    if not vals or not all(isinstance(v, str) for v in vals[:200]):
+        return False
+    for v in vals[:200]:
+        try:
+            datetime.datetime.fromisoformat(v)
+        except Exception:
+            return False
+    return True
+
+
+def load_data(data):
+    d = Path(data)
+    manifest = json.loads((d / "manifest.json").read_text())
+    as_of = manifest["as_of"]
+    as_of_ts = datetime.datetime.fromisoformat(as_of).timestamp()
+    B = pl.read_parquet(d / "path_b/path_b_customer_event_stream.parquet")
+    A = pl.read_parquet(d / "path_a/path_a_wide_table.parquet")
+    B = (
+        B.with_columns(pl.col("event_ts").str.to_datetime().alias("ts"))
+        .filter(pl.col("ts") <= pl.lit(as_of).str.to_datetime())
+        .sort(["customer_key", "ts"])
+    )
+    keys = sorted(B["customer_key"].unique().to_list())
+    rows = B.select(["customer_key", "ts", "event_type", "event_attributes"]).to_dicts()
+    et_v = _vocab({r["event_type"] for r in rows})
+    attrs = [json.loads(r["event_attributes"]) for r in rows]
+    fields = sorted(set().union(*[set(a) for a in attrs]) - {"target_key"})
+    n = len(rows)
+    cat, num = [], []
+    for f in fields:
+        vals = [a.get(f) for a in attrs if a.get(f) is not None and str(a.get(f)) != ""]
+        if _is_ts(vals):
+            num.append((f, "ts"))
+            continue
+        if vals and all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in vals):
+            u = len(set(map(str, vals)))
+            if isinstance(vals[0], int) and u <= 2 * int(math.sqrt(n)):
+                cat.append(f)
+            else:
+                num.append((f, "num"))
+        else:
+            cat.append(f)
+    catspec = []
+    for f in cat:
+        cnt = collections.Counter(
+            str(a.get(f)) for a in attrs if a.get(f) is not None and str(a.get(f)) != ""
+        )
+        if len(cnt) > 2 * int(math.sqrt(n)):
+            buckets = 1 << max(4, int(math.ceil(math.log2(2 * math.sqrt(n)))))
+            catspec.append(dict(field=f, mode="hash", buckets=buckets, size=buckets + 1))
+        else:
+            m = {}
+            total = sum(cnt.values())
+            acc = 0
+            i = 1
+            for v, c in cnt.most_common():
+                if total and acc / total >= 0.99:
+                    break
+                m[v] = i
+                i += 1
+                acc += c
+            catspec.append(dict(field=f, mode="vocab", map=m, size=i))
+    allt = np.array([r["ts"].timestamp() for r in rows])
+    h0 = allt.min()
+    hn = int(np.ceil((allt.max() - h0) / 3600.0)) + 1
+    counts, _ = np.histogram(allt, bins=hn, range=(h0, h0 + hn * 3600.0))
+    spec = np.abs(np.fft.rfft(counts - counts.mean())) ** 2
+    freqs = np.fft.rfftfreq(hn, d=1.0)
+    spec[0] = 0
+    peaks = []
+    for i in range(1, len(spec) - 1):
+        if (
+            spec[i] > spec[i - 1]
+            and spec[i] >= spec[i + 1]
+            and spec[i] > np.percentile(spec[1:], 90)
+        ):
+            peaks.append((spec[i], freqs[i]))
+    peaks = sorted(peaks, reverse=True)[:2]
+    periods = [1.0 / f for _, f in peaks if f > 0]
+    time_dim = 1 + 2 * len(periods)
+    by = {}
+    for r, a in zip(rows, attrs):
+        by.setdefault(r["customer_key"], []).append((r["ts"], r["event_type"], a))
+    gaps_all = []
+    seqs = {}
+    for k, evs in by.items():
+        evs.sort(key=lambda x: x[0])
+        m = len(evs)
+        et = np.zeros(m, np.int64)
+        gcat = np.zeros((m, len(catspec)), np.int64)
+        gnum = np.zeros((m, len(num)), np.float32)
+        gaps = np.zeros(m, np.float64)
+        tss = np.zeros(m, np.float64)
+        time = np.zeros((m, time_dim), np.float32)
+        prev = None
+        for i, (ts, etype, at) in enumerate(evs):
+            et[i] = et_v.get(etype, 0)
+            tss[i] = ts.timestamp()
+            gap = 0.0 if prev is None else max(0.0, (ts - prev).total_seconds() / 86400.0)
+            prev = ts
+            gaps[i] = gap
+            time[i, 0] = math.log1p(gap)
+            for j, P in enumerate(periods):
+                ph = 2 * math.pi * (tss[i] / 3600.0) / P
+                time[i, 1 + 2 * j] = math.sin(ph)
+                time[i, 2 + 2 * j] = math.cos(ph)
+            for j, g in enumerate(catspec):
+                s = "" if at.get(g["field"]) is None else str(at.get(g["field"]))
+                gcat[i, j] = (
+                    0
+                    if s == ""
+                    else (
+                        1 + zlib.crc32((g["field"] + "=" + s).encode()) % g["buckets"]
+                        if g["mode"] == "hash"
+                        else g["map"].get(s, 0)
+                    )
+                )
+            for j, (f, kind) in enumerate(num):
+                v = at.get(f)
+                x = 0.0
+                if v is not None and str(v) != "":
+                    if kind == "ts":
+                        try:
+                            x = (
+                                ts - datetime.datetime.fromisoformat(str(v))
+                            ).total_seconds() / 86400.0
+                        except Exception:
+                            x = 0.0
+                    else:
+                        try:
+                            x = float(v)
+                        except Exception:
+                            x = 0.0
+                gnum[i, j] = math.copysign(math.log1p(abs(x)), x) if x else 0.0
+            if gap > 0:
+                gaps_all.append(gap)
+        seqs[k] = (et, gcat, gnum, time, gaps, tss)
+    gaps_all = np.array(gaps_all) if gaps_all else np.array([1.0])
+    e = max(2, min(4, len(peaks) + 1))
+    taus = np.quantile(gaps_all, np.linspace(0.25, 0.95, e))
+    miss = [float((seqs[k][1][:, j] == 0).mean()) for k in keys for j in range(len(catspec))]
+    p_mask = float(np.clip(np.mean(miss) if miss else 0.1, 0.05, 0.4))
+    vs = dict(et=len(et_v), gcat=[g["size"] for g in catspec], gnum=len(num), time_dim=time_dim)
+    vs["past_dim"] = len(et_v) + len(catspec) + 6 * len(num) + 7
+    return B, A, keys, seqs, vs, et_v, catspec, num, taus, p_mask, as_of_ts, periods
+
+
+class GatedSSM(nn.Module):
+    def __init__(self, d, e, taus):
+        super().__init__()
+        self.d = d
+        self.e = e
+        self.Wx = nn.Linear(d, e * d)
+        self.out = nn.Linear(d, d)
+        self.log_tau = nn.Parameter(torch.log(torch.as_tensor(taus, dtype=torch.float32)))
+
+    def forward(self, x, mask, dt):
+        B, T, _ = x.shape
+        tau = torch.exp(self.log_tau)
+        decay = torch.exp(-dt.unsqueeze(-1) / tau)
+        decay = torch.where(mask.unsqueeze(-1) > 0, decay, torch.ones_like(decay))
+        inp = self.Wx(x).view(B, T, self.e, self.d)
+        b = (1 - decay).unsqueeze(-1) * inp
+        b = torch.where(mask.unsqueeze(-1).unsqueeze(-1) > 0, b, torch.zeros_like(b))
+        _, H = _scan(decay.unsqueeze(-1), b)
+        y = H.sum(2)
+        return F.gelu(self.out(y)) + y
+
+
+class Enc(nn.Module):
+    def __init__(self, vs, d, e, layers, taus):
+        super().__init__()
+        self.d = d
+        self.et = nn.Embedding(vs["et"], d)
+        self.gcat = nn.ModuleList([nn.Embedding(s, d) for s in vs["gcat"]])
+        self.gnum = nn.ModuleList([nn.Linear(1, d) for _ in range(vs["gnum"])])
+        self.time = nn.Linear(vs["time_dim"], d)
+        self.gw_cat = nn.Parameter(torch.full((len(vs["gcat"]),), 0.5413))
+        self.gw_num = nn.Parameter(torch.full((vs["gnum"],), 0.5413))
+        self.mlp = nn.Sequential(nn.Linear(d, d), nn.GELU(), nn.Linear(d, d))
+        self.ssm = nn.ModuleList([GatedSSM(d, e, taus) for _ in range(layers)])
+        self.q = nn.Parameter(torch.randn(d) / math.sqrt(d))
+        self.n_read = 5
+        self.rproj = nn.ModuleList([nn.Linear(d, d) for _ in range(self.n_read)])
+        self.rw = nn.Parameter(torch.zeros(self.n_read))
+        self.mass = nn.Linear(vs["gnum"], d)
+        self.rmlp = nn.Sequential(nn.Linear(d, d), nn.GELU(), nn.Linear(d, d))
+        self.qgap = nn.Sequential(nn.Linear(1, d), nn.GELU(), nn.Linear(d, d))
+        self.head_et = nn.Linear(d, vs["et"])
+        self.head_gap = nn.Linear(d, 1)
+        self.heads_cat = nn.ModuleList([nn.Linear(d, s) for s in vs["gcat"]])
+        self.heads_num = nn.ModuleList([nn.Linear(d, 1) for _ in range(vs["gnum"])])
+        self.past = nn.Linear(d, vs["past_dim"])
+
+    def forward(self, et, gcat, gnum, time, gaps, mask, lengths, qgap):
+        x = self.et(et) + self.time(time)
+        for i, emb in enumerate(self.gcat):
+            x = x + F.softplus(self.gw_cat[i]) * emb(gcat[:, :, i])
+        for i, lin in enumerate(self.gnum):
+            x = x + F.softplus(self.gw_num[i]) * lin(gnum[:, :, i : i + 1])
+        x = self.mlp(x)
+        dt = gaps.clamp(min=1e-3)
+        for ssm in self.ssm:
+            x = ssm(x, mask, dt)
+        Hs = x
+        ar = torch.arange(Hs.shape[0], device=Hs.device)
+        last = Hs[ar, lengths - 1]
+        m = mask.unsqueeze(-1)
+        mean = (Hs * m).sum(1) / lengths.unsqueeze(-1)
+        mx = Hs.masked_fill(mask.unsqueeze(-1) == 0, -1e9).max(1).values
+        score = (Hs @ self.q) / math.sqrt(self.d)
+        score = score.masked_fill(mask == 0, -1e9)
+        att = torch.softmax(score, 1)
+        pooled = (Hs * att.unsqueeze(-1)).sum(1)
+        gsum = (gnum * mask.unsqueeze(-1)).sum(1)
+        mag = self.mass(gsum)
+        rs = [last, mean, mx, pooled, mag]
+        pr = [self.rproj[i](rs[i]) for i in range(self.n_read)]
+        w = F.softplus(self.rw)
+        E = sum(w[i] * pr[i] for i in range(self.n_read))
+        E = self.rmlp(E)
+        E = E + self.qgap(torch.log1p(qgap).unsqueeze(-1))
+        return Hs, E, w / w.sum()
+
+
+def collate(seqs, ks, cuts, qgaps, vs, want_past, past_mu, past_sd):
+    T = max(cuts)
+    Bn = len(ks)
+    nc = len(vs["gcat"])
+    nnf = vs["gnum"]
+    td = vs["time_dim"]
+    et = np.zeros((Bn, T), np.int64)
+    gcat = np.zeros((Bn, T, nc), np.int64)
+    gnum = np.zeros((Bn, T, nnf), np.float32)
+    time = np.zeros((Bn, T, td), np.float32)
+    gaps = np.zeros((Bn, T), np.float32)
+    mask = np.zeros((Bn, T), np.float32)
+    past = np.zeros((Bn, vs["past_dim"]), np.float32)
+    qg = np.zeros(Bn, np.float32)
+    for b, (k, cut) in enumerate(zip(ks, cuts)):
+        etk, gck, gnk, tmk, gpk, tt = seqs[k]
+        L = min(cut, len(tt))
+        q = float(qgaps[b])
+        qg[b] = q
+        et[b, :L] = etk[:L]
+        gcat[b, :L] = gck[:L]
+        gnum[b, :L] = gnk[:L]
+        time[b, :L] = tmk[:L]
+        gaps[b, :L] = gpk[:L]
+        mask[b, :L] = 1
+        if want_past and L > 0:
+            ev = etk[:L]
+            etc = [float((ev == i).sum()) for i in range(vs["et"])]
+            catd = [float(len(np.unique(gck[:L, j][gck[:L, j] > 0]))) for j in range(nc)]
+            stat = []
+            for j in range(nnf):
+                x = gnk[:L, j]
+                stat += [
+                    float((x != 0).sum()),
+                    float(x.sum()),
+                    float(x.mean()),
+                    float(x.std()),
+                    float(x.min()),
+                    float(x.max()),
+                ]
+            tenure = (tt[L - 1] - tt[0]) / 86400.0
+            past[b] = (
+                etc
+                + catd
+                + stat
+                + [
+                    tenure,
+                    float(np.std(tt[:L]) / 86400.0),
+                    q,
+                    q,
+                    tenure,
+                    float(L),
+                    float(len(np.unique(ev))),
+                ]
+            )
+    if want_past and past_mu is not None:
+        past = (past - past_mu) / past_sd
+    t = dict(
+        et=torch.tensor(et, device=DEV),
+        gcat=torch.tensor(gcat, device=DEV),
+        gnum=torch.tensor(gnum, device=DEV),
+        time=torch.tensor(time, device=DEV),
+        gaps=torch.tensor(gaps, device=DEV),
+        mask=torch.tensor(mask, device=DEV),
+    )
+    return (
+        t,
+        torch.tensor(past, device=DEV),
+        torch.tensor(qg, device=DEV),
+        torch.tensor(cuts, device=DEV),
+    )
+
+
+def _next_losses(model, t, m, p_mask, rng):
+    def ce(head, tgt):
+        logit = head(model_hs[:, :-1]).reshape(-1, head.out_features)
+        y = tgt[:, 1:].reshape(-1)
+        mm = m.reshape(-1) > 0
+        return F.cross_entropy(logit[mm], y[mm]) if mm.sum() > 0 else torch.tensor(0.0, device=DEV)
+
+    model_hs = model._hs
+
+    def mse(head, tgt):
+        pred = head(model_hs[:, :-1]).squeeze(-1)
+        y = tgt[:, 1:].float()
+        return (
+            (((pred - y) ** 2) * m).sum() / m.sum()
+            if m.sum() > 0
+            else torch.tensor(0.0, device=DEV)
+        )
+
+    def keep():
+        return rng.random() < (1.0 - p_mask)
+
+    Ls = [ce(model.head_et, t["et"])]
+    for j, head in enumerate(model.heads_cat):
+        Ls.append(ce(head, t["gcat"][:, :, j]) if keep() else torch.tensor(0.0, device=DEV))
+    for j, head in enumerate(model.heads_num):
+        Ls.append(mse(head, t["gnum"][:, :, j]) if keep() else torch.tensor(0.0, device=DEV))
+    Ls.append(mse(model.head_gap, t["gaps"]))
+    return Ls
+
+
+def run_epoch(model, seqs, ks, opt, sched, log_s, rng, vs, past_mu, past_sd, p_mask, train=True):
+    model.train(train)
+    order = np.array(ks)[rng.permutation(len(ks))]
+    tot = 0
+    nb = 0
+    for i in range(0, len(order), BATCH):
+        bk = list(order[i : i + BATCH])
+        cuts = []
+        for k in bk:
+            lo = seqs[k][5][0]
+            hi = seqs[k][5][-1]
+            ct = float(rng.uniform(lo, hi))
+            cut = int(np.searchsorted(seqs[k][5], ct, side="right"))
+            cuts.append(max(8, min(cut, len(seqs[k][5]) - 2)))
+        t, past, qg, lens = collate(seqs, bk, cuts, [0.0] * len(bk), vs, False, None, None)
+        Hs, E, w = model(t["et"], t["gcat"], t["gnum"], t["time"], t["gaps"], t["mask"], lens, qg)
+        model._hs = Hs
+        m = t["mask"][:, 1:]
+        Ls = _next_losses(model, t, m, p_mask, rng)
+        loss = sum(0.5 * torch.exp(-log_s[j]) * Ls[j] + 0.5 * log_s[j] for j in range(len(Ls)))
+        fcuts = [len(seqs[k][5]) for k in bk]
+        fq = [(AS_OF_TS - seqs[k][5][-1]) / 86400.0 for k in bk]
+        t2, past2, qg2, lens2 = collate(seqs, bk, fcuts, fq, vs, True, past_mu, past_sd)
+        _, E2, _ = model(
+            t2["et"], t2["gcat"], t2["gnum"], t2["time"], t2["gaps"], t2["mask"], lens2, qg2
+        )
+        lp = ((model.past(E2) - past2) ** 2).mean()
+        j = len(Ls)
+        loss = loss + 0.5 * torch.exp(-log_s[j]) * lp + 0.5 * log_s[j]
+        if train:
+            opt.zero_grad()
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+            opt.step()
+        tot += float(loss.detach())
+        nb += 1
+    if train and sched:
+        sched.step()
+    return tot / max(nb, 1)
+
+
+@torch.no_grad()
+def val_loss(model, seqs, ks, vs, past_mu, past_sd):
+    model.eval()
+    tot = 0
+    nb = 0
+    for i in range(0, len(ks), 32):
+        bk = ks[i : i + 32]
+        fcuts = [len(seqs[k][5]) for k in bk]
+        fq = [(AS_OF_TS - seqs[k][5][-1]) / 86400.0 for k in bk]
+        t, past, qg, lens = collate(seqs, bk, fcuts, fq, vs, True, past_mu, past_sd)
+        Hs, E, w = model(t["et"], t["gcat"], t["gnum"], t["time"], t["gaps"], t["mask"], lens, qg)
+        model._hs = Hs
+        m = t["mask"][:, 1:]
+        Ls = _next_losses(model, t, m, 0.0, np.random.default_rng(0))
+        lp = ((model.past(E) - past) ** 2).mean()
+        tot += float(sum(Ls) + lp)
+        nb += 1
+    return tot / max(nb, 1)
+
+
+@torch.no_grad()
+def embed(model, seqs, ks, vs):
+    model.eval()
+    out = []
+    for i in range(0, len(ks), 32):
+        bk = ks[i : i + 32]
+        fcuts = [len(seqs[k][5]) for k in bk]
+        fq = [(AS_OF_TS - seqs[k][5][-1]) / 86400.0 for k in bk]
+        t, _, qg, lens = collate(seqs, bk, fcuts, fq, vs, False, None, None)
+        _, E, _ = model(t["et"], t["gcat"], t["gnum"], t["time"], t["gaps"], t["mask"], lens, qg)
+        out.append(E.cpu().numpy())
+    return np.concatenate(out, 0)
+
+
+def table_features(A, hold):
+    amap = {r["customer_key"]: r for r in A.to_dicts()}
+    rows = [amap[k] for k in hold]
+    feat = [
+        c for c in A.columns if not c.startswith("y_") and c not in ("customer_key", "signup_ts")
+    ]
+    X = pl.DataFrame([{c: r[c] for c in feat} for r in rows]).to_dummies(
+        columns=[
+            c for c in ("segment", "region", "acquisition_channel", "loyalty_tier") if c in feat
+        ],
+        drop_first=True,
+    )
+    labels = {c: np.array([r[c] for r in rows], float) for c in LABELS}
+    seg = np.array([str(r["segment"]) for r in rows], dtype=object)
+    return X.to_numpy().astype(float), labels, seg
+
+
+def train_encoder(data, seed=0, d=64, layers=2, epochs=5, lr=3e-4, batch=16):
+    global AS_OF_TS, BATCH
+    BATCH = batch
+    B, A, keys, seqs, vs, et_v, catspec, num, taus, p_mask, as_of_ts, periods = load_data(data)
+    AS_OF_TS = as_of_ts
+    rng = np.random.default_rng(seed)
+    perm = rng.permutation(len(keys))
+    nt = int(0.7 * len(keys))
+    hold = [keys[i] for i in perm[nt:]]
+    tr = [keys[i] for i in perm[:nt]]
+    r2 = np.random.default_rng(seed + 100)
+    vp = r2.permutation(len(tr))
+    vn = max(20, int(0.1 * len(tr)))
+    val = [tr[i] for i in vp[:vn]]
+    tr = [tr[i] for i in vp[vn:]]
+    pkeys = tr[: min(len(tr), 400)]
+    fcuts = [len(seqs[k][5]) for k in pkeys]
+    fq = [(AS_OF_TS - seqs[k][5][-1]) / 86400.0 for k in pkeys]
+    _, P, _, _ = collate(seqs, pkeys, fcuts, fq, vs, True, None, None)
+    P = P.cpu().numpy()
+    past_mu, past_sd = P.mean(0), P.std(0)
+    past_sd[past_sd < 1e-6] = 1.0
+    torch.manual_seed(seed)
+    model = Enc(vs, d, len(taus), layers, taus).to(DEV)
+    opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
+    log_s = nn.Parameter(torch.zeros(1 + len(vs["gcat"]) + vs["gnum"] + 1 + 1, device=DEV))
+    opt.add_param_group({"params": [log_s]})
+    warm = max(1, int(0.1 * epochs))
+    sched = torch.optim.lr_scheduler.LambdaLR(
+        opt,
+        lambda e: (
+            (e + 1) / warm
+            if e < warm
+            else 0.5 * (1 + math.cos(math.pi * (e - warm) / max(1, epochs - warm)))
+        ),
+    )
+    best = 1e9
+    best_state = None
+    pat = 0
+    hist = []
+    for ep in range(epochs):
+        trl = run_epoch(model, seqs, tr, opt, sched, log_s, rng, vs, past_mu, past_sd, p_mask, True)
+        vl = val_loss(model, seqs, val, vs, past_mu, past_sd)
+        print(f"seed {seed} epoch {ep + 1} train {trl:.4f} val {vl:.4f}", flush=True)
+        hist.append(vl)
+        tol = float(np.std(hist[-5:]) / np.sqrt(max(1, len(hist[-5:])))) if len(hist) >= 3 else 1e-3
+        if vl < best - tol:
+            best = vl
+            best_state = {k: v.detach().clone() for k, v in model.state_dict().items()}
+            pat = 0
+        else:
+            pat += 1
+            if pat >= 3:
+                break
+    if best_state:
+        model.load_state_dict(best_state)
+    E = embed(model, seqs, hold, vs)
+    Xtab, labels, seg = table_features(A, hold)
+    return E, Xtab, labels, hold, seg, model, vs, B

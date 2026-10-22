@@ -6,7 +6,7 @@ from types import SimpleNamespace
 import numpy as np, polars as pl
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-import encoder_model as EM
+import auto_encoder as AE
 from rabbit_hole.generators.relational_reference import CHANNELS
 from sklearn.model_selection import KFold
 from sklearn.ensemble import (
@@ -25,9 +25,6 @@ from sklearn.metrics import (
 from scipy.stats import spearmanr
 
 D = None
-EM.ARGS = SimpleNamespace(
-    max_customers=0, d=64, layers=2, mass="explicit", epochs=5, lr=3e-4, batch=16, nce=0, aug_p=0.1
-)
 
 
 def z(X):
@@ -76,34 +73,12 @@ def main():
     D = args.data
     out = Path(args.out)
     # ---- train the frozen E (fast) ----
-    B, A, keys, seqs, vs, et_v, cat_v, h_min, h_max, periods_h, n_experts, taus, p_mask, num_dim = (
-        EM.load_data(D)
-    )
-    purchase_idx = et_v.get("purchase", -1)
-    res = EM.one_seed(
-        0,
-        B,
-        A,
-        keys,
-        seqs,
-        vs,
-        purchase_idx,
-        h_min,
-        h_max,
-        n_experts,
-        taus,
-        p_mask,
-        num_dim,
-        et_v,
-        cat_v,
-        0.1,
-    )
-    E, Xtab, labels, hold = res["E"], res["Xtab"], res["labels"], res["hold"]
+    E, Xtab, labels, hold, seg, model, vs, B = AE.train_encoder(D, seed=0, epochs=5)
     E = np.nan_to_num(E)
     Xtab = np.nan_to_num(Xtab)
     Xh = np.hstack([Xtab, E])
     print(
-        f"[E] hold={len(hold)} dim={E.shape[1]} train={res['n_train']} val={res['n_val']} best_val={res['best_val']}",
+        f"[E] hold={len(hold)} dim={E.shape[1]}",
         flush=True,
     )
 
@@ -230,7 +205,10 @@ def main():
 
     # ---- B card numbers from 6k receipts ----
     b6 = {}
-    for tag in ("explicit", "none", "generic"):
+    for tag, label in (
+        ("auto", "Auto-tokenizer + mass explicit (default)"),
+        ("explicit", "Hand tokenizer + mass explicit (ablation)"),
+    ):
         f = (
             Path(__file__).resolve().parents[2]
             / "docs/report_cards/experiments"
@@ -239,19 +217,22 @@ def main():
         if f.exists():
             d = json.loads(f.read_text())
             b6[tag] = {
-                t: float(
-                    np.mean(
-                        [
-                            (
-                                x["results"][t]["E"]["r2"]
-                                if isinstance(x["results"][t]["E"], dict)
-                                else x["results"][t]["E"]
-                            )
-                            for x in d
-                        ]
+                "label": label,
+                "values": {
+                    t: float(
+                        np.mean(
+                            [
+                                (
+                                    x["results"][t]["E"]["r2"]
+                                    if isinstance(x["results"][t]["E"], dict)
+                                    else x["results"][t]["E"]
+                                )
+                                for x in d
+                            ]
+                        )
                     )
-                )
-                for t in ("value90", "orders90", "churn90")
+                    for t in ("value90", "orders90", "churn90")
+                },
             }
     # ---- card ----
     L = []
@@ -260,13 +241,12 @@ def main():
         "Synthetic relational reference `relational_v3`; no business data. Harness, not business value.\n"
     )
     L.append("## Layer B — encoder\n")
-    L.append(
-        f"- Frozen E: dim {E.shape[1]}, holdout {len(hold)}, train/val {res['n_train']}/{res['n_val']}, best val {res['best_val']}."
-    )
+    L.append(f"- Frozen E: dim {E.shape[1]}, holdout {len(hold)}.")
     if b6:
-        for tag, v in b6.items():
+        for tag, item in b6.items():
+            v = item["values"]
             L.append(
-                f"- 6k {tag} E-only: value {v['value90']:.3f}, orders {v['orders90']:.3f}, churn {v['churn90']:.3f}."
+                f"- 6k {item['label']}: E-only value {v['value90']:.3f}, orders {v['orders90']:.3f}, churn {v['churn90']:.3f}."
             )
     L.append(
         "- 6k fair table: value 0.335, orders 0.401, churn 0.919; raw table 0.364/0.436/0.917."
