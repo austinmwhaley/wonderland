@@ -196,6 +196,20 @@ Same holdout, table feature ablations (5-fold GBM):
 - Honest claim: *E-only matches/beats the principle-aligned table; the raw-table value gap is
   fixed-window engineering, not a missing learned capability.*
 
+## 6k Layer-0 confirmation (v3, 3 seeds / 20 epochs)
+
+| Arm | value90 | orders90 | churn90 |
+|---|---|---|---|
+| raw table | 0.364 | 0.436 | 0.917 |
+| fair table (no fixed windows) | 0.335 | 0.401 | 0.919 |
+| hand `explicit` E | **0.388** | **0.457** | **0.939** |
+| schema-agnostic auto-discovery E | **0.385** | **0.455** | **0.934** |
+
+Both encoder arms beat the fair table on **all three** targets at 6k; the auto-discovery arm is
+within noise of the hand-listed arm. E adds to `table+seq`: hand +0.021/+0.018/+0.017,
+auto +0.021/+0.032/+0.012. The metric leg of Layer 0 is met at 6k. Remaining: v3 certificate,
+repo prototype, transfer/geometry probes, derived capacity/LR, full generic heads/past.
+
 ## P8 — reference table is not fully derivable from the stream
 
 - `segment` and `loyalty_tier` are **random** (`rng.integers`) customer columns; `segment` is

@@ -28,6 +28,13 @@ raw table 0.349 / 0.352 / 0.964; fair table 0.289 / 0.349 / 0.960. E beats the f
 value/orders, trails on churn. Prior 3-seed/20 `mass=none` baseline: E-only 0.292 / 0.351 /
 0.959. Both need 3-seed confirmation; the mass variants trade churn for value/orders.
 
+**6k Layer-0 result (v3, 3 seeds/20).** Hand `explicit`: E **0.388/0.457/0.939** vs raw table
+0.364/0.436/0.917; fair table 0.335/0.401/0.919 -> **beats fair on all three**. Schema-agnostic
+auto-discovery (all discovered attribute fields, learned gates): E **0.385/0.455/0.934** -> also
+beats fair on all three, within noise of the hand arm. E adds to `table+seq` (+0.021/+0.032/+0.012).
+**Layer-0 metric met at 6k.** Remaining for full Layer 0: v3 re-certification, repo prototype,
+transfer/geometry probes, derived capacity/LR, full generic heads/past.
+
 **Attribution sweep (1 seed / 5 epochs, same harness; base = `mass=explicit` 0.339/0.430/0.941).**
 
 | Change | E-only value / orders / churn | Read |
