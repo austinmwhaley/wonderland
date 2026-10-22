@@ -5062,3 +5062,12 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   learned loss weights, and no table in `E`. Continuous-time `τ`, data-derived periodicities,
   timescale count, measured mask/patience are the next fast-loop changes. The certified card is
   unchanged; this is a sequence-first research prototype.
+
+## DEC-237 — Decision gate; multi-horizon design (not sampling)
+
+- **Process:** before any encoder/eval change: state principle, decision, alternatives, alignment check,
+  acceptance metric, and one-axis/one-run. Revert if acceptance fails. Record here.
+- **Multi-horizon:** horizons must be multiple and data-derived (event gaps + customer spans). Sampling one
+  horizon per batch failed acceptance (value/orders/anomaly regressed). The aligned design is a
+  **multi-horizon future target vector**: predict the future summary at every bank horizon at once.
+- **Status:** short-horizon raw algebra restored (29e9fef); the horizon-vector implementation is next.
