@@ -193,6 +193,8 @@ def load_data(data):
                 gaps_all.append(gap)
         seqs[k] = (et, gcat, gnum, time, gaps, tss, graw)
     gaps_all = np.array(gaps_all) if gaps_all else np.array([1.0])
+    spans = np.array([(seqs[k][5][-1] - seqs[k][5][0]) / 86400.0 for k in keys])
+    horizons = np.quantile(spans, [0.25, 0.5, 0.75, 0.95])
     e = max(2, min(4, len(peaks) + 1))
     taus = np.quantile(gaps_all, np.linspace(0.25, 0.95, e))
     miss = [float((seqs[k][1][:, j] == 0).mean()) for k in keys for j in range(len(catspec))]
@@ -202,7 +204,7 @@ def load_data(data):
     vs["mass_dim"] = len(rawspec) + len(et_v)
     vs["past_dim"] = len(et_v) + len(catspec) + 6 * len(rawspec) + 7
     vs["fut_dim"] = len(et_v) + len(catspec) + 2 * len(rawspec)
-    return B, A, keys, seqs, vs, et_v, catspec, num, taus, p_mask, as_of_ts, periods
+    return B, A, keys, seqs, vs, et_v, catspec, num, taus, p_mask, as_of_ts, periods, horizons
 
 
 class GatedSSM(nn.Module):
@@ -435,6 +437,7 @@ def run_epoch(
     taus,
     fut_mu,
     fut_sd,
+    horizons,
     train=True,
 ):
     model.train(train)
@@ -482,7 +485,7 @@ def run_epoch(
 
 
 @torch.no_grad()
-def val_loss(model, seqs, ks, vs, past_mu, past_sd, taus, fut_mu, fut_sd):
+def val_loss(model, seqs, ks, vs, past_mu, past_sd, taus, fut_mu, fut_sd, horizons):
     model.eval()
     tot = 0
     nb = 0
@@ -539,7 +542,7 @@ def table_features(A, hold):
 def train_encoder(data, seed=0, d=64, layers=2, epochs=5, lr=3e-4, batch=16):
     global AS_OF_TS, BATCH
     BATCH = batch
-    B, A, keys, seqs, vs, et_v, catspec, num, taus, p_mask, as_of_ts, periods = load_data(data)
+    B, A, keys, seqs, vs, et_v, catspec, num, taus, p_mask, as_of_ts, periods, horizons = load_data(data)
     AS_OF_TS = as_of_ts
     rng = np.random.default_rng(seed)
     perm = rng.permutation(len(keys))
@@ -599,7 +602,7 @@ def train_encoder(data, seed=0, d=64, layers=2, epochs=5, lr=3e-4, batch=16):
             fut_sd,
             True,
         )
-        vl = val_loss(model, seqs, val, vs, past_mu, past_sd, taus, fut_mu, fut_sd)
+        vl = val_loss(model, seqs, val, vs, past_mu, past_sd, taus, fut_mu, fut_sd, horizons)
         print(f"seed {seed} epoch {ep + 1} train {trl:.4f} val {vl:.4f}", flush=True)
         hist.append(vl)
         tol = float(np.std(hist[-5:]) / np.sqrt(max(1, len(hist[-5:])))) if len(hist) >= 3 else 1e-3
