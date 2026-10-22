@@ -70,7 +70,7 @@ def load_data(data):
     attrs = [json.loads(r["event_attributes"]) for r in rows]
     fields = sorted(set().union(*[set(a) for a in attrs]) - {"target_key"})
     n = len(rows)
-    cat, num = [], []
+    cat, num, cat_int = [], [], []
     for f in fields:
         vals = [a.get(f) for a in attrs if a.get(f) is not None and str(a.get(f)) != ""]
         if _is_ts(vals):
@@ -80,10 +80,12 @@ def load_data(data):
             u = len(set(map(str, vals)))
             if isinstance(vals[0], int) and u <= 2 * int(math.sqrt(n)):
                 cat.append(f)
+                cat_int.append(f)
             else:
                 num.append((f, "num"))
         else:
             cat.append(f)
+    rawspec = list(num) + [(f, 'int') for f in cat_int]
     catspec = []
     for f in cat:
         cnt = collections.Counter(
@@ -133,6 +135,7 @@ def load_data(data):
         et = np.zeros(m, np.int64)
         gcat = np.zeros((m, len(catspec)), np.int64)
         gnum = np.zeros((m, len(num)), np.float32)
+        graw = np.zeros((m, len(rawspec)), np.float32)
         gaps = np.zeros(m, np.float64)
         tss = np.zeros(m, np.float64)
         time = np.zeros((m, time_dim), np.float32)
@@ -176,17 +179,29 @@ def load_data(data):
                         except Exception:
                             x = 0.0
                 gnum[i, j] = math.copysign(math.log1p(abs(x)), x) if x else 0.0
+            for j, (f, kind) in enumerate(rawspec):
+                v = at.get(f); x = 0.0
+                if v is not None and str(v) != '':
+                    if kind == 'ts':
+                        try: x = (ts - datetime.datetime.fromisoformat(str(v))).total_seconds() / 86400.0
+                        except Exception: x = 0.0
+                    else:
+                        try: x = float(v)
+                        except Exception: x = 0.0
+                graw[i, j] = x
             if gap > 0:
                 gaps_all.append(gap)
-        seqs[k] = (et, gcat, gnum, time, gaps, tss)
+        seqs[k] = (et, gcat, gnum, time, gaps, tss, graw)
     gaps_all = np.array(gaps_all) if gaps_all else np.array([1.0])
     e = max(2, min(4, len(peaks) + 1))
     taus = np.quantile(gaps_all, np.linspace(0.25, 0.95, e))
     miss = [float((seqs[k][1][:, j] == 0).mean()) for k in keys for j in range(len(catspec))]
     p_mask = float(np.clip(np.mean(miss) if miss else 0.1, 0.05, 0.4))
     vs = dict(et=len(et_v), gcat=[g["size"] for g in catspec], gnum=len(num), time_dim=time_dim)
-    vs["past_dim"] = len(et_v) + len(catspec) + 6 * len(num) + 7
-    vs["fut_dim"] = len(et_v) + len(catspec) + 2 * len(num)
+    vs["raw"] = len(rawspec)
+    vs["mass_dim"] = len(rawspec) + len(et_v)
+    vs["past_dim"] = len(et_v) + len(catspec) + 6 * len(rawspec) + 7
+    vs["fut_dim"] = len(et_v) + len(catspec) + 2 * len(rawspec)
     return B, A, keys, seqs, vs, et_v, catspec, num, taus, p_mask, as_of_ts, periods
 
 
@@ -228,7 +243,7 @@ class Enc(nn.Module):
         self.n_read = 5
         self.rproj = nn.ModuleList([nn.Linear(d, d) for _ in range(self.n_read)])
         self.rw = nn.Parameter(torch.zeros(self.n_read))
-        self.mass = nn.Linear(vs["gnum"], d)
+        self.mass = nn.Linear(vs["mass_dim"], d)
         self.rmlp = nn.Sequential(nn.Linear(d, d), nn.GELU(), nn.Linear(d, d))
         self.qgap = nn.Sequential(nn.Linear(1, d), nn.GELU(), nn.Linear(d, d))
         self.head_et = nn.Linear(d, vs["et"])
@@ -238,7 +253,7 @@ class Enc(nn.Module):
         self.past = nn.Linear(d, vs["past_dim"])
         self.head_fut = nn.Linear(d, vs["fut_dim"])
 
-    def forward(self, et, gcat, gnum, time, gaps, mask, lengths, qgap):
+    def forward(self, et, gcat, gnum, time, gaps, mask, lengths, qgap, graw):
         x = self.et(et) + self.time(time)
         for i, emb in enumerate(self.gcat):
             x = x + F.softplus(self.gw_cat[i]) * emb(gcat[:, :, i])
@@ -258,8 +273,11 @@ class Enc(nn.Module):
         score = score.masked_fill(mask == 0, -1e9)
         att = torch.softmax(score, 1)
         pooled = (Hs * att.unsqueeze(-1)).sum(1)
-        gsum = (gnum * mask.unsqueeze(-1)).sum(1)
-        mag = self.mass(gsum)
+        gsum_raw = (graw * mask.unsqueeze(-1)).sum(1)
+        gsum = torch.sign(gsum_raw) * torch.log1p(gsum_raw.abs())
+        et_counts = F.one_hot(et, self.et.num_embeddings).float()
+        et_counts = (et_counts * mask.unsqueeze(-1)).sum(1)
+        mag = self.mass(torch.cat([gsum, et_counts], 1))
         rs = [last, mean, mx, pooled, mag]
         pr = [self.rproj[i](rs[i]) for i in range(self.n_read)]
         w = F.softplus(self.rw)
@@ -291,6 +309,7 @@ def collate(
     et = np.zeros((Bn, T), np.int64)
     gcat = np.zeros((Bn, T, nc), np.int64)
     gnum = np.zeros((Bn, T, nnf), np.float32)
+    graw = np.zeros((Bn, T, vs["raw"]), np.float32)
     time = np.zeros((Bn, T, td), np.float32)
     gaps = np.zeros((Bn, T), np.float32)
     mask = np.zeros((Bn, T), np.float32)
@@ -298,13 +317,14 @@ def collate(
     fut = np.zeros((Bn, vs["fut_dim"]), np.float32)
     qg = np.zeros(Bn, np.float32)
     for b, (k, cut) in enumerate(zip(ks, cuts)):
-        etk, gck, gnk, tmk, gpk, tt = seqs[k]
+        etk, gck, gnk, tmk, gpk, tt, grk = seqs[k]
         L = min(cut, len(tt))
         q = float(qgaps[b])
         qg[b] = q
         et[b, :L] = etk[:L]
         gcat[b, :L] = gck[:L]
         gnum[b, :L] = gnk[:L]
+        graw[b, :L] = grk[:L]
         time[b, :L] = tmk[:L]
         gaps[b, :L] = gpk[:L]
         mask[b, :L] = 1
@@ -313,8 +333,8 @@ def collate(
             etc = [float((ev == i).sum()) for i in range(vs["et"])]
             catd = [float(len(np.unique(gck[:L, j][gck[:L, j] > 0]))) for j in range(nc)]
             stat = []
-            for j in range(nnf):
-                x = gnk[:L, j]
+            for j in range(vs["raw"]):
+                x = grk[:L, j]
                 stat += [
                     float((x != 0).sum()),
                     float(x.sum()),
@@ -338,6 +358,16 @@ def collate(
                     float(len(np.unique(ev))),
                 ]
             )
+        if want_future and L > 0:
+            ct = tt[L - 1] + h * 86400.0
+            sel = (tt > ct) & (tt <= ct + h * 86400.0)
+            etcf = [float((etk[sel] == i).sum()) for i in range(vs["et"])]
+            catf = [float(len(np.unique(gck[sel, j][gck[sel, j] > 0]))) for j in range(nc)]
+            rawf = []
+            for j in range(vs["raw"]):
+                x = grk[sel, j]
+                rawf += [float(x.sum()), float(x.mean()) if len(x) else 0.0]
+            fut[b] = etcf + catf + rawf
     if want_past and past_mu is not None:
         past = (past - past_mu) / past_sd
     if want_future and fut_mu is not None:
@@ -346,6 +376,7 @@ def collate(
         et=torch.tensor(et, device=DEV),
         gcat=torch.tensor(gcat, device=DEV),
         gnum=torch.tensor(gnum, device=DEV),
+        graw=torch.tensor(graw, device=DEV),
         time=torch.tensor(time, device=DEV),
         gaps=torch.tensor(gaps, device=DEV),
         mask=torch.tensor(mask, device=DEV),
@@ -423,7 +454,7 @@ def run_epoch(
         t, past, qg, lens, fut = collate(
             seqs, bk, cuts, [0.0] * len(bk), vs, False, None, None, True, h, fut_mu, fut_sd
         )
-        Hs, E, w = model(t["et"], t["gcat"], t["gnum"], t["time"], t["gaps"], t["mask"], lens, qg)
+        Hs, E, w = model(t["et"], t["gcat"], t["gnum"], t["time"], t["gaps"], t["mask"], lens, qg, t["graw"])
         model._hs = Hs
         m = t["mask"][:, 1:]
         Ls = _next_losses(model, t, m, p_mask, rng)
@@ -433,7 +464,7 @@ def run_epoch(
         fq = [(AS_OF_TS - seqs[k][5][-1]) / 86400.0 for k in bk]
         t2, past2, qg2, lens2, _f2 = collate(seqs, bk, fcuts, fq, vs, True, past_mu, past_sd)
         _, E2, _ = model(
-            t2["et"], t2["gcat"], t2["gnum"], t2["time"], t2["gaps"], t2["mask"], lens2, qg2
+            t2["et"], t2["gcat"], t2["gnum"], t2["time"], t2["gaps"], t2["mask"], lens2, qg2, t2["graw"]
         )
         lp = ((model.past(E2) - past2) ** 2).mean()
         j = len(Ls)
@@ -463,7 +494,7 @@ def val_loss(model, seqs, ks, vs, past_mu, past_sd, taus, fut_mu, fut_sd):
         t, past, qg, lens, fut = collate(
             seqs, bk, fcuts, fq, vs, True, past_mu, past_sd, True, h, fut_mu, fut_sd
         )
-        Hs, E, w = model(t["et"], t["gcat"], t["gnum"], t["time"], t["gaps"], t["mask"], lens, qg)
+        Hs, E, w = model(t["et"], t["gcat"], t["gnum"], t["time"], t["gaps"], t["mask"], lens, qg, t["graw"])
         model._hs = Hs
         m = t["mask"][:, 1:]
         Ls = _next_losses(model, t, m, 0.0, np.random.default_rng(0))
@@ -483,7 +514,7 @@ def embed(model, seqs, ks, vs):
         fcuts = [len(seqs[k][5]) for k in bk]
         fq = [(AS_OF_TS - seqs[k][5][-1]) / 86400.0 for k in bk]
         t, _, qg, lens, _f = collate(seqs, bk, fcuts, fq, vs, False, None, None)
-        _, E, _ = model(t["et"], t["gcat"], t["gnum"], t["time"], t["gaps"], t["mask"], lens, qg)
+        _, E, _ = model(t["et"], t["gcat"], t["gnum"], t["time"], t["gaps"], t["mask"], lens, qg, t["graw"])
         out.append(E.cpu().numpy())
     return np.concatenate(out, 0)
 
