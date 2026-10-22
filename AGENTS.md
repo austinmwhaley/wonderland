@@ -480,6 +480,50 @@ Stop and ask the operator **before** running if a proposed change:
 
 ---
 
+## Principle-first defaults (binding)
+
+When two options both work, prefer the one whose **mechanism is learned or derived from the
+stream** over a fixed literal. A literal is allowed only when:
+(a) it is the **evaluation or causality contract** (those must stay fixed),
+(b) a learned/data-derived version is unstable or unmeasurable at the current budget, or
+(c) it is a **documented fallback** with a derivation receipt.
+
+### Defaults
+
+- **Time:** continuous-time gated SSM; `h_t = exp(-Δt/τ)·h_{t-1} + (1-exp(-Δt/τ))·x_t`;
+  `τ` learned per channel, initialized from the stream’s gap/autocorrelation statistics.
+- **Periodicity:** data-derived spectral peaks (autocorrelation/FFT); no fixed hour/day-of-week.
+- **Action cadence/period:** inferred from action-event spacing; the declared value is a fallback.
+- **Capacity:** width, depth, number of timescales, and vocab cap derived from data, validation,
+  and the compute budget; no fixed `d/layers/experts`.
+- **Vocab:** coverage-based cap (e.g. values covering ~99% of event mass) or hashing for
+  high-cardinality fields; no fixed cap.
+- **Numeric inputs:** learned monotone transform (quantile/spline) fit on train; signed `log1p`
+  is the stable fallback.
+- **Losses/masking/LR/patience:** learned task weights; mask rate from field missingness/entropy;
+  LR measured; patience/tolerance from validation SE.
+- **Readout:** all readouts available (last/mean/max/attention/magnitude); learned positive
+  weights; no softmax gate that can collapse to one branch.
+- **Horizons/cutoffs:** sampled from the data; no fixed 90d curriculum.
+- **Serving:** block-aware scales derived from data (shape vs measure).
+
+### Non-negotiable fixed things
+
+- Evaluation targets, folds, baselines, gates.
+- Causality: no future information, no `target_key`, no table/counter/summary in `E` for the
+  learned-shape claim.
+- The table baseline.
+
+### Decision protocol
+
+1. Name the fixed option and the learned/data-derived option.
+2. Name the principle(s) served and the measurable benefit.
+3. If a literal is needed for stability, record it as a **fallback** and show the derivation.
+4. If the learned option cannot be evaluated cheaply or threatens robustness/cost, stop and ask.
+5. Record the decision in `DECISIONS.md`.
+
+---
+
 ## GPU-first execution (operator policy)
 
 Use the **GPU for any hot path where a measured benchmark shows a material speedup**. Install the

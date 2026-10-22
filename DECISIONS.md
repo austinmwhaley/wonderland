@@ -5044,3 +5044,21 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   (real public data), prints the card with scope labels. Use the reference **labeled as a harness**
   plus **one real public event stream**; do not wait for B. Do not call a harness demo business
   value.
+
+## DEC-236 — Layer B defaults: principle-first, continuous-time learned timescales; update AGENTS
+
+- **Operator decision:** when a fixed literal and a learned/data-derived mechanism both work, choose
+  the learned/data-derived one unless it is the evaluation/causality contract, is unstable at the
+  budget, or is a documented fallback. Record the change in `AGENTS.md`.
+- **Applied to Layer B:** continuous-time gated SSM (`h_t=exp(-Δt/τ)h+ (1-exp(-Δt/τ))x`), learned
+  per-channel `τ`; timescale count from spectral peaks; data-derived periodicities (not fixed
+  hour/dow); action cadence inferred from action spacing; capacity from data/validation/budget;
+  coverage/hashed vocab; learned monotone numeric transform with log1p fallback; mask rate from
+  missingness/entropy; LR measured; patience/tolerance from validation SE. Evaluation and causality
+  remain fixed (non-negotiable).
+- **Docs:** `AGENTS.md` → “Principle-first defaults (binding)”; `docs/ENCODER_DESIGN.md` tracks the
+  Layer B pipeline, decisions, and status.
+- **Status:** the prototype already has the additive token/readout, sampled cutoffs/horizons,
+  learned loss weights, and no table in `E`. Continuous-time `τ`, data-derived periodicities,
+  timescale count, measured mask/patience are the next fast-loop changes. The certified card is
+  unchanged; this is a sequence-first research prototype.
