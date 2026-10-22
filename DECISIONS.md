@@ -5091,3 +5091,10 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - Pure-E loss: value90 vs table. Cause: the table's fixed `value_30d/90d` recency features; the E is
   forbidden fixed windows. This is a principle-consistent limitation, not a bug.
 - Demo decision: supervised heads = orders90 + churn90 (pure E); value90 is disclosed as table-only.
+
+## DEC-240 — Per-stream capacity search
+
+- 2k best: d64 / 1 layer / lr 1e-3 (val 28.53).
+- 6k best: d64 / 1 layer / lr 1e-3 (val 29.24).
+- Rejected: global capacity / 2k LR reused at 6k.
+- Next: paired CIs on the six selected heads at these per-stream configs.
