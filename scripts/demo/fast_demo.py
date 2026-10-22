@@ -205,10 +205,7 @@ def main():
 
     # ---- B card numbers from 6k receipts ----
     b6 = {}
-    for tag, label in (
-        ("auto", "Auto-tokenizer + mass explicit (default)"),
-        ("explicit", "Hand tokenizer + mass explicit (ablation)"),
-    ):
+    for tag, label in (("auto", "Auto encoder"),):
         f = (
             Path(__file__).resolve().parents[2]
             / "docs/report_cards/experiments"
@@ -252,9 +249,6 @@ def main():
         "- 6k fair table: value 0.335, orders 0.401, churn 0.919; raw table 0.364/0.436/0.917."
     )
     L.append("- E adds to `table+seq` (6k): hand +0.021/+0.018/+0.017; auto +0.021/+0.032/+0.012.")
-    L.append(
-        "- Feature ablations (1 seed/5): `qgap` critical; Fourier periods help orders; horizon helps orders; past helps churn; `mass=explicit` trades churn for value/orders.\n"
-    )
     schema = (
         Path(__file__).resolve().parents[2] / "docs/report_cards/demo_bc_card_schema_variant.md"
     )
