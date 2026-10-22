@@ -5081,3 +5081,13 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   Next aligned design: **multi-horizon past recency** — decayed raw extensive aggregates at every
   data-derived horizon for all discovered numeric fields, plus the future summaries.
 - Acceptance: pure E value90/orders90 >= short raw and >= table; churn/anomaly not worse.
+
+## DEC-239 — Multi-horizon past/future tested; value90 is the table's fixed-window advantage
+
+- Tested: short-only, long-only, uniform bank, log-uniform, all-horizon vector, past recency bank.
+- Result: only the short raw algebra is best for value/orders; multi-horizon variants regress or tie.
+- Pure-E wins (2k): value30, orders90 (tie/win), churn90 (tie; 6k win), retrieval, churn-neighbor,
+  channel RL, offer RL vs table.
+- Pure-E loss: value90 vs table. Cause: the table's fixed `value_30d/90d` recency features; the E is
+  forbidden fixed windows. This is a principle-consistent limitation, not a bug.
+- Demo decision: supervised heads = orders90 + churn90 (pure E); value90 is disclosed as table-only.
