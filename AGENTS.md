@@ -522,6 +522,42 @@ stream** over a fixed literal. A literal is allowed only when:
 4. If the learned option cannot be evaluated cheaply or threatens robustness/cost, stop and ask.
 5. Record the decision in `DECISIONS.md`.
 
+### Pre-implementation principle check (binding)
+
+Before writing code for a non-trivial change, answer these in the working notes or commit:
+
+1. **Which principles does this touch?** (speed, adaptive, universal, lawful, honest, efficient,
+   accessible, diagnosable).
+2. **What are at least two options?** Include the existing primitive in the repo, not just a new
+   implementation.
+3. **Which option best satisfies the principles?** If the choice uses a fixed literal, a
+   per-item Python loop, a new gate, or a new artifact, stop and justify it.
+4. **For a hot path, time a smoke before scaling** and emit a runtime receipt.
+5. **Record the choice and the benchmark** in `DECISIONS.md`.
+
+If you cannot answer (2) from the repo, search first: `_scan`, `embed_batch_size`,
+`derive_batch`, `generic_measure`, the generator, the existing tests.
+
+### Hot paths: no per-item Python loops
+
+Model, training, and serving hot paths must use scans, vectorized ops, token-budget batching, or
+compiled kernels. A Python loop over `T` or rows is a red flag. Use the existing affine scan
+(`looking_glass.cfm_model._scan`) or a vectorized equivalent; if a loop is unavoidable, record the
+benchmark and the reason.
+
+**Known primitives:** `_scan` (affine prefix scan), `embed_batch_size`, `derive_batch`,
+`generic_measure`, `token-budget` batching, the existing SSM/scan paths.
+
+### Principle audit (mechanized)
+
+Run `python3 scripts/principle_audit.py` on changed files before committing. It flags:
+- Python loops over time/rows in `looking_glass/` or `scripts/`,
+- `86400`/`604800` and other cadence literals,
+- fixed `dim`/`layers`/`epochs`/`seq_len` literals,
+- new gate/criterion strings.
+
+Use `--strict` in CI; a warning must be resolved or marked `# principle-ok: <reason>`.
+
 ---
 
 ## GPU-first execution (operator policy)
