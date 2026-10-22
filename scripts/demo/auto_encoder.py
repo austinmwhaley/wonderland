@@ -186,6 +186,7 @@ def load_data(data):
     p_mask = float(np.clip(np.mean(miss) if miss else 0.1, 0.05, 0.4))
     vs = dict(et=len(et_v), gcat=[g["size"] for g in catspec], gnum=len(num), time_dim=time_dim)
     vs["past_dim"] = len(et_v) + len(catspec) + 6 * len(num) + 7
+    vs["fut_dim"] = len(et_v) + len(catspec) + 2 * len(num)
     return B, A, keys, seqs, vs, et_v, catspec, num, taus, p_mask, as_of_ts, periods
 
 
@@ -235,6 +236,7 @@ class Enc(nn.Module):
         self.heads_cat = nn.ModuleList([nn.Linear(d, s) for s in vs["gcat"]])
         self.heads_num = nn.ModuleList([nn.Linear(d, 1) for _ in range(vs["gnum"])])
         self.past = nn.Linear(d, vs["past_dim"])
+        self.head_fut = nn.Linear(d, vs["fut_dim"])
 
     def forward(self, et, gcat, gnum, time, gaps, mask, lengths, qgap):
         x = self.et(et) + self.time(time)
@@ -267,7 +269,20 @@ class Enc(nn.Module):
         return Hs, E, w / w.sum()
 
 
-def collate(seqs, ks, cuts, qgaps, vs, want_past, past_mu, past_sd):
+def collate(
+    seqs,
+    ks,
+    cuts,
+    qgaps,
+    vs,
+    want_past,
+    past_mu,
+    past_sd,
+    want_future=False,
+    h=0.0,
+    fut_mu=None,
+    fut_sd=None,
+):
     T = max(cuts)
     Bn = len(ks)
     nc = len(vs["gcat"])
@@ -280,6 +295,7 @@ def collate(seqs, ks, cuts, qgaps, vs, want_past, past_mu, past_sd):
     gaps = np.zeros((Bn, T), np.float32)
     mask = np.zeros((Bn, T), np.float32)
     past = np.zeros((Bn, vs["past_dim"]), np.float32)
+    fut = np.zeros((Bn, vs["fut_dim"]), np.float32)
     qg = np.zeros(Bn, np.float32)
     for b, (k, cut) in enumerate(zip(ks, cuts)):
         etk, gck, gnk, tmk, gpk, tt = seqs[k]
@@ -324,6 +340,8 @@ def collate(seqs, ks, cuts, qgaps, vs, want_past, past_mu, past_sd):
             )
     if want_past and past_mu is not None:
         past = (past - past_mu) / past_sd
+    if want_future and fut_mu is not None:
+        fut = (fut - fut_mu) / fut_sd
     t = dict(
         et=torch.tensor(et, device=DEV),
         gcat=torch.tensor(gcat, device=DEV),
@@ -337,6 +355,7 @@ def collate(seqs, ks, cuts, qgaps, vs, want_past, past_mu, past_sd):
         torch.tensor(past, device=DEV),
         torch.tensor(qg, device=DEV),
         torch.tensor(cuts, device=DEV),
+        torch.tensor(fut, device=DEV),
     )
 
 
@@ -370,7 +389,23 @@ def _next_losses(model, t, m, p_mask, rng):
     return Ls
 
 
-def run_epoch(model, seqs, ks, opt, sched, log_s, rng, vs, past_mu, past_sd, p_mask, train=True):
+def run_epoch(
+    model,
+    seqs,
+    ks,
+    opt,
+    sched,
+    log_s,
+    rng,
+    vs,
+    past_mu,
+    past_sd,
+    p_mask,
+    taus,
+    fut_mu,
+    fut_sd,
+    train=True,
+):
     model.train(train)
     order = np.array(ks)[rng.permutation(len(ks))]
     tot = 0
@@ -384,15 +419,19 @@ def run_epoch(model, seqs, ks, opt, sched, log_s, rng, vs, past_mu, past_sd, p_m
             ct = float(rng.uniform(lo, hi))
             cut = int(np.searchsorted(seqs[k][5], ct, side="right"))
             cuts.append(max(8, min(cut, len(seqs[k][5]) - 2)))
-        t, past, qg, lens = collate(seqs, bk, cuts, [0.0] * len(bk), vs, False, None, None)
+        h = float(rng.choice(taus))
+        t, past, qg, lens, fut = collate(
+            seqs, bk, cuts, [0.0] * len(bk), vs, False, None, None, True, h, fut_mu, fut_sd
+        )
         Hs, E, w = model(t["et"], t["gcat"], t["gnum"], t["time"], t["gaps"], t["mask"], lens, qg)
         model._hs = Hs
         m = t["mask"][:, 1:]
         Ls = _next_losses(model, t, m, p_mask, rng)
+        Ls.append(((model.head_fut(E) - fut) ** 2).mean())
         loss = sum(0.5 * torch.exp(-log_s[j]) * Ls[j] + 0.5 * log_s[j] for j in range(len(Ls)))
         fcuts = [len(seqs[k][5]) for k in bk]
         fq = [(AS_OF_TS - seqs[k][5][-1]) / 86400.0 for k in bk]
-        t2, past2, qg2, lens2 = collate(seqs, bk, fcuts, fq, vs, True, past_mu, past_sd)
+        t2, past2, qg2, lens2, _f2 = collate(seqs, bk, fcuts, fq, vs, True, past_mu, past_sd)
         _, E2, _ = model(
             t2["et"], t2["gcat"], t2["gnum"], t2["time"], t2["gaps"], t2["mask"], lens2, qg2
         )
@@ -412,7 +451,7 @@ def run_epoch(model, seqs, ks, opt, sched, log_s, rng, vs, past_mu, past_sd, p_m
 
 
 @torch.no_grad()
-def val_loss(model, seqs, ks, vs, past_mu, past_sd):
+def val_loss(model, seqs, ks, vs, past_mu, past_sd, taus, fut_mu, fut_sd):
     model.eval()
     tot = 0
     nb = 0
@@ -420,13 +459,17 @@ def val_loss(model, seqs, ks, vs, past_mu, past_sd):
         bk = ks[i : i + 32]
         fcuts = [len(seqs[k][5]) for k in bk]
         fq = [(AS_OF_TS - seqs[k][5][-1]) / 86400.0 for k in bk]
-        t, past, qg, lens = collate(seqs, bk, fcuts, fq, vs, True, past_mu, past_sd)
+        h = float(np.median(taus))
+        t, past, qg, lens, fut = collate(
+            seqs, bk, fcuts, fq, vs, True, past_mu, past_sd, True, h, fut_mu, fut_sd
+        )
         Hs, E, w = model(t["et"], t["gcat"], t["gnum"], t["time"], t["gaps"], t["mask"], lens, qg)
         model._hs = Hs
         m = t["mask"][:, 1:]
         Ls = _next_losses(model, t, m, 0.0, np.random.default_rng(0))
         lp = ((model.past(E) - past) ** 2).mean()
-        tot += float(sum(Ls) + lp)
+        lf = ((model.head_fut(E) - fut) ** 2).mean()
+        tot += float(sum(Ls) + lp + lf)
         nb += 1
     return tot / max(nb, 1)
 
@@ -439,7 +482,7 @@ def embed(model, seqs, ks, vs):
         bk = ks[i : i + 32]
         fcuts = [len(seqs[k][5]) for k in bk]
         fq = [(AS_OF_TS - seqs[k][5][-1]) / 86400.0 for k in bk]
-        t, _, qg, lens = collate(seqs, bk, fcuts, fq, vs, False, None, None)
+        t, _, qg, lens, _f = collate(seqs, bk, fcuts, fq, vs, False, None, None)
         _, E, _ = model(t["et"], t["gcat"], t["gnum"], t["time"], t["gaps"], t["mask"], lens, qg)
         out.append(E.cpu().numpy())
     return np.concatenate(out, 0)
@@ -480,14 +523,19 @@ def train_encoder(data, seed=0, d=64, layers=2, epochs=5, lr=3e-4, batch=16):
     pkeys = tr[: min(len(tr), 400)]
     fcuts = [len(seqs[k][5]) for k in pkeys]
     fq = [(AS_OF_TS - seqs[k][5][-1]) / 86400.0 for k in pkeys]
-    _, P, _, _ = collate(seqs, pkeys, fcuts, fq, vs, True, None, None)
+    _, P, _, _, F = collate(
+        seqs, pkeys, fcuts, fq, vs, True, None, None, True, float(np.median(taus)), None, None
+    )
     P = P.cpu().numpy()
+    F = F.cpu().numpy()
     past_mu, past_sd = P.mean(0), P.std(0)
     past_sd[past_sd < 1e-6] = 1.0
+    fut_mu, fut_sd = F.mean(0), F.std(0)
+    fut_sd[fut_sd < 1e-6] = 1.0
     torch.manual_seed(seed)
     model = Enc(vs, d, len(taus), layers, taus).to(DEV)
     opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
-    log_s = nn.Parameter(torch.zeros(1 + len(vs["gcat"]) + vs["gnum"] + 1 + 1, device=DEV))
+    log_s = nn.Parameter(torch.zeros(1 + len(vs["gcat"]) + vs["gnum"] + 1 + 1 + 1, device=DEV))
     opt.add_param_group({"params": [log_s]})
     warm = max(1, int(0.1 * epochs))
     sched = torch.optim.lr_scheduler.LambdaLR(
@@ -503,8 +551,24 @@ def train_encoder(data, seed=0, d=64, layers=2, epochs=5, lr=3e-4, batch=16):
     pat = 0
     hist = []
     for ep in range(epochs):
-        trl = run_epoch(model, seqs, tr, opt, sched, log_s, rng, vs, past_mu, past_sd, p_mask, True)
-        vl = val_loss(model, seqs, val, vs, past_mu, past_sd)
+        trl = run_epoch(
+            model,
+            seqs,
+            tr,
+            opt,
+            sched,
+            log_s,
+            rng,
+            vs,
+            past_mu,
+            past_sd,
+            p_mask,
+            taus,
+            fut_mu,
+            fut_sd,
+            True,
+        )
+        vl = val_loss(model, seqs, val, vs, past_mu, past_sd, taus, fut_mu, fut_sd)
         print(f"seed {seed} epoch {ep + 1} train {trl:.4f} val {vl:.4f}", flush=True)
         hist.append(vl)
         tol = float(np.std(hist[-5:]) / np.sqrt(max(1, len(hist[-5:])))) if len(hist) >= 3 else 1e-3
@@ -520,4 +584,4 @@ def train_encoder(data, seed=0, d=64, layers=2, epochs=5, lr=3e-4, batch=16):
         model.load_state_dict(best_state)
     E = embed(model, seqs, hold, vs)
     Xtab, labels, seg = table_features(A, hold)
-    return E, Xtab, labels, hold, seg, model, vs, B
+    return E, Xtab, labels, hold, seg, model, vs, B, best
