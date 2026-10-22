@@ -145,8 +145,34 @@ stands on its own (beats the table); value/orders are within ~0.04.
   (value 0.294→0.278, orders 0.361→0.344, churn 0.959→0.945) and rank barely moved (2.14→2.20).
 - **Decayed multi-horizon past summary (data-derived τ = 2/24d): reject.** Value/orders dropped
   (0.294→0.262 / 0.361→0.325), churn flat. Many extra targets dilute rather than help.
-- Next geometry lever: variance–covariance (VICReg/whitening) or latent-regime diagnostics, not
-  NCE as implemented.
+- **VICReg (variance + decorrelation): reject as a rank fix.** 1 seed/5 epochs: E-only
+  0.273 / 0.344 / 0.966, rank 2.09 (vs 2.14); no rank gain, value/orders down.
+- Next geometry lever: latent-regime diagnostics; forcing rank is not working.
+
+## Attribution sweep (1 seed / 5 epochs, same harness)
+
+Base is `mass=explicit` (the argparse default): E-only 0.339 / 0.430 / 0.941. The prior
+confirmed `mass=none` baseline (3 seeds/20) was 0.292 / 0.351 / 0.959, so the mass branch is a
+real trade (value/orders up, churn down) and needs 3-seed confirmation.
+
+| Change vs base | value90 | orders90 | churn90 | Interpretation |
+|---|---|---|---|---|
+| none (base) | 0.339 | 0.430 | 0.941 | — |
+| `qgap` off | 0.150 | 0.257 | 0.620 | **critical** |
+| Fourier periods off | 0.345 | 0.360 | 0.952 | periods drive orders (+0.070) |
+| horizon heads off | 0.324 | 0.343 | 0.955 | horizon drives orders (+0.087) |
+| next-event heads off | 0.327 | 0.415 | 0.977 | next drives value/orders; costs churn |
+| past-summary off | 0.331 | 0.436 | 0.929 | past drives churn (+0.012) |
+| `d=32` | 0.287 | 0.303 | 0.967 | capacity helps value/orders |
+| `d=128` | 0.318 | 0.394 | 0.927 | no gain at this N |
+| layers 1 | 0.247 | 0.324 | 0.972 | 2 layers help orders |
+| layers 3 | 0.345 | 0.392 | 0.948 | 3 layers help value |
+| `mass=readout` | 0.285 | 0.359 | 0.965 | worse than explicit |
+
+Conclusions: `qgap`, data-derived periods, horizon/next-event objectives, and the past-summary
+all have a measurable role; `d=64`/2 layers is a reasonable current point; `mass=explicit`
+is the best value/orders screening arm but costs churn. The sweep is 1 seed, so treat deltas
+<~0.02 as unresolved.
 
 ## Fair-table comparison — the E-only target is already met
 

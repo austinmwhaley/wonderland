@@ -5,6 +5,53 @@
 > (phased plan), **AGENTS.md** (doctrine + operating mode). Read this header
 > first to restore state; update it before yielding.
 
+## CURRENT STATE — 2026-10-22 (read this first; supersedes older sections)
+
+**North star.** One self-supervised, schema-agnostic encoder per stream (`E`), frozen and
+reusable. No table/counter/summary inside `E`; the table is a teacher/baseline. Layer-0 success
+= `E`-only matches/beats a **fair** table (derivable, no fixed windows) and adds signal beyond
+`table + seq`. Layer 1 (sufficiency/minimality/decision) comes after.
+
+**The map.** Data/reference → tokenizer → dynamics/state → objectives → readout/heads →
+evaluation → governance. Change **one axis at a time**; evaluation stays frozen.
+
+**Reference.** `relational_v3` (2k) is the derivable reference: `customer_signup` carries
+`segment`, `loyalty_tier`, true `signup_ts`; PATH A is byte-identical to certified v1. The v1
+Layer-A certificate is still on disk; v3 re-certification is pending (P8 fix). Raw table and fair
+table are unchanged.
+
+**Current best (1 seed / 5 epochs screening, 2k).** Additive tokenizer (behavioral fields +
+data-derived 12h/24h Fourier + `qgap`), continuous-time gated SSM (`τ≈2/24d`, 2 layers, `d=64`,
+`_scan`), last/mean/max/attention readout, `mass=explicit`; objectives = next-event + sampled
+horizons + all-schema past-summary. E-only **0.339 / 0.430 / 0.941** (value / orders / churn);
+raw table 0.349 / 0.352 / 0.964; fair table 0.289 / 0.349 / 0.960. E beats the fair table on
+value/orders, trails on churn. Prior 3-seed/20 `mass=none` baseline: E-only 0.292 / 0.351 /
+0.959. Both need 3-seed confirmation; the mass variants trade churn for value/orders.
+
+**Attribution sweep (1 seed / 5 epochs, same harness; base = `mass=explicit` 0.339/0.430/0.941).**
+
+| Change | E-only value / orders / churn | Read |
+|---|---|---|
+| `qgap` off | 0.150 / 0.257 / 0.620 | **critical** (removal collapses) |
+| Fourier periods off | 0.345 / 0.360 / 0.952 | periods help orders (+0.070) |
+| horizon heads off | 0.324 / 0.343 / 0.955 | horizon helps orders (+0.087), value (+0.015) |
+| next-event heads off | 0.327 / 0.415 / 0.977 | next helps value/orders; churn suffers |
+| past-summary off | 0.331 / 0.436 / 0.929 | past helps churn (+0.012); value/orders ~flat |
+| `d=32` / `d=128` | 0.287/0.303/0.967 · 0.318/0.394/0.927 | d64 best value/orders; d32 best churn |
+| layers 1 / 3 | 0.247/0.324/0.972 · 0.345/0.392/0.948 | 2 layers best orders; 3 best value |
+| `mass=readout` | 0.285 / 0.359 / 0.965 | worse value/orders, better churn |
+
+**Helped:** `qgap`, data-derived periods, horizon + next-event objectives, past-summary (churn),
+`mass=explicit` (value/orders, screening), `d64`/2 layers.
+**Rejected:** NCE contrastive, VICReg, multi-horizon past-summary, raw extra-field tokenizer.
+**Untested:** 3-seed confirmation, full capacity/LR derivation, full generic tokenizer,
+action-conditioned outcome, head-free proxies, 6k, Layer 1.
+
+**You are here.** Layer 0, 2k screening; reference P8 fix done; prototype in `/tmp`.
+**Roadmap.** (1) re-certify v3; (2) 3-seed confirm and pick mass; (3) move prototype into repo;
+(4) full generic tokenizer; (5) capacity + measured LR; (6) geometry/action + head-free proxies;
+(7) 6k; (8) Layer 1 certification.
+
 ## Canonical decomposition (the frame every change is judged against)
 
 Read top to bottom: each level is *derived from* the level above it. This is the

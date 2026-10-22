@@ -1,0 +1,101 @@
+[
+ {
+  "seed": 0,
+  "mass": "explicit",
+  "n_train": 1260,
+  "n_val": 140,
+  "n_hold": 600,
+  "best_val": 13.5483,
+  "results": {
+   "value90": {
+    "table": {
+     "r2": 0.3491,
+     "mae": 537.14
+    },
+    "E": {
+     "r2": 0.2868,
+     "mae": 564.52
+    },
+    "E_nomag": {
+     "r2": 0.2263,
+     "mae": 589.39
+    },
+    "hybrid": {
+     "r2": 0.3465,
+     "mae": 542.22
+    },
+    "table_seq": {
+     "r2": 0.4169,
+     "mae": 506.04
+    },
+    "table_seq_E": {
+     "r2": 0.4107,
+     "mae": 508.18
+    }
+   },
+   "orders90": {
+    "table": {
+     "r2": 0.3516,
+     "mae": 3.99
+    },
+    "E": {
+     "r2": 0.3027,
+     "mae": 4.18
+    },
+    "E_nomag": {
+     "r2": 0.2613,
+     "mae": 4.36
+    },
+    "hybrid": {
+     "r2": 0.3734,
+     "mae": 3.98
+    },
+    "table_seq": {
+     "r2": 0.4221,
+     "mae": 3.8
+    },
+    "table_seq_E": {
+     "r2": 0.4524,
+     "mae": 3.69
+    }
+   },
+   "churn90": {
+    "table": 0.9643,
+    "E": 0.9671,
+    "E_nomag": 0.9763,
+    "hybrid": 0.9735,
+    "table_seq": 0.9513,
+    "table_seq_E": 0.9735
+   }
+  },
+  "gate_mean": [
+   0.201,
+   0.201,
+   0.198,
+   0.2,
+   0.2
+  ],
+  "geometry": {
+   "E": {
+    "churn_nn_agree": 0.9817,
+    "churn_random": 0.8814,
+    "value_nn_rank": 0.421,
+    "seg_knn_purity": 0.2035,
+    "seg_random": 0.2008,
+    "dist_value_spear": 0.1807,
+    "dist_churn_spear": 0.4622,
+    "eff_rank": 2.16
+   },
+   "table": {
+    "churn_nn_agree": 0.95,
+    "churn_random": 0.8814,
+    "value_nn_rank": 0.3733,
+    "seg_knn_purity": 0.5698,
+    "seg_random": 0.2008,
+    "dist_value_spear": 0.2426,
+    "dist_churn_spear": 0.1328,
+    "eff_rank": 7.98
+   }
+  }
+ }
+]
