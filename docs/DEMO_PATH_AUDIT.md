@@ -178,12 +178,18 @@ Same holdout, table feature ablations (5-fold GBM):
   at simulation day 0. The table's `tenure_days = as_of − signup_ts`; the E's first-event tenure
   is understated by 1–399 days. The table therefore has hidden information (tenure ablation is
   small — value 0.349→0.344 — but the principle is violated).
-- **Consequence:** the certified Layer A / PATH A is a valid *predictive* table, but it is not a
-  **derived view of PATH B**. The principle "table must be derivable from the stream" fails.
-- **Fix options** (operator decision):
-  - (a) emit `customer_signup` at the true `signup_ts` with `segment`/`loyalty_tier` attributes →
-    rebuild PATH A/B + re-certify (new reference version);
-  - (b) drop non-derivable random columns from the baseline and use the fair table above (no data
-    rebuild; document them as unused CRM noise).
-- Until fixed, report the E-only claim against the **fair** table and label the raw-table gap as
-  a baseline-engineering gap.
+- **Consequence:** in the original `relational_v1` stream, the table was a valid *predictive*
+  baseline but not a **derived view of PATH B**; v3 fixes that. The certified Layer A receipt
+  still refers to v1 and must be regenerated for v3.
+- **Fixed in the generator (v3).** `customer_signup` now carries `segment`, `loyalty_tier`, and
+  the true `signup_ts`; it stays at the window start so the 1–399 day pre-window gap is not
+  treated as inactivity. PATH A is **byte-identical** (`sha256` match); PATH B now contains
+  every table column. Rebuild: `/tmp/opencode/t0_loop/relational_v3`; re-certification pending.
+- **Encoder inclusion.** The prototype now auto-discovers extra attribute fields (typed as
+  categorical / numeric / timestamp) and applies a **learned per-field gate**; the data fix
+  alone (v3) leaves the hand-listed E unchanged (value 0.296, orders 0.359, churn 0.959 at
+  1 seed/5 epochs). Activating the extra table fields does **not** help at 2k/5 epochs
+  (value 0.223–0.261, orders 0.303–0.345, churn 0.928–0.951), because `segment`/`loyalty_tier`
+  are random and tenure is weakly predictive. Gates start off; the model may open them.
+- Report the E-only claim against the **fair** table (derivable, no fixed windows); the raw-table
+  value gap is fixed-window engineering, not hidden signal.

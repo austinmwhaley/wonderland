@@ -191,10 +191,12 @@ def build_relational(spec: RelationalSpec):
         shock_amp = float(rng.uniform(0.3, 1.2))
         shock_tau = float(rng.uniform(10, 45))
         region = ["north", "south", "east", "west"][int(rng.integers(0, 4))]
+        signup_days = int(rng.integers(1, 400))
+        signup_ts = start - timedelta(days=signup_days)
         customer_rows.append(
             {
                 "customer_key": key,
-                "signup_ts": (start - timedelta(days=float(rng.integers(1, 400)))).isoformat(),
+                "signup_ts": signup_ts.isoformat(),
                 "segment": segment,
                 "region": region,
                 "acquisition_channel": ACQ[acq],
@@ -209,6 +211,9 @@ def build_relational(spec: RelationalSpec):
             ent_id=key,
             acquisition_channel=ACQ[acq],
             region=region,
+            segment=segment,
+            loyalty_tier=LOYALTY[loyal],
+            signup_ts=signup_ts.isoformat(),
         )
 
         last_event = "signup"

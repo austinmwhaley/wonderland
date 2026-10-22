@@ -28,6 +28,13 @@ The build runs the PATH A gate (`scripts/validate_path_a.py`) and writes
 leakage, degenerate labels, no signal, action imbalance). Use `--no-validate` only for
 debugging.
 
+**Derivability (P8).** The `customer_signup` event carries `segment`, `loyalty_tier`, and
+the true `signup_ts` in `event_attributes`, and remains stamped at the window start (so the
+pre-window gap is not mistaken for inactivity). PATH A is byte-identical to the original
+build; PATH B now contains every table column, so the table is a derived view of the stream.
+Build the derivable reference as `relational_v3`; the original `relational_v1` stream does
+not contain these attributes.
+
 ## Files
 
 | Path | Rows × cols | What |
