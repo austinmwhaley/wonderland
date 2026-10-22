@@ -1,0 +1,16 @@
+{
+ "y_value_90": {
+  "table": 0.3372,
+  "table_seq": 0.415,
+  "seq_oracle": 0.2257,
+  "oracle_minus_table": -0.1115,
+  "oracle_minus_table_seq": -0.1893
+ },
+ "y_orders_90": {
+  "table": 0.4024,
+  "table_seq": 0.4911,
+  "seq_oracle": 0.244,
+  "oracle_minus_table": -0.1584,
+  "oracle_minus_table_seq": -0.2471
+ }
+}

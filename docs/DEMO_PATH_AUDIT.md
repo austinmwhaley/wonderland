@@ -81,3 +81,36 @@ churn −0.003. One seed/5 epochs: **not confirmed**. Next: 3 seeds/20 epochs; t
 5. **Governance:** `principle_audit.py --strict` on changes; fixed evaluation/causality; record
    decisions + runtime receipts.
 6. **Scale:** confirm on 3 seeds; then 6k; then the certified card.
+
+## Confirmed results (2k, 3 seeds, 20 epochs, vectorized scan)
+
+| Δ from `table + seq` → `table + seq + E` | mean ± SE |
+|---|---|
+| explicit magnitude branch — value90 | +0.022 ± 0.023 |
+| explicit magnitude branch — orders90 | +0.019 ± 0.011 |
+| explicit magnitude branch — churn90 | −0.007 ± 0.002 |
+| **high-purity `none`** — value90 | +0.021 ± 0.019 |
+| **high-purity `none`** — orders90 | **+0.035 ± 0.005** |
+| **high-purity `none`** — churn90 | −0.008 ± 0.003 |
+| **high-purity `readout`** — value90 | +0.023 ± 0.017 |
+| **high-purity `readout`** — orders90 | +0.032 ± 0.005 |
+| **high-purity `readout`** — churn90 | −0.002 ± 0.007 |
+
+- The pure SSM (`none`, no mass branch) adds the most on **orders** (+0.035, all seeds),
+  no robust value gain, and slightly hurts churn.
+- The learned attention mass (`readout`) is similar; the `state` variant was weak at 1 seed.
+- **E alone is far below the table** (`none`: value 0.08, orders 0.08, churn 0.45).
+  The table is still the floor; the pure E is an add-on on orders only.
+
+## Oracle ceiling (simple GRU on raw history)
+
+| target | table | table + explicit seq | GRU sequence oracle |
+|---|---|---|---|
+| value90 R² | 0.337 | 0.415 | 0.226 |
+| orders90 R² | 0.402 | 0.491 | 0.244 |
+
+The GRU oracle is **weaker than the table**, so it is **not a valid ceiling**; it shows the
+small GRU is underpowered, not that the data has no headroom. The practical sequence ceiling
+is the explicit `table + seq` (0.415/0.491); the pure E adds +0.035 orders beyond it.
+A stronger sequence model (or the custom SSM at larger capacity) is needed to establish the
+true ceiling before deciding whether the reference data is the limit.
