@@ -158,6 +158,28 @@ N and hashes on the card/manifest.
 
 ---
 
+## P8 — Reference table is not derivable from the stream
+
+**Statement.** PATH A contains columns that PATH B cannot reveal: `segment` and the initial
+`loyalty_tier` are random (`rng.integers`) and absent from the stream; `signup_ts` is random
+1–399 days before the window while `customer_signup` is emitted at simulation day 0, so
+`tenure_days` is hidden (the stream's first-event tenure is understated by 1–399 days).
+
+**Impact.** The table is a valid predictive baseline but not a derived view of the stream,
+violating the "stream contains all information / table is derived" principle. Measured impact
+is small on the 2k reference (tenure ablation value 0.349→0.344, orders 0.352→0.355), but the
+fairness claim is unproven until fixed. The random static columns also hurt the table
+(value/orders improve when they are dropped: 0.349/0.352 → 0.364/0.377).
+
+**Fix options.** (a) Emit `customer_signup` at the true `signup_ts` with `segment` /
+`loyalty_tier` attributes → rebuild PATH A/B and re-certify (new reference version).
+(b) Keep the data; drop the non-derivable random columns from the fair baseline and document
+them as unused CRM noise. The E-only claim is currently reported against the fair table.
+
+**Status:** open; operator decision required before changing the certified reference.
+
+---
+
 ## Two-track plan
 
 **Track A — measure-first product/demo (the reliable asset).**
@@ -202,3 +224,4 @@ with the caveats on the first page. Do not wait for Track B to demo A.
 | P5 | Weak/tautological consumer evidence | Comparator fixed; donor negative | Card disclosure |
 | P6 | Gate/claim drift | **Yes** (AGENTS + reader + test) | Enforce every run |
 | P7 | Reproducibility/provenance | Certifier implemented | Final run + commit |
+| P8 | Table not derivable from stream (random `segment`/`loyalty`, hidden `signup_ts`) | **No** | Operator: fix generator/re-certify or fair-table baseline |

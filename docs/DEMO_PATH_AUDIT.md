@@ -82,7 +82,7 @@ churn −0.003. One seed/5 epochs: **not confirmed**. Next: 3 seeds/20 epochs; t
    decisions + runtime receipts.
 6. **Scale:** confirm on 3 seeds; then 6k; then the certified card.
 
-## Confirmed results (2k, 3 seeds, 20 epochs, vectorized scan)
+## Confirmed results — mass variants, pre-past-summary (superseded below)
 
 | Δ from `table + seq` → `table + seq + E` | mean ± SE |
 |---|---|
@@ -99,8 +99,9 @@ churn −0.003. One seed/5 epochs: **not confirmed**. Next: 3 seeds/20 epochs; t
 - The pure SSM (`none`, no mass branch) adds the most on **orders** (+0.035, all seeds),
   no robust value gain, and slightly hurts churn.
 - The learned attention mass (`readout`) is similar; the `state` variant was weak at 1 seed.
-- **E alone is far below the table** (`none`: value 0.08, orders 0.08, churn 0.45).
-  The table is still the floor; the pure E is an add-on on orders only.
+- At this stage (before the past-summary objective) E alone was far below the table
+  (`none`: value 0.08, orders 0.08, churn 0.45). The past-summary section below supersedes
+  this: E-only is now at parity with the principle-aligned table.
 
 ## Oracle ceiling (simple GRU on raw history)
 
@@ -114,3 +115,75 @@ small GRU is underpowered, not that the data has no headroom. The practical sequ
 is the explicit `table + seq` (0.415/0.491); the pure E adds +0.035 orders beyond it.
 A stronger sequence model (or the custom SSM at larger capacity) is needed to establish the
 true ceiling before deciding whether the reference data is the limit.
+
+## Past-summary objective (all schema-derived) — 2k, 3 seeds, 20 epochs
+
+Targets: **all** event-type counts, **all** categorical distinct counts, **all** numeric
+count/sum/mean/std/min/max, timing/recency/tenure, dynamic query gap. **No fixed 30/90d
+windows.** The table is a teacher only; no table/counter/summary inside `E`.
+
+| 3-seed mean ± SE | E only | Table | E − table |
+|---|---|---|---|
+| value90 R² | 0.292 ± 0.032 | 0.344 | −0.053 |
+| orders90 R² | 0.351 ± 0.021 | 0.388 | −0.036 |
+| churn90 AUC | **0.959 ± 0.007** | 0.950 | **+0.009** |
+
+`table + seq → table + seq + E` deltas: value **+0.024 ± 0.017** (not robust), orders
+**+0.033 ± 0.011** (all seeds), churn **+0.009 ± 0.005** (all seeds). The E-only churn now
+stands on its own (beats the table); value/orders are within ~0.04.
+
+## Geometry + negative results (1 seed, 5 epochs)
+
+- **Effective rank of `E` ≈ 2** (table ≈ 8). The E is a low-rank predictive manifold; not a
+  full-rank representation. Outcome geometry is strong: kNN churn agreement 0.98 (random 0.88),
+  value-neighbour rank 0.45, distance–churn Spearman 0.46.
+- **Segment purity is not a valid geometry target**: `segment` is a **random** table column
+  unused by the DGP. E purity 0.19 vs random 0.20 is the correct result; the table's 0.57 is
+  fitting a random one-hot. Use the truth latents (`regime0`, `category_pref`,
+  `price_sensitivity`) for geometry diagnostics instead.
+- **Event-dropout contrastive (NCE, learned temperature): reject.** Downstream dropped
+  (value 0.294→0.278, orders 0.361→0.344, churn 0.959→0.945) and rank barely moved (2.14→2.20).
+- **Decayed multi-horizon past summary (data-derived τ = 2/24d): reject.** Value/orders dropped
+  (0.294→0.262 / 0.361→0.325), churn flat. Many extra targets dilute rather than help.
+- Next geometry lever: variance–covariance (VICReg/whitening) or latent-regime diagnostics, not
+  NCE as implemented.
+
+## Fair-table comparison — the E-only target is already met
+
+Same holdout, table feature ablations (5-fold GBM):
+
+| Table feature set | value90 | orders90 | churn90 |
+|---|---|---|---|
+| full 39 features | 0.349 | 0.352 | 0.964 |
+| no random static columns | 0.364 | 0.377 | 0.961 |
+| no fixed `value_30d/90d` | 0.274 | 0.355 | 0.963 |
+| derivable + no fixed windows | 0.289 | 0.349 | 0.960 |
+| **E only (3-seed)** | **0.292** | **0.351** | **0.959** |
+
+- The raw table's **value edge is the fixed 30/90d windows**; without them the table is below
+  the E-only (0.274 vs 0.292). The operator explicitly disallows fixed windows for `E`.
+- The random static columns (`segment`, `loyalty_tier`) **hurt** the table on value/orders;
+  removing them strengthens it (0.364/0.377/0.961). Against that stronger, noise-free table
+  the E-only orders gap is +0.026 R² (3-seed 0.351 vs 0.377), value +0.072.
+- Against the **principle-aligned** table (derivable, no hardcoded windows), E-only is at
+  parity/above on all three (value +0.003, orders +0.002, churn −0.001).
+- Honest claim: *E-only matches/beats the principle-aligned table; the raw-table value gap is
+  fixed-window engineering, not a missing learned capability.*
+
+## P8 — reference table is not fully derivable from the stream
+
+- `segment` and `loyalty_tier` are **random** (`rng.integers`) customer columns; `segment` is
+  absent from the stream, and the initial tier is not logged (only `loyalty_change` events).
+- `signup_ts` is random 1–399 days **before** the event window, but `customer_signup` is emitted
+  at simulation day 0. The table's `tenure_days = as_of − signup_ts`; the E's first-event tenure
+  is understated by 1–399 days. The table therefore has hidden information (tenure ablation is
+  small — value 0.349→0.344 — but the principle is violated).
+- **Consequence:** the certified Layer A / PATH A is a valid *predictive* table, but it is not a
+  **derived view of PATH B**. The principle "table must be derivable from the stream" fails.
+- **Fix options** (operator decision):
+  - (a) emit `customer_signup` at the true `signup_ts` with `segment`/`loyalty_tier` attributes →
+    rebuild PATH A/B + re-certify (new reference version);
+  - (b) drop non-derivable random columns from the baseline and use the fair table above (no data
+    rebuild; document them as unused CRM noise).
+- Until fixed, report the E-only claim against the **fair** table and label the raw-table gap as
+  a baseline-engineering gap.
