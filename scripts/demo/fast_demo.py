@@ -274,6 +274,14 @@ def main():
     L.append(
         "- Feature ablations (1 seed/5): `qgap` critical; Fourier periods help orders; horizon helps orders; past helps churn; `mass=explicit` trades churn for value/orders.\n"
     )
+    schema = (
+        Path(__file__).resolve().parents[2] / "docs/report_cards/demo_bc_card_schema_variant.md"
+    )
+    if schema.exists():
+        L.append(
+            "- Schema-adaptability: same code auto-discovered renamed/new fields (`item_id`, `dept`, `maker`, `session_len`); orders90 +0.077 [+0.010,+0.143], churn90 -0.054. See `docs/report_cards/demo_bc_card_schema_variant.md`."
+        )
+    L.append("- Data card: `docs/LAYER_A_DATA.md`.\n")
     L.append("## Layer C — plugins\n")
     L.append("### Supervised\n")
     L.append("| target | table | E | hybrid | E-table | 95% CI |")

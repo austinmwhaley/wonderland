@@ -12,17 +12,20 @@ Synthetic relational reference `relational_v3`; no business data. Harness, not b
 - E adds to `table+seq` (6k): hand +0.021/+0.018/+0.017; auto +0.021/+0.032/+0.012.
 - Feature ablations (1 seed/5): `qgap` critical; Fourier periods help orders; horizon helps orders; past helps churn; `mass=explicit` trades churn for value/orders.
 
+- Schema-adaptability: same code auto-discovered renamed/new fields (`item_id`, `dept`, `maker`, `session_len`); orders90 +0.077 [+0.010,+0.143], churn90 -0.054. See `docs/report_cards/demo_bc_card_schema_variant.md`.
+- Data card: `docs/LAYER_A_DATA.md`.
+
 ## Layer C — plugins
 
 ### Supervised
 
 | target | table | E | hybrid | E-table | 95% CI |
 |---|---|---|---|---|---|
-| value30 | 0.1195 | 0.1448 | 0.1723 | +0.0242 | [-0.0727, +0.1134] |
-| value90 | 0.3491 | 0.3342 | 0.3846 | -0.0143 | [-0.0842, +0.0511] |
-| orders30 | 0.2312 | 0.3044 | 0.3084 | +0.0715 | [+0.0012, +0.1444] |
-| orders90 | 0.3516 | 0.4373 | 0.4281 | +0.0868 | [+0.0226, +0.1544] |
-| churn30 | 0.7544 | 0.7978 | 0.7868 | +0.0407 | [-0.0104, +0.0922] |
+| value30 | 0.1195 | 0.1419 | 0.1730 | +0.0215 | [-0.0730, +0.1112] |
+| value90 | 0.3491 | 0.3414 | 0.3860 | -0.0070 | [-0.0777, +0.0548] |
+| orders30 | 0.2312 | 0.3007 | 0.3108 | +0.0679 | [-0.0011, +0.1435] |
+| orders90 | 0.3516 | 0.4436 | 0.4296 | +0.0932 | [+0.0275, +0.1588] |
+| churn30 | 0.7544 | 0.8016 | 0.7875 | +0.0445 | [-0.0047, +0.0967] |
 | churn90 | 0.9643 | 0.9605 | 0.9428 | -0.0025 | [-0.0341, +0.0375] |
 
 ### Unsupervised (truth-referenced)
