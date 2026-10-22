@@ -165,6 +165,7 @@ def main():
             nmi_category=round(nmic, 4),
             anomaly_auc=round(float(auc), 4),
             retrieval_rank=round(float(rnk), 4),
+            churn_nn=round(float(np.mean(yc == yc[nn])), 4),
             eff_rank=round(er, 2),
         )
         print(f"[uns] {arm:5s} {uns[arm]}", flush=True)
@@ -282,13 +283,35 @@ def main():
             "- Schema-adaptability: same code auto-discovered renamed/new fields (`item_id`, `dept`, `maker`, `session_len`); orders90 +0.077 [+0.010,+0.143], churn90 -0.054. See `docs/report_cards/demo_bc_card_schema_variant.md`."
         )
     L.append("- Data card: `docs/LAYER_A_DATA.md`.\n")
-    L.append("## Layer C — plugins\n")
-    L.append("### Supervised\n")
+    L.append("## Layer C — curated demo (2 per class)\n")
+    L.append("### Supervised (2)\n")
+    L.append("| target | table | E | hybrid | E-table | 95% CI |")
+    L.append("|---|---|---|---|---|---|")
+    for n, sT, sE, sH, m, lo, hi in [r for r in sup if r[0] in ("orders90", "churn30")]:
+        L.append(f"| {n} | {sT:.4f} | {sE:.4f} | {sH:.4f} | {m:+.4f} | [{lo:+.4f}, {hi:+.4f}] |")
+    L.append("\n### Unsupervised (2)\n")
+    L.append("| probe | table | E | E-table |")
+    L.append("|---|---|---|---|")
+    L.append(
+        f"| value-retrieval (Spearman) | {uns['table']['retrieval_rank']} | {uns['E']['retrieval_rank']} | {uns['E']['retrieval_rank'] - uns['table']['retrieval_rank']:+.4f} |"
+    )
+    L.append(
+        f"| churn-neighbor agreement | {uns['table']['churn_nn']} | {uns['E']['churn_nn']} | {uns['E']['churn_nn'] - uns['table']['churn_nn']:+.4f} |"
+    )
+    L.append("\n### RL (2)\n")
+    L.append("| arm | table IPS | E IPS | random | truth-acc (E) |")
+    L.append("|---|---|---|---|---|")
+    for arm in ("channel", "offer"):
+        rt = next(x for x in rl if x[0] == arm and x[1] == "table")
+        re_ = next(x for x in rl if x[0] == arm and x[1] == "E")
+        L.append(f"| {arm} | {rt[3]:.2f} | {re_[3]:.2f} | {re_[5]:.2f} | {re_[6]:.3f} |")
+    L.append("\n## Appendix — full suite\n")
+    L.append("### Supervised (6)\n")
     L.append("| target | table | E | hybrid | E-table | 95% CI |")
     L.append("|---|---|---|---|---|---|")
     for n, sT, sE, sH, m, lo, hi in sup:
         L.append(f"| {n} | {sT:.4f} | {sE:.4f} | {sH:.4f} | {m:+.4f} | [{lo:+.4f}, {hi:+.4f}] |")
-    L.append("\n### Unsupervised (truth-referenced)\n")
+    L.append("\n### Unsupervised (4, truth-referenced)\n")
     L.append(
         "| arm | NMI regime | ARI regime | NMI category | anomaly AUC | retrieval rank | eff rank |"
     )
@@ -297,7 +320,7 @@ def main():
         L.append(
             f"| {arm} | {v['nmi_regime']} | {v['ari_regime']} | {v['nmi_category']} | {v['anomaly_auc']} | {v['retrieval_rank']} | {v['eff_rank']} |"
         )
-    L.append("\n### RL (logged randomized actions; uniform-propensity IPS/DR)\n")
+    L.append("\n### RL (4, logged randomized actions; uniform-propensity IPS/DR)\n")
     L.append("| arm | state | arms | IPS | DR | random | truth-acc |")
     L.append("|---|---|---|---|---|---|---|")
     for arm_name, state_name, levels, ips, dr, rnd, acc in rl:
