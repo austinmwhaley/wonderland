@@ -5195,3 +5195,9 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - 6k quick (1 seed/5): value 0.401 vs 0.358 (+4.4%); orders 0.452 vs 0.450 (tie); churn 0.931 vs 0.926.
 - The stronger XGBoost GPU baseline removes the earlier sklearn-era churn/orders margins; value remains a clear E win.
 - Honest: the E is not universally ahead of XGBoost; value is robust, orders/churn are ties at this sample.
+
+## DEC-255 — All blocks learned/trained; supervised regressed
+
+- Identity + uncertainty are now learned heads with losses; rate/order/relational/causal reuse trained heads.
+- 2k 1/5 vs XGBoost GPU: value -3.8%, orders -0.4%, churn -0.4%; retrieval/churn-nn strong; order shuffle -0.275.
+- The static blocks were more useful to the supervised consumer; the learned blocks are trained but less informative for value.

@@ -9,7 +9,7 @@ identity/rate/uncertainty/causal/order/relational blocks; frozen.
 |---|---|---|---|---|---|
 | 1 | Shape | retrieval / churn-nn / regime | retrieval +8.5% pt; churn-nn +3.3% robust | table | partial/good |
 | 2 | Mass | 6k value/orders/churn vs XGBoost GPU | **0.401 / 0.452 / 0.931** | 0.358 / 0.450 / 0.926 | **working (value +4.4%)**; orders/churn tie |
-| 3 | Identity | kNN channel/category purity | **0.727** / 0.217 | 0.249 / 0.260 | strong (channel) / partial |
+| 3 | Identity | learned `IB` kNN channel/category | 0.381 / 0.164 | 0.249 / 0.260 | partial (learned head; weaker than static) |
 | 4 | Rate | churn AUC | 0.931 | 0.926 | tie |
 | 5 | Uncertainty | ECE / dropout / OOD | **0.048 / 0.966 / variant churn 0.957** | — | **good (OOD PASS)** |
 | 6 | Causal | IPS/DR policy value | channel E 480 vs table 686 (CI table wins); offer E 625 vs 580 (CI crosses) | table/random | not working |

@@ -203,6 +203,12 @@ def load_data(data):
     p_mask = float(np.clip(np.mean(miss) if miss else 0.1, 0.05, 0.4))
     vs = dict(et=len(et_v), gcat=[g["size"] for g in catspec], gnum=len(num), time_dim=time_dim)
     vs["horizons"] = horizons.tolist()
+    id_names = {"segment", "loyalty_tier", "region", "acquisition_channel"}
+    rel_names = {"product_id", "campaign_id"}
+    vs["id_idx"] = [i for i, g in enumerate(catspec) if g["field"] in id_names]
+    vs["id_dims"] = [catspec[i]["size"] for i in vs["id_idx"]]
+    vs["rel_idx"] = [i for i, g in enumerate(catspec) if g["field"] in rel_names]
+    vs["unc_dim"] = len(catspec) + len(num)
     vs["raw"] = len(rawspec)
     vs["mass_dim"] = len(rawspec) + len(et_v)
     vs["past_dim"] = len(et_v) + len(catspec) + 6 * len(rawspec) + 7
@@ -260,6 +266,8 @@ class Enc(nn.Module):
         self.heads_num = nn.ModuleList([nn.Linear(d, 1) for _ in range(vs["gnum"])])
         self.past = nn.Linear(d, vs["past_dim"])
         self.head_fut = nn.Linear(d, vs["fut_dim"])
+        self.head_id = nn.ModuleList([nn.Linear(d, s2) for s2 in vs["id_dims"]])
+        self.head_unc = nn.Linear(d, vs["unc_dim"]); self.rel_idx = list(vs["rel_idx"])
 
     def forward(self, et, gcat, gnum, time, gaps, mask, lengths, qgap, graw):
         x = self.et(et) + self.time(time)
@@ -301,26 +309,14 @@ class Enc(nn.Module):
         E = self.rmlp(E)
         E = E + self.qgap(torch.log1p(qgap).unsqueeze(-1))
         MB = torch.cat([Mlast.reshape(Mlast.shape[0], -1), Hlast.reshape(Hlast.shape[0], -1), Hmean.reshape(Hmean.shape[0], -1)], 1)
-        # identity block: pooled categorical/field embeddings (who/what)
-        id_emb = []
-        for i, emb in enumerate(self.gcat):
-            e = emb(gcat[:, :, i])
-            id_emb.append((e * mask.unsqueeze(-1)).sum(1) / lengths.unsqueeze(-1))
-        IB = torch.cat(id_emb, 1)
-        # rate block: gap/recency/activity stats
-        g = gaps
-        gm = (g * mask).sum(1, keepdim=True) / lengths.unsqueeze(-1)
-        gs = torch.sqrt(((g - gm) ** 2 * mask).sum(1, keepdim=True) / lengths.unsqueeze(-1) + 1e-9)
-        last_gap = g[ar, lengths - 1].unsqueeze(-1)
-        span = (gaps * mask).sum(1, keepdim=True)
-        RB = torch.cat([gm, gs, last_gap, span, lengths.float().unsqueeze(-1),
-                        torch.log1p(qgap).unsqueeze(-1)], 1)
-        # uncertainty block: field missingness
-        miss = (gcat == 0).float().sum(1) / lengths.unsqueeze(-1)
-        UB = miss
-        # causal block: action-field summary (last categorical codes for action-like fields)
-        CB = torch.cat([emb(gcat[ar, lengths - 1, i]) for i, emb in enumerate(self.gcat)], 1)
-        return Hs, E, w / w.sum(), MB, IB, RB, UB, CB
+        # learned blocks (trained heads, not static summaries)
+        IB = torch.cat([h(E) for h in self.head_id], 1) if len(self.head_id) else E.new_zeros((E.shape[0], 0))
+        UB = self.head_unc(E)
+        RB = self.head_gap(E)
+        OB = self.head_et(E)
+        RelB = torch.cat([self.heads_cat[j](E) for j in self.rel_idx], 1) if self.rel_idx else E.new_zeros((E.shape[0], 0))
+        CB = self.head_fut(E)
+        return Hs, E, w / w.sum(), MB, IB, RB, UB, CB, OB, RelB
 
 
 def collate(
@@ -352,6 +348,8 @@ def collate(
     tsarr = np.zeros((Bn, T), np.float64)
     past = np.zeros((Bn, vs["past_dim"]), np.float32)
     fut = np.zeros((Bn, vs["fut_dim"]), np.float32)
+    id_tgt = np.zeros((Bn, len(vs["id_idx"])), np.int64)
+    unc_tgt = np.zeros((Bn, vs["unc_dim"]), np.float32)
     qg = np.zeros(Bn, np.float32)
     for b, (k, cut) in enumerate(zip(ks, cuts)):
         etk, gck, gnk, tmk, gpk, tt, grk = seqs[k]
@@ -366,6 +364,10 @@ def collate(
         gaps[b, :L] = gpk[:L]
         tsarr[b, :L] = tt[:L]
         mask[b, :L] = 1
+        for jj, ii in enumerate(vs["id_idx"]):
+            id_tgt[b, jj] = gck[0, ii]
+        unc_tgt[b, :len(vs["gcat"])] = (gck[:L] == 0).mean(0)
+        unc_tgt[b, len(vs["gcat"]):] = (gnk[:L] == 0).mean(0)
         if want_past and L > 0:
             ev = etk[:L]
             etc = [float((ev == i).sum()) for i in range(vs["et"])]
@@ -415,6 +417,8 @@ def collate(
         gcat=torch.tensor(gcat, device=DEV),
         gnum=torch.tensor(gnum, device=DEV),
         graw=torch.tensor(graw, device=DEV),
+        id_tgt=torch.tensor(id_tgt, device=DEV),
+        unc_tgt=torch.tensor(unc_tgt, device=DEV),
         time=torch.tensor(time, device=DEV),
         gaps=torch.tensor(gaps, device=DEV),
         mask=torch.tensor(mask, device=DEV),
@@ -499,6 +503,9 @@ def run_epoch(
         m = t["mask"][:, 1:]
         Ls = _next_losses(model, t, m, p_mask, rng)
         Ls.append(((model.head_fut(E) - fut) ** 2).mean())
+        for jj, h in enumerate(model.head_id):
+            Ls.append(F.cross_entropy(h(E), t["id_tgt"][:, jj]))
+        Ls.append(((model.head_unc(E) - t["unc_tgt"]) ** 2).mean())
         loss = sum(0.5 * torch.exp(-log_s[j]) * Ls[j] + 0.5 * log_s[j] for j in range(len(Ls)))
         fcuts = [len(seqs[k][5]) for k in bk]
         fq = [(AS_OF_TS - seqs[k][5][-1]) / 86400.0 for k in bk]
@@ -541,7 +548,9 @@ def val_loss(model, seqs, ks, vs, past_mu, past_sd, taus, fut_mu, fut_sd, horizo
         Ls = _next_losses(model, t, m, 0.0, np.random.default_rng(0))
         lp = ((model.past(E) - past) ** 2).mean()
         lf = ((model.head_fut(E) - fut) ** 2).mean()
-        tot += float(sum(Ls) + lp + lf)
+        lid = sum(float(F.cross_entropy(h(E), t["id_tgt"][:, jj])) for jj, h in enumerate(model.head_id))
+        luc = float(((model.head_unc(E) - t["unc_tgt"]) ** 2).mean())
+        tot += float(sum(Ls) + lp + lf + lid + luc)
         nb += 1
     return tot / max(nb, 1)
 
@@ -557,7 +566,7 @@ def embed(model, seqs, ks, vs):
         fcuts = [len(seqs[k][5]) for k in bk]
         fq = [(AS_OF_TS - seqs[k][5][-1]) / 86400.0 for k in bk]
         t, _, qg, lens, _f = collate(seqs, bk, fcuts, fq, vs, False, None, None)
-        Hs, E, _, MB, IB, RB, UB, CB = model(t["et"], t["gcat"], t["gnum"], t["time"], t["gaps"], t["mask"], lens, qg, t["graw"])
+        Hs, E, _, MB, IB, RB, UB, CB, OB, RelB = model(t["et"], t["gcat"], t["gnum"], t["time"], t["gaps"], t["mask"], lens, qg, t["graw"])
         ms = []
         for k in bk:
             pass
@@ -571,7 +580,7 @@ def embed(model, seqs, ks, vs):
             ms.append((t["graw"] * w.unsqueeze(-1)).sum(1))
             oh = torch.nn.functional.one_hot(t["et"], vs["et"]).float()
             ms.append((oh * w.unsqueeze(-1)).sum(1))
-        out.append(E.cpu().numpy()); mout.append(np.hstack([MB.cpu().numpy(), IB.cpu().numpy(), RB.cpu().numpy(), UB.cpu().numpy(), CB.cpu().numpy()]))
+        out.append(E.cpu().numpy()); mout.append(np.hstack([MB.cpu().numpy(), IB.cpu().numpy(), RB.cpu().numpy(), UB.cpu().numpy(), CB.cpu().numpy(), OB.cpu().numpy(), RelB.cpu().numpy()]))
     return np.concatenate(out, 0), np.concatenate(mout, 0)
 
 
@@ -625,7 +634,7 @@ def train_encoder(data, seed=0, d=64, layers=2, epochs=5, lr=3e-4, batch=0):
     torch.manual_seed(seed)
     model = Enc(vs, d, len(taus), layers, taus).to(DEV)
     opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
-    log_s = nn.Parameter(torch.zeros(1 + len(vs["gcat"]) + vs["gnum"] + 1 + 1 + 1, device=DEV))
+    log_s = nn.Parameter(torch.zeros(1 + len(vs["gcat"]) + vs["gnum"] + 1 + 1 + 1 + len(vs["id_dims"]) + 1, device=DEV))
     opt.add_param_group({"params": [log_s]})
     warm = max(1, int(0.1 * epochs))
     sched = torch.optim.lr_scheduler.LambdaLR(
