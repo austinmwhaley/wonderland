@@ -16,6 +16,8 @@ import torch.nn.functional as F
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from looking_glass.cfm_model import _scan  # noqa: E402
+from looking_glass.autotune import derive_batch  # noqa: E402
+from looking_glass.cfm_training import embed_batch_size  # noqa: E402
 from sklearn.ensemble import HistGradientBoostingRegressor, HistGradientBoostingClassifier  # noqa: E402
 from sklearn.metrics import r2_score, roc_auc_score  # noqa: E402
 from sklearn.model_selection import KFold  # noqa: E402
@@ -524,8 +526,9 @@ def val_loss(model, seqs, ks, vs, past_mu, past_sd, taus, fut_mu, fut_sd, horizo
     model.eval()
     tot = 0
     nb = 0
-    for i in range(0, len(ks), 32):
-        bk = ks[i : i + 32]
+    eb = max(32, BATCH)
+    for i in range(0, len(ks), eb):
+        bk = ks[i : i + eb]
         fcuts = [len(seqs[k][5]) for k in bk]
         fq = [(AS_OF_TS - seqs[k][5][-1]) / 86400.0 for k in bk]
         h = float(np.median(taus))
@@ -548,8 +551,9 @@ def embed(model, seqs, ks, vs):
     model.eval()
     out = []
     mout = []
-    for i in range(0, len(ks), 32):
-        bk = ks[i : i + 32]
+    eb = max(32, BATCH)
+    for i in range(0, len(ks), eb):
+        bk = ks[i : i + eb]
         fcuts = [len(seqs[k][5]) for k in bk]
         fq = [(AS_OF_TS - seqs[k][5][-1]) / 86400.0 for k in bk]
         t, _, qg, lens, _f = collate(seqs, bk, fcuts, fq, vs, False, None, None)
@@ -588,11 +592,14 @@ def table_features(A, hold):
     return X.to_numpy().astype(float), labels, seg
 
 
-def train_encoder(data, seed=0, d=64, layers=2, epochs=5, lr=3e-4, batch=16):
+def train_encoder(data, seed=0, d=64, layers=2, epochs=5, lr=3e-4, batch=0):
     global AS_OF_TS, BATCH
-    BATCH = batch
     B, A, keys, seqs, vs, et_v, catspec, num, taus, p_mask, as_of_ts, periods, horizons = load_data(data)
     AS_OF_TS = as_of_ts
+    if not batch:
+        seq_len = int(np.median([len(seqs[k][5]) for k in keys]))
+        batch = derive_batch(len(keys), seq_len)[0]
+    BATCH = batch
     rng = np.random.default_rng(seed)
     perm = rng.permutation(len(keys))
     nt = int(0.7 * len(keys))

@@ -5176,3 +5176,9 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - 2k learned E-only: orders90 +6.4% robust; churn-nn +3.3% robust; retrieval +8.5% point;
   churn90 -2.5% (table). No hand summary.
 - Next: 6k block-aware; per-axis probes (identity/rate/uncertainty/causal) in the B card.
+
+## DEC-252 — GPU batch reuse + fast 6k check
+
+- Reused pre-demo `derive_batch`/`embed_batch_size`; derived batch replaces fixed 16; `_scan` compiled dispatcher.
+- 6k quick (1 seed/5): value90 0.383 vs 0.348; orders90 0.456 vs 0.425; churn90 0.931 vs 0.914 — E > table on all three.
+- Fast 6k now completes in-loop; full 3-seed remains background/report.
