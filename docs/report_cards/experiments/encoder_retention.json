@@ -1,0 +1,6 @@
+{
+ "retention_past_corr2": 0.1549,
+ "retention_future_corr2": 0.0,
+ "past_dims": 107,
+ "future_dims": 52
+}

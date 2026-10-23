@@ -24,7 +24,7 @@ identity/rate/uncertainty/causal/order/relational blocks; frozen.
 | Schema-agnostic / per-stream | partial (auto fields; variant pending) |
 | Universal / transferable | partial (retrieval/identity; no held-out battery yet) |
 | Lawful / compositional | field perm 1.2e−7; scan 8.9e−16; mass additivity 0.0 → **PASS** |
-| Minimal / bounded | rank 2.4; E dim 128; retention R² invalid (std bug) |
+| Minimal / bounded | rank 2.4; E dim 128; past retention corr² 0.155; future 0.0 (future objective ineffective) |
 | Robust / calibrated | partial (dropout/ECE; OOD pending) |
 | Accessible | **shape E 0.365 vs table 0.394 (close); multi-scale blocks (5527d) −0.72 (FAIL); combined −0.64** |
 | Efficient | partial (GPU train/eval; data/collate still CPU-bound) |
