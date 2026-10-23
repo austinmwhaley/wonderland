@@ -303,7 +303,7 @@ def collate(
                 ]
             )
         if want_future and L > 0:
-            ct = tt[L - 1] + h * 86400.0
+            ct = tt[L - 1]
             sel = (tt > ct) & (tt <= ct + h * 86400.0)
             etcf = [float((etk[sel] == i).sum()) for i in range(vs["et"])]
             catf = [float(len(np.unique(gck[sel, j][gck[sel, j] > 0]))) for j in range(nc)]
@@ -598,6 +598,9 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
         if pat >= 3:
             break
     print(f"trust-region lr {tr_log}", flush=True)
+    _names = ["et"] + [f"cat{j}" for j in range(len(vs["gcat"]))] + [f"num{j}" for j in range(vs["gnum"])] + ["gap", "fut"] + [f"id{j}" for j in range(len(vs["id_dims"]))] + ["unc"]
+    _ls = log_s.detach().cpu().tolist()
+    print("loss weights " + ", ".join(f"{n}={math.exp(-x):.3f}" for n, x in zip(_names, _ls)), flush=True)
     print(f"clip stats: {CLIP_STATS}", flush=True)
     if best_state:
         model.load_state_dict(best_state)

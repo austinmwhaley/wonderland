@@ -758,3 +758,19 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   fixed frozen evaluation holdout across seeds (train splits may vary; eval split frozen) would
   separate split difficulty from encoder quality. NOT applied unilaterally.
 - Patience reverted to 3. Proceeding to 1b (future objective) per the pre-registered queue.
+
+## DEC-279 — Queue 1b resolved: future target window (cut+h, cut+2h] -> adjacent (cut, cut+h]
+
+- Diagnostic chain (1 seed, current config, mid-stream cuts): past head works (ridge R2 0.408,
+  head r 0.474); future head is dead (r ~0.05) with a NORMAL learned loss weight (0.766) -> not a
+  weighting collapse. Full-history oracle control on the gapped window: ridge/GBM R2 -0.13/-0.06/-0.04
+  = NOBODY can predict it from the observed past -> the gapped target is unlearnable noise; E exonerated.
+- Same oracle control on the ADJACENT window (cut, cut+h]: R2 +0.53 (etc) / +0.23 (catf) / +0.69 (rawf)
+  = strongly learnable, and it is the window the downstream label family (value90 = next-90d from
+  as_of) actually lives in. The old target was misaligned with serving AND unpredictable.
+- Decision: one axis - the future target window becomes adjacent (cut, cut+h]. Still strictly future
+  information (events after the cut are never in the input at that cut; no leakage). Evaluation
+  labels/gates untouched.
+- Rejected: dropping the future head (discards a learnable signal); keeping the gap (proven noise).
+- Acceptance (pre-registered): (a) oracle learnability [measured: PASS]; (b) after retrain,
+  head_fut/E ridge R2 on the new target > 0.2; (c) 6k 3-seed value90 CI lower bound > 0; no divergence.
