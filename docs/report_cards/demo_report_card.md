@@ -15,17 +15,17 @@
 
 | Head | Scale | Table | Pure E | Margin | 95% CI |
 |---|---|---|---|---|---|
-| value90 | 6k | 0.364 | **0.424** | **+6.0%** | [+0.043, +0.076] |
-| orders90 | 6k | 0.436 | **0.489** | **+5.3%** | [+0.024, +0.082] |
-| orders90 | 2k | 0.352 | **0.445** | **+9.3%** | [+0.038, +0.151] |
-| churn90 | 6k | 0.917 | 0.938 | +2.1% | [−0.001, +0.043] |
+| value90 | 6k | 0.364 | **0.423** | **+5.9%** | [+0.029, +0.088] |
+| orders90 | 6k | 0.436 | **0.485** | **+4.9%** | [+0.023, +0.076] |
+| orders90 | 2k | 0.352 | **0.459** | **+10.7%** | [+0.051, +0.170] |
+| churn90 | 6k | 0.917 | 0.943 | +2.5% | [−0.011, +0.061] |
 
 ### Unsupervised
 
 | Probe | Table | Pure E | Margin | 95% CI |
 |---|---|---|---|---|
-| churn-neighbor | 0.950 | **0.975** | **+2.5%** | [+0.003, +0.022] |
-| value retrieval | 0.373 | 0.419 | +4.6% | [−0.041, +0.058] |
+| churn-neighbor | 0.950 | **0.980** | **+3.0%** | [+0.002, +0.025] |
+| value retrieval | 0.373 | **0.477** | **+10.4%** | [−0.022, +0.065] |
 | anomaly AUC | **0.635** | 0.504 | table wins | disclosed |
 
 ### RL (offline IPS/DR; test bootstrap)
@@ -37,7 +37,7 @@
 
 ## Claim
 
-The **pure frozen self-supervised E robustly exceeds the traditional table** on value90 (+6.0%), orders90 (+5.3% at 6k, +9.3% at 2k), and churn-neighbor (+2.5%). Churn90/retrieval are marginal; anomaly remains a table win. No hybrid, no hand fields, no fixed 30/90 windows.
+The **pure frozen self-supervised E robustly exceeds the traditional table** on value90 (+5.9%), orders90 (+4.9% at 6k, +10.7% at 2k), and churn-neighbor (+3.0%). Retrieval is +10.4% point; churn90 +2.5% marginal; anomaly remains a table win. No hybrid, no hand fields, no fixed 30/90 windows.
 
 ## Caveats
 
