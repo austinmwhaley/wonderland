@@ -601,7 +601,7 @@ def table_features(A, hold):
     return X.to_numpy().astype(float), labels, seg
 
 
-def train_encoder(data, seed=0, d=64, layers=2, epochs=5, lr=3e-4, batch=0):
+def train_encoder(data, seed=0, d=64, layers=2, epochs=5, lr=None, batch=0):
     global AS_OF_TS, BATCH
     B, A, keys, seqs, vs, et_v, catspec, num, taus, p_mask, as_of_ts, periods, horizons = load_data(data)
     AS_OF_TS = as_of_ts
@@ -633,29 +633,25 @@ def train_encoder(data, seed=0, d=64, layers=2, epochs=5, lr=3e-4, batch=0):
     fut_sd[fut_sd < 1e-6] = 1.0
     torch.manual_seed(seed)
     model = Enc(vs, d, len(taus), layers, taus).to(DEV)
+    lr = lr if lr is not None else 1e-3  # documented seed bound; trust-region adapts below
     opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
     log_s = nn.Parameter(torch.zeros(1 + len(vs["gcat"]) + vs["gnum"] + 1 + 1 + 1 + len(vs["id_dims"]) + 1, device=DEV))
     opt.add_param_group({"params": [log_s]})
-    warm = max(1, int(0.1 * epochs))
-    sched = torch.optim.lr_scheduler.LambdaLR(
-        opt,
-        lambda e: (
-            (e + 1) / warm
-            if e < warm
-            else 0.5 * (1 + math.cos(math.pi * (e - warm) / max(1, epochs - warm)))
-        ),
-    )
+    tr_log = []  # trust-region lr trajectory (receipt)
     best = 1e9
     best_state = None
     pat = 0
     hist = []
     for ep in range(epochs):
+        eff = lr * (0.5 if ep == 0 else 1.0)  # one warm epoch at half step
+        for g in opt.param_groups:
+            g["lr"] = eff
         trl = run_epoch(
             model,
             seqs,
             tr,
             opt,
-            sched,
+            None,
             log_s,
             rng,
             vs,
@@ -672,14 +668,18 @@ def train_encoder(data, seed=0, d=64, layers=2, epochs=5, lr=3e-4, batch=0):
         print(f"seed {seed} epoch {ep + 1} train {trl:.4f} val {vl:.4f}", flush=True)
         hist.append(vl)
         tol = float(np.std(hist[-5:]) / np.sqrt(max(1, len(hist[-5:])))) if len(hist) >= 3 else 1e-3
-        if vl < best - tol:
+        improved = vl < best - tol
+        if improved:
             best = vl
             best_state = {k: v.detach().clone() for k, v in model.state_dict().items()}
             pat = 0
         else:
             pat += 1
-            if pat >= 3:
-                break
+        lr = min(lr * 1.5, 1e-2) if improved else max(lr * 0.5, 1e-5)
+        tr_log.append((ep + 1, round(eff, 6), round(vl, 4)))
+        if pat >= 3:
+            break
+    print(f"trust-region lr {tr_log}", flush=True)
     if best_state:
         model.load_state_dict(best_state)
     E, BLK = embed(model, seqs, hold, vs)
