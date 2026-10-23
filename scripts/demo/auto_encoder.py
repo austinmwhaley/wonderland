@@ -315,7 +315,8 @@ def collate(
     if want_past and past_mu is not None:
         past = (past - past_mu) / past_sd
     if want_future and fut_mu is not None:
-        fut = (fut - fut_mu) / fut_sd
+        fi = int(np.argmin(np.abs(np.asarray(vs["horizons"]) - h)))
+        fut = (fut - fut_mu[fi]) / fut_sd[fi]
     t = dict(
         et=torch.tensor(et, device=DEV),
         gcat=torch.tensor(gcat, device=DEV),
@@ -538,14 +539,16 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
         _H = -sum((c / _tot) * math.log2(c / _tot) for c in _cnt.values())
         d, _dn = derive_dim(n_seqs, total, [vs["et"]] + list(vs["gcat"]), _H)
         print(f"derived dim {d} ({_dn['dim']})", flush=True)
-    _, P, _, _, F = collate(
-        seqs, pkeys, fcuts, fq, vs, True, None, None, True, float(np.median(taus)), None, None
-    )
+    _, P, _, _, _ = collate(seqs, pkeys, fcuts, fq, vs, True, None, None)
     P = P.cpu().numpy()
-    F = F.cpu().numpy()
     past_mu, past_sd = P.mean(0), P.std(0)
     past_sd[past_sd < 1e-6] = 1.0
-    fut_mu, fut_sd = F.mean(0), F.std(0)
+    Fs = []
+    for hv in vs["horizons"]:
+        _, _, _, _, Fk = collate(seqs, pkeys, fcuts, fq, vs, False, None, None, True, float(hv), None, None)
+        Fs.append(Fk.cpu().numpy())
+    Fcat = np.stack(Fs)
+    fut_mu, fut_sd = Fcat.mean(1), Fcat.std(1)
     fut_sd[fut_sd < 1e-6] = 1.0
     torch.manual_seed(seed)
     model = Enc(vs, d, len(taus), layers, taus).to(DEV)
