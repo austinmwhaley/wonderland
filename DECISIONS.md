@@ -5250,3 +5250,12 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   and speed (55.9ms vs 5.5ms per 16-batch). Receipt: docs/report_cards/experiments/encoder_collate_vec_failed.json.
 - Action: git restore auto_encoder.py (loop version is the committed truth); vectorization re-opened
   as a future one-axis change. No other axis touched.
+
+## DEC-262 — 6k learned-head 3-seed rerun: value tie, not +4.4%
+
+- 6k, 3 seeds, 5 epochs, learned heads: value90 0.3780 vs table 0.3802 (−0.0022); orders −0.0154;
+  churn +0.0017; identity channel 0.3996 vs 0.2513; shuffle drop −0.2355. Receipt e94ab16cbf2b.
+- The historical +4.4% required static summary blocks that violate the no-hand-summary contract.
+  Honest verdict: with the aligned config, supervised is tie-to-loss at both scales.
+- Next one-axis probe (DEC-263): training regime 5 -> 20 epochs at 6k (1 seed); acceptance =
+  value90 margin >= +0.01; val plateau-noisy at 5 epochs (36-60).

@@ -10,9 +10,10 @@
 - **Data:** `relational_v3` synthetic reference (2k/6k) + `relational_v3_schema` variant. Layer A
   generator: `rabbit_hole/generators/relational_reference.py`; data card `docs/LAYER_A_DATA.md`;
   certificate `docs/report_cards/layer_a_certificate_v3.json` (PASS).
-- **Verdict (current):** objective **NOT yet met**. E wins retrieval/identity/order axes; value90
-  at 6k beat XGBoost only with the pre-learned-head encoder; the learned-head 6k run is pending,
-  and 2k supervised is tie-to-loss. Details below; every table win disclosed.
+- **Verdict (current):** objective **NOT yet met**. E wins retrieval/identity/order axes; with learned
+  heads (the aligned config) supervised is tie-to-loss at 2k and 6k (6k 3-seed value −0.0022). The
+  historical 6k +4.4% came from static summary blocks that violate the no-hand-summary contract and
+  were removed. Every table win disclosed.
 
 ## 1. Objective (frozen)
 
@@ -31,7 +32,7 @@ python3 scripts/demo/demo.py --data /tmp/opencode/t0_loop/relational_v3 --epochs
 - Builds/validates v3, trains the frozen auto encoder (GPU), runs B probes, runs B+C heads vs the
   wide table + XGBoost GPU (encoder memory freed before XGBoost — 8 GB constraint), writes
   `docs/report_cards/demo_run.json` + `demo_command_card.md` with N, hashes, runtime.
-- Latest receipt: seeds [0,1,2], 5 epochs, 428.7s, hash `5a50753d7f39`.
+- Latest receipts: 2k 3-seed `5a50753d7f39` (428.7s); 6k 3-seed `e94ab16cbf2b` (875.9s).
 
 ## 3. Layer A data (summary; full card `docs/LAYER_A_DATA.md`)
 
@@ -44,7 +45,7 @@ python3 scripts/demo/demo.py --data /tmp/opencode/t0_loop/relational_v3 --epochs
 | # | Axis | Metric | Frozen E | Table / baseline | Status |
 |---|---|---|---|---|---|
 | 1 | Shape | retrieval / churn-nn / regime | retrieval 0.418; churn-nn 0.980 | — | **working** |
-| 2 | Mass | supervised vs XGBoost GPU | 2k 3-seed: value −0.016, orders +0.001, churn −0.003; 6k (pre-learned-heads): value +4.4% | table | **tie at 2k; 6k learned-head rerun pending** |
+| 2 | Mass | supervised vs XGBoost GPU | 2k 3-seed: −0.016/+0.001/−0.003; 6k 3-seed learned heads: −0.0022/−0.0154/+0.0017 | table | **tie-to-loss (both scales)** |
 | 3 | Identity | learned `IB` kNN channel/category | channel 0.335 (> table 0.249); category 0.177 (< table 0.260) | table | **partial** (learned head weaker than static 0.727) |
 | 4 | Rate | churn AUC | 0.949 | 0.952 | tie |
 | 5 | Uncertainty | ECE / dropout / OOD | ECE 0.048; variant churn 0.957 | — | **good** |
@@ -78,16 +79,18 @@ python3 scripts/demo/demo.py --data /tmp/opencode/t0_loop/relational_v3 --epochs
 | orders90 | 0.4003 | 0.4010 | +0.0007 |
 | churn90 | 0.9515 | 0.9487 | −0.0028 |
 
-### Supervised (6k, 1 seed/5 — static-block encoder, XGBoost GPU)
+### Supervised (6k, 3 seeds/5 — learned heads, XGBoost GPU; receipt e94ab16cbf2b)
 
 | Target | Table | Frozen E | Margin |
 |---|---|---|---|
-| value90 | 0.358 | **0.401** | **+4.4%** |
-| orders90 | 0.450 | 0.452 | tie |
-| churn90 | 0.926 | 0.931 | tie |
+| value90 | 0.3802 | 0.3780 | −0.0022 (tie) |
+| orders90 | 0.4547 | 0.4393 | −0.0154 |
+| churn90 | 0.9305 | 0.9321 | +0.0017 (tie) |
 
-> **Must revalidate:** the 6k win predates the learned-head refactor; a learned-head 6k 3-seed run
-> is required before claiming any 6k margin.
+> **Historical (superseded):** static-summary blocks gave 6k value +4.4% (1 seed/5), but static
+> summaries violate the no-hand-summary contract and were removed; the learned-head config is the
+> claimed E. Receipts: `encoder_6k_*`. Val loss plateau-noisy at 5 epochs → training regime is the
+> next one-axis probe (DEC-263).
 
 ### Unsupervised (2k)
 
