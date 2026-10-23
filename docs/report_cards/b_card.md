@@ -12,6 +12,8 @@ Synthetic `relational_v3`; no business data. E: auto-tokenizer, learned states, 
 | Rate | churn AUC | table | E 0.934 vs table 0.964 | not working (rate) |
 | Uncertainty | ECE / dropout / OOD | — | uncertainty block wired; ECE 0.089; dropout 0.966 | partial |
 | Causal | action-conditioned IPS/DR | table/random | causal block wired; channel table wins; offer point | not working |
+| Order/Path | transition NLL; shuffle delta | table | order block implicit in SSM; probe pending | pending |
+| Relational/Context | entity linkage; basket/session | table | token fields present; relational probe pending | pending |
 
 ## Foundation properties
 

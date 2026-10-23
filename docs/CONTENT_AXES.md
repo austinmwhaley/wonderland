@@ -14,9 +14,16 @@ The lens inside each axis is **direction × magnitude** (the polar factor).
 | **Rate** | When/how often (gaps, recency, cadence)? | time/rate | continuous-time gates, learned τ, gaps |
 | **Uncertainty** | How sure; what is missing/unlogged? | calibrated | masks, uncertainty heads, calibration |
 | **Causal** | What happens under `do(a)`? | counterfactual | action-conditioned heads, OPE |
+| **Order/Path** | In what order, with what transitions and memory? | sequence/order-sensitive | SSM order, transitions, long memory |
+| **Relational/Context** | How do entities relate (product, campaign, order, session, support)? | relational/graph | cross-entity tokens, linkage, baskets |
 
-Sequence order, regimes, and path dependence are **not a seventh axis**; they are shape + rate +
-identity interacting.
+**Eight content axes.** The earlier six were the information content; order/path and
+relational/context are separate because the table's aggregates are order-insensitive and
+relation-blind, while the stream carries both. Regimes are shape+rate+order; sessions/baskets are
+relational.
+
+These are **content axes**. They are not the foundation properties (task-free, universal/per-stream,
+lawful, minimal, robust, artifact, donor, interpretable, efficient), which are the behavior contract.
 
 ## Axis definitions, metrics, and failure symptoms
 
@@ -56,6 +63,18 @@ identity interacting.
 - **Metrics:** action-conditioned/IPS/DR policy value with randomized holdout; known-effect
   recovery; decision-sufficiency gap.
 - **Failure:** predicts the logged future but cannot answer “what if”.
+
+### Order/Path
+- **What:** event order, transition structure, path dependence, long memory.
+- **Metrics:** transition-matrix NLL; event-shuffle sensitivity (E should degrade, table should not);
+  long-memory autocorrelation; path/regime recovery.
+- **Failure:** E matches a bag-of-events table, so order carries no signal.
+
+### Relational/Context
+- **What:** cross-entity relations — product/category/campaign/order/session/support, hierarchy.
+- **Metrics:** entity linkage/retrieval; basket/session reconstruction; cross-entity prediction
+  (e.g., campaign → product); relation-aware retrieval.
+- **Failure:** entities collapse or relations are lost by per-customer aggregation.
 
 ## B report card layout
 
