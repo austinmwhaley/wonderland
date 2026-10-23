@@ -521,10 +521,6 @@ def run_epoch(
             opt.zero_grad()
             loss.backward()
             CLIP_STATS["steps"] += 1
-            gn = torch.sqrt(sum((pp.grad.norm() ** 2 for pp in model.parameters() if pp.grad is not None)))
-            if float(gn) > 1.0:
-                CLIP_STATS["binds"] += 1
-            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             opt.step()
         tot += float(loss.detach())
         nb += 1
@@ -671,6 +667,8 @@ def train_encoder(data, seed=0, d=64, layers=2, epochs=5, lr=None, batch=0):
         )
         vl = val_loss(model, seqs, val, vs, past_mu, past_sd, taus, fut_mu, fut_sd, horizons)
         print(f"seed {seed} epoch {ep + 1} train {trl:.4f} val {vl:.4f}", flush=True)
+        if not math.isfinite(trl) or not math.isfinite(vl):
+            raise RuntimeError(f"divergence (hard failure, never masked): train {trl} val {vl}")
         hist.append(vl)
         tol = float(np.std(hist[-5:]) / np.sqrt(max(1, len(hist[-5:])))) if len(hist) >= 3 else 1e-3
         improved = vl < best - tol

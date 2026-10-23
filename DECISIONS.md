@@ -5303,3 +5303,14 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - Rejected: wd ~ lr coupling (couples two axes); wd from param count (unvalidated formula = literal
   in disguise).
 - Acceptance: 6k 1-seed value90 margin >= 0, no divergence, val trajectory recorded.
+
+## DEC-269/270 — clip ceiling audit: 100% binding = violation; removal (one axis)
+
+- DEC-269 receipt: 465/465 steps bound (100%). The clip ceiling is the de-facto step-magnitude
+  control - it does the lr's work on every step, violating DEC-039 (no rescues). Not an inert bound.
+- DEC-270 decision: remove the clip entirely. Stability via (a) trust-region lr shrink on regression
+  (existing), (b) NaN hard-failure abort per epoch (divergence = recorded failure, never masked),
+  (c) best-state snapshot (existing). Rejected: keeping clip as "disclosed bound" (100% binding =
+  doing the lr's work, not a fallback).
+- Acceptance: 6k 1-seed value90 margin >= 0, finite loss every epoch, receipt. If NaN/abort -> hard
+  failure recorded, revert.
