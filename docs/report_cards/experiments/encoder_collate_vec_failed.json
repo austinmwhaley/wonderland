@@ -1,0 +1,29 @@
+{
+ "receipt": "DEC-260 vectorized collate",
+ "date": "2026-10-23",
+ "verdict": "FAIL-REVERTED",
+ "correctness": {
+  "et": "pass",
+  "gcat": "pass",
+  "gnum": "pass",
+  "mask": "pass",
+  "id_tgt": "pass",
+  "graw": "FAIL maxdiff=586.1",
+  "time": "FAIL maxdiff=2.079(=log1p(7))",
+  "gaps": "FAIL maxdiff=7.0",
+  "tss": "FAIL maxdiff=1.736e9",
+  "unc_tgt": "pass",
+  "past": "pass",
+  "qg": "pass",
+  "fut": "pass"
+ },
+ "diagnosis": "padded region beyond each sequence cut carries stale real values; reference loop zero-fills",
+ "timing_ms": {
+  "train_ref": 5.5,
+  "train_vec": 55.9,
+  "eval_ref": 14.5,
+  "eval_vec": 55.2
+ },
+ "action": "git restore auto_encoder.py to committed loop version; collate vectorization re-opened",
+ "test": "/tmp/opencode/vec_check.py"
+}

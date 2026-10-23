@@ -5243,3 +5243,10 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - Acceptance: (a) collate outputs equal a reference re-implementation of the old loop on random
   batches; (b) wall-time per 16-batch drops >=3x; (c) 2k 3-seed demo within seed noise of receipt
   5a50753d; (d) embed outputs identical vs reference path. Revert if any fails.
+
+## DEC-261 — Vectorized collate FAILED acceptance -> reverted per protocol
+
+- Both acceptance gates failed: correctness (stale values beyond each cut in graw/time/gaps/tss)
+  and speed (55.9ms vs 5.5ms per 16-batch). Receipt: docs/report_cards/experiments/encoder_collate_vec_failed.json.
+- Action: git restore auto_encoder.py (loop version is the committed truth); vectorization re-opened
+  as a future one-axis change. No other axis touched.

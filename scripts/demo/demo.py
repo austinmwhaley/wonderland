@@ -80,7 +80,7 @@ def main():
     L.append(f'| identity category | {runs[0]["identity_category"]:.4f} | {runs[0]["table_category"]:.4f} |')
     if 'shuffle' in runs[0]:
         L.append(f'| shuffle value drop | {runs[0]["shuffle"]["value90"]-runs[0]["value90"]["E"]:+.4f} | 0 |')
-    (out / 'demo_command_card.md').write_text('\n'.join(L) + '\n')
+    (out / 'demo_command_receipt.md').write_text('\n'.join(L) + '\n')
     print('\n'.join(L)); print('WROTE', out / 'demo_run.json')
 
 if __name__ == '__main__':
