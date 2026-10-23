@@ -623,6 +623,17 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     pkeys = tr[: min(len(tr), 400)]
     fcuts = [len(seqs[k][5]) for k in pkeys]
     fq = [(AS_OF_TS - seqs[k][5][-1]) / 86400.0 for k in pkeys]
+    if d is None:
+        from collections import Counter as _C
+        n_seqs = len(keys)
+        total = sum(len(seqs[k][5]) for k in keys)
+        _cnt = _C()
+        for k in keys:
+            _cnt.update(seqs[k][0].tolist())
+        _tot = sum(_cnt.values())
+        _H = -sum((c / _tot) * math.log2(c / _tot) for c in _cnt.values())
+        d, _dn = derive_dim(n_seqs, total, [vs["et"]] + list(vs["gcat"]), _H)
+        print(f"derived dim {d} ({_dn['dim']})", flush=True)
     _, P, _, _, F = collate(
         seqs, pkeys, fcuts, fq, vs, True, None, None, True, float(np.median(taus)), None, None
     )
