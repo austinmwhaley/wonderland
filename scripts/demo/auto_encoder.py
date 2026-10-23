@@ -16,7 +16,7 @@ import torch.nn.functional as F
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from looking_glass.cfm_model import _scan  # noqa: E402
-from looking_glass.autotune import derive_batch  # noqa: E402
+from looking_glass.autotune import derive_batch, derive_lr  # noqa: E402
 from looking_glass.cfm_training import embed_batch_size  # noqa: E402
 from sklearn.ensemble import HistGradientBoostingRegressor, HistGradientBoostingClassifier  # noqa: E402
 from sklearn.metrics import r2_score, roc_auc_score  # noqa: E402
@@ -519,7 +519,6 @@ def run_epoch(
         if train:
             opt.zero_grad()
             loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             opt.step()
         tot += float(loss.detach())
         nb += 1
@@ -601,10 +600,18 @@ def table_features(A, hold):
     return X.to_numpy().astype(float), labels, seg
 
 
-def train_encoder(data, seed=0, d=64, layers=2, epochs=5, lr=3e-4, batch=0):
+def train_encoder(data, seed=0, d=64, layers=2, epochs=5, lr=None, batch=0):
     global AS_OF_TS, BATCH
     B, A, keys, seqs, vs, et_v, catspec, num, taus, p_mask, as_of_ts, periods, horizons = load_data(data)
     AS_OF_TS = as_of_ts
+    if lr is None:
+        pw = []
+        for k in keys[: min(len(keys), 400)]:
+            gl = np.sign(seqs[k][6]) * np.log1p(np.abs(seqs[k][6]))
+            v = np.concatenate([gl.ravel(), seqs[k][3].ravel(), seqs[k][4]])
+            pw.append(float((v.astype(np.float64) ** 2).mean()))
+        lr, _lrn = derive_lr(float(np.mean(pw)))
+        print(f"derived lr {lr:.2e}", flush=True)
     if not batch:
         seq_len = int(np.median([len(seqs[k][5]) for k in keys]))
         batch = derive_batch(len(keys), seq_len)[0]
@@ -633,7 +640,7 @@ def train_encoder(data, seed=0, d=64, layers=2, epochs=5, lr=3e-4, batch=0):
     fut_sd[fut_sd < 1e-6] = 1.0
     torch.manual_seed(seed)
     model = Enc(vs, d, len(taus), layers, taus).to(DEV)
-    opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
+    opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=0.0)
     log_s = nn.Parameter(torch.zeros(1 + len(vs["gcat"]) + vs["gnum"] + 1 + 1 + 1 + len(vs["id_dims"]) + 1, device=DEV))
     opt.add_param_group({"params": [log_s]})
     warm = max(1, int(0.1 * epochs))

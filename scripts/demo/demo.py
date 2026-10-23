@@ -30,11 +30,11 @@ def knn_purity(Z, lab, k=10):
 
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument('--data', required=True); ap.add_argument('--out', default='docs/report_cards')
-    ap.add_argument('--epochs', type=int, default=5); ap.add_argument('--seeds', default='0'); ap.add_argument('--d', type=int, default=128); ap.add_argument('--layers', type=int, default=2)
+    ap.add_argument('--epochs', type=int, default=5); ap.add_argument('--seeds', default='0'); ap.add_argument('--d', type=int, default=128); ap.add_argument('--layers', type=int, default=2); ap.add_argument('--lr', type=float, default=None)
     a = ap.parse_args(); out = Path(a.out); out.mkdir(parents=True, exist_ok=True); t0 = time.time()
     seeds = [int(x) for x in a.seeds.split(',')]; runs = []
     for seed in seeds:
-        E, Xtab, labels, hold, seg, model, vs, B, best, BLK = AE.train_encoder(a.data, seed=seed, epochs=a.epochs, d=a.d, layers=a.layers, lr=1e-3)
+        E, Xtab, labels, hold, seg, model, vs, B, best, BLK = AE.train_encoder(a.data, seed=seed, epochs=a.epochs, d=a.d, layers=a.layers, lr=a.lr if a.lr else None)
         E = np.nan_to_num(E); Xtab = np.nan_to_num(Xtab); BLK = np.nan_to_num(BLK); Xms = np.hstack([E, BLK])
         _, A, keys, seqs, vs2, et_v, catspec, num, taus, p_mask, as_of_ts, periods, horizons = AE.load_data(a.data)
         truth = {c['customer']: c for c in json.load(open(Path(a.data) / 'reference_truth.json'))['customers']}
