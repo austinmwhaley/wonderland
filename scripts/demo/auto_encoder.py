@@ -665,6 +665,7 @@ def train_encoder(data, seed=0, d=64, layers=2, epochs=5, lr=3e-4, batch=0):
             taus,
             fut_mu,
             fut_sd,
+            None,
             True,
         )
         vl = val_loss(model, seqs, val, vs, past_mu, past_sd, taus, fut_mu, fut_sd, horizons)

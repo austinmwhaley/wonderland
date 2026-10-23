@@ -52,7 +52,7 @@ def main():
         d['churn_nn'] = float(np.mean(labels['y_churn_90'] == labels['y_churn_90'][nnidx]))
         d['eff_rank'] = float(np.linalg.svd(FD.z(E), compute_uv=False).var())
         # identity block slices (MB=3e*d, IB=nc*d)
-        e = model.ssm[0].e; dd = model.d; nc = len(vs['gcat']); ib = BLK[:, 3*e*dd:3*e*dd+nc*dd]
+        e = model.ssm[0].e; dd = model.d; nc = len(vs['gcat']); ib = BLK[:, 3*e*dd:3*e*dd+sum(vs['id_dims'])]
         cat = np.array([truth[k]['category_pref'] for k in hold], dtype=object); ch = np.array([truth[k]['channel_pref'] for k in hold], dtype=object)
         d['identity_channel'] = knn_purity(FD.z(ib), ch); d['identity_category'] = knn_purity(FD.z(ib), cat)
         d['table_channel'] = knn_purity(FD.z(Xtab), ch); d['table_category'] = knn_purity(FD.z(Xtab), cat)
