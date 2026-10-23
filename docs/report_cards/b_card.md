@@ -11,7 +11,7 @@ identity/rate/uncertainty/causal/order/relational blocks; frozen.
 | 2 | Mass | 6k value/orders/churn vs XGBoost GPU | **0.401 / 0.452 / 0.931** | 0.358 / 0.450 / 0.926 | **working (value +4.4%)**; orders/churn tie |
 | 3 | Identity | kNN channel/category purity | **0.727** / 0.217 | 0.249 / 0.260 | strong (channel) / partial |
 | 4 | Rate | churn AUC | 0.931 | 0.926 | tie |
-| 5 | Uncertainty | ECE / dropout | 0.089 / 0.966 | — | partial (OOD pending) |
+| 5 | Uncertainty | ECE / dropout | **0.048** / 0.966 | — | good (OOD pending) |
 | 6 | Causal | IPS/DR policy value | channel table wins; offer point | table/random | not working |
 | 7 | Order/Path | event-shuffle delta | value −0.091, orders −0.078, churn −0.030 | table 0 | **working** |
 | 8 | Relational/Context | order_id event purity | 0.005 | random 0.0005 | partial (weak) |
@@ -23,12 +23,12 @@ identity/rate/uncertainty/causal/order/relational blocks; frozen.
 | Task-free / self-supervised | PASS (audit) |
 | Schema-agnostic / per-stream | partial (auto fields; variant pending) |
 | Universal / transferable | partial (retrieval/identity; no held-out battery yet) |
-| Lawful / compositional | partial (additive mass; permutation/time-shift pending) |
-| Minimal / bounded | partial (rank; retention receipt pending) |
+| Lawful / compositional | mass additivity exact (0.0); permutation/time-shift pending |
+| Minimal / bounded | rank (participation) 2.4; E dim 128 |
 | Robust / calibrated | partial (dropout/ECE; OOD pending) |
-| Accessible | partial (linear/kNN pending) |
+| Accessible | **FAIL linear**: Ridge E −1.19 vs table 0.386; needs GBM/high-dim |
 | Efficient | partial (GPU train/eval; data/collate still CPU-bound) |
-| Artifact / reproducible | partial (frozen; one-command/v3 cert pending) |
+| Artifact / reproducible | frozen; hash d7d190; single command; v3 cert PASS |
 | Donor contract | partial (unique signal vs random E) |
 | Interpretable / diagnosable | partial (axis card, geometry) |
 

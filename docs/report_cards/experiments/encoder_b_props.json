@@ -1,0 +1,10 @@
+{
+ "eff_rank_participation": 2.4,
+ "access_ridge_E": -1.1936,
+ "access_ridge_table": 0.3855,
+ "ece_next_event": 0.0482,
+ "mass_additivity_error": 0.0,
+ "artifact_hash": "d7d190e10924",
+ "E_dim": 128,
+ "runtime_seed0_val": 29.234517574310303
+}
