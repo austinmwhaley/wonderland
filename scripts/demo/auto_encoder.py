@@ -595,7 +595,7 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
             pat += 1
         lr = min(lr * 1.5, 1e-2) if improved else max(lr * 0.5, 1e-5)
         tr_log.append((ep + 1, round(eff, 6), round(vl, 4)))
-        if pat >= 6:
+        if pat >= 3:
             break
     print(f"trust-region lr {tr_log}", flush=True)
     print(f"clip stats: {CLIP_STATS}", flush=True)
