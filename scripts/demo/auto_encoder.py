@@ -634,7 +634,7 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
         _H = -sum((c / _tot) * math.log2(c / _tot) for c in _cnt.values())
         d, _dn = derive_dim(n_seqs, total, [vs["et"]] + list(vs["gcat"]), _H)
         print(f"derived dim {d} ({_dn['dim']})", flush=True)
-        batch = max(8, int(batch * 128 / d))  # capacity-scaled token cap (disclosed bound)
+        batch = max(8, int(batch * (128 / d) ** 2))  # capacity-squared batch bound (disclosed; activations ~B*d, weights ~d^2)
     _, P, _, _, F = collate(
         seqs, pkeys, fcuts, fq, vs, True, None, None, True, float(np.median(taus)), None, None
     )
