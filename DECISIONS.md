@@ -5352,3 +5352,16 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - Audit complete: lr adaptive PASS, wd disclosed, clip removed PASS, d disclosed (open item:
   capacity-aware stability coupling), epochs budget cap. Next: objective-critical 3-seed CI on
   the DEC-270 config at 6k.
+
+## DEC-273 — orders90 significant loss: expose the trained past-head readout to the consumer
+
+- 6k 3-seed CI (config DEC-270): orders90 margins [-0.0048,-0.0060,-0.0032], 95% CI [-0.0070,-0.0024]
+  = significant LOSS. value90 +0.0099 carried by one seed (CI crosses 0); churn tie.
+- Mechanistic hypothesis: the wide table's explicit count features are what E loses; the encoder
+  already trains a past head reconstructing exactly those window statistics from E, but its readout
+  is not in the consumer blocks (BLK = MB + id/rate/unc/fut/et/rel logits). Exposing it is symmetric
+  with the other heads: learned, computed from frozen E, no hand summary.
+- Decision: one-axis change - append PB = past(E) to BLK in embed(). Rejected: re-adding static
+  count features (violates no-hand-summary); capacity increase (diverged, DEC-271).
+- Acceptance (pre-registered): 6k 3-seed; orders90 95% CI no longer excludes 0 on the negative side;
+  value90 mean not below 0; no divergence. Revert if fails.

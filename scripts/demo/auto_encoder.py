@@ -581,7 +581,7 @@ def embed(model, seqs, ks, vs):
             ms.append((t["graw"] * w.unsqueeze(-1)).sum(1))
             oh = torch.nn.functional.one_hot(t["et"], vs["et"]).float()
             ms.append((oh * w.unsqueeze(-1)).sum(1))
-        out.append(E.cpu().numpy()); mout.append(np.hstack([MB.cpu().numpy(), IB.cpu().numpy(), RB.cpu().numpy(), UB.cpu().numpy(), CB.cpu().numpy(), OB.cpu().numpy(), RelB.cpu().numpy()]))
+        out.append(E.cpu().numpy()); mout.append(np.hstack([MB.cpu().numpy(), IB.cpu().numpy(), RB.cpu().numpy(), UB.cpu().numpy(), CB.cpu().numpy(), OB.cpu().numpy(), RelB.cpu().numpy(), model.past(E).cpu().numpy()]))
     return np.concatenate(out, 0), np.concatenate(mout, 0)
 
 
