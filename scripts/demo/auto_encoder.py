@@ -16,7 +16,7 @@ import torch.nn.functional as F
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from looking_glass.cfm_model import _scan  # noqa: E402
-from looking_glass.autotune import derive_batch  # noqa: E402
+from looking_glass.autotune import derive_batch, derive_dim, derive_lr  # noqa: E402
 from looking_glass.cfm_training import embed_batch_size  # noqa: E402
 from sklearn.ensemble import HistGradientBoostingRegressor, HistGradientBoostingClassifier  # noqa: E402
 from sklearn.metrics import r2_score, roc_auc_score  # noqa: E402
@@ -602,7 +602,7 @@ def table_features(A, hold):
     return X.to_numpy().astype(float), labels, seg
 
 
-def train_encoder(data, seed=0, d=64, layers=2, epochs=5, lr=None, batch=0):
+def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     global AS_OF_TS, BATCH
     B, A, keys, seqs, vs, et_v, catspec, num, taus, p_mask, as_of_ts, periods, horizons = load_data(data)
     AS_OF_TS = as_of_ts

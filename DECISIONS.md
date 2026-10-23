@@ -5321,3 +5321,12 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   divergence; trust-region shrank lr after the ep3 val spike (71.96) on its own. Early stop ep4.
 - Best supervised receipt so far on the learned-head config, achieved with zero rescues: adaptive
   lr (DEC-267), wd disclosed bound (DEC-268), no clip (DEC-270). Receipt hash in demo_run.json.
+
+## DEC-271 — Capacity d derived from stream information (derive_dim wired in)
+
+- Principle: Adaptive (learned-or-data-derived over literals). d=64/128 were literals while
+  derive_dim (D ~ exp(H), info-based, clamped 16..256) sat unused. Derived value: d=256 for both
+  2k and 6k (H_et 2.55, vocab incl. hash buckets). Operator confirms max capacity acceptable.
+- Decision: d=None -> derive_dim(n_seqs, total_events, vocab_sizes, et_entropy). Rejected:
+  keeping the literal (violates adaptive); capacity ladder probe first (slower, same axis).
+- Acceptance: 6k 1-seed value90 margin >= 0 with d=256, no divergence, runtime recorded.
