@@ -5220,3 +5220,11 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - Real state: value90 E loses to table by ~0.01-0.03 at 2k (tie-to-loss within seed noise);
   the objective gap is real and must be attributed to an axis (capacity/objective/access), not a phantom bug.
 - Receipts: /tmp/opencode/blocks_learn2.log vs dec256_run.log epoch-for-epoch match.
+
+## DEC-259 — Coalesce all demo cards into single primary docs/REPORT_CARD.md
+
+- Decision: one primary card (B + B+C + completion matrix + receipts index + honest failures);
+  superseded cards reduced to pointers (history in git). Major docs stay AGENTS/DECISIONS/STATUS + REPORT_CARD.
+- Rejected: keeping 7 parallel cards (divergence risk; already stale: 6k +4.4% is pre-learned-heads).
+- Alignment: Honest (one place, live verdicts), Efficient (no duplicated maintenance), Diagnosable (one scorecard).
+- Acceptance: every claim in REPORT_CARD traces to a receipt in docs/report_cards/experiments/ or a live run; old cards contain only pointers.
