@@ -5169,3 +5169,10 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - Exposing the mass block separately to the head: orders90 0.393 vs 0.352 (+4.2%, CI marginal);
   retrieval +6.7% point; churn_nn +3.0% robust; churn90 -4.9% (mass block hurts the rate/churn).
 - Block-aware consumer: mass block for orders, shape block for churn/rate. Do not force one block.
+
+## DEC-251 — All six blocks wired (shape, mass, identity, rate, uncertainty, causal)
+
+- Blocks exposed separately by the frozen E; consumer head sees all; selection is learned.
+- 2k learned E-only: orders90 +6.4% robust; churn-nn +3.3% robust; retrieval +8.5% point;
+  churn90 -2.5% (table). No hand summary.
+- Next: 6k block-aware; per-axis probes (identity/rate/uncertainty/causal) in the B card.

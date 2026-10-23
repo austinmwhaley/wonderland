@@ -299,7 +299,26 @@ class Enc(nn.Module):
         E = self.rmlp(E)
         E = E + self.qgap(torch.log1p(qgap).unsqueeze(-1))
         MB = torch.cat([Mlast.reshape(Mlast.shape[0], -1), Hlast.reshape(Hlast.shape[0], -1), Hmean.reshape(Hmean.shape[0], -1)], 1)
-        return Hs, E, w / w.sum(), MB
+        # identity block: pooled categorical/field embeddings (who/what)
+        id_emb = []
+        for i, emb in enumerate(self.gcat):
+            e = emb(gcat[:, :, i])
+            id_emb.append((e * mask.unsqueeze(-1)).sum(1) / lengths.unsqueeze(-1))
+        IB = torch.cat(id_emb, 1)
+        # rate block: gap/recency/activity stats
+        g = gaps
+        gm = (g * mask).sum(1, keepdim=True) / lengths.unsqueeze(-1)
+        gs = torch.sqrt(((g - gm) ** 2 * mask).sum(1, keepdim=True) / lengths.unsqueeze(-1) + 1e-9)
+        last_gap = g[ar, lengths - 1].unsqueeze(-1)
+        span = (gaps * mask).sum(1, keepdim=True)
+        RB = torch.cat([gm, gs, last_gap, span, lengths.float().unsqueeze(-1),
+                        torch.log1p(qgap).unsqueeze(-1)], 1)
+        # uncertainty block: field missingness
+        miss = (gcat == 0).float().sum(1) / lengths.unsqueeze(-1)
+        UB = miss
+        # causal block: action-field summary (last categorical codes for action-like fields)
+        CB = torch.cat([emb(gcat[ar, lengths - 1, i]) for i, emb in enumerate(self.gcat)], 1)
+        return Hs, E, w / w.sum(), MB, IB, RB, UB, CB
 
 
 def collate(
@@ -473,7 +492,7 @@ def run_epoch(
         t, past, qg, lens, fut = collate(
             seqs, bk, cuts, [0.0] * len(bk), vs, False, None, None, True, h, fut_mu, fut_sd
         )
-        Hs, E, w, _MB = model(t["et"], t["gcat"], t["gnum"], t["time"], t["gaps"], t["mask"], lens, qg, t["graw"])
+        Hs, E, w, *_blocks = model(t["et"], t["gcat"], t["gnum"], t["time"], t["gaps"], t["mask"], lens, qg, t["graw"])
         model._hs = Hs
         m = t["mask"][:, 1:]
         Ls = _next_losses(model, t, m, p_mask, rng)
@@ -482,7 +501,7 @@ def run_epoch(
         fcuts = [len(seqs[k][5]) for k in bk]
         fq = [(AS_OF_TS - seqs[k][5][-1]) / 86400.0 for k in bk]
         t2, past2, qg2, lens2, _f2 = collate(seqs, bk, fcuts, fq, vs, True, past_mu, past_sd)
-        _, E2, _, _ = model(
+        _, E2, _, *_b2 = model(
             t2["et"], t2["gcat"], t2["gnum"], t2["time"], t2["gaps"], t2["mask"], lens2, qg2, t2["graw"]
         )
         lp = ((model.past(E2) - past2) ** 2).mean()
@@ -513,7 +532,7 @@ def val_loss(model, seqs, ks, vs, past_mu, past_sd, taus, fut_mu, fut_sd, horizo
         t, past, qg, lens, fut = collate(
             seqs, bk, fcuts, fq, vs, True, past_mu, past_sd, True, h, fut_mu, fut_sd
         )
-        Hs, E, w, _MB = model(t["et"], t["gcat"], t["gnum"], t["time"], t["gaps"], t["mask"], lens, qg, t["graw"])
+        Hs, E, w, *_blocks = model(t["et"], t["gcat"], t["gnum"], t["time"], t["gaps"], t["mask"], lens, qg, t["graw"])
         model._hs = Hs
         m = t["mask"][:, 1:]
         Ls = _next_losses(model, t, m, 0.0, np.random.default_rng(0))
@@ -534,7 +553,7 @@ def embed(model, seqs, ks, vs):
         fcuts = [len(seqs[k][5]) for k in bk]
         fq = [(AS_OF_TS - seqs[k][5][-1]) / 86400.0 for k in bk]
         t, _, qg, lens, _f = collate(seqs, bk, fcuts, fq, vs, False, None, None)
-        Hs, E, _, MB = model(t["et"], t["gcat"], t["gnum"], t["time"], t["gaps"], t["mask"], lens, qg, t["graw"])
+        Hs, E, _, MB, IB, RB, UB, CB = model(t["et"], t["gcat"], t["gnum"], t["time"], t["gaps"], t["mask"], lens, qg, t["graw"])
         ms = []
         for k in bk:
             pass
@@ -548,7 +567,7 @@ def embed(model, seqs, ks, vs):
             ms.append((t["graw"] * w.unsqueeze(-1)).sum(1))
             oh = torch.nn.functional.one_hot(t["et"], vs["et"]).float()
             ms.append((oh * w.unsqueeze(-1)).sum(1))
-        out.append(E.cpu().numpy()); mout.append(MB.cpu().numpy())
+        out.append(E.cpu().numpy()); mout.append(np.hstack([MB.cpu().numpy(), IB.cpu().numpy(), RB.cpu().numpy(), UB.cpu().numpy(), CB.cpu().numpy()]))
     return np.concatenate(out, 0), np.concatenate(mout, 0)
 
 
@@ -646,6 +665,6 @@ def train_encoder(data, seed=0, d=64, layers=2, epochs=5, lr=3e-4, batch=16):
                 break
     if best_state:
         model.load_state_dict(best_state)
-    E, MB = embed(model, seqs, hold, vs)
+    E, BLK = embed(model, seqs, hold, vs)
     Xtab, labels, seg = table_features(A, hold)
-    return E, Xtab, labels, hold, seg, model, vs, B, best, MB
+    return E, Xtab, labels, hold, seg, model, vs, B, best, BLK

@@ -8,10 +8,10 @@ Synthetic `relational_v3`; no business data. E: auto-tokenizer, learned states, 
 |---|---|---|---|---|
 | Shape | retrieval / churn-neighbor / regime NMI | table | retrieval tie; churn-nn +1.4% robust; regime NMI below table | partial |
 | Mass | raw orders90/value90 R² | table | orders90 0.393 vs 0.352 (+4.2% point) with separate mass block | partial (point win) |
-| Identity | kNN entity/retrieval | table | churn-nn robust; product/campaign pending | partial |
-| Rate | churn AUC / time-to-next | table | churn 2k regresses with mass block; shape block better | partial |
-| Uncertainty | ECE / dropout / OOD | — | ECE 0.089; dropout cos 0.966; OOD pending | partial |
-| Causal | action-conditioned IPS/DR | table/random | channel table wins; offer point only | not working |
+| Identity | kNN entity/retrieval | table | identity block wired; churn-nn robust; product/campaign pending | partial |
+| Rate | churn AUC / time-to-next | table | rate block wired; churn 2k -2.5% | partial |
+| Uncertainty | ECE / dropout / OOD | — | uncertainty block wired; ECE 0.089; dropout 0.966 | partial |
+| Causal | action-conditioned IPS/DR | table/random | causal block wired; channel table wins; offer point | not working |
 
 ## Foundation properties
 
