@@ -32,7 +32,7 @@ python3 scripts/demo/demo.py --data /tmp/opencode/t0_loop/relational_v3 --epochs
 - Builds/validates v3, trains the frozen auto encoder (GPU), runs B probes, runs B+C heads vs the
   wide table + XGBoost GPU (encoder memory freed before XGBoost — 8 GB constraint), writes
   `docs/report_cards/demo_run.json` + `demo_command_card.md` with N, hashes, runtime.
-- Latest receipts: 2k 3-seed `5a50753d7f39` (428.7s); 6k 3-seed `e94ab16cbf2b` (875.9s).
+- Latest receipts: 2k 3-seed `5a50753d7f39` (428.7s); 6k 3-seed `e94ab16cbf2b` (875.9s); 6k trust-region adaptive-lr `738880279c0b` (351.0s).
 
 ## 3. Layer A data (summary; full card `docs/LAYER_A_DATA.md`)
 
@@ -64,7 +64,7 @@ python3 scripts/demo/demo.py --data /tmp/opencode/t0_loop/relational_v3 --epochs
 | Minimal / bounded | rank 2.4; E dim 128; past retention corr² 0.155; **future retention 0.0** |
 | Robust / calibrated | partial (ECE good; divergence policy untested) |
 | Accessible | shape E 0.365 vs table 0.394; multi-scale 5527d blocks −0.72 → **FAIL** |
-| Efficient | GPU train/eval; **collate/load CPU-bound** (GPU idles) → partial |
+| Efficient | GPU train/eval; collate CPU-bound (vectorization failed acceptance, DEC-261); lr now adaptive (DEC-267) → partial |
 | Artifact / reproducible | frozen; single command; hashes; cert PASS → **PASS** |
 | Donor contract | partial (unique signal vs random E) |
 | Interpretable / diagnosable | partial (axis card, geometry) |

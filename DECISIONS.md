@@ -5281,3 +5281,16 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   weight-decay derived from the same scale, remove clip ceiling. Rejected: keep probed lr (tuned
   to judged metric = dishonest); keep clip (fakes stability).
 - Acceptance: 6k 1-seed value90 margin >= 0 (vs table) and no divergence; receipt.
+
+## DEC-267 — Trust-region adaptive lr PASSES acceptance
+
+- Mechanism (per repo doctrine cfm_training.py: seed a documented base rate; adapt from measured
+  val response): seed 1e-3 bound, one warm epoch at half step, expand 1.5x on held-out improvement,
+  shrink 0.5x on regression, bounds [1e-5, 1e-2] disclosed. Cosine schedule (hand-shaped) removed.
+- 6k 1-seed receipt 738880279c0b: trajectory (0.0005, 0.0015, 0.00225, 0.001125, 0.000563);
+  early stop at ep 5 (best val 37.22 @ ep 2). value90 +0.0002 (>= 0 gate), orders -0.0221,
+  churn +0.0064, identity channel 0.448 vs 0.251, shuffle drop -0.2316.
+- Verdict: adaptive-lr axis achieved without losing the probed run's supervised level; the shipped
+  config is no longer tuned to the judged metric.
+- Remaining audit violations queued as own one-axis decisions: weight_decay 1e-4 literal, clip
+  ceiling 1.0 (DEC-039 doctrine), d literal (derive_dim unused).
