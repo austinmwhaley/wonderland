@@ -5267,3 +5267,17 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - Diagnosis: not undertrained-by-wallclock; the optimizer stalls. Epochs is not the binding axis.
 - Rejected follow-ups on the same axis (more epochs, patience changes): the loss curve is flat-noisy,
   not slow-but-steady.
+
+## DEC-265 — Principle audit of the demo path (literals vs adaptive)
+
+- VIOLATIONS found: lr (literal, probed on value90 = tuned to judged metric), d (literal 64/128
+  while derive_dim unused), weight_decay 1e-4 (literal), clip_grad_norm 1.0 (rescue ceiling,
+  DEC-039 doctrine), epochs=5 (count stop vs convergence stop).
+- PASS: tokenizer (FFT periods, sqrt(n) hash buckets, coverage 0.99, miss-rate p_mask), taus and
+  horizons (gap/span quantiles), derive_batch/_scan reuse, split fractions as disclosed bounds.
+- Baseline disclosure: XGBoost 300/6/0.06 are the traditional baseline's own standard defaults
+  (outside our adaptive system).
+- Decision (DEC-266): one-axis fix = adaptive optimizer config: lr from derive_lr(input_power),
+  weight-decay derived from the same scale, remove clip ceiling. Rejected: keep probed lr (tuned
+  to judged metric = dishonest); keep clip (fakes stability).
+- Acceptance: 6k 1-seed value90 margin >= 0 (vs table) and no divergence; receipt.
