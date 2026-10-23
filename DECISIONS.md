@@ -5147,3 +5147,10 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 
 - orders90 +9.1% (vs +9.3% raw/event), retrieval +2.9% (vs +4.6%), churn-nn +2.5% same.
 - Reverted to the raw/event multi-scale block. Next: representation capacity / sequence-aware consumer.
+
+## DEC-248 — Representation capacity d128/2: orders +10.7% robust; churn regresses
+
+- 2k: orders90 +10.7% (CI [+0.051,+0.170]); retrieval +10.4% (CI crosses); churn-nn +3.0% (robust);
+  churn90 -3.1%.
+- Capacity is now selected for accessibility/downstream, not only self-supervised val.
+- Next: 6k at d128/2; churn-specific capacity/block; per-stream final selection.
