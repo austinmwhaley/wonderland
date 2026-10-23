@@ -606,9 +606,21 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     global AS_OF_TS, BATCH
     B, A, keys, seqs, vs, et_v, catspec, num, taus, p_mask, as_of_ts, periods, horizons = load_data(data)
     AS_OF_TS = as_of_ts
+    if d is None:
+        from collections import Counter as _C
+        n_seqs = len(keys)
+        total = sum(len(seqs[k][5]) for k in keys)
+        _cnt = _C()
+        for k in keys:
+            _cnt.update(seqs[k][0].tolist())
+        _tot = sum(_cnt.values())
+        _H = -sum((c / _tot) * math.log2(c / _tot) for c in _cnt.values())
+        d, _dn = derive_dim(n_seqs, total, [vs["et"]] + list(vs["gcat"]), _H)
+        print(f"derived dim {d} ({_dn['dim']})", flush=True)
     if not batch:
         seq_len = int(np.median([len(seqs[k][5]) for k in keys]))
         batch = derive_batch(len(keys), seq_len)[0]
+        batch = max(8, int(batch * (128 / d) ** 2))  # capacity-squared token bound (disclosed)
     BATCH = batch
     rng = np.random.default_rng(seed)
     perm = rng.permutation(len(keys))
@@ -634,7 +646,6 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
         _H = -sum((c / _tot) * math.log2(c / _tot) for c in _cnt.values())
         d, _dn = derive_dim(n_seqs, total, [vs["et"]] + list(vs["gcat"]), _H)
         print(f"derived dim {d} ({_dn['dim']})", flush=True)
-        batch = max(8, int(batch * (128 / d) ** 2))  # capacity-squared batch bound (disclosed; activations ~B*d, weights ~d^2)
     _, P, _, _, F = collate(
         seqs, pkeys, fcuts, fq, vs, True, None, None, True, float(np.median(taus)), None, None
     )
