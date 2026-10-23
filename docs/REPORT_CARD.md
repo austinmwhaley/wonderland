@@ -8,10 +8,11 @@
 - **Data:** `relational_v3` synthetic reference (2k/6k) + `relational_v3_schema` variant. Layer A
   generator: `rabbit_hole/generators/relational_reference.py`; data card `docs/LAYER_A_DATA.md`;
   certificate `docs/report_cards/layer_a_certificate_v3.json` (PASS).
-- **Verdict (current):** objective **NOT yet met** — the binding axis is the **supervised margin**:
-  all three 6k targets' CIs cross zero (tie-zone). E wins robustly on retrieval, churn-neighbor,
-  identity channel, and order/path sensitivity. The historical +4.4% value came from static summary
-  blocks that violate the no-hand-summary contract and were removed. Every table win disclosed.
+- **Verdict (current):** objective **supported at 6k** — value90 **+0.0677 CI [+0.0541, +0.0813]** and
+  orders90 **+0.0655 CI [+0.0386, +0.0924]** exclude zero, all seeds positive, E-only, no hand summary.
+  Churn ties; RL/causal remain open; 2k revalidation on the new config queued. The claim comes from the
+  fixed future objective (DEC-279/280): adjacent, per-horizon, correctly normalized — with E carrying
+  94% of the full-history oracle's future-signal accessibility (Ridge 0.522 vs 0.558).
 
 ## 1. Objective (frozen)
 
@@ -29,7 +30,7 @@ python3 scripts/demo/demo.py --data /tmp/opencode/t0_loop/relational_6k_v3 --epo
 - cudf-polars GPU data prep (artifact-cached, byte-identical) → deterministic encoder training
   (trust-region lr, no clip, MAD early-stop) → B probes → B+C vs XGBoost GPU (encoder memory freed
   first — 8 GB constraint) → `docs/report_cards/demo_run.json` + `demo_command_receipt.md`.
-- Latest receipt: **`a969f1b0f190`** — 6k, 3 seeds, 12-epoch budget, **662.3s**, hash recorded.
+- Latest receipt: **6k 3-seed DEC-280 config** (see `demo_run.json` hash; ~870s). Prior: `a969f1b0f190` (662.3s).
 
 ## 3. Layer A data (summary; full card `docs/LAYER_A_DATA.md`)
 
@@ -42,7 +43,7 @@ python3 scripts/demo/demo.py --data /tmp/opencode/t0_loop/relational_6k_v3 --epo
 | # | Axis | Metric | Frozen E | Table / baseline | Status |
 |---|---|---|---|---|---|
 | 1 | Shape | retrieval / churn-nn | **0.461 / 0.981** | — | **working** |
-| 2 | Mass | supervised vs XGBoost GPU | 6k 3-seed: +0.0067 / −0.0108 / −0.0008, all CIs cross zero | table | **tie-zone (binding gap)** |
+| 2 | Mass | supervised vs XGBoost GPU | value **+0.0677** [+0.0541,+0.0813]; orders **+0.0655** [+0.0386,+0.0924]; churn +0.0033 tie | table | **WORKING (value+orders robust)** |
 | 3 | Identity | learned `IB` kNN channel/category | channel **0.448** (> 0.251); category 0.162 (< 0.265) | table | **partial** (channel won; category loses) |
 | 4 | Rate | churn AUC | 0.949 | 0.952 | tie |
 | 5 | Uncertainty | ECE / OOD | ECE 0.048; variant churn 0.957 | — | **good** |
@@ -58,7 +59,7 @@ python3 scripts/demo/demo.py --data /tmp/opencode/t0_loop/relational_6k_v3 --epo
 | Schema-agnostic / per-stream | **partial** (auto fields; variant rerun queued) |
 | Universal / transferable | partial (no held-out battery) |
 | Lawful / compositional | field perm 1.2e−7; scan 8.9e−16; mass additivity 0.0 → **PASS** |
-| Minimal / bounded | rank 2.4; E dim 128 (disclosed bound; derived 256 diverged, DEC-271); past retention corr² 0.155; **future retention 0.0** |
+| Minimal / bounded | rank 2.4; E dim 128 (disclosed bound; derived 256 diverged, DEC-271); past corr² 0.53; future (365d) ridge-on-E **0.522** vs oracle 0.558; tau-scale horizons = noise floor (honest) |
 | Robust / calibrated | **partial** (ECE good; deterministic kernels PASS; NaN hard-abort wired, untested) |
 | Accessible | shape 0.365 vs table 0.394; multi-scale 5527d blocks −0.72 → **FAIL** |
 | Efficient | load_data GPU byte-identical 4.3× (DEC-277); collate per-batch Python remains → **partial** |
@@ -84,9 +85,9 @@ python3 scripts/demo/demo.py --data /tmp/opencode/t0_loop/relational_6k_v3 --epo
 
 | Target | Table | Frozen E | Margin (95% CI) |
 |---|---|---|---|
-| value90 | 0.3802 | 0.3869 | +0.0067 [−0.0335, +0.0469] crosses |
-| orders90 | 0.4547 | 0.4439 | −0.0108 [−0.0308, +0.0092] crosses |
-| churn90 | 0.9305 | 0.9297 | −0.0008 [−0.0129, +0.0113] crosses |
+| value90 | 0.3802 | **0.4479** | **+0.0677 [+0.0541, +0.0813] EXCLUDES 0** |
+| orders90 | 0.4547 | **0.5202** | **+0.0655 [+0.0386, +0.0924] EXCLUDES 0** |
+| churn90 | 0.9305 | 0.9338 | +0.0033 [−0.0071, +0.0137] tie |
 
 ### Supervised (2k, 3 seeds; receipt `5a50753d7f39`)
 
@@ -129,7 +130,7 @@ python3 scripts/demo/demo.py --data /tmp/opencode/t0_loop/relational_6k_v3 --epo
 2. **RL:** channel arm — table wins.
 3. **Anomaly AUC:** table wins (0.635 vs 0.504).
 4. **Accessibility:** multi-scale blocks (5527-d) not linearly accessible (Ridge −0.72).
-5. **Retention:** future objective ineffective (future retention 0.0); past corr² 0.155.
+5. **Retention (resolved, DEC-280):** the gapped future target was unlearnable-by-anyone (oracle −0.13); fixed to adjacent per-horizon targets; tau-scale (~1d) remains noise floor for everyone (honest).
 6. **Identity category:** learned head loses to table (0.162 vs 0.265).
 7. **Efficiency:** `collate` is still per-batch Python (the DEC-260 vectorization failed both gates
    and was reverted; retry now has a proven recipe: integers through the GPU, floats divided on CPU).
@@ -176,7 +177,7 @@ python3 scripts/demo/demo.py --data /tmp/opencode/t0_loop/relational_6k_v3 --epo
    c. If (a)+(b) fail: **capacity-aware stability coupling** to un-block d=256 (DEC-271 open item).
 2. **Collate vectorization retry** (efficiency axis) using the DEC-277 recipe; acceptance:
    bit-identical outputs + ≥3× per-batch time + demo receipt unchanged.
-3. **Schema-variant rerun** (universal axis): demo on `relational_v3_schema` → universality receipt.
+3. **2k revalidation + schema-variant rerun** (universal axis): the new config's receipts are 6k-only.
 4. **RL/causal 3-seed CIs** at the current config (decision-sufficiency evidence).
 5. **Migration** (per operator direction): `auto_encoder` → `looking_glass`, `stream_loader` →
    `rabbit_hole`, dataset generation owned by a `rabbit_hole` command; `scripts/demo` shrinks to the
