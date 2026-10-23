@@ -5106,3 +5106,12 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - Only churn-neighbor has a CI lower bound > 0. The other selected heads are point-estimate wins, not
   robust exceeds. RL CI is not yet implemented (placeholder removed from claims).
 - Next: either increase power/N (6k 3-seed CIs) or re-select the demo heads to robust wins; no overclaim.
+
+## DEC-242 — Multi-scale frozen E: orders +5.7%, CI marginal; block-aware next
+
+- Frozen E now includes multi-scale decay-weighted SSM states at data-derived horizons.
+- 2k: orders90 0.408 vs table 0.352 (+5.7%, CI [-0.007,+0.126]); churn90 0.957 vs 0.964;
+  retrieval 0.260 vs 0.373 (regressed); churn-nn 0.958 vs 0.950.
+- Diagnosis: multi-scale block adds supervised sequence signal but harms high-dim unsupervised distance.
+- Next: block-aware E (pooled block for unsup/retrieval; multi-scale block for supervised); 6k/3-seed
+  to tighten the CI. Acceptance: CI lower > 0 and >=3% on the selected supervised head.

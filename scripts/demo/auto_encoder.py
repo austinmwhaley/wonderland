@@ -194,12 +194,13 @@ def load_data(data):
         seqs[k] = (et, gcat, gnum, time, gaps, tss, graw)
     gaps_all = np.array(gaps_all) if gaps_all else np.array([1.0])
     spans = np.array([(seqs[k][5][-1] - seqs[k][5][0]) / 86400.0 for k in keys])
-    horizons = np.quantile(spans, [0.25, 0.5, 0.75, 0.95])
     e = max(2, min(4, len(peaks) + 1))
     taus = np.quantile(gaps_all, np.linspace(0.25, 0.95, e))
+    horizons = np.unique(np.concatenate([taus, np.quantile(spans, [0.25, 0.5, 0.75, 0.95])]))
     miss = [float((seqs[k][1][:, j] == 0).mean()) for k in keys for j in range(len(catspec))]
     p_mask = float(np.clip(np.mean(miss) if miss else 0.1, 0.05, 0.4))
     vs = dict(et=len(et_v), gcat=[g["size"] for g in catspec], gnum=len(num), time_dim=time_dim)
+    vs["horizons"] = horizons.tolist()
     vs["raw"] = len(rawspec)
     vs["mass_dim"] = len(rawspec) + len(et_v)
     vs["past_dim"] = len(et_v) + len(catspec) + 6 * len(rawspec) + 7
@@ -315,6 +316,7 @@ def collate(
     time = np.zeros((Bn, T, td), np.float32)
     gaps = np.zeros((Bn, T), np.float32)
     mask = np.zeros((Bn, T), np.float32)
+    tsarr = np.zeros((Bn, T), np.float64)
     past = np.zeros((Bn, vs["past_dim"]), np.float32)
     fut = np.zeros((Bn, vs["fut_dim"]), np.float32)
     qg = np.zeros(Bn, np.float32)
@@ -329,6 +331,7 @@ def collate(
         graw[b, :L] = grk[:L]
         time[b, :L] = tmk[:L]
         gaps[b, :L] = gpk[:L]
+        tsarr[b, :L] = tt[:L]
         mask[b, :L] = 1
         if want_past and L > 0:
             ev = etk[:L]
@@ -382,6 +385,7 @@ def collate(
         time=torch.tensor(time, device=DEV),
         gaps=torch.tensor(gaps, device=DEV),
         mask=torch.tensor(mask, device=DEV),
+        tss=torch.tensor(tsarr, device=DEV),
     )
     return (
         t,
@@ -517,8 +521,18 @@ def embed(model, seqs, ks, vs):
         fcuts = [len(seqs[k][5]) for k in bk]
         fq = [(AS_OF_TS - seqs[k][5][-1]) / 86400.0 for k in bk]
         t, _, qg, lens, _f = collate(seqs, bk, fcuts, fq, vs, False, None, None)
-        _, E, _ = model(t["et"], t["gcat"], t["gnum"], t["time"], t["gaps"], t["mask"], lens, qg, t["graw"])
-        out.append(E.cpu().numpy())
+        Hs, E, _ = model(t["et"], t["gcat"], t["gnum"], t["time"], t["gaps"], t["mask"], lens, qg, t["graw"])
+        ms = []
+        for k in bk:
+            pass
+        # multi-scale decay-weighted means of Hs at data-derived horizons
+        tss = t["tss"]; mask = t["mask"]; ar = torch.arange(Hs.shape[0], device=Hs.device)
+        last_t = tss[ar, lens - 1].unsqueeze(-1)
+        for hh in vs["horizons"]:
+            w = torch.exp(-(last_t - tss).clamp(min=0) / (hh * 86400.0)) * mask
+            w = w / (w.sum(1, keepdim=True) + 1e-9)
+            ms.append((Hs * w.unsqueeze(-1)).sum(1))
+        out.append(torch.cat([E] + ms, 1).cpu().numpy())
     return np.concatenate(out, 0)
 
 
