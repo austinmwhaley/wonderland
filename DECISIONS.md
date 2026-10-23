@@ -747,3 +747,14 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   tol changes (just fixed by MAD, DEC-275); more epochs (budget, not stop rule).
 - Acceptance (pre-registered): 6k 3-seed value90 margin 95% CI lower bound > 0; no divergence;
   runtime receipt. If CI lower bound <= 0 -> revert to 3, record, move to 1b (future objective).
+
+## DEC-278 receipt — patience 6 FAILED the frozen gate at n=5; reverted; split-variance diagnostic
+
+- 5-seed pooled value margins [+0.0140,+0.0273,+0.0065,-0.0618,+0.0017]: mean -0.0025,
+  CI [-0.0453,+0.0404]. The 3-seed positive reading was underpowered; with power the effect is gone.
+- DIAGNOSTIC (more important than the failure): the TABLE baseline swings 0.3677..0.4293 across
+  holdout splits - the margin CI is dominated by holdout-split difficulty, not encoder quality.
+  EVALUATION-DESIGN recommendation for the operator (folds are non-negotiable, needs approval):
+  fixed frozen evaluation holdout across seeds (train splits may vary; eval split frozen) would
+  separate split difficulty from encoder quality. NOT applied unilaterally.
+- Patience reverted to 3. Proceeding to 1b (future objective) per the pre-registered queue.
