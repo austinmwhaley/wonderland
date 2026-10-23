@@ -545,8 +545,12 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     past_sd[past_sd < 1e-6] = 1.0
     Fs = []
     for hv in vs["horizons"]:
-        _, _, _, _, Fk = collate(seqs, pkeys, fcuts, fq, vs, False, None, None, True, float(hv), None, None)
-        Fs.append(Fk.cpu().numpy())
+        rows = []
+        for fr in (0.3, 0.5, 0.7, 0.9):
+            mc = [max(8, int(fr * len(seqs[k][5]))) for k in pkeys]
+            _, _, _, _, Fk = collate(seqs, pkeys, mc, [0.0] * len(pkeys), vs, False, None, None, True, float(hv), None, None)
+            rows.append(Fk.cpu().numpy())
+        Fs.append(np.concatenate(rows))
     Fcat = np.stack(Fs)
     fut_mu, fut_sd = Fcat.mean(1), Fcat.std(1)
     fut_sd[fut_sd < 1e-6] = 1.0
