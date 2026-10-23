@@ -634,7 +634,7 @@ def train_encoder(data, seed=0, d=64, layers=2, epochs=5, lr=None, batch=0):
     torch.manual_seed(seed)
     model = Enc(vs, d, len(taus), layers, taus).to(DEV)
     lr = lr if lr is not None else 1e-3  # documented seed bound; trust-region adapts below
-    opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
+    opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=0.0)
     log_s = nn.Parameter(torch.zeros(1 + len(vs["gcat"]) + vs["gnum"] + 1 + 1 + 1 + len(vs["id_dims"]) + 1, device=DEV))
     opt.add_param_group({"params": [log_s]})
     tr_log = []  # trust-region lr trajectory (receipt)

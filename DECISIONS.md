@@ -5294,3 +5294,12 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   config is no longer tuned to the judged metric.
 - Remaining audit violations queued as own one-axis decisions: weight_decay 1e-4 literal, clip
   ceiling 1.0 (DEC-039 doctrine), d literal (derive_dim unused).
+
+## DEC-268 — weight_decay: remove the 1e-4 literal (regularization via convergence control)
+
+- Principle: regularization is not a hand literal; the loop already regularizes via early stopping
+  and best-state snapshot. wd=0.0 = no hand regularizer; if overfitting appears, a derived bound
+  (e.g., ~1/n_events) is the fallback, recorded when it fires.
+- Rejected: wd ~ lr coupling (couples two axes); wd from param count (unvalidated formula = literal
+  in disguise).
+- Acceptance: 6k 1-seed value90 margin >= 0, no divergence, val trajectory recorded.
