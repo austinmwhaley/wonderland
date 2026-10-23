@@ -61,3 +61,4 @@ logs/
 .idea/
 .vscode/
 *.swp
+.venv-cudf/

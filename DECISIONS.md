@@ -707,3 +707,21 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     E, BLK = embed(model, seqs, hold, vs)
     Xtab, labels, seg = table_features(A, hold)
     return E, Xtab, labels, hold, seg, model, vs, B, best, BLK
+
+## DEC-277 — CUDA-X data path: single code path, GPU engine, artifact cache (GATE PASS)
+
+- Structure: load_data extracted to scripts/demo/stream_loader.py (polars/numpy only, no torch -
+  importable in both envs). GPU engine = cudf-polars-cu12 26.10.2 in repo-local .venv-cudf
+  (uv-managed; lockfile requirements-cudf.lock committed; polars 1.44.2 matches main env).
+  auto_encoder.load_data = wrapper: fresh artifact -> load; else subprocess gpu_prep.py in the
+  venv (process boundary per doctrine); fallback = CPU in-process. Artifact revision hash =
+  data + loader code (stale artifacts cannot pass).
+- Measured: load_data 2k 19.2s -> 4.7s; 6k 56.7s -> 13.2s (4.3x), single prep then ~1s artifact loads.
+- Byte-identity gate: PASS on 2k AND 6k - scalars (vs/taus/periods/horizons/p_mask/catspec/et_v)
+  and every per-customer array equal. Fixes required to get there (all recorded):
+  (a) DST: replace_time_zone ambiguous=earliest (fold-0 parity) + non-existent times forward-filled
+  (mktime parity); (b) sub-second timestamps: epoch("s") truncates - carried naive_us + offset as
+  exact integers, single numpy /1e6 (CPython total_seconds composition parity);
+  (c) GPU float division is ~1 ULP off Python (reciprocal-multiply) -> ALL final float conversions
+  (gaps, ts deltas, tss) done in numpy on integers shipped through the GPU collect.
+- Lesson: integers cross the GPU boundary exactly; floats do not. Divide on the CPU.

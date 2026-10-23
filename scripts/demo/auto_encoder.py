@@ -5,7 +5,7 @@ import datetime
 import json
 import math
 import sys
-import zlib
+import hashlib
 from pathlib import Path
 
 import os as _os
@@ -42,184 +42,82 @@ LABELS = (
 )
 
 
-def _vocab(vals):
-    u = sorted({str(v) for v in vals if v is not None and str(v) != ""})
-    m = {v: i + 1 for i, v in enumerate(u)}
-    m[""] = 0
-    return m
+from stream_loader import load_data as _stream_load, _prep_rev  # noqa: E402
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+_VENV_CANDIDATES = (
+    _os.environ.get("WONDERLAND_CUDF_PY", ""),
+    str(Path(__file__).resolve().parents[1] / ".venv-cudf" / "bin" / "python"),
+    "/tmp/opencode/cudf_venv_uv/bin/python",
+)
 
 
-def _is_ts(vals):
-    if not vals or not all(isinstance(v, str) for v in vals[:200]):
-        return False
-    for v in vals[:200]:
-        try:
-            datetime.datetime.fromisoformat(v)
-        except Exception:
-            return False
-    return True
+def _venv_python():
+    for c in _VENV_CANDIDATES:
+        if c and Path(c).exists():
+            return c
+    return None
+
+
+def _artifact(data):
+    return Path(data) / f"prep_{_prep_rev(data)}.npz"
+
+
+def _load_artifact(art, data):
+    z = np.load(art, allow_pickle=False)
+    spec = json.loads(bytes(z["spec"]).decode())
+    keys = spec["keys"]
+    lens = z["lens"]
+    ends = np.cumsum(lens)
+    starts = ends - lens
+    big = {k: z[k] for k in ("et", "gcat", "gnum", "time", "gaps", "tss", "graw")}
+    seqs = {
+        k: (big["et"][s:e], big["gcat"][s:e], big["gnum"][s:e], big["time"][s:e], big["gaps"][s:e], big["tss"][s:e], big["graw"][s:e])
+        for k, s, e in zip(keys, starts, ends)
+    }
+    A = pl.read_parquet(Path(data) / "path_a/path_a_wide_table.parquet")
+    z.close()
+    return (
+        None,
+        A,
+        keys,
+        seqs,
+        spec["vs"],
+        spec["et_v"],
+        spec["catspec"],
+        [tuple(x) for x in spec["num"]],
+        np.array(spec["taus"]),
+        spec["p_mask"],
+        spec["as_of_ts"],
+        spec["periods"],
+        np.array(spec["horizons"]),
+    )
 
 
 def load_data(data):
-    d = Path(data)
-    manifest = json.loads((d / "manifest.json").read_text())
-    as_of = manifest["as_of"]
-    as_of_ts = datetime.datetime.fromisoformat(as_of).timestamp()
-    B = pl.read_parquet(d / "path_b/path_b_customer_event_stream.parquet")
-    A = pl.read_parquet(d / "path_a/path_a_wide_table.parquet")
-    B = (
-        B.with_columns(pl.col("event_ts").str.to_datetime().alias("ts"))
-        .filter(pl.col("ts") <= pl.lit(as_of).str.to_datetime())
-        .sort(["customer_key", "ts"])
-    )
-    keys = sorted(B["customer_key"].unique().to_list())
-    rows = B.select(["customer_key", "ts", "event_type", "event_attributes"]).to_dicts()
-    et_v = _vocab({r["event_type"] for r in rows})
-    attrs = [json.loads(r["event_attributes"]) for r in rows]
-    fields = sorted(set().union(*[set(a) for a in attrs]) - {"target_key"})
-    n = len(rows)
-    cat, num, cat_int = [], [], []
-    for f in fields:
-        vals = [a.get(f) for a in attrs if a.get(f) is not None and str(a.get(f)) != ""]
-        if _is_ts(vals):
-            num.append((f, "ts"))
-            continue
-        if vals and all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in vals):
-            u = len(set(map(str, vals)))
-            if isinstance(vals[0], int) and u <= 2 * int(math.sqrt(n)):
-                cat.append(f)
-                cat_int.append(f)
-            else:
-                num.append((f, "num"))
-        else:
-            cat.append(f)
-    rawspec = list(num) + [(f, 'int') for f in cat_int]
-    catspec = []
-    for f in cat:
-        cnt = collections.Counter(
-            str(a.get(f)) for a in attrs if a.get(f) is not None and str(a.get(f)) != ""
+    eng = _os.environ.get("WONDERLAND_LOAD_ENGINE", "auto")
+    art = _artifact(data)
+    if eng != "cpu" and art.exists():
+        z = np.load(art, allow_pickle=False)
+        ok = json.loads(bytes(z["spec"]).decode())["rev"] == _prep_rev(data)
+        z.close()
+        if ok:
+            return _load_artifact(art, data)
+    vp = None if eng == "cpu" else _venv_python()
+    if vp is not None:
+        import subprocess
+
+        r = subprocess.run(
+            [vp, str(Path(__file__).resolve().parent / "gpu_prep.py"), data, str(art)],
+            capture_output=True,
+            text=True,
         )
-        if len(cnt) > 2 * int(math.sqrt(n)):
-            buckets = 1 << max(4, int(math.ceil(math.log2(2 * math.sqrt(n)))))
-            catspec.append(dict(field=f, mode="hash", buckets=buckets, size=buckets + 1))
-        else:
-            m = {}
-            total = sum(cnt.values())
-            acc = 0
-            i = 1
-            for v, c in cnt.most_common():
-                if total and acc / total >= 0.99:
-                    break
-                m[v] = i
-                i += 1
-                acc += c
-            catspec.append(dict(field=f, mode="vocab", map=m, size=i))
-    allt = np.array([r["ts"].timestamp() for r in rows])
-    h0 = allt.min()
-    hn = int(np.ceil((allt.max() - h0) / 3600.0)) + 1
-    counts, _ = np.histogram(allt, bins=hn, range=(h0, h0 + hn * 3600.0))
-    spec = np.abs(np.fft.rfft(counts - counts.mean())) ** 2
-    freqs = np.fft.rfftfreq(hn, d=1.0)
-    spec[0] = 0
-    peaks = []
-    for i in range(1, len(spec) - 1):
-        if (
-            spec[i] > spec[i - 1]
-            and spec[i] >= spec[i + 1]
-            and spec[i] > np.percentile(spec[1:], 90)
-        ):
-            peaks.append((spec[i], freqs[i]))
-    peaks = sorted(peaks, reverse=True)[:2]
-    periods = [1.0 / f for _, f in peaks if f > 0]
-    time_dim = 1 + 2 * len(periods)
-    by = {}
-    for r, a in zip(rows, attrs):
-        by.setdefault(r["customer_key"], []).append((r["ts"], r["event_type"], a))
-    gaps_all = []
-    seqs = {}
-    for k, evs in by.items():
-        evs.sort(key=lambda x: x[0])
-        m = len(evs)
-        et = np.zeros(m, np.int64)
-        gcat = np.zeros((m, len(catspec)), np.int64)
-        gnum = np.zeros((m, len(num)), np.float32)
-        graw = np.zeros((m, len(rawspec)), np.float32)
-        gaps = np.zeros(m, np.float64)
-        tss = np.zeros(m, np.float64)
-        time = np.zeros((m, time_dim), np.float32)
-        prev = None
-        for i, (ts, etype, at) in enumerate(evs):
-            et[i] = et_v.get(etype, 0)
-            tss[i] = ts.timestamp()
-            gap = 0.0 if prev is None else max(0.0, (ts - prev).total_seconds() / 86400.0)
-            prev = ts
-            gaps[i] = gap
-            time[i, 0] = math.log1p(gap)
-            for j, P in enumerate(periods):
-                ph = 2 * math.pi * (tss[i] / 3600.0) / P
-                time[i, 1 + 2 * j] = math.sin(ph)
-                time[i, 2 + 2 * j] = math.cos(ph)
-            for j, g in enumerate(catspec):
-                s = "" if at.get(g["field"]) is None else str(at.get(g["field"]))
-                gcat[i, j] = (
-                    0
-                    if s == ""
-                    else (
-                        1 + zlib.crc32((g["field"] + "=" + s).encode()) % g["buckets"]
-                        if g["mode"] == "hash"
-                        else g["map"].get(s, 0)
-                    )
-                )
-            for j, (f, kind) in enumerate(num):
-                v = at.get(f)
-                x = 0.0
-                if v is not None and str(v) != "":
-                    if kind == "ts":
-                        try:
-                            x = (
-                                ts - datetime.datetime.fromisoformat(str(v))
-                            ).total_seconds() / 86400.0
-                        except Exception:
-                            x = 0.0
-                    else:
-                        try:
-                            x = float(v)
-                        except Exception:
-                            x = 0.0
-                gnum[i, j] = math.copysign(math.log1p(abs(x)), x) if x else 0.0
-            for j, (f, kind) in enumerate(rawspec):
-                v = at.get(f); x = 0.0
-                if v is not None and str(v) != '':
-                    if kind == 'ts':
-                        try: x = (ts - datetime.datetime.fromisoformat(str(v))).total_seconds() / 86400.0
-                        except Exception: x = 0.0
-                    else:
-                        try: x = float(v)
-                        except Exception: x = 0.0
-                graw[i, j] = x
-            if gap > 0:
-                gaps_all.append(gap)
-        seqs[k] = (et, gcat, gnum, time, gaps, tss, graw)
-    gaps_all = np.array(gaps_all) if gaps_all else np.array([1.0])
-    spans = np.array([(seqs[k][5][-1] - seqs[k][5][0]) / 86400.0 for k in keys])
-    e = max(2, min(4, len(peaks) + 1))
-    taus = np.quantile(gaps_all, np.linspace(0.25, 0.95, e))
-    horizons = np.unique(np.concatenate([taus, np.quantile(spans, [0.25, 0.5, 0.75, 0.95])]))
-    miss = [float((seqs[k][1][:, j] == 0).mean()) for k in keys for j in range(len(catspec))]
-    p_mask = float(np.clip(np.mean(miss) if miss else 0.1, 0.05, 0.4))
-    vs = dict(et=len(et_v), gcat=[g["size"] for g in catspec], gnum=len(num), time_dim=time_dim)
-    vs["horizons"] = horizons.tolist()
-    id_names = {"segment", "loyalty_tier", "region", "acquisition_channel"}
-    rel_names = {"product_id", "campaign_id"}
-    vs["id_idx"] = [i for i, g in enumerate(catspec) if g["field"] in id_names]
-    vs["id_dims"] = [catspec[i]["size"] for i in vs["id_idx"]]
-    vs["rel_idx"] = [i for i, g in enumerate(catspec) if g["field"] in rel_names]
-    vs["unc_dim"] = len(catspec) + len(num)
-    vs["raw"] = len(rawspec)
-    vs["mass_dim"] = len(rawspec) + len(et_v)
-    vs["past_dim"] = len(et_v) + len(catspec) + 6 * len(rawspec) + 7
-    vs["fut_dim"] = len(et_v) + len(catspec) + 2 * len(rawspec)
-    return B, A, keys, seqs, vs, et_v, catspec, num, taus, p_mask, as_of_ts, periods, horizons
+        if r.returncode == 0 and art.exists():
+            print((r.stdout.strip().splitlines() or [""])[-1], flush=True)
+            return _load_artifact(art, data)
+        print(f"gpu prep failed: {r.stderr.strip()[-300:]}; CPU in-process fallback", flush=True)
+    return _stream_load(data, engine=None)
 
 
 class GatedSSM(nn.Module):
