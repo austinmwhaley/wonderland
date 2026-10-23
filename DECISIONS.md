@@ -5182,3 +5182,10 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - Reused pre-demo `derive_batch`/`embed_batch_size`; derived batch replaces fixed 16; `_scan` compiled dispatcher.
 - 6k quick (1 seed/5): value90 0.383 vs 0.348; orders90 0.456 vs 0.425; churn90 0.931 vs 0.914 — E > table on all three.
 - Fast 6k now completes in-loop; full 3-seed remains background/report.
+
+## DEC-253 — GPU evaluation + order/relational probes
+
+- Evaluation moved to XGBoost GPU (`device=cuda`) after freeing the encoder; no pandas (Polars/numpy).
+- Order/path: realized — event shuffle drops E value −0.091, orders −0.078, churn −0.030; table unchanged.
+- Relational: order_id event purity 0.005 vs 0.0005 (weak/above chance).
+- 2k 1-seed/5 vs XGBoost GPU table: value tie, orders +1.7%, churn −0.9% (stronger baseline than sklearn).

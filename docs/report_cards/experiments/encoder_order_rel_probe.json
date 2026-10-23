@@ -1,0 +1,14 @@
+{
+ "order_id_purity": 0.005,
+ "order_id_random": 0.0005,
+ "E_value90": 0.3789,
+ "T_value90": 0.3777,
+ "Eshuf_value90": 0.2878,
+ "E_orders90": 0.4091,
+ "T_orders90": 0.3924,
+ "Eshuf_orders90": 0.3309,
+ "E_churn90": 0.9512,
+ "T_churn90": 0.9602,
+ "Eshuf_churn90": 0.9214,
+ "eval": "xgboost_gpu"
+}
