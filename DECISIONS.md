@@ -5122,3 +5122,10 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - 2k: orders90 +4.8% (CI [-0.019,+0.119]); retrieval +3.1% (CI [-0.041,+0.050]);
   churn-nn +2.7% (CI [+0.003,+0.023], robust); churn90 tie.
 - Next: 6k/3-seed block-aware to tighten orders/retrieval CIs; RL CI still unimplemented.
+
+## DEC-244 — 6k block-aware: pure E now wins value90 (point)
+
+- 6k block-aware: value90 +1.6% (E 0.380 vs 0.3644), orders +0.4%, churn +2.0%.
+- 3-seed CI crosses 0 (df=2, conservative); 2k holdout margins: orders +4.8%, retrieval +3.1%,
+  churn-nn +2.7% (robust).
+- The multi-scale block closes the value90 gap without fixed windows; the CIs need holdout bootstrap.
