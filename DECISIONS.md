@@ -5136,3 +5136,9 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - 2k: orders90 0.4454 vs 0.3516 = +9.3% (CI [+0.038,+0.151], robust); churn-nn +2.5% (robust);
   retrieval +4.6% (CI crosses); churn90 table wins.
 - This is the several-percent result: same GBM head, no table in E, no fixed windows.
+
+## DEC-246 — RL CI: channel table wins; offer point win, CI crosses zero
+
+- channel: E IPS 480 vs table 518, CI crosses 0.
+- offer: E IPS 625 vs table 422, CI [-16,+487] crosses 0.
+- RL is not a robust win; do not claim it. The robust demo claims are supervised value90/orders90 and churn-neighbor.

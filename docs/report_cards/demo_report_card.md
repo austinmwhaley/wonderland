@@ -28,12 +28,12 @@
 | value retrieval | 0.373 | 0.419 | +4.6% | [−0.041, +0.058] |
 | anomaly AUC | **0.635** | 0.504 | table wins | disclosed |
 
-### RL (offline IPS/DR, logged randomized actions; CI pending)
+### RL (offline IPS/DR; test bootstrap)
 
-| Arm | Table | Pure E | Random |
-|---|---|---|---|
-| channel | 518 | 711 | 511 |
-| offer | 422 | 488 | 511 |
+| Arm | Table | Pure E | Random | E−table CI | Result |
+|---|---|---|---|---|---|
+| channel | **518** | 480 | 511 | crosses 0 | table wins |
+| offer | 422 | 625 | 511 | [−16, +487] | E point win, not robust |
 
 ## Claim
 
