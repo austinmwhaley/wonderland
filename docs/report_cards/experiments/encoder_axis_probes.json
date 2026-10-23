@@ -1,0 +1,12 @@
+{
+ "identity": {
+  "E_IB_cat": 0.2165,
+  "E_IB_channel": 0.7273,
+  "table_cat": 0.26,
+  "table_channel": 0.2487
+ },
+ "rate": {
+  "E_churn_auc": 0.9336,
+  "table_churn_auc": 0.9643
+ }
+}
