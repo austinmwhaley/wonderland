@@ -1,17 +1,17 @@
 # B/C demo command output
 
-seeds=[3, 4] epochs=12 runtime=540.2s hash=d30a922af0e0
+seeds=[0, 1, 2] epochs=12 runtime=685.0s hash=8086995cad1d
 
 | target | table (XGBoost GPU) | frozen E | margin |
 |---|---|---|---|
-| value90 | 0.3677 | 0.3376 | -0.0300 |
-| orders90 | 0.4293 | 0.4187 | -0.0107 |
-| churn90 | 0.9417 | 0.9347 | -0.0070 |
+| value90 | 0.3802 | 0.3445 | -0.0357 |
+| orders90 | 0.4547 | 0.3977 | -0.0570 |
+| churn90 | 0.9305 | 0.9217 | -0.0088 |
 
 | probe | E | table |
 |---|---|---|
-| retrieval | 0.4089 | — |
-| churn-nn | 0.9733 | — |
-| identity channel | 0.4751 | 0.2532 |
-| identity category | 0.1744 | 0.2735 |
-| shuffle value drop | -0.2439 | 0 |
+| retrieval | 0.2673 | — |
+| churn-nn | 0.9217 | — |
+| identity channel | 0.2646 | 0.2513 |
+| identity category | 0.1671 | 0.2653 |
+| shuffle value drop | -0.1718 | 0 |
