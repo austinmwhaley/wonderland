@@ -12,7 +12,7 @@ identity/rate/uncertainty/causal/order/relational blocks; frozen.
 | 3 | Identity | kNN channel/category purity | **0.727** / 0.217 | 0.249 / 0.260 | strong (channel) / partial |
 | 4 | Rate | churn AUC | 0.931 | 0.926 | tie |
 | 5 | Uncertainty | ECE / dropout | **0.048** / 0.966 | — | good (OOD pending) |
-| 6 | Causal | IPS/DR policy value | channel table wins; offer point | table/random | not working |
+| 6 | Causal | IPS/DR policy value | channel E 480 vs table 686 (CI table wins); offer E 625 vs 580 (CI crosses) | table/random | not working |
 | 7 | Order/Path | event-shuffle delta | value −0.091, orders −0.078, churn −0.030 | table 0 | **working** |
 | 8 | Relational/Context | order_id event purity | 0.005 | random 0.0005 | partial (weak) |
 
