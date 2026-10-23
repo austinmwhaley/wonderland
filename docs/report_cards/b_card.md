@@ -1,35 +1,39 @@
-# B card — content-axis scorecard (auto encoder)
+# B card — eight content axes (auto encoder)
 
-Synthetic `relational_v3`; no business data. E: auto-tokenizer, learned states, frozen.
+Synthetic `relational_v3`; no business data. E: auto-tokenizer, learned shape + additive mass +
+identity/rate/uncertainty/causal/order/relational blocks; frozen.
 
 ## Axis scorecard
 
-| Axis | Primary metric | Baseline | Current | Status |
-|---|---|---|---|---|
-| Shape | retrieval / churn-neighbor / regime NMI | table | retrieval tie; churn-nn +1.4% robust; regime NMI below table | partial |
-| Mass | raw value/orders R² vs XGBoost GPU | table | 6k quick: value 0.401 vs 0.358 (+4.4%); orders 0.452 vs 0.450 (tie); churn 0.931 vs 0.926 | working (value) / tie |
-| Identity | kNN channel/category purity | table | channel **0.727 vs 0.249**; category 0.217 vs 0.260 | strong (channel) / partial |
-| Rate | churn AUC | table | E 0.934 vs table 0.964 | not working (rate) |
-| Uncertainty | ECE / dropout / OOD | — | uncertainty block wired; ECE 0.089; dropout 0.966 | partial |
-| Causal | action-conditioned IPS/DR | table/random | causal block wired; channel table wins; offer point | not working |
-| Order/Path | shuffle delta | table | E drops value −0.091, orders −0.078, churn −0.030; table unchanged | **working** |
-| Relational/Context | order_id purity | table | E 0.005 vs random 0.0005 (weak/above chance) | partial |
+| # | Axis | Metric | Frozen E | Table / baseline | Status |
+|---|---|---|---|---|---|
+| 1 | Shape | retrieval / churn-nn / regime | retrieval +8.5% pt; churn-nn +3.3% robust | table | partial/good |
+| 2 | Mass | 6k value/orders/churn vs XGBoost GPU | **0.401 / 0.452 / 0.931** | 0.358 / 0.450 / 0.926 | **working (value +4.4%)**; orders/churn tie |
+| 3 | Identity | kNN channel/category purity | **0.727** / 0.217 | 0.249 / 0.260 | strong (channel) / partial |
+| 4 | Rate | churn AUC | 0.931 | 0.926 | tie |
+| 5 | Uncertainty | ECE / dropout | 0.089 / 0.966 | — | partial (OOD pending) |
+| 6 | Causal | IPS/DR policy value | channel table wins; offer point | table/random | not working |
+| 7 | Order/Path | event-shuffle delta | value −0.091, orders −0.078, churn −0.030 | table 0 | **working** |
+| 8 | Relational/Context | order_id event purity | 0.005 | random 0.0005 | partial (weak) |
 
 ## Foundation properties
 
-| Property | Metric | Status |
-|---|---|---|
-| Sufficiency | E vs full-history oracle gap | pending |
-| Accessibility | linear/kNN probes | pending |
-| Minimality / boundedness | effective rank / retention | partial (rank ~2.8) |
-| Lawful composition | permutation / merge / additivity | pending |
-| Stability / adaptivity | seeds, time-shift, schema variant | partial |
-| Efficiency | E dim, train/inference | measured |
-| Artifact | frozen hash, config, one command | partial |
-| Donor controls | raw/random/destroyed | partial |
+| Property | Status |
+|---|---|
+| Task-free / self-supervised | PASS (audit) |
+| Schema-agnostic / per-stream | partial (auto fields; variant pending) |
+| Universal / transferable | partial (retrieval/identity; no held-out battery yet) |
+| Lawful / compositional | partial (additive mass; permutation/time-shift pending) |
+| Minimal / bounded | partial (rank; retention receipt pending) |
+| Robust / calibrated | partial (dropout/ECE; OOD pending) |
+| Accessible | partial (linear/kNN pending) |
+| Efficient | partial (GPU train/eval; data/collate still CPU-bound) |
+| Artifact / reproducible | partial (frozen; one-command/v3 cert pending) |
+| Donor contract | partial (unique signal vs random E) |
+| Interpretable / diagnosable | partial (axis card, geometry) |
 
 ## Disclosures
 
-- Mass is the main bottleneck; the hand summary previously supplied it and is removed.
-- Anomaly is a table win.
-- B+C utility is a separate card; this card does not judge by heads.
+- Stronger XGBoost GPU baseline removes the earlier sklearn-era orders/churn margins; value remains +4.4% at 6k.
+- Anomaly is a table win; causal channel is a table win.
+- Not 100% complete: uncertainty OOD, causal CI, 3-seed CI, collate vectorization, v3 certificate/one-command.
