@@ -227,7 +227,9 @@ class GatedSSM(nn.Module):
         b = torch.where(mask.unsqueeze(-1).unsqueeze(-1) > 0, b, torch.zeros_like(b))
         _, H = _scan(decay.unsqueeze(-1), b)
         y = H.sum(2)
-        return F.gelu(self.out(y)) + y
+        # additive mass state: m_t = decay * m_{t-1} + inp_t (no 1-decay normalization)
+        _, M = _scan(decay.unsqueeze(-1), inp)
+        return F.gelu(self.out(y)) + y, H, M
 
 
 class Enc(nn.Module):
@@ -243,10 +245,11 @@ class Enc(nn.Module):
         self.mlp = nn.Sequential(nn.Linear(d, d), nn.GELU(), nn.Linear(d, d))
         self.ssm = nn.ModuleList([GatedSSM(d, e, taus) for _ in range(layers)])
         self.q = nn.Parameter(torch.randn(d) / math.sqrt(d))
-        self.n_read = 5
+        self.n_read = 4 + 3 * e
         self.rproj = nn.ModuleList([nn.Linear(d, d) for _ in range(self.n_read)])
         self.rw = nn.Parameter(torch.zeros(self.n_read))
-        self.mass = nn.Linear(vs["mass_dim"], d)
+        self.raw = nn.Linear(vs["raw"], d)
+        self.mass_proj = nn.Linear(vs["raw"] + vs["et"], e * d)
         self.rmlp = nn.Sequential(nn.Linear(d, d), nn.GELU(), nn.Linear(d, d))
         self.qgap = nn.Sequential(nn.Linear(1, d), nn.GELU(), nn.Linear(d, d))
         self.head_et = nn.Linear(d, vs["et"])
@@ -262,10 +265,11 @@ class Enc(nn.Module):
             x = x + F.softplus(self.gw_cat[i]) * emb(gcat[:, :, i])
         for i, lin in enumerate(self.gnum):
             x = x + F.softplus(self.gw_num[i]) * lin(gnum[:, :, i : i + 1])
-        x = self.mlp(x)
+        x = self.mlp(x) + self.raw(torch.sign(graw) * torch.log1p(graw.abs()))
         dt = gaps.clamp(min=1e-3)
+        H = None; M = None
         for ssm in self.ssm:
-            x = ssm(x, mask, dt)
+            x, H, M = ssm(x, mask, dt)
         Hs = x
         ar = torch.arange(Hs.shape[0], device=Hs.device)
         last = Hs[ar, lengths - 1]
@@ -276,12 +280,19 @@ class Enc(nn.Module):
         score = score.masked_fill(mask == 0, -1e9)
         att = torch.softmax(score, 1)
         pooled = (Hs * att.unsqueeze(-1)).sum(1)
-        gsum_raw = (graw * mask.unsqueeze(-1)).sum(1)
-        gsum = torch.sign(gsum_raw) * torch.log1p(gsum_raw.abs())
-        et_counts = F.one_hot(et, self.et.num_embeddings).float()
-        et_counts = (et_counts * mask.unsqueeze(-1)).sum(1)
-        mag = self.mass(torch.cat([gsum, et_counts], 1))
-        rs = [last, mean, mx, pooled, mag]
+        Hlast = H.reshape(H.shape[0], H.shape[1], H.shape[2], H.shape[3])[ar, lengths - 1]  # (B,e,d)
+        Hmean = (H * mask.unsqueeze(-1).unsqueeze(-1)).sum(1) / lengths.view(-1, 1, 1)
+        mass_in = torch.cat([torch.sign(graw) * torch.log1p(graw.abs()),
+                             F.one_hot(et, self.et.num_embeddings).float()], -1)
+        Mp = self.mass_proj(mass_in)
+        # recompute the additive mass state (same decay) for the readout
+        # M from the last SSM is already the additive mass; use its last row
+        Mlast = M[ar, lengths - 1]  # (B,e,d), recency-weighted raw mass
+        rs = [last, mean, mx, pooled]
+        for j in range(Hlast.shape[1]):
+            rs.append(Hlast[:, j]); rs.append(Hmean[:, j])
+        for j in range(Mlast.shape[1]):
+            rs.append(Mlast[:, j])
         pr = [self.rproj[i](rs[i]) for i in range(self.n_read)]
         w = F.softplus(self.rw)
         E = sum(w[i] * pr[i] for i in range(self.n_read))
@@ -536,8 +547,8 @@ def embed(model, seqs, ks, vs):
             ms.append((t["graw"] * w.unsqueeze(-1)).sum(1))
             oh = torch.nn.functional.one_hot(t["et"], vs["et"]).float()
             ms.append((oh * w.unsqueeze(-1)).sum(1))
-        out.append(E.cpu().numpy()); mout.append(torch.cat(ms, 1).cpu().numpy())
-    return np.concatenate(out, 0), np.concatenate(mout, 0)
+        out.append(E.cpu().numpy())
+    return np.concatenate(out, 0)
 
 
 def table_features(A, hold):
@@ -634,6 +645,6 @@ def train_encoder(data, seed=0, d=64, layers=2, epochs=5, lr=3e-4, batch=16):
                 break
     if best_state:
         model.load_state_dict(best_state)
-    E, MS = embed(model, seqs, hold, vs)
+    E = embed(model, seqs, hold, vs)
     Xtab, labels, seg = table_features(A, hold)
-    return E, Xtab, labels, hold, seg, model, vs, B, best, MS
+    return E, Xtab, labels, hold, seg, model, vs, B, best

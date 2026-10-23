@@ -5154,3 +5154,12 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   churn90 -3.1%.
 - Capacity is now selected for accessibility/downstream, not only self-supervised val.
 - Next: 6k at d128/2; churn-specific capacity/block; per-stream final selection.
+
+## DEC-249 — Additive mass/rate channel implemented (aligned)
+
+- Mass state `m_t = decay*m_{t-1} + proj(raw,event_counts)` (no 1-decay), learned decay; shape stays
+  contractive. Unnormalized multi-timescale mass readout.
+- 2k learned E-only: orders90 0.320 vs table 0.352 (-3.2%, was -8.2%); retrieval +6.8% point;
+  churn_nn +3.2% robust; churn90 -2.2%.
+- Improved but not yet above table on orders/churn. Next: raw-level future/past totals + capacity/head;
+  then identity/uncertainty/causal probes.

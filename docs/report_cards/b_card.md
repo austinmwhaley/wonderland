@@ -7,7 +7,7 @@ Synthetic `relational_v3`; no business data. E: auto-tokenizer, learned states, 
 | Axis | Primary metric | Baseline | Current | Status |
 |---|---|---|---|---|
 | Shape | retrieval / churn-neighbor / regime NMI | table | retrieval tie; churn-nn +1.4% robust; regime NMI below table | partial |
-| Mass | raw orders90/value90 R² | table | orders90 0.273 vs 0.352 | **not working** |
+| Mass | raw orders90/value90 R² | table | orders90 0.320 vs 0.352 after additive mass | partial (improved) |
 | Identity | kNN entity/retrieval | table | churn-nn robust; product/campaign pending | partial |
 | Rate | churn AUC / time-to-next | table | churn 2k below table; 6k mixed | partial |
 | Uncertainty | ECE / dropout / OOD | — | ECE 0.089; dropout cos 0.966; OOD pending | partial |
