@@ -5375,3 +5375,18 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   to CUDA nondeterminism (different trust-region path -> different early stop -> different model).
   Run-to-run variance, not seed sampling, dominates. Stability axis is binding.
 - PB kept (information-positive, principle-consistent); no win claimed.
+
+## DEC-274 — Determinism axis: same seed must reproduce the same trajectory
+
+- Principle: Robust ("deterministic and stable from step 0"). CUDA nondeterminism (embedding
+  backward atomics, matmul reduction order) makes the trust-region trajectory chaotic: identical
+  seed+code produced orders margins -0.0048 vs -0.026 across runs.
+- Decision: torch.use_deterministic_algorithms(True, warn_only=True) + cudnn.deterministic +
+  CUBLAS_WORKSPACE_CONFIG=:4096:8 before torch import. warn_only recorded (ops without deterministic
+  impls warn, not mask).
+- Rejected: EMA/ensembling (adds capacity/cost, new mechanism); lowering lr further (slows
+  convergence, does not remove chaos).
+- Acceptance (pre-registered): (a) seed 0 twice -> identical val trajectories; (b) 6k 3-seed
+  value90 mean >= 0 and margin sd < DEC-273's 0.0083; (c) no divergence. Revert if (a) fails.
+- Note: demo shuffle probe uses hash(k) (PYTHONHASHSEED-salted) - varies across processes by design;
+  excluded from the determinism gate.

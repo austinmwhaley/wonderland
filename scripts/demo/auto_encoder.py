@@ -8,9 +8,14 @@ import sys
 import zlib
 from pathlib import Path
 
+import os as _os
+_os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
 import numpy as np
 import polars as pl
 import torch
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
+torch.use_deterministic_algorithms(True, warn_only=True)
 import torch.nn as nn
 import torch.nn.functional as F
 
