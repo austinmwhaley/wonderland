@@ -5210,3 +5210,13 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - Rejected: continuing encoder work on the closed demo branch (state was mixed: cards + encoder).
 - Alignment: Honest (cards recorded), Efficient (one clean branch per workstream), Universal (demo = reference dataset path unchanged).
 - Acceptance: new branch cut from updated main; demo command unchanged and reproducible from main.
+
+## DEC-258 — Erratum: DEC-256 did not change training; encoder was already training
+
+- The run_epoch call passes 15 positional args into a 16-param signature (train=True default),
+  so `True` bound to the dead `horizons` param and `train` stayed True. Epoch trajectories
+  before/after the edit are identical to ~1e-4 (CUDA nondeterminism only).
+- The 2k value90 change (0.3397 -> 0.3504) is run-to-run noise, not the fix.
+- Real state: value90 E loses to table by ~0.01-0.03 at 2k (tie-to-loss within seed noise);
+  the objective gap is real and must be attributed to an axis (capacity/objective/access), not a phantom bug.
+- Receipts: /tmp/opencode/blocks_learn2.log vs dec256_run.log epoch-for-epoch match.
