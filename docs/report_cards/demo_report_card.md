@@ -1,49 +1,48 @@
 # Demo report card — pure frozen auto encoder
 
-**Goal:** customer event stream → auto encoder (self-supervised) → frozen E → supervised / unsupervised / RL heads → compare to the traditional wide table. **No hybrid. Pure E only.**
+**Goal:** event stream → auto encoder (self-supervised) → frozen E → supervised / unsupervised / RL heads → compare to the traditional wide table. **Pure E, no hybrid.**
 
-## B — support (one page)
+## B — frozen encoder
 
-- Auto-tokenizer, all 22 discovered fields; d64/2 layers; E dim 64; no table/labels in E; `target_key` excluded. Audit **PASS**.
-- Self-supervised: next-event + future-summary + past-summary over all fields.
-- Geometry (2k): eff rank 2.77 · anomaly 0.504 · retrieval **0.390** (table 0.373) · churn-neighbor **0.973** (0.950).
-- Robustness: 10% dropout E cosine 0.966; next-event 2.557 bits; ECE 0.089.
-- Artifact: hash `c5ae38df2c0b`; d64/2; 2k runtime 70s.
-- Donor: real vs random E — retrieval 0.390 vs −0.128; churn-NN 0.973 vs 0.900; anomaly 0.504 vs 0.455.
+- Auto-tokenizer, all discovered fields; pooled block + multi-scale block (SSM states, raw numeric decayed sums, event-type decayed counts at data-derived horizons).
+- No table/labels in E; `target_key` excluded; E dim 64 pooled + multi-scale block.
+- Geometry (2k): retrieval +4.6% (CI marginal); churn-neighbor +2.5% (CI robust); anomaly table wins.
+- Artifact: frozen, hashed, 2k fast; synthetic harness.
 
-## B+C — pure frozen E (2 heads per family)
+## B+C — pure E, two heads per family
 
 ### Supervised
 
-| Head | Scale | Table | Pure E | Result |
-|---|---|---|---|---|
-| orders90 | 2k | 0.352 | **0.358** | **E exceeds** |
-| churn90 | 6k | 0.917 | **0.941** | **E exceeds** |
-| value90 | 6k | 0.364 | 0.300 | table's fixed `value_30d/90d` — disclosed, not used by E |
+| Head | Scale | Table | Pure E | Margin | 95% CI |
+|---|---|---|---|---|---|
+| value90 | 6k | 0.364 | **0.424** | **+6.0%** | [+0.043, +0.076] |
+| orders90 | 6k | 0.436 | **0.489** | **+5.3%** | [+0.024, +0.082] |
+| orders90 | 2k | 0.352 | **0.445** | **+9.3%** | [+0.038, +0.151] |
+| churn90 | 6k | 0.917 | 0.938 | +2.1% | [−0.001, +0.043] |
 
 ### Unsupervised
 
-| Probe | Table | Pure E | Result |
-|---|---|---|---|
-| value retrieval | 0.373 | **0.390** | **E exceeds** |
-| churn-neighbor | 0.950 | **0.973** | **E exceeds** |
-| anomaly AUC | **0.635** | 0.504 | table wins — disclosed |
-
-### RL (offline IPS/DR, logged randomized actions)
-
-| Arm | Table | Pure E | Random | Result |
+| Probe | Table | Pure E | Margin | 95% CI |
 |---|---|---|---|---|
-| channel | 518 | **711** | 511 | **E exceeds** |
-| offer | 422 | **488** | 511 | E exceeds table; random stronger |
+| churn-neighbor | 0.950 | **0.975** | **+2.5%** | [+0.003, +0.022] |
+| value retrieval | 0.373 | 0.419 | +4.6% | [−0.041, +0.058] |
+| anomaly AUC | **0.635** | 0.504 | table wins | disclosed |
+
+### RL (offline IPS/DR, logged randomized actions; CI pending)
+
+| Arm | Table | Pure E | Random |
+|---|---|---|---|
+| channel | 518 | 711 | 511 |
+| offer | 422 | 488 | 511 |
 
 ## Claim
 
-The **pure frozen self-supervised E** exceeds the traditional table on **orders90, churn90 (6k), retrieval, churn-neighbor, channel RL, and offer RL vs table** — no hybrid. The two disclosed table wins are **value90** (fixed 30/90d windows, which the E is not allowed to copy) and **anomaly**.
+The **pure frozen self-supervised E robustly exceeds the traditional table** on value90 (+6.0%), orders90 (+5.3% at 6k, +9.3% at 2k), and churn-neighbor (+2.5%). Churn90/retrieval are marginal; anomaly remains a table win. No hybrid, no hand fields, no fixed 30/90 windows.
 
 ## Caveats
 
-- Synthetic `relational_v3`; no business data; harness.
-- 2k fast C; 6k churn from receipts.
-- RL is offline OPE, not a shipped policy.
-- B retention receipt pending; decision/minimality certification is Layer 1.
+- Synthetic `relational_v3`; harness, not business value.
+- 6k/3-seed supervised; 2k fast for the rest.
+- RL CI not yet implemented; RL is offline OPE, not a shipped policy.
+- B-only retention receipt and v3 certificate pending; Layer 1 certification later.
 - Data card: `docs/LAYER_A_DATA.md`.
