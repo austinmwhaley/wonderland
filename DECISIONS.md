@@ -5142,3 +5142,8 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - channel: E IPS 480 vs table 518, CI crosses 0.
 - offer: E IPS 625 vs table 422, CI [-16,+487] crosses 0.
 - RL is not a robust win; do not claim it. The robust demo claims are supervised value90/orders90 and churn-neighbor.
+
+## DEC-247 — Event-type-conditioned block rejected (neutral)
+
+- orders90 +9.1% (vs +9.3% raw/event), retrieval +2.9% (vs +4.6%), churn-nn +2.5% same.
+- Reverted to the raw/event multi-scale block. Next: representation capacity / sequence-aware consumer.
