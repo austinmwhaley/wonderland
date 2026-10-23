@@ -5129,3 +5129,10 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - 3-seed CI crosses 0 (df=2, conservative); 2k holdout margins: orders +4.8%, retrieval +3.1%,
   churn-nn +2.7% (robust).
 - The multi-scale block closes the value90 gap without fixed windows; the CIs need holdout bootstrap.
+
+## DEC-245 — Raw/event multi-scale block: orders +9.3% robust
+
+- Frozen multi-scale block now exposes raw numeric decayed sums + event-type decayed counts per horizon.
+- 2k: orders90 0.4454 vs 0.3516 = +9.3% (CI [+0.038,+0.151], robust); churn-nn +2.5% (robust);
+  retrieval +4.6% (CI crosses); churn90 table wins.
+- This is the several-percent result: same GBM head, no table in E, no fixed windows.

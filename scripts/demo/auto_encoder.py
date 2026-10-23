@@ -531,8 +531,11 @@ def embed(model, seqs, ks, vs):
         last_t = tss[ar, lens - 1].unsqueeze(-1)
         for hh in vs["horizons"]:
             w = torch.exp(-(last_t - tss).clamp(min=0) / (hh * 86400.0)) * mask
-            w = w / (w.sum(1, keepdim=True) + 1e-9)
-            ms.append((Hs * w.unsqueeze(-1)).sum(1))
+            wn = w / (w.sum(1, keepdim=True) + 1e-9)
+            ms.append((Hs * wn.unsqueeze(-1)).sum(1))
+            ms.append((t["graw"] * w.unsqueeze(-1)).sum(1))
+            oh = torch.nn.functional.one_hot(t["et"], vs["et"]).float()
+            ms.append((oh * w.unsqueeze(-1)).sum(1))
         out.append(E.cpu().numpy()); mout.append(torch.cat(ms, 1).cpu().numpy())
     return np.concatenate(out, 0), np.concatenate(mout, 0)
 
