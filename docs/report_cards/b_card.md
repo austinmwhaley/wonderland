@@ -23,7 +23,7 @@ identity/rate/uncertainty/causal/order/relational blocks; frozen.
 | Task-free / self-supervised | PASS (audit) |
 | Schema-agnostic / per-stream | partial (auto fields; variant pending) |
 | Universal / transferable | partial (retrieval/identity; no held-out battery yet) |
-| Lawful / compositional | mass additivity exact (0.0); permutation/time-shift pending |
+| Lawful / compositional | field perm 1.2e−7; scan 8.9e−16; mass additivity 0.0 → **PASS** |
 | Minimal / bounded | rank (participation) 2.4; E dim 128 |
 | Robust / calibrated | partial (dropout/ECE; OOD pending) |
 | Accessible | **shape E 0.365 vs table 0.394 (close); multi-scale blocks (5527d) −0.72 (FAIL); combined −0.64** |
