@@ -5303,3 +5303,10 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - Rejected: wd ~ lr coupling (couples two axes); wd from param count (unvalidated formula = literal
   in disguise).
 - Acceptance: 6k 1-seed value90 margin >= 0, no divergence, val trajectory recorded.
+
+## DEC-268 receipt — wd=0 FAILED acceptance; reverted; wd=1e-4 closed as disclosed bound
+
+- 6k 1-seed: value90 -0.0048 (< 0 gate), val best 37.58 (vs 37.22 with wd), orders -0.0381.
+  The 1e-4 regularizer does measurable work; the derived fallback (~1/n_events = 1.9e-6) is weaker
+  and would not recover it. Per doctrine, wd=1e-4 survives as a conservative fallback bound,
+  recorded here when it fired. Audit item closed: DISCLOSED BOUND, not a hidden violation.
