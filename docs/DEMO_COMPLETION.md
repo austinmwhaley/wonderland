@@ -22,7 +22,7 @@ The demo is 100% done only when **all** of the following are true:
 
 | # | Requirement | Evidence | Verdict |
 |---|---|---|---|
-| 1 | One command | `scripts/demo/fast_demo.py` is 2k-only; B probes and B+C are separate `/tmp` scripts; final card is static | **FAIL** |
+| 1 | One command | `scripts/demo/demo.py` (2k fast, 331s, GPU XGBoost, writes `demo_run.json` + `demo_command_card.md`) | **PASS** |
 | 2 | B fully measured | 8 axes present; uncertainty OOD, causal CI, lawfulness, minimality, accessibility, artifact still pending | **FAIL** |
 | 3 | B+C 2/2/2 vs XGBoost GPU with paired CIs | 6k quick 1 seed/5; 2k 1 seed/5; value +4.4%; orders/churn ties; unsup/RL point estimates; RL CI crosses | **PARTIAL** |
 | 4 | Layer A current | `LAYER_A_DATA.md`; v3 certificate not regenerated | **PARTIAL** |
@@ -32,8 +32,8 @@ The demo is 100% done only when **all** of the following are true:
 
 ## Verdict
 
-**NOT 100% DONE.** The encoder and both cards are current and honest, but five of seven
-completion requirements are not yet satisfied.
+**NOT 100% DONE.** The single command now passes; four requirements remain (B-card completion,
+3-seed B+C CIs, v3 certificate, data-path vectorization).
 
 ## Remaining critical path
 
