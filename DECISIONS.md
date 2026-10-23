@@ -5259,3 +5259,11 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   Honest verdict: with the aligned config, supervised is tie-to-loss at both scales.
 - Next one-axis probe (DEC-263): training regime 5 -> 20 epochs at 6k (1 seed); acceptance =
   value90 margin >= +0.01; val plateau-noisy at 5 epochs (36-60).
+
+## DEC-263 — Training regime 5->20 epochs FAILED acceptance (early stop at 5)
+
+- 6k 1 seed, 20 epochs requested: early stopping (patience 3) fired at epoch 5; val plateau-noisy.
+  value90 -0.0078 (< +0.01 gate), orders -0.0186, churn +0.0223. Receipt 6d871e07d5f2.
+- Diagnosis: not undertrained-by-wallclock; the optimizer stalls. Epochs is not the binding axis.
+- Rejected follow-ups on the same axis (more epochs, patience changes): the loss curve is flat-noisy,
+  not slow-but-steady.
