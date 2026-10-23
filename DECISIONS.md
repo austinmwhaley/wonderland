@@ -736,3 +736,14 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   shuffle drop -0.2557.
 - Demo state: single command, GPU data path (byte-identical), deterministic training, honest cards.
   Remaining open axis for the objective: supervised margin (value CI crosses zero).
+
+## DEC-278 — Queue 1a: early-stop patience 3 -> 6 (training regime axis)
+
+- Binding axis: supervised margin. Observation: seed 1 stopped at ep4/12 while its last val (39.71)
+  was BELOW its best (39.94), rejected by a 0.28 MAD band; seed 0, which kept running, found real
+  improvements at ep6/7/10. Patience 3 was sized for a 5-epoch budget; at the 12-epoch budget it
+  stops runs at 1/3 of the wall.
+- Decision: patience 3 -> 6 (one axis). Rejected: slower lr expansion (second axis - not bundled);
+  tol changes (just fixed by MAD, DEC-275); more epochs (budget, not stop rule).
+- Acceptance (pre-registered): 6k 3-seed value90 margin 95% CI lower bound > 0; no divergence;
+  runtime receipt. If CI lower bound <= 0 -> revert to 3, record, move to 1b (future objective).
