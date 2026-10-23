@@ -5098,3 +5098,11 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - 6k best: d64 / 1 layer / lr 1e-3 (val 29.24).
 - Rejected: global capacity / 2k LR reused at 6k.
 - Next: paired CIs on the six selected heads at these per-stream configs.
+
+## DEC-241 — CI audit: only churn-neighbor is robust
+
+- Paired CIs at per-stream configs: orders90 +0.0091 [-0.065,+0.082]; churn90-2k +0.0098 [-0.032,+0.057];
+  retrieval +0.0064 [-0.045,+0.055]; **churn_nn +0.0120 [+0.003,+0.022]**; 6k churn +0.0064 [-0.032,+0.045].
+- Only churn-neighbor has a CI lower bound > 0. The other selected heads are point-estimate wins, not
+  robust exceeds. RL CI is not yet implemented (placeholder removed from claims).
+- Next: either increase power/N (6k 3-seed CIs) or re-select the demo heads to robust wins; no overclaim.
