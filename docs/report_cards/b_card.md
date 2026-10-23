@@ -26,7 +26,7 @@ identity/rate/uncertainty/causal/order/relational blocks; frozen.
 | Lawful / compositional | mass additivity exact (0.0); permutation/time-shift pending |
 | Minimal / bounded | rank (participation) 2.4; E dim 128 |
 | Robust / calibrated | partial (dropout/ECE; OOD pending) |
-| Accessible | **FAIL linear**: Ridge E −1.19 vs table 0.386; needs GBM/high-dim |
+| Accessible | **shape E 0.365 vs table 0.394 (close); multi-scale blocks (5527d) −0.72 (FAIL); combined −0.64** |
 | Efficient | partial (GPU train/eval; data/collate still CPU-bound) |
 | Artifact / reproducible | frozen; hash d7d190; single command; v3 cert PASS |
 | Donor contract | partial (unique signal vs random E) |
