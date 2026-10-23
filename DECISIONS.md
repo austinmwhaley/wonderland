@@ -5163,3 +5163,9 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   churn_nn +3.2% robust; churn90 -2.2%.
 - Improved but not yet above table on orders/churn. Next: raw-level future/past totals + capacity/head;
   then identity/uncertainty/causal probes.
+
+## DEC-250 — Separate mass block: orders +4.2% point; churn regresses
+
+- Exposing the mass block separately to the head: orders90 0.393 vs 0.352 (+4.2%, CI marginal);
+  retrieval +6.7% point; churn_nn +3.0% robust; churn90 -4.9% (mass block hurts the rate/churn).
+- Block-aware consumer: mass block for orders, shape block for churn/rate. Do not force one block.

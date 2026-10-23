@@ -73,7 +73,7 @@ def main():
     D = args.data
     out = Path(args.out)
     # ---- train the frozen E (fast) ----
-    E, Xtab, labels, hold, seg, model, vs, B, best_, MS = AE.train_encoder(D, seed=0, epochs=5)
+    E, Xtab, labels, hold, seg, model, vs, B, best_, MB = AE.train_encoder(D, seed=0, epochs=5)
     E = np.nan_to_num(E)
     Xtab = np.nan_to_num(Xtab)
     Xh = np.hstack([Xtab, E])
