@@ -1,0 +1,6 @@
+{
+ "retention_past_r2": -287674325794816.0,
+ "retention_future_r2": -948425281503232.0,
+ "ood_variant_churn_auc": 0.957,
+ "ood_variant_val": 31.55372667312622
+}

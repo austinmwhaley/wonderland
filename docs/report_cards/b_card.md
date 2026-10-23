@@ -11,7 +11,7 @@ identity/rate/uncertainty/causal/order/relational blocks; frozen.
 | 2 | Mass | 6k value/orders/churn vs XGBoost GPU | **0.401 / 0.452 / 0.931** | 0.358 / 0.450 / 0.926 | **working (value +4.4%)**; orders/churn tie |
 | 3 | Identity | kNN channel/category purity | **0.727** / 0.217 | 0.249 / 0.260 | strong (channel) / partial |
 | 4 | Rate | churn AUC | 0.931 | 0.926 | tie |
-| 5 | Uncertainty | ECE / dropout | **0.048** / 0.966 | — | good (OOD pending) |
+| 5 | Uncertainty | ECE / dropout / OOD | **0.048 / 0.966 / variant churn 0.957** | — | **good (OOD PASS)** |
 | 6 | Causal | IPS/DR policy value | channel E 480 vs table 686 (CI table wins); offer E 625 vs 580 (CI crosses) | table/random | not working |
 | 7 | Order/Path | event-shuffle delta | value −0.091, orders −0.078, churn −0.030 | table 0 | **working** |
 | 8 | Relational/Context | order_id event purity | 0.005 | random 0.0005 | partial (weak) |
@@ -24,7 +24,7 @@ identity/rate/uncertainty/causal/order/relational blocks; frozen.
 | Schema-agnostic / per-stream | partial (auto fields; variant pending) |
 | Universal / transferable | partial (retrieval/identity; no held-out battery yet) |
 | Lawful / compositional | field perm 1.2e−7; scan 8.9e−16; mass additivity 0.0 → **PASS** |
-| Minimal / bounded | rank (participation) 2.4; E dim 128 |
+| Minimal / bounded | rank 2.4; E dim 128; retention R² invalid (std bug) |
 | Robust / calibrated | partial (dropout/ECE; OOD pending) |
 | Accessible | **shape E 0.365 vs table 0.394 (close); multi-scale blocks (5527d) −0.72 (FAIL); combined −0.64** |
 | Efficient | partial (GPU train/eval; data/collate still CPU-bound) |
