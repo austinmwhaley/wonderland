@@ -5365,3 +5365,13 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   count features (violates no-hand-summary); capacity increase (diverged, DEC-271).
 - Acceptance (pre-registered): 6k 3-seed; orders90 95% CI no longer excludes 0 on the negative side;
   value90 mean not below 0; no divergence. Revert if fails.
+
+## DEC-273 receipt — PB exposure: acceptance letter passed, mean did not improve
+
+- 6k 3-seed: orders CI now crosses 0 (was significant loss) BUT via variance, not mean: margins
+  [-0.0260,+0.0044,+0.0046] mean -0.0057. churn degraded to -0.0077; retrieval 0.4255 (up).
+- Key observation: PB only changes the consumer input, not training - yet seed 0's orders margin
+  swung -0.0048 -> -0.026 with identical training code/seed. Trajectories are chaotically sensitive
+  to CUDA nondeterminism (different trust-region path -> different early stop -> different model).
+  Run-to-run variance, not seed sampling, dominates. Stability axis is binding.
+- PB kept (information-positive, principle-consistent); no win claimed.
