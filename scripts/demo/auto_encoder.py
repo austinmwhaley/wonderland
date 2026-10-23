@@ -573,19 +573,6 @@ def embed(model, seqs, ks, vs):
         fq = [(AS_OF_TS - seqs[k][5][-1]) / 86400.0 for k in bk]
         t, _, qg, lens, _f = collate(seqs, bk, fcuts, fq, vs, False, None, None)
         Hs, E, _, MB, IB, RB, UB, CB, OB, RelB = model(t["et"], t["gcat"], t["gnum"], t["time"], t["gaps"], t["mask"], lens, qg, t["graw"])
-        ms = []
-        for k in bk:
-            pass
-        # multi-scale decay-weighted means of Hs at data-derived horizons
-        tss = t["tss"]; mask = t["mask"]; ar = torch.arange(Hs.shape[0], device=Hs.device)
-        last_t = tss[ar, lens - 1].unsqueeze(-1)
-        for hh in vs["horizons"]:
-            w = torch.exp(-(last_t - tss).clamp(min=0) / (hh * 86400.0)) * mask
-            wn = w / (w.sum(1, keepdim=True) + 1e-9)
-            ms.append((Hs * wn.unsqueeze(-1)).sum(1))
-            ms.append((t["graw"] * w.unsqueeze(-1)).sum(1))
-            oh = torch.nn.functional.one_hot(t["et"], vs["et"]).float()
-            ms.append((oh * w.unsqueeze(-1)).sum(1))
         out.append(E.cpu().numpy()); mout.append(np.hstack([MB.cpu().numpy(), IB.cpu().numpy(), RB.cpu().numpy(), UB.cpu().numpy(), CB.cpu().numpy(), OB.cpu().numpy(), RelB.cpu().numpy(), model.past(E).cpu().numpy()]))
     return np.concatenate(out, 0), np.concatenate(mout, 0)
 
@@ -714,6 +701,7 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     print(f"clip stats: {CLIP_STATS}", flush=True)
     if best_state:
         model.load_state_dict(best_state)
+    torch.cuda.empty_cache()
     E, BLK = embed(model, seqs, hold, vs)
     Xtab, labels, seg = table_features(A, hold)
     return E, Xtab, labels, hold, seg, model, vs, B, best, BLK
