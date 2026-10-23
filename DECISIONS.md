@@ -789,3 +789,19 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   selection at Layer C, never Layer B).
 - Acceptance (pre-registered): (a) probe head/ridge R2 at a fixed horizon > 0.2; (b) 6k 3-seed
   value90 CI lower bound > 0; no divergence.
+
+## DEC-280 receipt — ACCEPTED: per-horizon future heads deliver the first robust supervised win
+
+- Diagnostic chain completed: gapped target unlearnable-by-anyone (oracle -0.13) -> adjacent window
+  (DEC-279); h-ambiguity -> per-horizon heads (DEC-280); normalization-stats-at-full-cuts were empty
+  (all-zero targets -> no-op normalization -> raw year-scale targets exploded the shared encoder)
+  -> stats from mid-stream cut fractions; tau-scale horizons (~1d) are NOISE FLOOR for everyone
+  (Ridge from past stats -0.016) - the tau heads being ~0 is honest; span-scale (~365d) is strongly
+  linearly predictable (Ridge from past stats 0.558).
+- Foundation-level PASS: Ridge(E -> 365d future) = 0.5223 vs full-history-oracle 0.5575 - E carries
+  94% of the oracle's future-signal accessibility.
+- BINDING GATE PASS (6k 3-seed, receipt in demo_run.json): value90 +0.0677 CI [+0.0541,+0.0813]
+  EXCLUDES 0 (seeds +0.073/+0.062/+0.069); orders90 +0.0655 CI [+0.0386,+0.0924] EXCLUDES 0;
+  churn +0.0033 tie (honest). E-only, no hand summary, adaptive lr, no clip, deterministic.
+- Open follow-ups: horizon ladder has a hole at label scale (~90d: 2.42 -> 364.8) - log-spaced
+  intermediate horizons queued; 2k revalidation on the new config; churn remains a tie.
