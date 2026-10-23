@@ -5115,3 +5115,10 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - Diagnosis: multi-scale block adds supervised sequence signal but harms high-dim unsupervised distance.
 - Next: block-aware E (pooled block for unsup/retrieval; multi-scale block for supervised); 6k/3-seed
   to tighten the CI. Acceptance: CI lower > 0 and >=3% on the selected supervised head.
+
+## DEC-243 — Block-aware E: several-percent margins; churn-nn robust
+
+- Pooled block for unsup/retrieval; multi-scale block for supervised.
+- 2k: orders90 +4.8% (CI [-0.019,+0.119]); retrieval +3.1% (CI [-0.041,+0.050]);
+  churn-nn +2.7% (CI [+0.003,+0.023], robust); churn90 tie.
+- Next: 6k/3-seed block-aware to tighten orders/retrieval CIs; RL CI still unimplemented.

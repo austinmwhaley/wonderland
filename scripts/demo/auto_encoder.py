@@ -516,6 +516,7 @@ def val_loss(model, seqs, ks, vs, past_mu, past_sd, taus, fut_mu, fut_sd, horizo
 def embed(model, seqs, ks, vs):
     model.eval()
     out = []
+    mout = []
     for i in range(0, len(ks), 32):
         bk = ks[i : i + 32]
         fcuts = [len(seqs[k][5]) for k in bk]
@@ -532,8 +533,8 @@ def embed(model, seqs, ks, vs):
             w = torch.exp(-(last_t - tss).clamp(min=0) / (hh * 86400.0)) * mask
             w = w / (w.sum(1, keepdim=True) + 1e-9)
             ms.append((Hs * w.unsqueeze(-1)).sum(1))
-        out.append(torch.cat([E] + ms, 1).cpu().numpy())
-    return np.concatenate(out, 0)
+        out.append(E.cpu().numpy()); mout.append(torch.cat(ms, 1).cpu().numpy())
+    return np.concatenate(out, 0), np.concatenate(mout, 0)
 
 
 def table_features(A, hold):
@@ -630,6 +631,6 @@ def train_encoder(data, seed=0, d=64, layers=2, epochs=5, lr=3e-4, batch=16):
                 break
     if best_state:
         model.load_state_dict(best_state)
-    E = embed(model, seqs, hold, vs)
+    E, MS = embed(model, seqs, hold, vs)
     Xtab, labels, seg = table_features(A, hold)
-    return E, Xtab, labels, hold, seg, model, vs, B, best
+    return E, Xtab, labels, hold, seg, model, vs, B, best, MS
