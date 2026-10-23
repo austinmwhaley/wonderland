@@ -5314,3 +5314,10 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   doing the lr's work, not a fallback).
 - Acceptance: 6k 1-seed value90 margin >= 0, finite loss every epoch, receipt. If NaN/abort -> hard
   failure recorded, revert.
+
+## DEC-270 receipt — clip removal PASSES (no-rescue stability works)
+
+- 6k 1-seed: value90 +0.0054 (gate >= 0), orders -0.0042 (near tie), churn +0.0212. No NaN, no
+  divergence; trust-region shrank lr after the ep3 val spike (71.96) on its own. Early stop ep4.
+- Best supervised receipt so far on the learned-head config, achieved with zero rescues: adaptive
+  lr (DEC-267), wd disclosed bound (DEC-268), no clip (DEC-270). Receipt hash in demo_run.json.
