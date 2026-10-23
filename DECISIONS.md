@@ -5390,3 +5390,14 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
   value90 mean >= 0 and margin sd < DEC-273's 0.0083; (c) no divergence. Revert if (a) fails.
 - Note: demo shuffle probe uses hash(k) (PYTHONHASHSEED-salted) - varies across processes by design;
   excluded from the determinism gate.
+
+## DEC-274 receipt — determinism PASSES gate (a); new churn regression disclosed; stop-defect found
+
+- Determinism: seed 0 run twice -> IDENTICAL val trajectories (79.2662/43.0939, 76.3579/43.5547,
+  75.0052/71.7190, 56.1631/40.7218) and identical value E. Chaos removed. Receipt hash in demo_run.json.
+- 6k CI (seeds 1,2): value +0.0152 (crosses), orders +0.0006 (significant loss GONE), churn -0.0097
+  (CI [-0.0101,-0.0092] EXCLUDES 0 = significant loss; NEW regression to fix).
+- Diagnostic: seed 0 stopped at ep4 despite 40.72 < best 43.09 because tol = std(hist[-5:])/sqrt(n)
+  was inflated to ~6.7 by the ep3 spike (71.72) -> genuine improvements rejected. The noise estimator
+  is not robust to its own spikes. Also fixed en route: dead `ms` computation in embed (memory),
+  empty_cache before embed (deterministic-mode OOM).
