@@ -32,7 +32,7 @@ python3 scripts/demo/demo.py --data /tmp/opencode/t0_loop/relational_v3 --epochs
 - Builds/validates v3, trains the frozen auto encoder (GPU), runs B probes, runs B+C heads vs the
   wide table + XGBoost GPU (encoder memory freed before XGBoost — 8 GB constraint), writes
   `docs/report_cards/demo_run.json` + `demo_command_card.md` with N, hashes, runtime.
-- Latest receipts: 2k 3-seed `5a50753d7f39` (428.7s); 6k 3-seed `e94ab16cbf2b` (875.9s); 6k trust-region adaptive-lr `738880279c0b` (351.0s).
+- Latest receipt: 6k 3-seed `a969f1b0f190` (662.3s, GPU data path, deterministic, MAD early-stop).
 
 ## 3. Layer A data (summary; full card `docs/LAYER_A_DATA.md`)
 
@@ -44,8 +44,8 @@ python3 scripts/demo/demo.py --data /tmp/opencode/t0_loop/relational_v3 --epochs
 
 | # | Axis | Metric | Frozen E | Table / baseline | Status |
 |---|---|---|---|---|---|
-| 1 | Shape | retrieval / churn-nn / regime | retrieval 0.418; churn-nn 0.980 | — | **working** |
-| 2 | Mass | supervised vs XGBoost GPU | 2k 3-seed: −0.016/+0.001/−0.003; 6k 3-seed learned heads: −0.0022/−0.0154/+0.0017 | table | **tie-to-loss (both scales)** |
+| 1 | Shape | retrieval / churn-nn / regime | retrieval 0.461; churn-nn 0.981 | — | **working** |
+| 2 | Mass | supervised vs XGBoost GPU | 6k 3-seed: +0.0067/−0.0108/−0.0008, all CIs cross zero | table | **tie-zone (no significant win)** |
 | 3 | Identity | learned `IB` kNN channel/category | channel 0.335 (> table 0.249); category 0.177 (< table 0.260) | table | **partial** (learned head weaker than static 0.727) |
 | 4 | Rate | churn AUC | 0.949 | 0.952 | tie |
 | 5 | Uncertainty | ECE / dropout / OOD | ECE 0.048; variant churn 0.957 | — | **good** |
@@ -79,13 +79,13 @@ python3 scripts/demo/demo.py --data /tmp/opencode/t0_loop/relational_v3 --epochs
 | orders90 | 0.4003 | 0.4010 | +0.0007 |
 | churn90 | 0.9515 | 0.9487 | −0.0028 |
 
-### Supervised (6k, 3 seeds/5 — learned heads, XGBoost GPU; receipt e94ab16cbf2b)
+### Supervised (6k, 3 seeds — learned heads, XGBoost GPU; receipt a969f1b0f190)
 
-| Target | Table | Frozen E | Margin |
+| Target | Table | Frozen E | Margin (95% CI) |
 |---|---|---|---|
-| value90 | 0.3802 | 0.3780 | −0.0022 (tie) |
-| orders90 | 0.4547 | 0.4393 | −0.0154 |
-| churn90 | 0.9305 | 0.9321 | +0.0017 (tie) |
+| value90 | 0.3802 | 0.3869 | +0.0067 [−0.0335, +0.0469] crosses |
+| orders90 | 0.4547 | 0.4439 | −0.0108 [−0.0308, +0.0092] crosses |
+| churn90 | 0.9305 | 0.9297 | −0.0008 [−0.0129, +0.0113] crosses |
 
 > **Historical (superseded):** static-summary blocks gave 6k value +4.4% (1 seed/5), but static
 > summaries violate the no-hand-summary contract and were removed; the learned-head config is the
@@ -135,7 +135,7 @@ python3 scripts/demo/demo.py --data /tmp/opencode/t0_loop/relational_v3 --epochs
 | 3 | B+C 2/2/2 vs XGBoost GPU with paired CIs | supervised 3-seed done; unsup point estimates; RL CI crosses | **PARTIAL** |
 | 4 | Layer A current (v3 cert, validator 0) | `layer_a_certificate_v3.json` | **PASS** |
 | 5 | No hand summary inside E | learned mass/heads only | **PASS** |
-| 6 | Runtime/GPU utilization | collate CPU-bound (vectorization failed DEC-261); d=256 OOM/divergence evidence recorded | **FAIL** |
+| 6 | Runtime/GPU utilization | load_data on cudf-polars GPU engine, byte-identical, 4.3x (DEC-277); collate per-batch Python remains | **PARTIAL** |
 | 7 | Reproducibility (commit + hashes) | this card + `demo_run.json` hash | **PASS** |
 
 ## 9. Receipts index
@@ -148,6 +148,6 @@ claim was wrong (see DEC-258): the encoder had always been training; DEC-256's "
 ## 10. Caveats / disclosures
 
 - Synthetic harness; no business data. 6k supervised is 1 seed/5 (3-seed pending on learned heads).
-- XGBoost GPU OOMs if the encoder stays resident; demo frees it first (8 GB constraint).
+- XGBoost GPU OOMs if the encoder stays resident; demo frees it first (8 GB constraint). GPU data path divides floats on the CPU (GPU division is ~1 ULP off Python; DEC-277).
 - Stronger XGBoost GPU baseline removed earlier sklearn-era orders/churn margins.
 - No hybrid heads, no hand summary, no counter inside E anywhere above.

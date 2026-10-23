@@ -725,3 +725,14 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   (c) GPU float division is ~1 ULP off Python (reciprocal-multiply) -> ALL final float conversions
   (gaps, ts deltas, tss) done in numpy on integers shipped through the GPU collect.
 - Lesson: integers cross the GPU boundary exactly; floats do not. Divide on the CPU.
+
+## DEC-275 receipt — MAD tolerance ACCEPTED (all criteria pass); demo run complete
+
+- 6k 3-seed receipt a969f1b0f190, 662.3s (GPU data path active): (a) no premature stop - seed 0
+  trains 10 epochs (was 4 under std-tol); (b) churn CI crosses 0; (c) value mean +0.0067 >= 0.
+- Supervised CIs: value +0.0067 [-0.0335,+0.0469], orders -0.0108 [-0.0308,+0.0092], churn -0.0008
+  [-0.0129,+0.0113] - all cross zero (tie-zone, no significant wins or losses).
+- Probes (best yet): retrieval 0.4614, churn-nn 0.9811, identity channel 0.448 vs table 0.251,
+  shuffle drop -0.2557.
+- Demo state: single command, GPU data path (byte-identical), deterministic training, honest cards.
+  Remaining open axis for the objective: supervised margin (value CI crosses zero).

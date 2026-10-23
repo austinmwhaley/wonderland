@@ -1,6 +1,6 @@
 # B/C demo command output
 
-seeds=[0, 1, 2] epochs=12 runtime=1042.5s hash=a969f1b0f190
+seeds=[0, 1, 2] epochs=12 runtime=662.3s hash=a969f1b0f190
 
 | target | table (XGBoost GPU) | frozen E | margin |
 |---|---|---|---|
@@ -14,4 +14,4 @@ seeds=[0, 1, 2] epochs=12 runtime=1042.5s hash=a969f1b0f190
 | churn-nn | 0.9811 | — |
 | identity channel | 0.4479 | 0.2513 |
 | identity category | 0.1618 | 0.2653 |
-| shuffle value drop | -0.2463 | 0 |
+| shuffle value drop | -0.2557 | 0 |
