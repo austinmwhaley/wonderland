@@ -5330,3 +5330,16 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - Decision: d=None -> derive_dim(n_seqs, total_events, vocab_sizes, et_entropy). Rejected:
   keeping the literal (violates adaptive); capacity ladder probe first (slower, same axis).
 - Acceptance: 6k 1-seed value90 margin >= 0 with d=256, no divergence, runtime recorded.
+
+## DEC-271 receipt — derived d=256 FAILED: divergence spike (false green) + value gate
+
+- 6k 1-seed, d=256 (info-derived), batch 10: trust-region trajectory (1, 0.0005, 50.26),
+  (2, 0.0015, 40.90), (3, 0.00225, 6714245.57), (4, 0.001125, 2320.64), (5, 0.000563, 1213.55).
+  UNSTABLE per DEC-039: val spike 6.7e6 at ep3 then partial "recovery" - the trust-region shrink +
+  best-state snapshot laundered a divergence into a completed run. value90 -0.0137 (< 0 gate).
+- Diagnosis: larger capacity raised the instability threshold breach; the same lr trajectory that
+  spiked to 71.96 (recoverable) at d=128 exploded at d=256. Stability threshold scales with capacity;
+  the lr seed/ceiling are not capacity-aware.
+- Action: shipped demo reverts to d=128 as a DISCLOSED bound. d-derivation machinery kept for probes;
+  audit item stays OPEN: capacity-aware stability coupling (capacity x lr) required before d=256 ships.
+  Never certify the d=256 receipt.

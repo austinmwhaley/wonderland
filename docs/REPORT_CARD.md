@@ -61,7 +61,7 @@ python3 scripts/demo/demo.py --data /tmp/opencode/t0_loop/relational_v3 --epochs
 | Schema-agnostic / per-stream | **partial** (auto fields; variant card pending rerun) |
 | Universal / transferable | partial (no held-out battery) |
 | Lawful / compositional | field perm 1.2e−7; scan 8.9e−16; mass additivity 0.0 → **PASS** |
-| Minimal / bounded | rank 2.4; E dim 128; past retention corr² 0.155; **future retention 0.0** |
+| Minimal / bounded | rank 2.4; E dim 128 (disclosed bound; derived 256 diverged, DEC-271); past retention corr² 0.155; **future retention 0.0** |
 | Robust / calibrated | partial (ECE good; divergence policy untested) |
 | Accessible | shape E 0.365 vs table 0.394; multi-scale 5527d blocks −0.72 → **FAIL** |
 | Efficient | GPU train/eval; collate CPU-bound (vectorization failed acceptance, DEC-261); lr now adaptive (DEC-267) → partial |
@@ -135,7 +135,7 @@ python3 scripts/demo/demo.py --data /tmp/opencode/t0_loop/relational_v3 --epochs
 | 3 | B+C 2/2/2 vs XGBoost GPU with paired CIs | supervised 3-seed done; unsup point estimates; RL CI crosses | **PARTIAL** |
 | 4 | Layer A current (v3 cert, validator 0) | `layer_a_certificate_v3.json` | **PASS** |
 | 5 | No hand summary inside E | learned mass/heads only | **PASS** |
-| 6 | Runtime/GPU utilization | collate CPU-bound; GPU idles | **FAIL** |
+| 6 | Runtime/GPU utilization | collate CPU-bound (vectorization failed DEC-261); d=256 OOM/divergence evidence recorded | **FAIL** |
 | 7 | Reproducibility (commit + hashes) | this card + `demo_run.json` hash | **PASS** |
 
 ## 9. Receipts index

@@ -30,7 +30,7 @@ def knn_purity(Z, lab, k=10):
 
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument('--data', required=True); ap.add_argument('--out', default='docs/report_cards')
-    ap.add_argument('--epochs', type=int, default=5); ap.add_argument('--seeds', default='0'); ap.add_argument('--d', type=int, default=None); ap.add_argument('--layers', type=int, default=2)
+    ap.add_argument('--epochs', type=int, default=5); ap.add_argument('--seeds', default='0'); ap.add_argument('--d', type=int, default=128); ap.add_argument('--layers', type=int, default=2)
     a = ap.parse_args(); out = Path(a.out); out.mkdir(parents=True, exist_ok=True); t0 = time.time()
     seeds = [int(x) for x in a.seeds.split(',')]; runs = []
     for seed in seeds:
