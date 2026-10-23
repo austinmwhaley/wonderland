@@ -5228,3 +5228,18 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - Rejected: keeping 7 parallel cards (divergence risk; already stale: 6k +4.4% is pre-learned-heads).
 - Alignment: Honest (one place, live verdicts), Efficient (no duplicated maintenance), Diagnosable (one scorecard).
 - Acceptance: every claim in REPORT_CARD traces to a receipt in docs/report_cards/experiments/ or a live run; old cards contain only pointers.
+
+## DEC-260 — Vectorize collate (padded-cache + vectorized targets)
+
+- Principle: Efficient — AGENTS.md cost doctrine: "vectorized/scan-native; no per-step Python loops".
+- Decision: load_data output is immutable per run, so build full-length padded arrays once per seqs
+  object (single-slot cache keyed by id); collate becomes slicing + vectorized numpy reductions:
+  unc_tgt masked means, id_tgt gather, past targets cached at full length (want_past is only ever
+  called with full cuts -- verified at all 5 call sites), future targets via one-hot einsum /
+  masked-window reductions. Fallback loop kept for want_past with partial cuts (correctness guard).
+- Rejected: cudf/cuml (unavailable in env), caching random-cut batches (changes the cut
+  distribution = dishonest), GPU-side collate (bigger rewrite, same win not needed).
+- Alignment: Honest (same values, verified), Efficient, Universal (pad built from whatever seqs hold).
+- Acceptance: (a) collate outputs equal a reference re-implementation of the old loop on random
+  batches; (b) wall-time per 16-batch drops >=3x; (c) 2k 3-seed demo within seed noise of receipt
+  5a50753d; (d) embed outputs identical vs reference path. Revert if any fails.
