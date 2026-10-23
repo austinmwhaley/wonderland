@@ -5343,3 +5343,12 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - Action: shipped demo reverts to d=128 as a DISCLOSED bound. d-derivation machinery kept for probes;
   audit item stays OPEN: capacity-aware stability coupling (capacity x lr) required before d=256 ships.
   Never certify the d=256 receipt.
+
+## DEC-272 — epochs audit item closed as disclosed bound (no run needed)
+
+- Evidence already in receipts: DEC-267 stopped at ep5 of a 12 budget; DEC-270 at ep4 of 12.
+  Convergence (patience 3 on held-out val, tol from val SE) governs; the epoch count is a budget
+  cap, not the stop criterion. Doctrine-compliant: "train to convergence, not to a count".
+- Audit complete: lr adaptive PASS, wd disclosed, clip removed PASS, d disclosed (open item:
+  capacity-aware stability coupling), epochs budget cap. Next: objective-critical 3-seed CI on
+  the DEC-270 config at 6k.
