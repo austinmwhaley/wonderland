@@ -23,6 +23,7 @@ from sklearn.metrics import r2_score, roc_auc_score  # noqa: E402
 from sklearn.model_selection import KFold  # noqa: E402
 
 DEV = "cuda" if torch.cuda.is_available() else "cpu"
+CLIP_STATS = {"steps": 0, "binds": 0}
 AS_OF_TS = 0.0
 BATCH = 16
 LABELS = (
@@ -519,6 +520,10 @@ def run_epoch(
         if train:
             opt.zero_grad()
             loss.backward()
+            CLIP_STATS["steps"] += 1
+            gn = torch.sqrt(sum((pp.grad.norm() ** 2 for pp in model.parameters() if pp.grad is not None)))
+            if float(gn) > 1.0:
+                CLIP_STATS["binds"] += 1
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             opt.step()
         tot += float(loss.detach())
@@ -680,6 +685,7 @@ def train_encoder(data, seed=0, d=64, layers=2, epochs=5, lr=None, batch=0):
         if pat >= 3:
             break
     print(f"trust-region lr {tr_log}", flush=True)
+    print(f"clip stats: {CLIP_STATS}", flush=True)
     if best_state:
         model.load_state_dict(best_state)
     E, BLK = embed(model, seqs, hold, vs)
