@@ -774,3 +774,18 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - Rejected: dropping the future head (discards a learnable signal); keeping the gap (proven noise).
 - Acceptance (pre-registered): (a) oracle learnability [measured: PASS]; (b) after retrain,
   head_fut/E ridge R2 on the new target > 0.2; (c) 6k 3-seed value90 CI lower bound > 0; no divergence.
+
+## DEC-280 — Future-head horizon ambiguity: one head per data-derived horizon
+
+- Post-DEC-279 probe: adjacent window fixed the target, but head_fut still r ~0.03 while training
+  val DROPPED (38.99 -> 35.36, lf included). Mechanism: run_epoch samples a different h per batch;
+  head_fut(E) has no h input -> the head learns a blur across horizons, generalizing to none.
+  The oracle at fixed h reached 0.53 from content E already carries (past corr2 0.37).
+- Tying h to the 90d label horizon would inject task knowledge into Layer B (anti-overfit clause:
+  known use cases VETO, never SHAPE). Rejected.
+- Decision: head_fut -> ModuleList over vs["horizons"] (taus + span quantiles, data-derived);
+  run_epoch samples h from horizons and trains ONLY the matching head; val_loss evaluates the
+  largest horizon consistently; forward returns ALL heads (consumer reads any horizon - task
+  selection at Layer C, never Layer B).
+- Acceptance (pre-registered): (a) probe head/ridge R2 at a fixed horizon > 0.2; (b) 6k 3-seed
+  value90 CI lower bound > 0; no divergence.

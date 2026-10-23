@@ -169,7 +169,7 @@ class Enc(nn.Module):
         self.heads_cat = nn.ModuleList([nn.Linear(d, s) for s in vs["gcat"]])
         self.heads_num = nn.ModuleList([nn.Linear(d, 1) for _ in range(vs["gnum"])])
         self.past = nn.Linear(d, vs["past_dim"])
-        self.head_fut = nn.Linear(d, vs["fut_dim"])
+        self.head_fut = nn.ModuleList([nn.Linear(d, vs["fut_dim"]) for _ in vs["horizons"]])
         self.head_id = nn.ModuleList([nn.Linear(d, s2) for s2 in vs["id_dims"]])
         self.head_unc = nn.Linear(d, vs["unc_dim"]); self.rel_idx = list(vs["rel_idx"])
 
@@ -219,7 +219,7 @@ class Enc(nn.Module):
         RB = self.head_gap(E)
         OB = self.head_et(E)
         RelB = torch.cat([self.heads_cat[j](E) for j in self.rel_idx], 1) if self.rel_idx else E.new_zeros((E.shape[0], 0))
-        CB = self.head_fut(E)
+        CB = torch.cat([hf(E) for hf in self.head_fut], 1)
         return Hs, E, w / w.sum(), MB, IB, RB, UB, CB, OB, RelB
 
 
@@ -398,7 +398,9 @@ def run_epoch(
             ct = float(rng.uniform(lo, hi))
             cut = int(np.searchsorted(seqs[k][5], ct, side="right"))
             cuts.append(max(8, min(cut, len(seqs[k][5]) - 2)))
-        h = float(rng.choice(taus))
+        hor = vs["horizons"]
+        _hi = int(rng.integers(len(hor)))
+        h = float(hor[_hi])
         t, past, qg, lens, fut = collate(
             seqs, bk, cuts, [0.0] * len(bk), vs, False, None, None, True, h, fut_mu, fut_sd
         )
@@ -406,7 +408,7 @@ def run_epoch(
         model._hs = Hs
         m = t["mask"][:, 1:]
         Ls = _next_losses(model, t, m, p_mask, rng)
-        Ls.append(((model.head_fut(E) - fut) ** 2).mean())
+        Ls.append(((model.head_fut[_hi](E) - fut) ** 2).mean())
         for jj, h in enumerate(model.head_id):
             Ls.append(F.cross_entropy(h(E), t["id_tgt"][:, jj]))
         Ls.append(((model.head_unc(E) - t["unc_tgt"]) ** 2).mean())
@@ -442,7 +444,7 @@ def val_loss(model, seqs, ks, vs, past_mu, past_sd, taus, fut_mu, fut_sd, horizo
         bk = ks[i : i + eb]
         fcuts = [len(seqs[k][5]) for k in bk]
         fq = [(AS_OF_TS - seqs[k][5][-1]) / 86400.0 for k in bk]
-        h = float(np.median(taus))
+        h = float(vs["horizons"][-1])
         t, past, qg, lens, fut = collate(
             seqs, bk, fcuts, fq, vs, True, past_mu, past_sd, True, h, fut_mu, fut_sd
         )
@@ -451,7 +453,7 @@ def val_loss(model, seqs, ks, vs, past_mu, past_sd, taus, fut_mu, fut_sd, horizo
         m = t["mask"][:, 1:]
         Ls = _next_losses(model, t, m, 0.0, np.random.default_rng(0))
         lp = ((model.past(E) - past) ** 2).mean()
-        lf = ((model.head_fut(E) - fut) ** 2).mean()
+        lf = ((model.head_fut[-1](E) - fut) ** 2).mean()
         lid = sum(float(F.cross_entropy(h(E), t["id_tgt"][:, jj])) for jj, h in enumerate(model.head_id))
         luc = float(((model.head_unc(E) - t["unc_tgt"]) ** 2).mean())
         tot += float(sum(Ls) + lp + lf + lid + luc)
