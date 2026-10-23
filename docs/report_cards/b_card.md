@@ -7,7 +7,7 @@ Synthetic `relational_v3`; no business data. E: auto-tokenizer, learned states, 
 | Axis | Primary metric | Baseline | Current | Status |
 |---|---|---|---|---|
 | Shape | retrieval / churn-neighbor / regime NMI | table | retrieval tie; churn-nn +1.4% robust; regime NMI below table | partial |
-| Mass | raw orders90/value90 R² | table | 6k quick: value 0.383 vs 0.348; orders 0.456 vs 0.425 | working (point) |
+| Mass | raw value/orders R² vs XGBoost GPU | table | 6k quick: value 0.401 vs 0.358 (+4.4%); orders 0.452 vs 0.450 (tie); churn 0.931 vs 0.926 | working (value) / tie |
 | Identity | kNN channel/category purity | table | channel **0.727 vs 0.249**; category 0.217 vs 0.260 | strong (channel) / partial |
 | Rate | churn AUC | table | E 0.934 vs table 0.964 | not working (rate) |
 | Uncertainty | ECE / dropout / OOD | — | uncertainty block wired; ECE 0.089; dropout 0.966 | partial |

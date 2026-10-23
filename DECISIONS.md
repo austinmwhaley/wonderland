@@ -5189,3 +5189,9 @@ closed as a Diagnostic Success / Representation Bound; **no green tag issued.**
 - Order/path: realized — event shuffle drops E value −0.091, orders −0.078, churn −0.030; table unchanged.
 - Relational: order_id event purity 0.005 vs 0.0005 (weak/above chance).
 - 2k 1-seed/5 vs XGBoost GPU table: value tie, orders +1.7%, churn −0.9% (stronger baseline than sklearn).
+
+## DEC-254 — 6k vs strong XGBoost GPU baseline
+
+- 6k quick (1 seed/5): value 0.401 vs 0.358 (+4.4%); orders 0.452 vs 0.450 (tie); churn 0.931 vs 0.926.
+- The stronger XGBoost GPU baseline removes the earlier sklearn-era churn/orders margins; value remains a clear E win.
+- Honest: the E is not universally ahead of XGBoost; value is robust, orders/churn are ties at this sample.
