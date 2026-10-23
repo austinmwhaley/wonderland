@@ -685,7 +685,9 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
         if not math.isfinite(trl) or not math.isfinite(vl):
             raise RuntimeError(f"divergence (hard failure, never masked): train {trl} val {vl}")
         hist.append(vl)
-        tol = float(np.std(hist[-5:]) / np.sqrt(max(1, len(hist[-5:])))) if len(hist) >= 3 else 1e-3
+        _h = np.array(hist[-5:])
+        _mad = float(np.median(np.abs(_h - np.median(_h)))) if len(_h) >= 3 else 0.0
+        tol = max(1.4826 * _mad / np.sqrt(len(_h)), 1e-3)
         improved = vl < best - tol
         if improved:
             best = vl
