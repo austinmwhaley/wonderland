@@ -214,7 +214,9 @@ def load_data(data, engine=None):
         gaps_all = np.array([1.0])
     e = max(2, min(4, len(peaks) + 1))
     taus = np.quantile(gaps_all, np.linspace(0.25, 0.95, e))
-    horizons = np.unique(np.concatenate([taus, np.quantile(spans, [0.25, 0.5, 0.75, 0.95])]))
+    _sp = np.quantile(spans, [0.05, 0.25, 0.5, 0.75, 0.95])
+    _ladder = np.unique(np.geomspace(max(taus.min(), 1e-3), max(_sp[0], 1e-3), 8))
+    horizons = np.unique(np.concatenate([taus, _ladder, _sp]))
     lens = (ends - starts).astype(np.float64)
     miss = []
     for j in range(len(catspec)):

@@ -805,3 +805,17 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   churn +0.0033 tie (honest). E-only, no hand summary, adaptive lr, no clip, deterministic.
 - Open follow-ups: horizon ladder has a hole at label scale (~90d: 2.42 -> 364.8) - log-spaced
   intermediate horizons queued; 2k revalidation on the new config; churn remains a tie.
+
+## DEC-281 — Queue 3: horizon-ladder hole at label scale (2k revalidation failed first)
+
+- 2k revalidation on the DEC-280 config FAILED to transfer the 6k win: value -0.0022 [-0.0857,+0.0812],
+  orders +0.0305 [-0.0274,+0.0884] (both cross 0). The win is 6k-specific so far.
+- Diagnosis: horizons = taus U span-quantiles([.25,.5,.75,.95]); every stream spans ~365d so ALL span
+  quantiles collapse to ~365 -> the ladder jumps 2.42d -> 364.8d, leaving the value90 LABEL SCALE
+  (~90d) unsupervised by the future objective. At 2k (less data) the encoder cannot compensate.
+- Decision: fill the hole with a data-derived geometric ladder between the two observed scales
+  (geomspace(max(tau), span_q05, 8) + 5%-95% span quantiles). Task-free: endpoints from observed
+  gaps/spans, never the label spec. Rejected: hardcoding 90d (magic number); reading the label
+  window (task leakage into Layer B).
+- Acceptance (pre-registered): 6k 3-seed value90 CI still excludes 0 (no regression) AND 2k value90
+  CI improves toward excluding 0. If 6k regresses -> revert ladder, record.
