@@ -151,6 +151,30 @@ Style: **spaces** (4) everywhere — `ruff format` is authoritative; no tabs.
 
 ---
 
+## Repository map & commands
+
+Layers (one-way): `rabbit_hole` (data) → `looking_glass` (Layer B donor) → `plugins` →
+`red_king` → `red_queen`, with `white_queen` (OPE certification) and `caterpillar`
+(read-only interpretability) off `plugins`.
+
+- **`looking_glass` = Layer B, the frozen customer-foundation donor.** One production
+  stack: the `CFM` selective multi-scale SSM (`cfm_model.py`), trained self-supervised and
+  frozen; plugins consume its `donor_embeddings` / `state_embeddings` tables read-only.
+  There are **no factory functions and no alternate backends** (the old `create_*` /
+  Mamba-2 `SequenceEngine` stack was deleted as dead code). Import submodules directly
+  (`looking_glass.cfm_*`, `looking_glass.daily_states`, ...).
+- **Run everything from the repo root** (`wonderland/`); the root `pyproject.toml` puts the
+  package on `sys.path` (no install needed).
+- Install deps: `python3 -m pip install -r requirements.txt`.
+- Tests: `python3 -m pytest` (fast tier `-m "not slow"`); tests live in the repo-root `tests/`.
+- Train + products: `python3 -m looking_glass.customer_foundation_model train --customers 25000
+  --anchors 6 --as-of YYYY-MM-01 --db rabbit_hole/data/duckdb/customer_event_stream.parquet
+  --out-dir looking_glass/artifacts/cfm`.
+- Conventions: one responsibility per submodule, **no package-root re-exports** (import
+  submodules); `scripts/` is not part of the package (it bootstraps the repo root onto `sys.path`).
+
+---
+
 ## Principles
 
 1. **No magic numbers.** Every threshold, budget, rate, dimension, window,
