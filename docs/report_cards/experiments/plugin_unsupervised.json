@@ -11,54 +11,54 @@
    "eff_rank": 7.83
   },
   "E": {
-   "retrieval": 0.4036,
-   "anomaly_auc": 0.4827,
-   "anomaly_knn_auc": 0.4868,
-   "churn_nn": 0.9672,
-   "nmi_regime": 0.0649,
-   "ari_regime": 0.0727,
-   "nmi_category": 0.0036,
-   "eff_rank": 8.19,
+   "retrieval": 0.421,
+   "anomaly_auc": 0.4596,
+   "anomaly_knn_auc": 0.4638,
+   "churn_nn": 0.9689,
+   "nmi_regime": 0.059,
+   "ari_regime": 0.0586,
+   "nmi_category": 0.0047,
+   "eff_rank": 9.07,
    "retrieval_ci": {
-    "se": 0.027,
-    "lo": -0.0513,
-    "hi": 0.0523
+    "se": 0.0252,
+    "lo": -0.034,
+    "hi": 0.0708
    },
    "retrieval_gate": false,
    "anomaly_auc_ci": {
-    "se": 0.025,
-    "lo": -0.2222,
-    "hi": -0.1251
+    "se": 0.0264,
+    "lo": -0.254,
+    "hi": -0.1499
    },
    "anomaly_auc_gate": false,
    "anomaly_knn_auc_ci": {
-    "se": 0.0311,
-    "lo": -0.2156,
-    "hi": -0.0868
+    "se": 0.0292,
+    "lo": -0.2344,
+    "hi": -0.1164
    },
    "anomaly_knn_auc_gate": false,
    "churn_nn_ci": {
-    "se": 0.005,
-    "lo": 0.01,
-    "hi": 0.0289
+    "se": 0.0049,
+    "lo": 0.0117,
+    "hi": 0.0306
    },
    "churn_nn_gate": true,
    "nmi_regime_ci": {
-    "se": 0.0059,
-    "lo": -0.059,
-    "hi": -0.0352
+    "se": 0.0071,
+    "lo": -0.0677,
+    "hi": -0.0405
    },
    "nmi_regime_gate": false,
    "ari_regime_ci": {
-    "se": 0.0068,
-    "lo": -0.0557,
-    "hi": -0.0296
+    "se": 0.0079,
+    "lo": -0.0719,
+    "hi": -0.0412
    },
    "ari_regime_gate": false,
    "nmi_category_ci": {
-    "se": 0.0022,
-    "lo": -0.0067,
-    "hi": 0.0017
+    "se": 0.0024,
+    "lo": -0.0059,
+    "hi": 0.0036
    },
    "nmi_category_gate": false
   }

@@ -52,16 +52,16 @@
   "sorted_key": true,
   "per_customer_sorted": true,
   "event_types": {
-   "view": 174297,
-   "customer_signup": 6000,
-   "purchase": 385166,
-   "return": 46045,
    "review": 204872,
+   "remove_from_cart": 314127,
+   "view": 174297,
    "add_to_cart": 236063,
    "email_send": 1547674,
    "search": 236529,
-   "remove_from_cart": 314127,
-   "support_ticket": 205024
+   "return": 46045,
+   "customer_signup": 6000,
+   "support_ticket": 205024,
+   "purchase": 385166
   },
   "pass": true
  },

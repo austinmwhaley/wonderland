@@ -1,0 +1,87 @@
+{
+ "protocol": {
+  "reward_days": 14.0,
+  "maxsends": 6,
+  "split": "GroupKFold by customer"
+ },
+ "channel": {
+  "levels": [
+   "direct_mail",
+   "email",
+   "push",
+   "sms"
+  ],
+  "n_rows": 25386,
+  "n_customers": 5993,
+  "random_value": 81.94,
+  "E": {
+   "ips": 83.86,
+   "dr": 82.92
+  },
+  "table": {
+   "ips": 83.75,
+   "dr": 83.01
+  },
+  "random": {
+   "ips": 83.86,
+   "dr": 82.36
+  },
+  "E_minus_table": {
+   "mean": 0.1,
+   "lo": -0.56,
+   "hi": 0.73
+  },
+  "E_minus_random": {
+   "mean": 0.0,
+   "lo": 0.0,
+   "hi": 0.0
+  },
+  "E_minus_random_dr": {
+   "mean": 0.57,
+   "lo": 0.04,
+   "hi": 1.14
+  },
+  "mean_reward": 81.943,
+  "positive_rate": 0.781
+ },
+ "offer": {
+  "levels": [
+   "0",
+   "1",
+   "2",
+   "3"
+  ],
+  "n_rows": 25325,
+  "n_customers": 5991,
+  "random_value": 82.43,
+  "E": {
+   "ips": 83.6,
+   "dr": 83.52
+  },
+  "table": {
+   "ips": 81.89,
+   "dr": 82.87
+  },
+  "random": {
+   "ips": 83.6,
+   "dr": 84.29
+  },
+  "E_minus_table": {
+   "mean": 1.73,
+   "lo": 0.4,
+   "hi": 3.06
+  },
+  "E_minus_random": {
+   "mean": 0.0,
+   "lo": 0.0,
+   "hi": 0.0
+  },
+  "E_minus_random_dr": {
+   "mean": -0.79,
+   "lo": -1.4,
+   "hi": -0.18
+  },
+  "mean_reward": 82.426,
+  "positive_rate": 0.78
+ }
+}

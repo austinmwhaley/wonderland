@@ -34,6 +34,20 @@ run(["scripts/measure_objectives.py", D6], env=f6)
 run(["scripts/measure_identity.py", D6], env=f6)
 run(["scripts/measure_ceiling.py", D6], env=f6)
 run(["scripts/measure_donor.py", D6], env=f6)
+run(
+    [
+        "scripts/measure_battery.py",
+        "--frozen",
+        C6,
+        "--data",
+        D6,
+        "--tag",
+        "baseline",
+        "--out",
+        "/tmp/opencode/battery",
+    ],
+    env=f6,
+)
 run(["scripts/measure_demo_plugins.py", "--data", D6, "--frozen", C6], env=base)
 run(["scripts/measure_causal.py", "--data", D6], env=f6)
 run(["scripts/measure_response.py", "--data", D6, "--frozen", C6], env=base)

@@ -2,7 +2,7 @@
 
 > **Generated** by `python3 scripts/audit_card.py` — DO NOT EDIT. The primary B + B+C card is `REPORT_CARD.md`. Gates live in `scripts/card_spec.py`; every row resolves to a receipt (`docs/report_cards/experiments/`). A missing receipt renders NOT MEASURED.
 
-- **Generated:** 2026-10-24 · **commit:** `4840d65` · **branch:** primary-encoder
+- **Generated:** 2026-10-24 · **commit:** `e85f5bb` · **branch:** primary-encoder
 - **Data:** `relational_v3` synthetic reference (+ schema variant) · harness, no business data.
 - **Latest demo receipt:** `7e32ebb84fc3` · seeds `3` · runtime `1009.2s`.
 - **B mastery:** **NOT YET MASTERED** — PASS 26 · FAIL 3 · NOT MEASURED 0.
@@ -67,19 +67,19 @@ Goal -> subgoals; a subgoal is MET only when all its rows PASS (or are EXCLUDED,
 
 | # | Item | Metric | Comparator | Gate | Value | Verdict |
 |---|---|---|---|---|---|---|
-| D1 | E vs raw table (6k) | value/orders/churn R2-AUC margin | raw table | not materially worse (all 3) | +0.087 / +0.081 / +0.008 | **PASS** |
-| D2 | E vs fair table (6k) | value/orders/churn margin | fair table | E > fair on all | +0.254 / +0.306 / +0.235 | **PASS** |
-| D3 | E adds over table+sequence | R2/auc gain of table+seq+E vs table+seq | table+seq | delta > 0 on all | +0.064 / +0.080 / +0.007 | **PASS** |
-| D4 | Negative control: random E | same battery with random E | learned E | random < learned (all 3) | +0.398 / +0.441 / +0.482 | **PASS** |
-| D5 | Negative control: destroyed E | same battery with shuffled E dims | learned E | destroyed < learned (all 3) | +0.454 / +0.477 / +0.428 | **PASS** |
+| D1 | E vs raw table (6k) | value/orders/churn R2-AUC margin | raw table | not materially worse (all 3) | +0.082 / +0.066 / +0.014 | **PASS** |
+| D2 | E vs fair table (6k) | value/orders/churn margin | fair table | E > fair on all | +0.248 / +0.291 / +0.241 | **PASS** |
+| D3 | E adds over table+sequence | R2/auc gain of table+seq+E vs table+seq | table+seq | delta > 0 on all | +0.058 / +0.068 / +0.012 | **PASS** |
+| D4 | Negative control: random E | same battery with random E | learned E | random < learned (all 3) | +0.356 / +0.439 / +0.472 | **PASS** |
+| D5 | Negative control: destroyed E | same battery with shuffled E dims | learned E | destroyed < learned (all 3) | +0.378 / +0.463 / +0.436 | **PASS** |
 
 ## Content axes (8)
 
 | # | Item | Metric | Comparator | Gate | Value | Verdict |
 |---|---|---|---|---|---|---|
 | A1 | Shape | retrieval / churn-nn / eff-rank | table (n/a) | retrieval > 0 and churn-nn > 0.6 | 0.417 | **PASS** |
-| A2 | Mass | past-magnitude reconstruction corr2; additivity | oracle | corr2 >= 0.4 and additivity exact | 0.537 | **PASS** |
-| A3 | Identity | kNN channel + category purity (from E) | table | both >= table | ch 0.685/0.251 · cat 0.159/0.265 | **FAIL** |
+| A2 | Mass | past-magnitude reconstruction corr2; additivity | oracle | corr2 >= 0.4 and additivity exact | 0.568 | **PASS** |
+| A3 | Identity | kNN channel + category purity (from E) | table | both >= table | ch 0.625/0.251 · cat 0.173/0.265 | **FAIL** |
 | A4 | Rate | churn AUC | table | E >= table | E 0.9290 vs 0.9256 | **PASS** |
 | A5 | Uncertainty | ECE; OOD retention | coverage target | ECE <= 0.1 and OOD retained | 0.0482 | **PASS** |
 | A6 | Causal | IPS known-effect recovery | random; table | E recovers effect (CI excludes 0) | diff +18.8 [-45.1,+78.8] | **FAIL** |
@@ -92,14 +92,14 @@ Goal -> subgoals; a subgoal is MET only when all its rows PASS (or are EXCLUDED,
 |---|---|---|---|---|---|---|
 | O1 | next | linear probe next-event skill | naive (marginal) | beats naive | skill +0.466 vs naive +0.465 | **FAIL** |
 | O2 | dt | gap/rate probe skill | naive (prev gap) | beats naive | skill +0.100 vs naive -0.000 | **PASS** |
-| O3 | jepa | latent future prediction | naive (hist mean) | beats naive | skill +0.880 vs naive -0.002 | **PASS** |
-| O4 | mask | masked-event recovery | naive (marginal) | beats naive | skill +0.867 vs naive +0.456 | **PASS** |
+| O3 | jepa | latent future prediction | naive (hist mean) | beats naive | skill +0.876 vs naive -0.002 | **PASS** |
+| O4 | mask | masked-event recovery | naive (marginal) | beats naive | skill +0.851 vs naive +0.456 | **PASS** |
 | O5 | value | value probe skill | naive (hist mean) | beats naive | skill +0.055 vs naive -0.000 | **PASS** |
-| O6 | entity | entity/identity probe | naive (marginal) | beats naive | skill +0.574 vs naive +0.535 | **PASS** |
-| O7 | order | temporal-order probe | naive (random) | beats naive | skill +0.813 vs naive +0.484 | **PASS** |
-| O8 | agg | aggregate/window probe | naive (hist mean) | beats naive | skill +0.022 vs naive -0.000 | **PASS** |
-| O9 | query | query-conditioned probe | naive (hist mean) | beats naive | skill +0.465 vs naive -0.001 | **PASS** |
-| O10 | sf | successor-feature probe | naive (prev value) | beats naive | skill +0.137 vs naive +0.091 | **PASS** |
+| O6 | entity | entity/identity probe | naive (marginal) | beats naive | skill +0.573 vs naive +0.535 | **PASS** |
+| O7 | order | temporal-order probe | naive (random) | beats naive | skill +0.786 vs naive +0.484 | **PASS** |
+| O8 | agg | aggregate/window probe | naive (hist mean) | beats naive | skill +0.021 vs naive -0.000 | **PASS** |
+| O9 | query | query-conditioned probe | naive (hist mean) | beats naive | skill +0.488 vs naive -0.001 | **PASS** |
+| O10 | sf | successor-feature probe | naive (prev value) | beats naive | skill +0.138 vs naive +0.091 | **PASS** |
 
 ## Supervised -- floor / E / ceiling
 
@@ -107,9 +107,9 @@ floor = legacy (table+XGBoost); E = frozen encoder; ceiling = full-history oracl
 
 | target | floor | E | ceiling | E-floor | gap | closed | status |
 |---|---|---|---|---|---|---|---|
-| value90 | 0.357 | 0.444 | 0.384 | +0.0868±0.0166 | +0.026 | 3.31 | **PASS** |
-| orders90 | 0.450 | 0.532 | 0.457 | +0.0811±0.0141 | +0.007 | 11.51 | **PASS** |
-| churn90 | 0.926 | 0.934 | 0.928 | +0.0078±0.0086 | +0.002 | 3.59 | **FAIL** |
+| value90 | 0.357 | 0.439 | 0.384 | +0.0815±0.0165 | +0.026 | 3.10 | **PASS** |
+| orders90 | 0.450 | 0.517 | 0.457 | +0.0658±0.0135 | +0.007 | 9.41 | **PASS** |
+| churn90 | 0.926 | 0.940 | 0.928 | +0.0138±0.0100 | +0.002 | 6.27 | **FAIL** |
 
 ## Verdict
 
