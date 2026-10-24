@@ -1,44 +1,44 @@
 {
  "config": {
-  "data": "/tmp/opencode/t0_loop/ref_v3b_6k",
+  "data": "/tmp/opencode/t0_loop/ref_gpu",
   "seed": 0
  },
  "results": {
   "value90": {
-   "floor": 0.3575,
-   "E": 0.4443,
-   "ceiling": 0.3838,
-   "E_minus_floor": 0.0868,
-   "se": 0.0166,
-   "lo": 0.0558,
-   "gap": 0.0263,
-   "closed_frac": 3.305,
-   "beats_floor_2se": true,
+   "floor": 0.3168,
+   "E": 0.3621,
+   "ceiling": 0.353,
+   "E_minus_floor": 0.045,
+   "se": 0.0331,
+   "lo": -0.015,
+   "gap": 0.0362,
+   "closed_frac": 1.25,
+   "beats_floor_2se": false,
    "reaches_ceiling": true
   },
   "orders90": {
-   "floor": 0.4503,
-   "E": 0.5318,
-   "ceiling": 0.4574,
-   "E_minus_floor": 0.0811,
-   "se": 0.0141,
-   "lo": 0.0547,
-   "gap": 0.0071,
-   "closed_frac": 11.512,
+   "floor": 0.3686,
+   "E": 0.4461,
+   "ceiling": 0.3997,
+   "E_minus_floor": 0.0763,
+   "se": 0.0346,
+   "lo": 0.0095,
+   "gap": 0.0311,
+   "closed_frac": 2.491,
    "beats_floor_2se": true,
    "reaches_ceiling": true
   },
   "churn90": {
-   "floor": 0.9256,
-   "E": 0.9337,
-   "ceiling": 0.9278,
-   "E_minus_floor": 0.0078,
-   "se": 0.0086,
-   "lo": -0.0071,
-   "gap": 0.0023,
-   "closed_frac": 3.593,
+   "floor": 0.9766,
+   "E": 0.9632,
+   "ceiling": 0.9737,
+   "E_minus_floor": -0.0132,
+   "se": 0.0154,
+   "lo": -0.0465,
+   "gap": -0.0029,
+   "closed_frac": 4.589,
    "beats_floor_2se": false,
-   "reaches_ceiling": true
+   "reaches_ceiling": false
   }
  }
 }

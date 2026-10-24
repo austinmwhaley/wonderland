@@ -22,7 +22,13 @@ DATA = sys.argv[1] if len(sys.argv) > 1 else "/tmp/opencode/t0_loop/relational_6
 OUT = Path("/home/austin-whaley/Documents/wonderland/docs/report_cards/experiments/encoder_donor.json")
 FIXED = {"value_30d", "value_90d", "recency_days", "days_since_last_purchase"}
 
-E, _, labels, hold, seg, model, vs, B, best, BLK = AE.train_encoder(DATA, seed=0, epochs=12, d=128, layers=2)
+import os as _os
+_fz = _os.environ.get("FROZEN")
+if _fz:
+    from frozen import load as _fload
+    E, _Xtab_f, labels, hold, seg, model, vs, B, best, BLK = _fload(_fz)
+else:
+    E, _, labels, hold, seg, model, vs, B, best, BLK = AE.train_encoder(DATA, seed=0, epochs=12, d=128, layers=2)
 torch.cuda.empty_cache()
 E = np.nan_to_num(E)
 BLK = np.nan_to_num(BLK)

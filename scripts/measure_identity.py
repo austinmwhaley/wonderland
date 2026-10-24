@@ -18,7 +18,13 @@ from scipy.spatial.distance import cdist  # noqa: E402
 DATA = sys.argv[1] if len(sys.argv) > 1 else "/tmp/opencode/t0_loop/v7b"
 OUT = Path("/home/austin-whaley/Documents/wonderland/docs/report_cards/experiments/encoder_identity.json")
 
-E, Xtab, labels, hold, seg, model, vs, B, best, BLK = AE.train_encoder(DATA, seed=0, epochs=12, d=128, layers=2)
+import os as _os
+_fz = _os.environ.get("FROZEN")
+if _fz:
+    from frozen import load as _fload
+    E, Xtab, labels, hold, seg, model, vs, B, best, BLK = _fload(_fz)
+else:
+    E, Xtab, labels, hold, seg, model, vs, B, best, BLK = AE.train_encoder(DATA, seed=0, epochs=12, d=128, layers=2)
 torch.cuda.empty_cache()
 
 

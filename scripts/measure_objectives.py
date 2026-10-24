@@ -29,7 +29,13 @@ DATA = sys.argv[1] if len(sys.argv) > 1 else "/tmp/opencode/t0_loop/relational_v
 OUT = Path("/home/austin-whaley/Documents/wonderland/docs/report_cards/experiments/encoder_objectives.json")
 H = 4  # horizon (steps) for agg/jepa/sf
 
-E, _, labels, hold, seg, model, vs, B, best, BLK = AE.train_encoder(DATA, seed=0, epochs=12, d=128, layers=2)
+import os as _os
+_fz = _os.environ.get("FROZEN")
+if _fz:
+    from frozen import load as _fload
+    E, _Xtab_f, labels, hold, seg, model, vs, B, best, BLK = _fload(_fz)
+else:
+    E, _, labels, hold, seg, model, vs, B, best, BLK = AE.train_encoder(DATA, seed=0, epochs=12, d=128, layers=2)
 torch.cuda.empty_cache()
 _, A, keys, seqs, vs2, et_v, catspec, num, taus, p_mask, as_of_ts, periods, horizons = AE.load_data(DATA)
 AE.AS_OF_TS = as_of_ts
