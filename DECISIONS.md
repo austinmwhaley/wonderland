@@ -900,3 +900,17 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   the table. The generator rewrite shifted the feature distribution so the ENCODER underperforms —
   the bottleneck is no longer only the label form. Next: (a) inspect why E is weak on v6+ (tokenizer
   field discovery / distributions / training), (b) fix validate_layer_a (path_a_validation.json not written).
+
+## DEC-287 — Diagnosis: E is weak on v6+ because the rewrite changed the data (spurious fields + ~3x lower activity)
+
+- Compared load_data schema + label stats v3 vs v9:
+  * categorical fields 17 -> 20: rewrite added spurious duplicate attributes (`product_id_a`,
+    `category_a`, `campaign_a`) AND a size-1 (empty) field -> the auto-tokenizer feeds E junk/noise.
+  * activity ~3x lower: y_value_90 mean 1275 -> 409; y_orders_90 10.2 -> 3.5; y_churn_90 0.08 -> 0.145;
+    gap/span scales shifted (taus 0.35/0.98/2.4 -> 0.98/1.0/2.0). Less signal + different scaling.
+- Consequence: E (fed noisier, lower-signal input with junk fields) slid from beating the floor (v3,
+  value +0.068 @6k) to ~0.05 on v9, while the table still reads the (lower) aggregates. NOT an encoder
+  regression in code - an input/distribution regression from the generator rewrite.
+- Fix (next one axis): remove the `*_a`/empty fields from emitted attributes; restore activity/label
+  scale so value90 has real variance; KEEP the v6+ order/action mechanisms and GPU vectorization.
+  Then re-check the ceiling/floor frame (E should beat the floor again, giving discount_sensitivity headroom).
