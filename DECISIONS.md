@@ -845,3 +845,19 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   volume limits the supervised head. Disclosed, not hidden.
 - No regression vs the pre-DEC-280 schema card; the universality claim is recorded.
 - Next queue: RL/causal CIs at the final config.
+
+## DEC-283 — Data revision: add self-exciting (Hawkes) intensity to the reference generator
+
+- Principle: Universal/Honest — the demo dataset should exercise genuine sequence
+  dependence so the encoder's advantage is structural, not marginal.
+- Change (Layer A generator): per-customer self-exciting intensity `exc` (decays ~weekly,
+  kicks +1 on each event) scales both purchase and organic-activity hazard.
+- Effect (2k seed0, v4): order/path separation DOUBLED (event-shuffle value drop -0.51 vs
+  -0.28; retrieval 0.49; churn-nn 0.995). BUT the supervised TABLE also strengthened
+  (value 0.64 vs 0.36) because self-excitation is count-based -> recency/count features see it.
+- Diagnosis: to make ONLY a sequence model win, the hazard must depend on the ORDER/PATTERN of
+  recent events, not their count. Next revision: pattern-conditioned intensity (n-gram gates)
+  + gap-dependent hazard, so aggregates are provably blind.
+- This is a NEW data revision (v4); all v3 receipts are superseded. Full re-certify + re-run
+  of the card measurements required before any claim moves.
+- Reverted the no-op log_s clamp (unproven, dead code).

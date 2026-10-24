@@ -186,6 +186,7 @@ def build_relational(spec: RelationalSpec):
         _regime_runs: list[list] = []
         _last_regime = regime
         _run_len = 0
+        exc = 0.0  # self-exciting intensity (Hawkes): recent events raise near-term rate
         # long-memory promo shock: starts on a random day, decays
         shock_day = float(rng.uniform(0.1 * T, 0.8 * T))
         shock_amp = float(rng.uniform(0.3, 1.2))
@@ -222,6 +223,7 @@ def build_relational(spec: RelationalSpec):
         for day in range(T):
             if day >= churn_day:
                 break
+            exc *= 0.85  # burst memory decays ~weekly
             # regime switch + long-memory shock
             if rng.random() < 0.035:
                 regime = int(rng.choice(len(REGIMES), p=P[regime]))
@@ -336,6 +338,7 @@ def build_relational(spec: RelationalSpec):
                 * price_fit
                 * (1.0 + 0.9 * shock)
                 * (1.0 + 0.35 * cust_cat[int(prod_cat[pid])])
+                * (1.0 + 0.9 * exc)  # self-excitation: clustered purchases
             )
             p_buy = _clip01(p_buy)
             made_purchase = False
@@ -345,6 +348,7 @@ def build_relational(spec: RelationalSpec):
                 value = round(unit * qty * (1.0 - discount), 2)
                 margin = round(value * float(prod_margin[pid]), 2)
                 order_id += 1
+                exc += 1.0
                 oid = f"o{order_id:09d}"
                 day_ts = day + (acts["hour"] + 0.75) / 24.0
                 emit(
@@ -416,7 +420,7 @@ def build_relational(spec: RelationalSpec):
                         )
                         prev2, prev1 = prev1, last_event
                         last_event = "return"
-            if not made_purchase and rng.random() < s * spec.base_activity * regime_mult:
+            if not made_purchase and rng.random() < s * spec.base_activity * regime_mult * (1.0 + 0.9 * exc):
                 # organic funnel: path-dependent event choice
                 if last_event == "add_to_cart":
                     et = "purchase" if rng.random() < 0.35 else "remove_from_cart"
@@ -444,6 +448,7 @@ def build_relational(spec: RelationalSpec):
                     keep=keep,
                     **_camp_extra,
                 )
+                exc += 1.0
                 prev2, prev1 = prev1, last_event
                 last_event = et
                 if et == "support_ticket":
