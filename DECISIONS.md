@@ -941,3 +941,16 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   order/action mechanisms are not producing E-headroom on this data.
 - Status: data-fix attempts (fields/activity) insufficient; E cannot beat the floor on the rewritten
   generator. v3 data remains the working reference. Next iteration must reconcile (GPU + v3 dynamics).
+
+## DEC-290 — DATA ISSUE FIXED: revert the GPU rewrite to the pre-rewrite generator (E beats the floor)
+
+- Root cause of E-below-floor: the v6+ generator rewrite changed the dynamics to favor the table.
+- Fix: restored rabbit_hole/generators/relational_reference.py from 2258a05 (pre-rewrite); made
+  table_features robust to absent labels.
+- Result (regenerated 6k, ref_v3b_6k): value90 floor 0.357 / E 0.444 / ceiling 0.384 ->
+  E-floor +0.087, beats2se TRUE, reaches ceiling TRUE -> FRAME PASS; orders90 +0.081 PASS;
+  churn90 +0.008 tie. E BEATS the legacy floor by 2SE AND reaches the full-history ceiling.
+- Note: the pre-rewrite generator is CPU; the GPU rewrite is reverted because it regressed the
+  OBJECTIVE (which outranks speed - a change that violates the objective is wrong regardless of speed).
+  Porting GPU vectorization onto the working dynamics is a later efficiency task.
+- Data is FIXED. Next: re-run all receipts on this revision; close A6; build B+C; one command.

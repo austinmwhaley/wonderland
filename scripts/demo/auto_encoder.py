@@ -523,7 +523,7 @@ def table_features(A, hold):
         ],
         drop_first=True,
     )
-    labels = {c: np.array([r[c] for r in rows], float) for c in LABELS}
+    labels = {c: np.array([r[c] for r in rows], float) for c in LABELS if c in rows[0]}
     seg = np.array([str(r["segment"]) for r in rows], dtype=object)
     return X.to_numpy().astype(float), labels, seg
 
