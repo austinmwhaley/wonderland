@@ -872,3 +872,18 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - Standing: the sequence-dependent revision is v4; supervised remains tie-zone at 2k (win is 6k).
 - Next large step (needs sanction due to compute): re-certify Layer A on v4 + re-run every card
   measurement (all v3 receipts superseded) before any verdict moves.
+
+## DEC-285 — Sum-based outcome labels cannot be sequence-dependent (LLN); ceiling frame corrects the spec
+
+- Tried: persistent path-dependent "engagement" state multiplying the purchase rate (data v8).
+- Result: floor jumped to 0.715 (table now predicts value90 well), ceiling still ~= floor (gap -0.009);
+  E at/below floor. Making the RATE path-dependent made the label MORE aggregate-determined, not less.
+- Insight (binding for the generator spec): a 90-day SUM/COUNT label is determined by the average
+  rate (law of large numbers) -> aggregates capture it -> ceiling ~= floor -> not winnable by ANY
+  encoder. Sequence-dependence in a summed label washes out. The DATA GAP is intrinsic to sum labels.
+- Correct generator spec: to give an axis headroom, the LABEL must be a NONLINEAR / OCCURRENCE /
+  THRESHOLD function of the path (e.g., "hit a specific order-gated pattern within k days", a regime
+  crossing, or a sequence-conditioned action response), NOT an additive window sum. Only then does
+  ceiling clear floor and the adaptive encoder have something to extract.
+- Reverted the engagement change (no headroom); v7b stands. Next data iteration must change the LABEL
+  functional form, not the rate.
