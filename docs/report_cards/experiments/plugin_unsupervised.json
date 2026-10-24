@@ -1,0 +1,66 @@
+{
+ "arms": {
+  "table": {
+   "retrieval": 0.4012,
+   "anomaly_auc": 0.656,
+   "anomaly_knn_auc": 0.6361,
+   "churn_nn": 0.9478,
+   "nmi_regime": 0.1126,
+   "ari_regime": 0.1157,
+   "nmi_category": 0.0056,
+   "eff_rank": 7.83
+  },
+  "E": {
+   "retrieval": 0.4036,
+   "anomaly_auc": 0.4827,
+   "anomaly_knn_auc": 0.4868,
+   "churn_nn": 0.9672,
+   "nmi_regime": 0.0649,
+   "ari_regime": 0.0727,
+   "nmi_category": 0.0036,
+   "eff_rank": 8.19,
+   "retrieval_ci": {
+    "se": 0.027,
+    "lo": -0.0513,
+    "hi": 0.0523
+   },
+   "retrieval_gate": false,
+   "anomaly_auc_ci": {
+    "se": 0.025,
+    "lo": -0.2222,
+    "hi": -0.1251
+   },
+   "anomaly_auc_gate": false,
+   "anomaly_knn_auc_ci": {
+    "se": 0.0311,
+    "lo": -0.2156,
+    "hi": -0.0868
+   },
+   "anomaly_knn_auc_gate": false,
+   "churn_nn_ci": {
+    "se": 0.005,
+    "lo": 0.01,
+    "hi": 0.0289
+   },
+   "churn_nn_gate": true,
+   "nmi_regime_ci": {
+    "se": 0.0059,
+    "lo": -0.059,
+    "hi": -0.0352
+   },
+   "nmi_regime_gate": false,
+   "ari_regime_ci": {
+    "se": 0.0068,
+    "lo": -0.0557,
+    "hi": -0.0296
+   },
+   "ari_regime_gate": false,
+   "nmi_category_ci": {
+    "se": 0.0022,
+    "lo": -0.0067,
+    "hi": 0.0017
+   },
+   "nmi_category_gate": false
+  }
+ }
+}

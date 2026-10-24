@@ -1,3 +1,5 @@
+> **SUPERSEDED (2026-10-24).** The demo is the 6k synthetic dataset run through the normal pipeline; the primary card is `docs/REPORT_CARD.md`. This audit is historical.
+
 # Demo path audit — decisions vs principles
 
 Scope: Layer A data (relational PATH A/B), Layer B encoder prototype, training loop, evaluation.

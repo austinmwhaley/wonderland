@@ -1,0 +1,135 @@
+{
+ "data": "/tmp/opencode/t0_loop/ref_v3b_6k",
+ "as_of": "2025-01-01",
+ "seed": 17,
+ "labels": [
+  "y_orders_30",
+  "y_value_30",
+  "y_margin_30",
+  "y_next_days_30",
+  "y_churn_30",
+  "y_orders_90",
+  "y_value_90",
+  "y_margin_90",
+  "y_next_days_90",
+  "y_churn_90"
+ ],
+ "action_design": {
+  "action_period_seconds": 86400.0,
+  "action_design": "one_factor_daily",
+  "note": "daily one-factor randomized action; other keys at the customer optimum; purchase depends on action quality x regime x path x interactions x long-memory shock."
+ },
+ "path_a": {
+  "ok": true,
+  "failures": [],
+  "join_ok": true,
+  "recompute_ok": {
+   "n_orders": true,
+   "purchase_value": true,
+   "y_orders_30": true,
+   "y_value_30": true
+  },
+  "label_balance": {
+   "churn90_positive": 479,
+   "churn90_rate": 0.0798
+  },
+  "temporal_split": {
+   "churn90_auc": 0.9492,
+   "value90_r2": 0.4245
+  },
+  "pass": true
+ },
+ "path_b": {
+  "columns": [
+   "customer_key",
+   "event_ts",
+   "event_type",
+   "event_attributes"
+  ],
+  "canonical_4": true,
+  "rows": 3355797,
+  "customers": 6000,
+  "sorted_key": true,
+  "per_customer_sorted": true,
+  "event_types": {
+   "view": 174297,
+   "customer_signup": 6000,
+   "purchase": 385166,
+   "return": 46045,
+   "review": 204872,
+   "add_to_cart": 236063,
+   "email_send": 1547674,
+   "search": 236529,
+   "remove_from_cart": 314127,
+   "support_ticket": 205024
+  },
+  "pass": true
+ },
+ "actions": {
+  "keys": [
+   "channel",
+   "dow",
+   "freq",
+   "hour",
+   "offer"
+  ],
+  "all_five": true,
+  "levels": {
+   "offer": [
+    "0",
+    "1",
+    "2",
+    "3"
+   ],
+   "dow": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6"
+   ],
+   "channel": [
+    "0",
+    "1",
+    "2",
+    "3"
+   ],
+   "freq": [
+    "0",
+    "1",
+    "2",
+    "3"
+   ],
+   "hour": [
+    "0",
+    "1",
+    "10",
+    "11",
+    "12",
+    "13",
+    "14",
+    "15",
+    "16",
+    "17",
+    "18",
+    "19",
+    "2",
+    "20",
+    "21",
+    "22",
+    "23",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9"
+   ]
+  },
+  "all_keys_have_2plus": true,
+  "pass": true
+ }
+}

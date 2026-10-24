@@ -371,7 +371,9 @@ obeying the principles*. Operate as an explicit loop, every iteration:
 1. **Generate the card** — `python3 scripts/report_card.py` renders `docs/REPORT_CARD.md`
    from the frozen gate spec (`scripts/card_spec.py`) + receipts. The card is the **single
    steering artifact**: goal, principles, subgoal decomposition, and every claim with its
-   comparator, gate, value, and verdict.
+   comparator, gate, value, and verdict. The full research audit (every open Layer-1 row)
+   is `python3 scripts/audit_card.py` -> `docs/AUDIT_CARD.md`; the primary card links it and
+   must never hide an open row.
 2. **Read the card; pick the next subgoal** — the highest-leverage *unmet* subgoal that is
    achievable now (cheapest first; **one axis**).
 3. **State the decision before running** — the principle(s) served, the decision, ≥2 rejected

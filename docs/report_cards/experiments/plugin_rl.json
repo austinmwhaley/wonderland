@@ -1,0 +1,107 @@
+{
+ "protocol": {
+  "reward_days": 3.0,
+  "split": "70/30 by customer",
+  "seed": 0
+ },
+ "channel": {
+  "levels": [
+   "direct_mail",
+   "email",
+   "push",
+   "sms"
+  ],
+  "n_train": 331,
+  "n_test": 142,
+  "random_value": 17.84,
+  "E": {
+   "ips": 22.89,
+   "dr": 22.1,
+   "acc_truth": 0.303,
+   "acc_p": 0.08934294823580936
+  },
+  "table": {
+   "ips": 25.38,
+   "dr": 25.08,
+   "acc_truth": 0.282,
+   "acc_p": 0.21722002635651366
+  },
+  "E_minus_table": {
+   "ips": {
+    "mean": -2.39,
+    "lo": -6.79,
+    "hi": 0.56
+   },
+   "dr": {
+    "mean": -3.07,
+    "lo": -10.32,
+    "hi": 3.66
+   }
+  },
+  "E_minus_random": {
+   "ips": {
+    "mean": 5.48,
+    "lo": -8.26,
+    "hi": 22.19
+   },
+   "dr": {
+    "mean": 4.37,
+    "lo": -8.47,
+    "hi": 20.63
+   }
+  },
+  "n_customers": 473,
+  "mean_reward": 15.104,
+  "positive_rate": 0.294
+ },
+ "offer": {
+  "levels": [
+   "0",
+   "1",
+   "2",
+   "3"
+  ],
+  "n_train": 330,
+  "n_test": 142,
+  "random_value": 15.69,
+  "E": {
+   "ips": 15.74,
+   "dr": 20.33,
+   "acc_truth": 0.275,
+   "acc_p": 0.27695661412292133
+  },
+  "table": {
+   "ips": 12.18,
+   "dr": 15.67,
+   "acc_truth": 0.239,
+   "acc_p": 0.6456271946994423
+  },
+  "E_minus_table": {
+   "ips": {
+    "mean": 3.6,
+    "lo": -1.78,
+    "hi": 9.67
+   },
+   "dr": {
+    "mean": 4.52,
+    "lo": -5.41,
+    "hi": 15.55
+   }
+  },
+  "E_minus_random": {
+   "ips": {
+    "mean": -0.24,
+    "lo": -8.62,
+    "hi": 8.4
+   },
+   "dr": {
+    "mean": 4.09,
+    "lo": -4.03,
+    "hi": 12.53
+   }
+  },
+  "n_customers": 472,
+  "mean_reward": 18.477,
+  "positive_rate": 0.343
+ }
+}

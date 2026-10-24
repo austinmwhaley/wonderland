@@ -78,6 +78,7 @@ is fixed-window engineering.
 
 ## Demo use
 
-The B+C demo reads this reference:
-`python3 scripts/demo/fast_demo.py --data <build> --out docs/report_cards/demo_bc_card.md`.
-The Layer A act is presented **last**, after the encoder and plugins, with the caveats above.
+The demo is this reference stream run through the normal pipeline:
+`python3 scripts/run_demo.py --generate --build --refresh` (or point `--data` at an
+existing build). The primary card is `docs/REPORT_CARD.md`; the full audit is
+`docs/AUDIT_CARD.md`.

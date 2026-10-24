@@ -186,6 +186,26 @@ it as a package from outside its directory.
 | red_queen | multi-cadence NBA + uplift targeting | ✅ |
 | caterpillar | interpretability | 🟡 v1 |
 
+## Demo — one dataset, one report card
+
+The demo is not a separate artifact. It is the project running on a synthetic
+6k event stream, judged in the same **B (encoder alone) + B+C (plugins)** card:
+
+```bash
+# full run: generate data, freeze the encoder, recompute receipts, render the card
+python3 scripts/run_demo.py --generate --build --refresh
+
+# instant: re-render from the saved receipts
+python3 scripts/run_demo.py
+```
+
+The saved card is checked in and renders instantly; a full rebuild is compute-heavy
+(encoder training + GBM/XGBoost batteries). The dataset is deterministic for seed 17.
+
+The output is [`docs/REPORT_CARD.md`](docs/REPORT_CARD.md). The full research audit
+(including the deliberately open Layer-1 causal/IPS rows and unclaimed probes) is
+[`docs/AUDIT_CARD.md`](docs/AUDIT_CARD.md).
+
 ## How to run (offline)
 ```bash
 # generate the stream

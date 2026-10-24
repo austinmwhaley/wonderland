@@ -1,24 +1,42 @@
 [
  {
   "arm": "channel",
-  "E_ips": 480.32,
-  "T_ips": 685.58,
-  "random": 511.2,
-  "diff": -215.28,
-  "lo": -413.15,
-  "hi": -12.62,
-  "accE": 0.233,
-  "accT": 0.317
+  "levels": [
+   "direct_mail",
+   "email",
+   "push",
+   "sms"
+  ],
+  "E_ips": 441.67,
+  "T_ips": 423.44,
+  "random": 475.46,
+  "diff": 18.83,
+  "lo": -45.06,
+  "hi": 78.75,
+  "accE": 0.263,
+  "accT": 0.25,
+  "n_train": 1260,
+  "n_test": 540,
+  "protocol": "v1 (last-send; as-of state; uniform IPS)"
  },
  {
   "arm": "offer",
-  "E_ips": 625.45,
-  "T_ips": 579.78,
-  "random": 511.2,
-  "diff": 64.78,
-  "lo": -199.5,
-  "hi": 329.28,
-  "accE": 0.272,
-  "accT": 0.272
+  "levels": [
+   "0",
+   "1",
+   "2",
+   "3"
+  ],
+  "E_ips": 353.06,
+  "T_ips": 514.53,
+  "random": 475.46,
+  "diff": -158.66,
+  "lo": -234.37,
+  "hi": -80.04,
+  "accE": 0.183,
+  "accT": 0.233,
+  "n_train": 1260,
+  "n_test": 540,
+  "protocol": "v1 (last-send; as-of state; uniform IPS)"
  }
 ]
