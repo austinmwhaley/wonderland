@@ -34,7 +34,13 @@ torch.cuda.empty_cache()
 _, A, keys, seqs, vs2, et_v, catspec, num, taus, p_mask, as_of_ts, periods, horizons = AE.load_data(DATA)
 AE.AS_OF_TS = as_of_ts
 n_ev = vs2["et"]
-id_idx = vs2["id_idx"][0] if vs2["id_idx"] else 0
+_cand = [j for j in range(len(catspec)) if j not in vs2["id_idx"]]
+_ent_j, _ent_u = (0, -1)
+for _j in _cand:
+    _u = len(set(np.concatenate([seqs[k][1][:, _j] for k in hold[:300]]).tolist()))
+    if _u > _ent_u:
+        _ent_u, _ent_j = _u, _j
+id_idx = _ent_j  # varying categorical for the entity probe (not a constant id field)
 
 # per-step states for holdout (chunked)
 Z, Ls, cust = [], [], []
@@ -96,11 +102,18 @@ def fit_eval(name, X, y, prev_id, prev_val, folds):
     X = np.asarray(X, float)
     y = np.asarray(y)
     vals, naive = [], []
+    from collections import Counter, defaultdict
     for tr, te in folds:
         if cat:
-            from collections import Counter
             mc = Counter(y[tr]).most_common(1)[0][0]
-            naive.append(accuracy_score(y[te], np.full(len(te), mc)))
+            uni = accuracy_score(y[te], np.full(len(te), mc))
+            # 1-gram predictor: most frequent target conditioned on previous id
+            g = defaultdict(Counter)
+            for yy, pp in zip(y[tr], prev_id[tr]):
+                g[pp][yy] += 1
+            pred1 = np.array([(g[pp].most_common(1)[0][0] if pp in g else mc) for pp in prev_id[te]])
+            one = accuracy_score(y[te], pred1)
+            naive.append(max(uni, one))
             m = make_pipeline(StandardScaler(), LogisticRegression(max_iter=500))
             try:
                 m.fit(X[tr], y[tr]); vals.append(accuracy_score(y[te], m.predict(X[te])))
@@ -122,7 +135,9 @@ for name in Xall:
     Sarr = np.asarray(S[name])
     folds = list(GroupKFold(5).split(X, y, Sarr))
     skill, se, naive = fit_eval(name, X, y, np.asarray(PREVID[name]), np.asarray(PREVVAL[name]), folds)
-    out[name] = {"skill": skill, "se": se, "naive": naive, "beats_naive_2se": bool((skill - naive) > 2 * se)}
+    deg = bool(name in ("next", "mask", "entity", "order") and naive >= 0.999)
+    out[name] = {"skill": skill, "se": se, "naive": naive,
+                 "beats_naive_2se": bool((skill - naive) > 2 * se), "degenerate": bool(deg)}
     print(f"[obj] {name:7s} skill {skill:+.4f} ± {se:.4f} vs naive {naive:+.4f} -> {out[name]['beats_naive_2se']}", flush=True)
 
 OUT.write_text(json.dumps({"config": {"data": DATA, "seed": 0, "epochs": 12, "horizon": H}, "objectives": out}, indent=1))

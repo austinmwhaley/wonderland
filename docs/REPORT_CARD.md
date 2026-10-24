@@ -2,7 +2,7 @@
 
 > **Generated** by `python3 scripts/report_card.py` — DO NOT EDIT. Gates live in `scripts/card_spec.py`; every row resolves to a receipt (`docs/report_cards/experiments/`). A missing receipt renders NOT MEASURED.
 
-- **Generated:** 2026-10-23 · **commit:** `84cb97e` · **branch:** primary-encoder
+- **Generated:** 2026-10-23 · **commit:** `8e11cdc` · **branch:** primary-encoder
 - **Data:** `relational_v3` synthetic reference (+ schema variant) · harness, no business data.
 - **Latest demo receipt:** `7e32ebb84fc3` · seeds `3` · runtime `1009.2s`.
 - **B mastery:** **NOT YET MASTERED** — PASS 23 · FAIL 5 · NOT MEASURED 1.
@@ -25,6 +25,20 @@ sufficiency / minimality / decision-sufficiency via `U = 1 - worst-case oracle g
 6. **Honest** -- held-out/falsifiable, label-free, never weakened to pass a gate or tuned to the judged metric.
 7. **Accessible** -- information recoverable by simple consumers, not merely present.
 8. **Diagnosable** -- attribute a shortfall to a specific axis with a matched control.
+
+## Encoder architecture (Layer B)
+
+- **Tokenizer** -- auto-discovers fields (categorical / numeric / ISO-time); additive per-field embeddings
+  with learned gates; time features = `log1p(gap)` + data-derived Fourier periods (FFT peaks); raw numerics via signed `log1p`.
+- **Dynamics** -- continuous-time gated SSM (learned decay, tau initialized from data gap-quantiles);
+  affine prefix `_scan` (monoid-exact); width/layers derived from data.
+- **State** -- contractive shape state (bounded) + additive mass state (extensive algebra: sums add, no `1-decay`).
+- **Readout** -- ensemble (last / mean / max / attention-pooled / per-scale states / mass) with learned positive
+  weights -> `E` (d-dim, frozen).
+- **Self-supervised objectives (heads)** -- next-event; gap/rate; categorical + numeric reconstruction; identity;
+  uncertainty (missingness); past-summary; future-summary (one head per data-derived horizon); relational/context.
+- **Training** -- AdamW; trust-region adaptive lr (seed bound; expand/shrink on held-out response); no gradient
+  clip; MAD-based early stop; deterministic kernels; learned loss weights.
 
 ## Construction — invariants by construction
 
