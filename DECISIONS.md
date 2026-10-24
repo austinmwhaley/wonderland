@@ -1033,3 +1033,41 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   compact learned-shape sufficiency; deleting the full audit; changing gates after results.
 - Current state: exploratory jobs stopped; working tree contains only the planning/document
   changes and the generated baseline artifacts from the prior committed run.
+
+## DEC-294 — Loop 1/2 executed: state contract + lawful measure state (ADOPTED, with limits)
+
+- Context: the encoder audit found attribution ambiguity (`E` vs `E+BLK`) and that the
+  claimed "additive mass" is a learned, transformed, decay-weighted accumulation. PLAN.md
+  Loop 1 (state contract) and Loop 2 (lawful typed measure) were executed on the existing
+  frozen 6k cache, so no retraining was needed.
+- Implemented:
+  - `looking_glass/state_layout.py` — single source of truth for block order, named views
+    (`shape`, `learned_state`, `forecast`, `uncertainty`, `heads`), and view assembly.
+    Bug found and fixed during verification: views were first sliced as contiguous ranges,
+    which would silently include interleaved blocks of other views. Views are now assembled
+    by block name, and a check asserts every BLK column is used exactly once.
+  - `looking_glass/measure_state.py` — exact typed measure state over all discovered fields:
+    event counts, per-field value distributions, missing fraction, per-entity distinct counts,
+    and numeric count/sum/mean/std/min/max from raw accumulators. Vocabulary is coverage-capped
+    (0.99) and bounded by a data-derived budget `max(8, sqrt(mass))`.
+  - `scripts/evaluate_foundation_state.py` — attribution battery on the same holdout/head/folds.
+  - `tests/test_measure_state.py` — additivity of raw blocks is exact; bounded vocabulary;
+    finite output; empty history rejected.
+- Measured (6k baseline cache, 3-fold, 80-iter head, 1800 holdout):
+  - shape `E`: value 0.339 / orders 0.401 / churn 0.936 (table 0.372 / 0.425 / 0.911) —
+    loses value/orders, beats table on churn.
+  - measure alone: value 0.251 / orders 0.288 / churn 0.789, but category identity 0.261 vs
+    table 0.265 (accessibility gap essentially closed) and best non-table anomaly 0.566.
+  - full legacy 0.4222 -> full + measure 0.4330 on value90 (+0.011), neutral orders,
+    slightly negative churn (-0.003).
+- Decision: ADOPT the state contract and the measure module as a named view. Do NOT claim it
+  as a universal improvement: it is neutral-to-slightly-negative on orders/churn and dilutes
+  raw-distance geometry when naively concatenated. The correct consumer contract is to SELECT
+  a view for its task, which the card now states explicitly.
+- Principles: Honest (attribution, no overclaim), Lawful (exact accumulation before
+  normalization), Accessible (measure view closes the category-identity gap), Adaptive
+  (data-derived bounds), Efficient (one frozen cache, no retrain).
+- Rejected: concatenating all views as "the state" (measured dilution); uncapped vocabulary
+  (4295 dims, weaker); raising capacity before fixing the interface.
+- Next: Loop 3 (input-conditioned retention; generic role discovery; removing company-action
+  prediction from the customer objective), each as a separate axis with a small screen first.

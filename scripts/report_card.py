@@ -234,6 +234,71 @@ def _eval_bc_response(d, key):
     )
 
 
+def _state_attribution(docs):
+    """Render which part of the frozen foundation state carries the signal."""
+    fs = docs.get("foundation_state.json")
+    out = ["## State attribution — what carries the signal", ""]
+    if not fs:
+        out += ["NOT MEASURED (no `foundation_state.json` receipt).", ""]
+        return out
+    arms = ["table", "shape", "learned_state", "forecast", "measure", "full_legacy", "full_measure"]
+    label = {
+        "table": "table (baseline)",
+        "shape": "**shape** (`E`, 128-d)",
+        "learned_state": "learned_state (per-timescale state/mass)",
+        "forecast": "forecast (past/future summary heads)",
+        "measure": "**measure** (lawful typed statistics)",
+        "full_legacy": "full legacy (`E` + blocks)",
+        "full_measure": "full + measure",
+    }
+    out += [
+        "Same holdout, same head, same folds. A view is a *named selection*, not a claim that "
+        "the compact embedding alone is sufficient. Concatenating every view dilutes raw-distance "
+        "probes; consumers should select the view their task needs.",
+        "",
+        f"Measure state: **{fs['config']['measure_dim']}** dims, coverage "
+        f"{fs['config']['measure_coverage']}. Full state: "
+        f"**{fs['config']['layout']['full_dim']}** dims.",
+        "",
+        "### Supervised (R² / AUC)",
+        "",
+        "| arm | value90 | orders90 | churn90 |",
+        "|---|---|---|---|",
+    ]
+    for a in arms:
+        r = fs["supervised"]
+        out.append(
+            f"| {label[a]} | {r['value90'][a]:.4f} | {r['orders90'][a]:.4f} | {r['churn90'][a]:.4f} |"
+        )
+    out += [
+        "",
+        "### Identity (kNN purity vs truth) and geometry",
+        "",
+        "| arm | channel | category | retrieval | churn-nn | anomaly AUC | regime NMI |",
+        "|---|---|---|---|---|---|---|",
+    ]
+    for a in arms:
+        i, g = fs["identity"][a], fs["geometry"][a]
+        out.append(
+            f"| {label[a]} | {i['channel']:.4f} | {i['category']:.4f} | {g['retrieval']:.4f} | "
+            f"{g['churn_nn']:.4f} | {g['anomaly_auc']:.4f} | {g['nmi_regime']:.4f} |"
+        )
+    vm = fs["supervised"]["value90"]
+    out += [
+        "",
+        "**Reading.** `shape` alone trails the table on value/orders but beats it on churn "
+        f"({fs['supervised']['churn90']['shape']:.4f} vs {fs['supervised']['churn90']['table']:.4f}). "
+        "`measure` nearly matches the table on category identity "
+        f"({fs['identity']['measure']['category']:.4f} vs {fs['identity']['table']['category']:.4f}) "
+        "and is the best non-table anomaly view. `learned_state` carries channel identity. "
+        f"`full` is the strongest supervised view (value90 {vm['full_measure']:.4f} vs table "
+        f"{vm['table']:.4f}). No single view wins everywhere; that is why the artifact exposes "
+        "named views instead of one opaque vector.",
+        "",
+    ]
+    return out
+
+
 def main():
     docs = {}
     for p in list((ROOT / "docs/report_cards").glob("*.json")) + list(EXP.glob("*.json")):
@@ -289,8 +354,9 @@ def main():
         f"{data.get('path_b', {}).get('rows', 0):,} events · as-of `{data.get('as_of', 'n/a')}`."
     )
     A(
-        "- **Arm:** donor and supervised rows use the published state (readout + identity/mass "
-        "blocks); geometry/control rows use the readout. The audit names every arm."
+        "- **Arm:** B/C rows use the published state; the *State attribution* section below "
+        "separates shape, learned_state, forecast, and lawful measure so no row implies the "
+        "compact embedding alone is sufficient. The audit names every arm."
     )
     A(
         f"- **B (encoder alone):** **{'CERTIFIED' if b_fail == 0 else 'OPEN'}** — {b_pass} PASS · {b_fail} FAIL"
@@ -357,6 +423,8 @@ def main():
                 f"| {r.ident} | {r.name} | {r.metric} | {r.comparator} | {r.gate} | {val} | **{verdict}** |"
             )
         A("")
+
+    L.extend(_state_attribution(docs))
 
     A("## B+C — encoder + plugins")
     A("")

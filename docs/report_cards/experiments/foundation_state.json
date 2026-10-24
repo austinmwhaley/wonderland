@@ -1,0 +1,294 @@
+{
+ "config": {
+  "data": "/tmp/opencode/t0_loop/ref_v3b_6k",
+  "frozen": "/tmp/opencode/frozen_6k",
+  "layout": {
+   "blocks": [
+    {
+     "name": "learned_state",
+     "view": "learned_state",
+     "start": 0,
+     "stop": 1152,
+     "dim": 1152
+    },
+    {
+     "name": "identity_probe",
+     "view": "heads",
+     "start": 1152,
+     "stop": 1173,
+     "dim": 21
+    },
+    {
+     "name": "gap",
+     "view": "uncertainty",
+     "start": 1173,
+     "stop": 1174,
+     "dim": 1
+    },
+    {
+     "name": "uncertainty",
+     "view": "uncertainty",
+     "start": 1174,
+     "stop": 1196,
+     "dim": 22
+    },
+    {
+     "name": "forecast_future",
+     "view": "forecast",
+     "start": 1196,
+     "stop": 1924,
+     "dim": 728
+    },
+    {
+     "name": "next_event",
+     "view": "heads",
+     "start": 1924,
+     "stop": 1935,
+     "dim": 11
+    },
+    {
+     "name": "relational",
+     "view": "heads",
+     "start": 1935,
+     "stop": 2030,
+     "dim": 95
+    },
+    {
+     "name": "forecast_past",
+     "view": "forecast",
+     "start": 2030,
+     "stop": 2137,
+     "dim": 107
+    }
+   ],
+   "views": {
+    "learned_state": {
+     "blocks": [
+      "learned_state"
+     ],
+     "dim": 1152
+    },
+    "heads": {
+     "blocks": [
+      "identity_probe",
+      "next_event",
+      "relational"
+     ],
+     "dim": 127
+    },
+    "uncertainty": {
+     "blocks": [
+      "gap",
+      "uncertainty"
+     ],
+     "dim": 23
+    },
+    "forecast": {
+     "blocks": [
+      "forecast_future",
+      "forecast_past"
+     ],
+     "dim": 835
+    }
+   },
+   "shape_dim": 128,
+   "blk_dim": 2137,
+   "full_dim": 2265
+  },
+  "measure_dim": 734,
+  "measure_coverage": 0.99
+ },
+ "supervised": {
+  "value90": {
+   "table": 0.3721,
+   "shape": 0.339,
+   "learned_state": 0.3428,
+   "forecast": 0.3602,
+   "measure": 0.2514,
+   "full_legacy": 0.4222,
+   "full_measure": 0.433,
+   "shape_vs_table": {
+    "mean": -0.0356,
+    "lo": -0.0746,
+    "hi": 0.0024
+   },
+   "learned_state_vs_table": {
+    "mean": -0.0305,
+    "lo": -0.0721,
+    "hi": 0.0064
+   },
+   "forecast_vs_table": {
+    "mean": -0.0156,
+    "lo": -0.0491,
+    "hi": 0.0228
+   },
+   "measure_vs_table": {
+    "mean": -0.1219,
+    "lo": -0.1569,
+    "hi": -0.0845
+   },
+   "full_legacy_vs_table": {
+    "mean": 0.0484,
+    "lo": 0.0113,
+    "hi": 0.0831
+   },
+   "full_measure_vs_table": {
+    "mean": 0.0596,
+    "lo": 0.0243,
+    "hi": 0.0916
+   }
+  },
+  "orders90": {
+   "table": 0.4249,
+   "shape": 0.4008,
+   "learned_state": 0.4047,
+   "forecast": 0.414,
+   "measure": 0.2876,
+   "full_legacy": 0.5048,
+   "full_measure": 0.5035,
+   "shape_vs_table": {
+    "mean": -0.0261,
+    "lo": -0.0601,
+    "hi": 0.0062
+   },
+   "learned_state_vs_table": {
+    "mean": -0.0199,
+    "lo": -0.0643,
+    "hi": 0.0178
+   },
+   "forecast_vs_table": {
+    "mean": -0.0134,
+    "lo": -0.049,
+    "hi": 0.0138
+   },
+   "measure_vs_table": {
+    "mean": -0.1358,
+    "lo": -0.1712,
+    "hi": -0.1021
+   },
+   "full_legacy_vs_table": {
+    "mean": 0.0787,
+    "lo": 0.0488,
+    "hi": 0.1097
+   },
+   "full_measure_vs_table": {
+    "mean": 0.0783,
+    "lo": 0.0508,
+    "hi": 0.1088
+   }
+  },
+  "churn90": {
+   "table": 0.9113,
+   "shape": 0.9356,
+   "learned_state": 0.8147,
+   "forecast": 0.9247,
+   "measure": 0.7885,
+   "full_legacy": 0.9321,
+   "full_measure": 0.929,
+   "shape_vs_table": {
+    "mean": 0.0242,
+    "lo": 0.0044,
+    "hi": 0.0494
+   },
+   "learned_state_vs_table": {
+    "mean": -0.0977,
+    "lo": -0.142,
+    "hi": -0.0531
+   },
+   "forecast_vs_table": {
+    "mean": 0.0137,
+    "lo": -0.0043,
+    "hi": 0.0339
+   },
+   "measure_vs_table": {
+    "mean": -0.1226,
+    "lo": -0.1759,
+    "hi": -0.0668
+   },
+   "full_legacy_vs_table": {
+    "mean": 0.0204,
+    "lo": -0.0027,
+    "hi": 0.0461
+   },
+   "full_measure_vs_table": {
+    "mean": 0.0183,
+    "lo": -0.0004,
+    "hi": 0.0405
+   }
+  }
+ },
+ "identity": {
+  "table": {
+   "channel": 0.2513,
+   "category": 0.2653
+  },
+  "shape": {
+   "channel": 0.6246,
+   "category": 0.1726
+  },
+  "learned_state": {
+   "channel": 0.7163,
+   "category": 0.1613
+  },
+  "forecast": {
+   "channel": 0.5188,
+   "category": 0.1752
+  },
+  "measure": {
+   "channel": 0.3907,
+   "category": 0.2611
+  },
+  "full_legacy": {
+   "channel": 0.6776,
+   "category": 0.1658
+  },
+  "full_measure": {
+   "channel": 0.6404,
+   "category": 0.1809
+  }
+ },
+ "geometry": {
+  "table": {
+   "retrieval": 0.4012,
+   "churn_nn": 0.9478,
+   "anomaly_auc": 0.656,
+   "nmi_regime": 0.1126
+  },
+  "shape": {
+   "retrieval": 0.421,
+   "churn_nn": 0.9689,
+   "anomaly_auc": 0.4596,
+   "nmi_regime": 0.059
+  },
+  "learned_state": {
+   "retrieval": 0.3254,
+   "churn_nn": 0.9,
+   "anomaly_auc": 0.4635,
+   "nmi_regime": 0.1082
+  },
+  "forecast": {
+   "retrieval": 0.4522,
+   "churn_nn": 0.9756,
+   "anomaly_auc": 0.4892,
+   "nmi_regime": 0.0576
+  },
+  "measure": {
+   "retrieval": 0.2232,
+   "churn_nn": 0.8794,
+   "anomaly_auc": 0.566,
+   "nmi_regime": 0.0808
+  },
+  "full_legacy": {
+   "retrieval": 0.4356,
+   "churn_nn": 0.9667,
+   "anomaly_auc": 0.4615,
+   "nmi_regime": 0.0813
+  },
+  "full_measure": {
+   "retrieval": 0.4565,
+   "churn_nn": 0.9622,
+   "anomaly_auc": 0.4625,
+   "nmi_regime": 0.0809
+  }
+ }
+}
