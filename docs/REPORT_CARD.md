@@ -2,7 +2,7 @@
 
 > **Generated** by `python3 scripts/report_card.py` — DO NOT EDIT. Gates live in `scripts/card_spec.py`; every row resolves to a receipt (`docs/report_cards/experiments/`). A missing receipt renders NOT MEASURED.
 
-- **Generated:** 2026-10-24 · **commit:** `f64d013` · **branch:** primary-encoder
+- **Generated:** 2026-10-24 · **commit:** `75f5c2d` · **branch:** primary-encoder
 - **Data:** `relational_v3` synthetic reference (+ schema variant) · harness, no business data.
 - **Latest demo receipt:** `7e32ebb84fc3` · seeds `3` · runtime `1009.2s`.
 - **B mastery:** **NOT YET MASTERED** — PASS 27 · FAIL 1 · NOT MEASURED 0.
@@ -100,6 +100,16 @@ Goal -> subgoals; a subgoal is MET only when all its rows PASS (or are EXCLUDED,
 | O8 | agg | aggregate/window probe | naive (hist mean) | beats naive | skill +0.010 vs naive -0.000 | **PASS** |
 | O9 | query | query-conditioned probe | naive (hist mean) | beats naive | skill +0.671 vs naive -0.000 | **PASS** |
 | O10 | sf | successor-feature probe | naive (prev value) | beats naive | skill +0.220 vs naive +0.091 | **PASS** |
+
+## Supervised -- floor / E / ceiling
+
+floor = legacy (table+XGBoost); E = frozen encoder; ceiling = full-history oracle. PASS = E beats floor by 2SE AND reaches >=50% of the ceiling-floor gap. If the gap <= 0 the label is aggregate-determined -> DATA GAP (no encoder can win).
+
+| target | floor | E | ceiling | E-floor | gap | closed | status |
+|---|---|---|---|---|---|---|---|
+| value90 | 0.170 | 0.051 | 0.155 | -0.1232±0.0457 | -0.015 | 7.87 | **DATA GAP** |
+| orders90 | 0.152 | 0.044 | 0.197 | -0.1112±0.0523 | +0.045 | -2.41 | **FAIL** |
+| churn90 | 0.815 | 0.707 | 0.800 | -0.1079±0.0294 | -0.015 | 7.27 | **DATA GAP** |
 
 ## Verdict
 

@@ -354,6 +354,27 @@ def main():
             L.append(f"| {row.ident} | {row.name} | {row.metric} | {row.comparator} | {row.gate} | {val} | **{verdict}** |")
         L.append("")
 
+    L.append("## Supervised -- floor / E / ceiling")
+    L.append("")
+    L.append("floor = legacy (table+XGBoost); E = frozen encoder; ceiling = full-history oracle. "
+             "PASS = E beats floor by 2SE AND reaches >=50% of the ceiling-floor gap. "
+             "If the gap <= 0 the label is aggregate-determined -> DATA GAP (no encoder can win).")
+    L.append("")
+    L.append("| target | floor | E | ceiling | E-floor | gap | closed | status |")
+    L.append("|---|---|---|---|---|---|---|---|")
+    _cl = _load(receipts, "encoder_ceiling.json") or {}
+    for _t in ("value90", "orders90", "churn90"):
+        _c = (_cl.get("results", {}) or {}).get(_t)
+        if not _c:
+            L.append(f"| {_t} | — | — | — | — | — | — | **NOT MEASURED** |")
+            continue
+        if _c["gap"] <= 0:
+            _st = "DATA GAP"
+        else:
+            _st = "PASS" if (_c["beats_floor_2se"] and _c["reaches_ceiling"]) else "FAIL"
+        L.append(f"| {_t} | {_c['floor']:.3f} | {_c['E']:.3f} | {_c['ceiling']:.3f} | "
+                 f"{_c['E_minus_floor']:+.4f}±{_c['se']:.4f} | {_c['gap']:+.3f} | {_c['closed_frac']:.2f} | **{_st}** |")
+    L.append("")
     L.append("## Verdict")
     L.append("")
     if mastered:
