@@ -144,6 +144,32 @@ class GatedSSM(nn.Module):
         return F.gelu(self.out(y)) + y, H, M
 
 
+def _ident_targets(seqs, keys, vs):
+    """Per-customer field histograms (all categorical fields), projected to <=32 dims each."""
+    dims = vs.get("ident_dims", [])
+    if not dims:
+        return {}, 0
+    g = np.random.default_rng(1234)
+    projs = [g.normal(size=(s, dd)).astype(np.float32) / np.sqrt(max(s, 1)) for s, dd in zip(vs["gcat"], dims)]
+    out = {}
+    for k in keys:
+        gck = seqs[k][1]
+        row = np.zeros(vs["ident_dim"], np.float32)
+        off = 0
+        for j, (sz, dd) in enumerate(zip(vs["gcat"], dims)):
+            h = np.bincount(gck[:, j], minlength=sz).astype(np.float32)
+            if h.shape[0] > sz:
+                h = h[:sz]
+            h[0] = 0.0
+            tot = h.sum()
+            if tot > 0:
+                h = h / tot
+            row[off : off + dd] = h @ projs[j]
+            off += dd
+        out[k] = row
+    return out, vs["ident_dim"]
+
+
 class Enc(nn.Module):
     def __init__(self, vs, d, e, layers, taus):
         super().__init__()
@@ -172,6 +198,7 @@ class Enc(nn.Module):
         self.head_fut = nn.ModuleList([nn.Linear(d, vs["fut_dim"]) for _ in vs["horizons"]])
         self.head_id = nn.ModuleList([nn.Linear(d, s2) for s2 in vs["id_dims"]])
         self.head_unc = nn.Linear(d, vs["unc_dim"]); self.rel_idx = list(vs["rel_idx"])
+        self.head_ident = nn.Linear(d, vs["ident_dim"]) if vs.get("ident_dim", 0) > 0 else None
 
     def forward(self, et, gcat, gnum, time, gaps, mask, lengths, qgap, graw):
         x = self.et(et) + self.time(time)
@@ -385,6 +412,7 @@ def run_epoch(
     fut_sd,
     horizons,
     train=True,
+    ident_map=None,
 ):
     model.train(train)
     order = np.array(ks)[rng.permutation(len(ks))]
@@ -413,6 +441,9 @@ def run_epoch(
         for jj, h in enumerate(model.head_id):
             Ls.append(F.cross_entropy(h(E), t["id_tgt"][:, jj]))
         Ls.append(((model.head_unc(E) - t["unc_tgt"]) ** 2).mean())
+        if model.head_ident is not None and ident_map is not None:
+            idt = torch.tensor(np.stack([ident_map[k] for k in bk]), device=DEV)
+            Ls.append(((model.head_ident(E) - idt) ** 2).mean())
         loss = sum(0.5 * torch.exp(-log_s[j]) * Ls[j] + 0.5 * log_s[j] for j in range(len(Ls)))
         fcuts = [len(seqs[k][5]) for k in bk]
         fq = [(AS_OF_TS - seqs[k][5][-1]) / 86400.0 for k in bk]
@@ -554,11 +585,12 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     Fcat = np.stack(Fs)
     fut_mu, fut_sd = Fcat.mean(1), Fcat.std(1)
     fut_sd[fut_sd < 1e-6] = 1.0
+    ident_map, _ = _ident_targets(seqs, keys, vs)
     torch.manual_seed(seed)
     model = Enc(vs, d, len(taus), layers, taus).to(DEV)
     lr = lr if lr is not None else 1e-3  # documented seed bound; trust-region adapts below
     opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
-    log_s = nn.Parameter(torch.zeros(1 + len(vs["gcat"]) + vs["gnum"] + 1 + 1 + 1 + len(vs["id_dims"]) + 1, device=DEV))
+    log_s = nn.Parameter(torch.zeros(1 + len(vs["gcat"]) + vs["gnum"] + 1 + 1 + 1 + len(vs["id_dims"]) + 1 + 1, device=DEV))
     opt.add_param_group({"params": [log_s]})
     tr_log = []  # trust-region lr trajectory (receipt)
     best = 1e9
@@ -586,6 +618,7 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
             fut_sd,
             None,
             True,
+            ident_map=ident_map,
         )
         vl = val_loss(model, seqs, val, vs, past_mu, past_sd, taus, fut_mu, fut_sd, horizons)
         print(f"seed {seed} epoch {ep + 1} train {trl:.4f} val {vl:.4f}", flush=True)
@@ -607,7 +640,7 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
         if pat >= 3:
             break
     print(f"trust-region lr {tr_log}", flush=True)
-    _names = ["et"] + [f"cat{j}" for j in range(len(vs["gcat"]))] + [f"num{j}" for j in range(vs["gnum"])] + ["gap", "fut"] + [f"id{j}" for j in range(len(vs["id_dims"]))] + ["unc"]
+    _names = ["et"] + [f"cat{j}" for j in range(len(vs["gcat"]))] + [f"num{j}" for j in range(vs["gnum"])] + ["gap", "fut"] + [f"id{j}" for j in range(len(vs["id_dims"]))] + ["unc", "ident"]
     _ls = log_s.detach().cpu().tolist()
     print("loss weights " + ", ".join(f"{n}={math.exp(-x):.3f}" for n, x in zip(_names, _ls)), flush=True)
     print(f"clip stats: {CLIP_STATS}", flush=True)

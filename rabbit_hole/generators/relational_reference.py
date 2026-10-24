@@ -96,7 +96,7 @@ class RelationalSpec:
     missing_rate: float = 0.15
     n_products: int = 80
     base_activity: float = 1.2
-    base_purchase: float = 0.02
+    base_purchase: float = 0.022
 
 
 def _clip01_scalar(x):
@@ -351,7 +351,7 @@ def simulate(spec: RelationalSpec, use_cuda: bool = True):
     h0 = lrng.uniform(0, 24, C).astype(np.float32)
     d0 = lrng.uniform(0, 7, C).astype(np.float32)
     offer_opt = lrng.integers(0, 4, C).astype(np.int64)
-    propensity = np.exp(lrng.normal(0.0, 0.35, C))
+    propensity = np.exp(lrng.normal(0.0, float(os.environ.get("WQ_PROP_SD", "0.40")), C))
     propensity = propensity / propensity.mean()
     Pc = lrng.dirichlet(np.full(len(REGIMES), 1.2), size=(C, len(REGIMES)))
     Pc = 0.93 * np.eye(len(REGIMES))[None] + 0.07 * Pc
@@ -377,7 +377,7 @@ def simulate(spec: RelationalSpec, use_cuda: bool = True):
     ACT_DELAY = _rm.uniform(1.0, 6.0, size=len(ACTS))
     ATC_MASS = T2[:, :, ATC]
     HOT = float(np.quantile(ATC_MASS, 0.80))
-    PAT = np.exp(_rm.normal(0.0, 0.9, size=(nA, nA)))
+    PAT = np.exp(_rm.normal(0.0, 0.75, size=(nA, nA)))
     PAT = PAT / PAT.mean()
     PATH_LUT = np.ones(nA)
     PATH_LUT[ALPHABET.index("view")] = 1.15
@@ -392,8 +392,8 @@ def simulate(spec: RelationalSpec, use_cuda: bool = True):
     IDX_SEND = ALL_EV.index("email_send")
     IDX_BUY = ALL_EV.index("purchase")
     IDX_RET = ALL_EV.index("return")
-    PAT2 = np.exp(_rm.normal(0.0, 0.9, size=(nAll, nAll)))
-    PAT2 = np.clip(PAT2 / PAT2.mean(), 0.1, 6.0)
+    PAT2 = np.exp(_rm.normal(0.0, 0.75, size=(nAll, nAll)))
+    PAT2 = np.clip(PAT2 / PAT2.mean(), 0.35, 2.8)
 
     TAU = 12.0
     G_ORD = int(np.ceil(float(DELAY2.max()) + 6.0 * TAU)) + 2
@@ -435,7 +435,7 @@ def simulate(spec: RelationalSpec, use_cuda: bool = True):
     Wd = B.to_dev(W, "f32")
     CCP = B.to_dev(cust_cat[:, prod_cat], "f32")
     PROD_POP2 = B.to_dev(np.broadcast_to(prod_pop, (C, P)).copy(), "f32")
-    regime_act_lut = B.to_dev(1.0 + 0.35 * s * (REGIME_BUY - 1.0), "f32")
+    regime_act_lut = B.to_dev(1.0 + 0.6 * s * (REGIME_BUY - 1.0), "f32")
     propensity_d = B.to_dev(propensity, "f32")
     PAT2d = B.to_dev(PAT2, "f32")
     ORG_TO_ALLd = B.to_dev(ORG_TO_ALL, "i64")
@@ -604,14 +604,14 @@ def simulate(spec: RelationalSpec, use_cuda: bool = True):
         ac_delay[:, slot_a] = B.where(sent, ACT_DELAYd[akey], B.full((C,), 1.0, "f32"))
         ac_amp[:, slot_a] = B.where(sent, s * 0.12 * q * (0.35 + ready), zero_f)
 
-        # ---- purchase (ORDER-GATED + shape/gap conditioned) ----
+        # ---- purchase (MODERATE aggregate-visible base + BOUNDED sequence term) ----
         pid = B.cat_probs(Wd, u[:, 8])
         path = 1.0 + s * (PATH_LUTd[o2] - 1.0)
-        ogate = B.clip(PATd[o1, o2] * (1.0 + 0.5 * B.maximum(ready - HOT, 0.0)), 0.03, 20.0)
+        ogate = B.clip(PATd[o1, o2], 0.35, 2.8)
         renew = B.where(
             (since_atc >= 1) & (since_atc <= 3),
-            B.full((C,), 1.6, "f32"),
-            B.where(since_atc <= 10, B.full((C,), 1.1, "f32"), B.full((C,), 1.0, "f32")),
+            B.full((C,), 2.2, "f32"),
+            B.where(since_atc <= 10, B.full((C,), 1.5, "f32"), B.full((C,), 1.0, "f32")),
         )
         regime_act = regime_act_lut[typed]
         chan_regime = B.where(
@@ -629,20 +629,32 @@ def simulate(spec: RelationalSpec, use_cuda: bool = True):
         q_eff = B.where(sent, q, B.full((C,), 1.0, "f32"))
         discount = B.maximum(action_discount, camp_discount)
         cat_prod = CCP[ar, pid]
-        p_buy = (
-            spec.base_purchase
-            * propensity_d
-            * gate2
+        # aggregate-visible base: what a wide table (counts/sums/recency) can see
+        base_mult = (
+            propensity_d
             * regime_act
-            * (0.30 + 0.70 * q_eff)
-            * path
+            * (0.45 + 0.55 * q_eff)
             * chan_regime
             * price_fit
-            * (1.0 + 0.35 * shock)
-            * (1.0 + 0.20 * cat_prod)
-            * ogate
-            * (1.0 + 4.0 * ob)
-            * renew
+            * (1.0 + 0.40 * shock)
+            * (1.0 + 0.25 * cat_prod)
+        )
+        # sequence-only term: recent all-event/organic k-gram shape, last-event path,
+        # gap/renewal since add_to_cart, and order-gated self-excitation -- combined into
+        # ONE bounded multiplier so the aggregate base stays learnable while the sequence
+        # stays strongly order-dependent (aggregates are blind to the ORDER).
+        seq_score = (
+            0.5 * (gate2 - 1.0)
+            + 0.6 * (ogate - 1.0)
+            + 0.5 * (path - 1.0)
+            + 0.6 * (renew - 1.0)
+            + 1.0 * ob
+        )
+        seq_mult = B.clip(1.0 + float(os.environ.get("WQ_SEQ_AMP", "2.0")) * seq_score, 0.25, 3.5)
+        p_buy = (
+            spec.base_purchase
+            * base_mult
+            * seq_mult
             * B.where(d >= refr_until, B.full((C,), 1.0, "f32"), B.full((C,), 0.25, "f32"))
         )
         p_buy = B.clip(p_buy, 0.0, 1.0)
@@ -650,7 +662,10 @@ def simulate(spec: RelationalSpec, use_cuda: bool = True):
 
         qty = 1 + B.floor_i(u[:, 9] * 3)
         unit = prod_price_d[pid]
-        val = B.round_(unit * B.to_f32(qty) * (1.0 - discount), 2)
+        # sequence-shape gives a MILD value tilt only (a strong order->value term just adds
+        # unlearnable variance at this scale and hurts the encoder)
+        seq_val = 1.0 + s * 0.30 * B.clip(gate2 - 1.0, -0.8, 1.5)
+        val = B.round_(unit * B.to_f32(qty) * (1.0 - discount) * seq_val, 2)
         margin = B.round_(val * prod_margin_d[pid], 2)
         touch = B.cat_probs(touch_pref_d, u[:, 10])
         buy_mask[d] = buy
@@ -1362,6 +1377,7 @@ def main(argv=None):
 
     manifest = {
         "name": a.name,
+        "actions": [{"event_type": "email_send", "fields": ["channel", "offer", "freq", "hour"]}],
         "join_key": "customer_key",
         "as_of": spec.as_of,
         "window": {"start": spec.start_date, "days": spec.window_days},

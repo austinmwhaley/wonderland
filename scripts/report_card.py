@@ -111,6 +111,13 @@ def evaluate(row, doc):
             ea, ta = v.get("identity_category"), v.get("table_category")
             ok = ec >= tc and ea >= ta
             return (f"ch {ec:.3f}/{tc:.3f} · cat {ea:.3f}/{ta:.3f}", "PASS" if ok else "FAIL", "both >= table")
+        if k == "identity3":
+            if not isinstance(v, dict):
+                return ("—", "NOT MEASURED", "")
+            ec, tc = v.get("E_channel"), v.get("table_channel")
+            ea, ta = v.get("E_category"), v.get("table_category")
+            ok = ec >= tc and ea >= ta
+            return (f"ch {ec:.3f}/{tc:.3f} · cat {ea:.3f}/{ta:.3f}", "PASS" if ok else "FAIL", "both >= table")
         if k == "rate2":
             if not isinstance(v, dict) or "churn90" not in v:
                 return ("—", "NOT MEASURED", "")
