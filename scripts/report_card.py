@@ -306,6 +306,11 @@ def main():
 
     A("## B — encoder alone")
     A("")
+    A(
+        "Rows with a `c` suffix (A1c/A3c/A4c) are the declared-scope variants; the audit keeps "
+        "the original combined A1/A3/A4 gates and the category-identity row."
+    )
+    A("")
     sections = [
         (S.CONSTRUCTION, "Construction — invariants by construction"),
         (S.DONOR, "Donor — does not lose / adds / controls"),
