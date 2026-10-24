@@ -987,3 +987,29 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   (hides open rows); calling A3 category/A6/O1 green by changing definitions post-result.
 - Receipts: `docs/report_cards/experiments/*.json` (controls, donor, identity, ceiling,
   objectives, causal, data, plugin_unsupervised, plugin_rl_known, plugin_rl).
+
+## DEC-292 — Encoder improvement axes 1-8 (one toggle each, measured)
+
+- Principle: Universal / Adaptive / Lawful / Accessible / Efficient / Honest.
+- Change: add flag-gated encoder axes `WQ_AXES={measure,query,suffix,slow,readout,multicut,tokbatch}`
+  in `scripts/demo/auto_encoder.py`; empty set = the recorded baseline path.
+  - **measure (item 1)** typed measure memory: coverage-capped (99%) per-field value histograms
+    for ALL discovered categorical fields; a self-supervised reconstruction head; the prediction is
+    published as a block. No hand-listed fields.
+  - **query (item 2)** query-conditioned self-supervision: sample (horizon, raw field) and predict the
+    future aggregate of that field; one shared conditioned head.
+  - **suffix (item 3)** exact suffix + learned low-rank transition operator: the previous event is
+    injected through a learned rank-16 operator; last/prev event embeddings are published.
+  - **slow (item 4)** independent memory timescales: a second SSM stack with tau initialized from the
+    stream span quantiles (0.5, 0.9), concatenated into the readout.
+  - **readout (item 6)** structured multi-query attention readout (K = #timescales learned queries).
+  - **multicut (item 5)** history-length-stratified cut sampling (position fraction in [0.15,0.95]).
+  - **tokbatch (item 8)** token-budget batch packing (median-length scaled) instead of customer count.
+- Measurement: `scripts/measure_battery.py` (one frozen cache -> supervised E-only + published state,
+  identity, geometry, next-event probe) and `scripts/axis_sweep.py` (cumulative configs, sequential).
+  `scripts/measure_response.py` (item 7) is a powered, customer-grouped, pre-action response test.
+- Rejected: enlarging d/layers first; hand-listed fields; training Layer B on labels; AMP before a
+  benchmark (determinism risk). Multi-cut keeps the existing future objective, not a new leak.
+- Acceptance: each axis is kept only if it does not regress the published-state donor margins and
+  improves at least one open axis (category identity / anomaly / segmentation / next-event), with
+  the frozen receipt; otherwise recorded as reverted.

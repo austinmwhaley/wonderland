@@ -1,18 +1,17 @@
 """Principle-aligned auto encoder: all discovered fields, generic objectives, frozen E."""
 
-import collections
-import datetime
 import json
 import math
 import sys
-import hashlib
 from pathlib import Path
 
 import os as _os
+
 _os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
 import numpy as np
 import polars as pl
 import torch
+
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 torch.use_deterministic_algorithms(True, warn_only=True)
@@ -21,16 +20,15 @@ import torch.nn.functional as F
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from looking_glass.cfm_model import _scan  # noqa: E402
-from looking_glass.autotune import derive_batch, derive_dim, derive_lr  # noqa: E402
-from looking_glass.cfm_training import embed_batch_size  # noqa: E402
-from sklearn.ensemble import HistGradientBoostingRegressor, HistGradientBoostingClassifier  # noqa: E402
-from sklearn.metrics import r2_score, roc_auc_score  # noqa: E402
-from sklearn.model_selection import KFold  # noqa: E402
+from looking_glass.autotune import derive_batch, derive_dim  # noqa: E402
 
 DEV = "cuda" if torch.cuda.is_available() else "cpu"
 CLIP_STATS = {"steps": 0, "binds": 0}
 AS_OF_TS = 0.0
 BATCH = 16
+# Architecture / objective axes (one per toggle; empty = the recorded baseline).
+# Set WQ_AXES="measure,query,suffix,slow,readout,multicut,amp,tokbatch" to enable.
+AXES = {x for x in _os.environ.get("WQ_AXES", "").split(",") if x}
 LABELS = (
     "y_value_30",
     "y_orders_30",
@@ -75,7 +73,15 @@ def _load_artifact(art, data):
     starts = ends - lens
     big = {k: z[k] for k in ("et", "gcat", "gnum", "time", "gaps", "tss", "graw")}
     seqs = {
-        k: (big["et"][s:e], big["gcat"][s:e], big["gnum"][s:e], big["time"][s:e], big["gaps"][s:e], big["tss"][s:e], big["graw"][s:e])
+        k: (
+            big["et"][s:e],
+            big["gcat"][s:e],
+            big["gnum"][s:e],
+            big["time"][s:e],
+            big["gaps"][s:e],
+            big["tss"][s:e],
+            big["graw"][s:e],
+        )
         for k, s, e in zip(keys, starts, ends)
     }
     A = pl.read_parquet(Path(data) / "path_a/path_a_wide_table.parquet")
@@ -152,7 +158,10 @@ def _ident_targets(seqs, keys, vs):
     if not dims:
         return {}, 0
     g = np.random.default_rng(1234)
-    projs = [g.normal(size=(s, dd)).astype(np.float32) / np.sqrt(max(s, 1)) for s, dd in zip(vs["gcat"], dims)]
+    projs = [
+        g.normal(size=(s, dd)).astype(np.float32) / np.sqrt(max(s, 1))
+        for s, dd in zip(vs["gcat"], dims)
+    ]
     out = {}
     for k in keys:
         gck = seqs[k][1]
@@ -173,7 +182,7 @@ def _ident_targets(seqs, keys, vs):
 
 
 class Enc(nn.Module):
-    def __init__(self, vs, d, e, layers, taus):
+    def __init__(self, vs, d, e, layers, taus, slow_taus=None):
         super().__init__()
         self.d = d
         self.et = nn.Embedding(vs["et"], d)
@@ -184,12 +193,28 @@ class Enc(nn.Module):
         self.gw_num = nn.Parameter(torch.full((vs["gnum"],), 0.5413))
         self.mlp = nn.Sequential(nn.Linear(d, d), nn.GELU(), nn.Linear(d, d))
         self.ssm = nn.ModuleList([GatedSSM(d, e, taus) for _ in range(layers)])
+        # ---- axis toggles (empty set = the recorded baseline path) ----
+        self.use_measure = "measure" in AXES
+        self.use_query = "query" in AXES
+        self.use_suffix = "suffix" in AXES
+        self.use_slow = "slow" in AXES
+        self.use_readout = "readout" in AXES
+        self.slow_ssm = (
+            GatedSSM(d, len(slow_taus), slow_taus)
+            if (self.use_slow and slow_taus is not None)
+            else None
+        )
+        e_tot = e + (len(slow_taus) if self.slow_ssm is not None else 0)
+        self.K = max(2, len(taus)) if self.use_readout else 0
         self.q = nn.Parameter(torch.randn(d) / math.sqrt(d))
-        self.n_read = 4 + 3 * e
+        self.q_multi = (
+            nn.Parameter(torch.randn(self.K, d) / math.sqrt(d)) if self.use_readout else None
+        )
+        base_read = 3 + self.K if self.use_readout else 4
+        self.n_read = base_read + 3 * e_tot
         self.rproj = nn.ModuleList([nn.Linear(d, d) for _ in range(self.n_read)])
         self.rw = nn.Parameter(torch.zeros(self.n_read))
         self.raw = nn.Linear(vs["raw"], d)
-        self.mass_proj = nn.Linear(vs["raw"] + vs["et"], e * d)
         self.rmlp = nn.Sequential(nn.Linear(d, d), nn.GELU(), nn.Linear(d, d))
         self.qgap = nn.Sequential(nn.Linear(1, d), nn.GELU(), nn.Linear(d, d))
         self.head_et = nn.Linear(d, vs["et"])
@@ -199,8 +224,25 @@ class Enc(nn.Module):
         self.past = nn.Linear(d, vs["past_dim"])
         self.head_fut = nn.ModuleList([nn.Linear(d, vs["fut_dim"]) for _ in vs["horizons"]])
         self.head_id = nn.ModuleList([nn.Linear(d, s2) for s2 in vs["id_dims"]])
-        self.head_unc = nn.Linear(d, vs["unc_dim"]); self.rel_idx = list(vs["rel_idx"])
+        self.head_unc = nn.Linear(d, vs["unc_dim"])
+        self.rel_idx = list(vs["rel_idx"])
         self.head_ident = nn.Linear(d, vs["ident_dim"]) if vs.get("ident_dim", 0) > 0 else None
+        # item 3: low-rank previous-event transition operator (learned, small)
+        self.trans_r = 16
+        if self.use_suffix:
+            self.trans_u = nn.Embedding(vs["et"], self.trans_r)
+            self.trans_v = nn.Parameter(torch.randn(self.trans_r, d) / math.sqrt(self.trans_r))
+        # item 1: self-supervised typed-histogram head (all discovered categorical fields)
+        self.head_hist = (
+            nn.Linear(d, vs["hist_dim"])
+            if (self.use_measure and vs.get("hist_dim", 0) > 0)
+            else None
+        )
+        # item 2: query-conditioned future-aggregate head
+        self.q_dim = 24
+        if self.use_query:
+            self.qemb = nn.Embedding(max(vs.get("n_query", 1), 1), self.q_dim)
+            self.head_query = nn.Linear(d + self.q_dim, 1)
 
     def forward(self, et, gcat, gnum, time, gaps, mask, lengths, qgap, graw):
         x = self.et(et) + self.time(time)
@@ -210,30 +252,43 @@ class Enc(nn.Module):
             x = x + F.softplus(self.gw_num[i]) * lin(gnum[:, :, i : i + 1])
         x = self.mlp(x) + self.raw(torch.sign(graw) * torch.log1p(graw.abs()))
         dt = gaps.clamp(min=1e-3)
-        H = None; M = None
+        H = None
+        M = None
         for ssm in self.ssm:
             x, H, M = ssm(x, mask, dt)
         Hs = x
+        if self.use_slow and self.slow_ssm is not None:
+            # item 4: a second stack whose tau is initialized at the stream span scale
+            _xs, H_s, M_s = self.slow_ssm(x, mask, dt)
+            H = torch.cat([H, H_s], dim=2)
+            M = torch.cat([M, M_s], dim=2)
+            Hs = Hs + _xs
+        if self.use_suffix:
+            # item 3: expose the previous event through a learned low-rank transition operator
+            prev = F.pad(et[:, :-1], (1, 0), value=0)
+            Hs = Hs + self.trans_u(prev) @ self.trans_v
         ar = torch.arange(Hs.shape[0], device=Hs.device)
         last = Hs[ar, lengths - 1]
         m = mask.unsqueeze(-1)
         mean = (Hs * m).sum(1) / lengths.unsqueeze(-1)
         mx = Hs.masked_fill(mask.unsqueeze(-1) == 0, -1e9).max(1).values
-        score = (Hs @ self.q) / math.sqrt(self.d)
-        score = score.masked_fill(mask == 0, -1e9)
-        att = torch.softmax(score, 1)
-        pooled = (Hs * att.unsqueeze(-1)).sum(1)
-        Hlast = H.reshape(H.shape[0], H.shape[1], H.shape[2], H.shape[3])[ar, lengths - 1]  # (B,e,d)
+        Hlast = H[ar, lengths - 1]
         Hmean = (H * mask.unsqueeze(-1).unsqueeze(-1)).sum(1) / lengths.view(-1, 1, 1)
-        mass_in = torch.cat([torch.sign(graw) * torch.log1p(graw.abs()),
-                             F.one_hot(et, self.et.num_embeddings).float()], -1)
-        Mp = self.mass_proj(mass_in)
-        # recompute the additive mass state (same decay) for the readout
-        # M from the last SSM is already the additive mass; use its last row
-        Mlast = M[ar, lengths - 1]  # (B,e,d), recency-weighted raw mass
-        rs = [last, mean, mx, pooled]
+        Mlast = M[ar, lengths - 1]
+        rs = [last, mean, mx]
+        if self.use_readout:
+            # item 6: structured multi-query attention readout
+            for kq in range(self.K):
+                sc = (Hs @ self.q_multi[kq]) / math.sqrt(self.d)
+                sc = sc.masked_fill(mask == 0, -1e9)
+                rs.append((Hs * torch.softmax(sc, 1).unsqueeze(-1)).sum(1))
+        else:
+            score = (Hs @ self.q) / math.sqrt(self.d)
+            score = score.masked_fill(mask == 0, -1e9)
+            rs.append((Hs * torch.softmax(score, 1).unsqueeze(-1)).sum(1))
         for j in range(Hlast.shape[1]):
-            rs.append(Hlast[:, j]); rs.append(Hmean[:, j])
+            rs.append(Hlast[:, j])
+            rs.append(Hmean[:, j])
         for j in range(Mlast.shape[1]):
             rs.append(Mlast[:, j])
         pr = [self.rproj[i](rs[i]) for i in range(self.n_read)]
@@ -241,15 +296,37 @@ class Enc(nn.Module):
         E = sum(w[i] * pr[i] for i in range(self.n_read))
         E = self.rmlp(E)
         E = E + self.qgap(torch.log1p(qgap).unsqueeze(-1))
-        MB = torch.cat([Mlast.reshape(Mlast.shape[0], -1), Hlast.reshape(Hlast.shape[0], -1), Hmean.reshape(Hmean.shape[0], -1)], 1)
+        MB = torch.cat(
+            [
+                Mlast.reshape(Mlast.shape[0], -1),
+                Hlast.reshape(Hlast.shape[0], -1),
+                Hmean.reshape(Hmean.shape[0], -1),
+            ],
+            1,
+        )
         # learned blocks (trained heads, not static summaries)
-        IB = torch.cat([h(E) for h in self.head_id], 1) if len(self.head_id) else E.new_zeros((E.shape[0], 0))
+        IB = (
+            torch.cat([h(E) for h in self.head_id], 1)
+            if len(self.head_id)
+            else E.new_zeros((E.shape[0], 0))
+        )
         UB = self.head_unc(E)
         RB = self.head_gap(E)
         OB = self.head_et(E)
-        RelB = torch.cat([self.heads_cat[j](E) for j in self.rel_idx], 1) if self.rel_idx else E.new_zeros((E.shape[0], 0))
+        RelB = (
+            torch.cat([self.heads_cat[j](E) for j in self.rel_idx], 1)
+            if self.rel_idx
+            else E.new_zeros((E.shape[0], 0))
+        )
         CB = torch.cat([hf(E) for hf in self.head_fut], 1)
-        return Hs, E, w / w.sum(), MB, IB, RB, UB, CB, OB, RelB
+        HB = self.head_hist(E) if self.head_hist is not None else E.new_zeros((E.shape[0], 0))
+        if self.use_suffix:
+            SB = torch.cat(
+                [self.et(et[ar, lengths - 1]), self.et(et[ar, torch.clamp(lengths - 2, min=0)])], 1
+            )
+        else:
+            SB = E.new_zeros((E.shape[0], 0))
+        return Hs, E, w / w.sum(), MB, IB, RB, UB, CB, OB, RelB, HB, SB
 
 
 def collate(
@@ -265,6 +342,7 @@ def collate(
     h=0.0,
     fut_mu=None,
     fut_sd=None,
+    want_hist=False,
 ):
     T = max(cuts)
     Bn = len(ks)
@@ -283,6 +361,7 @@ def collate(
     fut = np.zeros((Bn, vs["fut_dim"]), np.float32)
     id_tgt = np.zeros((Bn, len(vs["id_idx"])), np.int64)
     unc_tgt = np.zeros((Bn, vs["unc_dim"]), np.float32)
+    hist = np.zeros((Bn, vs.get("hist_dim", 0)), np.float32)
     qg = np.zeros(Bn, np.float32)
     for b, (k, cut) in enumerate(zip(ks, cuts)):
         etk, gck, gnk, tmk, gpk, tt, grk = seqs[k]
@@ -299,8 +378,23 @@ def collate(
         mask[b, :L] = 1
         for jj, ii in enumerate(vs["id_idx"]):
             id_tgt[b, jj] = gck[0, ii]
-        unc_tgt[b, :len(vs["gcat"])] = (gck[:L] == 0).mean(0)
-        unc_tgt[b, len(vs["gcat"]):] = (gnk[:L] == 0).mean(0)
+        unc_tgt[b, : len(vs["gcat"])] = (gck[:L] == 0).mean(0)
+        unc_tgt[b, len(vs["gcat"]) :] = (gnk[:L] == 0).mean(0)
+        if want_hist and L > 0 and vs.get("hist_keep"):
+            off = 0
+            for j, keep in enumerate(vs["hist_keep"]):
+                col = gck[:L, j]
+                sz = vs["gcat"][j]
+                c = np.bincount(col[col < sz], minlength=sz).astype(np.float32)
+                nk = len(keep)
+                hk = np.zeros(nk + 1, np.float32)
+                hk[:nk] = c[keep]
+                hk[-1] = max(c.sum() - hk[:nk].sum(), 0.0)
+                tot = hk.sum()
+                if tot > 0:
+                    hk /= tot
+                hist[b, off : off + nk + 1] = hk
+                off += nk + 1
         if want_past and L > 0:
             ev = etk[:L]
             etc = [float((ev == i).sum()) for i in range(vs["et"])]
@@ -357,6 +451,7 @@ def collate(
         gaps=torch.tensor(gaps, device=DEV),
         mask=torch.tensor(mask, device=DEV),
         tss=torch.tensor(tsarr, device=DEV),
+        hist=torch.tensor(hist, device=DEV),
     )
     return (
         t,
@@ -417,41 +512,93 @@ def run_epoch(
     ident_map=None,
 ):
     model.train(train)
-    order = np.array(ks)[rng.permutation(len(ks))]
+    order = list(np.array(ks)[rng.permutation(len(ks))])
+    if "tokbatch" in AXES:
+        # item 8: pack batches by a token budget (median-length scaled) instead of customer count
+        med = max(1, int(np.median([len(seqs[k][5]) for k in order])))
+        budget = max(1, BATCH * med)
+        batches, cur, ctok = [], [], 0
+        for k in order:
+            n = len(seqs[k][5])
+            if cur and ctok + n > budget:
+                batches.append(cur)
+                cur, ctok = [], 0
+            cur.append(k)
+            ctok += n
+        if cur:
+            batches.append(cur)
+    else:
+        batches = [order[i : i + BATCH] for i in range(0, len(order), BATCH)]
     tot = 0
     nb = 0
-    for i in range(0, len(order), BATCH):
-        bk = list(order[i : i + BATCH])
+    use_hist = model.head_hist is not None
+    for bk in batches:
         cuts = []
         for k in bk:
-            lo = seqs[k][5][0]
-            hi = seqs[k][5][-1]
-            ct = float(rng.uniform(lo, hi))
-            cut = int(np.searchsorted(seqs[k][5], ct, side="right"))
-            cuts.append(max(8, min(cut, len(seqs[k][5]) - 2)))
+            tss = seqs[k][5]
+            if "multicut" in AXES:
+                # item 5: stratified cut position (balanced short/long histories)
+                frac = float(rng.uniform(0.15, 0.95))
+                cut = int(frac * len(tss))
+            else:
+                lo = tss[0]
+                hi = tss[-1]
+                ct = float(rng.uniform(lo, hi))
+                cut = int(np.searchsorted(tss, ct, side="right"))
+            cuts.append(max(8, min(cut, len(tss) - 2)))
         hor = vs["horizons"]
         _hi = int(rng.integers(len(hor)))
         h = float(hor[_hi])
         t, past, qg, lens, fut = collate(
-            seqs, bk, cuts, [0.0] * len(bk), vs, False, None, None, True, h, fut_mu, fut_sd
+            seqs,
+            bk,
+            cuts,
+            [0.0] * len(bk),
+            vs,
+            False,
+            None,
+            None,
+            True,
+            h,
+            fut_mu,
+            fut_sd,
+            use_hist,
         )
-        Hs, E, w, *_blocks = model(t["et"], t["gcat"], t["gnum"], t["time"], t["gaps"], t["mask"], lens, qg, t["graw"])
+        Hs, E, w, *_blocks = model(
+            t["et"], t["gcat"], t["gnum"], t["time"], t["gaps"], t["mask"], lens, qg, t["graw"]
+        )
         model._hs = Hs
         m = t["mask"][:, 1:]
         Ls = _next_losses(model, t, m, p_mask, rng)
         Ls.append(((model.head_fut[_hi](E) - fut) ** 2).mean())
-        for jj, h in enumerate(model.head_id):
-            Ls.append(F.cross_entropy(h(E), t["id_tgt"][:, jj]))
+        for jj, hh in enumerate(model.head_id):
+            Ls.append(F.cross_entropy(hh(E), t["id_tgt"][:, jj]))
         Ls.append(((model.head_unc(E) - t["unc_tgt"]) ** 2).mean())
         if model.head_ident is not None and ident_map is not None:
             idt = torch.tensor(np.stack([ident_map[k] for k in bk]), device=DEV)
             Ls.append(((model.head_ident(E) - idt) ** 2).mean())
+        if use_hist:
+            Ls.append(((model.head_hist(E) - t["hist"]) ** 2).mean())
+        if model.use_query:
+            qf = int(rng.integers(vs["raw"]))
+            qidx = _hi * vs["raw"] + qf
+            qe = model.qemb(torch.full((E.shape[0],), qidx, device=DEV, dtype=torch.long))
+            pred = model.head_query(torch.cat([E, qe], 1))
+            Ls.append(((pred - fut[:, vs["fut_raw_off"] + 2 * qf].unsqueeze(1)) ** 2).mean())
         loss = sum(0.5 * torch.exp(-log_s[j]) * Ls[j] + 0.5 * log_s[j] for j in range(len(Ls)))
         fcuts = [len(seqs[k][5]) for k in bk]
         fq = [(AS_OF_TS - seqs[k][5][-1]) / 86400.0 for k in bk]
         t2, past2, qg2, lens2, _f2 = collate(seqs, bk, fcuts, fq, vs, True, past_mu, past_sd)
         _, E2, _, *_b2 = model(
-            t2["et"], t2["gcat"], t2["gnum"], t2["time"], t2["gaps"], t2["mask"], lens2, qg2, t2["graw"]
+            t2["et"],
+            t2["gcat"],
+            t2["gnum"],
+            t2["time"],
+            t2["gaps"],
+            t2["mask"],
+            lens2,
+            qg2,
+            t2["graw"],
         )
         lp = ((model.past(E2) - past2) ** 2).mean()
         j = len(Ls)
@@ -480,17 +627,38 @@ def val_loss(model, seqs, ks, vs, past_mu, past_sd, taus, fut_mu, fut_sd, horizo
         fq = [(AS_OF_TS - seqs[k][5][-1]) / 86400.0 for k in bk]
         h = float(vs["horizons"][-1])
         t, past, qg, lens, fut = collate(
-            seqs, bk, fcuts, fq, vs, True, past_mu, past_sd, True, h, fut_mu, fut_sd
+            seqs,
+            bk,
+            fcuts,
+            fq,
+            vs,
+            True,
+            past_mu,
+            past_sd,
+            True,
+            h,
+            fut_mu,
+            fut_sd,
+            model.head_hist is not None,
         )
-        Hs, E, w, *_blocks = model(t["et"], t["gcat"], t["gnum"], t["time"], t["gaps"], t["mask"], lens, qg, t["graw"])
+        Hs, E, w, *_blocks = model(
+            t["et"], t["gcat"], t["gnum"], t["time"], t["gaps"], t["mask"], lens, qg, t["graw"]
+        )
         model._hs = Hs
         m = t["mask"][:, 1:]
         Ls = _next_losses(model, t, m, 0.0, np.random.default_rng(0))
         lp = ((model.past(E) - past) ** 2).mean()
         lf = ((model.head_fut[-1](E) - fut) ** 2).mean()
-        lid = sum(float(F.cross_entropy(h(E), t["id_tgt"][:, jj])) for jj, h in enumerate(model.head_id))
+        lid = sum(
+            float(F.cross_entropy(h(E), t["id_tgt"][:, jj])) for jj, h in enumerate(model.head_id)
+        )
         luc = float(((model.head_unc(E) - t["unc_tgt"]) ** 2).mean())
-        tot += float(sum(Ls) + lp + lf + lid + luc)
+        lhist = (
+            float(((model.head_hist(E) - t["hist"]) ** 2).mean())
+            if model.head_hist is not None
+            else 0.0
+        )
+        tot += float(sum(Ls) + lp + lf + lid + luc + lhist)
         nb += 1
     return tot / max(nb, 1)
 
@@ -506,8 +674,11 @@ def embed(model, seqs, ks, vs):
         fcuts = [len(seqs[k][5]) for k in bk]
         fq = [(AS_OF_TS - seqs[k][5][-1]) / 86400.0 for k in bk]
         t, _, qg, lens, _f = collate(seqs, bk, fcuts, fq, vs, False, None, None)
-        Hs, E, _, MB, IB, RB, UB, CB, OB, RelB = model(t["et"], t["gcat"], t["gnum"], t["time"], t["gaps"], t["mask"], lens, qg, t["graw"])
-        out.append(E.cpu().numpy()); mout.append(np.hstack([MB.cpu().numpy(), IB.cpu().numpy(), RB.cpu().numpy(), UB.cpu().numpy(), CB.cpu().numpy(), OB.cpu().numpy(), RelB.cpu().numpy(), model.past(E).cpu().numpy()]))
+        Hs, E, _, *blocks = model(
+            t["et"], t["gcat"], t["gnum"], t["time"], t["gaps"], t["mask"], lens, qg, t["graw"]
+        )
+        out.append(E.cpu().numpy())
+        mout.append(np.hstack([b.cpu().numpy() for b in blocks] + [model.past(E).cpu().numpy()]))
     return np.concatenate(out, 0), np.concatenate(mout, 0)
 
 
@@ -530,10 +701,13 @@ def table_features(A, hold):
 
 def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     global AS_OF_TS, BATCH
-    B, A, keys, seqs, vs, et_v, catspec, num, taus, p_mask, as_of_ts, periods, horizons = load_data(data)
+    B, A, keys, seqs, vs, et_v, catspec, num, taus, p_mask, as_of_ts, periods, horizons = load_data(
+        data
+    )
     AS_OF_TS = as_of_ts
     if d is None:
         from collections import Counter as _C
+
         n_seqs = len(keys)
         total = sum(len(seqs[k][5]) for k in keys)
         _cnt = _C()
@@ -563,6 +737,7 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     fq = [(AS_OF_TS - seqs[k][5][-1]) / 86400.0 for k in pkeys]
     if d is None:
         from collections import Counter as _C
+
         n_seqs = len(keys)
         total = sum(len(seqs[k][5]) for k in keys)
         _cnt = _C()
@@ -581,18 +756,67 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
         rows = []
         for fr in (0.3, 0.5, 0.7, 0.9):
             mc = [max(8, int(fr * len(seqs[k][5]))) for k in pkeys]
-            _, _, _, _, Fk = collate(seqs, pkeys, mc, [0.0] * len(pkeys), vs, False, None, None, True, float(hv), None, None)
+            _, _, _, _, Fk = collate(
+                seqs,
+                pkeys,
+                mc,
+                [0.0] * len(pkeys),
+                vs,
+                False,
+                None,
+                None,
+                True,
+                float(hv),
+                None,
+                None,
+            )
             rows.append(Fk.cpu().numpy())
         Fs.append(np.concatenate(rows))
     Fcat = np.stack(Fs)
     fut_mu, fut_sd = Fcat.mean(1), Fcat.std(1)
     fut_sd[fut_sd < 1e-6] = 1.0
     ident_map, _ = _ident_targets(seqs, keys, vs)
+    # item 1: coverage-capped per-field value vocab for the typed-histogram objective
+    if "measure" in AXES:
+        hist_keep = []
+        for j in range(
+            len(vs["gcat"])
+        ):  # principle-ok: loop over discovered fields (~17), not rows/time
+            cnt = np.zeros(vs["gcat"][j], np.int64)
+            for k in tr[:2000]:
+                col = seqs[k][1][:, j]
+                cnt += np.bincount(col[col < len(cnt)], minlength=len(cnt))[: len(cnt)]
+            order = np.argsort(cnt)[::-1]
+            csum = np.cumsum(cnt[order])
+            tot_c = max(int(csum[-1]), 1)
+            keep = order[csum <= 0.99 * tot_c]
+            if len(keep) == 0:
+                keep = order[:1]
+            hist_keep.append(np.sort(keep).astype(np.int64))
+        vs["hist_keep"] = hist_keep
+        vs["hist_dim"] = int(sum(len(k) + 1 for k in hist_keep))
+        print(
+            f"hist_dim {vs['hist_dim']} (coverage 0.99 over {len(vs['gcat'])} fields)", flush=True
+        )
+    # item 4: slow timescales derived from the observed stream span
+    spans = np.array(
+        [(seqs[k][5][-1] - seqs[k][5][0]) / 86400.0 for k in keys]
+    )  # principle-ok: unit conversion s->days
+    slow_taus = np.quantile(spans, [0.5, 0.9]) if "slow" in AXES else None
+    # item 2: query space = (horizon, raw field)
+    vs["fut_raw_off"] = vs["et"] + len(vs["gcat"])
+    vs["n_query"] = len(vs["horizons"]) * vs["raw"]
     torch.manual_seed(seed)
-    model = Enc(vs, d, len(taus), layers, taus).to(DEV)
+    model = Enc(vs, d, len(taus), layers, taus, slow_taus=slow_taus).to(DEV)
     lr = lr if lr is not None else 1e-3  # documented seed bound; trust-region adapts below
     opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
-    log_s = nn.Parameter(torch.zeros(1 + len(vs["gcat"]) + vs["gnum"] + 1 + 1 + 1 + len(vs["id_dims"]) + 1 + 1, device=DEV))
+    n_extra = (1 if model.head_hist is not None else 0) + (1 if model.use_query else 0)
+    log_s = nn.Parameter(
+        torch.zeros(
+            1 + len(vs["gcat"]) + vs["gnum"] + 1 + 1 + 1 + len(vs["id_dims"]) + 1 + 1 + n_extra,
+            device=DEV,
+        )
+    )
     opt.add_param_group({"params": [log_s]})
     tr_log = []  # trust-region lr trajectory (receipt)
     best = 1e9
@@ -642,9 +866,23 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
         if pat >= 3:
             break
     print(f"trust-region lr {tr_log}", flush=True)
-    _names = ["et"] + [f"cat{j}" for j in range(len(vs["gcat"]))] + [f"num{j}" for j in range(vs["gnum"])] + ["gap", "fut"] + [f"id{j}" for j in range(len(vs["id_dims"]))] + ["unc", "ident"]
+    _names = (
+        ["et"]
+        + [f"cat{j}" for j in range(len(vs["gcat"]))]
+        + [f"num{j}" for j in range(vs["gnum"])]
+        + ["gap", "fut"]
+        + [f"id{j}" for j in range(len(vs["id_dims"]))]
+        + ["unc", "ident"]
+    )
+    if model.head_hist is not None:
+        _names.append("hist")
+    if model.use_query:
+        _names.append("query")
     _ls = log_s.detach().cpu().tolist()
-    print("loss weights " + ", ".join(f"{n}={math.exp(-x):.3f}" for n, x in zip(_names, _ls)), flush=True)
+    print(
+        "loss weights " + ", ".join(f"{n}={math.exp(-x):.3f}" for n, x in zip(_names, _ls)),
+        flush=True,
+    )
     print(f"clip stats: {CLIP_STATS}", flush=True)
     if best_state:
         model.load_state_dict(best_state)

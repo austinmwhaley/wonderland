@@ -54,23 +54,12 @@ def _embed_cut(model, seqs, ks, cuts, qgaps, vs, batch=32):
             bc = cuts[i : i + batch]
             bq = qgaps[i : i + batch]
             t, _, qg, lens, _ = AE.collate(seqs, bk, bc, bq, vs, False, None, None)
-            Hs, E, _, MB, IB, RB, UB, CB, OB, RelB = model(
+            Hs, E, _, *blocks = model(
                 t["et"], t["gcat"], t["gnum"], t["time"], t["gaps"], t["mask"], lens, qg, t["graw"]
             )
             out_e.append(E.cpu().numpy())
             out_b.append(
-                np.hstack(
-                    [
-                        MB.cpu().numpy(),
-                        IB.cpu().numpy(),
-                        RB.cpu().numpy(),
-                        UB.cpu().numpy(),
-                        CB.cpu().numpy(),
-                        OB.cpu().numpy(),
-                        RelB.cpu().numpy(),
-                        model.past(E).cpu().numpy(),
-                    ]
-                )
+                np.hstack([b.cpu().numpy() for b in blocks] + [model.past(E).cpu().numpy()])
             )
     return np.concatenate(out_e, 0), np.concatenate(out_b, 0)
 

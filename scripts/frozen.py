@@ -3,6 +3,7 @@
 Build once with `scripts/build_frozen.py <data> --seed S --out <cache>`.
 Measurement scripts load it when the env var FROZEN is set -> no retraining.
 """
+
 from __future__ import annotations
 
 import sys
@@ -32,7 +33,10 @@ def save(data, seed, path, epochs=12, d=128, layers=2):
         best=np.array([float(best)]),
         **labels_arr,
     )
-    torch.save({"model": model, "vs": vs, "data": data, "seed": seed}, str(path) + ".pt")
+    torch.save(
+        {"model": model, "vs": vs, "data": data, "seed": seed, "axes": sorted(AE.AXES)},
+        str(path) + ".pt",
+    )
     return str(path)
 
 
@@ -43,6 +47,14 @@ def load(path):
     z = np.load(str(path) + ".npz", allow_pickle=True)
     labels = {k[len("label_") :]: z[k] for k in z.files if k.startswith("label_")}
     return (
-        z["E"], z["Xtab"], labels, list(z["hold"]), list(z["seg"]), model, ck["vs"],
-        None, float(z["best"][0]), z["BLK"],
+        z["E"],
+        z["Xtab"],
+        labels,
+        list(z["hold"]),
+        list(z["seg"]),
+        model,
+        ck["vs"],
+        None,
+        float(z["best"][0]),
+        z["BLK"],
     )

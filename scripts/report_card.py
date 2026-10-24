@@ -101,6 +101,15 @@ BC_ROWS = [
         "plugin_rl_known.json",
         "freq",
     ),
+    BC(
+        "RL-3",
+        "response — channel (IPS/DR)",
+        "policy value vs random, grouped CI",
+        "random; table",
+        "E > random (CI lo > 0) and E >= table",
+        "plugin_response.json",
+        "response_channel",
+    ),
 ]
 
 
@@ -198,6 +207,8 @@ def _eval_bc(row, docs):
             "PASS" if ok else "FAIL",
             "not worse (2SE)",
         )
+    if row.kind == "response_channel":
+        return _eval_bc_response(d, "channel")
     if row.kind == "churn_nn":
         u = d["arms"]["E"]
         t = d["arms"]["table"]
@@ -212,6 +223,21 @@ def _eval_bc(row, docs):
         f"{r['E']:.4f} vs {r['table']:.4f} (CI {r['lo']:+.4f})",
         "PASS" if r["lo"] > 0 else "FAIL",
         "paired CI > 0",
+    )
+
+
+def _eval_bc_response(d, key):
+    r = d.get(key)
+    if not r:
+        return ("—", "NOT MEASURED", "missing arm")
+    dr = r["E_minus_random"]
+    dt = r["E_minus_table"]
+    ok = bool(dr["lo"] > 0 and dt["mean"] >= 0)
+    return (
+        f"IPS {r['E']['ips']:.1f} vs random {r['random']['ips']:.1f} (Δ {dr['mean']:+.1f} "
+        f"[{dr['lo']:+.1f},{dr['hi']:+.1f}]) · vs table Δ {dt['mean']:+.1f}",
+        "PASS" if ok else "FAIL",
+        "E > random (CI>0) and E >= table",
     )
 
 
@@ -231,9 +257,9 @@ def main():
         b_eval.append((r, val, verdict, note))
     bc_eval = [(r, *_eval_bc(r, docs)) for r in BC_ROWS]
     b_pass = sum(v == "PASS" for _, _, v, _ in b_eval)
-    b_fail = sum(v == "FAIL" for _, _, v, _ in b_eval)
+    b_fail = sum(v in ("FAIL", "NOT MEASURED") for _, _, v, _ in b_eval)
     bc_pass = sum(v == "PASS" for _, _, v, _ in bc_eval)
-    bc_fail = sum(v == "FAIL" for _, _, v, _ in bc_eval)
+    bc_fail = sum(v in ("FAIL", "NOT MEASURED") for _, _, v, _ in bc_eval)
 
     try:
         commit = subprocess.check_output(
@@ -256,6 +282,15 @@ def main():
         f"- **Generated:** {date.today().isoformat()} · **commit:** `{commit}` · **branch:** primary-encoder"
     )
     A("- **Data:** synthetic relational reference (6k) · harness, no business data.")
+    cfg = docs.get("encoder_config.json") or {}
+    if cfg:
+        A(
+            f"- **Encoder config:** axes `{','.join(cfg.get('axes') or []) or 'baseline'}` · "
+            f"d {cfg.get('d')} · layers {cfg.get('layers')} · readout dim {cfg.get('n_read')} · "
+            f"E dim {cfg.get('E_dim')} · state dim {cfg.get('state_dim')}"
+            + (f" · histogram dim {cfg.get('hist_dim')}" if cfg.get("hist_dim") else "")
+            + "."
+        )
     A(
         f"- **Scale:** {data.get('path_b', {}).get('customers', 0):,} customers · "
         f"{data.get('path_b', {}).get('rows', 0):,} events · as-of `{data.get('as_of', 'n/a')}`."
