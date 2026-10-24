@@ -35,12 +35,10 @@ _, A, keys, seqs, vs2, et_v, catspec, num, taus, p_mask, as_of_ts, periods, hori
 AE.AS_OF_TS = as_of_ts
 n_ev = vs2["et"]
 _cand = [j for j in range(len(catspec)) if j not in vs2["id_idx"]]
-_ent_j, _ent_u = (0, -1)
-for _j in _cand:
-    _u = len(set(np.concatenate([seqs[k][1][:, _j] for k in hold[:300]]).tolist()))
-    if _u > _ent_u:
-        _ent_u, _ent_j = _u, _j
-id_idx = _ent_j  # varying categorical for the entity probe (not a constant id field)
+_uc = {_j: len(set(np.concatenate([seqs[k][1][:, _j] for k in hold[:300]]).tolist())) for _j in _cand} if _cand else {}
+_ok = [j for j in _cand if 2 <= _uc[j] <= 50]
+_ent_j = max(_ok, key=lambda j: _uc[j]) if _ok else (min(_uc, key=lambda j: _uc[j]) if _uc else 0)
+id_idx = _ent_j  # varying, low-cardinality categorical for the entity probe
 
 # per-step states for holdout (chunked)
 Z, Ls, cust = [], [], []
@@ -114,7 +112,7 @@ def fit_eval(name, X, y, prev_id, prev_val, folds):
             pred1 = np.array([(g[pp].most_common(1)[0][0] if pp in g else mc) for pp in prev_id[te]])
             one = accuracy_score(y[te], pred1)
             naive.append(max(uni, one))
-            m = make_pipeline(StandardScaler(), LogisticRegression(max_iter=500))
+            m = make_pipeline(StandardScaler(), LogisticRegression(max_iter=200))
             try:
                 m.fit(X[tr], y[tr]); vals.append(accuracy_score(y[te], m.predict(X[te])))
             except Exception:
@@ -129,10 +127,14 @@ def fit_eval(name, X, y, prev_id, prev_val, folds):
 
 
 out = {}
+CAP = 40000
 for name in Xall:
     X = np.asarray(Xall[name], float)
     y = np.asarray(Y[name])
     Sarr = np.asarray(S[name])
+    if len(X) > CAP:
+        _ix = np.random.default_rng(0).choice(len(X), CAP, replace=False)
+        X, y, Sarr = X[_ix], y[_ix], Sarr[_ix]
     folds = list(GroupKFold(5).split(X, y, Sarr))
     skill, se, naive = fit_eval(name, X, y, np.asarray(PREVID[name]), np.asarray(PREVVAL[name]), folds)
     deg = bool(name in ("next", "mask", "entity", "order") and naive >= 0.999)

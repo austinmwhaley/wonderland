@@ -2,10 +2,10 @@
 
 > **Generated** by `python3 scripts/report_card.py` — DO NOT EDIT. Gates live in `scripts/card_spec.py`; every row resolves to a receipt (`docs/report_cards/experiments/`). A missing receipt renders NOT MEASURED.
 
-- **Generated:** 2026-10-23 · **commit:** `8e11cdc` · **branch:** primary-encoder
+- **Generated:** 2026-10-23 · **commit:** `ece9df1` · **branch:** primary-encoder
 - **Data:** `relational_v3` synthetic reference (+ schema variant) · harness, no business data.
 - **Latest demo receipt:** `7e32ebb84fc3` · seeds `3` · runtime `1009.2s`.
-- **B mastery:** **NOT YET MASTERED** — PASS 23 · FAIL 5 · NOT MEASURED 1.
+- **B mastery:** **NOT YET MASTERED** — PASS 24 · FAIL 4 · NOT MEASURED 1.
 
 ## Project goal (AGENTS.md)
 
@@ -78,20 +78,20 @@ sufficiency / minimality / decision-sufficiency via `U = 1 - worst-case oracle g
 
 | # | Item | Metric | Comparator | Gate | Value | Verdict |
 |---|---|---|---|---|---|---|
-| O1 | next | linear probe next-event skill | naive (marginal) | beats naive | skill +0.462 vs naive +0.462 | **FAIL** |
-| O2 | dt | gap/rate probe skill | naive (prev gap) | beats naive | skill +0.060 vs naive -0.000 | **PASS** |
-| O3 | jepa | latent future prediction | naive (hist mean) | beats naive | skill +0.785 vs naive -0.009 | **PASS** |
-| O4 | mask | masked-event recovery | naive (marginal) | beats naive | skill +0.807 vs naive +0.461 | **PASS** |
-| O5 | value | value probe skill | naive (hist mean) | beats naive | skill +0.049 vs naive -0.000 | **PASS** |
-| O6 | entity | entity/identity probe | naive (marginal) | beats naive | skill +0.000 vs naive +1.000 | **FAIL** |
+| O1 | next | linear probe next-event skill | naive (marginal) | beats naive | skill +0.459 vs naive +0.460 | **FAIL** |
+| O2 | dt | gap/rate probe skill | naive (prev gap) | beats naive | skill +0.053 vs naive -0.000 | **PASS** |
+| O3 | jepa | latent future prediction | naive (hist mean) | beats naive | skill +0.783 vs naive -0.011 | **PASS** |
+| O4 | mask | masked-event recovery | naive (marginal) | beats naive | skill +0.804 vs naive +0.460 | **PASS** |
+| O5 | value | value probe skill | naive (hist mean) | beats naive | skill +0.045 vs naive -0.000 | **PASS** |
+| O6 | entity | entity/identity probe | naive (marginal) | beats naive | skill +0.556 vs naive +0.540 | **PASS** |
 | O7 | order | temporal-order probe | naive (random) | beats naive | skill +0.630 vs naive +0.512 | **PASS** |
-| O8 | agg | aggregate/window probe | naive (hist mean) | beats naive | skill +0.016 vs naive -0.000 | **PASS** |
-| O9 | query | query-conditioned probe | naive (hist mean) | beats naive | skill +0.267 vs naive -0.000 | **PASS** |
-| O10 | sf | successor-feature probe | naive (prev value) | beats naive | skill +0.126 vs naive +0.091 | **PASS** |
+| O8 | agg | aggregate/window probe | naive (hist mean) | beats naive | skill +0.014 vs naive -0.000 | **PASS** |
+| O9 | query | query-conditioned probe | naive (hist mean) | beats naive | skill +0.266 vs naive -0.001 | **PASS** |
+| O10 | sf | successor-feature probe | naive (prev value) | beats naive | skill +0.121 vs naive +0.090 | **PASS** |
 
 ## Verdict
 
-B is **not yet mastered**: 1 row(s) unmeasured, 5 failing. Unmeasured rows need receipts; failing rows need an axis fix (one axis per run).
+B is **not yet mastered**: 1 row(s) unmeasured, 4 failing. Unmeasured rows need receipts; failing rows need an axis fix (one axis per run).
 
 ## Disclosures
 

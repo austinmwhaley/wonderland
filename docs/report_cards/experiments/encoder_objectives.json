@@ -7,64 +7,74 @@
  },
  "objectives": {
   "next": {
-   "skill": 0.4616063150071472,
-   "se": 0.0024081773449203705,
-   "naive": 0.4618799004184823,
-   "beats_naive_2se": false
+   "skill": 0.45857473669832904,
+   "se": 0.005219784023147589,
+   "naive": 0.460249683589345,
+   "beats_naive_2se": false,
+   "degenerate": false
   },
   "dt": {
-   "skill": 0.06029202573977386,
-   "se": 0.0018780832897897913,
-   "naive": -3.3188778593951086e-05,
-   "beats_naive_2se": true
+   "skill": 0.0533765469974599,
+   "se": 0.00247068262302989,
+   "naive": -0.00043188623604852874,
+   "beats_naive_2se": true,
+   "degenerate": false
   },
   "jepa": {
-   "skill": 0.7849023660111931,
-   "se": 0.002168891904829691,
-   "naive": -0.009448241448760043,
-   "beats_naive_2se": true
+   "skill": 0.7825272046805531,
+   "se": 0.002563194526615959,
+   "naive": -0.010955753940697662,
+   "beats_naive_2se": true,
+   "degenerate": false
   },
   "mask": {
-   "skill": 0.8073482940004684,
-   "se": 0.0005224011745438864,
-   "naive": 0.4605877029494502,
-   "beats_naive_2se": true
+   "skill": 0.8042498900760998,
+   "se": 0.0008680120123810187,
+   "naive": 0.46025022119093706,
+   "beats_naive_2se": true,
+   "degenerate": false
   },
   "value": {
-   "skill": 0.04948686725782696,
-   "se": 0.001032501674851398,
-   "naive": -0.0002475738525390625,
-   "beats_naive_2se": true
+   "skill": 0.04518657191470323,
+   "se": 0.001185669114698543,
+   "naive": -0.00028674602508544923,
+   "beats_naive_2se": true,
+   "degenerate": false
   },
   "entity": {
-   "skill": 0.0,
-   "se": 0.0,
-   "naive": 1.0,
-   "beats_naive_2se": false
+   "skill": 0.556000057293101,
+   "se": 0.00407047277593088,
+   "naive": 0.539750316410655,
+   "beats_naive_2se": true,
+   "degenerate": false
   },
   "order": {
    "skill": 0.63,
    "se": 0.013249737942901204,
    "naive": 0.5116666666666667,
-   "beats_naive_2se": true
+   "beats_naive_2se": true,
+   "degenerate": false
   },
   "agg": {
-   "skill": 0.016240092089311486,
-   "se": 0.0007481109772397411,
-   "naive": -0.0004887444464109159,
-   "beats_naive_2se": true
+   "skill": 0.01350327531381501,
+   "se": 0.0013064348484842297,
+   "naive": -0.0004050031401562126,
+   "beats_naive_2se": true,
+   "degenerate": false
   },
   "query": {
-   "skill": 0.26670571040487145,
-   "se": 0.005530791927182898,
-   "naive": -0.000265921723313145,
-   "beats_naive_2se": true
+   "skill": 0.2657490345604637,
+   "se": 0.002131813920788898,
+   "naive": -0.0008784491305230624,
+   "beats_naive_2se": true,
+   "degenerate": false
   },
   "sf": {
-   "skill": 0.12608538355109453,
-   "se": 0.0005124652115674004,
-   "naive": 0.09069809886057693,
-   "beats_naive_2se": true
+   "skill": 0.12147048055795032,
+   "se": 0.00092466084239349,
+   "naive": 0.0904383241061351,
+   "beats_naive_2se": true,
+   "degenerate": false
   }
  }
 }
