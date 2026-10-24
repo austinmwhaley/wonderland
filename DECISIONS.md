@@ -928,3 +928,16 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   supervised win was a 6k phenomenon (2k was tie-zone) -> not a data bug. Next: regenerate 6k on the
   fixed generator and re-run the ceiling frame there; if E beats the floor at 6k, the data is done and
   the loop proceeds (discount_sensitivity >2SE -> A6 -> re-run all receipts -> green).
+
+## DEC-289 — Critical-path item 1 FAILED: the GPU rewrite yields E-below-floor at 6k; v3 generator is the reference
+
+- Fixed generator (v10b logic) at 6k: value90 floor 0.392 / E 0.346 (E below, -0.046); orders -0.051;
+  churn tie; ltv below; discount_sensitivity E>floor (+0.034, gap +0.031). The FLOOR ROSE (v3 ~0.358)
+  -> the rewrite made the stream MORE aggregate-predictable, and E weaker - opposite of the goal.
+- The v3 generator's data (CPU) is the reference where E BEAT the table at 6k (value +0.068). The
+  GPU rewrite (v6+) changed the data dynamics in a way that helps the table, not the encoder.
+- Correct fix: port ONLY the GPU vectorization onto the v3-equivalent dynamics (reproduce v3's
+  statistics / E-favorability), OR accept CPU generation for the reference. The rewrite's added
+  order/action mechanisms are not producing E-headroom on this data.
+- Status: data-fix attempts (fields/activity) insufficient; E cannot beat the floor on the rewritten
+  generator. v3 data remains the working reference. Next iteration must reconcile (GPU + v3 dynamics).
