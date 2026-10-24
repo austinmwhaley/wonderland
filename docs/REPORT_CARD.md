@@ -57,7 +57,7 @@ python3 scripts/demo/demo.py --data /tmp/opencode/t0_loop/relational_6k_v3 --epo
 | Property | Status |
 |---|---|
 | Task-free / self-supervised | **PASS** (audit) |
-| Schema-agnostic / per-stream | **partial** (auto fields; variant rerun queued) |
+| Schema-agnostic / per-stream | **PASS** (variant rerun: E trains on renamed schema + new field with zero code changes; probes hold) |
 | Universal / transferable | partial (no held-out battery) |
 | Lawful / compositional | field perm 1.2e−7; scan 8.9e−16; mass additivity 0.0 → **PASS** |
 | Minimal / bounded | rank 2.4; E dim 128 (disclosed bound; derived 256 diverged, DEC-271); past corr² 0.53; future (365d) ridge-on-E **0.522** vs oracle 0.558; horizons ladder-filled (DEC-281); tau-scale horizons = noise floor (honest) |
@@ -178,7 +178,7 @@ python3 scripts/demo/demo.py --data /tmp/opencode/t0_loop/relational_6k_v3 --epo
    c. If (a)+(b) fail: **capacity-aware stability coupling** to un-block d=256 (DEC-271 open item).
 2. **Collate vectorization retry** (efficiency axis) using the DEC-277 recipe; acceptance:
    bit-identical outputs + ≥3× per-batch time + demo receipt unchanged.
-3. **Schema-variant rerun** (universal axis): demo on `relational_v3_schema` -> universality receipt at the final config. **2k revalidation done** — tie-zone at 5 seeds (disclosed above).
+3. **~~Schema-variant rerun~~ DONE** (DEC-282): E trains on the renamed schema with zero code changes; probes hold; supervised ties at 2k scale (disclosed).
 4. **RL/causal 3-seed CIs** at the current config (decision-sufficiency evidence).
 5. **Migration** (per operator direction): `auto_encoder` → `looking_glass`, `stream_loader` →
    `rabbit_hole`, dataset generation owned by a `rabbit_hole` command; `scripts/demo` shrinks to the

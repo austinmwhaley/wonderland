@@ -833,3 +833,15 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   task-free). Disclose on the card: the supervised win is demonstrated at 6k; 2k remains tie-zone
   (small-data scale is harder for the approach - disclosed limitation, not hidden).
 - Next queue: schema-variant rerun (universality), RL/causal CIs at final config.
+
+## DEC-282 receipt — schema-variant rerun (universality axis) PASS on probes; supervised ties at 2k
+
+- relational_v3_schema (renamed fields + session_len), 3 seeds, receipt da153d67c1b6 (578.8s):
+  E trains end-to-end with zero code/schema changes -> schema-agnostic PASS.
+- Probes HOLD under renaming: retrieval 0.378, churn-nn 0.987, identity channel 0.458 (vs table
+  0.249), shuffle drop -0.299. Category identity 0.161 (< table 0.260) - known partial.
+- Supervised (2k scale): value -0.0148 [-0.0439,+0.0142], orders +0.0211, churn +0.0040 - all cross 0.
+  Consistent with the 2k tie-zone finding (DEC-281): the supervised win is 6k-scale; at 2k the data
+  volume limits the supervised head. Disclosed, not hidden.
+- No regression vs the pre-DEC-280 schema card; the universality claim is recorded.
+- Next queue: RL/causal CIs at the final config.
