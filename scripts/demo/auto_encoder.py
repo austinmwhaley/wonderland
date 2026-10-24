@@ -39,6 +39,8 @@ LABELS = (
     "y_orders_90",
     "y_churn_90",
     "y_margin_90",
+    "y_discount_sensitivity",
+    "y_ltv",
 )
 
 

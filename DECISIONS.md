@@ -887,3 +887,16 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   ceiling clear floor and the adaptive encoder have something to extract.
 - Reverted the engagement change (no headroom); v7b stands. Next data iteration must change the LABEL
   functional form, not the rate.
+
+## DEC-286 — data_v9: non-additive targets added; discount_sensitivity is winnable but E is weak on rewritten data
+
+- Added to the generator: per-customer true `discount_sensitivity` (= dq/ddiscount = 1.4*price_sens) in
+  customers + truth; PATH A labels `y_discount_sensitivity` (label-only, no leakage) and `y_ltv`
+  (full-future margin sum). LABELS extended; measure_ceiling extended to 5 targets.
+- Results (2k, seed0): discount_sensitivity floor -0.146 / E -0.111 / ceiling -0.114 -> gap +0.032,
+  E-floor +0.036 (POSITIVE: E beats the floor; first winnable target) but not >2SE (se 0.043).
+  ltv floor 0.202 / E 0.067 -> E loses. value/orders/churn remain DATA GAP (gap ~0).
+- DIAGNOSIS: E is now WEAK on the rewritten (v6+) data (value90 E 0.05 vs floor 0.17); on v3 E beat
+  the table. The generator rewrite shifted the feature distribution so the ENCODER underperforms —
+  the bottleneck is no longer only the label form. Next: (a) inspect why E is weak on v6+ (tokenizer
+  field discovery / distributions / training), (b) fix validate_layer_a (path_a_validation.json not written).

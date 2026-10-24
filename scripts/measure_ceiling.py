@@ -63,8 +63,14 @@ def boot(y, pA, pB, kind, n=400, seed=0):
 
 
 res = {}
-for t, kind in (("value90", "reg"), ("orders90", "reg"), ("churn90", "clf")):
-    y = labels["y_" + t.replace("90", "_90")]
+for t, ykey, kind in (("value90", "y_value_90", "reg"), ("orders90", "y_orders_90", "reg"),
+                      ("churn90", "y_churn_90", "clf"),
+                      ("discount_sensitivity", "y_discount_sensitivity", "reg"),
+                      ("ltv", "y_ltv", "reg")):
+    if ykey not in labels:
+        print(f"[ceil] {t}: label missing (skip)", flush=True)
+        continue
+    y = labels[ykey]
     p_f, p_e, p_c = oof(Xtab, y, kind), oof(Xe, y, kind), oof(Xlat, y, kind)
     floor, ev, ceil = metric(y, p_f, kind), metric(y, p_e, kind), metric(y, p_c, kind)
     mean, se, lo = boot(y, p_e, p_f, kind)

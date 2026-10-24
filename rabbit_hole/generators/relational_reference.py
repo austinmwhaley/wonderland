@@ -1033,6 +1033,8 @@ def simulate(spec: RelationalSpec, use_cuda: bool = True):
             "region": np.array(REGIONS)[region],
             "acquisition_channel": np.array(ACQ)[acq],
             "loyalty_tier": np.array(LOYALTY)[loyal],
+            # true marginal discount effect (dq/ddiscount = 0.35*4*price_sens from the action effect)
+            "discount_sensitivity": np.round(1.4 * price_sens, 4),
         }
     )
     products = pl.DataFrame(
@@ -1192,6 +1194,7 @@ def simulate(spec: RelationalSpec, use_cuda: bool = True):
             "regime0": REGIMES[int(regime0[i])],
             "regime_runs": regime_runs[i],
             "price_sensitivity": round(float(price_sens[i]), 4),
+            "discount_sensitivity": round(1.4 * float(price_sens[i]), 4),
             "return_proneness": round(float(return_prone[i]), 4),
             "touch_pref": [round(float(v), 4) for v in touch_pref[i]],
             "category_pref": str(cat_pref[i]),

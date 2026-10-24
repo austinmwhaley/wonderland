@@ -94,7 +94,7 @@ def build_path_a(base: pl.DataFrame, customers: pl.DataFrame, as_of: datetime, e
     )
     per_cust = _collect(per_cust_lf, engine)
 
-    features = customers.join(per_cust, on="customer_key", how="left").fill_null(0.0)
+    features = customers.drop("discount_sensitivity").join(per_cust, on="customer_key", how="left").fill_null(0.0)
     features = (
         features.with_columns(pl.col("signup_ts").str.to_datetime().alias("_signup_dt"))
         .with_columns(
@@ -141,6 +141,18 @@ def build_path_a(base: pl.DataFrame, customers: pl.DataFrame, as_of: datetime, e
             .alias(f"y_next_days_{h}"),
             (pl.col(f"y_orders_{h}").fill_null(0) == 0).cast(pl.Int8).alias(f"y_churn_{h}"),
         )
+
+    ltv_lf = fut.lazy().group_by("customer_key").agg(
+        pl.col("margin").filter(_purchase).sum().alias("y_ltv")
+    )
+    labels = labels.join(_collect(ltv_lf, engine), on="customer_key", how="left").with_columns(
+        pl.col("y_ltv").fill_null(0.0)
+    )
+    labels = labels.join(
+        customers.select("customer_key", pl.col("discount_sensitivity").alias("y_discount_sensitivity")),
+        on="customer_key",
+        how="left",
+    )
 
     wide = features.join(labels, on="customer_key", how="left")
     return features, labels, wide, engine_state
