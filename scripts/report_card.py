@@ -141,6 +141,42 @@ def evaluate(row, doc):
             return _ctrl("random")
         if k == "ctrl_destroyed":
             return _ctrl("destroyed")
+        if k == "donor_raw2":
+            if not isinstance(v, dict):
+                return ("—", "NOT MEASURED", "")
+            rs = v.get("results", {}); vals = []; ok = True
+            for t in ("value90", "orders90", "churn90"):
+                d = rs.get(t, {}).get("E_minus_raw")
+                if d is None:
+                    return ("—", "NOT MEASURED", "missing")
+                vals.append(d["mean"])
+                if d["mean"] < -2 * d["se"]:
+                    ok = False
+            return (" / ".join(f"{x:+.3f}" for x in vals), "PASS" if ok else "FAIL", "E not worse than raw (2SE)")
+        if k == "donor_fair2":
+            if not isinstance(v, dict):
+                return ("—", "NOT MEASURED", "")
+            rs = v.get("results", {}); vals = []; ok = True
+            for t in ("value90", "orders90", "churn90"):
+                d = rs.get(t, {}).get("E_minus_fair")
+                if d is None:
+                    return ("—", "NOT MEASURED", "missing")
+                vals.append(d["mean"])
+                if d["mean"] <= 0:
+                    ok = False
+            return (" / ".join(f"{x:+.3f}" for x in vals), "PASS" if ok else "FAIL", "E > fair all 3")
+        if k == "donor_add2":
+            if not isinstance(v, dict):
+                return ("—", "NOT MEASURED", "")
+            rs = v.get("results", {}); vals = []; ok = True
+            for t in ("value90", "orders90", "churn90"):
+                d = rs.get(t, {}).get("add_over_tseq")
+                if d is None:
+                    return ("—", "NOT MEASURED", "missing")
+                vals.append(d["mean"])
+                if d["mean"] <= 0:
+                    ok = False
+            return (" / ".join(f"{x:+.3f}" for x in vals), "PASS" if ok else "FAIL", "adds over table+seq")
         if k == "obj":
             if not isinstance(v, dict):
                 return ("—", "NOT MEASURED", "")
@@ -209,7 +245,7 @@ def main():
         val, verdict, note = evaluate(row, doc)
         results.append((row, val, verdict, note))
 
-    counts = {"PASS": 0, "FAIL": 0, "NOT MEASURED": 0}
+    counts = {"PASS": 0, "FAIL": 0, "NOT MEASURED": 0, "EXCLUDED": 0}
     for _, _, v, _ in results:
         counts[v] += 1
     mastered = counts["FAIL"] == 0 and counts["NOT MEASURED"] == 0
@@ -255,6 +291,29 @@ def main():
     L.append("6. **Honest** -- held-out/falsifiable, label-free, never weakened to pass a gate or tuned to the judged metric.")
     L.append("7. **Accessible** -- information recoverable by simple consumers, not merely present.")
     L.append("8. **Diagnosable** -- attribute a shortfall to a specific axis with a matched control.")
+    L.append("")
+    L.append("## Subgoals (decomposition)")
+    L.append("")
+    L.append("Goal -> subgoals; a subgoal is MET only when all its rows PASS (or are EXCLUDED, reported). "
+             "Verdicts are derived from the rows below.")
+    L.append("")
+    L.append("| Subgoal | Principle | Rows | PASS | FAIL | EXCL | N/M | Status |")
+    L.append("|---|---|---|---|---|---|---|---|")
+    _sg = [(S.CONSTRUCTION, "SG-B1 Construction invariants", "Lawful / Robust"),
+           (S.DONOR, "SG-B2 Donor contract", "Universal / Honest"),
+           (S.AXES, "SG-B3 Content axes", "Adaptive / Lawful"),
+           (S.OBJECTIVES, "SG-B4 Self-supervised objectives", "Adaptive")]
+    _met = 0
+    for _sec, _title, _prin in _sg:
+        _rr = [v for (_r, _, v, _) in results if _r.section == _sec]
+        _p, _f = _rr.count("PASS"), _rr.count("FAIL")
+        _e, _nm = _rr.count("EXCLUDED"), _rr.count("NOT MEASURED")
+        _ok = (_f == 0 and _nm == 0)
+        _met += 1 if _ok else 0
+        L.append(f"| {_title} | {_prin} | {len(_rr)} | {_p} | {_f} | {_e} | {_nm} | **{'MET' if _ok else 'OPEN'}** |")
+    L.append(f"| **SG-B0 · Master the encoder (B)** | all | {len(results)} | {counts['PASS']} | "
+             f"{counts['FAIL']} | {counts['EXCLUDED']} | {counts['NOT MEASURED']} | "
+             f"**{'MET -> graduate to B+C' if _met == len(_sg) else 'OPEN'}** |")
     L.append("")
     L.append("## Encoder architecture (Layer B)")
     L.append("")

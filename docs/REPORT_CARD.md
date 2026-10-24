@@ -2,10 +2,10 @@
 
 > **Generated** by `python3 scripts/report_card.py` — DO NOT EDIT. Gates live in `scripts/card_spec.py`; every row resolves to a receipt (`docs/report_cards/experiments/`). A missing receipt renders NOT MEASURED.
 
-- **Generated:** 2026-10-23 · **commit:** `ece9df1` · **branch:** primary-encoder
+- **Generated:** 2026-10-23 · **commit:** `b09438e` · **branch:** primary-encoder
 - **Data:** `relational_v3` synthetic reference (+ schema variant) · harness, no business data.
 - **Latest demo receipt:** `7e32ebb84fc3` · seeds `3` · runtime `1009.2s`.
-- **B mastery:** **NOT YET MASTERED** — PASS 24 · FAIL 4 · NOT MEASURED 1.
+- **B mastery:** **NOT YET MASTERED** — PASS 26 · FAIL 3 · NOT MEASURED 0.
 
 ## Project goal (AGENTS.md)
 
@@ -25,6 +25,18 @@ sufficiency / minimality / decision-sufficiency via `U = 1 - worst-case oracle g
 6. **Honest** -- held-out/falsifiable, label-free, never weakened to pass a gate or tuned to the judged metric.
 7. **Accessible** -- information recoverable by simple consumers, not merely present.
 8. **Diagnosable** -- attribute a shortfall to a specific axis with a matched control.
+
+## Subgoals (decomposition)
+
+Goal -> subgoals; a subgoal is MET only when all its rows PASS (or are EXCLUDED, reported). Verdicts are derived from the rows below.
+
+| Subgoal | Principle | Rows | PASS | FAIL | EXCL | N/M | Status |
+|---|---|---|---|---|---|---|---|
+| SG-B1 Construction invariants | Lawful / Robust | 6 | 6 | 0 | 0 | 0 | **MET** |
+| SG-B2 Donor contract | Universal / Honest | 5 | 5 | 0 | 0 | 0 | **MET** |
+| SG-B3 Content axes | Adaptive / Lawful | 8 | 6 | 2 | 0 | 0 | **OPEN** |
+| SG-B4 Self-supervised objectives | Adaptive | 10 | 9 | 1 | 0 | 0 | **OPEN** |
+| **SG-B0 · Master the encoder (B)** | all | 29 | 26 | 3 | 0 | 0 | **OPEN** |
 
 ## Encoder architecture (Layer B)
 
@@ -55,9 +67,9 @@ sufficiency / minimality / decision-sufficiency via `U = 1 - worst-case oracle g
 
 | # | Item | Metric | Comparator | Gate | Value | Verdict |
 |---|---|---|---|---|---|---|
-| D1 | E vs raw table (6k) | value/orders/churn R2-AUC margin | raw table | E >= raw on all | +0.035 / +0.032 / +0.017 | **PASS** |
-| D2 | E vs fair table (6k) | value/orders/churn margin | fair table | E >= fair on all | — | **NOT MEASURED** |
-| D3 | E adds over table+sequence | R2/auc gain of table+seq+E vs table+seq | table+seq | delta > 0 (CI) | +0.040 / +0.065 / -0.003 | **FAIL** |
+| D1 | E vs raw table (6k) | value/orders/churn R2-AUC margin | raw table | not materially worse (all 3) | +0.079 / +0.079 / -0.001 | **PASS** |
+| D2 | E vs fair table (6k) | value/orders/churn margin | fair table | E > fair on all | +0.246 / +0.304 / +0.225 | **PASS** |
+| D3 | E adds over table+sequence | R2/auc gain of table+seq+E vs table+seq | table+seq | delta > 0 on all | +0.055 / +0.087 / +0.001 | **PASS** |
 | D4 | Negative control: random E | same battery with random E | learned E | random < learned (all 3) | +0.437 / +0.448 / +0.386 | **PASS** |
 | D5 | Negative control: destroyed E | same battery with shuffled E dims | learned E | destroyed < learned (all 3) | +0.447 / +0.521 / +0.402 | **PASS** |
 
@@ -91,7 +103,7 @@ sufficiency / minimality / decision-sufficiency via `U = 1 - worst-case oracle g
 
 ## Verdict
 
-B is **not yet mastered**: 1 row(s) unmeasured, 4 failing. Unmeasured rows need receipts; failing rows need an axis fix (one axis per run).
+B is **not yet mastered**: 0 row(s) unmeasured, 3 failing. Unmeasured rows need receipts; failing rows need an axis fix (one axis per run).
 
 ## Disclosures
 

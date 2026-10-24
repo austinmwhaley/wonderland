@@ -89,8 +89,8 @@ for t, kind in (("value90", "reg"), ("orders90", "reg"), ("churn90", "clf")):
     m_fair = boot_se(y, p_e, p_fair, kind)
     m_add = boot_se(y, p_tse, p_ts, kind)
     res[t] = {
-        "raw": sc(y, p_raw, kind), "fair": sc(y, p_fair, kind), "E": sc(y, p_e, kind),
-        "table_seq": sc(y, p_ts, kind), "table_seq_E": sc(y, p_tse, kind),
+        "raw": metric(y, p_raw, kind), "fair": metric(y, p_fair, kind), "E": metric(y, p_e, kind),
+        "table_seq": metric(y, p_ts, kind), "table_seq_E": metric(y, p_tse, kind),
         "E_minus_raw": {"mean": m_raw[0], "se": m_raw[1], "lo": m_raw[2], "hi": m_raw[3]},
         "E_minus_fair": {"mean": m_fair[0], "se": m_fair[1], "lo": m_fair[2], "hi": m_fair[3]},
         "add_over_tseq": {"mean": m_add[0], "se": m_add[1], "lo": m_add[2], "hi": m_add[3]},

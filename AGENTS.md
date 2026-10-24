@@ -363,6 +363,63 @@ prefer doing over asking, stop only for genuine decisions/blockers. The
 sections below are the execution framework; where they disagree with the
 engineering doctrine above, the doctrine above wins.
 
+### The working loop (binding)
+
+The job is **not** to write code — it is to *move the project toward its goal while
+obeying the principles*. Operate as an explicit loop, every iteration:
+
+1. **Generate the card** — `python3 scripts/report_card.py` renders `docs/REPORT_CARD.md`
+   from the frozen gate spec (`scripts/card_spec.py`) + receipts. The card is the **single
+   steering artifact**: goal, principles, subgoal decomposition, and every claim with its
+   comparator, gate, value, and verdict.
+2. **Read the card; pick the next subgoal** — the highest-leverage *unmet* subgoal that is
+   achievable now (cheapest first; **one axis**).
+3. **State the decision before running** — the principle(s) served, the decision, ≥2 rejected
+   alternatives, the acceptance metric, and the single axis changed. Record it in
+   `DECISIONS.md` *before* the run.
+4. **Implement the one change and run** the one command that emits the receipt (the run *is*
+   the measurement; do not spend the loop on test suites).
+5. **Regenerate the card and observe** — the verdict is recomputed from receipts, so it cannot
+   be improved by narration or by editing the card.
+6. **Accept or revert** — acceptance met → keep + commit; else revert + record the failure.
+   Repeat.
+
+**Every decision must cite a principle**, and a change that improves a metric but violates a
+principle is *wrong*. When principles conflict, apply the conflict order
+(**Robust → Universal → Adaptive → Lawful → Efficient → Honest**; Lawful and Robust outrank
+convenience).
+
+### Decomposition (binding)
+
+The goal is reached only through **achievable subgoals**, never in one leap.
+
+- **Decompose** the project goal into subgoals that are each (a) independently measurable,
+  (b) mapped to a principle, (c) owning an explicit acceptance gate, and (d) closable in one
+  loop iteration.
+- **Represent every subgoal in the report card** — *the card is the decomposition*: a subgoal
+  is a block of rows with gates; it is met only when all its rows PASS (or are
+  EXCLUDED-and-reported as degenerate). The top-line verdict is **derived from the rows**,
+  never asserted.
+- **Advance one subgoal at a time.** An unmeasured row is a gap to close (produce its receipt);
+  a failing row is an axis to fix. Never mark a subgoal done by changing what it measures.
+- **Canonical subgoal ladder:** *construction* (invariants by construction) → *donor*
+  (does-not-lose / adds / negative controls) → *content axes* → *objectives* → (only after the
+  encoder is mastered) the *consumers* (B+C). **The encoder is mastered only when every
+  encoder subgoal is green.**
+
+### Best practices (binding where a metric is claimed)
+
+- **Generate, don't narrate.** If a number can be computed, compute it; a hand-written claim
+  is a bug. The card is a pure function of (spec + receipts).
+- **A claim needs a comparator and a CI.** No PASS from a point estimate; no PASS whose
+  comparator is `n/a`, `nan`, or the thing under test.
+- **Exclude-and-report degeneracy.** A target with no variance (or a baseline that already
+  saturates) is EXCLUDED and disclosed, not forced to PASS or FAIL.
+- **Measure before adopting.** Keep the CPU fallback; record the benchmark. One axis per run;
+  revert on failure; log both.
+- **Single source of truth; cache deterministic intermediates.** Deduplicate; link, don't copy;
+  when blocked, the card names the exact missing receipt — produce it.
+
 ### Core rules
 
 1. **Earn the right to scale** — smallest viable footprint first (a spike, a
