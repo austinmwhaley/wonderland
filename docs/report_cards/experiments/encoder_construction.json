@@ -1,0 +1,8 @@
+{
+ "determinism": {
+  "identical": true
+ },
+ "schema_variant": {
+  "pass": true
+ }
+}

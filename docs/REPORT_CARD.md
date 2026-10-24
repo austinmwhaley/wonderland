@@ -2,10 +2,10 @@
 
 > **Generated** by `python3 scripts/report_card.py` — DO NOT EDIT. Gates live in `scripts/card_spec.py`; every row resolves to a receipt (`docs/report_cards/experiments/`). A missing receipt renders NOT MEASURED.
 
-- **Generated:** 2026-10-23 · **commit:** `397d02a` · **branch:** primary-encoder
+- **Generated:** 2026-10-23 · **commit:** `09c3638` · **branch:** primary-encoder
 - **Data:** `relational_v3` synthetic reference (+ schema variant) · harness, no business data.
 - **Latest demo receipt:** `7e32ebb84fc3` · seeds `3` · runtime `1009.2s`.
-- **B mastery:** **NOT YET MASTERED** — PASS 13 · FAIL 3 · NOT MEASURED 13.
+- **B mastery:** **NOT YET MASTERED** — PASS 15 · FAIL 3 · NOT MEASURED 11.
 
 ## Construction — invariants by construction
 
@@ -14,8 +14,8 @@
 | C1 | Field-permutation equivariance | max |E(x) - E(perm(x))| | exact (0) | <= 1e-6 | 1.19e-07 | **PASS** |
 | C2 | Scan (monoid) exactness | max |scan(g o f) - scan(g) o scan(f)| | exact (0) | <= 1e-12 | 8.88e-16 | **PASS** |
 | C3 | Mass additivity (extensive algebra) | |mass(a+b) - mass(a) - mass(b)| | exact (0) | == 0 | 0 | **PASS** |
-| C4 | Determinism (same seed => identical) | val trajectory bit-identical across repeats | itself | identical | — | **NOT MEASURED** |
-| C5 | Schema-agnosticism (variant, zero code change) | E trains on renamed schema + new field | raw v3 | pass | — | **NOT MEASURED** |
+| C4 | Determinism (same seed => identical) | val trajectory bit-identical across repeats | itself | identical | True | **PASS** |
+| C5 | Schema-agnosticism (variant, zero code change) | E trains on renamed schema + new field | raw v3 | pass | True | **PASS** |
 | C6 | Frozen + reproducible artifact | artifact hash recorded | present | hash present | d7d190e10924 | **PASS** |
 
 ## Donor — does not lose / adds / controls
@@ -58,7 +58,7 @@
 
 ## Verdict
 
-B is **not yet mastered**: 13 row(s) unmeasured, 3 failing. Unmeasured rows need receipts; failing rows need an axis fix (one axis per run).
+B is **not yet mastered**: 11 row(s) unmeasured, 3 failing. Unmeasured rows need receipts; failing rows need an axis fix (one axis per run).
 
 ## Disclosures
 
