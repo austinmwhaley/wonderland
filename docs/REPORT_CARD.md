@@ -2,10 +2,29 @@
 
 > **Generated** by `python3 scripts/report_card.py` — DO NOT EDIT. Gates live in `scripts/card_spec.py`; every row resolves to a receipt (`docs/report_cards/experiments/`). A missing receipt renders NOT MEASURED.
 
-- **Generated:** 2026-10-23 · **commit:** `dd7a166` · **branch:** primary-encoder
+- **Generated:** 2026-10-23 · **commit:** `84cb97e` · **branch:** primary-encoder
 - **Data:** `relational_v3` synthetic reference (+ schema variant) · harness, no business data.
 - **Latest demo receipt:** `7e32ebb84fc3` · seeds `3` · runtime `1009.2s`.
 - **B mastery:** **NOT YET MASTERED** — PASS 23 · FAIL 5 · NOT MEASURED 1.
+
+## Project goal (AGENTS.md)
+
+One pretrained, **self-supervised, schema-agnostic encoder per stream** whose FROZEN output is the
+**universal donor** every consumer builds on. **Layer 0 (now):** `E`-only matches/beats a fair table and
+adds signal beyond `table+seq`; no table/counter/summary inside `E`. **Layer 1 (next):** certification --
+sufficiency / minimality / decision-sufficiency via `U = 1 - worst-case oracle gap` vs full history.
+**Anti-overfit:** Layer B is self-supervised only; known use cases may VETO, never SHAPE.
+
+## Principles (charter; conflict order Robust > Universal > Adaptive > Lawful > Efficient > Honest)
+
+1. **Universal** -- one architecture for any stream; a model is trained per stream, never cross-applied.
+2. **Adaptive & Dynamic** -- everything resolves or is learned from the input; no magic literals.
+3. **Lawful** -- compositionality, equivariance, and the correct algebra per quantity.
+4. **Efficient** -- linear-time, constant-state, minimal capacity; slow or bloated is not done.
+5. **Robust** -- fail safe, calibrated uncertainty, deterministic; divergence is a hard failure.
+6. **Honest** -- held-out/falsifiable, label-free, never weakened to pass a gate or tuned to the judged metric.
+7. **Accessible** -- information recoverable by simple consumers, not merely present.
+8. **Diagnosable** -- attribute a shortfall to a specific axis with a matched control.
 
 ## Construction — invariants by construction
 

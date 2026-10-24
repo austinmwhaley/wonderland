@@ -234,6 +234,25 @@ def main():
              f"PASS {counts['PASS']} · FAIL {counts['FAIL']} · NOT MEASURED {counts['NOT MEASURED']}.")
     L.append("")
 
+    L.append("## Project goal (AGENTS.md)")
+    L.append("")
+    L.append("One pretrained, **self-supervised, schema-agnostic encoder per stream** whose FROZEN output is the")
+    L.append("**universal donor** every consumer builds on. **Layer 0 (now):** `E`-only matches/beats a fair table and")
+    L.append("adds signal beyond `table+seq`; no table/counter/summary inside `E`. **Layer 1 (next):** certification --")
+    L.append("sufficiency / minimality / decision-sufficiency via `U = 1 - worst-case oracle gap` vs full history.")
+    L.append("**Anti-overfit:** Layer B is self-supervised only; known use cases may VETO, never SHAPE.")
+    L.append("")
+    L.append("## Principles (charter; conflict order Robust > Universal > Adaptive > Lawful > Efficient > Honest)")
+    L.append("")
+    L.append("1. **Universal** -- one architecture for any stream; a model is trained per stream, never cross-applied.")
+    L.append("2. **Adaptive & Dynamic** -- everything resolves or is learned from the input; no magic literals.")
+    L.append("3. **Lawful** -- compositionality, equivariance, and the correct algebra per quantity.")
+    L.append("4. **Efficient** -- linear-time, constant-state, minimal capacity; slow or bloated is not done.")
+    L.append("5. **Robust** -- fail safe, calibrated uncertainty, deterministic; divergence is a hard failure.")
+    L.append("6. **Honest** -- held-out/falsifiable, label-free, never weakened to pass a gate or tuned to the judged metric.")
+    L.append("7. **Accessible** -- information recoverable by simple consumers, not merely present.")
+    L.append("8. **Diagnosable** -- attribute a shortfall to a specific axis with a matched control.")
+    L.append("")
     sections = [(S.CONSTRUCTION, "Construction — invariants by construction"),
                 (S.DONOR, "Donor — does not lose / adds / controls"),
                 (S.AXES, "Content axes (8)"),
