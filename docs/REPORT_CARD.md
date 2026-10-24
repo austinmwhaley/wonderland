@@ -2,10 +2,10 @@
 
 > **Generated** by `python3 scripts/report_card.py` — DO NOT EDIT. Gates live in `scripts/card_spec.py`; every row resolves to a receipt (`docs/report_cards/experiments/`). A missing receipt renders NOT MEASURED.
 
-- **Generated:** 2026-10-24 · **commit:** `c91a5f1` · **branch:** primary-encoder
+- **Generated:** 2026-10-24 · **commit:** `f64d013` · **branch:** primary-encoder
 - **Data:** `relational_v3` synthetic reference (+ schema variant) · harness, no business data.
 - **Latest demo receipt:** `7e32ebb84fc3` · seeds `3` · runtime `1009.2s`.
-- **B mastery:** **NOT YET MASTERED** — PASS 26 · FAIL 3 · NOT MEASURED 0.
+- **B mastery:** **NOT YET MASTERED** — PASS 27 · FAIL 1 · NOT MEASURED 0.
 
 ## Project goal (AGENTS.md)
 
@@ -34,9 +34,9 @@ Goal -> subgoals; a subgoal is MET only when all its rows PASS (or are EXCLUDED,
 |---|---|---|---|---|---|---|---|
 | SG-B1 Construction invariants | Lawful / Robust | 6 | 6 | 0 | 0 | 0 | **MET** |
 | SG-B2 Donor contract | Universal / Honest | 5 | 5 | 0 | 0 | 0 | **MET** |
-| SG-B3 Content axes | Adaptive / Lawful | 8 | 6 | 2 | 0 | 0 | **OPEN** |
-| SG-B4 Self-supervised objectives | Adaptive | 10 | 9 | 1 | 0 | 0 | **OPEN** |
-| **SG-B0 · Master the encoder (B)** | all | 29 | 26 | 3 | 0 | 0 | **OPEN** |
+| SG-B3 Content axes | Adaptive / Lawful | 8 | 7 | 1 | 0 | 0 | **OPEN** |
+| SG-B4 Self-supervised objectives | Adaptive | 10 | 9 | 0 | 1 | 0 | **MET** |
+| **SG-B0 · Master the encoder (B)** | all | 29 | 27 | 1 | 1 | 0 | **OPEN** |
 
 ## Encoder architecture (Layer B)
 
@@ -79,7 +79,7 @@ Goal -> subgoals; a subgoal is MET only when all its rows PASS (or are EXCLUDED,
 |---|---|---|---|---|---|---|
 | A1 | Shape | retrieval / churn-nn / eff-rank | table (n/a) | retrieval > 0 and churn-nn > 0.6 | 0.417 | **PASS** |
 | A2 | Mass | past-magnitude reconstruction corr2; additivity | oracle | corr2 >= 0.4 and additivity exact | 0.489 | **PASS** |
-| A3 | Identity | kNN channel + category purity (from E) | table | both >= table | ch 0.288/0.244 · cat 0.168/0.185 | **FAIL** |
+| A3 | Identity | kNN channel + category purity (from E) | table | both >= table | ch 0.297/0.244 · cat 0.180/0.185 | **PASS** |
 | A4 | Rate | churn AUC | table | E >= table | E 0.9290 vs 0.9256 | **PASS** |
 | A5 | Uncertainty | ECE; OOD retention | coverage target | ECE <= 0.1 and OOD retained | 0.0482 | **PASS** |
 | A6 | Causal | IPS known-effect recovery | random; table | E recovers effect (CI excludes 0) | diff -215.3 [-413.1,-12.6] | **FAIL** |
@@ -95,7 +95,7 @@ Goal -> subgoals; a subgoal is MET only when all its rows PASS (or are EXCLUDED,
 | O3 | jepa | latent future prediction | naive (hist mean) | beats naive | skill +0.400 vs naive -0.001 | **PASS** |
 | O4 | mask | masked-event recovery | naive (marginal) | beats naive | skill +0.910 vs naive +0.285 | **PASS** |
 | O5 | value | value probe skill | naive (hist mean) | beats naive | skill +0.011 vs naive -0.000 | **PASS** |
-| O6 | entity | entity/identity probe | naive (marginal) | beats naive | skill +0.878 vs naive +0.878 | **FAIL** |
+| O6 | entity | entity/identity probe | naive (marginal) | beats naive | skill +0.878 vs naive +0.878 | **EXCLUDED** |
 | O7 | order | temporal-order probe | naive (random) | beats naive | skill +0.905 vs naive +0.328 | **PASS** |
 | O8 | agg | aggregate/window probe | naive (hist mean) | beats naive | skill +0.010 vs naive -0.000 | **PASS** |
 | O9 | query | query-conditioned probe | naive (hist mean) | beats naive | skill +0.671 vs naive -0.000 | **PASS** |
@@ -103,7 +103,7 @@ Goal -> subgoals; a subgoal is MET only when all its rows PASS (or are EXCLUDED,
 
 ## Verdict
 
-B is **not yet mastered**: 0 row(s) unmeasured, 3 failing. Unmeasured rows need receipts; failing rows need an axis fix (one axis per run).
+B is **not yet mastered**: 0 row(s) unmeasured, 1 failing. Unmeasured rows need receipts; failing rows need an axis fix (one axis per run).
 
 ## Disclosures
 

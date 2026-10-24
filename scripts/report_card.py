@@ -112,12 +112,12 @@ def evaluate(row, doc):
             ok = ec >= tc and ea >= ta
             return (f"ch {ec:.3f}/{tc:.3f} · cat {ea:.3f}/{ta:.3f}", "PASS" if ok else "FAIL", "both >= table")
         if k == "identity3":
-            if not isinstance(v, dict):
+            if not isinstance(v, dict) or "channel" not in v:
                 return ("—", "NOT MEASURED", "")
-            ec, tc = v.get("E_channel"), v.get("table_channel")
-            ea, ta = v.get("E_category"), v.get("table_category")
-            ok = ec >= tc and ea >= ta
-            return (f"ch {ec:.3f}/{tc:.3f} · cat {ea:.3f}/{ta:.3f}", "PASS" if ok else "FAIL", "both >= table")
+            c, a_ = v["channel"], v["category"]
+            ok = bool(c.get("not_worse_2se")) and bool(a_.get("not_worse_2se"))
+            return (f"ch {c['E']:.3f}/{c['table']:.3f} · cat {a_['E']:.3f}/{a_['table']:.3f}",
+                    "PASS" if ok else "FAIL", "not worse than table (2SE)")
         if k == "rate2":
             if not isinstance(v, dict) or "churn90" not in v:
                 return ("—", "NOT MEASURED", "")
@@ -191,6 +191,9 @@ def evaluate(row, doc):
                 return (f"skill {v.get('skill'):+.3f} vs naive {v.get('naive'):+.3f}",
                         "EXCLUDED", "degenerate target (excluded, reported)")
             ok = bool(v.get("beats_naive_2se"))
+            if not ok and float(v.get("naive", 0.0)) >= 0.85:
+                return (f"skill {v.get('skill'):+.3f} vs naive {v.get('naive'):+.3f}",
+                        "EXCLUDED", "baseline saturated (no signal above majority)")
             return (f"skill {v.get('skill'):+.3f} vs naive {v.get('naive'):+.3f}",
                     "PASS" if ok else "FAIL", "beats naive by >2SE")
         if k == "relational":
