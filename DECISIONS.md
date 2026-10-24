@@ -1013,3 +1013,23 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - Acceptance: each axis is kept only if it does not regress the published-state donor margins and
   improves at least one open axis (category identity / anomaly / segmentation / next-event), with
   the frozen receipt; otherwise recorded as reverted.
+
+## DEC-293 — Planning reset: consolidate the completion brief in PLAN.md
+
+- Context: the baseline 6k B+B+C card is green for the declared Layer-0 scope, but the
+  encoder audit identified attribution, exact-measure, selective-dynamics, generic-schema,
+  accessibility, and performance work still needed for the broader foundation-model goal.
+  Exploratory full-scale sweeps were stopped because their iteration cost exceeded their value.
+- Decision: `PLAN.md` is now the implementation prompt for completing the project. It defines
+  the frozen per-stream artifact, shape/measure/forecast/uncertainty state views, generic
+  stream adapter, lawful measure state, selective dynamics, plugin contracts, RL protocol,
+  performance work, card semantics, and a strict definition of done. The next execution step
+  is Loop 1 (state contract and attribution), not another architecture sweep.
+- Principles: Honest (preserve E-only vs published-state attribution and open audit rows),
+  Universal/Generic (one pipeline, no business-specific roles), Lawful (exact measure algebra),
+  Accessible (state views), Efficient (small screens before full runs), Diagnosable (one axis
+  per loop).
+- Rejected: continuing long cumulative sweeps; treating the current green card as proof of
+  compact learned-shape sufficiency; deleting the full audit; changing gates after results.
+- Current state: exploratory jobs stopped; working tree contains only the planning/document
+  changes and the generated baseline artifacts from the prior committed run.
