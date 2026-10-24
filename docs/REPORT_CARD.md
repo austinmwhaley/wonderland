@@ -2,7 +2,7 @@
 
 > **Generated** by `python3 scripts/report_card.py` — DO NOT EDIT. Gates live in `scripts/card_spec.py`; every row resolves to a receipt (`docs/report_cards/experiments/`). A missing receipt renders NOT MEASURED.
 
-- **Generated:** 2026-10-24 · **commit:** `cf17117` · **branch:** primary-encoder
+- **Generated:** 2026-10-24 · **commit:** `c91a5f1` · **branch:** primary-encoder
 - **Data:** `relational_v3` synthetic reference (+ schema variant) · harness, no business data.
 - **Latest demo receipt:** `7e32ebb84fc3` · seeds `3` · runtime `1009.2s`.
 - **B mastery:** **NOT YET MASTERED** — PASS 26 · FAIL 3 · NOT MEASURED 0.
@@ -79,7 +79,7 @@ Goal -> subgoals; a subgoal is MET only when all its rows PASS (or are EXCLUDED,
 |---|---|---|---|---|---|---|
 | A1 | Shape | retrieval / churn-nn / eff-rank | table (n/a) | retrieval > 0 and churn-nn > 0.6 | 0.417 | **PASS** |
 | A2 | Mass | past-magnitude reconstruction corr2; additivity | oracle | corr2 >= 0.4 and additivity exact | 0.489 | **PASS** |
-| A3 | Identity | kNN channel + category purity (from E) | table | both >= table | ch 0.297/0.244 · cat 0.180/0.185 | **FAIL** |
+| A3 | Identity | kNN channel + category purity (from E) | table | both >= table | ch 0.288/0.244 · cat 0.168/0.185 | **FAIL** |
 | A4 | Rate | churn AUC | table | E >= table | E 0.9290 vs 0.9256 | **PASS** |
 | A5 | Uncertainty | ECE; OOD retention | coverage target | ECE <= 0.1 and OOD retained | 0.0482 | **PASS** |
 | A6 | Causal | IPS known-effect recovery | random; table | E recovers effect (CI excludes 0) | diff -215.3 [-413.1,-12.6] | **FAIL** |
@@ -90,16 +90,16 @@ Goal -> subgoals; a subgoal is MET only when all its rows PASS (or are EXCLUDED,
 
 | # | Item | Metric | Comparator | Gate | Value | Verdict |
 |---|---|---|---|---|---|---|
-| O1 | next | linear probe next-event skill | naive (marginal) | beats naive | skill +0.459 vs naive +0.460 | **FAIL** |
-| O2 | dt | gap/rate probe skill | naive (prev gap) | beats naive | skill +0.053 vs naive -0.000 | **PASS** |
-| O3 | jepa | latent future prediction | naive (hist mean) | beats naive | skill +0.783 vs naive -0.011 | **PASS** |
-| O4 | mask | masked-event recovery | naive (marginal) | beats naive | skill +0.804 vs naive +0.460 | **PASS** |
-| O5 | value | value probe skill | naive (hist mean) | beats naive | skill +0.045 vs naive -0.000 | **PASS** |
-| O6 | entity | entity/identity probe | naive (marginal) | beats naive | skill +0.556 vs naive +0.540 | **PASS** |
-| O7 | order | temporal-order probe | naive (random) | beats naive | skill +0.630 vs naive +0.512 | **PASS** |
-| O8 | agg | aggregate/window probe | naive (hist mean) | beats naive | skill +0.014 vs naive -0.000 | **PASS** |
-| O9 | query | query-conditioned probe | naive (hist mean) | beats naive | skill +0.266 vs naive -0.001 | **PASS** |
-| O10 | sf | successor-feature probe | naive (prev value) | beats naive | skill +0.121 vs naive +0.090 | **PASS** |
+| O1 | next | linear probe next-event skill | naive (marginal) | beats naive | skill +0.478 vs naive +0.289 | **PASS** |
+| O2 | dt | gap/rate probe skill | naive (prev gap) | beats naive | skill +0.102 vs naive -0.000 | **PASS** |
+| O3 | jepa | latent future prediction | naive (hist mean) | beats naive | skill +0.400 vs naive -0.001 | **PASS** |
+| O4 | mask | masked-event recovery | naive (marginal) | beats naive | skill +0.910 vs naive +0.285 | **PASS** |
+| O5 | value | value probe skill | naive (hist mean) | beats naive | skill +0.011 vs naive -0.000 | **PASS** |
+| O6 | entity | entity/identity probe | naive (marginal) | beats naive | skill +0.878 vs naive +0.878 | **FAIL** |
+| O7 | order | temporal-order probe | naive (random) | beats naive | skill +0.905 vs naive +0.328 | **PASS** |
+| O8 | agg | aggregate/window probe | naive (hist mean) | beats naive | skill +0.010 vs naive -0.000 | **PASS** |
+| O9 | query | query-conditioned probe | naive (hist mean) | beats naive | skill +0.671 vs naive -0.000 | **PASS** |
+| O10 | sf | successor-feature probe | naive (prev value) | beats naive | skill +0.220 vs naive +0.091 | **PASS** |
 
 ## Verdict
 
