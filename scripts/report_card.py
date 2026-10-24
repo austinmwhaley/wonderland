@@ -141,6 +141,12 @@ def evaluate(row, doc):
             return _ctrl("random")
         if k == "ctrl_destroyed":
             return _ctrl("destroyed")
+        if k == "obj":
+            if not isinstance(v, dict):
+                return ("—", "NOT MEASURED", "")
+            ok = bool(v.get("beats_naive_2se"))
+            return (f"skill {v.get('skill'):+.3f} vs naive {v.get('naive'):+.3f}",
+                    "PASS" if ok else "FAIL", "beats naive by >2SE")
         if k == "relational":
             if not isinstance(v, dict):
                 return ("—", "NOT MEASURED", "")
