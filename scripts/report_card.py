@@ -122,6 +122,25 @@ def evaluate(row, doc):
                 return ("—", "NOT MEASURED", "")
             drop = v["shuffle"]["value90"] - v["value90"]["E"]
             return (f"drop {drop:+.4f}", "PASS" if drop < 0 else "FAIL", "E order-sensitive")
+        def _ctrl(arm):
+            if not isinstance(v, dict):
+                return ("—", "NOT MEASURED", "")
+            rs = v.get("supervised", {})
+            vals = []
+            ok = True
+            for t in ("value90", "orders90", "churn90"):
+                e = rs.get(t, {}).get("E")
+                a = rs.get(t, {}).get(arm)
+                if e is None or a is None:
+                    return ("—", "NOT MEASURED", "missing arm")
+                vals.append(e - a)
+                if a >= e:
+                    ok = False
+            return (" / ".join(f"{d:+.3f}" for d in vals), "PASS" if ok else "FAIL", f"E > {arm} all 3")
+        if k == "ctrl_random":
+            return _ctrl("random")
+        if k == "ctrl_destroyed":
+            return _ctrl("destroyed")
         if k == "relational":
             if not isinstance(v, dict):
                 return ("—", "NOT MEASURED", "")

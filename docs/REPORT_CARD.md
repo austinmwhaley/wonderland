@@ -2,10 +2,10 @@
 
 > **Generated** by `python3 scripts/report_card.py` — DO NOT EDIT. Gates live in `scripts/card_spec.py`; every row resolves to a receipt (`docs/report_cards/experiments/`). A missing receipt renders NOT MEASURED.
 
-- **Generated:** 2026-10-23 · **commit:** `da6656c` · **branch:** primary-encoder
+- **Generated:** 2026-10-23 · **commit:** `397d02a` · **branch:** primary-encoder
 - **Data:** `relational_v3` synthetic reference (+ schema variant) · harness, no business data.
 - **Latest demo receipt:** `7e32ebb84fc3` · seeds `3` · runtime `1009.2s`.
-- **B mastery:** **NOT YET MASTERED** — PASS 10 · FAIL 4 · NOT MEASURED 15.
+- **B mastery:** **NOT YET MASTERED** — PASS 13 · FAIL 3 · NOT MEASURED 13.
 
 ## Construction — invariants by construction
 
@@ -25,15 +25,15 @@
 | D1 | E vs raw table (6k) | value/orders/churn R2-AUC margin | raw table | E >= raw on all | +0.035 / +0.032 / +0.017 | **PASS** |
 | D2 | E vs fair table (6k) | value/orders/churn margin | fair table | E >= fair on all | — | **NOT MEASURED** |
 | D3 | E adds over table+sequence | R2/auc gain of table+seq+E vs table+seq | table+seq | delta > 0 (CI) | +0.040 / +0.065 / -0.003 | **FAIL** |
-| D4 | Negative control: random E | same battery with random E | learned E | random < learned | — | **NOT MEASURED** |
-| D5 | Negative control: destroyed E | same battery with shuffled E dims | learned E | destroyed < learned | — | **NOT MEASURED** |
+| D4 | Negative control: random E | same battery with random E | learned E | random < learned (all 3) | +0.437 / +0.448 / +0.386 | **PASS** |
+| D5 | Negative control: destroyed E | same battery with shuffled E dims | learned E | destroyed < learned (all 3) | +0.447 / +0.521 / +0.402 | **PASS** |
 
 ## Content axes (8)
 
 | # | Item | Metric | Comparator | Gate | Value | Verdict |
 |---|---|---|---|---|---|---|
 | A1 | Shape | retrieval / churn-nn / eff-rank | table (n/a) | retrieval > 0 and churn-nn > 0.6 | 0.417 | **PASS** |
-| A2 | Mass | past-magnitude reconstruction corr2; additivity | oracle | corr2 >= 0.4 and additivity exact | 0.155 | **FAIL** |
+| A2 | Mass | past-magnitude reconstruction corr2; additivity | oracle | corr2 >= 0.4 and additivity exact | 0.489 | **PASS** |
 | A3 | Identity | kNN channel + category purity | table | both >= table | ch 0.504/0.251 · cat 0.172/0.265 | **FAIL** |
 | A4 | Rate | churn AUC | table | E >= table | E 0.9290 vs 0.9256 | **PASS** |
 | A5 | Uncertainty | ECE; OOD retention | coverage target | ECE <= 0.1 and OOD retained | 0.0482 | **PASS** |
@@ -58,7 +58,7 @@
 
 ## Verdict
 
-B is **not yet mastered**: 15 row(s) unmeasured, 4 failing. Unmeasured rows need receipts; failing rows need an axis fix (one axis per run).
+B is **not yet mastered**: 13 row(s) unmeasured, 3 failing. Unmeasured rows need receipts; failing rows need an axis fix (one axis per run).
 
 ## Disclosures
 
