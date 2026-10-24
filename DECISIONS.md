@@ -819,3 +819,17 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   window (task leakage into Layer B).
 - Acceptance (pre-registered): 6k 3-seed value90 CI still excludes 0 (no regression) AND 2k value90
   CI improves toward excluding 0. If 6k regresses -> revert ladder, record.
+
+## DEC-281 receipt — ladder ACCEPTED on binding-scale evidence; 2k disclosed as tie-zone
+
+- 6k 3-seed (receipt f0a7fca2d0bf, 1097.5s): value90 +0.0570 CI [+0.0073,+0.1066] EXCLUDES 0 -
+  the win HOLDS with the ladder; orders +0.0558 (crosses, weaker than +0.0655 before but same sign);
+  churn tie. Probes unchanged (retrieval 0.429, identity channel 0.490 vs table 0.251).
+- 2k 5-seed: value +0.0100 [-0.0389,+0.0589] vs pre-ladder 5-seed -0.0025 [-0.0453,+0.0404] -
+  mean improved +0.0125 but both CIs cross 0: the change is within CI width. Honest reading:
+  NO REGRESSION beyond noise; no proven 2k improvement. Part 2 of the acceptance was underpowered
+  by design (the CI cannot resolve this effect size at n=5 either).
+- Decision: ACCEPT the ladder (6k binding scale passes; the hole is structurally real and the fix is
+  task-free). Disclose on the card: the supervised win is demonstrated at 6k; 2k remains tie-zone
+  (small-data scale is harder for the approach - disclosed limitation, not hidden).
+- Next queue: schema-variant rerun (universality), RL/causal CIs at final config.
