@@ -861,3 +861,14 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - This is a NEW data revision (v4); all v3 receipts are superseded. Full re-certify + re-run
   of the card measurements required before any claim moves.
 - Reverted the no-op log_s clamp (unproven, dead code).
+
+## DEC-284 — Generator v5 (pattern/refractory hazard) tried and REVERTED
+
+- Attempt: amplify n-gram order effects (2.6-3.2x), add refractory/renewal on gap, cut
+  count-visible excitation (0.9->0.35).
+- Result (2k seed0): supervised gap WIDENED (value table 0.46 vs E 0.40, -0.066; orders -0.083)
+  and the order showcase DROPPED (shuffle drop -0.28 vs v4 -0.51). Worse than v4 on both counts.
+- Reverted to v4 (self-excitation at 0.9; strongest order/path showcase so far: shuffle -0.51).
+- Standing: the sequence-dependent revision is v4; supervised remains tie-zone at 2k (win is 6k).
+- Next large step (needs sanction due to compute): re-certify Layer A on v4 + re-run every card
+  measurement (all v3 receipts superseded) before any verdict moves.
