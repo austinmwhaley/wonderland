@@ -914,3 +914,17 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - Fix (next one axis): remove the `*_a`/empty fields from emitted attributes; restore activity/label
   scale so value90 has real variance; KEEP the v6+ order/action mechanisms and GPU vectorization.
   Then re-check the ceiling/floor frame (E should beat the floor again, giving discount_sensitivity headroom).
+
+## DEC-288 — data FIXED: attrs field names + activity restored (v10b matches v3 schema/scale)
+
+- Bug (DEC-287): the rewrite's attrs_json structs emitted the internal helper columns
+  (`product_id_a`/`category_a`/`campaign_a`) instead of `product_id`/`category_code`/`campaign_id`,
+  injecting spurious categorical fields (+ a size-1 empty) into the tokenizer, and activity was ~3x low.
+- Fix: alias the emitted attrs to the correct field names; calibrate base_purchase 0.022 -> 0.065
+  (documented calibration constant) to restore activity.
+- Result (v10b): discovered cat fields = 17 (== v3); y_value_90 mean 1199 (v3 1275), orders90 9.9
+  (v3 10.2), churn90 0.087 (v3 0.08). DATA SCHEMA + SCALE RESTORED.
+- Ceiling frame (2k): E still below the floor (value E 0.283 vs floor 0.384, -0.10). But on v3 the
+  supervised win was a 6k phenomenon (2k was tie-zone) -> not a data bug. Next: regenerate 6k on the
+  fixed generator and re-run the ceiling frame there; if E beats the floor at 6k, the data is done and
+  the loop proceeds (discount_sensitivity >2SE -> A6 -> re-run all receipts -> green).

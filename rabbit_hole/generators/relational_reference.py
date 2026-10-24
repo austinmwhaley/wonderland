@@ -96,7 +96,7 @@ class RelationalSpec:
     missing_rate: float = 0.15
     n_products: int = 80
     base_activity: float = 1.2
-    base_purchase: float = 0.022
+    base_purchase: float = 0.065
 
 
 def _clip01_scalar(x):
@@ -903,7 +903,7 @@ def simulate(spec: RelationalSpec, use_cuda: bool = True):
                         "qty",
                         "discount",
                         "touch",
-                        "campaign_a",
+                        pl.col("campaign_a").alias("campaign_id"),
                         "margin",
                         pl.col("value_a").alias("value"),
                     ]
@@ -960,7 +960,7 @@ def simulate(spec: RelationalSpec, use_cuda: bool = True):
             )
             .with_columns(pl.Series("event_ts", _iso(start64, day)))
             .with_columns(
-                pl.struct(["brand", "product_id_a", "category_a", "touch", "campaign_a"])
+                pl.struct([pl.col("brand"), pl.col("product_id_a").alias("product_id"), pl.col("category_a").alias("category_code"), pl.col("touch"), pl.col("campaign_a").alias("campaign_id")])
                 .struct.json_encode()
                 .alias("attrs_json")
             )
