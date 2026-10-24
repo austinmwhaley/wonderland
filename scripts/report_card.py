@@ -128,6 +128,8 @@ def evaluate(row, doc):
             pu, rd = v.get("order_id_purity"), v.get("order_id_random")
             ok = pu > rd
             return (f"{pu} vs chance {rd}", "PASS" if ok else "FAIL", "> chance")
+        def _r2(x):
+            return x if isinstance(x, (int, float)) else (x or {}).get("r2")
         if k in ("donor_raw", "donor_fair"):
             if not isinstance(v, dict):
                 return ("—", "NOT MEASURED", "")
@@ -136,8 +138,8 @@ def evaluate(row, doc):
             ok = True
             for t in ("value90", "orders90", "churn90"):
                 r = rs.get(t, {})
-                e = r.get("E", {}).get("r2")
-                tb = r.get("table", {}).get("r2")
+                e = _r2(r.get("E"))
+                tb = _r2(r.get("table"))
                 if e is None or tb is None:
                     return ("—", "NOT MEASURED", "missing arm")
                 margins.append(e - tb)
@@ -152,8 +154,8 @@ def evaluate(row, doc):
             ok = True
             for t in ("value90", "orders90", "churn90"):
                 r = rs.get(t, {})
-                a = r.get("table_seq_E", {}).get("r2")
-                b = r.get("table_seq", {}).get("r2")
+                a = _r2(r.get("table_seq_E"))
+                b = _r2(r.get("table_seq"))
                 if a is None or b is None:
                     return ("—", "NOT MEASURED", "missing arm")
                 deltas.append(a - b)

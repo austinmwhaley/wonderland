@@ -2,10 +2,10 @@
 
 > **Generated** by `python3 scripts/report_card.py` — DO NOT EDIT. Gates live in `scripts/card_spec.py`; every row resolves to a receipt (`docs/report_cards/experiments/`). A missing receipt renders NOT MEASURED.
 
-- **Generated:** 2026-10-23 · **commit:** `0fcbb13` · **branch:** primary-encoder
+- **Generated:** 2026-10-23 · **commit:** `da6656c` · **branch:** primary-encoder
 - **Data:** `relational_v3` synthetic reference (+ schema variant) · harness, no business data.
 - **Latest demo receipt:** `7e32ebb84fc3` · seeds `3` · runtime `1009.2s`.
-- **B mastery:** **NOT YET MASTERED** — PASS 11 · FAIL 3 · NOT MEASURED 15.
+- **B mastery:** **NOT YET MASTERED** — PASS 10 · FAIL 4 · NOT MEASURED 15.
 
 ## Construction — invariants by construction
 
@@ -23,8 +23,8 @@
 | # | Item | Metric | Comparator | Gate | Value | Verdict |
 |---|---|---|---|---|---|---|
 | D1 | E vs raw table (6k) | value/orders/churn R2-AUC margin | raw table | E >= raw on all | +0.035 / +0.032 / +0.017 | **PASS** |
-| D2 | E vs fair table (6k) | value/orders/churn margin | fair table | E >= fair on all | +0.035 / +0.032 / +0.017 | **PASS** |
-| D3 | E adds over table+sequence | R2/auc gain of table+seq+E vs table+seq | table+seq | delta > 0 (CI) | — | **NOT MEASURED** |
+| D2 | E vs fair table (6k) | value/orders/churn margin | fair table | E >= fair on all | — | **NOT MEASURED** |
+| D3 | E adds over table+sequence | R2/auc gain of table+seq+E vs table+seq | table+seq | delta > 0 (CI) | +0.040 / +0.065 / -0.003 | **FAIL** |
 | D4 | Negative control: random E | same battery with random E | learned E | random < learned | — | **NOT MEASURED** |
 | D5 | Negative control: destroyed E | same battery with shuffled E dims | learned E | destroyed < learned | — | **NOT MEASURED** |
 
@@ -58,7 +58,7 @@
 
 ## Verdict
 
-B is **not yet mastered**: 15 row(s) unmeasured, 3 failing. Unmeasured rows need receipts; failing rows need an axis fix (one axis per run).
+B is **not yet mastered**: 15 row(s) unmeasured, 4 failing. Unmeasured rows need receipts; failing rows need an axis fix (one axis per run).
 
 ## Disclosures
 

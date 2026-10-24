@@ -56,7 +56,7 @@ ROWS = [
         ("encoder_6k_auto_3seed.json", "0"), "donor_raw"),
     Row(DONOR, "D2", "E vs fair table (6k)",
         "value/orders/churn margin", "fair table", "E >= fair on all",
-        ("encoder_6k_auto_3seed.json", "0"), "donor_fair"),
+        None, "unmeasured"),
     Row(DONOR, "D3", "E adds over table+sequence",
         "R2/auc gain of table+seq+E vs table+seq", "table+seq", "delta > 0 (CI)",
         ("encoder_geometry_base_1seed.json", "0"), "donor_add"),
