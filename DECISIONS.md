@@ -1289,3 +1289,20 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   target compile time or head fitting, and must measure cold and warm separately.
 - Principles: Honest (correct a mis-measured claim), Diagnosable (separate cold/warm), Efficient
   (stop optimizing a non-bottleneck).
+
+## DEC-306 — Phase 3C/3D + Phase 6 accepted: fail-safe load, documented fallback, final verification
+
+- 3C (robustness): `frozen.load` now rejects a non-finite `E`/`BLK` with `FloatingPointError`
+  instead of letting measurement code sanitize it. `tests/test_frozen_failsafe.py` covers the
+  finite and non-finite cases.
+- 3D (adaptive config): the frozen build still pins `d=128`, 2 layers, 12 epochs. Rather than
+  silently pretend this is derived, the manifest now records
+  `config_source = "pinned baseline fallback (d/layers/epochs supplied by build_frozen)"` so the
+  fallback is explicit and receipted.
+- 3A/3B status: action masking and selective retention were measured and rejected at 6k
+  (DEC-295/297); relational roles remain a declared configuration (DEC-296). These are recorded
+  as open quality items, not closed by weakening a gate.
+- Phase 6 verification: all receipts regenerated from the final cache (`b75cc4a...`), primary card
+  B 28/28 and B+C 6/6 (34 PASS / 0 FAIL), audit 26 PASS / 3 FAIL preserved; 30 focused tests pass;
+  `pytest -m "not slow"` passes (exit 0); `ruff check` and `ruff format --check` clean;
+  principle audit clean on the new modules; `scripts/demo_show.py` renders the card.

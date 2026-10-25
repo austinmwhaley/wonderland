@@ -202,9 +202,28 @@ python3 scripts/run_demo.py
 The saved card is checked in and renders instantly; a full rebuild is compute-heavy
 (encoder training + GBM/XGBoost batteries). The dataset is deterministic for seed 17.
 
-The output is [`docs/REPORT_CARD.md`](docs/REPORT_CARD.md). The full research audit
+The output is [`REPORT_CARD.md`](REPORT_CARD.md). The full research audit
 (including the deliberately open Layer-1 causal/IPS rows and unclaimed probes) is
 [`docs/AUDIT_CARD.md`](docs/AUDIT_CARD.md).
+
+## Frozen foundation artifact
+
+```python
+from looking_glass.foundation import FrozenFoundation
+
+art = FrozenFoundation.load("/tmp/opencode/artifact_6k")
+keys, state, receipt = art.transform_events(raw_events)   # raw canonical stream
+state["shape"], state["measure"], state["full"]           # named views
+```
+
+`transform_events` applies the artifact's **frozen schema** — vocabulary, typing, and
+periods are reused, never rediscovered from the serving batch. `fit`, `save`, `load`,
+`describe`, and a content hash are part of the same interface. Non-finite state or a
+missing `as_of` fails loudly rather than being sanitized.
+
+State views: `shape` (learned, 128-d), `learned_state`, `forecast`, `uncertainty`,
+`heads`, `measure` (lawful exact statistics), and `full`. Which view a consumer should
+use is decided on training folds only (`scripts/select_views.py`).
 
 ## How to run (offline)
 ```bash

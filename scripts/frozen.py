@@ -138,6 +138,7 @@ def save(data, seed, path, epochs=12, d=128, layers=2):
         "measure_dim": int(builder.dim),
         "measure_coverage": float(builder.coverage),
         "best_val": float(best),
+        "config_source": "pinned baseline fallback (d/layers/epochs supplied by build_frozen)",
         "git_sha": _git_sha(),
         "built_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "cache_sha256": _sha256(str(path) + ".pt"),
@@ -152,6 +153,14 @@ def load(path):
     model = ck["model"]
     model.eval()
     z = np.load(str(path) + ".npz", allow_pickle=True)
+    # Fail safe at the boundary: a non-finite frozen state must never be sanitized
+    # into a measurement (Robust; no silent masking).
+    for name in ("E", "BLK"):
+        arr = z[name]
+        if not np.isfinite(arr).all():
+            raise FloatingPointError(
+                f"frozen cache {path}: non-finite {name}; refusing to score a broken artifact"
+            )
     labels = {k[len("label_") :]: z[k] for k in z.files if k.startswith("label_")}
     return (
         z["E"],
