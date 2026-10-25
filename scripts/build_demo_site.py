@@ -360,21 +360,25 @@ h2{font-size:21px;font-weight:600;margin:0 0 8px;letter-spacing:-.02em}
 .chartlegend .other::before{background:#d1d5db}
 .chartlegend .channel::before{background:var(--ink)}
 .chartlegend .offer::before{background:#6b7280}
-.plugmap{display:grid;grid-template-columns:210px minmax(0,1fr) minmax(0,1fr);gap:12px;margin-bottom:16px}
-@media(max-width:900px){.plugmap{grid-template-columns:1fr}}
-.plugstate,.plugcard{min-height:148px;border:1px solid var(--line);border-radius:8px;padding:14px 15px}
-.plugstate{display:flex;flex-direction:column;justify-content:space-between}
-.plugstate .k,.plugcard .k{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);font-weight:600}
-.plugstate .v{font-family:ui-monospace,monospace;font-size:25px;font-weight:600;letter-spacing:-.03em;margin-top:4px}
-.plugstate .d{font-size:11px;color:var(--muted);margin-top:2px}
-.plugstate .statevis{margin-top:10px}
-.plugstate .statevis svg{display:block;width:100%;height:54px}
-.plugcard{appearance:none;background:#fff;color:var(--ink);font:inherit;text-align:left;cursor:pointer;
+.plugsource{display:flex;justify-content:space-between;align-items:center;gap:18px;
+  border:1px solid var(--line);border-radius:8px;padding:12px 16px;margin-bottom:12px}
+.plugsourcehead{display:flex;align-items:baseline;gap:12px}
+.plugsource .k{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);font-weight:600}
+.plugsource .v{font-family:ui-monospace,monospace;font-size:20px;font-weight:600;letter-spacing:-.03em}
+.plugsource .statevis{width:150px;height:42px;flex:0 0 auto}
+.plugsource .statevis svg{display:block;width:100%;height:42px}
+@media(max-width:560px){.plugsource .statevis{width:110px}}
+.pluggrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}
+@media(max-width:900px){.pluggrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.pluggrid{grid-template-columns:1fr}}
+.plugcard{min-height:148px;border:1px solid var(--line);border-radius:8px;padding:14px 15px;
+  appearance:none;background:#fff;color:var(--ink);font:inherit;text-align:left;cursor:pointer;
   display:flex;flex-direction:column;justify-content:space-between}
 .plugcard:hover{border-color:var(--dim)}
 .plugcard.on{border-color:var(--accent);background:#f7fefb}
+.plugcard .k{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);font-weight:600}
 .plugcard .t{font-size:15px;font-weight:600;letter-spacing:-.01em;margin-top:4px}
-.plugcard .d{font-size:11px;color:var(--muted);margin-top:2px}
+.plugcard .d{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4}
 .plugcard .mini{height:42px;margin-top:10px}
 .plugcard .mini svg{display:block;width:100%;height:42px}
 .plugpanel{border:1px solid var(--line);border-radius:8px;padding:16px 18px 10px;overflow-x:auto}
@@ -1408,7 +1412,18 @@ objPanel("jepa");
 /* ---------- plugins ---------- */
 const PL_EFFECT=DATA.rl_known||{};
 const PL_POLICY=DATA.rl_policy||{};
-let pluginMode="effect";
+const PL_OUT=DATA.supervised.values||{};
+const PL_LOOK=DATA.explorer;
+let lookIdx=0;
+if(PL_LOOK&&PL_LOOK.customers){
+  const idx=PL_LOOK.customers.findIndex(c=>c.key==="rc0000208");
+  if(idx>=0) lookIdx=idx;
+}
+let pluginMode="outcome";
+
+function pluginMoney(v){
+  return "$"+Number(v).toLocaleString("en-US",{maximumFractionDigits:1});
+}
 
 function plugStateMini(){
   const W=180,H=54,s=svg(W,H);
@@ -1423,6 +1438,34 @@ function plugStateMini(){
     const a=Math.min(1,Math.abs(v)/maxv);
     s.appendChild(rect(x,y,cell,cell,v>=0?`rgba(5,150,105,${0.12+0.78*a})`:`rgba(17,24,39,${0.06+0.60*a})`,1));
   });
+  return s;
+}
+
+function miniOutcomeSVG(){
+  const W=240,H=42,pad=8,s=svg(W,H);
+  const keys=["value90","orders90","churn90"], rowH=(H-2*pad)/keys.length;
+  keys.forEach((k,i)=>{
+    const v=PL_OUT[k]||{}, table=Number(v.raw||0), frozen=Number(v.full_measure||0);
+    const y=pad+(i+0.5)*rowH;
+    s.appendChild(rect(pad,y-2.6,Math.max(1,table*(W-2*pad)),3,"#d1d5db",1.5));
+    s.appendChild(rect(pad,y+0.6,Math.max(1,frozen*(W-2*pad)),3,ACC,1.5));
+  });
+  return s;
+}
+
+function miniLookalikeSVG(){
+  const W=240,H=42,pad=4,s=svg(W,H);
+  const pts=(PL_LOOK&&PL_LOOK.customers)||[];
+  if(!pts.length) return s;
+  if(lookIdx>=pts.length) lookIdx=0;
+  const sel=pts[lookIdx], byKey=Object.fromEntries(pts.map(c=>[c.key,c]));
+  const X=x=>pad+x*(W-2*pad), Y=y=>H-pad-y*(H-2*pad);
+  (sel.neighbours||[]).forEach(n=>{
+    const c=byKey[n.key]; if(c) s.appendChild(ln(X(sel.x),Y(sel.y),X(c.x),Y(c.y),{stroke:"rgba(5,150,105,.45)",w:.8}));
+  });
+  pts.forEach(c=>s.appendChild(dot(X(c.x),Y(c.y),1.05,"#d1d5db")));
+  (sel.neighbours||[]).forEach(n=>{const c=byKey[n.key]; if(c) s.appendChild(dot(X(c.x),Y(c.y),2,ACC));});
+  s.appendChild(dot(X(sel.x),Y(sel.y),2.8,INK));
   return s;
 }
 
@@ -1460,15 +1503,15 @@ function miniPolicySVG(){
 
 function renderPluginsMap(){
   const host=$("#plugmap"); host.innerHTML="";
-  const state=el("div","plugstate");
-  const stateTop=el("div");
-  stateTop.appendChild(el("div","k","Frozen state"));
-  stateTop.appendChild(el("div","v",Number(OV_ENC?OV_ENC.state_dim:m.state_dim).toLocaleString()));
-  stateTop.appendChild(el("div","d","dimensions · one source"));
-  state.appendChild(stateTop);
-  const statevis=el("div","statevis"); statevis.appendChild(plugStateMini()); state.appendChild(statevis);
-  host.appendChild(state);
+  const source=el("div","plugsource");
+  const head=el("div","plugsourcehead");
+  head.appendChild(el("div","k","One frozen state"));
+  head.appendChild(el("div","v",Number(OV_ENC?OV_ENC.state_dim:m.state_dim).toLocaleString()+" dims"));
+  source.appendChild(head);
+  const statevis=el("div","statevis"); statevis.appendChild(plugStateMini()); source.appendChild(statevis);
+  host.appendChild(source);
 
+  const grid=el("div","pluggrid");
   const makeCard=(id,tag,title,desc,mini)=>{
     const b=el("button","plugcard"+(pluginMode===id?" on":""));
     b.type="button"; b.dataset.mode=id; b.setAttribute("aria-pressed",pluginMode===id);
@@ -1481,8 +1524,58 @@ function renderPluginsMap(){
     b.onclick=()=>{pluginMode=id;renderPluginsMap();renderPluginPanel();};
     return b;
   };
-  host.appendChild(makeCard("effect","Known effect","Randomized action recovery","5 action keys",miniEffectSVG));
-  host.appendChild(makeCard("policy","Policy value","IPS reward","channel + offer",miniPolicySVG));
+  grid.appendChild(makeCard("outcome","Outcome","Supervised heads","value_90d · orders_90d · churn_90d",miniOutcomeSVG));
+  grid.appendChild(makeCard("lookalike","Lookalike","Nearest neighbours","retrieve by state geometry",miniLookalikeSVG));
+  grid.appendChild(makeCard("effect","Known effect","Randomized recovery","5 action keys",miniEffectSVG));
+  grid.appendChild(makeCard("policy","Policy","IPS reward","channel + offer",miniPolicySVG));
+  host.appendChild(grid);
+}
+
+function pluginOutcomeChart(){
+  const W=1000,H=330,pad={l:108,r:26,t:38,b:40},s=svg(W,H);
+  const keys=[["value90","value_90d"],["orders90","orders_90d"],["churn90","churn_90d"]];
+  const rowH=(H-pad.t-pad.b)/keys.length;
+  [0,.25,.5,.75,1].forEach(g=>{
+    const x=pad.l+g*(W-pad.l-pad.r);
+    s.appendChild(ln(x,pad.t,x,H-pad.b,{stroke:g===0?LINE:"#f3f4f6"}));
+    if(g>0) s.appendChild(tx(x,H-14,Math.round(g*100)+"%",{size:9,fill:DIM,anchor:"middle"}));
+  });
+  keys.forEach(([key,label],i)=>{
+    const v=PL_OUT[key]||{}, table=Number(v.raw||0), frozen=Number(v.full_measure||0);
+    const y=pad.t+(i+0.5)*rowH, bh=14;
+    s.appendChild(tx(pad.l-12,y+4,label,{size:10,fill:MUT,anchor:"end"}));
+    const a=rect(pad.l,y-bh-3,Math.max(1,table*(W-pad.l-pad.r)),bh,"#d1d5db",3);
+    const b=rect(pad.l,y+3,Math.max(1,frozen*(W-pad.l-pad.r)),bh,ACC,3);
+    addSvgTitle(a,label+" · table "+table.toFixed(4));
+    addSvgTitle(b,label+" · frozen "+frozen.toFixed(4));
+    s.appendChild(a); s.appendChild(b);
+  });
+  return s;
+}
+
+function pluginLookalikeChart(){
+  const W=1000,H=340,pad=28,s=svg(W,H);
+  const pts=(PL_LOOK&&PL_LOOK.customers)||[];
+  if(!pts.length) return s;
+  if(lookIdx<0||lookIdx>=pts.length) lookIdx=0;
+  const sel=pts[lookIdx], byKey=Object.fromEntries(pts.map(c=>[c.key,c]));
+  const nb=new Set((sel.neighbours||[]).map(n=>n.key));
+  const X=x=>pad+x*(W-2*pad), Y=y=>H-pad-y*(H-2*pad);
+  (sel.neighbours||[]).forEach(n=>{
+    const c=byKey[n.key]; if(c) s.appendChild(ln(X(sel.x),Y(sel.y),X(c.x),Y(c.y),{stroke:"rgba(5,150,105,.4)",w:1.2}));
+  });
+  pts.forEach((c,i)=>{
+    const cx=X(c.x),cy=Y(c.y), isSel=i===lookIdx, isNb=nb.has(c.key);
+    const hit=dot(cx,cy,13,"transparent"); hit.style.cursor="pointer";
+    hit.onclick=()=>{lookIdx=i;renderPluginPanel();};
+    addSvgTitle(hit,c.key);
+    s.appendChild(hit);
+    const circle=dot(cx,cy,isSel?8:isNb?5.2:3.4,isSel?INK:isNb?ACC:"#d1d5db");
+    circle.setAttribute("pointer-events","none");
+    s.appendChild(circle);
+  });
+  s.appendChild(tx(pad,18,sel.key,{size:11,fill:MUT}));
+  return s;
 }
 
 function pluginEffectChart(){
@@ -1545,13 +1638,24 @@ function pluginPolicyChart(){
 function renderPluginPanel(){
   const host=$("#plugpanel"); host.innerHTML="";
   if(pluginMode==="policy"){
-    host.appendChild(chartHeader("Policy value · IPS reward",[["channel","channel"],["offer","offer"]]));
+    host.appendChild(chartHeader("Policy · IPS reward",[["channel","channel"],["offer","offer"]]));
     host.appendChild(pluginPolicyChart());
     host.appendChild(chartFoot("pre-action state · logged propensity · axis zoomed","hover a point for values"));
-  }else{
+  }else if(pluginMode==="effect"){
     host.appendChild(chartHeader("Known effect · randomized action recovery",[["table","table"],["frozen state","frozen"]]));
     host.appendChild(pluginEffectChart());
     host.appendChild(chartFoot("10-NN purity against the randomized optimum","hover a dot for values"));
+  }else if(pluginMode==="lookalike"){
+    host.appendChild(chartHeader("Lookalike · nearest neighbours",[["selected","selected"],["5 neighbours","neighbour"],["all customers","other"]]));
+    host.appendChild(pluginLookalikeChart());
+    const pts=(PL_LOOK&&PL_LOOK.customers)||[];
+    const sel=pts[lookIdx];
+    const right=sel?("5 neighbours · mean value "+pluginMoney(sel.neighbour_mean_value)+" · churn_90d agreement "+(sel.neighbour_churn_agree*100).toFixed(0)+"%"):"";
+    host.appendChild(chartFoot("click a point to change the lookalike set",right));
+  }else{
+    host.appendChild(chartHeader("Outcome · supervised heads",[["table","table"],["frozen state","frozen"]]));
+    host.appendChild(pluginOutcomeChart());
+    host.appendChild(chartFoot("held-out · R² value_90d / orders_90d · AUC churn_90d","hover a bar for values"));
   }
 }
 

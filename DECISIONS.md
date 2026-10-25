@@ -1771,3 +1771,22 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - Removed the duplicated "legacy wide table" tag inside the table card; the section label carries
   the mode. Selected-customer metadata now sits under the Event stream heading.
 - Verified by rendering the Data tab in headless Chrome.
+
+## DEC-337 — Plugins becomes a four-head workbench
+
+- Request: Plugins is the primary purpose of the demo and needs a substantially stronger visual,
+  interactive and structured treatment, setting up the future Explorer combination of
+  Data + Encoder + Plugins.
+- Replaced the two-card layout with one frozen-state source strip feeding four plugin heads:
+  - **Outcome** — horizontal bars for supervised value_90d / orders_90d / churn_90d.
+  - **Lookalike** — an interactive held-out customer scatter with nearest-neighbour links and
+    live aggregate output (mean value, churn agreement).
+  - **Known effect** — the five-action dumbbell chart.
+  - **Policy** — the uniform / table / frozen IPS slope chart.
+- Each head card has a miniature visual preview. Selecting a card swaps the large panel; the active
+  state is legitimate because the content below changes.
+- The source strip shows 2,265 dimensions and the actual shape grid, and is deliberately static.
+- The Lookalike plot shares the `rc0000208` customer used by Data/Encoder and updates when any
+  point is clicked, making the retrieval path from Data → state → plugin explicit.
+- Verified by rendering all four modes and switching cards in headless Chrome; inline JS passes
+  `node --check`.
