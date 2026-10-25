@@ -884,7 +884,7 @@ function flowOverlay(bg,fg,stage){
     fg.appendChild(tx(145,74,"Event Stream",{size:10,fill:MUT,anchor:"middle"}));
     fg.appendChild(tx(360,74,"Encoder",{size:10,fill:MUT,anchor:"middle"}));
     fg.appendChild(tx(596,74,"Frozen State",{size:10,fill:MUT,anchor:"middle"}));
-    fg.appendChild(tx(860,74,"Heads",{size:10,fill:MUT,anchor:"middle"}));
+    fg.appendChild(tx(860,74,"Plugins",{size:10,fill:MUT,anchor:"middle"}));
     bg.appendChild(rect(105,96,80,320,"#fff",8,LINE));
     bg.appendChild(ln(145,112,145,400,{stroke:"#e5e7eb"}));
     for(let r=0;r<15;r++){

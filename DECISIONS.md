@@ -2063,3 +2063,9 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   reintroducing input/output context.
 - The combined Overview position still carries the full Event Stream → Encoder → Frozen State →
   Heads story; the boundary between the focused Encoder stage and the summary is now explicit.
+
+## DEC-369 — Overview summary labels its final stage Plugins
+
+- Renamed the final stage label in the combined Overview image from “Heads” to “Plugins”, matching
+  the tab and the three-family vocabulary used everywhere else. The individual node labels
+  (value_90d, orders_90d, churn_90d, lookalike, action) are unchanged.
