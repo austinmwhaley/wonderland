@@ -606,33 +606,6 @@ footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);color:v
       </div>
     </section>
 
-    <section id="evidence" hidden>
-      <h2>Evidence and provenance</h2>
-      <div class="grid g2">
-        <div class="card">
-          <h3>Protocol</h3>
-          <div class="kv" id="protocol"></div>
-        </div>
-        <div class="card">
-          <h3>Serving cost</h3>
-          <div class="kv" id="runtime"></div>
-        </div>
-      </div>
-      <div class="card" style="margin-top:16px">
-        <h3>What is not claimed</h3>
-        <div class="caveat">The compact 128-d <b>shape</b> alone does not beat the table on value/orders. The published, stronger result depends on the larger state. The card states this rather than hiding it.</div>
-        <div class="caveat">Category identity still trails the table; anomaly and segmentation do not beat it. These rows are reported as failures, not suppressed.</div>
-        <div class="caveat">The RL policy-value result is non-dominant and is not a deploy certificate. Known-effect recovery is a separate, valid claim.</div>
-        <div class="caveat">Layer-1 minimality, universal <i>U</i>, and decision-sufficiency are not started and are not implied by the green Layer-0 card.</div>
-      </div>
-      <div class="card" style="margin-top:16px">
-        <h3>Reproduce</h3>
-        <pre class="note" style="white-space:pre-wrap">python3 scripts/run_demo.py --generate --build --refresh
-python3 scripts/report_card.py
-python3 scripts/build_demo_site.py</pre>
-        <p class="note">Synthetic relational harness. No business data. Every number on this page resolves to a receipt under <code>docs/report_cards/experiments/</code>.</p>
-      </div>
-    </section>
   </main>
 
   <footer>
@@ -648,7 +621,7 @@ const $ = (s, r=document) => r.querySelector(s);
 const el = (t, c, txt) => { const n=document.createElement(t); if(c) n.className=c; if(txt!=null) n.textContent=txt; return n; };
 
 /* ---------- tabs ---------- */
-const TABS = [["overview","Overview"],["vs","Encoder vs Traditional"],["state","State Views"],["plugins","Plugins"],["explorer","Customer Explorer"],["evidence","Evidence"]];
+const TABS = [["overview","Overview"],["vs","Encoder vs Traditional"],["state","State Views"],["plugins","Plugins"],["explorer","Customer Explorer"]];
 const nav = $("#tabs");
 function activate(id, push){
   const known = TABS.some(([t])=>t===id) ? id : TABS[0][0];
@@ -753,8 +726,10 @@ function chartSelected(host){
   TARGETS.forEach(t=>{
     const c=DATA.chosen[t]; if(!c) return;
     const box=el("div"); box.style.flex="1"; box.style.minWidth="0"; box.style.textAlign="center";
-    const W=220,H=230,base=196;
+    box.style.display="flex"; box.style.justifyContent="center";
+    const W=220,H=252,base=196;
     const s=svg(W,H);
+    s.setAttribute("width",String(W)); s.setAttribute("height",String(H)); s.setAttribute("style","max-width:100%");
     const maxV=Math.max(c.holdout.selected,c.holdout.table)*1.25||1;
     const bw=54;
     const ht=(c.holdout.table/maxV)*(base-28), hs=(c.holdout.selected/maxV)*(base-28);
@@ -764,7 +739,7 @@ function chartSelected(host){
     s.appendChild(txt(W/2+bw/2+8,base-hs-7,c.holdout.selected.toFixed(3),{anchor:"middle",size:11,fill:"#8ef0c8",weight:700}));
     s.appendChild(txt(W/2,base+20,cols[t],{anchor:"middle",size:12,fill:"#c9d6f2"}));
     const d=c.delta;
-    s.appendChild(txt(W/2,base+40,(d.mean>=0?"+":"")+d.mean.toFixed(4)+"  ["+d.lo.toFixed(3)+", "+d.hi.toFixed(3)+"]",
+    s.appendChild(txt(W/2,base+42,(d.mean>=0?"+":"")+d.mean.toFixed(4)+"  ["+d.lo.toFixed(3)+", "+d.hi.toFixed(3)+"]",
       {anchor:"middle",size:10,fill:d.lo>0?"#34d399":"#94a3b8"}));
     box.appendChild(s);
     host.appendChild(box);
@@ -811,16 +786,7 @@ document.querySelectorAll("[data-chart]").forEach(h=>{
 const dims=Object.entries(m.views||{shape:m.d});
 dims.forEach(([k,v])=>{ const c=el("div","card"); c.appendChild(el("h3",null,k.replace("_"," "))); c.appendChild(el("div","big",v.toLocaleString())); c.appendChild(el("div","note","dimensions of this view")); $("#dim_cards").appendChild(c); });
 
-/* ---------- protocol + runtime ---------- */
-const proto=DATA.view_selection||{};
-[["Selection",proto.selection||"n/a"],["Evaluation",proto.evaluation||"n/a"],["Train customers",(proto.n_train||0).toLocaleString()],["Holdout customers",(proto.n_hold||0).toLocaleString()],["State dim",m.state_dim.toLocaleString()],["Cache",m.cache||"n/a"],["Commit",m.commit||"n/a"]].forEach(([k,v])=>{
-  $("#protocol").appendChild(el("div",null,k)); $("#protocol").appendChild(el("div",null,String(v)));
-});
-const rt=DATA.runtime||{};
-[["Artifact load",(rt.artifact_load_s??0)+" s"],["Cold forward",(rt.state_forward_cold_s??0)+" s"],["Warm forward",(rt.state_forward_warm_s??0)+" s"],["Warm throughput",Math.round(rt.state_rows_per_s||0).toLocaleString()+" rows/s"],["Measure build",(rt.measure_transform_s??0)+" s"],["5-fold head fit",(rt.head_fit_5fold_s??0)+" s"],["Peak RSS",(rt.peak_rss_mb??0)+" MB"]].forEach(([k,v])=>{
-  $("#runtime").appendChild(el("div",null,k)); $("#runtime").appendChild(el("div",null,v));
-});
-$("#foot").textContent = `generated ${m.generated} · synthetic harness · no business data`;
+$("#foot").textContent = `generated ${m.generated} · synthetic harness · no business data · not a deploy certificate · full disclosures in REPORT_CARD.md`;
 
 /* ---------- explorer ---------- */
 const EXP = DATA.explorer;

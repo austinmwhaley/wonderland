@@ -20,7 +20,6 @@ xdg-open demo/index.html               # or just double-click the file
 | **State Views** | Per-view results, identity purity, unsupervised probes, and view dimensions |
 | **Plugins** | Known-effect recovery by action key, and RL policy value against uniform and table comparators |
 | **Customer Explorer** | Sampled holdout customers in the frozen embedding; click a point for its history, lookalikes, and held-out outcome |
-| **Evidence** | Protocol, provenance (cache hash, commit), serving cost, and an explicit "what is not claimed" list |
 
 ## Where the numbers come from
 
@@ -44,7 +43,8 @@ Nothing on the page is hand-typed, so it cannot drift from the reported evidence
 The page states plainly that the compact 128-dimension `shape` does **not** beat the table on
 value/orders, that category identity and anomaly/segmentation still trail the table, that the RL
 policy value is non-dominant, and that Layer-1 certification is not started. Those are the same
-disclosures as `REPORT_CARD.md` and `docs/AUDIT_CARD.md`.
+disclosures as `REPORT_CARD.md` and `docs/AUDIT_CARD.md`. The footer carries a short pointer to
+them; the full disclosure list lives in the card rather than on a separate tab.
 
 ## Notes
 
