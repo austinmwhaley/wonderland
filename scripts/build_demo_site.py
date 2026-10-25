@@ -832,7 +832,7 @@ function chartFoot(left,right){
 function predictChart(){
   const W=1000,H=348,pad={l:48,r:22,t:44,b:42}, s=svg(W,H);
   const vals=DATA.supervised.values||{};
-  const order=[["value90","Value"],["orders90","Orders"],["churn90","Churn"]];
+  const order=[["value90","value_90d"],["orders90","orders_90d"],["churn90","churn_90d"]];
   const plotH=H-pad.t-pad.b;
   [0,.25,.5,.75,1].forEach(g=>{
     const y=H-pad.b-g*plotH;
@@ -923,7 +923,7 @@ function renderOverviewPanel(){
   }else{
     host.appendChild(chartHeader("Predict · supervised heads",[["table","table"],["frozen state","frozen"]]));
     host.appendChild(predictChart());
-    host.appendChild(chartFoot("held-out · R² value/orders · AUC churn","hover a bar · higher is better"));
+    host.appendChild(chartFoot("held-out · R² value_90d / orders_90d · AUC churn_90d","hover a bar · higher is better"));
   }
 }
 
@@ -1613,9 +1613,9 @@ if(!EXP||!EXP.customers||!EXP.customers.length){
     const stats=el("div","custstats");
     [
       ["Total events",String(c.n_events)],
-      ["Actual value (90d)",money(c.value90)],
-      ["Actual orders (90d)",String(c.orders90)],
-      ["Lookalike churn agreement",(c.neighbour_churn_agree*100).toFixed(0)+"%"],
+      ["actual value_90d",money(c.value90)],
+      ["actual orders_90d",String(c.orders90)],
+      ["lookalike churn_90d agreement",(c.neighbour_churn_agree*100).toFixed(0)+"%"],
     ].forEach(([k,v])=>{
       const stat=el("div","custstat");
       stat.appendChild(el("div","k",k)); stat.appendChild(el("div","v",v));
