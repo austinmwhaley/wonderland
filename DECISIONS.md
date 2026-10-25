@@ -1176,3 +1176,22 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - Principles: Honest (an implausible CI is a bug, not evidence), Robust (fail loudly rather than
   publish), Diagnosable (the failure is localized to the bootstrap, not the encoder).
 - This is exactly the class of error the certification-integrity rules exist to catch.
+
+## DEC-300 — PLAN.md rewritten for the complete post-Layer-0 project state
+
+- Context: the earlier PLAN.md predated the state-layout, lawful-measure, frozen-artifact,
+  attribution, schema-role, runtime, and test work. A replacement must account for the entire
+  project, not only the most recent RL finding.
+- Decision: replaced PLAN.md with a complete post-Layer-0 completion/hardening plan. It preserves
+  the completed assets and measured multi-view results, records the NaN and degenerate-bootstrap
+  findings and the receipt-provenance risk, and sequences the remaining work: evidence identity,
+  direct stream lifecycle, artifact-consistent measurement and train-only view selection,
+  encoder adaptivity, performance, RL evidence, final verification/demo, and separate Layer-1
+  research.
+- Principles: Honest (no claim that the current card proves E-only sufficiency), Universal
+  (direct canonical input and per-stream artifacts), Lawful (exact measure algebra), Accessible
+  (named views and train-only selection), Efficient (small screens and measured optimization),
+  Diagnosable (one axis per loop).
+- Immediate next steps: Phase 0 evidence identity repair; Phase 1 direct stream lifecycle;
+  Phase 2 artifact-consistent measurement. RL bootstrap repair is a distinct later workstream,
+  not the whole plan.
