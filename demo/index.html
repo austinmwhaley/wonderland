@@ -237,6 +237,32 @@ th.num{text-align:right}
 .logtable td.attrs{font-family:ui-monospace,monospace;font-size:9.8px;line-height:1.5;
   color:var(--muted);min-width:440px;white-space:normal;word-break:break-word}
 .encsection{border-top:1px solid var(--line);margin-top:54px;padding-top:38px}
+.encintro{padding:20px 22px 16px;margin-bottom:30px;overflow:hidden}
+.encintrohead{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap}
+.encintrolede{font-size:18px;font-weight:600;letter-spacing:-.02em;margin-top:4px}
+.encchips{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.encchip{font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.04em;text-transform:uppercase;
+  color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:4px 9px;background:#fff}
+.encchip.acc{color:var(--accent);border-color:rgba(5,150,105,.3);background:#f7fefb}
+.encflow{margin:10px 0 4px;overflow-x:auto}
+.encflow svg{display:block;width:100%;height:auto}
+@media(max-width:800px){.encflow svg{min-width:720px}}
+.enczone .zonebg{transition:stroke .15s ease,fill .15s ease}
+.enczone.active .zonebg{stroke:var(--accent);fill:#f7fefb}
+.enczone{transition:opacity .15s ease}
+.encflow.hasactive .enczone:not(.active){opacity:.55}
+.encnotes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:6px}
+.encnote{border:1px solid var(--line);border-radius:6px;background:#fff;padding:9px 11px;min-width:0;
+  transition:border-color .15s ease,background-color .15s ease;cursor:default}
+.encnote .k{display:block;font-family:ui-monospace,monospace;font-size:9px;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--dim)}
+.encnote .v{display:block;font-size:11.5px;color:var(--muted);line-height:1.4;margin-top:2px}
+.encnote.on{border-color:var(--accent);background:#f7fefb}
+.encnote.on .v{color:var(--ink)}
+@media(max-width:900px){.encnotes{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.encnotes{grid-template-columns:1fr}}
+.featexplorerhead{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin:0 0 12px}
+.featexplorerhead .cardtag{margin-bottom:0}
 .featexplorer{display:grid;grid-template-columns:250px minmax(0,1fr);gap:28px;align-items:start}
 @media(max-width:900px){.featexplorer{grid-template-columns:1fr}}
 .featselector{border-top:1px solid var(--line)}
@@ -379,6 +405,21 @@ footer{margin-top:56px;padding-top:18px;border-top:1px solid var(--line);color:v
 
     <section id="encoder" hidden>
       <h2>Encoder</h2>
+      <div class="encintro panelbox">
+        <div class="encintrohead">
+          <div>
+            <div class="cardtag">Encoder at a glance</div>
+            <div class="encintrolede">Events in, one reusable state out.</div>
+          </div>
+          <div class="encchips" id="encchips"></div>
+        </div>
+        <div class="encflow" id="encflow"></div>
+        <div class="encnotes" id="encnotes"></div>
+      </div>
+      <div class="featexplorerhead">
+        <div class="cardtag">Feature explorer</div>
+        <div class="small dim">real values · hover a cell</div>
+      </div>
       <div class="featexplorer">
         <div class="featselector" id="featselector"></div>
         <div class="featpanel">
@@ -1133,6 +1174,109 @@ if(!ENC){
 }else{
   let featureFamily="shape";
 
+  function renderEncIntro(){
+    const chips=$("#encchips"); if(!chips) return;
+    chips.innerHTML="";
+    [
+      ["self-supervised","acc"],
+      [ENC.trunk.layers+" × gated SSM",""],
+      [ENC.trunk.width+"-d width",""],
+      [ENC.state_dim.toLocaleString()+"-d state",""],
+    ].forEach(([label,cls])=>{
+      const c=el("span","encchip"+(cls?" "+cls:""),label); chips.appendChild(c);
+    });
+
+    const host=$("#encflow"); host.innerHTML="";
+    const W=1000,H=250,s=svg(W,H); host.appendChild(s);
+    const zone=name=>{
+      const g=document.createElementNS(NS,"g");
+      g.setAttribute("class","enczone"); g.dataset.zone=name; s.appendChild(g); return g;
+    };
+    const add=(g,node)=>{g.appendChild(node);return node;};
+    const zbox=(g,x,y,w,h)=>{
+      const r=rect(x,y,w,h,"#fff",8,LINE); r.setAttribute("class","zonebg"); add(g,r);
+    };
+    const arrow=(x1,y1,x2,y2)=>{
+      s.appendChild(ln(x1,y1,x2,y2,{stroke:ACC,w:1.2}));
+      s.appendChild(ln(x2-6,y2-4,x2,y2,{stroke:ACC,w:1.2}));
+      s.appendChild(ln(x2-6,y2+4,x2,y2,{stroke:ACC,w:1.2}));
+    };
+
+    const input=zone("reads");
+    zbox(input,70,58,120,170);
+    add(input,ln(130,76,130,210,{stroke:"#e5e7eb"}));
+    for(let r=0;r<12;r++){
+      const yy=80+r*11.5;
+      add(input,ln(122,yy,130,yy,{stroke:"#e5e7eb"}));
+      add(input,dot(130,yy,2.2,r%4===0?ACC:"#d1d5db"));
+    }
+    add(input,tx(130,44,"Event Stream",{size:10,fill:MUT,anchor:"middle"}));
+    add(input,tx(130,242,"append-only",{size:8,fill:DIM,anchor:"middle"}));
+
+    const enc=zone("learns");
+    zbox(enc,255,58,260,170);
+    [88,158].forEach((y0,i)=>{
+      add(enc,rect(273,y0,224,56,"#f9fafb",6,LINE));
+      add(enc,tx(280,y0-4,"SSM "+(i+1),{size:8,fill:DIM}));
+      for(let l=1;l<=3;l++) add(enc,ln(283,y0+l*14,487,y0+l*14,{stroke:"#eef0f3"}));
+    });
+    add(enc,tx(385,44,"Encoder",{size:10,fill:MUT,anchor:"middle"}));
+    add(enc,tx(385,242,"2 × gated SSM",{size:8,fill:DIM,anchor:"middle"}));
+
+    const state=zone("state");
+    zbox(state,585,58,220,170);
+    const vals=ENC.shape||[],maxv=Math.max(...vals.map(v=>Math.abs(v)))||1;
+    vals.slice(0,128).forEach((v,i)=>{
+      const x=599+(i%16)*12,y=95+Math.floor(i/16)*12;
+      const a=Math.min(1,Math.abs(v)/maxv);
+      add(state,rect(x,y,10,10,v>=0?`rgba(5,150,105,${0.10+0.80*a})`:`rgba(17,24,39,${0.06+0.62*a})`,2));
+    });
+    add(state,tx(695,44,"Frozen State",{size:10,fill:MUT,anchor:"middle"}));
+    add(state,tx(695,242,ENC.state_dim.toLocaleString()+"-d",{size:8,fill:DIM,anchor:"middle"}));
+
+    const plug=zone("reuse");
+    zbox(plug,858,58,125,170);
+    [["Predict",95],["Retrieve",143],["Act",191]].forEach(([label,y])=>{
+      add(plug,ln(805,143,870,y,{stroke:"#d1d5db"}));
+      add(plug,dot(870,y,5,"#fff",ACC));
+      add(plug,tx(880,y+4,label,{size:9,fill:MUT}));
+    });
+    add(plug,tx(920,44,"Plugins",{size:10,fill:MUT,anchor:"middle"}));
+    add(plug,tx(920,242,"one state",{size:8,fill:DIM,anchor:"middle"}));
+
+    arrow(195,143,250,143);
+    arrow(520,143,580,143);
+    arrow(805,143,852,143);
+
+    const notes=$("#encnotes"); notes.innerHTML="";
+    [
+      ["reads","Reads","Events, fields, time and gaps."],
+      ["learns","Learns","Two gated SSM layers; no business labels."],
+      ["state","Writes","One fixed 2,265-d state per customer."],
+      ["reuse","Reuses","Same state for Predict · Retrieve · Act."],
+    ].forEach(([zoneName,key,text])=>{
+      const n=el("div","encnote"); n.dataset.zone=zoneName; n.tabIndex=0;
+      n.appendChild(el("div","k",key)); n.appendChild(el("div","v",text)); notes.appendChild(n);
+    });
+    const zones={};
+    host.querySelectorAll(".enczone").forEach(g=>zones[g.dataset.zone]=g);
+    function setActive(zoneName){
+      host.classList.toggle("hasactive",!!zoneName);
+      Object.entries(zones).forEach(([key,g])=>g.classList.toggle("active",key===zoneName));
+      notes.querySelectorAll(".encnote").forEach(n=>n.classList.toggle("on",n.dataset.zone===zoneName));
+    }
+    notes.querySelectorAll(".encnote").forEach(n=>{
+      n.addEventListener("mouseenter",()=>setActive(n.dataset.zone));
+      n.addEventListener("mouseleave",()=>setActive(null));
+      n.addEventListener("focus",()=>setActive(n.dataset.zone));
+      n.addEventListener("blur",()=>setActive(null));
+    });
+    Object.entries(zones).forEach(([zoneName,g])=>{
+      g.addEventListener("mouseenter",()=>setActive(zoneName));
+      g.addEventListener("mouseleave",()=>setActive(null));
+    });
+  }
+
   function featCols(id){
     if(id==="learned_state") return 48;
     if(id==="forecast") return 42;
@@ -1198,6 +1342,7 @@ if(!ENC){
     renderFeatSelector();
     renderFeatMap();
   }
+  renderEncIntro();
   renderEncoder();
 }
 

@@ -2069,3 +2069,13 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - Renamed the final stage label in the combined Overview image from “Heads” to “Plugins”, matching
   the tab and the three-family vocabulary used everywhere else. The individual node labels
   (value_90d, orders_90d, churn_90d, lookalike, action) are unchanged.
+
+## DEC-370 — Encoder tab gets a visual “Encoder at a glance” block
+
+- Added a standalone bordered intro block above the feature explorer with a single flow:
+  Event Stream → 2 × gated SSM → Frozen State → Plugins.
+- The state block uses the real 128 shape values; the stage facts are shown as compact chips
+  (self-supervised, 2 × gated SSM, 128-d width, 2,265-d state).
+- Four structured notes (Reads, Learns, Writes, Reuses) highlight the corresponding stage on
+  hover or keyboard focus, and the diagram stages highlight their notes in return.
+- The feature explorer below is now visually labelled as a separate block.
