@@ -314,7 +314,6 @@ body{font:15px/1.65 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Inter,Robot
 .small{font-size:11.5px}
 header{border-bottom:1px solid var(--line);padding-bottom:22px}
 h1{font-size:17px;font-weight:600;margin:0;letter-spacing:-.01em}
-.sub{color:var(--muted);font-size:13px;margin-top:4px}
 nav{display:flex;gap:30px;border-bottom:1px solid var(--line);margin:22px 0 0}
 nav button{appearance:none;background:none;border:0;padding:0 0 13px;font:inherit;font-size:13.5px;
   color:var(--muted);cursor:pointer;border-bottom:1px solid transparent;white-space:nowrap}
@@ -572,7 +571,6 @@ footer{margin-top:56px;padding-top:18px;border-top:1px solid var(--line);color:v
   <div class="topbar">
     <header>
       <h1>demo</h1>
-      <div class="sub">A frozen foundation model for customer event streams</div>
     </header>
 
     <nav id="tabs"></nav>
