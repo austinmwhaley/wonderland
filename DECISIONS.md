@@ -1879,3 +1879,9 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   height instead of leaving all the free space at the bottom.
 - Increased the timeline SVG height and lifted the labels so `observed history` and `target` are
   no longer clipped by the bottom edge.
+
+## DEC-347 — Overview stage slider spans the flow panel
+
+- Removed the 760 px cap on the Overview stage selector so all five positions stretch across the
+  full width of the flow panel below, giving the Overview a single top rail over the visual.
+- Verified in headless Chrome at 1300 px, including the Legacy ink and Event Stream green states.
