@@ -23,8 +23,8 @@ xdg-open demo/index.html                 # or double-click the file
 | **Encoder** | The encoder flow from event stream to field tokens, sequence blocks, 128-d shape, and 2,265-d published state. Below it: an actual 128-cell feature map for one customer and the published state's feature-family dimensions. |
 | **Axes** | Eight sub-tabs, one per content axis. Each opens a full panel: the value, what it measures, how it is measured, why it matters, and a dedicated visual (singular spectrum, reconstruction scatter, purity distribution, ROC, reliability curve, randomized-action design, order bars, relational bars) |
 | **Objectives** | A clickable explorer for all ten self-supervised objectives: what each predicts, the naive baseline, the learned skill, and a timeline diagram of the training cut |
-| **Plugins** | Known-effect recovery across five action keys, and RL policy value against table and uniform comparators |
-| **Explorer** | A full-width projection of 260 held-out customers. Click a point to open a large profile below: outcome, four headline numbers, preference profile, recent history, and nearest neighbours. |
+| **Plugins** | A structured source-and-branch view: one frozen state feeding two plugin heads. Click **Known effect** for a dumbbell chart of table vs state recovery across five action keys, or **Policy value** for the uniform / table / frozen IPS trajectories. Values appear on hover. |
+| **Explorer** | A full-width projection of 260 held-out customers. Click a point to draw lines to its five nearest neighbours and open a large profile below: outcome, four headline numbers, preference profile, recent history, and nearest neighbours. |
 
 ## Where the numbers come from
 

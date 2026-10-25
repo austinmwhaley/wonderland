@@ -254,41 +254,7 @@ def _f(x, n=3):
 
 def render(payload) -> str:
     """Flat, light, lab-style page: axes + objectives + plugins + explorer."""
-    rl = payload["rl_known"]
-    resp = payload["rl_policy"]
     obj = payload.get("objectives") or {}
-
-    def policy_table():
-        rows = []
-        for arm in ("channel", "offer"):
-            r = resp.get(arm) if isinstance(resp, dict) else None
-            if not r:
-                continue
-            rows.append(
-                "<tr>"
-                f"<td>{arm}</td>"
-                f"<td class='num'>{r['table']['ips']:.2f}</td>"
-                f"<td class='num'>{r['random']['ips']:.2f}</td>"
-                f"<td class='num strong'>{r['E']['ips']:.2f}</td>"
-                "</tr>"
-            )
-        return "".join(rows)
-
-    def rl_table():
-        rows = []
-        for arm in ("channel", "offer", "freq", "hour", "dow"):
-            r = rl.get(arm)
-            if not r:
-                continue
-            rows.append(
-                "<tr>"
-                f"<td>{arm}</td>"
-                f"<td class='num'>{r['table']:.3f}</td>"
-                f"<td class='num strong'>{r['E']:.3f}</td>"
-                f"<td class='num strong'>{r['E'] - r['table']:+.3f}</td>"
-                "</tr>"
-            )
-        return "".join(rows)
 
     OBJDEF = [
         ("jepa", "JEPA", "Predict the mean latent of the next H states.", 5, [6, 7, 8, 9], None),
@@ -338,22 +304,25 @@ def render(payload) -> str:
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0;background:var(--bg);color:var(--ink)}
+html{scrollbar-gutter:stable}
 body{font:15px/1.65 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Inter,Roboto,sans-serif;
   -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
-.wrap{max-width:1080px;margin:0 auto;padding:52px 24px 96px}
+.wrap{max-width:1080px;margin:0 auto;padding:0 24px 96px}
+.topbar{position:sticky;top:0;z-index:50;background:var(--bg);padding:24px 0 30px}
 .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
 .dim{color:var(--dim)}
 .small{font-size:11.5px}
 header{border-bottom:1px solid var(--line);padding-bottom:22px}
 h1{font-size:17px;font-weight:600;margin:0;letter-spacing:-.01em}
 .sub{color:var(--muted);font-size:13px;margin-top:4px}
-nav{display:flex;gap:30px;border-bottom:1px solid var(--line);margin:26px 0 44px}
+nav{display:flex;gap:30px;border-bottom:1px solid var(--line);margin:22px 0 0}
 nav button{appearance:none;background:none;border:0;padding:0 0 13px;font:inherit;font-size:13.5px;
   color:var(--muted);cursor:pointer;border-bottom:1px solid transparent;white-space:nowrap}
 nav button:hover{color:var(--ink)}
 nav button.on{color:var(--ink);border-bottom-color:var(--ink)}
 @media(max-width:680px){
-  nav{flex-wrap:wrap;gap:6px;margin:22px 0 32px}
+  .topbar{padding:18px 0 24px}
+  nav{flex-wrap:wrap;gap:6px;margin:16px 0 0}
   nav button{padding:7px 10px;border-bottom:0;border-radius:6px;font-size:12.5px}
   nav button.on{background:var(--ink);color:#fff}
 }
@@ -364,7 +333,6 @@ h2{font-size:21px;font-weight:600;margin:0 0 8px;letter-spacing:-.02em}
   gap:10px;align-items:stretch;margin-bottom:26px}
 @media(max-width:900px){.pipeline{grid-template-columns:1fr}.pipeline-arrow{display:none}}
 .pipeline-step{border:1px solid var(--line);border-radius:8px;padding:12px 13px 8px;background:#fff;min-width:0}
-.pipeline-step.core{border-color:var(--accent);background:#f7fefb}
 .pipeline-top{display:flex;justify-content:space-between;gap:10px;align-items:baseline;margin-bottom:4px}
 .pipeline-name{font-size:12px;font-weight:600}
 .pipeline-meta{font-family:ui-monospace,monospace;font-size:9.5px;color:var(--dim);white-space:nowrap}
@@ -391,11 +359,30 @@ h2{font-size:21px;font-weight:600;margin:0 0 8px;letter-spacing:-.02em}
 .chartlegend .selected::before{background:var(--ink)}
 .chartlegend .neighbour::before{background:var(--accent)}
 .chartlegend .other::before{background:#d1d5db}
+.chartlegend .channel::before{background:var(--ink)}
+.chartlegend .offer::before{background:#6b7280}
+.plugmap{display:grid;grid-template-columns:210px minmax(0,1fr) minmax(0,1fr);gap:12px;margin-bottom:16px}
+@media(max-width:900px){.plugmap{grid-template-columns:1fr}}
+.plugstate,.plugcard{min-height:148px;border:1px solid var(--line);border-radius:8px;padding:14px 15px}
+.plugstate{border-color:var(--accent);background:#f7fefb;display:flex;flex-direction:column;justify-content:space-between}
+.plugstate .k,.plugcard .k{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);font-weight:600}
+.plugstate .v{font-family:ui-monospace,monospace;font-size:25px;font-weight:600;letter-spacing:-.03em;margin-top:4px}
+.plugstate .d{font-size:11px;color:var(--muted);margin-top:2px}
+.plugstate .statevis{margin-top:10px}
+.plugstate .statevis svg{display:block;width:100%;height:54px}
+.plugcard{appearance:none;background:#fff;color:var(--ink);font:inherit;text-align:left;cursor:pointer;
+  display:flex;flex-direction:column;justify-content:space-between}
+.plugcard:hover{border-color:var(--dim)}
+.plugcard.on{border-color:var(--accent);background:#f7fefb}
+.plugcard .t{font-size:15px;font-weight:600;letter-spacing:-.01em;margin-top:4px}
+.plugcard .d{font-size:11px;color:var(--muted);margin-top:2px}
+.plugcard .mini{height:42px;margin-top:10px}
+.plugcard .mini svg{display:block;width:100%;height:42px}
+.plugpanel{border:1px solid var(--line);border-radius:8px;padding:16px 18px 10px;overflow-x:auto}
+.plugpanel svg{display:block;width:100%;height:auto}
+@media(max-width:800px){.plugpanel svg{min-width:720px}}
 .chartfoot{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;color:var(--dim);font-size:10.5px;
   border-top:1px solid var(--line2);margin-top:6px;padding-top:9px;font-family:ui-monospace,monospace}
-.grid{display:grid;gap:16px}
-.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
-@media(max-width:900px){.g2{grid-template-columns:1fr}}
 hr{border:0;border-top:1px solid var(--line);margin:44px 0}
 .axis{border:1px solid var(--line);border-radius:8px;padding:20px 20px 16px}
 .axis-top{display:flex;align-items:baseline;gap:10px}
@@ -582,12 +569,14 @@ footer{margin-top:56px;padding-top:18px;border-top:1px solid var(--line);color:v
 </head>
 <body>
 <div class="wrap">
-  <header>
-    <h1>demo</h1>
-    <div class="sub">A frozen foundation model for customer event streams</div>
-  </header>
+  <div class="topbar">
+    <header>
+      <h1>demo</h1>
+      <div class="sub">A frozen foundation model for customer event streams</div>
+    </header>
 
-  <nav id="tabs"></nav>
+    <nav id="tabs"></nav>
+  </div>
 
   <main>
     <section id="overview">
@@ -654,27 +643,8 @@ footer{margin-top:56px;padding-top:18px;border-top:1px solid var(--line);color:v
 
     <section id="plugins" hidden>
       <h2>Plugins</h2>
-      <p class="lede">Downstream heads read the frozen state. Known-effect recovery asks whether retrieval finds a customer's randomized optimum; policy value asks whether a learned response model beats logging.</p>
-      <div class="grid g2">
-        <div>
-          <div class="mono dim small" style="letter-spacing:.08em;text-transform:uppercase">Known-effect recovery</div>
-          <div class="chart" data-chart="rl_known"></div>
-          <div class="note">10-nearest-neighbour purity against the generator's randomized optimum.</div>
-        </div>
-        <div>
-          <div class="mono dim small" style="letter-spacing:.08em;text-transform:uppercase">RL policy value</div>
-          <table>
-            <thead><tr><th>Arm</th><th class="num">Table IPS</th><th class="num">Uniform</th><th class="num">Encoder IPS</th></tr></thead>
-            <tbody>__POLICY_TABLE__</tbody>
-          </table>
-          <div class="note">Pre-action state, logged propensity, customer-grouped resampling.</div>
-        </div>
-      </div>
-      <hr>
-      <table>
-        <thead><tr><th>Action key</th><th class="num">Table purity</th><th class="num">Encoder purity</th><th class="num">Gain</th></tr></thead>
-        <tbody>__RL_TABLE__</tbody>
-      </table>
+      <div class="plugmap" id="plugmap"></div>
+      <div class="plugpanel" id="plugpanel"></div>
     </section>
 
     <section id="explorer" hidden>
@@ -685,7 +655,7 @@ footer{margin-top:56px;padding-top:18px;border-top:1px solid var(--line);color:v
         <div class="scatterfoot">
           <span><i class="sw retained"></i> retained</span>
           <span><i class="sw churned"></i> churned</span>
-          <span class="hint">click a point</span>
+          <span class="hint">click a point · lines show 5 nearest neighbours</span>
         </div>
       </div>
       <div id="detail"></div>
@@ -816,7 +786,7 @@ function renderPipeline(){
     ["plugins","Plugins","3 families",miniPluginsSVG],
   ];
   steps.forEach(([key,name,meta,vis],i)=>{
-    const step=el("div","pipeline-step"+(key==="state"?" core":""));
+    const step=el("div","pipeline-step");
     const top=el("div","pipeline-top");
     top.appendChild(el("span","pipeline-name",name));
     top.appendChild(el("span","pipeline-meta",meta));
@@ -1413,23 +1383,158 @@ function objPanel(id){
 document.querySelectorAll(".objitem").forEach(b=>b.onclick=()=>objPanel(b.dataset.obj));
 objPanel("jepa");
 
-/* ---------- plugins chart ---------- */
-(function(){
-  const host=document.querySelector('[data-chart="rl_known"]'); if(!host) return;
-  const keys=Object.keys(DATA.rl_known||{}); if(!keys.length) return;
-  const W=460,H=230,s=svg(W,H),pad={l:34,r:10,t:10,b:34};
-  const gw=(W-pad.l-pad.r)/keys.length;
-  keys.forEach((k,i)=>{
-    const r=DATA.rl_known[k],gx=pad.l+i*gw,bw=gw*0.18;
-    const he=(r.E)*(H-pad.t-pad.b), ht=(r.table)*(H-pad.t-pad.b);
-    s.appendChild(ln(gx+gw*0.22,H-pad.b,gx+gw*0.22,H-pad.b-ht,{stroke:DIM,w:bw}));
-    s.appendChild(ln(gx+gw*0.52,H-pad.b,gx+gw*0.52,H-pad.b-he,{stroke:ACC,w:bw}));
-    s.appendChild(tx(gx+gw/2,H-8,k,{size:9,fill:DIM,anchor:"middle"}));
+/* ---------- plugins ---------- */
+const PL_EFFECT=DATA.rl_known||{};
+const PL_POLICY=DATA.rl_policy||{};
+let pluginMode="effect";
+
+function plugStateMini(){
+  const W=180,H=54,s=svg(W,H);
+  const vals=(OV_ENC&&OV_ENC.shape)||[];
+  if(!vals.length) return s;
+  const cols=16,rows=8,cell=5,gap=1.2;
+  const x0=(W-(cols*cell+(cols-1)*gap))/2;
+  const y0=(H-(rows*cell+(rows-1)*gap))/2;
+  const maxv=Math.max(...vals.map(v=>Math.abs(v)))||1;
+  vals.slice(0,cols*rows).forEach((v,i)=>{
+    const x=x0+(i%cols)*(cell+gap), y=y0+Math.floor(i/cols)*(cell+gap);
+    const a=Math.min(1,Math.abs(v)/maxv);
+    s.appendChild(rect(x,y,cell,cell,v>=0?`rgba(5,150,105,${0.12+0.78*a})`:`rgba(17,24,39,${0.06+0.60*a})`,1));
   });
-  s.appendChild(ln(pad.l,H-pad.b,W-pad.r,H-pad.b,{stroke:LINE}));
-  s.appendChild(tx(0,14,"1.0",{size:9,fill:DIM}));
-  host.appendChild(s);
-})();
+  return s;
+}
+
+function miniEffectSVG(){
+  const W=240,H=42,pad=8,s=svg(W,H);
+  const keys=["channel","offer","freq","hour","dow"].filter(k=>PL_EFFECT[k]);
+  const rowH=(H-2*pad)/Math.max(1,keys.length);
+  keys.forEach((k,i)=>{
+    const r=PL_EFFECT[k], y=pad+(i+0.5)*rowH;
+    const x1=pad+Number(r.table)*(W-2*pad), x2=pad+Number(r.E)*(W-2*pad);
+    s.appendChild(ln(x1,y,x2,y,{stroke:"rgba(5,150,105,.4)",w:1.2}));
+    s.appendChild(dot(x1,y,2.2,"#d1d5db"));
+    s.appendChild(dot(x2,y,3.2,ACC));
+  });
+  return s;
+}
+
+function miniPolicySVG(){
+  const W=240,H=42,pad=8,s=svg(W,H);
+  const arms=["channel","offer"].filter(k=>PL_POLICY[k]);
+  const vals=arms.flatMap(k=>[PL_POLICY[k].random.ips,PL_POLICY[k].table.ips,PL_POLICY[k].E.ips]);
+  if(!vals.length) return s;
+  const lo=Math.min(...vals)-0.4, hi=Math.max(...vals)+0.4;
+  const X=i=>pad+i*(W-2*pad)/2;
+  const Y=v=>H-pad-((v-lo)/(hi-lo||1))*(H-2*pad);
+  const colors={channel:INK,offer:"#6b7280"};
+  arms.forEach(k=>{
+    const r=PL_POLICY[k], pts=[r.random.ips,r.table.ips,r.E.ips];
+    s.appendChild(ln(X(0),Y(pts[0]),X(1),Y(pts[1]),{stroke:colors[k],w:1.2}));
+    s.appendChild(ln(X(1),Y(pts[1]),X(2),Y(pts[2]),{stroke:colors[k],w:1.2}));
+    pts.forEach((v,i)=>s.appendChild(dot(X(i),Y(v),i===2?3.4:2.4,colors[k])));
+  });
+  return s;
+}
+
+function renderPluginsMap(){
+  const host=$("#plugmap"); host.innerHTML="";
+  const state=el("div","plugstate");
+  const stateTop=el("div");
+  stateTop.appendChild(el("div","k","Frozen state"));
+  stateTop.appendChild(el("div","v",Number(OV_ENC?OV_ENC.state_dim:m.state_dim).toLocaleString()));
+  stateTop.appendChild(el("div","d","dimensions · one source"));
+  state.appendChild(stateTop);
+  const statevis=el("div","statevis"); statevis.appendChild(plugStateMini()); state.appendChild(statevis);
+  host.appendChild(state);
+
+  const makeCard=(id,tag,title,desc,mini)=>{
+    const b=el("button","plugcard"+(pluginMode===id?" on":""));
+    b.type="button"; b.dataset.mode=id; b.setAttribute("aria-pressed",pluginMode===id);
+    const top=el("div");
+    top.appendChild(el("div","k",tag));
+    top.appendChild(el("div","t",title));
+    top.appendChild(el("div","d",desc));
+    b.appendChild(top);
+    const box=el("div","mini"); box.appendChild(mini()); b.appendChild(box);
+    b.onclick=()=>{pluginMode=id;renderPluginsMap();renderPluginPanel();};
+    return b;
+  };
+  host.appendChild(makeCard("effect","Known effect","Randomized action recovery","5 action keys",miniEffectSVG));
+  host.appendChild(makeCard("policy","Policy value","IPS reward","channel + offer",miniPolicySVG));
+}
+
+function pluginEffectChart(){
+  const W=1000,H=340,pad={l:92,r:24,t:38,b:40},s=svg(W,H);
+  const keys=["channel","offer","freq","hour","dow"].filter(k=>PL_EFFECT[k]);
+  if(!keys.length) return s;
+  const rowH=(H-pad.t-pad.b)/keys.length;
+  [0,.25,.5,.75,1].forEach(g=>{
+    const x=pad.l+g*(W-pad.l-pad.r);
+    s.appendChild(ln(x,pad.t,x,H-pad.b,{stroke:g===0?LINE:"#f3f4f6"}));
+    if(g>0) s.appendChild(tx(x,H-14,Math.round(g*100)+"%",{size:9,fill:DIM,anchor:"middle"}));
+  });
+  keys.forEach((k,i)=>{
+    const r=PL_EFFECT[k], y=pad.t+(i+0.5)*rowH;
+    const table=Number(r.table), frozen=Number(r.E);
+    const x1=pad.l+table*(W-pad.l-pad.r), x2=pad.l+frozen*(W-pad.l-pad.r);
+    s.appendChild(tx(pad.l-12,y+4,k,{size:10,fill:MUT,anchor:"end"}));
+    s.appendChild(ln(x1,y,x2,y,{stroke:"rgba(5,150,105,.4)",w:2}));
+    const a=dot(x1,y,5.4,"#d1d5db"), b=dot(x2,y,7.2,ACC);
+    addSvgTitle(a,k+" · table "+table.toFixed(4));
+    addSvgTitle(b,k+" · frozen "+frozen.toFixed(4));
+    s.appendChild(a); s.appendChild(b);
+  });
+  return s;
+}
+
+function pluginPolicyChart(){
+  const W=1000,H=340,pad={l:58,r:96,t:56,b:48},s=svg(W,H);
+  const arms=["channel","offer"].filter(k=>PL_POLICY[k]);
+  if(!arms.length) return s;
+  const series=arms.map(k=>({key:k,uniform:Number(PL_POLICY[k].random.ips),table:Number(PL_POLICY[k].table.ips),frozen:Number(PL_POLICY[k].E.ips)}));
+  const vals=series.flatMap(r=>[r.uniform,r.table,r.frozen]);
+  const lo=Math.floor(Math.min(...vals)-0.5), hi=Math.ceil(Math.max(...vals)+0.5);
+  const X=i=>pad.l+i*(W-pad.l-pad.r)/2;
+  const Y=v=>H-pad.b-((v-lo)/(hi-lo||1))*(H-pad.t-pad.b);
+  const colors={channel:INK,offer:"#6b7280"};
+  for(let v=Math.ceil(lo);v<=Math.floor(hi);v++){
+    s.appendChild(ln(pad.l,Y(v),W-pad.r,Y(v),{stroke:v===lo?LINE:"#f3f4f6"}));
+    s.appendChild(tx(pad.l-10,Y(v)+3,String(v),{size:9,fill:DIM,anchor:"end"}));
+  }
+  const x2=X(2);
+  s.appendChild(rect(x2-58,pad.t,116,H-pad.t-pad.b,"#f7fefb",0));
+  ["uniform","table","frozen state"].forEach((label,i)=>{
+    s.appendChild(tx(X(i),H-15,label,{size:10,fill:MUT,anchor:"middle"}));
+  });
+  series.forEach(r=>{
+    const color=colors[r.key]||INK;
+    s.appendChild(ln(X(0),Y(r.uniform),X(1),Y(r.table),{stroke:color,w:1.6}));
+    s.appendChild(ln(X(1),Y(r.table),X(2),Y(r.frozen),{stroke:color,w:1.6}));
+    [[0,r.uniform],[1,r.table],[2,r.frozen]].forEach(([i,v],j)=>{
+      const c=dot(X(i),Y(v),j===2?6.4:4.6,j===0?"#fff":color,color);
+      addSvgTitle(c,r.key+" · "+(j===0?"uniform":j===1?"table":"frozen")+" "+v.toFixed(2));
+      s.appendChild(c);
+    });
+    s.appendChild(tx(x2+12,Y(r.frozen)+4,r.key,{size:10,fill:color}));
+  });
+  return s;
+}
+
+function renderPluginPanel(){
+  const host=$("#plugpanel"); host.innerHTML="";
+  if(pluginMode==="policy"){
+    host.appendChild(chartHeader("Policy value · IPS reward",[["channel","channel"],["offer","offer"]]));
+    host.appendChild(pluginPolicyChart());
+    host.appendChild(chartFoot("pre-action state · logged propensity · axis zoomed","hover a point for values"));
+  }else{
+    host.appendChild(chartHeader("Known effect · randomized action recovery",[["table","table"],["frozen state","frozen"]]));
+    host.appendChild(pluginEffectChart());
+    host.appendChild(chartFoot("10-NN purity against the randomized optimum","hover a dot for values"));
+  }
+}
+
+renderPluginsMap();
+renderPluginPanel();
 
 /* ---------- explorer ---------- */
 const EXP=DATA.explorer;
@@ -1437,8 +1542,13 @@ if(!EXP||!EXP.customers||!EXP.customers.length){
   $("#explorer").innerHTML="<h2>Meet a customer</h2><p class='lede'>Run <code>python3 scripts/build_demo_site.py</code> with the frozen cache available to build the explorer.</p>";
 }else{
   const svgEl=$("#scatter"),W=1000,H=600,pad=46,marks=[];
+  const lines=document.createElementNS(NS,"g");
+  lines.setAttribute("id","neighbour-lines");
+  svgEl.appendChild(lines);
+  const pointByKey={};
   EXP.customers.forEach((c,i)=>{
     const cx=pad+c.x*(W-2*pad),cy=H-pad-c.y*(H-2*pad);
+    pointByKey[c.key]={cx,cy};
     const hit=dot(cx,cy,12,"transparent"); hit.style.cursor="pointer";
     hit.setAttribute("class","hit"); hit.setAttribute("data-i",String(i));
     hit.onclick=()=>select(i);
@@ -1456,11 +1566,22 @@ if(!EXP||!EXP.customers||!EXP.customers.length){
   }
 
   function select(i){
-    marks.forEach(({circle},j)=>{
-      circle.setAttribute("r",j===i?12:6.2);
-      circle.setAttribute("opacity",j===i?1:.45);
+    const c=EXP.customers[i];
+    const nbSet=new Set((c.neighbours||[]).map(n=>n.key));
+    lines.innerHTML="";
+    const p0=pointByKey[c.key];
+    (c.neighbours||[]).forEach(n=>{
+      const p=pointByKey[n.key];
+      if(p) lines.appendChild(ln(p0.cx,p0.cy,p.cx,p.cy,{stroke:"rgba(5,150,105,.42)",w:1.2}));
     });
-    const c=EXP.customers[i],box=$("#detail"); box.innerHTML="";
+    marks.forEach(({circle},j)=>{
+      const isSel=j===i, isNb=nbSet.has(EXP.customers[j].key);
+      circle.setAttribute("r",isSel?12:isNb?8.2:6.2);
+      circle.setAttribute("opacity",isSel?1:isNb?1:.38);
+      if(isNb && !isSel){circle.setAttribute("stroke",INK);circle.setAttribute("stroke-width","1.8");}
+      else{circle.removeAttribute("stroke");circle.removeAttribute("stroke-width");}
+    });
+    const box=$("#detail"); box.innerHTML="";
 
     const head=el("div","custhead");
     const left=el("div");
@@ -1536,8 +1657,6 @@ $("#foot").textContent=`generated ${m.generated} · synthetic harness · ${m.cus
 
     html = html.replace("__OBJLIST__", obj_items)
     html = html.replace("__OBJSPEC__", json.dumps(obj_spec))
-    html = html.replace("__POLICY_TABLE__", policy_table())
-    html = html.replace("__RL_TABLE__", rl_table())
     html = html.replace("__PAYLOAD__", explorer_json)
     return html
 

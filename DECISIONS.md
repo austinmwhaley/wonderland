@@ -1674,3 +1674,39 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   rows and become compact pill tabs, so every label stays fully visible. Wider layouts keep the
   existing underline treatment.
 - Verified at 650 px and 390 px widths with Chrome screenshots; inline JS passes `node --check`.
+
+## DEC-329 — Explorer draws nearest-neighbour links on the chart
+
+- Feedback: the Explorer talks about nearest neighbours, so the top scatter should show those links
+  when a customer is selected.
+- Added a line layer behind the points. Selecting a point clears the layer and draws five lines to
+  that customer's five nearest neighbours; those neighbours get a dark ring and full opacity while
+  the rest of the cloud recedes. Clicking another point redraws the links.
+- The chart hint now says "click a point · lines show 5 nearest neighbours".
+- Verified by rendering the Explorer default selection and a newly clicked customer in headless
+  Chrome.
+
+## DEC-330 — Plugins rebuilt as a structured, interactive view
+
+- Request: overhaul Plugins around visualization, interaction and structure instead of tables and
+  prose.
+- Removed the two-column chart/table block, the separate action-key table, and the prose lede.
+- Added a source card (**Frozen state · 2,265 dims**) with a small shape glyph, feeding two large
+  clickable plugin cards:
+  - **Known effect** — randomized action recovery across the five action keys.
+  - **Policy value** — IPS reward for the channel and offer arms.
+- Each card has a miniature visual preview. Selecting a card reveals a large panel:
+  - Known effect uses a dumbbell chart from table dot → frozen-state dot for each action key.
+  - Policy value uses a zoomed three-column slope chart (uniform → table → frozen state) for both
+    arms.
+- Values are on hover; short chart tags, legends and protocol footers replace the old tables.
+- Verified by rendering both modes and switching cards in headless Chrome; inline JS passes
+  `node --check`.
+
+## DEC-331 — Overview pipeline state card loses its accent highlight
+
+- Feedback: the green highlight on the Frozen state card in the Overview pipeline looked strange.
+- Removed the special `core` class and its accent border/background; all four pipeline cards now use
+  the same neutral treatment, and the only accent left in the pipeline is the actual shape
+  heat-map colour.
+- Verified by rendering the Overview pipeline in headless Chrome.
