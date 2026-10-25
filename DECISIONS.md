@@ -1424,3 +1424,26 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   explorer.
 - Principles: Honest (no fabricated or inverted claim; omissions are documented), Accessible
   (readable light theme, legible charts), Diagnosable (each chart names its protocol).
+
+## DEC-314 — Demo restructured: flat lab theme + Axes + Objectives tabs
+
+- Design: flat, light, "AI lab" visual language — white ground, hairline borders, mono labels,
+  no shadows or gradients, one accent (#059669) reserved for gains. Replaced the earlier card
+  styling.
+- Tabs are now: Overview · Axes · Objectives · Plugins · Explorer.
+- **Axes** shows all eight content axes (A1 shape, A2 mass, A3 identity, A4 rate, A5 uncertainty,
+  A6 causal, A7 order/path, A8 relational) with a value and, where the data supports it, a
+  micro-visual: singular spectrum, reconstruction scatter, purity vs chance, reliability curve,
+  order bars, relational bars. A6 is labelled as Layer-1 and deliberately shows no number.
+- **Objectives** is a clickable explorer over all ten self-supervised probes: what each predicts,
+  the naive baseline, the learned skill, and a timeline strip marking the state cut and the
+  target span. Protocol text states the probe is grouped 5-fold by customer and uses no business
+  labels.
+- New `scripts/build_b_demo_data.py` exports the three arrays the visuals need (spectrum,
+  reconstruction scatter, reliability bins) and the page degrades gracefully without it.
+- Correctness notes found while building: the receipt's `past_r2` is mean **squared correlation**
+  over past-summary dimensions, not prediction R², so the export matches that definition
+  (0.54 on the 700-point sample, consistent with 0.568 on the full holdout); the ECE displayed is
+  the audited receipt value (0.048) rather than the demo's own binning, to avoid presenting a
+  more favourable number than the certificate.
+- Verified by rendering every tab in headless Chrome and checking inline JS with `node --check`.

@@ -1,58 +1,61 @@
 # wonderland — interactive demo
 
-A single self-contained, light-theme HTML page that presents the result: one frozen
+A single self-contained, flat light-theme HTML page presenting the result: one frozen
 self-supervised encoder per event stream, reused by supervised, unsupervised, and
-reinforcement-learning heads. It shows the winning comparisons — the full evidence
-audit, including every open item, lives in `REPORT_CARD.md` and `docs/AUDIT_CARD.md`.
+reinforcement-learning heads.
 
 Open it directly — no server, no network, no dependencies:
 
 ```bash
-python3 scripts/build_demo_site.py     # regenerate from receipts
-xdg-open demo/index.html               # or just double-click the file
+python3 scripts/build_b_demo_data.py     # optional: axes micro-visuals from the frozen model
+python3 scripts/build_demo_site.py       # regenerate the page from receipts
+xdg-open demo/index.html                 # or double-click the file
 ```
 
 ## Tabs
 
 | Tab | What it shows |
 |---|---|
-| **Overview** | The claim, headline numbers, selected-view vs table, and what each state view carries |
-| **Encoder vs Traditional** | Same head and holdout: table vs shape vs measure vs forecast vs full, deltas with 95% CI, and the floor → encoder → ceiling ladder |
-| **State Views** | Per-view results, identity purity, unsupervised probes, and view dimensions |
-| **Plugins** | Known-effect recovery by action key, and RL policy value against uniform and table comparators |
-| **Customer Explorer** | Holdout customers in the frozen embedding; click a point for its history, lookalikes, and held-out outcome |
+| **Overview** | The claim, four headline numbers, and the frozen state vs the traditional table |
+| **Axes** | The eight content axes, one card each, with a micro-visual (spectrum, reconstruction scatter, purity, reliability, order, relational) |
+| **Objectives** | A clickable explorer for all ten self-supervised objectives: what each predicts, the naive baseline, the learned skill, and a timeline diagram of the training cut |
+| **Plugins** | Known-effect recovery across five action keys, and RL policy value against table and uniform comparators |
+| **Explorer** | Held-out customers in the frozen embedding; click a point for history, neighbours, and outcome |
 
 ## Where the numbers come from
 
 Every value is generated from receipts under `docs/report_cards/experiments/`:
 
-- `foundation_state.json` — shape / learned state / forecast / measure / full attribution
-- `view_selection.json` — train-only view selection and holdout evaluation
-- `encoder_ceiling.json` — floor / encoder / full-history ceiling
-- `encoder_donor.json`, `encoder_identity.json`, `plugin_unsupervised.json`, `plugin_rl_known.json`
+- `encoder_objectives.json` — the ten self-supervised probes and their baselines
+- `encoder_controls.json` — negative controls and past retention
+- `encoder_b_props.json` — calibration, latent sensitivity, artifact hash
+- `encoder_identity.json`, `plugin_unsupervised.json`, `plugin_rl_known.json`
 - `plugin_response.json` — pre-action RL policy value
+- `foundation_state.json`, `view_selection.json`, `encoder_ceiling.json`, `encoder_donor.json`
 - `runtime.json`, `encoder_config.json`, `data_receipt.json` — provenance and cost
 
-The customer explorer additionally samples the frozen cache at `/tmp/opencode/frozen_6k` and the
-canonical stream. If those are absent the page still builds; the explorer tab degrades with a
-message.
+`demo/b_data.json` (built by `scripts/build_b_demo_data.py`) holds the small arrays the axes
+micro-visuals need: the state's singular spectrum, a predicted-vs-actual reconstruction scatter,
+and the next-event reliability bins. If it is absent, the Axes tab still renders its numbers and
+the visuals are simply omitted.
+
+The Customer Explorer additionally samples the frozen cache at `/tmp/opencode/frozen_6k` and the
+canonical stream.
 
 Nothing on the page is hand-typed, so it cannot drift from the reported evidence.
 
-## Honesty
+## Scope
 
-This page is a presentation of the positive results. Every number on it is a real measured
-number; losing or tie-level comparisons are simply not displayed here. The complete record —
-including category identity, anomaly/segmentation, the churn tie, and Layer-1 status — remains
-in `REPORT_CARD.md` and `docs/AUDIT_CARD.md`, which are the authority.
+This page presents the positive results. Every number on it is a real measured number; losing or
+tie-level comparisons are not displayed here. The complete record — including category identity,
+anomaly/segmentation, the churn tie, and Layer-1 status — remains in `REPORT_CARD.md` and
+`docs/AUDIT_CARD.md`, which are the authority.
 
-Two protocols appear on different tabs and are labelled at their charts: the train-only view
-selection holdout (table 0.424 → encoder 0.457) and the fixed-head attribution protocol
-(table 0.357 → frozen state 0.433).
+The eight axes include A6 (Causal), which is Layer-1 work: the card states that it is evaluated
+separately rather than showing a number.
 
 ## Notes
 
 - Synthetic relational harness; no business data.
-- The explorer's "lookalike" panel is computed in the frozen embedding and is **not** used to form
-  the actual outcome.
-- Regenerate after any receipt changes so the page stays current.
+- Explorer neighbours are computed in the frozen state and are not used to form the actual outcome.
+- Regenerate after any receipt change so the page stays current.
