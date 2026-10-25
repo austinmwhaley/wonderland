@@ -1652,3 +1652,15 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - `scripts/build_data_tab.py` exports the two additional legacy fields
   (`days_since_last_purchase`, `n_returns`); row selection and the raw stream below are unchanged.
 - Verified by rendering the updated table in headless Chrome; fast tests, ruff and node checks pass.
+
+## DEC-327 — Data table reduced to RFM; numeric headers right-aligned
+
+- Feedback: remove Events and Returns from the legacy table, and align column headers with their
+  values.
+- The table now has exactly four columns: customer, recency (days since last purchase), frequency
+  (historical orders), and monetary (historical purchase value). The RFM framing is unchanged.
+- Alignment: numeric headers now inherit right alignment (`th.num`), matching the right-aligned
+  numeric cells. This also fixes the same mismatch wherever a numeric table header is used.
+- A stale row-rendering path briefly left two empty cells after the columns were removed; removed
+  it and verified the rendered table has four headers and four cells per row.
+- Verified by rendering the Data table in headless Chrome; ruff and node checks pass.

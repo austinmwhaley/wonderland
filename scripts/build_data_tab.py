@@ -41,8 +41,6 @@ LEGACY_COLUMNS = [
     ("days_since_last_purchase", "int"),
     ("n_orders", "int"),
     ("purchase_value", "money"),
-    ("n_events", "int"),
-    ("n_returns", "int"),
 ]
 
 

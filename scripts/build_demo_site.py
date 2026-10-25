@@ -403,6 +403,7 @@ table{width:100%;border-collapse:collapse;font-size:13.5px}
 th,td{text-align:left;padding:11px 10px;border-bottom:1px solid var(--line)}
 th{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);font-weight:600}
 td.num{text-align:right;font-variant-numeric:tabular-nums;font-family:ui-monospace,monospace;font-size:12.5px}
+th.num{text-align:right}
 .strong{color:var(--accent);font-weight:600}
 .note{color:var(--muted);font-size:12.5px}
 .objlayout{display:grid;grid-template-columns:290px minmax(0,1fr);gap:36px}
@@ -1156,7 +1157,7 @@ if(!DT){
 
   function renderTable(){
     const host=$("#legacytable"); host.innerHTML="";
-    const cols=["Customer","Recency (days)","Frequency (orders)","Monetary","Events","Returns"];
+    const cols=["Customer","Recency (days)","Frequency (orders)","Monetary"];
     $("#legacymeta").textContent=DT.customers.length+" of "+DT.wide.rows.toLocaleString()+" rows · showing "+cols.length+" of "+DT.wide.columns+" columns";
     const table=el("table");
     const thead=el("thead"), hr=el("tr");
@@ -1174,8 +1175,6 @@ if(!DT){
       tr.appendChild(el("td","num",String(c.legacy.days_since_last_purchase)));
       tr.appendChild(el("td","num",String(c.legacy.n_orders)));
       tr.appendChild(el("td","num",money(c.legacy.purchase_value)));
-      tr.appendChild(el("td","num",String(c.legacy.n_events)));
-      tr.appendChild(el("td","num",String(c.legacy.n_returns)));
       tbody.appendChild(tr);
     });
     table.appendChild(tbody); host.appendChild(table);
