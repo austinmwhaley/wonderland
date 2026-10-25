@@ -2006,3 +2006,21 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   as one continuous swarm rather than block-by-block movement.
 - Verified real-time frames: cells leave the table layout progressively, reach the frozen-state
   grid, and settle cleanly.
+
+## DEC-362 — Event timeline and ledger rows are linked on hover
+
+- Hovering a timeline dot highlights the matching ledger row in green and scrolls the ledger to
+  keep that row visible. Hovering a ledger row enlarges and greens the matching timeline dot.
+- Timeline dots and ledger rows carry the same event index; the timeline no longer leaves a
+  visible dot to intercept the hover target.
+- Verified both directions with real browser mouse input.
+
+## DEC-363 — Explorer card turns Predict into a table and Act into a recommendation
+
+- Removed the 90-day outcome badge from the customer-card header; the churn outcome remains in
+  the Predict table.
+- Predict is now a compact table with metric, value, and sample-percentile columns.
+- Act is now a recommendation table: Offer and Channel, each with this customer's known optimum
+  and the global policy-value benefit versus the table. The higher-benefit offer row is
+  highlighted green; the note states that the policy benefit is global.
+- Added `offer_opt` to the explorer payload from the reference truth.

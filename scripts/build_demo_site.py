@@ -122,6 +122,7 @@ def _explorer(n_customers=260, neighbours=5, seed=0):
                 "orders90": round(float(yo[idx]), 1),
                 "churn90": int(yc[idx]),
                 "channel": t.get("channel_pref"),
+                "offer_opt": int(t.get("offer_opt", 0) or 0),
                 "category": t.get("category_pref"),
                 "regime": t.get("regime0"),
                 "return_proneness": round(float(t.get("return_proneness", 0.0)), 3),
@@ -524,6 +525,10 @@ th.num{text-align:right}
   font-size:10.5px;color:var(--muted)}
 .logtable td{padding:7px;vertical-align:top}
 .logtable tr:hover td{background:#fafafa}
+.logtable tbody tr.hot td{background:#ecfdf5}
+.logtable tbody tr.hot td:first-child{box-shadow:inset 2px 0 0 var(--accent)}
+.timeline-dot{transition:fill .12s ease,stroke .12s ease}
+.timeline-dot.hot{fill:var(--accent);stroke:#fff;stroke-width:1.4}
 .logtable td:first-child{font-family:ui-monospace,monospace;font-size:10.5px;color:var(--muted);white-space:nowrap}
 .logtable td:nth-child(2){font-family:ui-monospace,monospace;font-size:10.5px;white-space:nowrap}
 .logtable td.attrs{font-family:ui-monospace,monospace;font-size:9.8px;line-height:1.5;
@@ -573,9 +578,6 @@ th.num{text-align:right}
 @media(max-width:700px){.custcardhead{align-items:flex-start;flex-direction:column;gap:8px;padding:20px}}
 .custtag{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);font-weight:600}
 .custkey{font-family:ui-monospace,monospace;font-size:32px;font-weight:600;letter-spacing:-.03em;margin-top:4px}
-.outcome{font-size:15px;font-weight:600;white-space:nowrap}
-.outcome.retained{color:var(--accent)}
-.outcome.churned{color:#dc2626}
 .custcaps{display:grid;grid-template-columns:1.12fr 1fr .92fr;border-bottom:1px solid var(--line)}
 @media(max-width:900px){.custcaps{grid-template-columns:1fr}}
 .capability{padding:22px 24px;border-right:1px solid var(--line2);min-width:0}
@@ -586,14 +588,20 @@ th.num{text-align:right}
 .capname{font-size:15px;font-weight:600;letter-spacing:-.01em}
 .capmeta{font-family:ui-monospace,monospace;font-size:9px;letter-spacing:.07em;text-transform:uppercase;
   color:var(--dim);white-space:nowrap}
-.capmetrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-.capmetric .k{font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);
-  font-family:ui-monospace,monospace}
-.capmetric .v{font-family:ui-monospace,monospace;font-size:21px;font-weight:600;letter-spacing:-.03em;margin-top:5px}
-.capmetric .v.txt{font-size:16px;letter-spacing:-.01em;padding-top:3px}
-.capmetric .v.good{color:var(--accent)}
-.capmetric .v.bad{color:#dc2626}
-.capmetric .s{font-size:10px;color:var(--dim);margin-top:3px}
+.cardtable{width:100%;border-collapse:collapse;font-size:12px}
+.cardtable th{font-family:ui-monospace,monospace;font-size:8.5px;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--dim);font-weight:500;padding:0 0 7px;
+  border-bottom:1px solid var(--line2);text-align:left;white-space:nowrap}
+.cardtable th.r,.cardtable td.r{text-align:right}
+.cardtable td{padding:8px 0;border-bottom:1px solid var(--line2);vertical-align:baseline}
+.cardtable tr:last-child td{border-bottom:0;padding-bottom:0}
+.cardtable td.k{font-family:ui-monospace,monospace;font-size:10px;color:var(--muted)}
+.cardtable td.v{font-family:ui-monospace,monospace;font-size:14px;font-weight:600;color:var(--ink);
+  text-align:right;white-space:nowrap}
+.cardtable td.s{font-size:9.5px;color:var(--dim);text-align:right;padding-left:8px;white-space:nowrap}
+.cardtable .good{color:var(--accent)}
+.cardtable .bad{color:#dc2626}
+.cardtable tr.primary td{background:#f7fefb}
 .nbminilist{display:grid;gap:6px}
 .nbrow{display:grid;grid-template-columns:minmax(0,1fr) auto 7px;gap:8px;align-items:center;
   border-bottom:1px solid var(--line2);padding-bottom:6px;font-size:12px}
@@ -604,11 +612,6 @@ th.num{text-align:right}
 .nbrow .dotmark.bad{background:#dc2626}
 .capnote{margin-top:13px;color:var(--muted);font-size:11.5px;line-height:1.5}
 .capnote b{color:var(--ink);font-family:ui-monospace,monospace;font-weight:600}
-.actrows{display:grid;gap:13px}
-.actrow .top{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;color:var(--muted)}
-.actrow .v{font-family:ui-monospace,monospace;font-size:15px;font-weight:600;color:var(--accent)}
-.actbar{height:5px;background:#f3f4f6;border-radius:3px;margin-top:6px;overflow:hidden}
-.actbar i{display:block;height:100%;background:var(--accent);border-radius:3px}
 .custcontext{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,.75fr)}
 @media(max-width:800px){.custcontext{grid-template-columns:1fr}}
 .contextsection{padding:20px 26px}
@@ -1241,7 +1244,11 @@ if(!DT){
       });
       hit.addEventListener("mouseleave",()=>{tip.hidden=true;});
       s.appendChild(hit);
-      s.appendChild(dot(cx,cy,2.1,"rgba(17,24,39,.42)"));
+      const mark=dot(cx,cy,2.1,"rgba(17,24,39,.42)");
+      mark.setAttribute("class","timeline-dot");
+      mark.setAttribute("data-i",String(i));
+      mark.setAttribute("pointer-events","none");
+      s.appendChild(mark);
     });
     s.appendChild(ln(pad.l,H-pad.b,W-pad.r,H-pad.b,{stroke:LINE}));
     s.appendChild(ln(pad.l,H-pad.b,pad.l,H-pad.b+5,{stroke:LINE}));
@@ -1271,7 +1278,7 @@ if(!DT){
 
     const flow=el("div","dataflow");
     const tl=el("div","panelbox timeline-panel");
-    tl.appendChild(el("div","cardtag","Event timeline · hover a dot for event_ts / event_attributes"));
+    tl.appendChild(el("div","cardtag","Event timeline · hover a dot or row to link"));
     const tip=el("div","timeline-tip"); tip.hidden=true;
     const wrap=el("div","tlwrap"); wrap.appendChild(streamTimeline(c,tl,tip)); tl.appendChild(wrap);
     tl.appendChild(tip); flow.appendChild(tl);
@@ -1284,8 +1291,9 @@ if(!DT){
     ["event_ts","event_type","event_attributes"].forEach(t=>{hr.appendChild(el("th",null,t));});
     thead.appendChild(hr); table.appendChild(thead);
     const tbody=el("tbody");
-    c.events.forEach(e=>{
+    c.events.forEach((e,i)=>{
       const tr=el("tr");
+      tr.dataset.i=String(i);
       tr.appendChild(el("td",null,e[0]));
       tr.appendChild(el("td",null,e[1]));
       tr.appendChild(el("td","attrs",e[3]||"{}"));
@@ -1293,6 +1301,46 @@ if(!DT){
     });
     table.appendChild(tbody); box.appendChild(table);
     ledger.appendChild(box); flow.appendChild(ledger); host.appendChild(flow);
+    linkEventHover(wrap,box);
+  }
+
+  function linkEventHover(wrap,box){
+    const dots={},rows={};
+    wrap.querySelectorAll(".timeline-dot").forEach(d=>dots[d.dataset.i]=d);
+    box.querySelectorAll("tbody tr").forEach(r=>rows[r.dataset.i]=r);
+    let active=null;
+    function mark(i,on){
+      const dot=dots[i],row=rows[i];
+      if(dot){
+        dot.classList.toggle("hot",on);
+        dot.setAttribute("r",on?"4.4":"2.1");
+      }
+      if(row) row.classList.toggle("hot",on);
+    }
+    function enter(i){
+      if(active!==null&&active!==i) mark(active,false);
+      active=i; mark(i,true);
+      const row=rows[i];
+      if(row){
+        const top=row.offsetTop,h=box.clientHeight;
+        if(top<box.scrollTop||top+row.offsetHeight>box.scrollTop+h){
+          box.scrollTop=Math.max(0,top-h/2);
+        }
+      }
+    }
+    function leave(i){
+      if(active===i){mark(i,false);active=null;}
+    }
+    wrap.querySelectorAll(".timeline-hit").forEach(h=>{
+      const i=h.dataset.i;
+      h.addEventListener("mouseenter",()=>enter(i));
+      h.addEventListener("mouseleave",()=>leave(i));
+    });
+    box.querySelectorAll("tbody tr").forEach(r=>{
+      const i=r.dataset.i;
+      r.addEventListener("mouseenter",()=>enter(i));
+      r.addEventListener("mouseleave",()=>leave(i));
+    });
   }
 
   function selectData(i){
@@ -1888,11 +1936,7 @@ if(!EXP||!EXP.customers||!EXP.customers.length){
     const left=el("div");
     left.appendChild(el("div","custtag","Selected customer"));
     left.appendChild(el("div","custkey",c.key));
-    head.appendChild(left);
-    const right=el("div");
-    right.appendChild(el("div","custtag","90-day outcome"));
-    right.appendChild(el("div","outcome "+(c.churn90?"churned":"retained"),c.churn90?"Churned":"Retained"));
-    head.appendChild(right); card.appendChild(head);
+    head.appendChild(left); card.appendChild(head);
 
     const caps=el("div","custcaps");
     function capability(name,meta){
@@ -1905,19 +1949,23 @@ if(!EXP||!EXP.customers||!EXP.customers.length){
     }
 
     const predict=capability("Predict","90-day held-out");
-    const metrics=el("div","capmetrics");
+    const ptable=el("table","cardtable");
+    const phead=el("thead"),phr=el("tr");
+    ["Metric","Value","Sample"].forEach((label,i)=>phr.appendChild(el("th",i?"r":null,label)));
+    phead.appendChild(phr); ptable.appendChild(phead);
+    const pbody=el("tbody");
     [
       ["value_90d",money(c.value90),ordinal(pctile(valueSorted,c.value90))+" pct",""],
       ["orders_90d",String(c.orders90),ordinal(pctile(orderSorted,c.orders90))+" pct",""],
-      ["churn_90d",c.churn90?"churned":"retained","held-out outcome","txt "+(c.churn90?"bad":"good")],
+      ["churn_90d",c.churn90?"churned":"retained","actual","txt "+(c.churn90?"bad":"good")],
     ].forEach(([k,v,s,cls])=>{
-      const m=el("div","capmetric");
-      m.appendChild(el("div","k",k));
-      m.appendChild(el("div","v"+(cls?" "+cls:""),v));
-      m.appendChild(el("div","s",s));
-      metrics.appendChild(m);
+      const tr=el("tr");
+      tr.appendChild(el("td","k",k));
+      tr.appendChild(el("td","v"+(cls?" "+cls:""),v));
+      tr.appendChild(el("td","s",s));
+      pbody.appendChild(tr);
     });
-    predict.appendChild(metrics); caps.appendChild(predict);
+    ptable.appendChild(pbody); predict.appendChild(ptable); caps.appendChild(predict);
 
     const retrieve=capability("Retrieve","5 nearest neighbours");
     const list=el("div","nbminilist");
@@ -1938,28 +1986,33 @@ if(!EXP||!EXP.customers||!EXP.customers.length){
     rn.appendChild(document.createTextNode(" churn agreement"));
     retrieve.appendChild(rn); caps.appendChild(retrieve);
 
-    const act=capability("Act","policy value · IPS");
-    const rows=el("div","actrows");
+    const act=capability("Act","known optima");
+    const atable=el("table","cardtable");
+    const ahead=el("thead"),ahr=el("tr");
+    ["Action","Choice","Benefit"].forEach((label,i)=>ahr.appendChild(el("th",i?"r":null,label)));
+    ahead.appendChild(ahr); atable.appendChild(ahead);
+    const abody=el("tbody");
     const pol=DATA.rl_policy||{};
-    const lifts=Object.entries(pol)
-      .filter(([,r])=>r&&r.E&&r.table)
-      .map(([k,r])=>[k,(Number(r.E.ips)-Number(r.table.ips))/Number(r.table.ips)*100])
-      .sort((a,b)=>b[1]-a[1]);
-    const maxLift=Math.max(...lifts.map(x=>x[1]),.001);
-    lifts.forEach(([k,v])=>{
-      const row=el("div","actrow");
-      const top=el("div","top");
-      top.appendChild(el("span",null,k));
-      top.appendChild(el("span","v",(v>=0?"+":"")+v.toFixed(1)+"%"));
-      row.appendChild(top);
-      const bar=el("div","actbar"); const fill=el("i");
-      fill.style.width=Math.max(4,v/maxLift*100)+"%";
-      bar.appendChild(fill); row.appendChild(bar); rows.appendChild(row);
-    });
-    act.appendChild(rows);
-    const an=el("div","capnote");
-    an.appendChild(document.createTextNode("policy family, global · IPS vs table"));
-    act.appendChild(an); caps.appendChild(act);
+    [
+      ["Offer","Tier "+c.offer_opt,"offer"],
+      ["Channel",c.channel,"channel"],
+    ].filter(([, ,key])=>pol[key]&&pol[key].E&&pol[key].table)
+      .map(([label,choice,key])=>{
+        const r=pol[key];
+        const gain=(Number(r.E.ips)-Number(r.table.ips))/Number(r.table.ips)*100;
+        return {label,choice,gain};
+      })
+      .sort((a,b)=>b.gain-a.gain)
+      .forEach(({label,choice,gain},i)=>{
+        const tr=el("tr",i===0?"primary":null);
+        tr.appendChild(el("td","k",label));
+        tr.appendChild(el("td","v r",choice));
+        tr.appendChild(el("td","s good","+"+gain.toFixed(1)+"%"));
+        abody.appendChild(tr);
+      });
+    atable.appendChild(abody); act.appendChild(atable);
+    act.appendChild(el("div","capnote","Known optima · policy value vs table (global)"));
+    caps.appendChild(act);
     card.appendChild(caps);
 
     const ctx=el("div","custcontext");
