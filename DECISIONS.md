@@ -1274,3 +1274,18 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   non-finite intervals.
 - Principles: Honest (a degenerate control is fixed, not narrated away), Robust (impossible
   intervals fail loudly), Diagnosable (comparator definition printed on the card).
+
+## DEC-305 — Phase 4 accepted: the forward-pass "bottleneck" was a cold-start artifact
+
+- Finding: the previous runtime receipt reported ~110 rows/s for state generation. Measuring cold
+  versus warm separately shows: first call (torch.compile warm-up) 5.4 s for 600 entities, then
+  ~0.32 s per call = **~1,900-2,000 rows/s**. Batch size 32 vs 64 vs 128 changes warm throughput by
+  <5%, so batching was never the lever and the earlier rejected batching hypothesis is now fully
+  explained.
+- Change: `measure_runtime.py` reports `state_forward_cold_s` and `state_forward_warm_s` separately;
+  the card prints both and no longer calls the forward the steady-state bottleneck. The real
+  measured costs are compile warm-up and the supervised head fit (~63 s for 5-fold).
+- Consequence for the plan: further batching work is closed. Any future performance work should
+  target compile time or head fitting, and must measure cold and warm separately.
+- Principles: Honest (correct a mis-measured claim), Diagnosable (separate cold/warm), Efficient
+  (stop optimizing a non-bottleneck).

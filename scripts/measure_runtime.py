@@ -67,12 +67,17 @@ def main():
     rec["measure_dim"] = int(M.shape[1])
     rec["measure_rows_per_s"] = round(len(hold) / max(rec["measure_transform_s"], 1e-9), 1)
 
+    views = ["shape", "learned_state", "forecast", "uncertainty", "heads"]
     t0 = time.perf_counter()
-    out = art.state(
-        seqs, hold, views=["shape", "learned_state", "forecast", "uncertainty", "heads"]
-    )
-    rec["state_forward_s"] = round(time.perf_counter() - t0, 2)
-    rec["state_rows_per_s"] = round(len(hold) / max(rec["state_forward_s"], 1e-9), 1)
+    out = art.state(seqs, hold, views=views)
+    rec["state_forward_cold_s"] = round(time.perf_counter() - t0, 2)
+    warm = []
+    for _ in range(3):
+        t0 = time.perf_counter()
+        art.state(seqs, hold, views=views)
+        warm.append(time.perf_counter() - t0)
+    rec["state_forward_warm_s"] = round(min(warm), 3)
+    rec["state_rows_per_s"] = round(len(hold) / max(min(warm), 1e-9), 1)
     rec["state_dims"] = {k: int(v.shape[1]) for k, v in out.items()}
 
     t0 = time.perf_counter()

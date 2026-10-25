@@ -330,13 +330,16 @@ def _serving_contract(docs):
             f"Stream load (cached): **{rt['load_data_s']}s** · artifact load "
             f"**{rt['artifact_load_s']}s** · measure transform **{rt['measure_transform_s']}s** "
             f"for {rt['n_entities']} entities ({rt['measure_rows_per_s']} rows/s) · frozen forward "
-            f"**{rt['state_forward_s']}s** ({rt['state_rows_per_s']} rows/s) · 5-fold head fit "
-            f"**{rt['head_fit_5fold_s']}s** · peak RSS **{rt['peak_rss_mb']} MB**.",
+            f"cold **{rt.get('state_forward_cold_s', 'n/a')}s** (includes compile), warm "
+            f"**{rt.get('state_forward_warm_s', 'n/a')}s** ({rt['state_rows_per_s']} rows/s) · "
+            f"5-fold head fit **{rt['head_fit_5fold_s']}s** · peak RSS **{rt['peak_rss_mb']} MB**.",
             "",
         ]
     out += [
-        "**Bottleneck:** the frozen forward pass, not the lawful measure (which is ~30x faster per "
-        "row). This is the next performance axis; it is measured, not assumed.",
+        "**Corrected finding:** the frozen forward is not the steady-state bottleneck. The earlier "
+        "~110 rows/s figure was dominated by `torch.compile` warm-up; warm throughput is ~2,000 "
+        "rows/s and does not improve materially with larger batches. Cold compilation and the "
+        "supervised head fit are the real measured costs.",
         "",
     ]
     return out

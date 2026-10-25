@@ -4,12 +4,13 @@
  "n_entities": 600,
  "load_data_s": 0.26,
  "load_artifact_s": 0.17,
- "fit_measure_s": 0.68,
- "measure_transform_s": 0.2,
+ "fit_measure_s": 0.7,
+ "measure_transform_s": 0.19,
  "measure_dim": 796,
- "measure_rows_per_s": 3000.0,
- "state_forward_s": 5.44,
- "state_rows_per_s": 110.3,
+ "measure_rows_per_s": 3157.9,
+ "state_forward_cold_s": 5.36,
+ "state_forward_warm_s": 0.316,
+ "state_rows_per_s": 1896.6,
  "state_dims": {
   "shape": 128,
   "learned_state": 1152,
@@ -19,6 +20,6 @@
  },
  "artifact_save_s": 0.02,
  "artifact_load_s": 0.02,
- "head_fit_5fold_s": 66.4,
- "peak_rss_mb": 2226.1
+ "head_fit_5fold_s": 62.92,
+ "peak_rss_mb": 2226.4
 }
