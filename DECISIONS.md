@@ -1593,3 +1593,20 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   horizontally on narrow screens.
 - Verified with a dispatched hover in headless Chrome (tooltip content includes the timestamp and
   attributes) and by rendering the three-column ledger; inline JS passes `node --check`.
+
+## DEC-323 — Encoder tab: architecture flow and real feature map
+
+- Request: add an **Encoder** tab after Data that visualizes the encoder and its features.
+- Architecture: a five-step flow from event stream → field tokens → two sequence blocks → 128-d
+  frozen shape → 2,265-d published state. The dimensions and event count come from the run
+  receipts, not hand-written constants.
+- Features: the tab shows one holdout customer's actual 128-d shape vector as a 16×8 heat map
+  (negative, zero, positive), with dimension and value on hover. Beside it, proportional bars show
+  the published state families from `runtime.json`: shape 128, learned state 1,152, forecast 835,
+  uncertainty 23, heads 127; total 2,265.
+- New `scripts/build_encoder_tab.py` writes `demo/encoder_tab.json` from the frozen cache,
+  `encoder_config.json`, `runtime.json`, and `data_receipt.json`. The chosen customer
+  (`rc0000208`) matches the Data tab's default row.
+- Kept deliberately small: one flow, one feature map, one family breakdown. No additional
+  objective or metric content; Axes and Objectives remain the places for those.
+- Verified by rendering the tab in headless Chrome and syntax-checking the inline JS.

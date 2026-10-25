@@ -166,6 +166,10 @@ def _payload(explorer):
     _dt = ROOT / "demo/data_tab.json"
     if _dt.exists():
         data_tab = json.loads(_dt.read_text())
+    encoder_tab = None
+    _et = ROOT / "demo/encoder_tab.json"
+    if _et.exists():
+        encoder_tab = json.loads(_et.read_text())
     cfg = _load("encoder_config.json") or {}
     data = _load("data_receipt.json") or {}
 
@@ -239,6 +243,7 @@ def _payload(explorer):
         "bprops": bprops,
         "bdata": bdata,
         "data_tab": data_tab,
+        "encoder_tab": encoder_tab,
         "runtime": rt,
         "explorer": explorer,
     }
@@ -476,6 +481,39 @@ td.num{text-align:right;font-variant-numeric:tabular-nums;font-family:ui-monospa
 .logtable td:nth-child(2){font-family:ui-monospace,monospace;font-size:10.5px;white-space:nowrap}
 .logtable td.attrs{font-family:ui-monospace,monospace;font-size:9.8px;line-height:1.5;
   color:var(--muted);min-width:440px;white-space:normal;word-break:break-word}
+.encflow{display:flex;gap:8px;align-items:stretch;margin-bottom:20px}
+.encstep{flex:1;min-width:0;border:1px solid var(--line);border-radius:8px;padding:14px 14px 12px;background:#fff}
+.encstep.last{border-color:var(--accent);background:#f7fefb}
+.encstep .n{font-family:ui-monospace,monospace;font-size:9px;color:var(--dim)}
+.encstep .t{font-size:13px;font-weight:600;margin-top:6px;letter-spacing:-.01em}
+.encstep .v{font-family:ui-monospace,monospace;font-size:17px;font-weight:600;margin-top:8px;letter-spacing:-.02em}
+.encstep .d{font-size:10.5px;color:var(--muted);margin-top:4px;line-height:1.45}
+.encarrow{display:flex;align-items:center;justify-content:center;flex:0 0 auto;color:var(--dim);font-size:14px}
+@media(max-width:900px){.encflow{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+  .encarrow{display:none}.encstep.last{grid-column:span 2}}
+.encgrid{display:grid;grid-template-columns:minmax(0,1.06fr) minmax(0,.94fr);gap:16px;align-items:start}
+@media(max-width:900px){.encgrid{grid-template-columns:1fr}}
+.shapehead{display:flex;justify-content:space-between;align-items:baseline;gap:16px;margin-bottom:14px;flex-wrap:wrap}
+.shapekey{font-family:ui-monospace,monospace;font-size:20px;font-weight:600;letter-spacing:-.02em}
+.shapemeta{color:var(--muted);font-size:11.5px}
+.featgrid{display:grid;grid-template-columns:repeat(16,minmax(0,1fr));gap:3px}
+.featcell{aspect-ratio:1;border-radius:2px;border:1px solid #fff}
+.featcell:hover{outline:1px solid var(--ink);outline-offset:1px}
+.featlegend{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:12px;color:var(--dim);
+  font-size:10.5px;font-family:ui-monospace,monospace}
+.featlegend .sw{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.featlegend .max{margin-left:auto;font-size:10px}
+.familyrow{margin-bottom:15px}
+.familyrow:last-child{margin-bottom:0}
+.familytop{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.familyname{font-size:13px;font-weight:600}
+.familydim{font-family:ui-monospace,monospace;font-size:11.5px;color:var(--muted)}
+.familybar{height:6px;background:var(--line2);border-radius:3px;overflow:hidden;margin:6px 0 4px}
+.familybar div{height:100%;border-radius:3px}
+.familynote{color:var(--dim);font-size:10.5px;line-height:1.45}
+.familytotal{display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid var(--line);
+  margin-top:18px;padding-top:12px;font-size:12px;color:var(--muted)}
+.familytotal b{font-family:ui-monospace,monospace;color:var(--ink);font-size:16px}
 .explorerchart{padding:18px;margin-bottom:28px}
 #scatter{display:block;width:100%;height:auto;background:#fff}
 .scatterfoot{display:flex;gap:22px;align-items:center;border-top:1px solid var(--line2);
@@ -573,6 +611,26 @@ footer{margin-top:56px;padding-top:18px;border-top:1px solid var(--line);color:v
       <div id="datastream"></div>
     </section>
 
+    <section id="encoder" hidden>
+      <h2>Encoder</h2>
+      <p class="lede">One event stream in, one frozen state out. Two continuous-time blocks learn a 128-dimensional shape; named feature families make the full state inspectable.</p>
+      <div class="encflow" id="encflow"></div>
+      <div class="encgrid">
+        <div class="panelbox">
+          <div class="cardtag">Shape feature map</div>
+          <div class="shapehead" id="shapehead"></div>
+          <div class="featgrid" id="featuremap"></div>
+          <div class="featlegend" id="featurelegend"></div>
+          <p class="note">One cell per frozen dimension. Hover for the dimension index and value.</p>
+        </div>
+        <div class="panelbox">
+          <div class="cardtag">Published state · feature families</div>
+          <div id="familybars"></div>
+          <p class="note" id="familynote"></p>
+        </div>
+      </div>
+    </section>
+
     <section id="axes" hidden>
       <h2>Eight content axes</h2>
       <p class="lede">What the frozen state carries, axis by axis. Each axis is a distinct property of the stream, measured on held-out customers.</p>
@@ -645,7 +703,7 @@ const INK="#111827", MUT="#6b7280", DIM="#9ca3af", LINE="#e5e7eb", ACC="#059669"
 const OBJSPEC = __OBJSPEC__;
 
 /* tabs */
-const TABS=[["overview","Overview"],["data","Data"],["axes","Axes"],["objectives","Objectives"],["plugins","Plugins"],["explorer","Explorer"]];
+const TABS=[["overview","Overview"],["data","Data"],["encoder","Encoder"],["axes","Axes"],["objectives","Objectives"],["plugins","Plugins"],["explorer","Explorer"]];
 const nav=$("#tabs");
 function activate(id,push){
   const known=TABS.some(([t])=>t===id)?id:TABS[0][0];
@@ -1005,6 +1063,87 @@ if(!DT){
 
   renderTable();
   renderStream();
+}
+
+/* ---------- encoder tab ---------- */
+const ENC=DATA.encoder_tab;
+if(!ENC){
+  const host=$("#encoder");
+  if(host) host.innerHTML="<h2>Encoder</h2><p class='lede'>Run <code>python3 scripts/build_encoder_tab.py</code> with the frozen cache available to build this tab.</p>";
+}else{
+  const m=DATA.meta;
+
+  function renderEncoder(){
+    const flow=$("#encflow"); flow.innerHTML="";
+    const steps=[
+      ["01","Event stream",(m.events/1e6).toFixed(2)+"M events",m.customers.toLocaleString()+" customers · "+ENC.event_types+" event types",false],
+      ["02","Field tokens","schema-derived","type · category · value · time · gap",false],
+      ["03","Sequence blocks",ENC.trunk.layers+" × "+ENC.trunk.width,"blocks · continuous time · residual",false],
+      ["04","Frozen shape",ENC.trunk.width+" dims","one vector per customer",false],
+      ["05","Published state",ENC.state_dim.toLocaleString()+" dims","shape + named feature blocks",true],
+    ];
+    steps.forEach(([n,t,v,d,last],i)=>{
+      const step=el("div","encstep"+(last?" last":""));
+      step.appendChild(el("div","n",n));
+      step.appendChild(el("div","t",t));
+      step.appendChild(el("div","v",v));
+      step.appendChild(el("div","d",d));
+      flow.appendChild(step);
+      if(i<steps.length-1) flow.appendChild(el("div","encarrow","→"));
+    });
+
+    $("#shapehead").innerHTML="";
+    const left=el("div");
+    left.appendChild(el("div","shapekey",ENC.customer));
+    left.appendChild(el("div","shapemeta",ENC.shape.length+" frozen dimensions"));
+    $("#shapehead").appendChild(left);
+    $("#shapehead").appendChild(el("div","shapemeta","norm "+Number(ENC.shape_norm).toFixed(2)+" · population mean "+Number(ENC.population_mean_norm).toFixed(2)));
+
+    const grid=$("#featuremap"); grid.innerHTML="";
+    const maxv=Math.max(...ENC.shape.map(v=>Math.abs(v)));
+    ENC.shape.forEach((v,i)=>{
+      const cell=el("div","featcell");
+      const a=Math.min(1,Math.abs(v)/(maxv||1));
+      cell.style.background=v>=0?`rgba(5,150,105,${0.10+0.80*a})`:`rgba(17,24,39,${0.06+0.62*a})`;
+      cell.title="dim "+i+" · "+Number(v).toFixed(4);
+      grid.appendChild(cell);
+    });
+
+    const legend=$("#featurelegend"); legend.innerHTML="";
+    const sw=(bg,border,name)=>{
+      const s=el("span");
+      const i=el("i","sw"); i.style.background=bg; if(border){i.style.border="1px solid var(--line)";}
+      s.appendChild(i); s.appendChild(document.createTextNode(name)); return s;
+    };
+    legend.appendChild(sw("rgba(17,24,39,.68)",false,"negative"));
+    legend.appendChild(sw("#ffffff",true,"zero"));
+    legend.appendChild(sw("rgba(5,150,105,.80)",false,"positive"));
+    legend.appendChild(el("span","max","max |value| "+maxv.toFixed(2)));
+
+    const bars=$("#familybars"); bars.innerHTML="";
+    const maxDim=Math.max(...ENC.families.map(f=>f.dim));
+    const colors={shape:"#059669",learned_state:"#374151",forecast:"#6b7280",uncertainty:"#9ca3af",heads:"#d1d5db"};
+    ENC.families.forEach(f=>{
+      const row=el("div","familyrow");
+      const top=el("div","familytop");
+      top.appendChild(el("div","familyname",f.label));
+      top.appendChild(el("div","familydim",f.dim.toLocaleString()+" dims"));
+      row.appendChild(top);
+      const bar=el("div","familybar"); const fill=el("div");
+      fill.style.width=(100*f.dim/maxDim)+"%";
+      fill.style.background=colors[f.id]||"#9ca3af";
+      bar.appendChild(fill); row.appendChild(bar);
+      row.appendChild(el("div","familynote",f.note));
+      bars.appendChild(row);
+    });
+    const total=el("div","familytotal");
+    total.appendChild(el("span",null,"Published state"));
+    total.appendChild(el("b",null,ENC.state_dim.toLocaleString()+" dims"));
+    bars.appendChild(total);
+    $("#familynote").textContent="Shape is the compact encoder output. The named blocks are exposed alongside it by the same frozen encoder.";
+  }
+
+  renderEncoder();
 }
 
 /* ---------- objectives ---------- */
