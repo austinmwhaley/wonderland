@@ -35,31 +35,16 @@ nav button.on{color:var(--ink);border-bottom-color:var(--ink)}
 section[hidden]{display:none}
 h2{font-size:21px;font-weight:600;margin:0 0 8px;letter-spacing:-.02em}
 .lede{color:var(--muted);font-size:14px;max-width:72ch;margin:0 0 34px}
-.pipeline{display:grid;grid-template-columns:minmax(0,1.05fr) 18px minmax(0,1.05fr) 18px minmax(0,1.05fr) 18px minmax(0,.95fr);
-  gap:10px;align-items:stretch;margin-bottom:26px}
-@media(max-width:900px){.pipeline{grid-template-columns:1fr}.pipeline-arrow{display:none}}
-.pipeline-step{border:1px solid var(--line);border-radius:8px;padding:12px 13px 8px;background:#fff;min-width:0}
-.pipeline-top{display:flex;justify-content:space-between;gap:10px;align-items:baseline;margin-bottom:4px}
-.pipeline-name{font-size:12px;font-weight:600}
-.pipeline-meta{font-family:ui-monospace,monospace;font-size:9.5px;color:var(--dim);white-space:nowrap}
-.pipeline-vis{height:96px;display:flex;align-items:center;justify-content:center}
-.pipeline-vis svg{display:block;width:100%;height:96px}
-.pipeline-arrow{display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:16px}
-.concepthead{display:flex;justify-content:space-between;align-items:baseline;gap:16px;flex-wrap:wrap;
-  border-top:1px solid var(--line);padding-top:22px;margin-bottom:14px}
-.concepts{display:grid;gap:20px}
-.conceptcard{border:1px solid var(--line);border-radius:8px;padding:16px 18px 12px}
-.concepttop{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:8px}
-.concepttitle{font-size:18px;font-weight:600;letter-spacing:-.02em;margin-top:2px}
-.conceptdesc{color:var(--muted);font-size:12px;margin-top:2px}
-.conceptcontrols{display:flex;gap:2px;border:1px solid var(--line);border-radius:8px;padding:3px;flex-wrap:wrap}
-.ctab{appearance:none;border:0;background:none;padding:7px 13px;border-radius:6px;font:inherit;
-  font-size:12px;color:var(--muted);cursor:pointer}
-.ctab:hover{color:var(--ink)}
-.ctab.on{background:var(--ink);color:#fff}
-.conceptbody{overflow-x:auto}
-.conceptbody svg{display:block;width:100%;height:auto}
-@media(max-width:800px){.conceptbody svg{min-width:700px}.concepttop{flex-wrap:wrap}}
+.flowsteps{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;border:1px solid var(--line);
+  border-radius:8px;padding:3px;max-width:760px;margin-bottom:14px;background:#fff}
+.fstep{appearance:none;border:0;background:none;padding:8px 6px;border-radius:6px;font:inherit;
+  font-size:11.5px;color:var(--muted);cursor:pointer;text-align:center;white-space:nowrap}
+.fstep:hover{color:var(--ink)}
+.fstep.on{background:var(--ink);color:#fff}
+.fstep.on.accent{background:var(--accent);color:#fff}
+.flowpanel{border:1px solid var(--line);border-radius:8px;padding:10px 14px;overflow-x:auto;background:#fff}
+.flowpanel svg{display:block;width:100%;height:auto}
+@media(max-width:800px){.flowsteps{font-size:10px}.fstep{font-size:10px}.flowpanel svg{min-width:700px}}
 .chartbar{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:8px}
 .charttag{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);font-weight:600}
 .chartlegend{display:flex;gap:14px;flex-wrap:wrap;color:var(--muted);font-size:11px}
@@ -121,7 +106,8 @@ th.num{text-align:right}
 .objitem.on{color:var(--ink)}
 .objitem.on .objlabel{font-weight:600}
 .objlabel{font-size:13.5px}
-.objpanel{border:1px solid var(--line);border-radius:8px;padding:26px}
+.objpanel{border:1px solid var(--line);border-radius:8px;padding:26px;display:flex;flex-direction:column}
+.objvisual{flex:1;display:flex;align-items:center;justify-content:center;min-height:180px}
 .objhead{display:flex;align-items:baseline;justify-content:space-between;gap:16px}
 .objhead h3{font-size:17px;margin:0;font-weight:600;letter-spacing:-.01em}
 .objdesc{color:var(--muted);font-size:13.5px;margin:6px 0 22px;max-width:56ch}
@@ -296,12 +282,9 @@ footer{margin-top:56px;padding-top:18px;border-top:1px solid var(--line);color:v
 
   <main>
     <section id="overview">
-      <h2>Input: Event Stream. Output: Foundation Model</h2>
-      <div class="pipeline" id="pipeline"></div>
-      <div class="concepthead">
-        <div class="cardtag">One state, three forms</div>
-      </div>
-      <div class="concepts" id="concepts"></div>
+      <h2>From tables to downstream heads.</h2>
+      <div class="flowsteps" id="flowsteps"></div>
+      <div class="flowpanel" id="flowbody"></div>
     </section>
 
     <section id="data" hidden>
@@ -445,120 +428,18 @@ function rect(x,y,w,h,fill,rx,stroke){const n=document.createElementNS(NS,"rect"
   if(stroke){n.setAttribute("stroke",stroke);n.setAttribute("stroke-width",1);}return n;}
 
 /* ---------- overview ---------- */
-const OV_DATA=DATA.data_tab;
 const OV_ENC=DATA.encoder_tab;
-const OV_EXP=DATA.explorer;
-let morphMode="state";
+const FLOW_STAGES=[["legacy","Legacy"],["stream","Event Stream"],["encoder","Encoder"],["state","Frozen State"],["plugins","Plugins"]];
+let flowStage=0, flowTimer=null;
 
 function addSvgTitle(node,text){
   const t=document.createElementNS(NS,"title"); t.textContent=text; node.appendChild(t); return node;
 }
-
-function miniStreamSVG(){
-  const W=220,H=96,pad=4,s=svg(W,H);
-  if(!OV_DATA||!OV_DATA.customers||!OV_DATA.customers.length) return s;
-  const c=OV_DATA.customers.find(x=>x.key==="rc0000208")||OV_DATA.customers[0];
-  const types=OV_DATA.types||[];
-  const rowH=(H-2*pad)/Math.max(1,types.length);
-  types.forEach((t,i)=>{
-    const y=pad+(i+0.5)*rowH;
-    s.appendChild(ln(pad,y,W-pad,y,{stroke:"#f3f4f6"}));
-  });
-  c.events.forEach(e=>{
-    const idx=types.findIndex(t=>t.id===e[1]);
-    if(idx<0) return;
-    const x=pad+(e[2]/OV_DATA.window_days)*(W-2*pad);
-    const y=pad+(idx+0.5)*rowH;
-    s.appendChild(dot(x,y,1.05,"rgba(17,24,39,.52)"));
-  });
-  s.appendChild(ln(pad,H-pad,W-pad,H-pad,{stroke:LINE}));
-  return s;
-}
-
-function miniEncoderSVG(){
-  const W=220,H=96,s=svg(W,H);
-  const layers=[
-    {x:18, ys:[30,42,54,66], fill:"#d1d5db"},
-    {x:66, ys:[17,29,41,53,65,77], fill:INK},
-    {x:114, ys:[17,29,41,53,65,77], fill:INK},
-    {x:162, ys:[17,29,41,53,65,77], fill:INK},
-    {x:204, ys:[30,42,54,66], fill:ACC},
-  ];
-  layers.slice(0,-1).forEach((a,li)=>{
-    const b=layers[li+1];
-    a.ys.forEach(y1=>b.ys.forEach(y2=>{
-      s.appendChild(ln(a.x,y1,b.x,y2,{stroke:"rgba(17,24,39,.09)",w:.7}));
-    }));
-  });
-  layers.forEach((layer,li)=>{
-    layer.ys.forEach(y=>{
-      s.appendChild(dot(layer.x,y,li===0?2.1:li===layers.length-1?2.6:2.3,layer.fill));
-    });
-  });
-  return s;
-}
-
-function miniStateSVG(){
-  const W=220,H=96,s=svg(W,H);
-  if(!OV_ENC||!OV_ENC.shape) return s;
-  const vals=OV_ENC.shape, maxv=Math.max(...vals.map(v=>Math.abs(v)))||1;
-  const cols=16, rows=8, cell=9, gap=1.4;
-  const x0=(W-(cols*cell+(cols-1)*gap))/2;
-  const y0=(H-(rows*cell+(rows-1)*gap))/2;
-  vals.slice(0,cols*rows).forEach((v,i)=>{
-    const x=x0+(i%cols)*(cell+gap), y=y0+Math.floor(i/cols)*(cell+gap);
-    const a=Math.min(1,Math.abs(v)/maxv);
-    s.appendChild(rect(x,y,cell,cell,v>=0?`rgba(5,150,105,${0.12+0.78*a})`:`rgba(17,24,39,${0.06+0.60*a})`,1.5));
-  });
-  return s;
-}
-
-function miniPluginsSVG(){
-  const W=220,H=96,s=svg(W,H);
-  const cx=110,cy=49,r=30;
-  const nodes=[
-    ["predict",-Math.PI/2],
-    ["retrieve",Math.PI/6],
-    ["act",5*Math.PI/6],
-  ];
-  nodes.forEach(([label,angle])=>{
-    const x=cx+r*Math.cos(angle), y=cy+r*Math.sin(angle);
-    s.appendChild(ln(cx,cy,x,y,{stroke:LINE}));
-    s.appendChild(dot(x,y,5.5,"#fff",ACC));
-    const ly=y+(Math.sin(angle)<-0.5?-10:14);
-    s.appendChild(tx(x,ly,label,{size:11,fill:MUT,anchor:"middle"}));
-  });
-  s.appendChild(dot(cx,cy,7,ACC));
-  return s;
-}
-
-function renderPipeline(){
-  const host=$("#pipeline"); host.innerHTML="";
-  const steps=[
-    ["stream","Event stream","one stream",miniStreamSVG],
-    ["encoder","Encoder","2 × "+m.d,miniEncoderSVG],
-    ["state","Frozen state",m.state_dim.toLocaleString()+" dims",miniStateSVG],
-    ["plugins","Plugins","3 families",miniPluginsSVG],
-  ];
-  steps.forEach(([key,name,meta,vis],i)=>{
-    const step=el("div","pipeline-step");
-    const top=el("div","pipeline-top");
-    top.appendChild(el("span","pipeline-name",name));
-    top.appendChild(el("span","pipeline-meta",meta));
-    step.appendChild(top);
-    const wrap=el("div","pipeline-vis"); wrap.appendChild(vis()); step.appendChild(wrap);
-    host.appendChild(step);
-    if(i<steps.length-1) host.appendChild(el("div","pipeline-arrow","→"));
-  });
-}
-
 function chartHeader(tag,items){
   const bar=el("div","chartbar");
   bar.appendChild(el("div","charttag",tag));
   const leg=el("div","chartlegend");
-  items.forEach(([label,cls])=>{
-    const span=el("span",cls,label); leg.appendChild(span);
-  });
+  items.forEach(([label,cls])=>leg.appendChild(el("span",cls,label)));
   bar.appendChild(leg); return bar;
 }
 function chartFoot(left,right){
@@ -566,76 +447,83 @@ function chartFoot(left,right){
   foot.appendChild(el("span",null,left)); foot.appendChild(el("span",null,right)); return foot;
 }
 
-function stateVals(){
-  return (OV_ENC&&OV_ENC.shape)||[];
-}
-function stateFill(v,maxv){
+function flowValues(){ return (OV_ENC&&OV_ENC.shape)||[]; }
+function flowFill(v,maxv){
   const a=Math.min(1,Math.abs(v)/(maxv||1));
   return v>=0?`rgba(5,150,105,${0.10+0.80*a})`:`rgba(17,24,39,${0.06+0.62*a})`;
 }
-function conceptCard(title,desc){
-  const card=el("div","conceptcard");
-  const top=el("div","concepttop");
-  const left=el("div");
-  left.appendChild(el("div","concepttitle",title));
-  left.appendChild(el("div","conceptdesc",desc));
-  top.appendChild(left); card.appendChild(top);
-  const body=el("div","conceptbody"); card.appendChild(body);
-  $("#concepts").appendChild(card);
-  return {card,top,body};
-}
-function conceptTabs(defs,onPick){
-  const wrap=el("div","conceptcontrols");
-  const buttons={};
-  defs.forEach(([id,label])=>{
-    const b=el("button","ctab",label); b.type="button";
-    b.onclick=()=>onPick(id);
-    buttons[id]=b; wrap.appendChild(b);
-  });
-  function paint(active){
-    Object.entries(buttons).forEach(([id,b])=>b.classList.toggle("on",id===active));
-  }
-  return {wrap,paint};
-}
-
-/* B — state morph */
-function morphPositions(){
-  const n=128, cell=9, gap=2;
-  const grid=[]; const x0=413,y0=167;
-  for(let i=0;i<n;i++) grid.push({x:x0+(i%16)*(cell+gap),y:y0+Math.floor(i/16)*(cell+gap)});
-  const predict=[];
-  for(let i=0;i<n;i++){
-    const wave=i%4,j=Math.floor(i/4),t=j/31;
-    predict.push({x:60+t*880,y:100+wave*80+Math.sin(t*Math.PI*2.2+wave*.9)*22});
-  }
-  const retrieve=[];
-  for(let i=0;i<n;i++){
-    const k=i%5,j=Math.floor(i/5),a0=-Math.PI/2+k*2*Math.PI/5;
-    const cx=500+Math.cos(a0)*135, cy=210+Math.sin(a0)*135;
-    const a=j*2.399963, r=4+Math.sqrt(j+1)*4.4;
-    retrieve.push({x:cx+Math.cos(a)*r,y:cy+Math.sin(a)*r});
-  }
-  const act=[];
-  for(let i=0;i<n;i++){
-    const branch=i%3,j=Math.floor(i/3),t=j/42;
-    act.push({x:80+t*840,y:210+(branch-1)*140*t+(branch===1?0:Math.sin(t*Math.PI*2)*7*(branch-1))});
-  }
-  return {state:grid,predict,retrieve,act};
-}
-function mountMorph(body,startMode="state"){
-  const W=1000,H=420,s=svg(W,H); body.appendChild(s);
-  const vals=stateVals(), maxv=Math.max(...vals.map(v=>Math.abs(v)))||1;
-  const rects=[];
+function flowPositions(){
+  const legacy=[], stream=[], encoder=[], state=[], heads=[];
   for(let i=0;i<128;i++){
-    const r=rect(0,0,9,9,stateFill(vals[i]||0,maxv),2);
-    s.appendChild(r); rects.push(r);
+    if(i<28){
+      const c=i%4,r=Math.floor(i/4); legacy.push({x:300+c*18,y:210+r*18});
+    }else if(i<68){
+      const j=i-28,c=j%8,r=Math.floor(j/8); legacy.push({x:430+c*18,y:225+r*18});
+    }else{
+      const j=i-68,c=j%10,r=Math.floor(j/10); legacy.push({x:600+c*18,y:220+r*18});
+    }
+    const srow=Math.floor(i/8),scol=i%8;
+    stream.push({x:422.5+scol*20,y:102.5+srow*20});
+    const layer=Math.floor(i/32),sub=i%32;
+    const lc=[160,390,620,850][layer];
+    encoder.push({x:lc-34.5+(sub%4)*18,y:189.5+Math.floor(sub/4)*18});
+    state.push({x:357.5+(i%16)*18,y:189.5+Math.floor(i/16)*18});
+    heads.push({x:157.5+(i%16)*18,y:189.5+Math.floor(i/16)*18});
   }
-  const pos=morphPositions();
-  let current=(pos[startMode]||pos.state).map(p=>({...p}));
+  return {legacy,stream,encoder,state,plugins:heads};
+}
+function flowOverlay(bg,fg,stage){
+  bg.innerHTML=""; fg.innerHTML="";
+  if(stage==="legacy"){
+    const tables=[[290,200,89,143,"customers"],[420,215,161,107,"orders"],[590,210,197,125,"events"]];
+    tables.forEach(([x,y,w,h,label])=>{
+      bg.appendChild(rect(x,y,w,h,"#fff",6,LINE));
+      fg.appendChild(tx(x+w/2,y-8,label,{size:10,fill:DIM,anchor:"middle"}));
+    });
+  }else if(stage==="stream"){
+    bg.appendChild(ln(408,102.5,408,417.5,{stroke:"#e5e7eb"}));
+    for(let r=0;r<16;r++){
+      const y=102.5+r*20+7.5;
+      bg.appendChild(ln(402,y,408,y,{stroke:"#e5e7eb"}));
+      if(r<15) bg.appendChild(ln(422.5,y+10,577.5,y+10,{stroke:"#f3f4f6"}));
+    }
+  }else if(stage==="encoder"){
+    const centers=[160,390,620,850];
+    centers.forEach(cx=>{
+      bg.appendChild(rect(cx-44.5,179.5,89,161,"#fff",6,LINE));
+    });
+    centers.slice(0,-1).forEach((cx,i)=>{
+      bg.appendChild(ln(cx+44.5,260,centers[i+1]-44.5,260,{stroke:"#d1d5db"}));
+    });
+  }else if(stage==="state"){
+    bg.appendChild(rect(347.5,179.5,305,161,"#fff",6,LINE));
+    fg.appendChild(tx(500,360,"frozen state",{size:9,fill:DIM,anchor:"middle"}));
+  }else if(stage==="plugins"){
+    bg.appendChild(rect(147.5,179.5,305,161,"#fff",6,LINE));
+    fg.appendChild(tx(300,360,"frozen state",{size:9,fill:DIM,anchor:"middle"}));
+    const nodes=[["value_90d",90],["orders_90d",180],["churn_90d",270],["lookalike",360],["action",450]];
+    nodes.forEach(([label,y])=>{
+      bg.appendChild(ln(452.5,260,700,y,{stroke:LINE}));
+      fg.appendChild(dot(700,y,5.5,"#fff",ACC));
+      fg.appendChild(tx(716,y+4,label,{size:10,fill:MUT}));
+    });
+  }
+}
+function mountFlow(body){
+  const W=1000,H=520,s=svg(W,H); body.appendChild(s);
+  const bg=document.createElementNS(NS,"g"); const cells=document.createElementNS(NS,"g"); const fg=document.createElementNS(NS,"g");
+  s.appendChild(bg); s.appendChild(cells); s.appendChild(fg);
+  const vals=flowValues(), maxv=Math.max(...vals.map(v=>Math.abs(v)))||1;
+  const rects=[]; const pos=flowPositions();
+  for(let i=0;i<128;i++){
+    const r=rect(0,0,15,15,flowFill(vals[i]||0,maxv),3);
+    cells.appendChild(r); rects.push(r);
+  }
+  let current=pos.legacy.map(p=>({...p}));
   const apply=p=>rects.forEach((r,i)=>{r.setAttribute("x",p[i].x);r.setAttribute("y",p[i].y);});
   apply(current);
-  return function animateTo(mode){
-    const target=pos[mode]||pos.state, start=current.map(p=>({...p})), t0=Date.now();
+  function animateTo(stage){
+    const target=pos[stage]||pos.legacy, start=current.map(p=>({...p})), t0=Date.now();
     function frame(){
       const t=Math.min(1,(Date.now()-t0)/650), e=t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
       current=start.map((p,i)=>({x:p.x+(target[i].x-p.x)*e,y:p.y+(target[i].y-p.y)*e}));
@@ -643,36 +531,37 @@ function mountMorph(body,startMode="state"){
       if(t<1) setTimeout(frame,16);
     }
     setTimeout(frame,0);
-  };
-}
-function renderMorphConcept(){
-  const c=conceptCard("State morph","The frozen state re-forms for each capability.");
-  const cycle=["state","predict","state","retrieve","state","act"];
-  let step=0, timer=null;
-  const tabs=conceptTabs([["state","State"],["predict","Predict"],["retrieve","Retrieve"],["act","Act"]],id=>{
-    const idx=cycle.indexOf(id);
-    if(idx>=0) step=idx;
-    moveTo(id); schedule();
-  });
-  c.top.appendChild(tabs.wrap);
-  const animate=mountMorph(c.body,morphMode);
-  function moveTo(mode){morphMode=mode;tabs.paint(mode);animate(mode);}
-  function schedule(){
-    clearTimeout(timer);
-    timer=setTimeout(()=>{step=(step+1)%cycle.length;moveTo(cycle[step]);schedule();},3000);
   }
-  tabs.paint(morphMode);
+  return {bg,fg,animateTo};
+}
+function renderFlow(){
+  const steps=$("#flowsteps"); steps.innerHTML="";
+  const body=$("#flowbody"); body.innerHTML="";
+  const flow=mountFlow(body);
+  const buttons={};
+  function setStage(index){
+    flowStage=index;
+    const stage=FLOW_STAGES[index][0];
+    Object.entries(buttons).forEach(([id,b])=>{
+      b.classList.toggle("on",id===stage);
+      b.classList.toggle("accent",id===stage&&stage!=="legacy");
+    });
+    flowOverlay(flow.bg,flow.fg,stage);
+    flow.animateTo(stage);
+  }
+  FLOW_STAGES.forEach(([id,label],i)=>{
+    const b=el("button","fstep",label); b.type="button";
+    b.onclick=()=>{setStage(i);schedule();};
+    buttons[id]=b; steps.appendChild(b);
+  });
+  function schedule(){
+    clearTimeout(flowTimer);
+    flowTimer=setTimeout(()=>{setStage((flowStage+1)%FLOW_STAGES.length);schedule();},3000);
+  }
+  setStage(0);
   schedule();
 }
-
-function renderConcepts(){
-  const host=$("#concepts"); host.innerHTML="";
-  renderMorphConcept();
-}
-function initOverview(){
-  renderPipeline();
-  renderConcepts();
-}
+function initOverview(){ renderFlow(); }
 initOverview();
 
 
@@ -1096,8 +985,8 @@ if(!ENC){
 
 /* ---------- objectives ---------- */
 function strip(spec){
-  const W=520,H=96,s=svg(W,H);
-  const n=11, x0=18, step=(W-36)/(n-1), y=44;
+  const W=520,H=116,s=svg(W,H);
+  const n=11, x0=18, step=(W-36)/(n-1), y=50;
   for(let i=0;i<n;i++){
     const x=x0+i*step, isT=spec.target.includes(i);
     if(isT){
@@ -1115,8 +1004,8 @@ function strip(spec){
     s.appendChild(ln(xa, y - 16, xb, y - 16, {stroke: ACC, dash: "3 3"}));
     s.appendChild(ln(xa,y-20,xa,y-12,{stroke:INK})); s.appendChild(ln(xb,y-20,xb,y-12,{stroke:INK}));
   }
-  s.appendChild(tx(18,y+52,"observed history",{size:9,fill:DIM}));
-  s.appendChild(tx(W-18,y+52,"target",{size:9,fill:ACC,anchor:"end"}));
+  s.appendChild(tx(18,y+42,"observed history",{size:9,fill:DIM}));
+  s.appendChild(tx(W-18,y+42,"target",{size:9,fill:ACC,anchor:"end"}));
   return s;
 }
 function objPanel(id){
@@ -1127,7 +1016,9 @@ function objPanel(id){
   head.appendChild(el("h3",null,spec.label));
   box.appendChild(head);
   box.appendChild(el("p","objdesc",spec.desc));
-  const ste=strip(spec); ste.setAttribute("width","100%"); box.appendChild(ste);
+  const visual=el("div","objvisual");
+  const ste=strip(spec); ste.setAttribute("width","100%"); visual.appendChild(ste);
+  box.appendChild(visual);
 }
 document.querySelectorAll(".objitem").forEach(b=>b.onclick=()=>objPanel(b.dataset.obj));
 objPanel("jepa");

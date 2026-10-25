@@ -1855,3 +1855,27 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - The underlying objective numbers remain in the receipts and payload for Axes and the report card;
   they are simply not displayed here.
 - Verified the Encoder objectives section in headless Chrome; ruff and node checks pass.
+
+## DEC-344 — Overview becomes a five-stage morph
+
+- Replaced the pipeline cards and the State Morph on Overview with one morphing flow of the real
+  128-cell state: Legacy → Event Stream → Encoder → Frozen State → Plugins.
+- The flow advances automatically every three seconds. Selecting a stage jumps to it and restarts
+  the timer.
+- The Plugins shape fans the frozen state out to value_90d, orders_90d, churn_90d, lookalike, and
+  action, so the Overview reads as one table-to-heads story.
+
+## DEC-345 — Event Stream is vertical and active stages are green
+
+- The Event Stream shape is now a tall 8 × 16 block of rows instead of a wide horizontal grid,
+  with a subtle time rail and row rules on its left. It is taller than it is wide.
+- The active stage chip uses ink for Legacy and accent green for Event Stream, Encoder, Frozen
+  State, and Plugins, matching the Data tab's Legacy / Event-stream slider colours.
+- Verified all five stages and the automatic sequence in headless Chrome; ruff and node checks pass.
+
+## DEC-346 — Objective detail timeline centred and fully visible
+
+- The Encoder objective detail panel now centres its abstract timeline in the remaining panel
+  height instead of leaving all the free space at the bottom.
+- Increased the timeline SVG height and lifted the labels so `observed history` and `target` are
+  no longer clipped by the bottom edge.
