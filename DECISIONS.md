@@ -2024,3 +2024,33 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   and the global policy-value benefit versus the table. The higher-benefit offer row is
   highlighted green; the note states that the policy benefit is global.
 - Added `offer_opt` to the explorer payload from the reference truth.
+
+## DEC-364 — Explorer Act table covers all five action families
+
+- Added the customer's known optimal frequency, hour bucket, and day of week from the reference
+  truth to the explorer payload.
+- The Act table now lists Channel, Offer, Frequency, Hour, and Day, each with the known choice
+  for this customer and a consistent benefit: 10-NN recovery of the known optimum versus the
+  table, in percentage points.
+- The table is sorted by benefit and the best row is highlighted green. The note states the
+  recovery protocol; the global policy-value comparisons remain in the Act workbench.
+
+## DEC-365 — Plugins starts with the three family cards only
+
+- Removed the “One frozen state · 2,265 dims” source card and its mini state glyph from Plugins.
+- The tab now opens directly on the three family cards: Predict, Retrieve, and Act.
+
+## DEC-366 — Overview gains a combined A→B→C position
+
+- Added an Overview position to the stage slider. It shows Event Stream → Encoder → Frozen State
+  → Heads in one image, using the real 128-cell state for the Frozen State block.
+- The Event Stream, Encoder, and Heads glyphs are static summaries; the state cells remain the
+  actual frozen shard.
+- The stage slider now has six positions and the Overview position is appended after Plugins.
+
+## DEC-367 — Encoder visual follows the actual two-layer stack
+
+- Reworked the Encoder stage into one unified block with two SSM layer bands of 64 cells each,
+  input stream on the left, a readout, and a 128-d state output on the right.
+- Added a compact two-layer encoder glyph to the combined Overview stage.
+- This replaces the four unlabelled columns that did not match the two-layer encoder in the code.

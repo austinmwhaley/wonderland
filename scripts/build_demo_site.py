@@ -47,6 +47,7 @@ def _explorer(n_customers=260, neighbours=5, seed=0):
     """Sample holdout customers: projection, lookalikes, timeline, truth."""
     import numpy as np
     import polars as pl
+    from rabbit_hole.generators.reference import HOUR_BUCKETS
     from sklearn.decomposition import PCA
 
     import frozen as F
@@ -123,6 +124,20 @@ def _explorer(n_customers=260, neighbours=5, seed=0):
                 "churn90": int(yc[idx]),
                 "channel": t.get("channel_pref"),
                 "offer_opt": int(t.get("offer_opt", 0) or 0),
+                "freq_opt": int(np.clip(round(float(t.get("x0") or 1.0)), 1, 3)),
+                "hour_opt": int(
+                    HOUR_BUCKETS[
+                        int(
+                            np.argmin(
+                                [
+                                    abs(float(t.get("h0") or HOUR_BUCKETS[0]) - b)
+                                    for b in HOUR_BUCKETS
+                                ]
+                            )
+                        )
+                    ]
+                ),
+                "dow_opt": int(np.clip(round(float(t.get("d0") or 0.0)), 0, 6)),
                 "category": t.get("category_pref"),
                 "regime": t.get("regime0"),
                 "return_proneness": round(float(t.get("return_proneness", 0.0)), 3),
@@ -325,7 +340,7 @@ nav button.on{color:var(--ink);border-bottom-color:var(--ink)}
 section[hidden]{display:none}
 h2{font-size:21px;font-weight:600;margin:0 0 8px;letter-spacing:-.02em}
 .lede{color:var(--muted);font-size:14px;max-width:72ch;margin:0 0 34px}
-.flowsteps{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;border:1px solid var(--line);
+.flowsteps{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:2px;border:1px solid var(--line);
   border-radius:8px;padding:3px;margin:16px 0 14px;background:#fff}
 .fstep{appearance:none;border:0;background:none;padding:8px 6px;border-radius:6px;font:inherit;
   font-size:11.5px;color:var(--muted);cursor:pointer;text-align:center;white-space:nowrap}
@@ -335,6 +350,7 @@ h2{font-size:21px;font-weight:600;margin:0 0 8px;letter-spacing:-.02em}
 .flowpanel{border:1px solid var(--line);border-radius:8px;padding:10px 14px;overflow-x:auto;background:#fff}
 .flowpanel svg{display:block;width:100%;height:auto}
 @media(max-width:800px){.flowsteps{font-size:10px}.fstep{font-size:10px}.flowpanel svg{min-width:700px}}
+@media(max-width:680px){.flowsteps{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .chartbar{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:8px}
 .charttag{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);font-weight:600}
 .chartlegend{display:flex;gap:14px;flex-wrap:wrap;color:var(--muted);font-size:11px}
@@ -346,14 +362,6 @@ h2{font-size:21px;font-weight:600;margin:0 0 8px;letter-spacing:-.02em}
 .chartlegend .other::before{background:#d1d5db}
 .chartlegend .channel::before{background:var(--ink)}
 .chartlegend .offer::before{background:#6b7280}
-.plugsource{display:flex;justify-content:space-between;align-items:center;gap:18px;
-  border:1px solid var(--line);border-radius:8px;padding:12px 16px;margin-bottom:12px}
-.plugsourcehead{display:flex;align-items:baseline;gap:12px}
-.plugsource .k{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);font-weight:600}
-.plugsource .v{font-family:ui-monospace,monospace;font-size:20px;font-weight:600;letter-spacing:-.03em}
-.plugsource .statevis{width:150px;height:42px;flex:0 0 auto}
-.plugsource .statevis svg{display:block;width:100%;height:42px}
-@media(max-width:560px){.plugsource .statevis{width:110px}}
 .pluggrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:16px}
 @media(max-width:900px){.pluggrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){.pluggrid{grid-template-columns:1fr}}
@@ -777,7 +785,7 @@ function path(d,o={}){const n=document.createElementNS(NS,"path");n.setAttribute
 
 /* ---------- overview ---------- */
 const OV_ENC=DATA.encoder_tab;
-const FLOW_STAGES=[["legacy","Legacy"],["stream","Event Stream"],["encoder","Encoder"],["state","Frozen State"],["plugins","Plugins"]];
+const FLOW_STAGES=[["legacy","Legacy"],["stream","Event Stream"],["encoder","Encoder"],["state","Frozen State"],["plugins","Plugins"],["overview","Overview"]];
 let flowStage=0;
 
 function addSvgTitle(node,text){
@@ -801,7 +809,7 @@ function flowFill(v,maxv){
   return v>=0?`rgba(5,150,105,${0.10+0.80*a})`:`rgba(17,24,39,${0.06+0.62*a})`;
 }
 function flowPositions(){
-  const legacy=[], stream=[], encoder=[], state=[], heads=[];
+  const legacy=[], stream=[], encoder=[], state=[], overview=[], heads=[];
   const tables=[
     [24,6,250,150],
     [32,8,390,150],
@@ -817,16 +825,21 @@ function flowPositions(){
   for(let i=0;i<128;i++){
     const srow=Math.floor(i/8),scol=i%8;
     stream.push({x:422.5+scol*20,y:102.5+srow*20});
-    const layer=Math.floor(i/32),sub=i%32;
-    const lc=[160,390,620,850][layer];
-    encoder.push({x:lc-34.5+(sub%4)*18,y:189.5+Math.floor(sub/4)*18});
+    const j=i<64?i:i-64,col=j%16,row=Math.floor(j/16);
+    encoder.push({x:358+col*18,y:(i<64?180:269)+row*18});
     state.push({x:357.5+(i%16)*18,y:189.5+Math.floor(i/16)*18});
+    overview.push({x:526+(i%8)*18,y:104+Math.floor(i/8)*18});
     heads.push({x:157.5+(i%16)*18,y:189.5+Math.floor(i/16)*18});
   }
-  return {legacy,stream,encoder,state,plugins:heads};
+  return {legacy,stream,encoder,state,overview,plugins:heads};
 }
 function flowOverlay(bg,fg,stage){
   bg.innerHTML=""; fg.innerHTML="";
+  const arrow=(x1,y1,x2,y2,color=ACC)=>{
+    fg.appendChild(ln(x1,y1,x2,y2,{stroke:color,w:1.2}));
+    fg.appendChild(ln(x2-6,y2-4,x2,y2,{stroke:color,w:1.2}));
+    fg.appendChild(ln(x2-6,y2+4,x2,y2,{stroke:color,w:1.2}));
+  };
   if(stage==="legacy"){
     const tables=[
       [250,150,6,4,"customers","6k"],
@@ -850,13 +863,23 @@ function flowOverlay(bg,fg,stage){
       if(r<15) bg.appendChild(ln(422.5,y+10,577.5,y+10,{stroke:"#f3f4f6"}));
     }
   }else if(stage==="encoder"){
-    const centers=[160,390,620,850];
-    centers.forEach(cx=>{
-      bg.appendChild(rect(cx-44.5,179.5,89,161,"#fff",6,LINE));
-    });
-    centers.slice(0,-1).forEach((cx,i)=>{
-      bg.appendChild(ln(cx+44.5,260,centers[i+1]-44.5,260,{stroke:"#d1d5db"}));
-    });
+    bg.appendChild(rect(110,140,80,220,"#fff",8,LINE));
+    bg.appendChild(ln(150,156,150,344,{stroke:"#e5e7eb"}));
+    for(let r=0;r<12;r++){
+      const yy=160+r*16;
+      bg.appendChild(ln(142,yy,150,yy,{stroke:"#e5e7eb"}));
+      bg.appendChild(dot(150,yy,2.2,r%4===0?ACC:"#d1d5db"));
+    }
+    fg.appendChild(tx(150,124,"Event Stream",{size:9,fill:DIM,anchor:"middle"}));
+    arrow(194,250,334,250);
+    bg.appendChild(rect(338,158,326,200,"#fff",8,LINE));
+    bg.appendChild(ln(350,259,652,259,{stroke:"#f3f4f6"}));
+    fg.appendChild(tx(501,144,"Encoder · 2 × gated SSM",{size:10,fill:MUT,anchor:"middle"}));
+    fg.appendChild(tx(348,174,"SSM 1",{size:8,fill:DIM}));
+    fg.appendChild(tx(348,263,"SSM 2",{size:8,fill:DIM}));
+    fg.appendChild(tx(710,246,"readout",{size:8,fill:DIM,anchor:"middle"}));
+    arrow(668,258,760,258);
+    fg.appendChild(tx(770,262,"128-d state",{size:10,fill:ACC}));
   }else if(stage==="state"){
     bg.appendChild(rect(347.5,179.5,305,161,"#fff",6,LINE));
     fg.appendChild(tx(500,360,"frozen state",{size:9,fill:DIM,anchor:"middle"}));
@@ -868,6 +891,35 @@ function flowOverlay(bg,fg,stage){
       bg.appendChild(ln(452.5,260,700,y,{stroke:LINE}));
       fg.appendChild(dot(700,y,5.5,"#fff",ACC));
       fg.appendChild(tx(716,y+4,label,{size:10,fill:MUT}));
+    });
+  }else if(stage==="overview"){
+    fg.appendChild(tx(145,74,"Event Stream",{size:10,fill:MUT,anchor:"middle"}));
+    fg.appendChild(tx(360,74,"Encoder",{size:10,fill:MUT,anchor:"middle"}));
+    fg.appendChild(tx(596,74,"Frozen State",{size:10,fill:MUT,anchor:"middle"}));
+    fg.appendChild(tx(860,74,"Heads",{size:10,fill:MUT,anchor:"middle"}));
+    bg.appendChild(rect(105,96,80,320,"#fff",8,LINE));
+    bg.appendChild(ln(145,112,145,400,{stroke:"#e5e7eb"}));
+    for(let r=0;r<15;r++){
+      const yy=114+r*19;
+      bg.appendChild(ln(137,yy,145,yy,{stroke:"#e5e7eb"}));
+      bg.appendChild(dot(145,yy,2.2,r%4===0?ACC:"#d1d5db"));
+    }
+    bg.appendChild(rect(275,150,170,220,"#fff",8,LINE));
+    fg.appendChild(tx(360,138,"2 × SSM",{size:8,fill:DIM,anchor:"middle"}));
+    [167,267].forEach((y0,i)=>{
+      bg.appendChild(rect(289,y0,142,80,"#f9fafb",6,LINE));
+      fg.appendChild(tx(360,y0+14,"SSM "+(i+1),{size:7,fill:DIM,anchor:"middle"}));
+      for(let l=1;l<=3;l++) bg.appendChild(ln(299,y0+14+l*16,421,y0+14+l*16,{stroke:"#eef0f3"}));
+    });
+    arrow(190,250,270,250);
+    arrow(450,250,510,250);
+    bg.appendChild(rect(514,92,165,309,"#fff",8,LINE));
+    fg.appendChild(tx(596,416,"128-d",{size:8,fill:DIM,anchor:"middle"}));
+    const nodes=[["value_90d",110],["orders_90d",170],["churn_90d",230],["lookalike",290],["action",350]];
+    nodes.forEach(([label,y])=>{
+      bg.appendChild(ln(679,250,770,y,{stroke:LINE}));
+      fg.appendChild(dot(770,y,5.5,"#fff",ACC));
+      fg.appendChild(tx(782,y+4,label,{size:10,fill:MUT}));
     });
   }
 }
@@ -1585,22 +1637,6 @@ function pluginMoney(v){
   return "$"+Number(v).toLocaleString("en-US",{maximumFractionDigits:1});
 }
 
-function plugStateMini(){
-  const W=180,H=54,s=svg(W,H);
-  const vals=(OV_ENC&&OV_ENC.shape)||[];
-  if(!vals.length) return s;
-  const cols=16,rows=8,cell=5,gap=1.2;
-  const x0=(W-(cols*cell+(cols-1)*gap))/2;
-  const y0=(H-(rows*cell+(rows-1)*gap))/2;
-  const maxv=Math.max(...vals.map(v=>Math.abs(v)))||1;
-  vals.slice(0,cols*rows).forEach((v,i)=>{
-    const x=x0+(i%cols)*(cell+gap), y=y0+Math.floor(i/cols)*(cell+gap);
-    const a=Math.min(1,Math.abs(v)/maxv);
-    s.appendChild(rect(x,y,cell,cell,v>=0?`rgba(5,150,105,${0.12+0.78*a})`:`rgba(17,24,39,${0.06+0.60*a})`,1));
-  });
-  return s;
-}
-
 function miniOutcomeSVG(){
   const W=240,H=42,pad=8,s=svg(W,H);
   const keys=["value90","orders90","churn90"], rowH=(H-2*pad)/keys.length;
@@ -1660,14 +1696,6 @@ function miniActSVG(){
 
 function renderPluginsMap(){
   const host=$("#plugmap"); host.innerHTML="";
-  const source=el("div","plugsource");
-  const head=el("div","plugsourcehead");
-  head.appendChild(el("div","k","One frozen state"));
-  head.appendChild(el("div","v",Number(OV_ENC?OV_ENC.state_dim:m.state_dim).toLocaleString()+" dims"));
-  source.appendChild(head);
-  const statevis=el("div","statevis"); statevis.appendChild(plugStateMini()); source.appendChild(statevis);
-  host.appendChild(source);
-
   const grid=el("div","pluggrid");
   const makeCard=(id,title,desc,mini)=>{
     const b=el("button","plugcard"+(pluginMode===id?" on":""));
@@ -1992,26 +2020,27 @@ if(!EXP||!EXP.customers||!EXP.customers.length){
     ["Action","Choice","Benefit"].forEach((label,i)=>ahr.appendChild(el("th",i?"r":null,label)));
     ahead.appendChild(ahr); atable.appendChild(ahead);
     const abody=el("tbody");
-    const pol=DATA.rl_policy||{};
+    const known=DATA.rl_known||{};
+    const channelNames={direct_mail:"Direct mail",email:"Email",push:"Push",sms:"SMS"};
+    const dowNames=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
     [
+      ["Channel",channelNames[c.channel]||c.channel,"channel"],
       ["Offer","Tier "+c.offer_opt,"offer"],
-      ["Channel",c.channel,"channel"],
-    ].filter(([, ,key])=>pol[key]&&pol[key].E&&pol[key].table)
-      .map(([label,choice,key])=>{
-        const r=pol[key];
-        const gain=(Number(r.E.ips)-Number(r.table.ips))/Number(r.table.ips)*100;
-        return {label,choice,gain};
-      })
+      ["Frequency",c.freq_opt+(c.freq_opt===1?" send":" sends"),"freq"],
+      ["Hour",String(c.hour_opt).padStart(2,"0")+":00","hour"],
+      ["Day",dowNames[c.dow_opt],"dow"],
+    ].filter(([, ,key])=>known[key])
+      .map(([label,choice,key])=>({label,choice,gain:(Number(known[key].E)-Number(known[key].table))*100}))
       .sort((a,b)=>b.gain-a.gain)
       .forEach(({label,choice,gain},i)=>{
         const tr=el("tr",i===0?"primary":null);
         tr.appendChild(el("td","k",label));
         tr.appendChild(el("td","v r",choice));
-        tr.appendChild(el("td","s good","+"+gain.toFixed(1)+"%"));
+        tr.appendChild(el("td","s good",(gain>=0?"+":"")+gain.toFixed(1)+" pts"));
         abody.appendChild(tr);
       });
     atable.appendChild(abody); act.appendChild(atable);
-    act.appendChild(el("div","capnote","Known optima · policy value vs table (global)"));
+    act.appendChild(el("div","capnote","Known optima · recovery vs table (10-NN)"));
     caps.appendChild(act);
     card.appendChild(caps);
 
