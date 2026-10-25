@@ -826,7 +826,7 @@ function flowPositions(){
     const srow=Math.floor(i/8),scol=i%8;
     stream.push({x:422.5+scol*20,y:102.5+srow*20});
     const j=i<64?i:i-64,col=j%16,row=Math.floor(j/16);
-    encoder.push({x:358+col*18,y:(i<64?180:269)+row*18});
+    encoder.push({x:263+col*30,y:(i<64?140:284)+row*30,s:24});
     state.push({x:357.5+(i%16)*18,y:189.5+Math.floor(i/16)*18});
     overview.push({x:526+(i%8)*18,y:104+Math.floor(i/8)*18});
     heads.push({x:157.5+(i%16)*18,y:189.5+Math.floor(i/16)*18});
@@ -863,23 +863,11 @@ function flowOverlay(bg,fg,stage){
       if(r<15) bg.appendChild(ln(422.5,y+10,577.5,y+10,{stroke:"#f3f4f6"}));
     }
   }else if(stage==="encoder"){
-    bg.appendChild(rect(110,140,80,220,"#fff",8,LINE));
-    bg.appendChild(ln(150,156,150,344,{stroke:"#e5e7eb"}));
-    for(let r=0;r<12;r++){
-      const yy=160+r*16;
-      bg.appendChild(ln(142,yy,150,yy,{stroke:"#e5e7eb"}));
-      bg.appendChild(dot(150,yy,2.2,r%4===0?ACC:"#d1d5db"));
-    }
-    fg.appendChild(tx(150,124,"Event Stream",{size:9,fill:DIM,anchor:"middle"}));
-    arrow(194,250,334,250);
-    bg.appendChild(rect(338,158,326,200,"#fff",8,LINE));
-    bg.appendChild(ln(350,259,652,259,{stroke:"#f3f4f6"}));
-    fg.appendChild(tx(501,144,"Encoder · 2 × gated SSM",{size:10,fill:MUT,anchor:"middle"}));
-    fg.appendChild(tx(348,174,"SSM 1",{size:8,fill:DIM}));
-    fg.appendChild(tx(348,263,"SSM 2",{size:8,fill:DIM}));
-    fg.appendChild(tx(710,246,"readout",{size:8,fill:DIM,anchor:"middle"}));
-    arrow(668,258,760,258);
-    fg.appendChild(tx(770,262,"128-d state",{size:10,fill:ACC}));
+    bg.appendChild(rect(249,116,502,296,"#fff",8,LINE));
+    bg.appendChild(ln(263,269,737,269,{stroke:"#f3f4f6"}));
+    fg.appendChild(tx(500,100,"Encoder · 2 × gated SSM",{size:10,fill:MUT,anchor:"middle"}));
+    fg.appendChild(tx(263,134,"SSM 1",{size:8,fill:DIM}));
+    fg.appendChild(tx(263,278,"SSM 2",{size:8,fill:DIM}));
   }else if(stage==="state"){
     bg.appendChild(rect(347.5,179.5,305,161,"#fff",6,LINE));
     fg.appendChild(tx(500,360,"frozen state",{size:9,fill:DIM,anchor:"middle"}));
@@ -935,9 +923,11 @@ function mountFlow(body){
   }
   let current=pos.legacy.map(p=>({...p,a:0}));
   const apply=p=>rects.forEach((r,i)=>{
+    const size=p[i].s||15;
     r.setAttribute("x",p[i].x); r.setAttribute("y",p[i].y);
+    r.setAttribute("width",size); r.setAttribute("height",size);
     const a=p[i].a||0;
-    if(a) r.setAttribute("transform",`rotate(${a.toFixed(2)} ${(p[i].x+7.5).toFixed(2)} ${(p[i].y+7.5).toFixed(2)})`);
+    if(a) r.setAttribute("transform",`rotate(${a.toFixed(2)} ${(p[i].x+size/2).toFixed(2)} ${(p[i].y+size/2).toFixed(2)})`);
     else r.removeAttribute("transform");
   });
   apply(current);
@@ -955,6 +945,7 @@ function mountFlow(body){
       const wob=(rnd(i,seed)-0.5)*2, mag=dist*(0.22+0.55*rnd(i,seed+1));
       return {
         p, t,
+        s0:p.s||15, s1:t.s||15,
         cx:(p.x+t.x)/2+nx*mag*wob+(rnd(i,seed+2)-0.5)*60,
         cy:(p.y+t.y)/2+ny*mag*wob+(rnd(i,seed+3)-0.5)*60,
         delay:rnd(i,seed+4)*90,
@@ -974,6 +965,7 @@ function mountFlow(body){
         return {
           x:u*u*o.p.x+2*u*e*o.cx+e*e*o.t.x,
           y:u*u*o.p.y+2*u*e*o.cy+e*e*o.t.y,
+          s:o.s0+(o.s1-o.s0)*e,
           a:o.spin*Math.sin(Math.PI*e),
         };
       });

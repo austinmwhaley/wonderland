@@ -2054,3 +2054,12 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   input stream on the left, a readout, and a 128-d state output on the right.
 - Added a compact two-layer encoder glyph to the combined Overview stage.
 - This replaces the four unlabelled columns that did not match the two-layer encoder in the code.
+
+## DEC-368 — Encoder stage is isolated to the encoder only
+
+- Removed the Event Stream input column, readout label, output arrow, and 128-d state label from
+  the Encoder stage in the Overview morph. The stage now shows only the two-layer gated-SSM block.
+- Enlarged the isolated block to a 500 × 296 panel footprint so it uses the stage without
+  reintroducing input/output context.
+- The combined Overview position still carries the full Event Stream → Encoder → Frozen State →
+  Heads story; the boundary between the focused Encoder stage and the summary is now explicit.
