@@ -438,7 +438,7 @@ def render(payload) -> str:
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>wonderland — frozen customer foundation model</title>
+<title>demo</title>
 <style>
 :root{
   --ink:#111827; --muted:#6b7280; --dim:#9ca3af; --line:#e5e7eb; --line2:#f3f4f6;
@@ -526,7 +526,7 @@ footer{margin-top:56px;padding-top:18px;border-top:1px solid var(--line);color:v
 <body>
 <div class="wrap">
   <header>
-    <h1>wonderland</h1>
+    <h1>demo</h1>
     <div class="sub">A frozen foundation model for customer event streams</div>
   </header>
 
@@ -605,7 +605,7 @@ footer{margin-top:56px;padding-top:18px;border-top:1px solid var(--line);color:v
   </main>
 
   <footer>
-    <div>wonderland · frozen customer foundation model</div>
+    <div>demo</div>
     <div id="foot"></div>
   </footer>
 </div>

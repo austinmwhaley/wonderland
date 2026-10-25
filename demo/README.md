@@ -1,4 +1,4 @@
-# wonderland — interactive demo
+# demo
 
 A single self-contained, flat light-theme HTML page presenting the result: one frozen
 self-supervised encoder per event stream, reused by supervised, unsupervised, and
