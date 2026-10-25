@@ -1885,3 +1885,124 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - Removed the 760 px cap on the Overview stage selector so all five positions stretch across the
   full width of the flow panel below, giving the Overview a single top rail over the visual.
 - Verified in headless Chrome at 1300 px, including the Legacy ink and Event Stream green states.
+
+## DEC-348 — Every Encoder objective gets its own abstract sketch
+
+- Replaced the shared timeline strip with ten distinct, unlabelled schematics: pooled future
+  states for JEPA, a masked slot for Masked event, a look-back arrow for Order, linked identity
+  tokens for Entity, a measured interval for Query, a fading future trail for Successor, a wide
+  bracket for Gap, magnitude bars, a grouped summary for Aggregate, and a branching next event.
+- The sketch still uses only the shared vocabulary of ink history dots, green target marks, and
+  faint future guides; no internal objective ids or skill numbers appear.
+- Verified all ten sketches in headless Chrome; ruff and node checks pass.
+
+## DEC-349 — Predict shows relative percentage gains
+
+- Predict bar labels now show `(frozen − table) / table` as a signed percentage, one decimal,
+  in accent green. The chart footer reads "green = % better than table".
+- Values appear alongside the absolute bar lengths and remain on hover.
+- Verified value_90d, orders_90d, and churn_90d in headless Chrome.
+
+## DEC-350 — Explorer is a rotatable 3D projection
+
+- The explorer uses three PCA components from the standardized frozen state instead of two, with
+  a weak-perspective projection, depth-scaled point sizes, depth-dependent opacity, and a faint
+  projected bounding cube.
+- Dragging rotates yaw and pitch; clicking a point selects it and redraws its five neighbour lines.
+- Verified the initial 3D view, a rotated view, and point selection in headless Chrome.
+
+## DEC-351 — Explorer detail is one customer card
+
+- Replaced the separate stats/profile/history/neighbour panels with one bordered customer card.
+- The card shows Predict (held-out value, orders, churn with percentile context), Retrieve (five
+  nearest neighbours plus lookalike mean and churn agreement), Act (global channel/offer policy
+  value in IPS percentage terms), recent history, and profile in a single area.
+- Act is explicitly labelled as a global policy family, not a per-customer recommendation.
+- Verified the default customer and a newly selected customer in headless Chrome.
+
+## DEC-352 — Overview is manual-only and opens on Legacy
+
+- Removed the "From tables to downstream heads." heading so the stage slider and flow panel are
+  the first elements in the Overview, with a small top margin for breathing room.
+- Removed the three-second auto-advance timer entirely. The Overview opens on Legacy and changes
+  only when a stage is selected.
+- Updated the README to describe the manual flow.
+
+## DEC-353 — Customer card header keeps only the identifier and outcome
+
+- Removed the "360 events · sms · apparel · browse" subheader from the Explorer customer card;
+  those facts are already represented in the card's profile area.
+- Added total events to the profile grid so the event count is still available after the header
+  simplification.
+
+## DEC-354 — Overview Legacy shows the full source-table catalogue
+
+- Replaced the three generic Legacy boxes with the seven real relational source tables:
+  customers, orders, order_items, support, returns, products, and campaigns.
+- Each table has its real row count (6k, 385k, 385k, 205k, 46k, 80, 24) and is drawn as a
+  mini table made from the same 128 state cells.
+- Removed the Events block from Legacy: events belong to the following Event Stream stage, not
+  the legacy table catalogue.
+
+## DEC-355 — Objectives use one shared visual grammar
+
+- All ten objective sketches now share the same 11-slot timeline, cut marker, observed/target
+  legend, target halos, and footer labels.
+- Each objective keeps one task glyph in the same upper band: pooling for JEPA, a masked slot,
+  a look-back arrow for Order, identity links for Entity, an interval for Query, a fading trail
+  for Successor, a gap bracket, magnitude bars, grouped aggregation, and a branching next event.
+- This keeps the images distinct while making the observed-history → target structure instantly
+  comparable across objectives.
+
+## DEC-356 — Content axes mirror the objectives panel
+
+- Rebuilt the eight-axis detail as a full-width bordered panel with the same padding and visual
+  hierarchy as the objective panel: axis id/name, large metric, one-line description, full-width
+  visual, then three short notes.
+- Kept the eight axis subtabs at the top. Moved the chart to a 900 × 280 viewBox and removed
+  duplicate in-chart metric labels that are already shown in the header.
+- Verified Shape, Causal, Order / Path, and Relational in headless Chrome.
+
+## DEC-357 — Act becomes an action-family workbench
+
+- Added five action subtabs: Channel, Offer, Frequency, Hour, and Day. Each tab says what the
+  action is and why its levels mean something.
+- Known effect is presented as 10-NN purity for the table policy versus the frozen state, with
+  the point gain (`+37.3 pts` for Channel, etc.) and labelled baselines.
+- Channel and Offer also show IPS policy value for random, table, and frozen policies, plus the
+  relative gain versus both random and table. Actions without a logged policy estimate show only
+  their known-effect comparison.
+- Removed the crowded combined dumbbell and slope charts.
+
+## DEC-358 — Data event timeline gets a real date axis
+
+- Added monthly vertical guides with quarterly labels and explicit window start/end dates
+  (Jan 2024 → Jun 2025 for the current 540-day window).
+- Kept the row labels and event dots unchanged; hover details still expose the raw timestamp
+  and attributes.
+- Verified the Event-stream view in headless Chrome.
+
+## DEC-359 — Act copy tightened
+
+- Removed the explanatory intro and the repeated notes under Known effect / Policy value.
+- Kept the five action tabs, their short subtitles, one-line action descriptions, the recovery
+  bars, the policy stat cards, and the versus-table/random pills.
+- Act now reads as a compact workbench rather than a paragraph followed by charts.
+
+## DEC-360 — Explorer point clicks restored
+
+- Removed pointer capture from the drag start. Capture retargeted the browser click to the SVG
+  element, so the per-point hit circles never received a click.
+- Renamed the Data tab's row-selection function to `selectData` so it cannot collide with the
+  Explorer's `select` function in the shared script scope.
+- Verified with real browser mouse input: clicking a cloud point selects it and updates the
+  customer card.
+
+## DEC-361 — Flow morph is chaotic and fluid
+
+- Each state cell now follows its own quadratic curve with a per-cell lateral offset, random
+  start delay, random duration, and a small mid-flight rotation.
+- Reduced the maximum start delay and switched to smoother cubic easing so the transition reads
+  as one continuous swarm rather than block-by-block movement.
+- Verified real-time frames: cells leave the table layout progressively, reach the frozen-state
+  grid, and settle cleanly.
