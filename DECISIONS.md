@@ -1195,3 +1195,22 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - Immediate next steps: Phase 0 evidence identity repair; Phase 1 direct stream lifecycle;
   Phase 2 artifact-consistent measurement. RL bootstrap repair is a distinct later workstream,
   not the whole plan.
+
+## DEC-301 — Phase 0 accepted: run manifest makes the card self-identifying
+
+- Problem: `encoder_config.json` reported `axes: ["noaction"]` while every other receipt came from
+  the baseline cache, because the last battery process to run dictated the card's config. That is
+  a provenance bug: the card could label a run it did not measure.
+- Change: `scripts/frozen.py` writes `<cache>.manifest.json` at build time, containing data path
+  and revision, seed, axes, epochs, d/layers/e, state layout and dimensions, as_of, field-role
+  sources, best validation, git SHA, build timestamp, and the cache's SHA-256. `assert_axes`
+  refuses to mix a cache with a differently-configured process. `measure_battery.py` now derives
+  `encoder_config.json` from that manifest instead of from its own process, and the card header
+  prints the manifest name, cache hash, build time, and commit.
+- Verification: rebuilt `frozen_6k` from source (`62f5...` lineage), manifest shows
+  `axes: []`, layout 128 + 1152/127/23/835 = 2265, and the regenerated card reports
+  `axes baseline` with cache `88effcc54147`. Card remains B 28/28, B+C 6/6.
+- Tests: `tests/test_run_manifest.py` covers matching, mismatched, and order-insensitive axes,
+  plus manifest path adjacency.
+- Principles: Honest (no card claim without an identified artifact), Robust (refuse to mix runs),
+  Diagnosable (provenance printed in the card).

@@ -384,6 +384,12 @@ def main():
     )
     A("- **Data:** synthetic relational reference (6k) · harness, no business data.")
     cfg = docs.get("encoder_config.json") or {}
+    if cfg.get("manifest"):
+        A(
+            f"- **Run artifact:** `{Path(cfg.get('manifest')).name}` · cache "
+            f"`{cfg.get('cache_sha256', 'n/a')[:12]}` · built `{cfg.get('built_at', 'n/a')}` "
+            f"at `{cfg.get('git_sha', 'n/a')}`."
+        )
     if cfg:
         A(
             f"- **Encoder config:** axes `{','.join(cfg.get('axes') or []) or 'baseline'}` · "

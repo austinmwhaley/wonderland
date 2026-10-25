@@ -244,21 +244,33 @@ def main():
     (outdir / f"battery_{args.tag}.json").write_text(json.dumps(res, indent=1) + "\n")
     if args.tag == "baseline":
         OUT.write_text(json.dumps(res, indent=1) + "\n")
+    # Config comes from the CACHE's run manifest, not from this process. That is
+    # what prevents a differently-configured battery from relabelling the card.
+    man = F.assert_axes(args.frozen, AE.AXES)
     cfg = {
-        "axes": sorted(AE.AXES),
-        "E_dim": int(E.shape[1]),
-        "BLK_dim": int(BLK.shape[1]),
-        "state_dim": int(E.shape[1] + BLK.shape[1]),
-        "hist_dim": int(vs.get("hist_dim", 0)),
-        "n_read": int(model.n_read),
-        "d": int(model.d),
-        "layers": int(len(model.ssm)),
-        "e": int(model.ssm[0].e),
+        k: man.get(k)
+        for k in (
+            "axes",
+            "seed",
+            "data",
+            "d",
+            "layers",
+            "e",
+            "n_read",
+            "E_dim",
+            "BLK_dim",
+            "state_dim",
+            "git_sha",
+            "built_at",
+            "cache_sha256",
+        )
     }
+    cfg["hist_dim"] = int(vs.get("hist_dim", 0))
+    cfg["manifest"] = str(F.manifest_path(args.frozen))
     (ROOT / "docs/report_cards/experiments/encoder_config.json").write_text(
         json.dumps(cfg, indent=1) + "\n"
     )
-    print("WROTE", outdir / f"battery_{args.tag}.json", "and encoder_config.json")
+    print("WROTE", outdir / f"battery_{args.tag}.json", "and encoder_config.json (from manifest)")
 
 
 if __name__ == "__main__":
