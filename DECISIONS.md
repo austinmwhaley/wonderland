@@ -1322,3 +1322,21 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   seven views (128/1152/835/23/127/734/2265), all finite, 6,000 entities.
 - Principles: Universal (stream is sufficient to fit), Honest (absent baselines are reported as
   absent), Modularity (evaluation no longer constrains training input).
+
+## DEC-308 — PLAN.md rewritten for the full post-Layer-0 forward path
+
+- Context: the current baseline has a working frozen artifact, frozen-schema serving, lawful
+  measure state, train-only view selection, a repaired RL response evaluator, and corrected
+  cold/warm runtime measurements. The primary card is B 28/28 and B+C 6/6; the audit is 26/3.
+- Decision: overwrote PLAN.md with a complete forward plan grounded in those results. It preserves
+  completed assets, explains the design alternatives (one vector vs views, learned vs exact
+  measure, full vs train-only selection, action masking, selective retention, capacity, RL data,
+  batching, and Layer-1 timing), and sequences the remaining work: canonical lifecycle
+  unification, artifact-consistent consumers, one measured quality improvement, then RL/performance
+  and separate Layer-1 research.
+- Principles: Universal/Generic (raw canonical input), Adaptive (derived configuration and small
+  screens), Lawful (exact measure), Accessible (named views), Honest (no gate changes, no
+  test-set view selection, no E-only overclaim), Efficient (no repeated rejected sweeps).
+- Immediate next steps: Loop A canonical lifecycle unification; Loop B artifact-consistent
+  consumers; Loop C one measured quality improvement. No new architecture sweep is authorized by
+  this plan.

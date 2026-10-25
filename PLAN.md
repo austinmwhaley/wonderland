@@ -1,99 +1,116 @@
-# PLAN.md — wonderland: completion and hardening plan
+# PLAN.md — wonderland: forward plan from the current baseline
 
-> **Status:** rewritten after the Layer-0 implementation and measurement loops.
+> **Purpose:** a complete, principle-aligned plan for reaching the project goal from where the
+> repository is now. It records the current evidence, the design alternatives considered, why
+> they were accepted or rejected, and the remaining work in execution order.
 >
-> This is the complete forward plan for the project, not a reaction to one experiment or one
-> metric. It covers the public product contract, encoder quality, generic/adaptive behavior,
-> lawful state construction, supervised/unsupervised/RL consumers, performance, evidence,
-> and the demo.
+> **Read before acting:** `AGENTS.md`, this file, `STATUS.md`, `DECISIONS.md`,
+> `REPORT_CARD.md`, and `docs/AUDIT_CARD.md`. `AGENTS.md` always wins over this plan.
 >
-> Read `AGENTS.md` first. It always overrides this document. Also read `STATUS.md`,
-> `DECISIONS.md`, `REPORT_CARD.md`, and `docs/AUDIT_CARD.md` before changing anything.
-
-## Phase status (as executed)
-
-| Phase | State |
-|---|---|
-| 0 — Evidence identity (`frozen.py` run manifest, provenance guard) | **DONE** |
-| 1 — Direct stream → fit/transform artifact (`stream_adapter.py`, `FrozenFoundation`) | **DONE** |
-| 2 — Train-only view selection (`scripts/select_views.py`) | **DONE** |
-| 3 — Encoder quality/adaptivity | **PARTIAL**: 3C fail-safe load and 3D receipted config fallback done; 3A/3B measured and **rejected** at 6k, recorded as open quality items |
-| 4 — Performance | **DONE (measurement corrected)**: forward was cold-compile-bound, not steady-state |
-| 5 — RL evidence | **DONE**: degenerate control replaced by the uniform policy; intervals guarded |
-| 6 — Final verification/demo | **DONE**: card B 28/28, B+C 6/6; audit 26/3 preserved |
-| 7 — Layer-1 research (minimality, `U`, decision-sufficiency) | **NOT STARTED** — separate research |
-
-Checkpoint commit: `e0196e0`.
+> **Checkpoint:** `971eeb2` on `primary-encoder`.
 
 ---
 
-## 1. Mission and success definition
+## 1. Mission and definition of done
 
 Build one system that accepts an event stream and emits a **frozen, versioned foundation-model
-artifact per stream**. The artifact must provide a reusable state for:
+artifact per stream**, reusable as the base for:
 
-1. **Supervised learning** — value, orders, churn, margin, and labels not known during encoder
+1. **Supervised learning** — value, orders, churn, margin, and labels unknown during encoder
    training.
 2. **Unsupervised learning** — retrieval, nearest-neighbor structure, segmentation, anomaly
    detection, and usable geometry.
 3. **Reinforcement learning** — action-conditioned response models and offline evaluation using
    pre-action state and logged randomized actions.
 
-The required properties are:
+The pipeline must be:
 
-- **Universal as a pipeline:** one architecture adapts to any supported event-stream schema.
-- **Per-stream fitting:** one artifact per stream; never apply weights to an untrained stream.
+- **Universal/generic:** one architecture adapts to new schemas without business-specific edits.
+- **Per-stream:** one fitted artifact per stream; never apply weights to an untrained stream.
 - **Self-supervised upstream:** no downstream labels or task-specific feature engineering in
   Layer B.
 - **Frozen downstream:** plugins read state and never mutate the foundation.
 - **Dynamic/adaptive:** configuration, timescales, horizons, masking, capacity, and budgets are
-  learned or derived from data and hardware, with documented fallbacks only when necessary.
-- **Generic:** no business-specific field names or per-domain special cases in the architecture.
-- **Lawful:** exact algebra for exact quantities; learned representations for pattern/shape.
+  learned or derived from data and hardware, with documented fallbacks only when needed.
+- **Lawful:** exact algebra for exact quantities; learned representations for pattern and shape.
 - **Accessible:** simple consumers can recover the information they need from named state views.
 - **Efficient/fast:** vectorized preparation and sequence operations, bounded memory, measured
   runtime, and a working CPU fallback.
 - **Honest/robust:** finite output, explicit uncertainty, reproducible receipts, fair comparators,
   and no gate changes made to obtain a pass.
 
-The product goal is not “a small vector must beat every engineered table.” The product goal is a
-**reliable frozen foundation interface** whose components and limitations are measured
-consistently.
+### The workflow to complete
+
+```text
+raw canonical event stream
+    ↓
+schema discovery + causal sequence preparation
+    ↓
+self-supervised training
+    ↓
+frozen foundation artifact
+    ↓
+named state views
+    ↓
+supervised / unsupervised / RL plugins
+    ↓
+receipts → REPORT_CARD.md + docs/AUDIT_CARD.md
+```
+
+### Completion criteria
+
+The product goal is met when all are true:
+
+- A raw canonical stream can be fitted and transformed without a hand-built wide table.
+- One deterministic, self-contained, versioned artifact exists per stream.
+- The same artifact supports all three plugin families without retraining the foundation.
+- Renamed and additional fields work without business-specific edits.
+- State views and their dimensions are explicit and stable.
+- B and B+C pass under the pre-registered protocol, or remaining failures are openly reported.
+- Every claimed win has a fair comparator and paired uncertainty.
+- There is no silent leakage, non-finite sanitization, or unidentifiable receipt.
+- Training and serving have runtime and memory receipts and a working CPU fallback.
+- The full audit remains visible, including open research questions.
+
+Layer-1 minimality, worst-case universal `U`, and deploy-grade decision-sufficiency are separate
+research goals and must not be implied by a green Layer-0 card.
 
 ---
 
 ## 2. Current baseline: preserve these assets
 
-The Layer-0 loops have already produced real, useful work. Do not restart the project or repeat
-completed loops without a new hypothesis.
+The following work is complete or already measured. Do not restart it without a new hypothesis.
 
-### 2.1 Completed implementation
+### 2.1 Foundation and state contract
 
 - `looking_glass/state_layout.py`
-  - single source of truth for block order and named state views;
-  - views are assembled by block name, not incorrect contiguous slices;
-  - verification showed every `BLK` column is used exactly once.
-- `looking_glass/measure_state.py`
-  - lawful typed measure state over all discovered fields;
-  - exact event counts, categorical distributions, missing fractions, per-entity distinct counts,
-    and numeric count/sum/mean/std/min/max;
-  - raw accumulation before normalization;
-  - bounded, data-derived vocabulary;
-  - exact additivity of raw additive blocks, unit-tested.
+  - single source of truth for block order and named views;
+  - views assembled by block name, with every `BLK` column used exactly once.
 - `looking_glass/foundation.py`
-  - `FrozenFoundation` load/state/describe/save/load;
-  - provenance, schema/config, layout, measure vocabulary, and content hash;
+  - `FrozenFoundation` with `fit`, `state`, `transform_events`, `describe`, `save`, `load`,
+    content hash, and provenance;
+  - schema/config, layout, and measure vocabulary persisted;
   - deterministic round-trip on the real cache;
   - refuses to emit state with missing `as_of` or non-finite output.
-- `scripts/evaluate_foundation_state.py`
-  - attribution battery separating shape, learned state, forecast, measure, and full state.
+- `looking_glass/measure_state.py`
+  - lawful typed measure state over all discovered fields;
+  - exact accumulation before normalization;
+  - bounded, data-derived vocabulary;
+  - exact additivity of raw additive blocks, unit-tested.
+- `looking_glass/stream_adapter.py`
+  - frozen-schema encoding of raw canonical events.
+- `scripts/frozen.py`
+  - train-once cache and run manifest;
+  - `assert_axes` prevents mixing artifacts built with different configurations.
+- `scripts/select_views.py`
+  - candidates declared up front, selected on training folds only, holdout evaluated once.
+- `scripts/measure_response.py`
+  - pre-action response evaluation with a valid uniform-policy comparator and guarded intervals.
 - `scripts/measure_runtime.py`
-  - serving and runtime receipt.
-- Schema-derived identity roles in `scripts/demo/stream_loader.py`
-  - selected behaviorally rather than by business names;
-  - on the reference data the selection exactly matches the previous hand-listed identity set.
+  - cold and warm serving costs measured separately.
+- Tests for measure algebra, schema roles, artifact lifecycle, stream encoding, run-manifest
+  identity, response bootstrap validity, and fail-safe frozen loading.
 - `REPORT_CARD.md` at repository root and `docs/AUDIT_CARD.md`.
-- New tests across measure state, schema roles, and the artifact.
 
 ### 2.2 Current evidence
 
@@ -105,101 +122,115 @@ B+C:  6 PASS / 0 FAIL
 Total: 34 PASS / 0 FAIL
 ```
 
-The full audit remains intentionally open:
+The full audit remains:
 
 ```text
 26 PASS / 3 FAIL
 ```
 
-The open research rows include category identity, IPS policy value, and the strict next-event
-point gate. Churn is a ceiling tie in the supervised floor/ceiling analysis.
+The open research rows include A3 category identity, A6 policy value, and the strict next-event
+point gate. Churn is a ceiling tie in the floor/ceiling analysis.
 
-The current card is valid evidence for its **declared Layer-0 scope and published state**. It is
-not proof that the learned 128-dimensional `E` alone is a universal sufficient statistic.
+This is evidence for the declared Layer-0 scope and published state. It is not proof that the
+learned 128-dimensional `E` alone is a universal sufficient statistic.
 
 ### 2.3 Measured multi-view behavior
 
-The attribution battery established that the views are complementary rather than redundant:
+The attribution battery shows complementary information rather than one universally best vector:
 
-| View | Measured strength |
+| View | Main measured strength |
 |---|---|
-| `shape` | Strong churn result; compact behavioral representation |
+| `shape` | Compact behavioral state; strong churn result |
 | `learned_state` | Channel identity |
 | `forecast` | Retrieval and churn-neighbor structure |
 | `measure` | Category identity and best non-table anomaly view |
-| `full` | Strongest supervised value/orders view |
+| `full` | Supervised value/orders |
 
-Representative current-state results:
+Representative results:
 
 - `shape` beats the table on churn (approximately 0.936 vs 0.911).
 - `measure` nearly matches the table on category identity (approximately 0.261 vs 0.265).
 - `full` reaches approximately 0.433 on value90 versus approximately 0.372 for the table.
-- `shape` alone trails the table on value/orders; the stronger published result depends on the
-  larger state, not just the compact embedding.
-- Concatenating every view naively can dilute raw-distance geometry and identity. Consumers need
-  a declared view-selection protocol, not an assumption that more dimensions always help.
+- `shape` alone trails the table on value/orders.
+- Naively concatenating every view can dilute raw-distance geometry and identity.
 
-### 2.4 Important bugs and integrity findings
+### 2.4 Lifecycle correctness already measured
 
-These are part of the current engineering baseline and must not be forgotten:
+- The frozen-schema adapter reproduces training sequences exactly for event types, categorical
+  values, numeric transforms, and raw values; time features differ only by float32 rounding.
+- Encoding the raw 6k stream reproduces the training `E` to about `4e-7` and `BLK` to about
+  `1e-6`.
+- Artifact save/load round-trips are bit-identical and the content hash is stable.
+- Fitting works without `path_a/path_a_wide_table.parquet`; the wide table is only an evaluation
+  baseline.
+- Missing `as_of` or non-finite output is rejected instead of being silently converted into a
+  valid-looking score.
 
-1. **Latent NaN behavior:** `embed()` could return all-NaN when `AS_OF_TS` was unset, and legacy
-   measurement paths silently converted that to zero with `nan_to_num`. `as_of_ts` is now
-   persisted in the schema config and the new artifact rejects the invalid state. Legacy paths
-   still need migration to the same fail-safe contract.
-2. **Degenerate RL bootstrap:** the response receipt reported `E_minus_random` as exactly zero
-   with a zero-width CI alongside non-zero IPS/DR values. That is not a valid paired bootstrap.
-   The IPS row is excluded from the primary card until the evaluator is fixed.
-3. **Receipt provenance:** multiple measurement processes can write the same receipts with
-   different `WQ_AXES` settings. A config receipt must be tied to the exact cache used by every
-   other receipt, not to whichever process wrote last. A prior `noaction` battery left stale
-   config metadata after a baseline restore; this must be checked and prevented.
+### 2.5 Train-only view selection works
 
-### 2.5 Measured negative results
+| Target | Selected view | Holdout selected | Table | Delta | 95% CI |
+|---|---|---:|---:|---:|---|
+| value90 | `full` | 0.4573 | 0.4240 | +0.0335 | [+0.0029, +0.0581] |
+| orders90 | `full` | 0.5453 | 0.4938 | +0.0517 | [+0.0275, +0.0770] |
+| churn90 | `forecast` | 0.9495 | 0.9452 | +0.0027 | [−0.0205, +0.0270] |
 
-Do not repeat these unchanged:
+The training folds select different views per target. This supports the multi-view design and
+avoids choosing the best-looking view on the test set.
 
-| Experiment | Outcome | Disposition |
+### 2.6 RL evidence is valid but non-dominant
+
+The response evaluator uses pre-action state, logged uniform propensity, customer-grouped
+resampling, and a uniform-policy comparator:
+
+- **Channel:** E beats uniform (`+1.92`, 95% CI `[+0.04, +3.95]`) but ties the table.
+- **Offer:** E beats table (`+1.73`, 95% CI `[+0.40, +3.06]`) but ties uniform.
+
+This is a working response interface, not a deploy-grade policy-value certificate.
+
+### 2.7 Performance findings
+
+- The earlier forward-pass “110 rows/s” figure was dominated by `torch.compile` warm-up.
+- Warm state generation is approximately 1,900–2,000 rows/s; larger batches do not materially
+  improve it.
+- The meaningful measured costs are cold compilation and supervised head fitting.
+- Length-sorted token-budget batching was slower (62.8 vs 110.3 rows/s) and was reverted.
+- Further blind batching experiments are not justified.
+
+### 2.8 Negative results to respect
+
+| Experiment | Outcome | Rule going forward |
 |---|---|---|
-| Input-conditioned `selective` retention | Improved some identity/anomaly metrics but regressed donor margins at 6k | Rejected for the default path; retained behind a flag |
-| `noaction` masking of company actions | Improved value/orders but made churn add-over-sequence negative and failed D3 | Rejected for the default path; retained behind a flag |
-| Length-sorted token-budget batching | 62.8 rows/s versus 110.3 rows/s for existing batching, with equivalent numerics | Reverted |
-| Long cumulative architecture sweeps | Slow and mostly neutral or worse | Not an acceptable default exploration method |
+| `selective` retention | Some identity/anomaly gains but donor margins regressed at 6k | Do not retry unchanged; a new mechanism needs a new hypothesis |
+| `noaction` action masking | Value/orders improved but churn add-over-sequence failed D3 | Do not adopt by weakening D3; diagnose or retain baseline |
+| Long cumulative sweeps | Slow and mostly neutral or worse | Use focused small screens only |
+| Larger model as first response | Not justified by the measured failures | Fix interface and accessibility first |
 
 A rejected experiment is a recorded result, not a task to keep retrying without a new mechanism.
 
 ---
 
-## 3. What remains incomplete
+## 3. Remaining gaps
 
-The remaining work is broader than the RL bootstrap.
+### 3.1 Public lifecycle is implemented but not yet fully unified
 
-### 3.1 Public input/output lifecycle
+The cache-based path works, and fitting without a wide table has been verified. The remaining
+work is to make one canonical production path:
 
-The complete public workflow is not yet implemented:
+- `FrozenFoundation.fit(...)` still needs to accept a raw canonical stream directly, not only a
+  prepared bundle.
+- `state(...)` still expects prepared `seqs`; `transform_events(...)` is the raw-event entry point.
+- `scripts/demo/stream_loader.py` should become a compatibility wrapper around the adapter rather
+  than a second schema implementation.
+- Training and serving must use the same schema, vocabulary, missing/unknown rules, and
+  configuration, with no rediscovery on a serving batch.
 
-```text
-raw canonical stream → fit → save → load → transform(raw events, as_of)
-```
+### 3.2 State views are not yet consistently consumed
 
-Specific gaps:
-
-- `FrozenFoundation.fit(...)` is not implemented.
-- `state(...)` expects prepared `seqs`, not raw events.
-- There is no single `looking_glass/stream_adapter.py` that owns direct canonical input.
-- `scripts/demo/stream_loader.py` still reflects the generated dataset layout and evaluation
-  needs rather than a clean public training/serving interface.
-- Training must not require the wide table; the wide table is an evaluation baseline only.
-
-### 3.2 State consumption
-
-The artifact exposes views, but the rest of the system does not yet use them consistently:
-
-- some measurements still construct `E + BLK` manually;
-- `full` needs one permanent, documented definition;
-- `full_measure` must remain a separate named arm if evaluated;
-- consumers need a train-only view-selection protocol, not test-set selection;
-- the card must name the view used by every row.
+- Some measurements still construct `E + BLK` manually.
+- `full` needs one permanent, documented definition.
+- `full_measure` must remain a separate named arm if evaluated.
+- Consumers need a train-only view-selection protocol, not test-set selection.
+- The card must name the view used by every row.
 
 ### 3.3 Encoder quality and adaptivity
 
@@ -214,233 +245,318 @@ The artifact exposes views, but the rest of the system does not yet use them con
 
 ### 3.4 Performance
 
-The runtime receipt identifies the forward pass as the main serving bottleneck:
-
-- cached stream load: approximately 0.26 s;
-- artifact load: approximately 0.02 s;
-- measure transform: approximately 3,000 rows/s;
-- frozen forward: approximately 110 rows/s;
-- five-fold head fit: approximately 66 s;
-- peak RSS: approximately 2.2 GB.
-
-The scan has `O(T log T)` total work in its current Hillis–Steele form. Target construction,
+The runtime receipt identifies cold compilation and supervised head fitting as the real measured
+costs. The scan has `O(T log T)` total work in its current Hillis–Steele form. Target construction,
 padding, and duplicate full-history forwards also need profiling. No performance claim should be
 made without before/after runtime, memory, and numerical-equivalence receipts.
 
 ### 3.5 RL evidence
 
-Known-effect recovery on randomized synthetic action arms is a valid, separate result. It is not
-a deploy-grade offline policy-value estimate.
+Known-effect recovery on randomized synthetic action arms is valid but separate from policy-value
+estimation. The repaired response evaluator is valid but non-dominant: channel beats uniform and
+ties table; offer beats table and ties uniform.
 
-Before any IPS/DR policy claim:
+Before any stronger policy-value claim:
 
-- fix response arm alignment;
-- verify independent random-donor control;
-- recompute the paired statistic correctly on every grouped bootstrap resample;
-- reject impossible zero-width CIs with nonzero point estimates;
-- keep pre-action state and logged propensities;
-- add bootstrap-validity and no-future-leakage tests.
+- maintain arm alignment and independent controls;
+- keep grouped bootstrap validity checks;
+- use pre-action state and logged propensities;
+- decide whether a new decision-episode data revision is necessary.
 
-A new decision-episode data revision may be necessary for a defensible policy-value claim. It
-would invalidate prior receipts and must be introduced as a new version, not silently substituted
-for the current demo data.
+A new revision would invalidate prior receipts and must be introduced as a new version, not
+silently substituted for the current demo data.
 
 ### 3.6 Research Layer 1
 
 Minimality, worst-case universal `U`, and decision-sufficiency remain separate research goals.
-They are not required to pretend that Layer 0 is complete, and they are not claimed by the current
-card. They must be scheduled explicitly if the research north star is to be pursued.
+They are not required to pretend Layer 0 is complete, and they are not claimed by the current card.
 
 ---
 
-## 4. Target architecture and public contract
+## 4. Non-negotiable principles for all future work
 
-The stable public API should be:
-
-```python
-artifact = FrozenFoundation.fit(canonical_stream, config=AutoConfig())
-artifact.save(path)
-
-artifact = FrozenFoundation.load(path)
-state = artifact.transform(events, as_of=cutoff)
-
-state.shape
-state.learned_state
-state.forecast
-state.measure
-state.uncertainty
-state.heads
-state.full
-```
-
-The artifact must contain:
-
-- frozen weights;
-- schema and field-role map;
-- tokenizer and vocabulary;
-- missing/unknown/zero rules;
-- data-derived temporal and horizon configuration;
-- state layout and dimensions;
-- lawful measure vocabulary;
-- data hash/revision, code version, seed, and artifact hash;
-- provenance and runtime metadata.
-
-`full` must have one permanent definition. Do not silently change it to include or exclude
-measure. If an additional `full_measure` view exists, name and measure it separately.
-
-### State construction principles
-
-- **Shape:** learned sequence representation for behavioral patterns.
-- **Measure:** exact or lawfully derived statistics for extensive quantities and identity/rate.
-- **Forecast:** generic self-supervised future features, retained only when they add measured value.
-- **Uncertainty:** missingness, unseen values, support, and calibration information.
-- **Full:** a documented composition, not an opaque bundle assembled differently by each script.
-
-### Training principles
-
-- Learn what requires learning; compute what is lawfully computable.
-- Derive field roles from behavior and declared metadata, not business names.
-- Keep actions exogenous to the customer foundation model.
-- Generate self-supervised objectives from schema and causal cutoffs.
-- Use held-out self-supervised and accessibility evidence for checkpoint selection, never the
-  training metric alone and never the demo card.
+1. Follow `AGENTS.md` in full, including its conflict order and certification-integrity rules.
+2. Change one meaningful axis per experiment.
+3. Record context, alternatives, principle, acceptance metric, runtime, and revert condition before
+   running.
+4. Never change a gate, split, comparator, seed, or CI rule after seeing a result.
+5. Never train Layer B on downstream labels or choose features because they help the demo.
+6. Do not conflate `E`, measure, forecast, and full-state results.
+7. Accumulate exact quantities exactly; normalize at readout.
+8. Do not silently map missing, unknown, and observed-zero values into one ambiguous signal.
+9. Reject non-finite output rather than calling `nan_to_num` to make it look valid.
+10. Derive or learn configuration where practical; if a literal remains, document and receipt the
+    fallback.
+11. Use held-out convergence and evidence, not a fixed epoch count presented as convergence.
+12. Use small deterministic screens before full-scale runs. No more long cumulative sweeps.
+13. One GPU job and one receipt writer per run; no competing writers or stale processes.
+14. Keep the CPU fallback and benchmark accepted GPU/AMP changes for speed and numerical agreement.
+15. Commit coherent verified chunks locally. Do not push without explicit operator permission.
+16. Preserve rejected results in `DECISIONS.md` so they are not repeated blindly.
 
 ---
 
-## 5. Execution roadmap
+## 5. Strategic choices and rationale
 
-## Phase 0 — Evidence identity and reproducibility
+### 5.1 One opaque vector versus named state views
 
-Do this before further model changes.
+**Options:**
 
-1. Create a run manifest from the exact frozen artifact/cache used by all measurements:
-   - data path and data revision;
-   - seed and axes;
-   - artifact/cache hash;
-   - code commit;
-   - dimensions and state layout;
-   - training and runtime configuration.
-2. Make `encoder_config.json` derive from that manifest, not from the last battery process.
-3. Assert that cache axes, manifest axes, and card config agree.
-4. Use run-specific receipt paths and atomic publication to prevent competing writers.
-5. Add a regression test for config/receipt mismatch.
-6. Regenerate the primary card and audit card from the consistent manifest.
+- **A. Ship only compact `E`.** Simpler API and closer to the original “foundation embedding”
+  ambition, but current `E` loses to the table on value/orders and hides the measured value of
+  the other blocks.
+- **B. Concatenate everything into one large vector.** Simple consumer code, but measured
+  dilution of geometry and identity and no way to explain which component carries the signal.
+- **C. Publish named views with a stable layout.** Supports the measured multi-view reality,
+  attribution, and task-specific consumption while keeping `full` available.
 
-**Accept when:** every card row resolves to one identified artifact and no config is inherited
-from an unrelated run.
+**Decision: C.** `shape`, `learned_state`, `forecast`, `measure`, `uncertainty`, `heads`, and
+`full` are the product contract. This is aligned with Accessible and Diagnosable. It does not
+require pretending that `E` alone is sufficient.
 
-## Phase 1 — Direct stream adapter and artifact lifecycle
+### 5.2 Learn every statistic versus compute exact statistics
 
-Create `looking_glass/stream_adapter.py` as the single canonical input path.
+**Options:**
 
-It must:
+- **A. Ask the network to reconstruct all counts and magnitudes.** Attractive as a pure learned
+  model, but unnecessarily difficult and loses the exact additive law.
+- **B. Use only hand-built aggregates.** Strong on this reference, but domain-specific and unable
+  to represent sequence structure well.
+- **C. Combine learned shape with lawful measure.** Learn patterns; compute counts, sums,
+  distributions, and other exact statistics directly from the stream.
 
-- accept canonical Arrow/Parquet/DataFrame event streams;
-- validate columns, timestamps, entity keys, and ordering;
-- expand attributes and infer types;
-- infer identity/static roles behaviorally;
-- use declared action metadata, with a documented structural fallback;
-- distinguish missing, unknown, and observed-zero values;
-- construct causal per-entity sequences;
-- derive configuration from training data only;
-- emit a schema/config receipt.
+**Decision: C.** Exact arithmetic belongs in the measure state, not in a prediction head. Report
+learned-only and measure-only results so the combination is not mistaken for learned-shape
+sufficiency.
 
-Then:
+### 5.3 Always use `full` versus select a view per consumer
 
-- make `scripts/demo/stream_loader.py` a compatibility wrapper;
-- implement `FrozenFoundation.fit(...)`;
-- implement `transform(events, as_of=...)` so callers never construct `seqs` manually;
-- persist everything needed to serve in a fresh process.
+**Options:**
+
+- **A. Always use `full`.** Convenient, but geometry and identity can degrade when irrelevant
+  blocks dominate distances.
+- **B. Pick the best view on the holdout.** Produces optimistic, leaky results.
+- **C. Select on training folds only, then freeze and evaluate once.** Honest and compatible with
+  the measured differences between targets.
+
+**Decision: C.** A consumer may choose `full` if training evidence supports it, but it may not
+choose a view because it looks best on the test set.
+
+### 5.4 Mask company actions versus keep them in the next-event objective
+
+**Options:**
+
+- **A. Keep actions in the objective.** This is the current baseline and preserves the measured
+  D3 result, but it means the model learns some company-driven transition structure.
+- **B. Mask exogenous actions.** Better matches the exogenous-action doctrine, but the measured
+  6k change improved value/orders while making churn add-over-sequence negative.
+- **C. Separate customer and action dynamics structurally, with a new mechanism.** Potentially
+  resolves the tension, but is unproven and must be tested as a new axis.
+
+**Decision: retain A as the baseline and investigate C only with a new, justified mechanism.**
+Do not simply rerun B and do not weaken D3. This is an open principle/metric tension, not a solved
+problem.
+
+### 5.5 Input-conditioned retention versus fixed learned timescales
+
+**Options:**
+
+- **A. Fixed learned `τ` per channel.** Current baseline; stable and measured.
+- **B. Input-conditioned `τ(x_t)`.** More adaptive, but the first 6k implementation regressed donor
+  margins.
+- **C. A gated residual selective mechanism initialized to the baseline.** A possible future
+  attempt, only if it has a specific reason to preserve donor margins.
+
+**Decision: keep A; try C only with a new hypothesis and a small screen.** Do not claim that the
+rejected selective approach is an improvement because a few secondary metrics improved.
+
+### 5.6 Bigger encoder versus better interface
+
+**Options:**
+
+- **A. Increase `d`, layers, or epochs first.** More capacity and cost, but the measured failures
+  are largely accessibility, attribution, and interface problems.
+- **B. Improve state construction, schema handling, objectives, and consumer access first.**
+
+**Decision: B.** Capacity changes come later, through a small nested, cost-aware search. Do not use
+model size to hide a representation or evaluation problem.
+
+### 5.7 Existing RL data versus a new decision-episode revision
+
+**Options:**
+
+- **A. Keep using the current reference.** Supports known-effect recovery and the repaired
+  pre-action response evaluation; no need to disturb the demo.
+- **B. Create a new decision-episode data revision.** Required if the goal is a defensible,
+  deploy-style policy-value claim with clean episodes and adequate power, but it invalidates
+  prior receipts and requires full re-certification.
+
+**Decision: keep A for the current demo; use B only as a separately versioned RL workstream.**
+Known-effect recovery and IPS policy value must never be conflated.
+
+### 5.8 Batch optimization versus cold-start/head-fit optimization
+
+**Options:**
+
+- **A. More batching changes.** Already measured poorly; warm throughput is not batch-limited.
+- **B. Reduce compile warm-up, stabilize compiled shapes, and reduce repeated work/head-fit cost.**
+
+**Decision: B.** Measure cold and warm separately. Optimize only measured costs.
+
+### 5.9 Layer-1 now versus after the product contract is stable
+
+**Options:**
+
+- **A. Start universal `U` and minimality claims now.** Risks mixing a research certificate with
+  an unstable public interface.
+- **B. Finish the lifecycle, consumers, and evidence first, then certify separately.**
+
+**Decision: B.** Layer-1 is a separate research phase and is not implied by the current green card.
+
+---
+
+## 6. Forward roadmap
+
+## Phase 0 — Evidence identity and baseline preservation
+
+**Status:** mostly complete; harden and verify rather than redo.
+
+Remaining tasks:
+
+1. Keep the run manifest as the source of encoder configuration: data, revision, seed, axes,
+   layout, dimensions, cache hash, commit, and runtime configuration.
+2. Make every measurement writer consume that manifest and the same artifact.
+3. Use run-specific receipts and atomic publication; prevent competing writers.
+4. Assert cache axes, manifest axes, and card config agree.
+5. Regenerate the primary and audit cards from that consistent run.
+6. Keep a regression test for config/receipt mismatch.
+
+**Why:** a previous `noaction` battery left config metadata that did not describe the baseline
+receipts. That is a provenance failure, not a model result.
+
+**Accept when:** every card row resolves to an identified artifact and no row depends on an
+unidentified cache.
+
+## Phase 1 — Complete the public stream-to-artifact lifecycle
+
+**Purpose:** finish the actual product interface, not just the cache-based path.
+
+Tasks:
+
+1. Make `looking_glass/stream_adapter.py` the single canonical input path for both training and
+   serving.
+2. Accept canonical Arrow/Parquet/DataFrame streams directly.
+3. Validate columns, timestamps, entity keys, and ordering.
+4. Infer types and identity/static roles behaviorally, without business field names.
+5. Use declared action metadata where available, with a documented structural fallback.
+6. Separate missing, unknown, and observed-zero values.
+7. Build causal per-entity sequences and derive configuration from training data only.
+8. Make `scripts/demo/stream_loader.py` a compatibility wrapper rather than a second adapter.
+9. Complete `FrozenFoundation.fit(...)` so raw streams can be fitted without a prepared bundle.
+10. Complete `transform(events, as_of=...)` so callers never construct `seqs` manually.
+11. Persist all schema, vocabulary, measure, layout, and provenance needed to serve in a fresh
+    process.
 
 Required tests:
 
-- direct stream input without a wide table;
-- renamed fields and an additional field;
-- missing/unknown/observed-zero semantics;
+- direct stream fitting and transformation without a wide table;
+- renamed and additional fields;
+- missing, unknown, and observed-zero semantics;
 - empty stream and single-entity stream;
 - long gaps and duplicate timestamps;
 - causal cutoff correctness;
 - save/load determinism;
-- no labels in encoder training inputs.
+- no labels in encoder training inputs;
+- serving schema not rediscovered from a serving batch.
 
-**Accept when:** an unseen canonical stream can be fitted, saved, loaded, and transformed with no
+**Accept when:** a new canonical stream can be fitted, saved, loaded, and transformed with no
 business-specific edits and no wide-table dependency for training.
 
-## Phase 2 — Unified state consumption and view selection
+## Phase 2 — Unify state consumption and view selection
 
-1. Freeze the definition of `full` in `state_layout.py`.
+**Purpose:** make the state contract useful to all consumers without leaking test information.
+
+Tasks:
+
+1. Keep `full` permanently defined in `state_layout.py` and document its composition.
 2. Keep `full_measure` separate if it is evaluated.
-3. Migrate measurement and serving code from hand-built `E + BLK` bundles to the artifact.
-4. Implement train-only view selection:
-   - declare candidate views before evaluation;
-   - select with training-fold cross-validation only;
-   - freeze the selected view before the holdout;
+3. Migrate remaining measurement and serving paths from hand-built `E + BLK` bundles to the
+   artifact.
+4. Use the train-only view-selection protocol for each consumer:
+   - declare candidates before scoring;
+   - select using training-fold CV only;
+   - freeze the selection;
    - evaluate the holdout once with paired uncertainty.
 5. Report shape-only, measure-only, full, and selected-view results separately.
-6. Do not force measure into every consumer; use it where training-only evidence supports it.
+6. Do not force measure into every consumer. Use it where training-only evidence supports it.
+7. Add tests proving view selection does not use holdout labels.
 
-**Accept when:** every B and B+C row names its state view and no view is chosen because it looks
+**Accept when:** every B and B+C row names its state view and no view is selected because it looks
 best on the test set.
 
 ## Phase 3 — Encoder quality and adaptive behavior
 
-Handle each item as a separate experiment.
+Handle each item as its own experiment; do not bundle them.
 
 ### 3A. Action/objective semantics
 
 - Preserve declared exogenous-action metadata.
-- Diagnose why action masking improved value/orders but hurt churn.
-- Try only a new, mechanistically justified single-axis solution.
+- Diagnose why masking actions improved value/orders but hurt churn.
+- Try only a new, mechanistically justified solution that preserves the donor gate.
 - Do not simply rerun `noaction` and do not weaken D3.
-- If no acceptable solution is found, retain the baseline and document the unresolved tension.
+- If no acceptable solution is found, retain the baseline and document the tension.
 
 ### 3B. Selective retention
 
 - Do not repeat the rejected implementation unchanged.
 - A new attempt must explain why it should preserve donor margins while improving retention.
-- Compare against the exact baseline at the same scale before considering adoption.
+- Confirm at 6k after a small screen; a good 2k screen alone is not evidence of transfer.
 
 ### 3C. Relational roles
 
-- Keep declared relational configuration until a genuinely general rule is validated.
-- Test any proposed rule on schema variants and unrelated fields, not only the reference pair.
-- Do not invent a heuristic just to reproduce the old pair.
+- Keep the declared relational configuration until a genuinely general rule is validated.
+- Test proposed rules on schema variants and unrelated fields, not only on the reference pair.
+- Do not invent a heuristic merely to reproduce the existing pair.
 
 ### 3D. Missing/unknown/zero and non-finite behavior
 
 - Preserve separate missing, unseen, and observed-zero channels.
-- Reject non-finite output before scoring.
+- Reject non-finite state before scoring.
 - Replace legacy silent sanitization in production paths with explicit failure receipts.
 
 ### 3E. Adaptive capacity and convergence
 
-- Replace fixed `d`, layers, and epoch budgets with derived settings or documented fallbacks.
+- Replace fixed `d`, layers, and epoch budgets with derived settings or a documented, receipted
+  fallback.
 - Use a small nested held-out capacity search with a cost penalty, not a broad sweep.
-- Use held-out convergence with noise-derived tolerance.
+- Use held-out convergence with a noise-derived tolerance.
 - Never select weights by training loss or by the demo card.
 
-## Phase 4 — Performance
+## Phase 4 — Performance and scalability
 
-Profile first. Optimize the largest measured cost, one change at a time:
+Profile first, then change one measured bottleneck at a time.
 
-1. vectorize target and measure construction;
-2. remove redundant full-history forwards where mathematically safe;
-3. reduce padding without creating many tiny batches;
-4. stabilize compiled scan shapes;
-5. cache deterministic preparation and targets;
-6. benchmark CPU/GPU and AMP with numerical and determinism checks.
+Candidate work:
+
+1. Vectorize target and measure construction.
+2. Remove redundant full-history forwards where mathematically safe.
+3. Reduce padding without creating many tiny batches.
+4. Stabilize compiled scan shapes and reduce compile warm-up.
+5. Cache deterministic preparation and targets.
+6. Benchmark CPU/GPU and AMP only with numerical and determinism checks.
+7. Measure head-fit cost separately from serving cost.
 
 For every candidate record runtime, peak memory, numerical difference, and gate effect. Reject a
 change that is slower or changes results beyond the declared tolerance.
 
-## Phase 5 — RL evidence
+## Phase 5 — RL evidence and, if needed, a new data revision
 
-Fix the evaluator before changing the encoder or the dataset:
+First keep the repaired evaluator correct:
 
 1. Verify policy/logged-action/reward alignment.
-2. Verify the random-donor arm is independent.
+2. Verify random-donor and uniform-policy controls are independent and well-defined.
 3. Recompute the paired statistic correctly on every grouped bootstrap resample.
-4. Fail validation on impossible intervals such as zero-width CI with nonzero point estimate.
+4. Reject impossible intervals, including zero-width CI with nonzero mean.
 5. Use customer-grouped resampling and report IPS and DR separately.
 6. Keep pre-action states and logged propensities.
 7. Add tests for bootstrap validity and no-future-action leakage.
@@ -469,7 +585,7 @@ Known-effect recovery and policy-value evaluation remain separate claims.
 
 An interactive dashboard is optional and comes only after the terminal/Markdown demo is correct.
 
-## Phase 7 — Research Layer 1 (separate from Layer-0 product completion)
+## Phase 7 — Layer-1 research, separately from product completion
 
 If pursuing the research north star, schedule separately:
 
@@ -483,7 +599,7 @@ Do not use a Layer-0 green card to imply these are complete.
 
 ---
 
-## 6. Measurement protocol for every loop
+## 7. Measurement protocol for every future loop
 
 Unless a new protocol is explicitly approved, keep fixed:
 
@@ -526,7 +642,7 @@ supported win. Exclude and report degenerate targets rather than forcing a verdi
 
 ---
 
-## 7. Execution loop for the implementation agent
+## 8. Execution loop for the implementation agent
 
 At every iteration:
 
@@ -555,7 +671,7 @@ Stop and ask the operator only for:
 
 ---
 
-## 8. File ownership for the remaining work
+## 9. File ownership for the remaining work
 
 ### Canonical public path
 
@@ -588,7 +704,7 @@ Extend measure, role, and artifact tests with:
 
 ---
 
-## 9. Definition of done for this plan
+## 10. Definition of done for this plan
 
 ### Product
 
@@ -627,21 +743,27 @@ Extend measure, role, and artifact tests with:
 
 ---
 
-## 10. Immediate sequence
+## 11. Immediate next three loops
 
-Start here, in this order:
+### Loop A — Canonical lifecycle unification
 
-1. **Evidence identity repair:** implement the run manifest, validate config/cache agreement,
-   and add the mismatch regression test. No retraining.
-2. **Direct stream lifecycle:** implement `stream_adapter.py`, `FrozenFoundation.fit`, and
-   `transform(events, as_of=...)` with direct-stream and schema-variant tests.
-3. **Artifact-consistent measurement:** move measurement writers onto the artifact and manifest,
-   implement train-only view selection, and regenerate both cards.
-4. **RL evaluator repair:** fix `measure_response.py` arm alignment and bootstrap validity; do not
-   change the encoder or demo dataset for this loop.
-5. **Performance profiling:** choose the next optimization from measured cost, not from another
-   batching hypothesis.
-6. **Only then:** new encoder-quality experiments or a new decision-episode data revision.
+Finish the direct raw-stream `fit`/`transform` path and make the loader a compatibility wrapper.
+Do not retrain the baseline solely to prove it; use sequence-equivalence and artifact round-trip
+tests first.
+
+### Loop B — Artifact-consistent consumers
+
+Move the remaining measurement writers onto the artifact and manifest. Keep train-only view
+selection and make every card row name its state view.
+
+### Loop C — One measured quality improvement
+
+Choose the highest-leverage open item from measured evidence, not from a new architecture wish:
+
+- if accessibility is the target, use the lawful measure/view interface;
+- if action semantics is the target, diagnose the churn trade before changing the objective;
+- if adaptivity is the target, derive capacity/convergence settings with a small nested screen;
+- if RL is the target, repair/validate the evaluator before considering a new data revision.
 
 Do not begin with another architecture sweep, another capacity increase, or a repetition of the
 rejected `selective`, `noaction`, or batching experiments.
