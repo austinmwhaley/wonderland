@@ -1142,3 +1142,18 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   treatment or an operator decision to re-scope D3. Not done unilaterally.
 - Next: performance work on the measured bottleneck (forward pass, 60 rows/s), then the RL
   decision-episode data revision if time allows.
+
+## DEC-298 — Loop 4a: length-sorted token-budget batching (REJECTED, measured)
+
+- Hypothesis: `embed()` pads every batch to the longest history in it, so sorting by length and
+  packing to a token budget should cut wasted compute and speed up state generation.
+- Measured (same 600-entity benchmark): length-sorted packing **62.8 rows/s** vs the existing
+  fixed 32-row batching **110.3 rows/s**. Numerics were preserved (max |Δ| 7.7e-07 on `E`,
+  1.4e-06 on `BLK`), so the regression is purely batching overhead: sorting produced many tiny
+  batches for long histories and lost GPU utilisation.
+- Decision: REVERT. Keep the original `embed`. Recorded so it is not retried blindly.
+- Principles: Efficient (measured, not assumed), Honest (negative result recorded),
+  Robust (numerics verified before judging speed).
+- What this tells us: the forward cost is dominated by sequence length x batch geometry, not by
+  padding waste. The next performance lever is a smaller/compiled scan or a shorter serving
+  window, not batching tricks.
