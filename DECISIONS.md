@@ -1157,3 +1157,22 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - What this tells us: the forward cost is dominated by sequence length x batch geometry, not by
   padding waste. The next performance lever is a smaller/compiled scan or a shorter serving
   window, not batching tricks.
+
+## DEC-299 — RL response receipt is NOT trustworthy yet (degenerate bootstrap identified)
+
+- Finding: `docs/report_cards/experiments/plugin_response.json` reports
+  `E_minus_random = {mean: 0.0, lo: 0.0, hi: 0.0}` for BOTH action keys while the underlying
+  IPS values differ from `random_value`. A zero-width bootstrap CI with a non-zero point
+  estimate is impossible unless the resampled statistic is identically zero — so the paired
+  bootstrap is degenerate (the `pol == actions` indicator times reward is zero for every row,
+  or the comparison arms are misaligned).
+- Consequence: the DR figures (channel +0.57 [0.04,1.14], offer -0.79 [-1.4,-0.18]) and the
+  E-vs-table IPS figures must NOT be reported as a policy-value claim until the bootstrap is
+  fixed and re-run.
+- Decision: do NOT add an IPS row to `REPORT_CARD.md`. The B+C RL rows stay *known-effect
+  recovery* (kNN purity vs the generator's randomized optima), which is a different, valid
+  claim. `measure_response.py` is flagged as requiring a fix (arm alignment + resampling the
+  paired difference correctly) before any deploy-style statement.
+- Principles: Honest (an implausible CI is a bug, not evidence), Robust (fail loudly rather than
+  publish), Diagnosable (the failure is localized to the bootstrap, not the encoder).
+- This is exactly the class of error the certification-integrity rules exist to catch.

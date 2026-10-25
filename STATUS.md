@@ -1908,3 +1908,19 @@ recency/frequency aggregates. NOT decided unilaterally — receipts above.
   a valid IPS policy-value claim), forward-pass performance optimisation, and Layer-1
   certification (minimality / universal `U` / decision-sufficiency), which PLAN.md marks as
   separate research rather than a Layer-0 deliverable.
+
+## Loop log — final (RL + performance)
+
+- **Performance (Loop 4a) — measured, change REJECTED.** Length-sorted token-budget batching for
+  `embed()` gave 62.8 rows/s vs the existing 110.3 rows/s (numerics preserved to 7.7e-07), so it
+  was reverted. The forward cost is dominated by sequence length x batch geometry, not padding
+  waste. See DEC-298.
+- **RL policy value — NOT CLAIMED, bug found.** The pre-action grouped response receipt contains
+  a degenerate bootstrap (`E_minus_random` exactly 0 with a zero-width CI) alongside non-zero
+  IPS/DR points, which is impossible for a valid paired bootstrap. The IPS row is deliberately
+  excluded from the card; `measure_response.py` needs an arm-alignment fix before any
+  policy-value statement. See DEC-299. The B+C RL rows remain known-effect recovery, which is a
+  separate valid claim.
+- **Not started (and not claimed):** a new decision-episode Layer-A revision, and Layer-1
+  certification (minimality / universal `U` / decision-sufficiency), which PLAN.md defines as
+  separate research rather than a Layer-0 deliverable.
