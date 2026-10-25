@@ -428,13 +428,33 @@ td.num{text-align:right;font-variant-numeric:tabular-nums;font-family:ui-monospa
 .axrow .k{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim)}
 .axrow .v{font-size:13px;color:var(--muted);margin-top:3px}
 .axvis{border:1px solid var(--line);border-radius:8px;padding:22px}
-.dcustomer{display:grid;grid-template-columns:170px minmax(0,1fr) auto;gap:28px;align-items:center;
-  border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:17px 0;margin-bottom:24px}
-@media(max-width:800px){.dcustomer{grid-template-columns:1fr;gap:8px}}
-.dcustkey{font-family:ui-monospace,monospace;font-size:23px;font-weight:600;letter-spacing:-.02em}
-.dcustmeta{color:var(--muted);font-size:13px}
-.dcuststats{display:flex;gap:16px;color:var(--muted);font-size:12px;white-space:nowrap;flex-wrap:wrap}
-.dcuststats b{color:var(--ink);font-family:ui-monospace,monospace;font-weight:600}
+.legacycard{padding:18px 18px 6px;margin-bottom:0}
+.legacyhead{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;
+  padding-bottom:12px;border-bottom:1px solid var(--line)}
+.legacymeta{font-size:12.5px;color:var(--muted);margin-top:2px}
+.legacyhint{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);
+  font-weight:600;white-space:nowrap;font-family:ui-monospace,monospace}
+.legacytable{overflow-x:auto;margin-top:2px}
+.legacytable table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:780px}
+.legacytable th{padding:10px 8px;border-bottom:1px solid var(--line);font-size:10px}
+.legacytable td{padding:11px 8px;border-bottom:1px solid var(--line2)}
+.legacytable tbody tr{cursor:pointer;outline:none}
+.legacytable tbody tr:hover td{background:#fafafa}
+.legacytable tbody tr.on td{background:#ecfdf5}
+.legacytable tbody tr.on td:first-child{box-shadow:inset 3px 0 0 var(--accent);font-weight:600}
+.legacytable tbody tr.on td:first-child::before{content:"";display:inline-block;width:6px;height:6px;
+  border-radius:50%;background:var(--accent);margin-right:7px;vertical-align:1px}
+.legacytable tbody tr:last-child td{border-bottom:0}
+.legacytable td:first-child{font-family:ui-monospace,monospace;font-size:11.5px;white-space:nowrap}
+.legacytable td.num{font-size:12px}
+.legacytable td.churn{font-family:ui-monospace,monospace;font-size:11.5px;color:var(--muted)}
+.legacytable tr.on td.churn{color:var(--ink)}
+.streamhead{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;
+  border-top:1px solid var(--line);margin-top:28px;padding-top:20px;margin-bottom:14px}
+@media(max-width:700px){.streamhead{flex-direction:column;align-items:flex-start;gap:6px}}
+.streamkey{font-family:ui-monospace,monospace;font-size:24px;font-weight:600;letter-spacing:-.02em;margin-top:2px}
+.streamcounts{display:flex;gap:16px;flex-wrap:wrap;color:var(--muted);font-size:12px}
+.streamcounts b{color:var(--ink);font-family:ui-monospace,monospace;font-weight:600}
 .dataflow{display:grid;gap:16px}
 .cardtag{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);font-weight:600;margin-bottom:10px}
 .tlwrap svg{display:block;width:100%;height:auto}
@@ -539,9 +559,18 @@ footer{margin-top:56px;padding-top:18px;border-top:1px solid var(--line);color:v
 
     <section id="data" hidden>
       <h2>Data</h2>
-      <p class="lede">One customer's event stream over the full 540-day window. Every aggregate is built from this ledger.</p>
-      <div id="datacustomer"></div>
-      <div id="datapanel"></div>
+      <p class="lede">The legacy table collapses each customer's history into one wide row. Select a row to open that same customer's event stream below.</p>
+      <div class="legacycard panelbox">
+        <div class="legacyhead">
+          <div>
+            <div class="cardtag">Legacy wide table · one row per customer</div>
+            <div class="legacymeta" id="legacymeta"></div>
+          </div>
+          <div class="legacyhint">select a row</div>
+        </div>
+        <div id="legacytable" class="legacytable"></div>
+      </div>
+      <div id="datastream"></div>
     </section>
 
     <section id="axes" hidden>
@@ -841,6 +870,9 @@ if(!DT){
   if(host) host.innerHTML="<h2>Data</h2><p class='lede'>Run <code>python3 scripts/build_data_tab.py</code> with the canonical stream available to build this tab.</p>";
 }else{
   const MONTHS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const defaultIndex=Math.max(0,DT.customers.findIndex(c=>c.key==="rc0000208"));
+  let selected=defaultIndex;
+
   function month(iso){
     const parts=String(iso).slice(0,10).split("-");
     return MONTHS[Number(parts[1])-1]+" "+parts[0];
@@ -848,23 +880,38 @@ if(!DT){
   function dayOf(iso){
     return Math.max(0,Math.min(DT.window_days,(Date.parse(iso)-Date.parse(DT.window_start))/86400000));
   }
-
-  function renderCustomer(){
-    const c=DT.customer, host=$("#datacustomer"); host.innerHTML="";
-    const bar=el("div","dcustomer");
-    const left=el("div");
-    left.appendChild(el("div","mono dim small","CUSTOMER"));
-    left.appendChild(el("div","dcustkey",c.key));
-    bar.appendChild(left);
-    bar.appendChild(el("div","dcustmeta",[c.acquisition_channel,c.region,"segment "+c.segment,"loyalty "+c.loyalty_tier,"joined "+String(c.signup_ts).slice(0,10)].join(" · ")));
-    const stats=el("div","dcuststats");
-    [["events",DT.counts.total],["before as-of",DT.counts.history],["label window",DT.counts.labels],["later",DT.counts.later]].forEach(([k,n])=>{
-      const s=el("span"); s.appendChild(el("b",null,String(n))); s.appendChild(document.createTextNode(" "+k)); stats.appendChild(s);
-    });
-    bar.appendChild(stats); host.appendChild(bar);
+  function money(v){
+    return "$"+Number(v).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
   }
 
-  function streamTimeline(){
+  function renderTable(){
+    const host=$("#legacytable"); host.innerHTML="";
+    $("#legacymeta").textContent=DT.customers.length+" of "+DT.wide.rows.toLocaleString()+" rows · showing 7 of "+DT.wide.columns+" columns";
+    const table=el("table");
+    const thead=el("thead"), hr=el("tr");
+    ["Customer","Events · history","Orders · history","Purchase value · history","Orders · next 90d","Value · next 90d","Churn · next 90d"].forEach((label,i)=>{
+      hr.appendChild(el("th",i===0?null:"num",label));
+    });
+    thead.appendChild(hr); table.appendChild(thead);
+    const tbody=el("tbody");
+    DT.customers.forEach((c,i)=>{
+      const tr=el("tr",i===selected?"on":null);
+      tr.tabIndex=0;
+      tr.onclick=()=>select(i);
+      tr.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();select(i);}};
+      tr.appendChild(el("td",null,c.key));
+      tr.appendChild(el("td","num",String(c.legacy.n_events)));
+      tr.appendChild(el("td","num",String(c.legacy.n_orders)));
+      tr.appendChild(el("td","num",money(c.legacy.purchase_value)));
+      tr.appendChild(el("td","num",String(c.legacy.y_orders_90)));
+      tr.appendChild(el("td","num",money(c.legacy.y_value_90)));
+      tr.appendChild(el("td","churn",c.legacy.y_churn_90?"yes":"no"));
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody); host.appendChild(table);
+  }
+
+  function streamTimeline(c){
     const W=1000,H=300,pad={l:86,r:20,t:20,b:34};
     const s=svg(W,H), h=H-pad.t-pad.b;
     const types=DT.types, rowH=h/types.length;
@@ -881,11 +928,11 @@ if(!DT){
     s.appendChild(ln(xb,pad.t,xb,H-pad.b,{stroke:ACC,dash:"2 3"}));
     s.appendChild(tx(xb+5,pad.t-4,"+90d",{size:10,fill:ACC}));
     const colors={history:"rgba(17,24,39,.45)",labels:ACC,later:"#d1d5db"};
-    DT.events.forEach(e=>{
-      const idx=types.findIndex(t=>t.id===e.type);
+    c.events.forEach(e=>{
+      const idx=types.findIndex(t=>t.id===e[1]);
       if(idx<0) return;
       const y=pad.t+(idx+0.5)*rowH;
-      s.appendChild(dot(X(e.day),y,2.1,colors[e.phase]||DIM));
+      s.appendChild(dot(X(e[3]),y,2.1,colors[e[2]]||DIM));
     });
     s.appendChild(ln(pad.l,H-pad.b,W-pad.r,H-pad.b,{stroke:LINE}));
     s.appendChild(tx(pad.l,H-9,month(DT.window_start),{size:10,fill:DIM}));
@@ -895,38 +942,56 @@ if(!DT){
     return s;
   }
 
-  function renderData(){
-    const host=$("#datapanel"); host.innerHTML="";
-    const flow=el("div","dataflow");
+  function renderStream(){
+    const c=DT.customers[selected], host=$("#datastream"); host.innerHTML="";
 
+    const head=el("div","streamhead");
+    const left=el("div");
+    left.appendChild(el("div","cardtag","Event stream · selected legacy row"));
+    left.appendChild(el("div","streamkey",c.key));
+    head.appendChild(left);
+    const counts=el("div","streamcounts");
+    [["events",c.counts.total],["before as-of",c.counts.history],["label window",c.counts.labels],["later",c.counts.later]].forEach(([k,n])=>{
+      const span=el("span"); span.appendChild(el("b",null,String(n))); span.appendChild(document.createTextNode(" "+k)); counts.appendChild(span);
+    });
+    head.appendChild(counts); host.appendChild(head);
+
+    const flow=el("div","dataflow");
     const tl=el("div","panelbox");
     tl.appendChild(el("div","cardtag","Event timeline · one dot per event"));
-    const wrap=el("div","tlwrap"); wrap.appendChild(streamTimeline()); tl.appendChild(wrap);
+    const wrap=el("div","tlwrap"); wrap.appendChild(streamTimeline(c)); tl.appendChild(wrap);
     const leg=el("div","legend");
     [["h","history"],["l","90-day label"],["x","later"]].forEach(([cls,text])=>leg.appendChild(el("span",cls,text)));
     tl.appendChild(leg); flow.appendChild(tl);
 
     const ledger=el("div","panelbox");
-    ledger.appendChild(el("div","cardtag","Event ledger · "+DT.counts.total+" rows"));
+    ledger.appendChild(el("div","cardtag","Event ledger · "+c.counts.total+" rows"));
     const box=el("div","logscroll");
     const table=el("table","logtable");
     const thead=el("thead"); const hr=el("tr");
     ["Time","Event","Detail","Window"].forEach((t,i)=>{const th=el("th",i===3?"num":null,t);hr.appendChild(th);});
     thead.appendChild(hr); table.appendChild(thead);
     const tbody=el("tbody");
-    DT.events.forEach(e=>{
+    c.events.forEach(e=>{
       const tr=el("tr");
-      tr.appendChild(el("td",null,e.ts.slice(5,16).replace("T"," ")));
-      tr.appendChild(el("td",null,e.type));
-      tr.appendChild(el("td",null,e.detail||""));
-      tr.appendChild(el("td","num phase "+e.phase,e.phase==="labels"?"label":e.phase));
+      tr.appendChild(el("td",null,e[0].slice(5,16).replace("T"," ")));
+      tr.appendChild(el("td",null,e[1]));
+      tr.appendChild(el("td",null,e[4]||""));
+      tr.appendChild(el("td","num phase "+e[2],e[2]==="labels"?"label":e[2]));
       tbody.appendChild(tr);
     });
-    table.appendChild(tbody); box.appendChild(table); ledger.appendChild(box);
-    flow.appendChild(ledger); host.appendChild(flow);
+    table.appendChild(tbody); box.appendChild(table);
+    ledger.appendChild(box); flow.appendChild(ledger); host.appendChild(flow);
   }
 
-  renderCustomer(); renderData();
+  function select(i){
+    selected=i;
+    renderTable();
+    renderStream();
+  }
+
+  renderTable();
+  renderStream();
 }
 
 /* ---------- objectives ---------- */

@@ -18,7 +18,7 @@ xdg-open demo/index.html                 # or double-click the file
 | Tab | What it shows |
 |---|---|
 | **Overview** | The claim, four headline numbers, and the frozen state vs the traditional table |
-| **Data** | One customer's event stream over the full 540-day window: a full-width event timeline and the complete event ledger. Dots separate history, the 90-day label window, and later events. |
+| **Data** | A legacy wide-table sample with one row per customer. Select a row to open that customer's event timeline and full event ledger below. |
 | **Axes** | Eight sub-tabs, one per content axis. Each opens a full panel: the value, what it measures, how it is measured, why it matters, and a dedicated visual (singular spectrum, reconstruction scatter, purity distribution, ROC, reliability curve, randomized-action design, order bars, relational bars) |
 | **Objectives** | A clickable explorer for all ten self-supervised objectives: what each predicts, the naive baseline, the learned skill, and a timeline diagram of the training cut |
 | **Plugins** | Known-effect recovery across five action keys, and RL policy value against table and uniform comparators |
@@ -43,11 +43,12 @@ reliability bins, an ROC curve for churn from the state, and the per-customer id
 distribution. If it is absent, the Axes tab still renders its numbers and
 the visuals are simply omitted.
 
-The **Data** tab is generated separately by `scripts/build_data_tab.py`, which reads the canonical
-event stream at `/tmp/opencode/t0_loop/ref_v3b_6k` and writes `demo/data_tab.json`. It uses one
-example customer (`rc0000208`) and computes every timeline dot, ledger row, and phase count from
-the stream. The timeline makes the window split explicit: 249 history events, 55 events in the
-90-day label window, and 56 after it.
+The **Data** tab is generated separately by `scripts/build_data_tab.py`, which reads the legacy
+wide table and the canonical event stream at `/tmp/opencode/t0_loop/ref_v3b_6k` and writes
+`demo/data_tab.json`. It selects eight illustrative customers (stratified so both churn outcomes
+appear), previews 7 of the 51 wide-table columns, and attaches each customer's full stream. The
+selected row opens that customer's timeline and ledger below, with the as-of and 90-day label
+boundaries marked.
 
 The Customer Explorer additionally samples the frozen cache at `/tmp/opencode/frozen_6k` and the
 canonical stream.
@@ -68,6 +69,6 @@ separately rather than showing a number.
 
 - Synthetic relational harness; no business data.
 - Explorer neighbours are computed in the frozen state and are not used to form the actual outcome.
-- The Data tab shows one customer's full stream; its timeline marks the as-of and 90-day label
-  boundaries so the history and outcome windows are visible.
+- The Data tab's legacy table is a preview: 8 illustrative rows and 7 of 51 columns. Selecting a
+  row opens the same customer's complete event stream below.
 - Regenerate after any receipt or reference-data change so the page stays current.

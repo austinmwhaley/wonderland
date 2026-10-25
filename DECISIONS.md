@@ -1526,3 +1526,23 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   onto a second line.
 - Verified by clicking a churned point in headless Chrome and rendering the page at desktop and
   mobile widths; inline JS passes `node --check`.
+
+## DEC-319 — Data tab: legacy table first, selected customer's stream below
+
+- Feedback: the first element should be the legacy view that collapses customers to one row;
+  clicking a row should open that same customer's event timeline and ledger underneath.
+- Structure: the Data tab now opens on an eight-row legacy table. Each row is one customer with
+  history counts, purchase value, and next-90-day order/value/churn labels. The table previews
+  7 of the 51 wide-table columns and is labelled as such.
+- Selection: one row is selected by default (`rc0000208`). Clicking or keyboard-selecting any row
+  updates a large stream block below: the customer key, four phase counts, the full timeline, and
+  the complete event ledger. The selected row gets a green dot, left rule, and tint.
+- Sample: eight illustrative customers chosen deterministically and stratified by outcome so the
+  table shows both retained and churned rows. The page states that it is 8 of 6,000 rows.
+- Export: `scripts/build_data_tab.py` now emits legacy values and full event arrays for all eight
+  selected customers, sharing one event-type list. Events are compact arrays; the payload is about
+  280 KB and the generated page about 640 KB.
+- Removed the separate customer header and the single-customer stream-only layout. The selected
+  row is now the customer identity for the stream below.
+- Verified by clicking a different row in headless Chrome and confirming the key, counts, timeline,
+  and ledger all update; checked desktop and mobile layouts and inline JS with `node --check`.
