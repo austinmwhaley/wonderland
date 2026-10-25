@@ -2079,3 +2079,11 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - Four structured notes (Reads, Learns, Writes, Reuses) highlight the corresponding stage on
   hover or keyboard focus, and the diagram stages highlight their notes in return.
 - The feature explorer below is now visually labelled as a separate block.
+
+## DEC-371 — Encoder at-a-glance is limited to encoder internals
+
+- Removed the Event Stream, Frozen State, and Plugins stages from the Encoder tab's top visual.
+- The block now contains only token inputs (events, fields, time, gaps), the two gated SSM layer
+  bands, and the 128-d output vector. The four notes are Reads, Learns, Writes, and Why.
+- The “Why” note highlights the encoder as a whole; the other notes highlight their internal
+  input, layer, or output zones.
