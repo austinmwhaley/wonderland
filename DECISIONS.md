@@ -1723,3 +1723,14 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - Plugins: positioned the predict / retrieve / act nodes on a circle at equal radius from the
   centre; the three connectors are now equal length.
 - Verified by rendering the Overview pipeline in headless Chrome.
+
+## DEC-333 — Axes and Objectives fold into the Encoder tab
+
+- Request: migrate Axes and Objectives inside Encoder and reach them by scrolling.
+- Navigation is now five tabs: Overview, Data, Encoder, Plugins, Explorer.
+- The existing Axes and Objectives markup moved inside the Encoder section as `.encsection`
+  blocks, separated by hairlines. Their internal sub-tabs/panels and all interactions are unchanged.
+- Old `#view=axes` and `#view=objectives` links alias to Encoder instead of falling back to
+  Overview.
+- Verified by rendering the merged Encoder page and scrolling through both sections; inline JS
+  passes `node --check`.

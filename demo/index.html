@@ -198,6 +198,7 @@ th.num{text-align:right}
   .encarrow{display:none}.encstep.last{grid-column:span 2}}
 .encgrid{display:grid;grid-template-columns:minmax(0,1.06fr) minmax(0,.94fr);gap:16px;align-items:start}
 @media(max-width:900px){.encgrid{grid-template-columns:1fr}}
+.encsection{border-top:1px solid var(--line);margin-top:54px;padding-top:38px}
 .shapehead{display:flex;justify-content:space-between;align-items:baseline;gap:16px;margin-bottom:14px;flex-wrap:wrap}
 .shapekey{font-family:ui-monospace,monospace;font-size:20px;font-weight:600;letter-spacing:-.02em}
 .shapemeta{color:var(--muted);font-size:11.5px}
@@ -328,16 +329,14 @@ footer{margin-top:56px;padding-top:18px;border-top:1px solid var(--line);color:v
           <p class="note" id="familynote"></p>
         </div>
       </div>
-    </section>
-
-    <section id="axes" hidden>
+    <div class="encsection" id="axes">
       <h2>Eight content axes</h2>
       <p class="lede">What the frozen state carries, axis by axis. Each axis is a distinct property of the stream, measured on held-out customers.</p>
       <div class="subtabs" id="axistabs"></div>
       <div class="axpanel" id="axpanel"></div>
-    </section>
+    </div>
 
-    <section id="objectives" hidden>
+    <div class="encsection" id="objectives">
       <h2>Objectives</h2>
       <p class="lede">Ten self-supervised tasks trained on the same frozen state. None uses a business label: targets come from the stream itself.</p>
       <div class="objlayout">
@@ -384,6 +383,8 @@ footer{margin-top:56px;padding-top:18px;border-top:1px solid var(--line);color:v
         </button></div>
         <div class="objpanel" id="objpanel"></div>
       </div>
+    </div>
+
     </section>
 
     <section id="plugins" hidden>
@@ -423,9 +424,11 @@ const INK="#111827", MUT="#6b7280", DIM="#9ca3af", LINE="#e5e7eb", ACC="#059669"
 const OBJSPEC = {"jepa": {"label": "JEPA", "desc": "Predict the mean latent of the next H states.", "cut": 5, "target": [6, 7, 8, 9], "mode": null, "skill": 0.8762006805017981, "naive": -0.0023258936132506403}, "mask": {"label": "Masked event", "desc": "Recover an event removed from the middle.", "cut": 5, "target": [3], "mode": null, "skill": 0.8509751512519553, "naive": 0.45572487441952925}, "order": {"label": "Order", "desc": "From the final state, identify the terminal event.", "cut": 6, "target": [10], "mode": null, "skill": 0.7861111111111111, "naive": 0.4844444444444444}, "entity": {"label": "Entity", "desc": "Predict the identity field of the next event.", "cut": 5, "target": [6], "mode": null, "skill": 0.5727497759367153, "naive": 0.5354249129609361}, "query": {"label": "Query", "desc": "Predict days since the last event of a given type.", "cut": 5, "target": [6], "mode": null, "skill": 0.4875728119797424, "naive": -0.0005654786331093398}, "sf": {"label": "Successor", "desc": "Predict discounted future features.", "cut": 5, "target": [6, 7, 8, 9, 10], "mode": "decay", "skill": 0.1378410170441974, "naive": 0.09071136368549709}, "dt": {"label": "Gap", "desc": "Predict the time until the next event.", "cut": 5, "target": [6], "mode": "span", "skill": 0.10038443012541298, "naive": -7.038755761632487e-05}, "value": {"label": "Magnitude", "desc": "Predict the magnitude of the next event.", "cut": 5, "target": [6], "mode": null, "skill": 0.05503150209577039, "naive": -0.0002646923065185547}, "agg": {"label": "Aggregate", "desc": "Predict count and sum over the next H steps.", "cut": 5, "target": [6, 7, 8], "mode": null, "skill": 0.021034725040145717, "naive": -0.00026144068672830925}, "next": {"label": "Next event", "desc": "Predict the event type at t+1.", "cut": 5, "target": [6], "mode": null, "skill": 0.46600003081562547, "naive": 0.4645750870390639}};
 
 /* tabs */
-const TABS=[["overview","Overview"],["data","Data"],["encoder","Encoder"],["axes","Axes"],["objectives","Objectives"],["plugins","Plugins"],["explorer","Explorer"]];
+const TABS=[["overview","Overview"],["data","Data"],["encoder","Encoder"],["plugins","Plugins"],["explorer","Explorer"]];
 const nav=$("#tabs");
+const TAB_ALIAS={axes:"encoder",objectives:"encoder"};
 function activate(id,push){
+  id=TAB_ALIAS[id]||id;
   const known=TABS.some(([t])=>t===id)?id:TABS[0][0];
   document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("on",x.dataset.tab===known));
   TABS.forEach(([t])=>{const s=document.getElementById(t); if(s) s.hidden=t!==known;});

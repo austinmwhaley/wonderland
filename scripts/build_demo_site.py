@@ -491,6 +491,7 @@ th.num{text-align:right}
   .encarrow{display:none}.encstep.last{grid-column:span 2}}
 .encgrid{display:grid;grid-template-columns:minmax(0,1.06fr) minmax(0,.94fr);gap:16px;align-items:start}
 @media(max-width:900px){.encgrid{grid-template-columns:1fr}}
+.encsection{border-top:1px solid var(--line);margin-top:54px;padding-top:38px}
 .shapehead{display:flex;justify-content:space-between;align-items:baseline;gap:16px;margin-bottom:14px;flex-wrap:wrap}
 .shapekey{font-family:ui-monospace,monospace;font-size:20px;font-weight:600;letter-spacing:-.02em}
 .shapemeta{color:var(--muted);font-size:11.5px}
@@ -621,22 +622,22 @@ footer{margin-top:56px;padding-top:18px;border-top:1px solid var(--line);color:v
           <p class="note" id="familynote"></p>
         </div>
       </div>
-    </section>
-
-    <section id="axes" hidden>
+    <div class="encsection" id="axes">
       <h2>Eight content axes</h2>
       <p class="lede">What the frozen state carries, axis by axis. Each axis is a distinct property of the stream, measured on held-out customers.</p>
       <div class="subtabs" id="axistabs"></div>
       <div class="axpanel" id="axpanel"></div>
-    </section>
+    </div>
 
-    <section id="objectives" hidden>
+    <div class="encsection" id="objectives">
       <h2>Objectives</h2>
       <p class="lede">Ten self-supervised tasks trained on the same frozen state. None uses a business label: targets come from the stream itself.</p>
       <div class="objlayout">
         <div id="objlist">__OBJLIST__</div>
         <div class="objpanel" id="objpanel"></div>
       </div>
+    </div>
+
     </section>
 
     <section id="plugins" hidden>
@@ -676,9 +677,11 @@ const INK="#111827", MUT="#6b7280", DIM="#9ca3af", LINE="#e5e7eb", ACC="#059669"
 const OBJSPEC = __OBJSPEC__;
 
 /* tabs */
-const TABS=[["overview","Overview"],["data","Data"],["encoder","Encoder"],["axes","Axes"],["objectives","Objectives"],["plugins","Plugins"],["explorer","Explorer"]];
+const TABS=[["overview","Overview"],["data","Data"],["encoder","Encoder"],["plugins","Plugins"],["explorer","Explorer"]];
 const nav=$("#tabs");
+const TAB_ALIAS={axes:"encoder",objectives:"encoder"};
 function activate(id,push){
+  id=TAB_ALIAS[id]||id;
   const known=TABS.some(([t])=>t===id)?id:TABS[0][0];
   document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("on",x.dataset.tab===known));
   TABS.forEach(([t])=>{const s=document.getElementById(t); if(s) s.hidden=t!==known;});

@@ -20,9 +20,7 @@ xdg-open demo/index.html                 # or double-click the file
 |---|---|
 | **Overview** | A visual pipeline from event stream to encoder to frozen state to plugins. A **Predict / Retrieve / Act** selector switches between a held-out comparison chart, an interactive nearest-neighbour geometry, and known-effect recovery bars. Predict and Act values are available on hover rather than in a table. |
 | **Data** | A legacy RFM snapshot with one row per customer: Recency, Frequency and Monetary. Select a row to open that customer's raw event timeline and canonical ledger below. Hover any timeline dot for its `event_ts` and `event_attributes`; the ledger shows `event_ts`, `event_type`, and `event_attributes`, with the selected `customer_key` shown above. No outcome labels or window markers. |
-| **Encoder** | The encoder flow from event stream to field tokens, sequence blocks, 128-d shape, and 2,265-d published state. Below it: an actual 128-cell feature map for one customer and the published state's feature-family dimensions. |
-| **Axes** | Eight sub-tabs, one per content axis. Each opens a full panel: the value, what it measures, how it is measured, why it matters, and a dedicated visual (singular spectrum, reconstruction scatter, purity distribution, ROC, reliability curve, randomized-action design, order bars, relational bars) |
-| **Objectives** | A clickable explorer for all ten self-supervised objectives: what each predicts, the naive baseline, the learned skill, and a timeline diagram of the training cut |
+| **Encoder** | The encoder flow from event stream to field tokens, sequence blocks, 128-d shape, and 2,265-d published state. Below it: an actual 128-cell feature map, the published state's feature-family dimensions, then the eight content axes and the ten self-supervised objectives as scroll sections. |
 | **Plugins** | A structured source-and-branch view: one frozen state feeding two plugin heads. Click **Known effect** for a dumbbell chart of table vs state recovery across five action keys, or **Policy value** for the uniform / table / frozen IPS trajectories. Values appear on hover. |
 | **Explorer** | A full-width projection of 260 held-out customers. Click a point to draw lines to its five nearest neighbours and open a large profile below: outcome, four headline numbers, preference profile, recent history, and nearest neighbours. |
 
@@ -42,7 +40,7 @@ Every value in the model tabs is generated from receipts under
 `demo/b_data.json` (built by `scripts/build_b_demo_data.py`) holds the arrays the axis panels
 need: the state's singular spectrum, a predicted-vs-actual reconstruction scatter, the next-event
 reliability bins, an ROC curve for churn from the state, and the per-customer identity-purity
-distribution. If it is absent, the Axes tab still renders its numbers and
+distribution. If it is absent, the Axes section still renders its numbers and
 the visuals are simply omitted.
 
 The **Data** tab is generated separately by `scripts/build_data_tab.py`, which reads the legacy
