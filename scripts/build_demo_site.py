@@ -429,91 +429,26 @@ td.num{text-align:right;font-variant-numeric:tabular-nums;font-family:ui-monospa
 .axrow .v{font-size:13px;color:var(--muted);margin-top:3px}
 .axvis{border:1px solid var(--line);border-radius:8px;padding:22px}
 .dcustomer{display:grid;grid-template-columns:170px minmax(0,1fr) auto;gap:28px;align-items:center;
-  border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:17px 0;margin-bottom:22px}
-@media(max-width:800px){.dcustomer{grid-template-columns:1fr;gap:10px}}
+  border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:17px 0;margin-bottom:24px}
+@media(max-width:800px){.dcustomer{grid-template-columns:1fr;gap:8px}}
 .dcustkey{font-family:ui-monospace,monospace;font-size:23px;font-weight:600;letter-spacing:-.02em}
 .dcustmeta{color:var(--muted);font-size:13px}
-.dcuststats{display:flex;gap:20px;color:var(--muted);font-size:12px;white-space:nowrap}
+.dcuststats{display:flex;gap:16px;color:var(--muted);font-size:12px;white-space:nowrap;flex-wrap:wrap}
 .dcuststats b{color:var(--ink);font-family:ui-monospace,monospace;font-weight:600}
-.dsource{border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin-bottom:24px}
-.dsourcehead{display:flex;justify-content:space-between;gap:16px;align-items:baseline;margin-bottom:10px}
-.dsourcehead .t{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);font-weight:600}
-.dsourcegrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
-@media(max-width:800px){.dsourcegrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-.dsourcecard{border:1px solid var(--line2);border-radius:6px;padding:8px 10px;background:#fff}
-.dsourcecard.lookup{background:#fafafa}
-.dsname{font-family:ui-monospace,monospace;font-size:11.5px;color:var(--ink)}
-.dsrows{font-size:11.5px;color:var(--dim);margin-top:2px}
-.dsrows b{color:var(--ink);font-family:ui-monospace,monospace;font-size:12.5px;font-weight:600}
-.dscols{font-size:10px;color:var(--dim);margin-top:1px}
-.dstats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid var(--line);margin-bottom:24px}
-@media(max-width:800px){.dstats{grid-template-columns:repeat(2,minmax(0,1fr))}}
-.dstat{padding:13px 14px 10px 0;border-right:1px solid var(--line2)}
-.dstat:last-child{border-right:0}
-.dstat .k{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
-.dstat .v{font-family:ui-monospace,monospace;font-size:22px;font-weight:600;letter-spacing:-.02em;margin-top:3px}
-.dstat .s{font-size:10.5px;color:var(--dim)}
-.dsplit{border:1px solid var(--line);border-radius:8px;padding:15px 17px;margin-bottom:24px}
-.dsplithead{display:flex;justify-content:space-between;gap:16px;align-items:baseline}
-.dsplithead .k{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);font-weight:600}
-.dsplithead .t{font-family:ui-monospace,monospace;font-size:11px;color:var(--muted)}
-.dsplitbar{display:flex;height:17px;border-radius:3px;overflow:hidden;background:var(--line2);margin:11px 0 7px}
-.dsplitbar div{height:100%;font-size:9.5px;color:#fff;font-family:ui-monospace,monospace;
-  display:flex;align-items:center;justify-content:center;min-width:0;overflow:hidden;white-space:nowrap}
-.dsplitbar .hist{background:var(--ink)}
-.dsplitbar .labels{background:var(--accent)}
-.dsplitbar .later{background:#d1d5db;color:#4b5563}
-.dsplitlegend{display:flex;gap:18px;flex-wrap:wrap;color:var(--dim);font-size:11px}
-.dsplitlegend span::before{content:"";display:inline-block;width:7px;height:7px;border-radius:2px;margin-right:5px;vertical-align:0}
-.dsplitlegend .h::before{background:var(--ink)}
-.dsplitlegend .l::before{background:var(--accent)}
-.dsplitlegend .x::before{background:#d1d5db}
-.dsplit .note{margin-top:8px}
-.reconhead{font-size:17px;font-weight:600;letter-spacing:-.01em;margin:0 0 8px}
-.widebar{display:flex;gap:2px;margin:10px 0 16px;height:38px}
-.widebar button,.widekey{appearance:none;border:0;padding:0 7px;font:inherit;font-size:10px;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;min-width:0;white-space:nowrap;overflow:hidden;
-  background:var(--line2);color:var(--muted);border-radius:3px}
-.widebar button:hover{background:#e5e7eb;color:var(--ink)}
-.widebar button.on{background:var(--ink);color:#fff}
-.widekey{background:#fff;border:1px solid var(--line);color:var(--dim);font-family:ui-monospace,monospace;cursor:default}
-.widegrid{display:grid;grid-template-columns:minmax(0,1.26fr) minmax(0,.74fr);gap:38px;align-items:start}
-@media(max-width:880px){.widegrid{grid-template-columns:1fr}}
-.fieldtable th,.fieldtable td{padding:8px 8px}
-.fieldtable td:first-child{font-family:ui-monospace,monospace;font-size:11.5px;color:var(--ink);white-space:nowrap}
-.fieldtable td:nth-child(2){color:var(--muted);font-size:12px}
-.fieldtable td.num{font-size:12px}
-.fieldtable tr:last-child td{border-bottom:0}
-.rulecard{border:1px solid var(--line);border-radius:8px;padding:17px 18px}
-.ruletext{color:var(--muted);font-size:12.5px;line-height:1.6;margin:8px 0 0}
-.ruletext.mono{font-family:ui-monospace,monospace;font-size:11px;color:var(--ink)}
-.ruletag{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);font-weight:600;margin-top:16px}
-.rulecard .ruletag:first-child{margin-top:0}
-.streamgrid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,.65fr);gap:16px;align-items:start;margin-bottom:16px}
-@media(max-width:900px){.streamgrid{grid-template-columns:1fr}}
-.tlcard{padding:18px}
+.dataflow{display:grid;gap:16px}
+.cardtag{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);font-weight:600;margin-bottom:10px}
 .tlwrap svg{display:block;width:100%;height:auto}
-.legend{display:flex;gap:16px;flex-wrap:wrap;color:var(--dim);font-size:11px;margin-top:8px}
+@media(max-width:800px){.tlwrap{overflow-x:auto}.tlwrap svg{min-width:700px}}
+.legend{display:flex;gap:16px;flex-wrap:wrap;color:var(--dim);font-size:11px;margin-top:10px}
 .legend span::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px}
 .legend .h::before{background:var(--ink)}
 .legend .l::before{background:var(--accent)}
 .legend .x::before{background:#d1d5db}
-.coltable th,.coltable td{padding:8px 6px;font-size:11.5px}
-.coltable td:first-child{font-family:ui-monospace,monospace}
-.coltable td:nth-child(2){color:var(--dim);font-size:10.5px}
-.coltable td:last-child{color:var(--muted);font-size:11px;text-align:right}
-.filters{display:flex;gap:7px;flex-wrap:wrap;margin:12px 0 3px}
-.filter{appearance:none;border:1px solid var(--line);background:#fff;color:var(--muted);border-radius:999px;
-  padding:4px 9px;font:inherit;font-size:11px;cursor:pointer}
-.filter:hover{color:var(--ink);border-color:var(--dim)}
-.filter.on{background:var(--ink);color:#fff;border-color:var(--ink)}
-.logscroll{max-height:478px;overflow:auto;margin-top:9px;border-top:1px solid var(--line)}
+.logscroll{max-height:520px;overflow:auto;border-top:1px solid var(--line)}
 .logtable{font-size:12px}
 .logtable th{position:sticky;top:0;background:#fff;z-index:2;padding:8px 7px}
-.logtable td{padding:6px 7px}
-.logtable tr{cursor:pointer}
+.logtable td{padding:7px 7px}
 .logtable tr:hover td{background:#fafafa}
-.logtable tr.on td{background:#f0fdf4}
 .logtable td:first-child{font-family:ui-monospace,monospace;font-size:10.5px;color:var(--dim);white-space:nowrap}
 .logtable td:nth-child(2){font-family:ui-monospace,monospace;font-size:11px;white-space:nowrap}
 .logtable td:nth-child(3){color:var(--muted);font-size:11.5px}
@@ -521,23 +456,6 @@ td.num{text-align:right;font-variant-numeric:tabular-nums;font-family:ui-monospa
 .phase.history{color:var(--dim)}
 .phase.labels{color:var(--accent)}
 .phase.later{color:#d1d5db}
-.evtdetail{position:sticky;top:16px;padding:18px}
-.evtkey{font-family:ui-monospace,monospace;font-size:11.5px;color:var(--dim);margin-top:3px}
-.evttitle{font-size:17px;font-weight:600;letter-spacing:-.01em;margin-top:3px}
-.attrgrid{display:grid;grid-template-columns:1fr auto;gap:5px 12px;font-size:11.5px;margin-top:14px}
-.attrgrid div:nth-child(even){font-family:ui-monospace,monospace;text-align:right;font-size:10.5px}
-.attrgrid div:nth-child(odd){color:var(--muted)}
-pre.json{font:10.5px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;background:#f9fafb;
-  border:1px solid var(--line2);border-radius:6px;padding:11px;white-space:pre-wrap;word-break:break-word;
-  margin:14px 0 0;max-height:230px;overflow:auto;color:#374151}
-.recon{table-layout:auto}
-.recon td{padding:9px 8px}
-.recon td:first-child{font-family:ui-monospace,monospace;font-size:11.5px;white-space:nowrap}
-.recon td:nth-child(2),.recon td:nth-child(3){font-size:12px}
-.recon td:last-child{color:var(--muted);font-size:11.5px}
-.recon .w{color:var(--dim);font-size:10.5px;font-family:ui-sans-serif,system-ui,sans-serif}
-.reconwrap{overflow-x:auto}
-.evtdetail .phase{display:block;margin-top:4px}
 .explorer{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:28px;align-items:start}
 @media(max-width:980px){.explorer{grid-template-columns:1fr}}
 #scatter{width:100%;height:auto;border:1px solid var(--line);border-radius:8px;background:#fff}
@@ -586,13 +504,9 @@ footer{margin-top:56px;padding-top:18px;border-top:1px solid var(--line);color:v
 
     <section id="data" hidden>
       <h2>Data</h2>
-      <p class="lede">One customer, two shapes. Eight raw tables become a single 51-column legacy row and a 360-row event stream. Both are views of the same ledger; the wide row aggregates only the history before as-of.</p>
+      <p class="lede">One customer's event stream over the full 540-day window. Every aggregate is built from this ledger.</p>
       <div id="datacustomer"></div>
-      <div id="dataraw"></div>
-      <div class="subtabs" id="datatabs"></div>
       <div id="datapanel"></div>
-      <hr>
-      <div id="datareconcile"></div>
     </section>
 
     <section id="axes" hidden>
@@ -889,47 +803,7 @@ if(!DT){
   const host=$("#data");
   if(host) host.innerHTML="<h2>Data</h2><p class='lede'>Run <code>python3 scripts/build_data_tab.py</code> with the canonical stream available to build this tab.</p>";
 }else{
-  const TYPE_INFO={};
-  DT.stream.types.forEach(t=>TYPE_INFO[t.id]=t);
-  const FAMILY_OF=Object.fromEntries(DT.stream.types.map(t=>[t.id,t.family]));
   const MONTHS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-
-  function fmtVal(v,kind){
-    if(v===null||v===undefined||v==="") return "—";
-    if(kind==="date") return String(v).slice(0,10);
-    if(kind==="money"){
-      const n=Number(v); return (n<0?"-":"")+"$"+Math.abs(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
-    }
-    if(kind==="int") return Math.round(Number(v)).toLocaleString("en-US");
-    if(kind==="ratio4") return Number(v).toFixed(4);
-    if(kind==="num3") return Number(v).toFixed(3);
-    if(typeof v==="number") return Number(v).toLocaleString("en-US");
-    return String(v);
-  }
-  function dstat(k,v,s){
-    const n=el("div","dstat");
-    n.appendChild(el("div","k",k)); n.appendChild(el("div","v",v));
-    if(s) n.appendChild(el("div","s",s));
-    return n;
-  }
-  function splitBar(){
-    const bar=el("div","dsplitbar");
-    const total=DT.local.history+DT.local.labels+DT.local.later;
-    [["hist",DT.local.history,"history"],["labels",DT.local.labels,"90-day label"],["later",DT.local.later,"later"]]
-      .forEach(([cls,n,label])=>{
-        if(!n) return;
-        const seg=el("div",cls); seg.style.flex=String(n); seg.title=label+": "+n+" events";
-        if(n/total>0.10) seg.textContent=n;
-        bar.appendChild(seg);
-      });
-    return bar;
-  }
-  function splitLegend(){
-    const leg=el("div","dsplitlegend");
-    [["h","history "+DT.local.history],["l","90-day label "+DT.local.labels],["x","later "+DT.local.later]]
-      .forEach(([cls,text])=>{leg.appendChild(el("span",cls,text));});
-    return leg;
-  }
   function month(iso){
     const parts=String(iso).slice(0,10).split("-");
     return MONTHS[Number(parts[1])-1]+" "+parts[0];
@@ -947,295 +821,75 @@ if(!DT){
     bar.appendChild(left);
     bar.appendChild(el("div","dcustmeta",[c.acquisition_channel,c.region,"segment "+c.segment,"loyalty "+c.loyalty_tier,"joined "+String(c.signup_ts).slice(0,10)].join(" · ")));
     const stats=el("div","dcuststats");
-    [["history",DT.local.history],["label",DT.local.labels],["later",DT.local.later]].forEach(([k,n])=>{
+    [["events",DT.counts.total],["before as-of",DT.counts.history],["label window",DT.counts.labels],["later",DT.counts.later]].forEach(([k,n])=>{
       const s=el("span"); s.appendChild(el("b",null,String(n))); s.appendChild(document.createTextNode(" "+k)); stats.appendChild(s);
     });
     bar.appendChild(stats); host.appendChild(bar);
   }
 
-  function renderRaw(){
-    const host=$("#dataraw"); host.innerHTML="";
-    const box=el("div","dsource");
-    const head=el("div","dsourcehead");
-    head.appendChild(el("div","t","Raw relational tables"));
-    head.appendChild(el("div","note","row counts for this customer · products and campaigns are shared"));
-    box.appendChild(head);
-    const grid=el("div","dsourcegrid");
-    DT.local.raw.forEach(r=>{
-      const card=el("div","dsourcecard"+(r.lookup?" lookup":""));
-      card.title=r.columns+" columns · key "+r.key;
-      card.appendChild(el("div","dsname",r.name));
-      const rows=el("div","dsrows");
-      rows.appendChild(el("b",null,String(r.lookup?r.global_rows:r.rows)));
-      rows.appendChild(document.createTextNode(r.lookup?" global":" of "+r.global_rows.toLocaleString()));
-      card.appendChild(rows);
-      card.appendChild(el("div","dscols",r.columns+" columns · "+(r.lookup?"lookup":r.key)));
-      grid.appendChild(card);
-    });
-    box.appendChild(grid); host.appendChild(box);
-  }
-
-  function renderLegacy(){
-    const host=$("#datapanel"); host.innerHTML="";
-    const outcomeFields=DT.wide.groups.find(g=>g.id==="outcomes").fields.length;
-    const historyFields=DT.wide.groups.reduce((a,g)=>a+(g.id==="outcomes"?0:g.fields.length),0);
-    const stats=el("div","dstats");
-    [
-      dstat("Rows for this customer","1","one row per customer_key"),
-      dstat("Columns",String(DT.wide.columns),"1 key + "+historyFields+" features + "+outcomeFields+" labels"),
-      dstat("History fields",String(historyFields),"event_ts ≤ "+DT.as_of.slice(0,10)),
-      dstat("Rows globally",DT.global.wide_rows.toLocaleString(),"the whole legacy table"),
-    ].forEach(n=>stats.appendChild(n));
-    host.appendChild(stats);
-
-    const split=el("div","dsplit");
-    const shead=el("div","dsplithead");
-    shead.appendChild(el("div","k","Window split for this customer"));
-    shead.appendChild(el("div","t","as of "+DT.as_of.slice(0,10)));
-    split.appendChild(shead);
-    split.appendChild(splitBar());
-    split.appendChild(splitLegend());
-    split.appendChild(el("p","note","The wide row reads the history segment. Its ten outcome columns read the 90-day segment. The stream keeps all three."));
-    host.appendChild(split);
-
-    const bar=el("div","widebar");
-    const key=el("div","widekey","key"); key.style.flex="1"; key.title="customer_key"; bar.appendChild(key);
-    const buttons={};
-    DT.wide.groups.forEach(g=>{
-      const b=el("button",null,g.label+" "+g.fields.length);
-      b.style.flex=String(g.fields.length); b.dataset.group=g.id;
-      b.onclick=()=>paintGroup(g.id);
-      buttons[g.id]=b; bar.appendChild(b);
-    });
-    host.appendChild(bar);
-
-    const grid=el("div","widegrid");
-    const left=el("div"), right=el("div","rulecard");
-    grid.appendChild(left); grid.appendChild(right); host.appendChild(grid);
-
-    function paintGroup(gid){
-      const g=DT.wide.groups.find(x=>x.id===gid);
-      Object.entries(buttons).forEach(([id,b])=>b.classList.toggle("on",id===gid));
-      left.innerHTML="";
-      left.appendChild(el("div","tag",g.label+" · "+g.fields.length+" fields"));
-      const table=el("table","fieldtable");
-      const thead=el("thead"); const hr=el("tr");
-      ["Field","Meaning","Value"].forEach((t,i)=>{const th=el("th",i===2?"num":null,t);hr.appendChild(th);});
-      thead.appendChild(hr); table.appendChild(thead);
-      const tbody=el("tbody");
-      g.fields.forEach(f=>{
-        const tr=el("tr");
-        tr.appendChild(el("td",null,f.name));
-        tr.appendChild(el("td",null,f.label));
-        tr.appendChild(el("td","num",fmtVal(f.value,f.kind)));
-        tbody.appendChild(tr);
-      });
-      table.appendChild(tbody); left.appendChild(table);
-
-      right.innerHTML="";
-      right.appendChild(el("div","ruletag","How this group is built"));
-      right.appendChild(el("p","ruletext",g.rule));
-      right.appendChild(el("div","ruletag","Source"));
-      right.appendChild(el("p","ruletext mono",g.source));
-      right.appendChild(el("div","ruletag","Window"));
-      right.appendChild(el("p","ruletext",
-        g.id==="profile" ? "customer dimension, joined once at as_of" :
-        g.id==="outcomes" ? "events in the 90 days after as_of" :
-        "events with event_ts ≤ as_of"));
-    }
-    paintGroup("profile");
-  }
-
   function streamTimeline(){
-    const W=620,H=246,pad={l:70,r:14,t:18,b:28};
+    const W=1000,H=300,pad={l:86,r:20,t:20,b:34};
     const s=svg(W,H), h=H-pad.t-pad.b;
-    const types=DT.stream.types, rowH=h/types.length;
+    const types=DT.types, rowH=h/types.length;
     const X=d=>pad.l+(d/DT.window_days)*(W-pad.l-pad.r);
     const xa=X(dayOf(DT.as_of)), xb=X(dayOf(DT.label_end));
     s.appendChild(rect(xa,pad.t,Math.max(0,xb-xa),h,"#f0fdf4",0));
     types.forEach((t,i)=>{
       const y=pad.t+(i+0.5)*rowH;
-      s.appendChild(tx(pad.l-6,y+3,t.label,{size:9,fill:MUT,anchor:"end"}));
+      s.appendChild(tx(pad.l-7,y+3,t.label,{size:10,fill:MUT,anchor:"end"}));
       s.appendChild(ln(pad.l,y,W-pad.r,y,{stroke:"#f9fafb"}));
     });
     s.appendChild(ln(xa,pad.t,xa,H-pad.b,{stroke:INK,dash:"3 3"}));
-    s.appendChild(tx(xa+4,pad.t-3,"as of",{size:9,fill:INK}));
+    s.appendChild(tx(xa+5,pad.t-4,"as of",{size:10,fill:INK}));
     s.appendChild(ln(xb,pad.t,xb,H-pad.b,{stroke:ACC,dash:"2 3"}));
-    s.appendChild(tx(xb+4,pad.t-3,"+90d",{size:9,fill:ACC}));
-    const colors={history:"rgba(17,24,39,.5)",labels:ACC,later:"#d1d5db"};
-    DT.stream.events.forEach(e=>{
+    s.appendChild(tx(xb+5,pad.t-4,"+90d",{size:10,fill:ACC}));
+    const colors={history:"rgba(17,24,39,.45)",labels:ACC,later:"#d1d5db"};
+    DT.events.forEach(e=>{
       const idx=types.findIndex(t=>t.id===e.type);
       if(idx<0) return;
       const y=pad.t+(idx+0.5)*rowH;
-      s.appendChild(dot(X(e.day),y,1.6,colors[e.phase]||DIM));
+      s.appendChild(dot(X(e.day),y,2.1,colors[e.phase]||DIM));
     });
     s.appendChild(ln(pad.l,H-pad.b,W-pad.r,H-pad.b,{stroke:LINE}));
-    s.appendChild(tx(pad.l,H-8,month(DT.window_start),{size:9,fill:DIM}));
-    s.appendChild(tx(xa,H-8,month(DT.as_of),{size:9,fill:DIM,anchor:"middle"}));
-    s.appendChild(tx(xb,H-8,month(DT.label_end),{size:9,fill:DIM,anchor:"middle"}));
-    s.appendChild(tx(W-pad.r,H-8,"window end",{size:9,fill:DIM,anchor:"end"}));
+    s.appendChild(tx(pad.l,H-9,month(DT.window_start),{size:10,fill:DIM}));
+    s.appendChild(tx(xa,H-9,month(DT.as_of),{size:10,fill:DIM,anchor:"middle"}));
+    s.appendChild(tx(xb,H-9,month(DT.label_end),{size:10,fill:DIM,anchor:"middle"}));
+    s.appendChild(tx(W-pad.r,H-9,"window end",{size:10,fill:DIM,anchor:"end"}));
     return s;
   }
 
-  function eventDetail(e){
-    const a=e.attributes;
-    if(e.type==="purchase"||e.type==="return"){
-      return (a.value<0?"-":"")+"$"+Math.abs(Number(a.value)).toFixed(2)+(a.category_code?" · "+a.category_code:"");
-    }
-    if(e.type==="email_send") return (a.touch||"")+(a.target_key?" · "+a.target_key:"");
-    if(e.type==="customer_signup") return "via "+(a.acquisition_channel||"");
-    if(a.category_code) return a.category_code+(a.brand?" · "+a.brand:"");
-    return "";
-  }
-  function attrValue(k,v){
-    if(typeof v==="number"&&(k==="value"||k==="price"||k==="margin")){
-      return (v<0?"-":"")+"$"+Math.abs(v).toFixed(2);
-    }
-    return String(v);
-  }
-
-  function renderStream(){
+  function renderData(){
     const host=$("#datapanel"); host.innerHTML="";
-    const stats=el("div","dstats");
-    [
-      dstat("Rows for this customer",String(DT.local.stream_rows),"one row per event"),
-      dstat("Columns",String(DT.stream.columns.length),"canonical stream"),
-      dstat("Rows globally",DT.global.events.toLocaleString(),"the whole stream"),
-      dstat("Window",DT.window_days+" days","full sequence"),
-    ].forEach(n=>stats.appendChild(n));
-    host.appendChild(stats);
+    const flow=el("div","dataflow");
 
-    const top=el("div","streamgrid");
-    const tl=el("div","panelbox tlcard");
-    tl.appendChild(el("div","tag","Event timeline · one dot per row"));
+    const tl=el("div","panelbox");
+    tl.appendChild(el("div","cardtag","Event timeline · one dot per event"));
     const wrap=el("div","tlwrap"); wrap.appendChild(streamTimeline()); tl.appendChild(wrap);
     const leg=el("div","legend");
     [["h","history"],["l","90-day label"],["x","later"]].forEach(([cls,text])=>leg.appendChild(el("span",cls,text)));
-    tl.appendChild(leg); top.appendChild(tl);
+    tl.appendChild(leg); flow.appendChild(tl);
 
-    const schema=el("div","panelbox");
-    schema.appendChild(el("div","tag","Canonical columns"));
-    const ct=el("table","coltable");
-    const cth=el("thead"); const ctr=el("tr");
-    ["Column","Type","Note"].forEach((t,i)=>{const th=el("th",i===2?"num":null,t);ctr.appendChild(th);});
-    cth.appendChild(ctr); ct.appendChild(cth);
-    const ctb=el("tbody");
-    DT.stream.columns.forEach(c=>{
-      const tr=el("tr");
-      tr.appendChild(el("td",null,c.name));
-      tr.appendChild(el("td",null,c.kind));
-      tr.appendChild(el("td",null,c.note));
-      ctb.appendChild(tr);
-    });
-    ct.appendChild(ctb); schema.appendChild(ct);
-    schema.appendChild(el("div","tag","Window split"));
-    schema.appendChild(splitBar());
-    schema.appendChild(splitLegend());
-    schema.appendChild(el("p","note","Every event is ordered by event_ts. Attributes change shape by event type; nothing is aggregated away."));
-    top.appendChild(schema); host.appendChild(top);
-
-    const bottom=el("div","streamgrid");
     const ledger=el("div","panelbox");
-    ledger.appendChild(el("div","tag","Event ledger · every row"));
-    const filters=el("div","filters");
-    const logbox=el("div","logscroll");
+    ledger.appendChild(el("div","cardtag","Event ledger · "+DT.counts.total+" rows"));
+    const box=el("div","logscroll");
     const table=el("table","logtable");
     const thead=el("thead"); const hr=el("tr");
-    ["Time","Event","Detail","Phase"].forEach((t,i)=>{const th=el("th",i===3?"num":null,t);hr.appendChild(th);});
-    thead.appendChild(hr); table.appendChild(thead);
-    const tbody=el("tbody"); table.appendChild(tbody); logbox.appendChild(table);
-    ledger.appendChild(filters); ledger.appendChild(logbox);
-    bottom.appendChild(ledger);
-
-    const detail=el("div","panelbox evtdetail");
-    bottom.appendChild(detail); host.appendChild(bottom);
-
-    let family="all", selected=0;
-    const families=[
-      ["all","All"],["commerce","Commerce"],["marketing","Marketing"],
-      ["browse","Browsing"],["service","Service"],["signup","Signup"],
-    ];
-    const famCount=id=>id==="all"?DT.stream.events.length:DT.stream.events.filter(e=>FAMILY_OF[e.type]===id).length;
-    const filterButtons={};
-    families.forEach(([id,label])=>{
-      const b=el("button","filter"+(id==="all"?" on":""),label+" "+famCount(id));
-      b.onclick=()=>{family=id;Object.entries(filterButtons).forEach(([k,x])=>x.classList.toggle("on",k===id));paintLog();};
-      filterButtons[id]=b; filters.appendChild(b);
-    });
-
-    function showEvent(i){
-      const e=DT.stream.events[i];
-      detail.innerHTML="";
-      detail.appendChild(el("div","tag","Selected event · click any row"));
-      detail.appendChild(el("div","evtkey",e.ts.replace("T"," ")));
-      detail.appendChild(el("div","evttitle",e.type));
-      detail.appendChild(el("div","phase "+e.phase,e.phase==="labels"?"90-day label":e.phase));
-      detail.appendChild(el("div","tag","event_attributes"));
-      const grid=el("div","attrgrid");
-      Object.entries(e.attributes).forEach(([k,v])=>{
-        grid.appendChild(el("div",null,k));
-        grid.appendChild(el("div",null,attrValue(k,v)));
-      });
-      detail.appendChild(grid);
-      detail.appendChild(el("pre","json",JSON.stringify(e.attributes,null,2)));
-      detail.appendChild(el("p","note","customer_key "+DT.customer.key));
-    }
-
-    function paintLog(){
-      tbody.innerHTML="";
-      DT.stream.events.forEach((e,i)=>{
-        if(family!=="all"&&FAMILY_OF[e.type]!==family) return;
-        const tr=el("tr",i===selected?"on":null);
-        tr.onclick=()=>{selected=i;paintLog();showEvent(i);};
-        tr.appendChild(el("td",null,e.ts.slice(5,16).replace("T"," ")));
-        tr.appendChild(el("td",null,e.type));
-        tr.appendChild(el("td",null,eventDetail(e)));
-        tr.appendChild(el("td","num phase "+e.phase,e.phase==="labels"?"label":e.phase));
-        tbody.appendChild(tr);
-      });
-    }
-    paintLog(); showEvent(selected);
-  }
-
-  function renderReconcile(){
-    const host=$("#datareconcile"); host.innerHTML="";
-    host.appendChild(el("div","reconhead","Same customer, same facts"));
-    host.appendChild(el("p","lede","The legacy row is an aggregate of the same event rows. The values below are recomputed from the stream, not copied from the wide table."));
-    const table=el("table","recon");
-    const thead=el("thead"); const hr=el("tr");
-    ["Wide column","Legacy row","From event rows","Window","Rule"].forEach((t,i)=>{const th=el("th",i===1||i===2?"num":null,t);hr.appendChild(th);});
+    ["Time","Event","Detail","Window"].forEach((t,i)=>{const th=el("th",i===3?"num":null,t);hr.appendChild(th);});
     thead.appendChild(hr); table.appendChild(thead);
     const tbody=el("tbody");
-    DT.reconcile.forEach(r=>{
+    DT.events.forEach(e=>{
       const tr=el("tr");
-      const first=el("td");
-      first.appendChild(el("div",null,r.wide));
-      first.appendChild(el("div","w",r.label));
-      tr.appendChild(first);
-      tr.appendChild(el("td","num",fmtVal(r.wide_value,r.kind)));
-      tr.appendChild(el("td","num",fmtVal(r.event_value,r.kind)));
-      tr.appendChild(el("td",null,r.window==="history"?"history":"next 90d"));
-      tr.appendChild(el("td",null,r.from));
+      tr.appendChild(el("td",null,e.ts.slice(5,16).replace("T"," ")));
+      tr.appendChild(el("td",null,e.type));
+      tr.appendChild(el("td",null,e.detail||""));
+      tr.appendChild(el("td","num phase "+e.phase,e.phase==="labels"?"label":e.phase));
       tbody.appendChild(tr);
     });
-    table.appendChild(tbody);
-    const wrap=el("div","reconwrap");
-    wrap.appendChild(table); host.appendChild(wrap);
-    host.appendChild(el("p","note","The full stream has "+DT.local.total+" rows: "+DT.local.history+" history, "+DT.local.labels+" in the 90-day label window, and "+DT.local.later+" after it."));
+    table.appendChild(tbody); box.appendChild(table); ledger.appendChild(box);
+    flow.appendChild(ledger); host.appendChild(flow);
   }
 
-  function renderDataTab(which){
-    document.querySelectorAll("#datatabs button").forEach(b=>b.classList.toggle("on",b.dataset.data===which));
-    if(which==="stream") renderStream(); else renderLegacy();
-  }
-
-  renderCustomer(); renderRaw(); renderReconcile();
-  const dataTabs=$("#datatabs");
-  [["legacy","Legacy"],["stream","Stream"]].forEach(([id,label])=>{
-    const b=el("button",null,label); b.dataset.data=id;
-    b.onclick=()=>renderDataTab(id); dataTabs.appendChild(b);
-  });
-  renderDataTab("legacy");
+  renderCustomer(); renderData();
 }
 
 /* ---------- objectives ---------- */

@@ -1492,3 +1492,20 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   all 260 sampled customers match the stream exactly.
 - Verified by rendering both sub-tabs, every wide group, the event filters, and the A6 panel in
   headless Chrome; checked inline JS with `node --check`.
+
+## DEC-317 — Data tab reduced to the stream timeline and ledger
+
+- Feedback: the Data tab carried too much detail; for this demo simpler is better. The stream
+  timeline and event ledger were the two parts worth keeping, while the legacy view and the
+  surrounding tab scaffolding were not.
+- Removed: the Legacy sub-tab, raw-table strip, wide-row anatomy bar, six field groups and their
+  rules, window-split card, canonical-column table, filter chips, event-detail panel and JSON,
+  and the nine-row reconciliation table. `scripts/build_data_tab.py` now exports only the selected
+  customer, phase counts, event types, and ledger rows with a precomputed detail string.
+- Kept: one event timeline with history / 90-day label / later phases, and the complete event
+  ledger underneath it. Both now use the full content width. The customer header is a single line
+  of identity plus four counts.
+- The Data tab no longer tries to prove the legacy row from the stream; that comparison remains
+  available in the report card, not in the demo.
+- Verified by rendering the simplified tab at desktop and mobile widths and checking inline JS with
+  `node --check`.

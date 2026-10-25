@@ -18,7 +18,7 @@ xdg-open demo/index.html                 # or double-click the file
 | Tab | What it shows |
 |---|---|
 | **Overview** | The claim, four headline numbers, and the frozen state vs the traditional table |
-| **Data** | One real customer in both data shapes. **Legacy** breaks the 51-column wide row into six groups and says how each is aggregated; **Stream** shows the 360-row event ledger, its timeline, its four canonical columns, and the JSON payload of every event. A raw-table strip and a reconciliation table connect both views to the same source rows. |
+| **Data** | One customer's event stream over the full 540-day window: a full-width event timeline and the complete event ledger. Dots separate history, the 90-day label window, and later events. |
 | **Axes** | Eight sub-tabs, one per content axis. Each opens a full panel: the value, what it measures, how it is measured, why it matters, and a dedicated visual (singular spectrum, reconstruction scatter, purity distribution, ROC, reliability curve, randomized-action design, order bars, relational bars) |
 | **Objectives** | A clickable explorer for all ten self-supervised objectives: what each predicts, the naive baseline, the learned skill, and a timeline diagram of the training cut |
 | **Plugins** | Known-effect recovery across five action keys, and RL policy value against table and uniform comparators |
@@ -44,12 +44,10 @@ distribution. If it is absent, the Axes tab still renders its numbers and
 the visuals are simply omitted.
 
 The **Data** tab is generated separately by `scripts/build_data_tab.py`, which reads the canonical
-relational reference at `/tmp/opencode/t0_loop/ref_v3b_6k` and writes `demo/data_tab.json`. It
-uses one example customer (`rc0000208`) and computes every count, value, event, and raw-table row
-count from those tables. The only authored text is the six group labels and their one-sentence
-derivation rules. Its window split makes the central distinction explicit: the legacy row uses
-249 events up to as-of, the 90-day labels use the next 55, and the stream keeps the remaining 56
-as well.
+event stream at `/tmp/opencode/t0_loop/ref_v3b_6k` and writes `demo/data_tab.json`. It uses one
+example customer (`rc0000208`) and computes every timeline dot, ledger row, and phase count from
+the stream. The timeline makes the window split explicit: 249 history events, 55 events in the
+90-day label window, and 56 after it.
 
 The Customer Explorer additionally samples the frozen cache at `/tmp/opencode/frozen_6k` and the
 canonical stream.
@@ -70,6 +68,6 @@ separately rather than showing a number.
 
 - Synthetic relational harness; no business data.
 - Explorer neighbours are computed in the frozen state and are not used to form the actual outcome.
-- The Data tab shows the same customer in both shapes; the stream is the full 540-day window, while
-  the legacy features stop at as-of and the labels cover the following 90 days.
+- The Data tab shows one customer's full stream; its timeline marks the as-of and 90-day label
+  boundaries so the history and outcome windows are visible.
 - Regenerate after any receipt or reference-data change so the page stays current.
