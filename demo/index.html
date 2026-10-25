@@ -83,8 +83,7 @@ h2{font-size:21px;font-weight:600;margin:0 0 8px;letter-spacing:-.02em}
   display:flex;flex-direction:column;justify-content:space-between}
 .plugcard:hover{border-color:var(--dim)}
 .plugcard.on{border-color:var(--accent);background:#f7fefb}
-.plugcard .k{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);font-weight:600}
-.plugcard .t{font-size:15px;font-weight:600;letter-spacing:-.01em;margin-top:4px}
+.plugcard .t{font-size:17px;font-weight:600;letter-spacing:-.02em}
 .plugcard .d{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4}
 .plugcard .mini{height:42px;margin-top:10px}
 .plugcard .mini svg{display:block;width:100%;height:42px}
@@ -1257,11 +1256,10 @@ function renderPluginsMap(){
   host.appendChild(source);
 
   const grid=el("div","pluggrid");
-  const makeCard=(id,tag,title,desc,mini)=>{
+  const makeCard=(id,title,desc,mini)=>{
     const b=el("button","plugcard"+(pluginMode===id?" on":""));
     b.type="button"; b.dataset.mode=id; b.setAttribute("aria-pressed",pluginMode===id);
     const top=el("div");
-    top.appendChild(el("div","k",tag));
     top.appendChild(el("div","t",title));
     top.appendChild(el("div","d",desc));
     b.appendChild(top);
@@ -1269,9 +1267,9 @@ function renderPluginsMap(){
     b.onclick=()=>{pluginMode=id;renderPluginsMap();renderPluginPanel();};
     return b;
   };
-  grid.appendChild(makeCard("predict","Predict","Supervised heads","value_90d · orders_90d · churn_90d",miniOutcomeSVG));
-  grid.appendChild(makeCard("retrieve","Retrieve","Unsupervised geometry","nearest neighbours in the state",miniLookalikeSVG));
-  grid.appendChild(makeCard("act","Act","RL policy","known effect · policy value",miniActSVG));
+  grid.appendChild(makeCard("predict","Predict","value_90d · orders_90d · churn_90d",miniOutcomeSVG));
+  grid.appendChild(makeCard("retrieve","Retrieve","nearest neighbours in the state",miniLookalikeSVG));
+  grid.appendChild(makeCard("act","Act","known effect · policy value",miniActSVG));
   host.appendChild(grid);
 }
 
