@@ -1,8 +1,8 @@
-"""Export the payload for the legacy-first Data tab.
+"""Export the payload for the raw-data view.
 
-The legacy table shows one row per customer. Selecting a row opens that same
-customer's event timeline and ledger underneath. This script reads the wide
-table and the canonical stream, and writes `demo/data_tab.json`:
+The Data tab shows a legacy wide-table sample: one row per customer, historical
+counts only. Selecting a row opens that customer's raw event timeline and
+ledger over the full window.
 
     python3 scripts/build_data_tab.py
     python3 scripts/build_data_tab.py --rows 10
@@ -13,7 +13,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 
 import polars as pl
@@ -41,9 +41,6 @@ LEGACY_COLUMNS = [
     ("n_events", "int"),
     ("n_orders", "int"),
     ("purchase_value", "money"),
-    ("y_orders_90", "int"),
-    ("y_value_90", "money"),
-    ("y_churn_90", "int"),
 ]
 
 
@@ -66,36 +63,21 @@ def _detail(event_type: str, attrs: dict) -> str:
     return ""
 
 
-def _customer_rows(
-    key: str,
-    wide: pl.DataFrame,
-    stream: pl.DataFrame,
-    as_of: datetime,
-    label_end: datetime,
-    start: datetime,
-) -> dict:
+def _customer_rows(key: str, wide: pl.DataFrame, stream: pl.DataFrame, start: datetime) -> dict:
     row = wide.filter(pl.col("customer_key") == key).to_dicts()[0]
     events = []
     for event in stream.filter(pl.col("customer_key") == key).iter_rows(named=True):
         ts: datetime = event["_ts"]
-        phase = "history" if ts <= as_of else ("labels" if ts <= label_end else "later")
         attrs = json.loads(event["event_attributes"] or "{}")
         events.append(
             [
                 event["event_ts"],
                 event["event_type"],
-                phase,
                 round((ts - start).total_seconds() / 86400.0, 3),
                 _detail(event["event_type"], attrs),
             ]
         )
 
-    counts = {
-        "total": len(events),
-        "history": sum(1 for e in events if e[2] == "history"),
-        "labels": sum(1 for e in events if e[2] == "labels"),
-        "later": sum(1 for e in events if e[2] == "later"),
-    }
     legacy = {}
     for name, kind in LEGACY_COLUMNS:
         value = row.get(name)
@@ -106,12 +88,7 @@ def _customer_rows(
         else:
             legacy[name] = round(float(value), 2)
 
-    return {
-        "key": key,
-        "legacy": legacy,
-        "counts": counts,
-        "events": events,
-    }
+    return {"key": key, "legacy": legacy, "events": events}
 
 
 def main():
@@ -120,9 +97,7 @@ def main():
     ap.add_argument("--out", default=str(OUT))
     ap.add_argument("--customer", default=DEFAULT_CUSTOMER)
     ap.add_argument("--rows", type=int, default=DEFAULT_ROWS)
-    ap.add_argument("--as-of", default="2025-01-01", dest="as_of")
     ap.add_argument("--window-start", default="2024-01-01", dest="window_start")
-    ap.add_argument("--label-days", type=int, default=90, dest="label_days")
     ap.add_argument("--window-days", type=int, default=540, dest="window_days")
     args = ap.parse_args()
 
@@ -139,23 +114,15 @@ def main():
         print(f"customer {args.customer} not found in {wide_path}", file=sys.stderr)
         raise SystemExit(1)
 
-    # Illustrative sample, stratified so the table shows both outcome classes.
     n_extra = max(0, args.rows - 1)
-    n_churn = min(len(wide.filter(pl.col("y_churn_90") == 1)), n_extra // 2)
-    n_retain = n_extra - n_churn
-    churned = (
-        wide.filter(pl.col("y_churn_90") == 1).sample(n=n_churn, seed=17)["customer_key"].to_list()
-        if n_churn
-        else []
-    )
-    retained = (
-        wide.filter((pl.col("y_churn_90") == 0) & (pl.col("customer_key") != args.customer))
-        .sample(n=n_retain, seed=17)["customer_key"]
+    sampled = (
+        wide.filter(pl.col("customer_key") != args.customer)
+        .sample(n=n_extra, seed=17)["customer_key"]
         .to_list()
-        if n_retain
+        if n_extra
         else []
     )
-    keys = sorted(set([args.customer, *churned, *retained]))
+    keys = sorted(set([args.customer, *sampled]))
 
     stream = (
         pl.read_parquet(stream_path)
@@ -164,18 +131,12 @@ def main():
         .sort(["customer_key", "_ts"])
     )
 
-    as_of = datetime.fromisoformat(args.as_of)
     start = datetime.fromisoformat(args.window_start)
-    label_end = as_of + timedelta(days=args.label_days)
-
-    customers = [_customer_rows(key, wide, stream, as_of, label_end, start) for key in keys]
+    customers = [_customer_rows(key, wide, stream, start) for key in keys]
 
     out = {
-        "as_of": as_of.isoformat(),
-        "label_end": label_end.isoformat(),
         "window_start": args.window_start,
         "window_days": args.window_days,
-        "label_days": args.label_days,
         "wide": {"rows": wide.height, "columns": wide.width},
         "types": [{"id": t, "label": label} for t, label in EVENT_TYPES],
         "customers": customers,
@@ -185,8 +146,7 @@ def main():
     Path(args.out).write_text(json.dumps(out, separators=(",", ":")) + "\n")
     print(
         f"WROTE {args.out} | {len(customers)} legacy rows | "
-        f"{sum(c['counts']['total'] for c in customers)} events | "
-        f"{wide.width} wide columns"
+        f"{sum(len(c['events']) for c in customers)} events | {wide.width} wide columns"
     )
 
 

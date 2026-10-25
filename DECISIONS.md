@@ -1546,3 +1546,20 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   row is now the customer identity for the stream below.
 - Verified by clicking a different row in headless Chrome and confirming the key, counts, timeline,
   and ledger all update; checked desktop and mobile layouts and inline JS with `node --check`.
+
+## DEC-320 — Data tab: historical legacy rows, raw stream only
+
+- Feedback: remove the churn-next-90d label from the legacy table and the as-of/+90d markers from
+  the stream. The Data tab should show raw data.
+- Legacy table now keeps only historical fields: customer, historical events, historical orders,
+  and historical purchase value. The three next-90-day label columns are gone.
+- Stream now shows the full raw ledger with no phase split: no as-of line, no +90d line, no shaded
+  label band, no history/label/later legend, and no Window column in the ledger. All event dots use
+  one neutral colour.
+- The selected customer's header is reduced to total events and the full window length. The
+  timeline keeps only the raw start/end axis labels.
+- `scripts/build_data_tab.py` no longer reads or emits labels, phases, `as_of`, or `label_end`; it
+  exports historical legacy values and raw event arrays only. The sample is a deterministic random
+  sample that always includes `rc0000208`.
+- Verified by checking both selected-row updates and the absence of label/phase text in the
+  generated payload and page; inline JS passes `node --check`.

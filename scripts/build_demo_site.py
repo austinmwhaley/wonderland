@@ -447,8 +447,6 @@ td.num{text-align:right;font-variant-numeric:tabular-nums;font-family:ui-monospa
 .legacytable tbody tr:last-child td{border-bottom:0}
 .legacytable td:first-child{font-family:ui-monospace,monospace;font-size:11.5px;white-space:nowrap}
 .legacytable td.num{font-size:12px}
-.legacytable td.churn{font-family:ui-monospace,monospace;font-size:11.5px;color:var(--muted)}
-.legacytable tr.on td.churn{color:var(--ink)}
 .streamhead{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;
   border-top:1px solid var(--line);margin-top:28px;padding-top:20px;margin-bottom:14px}
 @media(max-width:700px){.streamhead{flex-direction:column;align-items:flex-start;gap:6px}}
@@ -459,11 +457,6 @@ td.num{text-align:right;font-variant-numeric:tabular-nums;font-family:ui-monospa
 .cardtag{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);font-weight:600;margin-bottom:10px}
 .tlwrap svg{display:block;width:100%;height:auto}
 @media(max-width:800px){.tlwrap{overflow-x:auto}.tlwrap svg{min-width:700px}}
-.legend{display:flex;gap:16px;flex-wrap:wrap;color:var(--dim);font-size:11px;margin-top:10px}
-.legend span::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px}
-.legend .h::before{background:var(--ink)}
-.legend .l::before{background:var(--accent)}
-.legend .x::before{background:#d1d5db}
 .logscroll{max-height:520px;overflow:auto;border-top:1px solid var(--line)}
 .logtable{font-size:12px}
 .logtable th{position:sticky;top:0;background:#fff;z-index:2;padding:8px 7px}
@@ -472,10 +465,6 @@ td.num{text-align:right;font-variant-numeric:tabular-nums;font-family:ui-monospa
 .logtable td:first-child{font-family:ui-monospace,monospace;font-size:10.5px;color:var(--dim);white-space:nowrap}
 .logtable td:nth-child(2){font-family:ui-monospace,monospace;font-size:11px;white-space:nowrap}
 .logtable td:nth-child(3){color:var(--muted);font-size:11.5px}
-.phase{font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;font-family:ui-monospace,monospace}
-.phase.history{color:var(--dim)}
-.phase.labels{color:var(--accent)}
-.phase.later{color:#d1d5db}
 .explorerchart{padding:18px;margin-bottom:28px}
 #scatter{display:block;width:100%;height:auto;background:#fff}
 .scatterfoot{display:flex;gap:22px;align-items:center;border-top:1px solid var(--line2);
@@ -877,19 +866,16 @@ if(!DT){
     const parts=String(iso).slice(0,10).split("-");
     return MONTHS[Number(parts[1])-1]+" "+parts[0];
   }
-  function dayOf(iso){
-    return Math.max(0,Math.min(DT.window_days,(Date.parse(iso)-Date.parse(DT.window_start))/86400000));
-  }
   function money(v){
     return "$"+Number(v).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
   }
 
   function renderTable(){
     const host=$("#legacytable"); host.innerHTML="";
-    $("#legacymeta").textContent=DT.customers.length+" of "+DT.wide.rows.toLocaleString()+" rows · showing 7 of "+DT.wide.columns+" columns";
+    $("#legacymeta").textContent=DT.customers.length+" of "+DT.wide.rows.toLocaleString()+" rows · showing 4 of "+DT.wide.columns+" columns";
     const table=el("table");
     const thead=el("thead"), hr=el("tr");
-    ["Customer","Events · history","Orders · history","Purchase value · history","Orders · next 90d","Value · next 90d","Churn · next 90d"].forEach((label,i)=>{
+    ["Customer","Events · history","Orders · history","Purchase value · history"].forEach((label,i)=>{
       hr.appendChild(el("th",i===0?null:"num",label));
     });
     thead.appendChild(hr); table.appendChild(thead);
@@ -903,9 +889,6 @@ if(!DT){
       tr.appendChild(el("td","num",String(c.legacy.n_events)));
       tr.appendChild(el("td","num",String(c.legacy.n_orders)));
       tr.appendChild(el("td","num",money(c.legacy.purchase_value)));
-      tr.appendChild(el("td","num",String(c.legacy.y_orders_90)));
-      tr.appendChild(el("td","num",money(c.legacy.y_value_90)));
-      tr.appendChild(el("td","churn",c.legacy.y_churn_90?"yes":"no"));
       tbody.appendChild(tr);
     });
     table.appendChild(tbody); host.appendChild(table);
@@ -916,28 +899,19 @@ if(!DT){
     const s=svg(W,H), h=H-pad.t-pad.b;
     const types=DT.types, rowH=h/types.length;
     const X=d=>pad.l+(d/DT.window_days)*(W-pad.l-pad.r);
-    const xa=X(dayOf(DT.as_of)), xb=X(dayOf(DT.label_end));
-    s.appendChild(rect(xa,pad.t,Math.max(0,xb-xa),h,"#f0fdf4",0));
     types.forEach((t,i)=>{
       const y=pad.t+(i+0.5)*rowH;
       s.appendChild(tx(pad.l-7,y+3,t.label,{size:10,fill:MUT,anchor:"end"}));
       s.appendChild(ln(pad.l,y,W-pad.r,y,{stroke:"#f9fafb"}));
     });
-    s.appendChild(ln(xa,pad.t,xa,H-pad.b,{stroke:INK,dash:"3 3"}));
-    s.appendChild(tx(xa+5,pad.t-4,"as of",{size:10,fill:INK}));
-    s.appendChild(ln(xb,pad.t,xb,H-pad.b,{stroke:ACC,dash:"2 3"}));
-    s.appendChild(tx(xb+5,pad.t-4,"+90d",{size:10,fill:ACC}));
-    const colors={history:"rgba(17,24,39,.45)",labels:ACC,later:"#d1d5db"};
     c.events.forEach(e=>{
       const idx=types.findIndex(t=>t.id===e[1]);
       if(idx<0) return;
       const y=pad.t+(idx+0.5)*rowH;
-      s.appendChild(dot(X(e[3]),y,2.1,colors[e[2]]||DIM));
+      s.appendChild(dot(X(e[2]),y,2.1,"rgba(17,24,39,.42)"));
     });
     s.appendChild(ln(pad.l,H-pad.b,W-pad.r,H-pad.b,{stroke:LINE}));
     s.appendChild(tx(pad.l,H-9,month(DT.window_start),{size:10,fill:DIM}));
-    s.appendChild(tx(xa,H-9,month(DT.as_of),{size:10,fill:DIM,anchor:"middle"}));
-    s.appendChild(tx(xb,H-9,month(DT.label_end),{size:10,fill:DIM,anchor:"middle"}));
     s.appendChild(tx(W-pad.r,H-9,"window end",{size:10,fill:DIM,anchor:"end"}));
     return s;
   }
@@ -951,7 +925,7 @@ if(!DT){
     left.appendChild(el("div","streamkey",c.key));
     head.appendChild(left);
     const counts=el("div","streamcounts");
-    [["events",c.counts.total],["before as-of",c.counts.history],["label window",c.counts.labels],["later",c.counts.later]].forEach(([k,n])=>{
+    [["events",c.events.length],["days",DT.window_days]].forEach(([k,n])=>{
       const span=el("span"); span.appendChild(el("b",null,String(n))); span.appendChild(document.createTextNode(" "+k)); counts.appendChild(span);
     });
     head.appendChild(counts); host.appendChild(head);
@@ -960,24 +934,21 @@ if(!DT){
     const tl=el("div","panelbox");
     tl.appendChild(el("div","cardtag","Event timeline · one dot per event"));
     const wrap=el("div","tlwrap"); wrap.appendChild(streamTimeline(c)); tl.appendChild(wrap);
-    const leg=el("div","legend");
-    [["h","history"],["l","90-day label"],["x","later"]].forEach(([cls,text])=>leg.appendChild(el("span",cls,text)));
-    tl.appendChild(leg); flow.appendChild(tl);
+    flow.appendChild(tl);
 
     const ledger=el("div","panelbox");
-    ledger.appendChild(el("div","cardtag","Event ledger · "+c.counts.total+" rows"));
+    ledger.appendChild(el("div","cardtag","Event ledger · "+c.events.length+" rows"));
     const box=el("div","logscroll");
     const table=el("table","logtable");
     const thead=el("thead"); const hr=el("tr");
-    ["Time","Event","Detail","Window"].forEach((t,i)=>{const th=el("th",i===3?"num":null,t);hr.appendChild(th);});
+    ["Time","Event","Detail"].forEach((t,i)=>{const th=el("th",i===2?"num":null,t);hr.appendChild(th);});
     thead.appendChild(hr); table.appendChild(thead);
     const tbody=el("tbody");
     c.events.forEach(e=>{
       const tr=el("tr");
       tr.appendChild(el("td",null,e[0].slice(5,16).replace("T"," ")));
       tr.appendChild(el("td",null,e[1]));
-      tr.appendChild(el("td",null,e[4]||""));
-      tr.appendChild(el("td","num phase "+e[2],e[2]==="labels"?"label":e[2]));
+      tr.appendChild(el("td",null,e[3]||""));
       tbody.appendChild(tr);
     });
     table.appendChild(tbody); box.appendChild(table);
