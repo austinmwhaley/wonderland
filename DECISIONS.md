@@ -1664,3 +1664,13 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - A stale row-rendering path briefly left two empty cells after the columns were removed; removed
   it and verified the rendered table has four headers and four cells per row.
 - Verified by rendering the Data table in headless Chrome; ruff and node checks pass.
+
+## DEC-328 — Tab bar no longer side-scrolls and clips Overview
+
+- Feedback: the top tab bar sometimes shifted Overview left and clipped the start of the label.
+- Cause: the nav used `overflow-x:auto`; when a right-side tab received focus or the viewport was
+  narrow, the browser scrolled the tab strip horizontally and cut off the first item.
+- Fix: removed horizontal scrolling from the nav. On widths up to 680 px the tabs now wrap into
+  rows and become compact pill tabs, so every label stays fully visible. Wider layouts keep the
+  existing underline treatment.
+- Verified at 650 px and 390 px widths with Chrome screenshots; inline JS passes `node --check`.

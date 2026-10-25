@@ -347,11 +347,16 @@ body{font:15px/1.65 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Inter,Robot
 header{border-bottom:1px solid var(--line);padding-bottom:22px}
 h1{font-size:17px;font-weight:600;margin:0;letter-spacing:-.01em}
 .sub{color:var(--muted);font-size:13px;margin-top:4px}
-nav{display:flex;gap:30px;border-bottom:1px solid var(--line);margin:26px 0 44px;overflow-x:auto}
+nav{display:flex;gap:30px;border-bottom:1px solid var(--line);margin:26px 0 44px}
 nav button{appearance:none;background:none;border:0;padding:0 0 13px;font:inherit;font-size:13.5px;
   color:var(--muted);cursor:pointer;border-bottom:1px solid transparent;white-space:nowrap}
 nav button:hover{color:var(--ink)}
 nav button.on{color:var(--ink);border-bottom-color:var(--ink)}
+@media(max-width:680px){
+  nav{flex-wrap:wrap;gap:6px;margin:22px 0 32px}
+  nav button{padding:7px 10px;border-bottom:0;border-radius:6px;font-size:12.5px}
+  nav button.on{background:var(--ink);color:#fff}
+}
 section[hidden]{display:none}
 h2{font-size:21px;font-weight:600;margin:0 0 8px;letter-spacing:-.02em}
 .lede{color:var(--muted);font-size:14px;max-width:72ch;margin:0 0 34px}
