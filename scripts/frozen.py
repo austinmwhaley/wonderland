@@ -76,8 +76,13 @@ def assert_axes(path, expected):
 
 
 def save(
-    data, seed, path, epochs=12, d=128, layers=2
-):  # principle-ok: pinned fallback, receipted in manifest
+    data,
+    seed,
+    path,
+    epochs=12,
+    d=128,
+    layers=2,  # principle-ok: pinned fallback, receipted in manifest
+):
     E, Xtab, labels, hold, seg, model, vs, B, best, BLK = AE.train_encoder(
         data, seed=seed, epochs=epochs, d=d, layers=layers
     )
