@@ -1619,3 +1619,24 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   padding. All five values, including Category preference, sit inset from the dividers, and the
   first cell's text now aligns with the stat-card content above.
 - Verified by rendering the Explorer tab in headless Chrome at desktop width.
+
+## DEC-325 — Overview rebuilt as a visual, interactive surface
+
+- Request: the Overview should be visual and interaction-first rather than a page of prose and
+  numbers; redo the whole tab.
+- Removed the headline paragraph, four stat cards, and the table of value/orders/churn metrics.
+- Added a visual pipeline: event stream density → two encoder blocks → actual 128-cell shape
+  (inside the 2,265-d state) → three plugin nodes. The stream illustration uses
+  `rc0000208`; the state cells are that customer's real frozen shape values.
+- Added a single interactive panel with three modes:
+  - **Predict** — grouped bars for value, orders and churn; exact values on hover.
+  - **Retrieve** — a 260-customer geometry scatter; clicking any point redraws that customer's
+    five nearest-neighbour links.
+  - **Act** — grouped bars for known-effect recovery across the five action keys; exact values on
+    hover.
+- Text is limited to short labels, legends and footers. The only numeric axes are percentage
+  scales on the bar charts; no table of metrics remains.
+- The chart protocol is stated in the footer: R² for value/orders, AUC for churn, purity for the
+  action recovery; higher is better.
+- Verified by rendering all three modes and clicking a Retrieve point in headless Chrome; inline JS
+  passes `node --check`.

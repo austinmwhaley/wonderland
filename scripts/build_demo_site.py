@@ -36,11 +36,6 @@ ARM_LABEL = {
     "full_legacy": "Full state",
     "full_measure": "Full + measure",
 }
-TARGET_LABEL = {
-    "value90": "Value, next 90d",
-    "orders90": "Orders, next 90d",
-    "churn90": "Churn, next 90d",
-}
 
 
 def _load(name):
@@ -259,7 +254,6 @@ def _f(x, n=3):
 
 def render(payload) -> str:
     """Flat, light, lab-style page: axes + objectives + plugins + explorer."""
-    sup = payload["supervised"]
     rl = payload["rl_known"]
     resp = payload["rl_policy"]
     obj = payload.get("objectives") or {}
@@ -292,22 +286,6 @@ def render(payload) -> str:
                 f"<td class='num'>{r['table']:.3f}</td>"
                 f"<td class='num strong'>{r['E']:.3f}</td>"
                 f"<td class='num strong'>{r['E'] - r['table']:+.3f}</td>"
-                "</tr>"
-            )
-        return "".join(rows)
-
-    def full_vs_table():
-        rows = []
-        for t in sup["targets"]:
-            v = sup["values"][t]
-            table = float(v.get("raw", 0.0))
-            full = float(v.get("full_measure", 0.0))
-            rows.append(
-                "<tr>"
-                f"<td>{TARGET_LABEL[t]}</td>"
-                f"<td class='num'>{table:.4f}</td>"
-                f"<td class='num strong'>{full:.4f}</td>"
-                f"<td class='num strong'>{full - table:+.4f}</td>"
                 "</tr>"
             )
         return "".join(rows)
@@ -377,11 +355,42 @@ nav button.on{color:var(--ink);border-bottom-color:var(--ink)}
 section[hidden]{display:none}
 h2{font-size:21px;font-weight:600;margin:0 0 8px;letter-spacing:-.02em}
 .lede{color:var(--muted);font-size:14px;max-width:72ch;margin:0 0 34px}
+.pipeline{display:grid;grid-template-columns:minmax(0,1.05fr) 18px minmax(0,1.05fr) 18px minmax(0,1.05fr) 18px minmax(0,.95fr);
+  gap:10px;align-items:stretch;margin-bottom:26px}
+@media(max-width:900px){.pipeline{grid-template-columns:1fr}.pipeline-arrow{display:none}}
+.pipeline-step{border:1px solid var(--line);border-radius:8px;padding:12px 13px 8px;background:#fff;min-width:0}
+.pipeline-step.core{border-color:var(--accent);background:#f7fefb}
+.pipeline-top{display:flex;justify-content:space-between;gap:10px;align-items:baseline;margin-bottom:4px}
+.pipeline-name{font-size:12px;font-weight:600}
+.pipeline-meta{font-family:ui-monospace,monospace;font-size:9.5px;color:var(--dim);white-space:nowrap}
+.pipeline-vis{height:96px;display:flex;align-items:center;justify-content:center}
+.pipeline-vis svg{display:block;width:100%;height:96px}
+.pipeline-arrow{display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:16px}
+.usecasehead{display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap;
+  border-top:1px solid var(--line);padding-top:22px;margin-bottom:14px}
+.usecasehead .cardtag{margin-bottom:0}
+.usecasetabs{display:flex;gap:2px;border:1px solid var(--line);border-radius:8px;padding:3px}
+.usetab{appearance:none;border:0;background:none;padding:7px 14px;border-radius:6px;font:inherit;
+  font-size:12px;color:var(--muted);cursor:pointer}
+.usetab:hover{color:var(--ink)}
+.usetab.on{background:var(--ink);color:#fff}
+.usecasepanel{border:1px solid var(--line);border-radius:8px;padding:16px 18px 10px;overflow-x:auto}
+.usecasepanel svg{display:block;width:100%;height:auto}
+@media(max-width:800px){.usecasepanel svg{min-width:760px}}
+.chartbar{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:8px}
+.charttag{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);font-weight:600}
+.chartlegend{display:flex;gap:14px;flex-wrap:wrap;color:var(--muted);font-size:11px}
+.chartlegend span::before{content:"";display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;vertical-align:0}
+.chartlegend .table::before{background:#d1d5db}
+.chartlegend .frozen::before{background:var(--accent)}
+.chartlegend .selected::before{background:var(--ink)}
+.chartlegend .neighbour::before{background:var(--accent)}
+.chartlegend .other::before{background:#d1d5db}
+.chartfoot{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;color:var(--dim);font-size:10.5px;
+  border-top:1px solid var(--line2);margin-top:6px;padding-top:9px;font-family:ui-monospace,monospace}
 .grid{display:grid;gap:16px}
 .g2{grid-template-columns:repeat(2,minmax(0,1fr))}
-.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
-.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
-@media(max-width:900px){.g2,.g3,.g4{grid-template-columns:1fr}}
+@media(max-width:900px){.g2{grid-template-columns:1fr}}
 hr{border:0;border-top:1px solid var(--line);margin:44px 0}
 .axis{border:1px solid var(--line);border-radius:8px;padding:20px 20px 16px}
 .axis-top{display:flex;align-items:baseline;gap:10px}
@@ -390,9 +399,6 @@ hr{border:0;border-top:1px solid var(--line);margin:44px 0}
 .axis-def{color:var(--muted);font-size:13px;margin-top:12px;min-height:38px}
 .vis{margin-top:14px}
 .axis.gap{background:#fafafa}
-.stat{border-top:1px solid var(--line);padding-top:12px}
-.stat .v{font-family:ui-monospace,monospace;font-size:26px;font-weight:600;letter-spacing:-.02em}
-.stat .k{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
 table{width:100%;border-collapse:collapse;font-size:13.5px}
 th,td{text-align:left;padding:11px 10px;border-bottom:1px solid var(--line)}
 th{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);font-weight:600}
@@ -579,20 +585,13 @@ footer{margin-top:56px;padding-top:18px;border-top:1px solid var(--line);color:v
 
   <main>
     <section id="overview">
-      <h2>The result</h2>
-      <p class="lede" id="claim"></p>
-      <div class="grid g4" id="stat_cards"></div>
-      <hr>
-      <div class="grid g2">
-        <div>
-          <h2 style="font-size:17px">One frozen state, three plugin families</h2>
-          <p class="lede" style="margin-bottom:0">Supervised heads predict outcomes. Unsupervised heads read geometry. RL heads estimate action response from a pre-action state. The foundation is never retrained per task.</p>
-        </div>
-        <table>
-          <thead><tr><th>Target</th><th class="num">Traditional table</th><th class="num">Frozen state</th><th class="num">Gain</th></tr></thead>
-          <tbody>__FULL_TABLE__</tbody>
-        </table>
+      <h2>One stream in. One frozen state out.</h2>
+      <div class="pipeline" id="pipeline"></div>
+      <div class="usecasehead">
+        <div class="cardtag">One frozen state, three plugin families</div>
+        <div class="usecasetabs" id="usecasetabs"></div>
       </div>
+      <div class="usecasepanel" id="usecasepanel"></div>
     </section>
 
     <section id="data" hidden>
@@ -718,9 +717,6 @@ activate(hashTab(),false);
 window.addEventListener("hashchange",()=>activate(hashTab(),false));
 
 const m=DATA.meta;
-$("#claim").innerHTML=`One self-supervised encoder is fitted per event stream and frozen. Its state is reused by every downstream head — <b>${m.events.toLocaleString()}</b> events from <b>${m.customers.toLocaleString()}</b> customers, ${m.d}-number shape, ${m.state_dim.toLocaleString()}-dimension published state.`;
-[["Customers",m.customers.toLocaleString()],["Events",(m.events/1e6).toFixed(2)+"M"],["Frozen state",m.state_dim.toLocaleString()],["Serving",Math.round(DATA.runtime.state_rows_per_s||0).toLocaleString()+" rows/s"]]
- .forEach(([k,v])=>{const c=el("div","stat");c.appendChild(el("div","k",k));c.appendChild(el("div","v",v));$("#stat_cards").appendChild(c);});
 
 /* ---------- tiny chart helpers ---------- */
 function svg(w,h){const s=document.createElementNS(NS,"svg");s.setAttribute("viewBox",`0 0 ${w} ${h}`);s.setAttribute("width","100%");return s;}
@@ -735,6 +731,225 @@ function dot(cx,cy,r,fill,stroke){const n=document.createElementNS(NS,"circle");
 function rect(x,y,w,h,fill,rx,stroke){const n=document.createElementNS(NS,"rect");n.setAttribute("x",x);n.setAttribute("y",y);
   n.setAttribute("width",w);n.setAttribute("height",h);n.setAttribute("rx",rx==null?0:rx);n.setAttribute("fill",fill);
   if(stroke){n.setAttribute("stroke",stroke);n.setAttribute("stroke-width",1);}return n;}
+
+/* ---------- overview ---------- */
+const OV_DATA=DATA.data_tab;
+const OV_ENC=DATA.encoder_tab;
+const OV_EXP=DATA.explorer;
+let overviewUse="predict";
+let retrieveIdx=0;
+
+function addSvgTitle(node,text){
+  const t=document.createElementNS(NS,"title"); t.textContent=text; node.appendChild(t); return node;
+}
+
+function miniStreamSVG(){
+  const W=220,H=96,pad=5,s=svg(W,H);
+  if(!OV_DATA||!OV_DATA.customers||!OV_DATA.customers.length) return s;
+  const c=OV_DATA.customers.find(x=>x.key==="rc0000208")||OV_DATA.customers[0];
+  const bins=44, counts=new Array(bins).fill(0);
+  c.events.forEach(e=>{
+    const i=Math.max(0,Math.min(bins-1,Math.floor((e[2]/OV_DATA.window_days)*bins)));
+    counts[i]++;
+  });
+  const max=Math.max(1,...counts), bw=(W-2*pad)/bins;
+  counts.forEach((n,i)=>{
+    const h=Math.max(1,(n/max)*(H-2*pad));
+    s.appendChild(rect(pad+i*bw,H-pad-h,Math.max(1,bw-1),h,"rgba(17,24,39,.34)",1));
+  });
+  s.appendChild(ln(pad,H-pad,W-pad,H-pad,{stroke:LINE}));
+  return s;
+}
+
+function miniEncoderSVG(){
+  const W=220,H=96,s=svg(W,H);
+  [22,52].forEach(y=>{
+    s.appendChild(rect(24,y,172,22,"#f3f4f6",5,LINE));
+    for(let k=0;k<4;k++){
+      s.appendChild(rect(40+k*34,y+7,22,8,"#e5e7eb",2));
+    }
+  });
+  s.appendChild(ln(196,33,208,33,{stroke:DIM}));
+  s.appendChild(ln(196,63,208,63,{stroke:DIM}));
+  return s;
+}
+
+function miniStateSVG(){
+  const W=220,H=96,s=svg(W,H);
+  if(!OV_ENC||!OV_ENC.shape) return s;
+  const vals=OV_ENC.shape, maxv=Math.max(...vals.map(v=>Math.abs(v)))||1;
+  const cols=16, rows=8, cell=9, gap=1.4;
+  const x0=(W-(cols*cell+(cols-1)*gap))/2;
+  const y0=(H-(rows*cell+(rows-1)*gap))/2;
+  vals.slice(0,cols*rows).forEach((v,i)=>{
+    const x=x0+(i%cols)*(cell+gap), y=y0+Math.floor(i/cols)*(cell+gap);
+    const a=Math.min(1,Math.abs(v)/maxv);
+    s.appendChild(rect(x,y,cell,cell,v>=0?`rgba(5,150,105,${0.12+0.78*a})`:`rgba(17,24,39,${0.06+0.60*a})`,1.5));
+  });
+  return s;
+}
+
+function miniPluginsSVG(){
+  const W=220,H=96,s=svg(W,H);
+  const cx=110,cy=49, nodes=[[55,23,"predict"],[165,23,"retrieve"],[110,79,"act"]];
+  nodes.forEach(([x,y,label])=>{
+    s.appendChild(ln(cx,cy,x,y,{stroke:LINE}));
+    s.appendChild(dot(x,y,5.5,"#fff",ACC));
+    s.appendChild(tx(x,y-12,label,{size:9,fill:MUT,anchor:"middle"}));
+  });
+  s.appendChild(dot(cx,cy,7,ACC));
+  return s;
+}
+
+function renderPipeline(){
+  const host=$("#pipeline"); host.innerHTML="";
+  const steps=[
+    ["stream","Event stream","one stream",miniStreamSVG],
+    ["encoder","Encoder","2 × "+m.d,miniEncoderSVG],
+    ["state","Frozen state",m.state_dim.toLocaleString()+" dims",miniStateSVG],
+    ["plugins","Plugins","3 families",miniPluginsSVG],
+  ];
+  steps.forEach(([key,name,meta,vis],i)=>{
+    const step=el("div","pipeline-step"+(key==="state"?" core":""));
+    const top=el("div","pipeline-top");
+    top.appendChild(el("span","pipeline-name",name));
+    top.appendChild(el("span","pipeline-meta",meta));
+    step.appendChild(top);
+    const wrap=el("div","pipeline-vis"); wrap.appendChild(vis()); step.appendChild(wrap);
+    host.appendChild(step);
+    if(i<steps.length-1) host.appendChild(el("div","pipeline-arrow","→"));
+  });
+}
+
+function chartHeader(tag,items){
+  const bar=el("div","chartbar");
+  bar.appendChild(el("div","charttag",tag));
+  const leg=el("div","chartlegend");
+  items.forEach(([label,cls])=>{
+    const span=el("span",cls,label); leg.appendChild(span);
+  });
+  bar.appendChild(leg); return bar;
+}
+function chartFoot(left,right){
+  const foot=el("div","chartfoot");
+  foot.appendChild(el("span",null,left)); foot.appendChild(el("span",null,right)); return foot;
+}
+
+function predictChart(){
+  const W=1000,H=348,pad={l:48,r:22,t:44,b:42}, s=svg(W,H);
+  const vals=DATA.supervised.values||{};
+  const order=[["value90","Value"],["orders90","Orders"],["churn90","Churn"]];
+  const plotH=H-pad.t-pad.b;
+  [0,.25,.5,.75,1].forEach(g=>{
+    const y=H-pad.b-g*plotH;
+    s.appendChild(ln(pad.l,y,W-pad.r,y,{stroke:g===0?LINE:"#f3f4f6"}));
+    if(g>0) s.appendChild(tx(pad.l-8,y+3,Math.round(g*100)+"%",{size:9,fill:DIM,anchor:"end"}));
+  });
+  const gw=(W-pad.l-pad.r)/order.length, bw=46;
+  order.forEach(([key,label],i)=>{
+    const v=vals[key]||{}, table=Number(v.raw||0), frozen=Number(v.full_measure||0);
+    const center=pad.l+gw*(i+0.5);
+    const h1=Math.max(1,table*plotH), h2=Math.max(1,frozen*plotH);
+    const b1=rect(center-bw-5,H-pad.b-h1,bw,h1,"#d1d5db",3);
+    const b2=rect(center+5,H-pad.b-h2,bw,h2,ACC,3);
+    addSvgTitle(b1,label+" · table "+table.toFixed(4));
+    addSvgTitle(b2,label+" · frozen "+frozen.toFixed(4));
+    s.appendChild(b1); s.appendChild(b2);
+    s.appendChild(tx(center,H-16,label,{size:11,fill:MUT,anchor:"middle"}));
+  });
+  return s;
+}
+
+function actChart(){
+  const W=1000,H=348,pad={l:92,r:24,t:44,b:38}, s=svg(W,H);
+  const rl=DATA.rl_known||{};
+  const keys=["channel","offer","freq","hour","dow"].filter(k=>rl[k]);
+  if(!keys.length) return s;
+  const rowH=(H-pad.t-pad.b)/keys.length, bh=14;
+  [0,.25,.5,.75,1].forEach(g=>{
+    const x=pad.l+g*(W-pad.l-pad.r);
+    s.appendChild(ln(x,pad.t,x,H-pad.b,{stroke:g===0?LINE:"#f3f4f6"}));
+    if(g>0) s.appendChild(tx(x,H-12,Math.round(g*100)+"%",{size:9,fill:DIM,anchor:"middle"}));
+  });
+  keys.forEach((k,i)=>{
+    const row=rl[k], center=pad.t+(i+0.5)*rowH;
+    const y1=center-bh-3, y2=center+3;
+    const w1=Math.max(1,Number(row.table)* (W-pad.l-pad.r));
+    const w2=Math.max(1,Number(row.E)*(W-pad.l-pad.r));
+    s.appendChild(tx(pad.l-10,center+4,k,{size:10,fill:MUT,anchor:"end"}));
+    const b1=rect(pad.l,y1,w1,bh,"#d1d5db",3);
+    const b2=rect(pad.l,y2,w2,bh,ACC,3);
+    addSvgTitle(b1,k+" · table "+Number(row.table).toFixed(4));
+    addSvgTitle(b2,k+" · frozen "+Number(row.E).toFixed(4));
+    s.appendChild(b1); s.appendChild(b2);
+  });
+  return s;
+}
+
+function retrieveChart(){
+  const W=1000,H=360,pad=28,s=svg(W,H);
+  const pts=(OV_EXP&&OV_EXP.customers)||[];
+  if(!pts.length) return s;
+  if(retrieveIdx<0||retrieveIdx>=pts.length) retrieveIdx=0;
+  const sel=pts[retrieveIdx];
+  const byKey=Object.fromEntries(pts.map(c=>[c.key,c]));
+  const nb=new Set((sel.neighbours||[]).map(n=>n.key));
+  const X=x=>pad+x*(W-2*pad), Y=y=>H-pad-y*(H-2*pad);
+  (sel.neighbours||[]).forEach(n=>{
+    const c=byKey[n.key]; if(!c) return;
+    s.appendChild(ln(X(sel.x),Y(sel.y),X(c.x),Y(c.y),{stroke:"rgba(5,150,105,.4)",w:1.2}));
+  });
+  pts.forEach((c,i)=>{
+    const cx=X(c.x), cy=Y(c.y);
+    const isSel=i===retrieveIdx, isNb=nb.has(c.key);
+    const hit=dot(cx,cy,13,"transparent");
+    hit.style.cursor="pointer";
+    hit.onclick=()=>{retrieveIdx=i;renderOverviewPanel();};
+    addSvgTitle(hit,c.key);
+    s.appendChild(hit);
+    const circle=dot(cx,cy,isSel?8:isNb?5.2:3.4,isSel?INK:isNb?ACC:"#d1d5db");
+    circle.setAttribute("pointer-events","none");
+    s.appendChild(circle);
+  });
+  s.appendChild(tx(pad,18,sel.key,{size:11,fill:MUT}));
+  return s;
+}
+
+function renderOverviewPanel(){
+  document.querySelectorAll(".usetab").forEach(b=>b.classList.toggle("on",b.dataset.use===overviewUse));
+  const host=$("#usecasepanel"); host.innerHTML="";
+  if(overviewUse==="retrieve"){
+    host.appendChild(chartHeader("Retrieve · frozen geometry",[["selected","selected"],["5 neighbours","neighbour"],["all customers","other"]]));
+    host.appendChild(retrieveChart());
+    host.appendChild(chartFoot("click a point to change the neighbour set","5 nearest neighbours in the state"));
+  }else if(overviewUse==="act"){
+    host.appendChild(chartHeader("Act · known-effect recovery",[["table","table"],["frozen state","frozen"]]));
+    host.appendChild(actChart());
+    host.appendChild(chartFoot("randomized holdout · hover a bar for values","10-NN purity · higher is better"));
+  }else{
+    host.appendChild(chartHeader("Predict · supervised heads",[["table","table"],["frozen state","frozen"]]));
+    host.appendChild(predictChart());
+    host.appendChild(chartFoot("held-out · R² value/orders · AUC churn","hover a bar · higher is better"));
+  }
+}
+
+function initOverview(){
+  renderPipeline();
+  const tabs=$("#usecasetabs");
+  [["predict","Predict"],["retrieve","Retrieve"],["act","Act"]].forEach(([id,label])=>{
+    const b=el("button","usetab"+(id===overviewUse?" on":""),label);
+    b.dataset.use=id;
+    b.onclick=()=>{overviewUse=id;renderOverviewPanel();};
+    tabs.appendChild(b);
+  });
+  if(OV_EXP&&OV_EXP.customers){
+    const idx=OV_EXP.customers.findIndex(c=>c.key==="rc0000208");
+    if(idx>=0) retrieveIdx=idx;
+  }
+  renderOverviewPanel();
+}
+initOverview();
+
 
 const bd=DATA.bdata||{};
 /* ---------- axis panels ---------- */
@@ -1314,7 +1529,6 @@ $("#foot").textContent=`generated ${m.generated} · synthetic harness · ${m.cus
 
     html = html.replace("__OBJLIST__", obj_items)
     html = html.replace("__OBJSPEC__", json.dumps(obj_spec))
-    html = html.replace("__FULL_TABLE__", full_vs_table())
     html = html.replace("__POLICY_TABLE__", policy_table())
     html = html.replace("__RL_TABLE__", rl_table())
     html = html.replace("__PAYLOAD__", explorer_json)

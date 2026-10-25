@@ -18,7 +18,7 @@ xdg-open demo/index.html                 # or double-click the file
 
 | Tab | What it shows |
 |---|---|
-| **Overview** | The claim, four headline numbers, and the frozen state vs the traditional table |
+| **Overview** | A visual pipeline from event stream to encoder to frozen state to plugins. A **Predict / Retrieve / Act** selector switches between a held-out comparison chart, an interactive nearest-neighbour geometry, and known-effect recovery bars. Predict and Act values are available on hover rather than in a table. |
 | **Data** | A legacy wide-table sample with one row per customer, showing historical counts only. Select a row to open that customer's raw event timeline and canonical ledger below. Hover any timeline dot for its `event_ts` and `event_attributes`; the ledger shows `event_ts`, `event_type`, and `event_attributes`, with the selected `customer_key` shown above. No outcome labels or window markers. |
 | **Encoder** | The encoder flow from event stream to field tokens, sequence blocks, 128-d shape, and 2,265-d published state. Below it: an actual 128-cell feature map for one customer and the published state's feature-family dimensions. |
 | **Axes** | Eight sub-tabs, one per content axis. Each opens a full panel: the value, what it measures, how it is measured, why it matters, and a dedicated visual (singular spectrum, reconstruction scatter, purity distribution, ROC, reliability curve, randomized-action design, order bars, relational bars) |
