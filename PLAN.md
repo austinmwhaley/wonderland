@@ -790,7 +790,7 @@ report, not a new plan.
   No prepared bundle and no wide table are required.
 - `scripts/demo/stream_loader.load_data(engine=None)` now delegates to discovery; the GPU path
   remains the prepared-cache builder.
-- `look+_glass/foundation.py` is importable without callers configuring `sys.path`.
+- `looking_glass/foundation.py` is importable without callers configuring `sys.path`.
 
 Proof it is equivalent, not merely plausible (6k reference, compared against the GPU-built
 prepared artifact):
