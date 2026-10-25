@@ -1464,3 +1464,31 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - Fixed during the build: the ROC AUC label overprinted the curve; the spectrum needed a log
   scale because singular values decay over orders of magnitude.
 - Verified by rendering each sub-panel in headless Chrome and syntax-checking the inline JS.
+
+## DEC-316 — Data tab: one customer, legacy and stream shapes
+
+- Request: add a **Data** tab with **Legacy** and **Stream** sub-tabs, showing the same customer in
+  both modes and how the data got from raw tables to the wide version and the long version.
+- New `scripts/build_data_tab.py` writes `demo/data_tab.json` from the canonical relational
+  reference. It selects one example customer (`rc0000208`), reads all eight raw tables, the
+  51-column wide row, and the full 360-row event stream, and computes the shared facts itself.
+- Layout: a customer header; a strip of the eight raw tables with local row counts, global counts,
+  column counts, and join keys; then the two sub-tabs.
+- **Legacy** shows the shape (`1 row × 51 columns`), a window split (249 history / 55 label /
+  56 later), a clickable 51-column anatomy bar, the selected group's 40 history fields or 10
+  outcome labels, and a plain-language rule plus source tables for that group.
+- **Stream** shows the shape (`360 rows × 4 columns`), a dot-per-event timeline over the 540-day
+  window with the as-of and +90-day boundaries marked, the canonical column list, a filterable
+  event ledger, and the selected event's attribute payload as both fields and JSON.
+- A shared reconciliation table recomputes nine legacy fields directly from event rows (for
+  example `n_orders` 30, `purchase_value` $4,210.63, `y_orders_90` 8) so the two shapes are tied
+  to the same customer and window rather than merely placed side by side.
+- Correctness note: the wide row's `n_events` is 249 (history only) while the stream has 360 rows;
+  the missing 111 are 55 events in the 90-day label window and 56 later. The tab renders this
+  split explicitly so the difference is not mistaken for a data bug.
+- Also fixed an Explorer bug found by comparing it with the Data tab: total-event counts were built
+  by zipping two separate `group_by` aggregations, whose row order is not guaranteed, so counts
+  were attached to the wrong customers. The count is now zipped once from a single aggregation;
+  all 260 sampled customers match the stream exactly.
+- Verified by rendering both sub-tabs, every wide group, the event filters, and the A6 panel in
+  headless Chrome; checked inline JS with `node --check`.
