@@ -770,3 +770,135 @@ rejected `selective`, `noaction`, or batching experiments.
 
 The immediate objective is to make the **public lifecycle, state contract, and evidence identity**
 as reliable as the current measured baseline, then improve the encoder on top of that foundation.
+
+---
+
+# Accomplished — 2026-10-25
+
+This section records what was actually delivered against the plan above. It is a status
+report, not a new plan.
+
+## Public lifecycle (Loop A) — done
+
+- `looking_glass/stream_adapter.discover()` derives a complete schema from a **raw canonical
+  event stream**: event vocabulary, categorical vocabularies and hashing, numeric and
+  time-delta fields, behavioural identity roles, exogenous event types, Fourier periods,
+  timescales, horizons, and masking rate.
+- Sequences for training are built by calling the **same `transform()` used at serving**, so the
+  two paths cannot drift apart.
+- `FrozenFoundation.fit_stream(frame, as_of_ts)` fits an artifact directly from raw events.
+  No prepared bundle and no wide table are required.
+- `scripts/demo/stream_loader.load_data(engine=None)` now delegates to discovery; the GPU path
+  remains the prepared-cache builder.
+- `look+_glass/foundation.py` is importable without callers configuring `sys.path`.
+
+Proof it is equivalent, not merely plausible (6k reference, compared against the GPU-built
+prepared artifact):
+
+| Array | Max difference |
+|---|---|
+| event types | 0.0 |
+| categorical indices | 0.0 |
+| numeric transform | 0.0 |
+| gaps | 0.0 |
+| raw values | 0.0 |
+| time features | 6e-08 (float32) |
+| timestamps | 2.4e-07 |
+
+Keys, `et_v`, categorical sizes, periods, taus, and identity/relational/exogenous indices were
+identical.
+
+Four real bugs were found and fixed while verifying this:
+
+1. int-coded categoricals gained a spurious extra vocabulary bucket;
+2. periods were computed on naive timestamps instead of local time, which reordered the spectral
+   peaks and swapped the Fourier columns;
+3. `fit_stream` did not set `AS_OF_TS`, producing invalid gap features;
+4. the validation split could consume the entire training set on a small stream.
+
+## State contract (Loop B) — done
+
+- `state_layout.FULL_ORDER` and `compose_full()` now define the `full` view permanently:
+  `shape → learned_state → forecast → uncertainty → heads`.
+- `FrozenFoundation.state()` uses that single definition instead of assembling `E + BLK` ad hoc.
+- Tests assert the declared order, the declared dimensions, and that every `BLK` column is used
+  exactly once across the views.
+
+## Robustness (Loop C) — done
+
+- `frozen.require_finite()` now guards the frozen state in the donor, controls, ceiling, battery,
+  and attribution writers. Non-finite encoder output fails loudly instead of being converted to
+  zeros.
+- `nan_to_num` remains only for baseline feature tables, where NaN is a legitimate artefact of
+  one-hot construction.
+- Verified behaviour-neutral: `measure_donor` was re-run after the change and the receipt is
+  identical in every reported metric.
+
+## Evidence integrity — done
+
+- Every cache writes `<cache>.manifest.json` (data, revision, seed, axes, layout, dimensions,
+  measure vocabulary, field-role sources, best validation, git SHA, build time, cache SHA-256).
+- `assert_axes()` refuses to mix a cache with a differently-configured process.
+- `encoder_config.json` and the card header derive from that manifest, so a card row can no
+  longer be labelled with a configuration that did not produce it.
+
+## RL evidence — repaired
+
+- The previous zero-width IPS interval was traced to a **degenerate control**: the shuffled-state
+  model converged to the same policy, so the IPS difference was identically zero.
+- The comparator is now the **uniform policy**, whose IPS value under uniform logging is exactly
+  mean reward.
+- `ci_or_fail()` rejects zero-width intervals with a nonzero mean and any non-finite interval.
+- Result: channel beats uniform (+1.92, 95% CI [+0.04, +3.95]) and ties the table; offer beats
+  the table (+1.73, +0.40 to +3.06) and ties uniform. Reported as a working response interface,
+  not a deploy certificate.
+
+## Performance — corrected
+
+- The earlier “~110 rows/s” forward figure was `torch.compile` warm-up, not steady state. Warm
+  state generation is about **1,900 rows/s**; batch size is not the lever.
+- Length-sorted token-budget batching was measured at 62.8 rows/s versus 110.3 and reverted.
+- Cold compilation and supervised head fitting are the real measured costs.
+
+## Current evidence
+
+```text
+REPORT_CARD.md      B 28/28 PASS · B+C 6/6 PASS · 34 PASS / 0 FAIL
+docs/AUDIT_CARD.md  26 PASS / 3 FAIL (open research rows preserved)
+```
+
+Measured highlights:
+
+- `shape` beats the table on churn (~0.936 vs 0.911).
+- `measure` nearly matches the table on category identity (~0.261 vs 0.265) and is the best
+  non-table anomaly view.
+- Train-only view selection picks `full` for value/orders and `forecast` for churn; all three
+  holdout comparisons are reported with paired CIs, and churn is honestly a tie.
+- Fitting no longer requires the wide table; the wide table is only an evaluation baseline.
+
+Validation: 33 focused tests pass, the fast suite passes, `ruff check`/`ruff format --check` are
+clean on changed files, and the principle audit reports no findings on the new modules.
+
+## Still open (unchanged by this work)
+
+- **3A** action-objective semantics: masking `email_send` improved value/orders but made churn
+  add-over-sequence negative, failing D3. Retained the baseline; the tension is recorded, not
+  hidden.
+- **3B** selective retention: rejected at 6k because donor margins regressed. A new attempt
+  needs a new hypothesis.
+- **3D/3E** missing/unknown/zero channel separation, and derived capacity/convergence.
+- **Relational roles** remain a declared configuration; no principled rule reproduces the current
+  pair.
+- **Phase 5** a decision-episode data revision, if a stronger policy-value claim is wanted.
+- **Phase 7** Layer-1 minimality, universal `U`, and decision-sufficiency are not started and are
+  not implied by the green Layer-0 card.
+
+## Commits
+
+```text
+0bd8d29 loopA: canonical discovery, raw-stream fit_stream, loader delegates on CPU path
+384bdb0 loopB/C: pin full-view composition; remove silent state sanitization
+396f579 card: regenerate at current commit
+```
+
+Local only; not pushed (awaiting explicit permission per `AGENTS.md`).
