@@ -1790,3 +1790,17 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   point is clicked, making the retrieval path from Data → state → plugin explicit.
 - Verified by rendering all four modes and switching cards in headless Chrome; inline JS passes
   `node --check`.
+
+## DEC-338 — Plugins matches Overview's three-family structure
+
+- Feedback: the first card tag above Supervised heads should read **Predict**, matching Overview;
+  Plugins should expose exactly three families: supervised, unsupervised and RL.
+- The four-card workbench collapsed to three cards:
+  - **Predict** / Supervised heads
+  - **Retrieve** / Unsupervised geometry
+  - **Act** / RL policy
+- Known-effect recovery and policy value now live together inside the Act panel as two stacked
+  RL checks, rather than separate top-level cards.
+- The card previews remain: supervised bars, a miniature neighbour graph, and a combined
+  effect/policy glyph. Only the three top-level cards highlight, and they all change the panel.
+- Verified by rendering Predict and Act modes in headless Chrome; ruff and node checks pass.

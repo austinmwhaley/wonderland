@@ -368,7 +368,7 @@ h2{font-size:21px;font-weight:600;margin:0 0 8px;letter-spacing:-.02em}
 .plugsource .statevis{width:150px;height:42px;flex:0 0 auto}
 .plugsource .statevis svg{display:block;width:100%;height:42px}
 @media(max-width:560px){.plugsource .statevis{width:110px}}
-.pluggrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.pluggrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:16px}
 @media(max-width:900px){.pluggrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){.pluggrid{grid-template-columns:1fr}}
 .plugcard{min-height:148px;border:1px solid var(--line);border-radius:8px;padding:14px 15px;
@@ -381,6 +381,7 @@ h2{font-size:21px;font-weight:600;margin:0 0 8px;letter-spacing:-.02em}
 .plugcard .d{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4}
 .plugcard .mini{height:42px;margin-top:10px}
 .plugcard .mini svg{display:block;width:100%;height:42px}
+.plugsub + .plugsub{border-top:1px solid var(--line);margin-top:22px;padding-top:18px}
 .plugpanel{border:1px solid var(--line);border-radius:8px;padding:16px 18px 10px;overflow-x:auto}
 .plugpanel svg{display:block;width:100%;height:auto}
 @media(max-width:800px){.plugpanel svg{min-width:720px}}
@@ -1419,7 +1420,7 @@ if(PL_LOOK&&PL_LOOK.customers){
   const idx=PL_LOOK.customers.findIndex(c=>c.key==="rc0000208");
   if(idx>=0) lookIdx=idx;
 }
-let pluginMode="outcome";
+let pluginMode="predict";
 
 function pluginMoney(v){
   return "$"+Number(v).toLocaleString("en-US",{maximumFractionDigits:1});
@@ -1469,35 +1470,32 @@ function miniLookalikeSVG(){
   return s;
 }
 
-function miniEffectSVG(){
-  const W=240,H=42,pad=8,s=svg(W,H);
+function miniActSVG(){
+  const W=240,H=42,pad=6,s=svg(W,H);
+  s.appendChild(ln(120,8,120,H-8,{stroke:LINE}));
   const keys=["channel","offer","freq","hour","dow"].filter(k=>PL_EFFECT[k]);
   const rowH=(H-2*pad)/Math.max(1,keys.length);
   keys.forEach((k,i)=>{
     const r=PL_EFFECT[k], y=pad+(i+0.5)*rowH;
-    const x1=pad+Number(r.table)*(W-2*pad), x2=pad+Number(r.E)*(W-2*pad);
-    s.appendChild(ln(x1,y,x2,y,{stroke:"rgba(5,150,105,.4)",w:1.2}));
-    s.appendChild(dot(x1,y,2.2,"#d1d5db"));
-    s.appendChild(dot(x2,y,3.2,ACC));
+    const x1=pad+Number(r.table)*104, x2=pad+Number(r.E)*104;
+    s.appendChild(ln(x1,y,x2,y,{stroke:"rgba(5,150,105,.38)",w:1}));
+    s.appendChild(dot(x1,y,1.7,"#d1d5db"));
+    s.appendChild(dot(x2,y,2.4,ACC));
   });
-  return s;
-}
-
-function miniPolicySVG(){
-  const W=240,H=42,pad=8,s=svg(W,H);
   const arms=["channel","offer"].filter(k=>PL_POLICY[k]);
   const vals=arms.flatMap(k=>[PL_POLICY[k].random.ips,PL_POLICY[k].table.ips,PL_POLICY[k].E.ips]);
-  if(!vals.length) return s;
-  const lo=Math.min(...vals)-0.4, hi=Math.max(...vals)+0.4;
-  const X=i=>pad+i*(W-2*pad)/2;
-  const Y=v=>H-pad-((v-lo)/(hi-lo||1))*(H-2*pad);
-  const colors={channel:INK,offer:"#6b7280"};
-  arms.forEach(k=>{
-    const r=PL_POLICY[k], pts=[r.random.ips,r.table.ips,r.E.ips];
-    s.appendChild(ln(X(0),Y(pts[0]),X(1),Y(pts[1]),{stroke:colors[k],w:1.2}));
-    s.appendChild(ln(X(1),Y(pts[1]),X(2),Y(pts[2]),{stroke:colors[k],w:1.2}));
-    pts.forEach((v,i)=>s.appendChild(dot(X(i),Y(v),i===2?3.4:2.4,colors[k])));
-  });
+  if(vals.length){
+    const lo=Math.min(...vals)-0.4, hi=Math.max(...vals)+0.4;
+    const X=i=>128+i*52;
+    const Y=v=>H-pad-((v-lo)/(hi-lo||1))*(H-2*pad);
+    const colors={channel:INK,offer:"#6b7280"};
+    arms.forEach(k=>{
+      const r=PL_POLICY[k], pts=[r.random.ips,r.table.ips,r.E.ips];
+      s.appendChild(ln(X(0),Y(pts[0]),X(1),Y(pts[1]),{stroke:colors[k],w:1}));
+      s.appendChild(ln(X(1),Y(pts[1]),X(2),Y(pts[2]),{stroke:colors[k],w:1}));
+      pts.forEach((v,i)=>s.appendChild(dot(X(i),Y(v),i===2?2.8:1.9,colors[k])));
+    });
+  }
   return s;
 }
 
@@ -1524,10 +1522,9 @@ function renderPluginsMap(){
     b.onclick=()=>{pluginMode=id;renderPluginsMap();renderPluginPanel();};
     return b;
   };
-  grid.appendChild(makeCard("outcome","Outcome","Supervised heads","value_90d · orders_90d · churn_90d",miniOutcomeSVG));
-  grid.appendChild(makeCard("lookalike","Lookalike","Nearest neighbours","retrieve by state geometry",miniLookalikeSVG));
-  grid.appendChild(makeCard("effect","Known effect","Randomized recovery","5 action keys",miniEffectSVG));
-  grid.appendChild(makeCard("policy","Policy","IPS reward","channel + offer",miniPolicySVG));
+  grid.appendChild(makeCard("predict","Predict","Supervised heads","value_90d · orders_90d · churn_90d",miniOutcomeSVG));
+  grid.appendChild(makeCard("retrieve","Retrieve","Unsupervised geometry","nearest neighbours in the state",miniLookalikeSVG));
+  grid.appendChild(makeCard("act","Act","RL policy","known effect · policy value",miniActSVG));
   host.appendChild(grid);
 }
 
@@ -1637,23 +1634,26 @@ function pluginPolicyChart(){
 
 function renderPluginPanel(){
   const host=$("#plugpanel"); host.innerHTML="";
-  if(pluginMode==="policy"){
-    host.appendChild(chartHeader("Policy · IPS reward",[["channel","channel"],["offer","offer"]]));
-    host.appendChild(pluginPolicyChart());
-    host.appendChild(chartFoot("pre-action state · logged propensity · axis zoomed","hover a point for values"));
-  }else if(pluginMode==="effect"){
-    host.appendChild(chartHeader("Known effect · randomized action recovery",[["table","table"],["frozen state","frozen"]]));
-    host.appendChild(pluginEffectChart());
-    host.appendChild(chartFoot("10-NN purity against the randomized optimum","hover a dot for values"));
-  }else if(pluginMode==="lookalike"){
-    host.appendChild(chartHeader("Lookalike · nearest neighbours",[["selected","selected"],["5 neighbours","neighbour"],["all customers","other"]]));
+  if(pluginMode==="retrieve"){
+    host.appendChild(chartHeader("Retrieve · nearest neighbours",[["selected","selected"],["5 neighbours","neighbour"],["all customers","other"]]));
     host.appendChild(pluginLookalikeChart());
     const pts=(PL_LOOK&&PL_LOOK.customers)||[];
     const sel=pts[lookIdx];
     const right=sel?("5 neighbours · mean value "+pluginMoney(sel.neighbour_mean_value)+" · churn_90d agreement "+(sel.neighbour_churn_agree*100).toFixed(0)+"%"):"";
     host.appendChild(chartFoot("click a point to change the lookalike set",right));
+  }else if(pluginMode==="act"){
+    const effect=el("div","plugsub");
+    effect.appendChild(chartHeader("Known effect · recovery",[["table","table"],["frozen state","frozen"]]));
+    effect.appendChild(pluginEffectChart());
+    effect.appendChild(chartFoot("10-NN purity against the randomized optimum","hover a dot for values"));
+    host.appendChild(effect);
+    const policy=el("div","plugsub");
+    policy.appendChild(chartHeader("Policy value · IPS estimate",[["channel","channel"],["offer","offer"]]));
+    policy.appendChild(pluginPolicyChart());
+    policy.appendChild(chartFoot("pre-action state · logged propensity · axis zoomed","hover a point for values"));
+    host.appendChild(policy);
   }else{
-    host.appendChild(chartHeader("Outcome · supervised heads",[["table","table"],["frozen state","frozen"]]));
+    host.appendChild(chartHeader("Predict · supervised heads",[["table","table"],["frozen state","frozen"]]));
     host.appendChild(pluginOutcomeChart());
     host.appendChild(chartFoot("held-out · R² value_90d / orders_90d · AUC churn_90d","hover a bar for values"));
   }
