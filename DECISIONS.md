@@ -1734,3 +1734,16 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   Overview.
 - Verified by rendering the merged Encoder page and scrolling through both sections; inline JS
   passes `node --check`.
+
+## DEC-334 — No static highlight on architecture/source visuals
+
+- Feedback: the clip-art visuals at the top should not be highlighted unless selecting them changes
+  content below.
+- Removed the green border/background from the Encoder flow's final "Published state" card and
+  from the static "Frozen state" source card in Plugins. These are diagrams, not selectable
+  controls.
+- Kept active highlighting only on real selectors: plugin cards (which swap the large panel),
+  Overview use-case tabs, axis sub-tabs, objective rows, and selected Data/Explorer points.
+- On narrow screens the final Encoder step still spans both columns via `:last-child`; that is
+  layout only, not an accent.
+- Verified by rendering the Encoder and Plugins tops in headless Chrome.

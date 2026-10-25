@@ -363,7 +363,7 @@ h2{font-size:21px;font-weight:600;margin:0 0 8px;letter-spacing:-.02em}
 .plugmap{display:grid;grid-template-columns:210px minmax(0,1fr) minmax(0,1fr);gap:12px;margin-bottom:16px}
 @media(max-width:900px){.plugmap{grid-template-columns:1fr}}
 .plugstate,.plugcard{min-height:148px;border:1px solid var(--line);border-radius:8px;padding:14px 15px}
-.plugstate{border-color:var(--accent);background:#f7fefb;display:flex;flex-direction:column;justify-content:space-between}
+.plugstate{display:flex;flex-direction:column;justify-content:space-between}
 .plugstate .k,.plugcard .k{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);font-weight:600}
 .plugstate .v{font-family:ui-monospace,monospace;font-size:25px;font-weight:600;letter-spacing:-.03em;margin-top:4px}
 .plugstate .d{font-size:11px;color:var(--muted);margin-top:2px}
@@ -481,14 +481,13 @@ th.num{text-align:right}
   color:var(--muted);min-width:440px;white-space:normal;word-break:break-word}
 .encflow{display:flex;gap:8px;align-items:stretch;margin-bottom:20px}
 .encstep{flex:1;min-width:0;border:1px solid var(--line);border-radius:8px;padding:14px 14px 12px;background:#fff}
-.encstep.last{border-color:var(--accent);background:#f7fefb}
 .encstep .n{font-family:ui-monospace,monospace;font-size:9px;color:var(--dim)}
 .encstep .t{font-size:13px;font-weight:600;margin-top:6px;letter-spacing:-.01em}
 .encstep .v{font-family:ui-monospace,monospace;font-size:17px;font-weight:600;margin-top:8px;letter-spacing:-.02em}
 .encstep .d{font-size:10.5px;color:var(--muted);margin-top:4px;line-height:1.45}
 .encarrow{display:flex;align-items:center;justify-content:center;flex:0 0 auto;color:var(--dim);font-size:14px}
 @media(max-width:900px){.encflow{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
-  .encarrow{display:none}.encstep.last{grid-column:span 2}}
+  .encarrow{display:none}.encstep:last-child{grid-column:span 2}}
 .encgrid{display:grid;grid-template-columns:minmax(0,1.06fr) minmax(0,.94fr);gap:16px;align-items:start}
 @media(max-width:900px){.encgrid{grid-template-columns:1fr}}
 .encsection{border-top:1px solid var(--line);margin-top:54px;padding-top:38px}
@@ -1293,10 +1292,10 @@ if(!ENC){
       ["02","Field tokens","schema-derived","type · category · value · time · gap",false],
       ["03","Sequence blocks",ENC.trunk.layers+" × "+ENC.trunk.width,"blocks · continuous time · residual",false],
       ["04","Frozen shape",ENC.trunk.width+" dims","one vector per customer",false],
-      ["05","Published state",ENC.state_dim.toLocaleString()+" dims","shape + named feature blocks",true],
+      ["05","Published state",ENC.state_dim.toLocaleString()+" dims","shape + named feature blocks"],
     ];
-    steps.forEach(([n,t,v,d,last],i)=>{
-      const step=el("div","encstep"+(last?" last":""));
+    steps.forEach(([n,t,v,d],i)=>{
+      const step=el("div","encstep");
       step.appendChild(el("div","n",n));
       step.appendChild(el("div","t",t));
       step.appendChild(el("div","v",v));
