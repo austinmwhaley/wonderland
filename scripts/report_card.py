@@ -342,6 +342,38 @@ def _serving_contract(docs):
     return out
 
 
+def _view_selection(docs):
+    """Render the pre-registered, train-only view selection result."""
+    vs = docs.get("view_selection.json")
+    out = ["## View selection — chosen on training folds only", ""]
+    if not vs:
+        out += ["NOT MEASURED (no `view_selection.json`).", ""]
+        return out
+    p = vs["protocol"]
+    out += [
+        f"Candidates `{', '.join(p['candidates'])}` were declared before scoring. Selection used "
+        f"**{p['selection']}** on {p['n_train']:,} training customers; the {p['n_hold']:,} holdout "
+        "customers were scored once afterwards. No view was chosen using holdout performance.",
+        "",
+        "| target | selected view | holdout selected | table | delta | 95% CI |",
+        "|---|---|---|---|---|---|",
+    ]
+    for t, e in vs["targets"].items():
+        d = e["selected_minus_table"]
+        out.append(
+            f"| {t} | `{e['selected_view']}` | {e['holdout']['selected']:.4f} | "
+            f"{e['holdout']['table']:.4f} | {d['mean']:+.4f} | [{d['lo']:+.4f}, {d['hi']:+.4f}] |"
+        )
+    out += [
+        "",
+        "The selected view is the one with the best **training-fold** score per target, so "
+        "`shape` is not assumed to be the product: consumers receive a state the training data "
+        "actually supports. Churn's interval crosses zero and is reported as a tie.",
+        "",
+    ]
+    return out
+
+
 def main():
     docs = {}
     for p in list((ROOT / "docs/report_cards").glob("*.json")) + list(EXP.glob("*.json")):
@@ -475,6 +507,7 @@ def main():
 
     L.extend(_state_attribution(docs))
     L.extend(_serving_contract(docs))
+    L.extend(_view_selection(docs))
 
     A("## B+C — encoder + plugins")
     A("")

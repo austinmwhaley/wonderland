@@ -266,6 +266,7 @@ def main():
         )
     }
     cfg["hist_dim"] = int(vs.get("hist_dim", 0))
+    cfg["measure_dim"] = man.get("measure_dim")
     cfg["manifest"] = str(F.manifest_path(args.frozen))
     (ROOT / "docs/report_cards/experiments/encoder_config.json").write_text(
         json.dumps(cfg, indent=1) + "\n"

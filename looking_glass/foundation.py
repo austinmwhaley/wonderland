@@ -26,6 +26,7 @@ import torch
 
 from looking_glass import measure_state as MS
 from looking_glass import state_layout as SL
+from looking_glass import stream_adapter as SA
 
 ARTIFACT_VERSION = "1.0.0"
 
@@ -39,6 +40,7 @@ class ArtifactMeta:
     as_of_ts: float = 0.0
     layout: dict = field(default_factory=dict)
     measure: dict | None = None
+    schema: dict | None = None
     git_sha: str = ""
 
     def to_dict(self):
@@ -50,6 +52,7 @@ class ArtifactMeta:
             "as_of_ts": self.as_of_ts,
             "layout": self.layout,
             "measure": self.measure,
+            "schema": self.schema,
             "git_sha": self.git_sha,
         }
 
@@ -63,6 +66,7 @@ class ArtifactMeta:
             as_of_ts=float(d.get("as_of_ts", 0.0)),
             layout=d.get("layout") or {},
             measure=d.get("measure"),
+            schema=d.get("schema"),
             git_sha=d.get("git_sha", ""),
         )
 
@@ -113,9 +117,83 @@ class FrozenFoundation:
             axes=sorted(ck.get("axes") or []),
             as_of_ts=as_of,
             layout=SL.describe(vs, model),
+            schema=(
+                SA.Schema.from_prepared(
+                    vs,
+                    vs.get("et_v") or ck.get("et_v") or {},
+                    vs.get("catspec") or ck.get("catspec") or [],
+                    vs.get("num") or ck.get("num") or [],
+                    vs.get("periods") or ck.get("periods") or [],
+                    vs.get("as_of_ts", 0.0),
+                    vs.get("action_keys") or ck.get("action_keys") or [],
+                ).to_dict()
+                if (vs.get("catspec") or ck.get("catspec"))
+                else None
+            ),
             git_sha=_git_sha(),
         )
-        return cls(model, vs, meta)
+        measure = MS.measure_from_dict(vs, ck["measure"]) if ck.get("measure") else None
+        return cls(model, vs, meta, measure=measure)
+
+    @classmethod
+    def fit(
+        cls,
+        prepared,
+        seed: int = 0,
+        epochs: int = 12,
+        d: int | None = 128,
+        layers: int = 2,
+    ):
+        """Fit one foundation artifact from a prepared stream bundle.
+
+        `prepared` is the tuple returned by `scripts/demo/stream_loader.load_data`, i.e.
+        (B, A, keys, seqs, vs, et_v, catspec, num, taus, p_mask, as_of_ts, periods, horizons).
+        Training never reads downstream labels.
+        """
+        import auto_encoder as AE
+
+        (
+            _B,
+            _A,
+            keys,
+            seqs,
+            vs,
+            et_v,
+            catspec,
+            num,
+            _taus,
+            _p_mask,
+            as_of_ts,
+            periods,
+            _horizons,
+        ) = prepared
+        E, Xtab, labels, hold, seg, model, vs2, _B2, best, BLK = AE.train_encoder(
+            seed=seed, epochs=epochs, d=d, layers=layers, prepared=prepared
+        )
+        meta = ArtifactMeta(
+            data=str(vs.get("data_path", "")),
+            seed=int(seed),
+            axes=sorted(AE.AXES),
+            as_of_ts=float(as_of_ts),
+            layout=SL.describe(vs2, model),
+            schema=SA.Schema.from_prepared(vs2, et_v, catspec, num, periods, as_of_ts).to_dict(),
+            git_sha=_git_sha(),
+        )
+        art = cls(model, vs2, meta)
+        art._fit_outputs = (E, Xtab, labels, hold, seg, best, BLK)
+        return art
+
+    def transform_events(self, frame, as_of=None):
+        """Encode a raw canonical event stream with the frozen schema.
+
+        Returns `(keys, state, receipt)`; `state` rows follow `keys` order.
+        """
+        if not self.meta.schema:
+            raise ValueError("artifact has no frozen schema; cannot transform raw events")
+        schema = SA.Schema.from_dict(self.meta.schema)
+        keys, seqs, receipt = SA.transform(frame, schema, as_of or self.meta.as_of_ts)
+        state = self.state(seqs, keys)
+        return keys, state, receipt
 
     def fit_measure(self, seqs, train_keys, coverage: float = 0.99):
         """Resolve the lawful measure vocabulary from TRAINING entities only."""

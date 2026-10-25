@@ -1,0 +1,88 @@
+{
+ "protocol": {
+  "candidates": [
+   "shape",
+   "learned_state",
+   "forecast",
+   "measure",
+   "full"
+  ],
+  "selection": "3-fold CV on TRAINING customers only",
+  "evaluation": "holdout scored once after selection",
+  "n_train": 4200,
+  "n_hold": 1800,
+  "transform": {
+   "rows": 2365220,
+   "entities": 6000,
+   "fields": 17,
+   "numeric": 5,
+   "periods": [
+    2.666970248937462,
+    2.182066567312469
+   ],
+   "as_of": 1735718400.0
+  }
+ },
+ "targets": {
+  "value90": {
+   "selected_view": "full",
+   "train_cv": {
+    "shape": 0.3579,
+    "learned_state": 0.3722,
+    "forecast": 0.3979,
+    "measure": 0.3198,
+    "full": 0.4644,
+    "table": 0.4297
+   },
+   "holdout": {
+    "selected": 0.4573,
+    "table": 0.424
+   },
+   "selected_minus_table": {
+    "mean": 0.0335,
+    "lo": 0.0029,
+    "hi": 0.0581
+   }
+  },
+  "orders90": {
+   "selected_view": "full",
+   "train_cv": {
+    "shape": 0.4208,
+    "learned_state": 0.4303,
+    "forecast": 0.4624,
+    "measure": 0.3723,
+    "full": 0.5362,
+    "table": 0.4836
+   },
+   "holdout": {
+    "selected": 0.5453,
+    "table": 0.4938
+   },
+   "selected_minus_table": {
+    "mean": 0.0517,
+    "lo": 0.0275,
+    "hi": 0.077
+   }
+  },
+  "churn90": {
+   "selected_view": "forecast",
+   "train_cv": {
+    "shape": 0.9474,
+    "learned_state": 0.8582,
+    "forecast": 0.9554,
+    "measure": 0.8129,
+    "full": 0.9537,
+    "table": 0.9418
+   },
+   "holdout": {
+    "selected": 0.9495,
+    "table": 0.9452
+   },
+   "selected_minus_table": {
+    "mean": 0.0027,
+    "lo": -0.0205,
+    "hi": 0.027
+   }
+  }
+ }
+}

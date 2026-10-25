@@ -9,9 +9,10 @@
  "E_dim": 128,
  "BLK_dim": 2137,
  "state_dim": 2265,
- "git_sha": "267fdec",
- "built_at": "2026-10-25T02:06:50.837597+00:00",
- "cache_sha256": "88effcc54147fd68774e8e47237e0f6eae3bd89bd6705eb179edb560c90753a0",
+ "git_sha": "4863bef",
+ "built_at": "2026-10-25T02:32:39.806976+00:00",
+ "cache_sha256": "b75cc4af509c84ff64c7f7786f745353bafcf7a8c570158164f83bc8b6607ad9",
  "hist_dim": 0,
+ "measure_dim": 734,
  "manifest": "/tmp/opencode/frozen_6k.manifest.json"
 }

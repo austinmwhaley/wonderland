@@ -1214,3 +1214,39 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   plus manifest path adjacency.
 - Principles: Honest (no card claim without an identified artifact), Robust (refuse to mix runs),
   Diagnosable (provenance printed in the card).
+
+## DEC-302 — Phase 1 accepted: public stream → fit/transform → artifact lifecycle
+
+- Change: `looking_glass/stream_adapter.py` implements a frozen `Schema` plus `transform(frame,
+  schema, as_of)` that maps a canonical stream `[customer_key, event_ts, event_type,
+  event_attributes]` to the exact per-entity sequences the encoder consumes. `FrozenFoundation`
+  gained `fit(prepared)` and `transform_events(frame, as_of)`; the cache/manifest now persists
+  `rawspec`, `et_v`, `catspec`, `num`, `periods`, `action_keys`, and the lawful measure vocabulary.
+- Correctness evidence (not just "it runs"):
+  - `apply_schema` reproduces the training-time sequences exactly: max |Δ| = 0.0 for event types,
+    categoricals, numeric transform, and raw values; time features differ only by float32
+    rounding (6e-08).
+  - Encoding the raw 6k stream through the artifact reproduces the training cache's `E`
+    (3.9e-07) and `BLK` (9.5e-07) for the holdout.
+  - `save`/`load`/`transform_events` round-trip is identical and the content hash is stable.
+  - All seven views are produced, finite, and the measure view is present (734 dims).
+- Tests: `tests/test_stream_adapter.py` (9 cases) covers frozen vocabulary, unseen event types
+  and categories, missing fields, required columns, positive `as_of`, future-event exclusion, and
+  empty input.
+- Principles: Universal/Generic (no business names; frozen schema reused at serving), Honest
+  (no rediscovery on serving batches), Robust (fail-loud validation), Efficient (vectorized).
+
+## DEC-303 — Phase 2 accepted: train-only view selection
+
+- Change: `scripts/select_views.py` declares candidates (`shape`, `learned_state`, `forecast`,
+  `measure`, `full`) before scoring, selects per target by 3-fold CV on the 4,200 TRAINING
+  customers only, freezes the choice, then scores the 1,800 holdout customers once.
+- Result (holdout, paired bootstrap 95% CI vs table):
+  - value90: selected `full` 0.4573 vs table 0.4240, **+0.0335 [+0.0029, +0.0581]**;
+  - orders90: selected `full` 0.5453 vs table 0.4938, **+0.0517 [+0.0275, +0.0770]**;
+  - churn90: selected `forecast` 0.9495 vs table 0.9452, +0.0027 [-0.0205, +0.0270] (tie).
+- Interpretation: the training folds choose different views per target, which confirms the
+  multi-view finding is real rather than a holdout artifact. `shape` is not silently assumed to
+  be the product; the card now shows which view was selected and how.
+- Principles: Honest (no test-set selection), Diagnosable (per-target selection), Accessible
+  (view contract), Efficient (3-fold screen).

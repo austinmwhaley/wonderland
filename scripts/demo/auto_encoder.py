@@ -742,11 +742,18 @@ def table_features(A, hold):
     return X.to_numpy().astype(float), labels, seg
 
 
-def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
+def train_encoder(data=None, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0, prepared=None):
     global AS_OF_TS, BATCH
-    B, A, keys, seqs, vs, et_v, catspec, num, taus, p_mask, as_of_ts, periods, horizons = load_data(
-        data
-    )
+    if prepared is not None:
+        (B, A, keys, seqs, vs, et_v, catspec, num, taus, p_mask, as_of_ts, periods, horizons) = (
+            prepared
+        )
+    else:
+        B, A, keys, seqs, vs, et_v, catspec, num, taus, p_mask, as_of_ts, periods, horizons = (
+            load_data(data)
+        )
+    if data is not None:
+        vs["data_path"] = str(data)
     AS_OF_TS = as_of_ts
     if d is None:
         from collections import Counter as _C

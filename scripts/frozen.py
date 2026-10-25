@@ -90,6 +90,15 @@ def save(data, seed, path, epochs=12, d=128, layers=2):
         best=np.array([float(best)]),
         **labels_arr,
     )
+    # Persist the lawful measure vocabulary so the artifact is self-contained.
+    from looking_glass import measure_state as MS
+
+    _B2, _A2, keys2, seqs2, vs2, *_rest = AE.load_data(data)
+    hold_set = set(hold)
+    train_keys = [k for k in keys2 if k not in hold_set]
+    builder = MS.MeasureBuilder(seqs2, train_keys, vs2)
+    measure_spec = MS.measure_to_dict(builder)
+
     ckpt = {
         "model": model,
         "vs": vs,
@@ -99,6 +108,7 @@ def save(data, seed, path, epochs=12, d=128, layers=2):
         "epochs": epochs,
         "d": d,
         "layers": layers,
+        "measure": measure_spec,
     }
     torch.save(ckpt, str(path) + ".pt")
 
@@ -125,6 +135,8 @@ def save(data, seed, path, epochs=12, d=128, layers=2):
         "rel_source": vs.get("rel_source"),
         "exo_idx": list(vs.get("exo_idx") or []),
         "exo_source": vs.get("exo_source"),
+        "measure_dim": int(builder.dim),
+        "measure_coverage": float(builder.coverage),
         "best_val": float(best),
         "git_sha": _git_sha(),
         "built_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
