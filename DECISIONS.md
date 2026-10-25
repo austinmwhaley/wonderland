@@ -1340,3 +1340,27 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - Immediate next steps: Loop A canonical lifecycle unification; Loop B artifact-consistent
   consumers; Loop C one measured quality improvement. No new architecture sweep is authorized by
   this plan.
+
+## DEC-309 — Loop A accepted: canonical discovery + raw-stream fitting
+
+- Change: `looking_glass/stream_adapter.discover(frame, as_of_ts, action_keys)` derives the schema
+  (event vocabulary, categorical vocabs/hashing, numeric and time-delta fields, identity roles,
+  exogenous event types, periods, taus, horizons, masking rate) from a raw canonical stream.
+  Sequences are built by calling the SAME `transform` used at serving, so training and serving
+  cannot diverge. `FrozenFoundation.fit_stream(...)` fits directly from raw events.
+  `stream_loader.load_data(engine=None)` now delegates to discovery; the GPU path remains the
+  prepared-cache builder.
+- Equivalence evidence (6k reference): discovery reproduces the loader exactly — keys, `et_v`,
+  categorical sizes, periods, taus, and identity/relational/exogenous indices all identical;
+  sequences differ by 0.0 for event types, categorical values, numeric transform, gaps, and raw
+  values, and only by float32 rounding for time (6e-08) and timestamps (2.4e-07). Compared against
+  the GPU-built prepared artifact, so both paths are covered.
+- Bugs found and fixed while verifying: int-coded categoricals gained a spurious extra bucket;
+  periods were computed on naive rather than local-time stamps (changing the spectral ranking);
+  `fit_stream` did not set `AS_OF_TS`; the validation split could consume the entire training set
+  on small streams.
+- Tests: `tests/test_stream_discovery.py` covers schema construction, behavioural identity
+  detection, exogenous-action detection, discovery/serving sequence equality, input validation,
+  and a full raw-stream fit → transform round trip.
+- Principles: Universal (raw stream is sufficient), Honest (one mapping for train and serve),
+  Robust (small-stream split guard), Diagnosable (role sources recorded).

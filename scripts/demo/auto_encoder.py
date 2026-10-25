@@ -749,6 +749,7 @@ def train_encoder(data=None, seed=0, d=None, layers=2, epochs=5, lr=None, batch=
         (B, A, keys, seqs, vs, et_v, catspec, num, taus, p_mask, as_of_ts, periods, horizons) = (
             prepared
         )
+        AS_OF_TS = float(as_of_ts)
     else:
         B, A, keys, seqs, vs, et_v, catspec, num, taus, p_mask, as_of_ts, periods, horizons = (
             load_data(data)
@@ -780,7 +781,8 @@ def train_encoder(data=None, seed=0, d=None, layers=2, epochs=5, lr=None, batch=
     tr = [keys[i] for i in perm[:nt]]
     r2 = np.random.default_rng(seed + 100)
     vp = r2.permutation(len(tr))
-    vn = max(20, int(0.1 * len(tr)))
+    # validation must never consume the whole training set on a small stream
+    vn = min(max(2, len(tr) // 2), max(20, int(0.1 * len(tr))))
     val = [tr[i] for i in vp[:vn]]
     tr = [tr[i] for i in vp[vn:]]
     pkeys = tr[: min(len(tr), 400)]

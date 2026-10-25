@@ -96,7 +96,60 @@ def derive_identity_fields(gcat, group_index, n_entities, catspec, single_thresh
     return out
 
 
+def _declared_action_keys(d: Path, manifest: dict):
+    keys = list(manifest.get("action_keys") or [])
+    if not keys:
+        truth = d / "reference_truth.json"
+        if truth.exists():
+            try:
+                keys = list(
+                    (json.loads(truth.read_text()).get("meta") or {}).get("action_keys") or []
+                )
+            except Exception:  # noqa: BLE001
+                keys = []
+    return keys
+
+
+def _load_via_discovery(data):
+    """Compat entry point backed by the canonical adapter (single source of truth)."""
+    import sys as _sys
+
+    _sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+    from looking_glass import stream_adapter as SA
+
+    d = Path(data)
+    manifest = json.loads((d / "manifest.json").read_text())
+    as_of_ts = datetime.datetime.fromisoformat(manifest["as_of"]).timestamp()
+    _ap = d / "path_a/path_a_wide_table.parquet"
+    A = pl.read_parquet(_ap) if _ap.exists() else None
+    raw = pl.read_parquet(d / "path_b/path_b_customer_event_stream.parquet").select(
+        ["customer_key", "event_ts", "event_type", "event_attributes"]
+    )
+    found = SA.discover(raw, as_of_ts, action_keys=_declared_action_keys(d, manifest))
+    B = raw.filter(
+        pl.col("event_ts").cast(pl.String).str.to_datetime()
+        <= pl.lit(manifest["as_of"]).str.to_datetime()
+    ).sort(["customer_key", "event_ts"])
+    return (
+        B,
+        A,
+        found["keys"],
+        found["seqs"],
+        found["vs"],
+        found["et_v"],
+        found["catspec"],
+        found["num"],
+        found["taus"],
+        found["p_mask"],
+        found["as_of_ts"],
+        found["periods"],
+        found["horizons"],
+    )
+
+
 def load_data(data, engine=None):
+    if engine is None:
+        return _load_via_discovery(data)
     d = Path(data)
     manifest = json.loads((d / "manifest.json").read_text())
     as_of = manifest["as_of"]

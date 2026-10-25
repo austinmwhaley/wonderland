@@ -18,15 +18,22 @@ from __future__ import annotations
 import hashlib
 import json
 import subprocess
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
 import numpy as np
 import torch
 
-from looking_glass import measure_state as MS
-from looking_glass import state_layout as SL
-from looking_glass import stream_adapter as SA
+# The training path lives under scripts/demo; make the artifact importable without
+# requiring callers to configure sys.path.
+_DEMO_DIR = Path(__file__).resolve().parents[1] / "scripts" / "demo"
+if str(_DEMO_DIR) not in sys.path:
+    sys.path.insert(0, str(_DEMO_DIR))
+
+from looking_glass import measure_state as MS  # noqa: E402
+from looking_glass import state_layout as SL  # noqa: E402
+from looking_glass import stream_adapter as SA  # noqa: E402
 
 ARTIFACT_VERSION = "1.0.0"
 
@@ -181,6 +188,57 @@ class FrozenFoundation:
         )
         art = cls(model, vs2, meta)
         art._fit_outputs = (E, Xtab, labels, hold, seg, best, BLK)
+        return art
+
+    @classmethod
+    def fit_stream(
+        cls,
+        frame,
+        as_of_ts: float,
+        action_keys=(),
+        seed: int = 0,
+        epochs: int = 12,
+        d: int | None = 128,
+        layers: int = 2,
+    ):
+        """Fit an artifact directly from a raw canonical event stream.
+
+        No wide table and no pre-built bundle are required. Schema discovery and
+        sequence construction share one implementation, so serving cannot drift.
+        """
+        import auto_encoder as AE
+
+        found = SA.discover(frame, as_of_ts, action_keys=action_keys)
+        prepared = (
+            None,
+            None,
+            found["keys"],
+            found["seqs"],
+            found["vs"],
+            found["et_v"],
+            found["catspec"],
+            found["num"],
+            found["taus"],
+            found["p_mask"],
+            found["as_of_ts"],
+            found["periods"],
+            found["horizons"],
+        )
+        E, Xtab, labels, hold, seg, model, vs2, _B, best, BLK = AE.train_encoder(
+            seed=seed, epochs=epochs, d=d, layers=layers, prepared=prepared
+        )
+        meta = ArtifactMeta(
+            data="<stream>",
+            seed=int(seed),
+            axes=sorted(AE.AXES),
+            as_of_ts=float(as_of_ts),
+            layout=SL.describe(vs2, model),
+            schema=found["schema"].to_dict(),
+            git_sha=_git_sha(),
+        )
+        art = cls(model, vs2, meta)
+        art._fit_outputs = (E, Xtab, labels, hold, seg, best, BLK)
+        art._discovery_receipt = found["receipt"]
         return art
 
     def transform_events(self, frame, as_of=None):
