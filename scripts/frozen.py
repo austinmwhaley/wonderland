@@ -155,6 +155,14 @@ def save(
     return str(path)
 
 
+def require_finite(arr, name: str = "state"):
+    """Return the array unchanged, or fail loudly. Never sanitize encoder output."""
+    a = np.asarray(arr)
+    if not np.isfinite(a).all():
+        raise FloatingPointError(f"non-finite {name}; refusing to score a broken artifact")
+    return a
+
+
 def load(path):
     ck = torch.load(str(path) + ".pt", map_location=AE.DEV, weights_only=False)
     model = ck["model"]

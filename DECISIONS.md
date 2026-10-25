@@ -1364,3 +1364,25 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   and a full raw-stream fit → transform round trip.
 - Principles: Universal (raw stream is sufficient), Honest (one mapping for train and serve),
   Robust (small-stream split guard), Diagnosable (role sources recorded).
+
+## DEC-310 — Loop B accepted: `full` view composition is pinned
+
+- Change: `state_layout.FULL_ORDER = (shape, learned_state, forecast, uncertainty, heads)` and
+  `compose_full(...)` are now the single definition of the `full` view; `FrozenFoundation.state`
+  uses it. Changing this order or membership is a contract change.
+- Tests: `tests/test_state_layout.py` asserts the declared order, that `compose_full` matches the
+  declared dimensions, and that every BLK column is used exactly once across the views.
+- Why: previously `full` was assembled ad hoc as `E + BLK`; the layout was correct but the
+  definition was implicit. Implicit definitions drift.
+- Principles: Accessible (stable consumer contract), Diagnosable (named views), Single source of
+  truth.
+
+## DEC-311 — Loop C accepted: silent state sanitization removed (behaviour-neutral)
+
+- Change: `frozen.require_finite` is used for the frozen state in the donor, controls, ceiling,
+  battery, and attribution writers. `nan_to_num` remains only for baseline feature tables, where
+  NaN can legitimately arise from one-hot construction.
+- Verification: re-ran `measure_donor` after the change; the receipt is byte-identical in every
+  reported metric, so the change removes a silent-masking pathway without altering any result.
+- Principles: Robust (fail loudly), Honest (no sanitized passes), Diagnosable (the failure names
+  the array).

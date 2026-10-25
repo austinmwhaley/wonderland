@@ -92,8 +92,8 @@ def main():
     import frozen as F
 
     E, Xtab, labels, hold, _seg, model, vs, _B, _best, BLK = F.load(args.frozen)
-    E = np.nan_to_num(E)
-    BLK = np.nan_to_num(BLK)
+    E = F.require_finite(E, "E")
+    BLK = F.require_finite(BLK, "BLK")
     Xtab = np.nan_to_num(Xtab)
     layout = SL.describe(vs, model)
 

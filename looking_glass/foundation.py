@@ -290,7 +290,7 @@ class FrozenFoundation:
         if (views is None or "measure" in views) and self.measure is not None:
             out["measure"] = self.measure.transform(seqs, keys)
         if views is None:
-            out["full"] = np.hstack([out["shape"], BLK])
+            out["full"] = SL.compose_full(out["shape"], BLK, self.vs, self.model)
         return out
 
     def describe(self):

@@ -165,9 +165,9 @@ def main():
     import frozen as F
 
     E, Xtab, labels, hold, seg, model, vs, B, best, BLK = F.load(args.frozen)
-    E = np.nan_to_num(E)
+    E = F.require_finite(E, "E")
     Xtab = np.nan_to_num(Xtab)
-    BLK = np.nan_to_num(BLK)
+    BLK = F.require_finite(BLK, "BLK")
     STATE = np.hstack([E, BLK])  # the published state consumers receive
     data = Path(args.data)
     truth = {c["customer"]: c for c in json.load(open(data / "reference_truth.json"))["customers"]}

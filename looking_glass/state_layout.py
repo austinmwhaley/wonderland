@@ -33,6 +33,10 @@ _ORDER = (
     "forecast_past",  # model.past(E)
 )
 
+# The permanent definition of the `full` view: concatenation order and membership.
+# Changing this is a contract change and must be recorded in DECISIONS.md.
+FULL_ORDER = ("shape", "learned_state", "forecast", "uncertainty", "heads")
+
 _VIEW = {
     "learned_state": "learned_state",
     "suffix": "learned_state",
@@ -101,6 +105,16 @@ def describe(vs, model):
         "blk_dim": start,
         "full_dim": shape_dim + start,
     }
+
+
+def compose_full(shape, blk, vs, model):
+    """Assemble the documented `full` view. `shape` first, then the BLK views in order."""
+    parts = [shape]
+    for name in FULL_ORDER[1:]:
+        v = slice_view(blk, vs, model, name)
+        if v.shape[1]:
+            parts.append(v)
+    return np.hstack(parts)
 
 
 def slice_view(blk, vs, model, view):
