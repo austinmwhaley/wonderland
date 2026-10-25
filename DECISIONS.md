@@ -1640,3 +1640,15 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   action recovery; higher is better.
 - Verified by rendering all three modes and clicking a Retrieve point in headless Chrome; inline JS
   passes `node --check`.
+
+## DEC-326 — Data legacy table becomes an RFM snapshot
+
+- Feedback: the legacy table needed more columns and should make its legacy nature clearer; RFM
+  was the suggested framing.
+- The table now previews six columns: customer, recency (days since last purchase), frequency
+  (historical orders), monetary (historical purchase value), events and returns.
+- This makes the table read as the familiar hand-built RFM summary rather than a sparse extract,
+  while staying historical only: no next-90-day labels, no churn, no window markers.
+- `scripts/build_data_tab.py` exports the two additional legacy fields
+  (`days_since_last_purchase`, `n_returns`); row selection and the raw stream below are unchanged.
+- Verified by rendering the updated table in headless Chrome; fast tests, ruff and node checks pass.

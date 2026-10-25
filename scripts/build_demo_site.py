@@ -1156,10 +1156,11 @@ if(!DT){
 
   function renderTable(){
     const host=$("#legacytable"); host.innerHTML="";
-    $("#legacymeta").textContent=DT.customers.length+" of "+DT.wide.rows.toLocaleString()+" rows · showing 4 of "+DT.wide.columns+" columns";
+    const cols=["Customer","Recency (days)","Frequency (orders)","Monetary","Events","Returns"];
+    $("#legacymeta").textContent=DT.customers.length+" of "+DT.wide.rows.toLocaleString()+" rows · showing "+cols.length+" of "+DT.wide.columns+" columns";
     const table=el("table");
     const thead=el("thead"), hr=el("tr");
-    ["Customer","Events · history","Orders · history","Purchase value · history"].forEach((label,i)=>{
+    cols.forEach((label,i)=>{
       hr.appendChild(el("th",i===0?null:"num",label));
     });
     thead.appendChild(hr); table.appendChild(thead);
@@ -1170,9 +1171,11 @@ if(!DT){
       tr.onclick=()=>select(i);
       tr.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();select(i);}};
       tr.appendChild(el("td",null,c.key));
-      tr.appendChild(el("td","num",String(c.legacy.n_events)));
+      tr.appendChild(el("td","num",String(c.legacy.days_since_last_purchase)));
       tr.appendChild(el("td","num",String(c.legacy.n_orders)));
       tr.appendChild(el("td","num",money(c.legacy.purchase_value)));
+      tr.appendChild(el("td","num",String(c.legacy.n_events)));
+      tr.appendChild(el("td","num",String(c.legacy.n_returns)));
       tbody.appendChild(tr);
     });
     table.appendChild(tbody); host.appendChild(table);
