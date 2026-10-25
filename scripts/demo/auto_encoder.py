@@ -517,7 +517,16 @@ def _next_losses(model, t, m, p_mask, rng):
     def keep():
         return rng.random() < (1.0 - p_mask)
 
-    Ls = [ce(model.head_et, t["et"])]
+    def ce_customer(head, tgt):
+        logit = head(model_hs[:, :-1]).reshape(-1, head.out_features)
+        y = tgt[:, 1:].reshape(-1)
+        mm = m.reshape(-1) > 0
+        if "noaction" in AXES and getattr(model, "_exo_idx", None):
+            exo = torch.tensor(model._exo_idx, device=y.device, dtype=torch.long)
+            mm = mm & ~torch.isin(y, exo)
+        return F.cross_entropy(logit[mm], y[mm]) if mm.sum() > 0 else torch.tensor(0.0, device=DEV)
+
+    Ls = [ce_customer(model.head_et, t["et"])]
     for j, head in enumerate(model.heads_cat):
         Ls.append(ce(head, t["gcat"][:, :, j]) if keep() else torch.tensor(0.0, device=DEV))
     for j, head in enumerate(model.heads_num):
@@ -854,6 +863,12 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     vs["n_query"] = len(vs["horizons"]) * vs["raw"]
     torch.manual_seed(seed)
     model = Enc(vs, d, len(taus), layers, taus, slow_taus=slow_taus).to(DEV)
+    model._exo_idx = list(vs.get("exo_idx") or [])
+    if "noaction" in AXES:
+        print(
+            f"noaction: masking exogenous event types {model._exo_idx} from next-event CE",
+            flush=True,
+        )
     lr = lr if lr is not None else 1e-3  # documented seed bound; trust-region adapts below
     opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
     n_extra = (1 if model.head_hist is not None else 0) + (1 if model.use_query else 0)

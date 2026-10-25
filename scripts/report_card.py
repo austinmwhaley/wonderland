@@ -299,6 +299,49 @@ def _state_attribution(docs):
     return out
 
 
+def _serving_contract(docs):
+    """Render the frozen artifact contract and the measured serving cost."""
+    rt = docs.get("runtime.json")
+    out = ["## Serving contract — frozen artifact", ""]
+    out += [
+        "`looking_glass/foundation.py` exposes `FrozenFoundation`: load → `state(seqs, keys, "
+        "views=[...])`. The artifact carries weights, schema/config, the state layout, the lawful "
+        "measure vocabulary, and provenance (data, seed, axes, git SHA, hash).",
+        "",
+        "| view | dims | consumer use |",
+        "|---|---|---|",
+        "| `shape` | 128 | compact behavioural state |",
+        "| `learned_state` | 1152 | per-timescale recurrent state + learned mass |",
+        "| `forecast` | 835 | self-supervised past/future summaries |",
+        "| `uncertainty` | 23 | missingness / support / gap |",
+        "| `heads` | 127 | identity / next-event / relational predictions |",
+        "| `measure` | varies (data-derived) | lawful exact statistics (category identity, "
+        "anomaly) |",
+        "| `full` | 2265 | strongest supervised view |",
+        "",
+        "The encoder refuses to emit a state when its `as_of` timestamp is missing or the output is "
+        "non-finite — it never silently sanitizes.",
+        "",
+    ]
+    if rt:
+        out += [
+            "### Measured serving cost",
+            "",
+            f"Stream load (cached): **{rt['load_data_s']}s** · artifact load "
+            f"**{rt['artifact_load_s']}s** · measure transform **{rt['measure_transform_s']}s** "
+            f"for {rt['n_entities']} entities ({rt['measure_rows_per_s']} rows/s) · frozen forward "
+            f"**{rt['state_forward_s']}s** ({rt['state_rows_per_s']} rows/s) · 5-fold head fit "
+            f"**{rt['head_fit_5fold_s']}s** · peak RSS **{rt['peak_rss_mb']} MB**.",
+            "",
+        ]
+    out += [
+        "**Bottleneck:** the frozen forward pass, not the lawful measure (which is ~30x faster per "
+        "row). This is the next performance axis; it is measured, not assumed.",
+        "",
+    ]
+    return out
+
+
 def main():
     docs = {}
     for p in list((ROOT / "docs/report_cards").glob("*.json")) + list(EXP.glob("*.json")):
@@ -425,6 +468,7 @@ def main():
         A("")
 
     L.extend(_state_attribution(docs))
+    L.extend(_serving_contract(docs))
 
     A("## B+C — encoder + plugins")
     A("")

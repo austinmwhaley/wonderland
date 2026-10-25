@@ -1880,3 +1880,31 @@ recency/frequency aggregates. NOT decided unilaterally — receipts above.
 - **Next (Loop 3b/3c):** generic role inference (remove hand-listed `segment`/`product_id`
   roles), and separating exogenous company actions from the customer next-event objective.
   Both need a small screen first; neither has been attempted yet.
+
+## Loop log — 2026-10-24 continued (Loop 3b/3c, artifact, runtime)
+
+- **Loop 3b (schema-derived identity roles) — DONE.** `derive_identity_fields` selects
+  identity/static fields behaviourally (>=95% single-valued per entity). On the 6k reference it
+  reproduces the previous hand-listed set exactly `[0,8,14,15]`, so no retrain was needed.
+  Relational roles are NOT generically derivable here and are recorded as a declared config
+  (`WQ_REL_FIELDS`) with `rel_source`. Tests: `tests/test_schema_roles.py`.
+- **Loop 3c (exogenous-action separation) — DONE, REJECTED at 6k.** `WQ_AXES=noaction` derives
+  `email_send` as the only exogenous event type from declared action keys and masks it from the
+  next-event CE. It improved value/orders/identity but pushed churn add-over-sequence to -0.0028,
+  failing the D3 gate. Kept behind the flag; receipt preserved. See DEC-297.
+- **Foundation artifact — DONE.** `looking_glass/foundation.py` (`FrozenFoundation`): load,
+  `state(seqs, keys, views=...)`, `describe()`, `save()`/`load()`, content hash, provenance.
+  Roundtrip is bit-identical on the real cache. It **fails safe**: no `as_of` or non-finite
+  output raises instead of sanitizing. Tests: `tests/test_foundation.py`.
+- **Latent bug fixed.** `embed()` returned all-NaN whenever the global `AS_OF_TS` was unset, and
+  every legacy measurement silently `nan_to_num`'d it to zero. `as_of_ts` is now persisted in the
+  `vs` config and resolved from the manifest for older caches; the artifact refuses to emit that
+  state. Legacy scripts still sanitize and are flagged for a later cleanup.
+- **Performance receipt — DONE.** `scripts/measure_runtime.py` → `runtime.json`: stream load
+  0.26s, artifact load 0.02s, measure transform 3000 rows/s, frozen forward 109 rows/s, 5-fold
+  head fit 66s, peak RSS 2.2 GB. The forward pass is the measured bottleneck.
+- **Current card:** B 28/28 PASS, B+C 6/6 PASS, 34 PASS / 0 FAIL.
+- **Remaining from PLAN.md:** RL decision-episode data revision (new Layer-A version, required for
+  a valid IPS policy-value claim), forward-pass performance optimisation, and Layer-1
+  certification (minimality / universal `U` / decision-sufficiency), which PLAN.md marks as
+  separate research rather than a Layer-0 deliverable.

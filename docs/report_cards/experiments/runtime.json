@@ -1,0 +1,24 @@
+{
+ "data": "/tmp/opencode/t0_loop/ref_v3b_6k",
+ "frozen": "/tmp/opencode/frozen_6k",
+ "n_entities": 600,
+ "load_data_s": 0.26,
+ "load_artifact_s": 0.18,
+ "fit_measure_s": 0.72,
+ "measure_transform_s": 0.2,
+ "measure_dim": 796,
+ "measure_rows_per_s": 3000.0,
+ "state_forward_s": 5.5,
+ "state_rows_per_s": 109.1,
+ "state_dims": {
+  "shape": 128,
+  "learned_state": 1152,
+  "forecast": 835,
+  "uncertainty": 23,
+  "heads": 127
+ },
+ "artifact_save_s": 0.02,
+ "artifact_load_s": 0.02,
+ "head_fit_5fold_s": 66.13,
+ "peak_rss_mb": 2226.4
+}

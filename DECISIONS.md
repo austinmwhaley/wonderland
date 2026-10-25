@@ -1117,3 +1117,28 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   (identical selection verified before adoption), Efficient (no retrain needed).
 - Rejected: inventing a cardinality heuristic that only coincidentally reproduces the old pair;
   silently dropping the relational block (would break A8).
+
+## DEC-297 — Loop 3c: exogenous-action separation from the customer objective (REJECTED at 6k)
+
+- Axis: `WQ_AXES=noaction`. The loader derives exogenous event types from the declared
+  `action_keys` (truth receipt), with a structural `target_key` fallback; on the 6k reference it
+  identifies exactly `email_send` (event type 3). The next-event CE then masks target positions
+  whose next event is exogenous, so Layer B trains on customer-driven transitions only. Actions
+  remain in the tokenizer as exogenous covariates.
+- Principle served: Universal/Honest — company actions are exogenous, never predicted.
+- 6k/12-epoch result (`frozen_6k_na`):
+  - donor E-raw: value **+0.0836**, orders **+0.0845**, churn **-0.0026** (baseline
+    +0.0815 / +0.0658 / +0.0138);
+  - add-over-table+seq: value +0.0524, orders +0.0699, churn **-0.0028** — the D3 gate requires
+    delta > 0 on all three, so this FAILS;
+  - published-state supervised: value 0.4220, orders 0.5101, churn 0.9269 (baseline
+    0.4161 / 0.5048 / 0.9364); channel identity improves (0.694 vs 0.678);
+    next-event probe unchanged (+0.0016).
+- Decision: REJECT for the default path. It improves value/orders and identity but breaks the
+  churn add-over-sequence row that the card certifies. Kept behind `WQ_AXES=noaction` with the
+  receipt at `/tmp/opencode/noaction/`.
+- Note: this is a genuine principle/metric tension, not a bug. The principled direction
+  (actions exogenous) is measured and recorded; adopting it requires either a better churn
+  treatment or an operator decision to re-scope D3. Not done unilaterally.
+- Next: performance work on the measured bottleneck (forward pass, 60 rows/s), then the RL
+  decision-episode data revision if time allows.

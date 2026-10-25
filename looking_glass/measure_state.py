@@ -137,3 +137,35 @@ class MeasureBuilder:
         if not np.isfinite(out).all():
             raise FloatingPointError("non-finite measure state")
         return out.astype(np.float32)
+
+
+def _builder_from_keep(vs, keep, coverage):
+    """Reconstruct a builder from a persisted vocabulary (no re-scan)."""
+    obj = MeasureBuilder.__new__(MeasureBuilder)
+    obj.vs = vs
+    obj.coverage = float(coverage)
+    obj.n_numeric = int(vs["gnum"])
+    obj.n_et = int(vs["et"])
+    obj.keep = tuple(np.asarray(k, dtype=np.int64) for k in keep)
+    obj.dim = int(obj.n_et + 1 + sum(len(k) + 3 for k in obj.keep) + 6 * obj.n_numeric)
+    obj.spec = MeasureSpec(
+        keep=obj.keep,
+        coverage=obj.coverage,
+        n_numeric=obj.n_numeric,
+        n_event_types=obj.n_et,
+        dim=obj.dim,
+    )
+    return obj
+
+
+def measure_to_dict(builder):
+    """Serialise the resolved vocabulary so a frozen artifact is self-contained."""
+    return {
+        "coverage": float(builder.coverage),
+        "dim": int(builder.dim),
+        "keep": [np.asarray(k, dtype=np.int64).tolist() for k in builder.keep],
+    }
+
+
+def measure_from_dict(vs, d):
+    return _builder_from_keep(vs, d.get("keep", []), d.get("coverage", 0.99))

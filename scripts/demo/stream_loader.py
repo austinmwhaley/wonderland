@@ -175,6 +175,37 @@ def load_data(data, engine=None):
                 acc += cnt[v]
             catspec.append(dict(field=f, mode="vocab", map=m, size=i))
     et_v = _vocab(B["_et"].to_list())
+    # ---- exogenous (company-driven) event types -----------------------------
+    # An event type is exogenous when its events carry the declared action
+    # fields (manifest, else the truth receipt), with a structural fallback on
+    # the reserved routing field. Never inferred from an event name.
+    _declared = list(manifest.get("action_keys") or [])
+    if not _declared:
+        _truth = d / "reference_truth.json"
+        if _truth.exists():
+            try:
+                _meta = json.loads(_truth.read_text()).get("meta") or {}
+                _declared = list(_meta.get("action_keys") or [])
+            except Exception:  # noqa: BLE001
+                _declared = []
+    _akeys = [f for f in _declared if f in DF.columns]
+    if _akeys:
+        _is_act = pl.any_horizontal([pl.col(f).is_not_null() for f in _akeys])
+        _exo_src = "declared action_keys"
+    elif "target_key" in DF.columns:
+        _is_act = pl.col("target_key").is_not_null()
+        _exo_src = "structural (target_key)"
+    else:
+        _is_act = None
+        _exo_src = "none"
+    exo_idx = []
+    if _is_act is not None:
+        _flag = (
+            DF.select(pl.col("_et"), _is_act.alias("_a")).group_by("_et").agg(pl.col("_a").mean())
+        )
+        _exo_names = {r["_et"] for r in _flag.iter_rows(named=True) if r["_a"] > 0.5}
+        exo_idx = sorted({et_v[n] for n in _exo_names if n in et_v})
+    _exo_idx_final = exo_idx
     exprs = [pl.col("_et").replace_strict(et_v, default=0, return_dtype=pl.Int64).alias("_et_i")]
     for j, g in enumerate(catspec):
         if g["mode"] == "hash":
@@ -294,6 +325,9 @@ def load_data(data, engine=None):
         miss.extend((np.add.reduceat(z, starts) / lens).tolist())
     p_mask = float(np.clip(np.mean(miss) if miss else 0.1, 0.05, 0.4))
     vs = dict(et=len(et_v), gcat=[g["size"] for g in catspec], gnum=len(num), time_dim=time_dim)
+    vs["as_of_ts"] = float(as_of_ts)
+    vs["exo_idx"] = _exo_idx_final
+    vs["exo_source"] = _exo_src
     vs["horizons"] = horizons.tolist()
     # ---- schema-derived field roles (no business field names) ----------------
     # Identity/static: the field is essentially constant within an entity
