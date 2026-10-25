@@ -44,37 +44,17 @@ LEGACY_COLUMNS = [
 ]
 
 
-def _detail(event_type: str, attrs: dict) -> str:
-    if event_type in ("purchase", "return"):
-        value = float(attrs.get("value", 0.0))
-        money = ("-" if value < 0 else "") + f"${abs(value):,.2f}"
-        category = attrs.get("category_code")
-        return money + (f" · {category}" if category else "")
-    if event_type == "email_send":
-        touch = attrs.get("touch") or ""
-        target = attrs.get("target_key")
-        return touch + (f" · {target}" if target else "")
-    if event_type == "customer_signup":
-        return "via " + str(attrs.get("acquisition_channel") or "")
-    category = attrs.get("category_code")
-    brand = attrs.get("brand")
-    if category:
-        return str(category) + (f" · {brand}" if brand else "")
-    return ""
-
-
 def _customer_rows(key: str, wide: pl.DataFrame, stream: pl.DataFrame, start: datetime) -> dict:
     row = wide.filter(pl.col("customer_key") == key).to_dicts()[0]
     events = []
     for event in stream.filter(pl.col("customer_key") == key).iter_rows(named=True):
         ts: datetime = event["_ts"]
-        attrs = json.loads(event["event_attributes"] or "{}")
         events.append(
             [
                 event["event_ts"],
                 event["event_type"],
                 round((ts - start).total_seconds() / 86400.0, 3),
-                _detail(event["event_type"], attrs),
+                event["event_attributes"] or "{}",
             ]
         )
 

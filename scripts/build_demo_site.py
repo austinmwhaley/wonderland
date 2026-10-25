@@ -457,14 +457,25 @@ td.num{text-align:right;font-variant-numeric:tabular-nums;font-family:ui-monospa
 .cardtag{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);font-weight:600;margin-bottom:10px}
 .tlwrap svg{display:block;width:100%;height:auto}
 @media(max-width:800px){.tlwrap{overflow-x:auto}.tlwrap svg{min-width:700px}}
+.timeline-panel{position:relative}
+.timeline-tip{position:absolute;z-index:20;pointer-events:none;background:#111827;color:#f9fafb;
+  border-radius:6px;padding:10px 12px;max-width:min(420px,86vw)}
+.timeline-tip .tts{font-family:ui-monospace,monospace;font-size:10.5px;color:#e5e7eb;white-space:nowrap}
+.timeline-tip .tty{font-family:ui-monospace,monospace;font-size:10px;color:#9ca3af;margin-top:2px}
+.timeline-tip .ttl{font-size:9px;letter-spacing:.07em;text-transform:uppercase;color:#9ca3af;margin-top:7px}
+.timeline-tip .tattrs{font-family:ui-monospace,monospace;font-size:9.6px;line-height:1.5;
+  color:#f3f4f6;margin:7px 0 0;white-space:pre-wrap;word-break:break-word}
 .logscroll{max-height:520px;overflow:auto;border-top:1px solid var(--line)}
-.logtable{font-size:12px}
+.logtable{font-size:11px;min-width:880px}
 .logtable th{position:sticky;top:0;background:#fff;z-index:2;padding:8px 7px}
-.logtable td{padding:7px 7px}
+.logtable.canonical th{text-transform:none;letter-spacing:0;font-family:ui-monospace,monospace;
+  font-size:10.5px;color:var(--muted)}
+.logtable td{padding:7px;vertical-align:top}
 .logtable tr:hover td{background:#fafafa}
-.logtable td:first-child{font-family:ui-monospace,monospace;font-size:10.5px;color:var(--dim);white-space:nowrap}
-.logtable td:nth-child(2){font-family:ui-monospace,monospace;font-size:11px;white-space:nowrap}
-.logtable td:nth-child(3){color:var(--muted);font-size:11.5px}
+.logtable td:first-child{font-family:ui-monospace,monospace;font-size:10.5px;color:var(--muted);white-space:nowrap}
+.logtable td:nth-child(2){font-family:ui-monospace,monospace;font-size:10.5px;white-space:nowrap}
+.logtable td.attrs{font-family:ui-monospace,monospace;font-size:9.8px;line-height:1.5;
+  color:var(--muted);min-width:440px;white-space:normal;word-break:break-word}
 .explorerchart{padding:18px;margin-bottom:28px}
 #scatter{display:block;width:100%;height:auto;background:#fff}
 .scatterfoot{display:flex;gap:22px;align-items:center;border-top:1px solid var(--line2);
@@ -894,7 +905,24 @@ if(!DT){
     table.appendChild(tbody); host.appendChild(table);
   }
 
-  function streamTimeline(c){
+  function tipContent(tip,e){
+    tip.innerHTML="";
+    tip.appendChild(el("div","tts","event_ts  "+e[0]));
+    tip.appendChild(el("div","tty","event_type  "+e[1]));
+    tip.appendChild(el("div","ttl","event_attributes"));
+    tip.appendChild(el("pre","tattrs",e[3]||"{}"));
+  }
+  function tipPlace(ev,panel,tip){
+    const r=panel.getBoundingClientRect();
+    const tw=tip.offsetWidth, th=tip.offsetHeight;
+    let left=ev.clientX-r.left+14, top=ev.clientY-r.top+14;
+    if(left+tw>r.width-10) left=ev.clientX-r.left-tw-14;
+    if(top+th>r.height-10) top=ev.clientY-r.top-th-14;
+    tip.style.left=Math.max(8,left)+"px";
+    tip.style.top=Math.max(8,top)+"px";
+  }
+
+  function streamTimeline(c,panel,tip){
     const W=1000,H=300,pad={l:86,r:20,t:20,b:34};
     const s=svg(W,H), h=H-pad.t-pad.b;
     const types=DT.types, rowH=h/types.length;
@@ -904,11 +932,24 @@ if(!DT){
       s.appendChild(tx(pad.l-7,y+3,t.label,{size:10,fill:MUT,anchor:"end"}));
       s.appendChild(ln(pad.l,y,W-pad.r,y,{stroke:"#f9fafb"}));
     });
-    c.events.forEach(e=>{
+    c.events.forEach((e,i)=>{
       const idx=types.findIndex(t=>t.id===e[1]);
       if(idx<0) return;
-      const y=pad.t+(idx+0.5)*rowH;
-      s.appendChild(dot(X(e[2]),y,2.1,"rgba(17,24,39,.42)"));
+      const cx=X(e[2]), cy=pad.t+(idx+0.5)*rowH;
+      const hit=dot(cx,cy,7,"transparent");
+      hit.setAttribute("class","timeline-hit");
+      hit.setAttribute("data-i",String(i));
+      hit.setAttribute("pointer-events","all");
+      hit.style.cursor="pointer";
+      hit.addEventListener("mouseenter",ev=>{
+        tipContent(tip,e); tip.hidden=false; tipPlace(ev,panel,tip);
+      });
+      hit.addEventListener("mousemove",ev=>{
+        if(!tip.hidden) tipPlace(ev,panel,tip);
+      });
+      hit.addEventListener("mouseleave",()=>{tip.hidden=true;});
+      s.appendChild(hit);
+      s.appendChild(dot(cx,cy,2.1,"rgba(17,24,39,.42)"));
     });
     s.appendChild(ln(pad.l,H-pad.b,W-pad.r,H-pad.b,{stroke:LINE}));
     s.appendChild(tx(pad.l,H-9,month(DT.window_start),{size:10,fill:DIM}));
@@ -931,24 +972,25 @@ if(!DT){
     head.appendChild(counts); host.appendChild(head);
 
     const flow=el("div","dataflow");
-    const tl=el("div","panelbox");
-    tl.appendChild(el("div","cardtag","Event timeline · one dot per event"));
-    const wrap=el("div","tlwrap"); wrap.appendChild(streamTimeline(c)); tl.appendChild(wrap);
-    flow.appendChild(tl);
+    const tl=el("div","panelbox timeline-panel");
+    tl.appendChild(el("div","cardtag","Event timeline · hover a dot for event_ts / event_attributes"));
+    const tip=el("div","timeline-tip"); tip.hidden=true;
+    const wrap=el("div","tlwrap"); wrap.appendChild(streamTimeline(c,tl,tip)); tl.appendChild(wrap);
+    tl.appendChild(tip); flow.appendChild(tl);
 
     const ledger=el("div","panelbox");
-    ledger.appendChild(el("div","cardtag","Event ledger · "+c.events.length+" rows"));
+    ledger.appendChild(el("div","cardtag","Canonical stream · "+c.events.length+" rows"));
     const box=el("div","logscroll");
-    const table=el("table","logtable");
+    const table=el("table","logtable canonical");
     const thead=el("thead"); const hr=el("tr");
-    ["Time","Event","Detail"].forEach((t,i)=>{const th=el("th",i===2?"num":null,t);hr.appendChild(th);});
+    ["event_ts","event_type","event_attributes"].forEach(t=>{hr.appendChild(el("th",null,t));});
     thead.appendChild(hr); table.appendChild(thead);
     const tbody=el("tbody");
     c.events.forEach(e=>{
       const tr=el("tr");
-      tr.appendChild(el("td",null,e[0].slice(5,16).replace("T"," ")));
+      tr.appendChild(el("td",null,e[0]));
       tr.appendChild(el("td",null,e[1]));
-      tr.appendChild(el("td",null,e[3]||""));
+      tr.appendChild(el("td","attrs",e[3]||"{}"));
       tbody.appendChild(tr);
     });
     table.appendChild(tbody); box.appendChild(table);

@@ -18,7 +18,7 @@ xdg-open demo/index.html                 # or double-click the file
 | Tab | What it shows |
 |---|---|
 | **Overview** | The claim, four headline numbers, and the frozen state vs the traditional table |
-| **Data** | A legacy wide-table sample with one row per customer, showing historical counts only. Select a row to open that customer's raw event timeline and full ledger below. No outcome labels or window markers. |
+| **Data** | A legacy wide-table sample with one row per customer, showing historical counts only. Select a row to open that customer's raw event timeline and canonical ledger below. Hover any timeline dot for its `event_ts` and `event_attributes`; the ledger shows `event_ts`, `event_type`, and `event_attributes`, with the selected `customer_key` shown above. No outcome labels or window markers. |
 | **Axes** | Eight sub-tabs, one per content axis. Each opens a full panel: the value, what it measures, how it is measured, why it matters, and a dedicated visual (singular spectrum, reconstruction scatter, purity distribution, ROC, reliability curve, randomized-action design, order bars, relational bars) |
 | **Objectives** | A clickable explorer for all ten self-supervised objectives: what each predicts, the naive baseline, the learned skill, and a timeline diagram of the training cut |
 | **Plugins** | Known-effect recovery across five action keys, and RL policy value against table and uniform comparators |
@@ -47,7 +47,8 @@ The **Data** tab is generated separately by `scripts/build_data_tab.py`, which r
 wide table and the canonical event stream at `/tmp/opencode/t0_loop/ref_v3b_6k` and writes
 `demo/data_tab.json`. It selects eight illustrative customers, previews 4 of the 51 wide-table
 columns (customer, historical events, historical orders, historical purchase value), and attaches
-each customer's full raw stream. Selecting a row opens that customer's timeline and ledger below.
+each customer's full raw stream. Selecting a row opens that customer's timeline and canonical
+ledger below; hovering a timeline dot exposes its timestamp and raw attribute JSON.
 
 The Customer Explorer additionally samples the frozen cache at `/tmp/opencode/frozen_6k` and the
 canonical stream.
@@ -69,5 +70,7 @@ separately rather than showing a number.
 - Synthetic relational harness; no business data.
 - Explorer neighbours are computed in the frozen state and are not used to form the actual outcome.
 - The Data tab's legacy table is a preview: 8 illustrative rows and 4 of 51 columns. Selecting a
-  row opens the same customer's complete raw event stream below. No outcome labels are shown.
+  row opens the same customer's complete raw stream below. The ledger columns are `event_ts`,
+  `event_type`, and `event_attributes`; the selected `customer_key` is shown above the timeline.
+  Hovering a timeline dot shows that event's timestamp and raw attributes.
 - Regenerate after any receipt or reference-data change so the page stays current.

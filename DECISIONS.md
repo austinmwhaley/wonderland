@@ -1563,3 +1563,33 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   sample that always includes `rc0000208`.
 - Verified by checking both selected-row updates and the absence of label/phase text in the
   generated payload and page; inline JS passes `node --check`.
+
+## DEC-321 — Data ledger is the canonical four-column stream
+
+- Feedback: the ledger at the bottom should be the canonical stream of
+  `[customer_key, event_ts, event_type, event_attributes]`.
+- Change: the ledger no longer shows derived Time / Event / Detail columns. It now renders the four
+  canonical columns exactly, with the selected customer's `customer_key` repeated per row, the full
+  `event_ts`, the raw `event_type`, and the original `event_attributes` JSON string.
+- `scripts/build_data_tab.py` no longer parses attributes or builds detail strings; it preserves the
+  source attribute JSON verbatim. The timeline still uses only the parsed timestamp/type/day it
+  needs for positioning.
+- Styling: the canonical headers keep their snake_case names (no uppercase transform); the
+  attribute column is monospace, wraps within the table, and the ledger scrolls both directions on
+  narrow screens.
+- Verified by checking the generated ledger text contains the four canonical headers and raw JSON
+  attributes; inline JS passes `node --check`.
+
+## DEC-322 — Timeline hover payloads; ledger drops the repeated customer_key
+
+- Feedback: hovering a timeline dot should reveal its `event_ts` and `event_attributes`; the
+  ledger can drop the `customer_key` column because the selected key is already shown above.
+- Timeline: every dot now has a larger transparent hit target. Hovering shows a tooltip containing
+  `event_ts`, `event_type`, and the raw `event_attributes` JSON. The tooltip follows the pointer,
+  flips at the panel edges, and is pointer-events:none so it never blocks the chart.
+- Ledger: now three canonical columns — `event_ts`, `event_type`, `event_attributes`. The repeated
+  `customer_key` column is gone; the selected key remains in the stream heading.
+- The attributes column preserves the source JSON string verbatim; the ledger scrolls
+  horizontally on narrow screens.
+- Verified with a dispatched hover in headless Chrome (tooltip content includes the timestamp and
+  attributes) and by rendering the three-column ledger; inline JS passes `node --check`.
