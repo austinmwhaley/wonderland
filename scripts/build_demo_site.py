@@ -469,7 +469,6 @@ footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);color:v
         <div class="sub">One frozen encoder per event stream · supervised · unsupervised · reinforcement learning</div>
       </div>
     </div>
-    <div class="badges" id="badges"></div>
   </header>
 
   <nav id="tabs"></nav>
@@ -630,9 +629,6 @@ window.addEventListener("hashchange",()=>activate(hashTab(), false));
 
 /* ---------- header + cards ---------- */
 const m = DATA.meta;
-[["B "+m.b_pass+"/"+m.b_pass+" PASS","ok"],["B+C "+m.bc_pass+"/"+m.bc_pass+" PASS","ok"],["frozen artifact verified","ok"]].forEach(([t,c])=>{
-  $("#badges").appendChild(el("span","badge "+c,t));
-});
 
 $("#claim").innerHTML = `Given <b>${m.events.toLocaleString()}</b> events from <b>${m.customers.toLocaleString()}</b> customers, one self-supervised encoder is frozen and reused by every head. The compact shape is <b>${m.d}</b> numbers; the published state is <b>${m.state_dim.toLocaleString()}</b>. On the same holdout, the frozen state beats the traditional wide table on value and orders.`;
 
