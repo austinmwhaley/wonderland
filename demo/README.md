@@ -22,7 +22,7 @@ xdg-open demo/index.html                 # or double-click the file
 | **Axes** | Eight sub-tabs, one per content axis. Each opens a full panel: the value, what it measures, how it is measured, why it matters, and a dedicated visual (singular spectrum, reconstruction scatter, purity distribution, ROC, reliability curve, randomized-action design, order bars, relational bars) |
 | **Objectives** | A clickable explorer for all ten self-supervised objectives: what each predicts, the naive baseline, the learned skill, and a timeline diagram of the training cut |
 | **Plugins** | Known-effect recovery across five action keys, and RL policy value against table and uniform comparators |
-| **Explorer** | Held-out customers in the frozen embedding; click a point for history, neighbours, and outcome |
+| **Explorer** | A full-width projection of 260 held-out customers. Click a point to open a large profile below: outcome, four headline numbers, preference profile, recent history, and nearest neighbours. |
 
 ## Where the numbers come from
 

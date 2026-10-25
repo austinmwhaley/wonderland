@@ -1509,3 +1509,20 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   available in the report card, not in the demo.
 - Verified by rendering the simplified tab at desktop and mobile widths and checking inline JS with
   `node --check`.
+
+## DEC-318 — Explorer: full-width chart, large profile below
+
+- Feedback: make the scatter large at the top and place the selected customer's information below
+  it; make the elements easier to see.
+- Layout: the chart is now a single full-width panel (1000×600 viewBox) with larger points and a
+  larger transparent hit target. The two-column chart/sidebar layout is gone.
+- Detail: clicking a point updates a full-width profile below the chart. It shows the customer key
+  and outcome, four large stats (total events, actual value, actual orders, lookalike churn
+  agreement), a five-item preference strip, recent history, and nearest neighbours.
+- Typography: the key is 32px, stat values 30px, history/neighbour rows 14px. Raw values keep their
+  original casing (for example `sms`, `apparel`) rather than being title-cased by CSS.
+- Responsive: the chart scales to the viewport instead of forcing a horizontal scroll; on narrow
+  screens the stats and profile collapse to two columns and the history timeline stacks its detail
+  onto a second line.
+- Verified by clicking a churned point in headless Chrome and rendering the page at desktop and
+  mobile widths; inline JS passes `node --check`.
