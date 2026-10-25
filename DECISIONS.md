@@ -1817,3 +1817,41 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   requestAnimationFrame, so it behaves consistently in headless captures and normal browsers.
 - Verified all four modes (State / Predict / Retrieve / Act) and their transitions in headless
   Chrome; ruff and node checks pass.
+
+## DEC-340 — State Morph starts on State and auto-cycles
+
+- Default: State. The overview opens on the real 128-cell grid and then cycles every three seconds:
+  State → Predict → State → Retrieve → State → Act → State…
+- The State/Predict/Retrieve/Act controls remain interactive. Manual selection resets the timer to
+  that stage, so the next automatic transition still goes back to State where appropriate.
+- Position changes use a short timer-driven interpolation (650 ms) for reliable behaviour in both
+  browsers and headless captures.
+- Verified all transitions and the State reset in headless Chrome.
+
+## DEC-341 — Data gets a Legacy / Event stream slider
+
+- Data now has a two-position slider at the top rather than stacked views.
+- Legacy is the initial selection; the first row is selected by default so switching to Event
+  stream always has a populated customer.
+- The Event-stream active thumb uses the accent green; Legacy uses ink. The pane changes with the
+  slider and the selected customer is preserved across it.
+- Verified both slider states and the selected first customer's stream in headless Chrome.
+
+## DEC-342 — Predict deltas and minor presentation cleanup
+
+- Predict bars now show the frozen-minus-table delta at the end of each pair in accent green; the
+  chart footer explains the colour.
+- Predict/Retrieve/Act labels in the Overview plugin glyph are slightly larger.
+- Removed the Linear-probe protocol paragraph from the Encoder objectives detail; the protocol
+  remains documented in the report card and README.
+
+## DEC-343 — Objectives section reduced to abstract forms
+
+- Feedback: the Encoder objectives section should show off the ten objectives abstractly, without
+  internal ids or learned-skill/improvement numbers.
+- Removed the internal objective code (`jepa`, `mask`, …) and the skill/naive/improvement columns
+  from the list and detail panel. The list now shows only human-readable objective names; the
+  panel shows the name, one-sentence description, and the observed-history → target timeline strip.
+- The underlying objective numbers remain in the receipts and payload for Axes and the report card;
+  they are simply not displayed here.
+- Verified the Encoder objectives section in headless Chrome; ruff and node checks pass.

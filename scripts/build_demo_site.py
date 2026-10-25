@@ -254,7 +254,6 @@ def _f(x, n=3):
 
 def render(payload) -> str:
     """Flat, light, lab-style page: axes + objectives + plugins + explorer."""
-    obj = payload.get("objectives") or {}
 
     OBJDEF = [
         ("jepa", "JEPA", "Predict the mean latent of the next H states.", 5, [6, 7, 8, 9], None),
@@ -270,9 +269,7 @@ def render(payload) -> str:
     ]
     obj_items = "".join(
         f"""<button class="objitem" data-obj="{oid}">
-          <span class="mono dim">{oid}</span>
           <span class="objlabel">{label}</span>
-          <span class="mono skill">{float((obj.get(oid) or {}).get("skill", 0.0)):+.3f}</span>
         </button>"""
         for oid, label, _d, _c, _t, _m in OBJDEF
     )
@@ -283,8 +280,6 @@ def render(payload) -> str:
             "cut": cut,
             "target": target,
             "mode": mode,
-            "skill": float((obj.get(oid) or {}).get("skill", 0.0)),
-            "naive": float((obj.get(oid) or {}).get("naive", 0.0)),
         }
         for oid, label, desc, cut, target, mode in OBJDEF
     }
@@ -407,23 +402,17 @@ th.num{text-align:right}
 .note{color:var(--muted);font-size:12.5px}
 .objlayout{display:grid;grid-template-columns:290px minmax(0,1fr);gap:36px}
 @media(max-width:860px){.objlayout{grid-template-columns:1fr}}
-.objitem{display:grid;grid-template-columns:64px 1fr auto;align-items:center;gap:10px;width:100%;
-  background:none;border:0;border-bottom:1px solid var(--line);padding:13px 2px;font:inherit;
-  text-align:left;cursor:pointer;color:var(--muted)}
+.objitem{display:flex;align-items:center;width:100%;background:none;border:0;
+  border-bottom:1px solid var(--line);padding:13px 2px;font:inherit;text-align:left;
+  cursor:pointer;color:var(--muted)}
 .objitem:hover{color:var(--ink)}
 .objitem.on{color:var(--ink)}
 .objitem.on .objlabel{font-weight:600}
-.objitem.on .mono.skill{color:var(--accent)}
 .objlabel{font-size:13.5px}
-.mono.skill{font-size:12px;color:var(--dim)}
 .objpanel{border:1px solid var(--line);border-radius:8px;padding:26px}
 .objhead{display:flex;align-items:baseline;justify-content:space-between;gap:16px}
 .objhead h3{font-size:17px;margin:0;font-weight:600;letter-spacing:-.01em}
 .objdesc{color:var(--muted);font-size:13.5px;margin:6px 0 22px;max-width:56ch}
-.objnums{display:flex;gap:34px;margin:18px 0 4px}
-.objnum .v{font-family:ui-monospace,monospace;font-size:22px;font-weight:600}
-.objnum .k{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin-top:2px}
-.protocol{color:var(--dim);font-size:12px;margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
 .subtabs{display:flex;gap:2px;flex-wrap:wrap;border-bottom:1px solid var(--line);margin-bottom:34px}
 .subtabs button{appearance:none;background:none;border:0;padding:11px 14px;font:inherit;font-size:13px;
   color:var(--muted);cursor:pointer;border-bottom:1px solid transparent;white-space:nowrap}
@@ -439,15 +428,19 @@ th.num{text-align:right}
 .axrow .k{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim)}
 .axrow .v{font-size:13px;color:var(--muted);margin-top:3px}
 .axvis{border:1px solid var(--line);border-radius:8px;padding:22px}
-.datamode{margin-top:46px}
-.datamode:first-of-type{margin-top:0}
-.datamodehead{display:flex;justify-content:space-between;align-items:baseline;gap:16px;
-  border-bottom:1px solid var(--line);padding-bottom:9px;margin-bottom:14px}
-.datamodetag{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:600;letter-spacing:-.01em}
-.datamodetag::before{content:"";width:8px;height:8px;border-radius:2px;background:#d1d5db}
-.datamodetag.stream::before{background:var(--accent)}
-.datamodeshape{font-family:ui-monospace,monospace;font-size:10.5px;color:var(--dim);
-  text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
+.dataslider{position:relative;display:grid;grid-template-columns:1fr 1fr;width:360px;max-width:100%;
+  border:1px solid var(--line);border-radius:8px;padding:3px;margin-bottom:18px;background:#fff}
+.dsslide{position:absolute;top:3px;bottom:3px;left:3px;width:calc(50% - 3px);background:var(--ink);
+  border-radius:6px;transition:transform .25s ease,background-color .25s ease}
+.dsslide.stream{background:var(--accent)}
+.dstab{position:relative;z-index:1;appearance:none;border:0;background:none;padding:7px 10px 6px;
+  border-radius:6px;font:inherit;font-size:12.5px;color:var(--muted);cursor:pointer}
+.dstab span{display:block;font-family:ui-monospace,monospace;font-size:9px;letter-spacing:.04em;
+  color:var(--dim);margin-top:2px}
+.dstab:hover{color:var(--ink)}
+.dstab.on{color:#fff}
+.dstab.on span{color:rgba(255,255,255,.68)}
+.datapane[hidden]{display:none}
 .legacycard{padding:18px 18px 6px;margin-bottom:0}
 .legacyhead{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;
   padding-bottom:12px;border-bottom:1px solid var(--line)}
@@ -601,12 +594,13 @@ footer{margin-top:56px;padding-top:18px;border-top:1px solid var(--line);color:v
 
     <section id="data" hidden>
       <h2>Data</h2>
-      <p class="lede">Two views of the same customer. The legacy RFM snapshot is on top; the raw event stream is below.</p>
-      <div class="datamode">
-        <div class="datamodehead">
-          <div class="datamodetag">Legacy</div>
-          <div class="datamodeshape">one row / customer</div>
-        </div>
+      <p class="lede">Switch between a legacy RFM row and the raw event stream for the same customer.</p>
+      <div class="dataslider" id="dataslider">
+        <div class="dsslide"></div>
+        <button class="dstab on" data-dsmode="legacy" type="button">Legacy<span>one row / customer</span></button>
+        <button class="dstab" data-dsmode="stream" type="button">Event stream<span>one row / event</span></button>
+      </div>
+      <div class="datapane" id="legacypane">
         <div class="legacycard panelbox">
           <div class="legacyhead">
             <div class="legacymeta" id="legacymeta"></div>
@@ -615,11 +609,7 @@ footer{margin-top:56px;padding-top:18px;border-top:1px solid var(--line);color:v
           <div id="legacytable" class="legacytable"></div>
         </div>
       </div>
-      <div class="datamode">
-        <div class="datamodehead">
-          <div class="datamodetag stream">Event stream</div>
-          <div class="datamodeshape">one row / event</div>
-        </div>
+      <div class="datapane" id="streampane" hidden>
         <div id="datastream"></div>
       </div>
     </section>
@@ -726,7 +716,7 @@ function rect(x,y,w,h,fill,rx,stroke){const n=document.createElementNS(NS,"rect"
 const OV_DATA=DATA.data_tab;
 const OV_ENC=DATA.encoder_tab;
 const OV_EXP=DATA.explorer;
-let morphMode="predict";
+let morphMode="state";
 
 function addSvgTitle(node,text){
   const t=document.createElementNS(NS,"title"); t.textContent=text; node.appendChild(t); return node;
@@ -804,7 +794,7 @@ function miniPluginsSVG(){
     s.appendChild(ln(cx,cy,x,y,{stroke:LINE}));
     s.appendChild(dot(x,y,5.5,"#fff",ACC));
     const ly=y+(Math.sin(angle)<-0.5?-10:14);
-    s.appendChild(tx(x,ly,label,{size:9,fill:MUT,anchor:"middle"}));
+    s.appendChild(tx(x,ly,label,{size:11,fill:MUT,anchor:"middle"}));
   });
   s.appendChild(dot(cx,cy,7,ACC));
   return s;
@@ -925,12 +915,22 @@ function mountMorph(body,startMode="state"){
 }
 function renderMorphConcept(){
   const c=conceptCard("State morph","The frozen state re-forms for each capability.");
+  const cycle=["state","predict","state","retrieve","state","act"];
+  let step=0, timer=null;
   const tabs=conceptTabs([["state","State"],["predict","Predict"],["retrieve","Retrieve"],["act","Act"]],id=>{
-    morphMode=id; tabs.paint(id); animate(id);
+    const idx=cycle.indexOf(id);
+    if(idx>=0) step=idx;
+    moveTo(id); schedule();
   });
   c.top.appendChild(tabs.wrap);
   const animate=mountMorph(c.body,morphMode);
+  function moveTo(mode){morphMode=mode;tabs.paint(mode);animate(mode);}
+  function schedule(){
+    clearTimeout(timer);
+    timer=setTimeout(()=>{step=(step+1)%cycle.length;moveTo(cycle[step]);schedule();},3000);
+  }
   tabs.paint(morphMode);
+  schedule();
 }
 
 function renderConcepts(){
@@ -1136,8 +1136,7 @@ if(!DT){
   if(host) host.innerHTML="<h2>Data</h2><p class='lede'>Run <code>python3 scripts/build_data_tab.py</code> with the canonical stream available to build this tab.</p>";
 }else{
   const MONTHS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  const defaultIndex=Math.max(0,DT.customers.findIndex(c=>c.key==="rc0000208"));
-  let selected=defaultIndex;
+  let selected=0;
 
   function month(iso){
     const parts=String(iso).slice(0,10).split("-");
@@ -1270,8 +1269,21 @@ if(!DT){
     renderStream();
   }
 
+  function setDataMode(mode){
+    const stream=mode==="stream";
+    $("#legacypane").hidden=stream;
+    $("#streampane").hidden=!stream;
+    const slide=$(".dsslide");
+    slide.style.transform=stream?"translateX(100%)":"translateX(0)";
+    slide.classList.toggle("stream",stream);
+    document.querySelectorAll(".dstab").forEach(b=>b.classList.toggle("on",b.dataset.dsmode===mode));
+  }
+
+  document.querySelectorAll(".dstab").forEach(b=>b.onclick=()=>setDataMode(b.dataset.dsmode));
+
   renderTable();
   renderStream();
+  setDataMode("legacy");
 }
 
 /* ---------- encoder tab ---------- */
@@ -1381,16 +1393,9 @@ function objPanel(id){
   const box=$("#objpanel"); box.innerHTML="";
   const head=el("div","objhead");
   head.appendChild(el("h3",null,spec.label));
-  const sc=el("div","mono dim small",`skill ${spec.skill>=0?"+":""}${spec.skill.toFixed(3)}`);
-  head.appendChild(sc);
   box.appendChild(head);
   box.appendChild(el("p","objdesc",spec.desc));
   const ste=strip(spec); ste.setAttribute("width","100%"); box.appendChild(ste);
-  const nums=el("div","objnums");
-  [["learned skill",(spec.skill>=0?"+":"")+spec.skill.toFixed(3)],["naive baseline",spec.naive.toFixed(3)],["improvement",(spec.skill-spec.naive>=0?"+":"")+(spec.skill-spec.naive).toFixed(3)]]
-   .forEach(([k,v])=>{const d=el("div","objnum");d.appendChild(el("div","v",v));d.appendChild(el("div","k",k));nums.appendChild(d);});
-  box.appendChild(nums);
-  box.appendChild(el("div","protocol","Linear probe on frozen states, grouped 5-fold by customer. Skill is improvement over the naive baseline. No business labels are used in training or in the target."));
 }
 document.querySelectorAll(".objitem").forEach(b=>b.onclick=()=>objPanel(b.dataset.obj));
 objPanel("jepa");
@@ -1513,7 +1518,7 @@ function renderPluginsMap(){
 }
 
 function pluginOutcomeChart(){
-  const W=1000,H=330,pad={l:108,r:26,t:38,b:40},s=svg(W,H);
+  const W=1000,H=330,pad={l:108,r:64,t:38,b:40},s=svg(W,H);
   const keys=[["value90","value_90d"],["orders90","orders_90d"],["churn90","churn_90d"]];
   const rowH=(H-pad.t-pad.b)/keys.length;
   [0,.25,.5,.75,1].forEach(g=>{
@@ -1530,6 +1535,8 @@ function pluginOutcomeChart(){
     addSvgTitle(a,label+" · table "+table.toFixed(4));
     addSvgTitle(b,label+" · frozen "+frozen.toFixed(4));
     s.appendChild(a); s.appendChild(b);
+    const diff=frozen-table;
+    s.appendChild(tx(pad.l+Math.max(table,frozen)*(W-pad.l-pad.r)+12,y+4,(diff>=0?"+":"")+diff.toFixed(3),{size:10,fill:ACC}));
   });
   return s;
 }
@@ -1639,7 +1646,7 @@ function renderPluginPanel(){
   }else{
     host.appendChild(chartHeader("Predict · supervised heads",[["table","table"],["frozen state","frozen"]]));
     host.appendChild(pluginOutcomeChart());
-    host.appendChild(chartFoot("held-out · R² value_90d / orders_90d · AUC churn_90d","hover a bar for values"));
+    host.appendChild(chartFoot("held-out · R² value_90d / orders_90d · AUC churn_90d","green = frozen − table"));
   }
 }
 
