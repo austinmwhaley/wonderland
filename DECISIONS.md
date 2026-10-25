@@ -1804,3 +1804,16 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - The card previews remain: supervised bars, a miniature neighbour graph, and a combined
   effect/policy glyph. Only the three top-level cards highlight, and they all change the panel.
 - Verified by rendering Predict and Act modes in headless Chrome; ruff and node checks pass.
+
+## DEC-339 — Overview settles on State Morph
+
+- Decision: of the four abstract prototypes, **State Morph** is the only retained Overview
+  direction.
+- Removed State Prism, Capability Orbit, Prism Beams, their controls, SVG code, and the
+  four-concept review framing. The lower Overview is now one interactive State Morph section.
+- The actual 128-cell state re-forms into: four prediction waves, five retrieval clusters, or
+  three action branches. Predict is the default; State restores the grid.
+- The morph animates positions with a short timer-driven interpolation rather than
+  requestAnimationFrame, so it behaves consistently in headless captures and normal browsers.
+- Verified all four modes (State / Predict / Retrieve / Act) and their transitions in headless
+  Chrome; ruff and node checks pass.

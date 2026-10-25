@@ -338,17 +338,21 @@ h2{font-size:21px;font-weight:600;margin:0 0 8px;letter-spacing:-.02em}
 .pipeline-vis{height:96px;display:flex;align-items:center;justify-content:center}
 .pipeline-vis svg{display:block;width:100%;height:96px}
 .pipeline-arrow{display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:16px}
-.usecasehead{display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap;
+.concepthead{display:flex;justify-content:space-between;align-items:baseline;gap:16px;flex-wrap:wrap;
   border-top:1px solid var(--line);padding-top:22px;margin-bottom:14px}
-.usecasehead .cardtag{margin-bottom:0}
-.usecasetabs{display:flex;gap:2px;border:1px solid var(--line);border-radius:8px;padding:3px}
-.usetab{appearance:none;border:0;background:none;padding:7px 14px;border-radius:6px;font:inherit;
+.concepts{display:grid;gap:20px}
+.conceptcard{border:1px solid var(--line);border-radius:8px;padding:16px 18px 12px}
+.concepttop{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:8px}
+.concepttitle{font-size:18px;font-weight:600;letter-spacing:-.02em;margin-top:2px}
+.conceptdesc{color:var(--muted);font-size:12px;margin-top:2px}
+.conceptcontrols{display:flex;gap:2px;border:1px solid var(--line);border-radius:8px;padding:3px;flex-wrap:wrap}
+.ctab{appearance:none;border:0;background:none;padding:7px 13px;border-radius:6px;font:inherit;
   font-size:12px;color:var(--muted);cursor:pointer}
-.usetab:hover{color:var(--ink)}
-.usetab.on{background:var(--ink);color:#fff}
-.usecasepanel{border:1px solid var(--line);border-radius:8px;padding:16px 18px 10px;overflow-x:auto}
-.usecasepanel svg{display:block;width:100%;height:auto}
-@media(max-width:800px){.usecasepanel svg{min-width:760px}}
+.ctab:hover{color:var(--ink)}
+.ctab.on{background:var(--ink);color:#fff}
+.conceptbody{overflow-x:auto}
+.conceptbody svg{display:block;width:100%;height:auto}
+@media(max-width:800px){.conceptbody svg{min-width:700px}.concepttop{flex-wrap:wrap}}
 .chartbar{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:8px}
 .charttag{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);font-weight:600}
 .chartlegend{display:flex;gap:14px;flex-wrap:wrap;color:var(--muted);font-size:11px}
@@ -589,11 +593,10 @@ footer{margin-top:56px;padding-top:18px;border-top:1px solid var(--line);color:v
     <section id="overview">
       <h2>Input: Event Stream. Output: Foundation Model</h2>
       <div class="pipeline" id="pipeline"></div>
-      <div class="usecasehead">
-        <div class="cardtag">One frozen state, three plugin families</div>
-        <div class="usecasetabs" id="usecasetabs"></div>
+      <div class="concepthead">
+        <div class="cardtag">One state, three forms</div>
       </div>
-      <div class="usecasepanel" id="usecasepanel"></div>
+      <div class="concepts" id="concepts"></div>
     </section>
 
     <section id="data" hidden>
@@ -723,8 +726,7 @@ function rect(x,y,w,h,fill,rx,stroke){const n=document.createElementNS(NS,"rect"
 const OV_DATA=DATA.data_tab;
 const OV_ENC=DATA.encoder_tab;
 const OV_EXP=DATA.explorer;
-let overviewUse="predict";
-let retrieveIdx=0;
+let morphMode="predict";
 
 function addSvgTitle(node,text){
   const t=document.createElementNS(NS,"title"); t.textContent=text; node.appendChild(t); return node;
@@ -842,118 +844,102 @@ function chartFoot(left,right){
   foot.appendChild(el("span",null,left)); foot.appendChild(el("span",null,right)); return foot;
 }
 
-function predictChart(){
-  const W=1000,H=348,pad={l:48,r:22,t:44,b:42}, s=svg(W,H);
-  const vals=DATA.supervised.values||{};
-  const order=[["value90","value_90d"],["orders90","orders_90d"],["churn90","churn_90d"]];
-  const plotH=H-pad.t-pad.b;
-  [0,.25,.5,.75,1].forEach(g=>{
-    const y=H-pad.b-g*plotH;
-    s.appendChild(ln(pad.l,y,W-pad.r,y,{stroke:g===0?LINE:"#f3f4f6"}));
-    if(g>0) s.appendChild(tx(pad.l-8,y+3,Math.round(g*100)+"%",{size:9,fill:DIM,anchor:"end"}));
-  });
-  const gw=(W-pad.l-pad.r)/order.length, bw=46;
-  order.forEach(([key,label],i)=>{
-    const v=vals[key]||{}, table=Number(v.raw||0), frozen=Number(v.full_measure||0);
-    const center=pad.l+gw*(i+0.5);
-    const h1=Math.max(1,table*plotH), h2=Math.max(1,frozen*plotH);
-    const b1=rect(center-bw-5,H-pad.b-h1,bw,h1,"#d1d5db",3);
-    const b2=rect(center+5,H-pad.b-h2,bw,h2,ACC,3);
-    addSvgTitle(b1,label+" · table "+table.toFixed(4));
-    addSvgTitle(b2,label+" · frozen "+frozen.toFixed(4));
-    s.appendChild(b1); s.appendChild(b2);
-    s.appendChild(tx(center,H-16,label,{size:11,fill:MUT,anchor:"middle"}));
-  });
-  return s;
+function stateVals(){
+  return (OV_ENC&&OV_ENC.shape)||[];
 }
-
-function actChart(){
-  const W=1000,H=348,pad={l:92,r:24,t:44,b:38}, s=svg(W,H);
-  const rl=DATA.rl_known||{};
-  const keys=["channel","offer","freq","hour","dow"].filter(k=>rl[k]);
-  if(!keys.length) return s;
-  const rowH=(H-pad.t-pad.b)/keys.length, bh=14;
-  [0,.25,.5,.75,1].forEach(g=>{
-    const x=pad.l+g*(W-pad.l-pad.r);
-    s.appendChild(ln(x,pad.t,x,H-pad.b,{stroke:g===0?LINE:"#f3f4f6"}));
-    if(g>0) s.appendChild(tx(x,H-12,Math.round(g*100)+"%",{size:9,fill:DIM,anchor:"middle"}));
-  });
-  keys.forEach((k,i)=>{
-    const row=rl[k], center=pad.t+(i+0.5)*rowH;
-    const y1=center-bh-3, y2=center+3;
-    const w1=Math.max(1,Number(row.table)* (W-pad.l-pad.r));
-    const w2=Math.max(1,Number(row.E)*(W-pad.l-pad.r));
-    s.appendChild(tx(pad.l-10,center+4,k,{size:10,fill:MUT,anchor:"end"}));
-    const b1=rect(pad.l,y1,w1,bh,"#d1d5db",3);
-    const b2=rect(pad.l,y2,w2,bh,ACC,3);
-    addSvgTitle(b1,k+" · table "+Number(row.table).toFixed(4));
-    addSvgTitle(b2,k+" · frozen "+Number(row.E).toFixed(4));
-    s.appendChild(b1); s.appendChild(b2);
-  });
-  return s;
+function stateFill(v,maxv){
+  const a=Math.min(1,Math.abs(v)/(maxv||1));
+  return v>=0?`rgba(5,150,105,${0.10+0.80*a})`:`rgba(17,24,39,${0.06+0.62*a})`;
 }
-
-function retrieveChart(){
-  const W=1000,H=360,pad=28,s=svg(W,H);
-  const pts=(OV_EXP&&OV_EXP.customers)||[];
-  if(!pts.length) return s;
-  if(retrieveIdx<0||retrieveIdx>=pts.length) retrieveIdx=0;
-  const sel=pts[retrieveIdx];
-  const byKey=Object.fromEntries(pts.map(c=>[c.key,c]));
-  const nb=new Set((sel.neighbours||[]).map(n=>n.key));
-  const X=x=>pad+x*(W-2*pad), Y=y=>H-pad-y*(H-2*pad);
-  (sel.neighbours||[]).forEach(n=>{
-    const c=byKey[n.key]; if(!c) return;
-    s.appendChild(ln(X(sel.x),Y(sel.y),X(c.x),Y(c.y),{stroke:"rgba(5,150,105,.4)",w:1.2}));
-  });
-  pts.forEach((c,i)=>{
-    const cx=X(c.x), cy=Y(c.y);
-    const isSel=i===retrieveIdx, isNb=nb.has(c.key);
-    const hit=dot(cx,cy,13,"transparent");
-    hit.style.cursor="pointer";
-    hit.onclick=()=>{retrieveIdx=i;renderOverviewPanel();};
-    addSvgTitle(hit,c.key);
-    s.appendChild(hit);
-    const circle=dot(cx,cy,isSel?8:isNb?5.2:3.4,isSel?INK:isNb?ACC:"#d1d5db");
-    circle.setAttribute("pointer-events","none");
-    s.appendChild(circle);
-  });
-  s.appendChild(tx(pad,18,sel.key,{size:11,fill:MUT}));
-  return s;
+function conceptCard(title,desc){
+  const card=el("div","conceptcard");
+  const top=el("div","concepttop");
+  const left=el("div");
+  left.appendChild(el("div","concepttitle",title));
+  left.appendChild(el("div","conceptdesc",desc));
+  top.appendChild(left); card.appendChild(top);
+  const body=el("div","conceptbody"); card.appendChild(body);
+  $("#concepts").appendChild(card);
+  return {card,top,body};
 }
-
-function renderOverviewPanel(){
-  document.querySelectorAll(".usetab").forEach(b=>b.classList.toggle("on",b.dataset.use===overviewUse));
-  const host=$("#usecasepanel"); host.innerHTML="";
-  if(overviewUse==="retrieve"){
-    host.appendChild(chartHeader("Retrieve · frozen geometry",[["selected","selected"],["5 neighbours","neighbour"],["all customers","other"]]));
-    host.appendChild(retrieveChart());
-    host.appendChild(chartFoot("click a point to change the neighbour set","5 nearest neighbours in the state"));
-  }else if(overviewUse==="act"){
-    host.appendChild(chartHeader("Act · known-effect recovery",[["table","table"],["frozen state","frozen"]]));
-    host.appendChild(actChart());
-    host.appendChild(chartFoot("randomized holdout · hover a bar for values","10-NN purity · higher is better"));
-  }else{
-    host.appendChild(chartHeader("Predict · supervised heads",[["table","table"],["frozen state","frozen"]]));
-    host.appendChild(predictChart());
-    host.appendChild(chartFoot("held-out · R² value_90d / orders_90d · AUC churn_90d","hover a bar · higher is better"));
+function conceptTabs(defs,onPick){
+  const wrap=el("div","conceptcontrols");
+  const buttons={};
+  defs.forEach(([id,label])=>{
+    const b=el("button","ctab",label); b.type="button";
+    b.onclick=()=>onPick(id);
+    buttons[id]=b; wrap.appendChild(b);
+  });
+  function paint(active){
+    Object.entries(buttons).forEach(([id,b])=>b.classList.toggle("on",id===active));
   }
+  return {wrap,paint};
 }
 
+/* B — state morph */
+function morphPositions(){
+  const n=128, cell=9, gap=2;
+  const grid=[]; const x0=413,y0=167;
+  for(let i=0;i<n;i++) grid.push({x:x0+(i%16)*(cell+gap),y:y0+Math.floor(i/16)*(cell+gap)});
+  const predict=[];
+  for(let i=0;i<n;i++){
+    const wave=i%4,j=Math.floor(i/4),t=j/31;
+    predict.push({x:60+t*880,y:100+wave*80+Math.sin(t*Math.PI*2.2+wave*.9)*22});
+  }
+  const retrieve=[];
+  for(let i=0;i<n;i++){
+    const k=i%5,j=Math.floor(i/5),a0=-Math.PI/2+k*2*Math.PI/5;
+    const cx=500+Math.cos(a0)*135, cy=210+Math.sin(a0)*135;
+    const a=j*2.399963, r=4+Math.sqrt(j+1)*4.4;
+    retrieve.push({x:cx+Math.cos(a)*r,y:cy+Math.sin(a)*r});
+  }
+  const act=[];
+  for(let i=0;i<n;i++){
+    const branch=i%3,j=Math.floor(i/3),t=j/42;
+    act.push({x:80+t*840,y:210+(branch-1)*140*t+(branch===1?0:Math.sin(t*Math.PI*2)*7*(branch-1))});
+  }
+  return {state:grid,predict,retrieve,act};
+}
+function mountMorph(body,startMode="state"){
+  const W=1000,H=420,s=svg(W,H); body.appendChild(s);
+  const vals=stateVals(), maxv=Math.max(...vals.map(v=>Math.abs(v)))||1;
+  const rects=[];
+  for(let i=0;i<128;i++){
+    const r=rect(0,0,9,9,stateFill(vals[i]||0,maxv),2);
+    s.appendChild(r); rects.push(r);
+  }
+  const pos=morphPositions();
+  let current=(pos[startMode]||pos.state).map(p=>({...p}));
+  const apply=p=>rects.forEach((r,i)=>{r.setAttribute("x",p[i].x);r.setAttribute("y",p[i].y);});
+  apply(current);
+  return function animateTo(mode){
+    const target=pos[mode]||pos.state, start=current.map(p=>({...p})), t0=Date.now();
+    function frame(){
+      const t=Math.min(1,(Date.now()-t0)/650), e=t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+      current=start.map((p,i)=>({x:p.x+(target[i].x-p.x)*e,y:p.y+(target[i].y-p.y)*e}));
+      apply(current);
+      if(t<1) setTimeout(frame,16);
+    }
+    setTimeout(frame,0);
+  };
+}
+function renderMorphConcept(){
+  const c=conceptCard("State morph","The frozen state re-forms for each capability.");
+  const tabs=conceptTabs([["state","State"],["predict","Predict"],["retrieve","Retrieve"],["act","Act"]],id=>{
+    morphMode=id; tabs.paint(id); animate(id);
+  });
+  c.top.appendChild(tabs.wrap);
+  const animate=mountMorph(c.body,morphMode);
+  tabs.paint(morphMode);
+}
+
+function renderConcepts(){
+  const host=$("#concepts"); host.innerHTML="";
+  renderMorphConcept();
+}
 function initOverview(){
   renderPipeline();
-  const tabs=$("#usecasetabs");
-  [["predict","Predict"],["retrieve","Retrieve"],["act","Act"]].forEach(([id,label])=>{
-    const b=el("button","usetab"+(id===overviewUse?" on":""),label);
-    b.dataset.use=id;
-    b.onclick=()=>{overviewUse=id;renderOverviewPanel();};
-    tabs.appendChild(b);
-  });
-  if(OV_EXP&&OV_EXP.customers){
-    const idx=OV_EXP.customers.findIndex(c=>c.key==="rc0000208");
-    if(idx>=0) retrieveIdx=idx;
-  }
-  renderOverviewPanel();
+  renderConcepts();
 }
 initOverview();
 
