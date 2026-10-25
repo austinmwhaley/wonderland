@@ -1250,3 +1250,27 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   be the product; the card now shows which view was selected and how.
 - Principles: Honest (no test-set selection), Diagnosable (per-target selection), Accessible
   (view contract), Efficient (3-fold screen).
+
+## DEC-304 — Phase 5 accepted: RL evaluator repaired; valid but non-dominant result
+
+- Root cause (corrected diagnosis): the zero-width IPS interval was NOT a resampling bug. The
+  "random" arm was a **shuffled-state model**, which converged to the same argmax policy as `E`.
+  Identical policies give an identically-zero IPS difference, hence mean 0 / CI [0,0], while the
+  DR values differed because the predicted values still differed. The control was degenerate,
+  not the bootstrap.
+- Change: `measure_response.py` now compares against the **uniform policy**, whose IPS value under
+  uniform logging is exactly mean reward. `ci_or_fail` refuses zero-width intervals with a
+  nonzero mean and any non-finite interval. Protocol stays pre-action, customer-grouped, logged
+  propensity.
+- Result (6k, 14-day reward window, up to 6 sends/customer, ~25.4k rows, 5,990 customers):
+  - channel: E IPS 83.86, table 83.75, uniform 81.94; E−uniform **+1.92 [+0.04, +3.95]**,
+    E−table +0.10 [-0.56, +0.73];
+  - offer: E IPS 83.60, table 81.89, uniform 82.43; E−uniform +1.21 [-0.87, +3.17],
+    E−table **+1.73 [+0.40, +3.06]**.
+- Interpretation: each arm beats one comparator and ties the other. That is a working response
+  interface, not a deploy-grade certificate. The card reports it in a separate section and does
+  not add it to the B+C gate rows.
+- Tests: `tests/test_response_bootstrap.py` covers valid, degenerate, zero-at-zero, and
+  non-finite intervals.
+- Principles: Honest (a degenerate control is fixed, not narrated away), Robust (impossible
+  intervals fail loudly), Diagnosable (comparator definition printed on the card).

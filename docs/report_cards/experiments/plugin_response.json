@@ -23,8 +23,9 @@
    "dr": 83.01
   },
   "random": {
-   "ips": 83.86,
-   "dr": 82.36
+   "ips": 81.94,
+   "dr": 81.94,
+   "definition": "uniform policy under uniform logging (= mean reward)"
   },
   "E_minus_table": {
    "mean": 0.1,
@@ -32,14 +33,19 @@
    "hi": 0.73
   },
   "E_minus_random": {
-   "mean": 0.0,
-   "lo": 0.0,
-   "hi": 0.0
+   "mean": 1.92,
+   "lo": 0.04,
+   "hi": 3.95
   },
   "E_minus_random_dr": {
-   "mean": 0.57,
-   "lo": 0.04,
-   "hi": 1.14
+   "mean": 1.03,
+   "lo": -0.28,
+   "hi": 2.41
+  },
+  "table_minus_random": {
+   "mean": 1.82,
+   "lo": -0.05,
+   "hi": 3.96
   },
   "mean_reward": 81.943,
   "positive_rate": 0.781
@@ -63,8 +69,9 @@
    "dr": 82.87
   },
   "random": {
-   "ips": 83.6,
-   "dr": 84.29
+   "ips": 82.43,
+   "dr": 82.43,
+   "definition": "uniform policy under uniform logging (= mean reward)"
   },
   "E_minus_table": {
    "mean": 1.73,
@@ -72,14 +79,19 @@
    "hi": 3.06
   },
   "E_minus_random": {
-   "mean": 0.0,
-   "lo": 0.0,
-   "hi": 0.0
+   "mean": 1.21,
+   "lo": -0.87,
+   "hi": 3.17
   },
   "E_minus_random_dr": {
-   "mean": -0.79,
-   "lo": -1.4,
-   "hi": -0.18
+   "mean": 1.1,
+   "lo": -0.44,
+   "hi": 2.41
+  },
+  "table_minus_random": {
+   "mean": -0.52,
+   "lo": -2.4,
+   "hi": 1.39
   },
   "mean_reward": 82.426,
   "positive_rate": 0.78

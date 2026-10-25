@@ -374,6 +374,48 @@ def _view_selection(docs):
     return out
 
 
+def _rl_policy_value(docs):
+    """Pre-action, customer-grouped policy value against valid comparators."""
+    d = docs.get("plugin_response.json")
+    out = ["## RL policy value — pre-action, grouped", ""]
+    if not d:
+        out += ["NOT MEASURED (no `plugin_response.json`).", ""]
+        return out
+    pr = d.get("protocol", {})
+    out += [
+        "Separate from the known-effect rows above. The response model sees a state cut strictly "
+        "**before** each randomized send and uses the logged uniform propensity; intervals come "
+        "from a customer-grouped bootstrap. The comparator is the **uniform policy**, not a "
+        "shuffled-state model (which converged to the same policy and produced a fake zero-width "
+        "CI). No deploy claim is made.",
+        "",
+        f"Reward window {pr.get('reward_days')} days · up to {pr.get('maxsends')} sends/customer · "
+        f"split `{pr.get('split')}`.",
+        "",
+        "| arm | E IPS | table IPS | uniform | E − uniform | E − table |",
+        "|---|---|---|---|---|---|",
+    ]
+    for key in ("channel", "offer"):
+        r = d.get(key)
+        if not r:
+            continue
+        er, et = r["E_minus_random"], r["E_minus_table"]
+        out.append(
+            f"| {key} | {r['E']['ips']:.2f} | {r['table']['ips']:.2f} | "
+            f"{r['random']['ips']:.2f} | {er['mean']:+.2f} [{er['lo']:+.2f}, {er['hi']:+.2f}] | "
+            f"{et['mean']:+.2f} [{et['lo']:+.2f}, {et['hi']:+.2f}] |"
+        )
+    out += [
+        "",
+        "Read honestly: the channel policy beats the uniform comparator while tying the table; the "
+        "offer policy beats the table while tying the uniform comparator. No arm dominates both "
+        "comparators, so this is evidence of a working response interface — not a deploy-grade "
+        "policy-value certificate.",
+        "",
+    ]
+    return out
+
+
 def main():
     docs = {}
     for p in list((ROOT / "docs/report_cards").glob("*.json")) + list(EXP.glob("*.json")):
@@ -508,6 +550,7 @@ def main():
     L.extend(_state_attribution(docs))
     L.extend(_serving_contract(docs))
     L.extend(_view_selection(docs))
+    L.extend(_rl_policy_value(docs))
 
     A("## B+C — encoder + plugins")
     A("")

@@ -112,7 +112,32 @@ def _rows_for(rows, pur, days, key, seqs, as_of_ts):
     )
 
 
-def _eval(Xe, Xt, Xr, actions, reward, groups, levels, seed=0):
+def ci_or_fail(d):
+    """Paired-bootstrap interval that refuses impossible results."""
+    d = np.asarray(d, dtype=float)
+    mean = float(d.mean())
+    lo, hi = float(np.quantile(d, 0.025)), float(np.quantile(d, 0.975))
+    if lo == hi and abs(mean) > 1e-9:
+        raise RuntimeError(
+            f"degenerate bootstrap: zero-width CI with mean {mean}; refusing to publish"
+        )
+    if not np.isfinite([mean, lo, hi]).all():
+        raise RuntimeError(f"non-finite bootstrap interval: {mean} [{lo}, {hi}]")
+    return {"mean": round(mean, 2), "lo": round(lo, 2), "hi": round(hi, 2)}
+
+
+def _eval(Xe, Xt, actions, reward, groups, levels, seed=0):
+    """Pre-action response evaluation with a valid uniform-policy control.
+
+    Arms:
+      * `E`      response model on the frozen foundation state;
+      * `table`  response model on the wide table;
+      * `random` the UNIFORM policy (its IPS value under uniform logging is mean reward).
+
+    The previous "random" arm was a shuffled-state model. That is not a policy control:
+    it converged to the same policy as `E`, producing an identically-zero IPS difference
+    and a zero-width interval. The uniform policy is the correct randomized comparator.
+    """
     from sklearn.model_selection import GroupKFold
 
     levels = sorted(set(levels) | set(actions))
@@ -120,8 +145,8 @@ def _eval(Xe, Xt, Xr, actions, reward, groups, levels, seed=0):
     K = len(levels)
     p0 = 1.0 / K
     n = len(reward)
-    oof = {}
-    for name, X in (("E", Xe), ("table", Xt), ("random", Xr)):
+
+    def fit_policy(X):
         Z = StandardScaler().fit_transform(X)
         A = np.zeros((n, K))
         for i, v in enumerate(actions):
@@ -140,58 +165,57 @@ def _eval(Xe, Xt, Xr, actions, reward, groups, levels, seed=0):
         pol = np.array(levels)[pred.argmax(1)]
         hit = pol == actions
         p_logged = pred[np.arange(n), [lev[v] for v in actions]]
-        oof[name] = {
+        return {
             "pol": pol,
             "best": pred.max(1),
             "logged_pred": p_logged,
             "ips": float(np.mean(hit * reward / p0)),
             "dr": float(np.mean(pred.max(1) + hit * (reward - p_logged) / p0)),
         }
+
+    arms = {"E": fit_policy(Xe), "table": fit_policy(Xt)}
+
     rng = np.random.default_rng(seed + 1)
     gu = np.unique(groups)
-    boots = {k: [] for k in ("E-table", "E-random", "E-randomdr")}
+
+    def ips_of(arm, ix):
+        a = arms[arm]
+        return float(np.mean((a["pol"][ix] == actions[ix]) * reward[ix] / p0))
+
+    def dr_of(arm, ix):
+        a = arms[arm]
+        return float(
+            np.mean(
+                a["best"][ix]
+                + (a["pol"][ix] == actions[ix]) * (reward[ix] - a["logged_pred"][ix]) / p0
+            )
+        )
+
+    boots = {k: [] for k in ("E-table", "E-random", "E-random-dr", "table-random")}
     for _ in range(400):
         gsel = rng.choice(gu, size=len(gu), replace=True)
-        mask = np.isin(groups, gsel)
-        p0b = p0
-        for pair, (a, b) in (("E-table", ("E", "table")), ("E-random", ("E", "random"))):
-            ia = np.mean((oof[a]["pol"][mask] == actions[mask]) * reward[mask] / p0b)
-            ib = np.mean((oof[b]["pol"][mask] == actions[mask]) * reward[mask] / p0b)
-            boots[pair].append(float(ia - ib))
-        # DR variant of E vs random
-        ia = np.mean(
-            oof["E"]["best"][mask]
-            + (oof["E"]["pol"][mask] == actions[mask])
-            * (reward[mask] - oof["E"]["logged_pred"][mask])
-            / p0b
-        )
-        ib = np.mean(
-            oof["random"]["best"][mask]
-            + (oof["random"]["pol"][mask] == actions[mask])
-            * (reward[mask] - oof["random"]["logged_pred"][mask])
-            / p0b
-        )
-        boots["E-randomdr"].append(float(ia - ib))
-
-    def ci(d):
-        d = np.array(d)
-        return {
-            "mean": round(float(d.mean()), 2),
-            "lo": round(float(np.quantile(d, 0.025)), 2),
-            "hi": round(float(np.quantile(d, 0.975)), 2),
-        }
+        ix = np.flatnonzero(np.isin(groups, gsel))
+        boots["E-table"].append(ips_of("E", ix) - ips_of("table", ix))
+        boots["E-random"].append(ips_of("E", ix) - float(np.mean(reward[ix])))
+        boots["table-random"].append(ips_of("table", ix) - float(np.mean(reward[ix])))
+        boots["E-random-dr"].append(dr_of("E", ix) - float(np.mean(reward[ix])))
 
     return {
         "levels": [str(x) for x in levels],
         "n_rows": int(n),
         "n_customers": int(len(gu)),
         "random_value": round(float(np.mean(reward)), 2),
-        "E": {"ips": round(oof["E"]["ips"], 2), "dr": round(oof["E"]["dr"], 2)},
-        "table": {"ips": round(oof["table"]["ips"], 2), "dr": round(oof["table"]["dr"], 2)},
-        "random": {"ips": round(oof["random"]["ips"], 2), "dr": round(oof["random"]["dr"], 2)},
-        "E_minus_table": ci(boots["E-table"]),
-        "E_minus_random": ci(boots["E-random"]),
-        "E_minus_random_dr": ci(boots["E-randomdr"]),
+        "E": {"ips": round(arms["E"]["ips"], 2), "dr": round(arms["E"]["dr"], 2)},
+        "table": {"ips": round(arms["table"]["ips"], 2), "dr": round(arms["table"]["dr"], 2)},
+        "random": {
+            "ips": round(float(np.mean(reward)), 2),
+            "dr": round(float(np.mean(reward)), 2),
+            "definition": "uniform policy under uniform logging (= mean reward)",
+        },
+        "E_minus_table": ci_or_fail(boots["E-table"]),
+        "E_minus_random": ci_or_fail(boots["E-random"]),
+        "E_minus_random_dr": ci_or_fail(boots["E-random-dr"]),
+        "table_minus_random": ci_or_fail(boots["table-random"]),
     }
 
 
@@ -234,9 +258,7 @@ def main():
         Ec, Bc = _embed_cut(model, seqs, ks, cuts, qg, vs)
         Xe = np.nan_to_num(np.hstack([Ec, Bc]))
         Xt = _past_cut(seqs, ks, cuts, qg, vs2)
-        rng2 = np.random.default_rng(7)
-        Xr = Xe[rng2.permutation(len(Xe))]
-        res = _eval(Xe, Xt, Xr, actions, reward, groups, set(actions))
+        res = _eval(Xe, Xt, actions, reward, groups, set(actions))
         res["mean_reward"] = round(float(reward.mean()), 3)
         res["positive_rate"] = round(float((reward > 0).mean()), 3)
         out[key] = res
