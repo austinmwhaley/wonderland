@@ -1710,3 +1710,16 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   the same neutral treatment, and the only accent left in the pipeline is the actual shape
   heat-map colour.
 - Verified by rendering the Overview pipeline in headless Chrome.
+
+## DEC-332 — Overview pipeline glyphs refined
+
+- Feedback: the Event stream glyph should resemble the event timeline rather than a bar chart; the
+  three plugin nodes should sit at equal distances from the centre; the Encoder glyph should look
+  more like a neural network.
+- Event stream: replaced the density bars with a compressed 10-row dot timeline over the real
+  customer stream, using faint row guides.
+- Encoder: replaced the two stacked block glyphs with a five-layer node-and-edge network diagram,
+  ending in accent-coloured output nodes.
+- Plugins: positioned the predict / retrieve / act nodes on a circle at equal radius from the
+  centre; the three connectors are now equal length.
+- Verified by rendering the Overview pipeline in headless Chrome.

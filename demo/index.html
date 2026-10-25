@@ -467,18 +467,21 @@ function addSvgTitle(node,text){
 }
 
 function miniStreamSVG(){
-  const W=220,H=96,pad=5,s=svg(W,H);
+  const W=220,H=96,pad=4,s=svg(W,H);
   if(!OV_DATA||!OV_DATA.customers||!OV_DATA.customers.length) return s;
   const c=OV_DATA.customers.find(x=>x.key==="rc0000208")||OV_DATA.customers[0];
-  const bins=44, counts=new Array(bins).fill(0);
-  c.events.forEach(e=>{
-    const i=Math.max(0,Math.min(bins-1,Math.floor((e[2]/OV_DATA.window_days)*bins)));
-    counts[i]++;
+  const types=OV_DATA.types||[];
+  const rowH=(H-2*pad)/Math.max(1,types.length);
+  types.forEach((t,i)=>{
+    const y=pad+(i+0.5)*rowH;
+    s.appendChild(ln(pad,y,W-pad,y,{stroke:"#f3f4f6"}));
   });
-  const max=Math.max(1,...counts), bw=(W-2*pad)/bins;
-  counts.forEach((n,i)=>{
-    const h=Math.max(1,(n/max)*(H-2*pad));
-    s.appendChild(rect(pad+i*bw,H-pad-h,Math.max(1,bw-1),h,"rgba(17,24,39,.34)",1));
+  c.events.forEach(e=>{
+    const idx=types.findIndex(t=>t.id===e[1]);
+    if(idx<0) return;
+    const x=pad+(e[2]/OV_DATA.window_days)*(W-2*pad);
+    const y=pad+(idx+0.5)*rowH;
+    s.appendChild(dot(x,y,1.05,"rgba(17,24,39,.52)"));
   });
   s.appendChild(ln(pad,H-pad,W-pad,H-pad,{stroke:LINE}));
   return s;
@@ -486,14 +489,24 @@ function miniStreamSVG(){
 
 function miniEncoderSVG(){
   const W=220,H=96,s=svg(W,H);
-  [22,52].forEach(y=>{
-    s.appendChild(rect(24,y,172,22,"#f3f4f6",5,LINE));
-    for(let k=0;k<4;k++){
-      s.appendChild(rect(40+k*34,y+7,22,8,"#e5e7eb",2));
-    }
+  const layers=[
+    {x:18, ys:[30,42,54,66], fill:"#d1d5db"},
+    {x:66, ys:[17,29,41,53,65,77], fill:INK},
+    {x:114, ys:[17,29,41,53,65,77], fill:INK},
+    {x:162, ys:[17,29,41,53,65,77], fill:INK},
+    {x:204, ys:[30,42,54,66], fill:ACC},
+  ];
+  layers.slice(0,-1).forEach((a,li)=>{
+    const b=layers[li+1];
+    a.ys.forEach(y1=>b.ys.forEach(y2=>{
+      s.appendChild(ln(a.x,y1,b.x,y2,{stroke:"rgba(17,24,39,.09)",w:.7}));
+    }));
   });
-  s.appendChild(ln(196,33,208,33,{stroke:DIM}));
-  s.appendChild(ln(196,63,208,63,{stroke:DIM}));
+  layers.forEach((layer,li)=>{
+    layer.ys.forEach(y=>{
+      s.appendChild(dot(layer.x,y,li===0?2.1:li===layers.length-1?2.6:2.3,layer.fill));
+    });
+  });
   return s;
 }
 
@@ -514,11 +527,18 @@ function miniStateSVG(){
 
 function miniPluginsSVG(){
   const W=220,H=96,s=svg(W,H);
-  const cx=110,cy=49, nodes=[[55,23,"predict"],[165,23,"retrieve"],[110,79,"act"]];
-  nodes.forEach(([x,y,label])=>{
+  const cx=110,cy=49,r=30;
+  const nodes=[
+    ["predict",-Math.PI/2],
+    ["retrieve",Math.PI/6],
+    ["act",5*Math.PI/6],
+  ];
+  nodes.forEach(([label,angle])=>{
+    const x=cx+r*Math.cos(angle), y=cy+r*Math.sin(angle);
     s.appendChild(ln(cx,cy,x,y,{stroke:LINE}));
     s.appendChild(dot(x,y,5.5,"#fff",ACC));
-    s.appendChild(tx(x,y-12,label,{size:9,fill:MUT,anchor:"middle"}));
+    const ly=y+(Math.sin(angle)<-0.5?-10:14);
+    s.appendChild(tx(x,ly,label,{size:9,fill:MUT,anchor:"middle"}));
   });
   s.appendChild(dot(cx,cy,7,ACC));
   return s;
