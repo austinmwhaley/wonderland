@@ -431,6 +431,15 @@ th.num{text-align:right}
 .axrow .k{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim)}
 .axrow .v{font-size:13px;color:var(--muted);margin-top:3px}
 .axvis{border:1px solid var(--line);border-radius:8px;padding:22px}
+.datamode{margin-top:46px}
+.datamode:first-of-type{margin-top:0}
+.datamodehead{display:flex;justify-content:space-between;align-items:baseline;gap:16px;
+  border-bottom:1px solid var(--line);padding-bottom:9px;margin-bottom:14px}
+.datamodetag{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:600;letter-spacing:-.01em}
+.datamodetag::before{content:"";width:8px;height:8px;border-radius:2px;background:#d1d5db}
+.datamodetag.stream::before{background:var(--accent)}
+.datamodeshape{font-family:ui-monospace,monospace;font-size:10.5px;color:var(--dim);
+  text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
 .legacycard{padding:18px 18px 6px;margin-bottom:0}
 .legacyhead{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;
   padding-bottom:12px;border-bottom:1px solid var(--line)}
@@ -450,8 +459,7 @@ th.num{text-align:right}
 .legacytable tbody tr:last-child td{border-bottom:0}
 .legacytable td:first-child{font-family:ui-monospace,monospace;font-size:11.5px;white-space:nowrap}
 .legacytable td.num{font-size:12px}
-.streamhead{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;
-  border-top:1px solid var(--line);margin-top:28px;padding-top:20px;margin-bottom:14px}
+.streamhead{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;margin-bottom:14px}
 @media(max-width:700px){.streamhead{flex-direction:column;align-items:flex-start;gap:6px}}
 .streamkey{font-family:ui-monospace,monospace;font-size:24px;font-weight:600;letter-spacing:-.02em;margin-top:2px}
 .streamcounts{display:flex;gap:16px;flex-wrap:wrap;color:var(--muted);font-size:12px}
@@ -479,39 +487,36 @@ th.num{text-align:right}
 .logtable td:nth-child(2){font-family:ui-monospace,monospace;font-size:10.5px;white-space:nowrap}
 .logtable td.attrs{font-family:ui-monospace,monospace;font-size:9.8px;line-height:1.5;
   color:var(--muted);min-width:440px;white-space:normal;word-break:break-word}
-.encflow{display:flex;gap:8px;align-items:stretch;margin-bottom:20px}
-.encstep{flex:1;min-width:0;border:1px solid var(--line);border-radius:8px;padding:14px 14px 12px;background:#fff}
-.encstep .n{font-family:ui-monospace,monospace;font-size:9px;color:var(--dim)}
-.encstep .t{font-size:13px;font-weight:600;margin-top:6px;letter-spacing:-.01em}
-.encstep .v{font-family:ui-monospace,monospace;font-size:17px;font-weight:600;margin-top:8px;letter-spacing:-.02em}
-.encstep .d{font-size:10.5px;color:var(--muted);margin-top:4px;line-height:1.45}
-.encarrow{display:flex;align-items:center;justify-content:center;flex:0 0 auto;color:var(--dim);font-size:14px}
-@media(max-width:900px){.encflow{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
-  .encarrow{display:none}.encstep:last-child{grid-column:span 2}}
-.encgrid{display:grid;grid-template-columns:minmax(0,1.06fr) minmax(0,.94fr);gap:16px;align-items:start}
-@media(max-width:900px){.encgrid{grid-template-columns:1fr}}
 .encsection{border-top:1px solid var(--line);margin-top:54px;padding-top:38px}
+.featexplorer{display:grid;grid-template-columns:250px minmax(0,1fr);gap:28px;align-items:start}
+@media(max-width:900px){.featexplorer{grid-template-columns:1fr}}
+.featselector{border-top:1px solid var(--line)}
+.featfamily{appearance:none;display:block;width:100%;background:none;border:0;border-bottom:1px solid var(--line);
+  padding:11px 2px 10px;text-align:left;cursor:pointer;font:inherit;color:var(--muted)}
+.featfamily:hover{color:var(--ink)}
+.featfamily.on{color:var(--ink)}
+.featfamily .top{display:flex;justify-content:space-between;gap:12px;align-items:baseline}
+.featfamily .name{font-size:13.5px;font-weight:600}
+.featfamily .dim{font-family:ui-monospace,monospace;font-size:10.5px;color:var(--dim)}
+.featfamily .bar{height:4px;background:var(--line2);border-radius:2px;overflow:hidden;margin-top:7px}
+.featfamily .bar div{height:100%;background:#d1d5db;border-radius:2px}
+.featfamily.on .bar div{background:var(--accent)}
+.featselector .total{display:flex;justify-content:space-between;align-items:baseline;
+  padding-top:12px;font-size:11.5px;color:var(--muted);font-family:ui-monospace,monospace}
+.featselector .total b{color:var(--ink);font-size:14px}
+.featpanel{border:1px solid var(--line);border-radius:8px;padding:18px;min-width:0}
 .shapehead{display:flex;justify-content:space-between;align-items:baseline;gap:16px;margin-bottom:14px;flex-wrap:wrap}
+.shapehead .cardtag{margin-bottom:0}
 .shapekey{font-family:ui-monospace,monospace;font-size:20px;font-weight:600;letter-spacing:-.02em}
 .shapemeta{color:var(--muted);font-size:11.5px}
-.featgrid{display:grid;grid-template-columns:repeat(16,minmax(0,1fr));gap:3px}
+.featmatrix{display:grid;gap:2px;min-height:360px;align-content:center}
+@media(max-width:900px){.featmatrix{min-height:0}}
 .featcell{aspect-ratio:1;border-radius:2px;border:1px solid #fff}
 .featcell:hover{outline:1px solid var(--ink);outline-offset:1px}
 .featlegend{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:12px;color:var(--dim);
   font-size:10.5px;font-family:ui-monospace,monospace}
 .featlegend .sw{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;vertical-align:-1px}
 .featlegend .max{margin-left:auto;font-size:10px}
-.familyrow{margin-bottom:15px}
-.familyrow:last-child{margin-bottom:0}
-.familytop{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
-.familyname{font-size:13px;font-weight:600}
-.familydim{font-family:ui-monospace,monospace;font-size:11.5px;color:var(--muted)}
-.familybar{height:6px;background:var(--line2);border-radius:3px;overflow:hidden;margin:6px 0 4px}
-.familybar div{height:100%;border-radius:3px}
-.familynote{color:var(--dim);font-size:10.5px;line-height:1.45}
-.familytotal{display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid var(--line);
-  margin-top:18px;padding-top:12px;font-size:12px;color:var(--muted)}
-.familytotal b{font-family:ui-monospace,monospace;color:var(--ink);font-size:16px}
 .explorerchart{padding:18px;margin-bottom:28px}
 #scatter{display:block;width:100%;height:auto;background:#fff}
 .scatterfoot{display:flex;gap:22px;align-items:center;border-top:1px solid var(--line2);
@@ -589,36 +594,38 @@ footer{margin-top:56px;padding-top:18px;border-top:1px solid var(--line);color:v
 
     <section id="data" hidden>
       <h2>Data</h2>
-      <p class="lede">The legacy table collapses each customer's history into one wide row. Select a row to open that same customer's event stream below.</p>
-      <div class="legacycard panelbox">
-        <div class="legacyhead">
-          <div>
-            <div class="cardtag">Legacy wide table · one row per customer</div>
-            <div class="legacymeta" id="legacymeta"></div>
-          </div>
-          <div class="legacyhint">select a row</div>
+      <p class="lede">Two views of the same customer. The legacy RFM snapshot is on top; the raw event stream is below.</p>
+      <div class="datamode">
+        <div class="datamodehead">
+          <div class="datamodetag">Legacy</div>
+          <div class="datamodeshape">one row / customer</div>
         </div>
-        <div id="legacytable" class="legacytable"></div>
+        <div class="legacycard panelbox">
+          <div class="legacyhead">
+            <div class="legacymeta" id="legacymeta"></div>
+            <div class="legacyhint">select a row</div>
+          </div>
+          <div id="legacytable" class="legacytable"></div>
+        </div>
       </div>
-      <div id="datastream"></div>
+      <div class="datamode">
+        <div class="datamodehead">
+          <div class="datamodetag stream">Event stream</div>
+          <div class="datamodeshape">one row / event</div>
+        </div>
+        <div id="datastream"></div>
+      </div>
     </section>
 
     <section id="encoder" hidden>
       <h2>Encoder</h2>
-      <p class="lede">One event stream in, one frozen state out. Two continuous-time blocks learn a 128-dimensional shape; named feature families make the full state inspectable.</p>
-      <div class="encflow" id="encflow"></div>
-      <div class="encgrid">
-        <div class="panelbox">
-          <div class="cardtag">Shape feature map</div>
+      <div class="featexplorer">
+        <div class="featselector" id="featselector"></div>
+        <div class="featpanel">
           <div class="shapehead" id="shapehead"></div>
-          <div class="featgrid" id="featuremap"></div>
+          <div class="featmatrix" id="featuremap"></div>
           <div class="featlegend" id="featurelegend"></div>
-          <p class="note">One cell per frozen dimension. Hover for the dimension index and value.</p>
-        </div>
-        <div class="panelbox">
-          <div class="cardtag">Published state · feature families</div>
-          <div id="familybars"></div>
-          <p class="note" id="familynote"></p>
+          <p class="note">Hover a cell for its dimension and value.</p>
         </div>
       </div>
     <div class="encsection" id="axes">
@@ -1232,7 +1239,7 @@ if(!DT){
 
     const head=el("div","streamhead");
     const left=el("div");
-    left.appendChild(el("div","cardtag","Event stream · selected legacy row"));
+    left.appendChild(el("div","custtag","Selected customer"));
     left.appendChild(el("div","streamkey",c.key));
     head.appendChild(left);
     const counts=el("div","streamcounts");
@@ -1283,37 +1290,50 @@ if(!ENC){
   const host=$("#encoder");
   if(host) host.innerHTML="<h2>Encoder</h2><p class='lede'>Run <code>python3 scripts/build_encoder_tab.py</code> with the frozen cache available to build this tab.</p>";
 }else{
-  const m=DATA.meta;
+  let featureFamily="shape";
 
-  function renderEncoder(){
-    const flow=$("#encflow"); flow.innerHTML="";
-    const steps=[
-      ["01","Event stream",(m.events/1e6).toFixed(2)+"M events",m.customers.toLocaleString()+" customers · "+ENC.event_types+" event types",false],
-      ["02","Field tokens","schema-derived","type · category · value · time · gap",false],
-      ["03","Sequence blocks",ENC.trunk.layers+" × "+ENC.trunk.width,"blocks · continuous time · residual",false],
-      ["04","Frozen shape",ENC.trunk.width+" dims","one vector per customer",false],
-      ["05","Published state",ENC.state_dim.toLocaleString()+" dims","shape + named feature blocks"],
-    ];
-    steps.forEach(([n,t,v,d],i)=>{
-      const step=el("div","encstep");
-      step.appendChild(el("div","n",n));
-      step.appendChild(el("div","t",t));
-      step.appendChild(el("div","v",v));
-      step.appendChild(el("div","d",d));
-      flow.appendChild(step);
-      if(i<steps.length-1) flow.appendChild(el("div","encarrow","→"));
+  function featCols(id){
+    if(id==="learned_state") return 48;
+    if(id==="forecast") return 42;
+    if(id==="uncertainty") return 8;
+    return 16;
+  }
+
+  function renderFeatSelector(){
+    const host=$("#featselector"); host.innerHTML="";
+    const maxDim=Math.max(...ENC.families.map(f=>f.dim));
+    ENC.families.forEach(f=>{
+      const b=el("button","featfamily"+(featureFamily===f.id?" on":""));
+      b.type="button";
+      const top=el("div","top");
+      top.appendChild(el("div","name",f.label));
+      top.appendChild(el("div","dim",f.dim.toLocaleString()));
+      b.appendChild(top);
+      const bar=el("div","bar"); const fill=el("div");
+      fill.style.width=(100*f.dim/maxDim)+"%"; bar.appendChild(fill); b.appendChild(bar);
+      b.onclick=()=>{featureFamily=f.id;renderFeatSelector();renderFeatMap();};
+      host.appendChild(b);
     });
+    const total=el("div","total");
+    total.appendChild(el("span",null,"Published state"));
+    total.appendChild(el("b",null,ENC.state_dim.toLocaleString()+" dims"));
+    host.appendChild(total);
+  }
 
+  function renderFeatMap(){
+    const fam=ENC.families.find(f=>f.id===featureFamily)||ENC.families[0];
     $("#shapehead").innerHTML="";
     const left=el("div");
+    left.appendChild(el("div","cardtag",fam.label));
     left.appendChild(el("div","shapekey",ENC.customer));
-    left.appendChild(el("div","shapemeta",ENC.shape.length+" frozen dimensions"));
     $("#shapehead").appendChild(left);
-    $("#shapehead").appendChild(el("div","shapemeta","norm "+Number(ENC.shape_norm).toFixed(2)+" · population mean "+Number(ENC.population_mean_norm).toFixed(2)));
+    $("#shapehead").appendChild(el("div","shapemeta",fam.dim.toLocaleString()+" dims"));
 
     const grid=$("#featuremap"); grid.innerHTML="";
-    const maxv=Math.max(...ENC.shape.map(v=>Math.abs(v)));
-    ENC.shape.forEach((v,i)=>{
+    const cols=featCols(fam.id);
+    grid.style.gridTemplateColumns="repeat("+cols+",minmax(0,1fr))";
+    const maxv=Math.max(...fam.values.map(v=>Math.abs(v)));
+    fam.values.forEach((v,i)=>{
       const cell=el("div","featcell");
       const a=Math.min(1,Math.abs(v)/(maxv||1));
       cell.style.background=v>=0?`rgba(5,150,105,${0.10+0.80*a})`:`rgba(17,24,39,${0.06+0.62*a})`;
@@ -1331,30 +1351,12 @@ if(!ENC){
     legend.appendChild(sw("#ffffff",true,"zero"));
     legend.appendChild(sw("rgba(5,150,105,.80)",false,"positive"));
     legend.appendChild(el("span","max","max |value| "+maxv.toFixed(2)));
-
-    const bars=$("#familybars"); bars.innerHTML="";
-    const maxDim=Math.max(...ENC.families.map(f=>f.dim));
-    const colors={shape:"#059669",learned_state:"#374151",forecast:"#6b7280",uncertainty:"#9ca3af",heads:"#d1d5db"};
-    ENC.families.forEach(f=>{
-      const row=el("div","familyrow");
-      const top=el("div","familytop");
-      top.appendChild(el("div","familyname",f.label));
-      top.appendChild(el("div","familydim",f.dim.toLocaleString()+" dims"));
-      row.appendChild(top);
-      const bar=el("div","familybar"); const fill=el("div");
-      fill.style.width=(100*f.dim/maxDim)+"%";
-      fill.style.background=colors[f.id]||"#9ca3af";
-      bar.appendChild(fill); row.appendChild(bar);
-      row.appendChild(el("div","familynote",f.note));
-      bars.appendChild(row);
-    });
-    const total=el("div","familytotal");
-    total.appendChild(el("span",null,"Published state"));
-    total.appendChild(el("b",null,ENC.state_dim.toLocaleString()+" dims"));
-    bars.appendChild(total);
-    $("#familynote").textContent="Shape is the compact encoder output. The named blocks are exposed alongside it by the same frozen encoder.";
   }
 
+  function renderEncoder(){
+    renderFeatSelector();
+    renderFeatMap();
+  }
   renderEncoder();
 }
 

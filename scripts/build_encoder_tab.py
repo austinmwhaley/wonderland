@@ -26,14 +26,6 @@ DEFAULT_CACHE = Path("/tmp/opencode/frozen_6k")
 OUT = ROOT / "demo/encoder_tab.json"
 DEFAULT_CUSTOMER = "rc0000208"
 
-FAMILY_NOTES = {
-    "shape": "learned sequence representation",
-    "learned_state": "per-timescale recurrent state + learned mass",
-    "forecast": "self-supervised past / future summaries",
-    "uncertainty": "missingness, support and gap",
-    "heads": "identity, next event and relational predictions",
-}
-
 
 def main():
     ap = argparse.ArgumentParser()
@@ -59,19 +51,41 @@ def main():
     runtime = json.loads((EXP / "runtime.json").read_text())
     cfg = json.loads((EXP / "encoder_config.json").read_text())
     data_receipt = json.loads((EXP / "data_receipt.json").read_text())
+    manifest = json.loads(Path(str(cache) + ".manifest.json").read_text())
+    layout = manifest.get("layout") or {}
+    blocks = {b["name"]: b for b in layout.get("blocks", [])}
+    blk = np.asarray(z["BLK"], dtype=float)
 
     state_dims = runtime.get("state_dims") or {}
     order = ["shape", "learned_state", "forecast", "uncertainty", "heads"]
-    families = [
-        {
-            "id": name,
-            "label": name.replace("_", " ").capitalize(),
-            "dim": int(state_dims[name]),
-            "note": FAMILY_NOTES[name],
-        }
-        for name in order
-        if int(state_dims.get(name, 0)) > 0
-    ]
+    families = []
+    for name in order:
+        dim = int(state_dims.get(name, 0))
+        if dim <= 0:
+            continue
+        if name == "shape":
+            values = shape
+        else:
+            view = (layout.get("views") or {}).get(name) or {}
+            parts = [
+                blk[hold.index(args.customer), blocks[b]["start"] : blocks[b]["stop"]]
+                for b in view.get("blocks", [])
+                if b in blocks
+            ]
+            if not parts:
+                continue
+            values = np.concatenate(parts)
+        if len(values) != dim:
+            print(f"family {name}: value count {len(values)} != state dim {dim}", file=sys.stderr)
+            raise SystemExit(1)
+        families.append(
+            {
+                "id": name,
+                "label": name.replace("_", " ").capitalize(),
+                "dim": dim,
+                "values": [round(float(v), 4) for v in values],
+            }
+        )
     total = sum(f["dim"] for f in families)
 
     out = {

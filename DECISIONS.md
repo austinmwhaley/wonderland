@@ -1747,3 +1747,27 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - On narrow screens the final Encoder step still spans both columns via `:last-child`; that is
   layout only, not an accent.
 - Verified by rendering the Encoder and Plugins tops in headless Chrome.
+
+## DEC-335 — Encoder intro becomes an interactive feature explorer
+
+- Feedback: the first Encoder block carried too much architecture detail; it should be visual,
+  interactive and structural about the encoder's features.
+- Removed the five-step architecture cards, the intro paragraph, the norm statistics, and the
+  feature-family prose bars.
+- Added a single explorer: a compact five-row family selector (Shape, Learned state, Forecast,
+  Uncertainty, Heads) with proportional size bars, and a large heat map of that family's actual
+  values for `rc0000208`. Selecting a family swaps the map; the active selector changes content and
+  therefore keeps the accent. Hovering a cell exposes its dimension and value.
+- `scripts/build_encoder_tab.py` now exports the real values for every family by concatenating the
+  manifest's block slices from the frozen BLK matrix (2,265 dimensions total).
+- The map keeps a stable minimum height on desktop so switching families does not move the page.
+- Axes and Objectives remain below as scroll sections.
+
+## DEC-336 — Data separates Legacy and Event stream visually
+
+- Feedback: the top legacy table and the bottom event-level view needed a clearer distinction.
+- The Data tab now has two labelled modes separated by rules: **Legacy** (one row / customer) and
+  **Event stream** (one row / event). Legacy uses a neutral square; Event stream uses the accent.
+- Removed the duplicated "legacy wide table" tag inside the table card; the section label carries
+  the mode. Selected-customer metadata now sits under the Event stream heading.
+- Verified by rendering the Data tab in headless Chrome.
