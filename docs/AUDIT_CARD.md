@@ -2,7 +2,7 @@
 
 > **Generated** by `python3 scripts/audit_card.py` — DO NOT EDIT. The primary B + B+C card is `REPORT_CARD.md`. Gates live in `scripts/card_spec.py`; every row resolves to a receipt (`docs/report_cards/experiments/`). A missing receipt renders NOT MEASURED.
 
-- **Generated:** 2026-10-24 · **commit:** `99d8e86` · **branch:** primary-encoder
+- **Generated:** 2026-10-24 · **commit:** `aa15929` · **branch:** primary-encoder
 - **Data:** `relational_v3` synthetic reference (+ schema variant) · harness, no business data.
 - **Latest demo receipt:** `7e32ebb84fc3` · seeds `3` · runtime `1009.2s`.
 - **B mastery:** **NOT YET MASTERED** — PASS 26 · FAIL 3 · NOT MEASURED 0.
