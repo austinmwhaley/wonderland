@@ -1096,3 +1096,24 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - Note: the selective run overwrote the canonical donor/identity receipts, which were then
   regenerated from a fresh baseline cache from the current committed code. The card is now
   consistent with committed code.
+
+## DEC-296 — Loop 3b: schema-derived identity roles (ADOPTED, zero behaviour change)
+
+- Axis: replace hand-listed `{"segment","loyalty_tier","region","acquisition_channel"}` with a
+  data-derived rule: a categorical field is identity/static when it takes at most one value for
+  at least 95% of entities. No field name is consulted.
+- Verification: on the 6k reference the generic rule selects `[0, 8, 14, 15]` — exactly the
+  previous hand-listed set — so existing receipts remain valid and no retrain was required.
+- Relational roles are NOT generically derivable on this data: camera-ready candidates
+  (`product_id`, `campaign_id`, `order_id`) are ordinary behavioural attributes by cardinality
+  and per-entity distinctness, while the pre-existing pair was arbitrary. `rel_idx` is therefore
+  kept as an explicit declaration (`WQ_REL_FIELDS`, default `campaign_id,product_id`) and
+  recorded as `rel_source = "declared; not schema-derived"`. Removing or redefining it is a
+  separate loop because the A8 card row depends on the relational block.
+- Tests: `tests/test_schema_roles.py` proves the rule is behavioural (renaming a field to
+  `segment`/`region` does not change the outcome), handles a constant field and an all-missing
+  field.
+- Principles: Universal/Generic (no business names), Honest (role source recorded), Robust
+  (identical selection verified before adoption), Efficient (no retrain needed).
+- Rejected: inventing a cardinality heuristic that only coincidentally reproduces the old pair;
+  silently dropping the relational block (would break A8).
