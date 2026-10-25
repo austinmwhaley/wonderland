@@ -62,3 +62,6 @@ logs/
 .vscode/
 *.swp
 .venv-cudf/
+
+# interactive demo page (generated, but it IS the deliverable)
+!demo/index.html

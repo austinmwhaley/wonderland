@@ -1386,3 +1386,21 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   reported metric, so the change removes a silent-masking pathway without altering any result.
 - Principles: Robust (fail loudly), Honest (no sanitized passes), Diagnosable (the failure names
   the array).
+
+## DEC-312 — Interactive demo: generated self-contained HTML
+
+- Decision: the demo is a single self-contained HTML page generated from receipts by
+  `scripts/build_demo_site.py` (vanilla JS + inline SVG charts, no CDN, no server, no build step).
+  Rejected Streamlit (needs a running server and constrains styling) and a JS framework
+  (dependency/network risk with no benefit for a six-tab page).
+- Why generated: every number comes from `docs/report_cards/experiments/*.json`, so the page
+  cannot drift from the evidence. The Customer Explorer additionally samples the frozen cache.
+- Tabs: Overview, Encoder vs Traditional, State Views, Plugins, Customer Explorer, Evidence.
+  Deep links via `#tab`; each tab renders for screenshot/verification.
+- Verified by rendering every tab with headless Chrome and inspecting the output; JS syntax
+  checked with `node --check`; embedded payload parsed and cross-checked against receipts.
+- Honesty: the page states that compact `E` alone loses value/orders, that category identity and
+  anomaly/segmentation trail the table, that RL policy value is non-dominant, and that Layer-1 is
+  not started. The two different "table" values (0.357 fixed-head vs 0.424 selection protocol)
+  are both shown with an explicit protocol note instead of being reconciled silently.
+- `demo/index.html` is a generated deliverable, so `.gitignore` gains a narrow exception for it.

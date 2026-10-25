@@ -1926,3 +1926,11 @@ recency/frequency aggregates. NOT decided unilaterally — receipts above.
 - **Not started (and not claimed):** a new decision-episode Layer-A revision, and Layer-1
   certification (minimality / universal `U` / decision-sufficiency), which PLAN.md defines as
   separate research rather than a Layer-0 deliverable.
+
+## Demo — interactive site
+
+`demo/index.html` is a single self-contained page generated from receipts by
+`python3 scripts/build_demo_site.py`. Six tabs (Overview, Encoder vs Traditional, State Views,
+Plugins, Customer Explorer, Evidence), deep-linkable via `#tab`, no server or network required.
+The Customer Explorer samples 260 holdout customers from the frozen embedding. Every figure
+resolves to a receipt; the "what is not claimed" panel repeats the card's disclosures.
