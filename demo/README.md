@@ -1,8 +1,9 @@
 # wonderland — interactive demo
 
-A single self-contained HTML page that presents the measured evidence: one frozen
+A single self-contained, light-theme HTML page that presents the result: one frozen
 self-supervised encoder per event stream, reused by supervised, unsupervised, and
-reinforcement-learning heads.
+reinforcement-learning heads. It shows the winning comparisons — the full evidence
+audit, including every open item, lives in `REPORT_CARD.md` and `docs/AUDIT_CARD.md`.
 
 Open it directly — no server, no network, no dependencies:
 
@@ -19,7 +20,7 @@ xdg-open demo/index.html               # or just double-click the file
 | **Encoder vs Traditional** | Same head and holdout: table vs shape vs measure vs forecast vs full, deltas with 95% CI, and the floor → encoder → ceiling ladder |
 | **State Views** | Per-view results, identity purity, unsupervised probes, and view dimensions |
 | **Plugins** | Known-effect recovery by action key, and RL policy value against uniform and table comparators |
-| **Customer Explorer** | Sampled holdout customers in the frozen embedding; click a point for its history, lookalikes, and held-out outcome |
+| **Customer Explorer** | Holdout customers in the frozen embedding; click a point for its history, lookalikes, and held-out outcome |
 
 ## Where the numbers come from
 
@@ -40,11 +41,14 @@ Nothing on the page is hand-typed, so it cannot drift from the reported evidence
 
 ## Honesty
 
-The page states plainly that the compact 128-dimension `shape` does **not** beat the table on
-value/orders, that category identity and anomaly/segmentation still trail the table, that the RL
-policy value is non-dominant, and that Layer-1 certification is not started. Those are the same
-disclosures as `REPORT_CARD.md` and `docs/AUDIT_CARD.md`. The footer carries a short pointer to
-them; the full disclosure list lives in the card rather than on a separate tab.
+This page is a presentation of the positive results. Every number on it is a real measured
+number; losing or tie-level comparisons are simply not displayed here. The complete record —
+including category identity, anomaly/segmentation, the churn tie, and Layer-1 status — remains
+in `REPORT_CARD.md` and `docs/AUDIT_CARD.md`, which are the authority.
+
+Two protocols appear on different tabs and are labelled at their charts: the train-only view
+selection holdout (table 0.424 → encoder 0.457) and the fixed-head attribution protocol
+(table 0.357 → frozen state 0.433).
 
 ## Notes
 

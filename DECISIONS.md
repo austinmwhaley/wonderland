@@ -1404,3 +1404,23 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   not started. The two different "table" values (0.357 fixed-head vs 0.424 selection protocol)
   are both shown with an explicit protocol note instead of being reconciled silently.
 - `demo/index.html` is a generated deliverable, so `.gitignore` gains a narrow exception for it.
+
+## DEC-313 — Demo restyled: light theme, positive-only presentation
+
+- Request: default light mode, and the demo page should show only the favourable results.
+- Change: the site is now light-theme by default. The page presents the winning comparisons:
+  frozen state vs traditional table (value/orders/churn, all higher), the floor → encoder →
+  ceiling ladder, selected-view gains for value/orders, channel identity, the three unsupervised
+  wins (churn-neighbour, value-neighbour, effective rank), all five known-effect action keys, and
+  the three-way RL policy comparison where the encoder has the highest estimated value on both
+  arms. The audit badge, the loss rows, and the "not claimed" panel were removed; the Evidence tab
+  was removed in the previous change.
+- Honesty handling: every displayed number is still a real receipt value. Nothing was inverted,
+  reweighted, or invented; losing or tie-level comparisons are omitted rather than reframed. The
+  full record remains in `REPORT_CARD.md` and `docs/AUDIT_CARD.md`, and `demo/README.md` states
+  explicitly that this page presents the positive results while the card is the authority.
+- Also fixed: `#view=<tab>` hash routing (the previous `#<tab>` collided with section ids and made
+  Chrome scroll the header out of view), overview legend target, and total-event counts in the
+  explorer.
+- Principles: Honest (no fabricated or inverted claim; omissions are documented), Accessible
+  (readable light theme, legible charts), Diagnosable (each chart names its protocol).

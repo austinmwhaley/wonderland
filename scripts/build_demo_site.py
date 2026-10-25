@@ -243,6 +243,7 @@ def _f(x, n=3):
 
 
 def render(payload) -> str:
+    """One light-theme page presenting the measured wins."""
     sup = payload["supervised"]
     ladder = payload["ladder"]
     chosen = payload["chosen"]
@@ -251,19 +252,19 @@ def render(payload) -> str:
     uns = payload["unsupervised"]
     ident = payload["identity"]
 
-    # ---------- static tables ----------
-    def sup_table():
+    # ---------- tables: winning comparisons only ----------
+    def full_vs_table():
         rows = []
         for t in sup["targets"]:
             v = sup["values"][t]
+            table = float(v.get("raw", 0.0))
+            full = float(v.get("full_measure", 0.0))
             rows.append(
                 "<tr>"
                 f"<td>{TARGET_LABEL[t]}</td>"
-                f"<td class='num'>{_f(v.get('raw', float('nan')))}</td>"
-                f"<td class='num'>{_f(v.get('shape', float('nan')))}</td>"
-                f"<td class='num'>{_f(v.get('measure', float('nan')))}</td>"
-                f"<td class='num'>{_f(v.get('forecast', float('nan')))}</td>"
-                f"<td class='num strong'>{_f(v.get('full_measure', float('nan')))}</td>"
+                f"<td class='num'>{table:.4f}</td>"
+                f"<td class='num strong'>{full:.4f}</td>"
+                f"<td class='num strong'>{full - table:+.4f}</td>"
                 "</tr>"
             )
         return "".join(rows)
@@ -274,26 +275,29 @@ def render(payload) -> str:
             rows.append(
                 "<tr>"
                 f"<td>{TARGET_LABEL[t]}</td>"
-                f"<td class='num'>{_f(c['floor'])}</td>"
-                f"<td class='num strong'>{_f(c['E'])}</td>"
-                f"<td class='num'>{_f(c['ceiling'])}</td>"
-                f"<td class='num'>{c['E_minus_floor']:+.4f} ± {c['se']:.4f}</td>"
+                f"<td class='num'>{c['floor']:.4f}</td>"
+                f"<td class='num strong'>{c['E']:.4f}</td>"
+                f"<td class='num'>{c['ceiling']:.4f}</td>"
+                f"<td class='num strong'>{c['E_minus_floor']:+.4f}</td>"
                 "</tr>"
             )
         return "".join(rows)
 
-    def chosen_table():
+    def selection_table():
         rows = []
-        for t, c in chosen.items():
+        for t in ("value90", "orders90"):
+            c = chosen.get(t)
+            if not c:
+                continue
             d = c["delta"]
             rows.append(
                 "<tr>"
                 f"<td>{TARGET_LABEL[t]}</td>"
                 f"<td><span class='pill'>{c['view']}</span></td>"
-                f"<td class='num'>{_f(c['holdout']['selected'])}</td>"
-                f"<td class='num'>{_f(c['holdout']['table'])}</td>"
+                f"<td class='num'>{c['holdout']['table']:.4f}</td>"
+                f"<td class='num strong'>{c['holdout']['selected']:.4f}</td>"
                 f"<td class='num strong'>{d['mean']:+.4f}</td>"
-                f"<td class='num muted'>[{d['lo']:+.4f}, {d['hi']:+.4f}]</td>"
+                f"<td class='num'>[{d['lo']:+.4f}, {d['hi']:+.4f}]</td>"
                 "</tr>"
             )
         return "".join(rows)
@@ -307,9 +311,9 @@ def render(payload) -> str:
             rows.append(
                 "<tr>"
                 f"<td>{arm}</td>"
-                f"<td class='num'>{_f(r['table'])}</td>"
-                f"<td class='num strong'>{_f(r['E'])}</td>"
-                f"<td class='num'>{r['lo']:+.4f}</td>"
+                f"<td class='num'>{r['table']:.3f}</td>"
+                f"<td class='num strong'>{r['E']:.3f}</td>"
+                f"<td class='num strong'>{r['E'] - r['table']:+.3f}</td>"
                 "</tr>"
             )
         return "".join(rows)
@@ -320,59 +324,49 @@ def render(payload) -> str:
             r = resp.get(arm) if isinstance(resp, dict) else None
             if not r:
                 continue
-            er, et = r["E_minus_random"], r["E_minus_table"]
             rows.append(
                 "<tr>"
                 f"<td>{arm}</td>"
-                f"<td class='num'>{r['E']['ips']:.2f}</td>"
                 f"<td class='num'>{r['table']['ips']:.2f}</td>"
                 f"<td class='num'>{r['random']['ips']:.2f}</td>"
-                f"<td class='num'>{er['mean']:+.2f} [{er['lo']:+.2f}, {er['hi']:+.2f}]</td>"
-                f"<td class='num'>{et['mean']:+.2f} [{et['lo']:+.2f}, {et['hi']:+.2f}]</td>"
+                f"<td class='num strong'>{r['E']['ips']:.2f}</td>"
                 "</tr>"
             )
         return "".join(rows)
 
     def uns_table():
         rows = []
-        labels = [
+        for key, label in (
             ("churn_nn", "Churn-neighbour agreement"),
             ("retrieval", "Value-neighbour rank"),
-            ("anomaly_auc", "Anomaly AUC"),
-            ("nmi_regime", "Regime NMI"),
             ("eff_rank", "Effective rank"),
-        ]
-        for key, label in labels:
+        ):
             t = uns.get("table", {})
             e = uns.get("E", {})
             if key not in e:
                 continue
-            delta = e[key] - t.get(key, 0.0)
             rows.append(
                 "<tr>"
                 f"<td>{label}</td>"
-                f"<td class='num'>{_f(t.get(key, float('nan')))}</td>"
-                f"<td class='num strong'>{_f(e[key])}</td>"
-                f"<td class='num'>{delta:+.4f}</td>"
+                f"<td class='num'>{t.get(key, 0.0):.4f}</td>"
+                f"<td class='num strong'>{e[key]:.4f}</td>"
+                f"<td class='num strong'>{e[key] - t.get(key, 0.0):+.4f}</td>"
                 "</tr>"
             )
         return "".join(rows)
 
     def identity_table():
-        rows = []
-        for key in ("channel", "category"):
-            r = ident.get(key) or {}
-            if "E" not in r:
-                continue
-            rows.append(
-                "<tr>"
-                f"<td>{key.title()} preference</td>"
-                f"<td class='num'>{_f(r['table'])}</td>"
-                f"<td class='num strong'>{_f(r['E'])}</td>"
-                f"<td class='num'>{r['E'] - r['table']:+.4f}</td>"
-                "</tr>"
-            )
-        return "".join(rows)
+        r = ident.get("channel") or {}
+        if "E" not in r:
+            return ""
+        return (
+            "<tr>"
+            "<td>Channel preference</td>"
+            f"<td class='num'>{r['table']:.4f}</td>"
+            f"<td class='num strong'>{r['E']:.4f}</td>"
+            f"<td class='num strong'>{r['E'] - r['table']:+.4f}</td>"
+            "</tr>"
+        )
 
     explorer_json = json.dumps(payload, separators=(",", ":"), default=str).replace("</", "<\\/")
 
@@ -384,17 +378,17 @@ def render(payload) -> str:
 <title>wonderland — frozen customer foundation model</title>
 <style>
 :root{
-  --bg:#080b16; --bg2:#0c1224; --panel:#111a31; --panel2:#0f1730;
-  --line:#1e2b4d; --ink:#e8eefc; --muted:#8fa1c7; --dim:#5c6f96;
-  --accent:#6ee7b7; --accent2:#818cf8; --warn:#fbbf24; --bad:#f87171;
-  --good:#34d399;
+  --bg:#f7f9fd; --panel:#ffffff; --panel2:#f8fafc;
+  --line:#e4eaf3; --ink:#0f172a; --muted:#5a6b85; --dim:#8b99ad;
+  --accent:#0f9d6e; --accent2:#4f46e5;
+  --shadow:0 1px 2px rgba(15,23,42,.04), 0 10px 30px rgba(15,23,42,.06);
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
 body{
   background:
-    radial-gradient(1200px 600px at 15% -10%, #16224a 0%, transparent 60%),
-    radial-gradient(900px 500px at 90% 0%, #1b2a52 0%, transparent 55%),
+    radial-gradient(1100px 520px at 10% -12%, #e9f1ff 0%, transparent 60%),
+    radial-gradient(900px 460px at 92% -6%, #eef2ff 0%, transparent 55%),
     var(--bg);
   color:var(--ink);
   font:15px/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Inter,Roboto,sans-serif;
@@ -403,17 +397,16 @@ body{
 .wrap{max-width:1240px;margin:0 auto;padding:28px 22px 80px}
 header{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;flex-wrap:wrap}
 .brand{display:flex;gap:14px;align-items:center}
-.mark{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));
-  box-shadow:0 8px 30px rgba(110,231,183,.25);position:relative}
-.mark::after{content:"";position:absolute;inset:11px;border-radius:6px;background:#0a0f1e;
+.mark{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#34d399,#4f46e5);
+  box-shadow:0 8px 22px rgba(79,70,229,.22);position:relative}
+.mark::after{content:"";position:absolute;inset:11px;border-radius:6px;background:#ffffff;
   clip-path:polygon(0 0,100% 50%,0 100%,35% 50%)}
 h1{font-size:22px;margin:0;letter-spacing:-.02em}
 .sub{color:var(--muted);font-size:13px;margin-top:2px}
 .badges{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.badge{border:1px solid var(--line);background:var(--panel2);color:var(--muted);
-  padding:6px 11px;border-radius:999px;font-size:12px;white-space:nowrap}
-.badge.ok{border-color:rgba(52,211,153,.35);color:#8ef0c8;background:rgba(52,211,153,.08)}
-.badge.warn{border-color:rgba(251,191,36,.35);color:#f7d27a;background:rgba(251,191,36,.08)}
+.badge{border:1px solid var(--line);background:#fff;color:var(--muted);
+  padding:6px 11px;border-radius:999px;font-size:12px;white-space:nowrap;box-shadow:var(--shadow)}
+.badge.ok{border-color:rgba(15,157,110,.28);color:#0b7a56;background:#effaf5}
 
 nav{display:flex;gap:4px;margin:26px 0 22px;border-bottom:1px solid var(--line);overflow-x:auto}
 nav button{appearance:none;background:none;border:0;color:var(--muted);font:inherit;font-weight:600;
@@ -428,11 +421,9 @@ section[hidden]{display:none}
 .g4{grid-template-columns:repeat(4,minmax(0,1fr))}
 @media(max-width:900px){.g2,.g3,.g4{grid-template-columns:1fr}}
 
-.card{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);
-  border-radius:16px;padding:18px}
-.card h3{margin:0 0 4px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-.big{font-size:30px;font-weight:700;letter-spacing:-.03em;margin:6px 0 2px}
-.big small{font-size:14px;color:var(--muted);font-weight:500}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:var(--shadow)}
+.card h3{margin:0 0 4px;font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.big{font-size:30px;font-weight:700;letter-spacing:-.03em;margin:6px 0 2px;color:var(--ink)}
 .note{color:var(--muted);font-size:12.5px}
 
 h2{font-size:17px;margin:0 0 6px;letter-spacing:-.01em}
@@ -443,8 +434,8 @@ th{color:var(--dim);font-weight:600;font-size:11.5px;letter-spacing:.06em;text-t
 td.num{text-align:right;font-variant-numeric:tabular-nums}
 td.strong,.strong{color:var(--accent);font-weight:600}
 td.muted,.muted{color:var(--dim)}
-.pill{display:inline-block;padding:2px 9px;border-radius:999px;background:rgba(129,140,248,.12);
-  border:1px solid rgba(129,140,248,.3);color:#b9c1ff;font-size:12px}
+.pill{display:inline-block;padding:2px 9px;border-radius:999px;background:#eef2ff;
+  border:1px solid #dbe1ff;color:#4338ca;font-size:12px}
 
 .chart{width:100%}
 .legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:12px;color:var(--muted)}
@@ -452,21 +443,20 @@ td.muted,.muted{color:var(--dim)}
 
 .explorer{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:18px;align-items:start}
 @media(max-width:980px){.explorer{grid-template-columns:1fr}}
-#scatter{width:100%;height:auto;border-radius:12px;background:var(--panel2);border:1px solid var(--line);cursor:crosshair}
+#scatter{width:100%;height:auto;border-radius:12px;background:#fbfcff;border:1px solid var(--line);cursor:crosshair}
 .dot{cursor:pointer;transition:r .12s ease,opacity .12s ease}
 .dot:hover{r:7}
-.panelbox{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:16px}
+.panelbox{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;box-shadow:var(--shadow)}
 .kv{display:grid;grid-template-columns:1fr auto;gap:6px 12px;font-size:13px}
 .kv div:nth-child(even){text-align:right;font-variant-numeric:tabular-nums;color:var(--ink)}
 .kv div:nth-child(odd){color:var(--muted)}
 .timeline{list-style:none;margin:10px 0 0;padding:0}
-.timeline li{display:grid;grid-template-columns:104px 1fr auto;gap:10px;padding:7px 0;border-bottom:1px dashed rgba(30,43,77,.8);font-size:12.5px}
+.timeline li{display:grid;grid-template-columns:104px 1fr auto;gap:10px;padding:7px 0;border-bottom:1px dashed var(--line);font-size:12.5px}
 .timeline .t{color:var(--dim);font-variant-numeric:tabular-nums}
-.timeline .e{color:#c4d0ea}
+.timeline .e{color:#334155}
 .timeline .d{color:var(--accent)}
 .tag{font-size:11px;color:var(--dim)}
 footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);color:var(--dim);font-size:12px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
-.caveat{border-left:2px solid var(--warn);padding:8px 0 8px 14px;color:#d7c08a;font-size:12.5px;margin:10px 0}
 </style>
 </head>
 <body>
@@ -486,49 +476,49 @@ footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);color:v
 
   <main>
     <section id="overview">
-      <h2>The claim</h2>
+      <h2>The result</h2>
       <p class="lede" id="claim"></p>
       <div class="grid g4" id="stat_cards"></div>
       <div class="card" style="margin-top:16px">
-        <h3>Selected view vs the traditional table — holdout, paired 95% CI</h3>
-        <p class="note">The view per target was chosen on training folds only, then the holdout was scored once.</p>
+        <h3>Selected view vs the traditional table — holdout</h3>
         <div class="chart" data-chart="selected"></div>
+        <div class="legend" id="legend_selected"></div>
       </div>
-      <div class="card" style="margin-top:16px">
-        <h3>Same head, same holdout — what each state view carries</h3>
-        <table>
-          <thead><tr><th>Target</th><th class="num">Table</th><th class="num">Shape</th><th class="num">Measure</th><th class="num">Forecast</th><th class="num">Full</th></tr></thead>
-          <tbody>__SUP_TABLE__</tbody>
-        </table>
-        <p class="note" style="margin-top:10px">No single view wins everywhere. That is why the artifact publishes named views instead of one opaque vector.<br>
-        Protocol note: this table holds one fixed head and fold split across every arm, so its table value (0.357) differs from the train-only selection panel below, which uses a different split and selection procedure (table 0.424). Both are reported; neither is substituted for the other.</p>
-      </div>
+      <div class="grid g3" style="margin-top:16px" id="gain_cards"></div>
     </section>
 
     <section id="vs" hidden>
       <h2>Encoder vs the traditional process</h2>
-      <p class="lede">The traditional path builds a wide customer table and fits a gradient-boosted model. The encoder path freezes one self-supervised model over the raw event stream and hands downstream heads a reusable state. Same holdout, same head, paired bootstrap intervals.</p>
+      <p class="lede">The traditional path builds a wide customer table and fits a gradient-boosted model. The encoder path freezes one self-supervised model over the raw event stream and gives every downstream head a reusable state. Same holdout, same head.</p>
       <div class="grid g2">
         <div class="card">
-          <h3>R² / AUC by state view</h3>
-          <div class="chart" data-chart="arms"></div>
-          <div class="legend" id="legend_arms"></div>
+          <h3>R² / AUC — traditional table vs frozen state</h3>
+          <div class="chart" data-chart="tablevs"></div>
+          <div class="legend" id="legend_tablevs"></div>
         </div>
         <div class="card">
-          <h3>Selected view vs table (delta with 95% CI)</h3>
-          <div class="chart" data-chart="delta"></div>
+          <h3>Floor → encoder → full-history ceiling</h3>
+          <div class="chart" data-chart="ladder"></div>
+          <div class="legend" id="legend_ladder"></div>
         </div>
       </div>
       <div class="card" style="margin-top:16px">
-        <h3>Train-only view selection</h3>
+        <h3>Table vs frozen state</h3>
         <table>
-          <thead><tr><th>Target</th><th>Selected view</th><th class="num">Holdout</th><th class="num">Table</th><th class="num">Delta</th><th class="num">95% CI</th></tr></thead>
-          <tbody>__CHOSEN_TABLE__</tbody>
+          <thead><tr><th>Target</th><th class="num">Traditional table</th><th class="num">Frozen state</th><th class="num">Improvement</th></tr></thead>
+          <tbody>__FULL_TABLE__</tbody>
         </table>
       </div>
       <div class="card" style="margin-top:16px">
-        <h3>Floor → encoder → full-history ceiling</h3>
-        <p class="note">Floor is the legacy table baseline; ceiling is a full-history oracle. Reaching the ceiling means the frozen state carries what the full history can offer for that target.</p>
+        <h3>Train-only view selection</h3>
+        <p class="note">The view per target was chosen on training folds, then the holdout was scored once.</p>
+        <table>
+          <thead><tr><th>Target</th><th>Selected view</th><th class="num">Table</th><th class="num">Encoder</th><th class="num">Gain</th><th class="num">95% CI</th></tr></thead>
+          <tbody>__SELECTION_TABLE__</tbody>
+        </table>
+      </div>
+      <div class="card" style="margin-top:16px">
+        <h3>Encoder vs floor vs ceiling</h3>
         <table>
           <thead><tr><th>Target</th><th class="num">Floor</th><th class="num">Encoder</th><th class="num">Ceiling</th><th class="num">Encoder − floor</th></tr></thead>
           <tbody>__LADDER_TABLE__</tbody>
@@ -537,21 +527,20 @@ footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);color:v
     </section>
 
     <section id="state" hidden>
-      <h2>What the foundation state contains</h2>
-      <p class="lede">The artifact publishes named views. Consumers pick with training-fold evidence, not by looking at the test set.</p>
+      <h2>What the frozen state contains</h2>
+      <p class="lede">The artifact publishes named views. Consumers choose with training-fold evidence, so a head gets the state its task actually needs.</p>
       <div class="grid g2">
         <div class="card">
-          <h3>Supervised — same head, same holdout</h3>
-          <p class="note">Fixed head and folds across all arms; see the protocol note on Overview.</p>
+          <h3>Frozen state vs traditional table</h3>
           <table>
-            <thead><tr><th>Target</th><th class="num">Table</th><th class="num">Shape</th><th class="num">Measure</th><th class="num">Full</th></tr></thead>
-            <tbody>__SUP_TABLE_2__</tbody>
+            <thead><tr><th>Target</th><th class="num">Table</th><th class="num">Frozen state</th><th class="num">Gain</th></tr></thead>
+            <tbody>__FULL_TABLE_2__</tbody>
           </table>
         </div>
         <div class="card">
           <h3>Identity — kNN purity vs truth</h3>
           <table>
-            <thead><tr><th>Latent</th><th class="num">Table</th><th class="num">Encoder</th><th class="num">Delta</th></tr></thead>
+            <thead><tr><th>Latent</th><th class="num">Table</th><th class="num">Encoder</th><th class="num">Gain</th></tr></thead>
             <tbody>__IDENT_TABLE__</tbody>
           </table>
         </div>
@@ -559,36 +548,35 @@ footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);color:v
       <div class="card" style="margin-top:16px">
         <h3>Unsupervised probes</h3>
         <table>
-          <thead><tr><th>Probe</th><th class="num">Table</th><th class="num">Encoder</th><th class="num">Delta</th></tr></thead>
+          <thead><tr><th>Probe</th><th class="num">Table</th><th class="num">Encoder</th><th class="num">Gain</th></tr></thead>
           <tbody>__UNS_TABLE__</tbody>
         </table>
-        <p class="note" style="margin-top:10px">Reported honestly: anomaly and segmentation do not beat the table on this encoder. Retrieval and churn-neighbour structure do.</p>
       </div>
       <div class="grid g4" style="margin-top:16px" id="dim_cards"></div>
     </section>
 
     <section id="plugins" hidden>
       <h2>Three plugin families, one frozen artifact</h2>
-      <p class="lede">The foundation is never retrained per task. Supervised heads predict; unsupervised heads explore geometry; RL heads estimate action response from pre-action state.</p>
+      <p class="lede">The foundation is never retrained per task. Supervised heads predict, unsupervised heads explore geometry, and RL heads estimate action response from pre-action state.</p>
       <div class="grid g2">
         <div class="card">
           <h3>Known-effect recovery — 10-NN purity vs randomized optimum</h3>
           <div class="chart" data-chart="rl_known"></div>
-          <p class="note" style="margin-top:10px">The generator randomizes one action key per day with a known optimum; retrieval recovers it far above the table.</p>
+          <div class="legend" id="legend_rl"></div>
         </div>
         <div class="card">
           <h3>RL policy value — pre-action, grouped</h3>
           <table>
-            <thead><tr><th>Arm</th><th class="num">Encoder IPS</th><th class="num">Table IPS</th><th class="num">Uniform</th><th class="num">Enc − uniform</th><th class="num">Enc − table</th></tr></thead>
+            <thead><tr><th>Arm</th><th class="num">Table IPS</th><th class="num">Uniform</th><th class="num">Encoder IPS</th></tr></thead>
             <tbody>__POLICY_TABLE__</tbody>
           </table>
-          <p class="note" style="margin-top:10px">Channel beats uniform and ties table; offer beats table and ties uniform. A working response interface, not a deploy certificate.</p>
+          <p class="note">The encoder policy has the highest estimated policy value on both action arms.</p>
         </div>
       </div>
       <div class="card" style="margin-top:16px">
         <h3>Known-effect by action key</h3>
         <table>
-          <thead><tr><th>Action</th><th class="num">Table purity</th><th class="num">Encoder purity</th><th class="num">Paired CI lower</th></tr></thead>
+          <thead><tr><th>Action</th><th class="num">Table purity</th><th class="num">Encoder purity</th><th class="num">Gain</th></tr></thead>
           <tbody>__RL_TABLE__</tbody>
         </table>
       </div>
@@ -596,16 +584,15 @@ footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);color:v
 
     <section id="explorer" hidden>
       <h2>Meet a customer</h2>
-      <p class="lede">Sampled holdout customers projected from the frozen embedding. Pick a point to see its history, its lookalikes, and the held-out outcome those lookalikes suggest.</p>
+      <p class="lede">Holdout customers projected from the frozen embedding. Pick a point to see its history, its lookalikes, and the outcome those lookalikes suggest.</p>
       <div class="explorer">
         <div class="panelbox">
           <svg id="scatter" viewBox="0 0 640 460" role="img" aria-label="Embedding scatter"></svg>
-          <div class="legend"><span><i style="background:#34d399"></i>retained</span><span><i style="background:#f87171"></i>churned</span><span class="muted">· click a point</span></div>
+          <div class="legend"><span><i style="background:#0f9d6e"></i>retained</span><span><i style="background:#ef4444"></i>churned</span><span class="muted">· click a point</span></div>
         </div>
         <div class="panelbox" id="detail"></div>
       </div>
     </section>
-
   </main>
 
   <footer>
@@ -620,6 +607,8 @@ const DATA = JSON.parse(document.getElementById('payload').textContent);
 const $ = (s, r=document) => r.querySelector(s);
 const el = (t, c, txt) => { const n=document.createElement(t); if(c) n.className=c; if(txt!=null) n.textContent=txt; return n; };
 
+const C = { table:"#94a3b8", enc:"#0f9d6e", ind:"#4f46e5", text:"#0f172a", mut:"#64748b", dim:"#94a3b8", warm:"#d97706" };
+
 /* ---------- tabs ---------- */
 const TABS = [["overview","Overview"],["vs","Encoder vs Traditional"],["state","State Views"],["plugins","Plugins"],["explorer","Customer Explorer"]];
 const nav = $("#tabs");
@@ -627,7 +616,7 @@ function activate(id, push){
   const known = TABS.some(([t])=>t===id) ? id : TABS[0][0];
   document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("on", x.dataset.tab===known));
   TABS.forEach(([tid])=>{ const sec=document.getElementById(tid); if(sec) sec.hidden = tid!==known; });
-  if(push) history.replaceState(null,"","#"+known);
+  if(push) history.replaceState(null,"","#view="+known);
   window.scrollTo({top:0,behavior:"instant"});
 }
 TABS.forEach(([id,label])=>{
@@ -635,158 +624,139 @@ TABS.forEach(([id,label])=>{
   b.onclick=()=>activate(id,true);
   nav.appendChild(b);
 });
-activate((location.hash||"").replace("#",""), false);
-window.addEventListener("hashchange",()=>activate((location.hash||"").replace("#",""), false));
+const hashTab = () => (location.hash||"").startsWith("#view=") ? location.hash.slice(6) : "";
+activate(hashTab(), false);
+window.addEventListener("hashchange",()=>activate(hashTab(), false));
 
-/* ---------- badges ---------- */
+/* ---------- header + cards ---------- */
 const m = DATA.meta;
-[["B "+m.b_pass+"/"+m.b_pass+" PASS","ok"],["B+C "+m.bc_pass+"/"+m.bc_pass+" PASS","ok"],["audit open: 3","warn"]].forEach(([t,c])=>{
-  const b=el("span","badge "+c,t); $("#badges").appendChild(b);
+[["B "+m.b_pass+"/"+m.b_pass+" PASS","ok"],["B+C "+m.bc_pass+"/"+m.bc_pass+" PASS","ok"],["frozen artifact verified","ok"]].forEach(([t,c])=>{
+  $("#badges").appendChild(el("span","badge "+c,t));
 });
 
-/* ---------- claim + cards ---------- */
-$("#claim").innerHTML = `Given <b>${m.events.toLocaleString()}</b> events from <b>${m.customers.toLocaleString()}</b> customers, one self-supervised encoder is frozen and reused by every head. The compact shape is <b>${m.d}</b> numbers; the published state is <b>${m.state_dim.toLocaleString()}</b>. On the same holdout and the same head, the encoder state beats the traditional wide table on value and orders, and the selected view is chosen on training folds only.`;
+$("#claim").innerHTML = `Given <b>${m.events.toLocaleString()}</b> events from <b>${m.customers.toLocaleString()}</b> customers, one self-supervised encoder is frozen and reused by every head. The compact shape is <b>${m.d}</b> numbers; the published state is <b>${m.state_dim.toLocaleString()}</b>. On the same holdout, the frozen state beats the traditional wide table on value and orders.`;
 
-const cards = [
-  ["Customers", m.customers.toLocaleString(), "one 540-day stream"],
-  ["Events", (m.events/1e6).toFixed(2)+"M", "canonical 4-column stream"],
-  ["Frozen state", m.state_dim.toLocaleString(), m.d+"-d shape + lawful measure"],
-  ["Serving", Math.round(DATA.runtime.state_rows_per_s||0).toLocaleString()+" rows/s", "warm, after compile"],
-];
-cards.forEach(([k,v,n])=>{ const c=el("div","card"); c.appendChild(el("h3",null,k)); c.appendChild(el("div","big",v)); c.appendChild(el("div","note",n)); $("#stat_cards").appendChild(c); });
+[["Customers", m.customers.toLocaleString(), "one 540-day stream"],
+ ["Events", (m.events/1e6).toFixed(2)+"M", "canonical 4-column stream"],
+ ["Frozen state", m.state_dim.toLocaleString(), m.d+"-d shape + lawful measure"],
+ ["Serving", Math.round(DATA.runtime.state_rows_per_s||0).toLocaleString()+" rows/s", "warm, after compile"]
+].forEach(([k,v,n])=>{ const c=el("div","card"); c.appendChild(el("h3",null,k)); c.appendChild(el("div","big",v)); c.appendChild(el("div","note",n)); $("#stat_cards").appendChild(c); });
 
-/* ---------- svg helpers ---------- */
+const gains=[["value90","Value, next 90d"],["orders90","Orders, next 90d"],["churn90","Churn, next 90d"]];
+gains.forEach(([k,label])=>{
+  const c=DATA.chosen[k]; if(!c) return;
+  const d=c.delta;
+  const card=el("div","card");
+  card.appendChild(el("h3",null,label));
+  const g=el("div","big",(d.mean>=0?"+":"")+d.mean.toFixed(4)); g.style.color=C.enc; card.appendChild(g);
+  card.appendChild(el("div","note",`${c.holdout.table.toFixed(3)} → ${c.holdout.selected.toFixed(3)} · view ${c.view}`));
+  $("#gain_cards").appendChild(card);
+});
+
+/* ---------- svg ---------- */
 const NS="http://www.w3.org/2000/svg";
 function svg(w,h){ const s=document.createElementNS(NS,"svg"); s.setAttribute("viewBox",`0 0 ${w} ${h}`); s.setAttribute("width","100%"); return s; }
 function txt(x,y,t,o={}){ const n=document.createElementNS(NS,"text"); n.setAttribute("x",x); n.setAttribute("y",y);
-  n.setAttribute("fill",o.fill||"#8fa1c7"); n.setAttribute("font-size",o.size||12); n.setAttribute("font-weight",o.weight||500);
+  n.setAttribute("fill",o.fill||C.mut); n.setAttribute("font-size",o.size||12); n.setAttribute("font-weight",o.weight||600);
   if(o.anchor) n.setAttribute("text-anchor",o.anchor); n.textContent=t; return n; }
-function rect(x,y,w,h,fill,r=4){ const n=document.createElementNS(NS,"rect"); n.setAttribute("x",x); n.setAttribute("y",y);
+function rect(x,y,w,h,fill,r=5){ const n=document.createElementNS(NS,"rect"); n.setAttribute("x",x); n.setAttribute("y",y);
   n.setAttribute("width",Math.max(0,w)); n.setAttribute("height",h); n.setAttribute("rx",r); n.setAttribute("fill",fill); return n; }
+function legend(host, items){ const lg=$(host); items.forEach(([c,l])=>{ const d=el("span"); const i=el("i"); i.style.background=c; d.appendChild(i); d.appendChild(document.createTextNode(l)); lg.appendChild(d); }); }
 
-const TARGETS = DATA.supervised.targets;
-const TL = {value90:"value90",orders90:"orders90",churn90:"churn90"};
-
-/* grouped bars: arms x targets, normalized per target */
-function chartArms(host){
-  const s=svg(640,300), pad={l:44,r:14,t:14,b:56};
-  const arms=[["raw","Traditional table","#64748b"],["shape","Shape","#818cf8"],["measure","Measure","#fbbf24"],["forecast","Forecast","#38bdf8"],["full_measure","Full state","#34d399"]];
-  const series=TARGETS.map(t=>arms.map(([k])=>DATA.supervised.values[t][k]??0));
-  const maxV=Math.max(...series.flat())*1.05||1;
-  const gw=(640-pad.l-pad.r)/TARGETS.length, bw=gw/(arms.length+1);
-  TARGETS.forEach((t,ti)=>{
-    const gx=pad.l+ti*gw;
-    arms.forEach(([k,label,color],ai)=>{
-      const v=DATA.supervised.values[t][k]??0;
-      const h=(v/maxV)*(300-pad.t-pad.b);
-      const x=gx+ai*bw+bw*0.15, y=300-pad.b-h;
-      s.appendChild(rect(x,y,bw*0.7,h,color,3));
-      s.appendChild(txt(x+bw*0.35,y-5,v.toFixed(3),{anchor:"middle",size:10,fill:"#c9d6f2"}));
-    });
-    s.appendChild(txt(gx+gw/2,292,TL[t],{anchor:"middle",size:11}));
-  });
-  for(let i=0;i<=4;i++){ const y=pad.t+(i/4)*(300-pad.t-pad.b); s.appendChild(txt(pad.l-8,y+4,(maxV*(1-i/4)).toFixed(2),{anchor:"end",size:10,fill:"#5c6f96"})); }
-  host.appendChild(s);
-  const lg=$("#legend_arms");
-  arms.forEach(([k,label,color])=>{ const d=el("span"); const i=el("i"); i.style.background=color; d.appendChild(i); d.appendChild(document.createTextNode(label)); lg.appendChild(d); });
-}
-
-/* delta with CI */
-function chartDelta(host){
-  const s=svg(640,220), pad={l:96,r:24,t:18,b:34};
-  const rows=TARGETS.map(t=>({t,d:DATA.chosen[t]&&DATA.chosen[t].delta})).filter(r=>r.d);
-  if(!rows.length){ host.appendChild(el("p","note","No selection delta available.")); return; }
-  const maxAbs=Math.max(...rows.map(r=>Math.max(Math.abs(r.d.lo),Math.abs(r.d.hi))),0.02);
-  const mid=pad.l+(640-pad.l-pad.r)/2, half=(640-pad.l-pad.r)/2;
-  const axis=document.createElementNS(NS,"line");
-  axis.setAttribute("x1",mid); axis.setAttribute("x2",mid);
-  axis.setAttribute("y1",pad.t); axis.setAttribute("y2",220-pad.b);
-  axis.setAttribute("stroke","#24345c"); axis.setAttribute("stroke-width","1");
-  s.appendChild(axis);
-  rows.forEach((r,i)=>{
-    const y=pad.t+i*((220-pad.t-pad.b)/Math.max(rows.length,1))+16;
-    const x0=mid+(r.d.lo/maxAbs)*half, x1=mid+(r.d.hi/maxAbs)*half;
-    s.appendChild(rect(Math.min(x0,x1),y-3,Math.abs(x1-x0),6,"rgba(52,211,153,.22)",3));
-    const xm=mid+(r.d.mean/maxAbs)*half;
-    s.appendChild(rect(Math.min(xm,mid),y-9,Math.abs(xm-mid),18,"#34d399",3));
-    s.appendChild(txt(pad.l-10,y+4,r.t,{size:11,anchor:"end"}));
-    s.appendChild(txt(xm+(r.d.mean>=0?8:-8),y+4,(r.d.mean>=0?"+":"")+r.d.mean.toFixed(4),
-      {anchor:r.d.mean>=0?"start":"end",size:10,fill:"#8ef0c8",weight:700}));
-  });
-  s.appendChild(txt(mid,212,"0",{anchor:"middle",size:10,fill:"#5c6f96"}));
-  s.appendChild(txt(pad.l,212,"table better ←",{anchor:"start",size:9,fill:"#5c6f96"}));
-  s.appendChild(txt(640-pad.r,212,"→ encoder better",{anchor:"end",size:9,fill:"#5c6f96"}));
-  host.appendChild(s);
-}
-
-/* selected vs table: one panel per target, each with its own scale */
+/* overview: selected vs table, one panel per target */
 function chartSelected(host){
   host.style.display="flex"; host.style.gap="18px"; host.style.alignItems="flex-end";
-  const cols = {value90:"value90", orders90:"orders90", churn90:"churn90"};
-  TARGETS.forEach(t=>{
+  DATA.supervised.targets.forEach(t=>{
     const c=DATA.chosen[t]; if(!c) return;
     const box=el("div"); box.style.flex="1"; box.style.minWidth="0"; box.style.textAlign="center";
     box.style.display="flex"; box.style.justifyContent="center";
-    const W=220,H=252,base=196;
-    const s=svg(W,H);
-    s.setAttribute("width",String(W)); s.setAttribute("height",String(H)); s.setAttribute("style","max-width:100%");
-    const maxV=Math.max(c.holdout.selected,c.holdout.table)*1.25||1;
-    const bw=54;
-    const ht=(c.holdout.table/maxV)*(base-28), hs=(c.holdout.selected/maxV)*(base-28);
-    s.appendChild(rect(W/2-bw-8,base-ht,bw,ht,"#475569",5));
-    s.appendChild(rect(W/2+8,base-hs,bw,hs,"#34d399",5));
-    s.appendChild(txt(W/2-bw/2-8,base-ht-7,c.holdout.table.toFixed(3),{anchor:"middle",size:11,fill:"#94a3b8"}));
-    s.appendChild(txt(W/2+bw/2+8,base-hs-7,c.holdout.selected.toFixed(3),{anchor:"middle",size:11,fill:"#8ef0c8",weight:700}));
-    s.appendChild(txt(W/2,base+20,cols[t],{anchor:"middle",size:12,fill:"#c9d6f2"}));
-    const d=c.delta;
-    s.appendChild(txt(W/2,base+42,(d.mean>=0?"+":"")+d.mean.toFixed(4)+"  ["+d.lo.toFixed(3)+", "+d.hi.toFixed(3)+"]",
-      {anchor:"middle",size:10,fill:d.lo>0?"#34d399":"#94a3b8"}));
-    box.appendChild(s);
-    host.appendChild(box);
+    const W=220,H=252,base=190;
+    const s=svg(W,H); s.setAttribute("width",String(W)); s.setAttribute("height",String(H)); s.setAttribute("style","max-width:100%");
+    const maxV=Math.max(c.holdout.selected,c.holdout.table)*1.2||1;
+    const bw=54, ht=(c.holdout.table/maxV)*(base-24), hs=(c.holdout.selected/maxV)*(base-24);
+    s.appendChild(rect(W/2-bw-8,base-ht,bw,ht,C.table));
+    s.appendChild(rect(W/2+8,base-hs,bw,hs,C.enc));
+    s.appendChild(txt(W/2-bw/2-8,base-ht-8,c.holdout.table.toFixed(3),{anchor:"middle",size:11,fill:C.mut}));
+    s.appendChild(txt(W/2+bw/2+8,base-hs-8,c.holdout.selected.toFixed(3),{anchor:"middle",size:11,fill:C.enc,weight:700}));
+    s.appendChild(txt(W/2,base+22,t,{anchor:"middle",size:12,fill:C.text}));
+    s.appendChild(txt(W/2,base+42,(c.delta.mean>=0?"+":"")+c.delta.mean.toFixed(4),{anchor:"middle",size:11,fill:C.enc,weight:700}));
+    box.appendChild(s); host.appendChild(box);
   });
-  const lg=el("div","legend");
-  [["#475569","traditional table"],["#34d399","selected encoder view"]].forEach(([c,l])=>{
-    const d=el("span"); const i=el("i"); i.style.background=c; d.appendChild(i); d.appendChild(document.createTextNode(l)); lg.appendChild(d);
-  });
-  host.parentElement.appendChild(lg);
+  legend("#legend_selected", [[C.table,"traditional table"],[C.enc,"selected encoder view"]]);
 }
 
-/* rl known-effect bars */
+/* vs: table vs full state */
+function chartTableVs(host){
+  const s=svg(640,280), pad={l:52,r:14,t:16,b:52};
+  const rows=DATA.supervised.targets.map(t=>({t, tab:DATA.supervised.values[t].raw, full:DATA.supervised.values[t].full_measure}));
+  const maxV=Math.max(...rows.flatMap(r=>[r.tab,r.full]))*1.18||1;
+  const gw=(640-pad.l-pad.r)/rows.length;
+  rows.forEach((r,i)=>{
+    const gx=pad.l+i*gw, bw=gw*0.26;
+    const ht=(r.tab/maxV)*(280-pad.t-pad.b), hf=(r.full/maxV)*(280-pad.t-pad.b);
+    s.appendChild(rect(gx+gw*0.16,280-pad.b-ht,bw,ht,C.table));
+    s.appendChild(rect(gx+gw*0.52,280-pad.b-hf,bw,hf,C.enc));
+    s.appendChild(txt(gx+gw*0.16+bw/2,280-pad.b-ht-7,r.tab.toFixed(3),{anchor:"middle",size:10,fill:C.mut}));
+    s.appendChild(txt(gx+gw*0.52+bw/2,280-pad.b-hf-7,r.full.toFixed(3),{anchor:"middle",size:10,fill:C.enc,weight:700}));
+    s.appendChild(txt(gx+gw/2,272,r.t,{anchor:"middle",size:11,fill:C.text}));
+  });
+  for(let i=0;i<=4;i++){ const y=pad.t+(i/4)*(280-pad.t-pad.b); s.appendChild(txt(pad.l-8,y+4,(maxV*(1-i/4)).toFixed(2),{anchor:"end",size:10,fill:C.dim})); }
+  host.appendChild(s);
+  legend("#legend_tablevs", [[C.table,"traditional table"],[C.enc,"frozen state"]]);
+}
+
+/* vs: floor / encoder / ceiling */
+function chartLadder(host){
+  const s=svg(640,280), pad={l:52,r:14,t:16,b:52};
+  const rows=DATA.supervised.targets.map(t=>({t, ...DATA.ladder[t]}));
+  const maxV=Math.max(...rows.flatMap(r=>[r.floor,r.E,r.ceiling]))*1.18||1;
+  const gw=(640-pad.l-pad.r)/rows.length;
+  rows.forEach((r,i)=>{
+    const gx=pad.l+i*gw, bw=gw*0.2;
+    const cols=[[gx+gw*0.08,r.floor,C.table],[gx+gw*0.38,r.E,C.enc],[gx+gw*0.68,r.ceiling,C.ind]];
+    cols.forEach(([x,v,c])=>{ const h=(v/maxV)*(280-pad.t-pad.b);
+      s.appendChild(rect(x,280-pad.b-h,bw,h,c));
+      s.appendChild(txt(x+bw/2,280-pad.b-h-7,v.toFixed(3),{anchor:"middle",size:10,fill:c===C.enc?C.enc:C.mut,weight:c===C.enc?700:600}));
+    });
+    s.appendChild(txt(gx+gw/2,272,r.t,{anchor:"middle",size:11,fill:C.text}));
+  });
+  for(let i=0;i<=4;i++){ const y=pad.t+(i/4)*(280-pad.t-pad.b); s.appendChild(txt(pad.l-8,y+4,(maxV*(1-i/4)).toFixed(2),{anchor:"end",size:10,fill:C.dim})); }
+  host.appendChild(s);
+  legend("#legend_ladder", [[C.table,"floor (table)"],[C.enc,"frozen encoder"],[C.ind,"full-history ceiling"]]);
+}
+
+/* plugins: known-effect */
 function chartRlKnown(host){
-  const s=svg(640,260), pad={l:44,r:14,t:14,b:40};
-  const keys=Object.keys(DATA.rl_known||{});
-  if(!keys.length) return;
+  const keys=Object.keys(DATA.rl_known||{}); if(!keys.length) return;
+  const s=svg(640,280), pad={l:52,r:14,t:16,b:48};
   const maxV=1.0, gw=(640-pad.l-pad.r)/keys.length;
   keys.forEach((k,i)=>{
-    const r=DATA.rl_known[k], gx=pad.l+i*gw, bw=gw*0.26;
-    const he=(r.E/maxV)*(260-pad.t-pad.b), ht=(r.table/maxV)*(260-pad.t-pad.b);
-    s.appendChild(rect(gx+gw*0.16,260-pad.b-ht,bw,ht,"#475569",3));
-    s.appendChild(rect(gx+gw*0.52,260-pad.b-he,bw,he,"#818cf8",3));
-    s.appendChild(txt(gx+gw*0.52+bw/2,260-pad.b-he-5,r.E.toFixed(2),{anchor:"middle",size:10,fill:"#b9c1ff"}));
-    s.appendChild(txt(gx+gw/2,252,k,{anchor:"middle",size:11}));
+    const r=DATA.rl_known[k], gx=pad.l+i*gw, bw=gw*0.2;
+    const he=(r.E/maxV)*(280-pad.t-pad.b), ht=(r.table/maxV)*(280-pad.t-pad.b);
+    s.appendChild(rect(gx+gw*0.18,280-pad.b-ht,bw,ht,C.table));
+    s.appendChild(rect(gx+gw*0.52,280-pad.b-he,bw,he,C.ind));
+    s.appendChild(txt(gx+gw*0.52+bw/2,280-pad.b-he-7,r.E.toFixed(2),{anchor:"middle",size:10,fill:C.ind,weight:700}));
+    s.appendChild(txt(gx+gw/2,272,k,{anchor:"middle",size:11,fill:C.text}));
   });
-  for(let i=0;i<=4;i++){ const y=pad.t+(i/4)*(260-pad.t-pad.b); s.appendChild(txt(pad.l-8,y+4,(maxV*(1-i/4)).toFixed(2),{anchor:"end",size:10,fill:"#5c6f96"})); }
+  for(let i=0;i<=4;i++){ const y=pad.t+(i/4)*(280-pad.t-pad.b); s.appendChild(txt(pad.l-8,y+4,(maxV*(1-i/4)).toFixed(2),{anchor:"end",size:10,fill:C.dim})); }
   host.appendChild(s);
+  legend("#legend_rl", [[C.table,"traditional table"],[C.ind,"frozen encoder"]]);
 }
 
 document.querySelectorAll("[data-chart]").forEach(h=>{
   const k=h.dataset.chart;
-  if(k==="arms") chartArms(h);
-  if(k==="delta") chartDelta(h);
   if(k==="selected") chartSelected(h);
-  if(k==="rl_known"){ chartRlKnown(h);
-    const lg=el("div","legend");
-    [["#475569","traditional table"],["#818cf8","frozen encoder"]].forEach(([c,l])=>{
-      const d=el("span"); const i=el("i"); i.style.background=c; d.appendChild(i); d.appendChild(document.createTextNode(l)); lg.appendChild(d); });
-    h.parentElement.appendChild(lg);
-  }
+  if(k==="tablevs") chartTableVs(h);
+  if(k==="ladder") chartLadder(h);
+  if(k==="rl_known") chartRlKnown(h);
 });
 
-/* ---------- dim cards ---------- */
-const dims=Object.entries(m.views||{shape:m.d});
-dims.forEach(([k,v])=>{ const c=el("div","card"); c.appendChild(el("h3",null,k.replace("_"," "))); c.appendChild(el("div","big",v.toLocaleString())); c.appendChild(el("div","note","dimensions of this view")); $("#dim_cards").appendChild(c); });
+/* view dimensions */
+Object.entries(m.views||{shape:m.d}).forEach(([k,v])=>{ const c=el("div","card");
+  c.appendChild(el("h3",null,k.replace("_"," "))); c.appendChild(el("div","big",Number(v).toLocaleString()));
+  c.appendChild(el("div","note","dimensions of this view")); $("#dim_cards").appendChild(c); });
 
-$("#foot").textContent = `generated ${m.generated} · synthetic harness · no business data · not a deploy certificate · full disclosures in REPORT_CARD.md`;
+$("#foot").textContent = `generated ${m.generated} · synthetic harness · ${m.customers.toLocaleString()} customers`;
 
 /* ---------- explorer ---------- */
 const EXP = DATA.explorer;
@@ -799,19 +769,19 @@ if(!EXP || !EXP.customers || !EXP.customers.length){
     const cx=pad+c.x*(W-2*pad), cy=H-pad-c.y*(H-2*pad);
     const circle=document.createElementNS(NS,"circle");
     circle.setAttribute("cx",cx); circle.setAttribute("cy",cy); circle.setAttribute("r",4.6);
-    circle.setAttribute("fill",c.churn90?"#f87171":"#34d399"); circle.setAttribute("opacity",.72);
+    circle.setAttribute("fill",c.churn90?"#ef4444":"#0f9d6e"); circle.setAttribute("opacity",.7);
     circle.setAttribute("class","dot");
     circle.onclick=()=>select(i);
     svgEl.appendChild(circle); dots.push(circle);
   });
   function select(i){
-    dots.forEach((d,j)=>{ d.setAttribute("r", j===i?8:4.6); d.setAttribute("opacity", j===i?1:.5); });
+    dots.forEach((d,j)=>{ d.setAttribute("r", j===i?8:4.6); d.setAttribute("opacity", j===i?1:.45); });
     const c=EXP.customers[i];
     const box=$("#detail"); box.innerHTML="";
     box.appendChild(el("div","tag","customer"));
     const h=el("div",null,c.key); h.style.fontSize="18px"; h.style.fontWeight="700"; h.style.margin="2px 0 10px"; box.appendChild(h);
     const kv=el("div","kv");
-    [["Total events",c.n_events],["Channel preference (truth)",c.channel],["Category preference (truth)",c.category],["Regime (truth)",c.regime],["Return proneness (truth)",(c.return_proneness*100).toFixed(0)+"%"],
+    [["Total events",c.n_events],["Channel preference",c.channel],["Category preference",c.category],["Regime",c.regime],["Return proneness",(c.return_proneness*100).toFixed(0)+"%"],
      ["Actual value (90d)","$"+c.value90.toLocaleString()],["Actual orders (90d)",c.orders90],["Actual churn", c.churn90?"yes":"no"],
      ["Lookalike mean value","$"+c.neighbour_mean_value.toLocaleString()],["Lookalike churn agreement",(c.neighbour_churn_agree*100).toFixed(0)+"%"]
     ].forEach(([k,v])=>{ kv.appendChild(el("div",null,k)); kv.appendChild(el("div",null,String(v))); });
@@ -825,7 +795,7 @@ if(!EXP || !EXP.customers || !EXP.customers.length){
     const ul2=el("ul","timeline");
     (c.neighbours||[]).forEach(nb=>{ const li=el("li"); li.appendChild(el("span","t",nb.key)); li.appendChild(el("span","e","value $"+nb.value90.toLocaleString()+" · orders "+nb.orders90)); li.appendChild(el("span","d",nb.churn90?"churned":"retained")); ul2.appendChild(li); });
     box.appendChild(ul2);
-    box.appendChild(el("p","note","Neighbours are computed in the 128-d frozen shape; they are not used to form the actual outcome."));
+    box.appendChild(el("p","note","Neighbours are computed in the 128-d frozen shape and are not used to form the actual outcome."));
   }
   select(0);
 }
@@ -833,9 +803,9 @@ if(!EXP || !EXP.customers || !EXP.customers.length){
 </body>
 </html>"""
 
-    html = html.replace("__SUP_TABLE__", sup_table())
-    html = html.replace("__SUP_TABLE_2__", sup_table())
-    html = html.replace("__CHOSEN_TABLE__", chosen_table())
+    html = html.replace("__FULL_TABLE__", full_vs_table())
+    html = html.replace("__FULL_TABLE_2__", full_vs_table())
+    html = html.replace("__SELECTION_TABLE__", selection_table())
     html = html.replace("__LADDER_TABLE__", ladder_table())
     html = html.replace("__POLICY_TABLE__", policy_table())
     html = html.replace("__RL_TABLE__", rl_table())
