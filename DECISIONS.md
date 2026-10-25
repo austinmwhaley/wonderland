@@ -1610,3 +1610,12 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - Kept deliberately small: one flow, one feature map, one family breakdown. No additional
   objective or metric content; Axes and Objectives remain the places for those.
 - Verified by rendering the tab in headless Chrome and syntax-checking the inline JS.
+
+## DEC-324 — Explorer profile cells get consistent inset padding
+
+- Feedback: in the Explorer preference strip, the Category preference text sat directly against
+  its left cell edge/divider and looked cramped.
+- Fix: every profile cell now uses symmetric horizontal padding (`13px 16px`) instead of zero left
+  padding. All five values, including Category preference, sit inset from the dividers, and the
+  first cell's text now aligns with the stat-card content above.
+- Verified by rendering the Explorer tab in headless Chrome at desktop width.
