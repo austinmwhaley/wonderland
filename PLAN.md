@@ -10,6 +10,21 @@
 > Read `AGENTS.md` first. It always overrides this document. Also read `STATUS.md`,
 > `DECISIONS.md`, `REPORT_CARD.md`, and `docs/AUDIT_CARD.md` before changing anything.
 
+## Phase status (as executed)
+
+| Phase | State |
+|---|---|
+| 0 — Evidence identity (`frozen.py` run manifest, provenance guard) | **DONE** |
+| 1 — Direct stream → fit/transform artifact (`stream_adapter.py`, `FrozenFoundation`) | **DONE** |
+| 2 — Train-only view selection (`scripts/select_views.py`) | **DONE** |
+| 3 — Encoder quality/adaptivity | **PARTIAL**: 3C fail-safe load and 3D receipted config fallback done; 3A/3B measured and **rejected** at 6k, recorded as open quality items |
+| 4 — Performance | **DONE (measurement corrected)**: forward was cold-compile-bound, not steady-state |
+| 5 — RL evidence | **DONE**: degenerate control replaced by the uniform policy; intervals guarded |
+| 6 — Final verification/demo | **DONE**: card B 28/28, B+C 6/6; audit 26/3 preserved |
+| 7 — Layer-1 research (minimality, `U`, decision-sufficiency) | **NOT STARTED** — separate research |
+
+Checkpoint commit: `e0196e0`.
+
 ---
 
 ## 1. Mission and success definition
