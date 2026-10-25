@@ -1447,3 +1447,20 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   the audited receipt value (0.048) rather than the demo's own binning, to avoid presenting a
   more favourable number than the certificate.
 - Verified by rendering every tab in headless Chrome and checking inline JS with `node --check`.
+
+## DEC-315 — Axes tab rebuilt as eight dedicated sub-panels
+
+- Change: the Axes tab is now a sub-tab strip (A1…A8). Selecting one dedicates the panel to that
+  axis: code, name, large value, caption, one-line description, and three explanatory blocks
+  (what it measures / how it is measured / why it matters) beside a dedicated visual.
+- Visuals: A1 singular spectrum on a log scale with effective rank; A2 predicted-vs-actual
+  reconstruction scatter (r² 0.54); A3 per-customer identity-purity distribution with chance and
+  mean markers; A4 ROC curve for churn from the state (AUC 0.928); A5 reliability curve with the
+  audited ECE; A6 randomized-action design diagram (Layer-1, no number); A7 order probe bars vs
+  random; A8 cross-entity purity bars.
+- New exports in `scripts/build_b_demo_data.py`: a five-fold logistic ROC for churn and the
+  per-customer 10-NN identity-purity histogram, alongside the existing spectrum, scatter and
+  reliability bins. The page degrades to numbers only if the export is absent.
+- Fixed during the build: the ROC AUC label overprinted the curve; the spectrum needed a log
+  scale because singular values decay over orders of magnitude.
+- Verified by rendering each sub-panel in headless Chrome and syntax-checking the inline JS.

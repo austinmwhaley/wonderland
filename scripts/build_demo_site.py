@@ -256,9 +256,7 @@ def render(payload) -> str:
     sup = payload["supervised"]
     rl = payload["rl_known"]
     resp = payload["rl_policy"]
-    ident = payload["identity"]
     obj = payload.get("objectives") or {}
-    bd = payload.get("bdata") or {}
 
     def policy_table():
         rows = []
@@ -307,96 +305,6 @@ def render(payload) -> str:
                 "</tr>"
             )
         return "".join(rows)
-
-    # axis values
-    eff = bd.get("eff_rank", 9.07)
-    mass_r2 = (bd.get("mass") or {}).get("r2", 0.0)
-    mass_dims = (bd.get("mass") or {}).get("n_dims", 0)
-    ece = float((payload.get("bprops") or {}).get("ece_next_event", 0.0))
-    ch = ident.get("channel") or {}
-    id_val = float(ch.get("E", 0.0))
-    rate = float(sup["values"]["churn90"].get("full_measure", 0.0))
-    ordw = obj.get("order", {})
-    rel = 0.005
-    rel_chance = 0.0005
-
-    axes = [
-        (
-            "A1",
-            "Shape",
-            "Customers with similar behaviour land near each other.",
-            f"{eff:.2f}",
-            "effective rank of the state",
-            "shape",
-        ),
-        (
-            "A2",
-            "Mass",
-            "The state remembers how much, not only what kind.",
-            f"{mass_r2:.2f}",
-            f"mean r² over {mass_dims} past-summary dimensions",
-            "mass",
-        ),
-        (
-            "A3",
-            "Identity",
-            "Lookalikes share preference, not just activity.",
-            f"{id_val:.2f}",
-            "kNN purity vs 0.25 chance",
-            "identity",
-        ),
-        (
-            "A4",
-            "Rate",
-            "Intensity and timing are separable from content.",
-            f"{rate:.3f}",
-            "ranking quality on churn",
-            "rate",
-        ),
-        (
-            "A5",
-            "Uncertainty",
-            "Confidence tracks accuracy.",
-            f"{ece:.3f}",
-            "expected calibration error",
-            "uncertainty",
-        ),
-        (
-            "A6",
-            "Causal",
-            "The state supports action-conditioned decisions.",
-            "Layer 1",
-            "evaluated separately, not claimed here",
-            "causal",
-        ),
-        (
-            "A7",
-            "Order / Path",
-            "Sequence order matters, not just the bag of events.",
-            f"{float(ordw.get('skill', 0.0)):.3f}",
-            f"order probe vs {float(ordw.get('naive', 0.0)):.3f} random",
-            "order",
-        ),
-        (
-            "A8",
-            "Relational",
-            "Structure across entities is preserved.",
-            f"{rel:.3f}",
-            f"cross-entity purity vs {rel_chance:.4f} chance",
-            "relational",
-        ),
-    ]
-
-    axis_html = "".join(
-        f"""<div class="axis">
-          <div class="axis-top"><span class="mono dim">{aid}</span><span class="axis-name">{name}</span></div>
-          <div class="axis-val">{val}</div>
-          <div class="mono dim small">{cap}</div>
-          <div class="axis-def">{desc}</div>
-          <div class="vis" id="vis-{key}"></div>
-        </div>"""
-        for aid, name, desc, val, cap, key in axes
-    )
 
     OBJDEF = [
         ("jepa", "JEPA", "Predict the mean latent of the next H states.", 5, [6, 7, 8, 9], None),
@@ -504,6 +412,21 @@ td.num{text-align:right;font-variant-numeric:tabular-nums;font-family:ui-monospa
 .objnum .v{font-family:ui-monospace,monospace;font-size:22px;font-weight:600}
 .objnum .k{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin-top:2px}
 .protocol{color:var(--dim);font-size:12px;margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
+.subtabs{display:flex;gap:2px;flex-wrap:wrap;border-bottom:1px solid var(--line);margin-bottom:34px}
+.subtabs button{appearance:none;background:none;border:0;padding:11px 14px;font:inherit;font-size:13px;
+  color:var(--muted);cursor:pointer;border-bottom:1px solid transparent;white-space:nowrap}
+.subtabs button:hover{color:var(--ink)}
+.subtabs button.on{color:var(--ink);border-bottom-color:var(--ink);font-weight:600}
+.axpanel{display:grid;grid-template-columns:minmax(0,.82fr) minmax(0,1.18fr);gap:48px;align-items:start}
+@media(max-width:900px){.axpanel{grid-template-columns:1fr}}
+.axname{font-size:30px;font-weight:600;letter-spacing:-.03em;margin:8px 0 0}
+.axval{font-family:ui-monospace,monospace;font-size:46px;font-weight:600;letter-spacing:-.03em;margin:20px 0 2px}
+.axcap{color:var(--dim);font-size:12px}
+.axdesc{color:var(--muted);font-size:14.5px;margin:22px 0 28px;max-width:38ch}
+.axrows{display:grid;gap:16px;max-width:42ch}
+.axrow .k{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim)}
+.axrow .v{font-size:13px;color:var(--muted);margin-top:3px}
+.axvis{border:1px solid var(--line);border-radius:8px;padding:22px}
 .explorer{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:28px;align-items:start}
 @media(max-width:980px){.explorer{grid-template-columns:1fr}}
 #scatter{width:100%;height:auto;border:1px solid var(--line);border-radius:8px;background:#fff}
@@ -553,8 +476,8 @@ footer{margin-top:56px;padding-top:18px;border-top:1px solid var(--line);color:v
     <section id="axes" hidden>
       <h2>Eight content axes</h2>
       <p class="lede">What the frozen state carries, axis by axis. Each axis is a distinct property of the stream, measured on held-out customers.</p>
-      <div class="grid g4">__AXES__</div>
-      <p class="note" style="margin-top:22px">A6 is the decision axis and is evaluated separately as Layer-1 research; it is not claimed by this card.</p>
+      <div class="subtabs" id="axistabs"></div>
+      <div class="axpanel" id="axpanel"></div>
     </section>
 
     <section id="objectives" hidden>
@@ -651,81 +574,189 @@ function dot(cx,cy,r,fill,stroke){const n=document.createElementNS(NS,"circle");
   n.setAttribute("r",r);n.setAttribute("fill",fill);if(stroke){n.setAttribute("stroke",stroke);n.setAttribute("stroke-width",1.2);}return n;}
 
 const bd=DATA.bdata||{};
-/* spectrum */
-(function(){const host=$("#vis-shape");if(!host||!bd.spectrum)return;const W=250,H=74,s=svg(W,H);
- const v=bd.spectrum,n=v.length;
- v.forEach((x,i)=>{const h=Math.max(1,(x)*(H-14));s.appendChild(ln(6+i*((W-12)/(n-1)),H-10,6+i*((W-12)/(n-1)),H-10-h,{stroke:i<12?INK:DIM,w:1.4}));});
- s.appendChild(tx(6,H-1,"singular values (log)",{size:9,fill:DIM}));host.appendChild(s);})();
+/* ---------- axis panels ---------- */
+const AXES = [
+  ["A1","Shape"],["A2","Mass"],["A3","Identity"],["A4","Rate"],
+  ["A5","Uncertainty"],["A6","Causal"],["A7","Order / Path"],["A8","Relational"]
+];
+const AXDEF = {
+  A1:{name:"Shape", val:()=> (bd.eff_rank||0).toFixed(2), cap:"effective rank of the frozen state",
+      desc:"Customers with similar behaviour land near each other in the state.",
+      what:"Whether the state organises customers by behaviour rather than by noise.",
+      how:"Singular-value spectrum of the standardised state; effective rank is the participation ratio.",
+      why:"This geometry is what makes retrieval, lookalikes and segmentation work downstream."},
+  A2:{name:"Mass", val:()=> ((bd.mass||{}).r2||0).toFixed(2), cap:"mean r² over "+((bd.mass||{}).n_dims||0)+" past-summary dimensions",
+      desc:"The state remembers how much, not only what kind.",
+      what:"Whether extensive quantities — counts, sums, magnitudes — survive into the state.",
+      how:"Reconstruct the past-summary vector from the state at a 70% history cut and compare.",
+      why:"A representation that keeps shape but loses level cannot support value or budget decisions."},
+  A3:{name:"Identity", val:()=> ((bd.identity||{}).mean||0).toFixed(2), cap:"kNN purity vs "+((bd.identity||{}).chance||0.25).toFixed(2)+" chance",
+      desc:"Lookalikes share preference, not just activity.",
+      what:"Whether neighbours in the state also share a stable customer preference.",
+      how:"Ten nearest neighbours per held-out customer; fraction sharing the same channel preference.",
+      why:"Identity is what separates a behavioural cluster from a merely busy one."},
+  A4:{name:"Rate", val:()=> ((bd.roc||{}).auc||0).toFixed(3), cap:"AUC for churn ranking from the state",
+      desc:"Intensity and timing are separable from content.",
+      what:"Whether timing and churn intensity are recoverable, not just what the customer does.",
+      how:"Five-fold logistic probe on the frozen state; ROC AUC on the held-out customers.",
+      why:"Rate information is what makes a state useful for when, not only who."},
+  A5:{name:"Uncertainty", val:()=> Number((DATA.bprops||{}).ece_next_event||0).toFixed(3), cap:"expected calibration error",
+      desc:"Confidence tracks accuracy.",
+      what:"Whether the model's stated confidence corresponds to its empirical accuracy.",
+      how:"Bin next-event predictions by confidence and compare with observed accuracy.",
+      why:"Calibrated confidence is what lets a downstream policy abstain or widen bounds."},
+  A6:{name:"Causal", val:()=> "Layer 1", cap:"evaluated separately, not claimed here",
+      desc:"The state must support action-conditioned decisions, not only prediction.",
+      what:"Whether the state is sufficient for estimating the response to an action.",
+      how:"Pre-action state plus logged randomized action, scored with inverse-propensity weighting.",
+      why:"Prediction sufficiency does not imply decision sufficiency. This is the next research layer."},
+  A7:{name:"Order / Path", val:()=> ((DATA.objectives||{}).order||{}).skill?.toFixed(3)||"—", cap:"order probe vs "+(((DATA.objectives||{}).order||{}).naive||0).toFixed(3)+" random",
+      desc:"Sequence order matters, not just the bag of events.",
+      what:"Whether the order of events carries information that a bag-of-events summary would lose.",
+      how:"Probe the final state for the terminal event; compare against a random-order baseline.",
+      why:"Path dependence is why a sequence model can beat a count table at all."},
+  A8:{name:"Relational", val:()=> "0.005", cap:"cross-entity purity vs 0.0005 chance",
+      desc:"Structure across entities is preserved.",
+      what:"Whether shared identifiers link customers in a way the state reflects.",
+      how:"Purity of shared-entity grouping against the chance rate.",
+      why:"Cross-entity structure is what lets one customer's state inform a lookalike."}
+};
 
-/* mass scatter */
-(function(){const host=$("#vis-mass");const mm=bd.mass;if(!host||!mm||!mm.points)return;
- const W=250,H=150,s=svg(W,H),pad=18;
- s.appendChild(ln(pad,H-pad,W-6,6,{stroke:LINE,dash:"3 3"}));
- const pts=mm.points;const lim=3;
- const X=x=>pad+((x+lim)/(2*lim))*(W-pad-8), Y=y=>H-pad-((y+lim)/(2*lim))*(H-pad-8);
- pts.forEach(([a,b])=>{s.appendChild(dot(X(a),Y(b),1.4,"rgba(5,150,105,.35)"));});
- s.appendChild(tx(pad,H-4,"actual",{size:9,fill:DIM}));
- s.appendChild(tx(W-8,H-pad+12,"predicted",{size:9,fill:DIM,anchor:"end"}));
- host.appendChild(s);})();
+function axVis(id){
+  const box=el("div","axvis");
+  const s=svg(560,330), pad={l:44,r:16,t:16,b:38};
+  const W=560,H=330;
+  const axis=()=>{ s.appendChild(ln(pad.l,H-pad.b,W-pad.r,H-pad.b,{stroke:LINE}));
+                   s.appendChild(ln(pad.l,H-pad.b,pad.l,pad.t,{stroke:LINE})); };
 
-/* identity bar with chance */
-(function(){const host=$("#vis-identity");const ch=(DATA.identity||{}).channel;if(!host||!ch)return;
- const W=250,H=70,s=svg(W,H),w=W-16;
- s.appendChild(ln(8,30,8+w,30,{stroke:LINE}));
- s.appendChild(ln(8,24,8+w,24,{stroke:INK,w:6}));
- const px=8+(0.25/0.7)*w; s.appendChild(ln(px,18,px,36,{stroke:DIM,dash:"3 3"}));
- s.appendChild(tx(px,10,"chance",{size:9,fill:DIM,anchor:"middle"}));
- s.appendChild(tx(8,H-6,"purity "+ch.E.toFixed(2)+" vs 0.25 chance",{size:9,fill:DIM}));
- host.appendChild(s);})();
+  if(id==="A1" && bd.spectrum){
+    // log scale: singular values span orders of magnitude, linear hides the tail
+    const v=bd.spectrum.map(x=>Math.log10(Math.max(x,1e-6)));
+    const lo=Math.min(...v), hi=Math.max(...v), n=v.length;
+    v.forEach((x,i)=>{
+      const h=Math.max(1,((x-lo)/(hi-lo||1))*(H-pad.t-pad.b));
+      const bx=pad.l+i*((W-pad.l-pad.r)/n);
+      s.appendChild(ln(bx,H-pad.b,bx,H-pad.b-h,{stroke:i<12?INK:DIM,w:Math.max(1.2,(W-pad.l)/n-2)}));
+    });
+    axis();
+    s.appendChild(tx(pad.l,H-8,"singular values, largest first (log)",{size:10,fill:DIM}));
+    s.appendChild(tx(W-pad.r,pad.t+10,"effective rank "+(bd.eff_rank||0).toFixed(2),{size:11,fill:ACC,anchor:"end"}));
+  }
 
-/* reliability */
-(function(){const host=$("#vis-uncertainty");const c=bd.calibration;if(!host||!c||!c.bins)return;
- const W=250,H=150,s=svg(W,H),pad=24;
- s.appendChild(ln(pad,H-pad,W-8,H-pad,{stroke:LINE}));
- s.appendChild(ln(pad,H-pad,pad,8,{stroke:LINE}));
- s.appendChild(ln(pad,H-pad,W-8,8,{stroke:LINE,dash:"3 3"}));
- const X=x=>pad+x*(W-pad-10), Y=y=>H-pad-y*(H-pad-12);
- const pts=c.bins.map(b=>[b.conf,b.acc]);
- pts.forEach((p,i)=>{ if(i) s.appendChild(ln(X(pts[i-1][0]),Y(pts[i-1][1]),X(p[0]),Y(p[1]),{stroke:ACC,w:1.6})); s.appendChild(dot(X(p[0]),Y(p[1]),2.4,ACC));});
- s.appendChild(tx(pad,H-6,"confidence",{size:9,fill:DIM}));
- host.appendChild(s);})();
+  if(id==="A2" && (bd.mass||{}).points){
+    const pts=bd.mass.points, lim=3;
+    const X=x=>pad.l+((x+lim)/(2*lim))*(W-pad.l-pad.r), Y=y=>H-pad.b-((y+lim)/(2*lim))*(H-pad.t-pad.b);
+    s.appendChild(ln(X(-lim),Y(-lim),X(lim),Y(lim),{stroke:LINE,dash:"4 4"}));
+    pts.forEach(([a,b])=>s.appendChild(dot(X(a),Y(b),1.5,"rgba(5,150,105,.35)")));
+    axis();
+    s.appendChild(tx(pad.l,H-8,"actual past summary (z)",{size:10,fill:DIM}));
+    s.appendChild(tx(W-pad.r,pad.t+10,"r² "+(((bd.mass||{}).r2)||0).toFixed(2),{size:11,fill:ACC,anchor:"end"}));
+    s.appendChild(tx(pad.l+6,pad.t+12,"predicted",{size:10,fill:DIM}));
+  }
 
-/* rate */
-(function(){const host=$("#vis-rate");if(!host)return;
- const v=DATA.supervised.values.churn90.full_measure;
- const W=250,H=66,s=svg(W,H);
- [["chance",0.5,DIM],[("encoder"),v,INK]].forEach(([lab,val,col],i)=>{
-   const y=22+i*24,w=Math.max(2,(val)*(W-120));
-   s.appendChild(tx(0,y+4,lab,{size:9,fill:DIM}));
-   s.appendChild(ln(84,y,84+w,y,{stroke:col,w:6}));
-   s.appendChild(tx(84+w+6,y+4,val.toFixed(3),{size:9,fill:col}));
- });
- host.appendChild(s);})();
+  if(id==="A3" && (bd.identity||{}).bins){
+    const bins=bd.identity.bins, maxn=Math.max(...bins.map(b=>b.n));
+    const bw=(W-pad.l-pad.r)/bins.length;
+    bins.forEach((b,i)=>{ const h=(b.n/maxn)*(H-pad.t-pad.b);
+      s.appendChild(ln(pad.l+i*bw+bw*0.15,H-pad.b,pad.l+i*bw+bw*0.15,H-pad.b-h,{stroke:INK,w:bw*0.7})); });
+    const mean=(bd.identity||{}).mean||0, chance=(bd.identity||{}).chance||0.25;
+    const mx=pad.l+mean*(W-pad.l-pad.r), cx=pad.l+chance*(W-pad.l-pad.r);
+    s.appendChild(ln(mx,pad.t,mx,H-pad.b,{stroke:ACC}));
+    s.appendChild(ln(cx,pad.t+20,cx,H-pad.b,{stroke:DIM,dash:"3 3"}));
+    s.appendChild(tx(mx,pad.t-2,"mean "+mean.toFixed(2),{size:10,fill:ACC,anchor:"middle"}));
+    s.appendChild(tx(cx,pad.t+16,"chance",{size:10,fill:DIM,anchor:"middle"}));
+    axis();
+    s.appendChild(tx(pad.l,H-8,"per-customer purity (10-NN)",{size:10,fill:DIM}));
+  }
 
-/* order */
-(function(){const host=$("#vis-order");const o=(DATA.objectives||{}).order;if(!host||!o)return;
- const W=250,H=74,s=svg(W,H);
- const rows=[["random baseline",o.naive,DIM],["encoder state",o.skill,INK]];
- rows.forEach(([lab,v,col],i)=>{
-   const y=22+i*26, w=Math.max(2,v*(W-140));
-   s.appendChild(tx(0,y+4,lab,{size:9,fill:DIM}));
-   s.appendChild(ln(112,y,112+w,y,{stroke:col,w:6}));
-   s.appendChild(tx(112+w+6,y+4,v.toFixed(3),{size:9,fill:col}));
- });
- host.appendChild(s);})();
+  if(id==="A4" && (bd.roc||{}).points){
+    const pts=bd.roc.points;
+    const X=x=>pad.l+x*(W-pad.l-pad.r), Y=y=>H-pad.b-y*(H-pad.t-pad.b);
+    s.appendChild(ln(X(0),Y(0),X(1),Y(1),{stroke:LINE,dash:"4 4"}));
+    pts.forEach((p,i)=>{ if(i) s.appendChild(ln(X(pts[i-1][0]),Y(pts[i-1][1]),X(p[0]),Y(p[1]),{stroke:ACC,w:2})); });
+    axis();
+    s.appendChild(tx(pad.l,H-8,"false positive rate",{size:10,fill:DIM}));
+    s.appendChild(tx(W-pad.r,H-pad.b-12,"AUC "+(((bd.roc||{}).auc)||0).toFixed(3),{size:11,fill:ACC,anchor:"end"}));
+    s.appendChild(tx(pad.l+6,pad.t+12,"true positive rate",{size:10,fill:DIM}));
+  }
 
-/* relational */
-(function(){const host=$("#vis-relational");if(!host)return;
- const W=250,H=64,s=svg(W,H);
- const rows=[["chance",0.0005,DIM],["encoder",0.005,INK]];
- const maxv=0.005;
- rows.forEach(([lab,v,col],i)=>{
-   const y=20+i*22, w=Math.max(1.5,(v/maxv)*(W-150));
-   s.appendChild(tx(0,y+4,lab,{size:9,fill:DIM}));
-   s.appendChild(ln(78,y,78+w,y,{stroke:col,w:5}));
-   s.appendChild(tx(78+w+6,y+4,v.toFixed(4),{size:9,fill:col}));
- });
- host.appendChild(s);})();
+  if(id==="A5" && (bd.calibration||{}).bins){
+    const bins=bd.calibration.bins;
+    const X=x=>pad.l+x*(W-pad.l-pad.r), Y=y=>H-pad.b-y*(H-pad.t-pad.b);
+    s.appendChild(ln(X(0),Y(0),X(1),Y(1),{stroke:LINE,dash:"4 4"}));
+    bins.forEach((b,i)=>{ if(i){const p=bins[i-1]; s.appendChild(ln(X(p.conf),Y(p.acc),X(b.conf),Y(b.acc),{stroke:ACC,w:2}));} s.appendChild(dot(X(b.conf),Y(b.acc),3,ACC)); });
+    axis();
+    s.appendChild(tx(pad.l,H-8,"confidence",{size:10,fill:DIM}));
+    s.appendChild(tx(pad.l+6,pad.t+12,"accuracy",{size:10,fill:DIM}));
+    s.appendChild(tx(W-pad.r,pad.t+10,"ECE "+Number(((DATA.bprops||{}).ece_next_event)||0).toFixed(3),{size:11,fill:ACC,anchor:"end"}));
+  }
+
+  if(id==="A6"){
+    const keys=["channel","offer","freq","hour","dow"];
+    keys.forEach((k,i)=>{
+      const y=pad.t+18+i*44;
+      s.appendChild(tx(pad.l,y+4,k,{size:11,fill:MUT}));
+      for(let j=0;j<4;j++){
+        const x=140+j*70, on=(j===i%4);
+        s.appendChild(rect(x,y-10,52,22,on?"#ecfdf5":"#fff",4, on?ACC:LINE));
+        if(on) s.appendChild(tx(x+26,y+4,"randomised",{size:8,fill:ACC,anchor:"middle"}));
+      }
+    });
+    s.appendChild(tx(140,H-8,"one key randomised per day, others at the customer optimum",{size:10,fill:DIM}));
+  }
+
+  if(id==="A7"){
+    const o=(DATA.objectives||{}).order||{};
+    const rows=[["random-order baseline",o.naive||0,DIM],["frozen state",o.skill||0,INK]];
+    rows.forEach(([lab,v,col],i)=>{
+      const y=pad.t+70+i*70, w=Math.max(3,(v||0)*(W-pad.l-190));
+      s.appendChild(tx(pad.l,y-14,lab,{size:11,fill:DIM}));
+      s.appendChild(ln(pad.l,y,pad.l+w,y,{stroke:col,w:14}));
+      s.appendChild(tx(pad.l+w+10,y+4,(v||0).toFixed(3),{size:11,fill:col}));
+    });
+    s.appendChild(tx(pad.l,H-12,"probe skill identifying the terminal event",{size:10,fill:DIM}));
+  }
+
+  if(id==="A8"){
+    const rows=[["chance",0.0005,DIM],["frozen state",0.005,INK]];
+    const maxv=0.005;
+    rows.forEach(([lab,v,col],i)=>{
+      const y=pad.t+80+i*70, w=Math.max(3,(v/maxv)*(W-pad.l-210));
+      s.appendChild(tx(pad.l,y-14,lab,{size:11,fill:DIM}));
+      s.appendChild(ln(pad.l,y,pad.l+w,y,{stroke:col,w:14}));
+      s.appendChild(tx(pad.l+w+10,y+4,v.toFixed(4),{size:11,fill:col}));
+    });
+    s.appendChild(tx(pad.l,H-12,"cross-entity purity, log-style scale",{size:10,fill:DIM}));
+  }
+
+  box.appendChild(s);
+  return box;
+}
+
+function axisPanel(id){
+  document.querySelectorAll("#axistabs button").forEach(b=>b.classList.toggle("on",b.dataset.ax===id));
+  const d=AXDEF[id], host=$("#axpanel");
+  host.innerHTML="";
+  const left=el("div");
+  left.appendChild(el("div","mono dim small",id));
+  left.appendChild(el("div","axname",d.name));
+  left.appendChild(el("div","axval",d.val()));
+  left.appendChild(el("div","axcap",d.cap));
+  left.appendChild(el("p","axdesc",d.desc));
+  const rows=el("div","axrows");
+  [["What it measures",d.what],["How it is measured",d.how],["Why it matters",d.why]].forEach(([k,v])=>{
+    const r=el("div","axrow"); r.appendChild(el("div","k",k)); r.appendChild(el("div","v",v)); rows.appendChild(r);
+  });
+  left.appendChild(rows);
+  host.appendChild(left);
+  host.appendChild(axVis(id));
+}
+const atabs=$("#axistabs");
+AXES.forEach(([id,label],i)=>{
+  const b=el("button",null,label); b.dataset.ax=id;
+  b.onclick=()=>axisPanel(id); atabs.appendChild(b);
+});
+axisPanel("A1");
 
 /* ---------- objectives ---------- */
 function strip(spec){
@@ -830,7 +861,6 @@ $("#foot").textContent=`generated ${m.generated} · synthetic harness · ${m.cus
 </body>
 </html>"""
 
-    html = html.replace("__AXES__", axis_html)
     html = html.replace("__OBJLIST__", obj_items)
     html = html.replace("__OBJSPEC__", json.dumps(obj_spec))
     html = html.replace("__FULL_TABLE__", full_vs_table())

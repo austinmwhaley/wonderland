@@ -45,7 +45,7 @@ def main():
     ap.add_argument("--sample", type=int, default=700)
     args = ap.parse_args()
 
-    E, _Xtab, _labels, hold, _seg, model, vs, _B, _best, _BLK = F.load(args.frozen)
+    E, _Xtab, y_labels, hold, _seg, model, vs, _B, _best, _BLK = F.load(args.frozen)
     E = np.asarray(E, dtype=float)
     _b, _a, keys, seqs, vs2, _etv, catspec, _num, taus, _pm, as_of_ts, _per, _hor = AE.load_data(
         args.data
@@ -172,6 +172,56 @@ def main():
             )
     ece = float(np.mean([abs(b["acc"] - b["conf"]) for b in bins])) if bins else float("nan")
     out["calibration"] = {"bins": bins, "ece": round(ece, 4), "n": int(len(conf))}
+
+    # ---- 4. ROC for the rate axis (churn ranking from the state) ---------
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.metrics import roc_auc_score, roc_curve
+    from sklearn.model_selection import KFold
+    from sklearn.pipeline import make_pipeline
+    from sklearn.preprocessing import StandardScaler
+
+    y = np.asarray(y_labels.get("y_churn_90", []), dtype=float)
+    if len(y) == len(E) and len(np.unique(y)) > 1:
+        oof = np.zeros(len(y))
+        X = np.nan_to_num(E)
+        for tr, te in KFold(5, shuffle=True, random_state=0).split(X):
+            m = make_pipeline(StandardScaler(), LogisticRegression(max_iter=400))
+            m.fit(X[tr], y[tr])
+            oof[te] = m.predict_proba(X[te])[:, 1]
+        fpr, tpr, _ = roc_curve(y, oof)
+        idx = np.linspace(0, len(fpr) - 1, min(48, len(fpr))).astype(int)
+        out["roc"] = {
+            "auc": round(float(roc_auc_score(y, oof)), 4),
+            "points": [[round(float(fpr[i]), 4), round(float(tpr[i]), 4)] for i in idx],
+        }
+
+    # ---- 5. identity: per-customer kNN purity distribution ----------------
+    from scipy.spatial.distance import cdist
+
+    truth = {
+        c["customer"]: c
+        for c in json.loads((Path(args.data) / "reference_truth.json").read_text())["customers"]
+    }
+    ch = np.array([str(truth[k]["channel_pref"]) for k in hold], dtype=object)
+    Zs = _standardize(E)
+    D = cdist(Zs, Zs)
+    np.fill_diagonal(D, np.inf)
+    k = 10
+    nn = np.argpartition(D, k, axis=1)[:, :k]
+    pur = (ch[nn] == ch[:, None]).mean(1)
+    hist, edges = np.histogram(pur, bins=np.linspace(0, 1, 11))
+    out["identity"] = {
+        "mean": round(float(pur.mean()), 4),
+        "chance": round(float(1.0 / max(len(set(ch)), 1)), 4),
+        "bins": [
+            {
+                "lo": round(float(edges[i]), 2),
+                "hi": round(float(edges[i + 1]), 2),
+                "n": int(hist[i]),
+            }
+            for i in range(len(hist))
+        ],
+    }
 
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
     Path(args.out).write_text(json.dumps(out, separators=(",", ":")) + "\n")

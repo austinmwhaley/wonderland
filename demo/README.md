@@ -17,7 +17,7 @@ xdg-open demo/index.html                 # or double-click the file
 | Tab | What it shows |
 |---|---|
 | **Overview** | The claim, four headline numbers, and the frozen state vs the traditional table |
-| **Axes** | The eight content axes, one card each, with a micro-visual (spectrum, reconstruction scatter, purity, reliability, order, relational) |
+| **Axes** | Eight sub-tabs, one per content axis. Each opens a full panel: the value, what it measures, how it is measured, why it matters, and a dedicated visual (singular spectrum, reconstruction scatter, purity distribution, ROC, reliability curve, randomized-action design, order bars, relational bars) |
 | **Objectives** | A clickable explorer for all ten self-supervised objectives: what each predicts, the naive baseline, the learned skill, and a timeline diagram of the training cut |
 | **Plugins** | Known-effect recovery across five action keys, and RL policy value against table and uniform comparators |
 | **Explorer** | Held-out customers in the frozen embedding; click a point for history, neighbours, and outcome |
@@ -34,9 +34,10 @@ Every value is generated from receipts under `docs/report_cards/experiments/`:
 - `foundation_state.json`, `view_selection.json`, `encoder_ceiling.json`, `encoder_donor.json`
 - `runtime.json`, `encoder_config.json`, `data_receipt.json` — provenance and cost
 
-`demo/b_data.json` (built by `scripts/build_b_demo_data.py`) holds the small arrays the axes
-micro-visuals need: the state's singular spectrum, a predicted-vs-actual reconstruction scatter,
-and the next-event reliability bins. If it is absent, the Axes tab still renders its numbers and
+`demo/b_data.json` (built by `scripts/build_b_demo_data.py`) holds the arrays the axis panels
+need: the state's singular spectrum, a predicted-vs-actual reconstruction scatter, the next-event
+reliability bins, an ROC curve for churn from the state, and the per-customer identity-purity
+distribution. If it is absent, the Axes tab still renders its numbers and
 the visuals are simply omitted.
 
 The Customer Explorer additionally samples the frozen cache at `/tmp/opencode/frozen_6k` and the
