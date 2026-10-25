@@ -129,17 +129,39 @@ def load_data(data):
 
 
 class GatedSSM(nn.Module):
-    def __init__(self, d, e, taus):
+    def __init__(self, d, e, taus, selective=False, log_tau_bounds=None):
         super().__init__()
         self.d = d
         self.e = e
+        self.selective = bool(selective)
         self.Wx = nn.Linear(d, e * d)
         self.out = nn.Linear(d, d)
         self.log_tau = nn.Parameter(torch.log(torch.as_tensor(taus, dtype=torch.float32)))
+        if self.selective:
+            # Zero-initialised: at step 0 the retention is EXACTLY the baseline
+            # exp(-dt/tau); the model then learns input-dependent deviations.
+            self.Wsel = nn.Linear(d, e)
+            nn.init.zeros_(self.Wsel.weight)
+            nn.init.zeros_(self.Wsel.bias)
+            if log_tau_bounds is None:
+                lo = float(np.log(max(float(np.min(taus)), 1e-3))) - 2.0
+                hi = float(np.log(max(float(np.max(taus)), 1e-3))) + 2.0
+                log_tau_bounds = (lo, hi)
+            self.register_buffer(
+                "tau_lo", torch.tensor(float(log_tau_bounds[0]), dtype=torch.float32)
+            )
+            self.register_buffer(
+                "tau_hi", torch.tensor(float(log_tau_bounds[1]), dtype=torch.float32)
+            )
 
     def forward(self, x, mask, dt):
         B, T, _ = x.shape
-        tau = torch.exp(self.log_tau)
+        if self.selective:
+            log_tau_t = self.log_tau.view(1, 1, self.e) + self.Wsel(x)
+            log_tau_t = torch.clamp(log_tau_t, self.tau_lo, self.tau_hi)
+            tau = torch.exp(log_tau_t)
+        else:
+            tau = torch.exp(self.log_tau).view(1, 1, self.e)
         decay = torch.exp(-dt.unsqueeze(-1) / tau)
         decay = torch.where(mask.unsqueeze(-1) > 0, decay, torch.ones_like(decay))
         inp = self.Wx(x).view(B, T, self.e, self.d)
@@ -192,7 +214,19 @@ class Enc(nn.Module):
         self.gw_cat = nn.Parameter(torch.full((len(vs["gcat"]),), 0.5413))
         self.gw_num = nn.Parameter(torch.full((vs["gnum"],), 0.5413))
         self.mlp = nn.Sequential(nn.Linear(d, d), nn.GELU(), nn.Linear(d, d))
-        self.ssm = nn.ModuleList([GatedSSM(d, e, taus) for _ in range(layers)])
+        self.selective = "selective" in AXES
+        self.ssm = nn.ModuleList(
+            [
+                GatedSSM(
+                    d,
+                    e,
+                    taus,
+                    selective=self.selective,
+                    log_tau_bounds=vs.get("tau_bounds"),
+                )
+                for _ in range(layers)
+            ]
+        )
         # ---- axis toggles (empty set = the recorded baseline path) ----
         self.use_measure = "measure" in AXES
         self.use_query = "query" in AXES
@@ -798,6 +832,18 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
         print(
             f"hist_dim {vs['hist_dim']} (coverage 0.99 over {len(vs['gcat'])} fields)", flush=True
         )
+    # selective retention: bounds derived from observed gap/span statistics
+    _gap_pos = np.concatenate(
+        [np.asarray(seqs[k][4]) for k in tr[:500]]
+    )  # principle-ok: one-off data prep
+    _gap_pos = _gap_pos[_gap_pos > 0]
+    _span = np.array(
+        [(seqs[k][5][-1] - seqs[k][5][0]) / 86400.0 for k in tr[:500]]
+    )  # principle-ok: unit conversion s->days
+    if len(_gap_pos) and len(_span):
+        _lo = float(np.log(max(float(np.quantile(_gap_pos, 0.01)), 1e-4)))
+        _hi = float(np.log(max(float(np.quantile(_span, 0.99)), 1e-3)))
+        vs["tau_bounds"] = (_lo - 2.0, _hi + 2.0)
     # item 4: slow timescales derived from the observed stream span
     spans = np.array(
         [(seqs[k][5][-1] - seqs[k][5][0]) / 86400.0 for k in keys]

@@ -1071,3 +1071,28 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   (4295 dims, weaker); raising capacity before fixing the interface.
 - Next: Loop 3 (input-conditioned retention; generic role discovery; removing company-action
   prediction from the customer objective), each as a separate axis with a small screen first.
+
+## DEC-295 — Loop 3a: input-conditioned retention SCREENED then REJECTED at 6k
+
+- Axis: selective retention. `log τ_t = log τ + W_sel(x_t)`, clamped to bounds derived from
+  observed gap/span quantiles; `W_sel` zero-initialised so step-0 behaviour equals the baseline.
+- 2k/3-epoch screen looked promising: value90 0.3731 vs 0.3285, orders90 0.4477 vs 0.3907,
+  retrieval +0.066 — but channel identity fell 0.797 -> 0.713 and next-event got worse.
+- 6k/12-epoch confirmation (frozen_6k_sel, published state):
+  - donor margins regressed: value +0.0470 vs +0.0815, orders +0.0492 vs +0.0658, churn +0.0071
+    vs +0.0138;
+  - state supervised: value 0.3972 vs 0.4161, orders 0.4927 vs 0.5048, churn 0.9300 vs 0.9364;
+  - improved: channel identity (0.7377 vs 0.6780 on the published state), churn-nn 0.9717 vs
+    0.9689, anomaly 0.4795 vs 0.4596, next-event skill 0.00205 vs 0.00163.
+- Decision: REJECT for the default path (regresses the donor margins that the card certifies).
+  Retain the implementation behind `WQ_AXES=selective` as an experimental axis, with the receipt
+  saved at `/tmp/opencode/sel/`. The 2k screen did not transfer; this is recorded as a
+  screen-transfer failure, not a hidden result.
+- Principles: Honest (pre-registered acceptance; rejected on the stated criterion), Robust
+  (zero-init baseline equivalence), Adaptive (data-derived tau bounds), Efficient (2-minute
+  screen before a 6k run).
+- Rejected: adopting a config that improves identity/anomaly but loses the certified donor
+  margins; bundling selective retention with a capacity change to mask the regression.
+- Note: the selective run overwrote the canonical donor/identity receipts, which were then
+  regenerated from a fresh baseline cache from the current committed code. The card is now
+  consistent with committed code.

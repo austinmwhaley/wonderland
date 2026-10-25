@@ -1857,3 +1857,26 @@ rabbit_hole; > both alone on Instacart). DoD#2 status for this target is open:
 either (a) revisit D14's sole-input lock so heads may take [E|R] (the Dataset
 `price_mat` slot exists), or (b) change the encoder so the state carries
 recency/frequency aggregates. NOT decided unilaterally — receipts above.
+
+## Loop log — 2026-10-24 (PLAN.md Loop 1-3a)
+
+- **Loop 1 (state contract) — DONE.** `looking_glass/state_layout.py` names every block and
+  exposes views (`shape`, `learned_state`, `forecast`, `uncertainty`, `heads`). A verification
+  check asserts every `BLK` column is used exactly once. `REPORT_CARD.md` now has a
+  **State attribution** section so no row implies the 128-d embedding alone is sufficient.
+- **Loop 2 (lawful measure state) — DONE, adopted with limits.**
+  `looking_glass/measure_state.py` computes exact typed statistics over all discovered fields
+  (event counts, per-field distributions, missing fraction, per-entity distinct counts, numeric
+  count/sum/mean/std/min/max). Vocabulary is coverage-capped and bounded by
+  `max(8, sqrt(mass))`: 4,295 -> 734 dims. Additivity of raw blocks is exact and unit-tested.
+  Measured: measure nearly matches the table on category identity (0.261 vs 0.265) and is the
+  best non-table anomaly view (0.566), but is neutral-to-slightly-negative on orders/churn and
+  dilutes raw-distance geometry when concatenated. Consumers must select a view.
+- **Loop 3a (input-conditioned retention) — REJECTED.** 2k screen looked promising; 6k
+  confirmation regressed the donor margins. Kept behind `WQ_AXES=selective`, receipt preserved.
+  See DEC-295.
+- **Current card:** `REPORT_CARD.md` — B 28/28 PASS, B+C 6/6 PASS, 34 PASS / 0 FAIL, generated
+  from a fresh baseline cache built by the current committed code.
+- **Next (Loop 3b/3c):** generic role inference (remove hand-listed `segment`/`product_id`
+  roles), and separating exogenous company actions from the customer next-event objective.
+  Both need a small screen first; neither has been attempted yet.
