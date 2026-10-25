@@ -79,7 +79,7 @@ def save(data, seed, path, epochs=12, d=128, layers=2):
     E, Xtab, labels, hold, seg, model, vs, B, best, BLK = AE.train_encoder(
         data, seed=seed, epochs=epochs, d=d, layers=layers
     )
-    labels_arr = {f"label_{k}": np.asarray(v) for k, v in labels.items()}
+    labels_arr = {f"label_{k}": np.asarray(v) for k, v in (labels or {}).items()}
     np.savez(
         str(path) + ".npz",
         E=np.asarray(E),

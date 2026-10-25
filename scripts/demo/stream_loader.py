@@ -101,7 +101,9 @@ def load_data(data, engine=None):
     manifest = json.loads((d / "manifest.json").read_text())
     as_of = manifest["as_of"]
     as_of_ts = datetime.datetime.fromisoformat(as_of).timestamp()
-    A = pl.read_parquet(d / "path_a/path_a_wide_table.parquet")
+    # The wide table is an EVALUATION baseline, never required for encoder training.
+    _ap = d / "path_a/path_a_wide_table.parquet"
+    A = pl.read_parquet(_ap) if _ap.exists() else None
     _naive = pl.col("ts").dt.epoch("s")
     _tzep = (
         pl.col("ts")

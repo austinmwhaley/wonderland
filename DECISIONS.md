@@ -1306,3 +1306,19 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   B 28/28 and B+C 6/6 (34 PASS / 0 FAIL), audit 26 PASS / 3 FAIL preserved; 30 focused tests pass;
   `pytest -m "not slow"` passes (exit 0); `ruff check` and `ruff format --check` clean;
   principle audit clean on the new modules; `scripts/demo_show.py` renders the card.
+
+## DEC-307 — DoD closure: fitting does not require the wide table
+
+- Gap: `scripts/demo/stream_loader.py` and `auto_encoder._load_artifact` read
+  `path_a/path_a_wide_table.parquet` unconditionally, so a canonical stream without a wide table
+  could not be fitted. That contradicted the plan's product DoD (the wide table is an evaluation
+  baseline only).
+- Change: both loaders tolerate a missing wide table. `train_encoder` then returns empty table
+  features and empty labels instead of inventing a baseline. No training behaviour changes when
+  the table is present.
+- Verification: built a run directory containing only `manifest.json`, `path_b/`, and the truth
+  receipt. `scripts/build_frozen.py` fitted successfully, the manifest records the pinned-config
+  fallback, and `FrozenFoundation.transform_events` on the full canonical stream produced all
+  seven views (128/1152/835/23/127/734/2265), all finite, 6,000 entities.
+- Principles: Universal (stream is sufficient to fit), Honest (absent baselines are reported as
+  absent), Modularity (evaluation no longer constrains training input).

@@ -84,7 +84,8 @@ def _load_artifact(art, data):
         )
         for k, s, e in zip(keys, starts, ends)
     }
-    A = pl.read_parquet(Path(data) / "path_a/path_a_wide_table.parquet")
+    _ap = Path(data) / "path_a/path_a_wide_table.parquet"
+    A = pl.read_parquet(_ap) if _ap.exists() else None
     z.close()
     return (
         None,
@@ -956,5 +957,12 @@ def train_encoder(data=None, seed=0, d=None, layers=2, epochs=5, lr=None, batch=
         model.load_state_dict(best_state)
     torch.cuda.empty_cache()
     E, BLK = embed(model, seqs, hold, vs)
-    Xtab, labels, seg = table_features(A, hold)
+    if A is not None and getattr(A, "height", 0):
+        Xtab, labels, seg = table_features(A, hold)
+    else:
+        # No wide table available: training is still complete. Evaluation baselines
+        # are simply absent, and that is reported rather than invented.
+        Xtab = np.zeros((len(hold), 0), float)
+        labels = {}
+        seg = np.array(["unknown"] * len(hold), dtype=object)
     return E, Xtab, labels, hold, seg, model, vs, B, best, BLK
