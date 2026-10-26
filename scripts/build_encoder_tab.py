@@ -2,9 +2,9 @@
 
 Reads the frozen cache and receipts to produce:
 
-  * one customer's 128-d frozen shape vector (for the feature map)
+  * a shortlist of customers' frozen shape and full state-family vectors
   * the published state's feature-family dimensions
-  * encoder dimensions for the architecture flow
+  * encoder dimensions for the feature explorer
 
 Writes `demo/encoder_tab.json`:
 
@@ -46,7 +46,6 @@ def main():
     if args.customer not in hold:
         print(f"customer {args.customer} not in frozen holdout", file=sys.stderr)
         raise SystemExit(1)
-    shape = E[hold.index(args.customer)]
 
     runtime = json.loads((EXP / "runtime.json").read_text())
     cfg = json.loads((EXP / "encoder_config.json").read_text())
@@ -55,45 +54,87 @@ def main():
     layout = manifest.get("layout") or {}
     blocks = {b["name"]: b for b in layout.get("blocks", [])}
     blk = np.asarray(z["BLK"], dtype=float)
-
     state_dims = runtime.get("state_dims") or {}
     order = ["shape", "learned_state", "forecast", "uncertainty", "heads"]
-    families = []
-    for name in order:
-        dim = int(state_dims.get(name, 0))
-        if dim <= 0:
-            continue
-        if name == "shape":
-            values = shape
-        else:
-            view = (layout.get("views") or {}).get(name) or {}
-            parts = [
-                blk[hold.index(args.customer), blocks[b]["start"] : blocks[b]["stop"]]
-                for b in view.get("blocks", [])
-                if b in blocks
-            ]
-            if not parts:
-                continue
-            values = np.concatenate(parts)
-        if len(values) != dim:
-            print(f"family {name}: value count {len(values)} != state dim {dim}", file=sys.stderr)
+
+    truth = {}
+    truth_path = Path(cfg.get("data", "")) / "reference_truth.json"
+    if truth_path.exists():
+        truth = {c["customer"]: c for c in json.loads(truth_path.read_text()).get("customers", [])}
+
+    def families_for(key):
+        if key not in hold:
+            print(f"customer {key} not in frozen holdout", file=sys.stderr)
             raise SystemExit(1)
-        families.append(
+        row = hold.index(key)
+        shape = E[row]
+        families = []
+        for name in order:
+            dim = int(state_dims.get(name, 0))
+            if dim <= 0:
+                continue
+            if name == "shape":
+                values = shape
+            else:
+                view = (layout.get("views") or {}).get(name) or {}
+                parts = [
+                    blk[row, blocks[b]["start"] : blocks[b]["stop"]]
+                    for b in view.get("blocks", [])
+                    if b in blocks
+                ]
+                if not parts:
+                    continue
+                values = np.concatenate(parts)
+            if len(values) != dim:
+                print(
+                    f"family {name}: value count {len(values)} != state dim {dim}",
+                    file=sys.stderr,
+                )
+                raise SystemExit(1)
+            families.append(
+                {
+                    "id": name,
+                    "label": name.replace("_", " ").capitalize(),
+                    "dim": dim,
+                    "values": [round(float(v), 4) for v in values],
+                }
+            )
+        return shape, families
+
+    shortlist = [
+        "rc0000208",
+        "rc0004902",
+        "rc0000003",
+        "rc0000863",
+        "rc0004162",
+    ]
+    if args.customer not in shortlist:
+        shortlist.insert(0, args.customer)
+
+    customers = []
+    for key in shortlist:
+        shape, families = families_for(key)
+        t = truth.get(key, {})
+        customers.append(
             {
-                "id": name,
-                "label": name.replace("_", " ").capitalize(),
-                "dim": dim,
-                "values": [round(float(v), 4) for v in values],
+                "key": key,
+                "channel": t.get("channel_pref"),
+                "category": t.get("category_pref"),
+                "regime": t.get("regime0"),
+                "shape": [round(float(v), 4) for v in shape],
+                "families": families,
             }
         )
-    total = sum(f["dim"] for f in families)
 
+    first = customers[0]
+    total = sum(f["dim"] for f in first["families"])
     out = {
-        "customer": args.customer,
-        "shape": [round(float(v), 4) for v in shape],
-        "shape_norm": round(float(np.linalg.norm(shape)), 3),
+        "customer": first["key"],
+        "customers": customers,
+        "shape": first["shape"],
+        "shape_norm": round(float(np.linalg.norm(E[hold.index(first["key"])])), 3),
         "population_mean_norm": round(float(np.linalg.norm(E, axis=1).mean()), 3),
-        "families": families,
+        "families": first["families"],
         "state_dim": total,
         "trunk": {
             "width": int(cfg["d"]),
@@ -108,8 +149,8 @@ def main():
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
     Path(args.out).write_text(json.dumps(out, separators=(",", ":")) + "\n")
     print(
-        f"WROTE {args.out} | {args.customer} shape {len(out['shape'])} | "
-        f"state {total} | families {len(families)}"
+        f"WROTE {args.out} | {len(customers)} customers | "
+        f"{first['key']} shape {len(first['shape'])} | state {total}"
     )
 
 
