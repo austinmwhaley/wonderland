@@ -2133,3 +2133,10 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 
 - Replaced the five output labels in the combined Overview summary with the three plugin family
   labels, matching the Plugins stage and the plugin cards.
+
+## DEC-378 — Strip secondary labels and footnotes from the customer card
+
+- Removed the small capability subtitles (“90-day held-out”, “5 nearest neighbours”, “known
+  optima”) from the Explorer customer card.
+- Removed the capability footnotes, including the lookalike agreement line and the recovery
+  protocol note under Act. The Predict table, neighbour list, and five-action Act table remain.

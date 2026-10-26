@@ -300,8 +300,6 @@ th.num{text-align:right}
   .capability:last-child{border-bottom:0}}
 .caphead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:14px}
 .capname{font-size:15px;font-weight:600;letter-spacing:-.01em}
-.capmeta{font-family:ui-monospace,monospace;font-size:9px;letter-spacing:.07em;text-transform:uppercase;
-  color:var(--dim);white-space:nowrap}
 .cardtable{width:100%;border-collapse:collapse;font-size:12px}
 .cardtable th{font-family:ui-monospace,monospace;font-size:8.5px;letter-spacing:.06em;
   text-transform:uppercase;color:var(--dim);font-weight:500;padding:0 0 7px;
@@ -324,8 +322,6 @@ th.num{text-align:right}
 .nbrow .v{font-family:ui-monospace,monospace;font-size:10.5px;color:var(--dim);white-space:nowrap}
 .nbrow .dotmark{width:6px;height:6px;border-radius:50%;background:var(--accent)}
 .nbrow .dotmark.bad{background:#dc2626}
-.capnote{margin-top:13px;color:var(--muted);font-size:11.5px;line-height:1.5}
-.capnote b{color:var(--ink);font-family:ui-monospace,monospace;font-weight:600}
 .custcontext{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,.75fr)}
 @media(max-width:800px){.custcontext{grid-template-columns:1fr}}
 .contextsection{padding:20px 26px}
@@ -1703,16 +1699,15 @@ if(!EXP||!EXP.customers||!EXP.customers.length){
     head.appendChild(left); card.appendChild(head);
 
     const caps=el("div","custcaps");
-    function capability(name,meta){
+    function capability(name){
       const sec=el("div","capability");
       const h=el("div","caphead");
       h.appendChild(el("div","capname",name));
-      h.appendChild(el("div","capmeta",meta));
       sec.appendChild(h);
       return sec;
     }
 
-    const predict=capability("Predict","90-day held-out");
+    const predict=capability("Predict");
     const ptable=el("table","cardtable");
     const phead=el("thead"),phr=el("tr");
     ["Metric","Value","Sample"].forEach((label,i)=>phr.appendChild(el("th",i?"r":null,label)));
@@ -1731,7 +1726,7 @@ if(!EXP||!EXP.customers||!EXP.customers.length){
     });
     ptable.appendChild(pbody); predict.appendChild(ptable); caps.appendChild(predict);
 
-    const retrieve=capability("Retrieve","5 nearest neighbours");
+    const retrieve=capability("Retrieve");
     const list=el("div","nbminilist");
     (c.neighbours||[]).forEach(nb=>{
       const row=el("div","nbrow");
@@ -1741,16 +1736,9 @@ if(!EXP||!EXP.customers||!EXP.customers.length){
       mark.title=nb.churn90?"churned":"retained";
       row.appendChild(mark); list.appendChild(row);
     });
-    retrieve.appendChild(list);
-    const rn=el("div","capnote");
-    rn.appendChild(document.createTextNode("lookalike value "));
-    rn.appendChild(el("b",null,money(c.neighbour_mean_value)));
-    rn.appendChild(document.createTextNode(" · "));
-    rn.appendChild(el("b",null,Math.round(c.neighbour_churn_agree*100)+"%"));
-    rn.appendChild(document.createTextNode(" churn agreement"));
-    retrieve.appendChild(rn); caps.appendChild(retrieve);
+    retrieve.appendChild(list); caps.appendChild(retrieve);
 
-    const act=capability("Act","known optima");
+    const act=capability("Act");
     const atable=el("table","cardtable");
     const ahead=el("thead"),ahr=el("tr");
     ["Action","Choice","Benefit"].forEach((label,i)=>ahr.appendChild(el("th",i?"r":null,label)));
@@ -1776,7 +1764,6 @@ if(!EXP||!EXP.customers||!EXP.customers.length){
         abody.appendChild(tr);
       });
     atable.appendChild(abody); act.appendChild(atable);
-    act.appendChild(el("div","capnote","Known optima · recovery vs table (10-NN)"));
     caps.appendChild(act);
     card.appendChild(caps);
 
