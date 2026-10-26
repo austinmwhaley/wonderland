@@ -542,31 +542,15 @@ th.num{text-align:right}
 .logtable td.attrs{font-family:ui-monospace,monospace;font-size:9.8px;line-height:1.5;
   color:var(--muted);min-width:440px;white-space:normal;word-break:break-word}
 .encsection{border-top:1px solid var(--line);margin-top:54px;padding-top:38px}
-.encintro{padding:20px 22px 16px;margin-bottom:30px;overflow:hidden}
-.encintrohead{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap}
-.encintrolede{font-size:18px;font-weight:600;letter-spacing:-.02em;margin-top:4px}
-.encchips{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
-.encchip{font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.04em;text-transform:uppercase;
-  color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:4px 9px;background:#fff}
-.encchip.acc{color:var(--accent);border-color:rgba(5,150,105,.3);background:#f7fefb}
-.encflow{margin:10px 0 4px;overflow-x:auto}
-.encflow svg{display:block;width:100%;height:auto}
-@media(max-width:800px){.encflow svg{min-width:720px}}
-.enczone .zonebg{transition:stroke .15s ease,fill .15s ease}
-.enczone.active .zonebg{stroke:var(--accent);fill:#f7fefb}
-.enczone{transition:opacity .15s ease}
-.encflow.hasactive .enczone:not(.active){opacity:.55}
-.encflow.focusall .enczone .zonebg{stroke:var(--accent);fill:#f7fefb}
-.encnotes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:6px}
-.encnote{border:1px solid var(--line);border-radius:6px;background:#fff;padding:9px 11px;min-width:0;
-  transition:border-color .15s ease,background-color .15s ease;cursor:default}
-.encnote .k{display:block;font-family:ui-monospace,monospace;font-size:9px;letter-spacing:.06em;
-  text-transform:uppercase;color:var(--dim)}
-.encnote .v{display:block;font-size:11.5px;color:var(--muted);line-height:1.4;margin-top:2px}
-.encnote.on{border-color:var(--accent);background:#f7fefb}
-.encnote.on .v{color:var(--ink)}
-@media(max-width:900px){.encnotes{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:560px){.encnotes{grid-template-columns:1fr}}
+.encpick{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 16px}
+.encperson{appearance:none;border:1px solid var(--line);border-radius:6px;background:#fff;
+  padding:7px 10px;font:inherit;text-align:left;cursor:pointer;color:var(--muted);min-width:0;
+  transition:border-color .15s ease,background-color .15s ease}
+.encperson b{display:block;font-family:ui-monospace,monospace;font-size:11px;font-weight:600;color:var(--ink)}
+.encperson span{display:block;font-size:9.5px;color:var(--dim);margin-top:1px;white-space:nowrap}
+.encperson:hover{border-color:var(--dim)}
+.encperson.on{border-color:var(--accent);background:#f7fefb}
+.encperson.on b{color:var(--accent)}
 .featexplorerhead{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin:0 0 12px}
 .featexplorerhead .cardtag{margin-bottom:0}
 .featexplorer{display:grid;grid-template-columns:250px minmax(0,1fr);gap:28px;align-items:start}
@@ -711,21 +695,11 @@ footer{margin-top:56px;padding-top:18px;border-top:1px solid var(--line);color:v
 
     <section id="encoder" hidden>
       <h2>Encoder</h2>
-      <div class="encintro panelbox">
-        <div class="encintrohead">
-          <div>
-            <div class="cardtag">Encoder at a glance</div>
-            <div class="encintrolede">Events in, one 128-d representation out.</div>
-          </div>
-          <div class="encchips" id="encchips"></div>
-        </div>
-        <div class="encflow" id="encflow"></div>
-        <div class="encnotes" id="encnotes"></div>
-      </div>
       <div class="featexplorerhead">
         <div class="cardtag">Feature explorer</div>
         <div class="small dim">real values · hover a cell</div>
       </div>
+      <div class="encpick" id="encpick"></div>
       <div class="featexplorer">
         <div class="featselector" id="featselector"></div>
         <div class="featpanel">
@@ -853,20 +827,16 @@ function flowFill(v,maxv){
 function flowPositions(){
   const legacy=[], stream=[], encoder=[], state=[], overview=[], heads=[];
   const tables=[
-    [24,6,250,150],
-    [32,8,390,150],
-    [24,6,568,150],
-    [16,4,708,150],
-    [12,4,360,320],
-    [12,4,470,320],
-    [8,4,580,320],
+    ["customers",19],["orders",19],["order_items",18],["support",18],
+    ["returns",18],["products",18],["campaigns",18],
   ];
-  tables.forEach(([n,cols,x,y])=>{
-    for(let k=0;k<n;k++) legacy.push({x:x+(k%cols)*19,y:y+Math.floor(k/cols)*19});
+  tables.forEach(([_,n],row)=>{
+    const rowW=(n-1)*40+18, x0=140+(760-rowW)/2, y=130+row*48;
+    for(let k=0;k<n;k++) legacy.push({x:x0+k*40,y:y+4,s:18});
   });
   for(let i=0;i<128;i++){
-    const srow=Math.floor(i/8),scol=i%8;
-    stream.push({x:422.5+scol*20,y:102.5+srow*20});
+    const srow=Math.floor(i/5),scol=i%5;
+    stream.push({x:457+scol*18,y:28+srow*18,s:14});
     const j=i<64?i:i-64,col=j%16,row=Math.floor(j/16);
     encoder.push({x:263+col*30,y:(i<64?140:284)+row*30,s:24});
     state.push({x:357.5+(i%16)*18,y:189.5+Math.floor(i/16)*18});
@@ -884,25 +854,20 @@ function flowOverlay(bg,fg,stage){
   };
   if(stage==="legacy"){
     const tables=[
-      [250,150,6,4,"customers","6k"],
-      [390,150,8,4,"orders","385k"],
-      [568,150,6,4,"order_items","385k"],
-      [708,150,4,4,"support","205k"],
-      [360,320,4,3,"returns","46k"],
-      [470,320,4,3,"products","80"],
-      [580,320,4,2,"campaigns","24"],
+      ["customers","6k"],["orders","385k"],["order_items","385k"],["support","205k"],
+      ["returns","46k"],["products","80"],["campaigns","24"],
     ];
-    tables.forEach(([x,y,cols,rows,name,count])=>{
-      const w=cols*19-4,h=rows*19-4;
-      bg.appendChild(rect(x-11,y-10,w+22,h+20,"#fff",6,LINE));
-      fg.appendChild(tx(x-2,y-16,name+" · "+count,{size:9.5,fill:MUT}));
+    tables.forEach(([name,count],row)=>{
+      const y=130+row*48;
+      bg.appendChild(rect(132,y,776,26,"#fff",4,LINE));
+      fg.appendChild(tx(140,y-7,name+" · "+count,{size:9.5,fill:MUT}));
     });
   }else if(stage==="stream"){
-    bg.appendChild(ln(408,102.5,408,417.5,{stroke:"#e5e7eb"}));
-    for(let r=0;r<16;r++){
-      const y=102.5+r*20+7.5;
-      bg.appendChild(ln(402,y,408,y,{stroke:"#e5e7eb"}));
-      if(r<15) bg.appendChild(ln(422.5,y+10,577.5,y+10,{stroke:"#f3f4f6"}));
+    bg.appendChild(ln(441,24,441,496,{stroke:"#e5e7eb"}));
+    for(let r=0;r<26;r++){
+      const y=28+r*18+7;
+      bg.appendChild(ln(435,y,441,y,{stroke:"#e5e7eb"}));
+      if(r<25) bg.appendChild(ln(457,y+8,543,y+8,{stroke:"#f3f4f6"}));
     }
   }else if(stage==="encoder"){
     bg.appendChild(rect(249,116,502,296,"#fff",8,LINE));
@@ -916,11 +881,11 @@ function flowOverlay(bg,fg,stage){
   }else if(stage==="plugins"){
     bg.appendChild(rect(147.5,179.5,305,161,"#fff",6,LINE));
     fg.appendChild(tx(300,360,"frozen state",{size:9,fill:DIM,anchor:"middle"}));
-    const nodes=[["value_90d",90],["orders_90d",180],["churn_90d",270],["lookalike",360],["action",450]];
+    const nodes=[["Predict",130],["Retrieve",260],["Act",390]];
     nodes.forEach(([label,y])=>{
       bg.appendChild(ln(452.5,260,700,y,{stroke:LINE}));
       fg.appendChild(dot(700,y,5.5,"#fff",ACC));
-      fg.appendChild(tx(716,y+4,label,{size:10,fill:MUT}));
+      fg.appendChild(tx(716,y+4,label,{size:11,fill:MUT}));
     });
   }else if(stage==="overview"){
     fg.appendChild(tx(145,74,"Event Stream",{size:10,fill:MUT,anchor:"middle"}));
@@ -1459,105 +1424,22 @@ if(!ENC){
   if(host) host.innerHTML="<h2>Encoder</h2><p class='lede'>Run <code>python3 scripts/build_encoder_tab.py</code> with the frozen cache available to build this tab.</p>";
 }else{
   let featureFamily="shape";
-
-  function renderEncIntro(){
-    const chips=$("#encchips"); if(!chips) return;
-    chips.innerHTML="";
-    [
-      ["self-supervised","acc"],
-      [ENC.trunk.layers+" × gated SSM",""],
-      [ENC.trunk.width+"-d core",""],
-      ["task-agnostic",""],
-    ].forEach(([label,cls])=>{
-      const c=el("span","encchip"+(cls?" "+cls:""),label); chips.appendChild(c);
-    });
-
-    const host=$("#encflow"); host.innerHTML="";
-    const W=1000,H=250,s=svg(W,H); host.appendChild(s);
-    const zone=name=>{
-      const g=document.createElementNS(NS,"g");
-      g.setAttribute("class","enczone"); g.dataset.zone=name; s.appendChild(g); return g;
-    };
-    const add=(g,node)=>{g.appendChild(node);return node;};
-    const zbox=(g,x,y,w,h)=>{
-      const r=rect(x,y,w,h,"#fff",8,LINE); r.setAttribute("class","zonebg"); add(g,r);
-    };
-    const arrow=(x1,y1,x2,y2)=>{
-      s.appendChild(ln(x1,y1,x2,y2,{stroke:ACC,w:1.2}));
-      s.appendChild(ln(x2-6,y2-4,x2,y2,{stroke:ACC,w:1.2}));
-      s.appendChild(ln(x2-6,y2+4,x2,y2,{stroke:ACC,w:1.2}));
-    };
-
-    // The whole visual is one encoder. No event-stream, frozen-state, or plugin stages.
-    s.appendChild(rect(120,48,760,164,"#fff",10,LINE));
-    s.appendChild(tx(500,34,"Encoder",{size:11,fill:MUT,anchor:"middle"}));
-
-    const input=zone("reads");
-    zbox(input,140,70,108,120);
-    [["event",92],["fields",118],["time",144],["gaps",170]].forEach(([label,y],i)=>{
-      add(input,tx(152,y+3,label,{size:8,fill:DIM}));
-      add(input,rect(194,y-5,32,8,i===0?ACC:"#d1d5db",2));
-    });
-    add(input,tx(194,62,"tokens",{size:8,fill:DIM,anchor:"middle"}));
-
-    arrow(250,130,262,130);
-
-    const enc=zone("learns");
-    [82,132].forEach((y0,i)=>{
-      add(enc,rect(262,y0,500,38,"#f9fafb",6,LINE));
-      add(enc,tx(290,y0-4,"SSM "+(i+1),{size:8,fill:DIM}));
-    });
-    const vals=ENC.shape||[],maxv=Math.max(...vals.map(v=>Math.abs(v)))||1;
-    for(let layer=0;layer<2;layer++){
-      for(let k=0;k<64;k++){
-        const i=layer*64+k,v=vals[i]||0;
-        const x=290+(k%32)*14,y=(layer?139:89)+Math.floor(k/32)*14;
-        const a=Math.min(1,Math.abs(v)/maxv);
-        add(enc,rect(x,y,10,10,v>=0?`rgba(5,150,105,${0.10+0.80*a})`:`rgba(17,24,39,${0.06+0.62*a})`,2));
-      }
-    }
-    add(enc,ln(276,120,276,132,{stroke:"#9ca3af",w:1}));
-    add(enc,ln(272,128,276,132,{stroke:"#9ca3af",w:1}));
-    add(enc,ln(280,128,276,132,{stroke:"#9ca3af",w:1}));
-
-    arrow(766,130,790,130);
-
-    const output=zone("writes");
-    zbox(output,790,86,70,88);
-    for(let k=0;k<8;k++){
-      const x=806+(k%4)*12,y=100+Math.floor(k/4)*12;
-      add(output,rect(x,y,8,8,k%3===0?ACC:"#d1d5db",2));
-    }
-    add(output,tx(825,160,"128-d",{size:8,fill:ACC,anchor:"middle"}));
-
-    const notes=$("#encnotes"); notes.innerHTML="";
-    [
-      ["reads","Reads","Events, fields, time and gaps."],
-      ["learns","Learns","Two gated SSM layers; no business labels."],
-      ["writes","Writes","One fixed 128-d customer vector."],
-      ["why","Why","A reusable representation, not a task-specific model."],
-    ].forEach(([zoneName,key,text])=>{
-      const n=el("div","encnote"); n.dataset.zone=zoneName; n.tabIndex=0;
-      n.appendChild(el("div","k",key)); n.appendChild(el("div","v",text)); notes.appendChild(n);
-    });
-    const zones={};
-    host.querySelectorAll(".enczone").forEach(g=>zones[g.dataset.zone]=g);
-    function setActive(zoneName){
-      const why=zoneName==="why";
-      host.classList.toggle("hasactive",!!zoneName&&!why);
-      host.classList.toggle("focusall",why);
-      Object.entries(zones).forEach(([key,g])=>g.classList.toggle("active",key===zoneName));
-      notes.querySelectorAll(".encnote").forEach(n=>n.classList.toggle("on",n.dataset.zone===zoneName));
-    }
-    notes.querySelectorAll(".encnote").forEach(n=>{
-      n.addEventListener("mouseenter",()=>setActive(n.dataset.zone));
-      n.addEventListener("mouseleave",()=>setActive(null));
-      n.addEventListener("focus",()=>setActive(n.dataset.zone));
-      n.addEventListener("blur",()=>setActive(null));
-    });
-    Object.entries(zones).forEach(([zoneName,g])=>{
-      g.addEventListener("mouseenter",()=>setActive(zoneName));
-      g.addEventListener("mouseleave",()=>setActive(null));
+  const ENC_CUSTOMERS=(ENC.customers&&ENC.customers.length)?ENC.customers:[{
+    key:ENC.customer,shape:ENC.shape,families:ENC.families,channel:null,category:null,regime:null
+  }];
+  let encSel=0;
+  const encCust=()=>ENC_CUSTOMERS[encSel]||ENC_CUSTOMERS[0];
+  function renderEncCustomers(){
+    const pick=$("#encpick"); if(!pick) return;
+    pick.innerHTML="";
+    ENC_CUSTOMERS.forEach((c,i)=>{
+      const b=el("button","encperson"+(i===encSel?" on":""));
+      b.type="button"; b.setAttribute("aria-pressed",i===encSel);
+      b.appendChild(el("b",null,c.key));
+      const desc=[c.regime,c.category].filter(Boolean).join(" · ");
+      b.appendChild(el("span",null,desc));
+      b.onclick=()=>{encSel=i;renderEncCustomers();renderFeatSelector();renderFeatMap();};
+      pick.appendChild(b);
     });
   }
 
@@ -1570,8 +1452,8 @@ if(!ENC){
 
   function renderFeatSelector(){
     const host=$("#featselector"); host.innerHTML="";
-    const maxDim=Math.max(...ENC.families.map(f=>f.dim));
-    ENC.families.forEach(f=>{
+    const maxDim=Math.max(...encCust().families.map(f=>f.dim));
+    encCust().families.forEach(f=>{
       const b=el("button","featfamily"+(featureFamily===f.id?" on":""));
       b.type="button";
       const top=el("div","top");
@@ -1590,11 +1472,11 @@ if(!ENC){
   }
 
   function renderFeatMap(){
-    const fam=ENC.families.find(f=>f.id===featureFamily)||ENC.families[0];
+    const fam=encCust().families.find(f=>f.id===featureFamily)||encCust().families[0];
     $("#shapehead").innerHTML="";
     const left=el("div");
     left.appendChild(el("div","cardtag",fam.label));
-    left.appendChild(el("div","shapekey",ENC.customer));
+    left.appendChild(el("div","shapekey",encCust().key));
     $("#shapehead").appendChild(left);
     $("#shapehead").appendChild(el("div","shapemeta",fam.dim.toLocaleString()+" dims"));
 
@@ -1626,7 +1508,7 @@ if(!ENC){
     renderFeatSelector();
     renderFeatMap();
   }
-  renderEncIntro();
+  renderEncCustomers();
   renderEncoder();
 }
 

@@ -2087,3 +2087,36 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   bands, and the 128-d output vector. The four notes are Reads, Learns, Writes, and Why.
 - The “Why” note highlights the encoder as a whole; the other notes highlight their internal
   input, layer, or output zones.
+
+## DEC-372 — Encoder tab opens with a customer state fingerprint
+
+- Replaced the Encoder at-a-glance architecture block with a **State fingerprint** block.
+- Added a five-customer shortlist; selecting a customer updates both the fingerprint and the
+  feature explorer. The shortlist carries compact regime/category descriptors.
+- The fingerprint is proportional to the published 2,265-d state and split into the five feature
+  families. Hovering a block or legend item dims the rest, shows its dimension and role, and
+  clicking it selects that family in the feature explorer.
+- Extended the encoder payload to include full family slices for the five shortlisted customers.
+- The content axes and objectives remain below as optional scroll sections.
+
+## DEC-373 — Customer shortlist moves into the feature explorer
+
+- Removed the state-fingerprint block from the top of the Encoder tab; 2,265 dimensions were too
+  dense to read in that small strip.
+- Kept the five-customer shortlist and moved it directly above the feature-explorer grid. The
+  selector and selected family heatmap update when a customer changes.
+- The content axes and objectives remain below as optional scroll sections.
+
+## DEC-374 — Overview Plugins stage uses the three family labels
+
+- Replaced the five output labels in the Overview Plugins stage with Predict, Retrieve, and Act,
+  matching the plugin-family vocabulary used by the tab and cards. The underlying plugin outputs
+  remain visible in the Plugins tab itself.
+
+## DEC-375 — Legacy becomes long rows; Event Stream becomes taller
+
+- Replaced the seven small Legacy table cards with seven long horizontal rows, each labelled with
+  its table name and row count. The state cells sit in a single long row inside each border.
+- Reflowed the Event Stream from an 8 × 16 block to a 5 × 26 strip: five columns wide and much
+  taller, with the time rail and row rules matching the new shape.
+- This makes the two stages read as different database formats at a glance rather than two grids.
