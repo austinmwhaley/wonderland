@@ -2128,3 +2128,8 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - Event Stream now renders as a single tall ledger: five fields across, one row per event, with
   a header row and an explicit “one row / event” caption.
 - The 128 state cells form the table bodies; the overlays carry the row semantics.
+
+## DEC-377 — Combined Overview also uses Predict, Retrieve, and Act
+
+- Replaced the five output labels in the combined Overview summary with the three plugin family
+  labels, matching the Plugins stage and the plugin cards.

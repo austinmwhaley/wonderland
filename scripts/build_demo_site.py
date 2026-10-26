@@ -913,11 +913,11 @@ function flowOverlay(bg,fg,stage){
     arrow(450,250,510,250);
     bg.appendChild(rect(514,92,165,309,"#fff",8,LINE));
     fg.appendChild(tx(596,416,"128-d",{size:8,fill:DIM,anchor:"middle"}));
-    const nodes=[["value_90d",110],["orders_90d",170],["churn_90d",230],["lookalike",290],["action",350]];
+    const nodes=[["Predict",140],["Retrieve",250],["Act",360]];
     nodes.forEach(([label,y])=>{
       bg.appendChild(ln(679,250,770,y,{stroke:LINE}));
       fg.appendChild(dot(770,y,5.5,"#fff",ACC));
-      fg.appendChild(tx(782,y+4,label,{size:10,fill:MUT}));
+      fg.appendChild(tx(782,y+4,label,{size:11,fill:MUT}));
     });
   }
 }
