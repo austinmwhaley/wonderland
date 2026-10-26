@@ -541,17 +541,14 @@ function flowFill(v,maxv){
 }
 function flowPositions(){
   const legacy=[], stream=[], encoder=[], state=[], overview=[], heads=[];
-  const tables=[
-    ["customers",19],["orders",19],["order_items",18],["support",18],
-    ["returns",18],["products",18],["campaigns",18],
-  ];
-  tables.forEach(([_,n],row)=>{
-    const rowW=(n-1)*40+18, x0=140+(760-rowW)/2, y=130+row*48;
-    for(let k=0;k<n;k++) legacy.push({x:x0+k*40,y:y+4,s:18});
+  const customerRows=[19,19,18,18,18,18,18];
+  customerRows.forEach((n,row)=>{
+    const y=150+row*38;
+    for(let k=0;k<n;k++) legacy.push({x:250+k*34,y:y+10,s:18});
   });
   for(let i=0;i<128;i++){
     const srow=Math.floor(i/5),scol=i%5;
-    stream.push({x:457+scol*18,y:28+srow*18,s:14});
+    stream.push({x:432+scol*30,y:44+srow*17,s:14});
     const j=i<64?i:i-64,col=j%16,row=Math.floor(j/16);
     encoder.push({x:263+col*30,y:(i<64?140:284)+row*30,s:24});
     state.push({x:357.5+(i%16)*18,y:189.5+Math.floor(i/16)*18});
@@ -568,22 +565,28 @@ function flowOverlay(bg,fg,stage){
     fg.appendChild(ln(x2-6,y2+4,x2,y2,{stroke:color,w:1.2}));
   };
   if(stage==="legacy"){
-    const tables=[
-      ["customers","6k"],["orders","385k"],["order_items","385k"],["support","205k"],
-      ["returns","46k"],["products","80"],["campaigns","24"],
-    ];
-    tables.forEach(([name,count],row)=>{
-      const y=130+row*48;
-      bg.appendChild(rect(132,y,776,26,"#fff",4,LINE));
-      fg.appendChild(tx(140,y-7,name+" · "+count,{size:9.5,fill:MUT}));
+    const left=120,top=110,w=800,h=320;
+    bg.appendChild(rect(left,top,w,h,"#fff",8,LINE));
+    bg.appendChild(rect(left,top,w,40,"#f9fafb",8));
+    fg.appendChild(tx(left+20,top+24,"customer",{size:9,fill:MUT}));
+    fg.appendChild(tx(left+130,top+24,"features · one row per customer",{size:9,fill:MUT}));
+    fg.appendChild(tx(left+w-20,top+24,"7 of 6,000",{size:8,fill:DIM,anchor:"end"}));
+    bg.appendChild(ln(left+110,top+40,left+w,top+40,{stroke:LINE}));
+    bg.appendChild(ln(left+110,top+40,left+110,top+h,{stroke:LINE}));
+    const keys=["rc0000208","rc0004902","rc0000003","rc0000863","rc0004162","rc0003777","rc0005186"];
+    keys.forEach((key,row)=>{
+      const y=150+row*38;
+      fg.appendChild(tx(left+20,y+23,key,{size:8.5,fill:MUT}));
+      if(row<6) bg.appendChild(ln(left+110,y+38,left+w,y+38,{stroke:"#f3f4f6"}));
     });
   }else if(stage==="stream"){
-    bg.appendChild(ln(441,24,441,496,{stroke:"#e5e7eb"}));
-    for(let r=0;r<26;r++){
-      const y=28+r*18+7;
-      bg.appendChild(ln(435,y,441,y,{stroke:"#e5e7eb"}));
-      if(r<25) bg.appendChild(ln(457,y+8,543,y+8,{stroke:"#f3f4f6"}));
-    }
+    const left=418,top=12,w=164,h=486;
+    bg.appendChild(rect(left,top,w,h,"#fff",8,LINE));
+    bg.appendChild(rect(left,top,w,30,"#f9fafb",8));
+    const labels=["ts","type","attrs","val","src"];
+    labels.forEach((label,i)=>fg.appendChild(tx(left+14+i*30,top+20,label,{size:7,fill:DIM})));
+    bg.appendChild(ln(left,top+30,left+w,top+30,{stroke:LINE}));
+    fg.appendChild(tx(left+w/2,top+h+16,"one row / event",{size:8,fill:DIM,anchor:"middle"}));
   }else if(stage==="encoder"){
     bg.appendChild(rect(249,116,502,296,"#fff",8,LINE));
     bg.appendChild(ln(263,269,737,269,{stroke:"#f3f4f6"}));

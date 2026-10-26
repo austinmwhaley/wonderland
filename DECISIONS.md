@@ -2120,3 +2120,11 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - Reflowed the Event Stream from an 8 × 16 block to a 5 × 26 strip: five columns wide and much
   taller, with the time rail and row rules matching the new shape.
 - This makes the two stages read as different database formats at a glance rather than two grids.
+
+## DEC-376 — Overview stages use customer-row and event-row tables
+
+- Legacy now renders as a single wide table: customer keys down the left, one row per customer,
+  and a shared feature field to the right. It no longer reads as a catalogue of source tables.
+- Event Stream now renders as a single tall ledger: five fields across, one row per event, with
+  a header row and an explicit “one row / event” caption.
+- The 128 state cells form the table bodies; the overlays carry the row semantics.
