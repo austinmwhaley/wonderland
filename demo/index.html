@@ -34,6 +34,7 @@ nav button.on{color:var(--ink);border-bottom-color:var(--ink)}
 }
 section[hidden]{display:none}
 h2{font-size:21px;font-weight:600;margin:0 0 8px;letter-spacing:-.02em}
+.h2sub{color:var(--muted);font-weight:400;font-size:15px;letter-spacing:-.01em}
 .lede{color:var(--muted);font-size:14px;max-width:72ch;margin:0 0 34px}
 .flowsteps{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:2px;border:1px solid var(--line);
   border-radius:8px;padding:3px;margin:16px 0 14px;background:#fff}
@@ -363,7 +364,7 @@ footer{margin-top:56px;padding-top:18px;border-top:1px solid var(--line);color:v
     </section>
 
     <section id="data" hidden>
-      <h2>Data</h2>
+      <h2>Data <span class="h2sub">· Customer Event Stream</span></h2>
       <p class="lede">Switch between a legacy RFM row and the raw event stream for the same customer.</p>
       <div class="dataslider" id="dataslider">
         <div class="dsslide"></div>
@@ -385,7 +386,7 @@ footer{margin-top:56px;padding-top:18px;border-top:1px solid var(--line);color:v
     </section>
 
     <section id="encoder" hidden>
-      <h2>Encoder</h2>
+      <h2>Encoder <span class="h2sub">· Customer Foundation Model</span></h2>
       <div class="featexplorerhead">
         <div class="cardtag">Feature explorer</div>
         <div class="small dim">real values · hover a cell</div>
@@ -916,7 +917,7 @@ axisPanel("A1");
 const DT=DATA.data_tab;
 if(!DT){
   const host=$("#data");
-  if(host) host.innerHTML="<h2>Data</h2><p class='lede'>Run <code>python3 scripts/build_data_tab.py</code> with the canonical stream available to build this tab.</p>";
+  if(host) host.innerHTML="<h2>Data <span class='h2sub'>· Customer Event Stream</span></h2><p class='lede'>Run <code>python3 scripts/build_data_tab.py</code> with the canonical stream available to build this tab.</p>";
 }else{
   const MONTHS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   let selected=0;
@@ -1135,7 +1136,7 @@ if(!DT){
 const ENC=DATA.encoder_tab;
 if(!ENC){
   const host=$("#encoder");
-  if(host) host.innerHTML="<h2>Encoder</h2><p class='lede'>Run <code>python3 scripts/build_encoder_tab.py</code> with the frozen cache available to build this tab.</p>";
+  if(host) host.innerHTML="<h2>Encoder <span class='h2sub'>· Customer Foundation Model</span></h2><p class='lede'>Run <code>python3 scripts/build_encoder_tab.py</code> with the frozen cache available to build this tab.</p>";
 }else{
   let featureFamily="shape";
   const ENC_CUSTOMERS=(ENC.customers&&ENC.customers.length)?ENC.customers:[{

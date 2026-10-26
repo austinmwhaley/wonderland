@@ -2140,3 +2140,9 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   optima”) from the Explorer customer card.
 - Removed the capability footnotes, including the lookalike agreement line and the recovery
   protocol note under Act. The Predict table, neighbour list, and five-action Act table remain.
+
+## DEC-379 — Data and Encoder headings name their subject
+
+- Data is titled “Data · Customer Event Stream”.
+- Encoder is titled “Encoder · Customer Foundation Model”.
+- The second phrase is rendered as a lighter heading suffix so the tab name remains primary.
