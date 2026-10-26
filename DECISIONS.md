@@ -2151,3 +2151,9 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 
 - Plugins is titled “Plugins · The Capabilities”, using the same lighter heading suffix as Data
   and Encoder.
+
+## DEC-381 — Demo page moves to the repository root
+
+- Moved the generated self-contained demo from `demo/index.html` to top-level `index.html`.
+- Updated the build output path, README open command, STATUS path, and the narrow .gitignore
+  exception so future regeneration writes the root deliverable directly.

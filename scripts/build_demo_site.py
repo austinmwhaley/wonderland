@@ -4,7 +4,7 @@ Everything shown is generated from `docs/report_cards/experiments/*.json` and, f
 customer explorer, from the frozen artifact plus the canonical stream. Nothing is typed by
 hand, so the site cannot drift from the measured evidence.
 
-    python3 scripts/build_demo_site.py            # writes demo/index.html
+    python3 scripts/build_demo_site.py            # writes index.html
     python3 scripts/build_demo_site.py --no-explorer   # skip the customer sample
 
 The output is one HTML file with embedded JSON, inline CSS, and vanilla JS. No server, no CDN.
@@ -24,7 +24,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "scripts/demo"))
 
 EXP = ROOT / "docs/report_cards/experiments"
-OUT = ROOT / "demo/index.html"
+OUT = ROOT / "index.html"
 
 ARM_LABEL = {
     "table": "Traditional table",

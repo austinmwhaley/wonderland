@@ -11,7 +11,7 @@ python3 scripts/build_data_tab.py        # optional: Data tab from the relationa
 python3 scripts/build_encoder_tab.py     # optional: Encoder tab from the frozen shape/state layout
 python3 scripts/build_b_demo_data.py     # optional: axes micro-visuals from the frozen model
 python3 scripts/build_demo_site.py       # regenerate the page from receipts
-xdg-open demo/index.html                 # or double-click the file
+xdg-open index.html                      # or double-click the file
 ```
 
 ## Tabs
