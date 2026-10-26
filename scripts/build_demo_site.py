@@ -725,7 +725,7 @@ footer{margin-top:56px;padding-top:18px;border-top:1px solid var(--line);color:v
     </section>
 
     <section id="plugins" hidden>
-      <h2>Plugins</h2>
+      <h2>Plugins <span class="h2sub">· The Capabilities</span></h2>
       <div class="plugmap" id="plugmap"></div>
       <div class="plugpanel" id="plugpanel"></div>
     </section>

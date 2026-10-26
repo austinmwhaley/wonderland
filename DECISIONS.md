@@ -2146,3 +2146,8 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - Data is titled “Data · Customer Event Stream”.
 - Encoder is titled “Encoder · Customer Foundation Model”.
 - The second phrase is rendered as a lighter heading suffix so the tab name remains primary.
+
+## DEC-380 — Plugins heading names the capability layer
+
+- Plugins is titled “Plugins · The Capabilities”, using the same lighter heading suffix as Data
+  and Encoder.
