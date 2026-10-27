@@ -542,7 +542,7 @@ def test_ladder_receipt_cache_is_as_of_keyed(tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# gate uncertainty (ROADMAP P1-3): derived thresholds, paired noise
+# gate uncertainty (PLAN Phase 1): derived thresholds, paired noise
 # ---------------------------------------------------------------------------
 def test_binary_gates_use_measured_noise():
     from plugins.head_template import HeadTemplate, _metrics_binary

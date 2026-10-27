@@ -202,6 +202,9 @@ python3 scripts/run_demo.py
 The saved card is checked in and renders instantly; a full rebuild is compute-heavy
 (encoder training + GBM/XGBoost batteries). The dataset is deterministic for seed 17.
 
+Rebuild the interactive page itself with `python3 scripts/build_demo_site.py`; the
+tab payloads and regeneration order are documented in [`demo/README.md`](demo/README.md).
+
 The output is [`REPORT_CARD.md`](REPORT_CARD.md). The full research audit
 (including the deliberately open Layer-1 causal/IPS rows and unclaimed probes) is
 [`docs/AUDIT_CARD.md`](docs/AUDIT_CARD.md).

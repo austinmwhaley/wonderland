@@ -61,7 +61,6 @@ select = ["E4", "E7", "E9", "F"]
 # schema adapter import deliberately after canonical-form construction
 "white_queen/tribunal/ope/data.py" = ["E402"]
 "rabbit_hole/generators/generate_data.py" = ["E402"]
-"looking_glass/scripts/generate_data.py" = ["E402"]
 
 # RAPIDS cu12 stack for the data path: dedicated venv (cuda-bindings conflict with torch cu13),
 # process boundary via scripts/demo/gpu_prep.py; lockfile: requirements-cudf.lock

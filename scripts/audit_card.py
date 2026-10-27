@@ -1,6 +1,6 @@
 """Generate the full research AUDIT_CARD.md from receipts + the frozen gate spec.
 
-Usage: python3 scripts/report_card.py [--out docs/REPORT_CARD.md] [--receipts docs/report_cards/experiments]
+Usage: python3 scripts/audit_card.py [--out docs/AUDIT_CARD.md] [--receipts docs/report_cards/experiments]
 
 The card is a pure function of (receipts, card_spec). It is never hand-edited.
 Every row resolves to a receipt field; a missing source renders NOT MEASURED

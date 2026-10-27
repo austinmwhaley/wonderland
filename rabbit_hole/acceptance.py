@@ -191,7 +191,7 @@ def check(seed=17):
     # ---- causal design + window bound (wide tables of the toy build) -------
     # The standing 25k artifact leaked 15,727 events past _REFERENCE_NOW (max
     # 2026-03-04); these checks pin the generator code. Checking the standing
-    # artifact itself waits on the regeneration decision (ROADMAP open #4).
+    # artifact itself waits on the regeneration decision (archived ROADMAP open #4).
     con = duckdb.connect(db, read_only=True)
     try:
         max_ts = con.execute(

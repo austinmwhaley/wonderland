@@ -1,4 +1,4 @@
-"""E-vs-R-vs-E+R ablation under the PRODUCTION bake-off head (ROADMAP P1-4).
+"""E-vs-R-vs-E+R ablation under the PRODUCTION bake-off head (PLAN Phase 2).
 
 The sufficiency battery proves donor-vs-raw with Spearman-of-Ridge linear
 probes on `anchor_embeddings`; production ships the bake-off winner on

@@ -2157,3 +2157,24 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - Moved the generated self-contained demo from `demo/index.html` to top-level `index.html`.
 - Updated the build output path, README open command, STATUS path, and the narrow .gitignore
   exception so future regeneration writes the root deliverable directly.
+
+## DEC-382 — Coalesce duplicate repository artifacts after the demo merge
+
+- Fast-forwarded `main` to `primary-encoder`; the demo work and `main` now share one history.
+- Deleted the stale `docs/REPORT_CARD.md`; `REPORT_CARD.md` at the repository root is the one
+  generated B + B+C card, and every reference points to it.
+- Archived `ROADMAP.md` to `docs/archive/ROADMAP.md`; `PLAN.md` is the one forward plan. The
+  archived file keeps the retired v8 research context and scale appendix without competing
+  with the current plan.
+- Merged `scripts/refresh_receipts.py` into `scripts/run_demo.py --refresh` and deleted the
+  duplicate orchestrator. The refresh now includes the response receipt; the pinned
+  construction receipt runs under `--research`.
+- Removed `scripts/demo_show.py`; `scripts/run_demo.py` is the one card presenter.
+- Removed the one-off OPE wrappers (`run_v18*`, `run_v19`, `run_v20*`, `route_a`, `polyak_real`);
+  `scripts/fqe_panel.py` and `scripts/benchmark_ope.py` are the consolidated entry points.
+- Removed the `looking_glass/scripts/generate_data.py` alias symlink; the canonical generator is
+  `rabbit_hole/generators/generate_data.py`.
+- Archived the superseded demo contract/audit under `docs/archive/`; `REPORT_CARD.md` and
+  `docs/AUDIT_CARD.md` remain the current authority.
+- Principle served: `AGENTS.md` #6 (single source of truth; no duplication) and #13 (prefer
+  deletion over accretion).

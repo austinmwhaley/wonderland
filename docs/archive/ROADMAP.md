@@ -1,4 +1,8 @@
-# ROADMAP — wonderland
+# ROADMAP — wonderland [ARCHIVED]
+
+> **ARCHIVED (2026-10-27).** Superseded by [`PLAN.md`](../../PLAN.md). This file is kept for
+> historical research context (v8 capability notes, scale appendix, retired phase labels).
+> Do not use it as the current plan.
 
 Written after a full-project scan (decisioning layers, data layer, plugins,
 measurement, hygiene). Suite: **216 tests** (202 fast + 14 slow; fast tier

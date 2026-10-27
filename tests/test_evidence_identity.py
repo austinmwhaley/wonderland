@@ -1,4 +1,4 @@
-"""Evidence-identity regressions (ROADMAP Phase 0): receipts must survive,
+"""Evidence-identity regressions (PLAN Phase 0): receipts must survive,
 be attributable to code, and never silently shrink what they claim to cover."""
 
 from __future__ import annotations

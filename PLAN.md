@@ -578,7 +578,7 @@ Known-effect recovery and policy-value evaluation remain separate claims.
 4. Generate `REPORT_CARD.md` and `docs/AUDIT_CARD.md`.
 5. Run focused tests, the fast suite, `ruff check`, `ruff format --check`, and the principle audit.
 6. Run the full suite if the environment permits; disclose any incomplete run.
-7. Present the terminal/Markdown demo with `scripts/demo_show.py`.
+7. Present the terminal/Markdown demo with `scripts/run_demo.py` (it prints the card).
 8. Update `README.md`, `STATUS.md`, `DECISIONS.md`, and this plan if the public contract changes.
 9. Remove obsolete duplicate scripts/cards only after checking documented references.
 10. Commit coherent chunks locally; do not push without explicit permission.

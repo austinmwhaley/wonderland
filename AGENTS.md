@@ -368,7 +368,7 @@ engineering doctrine above, the doctrine above wins.
 The job is **not** to write code — it is to *move the project toward its goal while
 obeying the principles*. Operate as an explicit loop, every iteration:
 
-1. **Generate the card** — `python3 scripts/report_card.py` renders `docs/REPORT_CARD.md`
+1. **Generate the card** — `python3 scripts/report_card.py` renders `REPORT_CARD.md` at the repo root
    from the frozen gate spec (`scripts/card_spec.py`) + receipts. The card is the **single
    steering artifact**: goal, principles, subgoal decomposition, and every claim with its
    comparator, gate, value, and verdict. The full research audit (every open Layer-1 row)
@@ -462,14 +462,13 @@ fallbacks) → `Stage 3: Scale` (optimize only where measured data justifies).
 - **`DECISIONS.md`** — append-only decision log (context / alternatives /
   decision+principle / trade-offs). Check it before non-trivial changes;
   log every non-trivial decision so choices are never re-litigated.
-- **Cockpit report card (PRIMARY steering artifact)** — `scripts/full_report_card.py`
-  composed from real receipts (`foundation_report --receipts`, `objectives_receipts.py`,
-  portfolio, minimality, comparators, transfer, known-effect, acceptance, schema suite).
-  **The whole project is steered from the card:** every milestone/chunk ends by
-  **printing the full card** (T0 + tier matrix + proof sections + caveats), and the
-  card — not a hand summary — is the source of truth for what is PASS and what is next.
-  Print it as **rendered Markdown** (never wrap the whole card in a fenced code block:
-  that suppresses table rendering).
+- **Primary B + B+C report card** — `scripts/report_card.py` → `REPORT_CARD.md` at the repo
+  root. The full research audit is `scripts/audit_card.py` → `docs/AUDIT_CARD.md`. The older
+  cockpit generator (`scripts/full_report_card.py`) is retained only for reproducing the
+  archived v4 research cards; it is not the project's primary card. **The whole project is
+  steered from the primary card and audit:** every milestone/chunk ends by printing the
+  rendered Markdown (never fenced), and the card — not a hand summary — is the source of
+  truth for what is PASS and what is next.
 
 ### Decision self-check (before non-trivial action)
 

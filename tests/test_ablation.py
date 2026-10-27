@@ -1,4 +1,4 @@
-"""E-vs-R ablation (ROADMAP P1-4): raw rows must align to the donor rows —
+"""E-vs-R ablation (PLAN Phase 2): raw rows must align to the donor rows —
 a paired comparison on different row sets compares nothing, so misalignment
 fails safe instead of shrinking."""
 
