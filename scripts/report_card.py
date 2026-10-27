@@ -445,6 +445,12 @@ def main():
         ).strip()
     except Exception:
         commit = "unknown"
+    try:
+        branch = subprocess.check_output(
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=ROOT, text=True
+        ).strip()
+    except Exception:
+        branch = "unknown"
 
     L = []
     A = L.append
@@ -457,7 +463,7 @@ def main():
     )
     A("")
     A(
-        f"- **Generated:** {date.today().isoformat()} · **commit:** `{commit}` · **branch:** primary-encoder"
+        f"- **Generated:** {date.today().isoformat()} · **commit:** `{commit}` · **branch:** {branch}"
     )
     A("- **Data:** synthetic relational reference (6k) · harness, no business data.")
     cfg = docs.get("encoder_config.json") or {}
