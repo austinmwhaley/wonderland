@@ -2235,3 +2235,26 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - Principles served: consumer-backward tracing (the bucket exists because a consumer
   demands it), A1 (uncertainty over claims), A2 (stream-only supervision), Diagnosable
   (named outlet → attributable receipts for the RL leg).
+
+## DEC-385 — Shape/mass split ratified as law (Feature 4 = Option A); Overmatch doctrine adopted
+
+- Feature 4 ruling: **Option A** adopted. (1) Engine law: shape (bounded, contractive) and
+  mass (extensive, purely additive — no decay on anything additive) accumulate through
+  different algebra, always; no single blended recurrence. (2) Polar interface law: every
+  bucket exposes direction ("who") and magnitude ("how much") separately readable.
+- Rationale: the lookalike-vs-value collision is geometric, not tunable (identical habits,
+  1000x spend must be near for similarity and far for value — one blended vector must pick
+  a side, and both sides are consumers under contract). Receipts corroborate: buckets win
+  different targets; blended concatenation measurably pollutes distance probes; mass/mag-
+  nitude is the historically shaky axis. Interface-only variants fail the freeze (a blended
+  ship forces a full refit when the need surfaces); exposure-only variants fail the data-
+  processing inequality (what accumulation forgets, no readout recovers).
+- **Overmatch doctrine (operator, standing tie-breaker):** between "build the correct thing
+  structurally now" and "defer until a receipt proves the need," choose **now** where costs
+  are comparable — correctness is not a cost to postpone, and under strict-frozen a deferred
+  interface error costs a refit, so empiricism-at-the-interface is the expensive option.
+  Applies as a tie-breaker to future A-vs-defer choices (already consistent with DEC-383's
+  polar/companion choices).
+- Principles served: M3 Lawful (correct algebra per quantity), A3 (freeze makes protective
+  structure cheaper than empirical structure), consumer-backward trace (unsupervised needs
+  similarity protected; supervised needs level protected).
