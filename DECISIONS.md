@@ -3329,3 +3329,59 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   continuous state, v6.0 macro filter), Robust (the spring responds; stability measured,
   not assumed), Honest (both findings surfaced in the receipt text, nothing clamped),
   Efficient (exact continuation costs one extra multiply per filter).
+
+## DEC-420 — S5 measured honestly: three content classes FAIL against fair naive comparators; the battery is complete and the axes are named
+
+- **Context.** SPINE §8 step 4 — the battery must be complete by derivation against the
+  six content classes (DEC-387). Three probes were missing: distance regression ("what
+  it's like"), action-conditioned outcome ("what if"), ledger reconstruction
+  ("how much"). `scripts/measure_battery_law.py` now signs all three on the **holdout
+  (split-B) 724 customers**, heads fitted on split A (no same-customer games), every
+  claim with a finite naive comparator and a paired bootstrap CI, plus the prune-pass
+  deletion receipt from the registry. Frozen contract: seed 65537, N_BOOT=2000,
+  20k pairs, ≥10 arm-days/side uplift identifiability (recorded in source as
+  evaluation-contract constants, DEC-410).
+- **What the battery found (all honest FAILs, all attributed):**
+  1. **how-much**: the donor *carries* mass (spend R²=0.805, purchases 0.832 out-of-sample)
+     but LOSES the linear race to a full event-type-bag + recency head (0.935/0.894) on
+     spend/margin/purchases — the "shaky corr² 0.57" row from the design phase, now
+     measured with comparators. Exception: **returns (n_ret) the donor WINS**
+     (0.375 vs 0.237, paired CI [0.048, 0.153]) — return-proneness is already a decoded
+     latent trait. Axis: **objective pressure** (agg/past-totals under-pressured at
+     smoke-scale training).
+  2. **what-it's-like**: donor Spearman vs the LAB TRUTH latent distance = **0.086**,
+     naive bag-distance = **0.181** (donor loses, CI [−0.096,−0.095]); the raw
+     pre-boundary state is **0.006** — geometry is essentially absent from the trunk and
+     the boundary adds only noise-order structure. Corroborates the earlier disclosures
+     (trunk eff-rank 5.78/100, boundary eff-rank 0.021). Axis: **state/geometry**
+     (anti-collapse + distance pressure), fed back as objective-mix work, never a clamp.
+  3. **what-if**: E cannot decode the lab's KNOWN randomized-offer uplift (R²≈0 vs the
+     population constant; Spearman 0.084). The successor/action pressure of DEC-384 has
+     never been earned at this training scale. 233/724 B customers were identifiable
+     (churn/sparse-arm exclusion, disclosed). Axis: **objective (successor features)**.
+  4. **prune_pass PASS**: 34 per-objective weights recorded with an 8-snapshot trajectory,
+     selection = frozen held-out-SSL rule; deletion list EMPTY (equal-weight mode never
+     decays a task to zero) — disclosed as vacuous-today, enforced-on-adoption.
+- **The comparator caught its own abuse case.** The first naive head used `n_purch`/`n_ret`
+  as FEATURES while predicting those same targets (R²=1.000 by circularity). Fixed per
+  the fairness rule: the comparator is now the full event-type bag + recency with the
+  **target-defining event type excluded**. The conclusion did not change after the fix —
+  reported both sides of the trade.
+- **Claim-scope note (no circularity):** probes read `state_embeddings.embedding =
+  model.proj(h)` — the learned-shape boundary, no served measure blocks — so these are
+  learned-only attributions (DEC-410 §4), not served-statistic sufficiency.
+- **Card movement:** S5 UNKNOWN → **FAIL** (measured). 3/6 stages · 0/8 legs · NOT DONE.
+  A FAIL by receipt is information, not noise (operating mode, antifragile rule): the
+  battery did its job — it named the bottleneck axes instead of the card staying silent.
+- **Alternatives rejected.** (1) Reporting only the n_ret win and calling the mass row
+  "partially served" — cherry-picking, banned. (2) Keeping the target-leaking naive
+  comparator because it "only made the gap look bigger" — comparators must be fair
+  first, strong second. (3) Marking the probes "smoke-scale, exempt" — exclusions must be
+  degenerate-target exclusions with a variance statement, not scale excuses.
+- **Next loop (one axis):** the state/geometry axis is the deepest hole (raw-state
+  ρ=0.006) and gates both the unsupervised leg and the distance class — it is the first
+  fix, via objective pressure (rank/geometry terms at training), never via boundary
+  cosmetics (batch-coupled whitening is banned, v6.0).
+- **Principles served.** Honest (falsifiable, comparators + CIs, no clamp),
+  Diagnosable (each FAIL names its axis and its cheapest isolation experiment),
+  M9 (ground-truth gates), M13 (prune pass wired: nothing accretes without earning keep).

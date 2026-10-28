@@ -1,6 +1,6 @@
 # JUDGE CARD — PATH B > PATH A
 
-*Generated `2026-10-28T17:35:59+00:00` · commit `b6b9703` (`foundation-rebuild` · dirty) · encoder behavior `6950962b06ba73b8`*
+*Generated `2026-10-28T22:30:41+00:00` · commit `4aceb04` (`foundation-rebuild` · dirty) · encoder behavior `6950962b06ba73b8`*
 
 **Assessment:** NOT DONE. Legs green: 0/8 · stages green: 3/6. This is a statement about receipts, not about effort; nothing here is a claim of universality (DEC-410: that word appears only when the coverage rows are green).
 
@@ -28,7 +28,7 @@ Ledger points never count as progress: `brain alone` is the judge, `brain + ledg
 | **S2** Vocabulary & numeric encoding | unseen-value path exercised; transform receipts; permutation invariance <= tol | ✅ PASS | [unseen_value_path] OK: frozen schema (11 event types, vocab sizes [4, 10, 16, 6, 4, 7, 4, 24, 4, 4, 0, 77, 3, 4, 4, 5, 7]) encoded a batch containing unseen ev |
 | **S3** Lawful dynamics (the engine) | merge/equivariance/mass-additivity exact on data; tau receipted from spectra; stable from step 0 | ✅ PASS | [scan_associativity] OK: merge law F(g∘f)=F(g)∘F(f) on 6 real sequences x 5 split points (float64, model's own decay/drive, continuous_time=True): worst relativ |
 | **S4** Buckets (the outlets) | per-bucket accessibility parity + per-bucket negative controls | ❔ UNKNOWN | no measurement recorded for S4 |
-| **S5** The objective battery | every content pressure beats its naive comparator (or is excluded and reported) | ❔ UNKNOWN | no measurement recorded for S5 |
+| **S5** The objective battery | every content pressure beats its naive comparator (or is excluded and reported) | ❌ FAIL | [ledger_reconstruction] FAILED: ledger recomputed from the raw stream by DuckDB (not a table copy); LINEAR head on the learned-shape donor (embedding = model.pr |
 | **S6** Certification (the card) | one command regenerates the card at a recorded commit + hashes | ❔ UNKNOWN | no measurement recorded for S6 |
 
 ## Certification hygiene
@@ -52,7 +52,7 @@ Ledger points never count as progress: `brain alone` is the judge, `brain + ledg
 - `judge_leg_simulator.json — receipt missing`
 - `judge_leg_simulator.json — receipt missing`
 - `judge_stages.json — no measurement recorded for S4`
-- `judge_stages.json — no measurement recorded for S5`
+- `judge_stages.json — [ledger_reconstruction] FAILED: ledger recomputed from the raw stream by DuckDB (not a table copy); LINEAR head on the learned-shape donor (embedding = model.pr`
 - `judge_stages.json — no measurement recorded for S6`
 
 ---

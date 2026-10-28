@@ -10,7 +10,7 @@
 
 > **IMPLEMENTATION OPENED on branch `foundation-rebuild` (2026-10-28).** Design phase complete
 > (T-series DEC-399 · A-series DEC-404 · C-series DEC-412 · Outlet Standard O1–O8 · O6 DEC-414);
-> DEC trail DEC-383…419. **Steps 0–1 done (DEC-416):** GB10 CUDA env in `.venv` (torch
+> DEC trail DEC-383…420. **Steps 0–1 done (DEC-416):** GB10 CUDA env in `.venv` (torch
 > 2.14.1+cu130, warm bf16 ≈15.2 TFLOPS, `python3-dev` installed — all scan-accel tests pass);
 > judge card live (`scripts/judge_spec.py` + `judge_card.py` → `JUDGE_CARD.md`, 18 anti-false-PASS
 > tests). **Step 2 delivered (DEC-417/418):** S1/S2 **PASS** on real evidence — renamed schema + new
@@ -24,7 +24,16 @@
 > (0.0) with a live spring (gaps×10 → 3.8e-01), step-0 finite, τ×100 tracks cadence, governed
 > stability clean. The receipt caught and fixed a **doctrine-violating default** (`continuous_time`
 > typed `False` against the binding AGENTS time default — measured time-blind) and an **uncarried
-> intent-filter state**. Card now **3/6 stages · 0/8 legs · NOT DONE**. Baseline: 512/511
+> intent-filter state**. **Step 4 delivered (DEC-420):** the battery is complete —
+> `scripts/measure_battery_law.py` signs the three missing probes on the 724 holdout-B
+> customers with fair naive comparators + paired CIs, and they **FAIL honestly**: mass
+> loses to the frequency head (spend R²0.805 vs 0.935; returns is the donor's win 0.375
+> vs 0.237, CI[0.048,0.153]), geometry ≈ absent (donor ρ=0.086 vs bag 0.181, raw state
+> 0.006), known randomized-offer uplift undecodable (R²≈0); prune pass wired (deletion
+> list empty, disclosed). S5 is a **measured FAIL with named axes** — state/geometry
+> deepest, then mass pressure, then successor features.
+> Card now **3/6 stages · 0/8 legs · NOT DONE** (8 PASS · 1 measured FAIL · 10 UNKNOWN).
+> Baseline: 512/511
 > /1 (the 1 is a typed-tolerance drift left alone — gate-touching). Nothing pushed.
 > The status-quo `REPORT_CARD.md` remains the operational reference for the inherited pipeline.
 >

@@ -1005,7 +1005,7 @@ this order when implementation opens.
 | 1 | **Judge-first card skeleton** — two-number × four-leg top line, freshness law, UNKNOWN default (existing receipts feed it; missing rows render UNKNOWN) | ✅ **done 2026-10-28** (DEC-416): `scripts/judge_spec.py` + `scripts/judge_card.py` → `JUDGE_CARD.md` (0/8 legs, 0/6 stages, NOT DONE); 18 tests prove it cannot be talked into a PASS; freshness enforced via `behavior_hash()` |
 | 2 | **S1/S2 receipts** — renamed-schema + new-field pass, resolution receipt, unseen-value path, transform receipts | ✅ **done 2026-10-28** (DEC-417/418): 6 checks PASS via `scripts/measure_input_law.py`; falsified a dead canonical adapter (polars 1.44) + a masked accelerator (root-owned triton cache, DEC-389 vindicated) — both fixed at the right layer |
 | 3 | **S3 compliance receipts** — homomorphism/equivariance/mass-additivity on data; τ-from-spectrum; stability step 0 | ✅ **done 2026-10-28** (DEC-419): 7/7 PASS via `scripts/measure_dynamics_law.py` on the continuous-time production checkpoint — merge law 1.2e-15, chunked continuation 1.1e-07 **with all recurrent states carried** (h-only serving gap disclosed as an O6 bought approximation), mass 6.0e-16, week-shift exact 0.0, spring alive (gaps×10 → 3.8e-01), τ×100 tracks, governed stable; restored the binding continuous-time default the typed `False` had violated |
-| 4 | **Battery completion** — distance-regression + action-conditioned outcome + ledger-reconstruction; naive comparators; prune pass | the two known gaps; expected biggest progress jump (DEC-387) |
+| 4 | **Battery completion** — distance-regression + action-conditioned outcome + ledger-reconstruction; naive comparators; prune pass | ✅ **receipts delivered 2026-10-28** (DEC-420): all three probes signed on the 724 holdout-B customers with fair naive comparators + paired CIs — and they **FAIL honestly** (mass loses to the frequency head, geometry ≈ absent, what-if undecodable; the donor does WIN returns-proneness). Prune pass wired (deletion list empty, disclosed). S5 = measured FAIL with named axes — the stage fix is now the ladder's work, not the receipt's |
 | 5 | **`response` bucket + decodability contracts** — build bucket (DEC-384 disciplines); per-bucket ρ + accessibility parity (DEC-388), tolerances frozen pre-run | completes bucket set + pays the frozen tax |
 | 6 | **Ledger companion formalized** — G1–G5 as code-enforced tests | DEC-383 made mechanical |
 | 7 | **Capacity curve** — retention-vs-d sweep → k_min certified; settle d=128 (derived or replaced) | DEC-390 done-item (4); answers Feature 7's width question |
@@ -1357,3 +1357,19 @@ this order when implementation opens.
   the pre-existing config-free GeometryBank tolerance drift).
   Next per §8: **step 4 — battery completion** (distance-regression + action-conditioned
   outcome + ledger-reconstruction probes, naive comparators, prune pass).
+- 2026-10-28 s41 — **step 4 delivered: battery complete, S5 measured FAIL** (DEC-420).
+  `scripts/measure_battery_law.py` signs the three missing content-class probes on the
+  724 holdout-B customers (heads fitted on split A, paired bootstrap CIs, frozen contract
+  constants): **how-much** — donor reconstructs spend at R²=0.805 out-of-sample but loses
+  to the full event-bag+recency head (0.935); returns is the exception the donor WON
+  (0.375 vs 0.237, CI[0.048,0.153]); **what-it's-like** — donor Spearman 0.086 vs truth
+  latent distance, naive bag 0.181, raw pre-boundary state 0.006 (geometry essentially
+  absent — corroborates eff-rank 5.78/100 and boundary 0.021); **what-if** — the lab's
+  KNOWN randomized-offer uplift is undecodable (R²≈0, ρ=0.084, 233/724 identifiable);
+  **prune_pass** PASS (34 weights, trajectory, frozen held-out-SSL selection, deletion
+  list empty — vacuous-today disclosed). The fairness law caught a circular comparator in
+  my own first draft (n_purch as feature AND target) — fixed, conclusion unchanged.
+  Card: **3/6 stages · 0/8 legs · NOT DONE**, S5 now a MEASURED FAIL with named axes
+  (state/geometry deepest, then mass/objective pressure, then successor features).
+  Next per §8: the state/geometry axis via training-side pressure — never boundary
+  cosmetics (batch-coupled whitening stays banned, v6.0).
