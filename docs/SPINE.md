@@ -641,6 +641,9 @@ how does it know the artifact changed under it, and where does personalization l
 | C5 | **The unknown-consumer guarantee** — how "covered BY CONSTRUCTION, not by enumeration" is carried (mechanism ruling) | open — the deepest row |
 | C6 | **Version & compatibility contract** — what a consumer pins, what breaks on re-fit, refusal on incompatibility | open |
 | C7 | **Personalization** — where per-customer/segment adaptation legally lives | open |
+| C8 | **The factory** — supervised plugin generation from a target spec (operator directive, DEC-406) | **open — presenting now** |
+| C9 | **Unsupervised instruments** — dumb instrument set for structure/geometry/anomaly, template-generated | **open — presenting now** |
+| C10 | **Decision & RL consumers** — white_queen primary; online RL admissible under tiered discipline | **open — presenting now** |
 
 ### C1 — The read surface — **RATIFIED by operator directive (DEC-405): the artifact *is* the interface**
 
@@ -675,6 +678,69 @@ rather than observed in a call path, hence rule 4's stamped metadata.
 
 Plain summary: **B publishes to a wall. Thousands may read the wall. Nobody can ask the wall a
 question, write on it, or get a wall built just for them.**
+
+### C8 — The supervised plugin factory (operator directive, DEC-406)
+
+The observation that makes this mechanical: **the supervised dataset already exists.** One row
+per `customer_key × as_of`; features = the published columns; the label joins by key from the
+label store. So a supervised plugin is not software — it is a **target + discipline**.
+
+| # | Option | In one line | For | Against | Verdict |
+|---|---|---|---|---|---|
+| A | Generate editable plugin **code** per target (scaffold) | familiar | consumers can customize anything | correctness diffuses into thousands of editable copies; the first edit that breaks an as_of split silently voids the encoder's certification claim, and the card can't see it | ✗ |
+| B | **Spec-interpreted factory** ⭐ | a plugin **is** a declarative spec (`target`, `entity grain`, `label window`, `buckets allowed`, `task type`, `cadence`) + trained artifact + receipt, produced by **one** engine | one implementation of every discipline (single source of truth); guarantees are **structural, not reviewed**; the card enumerates plugins from specs, so a claim with no receipt simply cannot be displayed; one engine fix re-certifies all consumers — with generated code it never propagates | exotic needs must use the escape hatch | ✅ |
+| C | **B + gated custom escape** ⭐ | hand-written plugins allowed, but must pass the **same** gates and emit the **same** receipts, labeled `custom` on the card | keeps the factory honest (it must express real needs) without letting anyone skip discipline; a growing `custom` count is itself a card signal of factory deficiency | the escape must stay rare and visible | ✅ (adopted with B) |
+| D | Free-form consumer code, human-reviewed | trusts experts | — | review does not scale to thousands; unreviewed paths become unfalsifiable claims about the encoder | ✗ |
+
+**The discipline the engine owns on every consumer's behalf** (the actual product): as_of-anchored
+time-ordered splits (train strictly before validation — no future information); features
+restricted to published columns and to the buckets the spec declared; head class = the locked dumb
+set with **derived** capacity (C2); calibration with measured coverage; **both** comparators
+(capacity-matched control **and** the strong PATH A incumbent) with paired CIs; degenerate targets
+**excluded and reported**, not passed; residency re-check (the trained scorer runs from the
+published table alone, DEC-404); pinning to the artifact's version + hash (DEC-405 rule 4); receipt
+with N, commit, hashes. `sklearn`/`scipy` supply estimators, splits, calibration, and statistics
+(principle 14) — none of it hand-rolled.
+
+**Firewall (C3, enforced here):** the spec names a *label source*; labels join by key, read-only,
+and **never** flow into B. Encoder selection stays on held-out self-supervised loss (DEC-387) —
+the factory consumes the encoder, it does not train it.
+
+Ruling pending (recommend **B + C**). Plain summary: **you supply the question; the factory
+supplies the question's honesty.**
+
+### C9 — Unsupervised instruments (sklearn-grade, same template discipline)
+
+Same published rows, no labels anywhere in fitting. Dumb instrument set: **distance/kNN**
+(similarity = shared futures, S5 distance pressure) · **PCA / whitening** (rank & isotropy
+diagnostics) · **k-means / HDBSCAN** (segments) · **IsolationForest / Mahalanobis** (anomaly, read
+with the `uncertainty` bucket) · **cross-cohort transfer** (fit on one cohort, tested on another).
+Every count that would otherwise be typed — clusters, neighbors, contamination, components — is
+**derived and receipted**; comparators are always **table / random / destroyed**, and a structure
+claim that beats neither is excluded, not celebrated. Geometry gates (isotropy, effective rank,
+decay) attach to the **artifact**, not to each consumer's re-derivation.
+
+### C10 — Decision & RL consumers (white_queen primary, online RL admissible)
+
+`white_queen` (OPE tribunal) is the primary decision instrument **and the certifier**: no policy
+ships that it has not certified, and it certifies against **known effects** in the randomized arms
+(Definition-of-done #4). The layer nonetheless admits a **tiered** RL ladder — higher tiers
+require more evidence, never less:
+
+| Tier | What it may do | What it must show |
+|---|---|---|
+| **T-0 Offline analysis** | evaluate/compare policies from logged data | OPE with paired CIs; known-effect recovery; beats table & random |
+| **T-1 Offline policy, certified deploy** | choose actions live, **never explore** | white_queen certification — stream gate **and** broad acceptance contract shown separately — plus improvement with/without `red_king` |
+| **T-2 Constrained online learning** | update its **own** head from observed outcomes | frozen encoder (state-only, **no gradients upstream**), off-policy correction, drift/stability receipts, rollback path, operator pre-authorization |
+| **T-3 Live exploration** | randomized arms at a **small, derived rate** | pre-registered protocol, guardrails, explicit operator approval — this tier is what *creates* the ground truth T-0..T-2 certify against |
+
+Non-negotiables: every decision consumer optimizes the same objective — discounted
+**incremental** gross margin (causal lift, never correlated margin); action space, cadence, and
+exploration rate are **derived**, with any declared value a receipted fallback; an RL consumer owns
+its head, replay, and policy state — **never** the encoder's weights; counterfactual reads are
+lawful only where randomization is logged, otherwise they carry widened uncertainty.
+
+Ruling pending (recommend the tiered ladder as written).
 
 ## 7. Progress mechanics (DEC-390) — the card IS the judge
 
@@ -935,3 +1001,14 @@ this order when implementation opens.
   rule already broken (B→white_queen ×5; C→B ×3 incl. `rehearsal.py → update_day`, a consumer
   that can produce its own input) — cleanup owed as one work item. Pending: C2 (head-class
   ceiling — what bounds "small MLP").
+- 2026-10-27 s32 — operator issued the **Layer C charter** (DEC-406): supervised plugins
+  **spawned from a template** given essentially just the target (the published artifact already
+  *is* the supervised dataset); unsupervised the same; **sklearn-level quality and simplicity**;
+  `white_queen` as the primary RL instrument with **online RL admitted**; "all of Layer C is
+  dedicated to creating plugins given this encoder." Recorded as a **certified factory +
+  registry** (not bespoke scripts). C8/C9/C10 presented: factory = spec-interpreted engine +
+  gated custom escape (B+C, rejecting generated-code and free-form review); unsupervised =
+  dumb instrument set with derived counts and table/random/destroyed comparators; RL = tiered
+  ladder T-0 offline → T-1 certified offline policy → T-2 constrained online learning → T-3
+  live randomized exploration, all under the single discounted-incremental-margin objective and
+  with gradients never reaching B. Pending: rulings on C2, C8, C9, C10.
