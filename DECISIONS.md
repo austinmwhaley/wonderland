@@ -2921,3 +2921,44 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - Principles served: modularity/one-way flow (peer mini-projects over a published artifact),
   A1/Robust (guardrails outside the learner, rollback, invalidation), Honest (open items named
   instead of a false-complete design), M1 (future RL capability admissible with no encoder edit).
+
+## DEC-410 — The coverage lattice: how the unknown-consumer guarantee is carried (C5 = E); v1 stub hunter approved
+
+- Ruling: **Option E (the coverage lattice)**, on the pre-registered premise that **no
+  mechanism proves** "covered by construction, not by enumeration." Four legs, each declaring its
+  guarantee type:
+  1. **Form — proven by construction:** bounded mergeable homomorphism, explicitly parameterized
+     forgetting, per-sample, schema-agnostic, two pathways. Receipts: merge exactness,
+     equivariance, mass additivity. (This is what makes "any consumer" meaningful: the object is a
+     *state of the stream*, not a feature vector for our tasks.)
+  2. **Content — measured:** the battery's six content classes, `Δ_suff` vs a shuffled null, and
+     oracle-gap at fixed capacity, over a family **whose members are printed on the card**
+     (coverage = family width, and the width is visible rather than implied).
+  3. **Adversary — hunted:** synthesized targets (random functionals of the future, programmatic
+     targets); each blind spot becomes a new battery pressure with its own row. The hunter's own
+     hypothesis class is disclosed — it inherits a blind spot and says so.
+  4. **Boundary falsification — free, instant, for strangers:** every consumer receives a machine
+     verdict on *"is my target served?"* from the head-ladder + matched comparators + knob-turn
+     receipt, with **NOT-SERVED attributed to the encoder**, not to the consumer.
+- **Claimed by construction (truthfully, at no measurement cost):** additive/aggregate targets
+  (counts, sums, recency/frequency/value style) — the mass pathway is exact-additive and never
+  decayed, gated, or normalized, and the shipping head is linear, so every additive aggregate over
+  the window is **linearly recoverable**; consistency under chunking and time-translation (merge +
+  equivariance); usable distances (geometry gates live on the artifact); refusal over clamping.
+- **Non-promise, published in the artifact's metadata:** coverage is over **functions of the
+  observed stream**. Unlogged events, hidden confounders, and covariates that never enter the
+  stream are carried as **uncertainty**, never faked. A consumer needing them is covered by
+  getting data, not by any encoder.
+- **Wording law (the anti-self-deception clause applied to the flagship claim):** the word
+  **"universal" never appears in a generated artifact unless the coverage rows are green.** v1
+  prints instead: *"no unserved target found among battery ∪ registered consumers ∪ stub-hunter,
+  as of receipt X, commit Y"* — strictly weaker than "all consumers," printed that way on purpose.
+- **v1 stub hunter APPROVED** (operator): fixed random projections of the future + a handful of
+  programmatic functionals (max-in-window, gap-to-next, count-above-threshold, time-weighted sum),
+  self-supervised and GPU-cheap, so leg 3 is non-empty on day one. This is a **receipt addition,
+  not a gate change**; it touches DEC-390's deferral of the full task-hunter, so it is recorded
+  as explicitly approved by the operator rather than slipped in. The full adversarial
+  task-hunter remains a **Layer-1** frontier row, disclosed as open on the card.
+- Principles served: Honest (the claim is bounded and falsifiable, not asserted), M1 (unimagined
+  consumers accommodated or *seen to fail*), A1 (refusal over clamping), M3 (form as law),
+  Diagnosable (a stranger's failure is attributed to the encoder, naming the axis).
