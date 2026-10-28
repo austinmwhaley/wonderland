@@ -2649,3 +2649,43 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - Principles served: A1 (stability without clamps; reject-not-clamp), M3 (affineness and the
   merge law preserved), Honest (level preserved; no batch-fabricated capacity),
   prefer-deletion (evidence-gated presence).
+
+## DEC-403 — Residuals: channel-space skips + read taps with learned neutral-init gains (A5 = B)
+
+- Ruling: **Option B**. Legal skip structure: (1) a skip around the **channel-MLP**
+  sub-block; (2) **layer-to-layer input skips in channel space**; (3) **per-layer read taps**
+  into the readout ensemble (A3's learned positive weights — already law); (4) every skip
+  carries a **learned scalar gain initialized at the neutral element** (zero contribution, so
+  adding a layer cannot change the function at step 0 — ReZero-style). Skips live only in
+  channel space; never route around the recurrence; never carry mass channels through a
+  shared path (mass additivity gate C3 must keep measuring exact zero).
+- **Depth fairness** is the load-bearing reason: with zero-contribution skip gains a deeper
+  model *contains* the shallower one at initialization, so the A2 depth sweep attributes
+  improvement to depth rather than to re-randomization. Without it, the depth verdict measures
+  luck.
+- No typed skip coefficients: `0.5`, `1/(N+1)` and friends are literals — skip strength is
+  earned by gradient (M2).
+- Rejected: no-residuals (⚠️ legitimate start position; strands DEC-402's mandatory
+  unnormalized magnitude lane, and gradient starvation at derived depth would be discovered
+  mid-training with no lawful form ready); **skip around the recurrence** — algebraically
+  `fade(s)+Bx+s = (A+I)·s+Bx`, an **un-faded second copy of history**: fast-τ channels can no
+  longer forget (falsifies the measured τ, defeats bounded memory) and `A+I` can be expansive
+  (stability law endangered).
+- **D (dense multi-connectivity / ConnectNet-style concat) PARKED, admission trigger
+  pre-registered** (so it is never relitigated by opinion): D's genuine advantage over B is
+  *separable* per-source access (per-source linear maps vs B's scalar-gain sums). It is
+  admitted **at that location only** if a battery row shows a consumer-side failure
+  attributable to entangled shallow content, demonstrated by a matched control where clean
+  separable access fixes the row and B's read taps demonstrably do not — with its own runtime
+  receipt, its own minimality row, and the served-dimension cost disclosed on the card.
+  Rejected as a default (not as a possibility): duplicates A3's already-ratified
+  "learned positive weights over sources"; wiring grows with depth²; served object size grows
+  with depth × width (dilution measured when concatenating — the T10 "one giant blob"
+  failure); starts at the fattest candidate and asks the minimality curve to justify it.
+- Doctrine line adopted: **the past may be re-read, the present may be short-circuited, the
+  fade may never be bypassed** — and every shortcut must earn how much it contributes.
+- Receipts owed: skip-placement audit; step-0 identity-preservation check (deeper model =
+  shallower model at init); per-skip learned-gain report.
+- Principles served: M3 (fade exactness, mass additivity), M2 (gain learned), M4 (runtime
+  receipts), A1 (step-0 stability, identity-preserving), Honest (depth verdict attributable),
+  prefer-deletion (single mechanism for multi-source readout).
