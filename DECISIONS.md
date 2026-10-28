@@ -2279,3 +2279,27 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   segments compose; constant-state, O(1) incremental serving and time-translation
   equivariance follow from the algebra (M3 → M4 as the constitution intends).
 - Principles served: M3 Lawful, M4 Efficient, M2 Adaptive, A1 Robust.
+
+## DEC-387 — Pressure ratified: full derived battery (Feature 6 = Option A) + discipline
+
+- Ruling: **Option A** — the complete objective battery (existing 10 + distance-regression
+  + action-conditioned outcome + ledger-reconstruction), with the operator's demand that
+  the set be **all** objectives. Completeness is achieved by **derivation, not collection**:
+  the six content classes (Feature 3 audit) are the coverage checklist — every objective
+  hangs on a class; a class without a hanging objective is a gap to fill; an objective that
+  hangs on nothing is deleted.
+- Binding discipline (operator approved all three):
+  (1) **Trace or cut** — every objective names a content class (consumer leg or law) or dies;
+  (2) **weights learned, never hand-set** (M2), selected on held-out self-supervised loss
+      only — never the graded metric, never downstream labels (A2);
+  (3) **naive comparator per objective** — anything that cannot beat the dumb default is
+      pruned, not pitied (objective pruning tooling exists).
+- New pressures: distance-regression (unsupervised leg; truth-to-truth behavioral distance
+  available **exactly on the synthetic lab** — certify the machinery where ground truth
+  exists, then generalize via predicted-future discrepancy on real streams);
+  action-conditioned outcome (feeds `response`; DEC-384 disciplines apply).
+- Alternatives rejected: single pure next-event objective (under-pressures geometry and
+  long-horizon structure; freeze makes likelihood-optimal entanglement permanent);
+  contrastive-only (pair choices smuggle in the answer; no generative content);
+  hand-weighted menu (M2 violation — human weights are magic numbers).
+- Principles served: A2 Honest, M2 Adaptive, Diagnosable, consumer-backward trace.
