@@ -135,6 +135,42 @@ without a hanging objective is a gap; an objective hanging on nothing is deleted
 Discipline (binding): trace-or-cut · learned weights, held-out-SSL selection only · naive
 comparator per objective or pruned.
 
+### T-series — the internals map (between raw event and frozen state)
+
+S1–S6 are the stages; each contains internal decisions. Status legend:
+**law/receipt** = already settled by a ratified law or existing receipt · **open** = due at
+the table as a T-feature (same protocol: options, why/why not, recommendation, ruling).
+
+| # | Internal decision | Where | Status |
+|---|---|---|---|
+| T1 | **Token unit** — what one "tick" of the engine is | S2 | **open — first up** |
+| T2 | Categorical vocab policy — caps, hashing for id-like fields, unseen-value path | S2 | open |
+| T3 | Numeric encoding — learned monotone transform vs fallback | S2 | open |
+| T4 | **Missing/unknown/zero semantics** — three-way field presence | S2 | open (was already the planned first quality-loop item) |
+| T5 | Composition law — how fields combine into one event vector | S2 | **law** (permutation-equivariant symmetric composition; C1 receipt) |
+| — | Time is not a feature; periodicity from data-derived spectral peaks | S2/S3 | **law** (DEC-386) + receipt (Fourier-off hurts orders) |
+| T6 | Sequence construction — chunking long histories, budgets, as-of cuts | S3 | open |
+| T7 | Timescale allocation — how many τ channels, from what statistic | S3 | open (rule: from measured spectrum peaks) |
+| T8 | Nonlinearity placement — gating/bilinear coupling where rank needs it | S3 | open (micro; iterate-to-convergence scans only) |
+| T9 | Capacity d | S3 | open — deferred to retention-vs-d curve (DEC-390) |
+| T10 | Bucket membership — which head outputs live in which bucket | S4 | open |
+| T11 | Weight-learning mechanism, horizons, mask rates | S5 | partially open (all derived-from-data per DEC-387) |
+| — | Training regime (convergence not counts, stability law, early stop) | S5 | doctrine (AGENTS.md) — needs spine receipts |
+| — | Freeze semantics | S6 | **law** (A3 lock) |
+
+### T1 — Token unit (options table, presented 2026-10-27)
+
+| # | Option | In one line | For | Against | Verdict |
+|---|---|---|---|---|---|
+| A | **One event = one tick** — the engine reads each event as-is, fields encoded by their measured kind, timestamp feeds the physics | Native fidelity | Matches the engine law exactly (fade between, tick AT events); no cadence literals; irregular timing preserved; O(1) per event | Field-heavy events make one tick carry a lot (fine: composition is symmetric and learned) | ✅ recommended |
+| B | **Text-ify** — render each event as a sentence, feed a text model | Translate to English first | Reuses LLM machinery; free linguistic priors | Lossy paraphrase (numbers drift when written as words); tokenizer bloat; external dependency violates minimal self-contained stack; LLM-style ES models remain single-domain per the JAIR survey | ✗ |
+| C | **One day = one tick** — aggregate the day's events into a token | Daily digest | Compact; smooths noise | It is a **cadence literal** and destroys intra-day order/timing — the banned anti-pattern (DEC-386 rejected this family) | ✗ |
+| D | **One field = one tick** — spread an event's fields across separate steps | Micro-tokens | Slower, finer reads | Breaks the tick-at-event physics (an event no longer arrives at a time); multiplies state updates by fields with no law to justify it | ✗ |
+
+Ruling pending: ratify A; then T2/T3/T4 (within-event encoding) proceed as their own
+tables. A is already the de-facto build — ratification converts practice to law, same as
+DEC-386 did for the engine.
+
 ### What the encoder is NOT
 - Not a consumer of labels/downstream tasks (firewall; PATH A's table is a
   **teacher/baseline**, never resident inside the brain — see ledger guardrail G4).
@@ -391,3 +427,7 @@ this order when implementation opens.
   split-as-law engine, derived battery, accessibility guarantee, judge-first card with
   freshness law and encoder-done (v1). Implementation order recorded (§8), **awaiting
   operator "go"** — step 0 is the CUDA environment rebuild. DEC trail: DEC-383…390.
+- 2026-10-27 s14 — operator opened the **internals arc (T-series)**: map of internal
+  decisions between stream and state pinned (T1–T11 with statuses; laws marked).
+  T1 (token unit) options presented, recommendation A (one event = one tick). Pending:
+  T1 ruling, then T2 vocab policy, T3 numerics, T4 missing/unknown/zero semantics.
