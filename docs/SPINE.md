@@ -357,7 +357,7 @@ benchmark receipt (DEC-389), not a design debate.
 | A3 | **Gates** — which gates exist, where, measured init | **LAW (DEC-401): full lawful set — write + event-locked persistence + read gates; mass never gated; measured init; step-0 stability receipt** |
 | A4 | **Normalization** — allowed where? (BANNED on state paths — mass additivity C3 + contractivity analysis; per-sample norms only on bend paths) | **LAW (DEC-402): per-sample, bend-path inputs only, admitted by receipt; unnormalized magnitude lane mandatory** |
 | A5 | **Residuals** — skip structure (legal in channel space; never through state) | **LAW (DEC-403): channel-space skips + read taps, learned neutral-init gains (depth fairness); dense concat parked** |
-| A6 | **Attention's place** — allowed only as read-side pooling; may never be the state (DEC-386) | **open — presenting now (last of the A-series)** |
+| A6 | **Attention's place** — allowed only as read-side pooling; may never be the state (DEC-386) | **LAW (DEC-404): read-side only, resident objects only — residency law** |
 
 ### A1 — Block anatomy (presented 2026-10-27)
 
@@ -487,6 +487,29 @@ Folded rulings:
 
 Ruling pending (recommend **B**). Plain summary: **attention may be a way of looking, never a
 way of remembering.**
+
+Ratified: **B (DEC-404)** — **residency law**: any read path reads only what the fixed-size
+state carries; proven by re-implementing the readout against the frozen artifact alone
+(bitwise-equal). Attention weights are read-only diagnostics. Layer-trust attention deleted as
+a duplicate of A3's read gates.
+
+### A-series — CLOSED (2026-10-27)
+
+| # | Decision | Status |
+|---|---|---|
+| A1 | Block anatomy | **LAW** — two sub-blocks: lawful recurrence (time-mix) + channel-MLP (channel-mix), attention-free (DEC-400) |
+| A2 | Depth | **LAW** — derived from held-out convergence; card's `layers 2` = inherited, pending re-derivation (DEC-400) |
+| A3 | Gates | **LAW** — write + event-locked persistence + per-layer read gates; τ bands from spectral bootstrap; mass never gated; measured init; step-0 stability receipt (DEC-401) |
+| A4 | Normalization | **LAW** — per-sample, bend-path inputs only, admitted by receipt; unnormalized magnitude lane mandatory (DEC-402) |
+| A5 | Residuals | **LAW** — channel-space skips + read taps, learned neutral-init gains (**depth fairness**); dense concat parked with pre-registered trigger (DEC-403) |
+| A6 | Attention | **LAW** — read-side only under the **residency law**; weights are diagnostics (DEC-404) |
+| — | Kernel formulation (Mamba-1/2-style SSD etc.) | **implementation** — fastest lawful kernel on the GB10 by benchmark receipt (DEC-389), not a design debate |
+| — | Parked receipted candidates | recent-window attention · short-conv pre-stage (A1) · nonlinear parallel dynamics (T8) · dense concat (A5) — each admitted only by battery receipt, never smuggled into the core |
+
+Doctrine lines from the A-series: *the spring between events is sacred; the pen and the voice
+may bend* · *norms may wash the pen and the voice, never the inkwell* · *the past may be
+re-read, the present may be short-circuited, the fade may never be bypassed* · *attention may
+be a way of looking, never a way of remembering*.
 
 ### What the encoder is NOT
 - Not a consumer of labels/downstream tasks (firewall; PATH A's table is a
@@ -834,3 +857,11 @@ this order when implementation opens.
   (a read path may read only what the fixed-size state carries; receipt = readout re-implemented
   against the frozen artifact alone, bitwise-equal), positive weights, attention weights as
   diagnostics. Pending: A6 ruling → **A-series closes**.
+- 2026-10-27 s29 — operator: **A6 = B ratified (DEC-404)**. **A-SERIES (MICROARCHITECTURE)
+  CLOSED** — A1 two-subblock recurrence+MLP · A2 depth measured · A3 full lawful gate set ·
+  A4 per-sample norms on bend paths · A5 channel-space skips w/ neutral-init gains · A6
+  read-side attention under the residency law. Kernel formulations demoted to implementation
+  (GB10 benchmark receipt). DEC trail now DEC-383…404; 45+ commits. Remaining arcs: consumer-
+  side contracts (plugins/RL/simulator), serving & refresh policy, GPU work-mapping per
+  component, Layer-1 certification (U-metric/adversary), implementation go/no-go (step 0 =
+  CUDA env rebuild).

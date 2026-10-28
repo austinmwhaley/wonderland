@@ -8,12 +8,15 @@
 
 ## CURRENT STATE — 2026-10-27 (read this first; supersedes older sections)
 
-> **Design re-think active (structure phase CLOSED):** first-principles restructure running
-> as `docs/SPINE.md` (constitution, four consumers, judge = PATH B > PATH A, S1–S6 spine,
-> buckets + ledger companion, derived battery, judge-first card, GPU-first on the GB10).
-> Decisions DEC-383…390. Implementation order recorded in `docs/SPINE.md` §8 — awaiting
-> operator "go"; step 0 = CUDA environment rebuild (torch aarch64/CUDA-13). Until then the
-> existing card/pipeline above remains the operational status quo.
+> **Design re-think active (structure + internals + microarchitecture CLOSED):**
+> first-principles restructure running as `docs/SPINE.md` (constitution, four consumers,
+> judge = PATH B > PATH A, S1–S6 spine, buckets + ledger companion, derived battery,
+> judge-first card, GPU-first on the GB10). **T-series (internals) closed — DEC-399;
+> A-series (encoder microarchitecture) closed — DEC-404.** DEC trail DEC-383…404.
+> Implementation order recorded in `docs/SPINE.md` §8 — awaiting operator "go"; step 0 =
+> CUDA environment rebuild (torch aarch64/CUDA-13). Remaining design arcs before go:
+> consumer-side contracts, serving & refresh policy, GPU work-mapping, Layer-1 certification.
+> Until "go", the existing card/pipeline above remains the operational status quo.
 
 **Repository state:** `main` now contains the former `primary-encoder` demo work. The duplicate
 report card, stale roadmap, duplicate receipt orchestrator, one-off OPE wrappers, and generator
