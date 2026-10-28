@@ -3115,3 +3115,31 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   scoring exact by the merge law), M4/Efficient (cost is the design driver here), A1/Robust
   (refuse rather than stale-pass; no silent shortcuts), Honest (label-free early warning,
   certified fallback for every shortcut).
+
+## DEC-415 — Implementation opens on branch `foundation-rebuild`; the merge replaces the core
+
+- **Operator directive:** *"make a new branch for all this work you are about to do. What you are
+  doing now will replace the core of the project when it is merged back in. go."*
+- Branch **`foundation-rebuild`** created from `main` at `57757a1` (design phase complete,
+  DEC-383…414). Implementation happens here; `main` stays intact until merge. Commits remain
+  **local** — pushing still requires an explicit operator word.
+- **"Replaces the core" interpreted as a deletion obligation, not an addition.** During the build,
+  new components land **alongside** the inherited pipeline so the status-quo card keeps running as
+  the operational reference. Once the judge-first card is green on the new stack, the superseded
+  paths (the old card generator's claims, and any encoder path it measures) are **deleted**, not
+  kept as a parallel implementation — otherwise we violate single-source-of-truth and end up with
+  two judges. Until then, the inherited card is the *status quo baseline*, explicitly labeled as
+  such on the new card so nobody confuses the two.
+- Consequences honored: one-way flow preserved on the new code (leaf `contracts/` module, no
+  backward imports — the cleanup named in DEC-405 becomes a CI-checked gate, since we are now
+  writing the code that must obey it); every new component emits a receipt or its card row renders
+  UNKNOWN; `PLAN.md` is reconciled to `docs/SPINE.md` §8 as part of this branch.
+- **Step 0 (environment) started:** `scripts/setup_env.sh` (idempotent, project venv, torch from
+  the CUDA-13 index first so requirements can never resolve a CPU build) and
+  `scripts/env_receipt.py` (writes `docs/report_cards/experiments/env_receipt.json`: python,
+  platform, git commit/branch/dirty, package versions, nvidia-smi block, torch CUDA block with a
+  real device matmul smoke, cupy smoke). A CPU-only environment stays legal but can never certify
+  a GPU row — the card renders those UNKNOWN.
+- Principles served: principle 10 (reproducibility is identity — the runtime is now receipted),
+  A1/Robust, M4, prefer-deletion (replacement implies deletion), Honest (two cards kept distinct
+  and labeled).
