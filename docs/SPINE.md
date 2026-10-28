@@ -625,6 +625,52 @@ Single-object record: the three properties are projections of ONE object — the
 future-predictive law (action-conditioned where identified). Supervised = determine it;
 unsupervised = distance equals discrepancy between laws; RL = use it under actions.
 
+## 6C. The C-series — consumer-side contracts (opened 2026-10-27)
+
+The encoder is specified; the **consumer side of the boundary** is not yet. Derived from the
+four declared consumers (DEC-384) by asking, for each: what does it receive, what may it
+build, what is it forbidden to do, how is it gated, what covers it if nobody imagined it,
+how does it know the artifact changed under it, and where does personalization live.
+
+| # | Question | Status |
+|---|---|---|
+| C1 | **The read surface** — what exactly does a consumer receive, and how is "brain-only" made mechanical? | **open — presenting now** |
+| C2 | **Permitted head classes** — {linear, kNN, small MLP} is locked (Q3); open: how "small" is bounded (derived, not a literal) and whether the set is closed | open |
+| C3 | **Firewall rules** — no mutation, no label leakage upstream, no ledger-as-brain-win, no future information at serve | open (constraints already law) |
+| C4 | **Per-consumer gates** — who produces the receipt, who verifies it, independence requirement (Definition-of-done #3) | open |
+| C5 | **The unknown-consumer guarantee** — how "covered BY CONSTRUCTION, not by enumeration" is carried (mechanism ruling) | open — the deepest row |
+| C6 | **Version & compatibility contract** — what a consumer pins, what breaks on re-fit, refusal on incompatibility | open |
+| C7 | **Personalization** — where per-customer/segment adaptation legally lives | open |
+
+### C1 — The read surface (presented 2026-10-27)
+
+Today plugins read the frozen artifact's `donor_embeddings` / `state_embeddings` tables
+read-only, with no record of *which* buckets they actually consume. Options:
+
+| # | Option | In one line | For | Against | Verdict |
+|---|---|---|---|---|---|
+| A | Whole artifact, undeclared reads | consumers grab what they want | simplest; zero bookkeeping | breaks three ratified mechanisms at once: earned-keep attribution (DEC-397 can't say who wins in a bucket), the two-number judge (can't verify a "brain" row avoided `measure`), and surgical freshness (DEC-390 must mark **every** row stale on any change) | ✗ |
+| B | **Declared read-set, verified by a single typed accessor** ⭐ | each consumer declares the buckets it reads; reads go through one typed accessor, so the declaration is **observable** (not honor-system); undeclared read = hard failure | makes brain-credit mechanical, attribution automatic, and freshness **surgical** (only rows declaring bucket X go UNKNOWN when X changes) | a registry to maintain; accessor discipline is a real (small) rule | ✅ |
+| C | Curated per-consumer views shipped by the foundation | tailored view per consumer | maximally convenient today | **forbidden** — known consumers would SHAPE the foundation (veto-never-shape); guarantees the next consumer is unaccommodated | ✗ |
+| D | Serving API/gateway instead of tables | wrap it in a service | operationally standard at scale | duplicating the read path risks two sources of truth and an A6-style residency leak; admissible **later** as a thin wrapper **with no logic in it** (logic in the gateway = a second brain) | ⏸ later, by receipt |
+
+Folded rulings (mechanical, not narrated):
+1. **Read-only, always.** The encoder is immutable after certification (Q3 lock); no consumer
+   writes, fine-tunes, or caches a mutated copy.
+2. **Brain-credit rule:** a card row may be labeled **brain** iff its declared read-set
+   contains **no ledger buckets** (`measure`); any read-set including them is labeled
+   **brain+ledger**. This is what enforces DEC-383's two-number card in code instead of prose.
+3. **No raw-event reads in a brain row.** Raw features are PATH A's material and the ledger
+   builder's; a consumer that needs them is in the ledger/A column, not the brain column.
+4. **Freshness scope = declared read-set.** The freshness law (DEC-390) invalidates only rows
+   whose declared buckets were touched by the behavior change — otherwise one encoder edit makes
+   the entire card UNKNOWN and the card stops being usable as a steering artifact.
+5. **One implementation** (principle 6): a single typed accessor for all reads — the mechanism
+   that turns "declaration" from an honor system into an auditable fact.
+
+Ruling pending (recommend **B**). Plain summary: **consumers pick from the menu; they don't
+rearrange the kitchen — and they sign for what they took.**
+
 ## 7. Progress mechanics (DEC-390) — the card IS the judge
 
 **Card top line (the judge):** four consumer legs × two numbers —
@@ -865,3 +911,10 @@ this order when implementation opens.
   side contracts (plugins/RL/simulator), serving & refresh policy, GPU work-mapping per
   component, Layer-1 certification (U-metric/adversary), implementation go/no-go (step 0 =
   CUDA env rebuild).
+- 2026-10-27 s30 — operator chose **Arc 1: consumer-side contracts**. **C-series opened**
+  (C1 read surface · C2 permitted head classes · C3 firewall rules · C4 per-consumer gates ·
+  C5 unknown-consumer guarantee · C6 version & compatibility · C7 personalization).
+  C1 presented: recommendation B — declared read-set verified by a single typed accessor, with
+  the brain-credit rule (a card row is "brain" iff its read-set excludes ledger buckets) making
+  DEC-383's two-number card mechanical rather than narrated, and freshness scoped to the
+  declared read-set. Pending: C1 ruling.
