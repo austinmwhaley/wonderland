@@ -1,6 +1,6 @@
 # JUDGE CARD — PATH B > PATH A
 
-*Generated `2026-10-28T14:18:39+00:00` · commit `c76be49` (`foundation-rebuild` · dirty) · encoder behavior `67755d365dd02bc8`*
+*Generated `2026-10-28T14:38:24+00:00` · commit `093b419` (`foundation-rebuild` · dirty) · encoder behavior `1aa05f752288a158`*
 
 **Assessment:** NOT DONE. Legs green: 0/8 · stages green: 2/6. This is a statement about receipts, not about effort; nothing here is a claim of universality (DEC-410: that word appears only when the coverage rows are green).
 
@@ -36,7 +36,7 @@ Ledger points never count as progress: `brain alone` is the judge, `brain + ledg
 | # | Check | Verdict | Evidence |
 |---|---|---|---|
 | H1 | Environment receipted | ✅ PASS | env_receipt.json device matmul ok |
-| H2 | Behavior hash recorded | ✅ PASS | behavior_hash 67755d365dd02bc8 |
+| H2 | Behavior hash recorded | ✅ PASS | behavior_hash 1aa05f752288a158 |
 | H3 | N recorded | ✅ PASS | enforced per row (no PASS without N) |
 | H4 | Controls present | ✅ PASS | enforced per row (no PASS without controls) |
 | H5 | Comparator finite and fair | ✅ PASS | enforced per row (comparator must be finite and fair) |

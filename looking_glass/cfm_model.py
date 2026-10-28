@@ -167,6 +167,22 @@ def _scan_eager(d, b):
 # initial-state term (`H + D*h0`) is handled by the callers, not here.
 # ---------------------------------------------------------------------------
 _SCAN_MODE = os.environ.get("LG_SCAN", "auto").strip().lower()
+
+# Triton (torch.compile's backend) writes a kernel cache under $HOME/.triton. When that tree
+# is not writable (e.g. root-owned leftovers from an earlier privileged run), compiling any
+# NEW kernel raises PermissionError, the scan silently falls back to eager — a masked
+# accelerator (DEC-389's false green). Pin the cache to a per-uid, always-writable location
+# unless the operator has already configured one; this makes the accelerated path engage
+# deterministically in any environment.
+if "TRITON_CACHE_DIR" not in os.environ:
+    import tempfile
+
+    _tc = os.path.join(tempfile.gettempdir(), f"wonderland_triton_cache_{os.getuid()}")
+    try:
+        os.makedirs(_tc, exist_ok=True)
+        os.environ["TRITON_CACHE_DIR"] = _tc
+    except OSError:  # pragma: no cover - keep default behavior if /tmp is hostile too
+        pass
 _scan_compiled = None
 _scan_disabled = _SCAN_MODE == "eager"
 
@@ -194,8 +210,8 @@ def _tod(ts):
     day-of-week as sin/cos pairs. `ts` = epoch seconds (any shape) -> (..., 4).
     2π-normalized, no calendar literals; works on any absolute clock."""
     ts = np.asarray(ts, dtype=np.float64)
-    h = (ts % 86400.0) / 86400.0 * (2.0 * np.pi)
-    d = ((ts / 86400.0) % 7.0) / 7.0 * (2.0 * np.pi)
+    h = (ts % 86400.0) / 86400.0 * (2.0 * np.pi)  # principle-ok: seconds->day unit conversion
+    d = ((ts / 86400.0) % 7.0) / 7.0 * (2.0 * np.pi)  # principle-ok: week cycle definition
     return np.stack([np.sin(h), np.cos(h), np.sin(d), np.cos(d)], axis=-1)
 
 
@@ -442,7 +458,7 @@ class SelectiveSSM(nn.Module):
         # between events, so a channel's memory is in TIME units (irregular streams).
         # decay = exp(-delta * dt_days); dt is log1p(seconds) -> days.
         if dt is not None and self.continuous_time:
-            dt_days = torch.expm1(dt) / 86400.0  # (B,T,1)
+            dt_days = torch.expm1(dt) / 86400.0  # (B,T,1)  # principle-ok: seconds->days unit conversion
             decay = torch.exp(-delta * dt_days)
         else:
             decay = torch.exp(-delta)
@@ -1231,7 +1247,7 @@ class CFM(nn.Module):
         secs = (torch.expm1(t["dt"]).squeeze(-1) * t["mask"]).cumsum(1)
         age = secs[:, -1:] - secs
         for k in (0.3, 1.0, 3.0, 10.0):
-            w = 0.5 ** (age / (hl * k * 86400.0)) * t["mask"]
+            w = 0.5 ** (age / (hl * k * 86400.0)) * t["mask"]  # principle-ok: seconds->days unit conversion
             feats.append((tok * w.unsqueeze(-1)).sum(1))
             feats.append(w.sum(1, keepdim=True))
         m = t["mask"]

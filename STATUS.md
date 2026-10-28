@@ -10,15 +10,16 @@
 
 > **IMPLEMENTATION OPENED on branch `foundation-rebuild` (2026-10-28).** Design phase complete
 > (T-series DEC-399 · A-series DEC-404 · C-series DEC-412 · Outlet Standard O1–O8 · O6 DEC-414);
-> DEC trail DEC-383…416. **Step 0 done:** GB10 CUDA env built in `.venv` (torch 2.14.1+cu130,
-> CUDA 13.0, compute cap 12.1, cupy 14.2; receipt
-> `docs/report_cards/experiments/env_receipt.json`). **Step 1 done:** the judge card exists —
-> `scripts/judge_spec.py` (frozen gates) + `scripts/judge_card.py` → `JUDGE_CARD.md`, currently
-> **0/8 legs green, 0/6 stages green, NOT DONE** by design (the court before the cases), with 18
-> tests proving it cannot be talked into a PASS. Inherited-suite baseline at this commit:
-> **512 collected / 504 passed / 8 failed** (duckdb 2.0 API break pinned to `>=1.5,<2`; 7 failures
-> need `python3-dev` for `torch.compile`; 1 typed-tolerance drift). Blocking operator action:
-> `sudo apt-get install -y python3-dev build-essential`. Nothing pushed.
+> DEC trail DEC-383…417. **Steps 0–1 done (DEC-416):** GB10 CUDA env in `.venv` (torch
+> 2.14.1+cu130, warm bf16 ≈15.2 TFLOPS, `python3-dev` installed — all scan-accel tests pass);
+> judge card live (`scripts/judge_spec.py` + `judge_card.py` → `JUDGE_CARD.md`, 18 anti-false-PASS
+> tests). **Step 2 delivered (DEC-417):** S1/S2 **PASS** on real evidence — renamed schema + new
+> fields end-to-end with zero code edits, unseen-value path, signed-log1p law, permutation
+> invariance, bit-identical determinism (`scripts/measure_input_law.py` → `judge_stages.json`);
+> the measurement immediately falsified a **dead canonical adapter** (polars 1.44 broke attrs-JSON
+> decode + tz timestamps; fast tier never exercised it) — fixed in `stream_adapter` with one
+> shared decode/parse mechanism. Card now **2/6 stages · 0/8 legs · NOT DONE**. Baseline: 512/511
+> /1 (the 1 is a typed-tolerance drift left alone — gate-touching). Nothing pushed.
 > The status-quo `REPORT_CARD.md` remains the operational reference for the inherited pipeline.
 
 **Repository state:** `main` now contains the former `primary-encoder` demo work. The duplicate

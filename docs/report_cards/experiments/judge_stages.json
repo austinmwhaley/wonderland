@@ -4,18 +4,18 @@
       "new_field_ingested": {
         "evidence": "injected loyalty_tier (novel categories) + session_seconds into every event's attributes: resolved into catspec=['acquisition_channel', 'brand', 'campaign_id', 'category_code', 'channel', 'dow', 'freq', 'hour', 'loyalty_tier', 'offer', 'order_id', 'product_id', 'qty', 'reason', 'region', 'segment', 'touch'] num=['discount', 'margin', 'price', 'session_seconds', 'signup_ts', 'value']; encoder trained on the variant (d=64,L=1,e=1): E finite=True, best=59.5698; zero pipeline-code edits",
         "n_rows": 3328381,
-        "seconds": 97.7,
+        "seconds": 88.0,
         "working": true
       },
       "renamed_end_to_end": {
-        "evidence": "renamed client_id/occurred_at/event/attributes/total -> onboard resolved {'customer_key': 'client_id', 'event_ts': 'occurred_at', 'event_type': 'event', 'brand': None, 'entity_type': None, 'entity_id': None, 'source_table': None, 'value': 'total', 'event_attributes': ['attributes']}; 3328381 rows kept (source 3328381); 6000 customers encoded; encoder trained on the resolved stream (d=64,L=1,e=1): E finite=True, best=53.0010; zero pipeline-code edits",
+        "evidence": "renamed client_id/occurred_at/event/attributes/total -> onboard resolved {'customer_key': 'client_id', 'event_ts': 'occurred_at', 'event_type': 'event', 'brand': None, 'entity_type': None, 'entity_id': None, 'source_table': None, 'value': 'total', 'event_attributes': ['attributes']}; 3328381 rows kept (source 3328381); 6000 customers encoded; encoder trained on the resolved stream (d=64,L=1,e=1): E finite=True, best=60.7079; zero pipeline-code edits",
         "n_customers": 6000,
         "n_rows": 3328381,
-        "seconds": 89.3,
+        "seconds": 116.7,
         "working": true
       }
     },
-    "evidence": "[renamed_end_to_end] OK: renamed client_id/occurred_at/event/attributes/total -> onboard resolved {'customer_key': 'client_id', 'event_ts': 'occurred_at', 'event_type': 'event', 'brand': None, 'entity_type': None, 'entity_id': None, 'source_table': None, 'value': 'total', 'event_attributes': ['attributes']}; 3328381 rows kept (source 3328381); 6000 customers encoded; encoder trained on the resolved stream (d=64,L=1,e=1): E finite=True, best=53.0010; zero pipeline-code edits | [new_field_ingested] OK: injected loyalty_tier (novel categories) + session_seconds into every event's attributes: resolved into catspec=['acquisition_channel', 'brand', 'campaign_id', 'category_code', 'channel', 'dow', 'freq', 'hour', 'loyalty_tier', 'offer', 'order_id', 'product_id', 'qty', 'reason', 'region', 'segment', 'touch'] num=['discount', 'margin', 'price', 'session_seconds', 'signup_ts', 'value']; encoder trained on the variant (d=64,L=1,e=1): E finite=True, best=59.5698; zero pipeline-code edits",
+    "evidence": "[renamed_end_to_end] OK: renamed client_id/occurred_at/event/attributes/total -> onboard resolved {'customer_key': 'client_id', 'event_ts': 'occurred_at', 'event_type': 'event', 'brand': None, 'entity_type': None, 'entity_id': None, 'source_table': None, 'value': 'total', 'event_attributes': ['attributes']}; 3328381 rows kept (source 3328381); 6000 customers encoded; encoder trained on the resolved stream (d=64,L=1,e=1): E finite=True, best=60.7079; zero pipeline-code edits | [new_field_ingested] OK: injected loyalty_tier (novel categories) + session_seconds into every event's attributes: resolved into catspec=['acquisition_channel', 'brand', 'campaign_id', 'category_code', 'channel', 'dow', 'freq', 'hour', 'loyalty_tier', 'offer', 'order_id', 'product_id', 'qty', 'reason', 'region', 'segment', 'touch'] num=['discount', 'margin', 'price', 'session_seconds', 'signup_ts', 'value']; encoder trained on the variant (d=64,L=1,e=1): E finite=True, best=59.5698; zero pipeline-code edits",
     "working": true
   },
   "S2": {
@@ -32,9 +32,9 @@
         "working": true
       },
       "training_determinism": {
-        "evidence": "two seed-0 runs (d=64,L=1,e=1) on identical prepared inputs: E bit-identical=True, best-val equal (55.365458 == 55.365458)",
+        "evidence": "two seed-0 runs (d=64,L=1,e=1) on identical prepared inputs: E bit-identical=True, best-val equal (55.365457 == 55.365457)",
         "n_customers": 6000,
-        "seconds": 64.4,
+        "seconds": 40.4,
         "working": true
       },
       "unseen_value_path": {
@@ -44,14 +44,14 @@
         "working": true
       }
     },
-    "evidence": "[unseen_value_path] OK: frozen schema (11 event types, vocab sizes [4, 10, 16, 6, 4, 7, 4, 24, 4, 4, 0, 77, 3, 4, 4, 5, 7]) encoded a batch containing unseen event types/categories/1e12 numerics: rows=2348780, entities=6002, all arrays finite=True, novel rows -> OOV slot 0 = True, vocab unchanged after serving = True (never re-derived) | [numeric_transform_law] OK: signed log1p law measured: encoded([0.0, 1.0, 10.0, 1000.0, 1000000000000.0, -1.0, -1000000000000.0]) = [0.0, 0.6931, 2.3979, 6.9088, 27.631, -0.6931, -27.631]; matches formula=True, monotone=True, odd-symmetric=True, finite at 1e12=True | [field_permutation_invariance] OK: attribute field order ['touch', 'target_key', 'freq', 'hour']... vs permuted ['reason', 'order_id', 'dow', 'region']... over 60000 rows: sequence digests identical (4c44abeb87398213 vs 4c44abeb87398213) | [training_determinism] OK: two seed-0 runs (d=64,L=1,e=1) on identical prepared inputs: E bit-identical=True, best-val equal (55.365458 == 55.365458)",
+    "evidence": "[unseen_value_path] OK: frozen schema (11 event types, vocab sizes [4, 10, 16, 6, 4, 7, 4, 24, 4, 4, 0, 77, 3, 4, 4, 5, 7]) encoded a batch containing unseen event types/categories/1e12 numerics: rows=2348780, entities=6002, all arrays finite=True, novel rows -> OOV slot 0 = True, vocab unchanged after serving = True (never re-derived) | [numeric_transform_law] OK: signed log1p law measured: encoded([0.0, 1.0, 10.0, 1000.0, 1000000000000.0, -1.0, -1000000000000.0]) = [0.0, 0.6931, 2.3979, 6.9088, 27.631, -0.6931, -27.631]; matches formula=True, monotone=True, odd-symmetric=True, finite at 1e12=True | [field_permutation_invariance] OK: attribute field order ['touch', 'target_key', 'freq', 'hour']... vs permuted ['reason', 'order_id', 'dow', 'region']... over 60000 rows: sequence digests identical (4c44abeb87398213 vs 4c44abeb87398213) | [training_determinism] OK: two seed-0 runs (d=64,L=1,e=1) on identical prepared inputs: E bit-identical=True, best-val equal (55.365457 == 55.365457)",
     "working": true
   },
   "_meta": {
-    "behavior_hash": "67755d365dd02bc8",
+    "behavior_hash": "1aa05f752288a158",
     "command": "measure_input_law.py",
     "data": "/tmp/opencode/wonderland_demo",
-    "generated_at": "2026-10-28T14:15:38+00:00",
-    "git_commit": "c76be49b53c2aa441ed5cb84fb691322d0893063"
+    "generated_at": "2026-10-28T14:38:17+00:00",
+    "git_commit": "093b419b2980eb9dca3d0dc8e2dbb719ec772859"
   }
 }

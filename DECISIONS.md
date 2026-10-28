@@ -3243,3 +3243,29 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - Principles served: Honest (the run is the measurement; a dead path was exposed within one
   loop of building the gate), Lawful/Universal (both timestamp shapes, any schema, zero edits),
   Robust (reject-not-clamp on garbage timestamps), M9 (grounded gates over inherited folklore).
+
+## DEC-418 — the masked accelerator unmasked: root-owned triton cache silently disabled `torch.compile`
+
+- **Symptom.** `tests/test_scan_accel.py` passed alone (after `python3-dev`) but failed inside the
+  full suite: "accelerated path fell back to eager". Not an ordering bug — an **environment
+  poison**: `~/.triton/cache` is **root-owned** (leftover from a privileged run), so compiling any
+  kernel not already cached raised `PermissionError`, which `_scan`'s documented fallback turned
+  into eager execution. Whether the accelerated path engaged depended on which kernels happened to
+  be warm — the exact "silently masked accelerator" DEC-389 forbids, caught only because
+  `test_scan_accel` asserts the accelerator *engaged* rather than skipping.
+- **Fix at the right layer** (`cfm_model`, where compilation lives): unless the operator set
+  `TRITON_CACHE_DIR`, pin it to a per-uid directory in the temp dir before any compile. Behavior
+  unchanged; the accelerator now engages deterministically in any environment. The root-owned
+  `~/.triton` tree can be deleted with one `sudo rm -rf ~/.triton` at the operator's convenience —
+  nothing depends on it anymore (documented, not required).
+- **Confirmed consequence:** full fast tier at this state = **512 collected · 511 passed ·
+  1 failed** — the single failure remains the typed-`0.01` geometry-bank tolerance drift
+  (gate-touching, deliberately untouched until S5 derives that tolerance from the noise floor).
+  Recorded in `env_receipt.json` (`--with-tests`, JUnit XML counts).
+- Also in this chunk: four inherited `86400` occurrences in `cfm_model` marked
+  `# principle-ok:` (seconds→days **unit conversions** and the week-cycle definition in the
+  Fourier time features — not cadence assumptions), clearing `principle_audit` output for the
+  files this branch touches.
+- Principles served: Robust (deterministic from step 0 — including the accelerator's engagement),
+  Honest (a silent fallback was surfaced and eliminated, not papered over), M16 (runtime receipt
+  with warm matmul + real test-tier counts).
