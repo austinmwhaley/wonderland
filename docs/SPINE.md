@@ -354,8 +354,8 @@ benchmark receipt (DEC-389), not a design debate.
 |---|---|---|
 | A1 | **Block anatomy** — what is one layer? | **LAW (DEC-400): recurrence + channel-MLP, two sub-blocks, attention-free** |
 | A2 | **Depth** — how many layers | **LAW (DEC-400): derived from held-out convergence; card's `layers 2` = inherited, pending re-derivation** |
-| A3 | **Gates** — which gates exist, where, measured init | **open — presenting now** |
-| A4 | **Normalization** — allowed where? (BANNED on state paths — mass additivity C3 + contractivity analysis; per-sample norms only on bend paths) | open (constraint already law) |
+| A3 | **Gates** — which gates exist, where, measured init | **LAW (DEC-401): full lawful set — write + event-locked persistence + read gates; mass never gated; measured init; step-0 stability receipt** |
+| A4 | **Normalization** — allowed where? (BANNED on state paths — mass additivity C3 + contractivity analysis; per-sample norms only on bend paths) | **open — presenting now** |
 | A5 | **Residuals** — skip structure (legal in channel space; never through state) | open (constraint already law) |
 | A6 | **Attention's place** — allowed only as read-side pooling; may never be the state (DEC-386) | open (constraint already law) |
 
@@ -403,6 +403,32 @@ Folded rulings if B (each already law-shaped, restated here):
    serve; any training-time noise is seed-reproducible under the C4 receipt.
 4. Stability law binds: lr from curvature, divergence kills the run — persistence gates must
    ship a **step-0 stability receipt**.
+
+Ratified: **B (DEC-401)**. Event-locked persistence gate; exact exponential between events;
+τ bands from spectral bootstrap uncertainty; mass never gated; measured gate init; step-0
+stability receipt. Option A (minimal set) retained as a receipted ablation, not doctrine.
+
+### A4 — Normalization: where is it allowed to sit? (presented 2026-10-27)
+
+Two parts are already law: batch-coupled norms are **banned absolutely** (DEC-398), and no
+norm may sit **on the state or mass paths** — a norm there rescales the state
+non-affinely, which voids the merge law (`F(g∘f)=F(g)∘F(f)` dies), breaks additive sums
+(mass gate C3 = exact zero error), and destroys level/magnitude (a first-class requirement
+the contractive core must not lose). What remains genuinely open: are **per-sample** norms
+allowed on the *bend paths* (the standard "pre-norm" habit: normalize the input to the
+channel-MLP and the gate projections)?
+
+| # | Option | In one line | For | Against | Verdict |
+|---|---|---|---|---|---|
+| A | None anywhere | measured init (T7/T11) + lr-from-curvature may make norms unnecessary | fewest parts; zero risk of erasing magnitude; purity | if a deep bend path destabilizes, we discover it at training time rather than having a lawful instrument ready | ⚠️ start here |
+| B | **Per-sample norms on bend-path inputs only, admitted by receipt** ⭐ | RMSNorm-style (per-sample statistics, no batch coupling) on the channel-MLP input and gate projections — **never** on state, mass, or readout; any rescaling must leave a **parallel unnormalized magnitude lane** so level survives; each norm enters only when a training-behavior receipt shows instability on that path | standard deep-training stability without touching any law; per-sample ⇒ train=serve; placement decided now (no future drift), presence decided by evidence (prefer-deletion) | two receipts to keep: the placement audit + the instability justification | ✅ |
+| C | Norms on the state too (unit-sphere / traced-state SSM) | normalize the hidden state each step | bounded-state proofs get easy | **voids merge exactness** (state-normalization is not affine in the state), **destroys level** (the thing RFM-style summaries keep and we are forbidden to lose), breaks mass additivity | ✗ |
+| D | Batch-coupled norms (batchnorm/ZCA family) | — | — | **already banned** (DEC-398): capacity fabrication, train≠serve divergence | ✗ closed |
+
+Ruling pending (recommend **B**, which is "A, plus a lawful instrument held in reserve").
+Plain summary: **norms may wash the pen and the voice, never the inkwell.** Per-sample is the
+hard condition — anything computed across customers is the ZCA scandal waiting to happen again;
+and a norm that rescales must never be the only path, because magnitude is information.
 
 ### What the encoder is NOT
 - Not a consumer of labels/downstream tasks (firewall; PATH A's table is a
@@ -724,3 +750,10 @@ this order when implementation opens.
   gate with exact-exponential decay between events so the merge law survives; τ bands from
   spectral bootstrap uncertainty; per-layer read gates; mass pathway never gated; measured
   gate init; step-0 stability receipt). Pending: A3 ruling; then A4–A6 close the arc.
+- 2026-10-27 s26 — operator: **A3 = B ratified (DEC-401)**. A4 (normalization placement)
+  presented: recommendation B — per-sample norms (RMSNorm-style) admitted on bend-path
+  inputs only (channel-MLP input, gate projections), never on state/mass/readout, any
+  rescaling paired with a parallel unnormalized magnitude lane, each norm entering only on
+  a training-instability receipt; state-normalizing SSMs rejected (voids merge exactness,
+  destroys level); batch-coupled norms already closed. Pending: A4 ruling; then A5
+  (residuals), A6 (attention's place).
