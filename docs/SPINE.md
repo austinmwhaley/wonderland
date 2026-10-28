@@ -106,6 +106,25 @@ brain alone; serve with brain ⊕ ledger.
 | **S5 Pressure** | Architecture is capacity, not content — nothing enters the state unless a gradient demands it; only self-supervised objectives admissible (A2); accessibility/distance failures feed back here as objective-mix changes, never clamps | hand-weighted losses; no distance pressure (today's geometry gap); training on graded metric |
 | **S6 Freeze** | Without hash + provenance + per-view controls + regenerable card, every claim is narrative | card newer than receipts; stale claims |
 
+### S5 detail — THE BATTERY (complete by derivation, DEC-387)
+
+Coverage checklist = the six content classes. Every objective hangs on a class; a class
+without a hanging objective is a gap; an objective hanging on nothing is deleted.
+
+| Content class | Objectives pressuring it | Status |
+|---|---|---|
+| **who** (predictive shape) | next-event type · JEPA latent-future · order/path · entity/identity | passing |
+| **how much** (mass) | aggregates/past-totals (incl. ledger-reconstruction — preserved Option 4) · numeric marks (values) | shaky (corr² 0.57) — needs more pressure |
+| **when** (timing) | gap/rate · next-event time | passing |
+| **what it's like** (distance) | **distance regression — NEW** (exact truth-distance on the lab; predicted-future discrepancy on real streams) | missing → approved |
+| **what if** (response) | **action-conditioned outcome — NEW** · successor features | missing → approved (DEC-384) |
+| **what I saw** (support) | missingness/support prediction | present (the `uncertainty` heads) |
+| anti-collapse | masked recovery (any field of any past event) | passing |
+| accessibility pressure | query-conditioned probe-as-objective | passing |
+
+Discipline (binding): trace-or-cut · learned weights, held-out-SSL selection only · naive
+comparator per objective or pruned.
+
 ### What the encoder is NOT
 - Not a consumer of labels/downstream tasks (firewall; PATH A's table is a
   **teacher/baseline**, never resident inside the brain — see ledger guardrail G4).
@@ -313,3 +332,10 @@ stage; each state moves only on a receipt. "Mastered" = all six working.
   needed; freeze makes deferral expensive). Feature 5 (the engine) options presented:
   A fade+tick continuous-time recurrence (recommended), B attention-over-history,
   C fixed-window binning, D event-indexed discrete recurrence, E ledger-only (PATH A).
+- 2026-10-27 s10 — operator: **Feature 5 = A ratified (DEC-386)** with both safeguards
+  (learned-from-spectrum timescales; ansatz mismatch surfaces as a receipt).
+- 2026-10-27 s11 — operator: **Feature 6 = A ratified (DEC-387)**, demands ALL objectives
+  (battery pinned as complete-by-derivation against the six content classes, S5 detail
+  table above) + all three discipline conditions. Feature 7 (frozen tax) options
+  presented: A zero-tax ship-as-is, B accessibility-parity guarantee (recommended),
+  C overbuild width (measure, don't doctrine), D adapters (ruled out by A3 lock).
