@@ -339,6 +339,39 @@ complete — internals arc closed.**
 | — | Training regime | **doctrine-pinned** — convergence not counts, lr < 2/L, patience from SE (receipts at implementation) |
 | — | Schema | **CONTRACT** — `entity_id \| event_ts \| event_type \| event_attributes` (DEC-391) |
 
+### A-series — encoder microarchitecture (opened 2026-10-27)
+
+DEC-386 settled the memory *family* (lawful continuous-time gated recurrence) and T8 the
+*bend locations*; the layer interior remains. Closest prior art: the **Mamba-shaped**
+engine — but ours is law-constrained, not off-the-shelf: **Δt is measured from the clock**
+(Mamba *learns* per-token Δ — time is data-truth here, not something to learn), the
+**mass pathway skips decay entirely** (Mamba decays everything), and merge exactness is a
+gate, not a hope. Mamba-1-vs-Mamba-2 internals (e.g., SSD kernel formulations) are
+therefore **implementation** choices: pick the fastest lawful kernel on the GB10 by
+benchmark receipt (DEC-389), not a design debate.
+
+| # | Question | Status |
+|---|---|---|
+| A1 | **Block anatomy** — what is one layer? (the "2 vs 1" question: transformer-style two sub-blocks, time-mix + channel-mix?) | **open — presenting now** |
+| A2 | **Depth** — how many layers (never a typed "2") | open — derived from held-out convergence over candidate depths |
+| A3 | **Gates** — which gates exist, where, measured init | open |
+| A4 | **Normalization** — allowed where? (BANNED on state paths — mass additivity C3 + contractivity analysis; per-sample norms only on bend paths) | open (constraint already law) |
+| A5 | **Residuals** — skip structure (legal in channel space; never through state) | open (constraint already law) |
+| A6 | **Attention's place** — allowed only as read-side pooling; may never be the state (DEC-386) | open (constraint already law) |
+
+### A1 — Block anatomy (presented 2026-10-27)
+
+Transformer discipline says a layer = two sub-blocks: a **time-mixer** (attention) + a
+**channel-mixer** (MLP). Our lawful recurrence IS the time-mixer. What else belongs in a
+layer?
+
+| # | Option | In one line | For | Against | Verdict |
+|---|---|---|---|---|---|
+| A | Pure recurrence (one sub-block) | maximum law purity | fewest parts | channel mixing must live only in write/read gates — cramped; the measured rank win (1.79×) came from content×state interaction that wants dedicated room | ✗ |
+| B | **Recurrence + channel-MLP** ⭐ (two sub-blocks, attention-free) | keep the transformer's *discipline* (mix across time, then across channels), replace its *instruments* (recurrence for time, MLP for channels); bends all sit at write/read (T8-legal) | matches where the measured rank lives; depth scales the interaction; per-sample ops only; kernel-friendly for GPU | slightly more params than A (cheap — capacity is certified by curve anyway, T9) | ✅ |
+| C | Recurrence + attention over a recent bounded window (true hybrid) | keep attention as a spice | sharpens short-range patterns | the window is a **literal** and history-dependent state in miniature — DEC-386's problem re-imported at small scale; park behind a receipt (T8's second-mechanism pattern) | ⏸ receipted candidate |
+| D | Recurrence + short convolution pre-stage (Mamba-style conv) | smooth before integrating | cheap, standard | kernel width = fixed-range literal; fast-τ channels already cover short-term structure (T7) | ⏸ receipted candidate |
+
 ### What the encoder is NOT
 - Not a consumer of labels/downstream tasks (firewall; PATH A's table is a
   **teacher/baseline**, never resident inside the brain — see ledger guardrail G4).
