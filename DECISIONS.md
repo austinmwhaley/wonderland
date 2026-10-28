@@ -2258,3 +2258,24 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - Principles served: M3 Lawful (correct algebra per quantity), A3 (freeze makes protective
   structure cheaper than empirical structure), consumer-backward trace (unsupervised needs
   similarity protected; supervised needs level protected).
+
+## DEC-386 — Engine ratified: continuous-time fade+tick recurrence (Feature 5 = Option A)
+
+- Ruling: the state accumulation is the continuous-time gated recurrence — exponential fade
+  between events at learned timescales, additive ticks at events (S3). Alternatives rejected:
+  attention-over-raw-history (state = whole history: breaks fixed-capacity judge, A1 serving
+  stability, M4 incrementality), fixed-window binning (destroys irregular timing; the window
+  size is a cadence literal — banned anti-pattern), event-indexed discrete recurrence
+  (strictly dominated at equal cost: decay becomes a guessed input feature instead of state
+  physics), ledger-only (is PATH A).
+- The engine is an **ansatz about the process class** (event influence fades with age),
+  admitted as a bet and made falsifiable by two binding safeguards:
+  (1) timescales are learned, initialized from each stream's measured gap/autocorrelation
+  spectra — no human picks them (M2);
+  (2) ansatz mismatch must surface as a receipt (the S5 battery + stage scorecard detect
+  non-fading structure); the fix is a second mechanism added **by receipt**, never a silent
+  clamp (A1, Diagnosable).
+- Consequence: speed is structural, not deferred — the recurrence is associative, so history
+  segments compose; constant-state, O(1) incremental serving and time-translation
+  equivariance follow from the algebra (M3 → M4 as the constitution intends).
+- Principles served: M3 Lawful, M4 Efficient, M2 Adaptive, A1 Robust.
