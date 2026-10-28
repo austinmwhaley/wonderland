@@ -2518,3 +2518,25 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   veto-never-shape).
 - Principles served: M1 (unknown consumers stay accommodated), A2 (membership by receipt),
   A1 (discipline-carrying outlets), prefer-deletion.
+
+## DEC-398 — Nonlinearity placement: bend at write and read, never between (T8 = A)
+
+- Ruling: **Option A**. Nonlinearity is admitted only at (1) **event ticks** — learned
+  gates (which events write, how strongly) and bilinear content×state coupling (the bend
+  the v6 experiment measured raising usable rank 1.79×) — and (2) **readout** (per-bucket
+  ensembles with learned positive weights; no softmax branch collapse). The fade between
+  events remains **exactly linear**.
+- Preserved by this placement: merge exactness (receipt 8.88e-16 → T6 chunking remains
+  free), the monotonic-stability law (contractive linear core), determinism.
+- Rejected: pure linear (measured rank failure; linear workarounds were no-ops — rejected
+  by experiment); bending the fade itself (voids the merge law, endangers stability) —
+  admissible only as a **second, parallel mechanism added by battery receipt** when the
+  ansatz detector says the stream demands it, each mechanism carrying its own merge test;
+  batch-coupled bends (batchnorm/ZCA family) **banned absolutely** — per-sample contract,
+  capacity fabrication (a scandal already lived once here), train≠serve divergence.
+- Doctrine line adopted: **the spring between events is sacred; the pen (write) and the
+  voice (readout) may bend.** Discovery stays open — richer dynamics are gated behind
+  receipts, never smuggled into the core where they would quietly cancel the laws that
+  make histories free.
+- Principles served: M3 (laws kept exact; bends placed where measured), M4, A1 (stability,
+  determinism), Honest (bend justified by receipt, not taste).
