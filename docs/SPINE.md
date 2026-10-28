@@ -160,7 +160,7 @@ open bag S1 interprets. Schema-agnosticism applies inside the bag and to column 
 | T8 | Nonlinearity placement — gating/bilinear coupling where rank needs it | S3 | **open — presenting now** |
 | T9 | Capacity d | S3 | open — deferred to retention-vs-d curve (DEC-390) |
 | T10 | Bucket membership — which head outputs live in which bucket | S4 | **open — presenting now** |
-| T11 | Weight-learning mechanism, horizons, mask rates | S5 | **open — presenting now (last)** |
+| T11 | Weight-learning mechanism, horizons, mask rates | S5 | **LAW (DEC-399): all derived from measurement; C shelved as fallback** |
 | — | Training regime (convergence not counts, stability law, early stop) | S5 | doctrine (AGENTS.md) — needs spine receipts |
 | — | Freeze semantics | S6 | **law** (A3 lock) |
 
@@ -317,6 +317,27 @@ never counts.
 | B | Community defaults (15%, 30/60/90, equal) | ✗ a bag of literals |
 | C | Grid-search on held-out SSL loss | admissible **fallback** if the learned mechanism proves unstable (search over selection-on-graded-metric stays banned); documented, not doctrine |
 | D | Expert-tuned weights | ✗ M2 violation |
+
+Ratified: **A with C shelved as documented fallback (DEC-399)**. **The T-series is
+complete — internals arc closed.**
+
+### T-series — CLOSED (2026-10-27)
+
+| # | Decision | Status |
+|---|---|---|
+| T1 | Token unit | **LAW** — one event = one tick (DEC-391) |
+| T2 | Vocab policy | **LAW** — measured head + hashed tail + profile id-typing + flagged unseen (DEC-393) |
+| T3 | Numeric encoding | **LAW** — measured monotone transform; log1p fallback (DEC-394) |
+| T4 | Presence semantics | **LAW** — not-applicable / unknown / present, data-pruned (DEC-392) |
+| T5 | Composition | **LAW** — symmetric, learned gates (permutation receipt) |
+| T6 | Sequence construction | **LAW** — chunked streaming via merge law; derived budgets (DEC-395) |
+| T7 | Timescale allocation | **LAW** — spectrum peaks vs shuffle-noise floor; peak-init then learn; geometric-ladder fallback (DEC-396) |
+| T8 | Nonlinearity placement | **LAW** — bend at write + read; fade exactly linear; batch-coupled banned (DEC-398) |
+| T9 | Capacity d | **deferred by design** — retention-vs-size curve → k_min (DEC-390; implementation step 7) |
+| T10 | Bucket membership | **LAW** — content class + earned-keep; heads provisional (DEC-397) |
+| T11 | Final knobs | **LAW** — measured mask rates / horizons / weight balancing; search shelved as fallback (DEC-399) |
+| — | Training regime | **doctrine-pinned** — convergence not counts, lr < 2/L, patience from SE (receipts at implementation) |
+| — | Schema | **CONTRACT** — `entity_id \| event_ts \| event_type \| event_attributes` (DEC-391) |
 
 ### What the encoder is NOT
 - Not a consumer of labels/downstream tasks (firewall; PATH A's table is a
@@ -614,3 +635,9 @@ this order when implementation opens.
   derived from measured statistics at fit time; C = search-on-held-out-SSL as documented
   fallback). Pending: T11 ruling → internals arc closes; T9 capacity already deferred to
   the retention-vs-size curve (DEC-390).
+- 2026-10-27 s23 — operator: **T11 = A with C fallback ratified (DEC-399)**.
+  **INTERNALS ARC CLOSED** — T-series complete (T1–T8, T10, T11 law; T9 deferred to the
+  capacity curve by design). DEC trail now DEC-383…399. Remaining table items: consumer-
+  side contracts (plugins/RL/simulator interfaces), serving & refresh policy (incremental
+  updates, drift, retrain cadence), GPU work-mapping per component, Layer-1 certification
+  (U-metric/adversary), and the implementation go/no-go (step 0 = CUDA env rebuild).
