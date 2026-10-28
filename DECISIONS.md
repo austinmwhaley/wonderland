@@ -2303,3 +2303,42 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   contrastive-only (pair choices smuggle in the answer; no generative content);
   hand-weighted menu (M2 violation — human weights are magic numbers).
 - Principles served: A2 Honest, M2 Adaptive, Diagnosable, consumer-backward trace.
+
+## DEC-388 — Frozen tax paid with the accessibility-parity guarantee (Feature 7 = Option B)
+
+- Ruling: **Option B**. Simple-head parity becomes a training-time **requirement**, not a
+  post-hoc report: on battery targets, a linear/kNN head on E must come within frozen noise
+  tolerance of the best head; failures feed the objective mix (DEC-387 mechanism) until
+  resolved. Every bucket ships with a **decodability contract ρ** (what head class reads
+  what, at certified parity), published on the card.
+- Rejected: ship-as-is (defers the tax to production discovery — fails the overmatch
+  doctrine, DEC-385); adapters (violates the A3 lock — known use cases would SHAPE the
+  foundation); overbuild-width adopted NOT as doctrine but as a question answered by the
+  retention-vs-size capacity curve (Feature 8), keeping minimality honest.
+- Honesty condition: parity tolerances are **contract-column values — frozen before any
+  run**, never tuned to pass (certification-integrity protocol).
+- Principles served: A3 (freeze makes readability structural), A2, Diagnosable.
+
+## DEC-389 — GPU-first stack on the operator's NVIDIA GB10 (DGX Spark)
+
+- Operator directive: **optimize the entire software stack for CUDA — anything that can be
+  GPU-accelerated should be.**
+- Verified hardware (nvidia-smi + NVIDIA specs): GB10 Grace Blackwell — Blackwell GPU,
+  6,144 CUDA cores, 5th-gen Tensor Cores (FP4), ~1 PFLOP sparse-FP4, **128 GB LPDDR5x
+  coherent unified memory @ 273 GB/s**, CUDA 13.0, aarch64 (20-core Grace) host.
+- Strategy (measured, honest): compute class ≈ RTX-5070 tier; **memory bandwidth is the
+  real constraint** → the GPU plan is *move nothing, batch everything*: unified-memory
+  zero-copy (streams resident, no host↔device transfers), bf16/fp16 autocast on Tensor
+  Cores, parallel scans and token-budget batching, GPU gradient-boosted heads
+  (`xgboost device=cuda`), GPU columnar ops for the ledger/data-prep (RAPIDS via the
+  existing process-boundary precedent, `requirements-cudf.lock`), GPU FFT for spectral
+  periods. DuckDB/polars stay CPU where they already saturate bandwidth — **adopted per
+  measured benchmark receipts, CPU fallback always kept** (M4 + A1).
+- Binding rules: every GPU adoption carries a CPU-vs-GPU benchmark receipt; regressions or
+  tolerance-breaking numerics are not adopted; one GPU job at a time; runtime receipts per
+  hot path.
+- Environment finding: no importable torch/numpy env exists on the box today despite
+  pyproject declaring torch (+ RAPIDS cu12 side-venv precedent) — **environment rebuild on
+  the NVIDIA aarch64/CUDA-13 wheels is GPU work item #1** when implementation opens.
+- Status: policy recorded now (structure phase); execution sequenced after the spine
+  closes. Principles served: M4 Efficient (from M3 Lawful: scans), A1 (fallback kept).
