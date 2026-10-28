@@ -105,6 +105,13 @@ brain alone; serve with brain ⊕ ledger.
 
 ## 5. THE BUCKETS — the complete view table (real names, per `looking_glass/state_layout.py`)
 
+**LEDGER DECISION (2026-10-27, DEC-383): Option 3 (companion) ADOPTED** with guardrails
+G1–G5 mandatory, and the two-number card (brain-vs-A = the judge; brain+ledger-vs-A =
+delivery). **Option 4 preserved**: serving on the brain's learned mass channel remains a
+live target, and ledger aggregates remain admissible S5 auxiliary targets (self-supervised
+pressure from the visible past; G4 still bans the ledger as a brain *input*). Serving
+ledger retires only when the brain earns those rows outright.
+
 The frozen artifact exposes **named views** (buckets) so simple consumers select what they
 need. Real names below; "brain vs ledger" = learned-by-the-network vs computed-outside-it.
 
@@ -277,3 +284,7 @@ stage; each state moves only on a receipt. "Mastered" = all six working.
   capacity + inexactness. Bucket origin table + derived-set audit added: current 6+1 set
   is ALL that publishes; **`response` bucket gap** found (RL has cuts, no bucket);
   `learned_state`/`heads` flagged for the minimality audit (queue item 3).
+- 2026-10-27 s6 — operator adopts recommendations: **Option 3 + G1–G5 + two-number card
+  ACCEPTED (DEC-383)**; Option 4 explicitly preserved (brain absorbs counting over time;
+  ledger as S5 reconstruction target, never as input). Next: queue item 3 — bucket audit,
+  headline finding = missing `response` bucket.
