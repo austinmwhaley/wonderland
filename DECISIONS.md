@@ -2385,3 +2385,25 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   teeth: the four columns are our loader's canonical form, not privileged knowledge).
 - Principles served: M1 (read the stream directly, no translation), M3 (tick-at-event law),
   A2 (schema recorded as contract, not assumption).
+
+## DEC-392 — Field presence semantics: explicit three-way status (T4 = Option B)
+
+- Ruling: **Option B**. Every field carries its true presence status — **not-applicable /
+  recorded-but-unknown / present(value)** — instead of collapsing all three into 0/sentinel:
+  categoricals get dedicated unknown slots; numerics carry a presence indicator beside the
+  transformed value. Only statuses the stream actually exercises get channels (S1 measures
+  which occur; constant-status fields prune — derivation, not accretion).
+- Rejected: zero-fill-everything (confident-wrongness by construction: "didn't measure"
+  learned as "measured zero"; fakes calibration — A1 violation); mask-and-ignore as the
+  answer (a fine *training pressure* — stays in the battery — but not a serving-time
+  semantics); dropping high-missing fields (the missingness pattern is itself signal;
+  constant-field pruning already lives in S1, data-derived).
+- Consequences: the `uncertainty` bucket gains real content; the battery's uncertainty
+  objective predicts a truthful three-way state; ledger counting distinguishes
+  present-value counts; new accessibility gate (DEC-388 machinery): **a linear head must be
+  able to tell unknown from zero** — presence information must be accessible, not merely
+  present.
+- Distinction pinned: T4 governs *unrecorded*; T2's unseen-value path governs *recorded but
+  never seen at fit time* — adjacent, distinct, composable.
+- Principles served: A1 (uncertainty first, reject-don't-clamp), M2 (status set derived
+  from data), A2/Honest (no faked calibration), consumer trace (abstention).
