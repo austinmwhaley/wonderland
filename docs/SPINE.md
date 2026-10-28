@@ -46,7 +46,17 @@ designs that pass the gates, the higher maxim wins.
 | M1 | **Universal / generic** | zero domain knowledge in code; any schema resolves from the input; test = renamed-schema + new-field training, zero code edits |
 | M2 | **Adaptive / dynamic** | every resolvable quantity measured or learned at fit time; surviving literals are receipted fallbacks only |
 | M3 | **Lawful** | correct algebra per quantity; exact symmetries (field order, time shift, sequence-merge); laws rank above efficiency because the laws are the *mechanism* of speed |
-| M4 | **Efficient / fast** | linear time, constant state, O(1) incremental update, vectorized; runtime receipts |
+| M4 | **Efficient / fast** | linear time, constant state, O(1) incremental update, vectorized; runtime receipts; **GPU-first execution (DEC-389)** |
+
+### Operational platform (DEC-389, operator directive)
+Hardware: **NVIDIA GB10 (DGX Spark)** — 6,144 CUDA cores, 128 GB coherent unified memory
+@ 273 GB/s, CUDA 13.0, aarch64. Directive: **anything that can be GPU-accelerated should
+be.** Strategy: *move nothing, batch everything* (bandwidth-bound chip, compute ≈ RTX-5070
+tier) — streams resident in unified memory, bf16 on Tensor Cores, parallel scans, GPU
+heads (xgboost `device=cuda`), GPU columnar ledger/data-prep (RAPIDS via process boundary),
+GPU FFT for spectral periods. Binding: CPU-vs-GPU benchmark receipt per adoption, CPU
+fallback always kept, one GPU job at a time. First GPU work item when implementation opens:
+rebuild the environment (torch aarch64/CUDA-13) — no importable torch exists on the box now.
 
 ### Standing tie-breaker — OVERMATCH (operator doctrine, DEC-385)
 Between "build the correct thing structurally **now**" and "defer until a receipt proves
@@ -339,3 +349,8 @@ stage; each state moves only on a receipt. "Mastered" = all six working.
   table above) + all three discipline conditions. Feature 7 (frozen tax) options
   presented: A zero-tax ship-as-is, B accessibility-parity guarantee (recommended),
   C overbuild width (measure, don't doctrine), D adapters (ruled out by A3 lock).
+- 2026-10-27 s12 — operator: **Feature 7 = B ratified (DEC-388)** (accessibility-parity
+  guarantee + decodability contracts; tolerances frozen pre-run; width question deferred
+  to the capacity curve). **GPU-first directive issued (DEC-389)** — hardware verified as
+  NVIDIA GB10 / DGX Spark; policy recorded, execution sequenced post-structure. Feature 8
+  (receipts & progress) presented — the final feature.
