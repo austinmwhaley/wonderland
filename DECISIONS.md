@@ -2342,3 +2342,28 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   the NVIDIA aarch64/CUDA-13 wheels is GPU work item #1** when implementation opens.
 - Status: policy recorded now (structure phase); execution sequenced after the spine
   closes. Principles served: M4 Efficient (from M3 Lawful: scans), A1 (fallback kept).
+
+## DEC-390 — Progress machinery: judge-first + freshness-enforced card (Feature 8 = Option C); structure phase closed
+
+- Ruling: **Option C**. The card's top line **is the judge**: for each of the four consumer
+  legs (supervised / unsupervised / RL / simulator) two numbers — **brain vs PATH A (the
+  judge)** and **brain+ledger vs PATH A (the delivery)** — each with paired CIs and
+  random/destroyed controls. Beneath it, the six stage states (S1–S6), derived only from
+  receipts.
+- **Freshness law (binding):** any behavior change to the encoder or serving path marks
+  dependent receipts stale; stale rows render **UNKNOWN, never PASS**. An old win cannot
+  quietly age into a permanent one. One command regenerates the card at a recorded commit
+  with hashes.
+- **Encoder done (v1), mechanically:** (1) all six stage states working by receipt;
+  (2) all four consumer legs green vs PATH A with paired CIs and controls; (3) card fully
+  fresh (zero stale rows, judge line current, one command, recorded commit + hashes);
+  (4) capacity certified — retention-vs-size curve measured and minimal sufficient size
+  k_min recorded (also settles the Feature 7 width question with data).
+- Adversarial task-hunter (minimax U-metric enforcement) **deferred to Layer 1 by design,
+  disclosed on the card** ("worst-case family broad + held-out, not yet adversarially
+  grown") — correct layering, not a softened gate.
+- Alternatives rejected: hand-written status (forbidden — a hand-written claim is a bug);
+  generated-but-not-freshness-enforced card (stale receipts can still glow green);
+  adversary-now (taxes every v1 loop iteration for a Layer-1 guarantee).
+- Principles served: A2 Honest, certification-integrity protocol, judge-first consumer
+  tracing, "generate, don't narrate."
