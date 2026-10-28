@@ -143,10 +143,16 @@ the table as a T-feature (same protocol: options, why/why not, recommendation, r
 
 | # | Internal decision | Where | Status |
 |---|---|---|---|
-| T1 | **Token unit** — what one "tick" of the engine is | S2 | **open — first up** |
+| T1 | **Token unit** — what one "tick" of the engine is | S2 | **LAW (DEC-391): one event = one tick** |
 | T2 | Categorical vocab policy — caps, hashing for id-like fields, unseen-value path | S2 | open |
 | T3 | Numeric encoding — learned monotone transform vs fallback | S2 | open |
-| T4 | **Missing/unknown/zero semantics** — three-way field presence | S2 | open (was already the planned first quality-loop item) |
+| T4 | **Missing/unknown/zero semantics** — three-way field presence | S2 | **open — presenting now** |
+
+**Canonical input schema (contract column, DEC-391):** `entity_id | event_ts | event_type |
+event_attributes` — entity_id hashed to identity view (never numeric); event_ts feeds
+continuous-time physics; event_type conditions and is predictable; event_attributes is the
+open bag S1 interprets. Schema-agnosticism applies inside the bag and to column names
+(C5 renamed-schema test keeps its teeth).
 | T5 | Composition law — how fields combine into one event vector | S2 | **law** (permutation-equivariant symmetric composition; C1 receipt) |
 | — | Time is not a feature; periodicity from data-derived spectral peaks | S2/S3 | **law** (DEC-386) + receipt (Fourier-off hurts orders) |
 | T6 | Sequence construction — chunking long histories, budgets, as-of cuts | S3 | open |
@@ -167,9 +173,28 @@ the table as a T-feature (same protocol: options, why/why not, recommendation, r
 | C | **One day = one tick** — aggregate the day's events into a token | Daily digest | Compact; smooths noise | It is a **cadence literal** and destroys intra-day order/timing — the banned anti-pattern (DEC-386 rejected this family) | ✗ |
 | D | **One field = one tick** — spread an event's fields across separate steps | Micro-tokens | Slower, finer reads | Breaks the tick-at-event physics (an event no longer arrives at a time); multiplies state updates by fields with no law to justify it | ✗ |
 
-Ruling pending: ratify A; then T2/T3/T4 (within-event encoding) proceed as their own
-tables. A is already the de-facto build — ratification converts practice to law, same as
-DEC-386 did for the engine.
+Ratified: **A (DEC-391)**. T2/T3/T4 proceed as their own tables.
+
+### T4 — Missing / unknown / zero semantics (presented 2026-10-27)
+
+The problem: a field can be (1) **not applicable** (email_subject on a purchase — structurally
+absent), (2) **recorded-but-unknown** (tracking failed: value exists, we don't have it), or
+(3) **genuinely zero** (discount = $0.00 — a real value). Collapsing these means "didn't
+measure" and "measured zero" become the same number: confident-wrongness by construction,
+and it starves the `uncertainty` bucket of content. Missingness is itself signal (tracking
+failures correlate with cohorts/channels).
+
+| # | Option | In one line | For | Against | Verdict |
+|---|---|---|---|---|---|
+| A | **Zero-fill everything** (typical default) | missing → 0 / sentinel | simplest | erases the distinction; engine learns "unrecorded" as "zero" — wrong patterns, no abstention, uncertainty faked (A1 violation) | ✗ |
+| B | **Explicit presence semantics** | every field carries its true status — not-applicable / unknown / present(value); categorics get dedicated unknown slots, numerics an indicator beside the transformed value; **only statuses the data actually exercises get channels** (S1-derived pruning) | truth in the vector; `uncertainty` bucket finally has content; missingness becomes usable signal; cheap (bits + indicator, vectorized) | slight state growth, pruned by derivation when a status never occurs | ✅ recommended |
+| C | **Mask-and-ignore** (BERT-style) | treat missingness only as a training-noise device | the masking objective is a fine *pressure* (stays in the battery) | not a semantics answer — says nothing about what missing means at serving; complementary, not an alternative | as pressure only |
+| D | **Drop high-missing fields** | schema hygiene | cleaner input | throws away signal; the missing pattern was the signal; M1 (deletion decided by data anyway) | ✗ (data-derived pruning of *constant* fields stays in S1) |
+
+Ruling pending. Consequences if B: presence profile becomes S1 receipt content; the
+uncertainty objective predicts a real three-way state (currently predicts a collapsed one);
+ledger counting distinguishes present-value counts; accessibility gates include presence
+recovery probes (can a simple head tell unknown from zero?).
 
 ### What the encoder is NOT
 - Not a consumer of labels/downstream tasks (firewall; PATH A's table is a
@@ -431,3 +456,7 @@ this order when implementation opens.
   decisions between stream and state pinned (T1–T11 with statuses; laws marked).
   T1 (token unit) options presented, recommendation A (one event = one tick). Pending:
   T1 ruling, then T2 vocab policy, T3 numerics, T4 missing/unknown/zero semantics.
+- 2026-10-27 s15 — operator: **T1 = A ratified (DEC-391)**; **canonical schema recorded**
+  (`entity_id | event_ts | event_type | event_attributes`, contract column). T4
+  (missing/unknown/zero) options presented A–D, recommendation B (explicit presence
+  semantics, data-pruned). Pending: T4 ruling; then T2, T3, T6.
