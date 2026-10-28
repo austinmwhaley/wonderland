@@ -160,7 +160,7 @@ open bag S1 interprets. Schema-agnosticism applies inside the bag and to column 
 | T8 | Nonlinearity placement — gating/bilinear coupling where rank needs it | S3 | **open — presenting now** |
 | T9 | Capacity d | S3 | open — deferred to retention-vs-d curve (DEC-390) |
 | T10 | Bucket membership — which head outputs live in which bucket | S4 | **open — presenting now** |
-| T11 | Weight-learning mechanism, horizons, mask rates | S5 | partially open (all derived-from-data per DEC-387) |
+| T11 | Weight-learning mechanism, horizons, mask rates | S5 | **open — presenting now (last)** |
 | — | Training regime (convergence not counts, stability law, early stop) | S5 | doctrine (AGENTS.md) — needs spine receipts |
 | — | Freeze semantics | S6 | **law** (A3 lock) |
 
@@ -291,10 +291,32 @@ bet, and a bend in the wrong place breaks a ratified law. Where may nonlinearity
 | C | Bend the fade itself (nonlinear decay ODEs, MLPs running between events) | richer dynamics | could express non-exponential memory | **voids the merge law** (chunked scanning no longer exact — T6's free lunch revoked), stability law at risk, determinism degraded | ✗ as edit to the core; admissible ONLY as a **second, parallel mechanism** added by battery receipt (DEC-386 ansatz-detector path), each mechanism carrying its own merge test |
 | D | Batch-coupled bends (batchnorm/ZCA family) | normalize by the batch | — | **banned absolutely**: per-sample contract; batch statistics manufacture capacity (the ZCA scandal this repo has already lived once); train≠serve divergence | ✗ |
 
-Ruling pending (recommend A). Plain summary: **the spring between events is sacred; the
-pen at write time and the voice at readout may bend.** Bending where content meets state
-is where the measured rank lives; bending the spring costs the laws that make histories
-free and runs stable.
+Ratified: **A (DEC-398)**. The spring between events is sacred; the pen (write: gates +
+bilinear content×state) and the voice (readout: learned positive weights) may bend.
+Richer dynamics admissible only as receipted parallel mechanisms with own merge tests;
+batch-coupled bends banned absolutely.
+
+### T11 — The last derived knobs (presented 2026-10-27 — closes the internals arc)
+
+Three knobs left that are traditionally typed into code. The same rule applies: measure
+what measurement can see.
+
+| Knob | Derived from (if A) | The usual literal it replaces |
+|---|---|---|
+| **Mask rate** (masked-recovery objective) | per-field measured missingness + entropy — mask what THIS stream actually withholds, so the objective becomes "predict this stream's own blank patterns" | BERT's fixed 15% |
+| **Horizon set** (future-summary targets) | sampled from measured behavioral-time statistics (event-gap quantiles, per-stream activity spans), receipted | the 30/60/90-day curriculum (a cadence literal) |
+| **Objective weights** (13-way battery mix) | learned balancing from measured per-objective noise/gradient scales; weights decaying to zero trigger the prune pass (deletion receipt); selection on held-out self-supervised loss ONLY (DEC-387) | equal weights, or expert tuning |
+
+Folded in from training doctrine, pinned to the Derived column: **learning rate measured
+from curvature (stability bound lr < 2/L), patience from validation SE** — convergence,
+never counts.
+
+| # | Option | Verdict |
+|---|---|---|
+| A | **All three derived at fit time, receipted** (table above) | ✅ recommended |
+| B | Community defaults (15%, 30/60/90, equal) | ✗ a bag of literals |
+| C | Grid-search on held-out SSL loss | admissible **fallback** if the learned mechanism proves unstable (search over selection-on-graded-metric stays banned); documented, not doctrine |
+| D | Expert-tuned weights | ✗ M2 violation |
 
 ### What the encoder is NOT
 - Not a consumer of labels/downstream tasks (firewall; PATH A's table is a
@@ -587,3 +609,8 @@ this order when implementation opens.
   readout — learned positive weights; fade between events stays exactly linear; nonlinear
   decay only as a receipted second mechanism; batch-coupled bends banned absolutely).
   Pending: T8 ruling; then T11 (last derived knobs) closes the internals arc.
+- 2026-10-27 s22 — operator: **T8 = A ratified (DEC-398)**. T11 (mask rates / horizons /
+  objective weights — last internals feature) presented: recommendation A (all three
+  derived from measured statistics at fit time; C = search-on-held-out-SSL as documented
+  fallback). Pending: T11 ruling → internals arc closes; T9 capacity already deferred to
+  the retention-vs-size curve (DEC-390).
