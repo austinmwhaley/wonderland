@@ -2565,3 +2565,26 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   deferred to the retention-vs-size curve (DEC-390, implementation step 7).
 - Principles served: M2 (every knob measured), Honest (never self-graded), M1 (knobs
   re-derive per stream), prefer-deletion (prune pass).
+
+## DEC-400 — Block anatomy = recurrence + channel-MLP (A1 = B); depth derived, never inherited (A2 = A2a)
+
+- **A1 ruling (Option B):** one layer = two sub-blocks — the lawful recurrence (time-mix)
+  then a channel-MLP (channel-mix), attention-free. The transformer's *discipline*
+  (mix across time, then across channels) is right; its *instrument* (attention) stays
+  out. "Two" is not a tuned number: it is the count of mixing **axes** that exist (time,
+  channels); a third kind does not exist, so any "more blocks" request is depth.
+  Hybrids parked as receipted candidates (per DEC-398's second-mechanism pattern):
+  recurrence + recent-window attention (window = literal, history-dependent state in
+  miniature); recurrence + short conv pre-stage (kernel-width literal; fast-τ channels
+  already cover short-term structure).
+- **A2 ruling (Option A2a):** depth (number of layers) is **derived from held-out
+  convergence** — sweep candidate depths, stop where improvement plateaus within
+  measurement noise, runtime receipt per step (depth costs linear scan passes; cheap on
+  the GB10). The current card's `layers 2` is declared **inherited from screening,
+  pending re-derivation** — same treatment as `d 128` (T9). Rejected: keeping 2 by
+  inheritance (a2b); fixing/deepest-possible depth (a2c — a literal that violates
+  Efficient and minimality; depth past measured convergence is rejected on T9's grounds).
+- Disambiguation recorded: **kinds-per-round (A1, derived = 2) vs rounds (A2, measured)**
+  are separate dials; "why not 5" is legitimate only for the second.
+- Principles served: M3 (axes of mixing derived from what information must do), M2 (depth
+  measured), M4 (runtime receipts), Honest (inheritance named out loud).
