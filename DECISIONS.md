@@ -2774,3 +2774,39 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - Principles served: one-way flow (doctrine), M1/universal (schema contract accommodates the
   unimagined consumer), A1/Robust (read-only, immutable, local refusal), Honest (attribution
   by measurement), prefer-deletion (no wrapper layer), single source of truth (one writer).
+
+## DEC-406 — Layer C's charter: a plugin FACTORY over the published artifact (operator directive)
+
+- **Operator directive (binding):** *"All of Layer C is dedicated to creating plugins given
+  this encoder (Layer B)."* Specific requirements:
+  1. **Supervised plugins are spawned from a template** — the requester supplies essentially
+     just the **target**; everything else is mechanical, because the encoder's published
+     artifact already *is* the supervised dataset (one row per `customer_key × as_of`, features
+     = published columns, label joined by key).
+  2. **Unsupervised follows the same pattern** (template over the same published rows).
+  3. **`sklearn`-level quality and simplicity** — familiar estimator ergonomics, and (doctrine
+     principle 14) *use* sklearn/scipy rather than hand-rolling probes, splits, calibration,
+     or statistics.
+  4. **Reinforcement learning:** `white_queen` is the primary RL/certification instrument, but
+     the layer must **admit other RL capabilities, including online RL**.
+- Interpretation adopted: Layer C is not a pile of bespoke scripts; it is a **factory +
+  registry** whose raw material is B's published, immutable artifact. A plugin is a *derived,
+  certified, versioned* object, produced mechanically from a declared specification.
+- Why the factory (not code templates) is the load-bearing choice, recorded up front: the value
+  of a tabular consumer over a foundation model is almost entirely **discipline** —
+  as_of-anchored splits, no future information, capacity ceilings, calibration, matched
+  comparators, receipts, artifact pinning. Thousands of hand-written consumers cannot be
+  trusted to get that right, and every hand-rolled variant that gets it wrong becomes an
+  unfalsifiable claim about the encoder. The factory makes the **safe path the only path**;
+  a generated-code scaffold instead diffuses correctness into thousands of editable copies.
+- Mechanism (spec-interpreter vs generated code vs hybrid), the unsupervised instrument set,
+  and the RL tiering (offline → OPE-certified → live randomized-holdout exploration) are
+  **presented for operator ruling** in `docs/SPINE.md` (C8–C10).
+- Constraints inherited, restated because the factory must enforce them structurally: frozen
+  encoder (no gradient ever reaches B, DEC-405 / Q3 lock); consumer heads from the locked
+  dumb set with **derived** capacity (C2); no backward edge; labels are joined by key from the
+  label store and never flow into B; every PASS needs finite, fair comparators with paired CIs;
+  the single objective for any decision consumer is **discounted incremental gross margin**.
+- Principles served: M1 (thousands of consumers, one mechanism), M4/Efficient (mechanical
+  generation vs bespoke work), Honest (discipline by construction, not by review), principle 14
+  (use the vetted library), prefer-deletion (one implementation of every discipline).
