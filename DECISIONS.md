@@ -2810,3 +2810,37 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - Principles served: M1 (thousands of consumers, one mechanism), M4/Efficient (mechanical
   generation vs bespoke work), Honest (discipline by construction, not by review), principle 14
   (use the vetted library), prefer-deletion (one implementation of every discipline).
+
+## DEC-407 — Supervised shipping head = LINEAR only; kNN is the unsupervised instrument; MLP demoted to diagnostic (C2)
+
+- **Operator input:** "we should only do 1 of the trio but happy to test." Resolved by
+  derivation rather than preference: the head is not a menu, it follows from what the
+  foundation is *for*.
+- **Ruling:**
+  1. **Linear is the shipping supervised head.** The accessibility principle (information must
+     be *recoverable by simple downstream consumers*, not merely present) makes the dumbest
+     instrument the correct default: if a linear head cannot read a target off the published
+     columns, that is an **encoder defect**, not a cue to strengthen the head. Strengthening
+     the head is how a foundation model is quietly relieved of its obligations.
+  2. **kNN is not a supervised head here — it is the unsupervised product** (distance = shared
+     futures, the S5 distance pressure). It belongs to C9, where distance *is* the deliverable.
+  3. **Small MLP moves to the diagnostic tier**: permitted for measurement, labeled, read-only,
+     never ships, never earns a card row. Its job is attribution: linear fails + MLP succeeds ⇒
+     **accessibility gap** (trunk work item); linear fails + MLP fails ⇒ the information is
+     genuinely absent (sufficiency gap).
+- **The test the operator asked for — head-ladder receipt (new card row):** for every certified
+  supervised target the factory reports all three instruments (linear / kNN / MLP) at derived
+  capacity, on identical splits, with paired CIs. If MLP beats linear beyond measurement noise,
+  the row renders as an **accessibility gap against the encoder** — never as permission to ship
+  the MLP. A `custom` consumer may still request an MLP head, but its row is labeled
+  `custom/MLP` and does **not** count as evidence for the donor.
+- Comparator integrity inherited: the brain's linear row is compared against (a) a
+  **capacity-matched** linear row on PATH A features (the fair fight) and (b) the strong PATH A
+  incumbent GBM (the practical bar). A PASS needs both; beating a weakened baseline is not a win.
+- Everything else from the C2 recommendation stands: capacity **derived** from the consumer's own
+  data (no typed unit counts, and `sklearn` defaults are overridden with derived values +
+  emitted as a derived-values receipt), trained to convergence, calibration with measured
+  coverage, capacity reported as a card column, shipping set closed but re-openable by receipt.
+- Principles served: Honest (the head cannot rescue the encoder), Diagnosable (gap attributed to
+  the right axis), A1 (reject rather than compensate), M4 (cheapest instrument that can do the
+  job), principle 14 (sklearn for estimators/metrics, derived for every default).
