@@ -355,8 +355,8 @@ benchmark receipt (DEC-389), not a design debate.
 | A1 | **Block anatomy** — what is one layer? | **LAW (DEC-400): recurrence + channel-MLP, two sub-blocks, attention-free** |
 | A2 | **Depth** — how many layers | **LAW (DEC-400): derived from held-out convergence; card's `layers 2` = inherited, pending re-derivation** |
 | A3 | **Gates** — which gates exist, where, measured init | **LAW (DEC-401): full lawful set — write + event-locked persistence + read gates; mass never gated; measured init; step-0 stability receipt** |
-| A4 | **Normalization** — allowed where? (BANNED on state paths — mass additivity C3 + contractivity analysis; per-sample norms only on bend paths) | **open — presenting now** |
-| A5 | **Residuals** — skip structure (legal in channel space; never through state) | open (constraint already law) |
+| A4 | **Normalization** — allowed where? (BANNED on state paths — mass additivity C3 + contractivity analysis; per-sample norms only on bend paths) | **LAW (DEC-402): per-sample, bend-path inputs only, admitted by receipt; unnormalized magnitude lane mandatory** |
+| A5 | **Residuals** — skip structure (legal in channel space; never through state) | **open — presenting now** |
 | A6 | **Attention's place** — allowed only as read-side pooling; may never be the state (DEC-386) | open (constraint already law) |
 
 ### A1 — Block anatomy (presented 2026-10-27)
@@ -429,6 +429,30 @@ Ruling pending (recommend **B**, which is "A, plus a lawful instrument held in r
 Plain summary: **norms may wash the pen and the voice, never the inkwell.** Per-sample is the
 hard condition — anything computed across customers is the ZCA scandal waiting to happen again;
 and a norm that rescales must never be the only path, because magnitude is information.
+
+Ratified: **B (DEC-402)** — per-sample norms on bend-path inputs only, evidence-gated;
+parallel unnormalized magnitude lane mandatory; state/mass/readout norms banned; batch-coupled
+closed. Placement audit + per-norm instability receipts owed.
+
+### A5 — Residuals: which skips may the engine have? (presented 2026-10-27)
+
+A residual ("skip") is `output = input + f(input)` — the shortcut that lets depth train.
+Already-law boundaries: skips live in **channel space**, never route around the recurrence,
+and never mix the mass channels with shape channels through a shared path (mass additivity
+gate C3 must keep measuring exact zero). Note the lock with DEC-402: the mandatory
+*unnormalized magnitude lane* beside any norm **is** the residual path — a "no residuals"
+ruling would force that lane to be reinvented unlawfully.
+
+| # | Option | In one line | For | Against | Verdict |
+|---|---|---|---|---|---|
+| A | No residuals (pure stack) | fewest parts | maximal contractivity | deeper derived stacks (A2) starve gradients; the need would be discovered mid-training with no lawful form ready; also strands DEC-402's magnitude lane | ⚠️ |
+| B | **Channel-space skips + per-layer read taps, learned neutral-init gains** ⭐ | (1) skip around the channel-MLP sub-block and layer-to-layer input skips **in channel space**; (2) every layer exposes a **read tap** into the readout ensemble (A3's learned positive weights — already law); (3) each skip carries a **learned scalar gain initialized at the neutral element** (zero contribution ⇒ adding a layer cannot change the function at step 0 — ReZero-style) | **depth fairness**: the A2 depth sweep is only honest if a deeper model *contains* the shallower one at init, so improvement is attributable to depth, not to re-randomization; skips earn their contribution by gradient (M2, no `0.5`/`1/(N+1)` literals); step-0 function is identity-preserving (stability, A1) | step-0 zero-gain skips can train slowly at first (mitigated: measured init elsewhere; gradient flows through the other paths); placement audit owed | ✅ |
+| C | Skip **around** the recurrence (`s_t = fade(s_{t-1}) + Bx_t + s_{t-1}`) | bypass the fade | easy gradient path | algebraically it is `(A+I)·s_{t-1}+Bx_t` — an **un-faded second copy of history**: fast-τ channels can no longer forget (bounded-memory law defeated, measured τ falsified), and `A+I` can be expansive (stability law endangered) | ✗ |
+| D | Dense multi-connectivity (concat every layer into the readout — ConnectNet style) | everything connects to everything | multi-resolution features at read | duplicates a mechanism we already ratified: A3's read gates ARE learned positive weights over sources — dense concat is the same idea with extra dimensions (prefer-deletion); admissible only by receipt | ⏸ receipted candidate |
+
+Ruling pending (recommend **B**). Plain summary: **the past may be re-read, the present may be
+short-circuited, the fade may never be bypassed** — and every shortcut has to *earn* how much
+it contributes.
 
 ### What the encoder is NOT
 - Not a consumer of labels/downstream tasks (firewall; PATH A's table is a
@@ -757,3 +781,12 @@ this order when implementation opens.
   a training-instability receipt; state-normalizing SSMs rejected (voids merge exactness,
   destroys level); batch-coupled norms already closed. Pending: A4 ruling; then A5
   (residuals), A6 (attention's place).
+- 2026-10-27 s27 — operator: **A4 = B ratified (DEC-402)**. A5 (residuals) presented:
+  recommendation B — channel-space skips (around the channel-MLP, layer-to-layer) plus
+  per-layer read taps, every skip carrying a learned neutral-init (zero-contribution) gain
+  so a deeper model *contains* the shallower one at init — **depth fairness**, which is what
+  makes the A2 depth sweep honest. Rejected-as-illegal: skipping around the recurrence
+  (algebraically `(A+I)·s_{t-1}` — an un-faded second copy of history: falsifies measured τ,
+  endangers contractivity); dense concat readout parked as a receipted duplicate of A3's
+  read gates. Noted lock with DEC-402: the mandatory unnormalized magnitude lane IS the
+  residual path. Pending: A5 ruling; then A6 (attention's place) closes the A-series.
