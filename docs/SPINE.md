@@ -636,11 +636,11 @@ how does it know the artifact changed under it, and where does personalization l
 |---|---|---|
 | C1 | **The read surface** — what exactly does a consumer receive, and how is "brain-only" made mechanical? | **LAW (DEC-405): artifact = the interface; dumb consumers; no ability to talk back** |
 | C2 | **Permitted head classes** | **LAW (DEC-407): linear is the only shipping supervised head; kNN → unsupervised; MLP → diagnostic; head-ladder receipt tests it** |
-| C3 | **Firewall rules** — no mutation, no label leakage upstream, no ledger-as-brain-win, no future information at serve | open (constraints already law) |
-| C4 | **Per-consumer gates** — who produces the receipt, who verifies it, independence requirement (Definition-of-done #3) | open |
+| C3 | **Firewall rules** | **LAW (DEC-412): no mutation, no backward edges, labels never reach B, no future info at serve — plus the data-mediated leakage law: no derived/consumed table may be an event source** |
+| C4 | **Per-consumer gates** | **LAW (DEC-412): gates computed by the card from receipts, never self-declared; thresholds frozen pre-run; uncertified is advertised** |
 | C5 | **The unknown-consumer guarantee** | **LAW (DEC-410): the coverage lattice — proven form, measured content, hunted unknown, per-consumer falsification; "universal" retired until green; v1 stub hunter** |
-| C6 | **Version & compatibility contract** — what a consumer pins, what breaks on re-fit, refusal on incompatibility | open |
-| C7 | **Personalization** — where per-customer/segment adaptation legally lives | open |
+| C6 | **Version & compatibility contract** | **LAW (DEC-412): version = behavior; additive-only within a line; deprecation ledger; pin major+hash and refuse mismatch; geometry epoch for distance consumers** |
+| C7 | **Personalization** | **LAW (DEC-412): adapter, never rewiring — per-segment LINEAR heads at derived capacity with a derived support floor; below it, fall back to global with widened uncertainty** |
 | C8 | **The factory** — supervised plugin generation from a target spec (operator directive, DEC-406) | **LAW (DEC-408): spec-interpreted engine + gated `custom` escape** |
 | C9 | **Unsupervised instruments** — dumb instrument set for structure/geometry/anomaly, template-generated | **LAW (DEC-408): ratified set, derived counts, table/random/destroyed comparators** |
 | C10 | **Decision & RL consumers** — decision-platform contract only; RL internals live in peer mini-projects | **open arc (DEC-409)** — invariants adopted, 4 open items named |
@@ -867,8 +867,26 @@ sufficiency gap (the information is not in the window) — never a silent shrug.
 cannot power a device that needs gas (a target requiring unlogged covariates is a data problem,
 not an encoder problem — the faceplate says so up front, so nobody discovers it after building).
 
-Ruling pending: adopt O1–O8 as the capstone (O3's shipped kit and O8 as stated clauses are **new**;
-the rest restate ratified law), and close C3/C4/C6/C7 under it.
+Ratified (DEC-412). O3's shipped conformance kit and O8's unconditional-read clause are new;
+the rest restate ratified law as one promise. **O6 (the wall is live) is the sole undesigned
+clause → the serving & refresh arc.**
+
+### C-series — CLOSED (2026-10-27), one open arc
+
+| # | Decision | Status |
+|---|---|---|
+| C1 | Read surface | **LAW** — the published artifact *is* the interface; no ability to talk back (DEC-405) |
+| C2 | Heads | **LAW** — linear ships; kNN is the unsupervised product; MLP diagnoses; head-ladder receipt (DEC-407) |
+| C3 | Firewall | **LAW** — incl. no derived table as an event source (DEC-412) |
+| C4 | Gates | **LAW** — computed not claimed; frozen thresholds; uncertified advertised (DEC-412) |
+| C5 | Unknown-consumer guarantee | **LAW** — the coverage lattice; "universal" retired until green; v1 stub hunter (DEC-410) |
+| C6 | Version & compatibility | **LAW** — behavior-versioned, additive-only, deprecation ledger, geometry epoch (DEC-412) |
+| C7 | Personalization | **LAW** — adapter heads, derived support floor, fallback with widened uncertainty (DEC-412) |
+| C8 | The factory | **LAW** — spec-interpreted engine + gated `custom` escape (DEC-408) |
+| C9 | Unsupervised instruments | **LAW** — dumb set, derived counts, table/random/destroyed comparators (DEC-408) |
+| C10 | Decision & RL | **open arc** — decision-platform contract + 6 invariants; 4 items parked (DEC-409) |
+| — | **The Outlet Standard** | **LAW** — O1–O8; "works" defined mechanically (DEC-412) |
+| — | Cleanup owed | backward imports (B→white_queen ×5, C→B ×3 incl. `rehearsal → update_day`); leaf `contracts/` module |
 
 ## 7. Progress mechanics (DEC-390) — the card IS the judge
 
@@ -907,6 +925,25 @@ receipt. "Mastered" = all six working.
 3. Which column is its parameter in (contract / derived / learned)?
 4. What receipt moves that stage's state? What negative control catches the failure?
 5. Record in `DECISIONS.md`; regenerate card; accept or revert.
+
+### Decision rights (DEC-413) — who decides what
+
+The operator supplies **principles and context**; the agent aligns the solution to them (AGENTS.md
+operating contract). Since the operator will usually take the agent's recommendation, the check on
+self-deception must not depend on the operator evaluating mechanisms — so the *questions* change:
+
+| Class | Who decides | Examples |
+|---|---|---|
+| **[PRINCIPLE]** | **operator only** | principles, the objective, what "good" means for the business, risk appetite, live customer exposure, whether to continue or stop |
+| **[AUTHORIZATION]** | **operator's explicit word** | push, destructive deletes, material spend/compute, anything customer-facing, any live exploration |
+| **Gate-touching** | **operator only, always surfaced** | any change to a gate/threshold/criterion/frontier definition, anything touching the judge or frozen definitions, any FAIL→PASS movement, any completion claim ("SOLVED", "universal", PASS language) |
+| **[TECHNICAL]** | **agent decides**, citing the principle served, logged in `DECISIONS.md` with rejected alternatives | architecture, mechanisms, derived thresholds, library choice, experiment design, sequencing — **recommendation adopted unless the operator objects** |
+
+Every question is tagged. The operator's veto on **[TECHNICAL]** items is *principle-fit* ("this
+doesn't fit the principles"), which is evaluable without domain expertise — not mechanism review.
+Multi-option tables are reserved for genuine forks touching the objective or risk; routine rows are
+presented as **decision · principle served · what was rejected and why**. Silence is never treated
+as assent for any gate-touching or authorization item.
 
 ### Implementation order (recorded; **awaiting operator "go" — no code until then**)
 One axis per loop; each step = one commit chunk + card regeneration; GPU work follows
@@ -1180,3 +1217,17 @@ this order when implementation opens.
   observed stream ⇒ a verdict, and if served a bounded gap to the full-history oracle at declared
   capacity, and if not served an attributed cause. Plus the two honest limits: the wall cannot fix
   a broken appliance or power a device that needs gas. Pending: ratify O1–O8 and close C3/C4/C6/C7.
+- 2026-10-27 s36 — operator: **O1–O8 RATIFIED (DEC-412)**, which also closed **C3** (firewall +
+  the new data-mediated leakage law: no derived/consumed table may be an event source), **C4**
+  (gates computed by the card, never self-declared; frozen thresholds; uncertified advertised),
+  **C6** (behavior-versioned, additive-only, deprecation ledger, geometry epoch) and **C7**
+  (personalization = adapter heads at derived capacity, derived support floor, fallback with
+  widened uncertainty). **The C-series is CLOSED** — one open arc (C10's four parked items) and
+  one undesigned clause (**O6 — the wall must be *live*** → serving & refresh arc).
+  Operator also stated their working mode: principles and context are theirs, technical rulings
+  are mine, and they will usually take my recommendation. Named the governance risk out loud (this
+  project was twice overturned on a false "SOLVED") and fixed it by changing **what gets asked**
+  rather than asking more unevaluable questions: **decision rights logged as DEC-413** —
+  [PRINCIPLE] / [AUTHORIZATION] / gate-touching items stay the operator's and are *always*
+  surfaced; [TECHNICAL] items I decide, cite a principle, log with rejected alternatives, and are
+  adopted unless vetoed on principle-fit.
