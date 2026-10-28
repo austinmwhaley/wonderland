@@ -3050,3 +3050,68 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - Principles served: Honest (the check on self-deception is preserved, not laundered),
   Diagnosable, principle 12 (implement the intent of the operator's role, not the letter of
   approving every item).
+
+## DEC-414 — O6 ratified: two clocks — cheap exact freshness, degradation-triggered re-fit (serving & refresh)
+
+- **Operator principle inputs:** (1) staleness = *"when the embedding fails to do its job
+  anymore"* — not a clock; (2) **30–90 days** between re-fits is tolerable, and cadence *"should
+  be measured as a function of performance degradation, not static"* (current day-job practice is
+  a static 30 days, which they explicitly rejected as the model); (3) training/retraining/inference
+  should be **as cheap as possible** — tricks and shortcuts are welcome and could change the answer.
+- **The structural insight that makes all three answers compatible: freshness of embeddings and
+  re-fitting the encoder are different problems, and conflating them is what makes refresh
+  expensive.**
+  - **Clock A — scoring (continuous, cheap, exact).** Publish embeddings for changed customers on
+    the **frozen** encoder. O(1) per tick (DEC-395) and exact over chunks by the merge law, so
+    delta-scoring is *not an approximation* — unchanged customers are never recomputed
+    (content-addressed by input-window hash), changed ones are re-scored from the state. This is
+    where "live" is bought, and it is nearly free.
+  - **Clock B — re-fit (rare, expensive, event-triggered).** Re-fit the encoder only when the
+    **degradation detector** fires, with a derived maximum-interval backstop, champion/challenger
+    certification, and never-ship-worse-than-the-champion.
+- **The degradation detector (how "fails to do its job" is measured, per consumer leg):**
+  1. **Label-free tier — cheap, fires early.** Re-run the self-supervised battery on fresh data:
+     if the SSL objectives' held-out losses drift beyond the measured noise floor, the encoder is
+     going stale *before* any label proves it. Companions: input-drift on the S1/S2 statistics
+     already collected (field distributions, gap quantiles, spectrum peaks), **unseen-value mass**
+     (T2), and geometry drift (isotropy/effective rank). Label-free upstream stays label-free.
+  2. **Label tier — confirms, per leg.** A **backtest ledger**: every published cohort is scored
+     at `as_of` and its predictions are resolved when labels mature, so each leg has an honest
+     time series of the brain-vs-PATH-A advantage *by cohort age*. Staleness = the advantage has
+     decayed by more than N × the measured standard error (the same "plateau within measurement
+     noise" rule used for convergence, aimed at time instead of steps).
+- **Staleness is per-leg and per-bucket, not global** (consistent with DEC-405's surgical
+  freshness): churn may be live while value is dead. A leg whose detector has fired renders
+  **UNKNOWN, never PASS**, and the artifact's faceplate publishes the verdict, the last-good
+  publish time, the next check, and which trigger fired. Serving a refused artifact is a
+  refusal, not a degraded pass (axiom: reject, do not clamp).
+- **Derived backstop interval instead of a static literal.** Fit the utility-decay curve from the
+  backtest ledger (metric vs cohort age) across historical re-fits; the backstop = the age at
+  which the trigger would have fired anyway. The operator's 30–90 day tolerance is recorded as
+  the **outer envelope**, not the schedule. Until enough re-fits exist to fit the curve, a
+  conservative derived fallback is used **with a fallback-fired receipt** (never silently).
+- **Cost policy — "exactness is free; approximation must be bought with a receipt."**
+  - **Adopted as exact (no quality risk):** delta scoring from state (merge law), content-addressed
+    caching, batch-everything GPU execution ("move nothing, batch everything", DEC-389), O(1)
+    incremental serve.
+  - **Admissible only with a certification receipt (they change outputs):** **warm-started
+     re-fits** (continue from the prior checkpoint — must be validated against a **cold-start
+     control** on the card, and periodically cold-started to prevent drift accumulation across
+     successive warm starts), quantized training/serving (bf16/fp16 within stated tolerance),
+     sampled re-fit cohorts, and partial-battery re-training (gated: the full battery is the
+     certified fallback).
+  - **Every speedup is measured before adoption** (CPU-vs-GPU or exact-vs-shortcut) and keeps the
+     slow-but-certified path as fallback. A shortcut that is slower, outside tolerance, or that
+     regresses a gate is not adopted.
+- **Cost budgets are derived from data + hardware, not typed** (DEC-389 discipline); the concrete
+  compute ceiling for a re-fit will be presented at implementation go-time for authorization,
+  since it is material spend.
+- **Consequences for the judge:** the card gains a **freshness/degradation block** (per-leg
+  staleness verdicts, trigger provenance) and the backtest ledger becomes a first-class receipt
+  source. The judge itself (PATH B > PATH A) is unchanged — the ledger measures its decay, it does
+  not redefine it.
+- Principles served: doctrine ("train to convergence, not to a count" extended to *time*: refresh
+  on measured degradation, never a calendar), M2/M3 (cadence from the measured decay curve; delta
+  scoring exact by the merge law), M4/Efficient (cost is the design driver here), A1/Robust
+  (refuse rather than stale-pass; no silent shortcuts), Honest (label-free early warning,
+  certified fallback for every shortcut).
