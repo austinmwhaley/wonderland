@@ -634,7 +634,7 @@ how does it know the artifact changed under it, and where does personalization l
 
 | # | Question | Status |
 |---|---|---|
-| C1 | **The read surface** — what exactly does a consumer receive, and how is "brain-only" made mechanical? | **open — presenting now** |
+| C1 | **The read surface** — what exactly does a consumer receive, and how is "brain-only" made mechanical? | **LAW (DEC-405): artifact = the interface; dumb consumers; no ability to talk back** |
 | C2 | **Permitted head classes** — {linear, kNN, small MLP} is locked (Q3); open: how "small" is bounded (derived, not a literal) and whether the set is closed | open |
 | C3 | **Firewall rules** — no mutation, no label leakage upstream, no ledger-as-brain-win, no future information at serve | open (constraints already law) |
 | C4 | **Per-consumer gates** — who produces the receipt, who verifies it, independence requirement (Definition-of-done #3) | open |
@@ -642,34 +642,39 @@ how does it know the artifact changed under it, and where does personalization l
 | C6 | **Version & compatibility contract** — what a consumer pins, what breaks on re-fit, refusal on incompatibility | open |
 | C7 | **Personalization** — where per-customer/segment adaptation legally lives | open |
 
-### C1 — The read surface (presented 2026-10-27)
+### C1 — The read surface — **RATIFIED by operator directive (DEC-405): the artifact *is* the interface**
 
-Today plugins read the frozen artifact's `donor_embeddings` / `state_embeddings` tables
-read-only, with no record of *which* buckets they actually consume. Options:
+Operator's ruling, which superseded my first draft: **plugins are dumb consumers; they must not
+have the *ability* to talk to B; there may be thousands of them.** My original C1-B ("single
+typed accessor at read time") is **withdrawn** — anything standing in the consumption path is a
+dependency waiting to happen, and with fan-out to thousands of consumers, per-consumer coupling
+is fatal. Fan-out, not tidiness, is the argument.
 
-| # | Option | In one line | For | Against | Verdict |
-|---|---|---|---|---|---|
-| A | Whole artifact, undeclared reads | consumers grab what they want | simplest; zero bookkeeping | breaks three ratified mechanisms at once: earned-keep attribution (DEC-397 can't say who wins in a bucket), the two-number judge (can't verify a "brain" row avoided `measure`), and surgical freshness (DEC-390 must mark **every** row stale on any change) | ✗ |
-| B | **Declared read-set, verified by a single typed accessor** ⭐ | each consumer declares the buckets it reads; reads go through one typed accessor, so the declaration is **observable** (not honor-system); undeclared read = hard failure | makes brain-credit mechanical, attribution automatic, and freshness **surgical** (only rows declaring bucket X go UNKNOWN when X changes) | a registry to maintain; accessor discipline is a real (small) rule | ✅ |
-| C | Curated per-consumer views shipped by the foundation | tailored view per consumer | maximally convenient today | **forbidden** — known consumers would SHAPE the foundation (veto-never-shape); guarantees the next consumer is unaccommodated | ✗ |
-| D | Serving API/gateway instead of tables | wrap it in a service | operationally standard at scale | duplicating the read path risks two sources of truth and an A6-style residency leak; admissible **later** as a thin wrapper **with no logic in it** (logic in the gateway = a second brain) | ⏸ later, by receipt |
+**The law:**
 
-Folded rulings (mechanical, not narrated):
-1. **Read-only, always.** The encoder is immutable after certification (Q3 lock); no consumer
-   writes, fine-tunes, or caches a mutated copy.
-2. **Brain-credit rule:** a card row may be labeled **brain** iff its declared read-set
-   contains **no ledger buckets** (`measure`); any read-set including them is labeled
-   **brain+ledger**. This is what enforces DEC-383's two-number card in code instead of prose.
-3. **No raw-event reads in a brain row.** Raw features are PATH A's material and the ledger
-   builder's; a consumer that needs them is in the ledger/A column, not the brain column.
-4. **Freshness scope = declared read-set.** The freshness law (DEC-390) invalidates only rows
-   whose declared buckets were touched by the behavior change — otherwise one encoder edit makes
-   the entire card UNKNOWN and the card stops being usable as a steering artifact.
-5. **One implementation** (principle 6): a single typed accessor for all reads — the mechanism
-   that turns "declaration" from an honor system into an auditable fact.
+| Rule | Content |
+|---|---|
+| **1. Artifact = interface** | `customer_key × as_of` tables (embeddings, buckets, ledger, uncertainty) written by **one** producer path. A consumer is anyone who can run a SELECT — that is what "accommodates unknown consumers **by construction**" means: the contract is a **schema**, not a function signature |
+| **2. No talking back** | Banned shapes: imports in either direction between B and C; consumer-invokable compute in B (no request-driven recompute, no callback, no gateway B answers); shared mutable state; consumer-specific columns/tables/logic in B's namespace; consumers write only their own namespace. Enforced by import-graph + call-site scan (`principle_audit.py --strict` / CI) |
+| **3. Read-only in fact** | Output immutable and content-addressed (hash + version + build commit); consumers get read-only access. Physical enforcement, not discipline |
+| **4. Self-describing artifact** | *Required by fan-out:* the artifact carries its own metadata (version, hash, `as_of`, freshness bound, bucket inventory) so each consumer **self-validates and locally refuses** a stale/out-of-support artifact without asking B. Reject, never clamp, at the boundary |
+| **5. Producer-side materialization** | Anything derived from B's own guarantees (pre-action cuts, ledger companion views) is **materialized by the producer** — thousands of consumers each re-deriving a cut is guaranteed drift, and it escapes the encoder's certification. B stays oblivious; it just publishes more columns |
+| **6. Judgment outside both sides** | "Which buckets a consumer actually used" comes from the judge's **read-only** observations (declared manifest + static column-reference extraction + **knob-turn receipt**: zero/permute a bucket, see if the score moves) — never a gate inside B |
 
-Ruling pending (recommend **B**). Plain summary: **consumers pick from the menu; they don't
-rearrange the kitchen — and they sign for what they took.**
+**Existing violations (one cleanup work item):** `looking_glass/white_queen_bridge.py` (×4) and
+`looking_glass/candidate_roster.py` import `white_queen.tribunal.ope.api` (**B → downstream**);
+`plugins/{inference,ablation,rehearsal}.py` import `looking_glass.*` (**C → B**) — including
+`rehearsal.py → daily_states.update_day`, a consumer that can **produce its own input**, the
+worst form of the loop. Shared constants → a leaf `contracts/` module that imports nothing;
+certification call sites relocate to the judge/card layer (which may read everything, the
+`caterpillar` pattern).
+
+**Disclosed costs:** declarations are self-reported (honesty enforced by the knob-turn receipt —
+concealing a ledger read buys a consumer nothing); version pinning is matched by the judge
+rather than observed in a call path, hence rule 4's stamped metadata.
+
+Plain summary: **B publishes to a wall. Thousands may read the wall. Nobody can ask the wall a
+question, write on it, or get a wall built just for them.**
 
 ## 7. Progress mechanics (DEC-390) — the card IS the judge
 
@@ -918,3 +923,15 @@ this order when implementation opens.
   the brain-credit rule (a card row is "brain" iff its read-set excludes ledger buckets) making
   DEC-383's two-number card mechanical rather than narrated, and freshness scoped to the
   declared read-set. Pending: C1 ruling.
+- 2026-10-27 s31 — operator overrode my C1 draft with a stronger framing: **plugins are dumb
+  consumers; they must not have the *ability* to talk to B; there may be thousands of them**;
+  write embeddings to a table, plugins consume directly. First draft's "typed accessor" gate
+  **withdrawn** (anything in the consumption path becomes a dependency; fan-out makes
+  per-consumer coupling fatal). **C1 ratified as DEC-405**: artifact = the interface; imports
+  banned both directions; immutable content-addressed read-only output; self-describing
+  artifact so thousands of uncoordinated consumers can self-validate and locally refuse;
+  producer-side materialization of derived cuts; attribution by the judge's read-only
+  observations (manifest + static column extraction + knob-turn receipt). Repo audit found the
+  rule already broken (B→white_queen ×5; C→B ×3 incl. `rehearsal.py → update_day`, a consumer
+  that can produce its own input) — cleanup owed as one work item. Pending: C2 (head-class
+  ceiling — what bounds "small MLP").
