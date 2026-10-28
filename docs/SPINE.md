@@ -352,9 +352,9 @@ benchmark receipt (DEC-389), not a design debate.
 
 | # | Question | Status |
 |---|---|---|
-| A1 | **Block anatomy** — what is one layer? (the "2 vs 1" question: transformer-style two sub-blocks, time-mix + channel-mix?) | **open — presenting now** |
-| A2 | **Depth** — how many layers (never a typed "2") | open — derived from held-out convergence over candidate depths |
-| A3 | **Gates** — which gates exist, where, measured init | open |
+| A1 | **Block anatomy** — what is one layer? | **LAW (DEC-400): recurrence + channel-MLP, two sub-blocks, attention-free** |
+| A2 | **Depth** — how many layers | **LAW (DEC-400): derived from held-out convergence; card's `layers 2` = inherited, pending re-derivation** |
+| A3 | **Gates** — which gates exist, where, measured init | **open — presenting now** |
 | A4 | **Normalization** — allowed where? (BANNED on state paths — mass additivity C3 + contractivity analysis; per-sample norms only on bend paths) | open (constraint already law) |
 | A5 | **Residuals** — skip structure (legal in channel space; never through state) | open (constraint already law) |
 | A6 | **Attention's place** — allowed only as read-side pooling; may never be the state (DEC-386) | open (constraint already law) |
@@ -371,6 +371,38 @@ layer?
 | B | **Recurrence + channel-MLP** ⭐ (two sub-blocks, attention-free) | keep the transformer's *discipline* (mix across time, then across channels), replace its *instruments* (recurrence for time, MLP for channels); bends all sit at write/read (T8-legal) | matches where the measured rank lives; depth scales the interaction; per-sample ops only; kernel-friendly for GPU | slightly more params than A (cheap — capacity is certified by curve anyway, T9) | ✅ |
 | C | Recurrence + attention over a recent bounded window (true hybrid) | keep attention as a spice | sharpens short-range patterns | the window is a **literal** and history-dependent state in miniature — DEC-386's problem re-imported at small scale; park behind a receipt (T8's second-mechanism pattern) | ⏸ receipted candidate |
 | D | Recurrence + short convolution pre-stage (Mamba-style conv) | smooth before integrating | cheap, standard | kernel width = fixed-range literal; fast-τ channels already cover short-term structure (T7) | ⏸ receipted candidate |
+
+Ratified: **B (DEC-400)** — two sub-blocks (time-mix = lawful recurrence; channel-mix =
+per-layer MLP), attention-free. C/D parked as receipted candidates per DEC-398's
+second-mechanism pattern. "Two" = count of mixing AXES (derived), not rounds (A2, measured).
+
+### A3 — Gates: what may the engine decide to remember, hold, or say? (presented 2026-10-27)
+
+Gates are the engine's attention budget. Already law from T7/T8: **write gates + bilinear
+content×state** at ticks, **positive-weight ensembles** at readout, **static per-channel τ**
+(spectrum-initialized, then learned). The genuine open fork: may content ALSO steer
+*persistence* (a forget gate)?
+
+Plain meanings: **write gate** = "is this worth recording?"; **persistence (forget) gate**
+= "how long do I keep this thought?" (rereading something important should make it last
+longer); **read gate** = "how loudly do I speak about this channel when asked?"
+
+| # | Option | In one line | For | Against | Verdict |
+|---|---|---|---|---|---|
+| A | Minimal set (write gates + readout ensembles; static τ only) | fewest dials | maximal stability surface | can't express "this event makes memories stick longer/shorter" — persistence is one-size per channel | ⚠️ baseline |
+| B | **Full lawful gate set** ⭐ | write gates + bilinear (law) + **event-locked persistence gate**: at each event the engine may retune each channel's holding time; **between events decay is exact exponential at locked parameters → merge law survives, T6 chunking stays free**; τ stays inside **bands derived from the spectral peak's bootstrap uncertainty** (no literals); per-layer read gates; positive-weight ensembles | expressive where it matters (content-dependent memory), lawful between events, band + step-0 stability receipts guard the known instability (content-driven decay can be pushed to 0/∞) | needs band-derivation + stability receipts kept current | ✅ |
+| C | Maximal: decay steered continuously between events | fully adaptive fade | — | **voids the merge law** (T6's free lunch revoked) + stability endangers (DEC-398's sacred spring) | ✗ |
+| D | Bare recurrence, no extra gates | simplest | — | contradicts the measured rank receipts (T8) | ✗ |
+
+Folded rulings if B (each already law-shaped, restated here):
+1. **The mass pathway never gets gates** — gating a sum falsifies sums (mass-additivity
+   gate C3 = exact 0 error).
+2. **Measured gate init** (T7's rule): write-gate biases from measured event rate/redundancy;
+   persistence gates initialized at the static-τ equivalent (spectrum); random init ✗.
+3. **Determinism (A1 axiom):** gates are deterministic functions; no stochastic gates at
+   serve; any training-time noise is seed-reproducible under the C4 receipt.
+4. Stability law binds: lr from curvature, divergence kills the run — persistence gates must
+   ship a **step-0 stability receipt**.
 
 ### What the encoder is NOT
 - Not a consumer of labels/downstream tasks (firewall; PATH A's table is a
@@ -674,3 +706,21 @@ this order when implementation opens.
   side contracts (plugins/RL/simulator interfaces), serving & refresh policy (incremental
   updates, drift, retrain cadence), GPU work-mapping per component, Layer-1 certification
   (U-metric/adversary), and the implementation go/no-go (step 0 = CUDA env rebuild).
+- 2026-10-27 s24 — operator asked whether **actual encoder architecture** (SSM vs
+  transformer, 2 vs 1, gating) had been ruled. Answered honestly: the *family* is law
+  (DEC-386), the *microarchitecture* is not. **A-series opened** (A1 block anatomy · A2
+  depth · A3 gates · A4 normalization · A5 residuals · A6 attention's place). A1 presented
+  (recommend B). Mamba positioned as closest prior art, not adopted wholesale: we take Δt
+  from the clock (Mamba learns it) and never decay the mass pathway (Mamba decays all);
+  Mamba-1-vs-2 kernel formulations demoted to **implementation** choices settled by GB10
+  benchmark receipt (DEC-389), not design debate.
+- 2026-10-27 s25 — operator challenged **"why 2 blocks, why not 5?"** Real ambiguity
+  caught and resolved in the open: **kinds-per-round vs rounds are separate dials** —
+  A1's "2" is the derived count of mixing *axes* (time, channels; a third kind does not
+  exist, so any "more blocks" request is really depth), while rounds = A2 depth, measured.
+  Also named out loud: the card's `layers 2` is **inherited from screening, pending
+  re-derivation** (same disease as `d 128`). **A1 = B and A2 = A2a ratified (DEC-400)**.
+  A3 (gates) presented: recommendation B — full lawful gate set (event-locked persistence
+  gate with exact-exponential decay between events so the merge law survives; τ bands from
+  spectral bootstrap uncertainty; per-layer read gates; mass pathway never gated; measured
+  gate init; step-0 stability receipt). Pending: A3 ruling; then A4–A6 close the arc.
