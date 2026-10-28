@@ -1,9 +1,11 @@
 # SPINE — the single first-principles structure (living document)
 
 > The one steering document for the foundation-model re-think (started 2026-10-27; merges
-> and supersedes `docs/FIRST_PRINCIPLES.md`, whose argument log is folded into §9).
+> and supersedes `docs/FIRST_PRINCIPLES.md`, whose argument log is folded into §10).
 > Nothing here is implemented; this is the structure we are building by conversation.
 > The operator reads the chat, not this file — this file is the record the chat produces.
+> Vocabulary adopted: **the brain** = the learned views; **the ledger** = the `measure`
+> view (exact computed tallies, built outside the network).
 
 ## 0. The goal, one sentence
 
@@ -14,70 +16,63 @@ supports **supervised**, **unsupervised**, and **RL** heads using simple consume
 
 Everything in the system must trace to the consumer set as a whole ("no feature without a
 trace"): a component exists only if it can name a consumer need it serves or a gate it
-satisfies. The full trace table lives in §3.
+satisfies.
 
 | Consumer | The question it asks | What it needs from the frozen state |
 |---|---|---|
-| **Supervised** (predict churn, value, orders…) | "What will happen to this customer?" | The state must **contain** everything about the customer that predicts their future, and a plain line must be able to **read** it |
-| **Unsupervised** (segments, lookalikes, anomalies) | "Who is like this customer?" | **Distance = behavioral similarity**: neighbors must genuinely share futures; the *arrangement* of points matters, not just the contents |
-| **RL** (what to do: email frequency, offers…) | "What should we do to this customer?" | The customer state **just before** an action + how they respond to actions; only where the logged data actually tested actions |
+| **Supervised** (predict churn, value, orders…) | "What will happen to this customer?" | The state must **contain** everything predictive about the customer, and a plain line must be able to **read** it |
+| **Unsupervised** (segments, lookalikes, anomalies) | "Who is like this customer?" | **Distance = behavioral similarity**: neighbors genuinely share futures |
+| **RL** (email frequency, offers…) | "What should we do?" | Customer state **just before** an action + response structure, where the logged data tested actions |
 
 ## 2. The constitution (ACCEPTED 2026-10-27)
 
-**Axioms are gates** — violate one and the run is void (not "low-scoring").
-**Maxims are ranked** — between two designs that pass the gates, the higher maxim wins.
+**Axioms are gates** — violate one and the run is void. **Maxims are ranked** — between two
+designs that pass the gates, the higher maxim wins.
 
 ### Axioms (gates)
 | # | Axiom | The test |
 |---|---|---|
-| A1 | **Robust** | deterministic; divergence = hard failure (never rescued); reject or widen uncertainty, never clamp; every estimate carries calibrated uncertainty |
-| A2 | **Honest** | no downstream labels in encoder training; never trained on the metric it is graded by; fair comparators with paired CIs; reproducible receipts at a recorded commit |
-| A3 | **Strict-frozen** *(LOCKED by operator)* | after freeze the encoder is immutable; consumers ≤ {linear, kNN, small MLP}. Consequence: the encoder must pre-adapt to consumers it will never meet — *accessibility is a first-class encoder requirement*, not a consumer problem |
+| A1 | **Robust** | deterministic; divergence = hard failure (never rescued); reject or widen uncertainty, never clamp; calibrated uncertainty everywhere |
+| A2 | **Honest** | no downstream labels in encoder training; never trained on the graded metric; fair comparators with paired CIs; reproducible receipts at a recorded commit |
+| A3 | **Strict-frozen** *(LOCKED)* | after freeze the encoder is immutable; consumers ≤ {linear, kNN, small MLP}. The encoder must pre-adapt to consumers it will never meet — accessibility is an encoder requirement, not a consumer problem |
 
 ### Maxims (ranked core)
 | Rank | Maxim | The test |
 |---|---|---|
-| M1 | **Universal / generic** | zero domain knowledge in code; any schema resolves from the input; test = renamed-schema + new-field training with zero code edits |
+| M1 | **Universal / generic** | zero domain knowledge in code; any schema resolves from the input; test = renamed-schema + new-field training, zero code edits |
 | M2 | **Adaptive / dynamic** | every resolvable quantity measured or learned at fit time; surviving literals are receipted fallbacks only |
-| M3 | **Lawful** | correct algebra per quantity; exact symmetries (field order, time shift, sequence-merge); laws rank above efficiency because in this system the laws are the *mechanism* of speed |
+| M3 | **Lawful** | correct algebra per quantity; exact symmetries (field order, time shift, sequence-merge); laws rank above efficiency because the laws are the *mechanism* of speed |
 | M4 | **Efficient / fast** | linear time, constant state, O(1) incremental update, vectorized; runtime receipts |
 
-### The parameter trichotomy (the daily use of the constitution)
-Every parameter lives in exactly one column; a parameter caught in the wrong column is a bug.
+### The parameter trichotomy
+Every parameter lives in exactly one column; wrong column = bug.
 | Column | Meaning | Examples |
 |---|---|---|
-| **Contract** (fixed on purpose) | the rules of the game | the laws, evaluation oracles, label firewall, strict-frozen, per-stream rule, negative controls |
+| **Contract** (fixed on purpose) | rules of the game | laws, evaluation oracles, label firewall, strict-frozen, per-stream rule, negative controls |
 | **Derived** (measured at fit time) | read from the stream | field types, vocab caps, transforms, timescales τ, horizons, mask rates, capacity, loss weights |
 | **Learned** (fitted) | the model's own knowledge | embeddings, gates, decays, prediction heads |
 
-### Operator rulings log
-- **Q3 LOCKED:** frozen is absolute (§A3). All decisions align to it.
-- **Q5:** RL bar for v1 is **decision-useful** — receipted progress (beats table & random
-  under known-effect/IPS with CI), not Bellman-completeness (stays a Layer-1 goal).
-- **Constitution accepted** (axioms as gates, maxims as ranked core).
-- **Consumer-backward tracing** is the organizing direction; single .md ruling.
+## 3. THE JUDGE — PATH B > PATH A (operator definition of progress, 2026-10-27)
 
-## 3. The consumer-backward trace (the spine, inverted)
-
-| Layer | Supervised | Unsupervised | RL |
+| Path | Data shape | Trains | Meaning in the judge |
 |---|---|---|---|
-| Needed property | **Predictive sufficiency** — state determines the customer's future behavior distribution | **Behavioral metric** — embedding distance ≈ similarity of futures | **Decision-usefulness (v1)** — pre-action state supports response models that beat table/random |
-| Which view carries it | `shape`, `mass`, `forecast` | `shape` geometry (+ `support` for anomalies) | `pre-action` (+ `shape`) |
-| Which stage creates it | S3 state + S5 pressure + S4 exposure | S3 state + S5 **distance pressure (currently missing)** + S4 | S3 state + S5 response pressure + S4 pre-action cut + randomized data (Layer A) |
-| Progress gate (receipt) | beats raw & fair table, paired CI; ≥50% of ceiling gap | distance↔truth-similarity correlation beats table/random; kNN label transfer > table | known-effect recovery + IPS beats table & random with CI |
-| What breaks if only this leg is served | table-like encoder with no usable neighbors | pretty clusters, blind predictions | confident policies with unverified effects |
+| **PATH A** | **wide table — one row per customer** | one set of models (table + GBM baseline) | the incumbent: everything must beat this |
+| **PATH B** | **event stream — one row per customer-event** | the encoder (our build) | progress = PATH B beats PATH A on the consumer battery, paired CIs |
 
-Single-object argument (from the argument layer, kept as record): the three properties are
-projections of ONE object — the stream's **future-predictive law** (action-conditioned where
-the data identifies it). Supervised wants the state to *determine* it; unsupervised wants
-*distance* to equal discrepancy between laws; RL wants that law usable under actions.
-Hence one frozen state can serve all three — and a failure in one leg is a stage-localized
-diagnosis, not a mystery.
+Everything below serves this judge. The stage ladder (§7) is the diagnostic layer beneath
+it: when B fails to beat A, the ladder names which stage is the bottleneck.
+
+**Corollary (derived 2026-10-27, from the ledger discussion):** any score contributed by
+the ledger cannot count as a B-*win*, because the ledger is mechanically what PATH A's
+table already is (receipt: ledger category purity 0.261 vs table 0.265 — same object).
+The ledger can only prevent B from *losing*; **the brain earns the win, the ledger
+prevents the loss.** Hence the two-role rule (see §5): certify the foundation on the
+brain alone; serve with brain ⊕ ledger.
 
 ## 4. The derivation spine (S1 → S6), each stage forced by a gap
 
 ```
- RAW events (time, customer, typed attributes)          — the only given; the system knows nothing
+ RAW events (time, customer, typed attributes)          — the only given
    ▼ S1 INTERPRET  read the stream's ontology off the stream            [M1 · M2]
  Typed fields + measured statistics → a resolution receipt
    ▼ S2 SYMBOLIZE  event → vector, correct algebra per field            [M3 · M2]
@@ -92,109 +87,147 @@ diagnosis, not a mystery.
    ◆ S6 FREEZE     hash + provenance + per-view controls + card
 ```
 
-| Stage | Gap that forces it (why it cannot be skipped) | Failure if faked |
+| Stage | Gap that forces it | Failure if faked |
 |---|---|---|
-| **S1 Interpret** | No downstream operation is type-agnostic: before anything accumulates or predicts, the system must know whether a field is a count, a rate, a label, or an id — and the *data* must say so (M1 forbids being told) | new schema breaks it, or ids get treated as numbers; "works only on our dataset" |
-| **S2 Symbolize** | S3 needs one continuous object per event, but events are typed field-maps; the mapping must preserve each field's algebra or totals become arithmetic on lies. Time is not a feature: the timestamp belongs to S3; binning time is banned (destroys the irregular timing this project is about) | clamped/crashed unseen values; hand-written templates; cadence literals in code |
-| **S3 Accumulate** | Fixed-size state that matches full history + constant memory + O(1) updates ⇒ only a state recurrence can do it. *Which* recurrence is derived: if event influence fades over the past (standard event-process family), the sufficient state decays exponentially between events and jumps at events — the continuous-time gated recurrence IS that equation. Architecture = an ansatz about the process class; S5 tests the ansatz | hand-set timescales/width; divergence rescued by "keeping the best earlier state"; mass decayed (level information lost) |
-| **S4 Expose** | A3 (locked): sufficiency survives scrambles that kill simple heads, and no consumer may adapt to the encoder ⇒ the encoder must pre-adapt to consumers it never meets. Named views = the equivalence classes the three consumer classes provably need; direction and magnitude readable separately; consumers can abstain | views picked on holdout data; one blended vector (measurably dilutes distance probes); "present but unreadable" sold as sufficiency |
-| **S5 Pressure** | Architecture is a capacity claim, not a content claim — nothing enters the state unless a gradient demands it. Only self-supervised objectives are admissible (A2). Accessibility/distance failures feed back here as objective-mix changes, never as clamps | hand-weighted losses; no objective pressures distances (our geometry leg today); training on the graded metric |
-| **S6 Freeze** | Without a versioned hash + provenance + per-view negative controls + a regenerable card, every earlier claim is narrative | card text newer than receipts; stale claims |
+| **S1 Interpret** | No downstream operation is type-agnostic; the *data* must declare what each field is (M1 forbids being told) | new schema breaks it; ids treated as numbers |
+| **S2 Symbolize** | S3 needs one continuous object per event; mapping must preserve each field's algebra; **time is not a feature** (timestamp belongs to S3; binning banned) | clamped unseen values; hand-written templates; cadence literals |
+| **S3 Accumulate** | Fixed-size state ≈ full history + constant memory + O(1) updates ⇒ only a recurrence can do it; *which* recurrence is derived (fade + jump = sufficient statistic of the event-process family). Architecture = ansatz about the process class; S5 tests it | hand-set τ/width; divergence rescued; mass decayed (level lost) |
+| **S4 Expose** | A3: sufficiency survives scrambles that kill simple heads, and no consumer may adapt ⇒ the encoder pre-adapts to consumers it never meets; named views; abstention channel | views picked on holdout; one blended vector; "present but unreadable" sold as sufficiency |
+| **S5 Pressure** | Architecture is capacity, not content — nothing enters the state unless a gradient demands it; only self-supervised objectives admissible (A2); accessibility/distance failures feed back here as objective-mix changes, never clamps | hand-weighted losses; no distance pressure (today's geometry gap); training on graded metric |
+| **S6 Freeze** | Without hash + provenance + per-view controls + regenerable card, every claim is narrative | card newer than receipts; stale claims |
 
 ### What the encoder is NOT
-- Not a consumer of labels/downstream tasks (firewall; the wide table is a
-  **teacher/baseline**, never resident inside the learned state).
-- Not cross-stream: one stream in → one model out; applying to an unseen stream = refuse.
-- Not batch-coupled at serving (per-sample contract; no batch-statistics capacity fabrication).
+- Not a consumer of labels/downstream tasks (firewall; PATH A's table is a
+  **teacher/baseline**, never resident inside the brain — see ledger guardrail G4).
+- Not cross-stream (1 stream → 1 model; unseen stream = refuse).
+- Not batch-coupled at serving (per-sample contract).
 - Not allowed to clamp (out-of-support → abstain/widen).
 
-## 5. The views, and the OPEN measure question
+## 5. THE BUCKETS — the complete view table (real names, per `looking_glass/state_layout.py`)
 
-Views = named buckets the frozen artifact exposes (so simple heads can select what they
-need instead of drinking from one blended vector).
+The frozen artifact exposes **named views** (buckets) so simple consumers select what they
+need. Real names below; "brain vs ledger" = learned-by-the-network vs computed-outside-it.
 
-| View | Plain meaning | Who reads it |
+| Real name | Brain/ledger | Dims (6k artifact) | What it represents | Primary consumer use |
+|---|---|---|---|---|
+| `shape` | brain | 128 | the behavioral profile — "who is this customer like" (the compact learned state `E`) | all distance/neighbor tasks (unsupervised), supervised |
+| `learned_state` | brain | 1152 | the raw per-timescale memory contents + learned mass (what the recurrence held) | fine-grained supervised; carries channel identity (0.72 purity) |
+| `forecast` | brain | 835 | learned past/future summaries (self-supervised summary heads) | prediction heads (best churn view 0.925) |
+| `uncertainty` | brain | 23 | missingness / support / gap — "what did I actually see" | anomaly detection; careful heads abstaining |
+| `heads` | brain | 127 | head outputs: identity / next-event / relational predictions | identity probes, next-event consumers |
+| `measure` | **LEDGER** | data-derived (~734, coverage 0.99) | exact lawful tallies computed **outside the network** (counts, totals, shares per category, first/last…) | category identity, anomaly — the only place these currently work |
+| `full` | brain bundle | 2265 | **permanently defined** concatenation of shape + learned_state + forecast + uncertainty + heads (order fixed; **`measure` excluded by definition**) | strongest supervised view |
+
+Facts pinned by code (single source of truth):
+- `FULL_ORDER = (shape, learned_state, forecast, uncertainty, heads)` — `full` is the brain
+  bundle; the ledger is NOT inside it ("full + measure" is a separately-named arm).
+- `pre-action` is **not a bucket** — it is a **cut**: any bucket read at a timestamp
+  strictly before an action. Buckets are what; cuts are when. (RL consumes `shape`/
+  `learned_state` as pre-action cuts.)
+- Every card row must name the bucket it used (the layout exists for that).
+
+### The ledger question — OPTIONS (OPEN; operator deciding)
+
+The worry (operator, 2026-10-27): "if we add the table back we're right back to PATH A."
+Correct and empirically true — the ledger ≈ the table. Options:
+
+| # | Option | In one line | For | Against |
+|---|---|---|---|---|
+| 1 | **Brain only** | no ledger in the artifact; consumers needing exact counts compute them from events | purest judge; smallest artifact | ledger-served tasks (category identity, anomaly) get no answer from the foundation; breaks "never materially worse than table"; each consumer rebuilds its own PATH A |
+| 2 | **Ledger blended in** (status-quo direction) | ledger is just another bucket inside E, summed into headline scores | one-stop; parity guaranteed | contaminates the judge — ledger-backed "wins" are table-vs-table; slippery slope to hand-picked columns |
+| 3 | **Companion (recommended)** | the **foundation is certified on the brain alone**; the artifact **ships brain ⊕ ledger as named buckets side by side**; ledger can never count toward a B-win | judge stays honest (B wins only via brain); ledger guarantees never-shipped-worse-than-table; consumers still single-stop | more bookkeeping; attribution discipline must be enforced by the card, not by trust |
+| 4 | **Learned ledger** | no ledger; force the brain to learn exact totals via training pressure (already half-present: mass-reconstruction corr² 0.568 PASS) | purest artifact; brain carries magnitude content | brain burns capacity on arithmetic a CPU does exactly (never exact, slower, bigger) — violates minimality/efficiency |
+
+**Guardrails — MUST if the ledger ships at all (operator ruling 2026-10-27: mandatory):**
+| # | Guardrail | In plain English |
 |---|---|---|
-| `shape` | the learned "profile direction" — who this customer behaves like | supervised + all distance/neighbor tasks |
-| `mass` | learned total/level signals (how much, how big) | value/orders consumers |
-| `forecast` | learned future-summary signals | prediction consumers |
-| `support` | what the encoder actually saw (gaps, missingness) — lets heads abstain | anomaly; any careful consumer |
-| `pre-action` | state cut strictly BEFORE each logged action | RL/response models |
-| `measure` | **the ledger**: exact counts/totals computed faithfully from the visible history (N purchases, $ totals, % by channel, first/last activity…) — not learned, just computed | category identity, anomaly (per receipts, ONLY these work here) |
+| G1 | **Mechanical only** | the ledger is a fixed recipe (count, sum, last, first, distinct-count, share-per-category) applied to **every field S1 discovered** — no human ever hand-picks columns or windows; hand-picked = PATH A smuggled back in |
+| G2 | **History-only** | computed from events visible before the as-of cut; no peeking forward |
+| G3 | **Target-blind** | never contains the definition of the quantity being predicted |
+| G4 | **Never feeds the brain's training** | the brain trains on events only; if the brain could read the ledger, we could never tell learned from copied |
+| G5 | **Attribution always** | every reported row states brain / ledger / both, with learned-only + ledger-only + destroyed controls |
 
-**The `measure` tension (OPEN — under conversation):** the old honesty rule says "no
-table/counter inside the model" to prevent two cheats — (1) pre-computing the answer key
-into what's being graded, (2) not being able to say whether a win came from the learned
-brain or the carried ledger. But receipts show some consumer needs (category identity,
-anomaly) work *only* in the ledger view. Proposed resolution (pending operator opinion):
-the ledger is legitimate content when it passes three guardrails — **(a) history-only**
-(computed from events visible before the as-of cut), **(b) target-blind** (never contains
-the predicted quantity's definition), **(c) attribution always reported** (every claim
-states which buckets it came from; learned-only + ledger-only + destroyed controls).
-Alternative: remove the ledger from the artifact — but then each consumer must compute its
-own counts, weakening "the foundation supports everything."
+Recommended: **Option 3 (companion) + all five guardrails.** Slogan: *the brain earns the
+win; the ledger prevents the loss.*
 
-## 6. Progress mechanics (anti-narration ladder)
+## 6. The consumer-backward trace
 
-Stage states move only on receipts. "Mastered" = all six working on target streams.
+| Layer | Supervised | Unsupervised | RL |
+|---|---|---|---|
+| Needed property | predictive sufficiency | behavioral metric (distance = shared futures) | decision-usefulness (v1 bar) |
+| Buckets that serve it (real names) | `full`, `forecast`, `learned_state`, `shape` | `shape` geometry; `uncertainty` for anomaly; ledger for category identity | pre-action cuts of `shape`/`learned_state` |
+| Stage that creates it | S3 + S5 + S4 | S3 + **S5 distance pressure (missing today)** + S4 | S3 + S5 response pressure + pre-action cut + randomized data (Layer A) |
+| Progress gate (receipt) | beats PATH A with paired CI; ≥50% of ceiling gap | distance↔truth-similarity beats table/random; kNN transfer > table | known-effect + IPS beats table & random with CI |
+
+Single-object record: the three properties are projections of ONE object — the stream's
+future-predictive law (action-conditioned where identified). Supervised = determine it;
+unsupervised = distance equals discrepancy between laws; RL = use it under actions.
+
+## 7. Progress mechanics (the diagnostic ladder beneath the judge)
+
+Judge = PATH B > PATH A (§3). When B doesn't beat A, this ladder names the bottleneck
+stage; each state moves only on a receipt. "Mastered" = all six working.
 
 | Stage | Working-state proof | Not-working looks like |
 |---|---|---|
 | S1 | renamed-schema + new-field pass with full resolution receipt, zero code edits | any field typed by hand; any cadence literal |
-| S2 | unseen-value path exercised; transform receipts; field-permutation invariance ≤ tol | clamped/crashed unseen values; templates in code |
+| S2 | unseen-value path exercised; transform receipts; permutation invariance ≤ tol | clamped unseen values; templates in code |
 | S3 | merge/equivariance/mass-additivity exact on data; τ receipted from spectra; stable from step 0 | divergence rescued; τ/d hand-set |
 | S4 | per-view accessibility parity + per-view negative controls | views selected on holdout; no decodability contract |
 | S5 | objective battery beats naive (or excluded+reported); distance-pressure row exists | hand-weighted losses; no geometry pressure |
 | S6 | one command regenerates the card at a recorded commit + hashes | card text older than last behavior change |
 
-## 7. Decision protocol (how any change is processed)
+## 8. Decision protocol (how any change is processed)
 
-1. Which stage (S1–S6) does it touch? **Which consumer(s) does it trace to?** (no trace = no)
+1. Which stage (S1–S6) does it touch? **Which consumer(s) does it trace to? Does it move
+   the judge (B > A)?** (no trace = no)
 2. Which maxim does it serve? Does it violate an axiom? (axiom violation = stop)
 3. Which column is its parameter in (contract / derived / learned)?
 4. What receipt moves that stage's state? What negative control catches the failure?
 5. Record in `DECISIONS.md`; regenerate card; accept or revert.
 
-## 8. Literature anchors (compressed; full citations in git history of FIRST_PRINCIPLES.md)
+## 9. Literature anchors (compressed; full citations in git history of FIRST_PRINCIPLES.md)
 
 - Event-stream SSL & foundation models: JAIR 2025 unified-SSL survey (no adopted universal
   ES foundation model exists); MLEM 2024 (no single objective dominates; generative wins
-  timing tasks; aligned mixtures most universal); ESGPT; PyTorch-Lifestream IJCAI 2025;
+  timing; aligned mixtures most universal); ESGPT; PyTorch-Lifestream IJCAI 2025;
   HT-Transformer; RecSys Challenge 2025 (fixed-vector event autoencoder + normalized view
   concatenation); LLM4ES CIKM 2025; PinnerFormer KDD 2022 (frozen user embeddings at scale).
 - Sufficiency & prediction: informative statistics (NeurIPS 1999); predictive information
   (Bialek 2001; Ver Steeg & Galstyan 2015); DAPC; CPIC; slow-feature principle
   (Wiskott & Sejnowski 2002; Creutzig & Sprekeler 2008).
-- Control-relevance: state abstraction (Li–Walsh–Littman 2006; Du et al. 2019 Q*/π*-irrelevance;
-  NeurIPS 2024 probing-through-abstraction); bisimulation metrics (Ferns–Precup–Pan; Castro
-  et al. 2020; robust BSM NeurIPS 2021; RAP NeurIPS 2022; DBC 2019); ATC decoupled
-  representations (Stooke 2020); action-sufficient reps (ICML 2022); predictive ≠ control
-  sufficiency (Latent State Design under Sufficiency Constraints); frozen-encoder limits
-  (response-aware planning, Shang 2026).
+- Control-relevance: state abstraction (Li–Walsh–Littman 2006; Du et al. 2019);
+  bisimulation metrics (Ferns–Precup–Pan; Castro et al. 2020; robust BSM NeurIPS 2021;
+  RAP NeurIPS 2022; DBC 2019); ATC decoupled representations (Stooke 2020);
+  action-sufficient reps (ICML 2022); predictive ≠ control sufficiency (Latent State
+  Design under Sufficiency Constraints); frozen-encoder limits (response-aware planning,
+  Shang 2026).
 - Accessibility/probing: Hewitt & Manning 2019; Vo & Rogers 2020; Probing with Noise 2022
-  (norm = separate information container); Present but Not Remembered 2026 (decodable ≠ used).
+  (norm = separate information container); Present but Not Remembered 2026.
 
-## 9. Argument log (from the merged FIRST_PRINCIPLES discussion)
+## 10. Argument log (from the merged FIRST_PRINCIPLES discussion)
 
-1. **Freezing is the defining commitment** — it moves all learning from consumer to encoder;
-   presence ≠ decodability (any invertible scramble of a sufficient state is sufficient but
-   probe-dead). The object is therefore a pair: content + exposure contract.
-2. **Three consumers, three sufficiencies, one generator** (the future-predictive law;
-   §3). Decision sufficiency for a rich reward family subsumes prediction; geometry =
-   isometry to the metric the law induces.
+1. **Freezing is the defining commitment** — all learning moves from consumer to encoder;
+   presence ≠ decodability. The object is a pair: content + exposure contract.
+2. **Three consumers, three sufficiencies, one generator** (the future-predictive law).
+   Decision sufficiency for a rich reward family subsumes prediction; geometry = isometry
+   to the metric the law induces.
 3. **No free lunch** — "universal" is relative to (a) the stream's real predictive content
-   (Bayes floor), (b) capacity (right size ≈ the stream's predictive-information rate —
-   measured by a retention-vs-d curve, not tuned), (c) a minimax over an adversarial,
-   held-out task family. Task count is decoupled from information content; that is why
-   universality is credible at all. "1 stream → 1 model" is an easier, more defensible
-   contract than the cross-domain transfer the outside literature keeps failing at.
-4. **Freezing strictly costs something** — frozen encoders can provably miss what fine-tuning
-   recovers; hence accessibility must be designed + certified (S4/S5 feedback), not hoped for.
+   (Bayes floor), (b) capacity (right size ≈ predictive-information rate; measured by a
+   retention-vs-d curve, never tuned), (c) a minimax over an adversarial held-out family.
+   Task count is decoupled from information content. "1 stream → 1 model" is the easier,
+   defensible contract the outside literature keeps failing at by chasing cross-domain.
+4. **Freezing strictly costs something** — frozen encoders can provably miss what
+   fine-tuning recovers; accessibility must be designed + certified, not hoped for.
 
-## 10. Conversation log
+## 11. Conversation log
 
-- 2026-10-27 s1 — framing (three sufficiencies; impossibility; U metric continuity).
-- 2026-10-27 s2 — operator: Q3 LOCKED (strict frozen), Q5 decision-useful, wants structured
-  raw→frozen derivation + consumer-backward tracing + simple language; SPINE v1 written.
-- 2026-10-27 s3 — operator: single .md (this file), constitution ACCEPTED, feature-by-feature
-  walkthrough begins; first feature = `measure` view (§5), under discussion.
+- 2026-10-27 s1 — framing (three sufficiencies; impossibility; U-metric continuity).
+- 2026-10-27 s2 — operator: Q3 LOCKED (strict frozen), Q5 decision-useful; wants structured
+  raw→frozen derivation + consumer-backward tracing + simple language; SPINE v1.
+- 2026-10-27 s3 — operator: single .md; constitution ACCEPTED; feature-by-feature begins.
+- 2026-10-27 s4 — operator: **judge defined = PATH B (event stream) > PATH A (wide table)**;
+  full bucket table pinned from `state_layout.py` (real names; `full` excludes `measure`;
+  pre-action = a cut, not a bucket); ledger guardrails G1–G5 made MANDATORY; ledger
+  OPTIONS 1–4 tabled with companion recommendation (Option 3) — operator deciding.
+  Vocabulary adopted: brain / ledger.
