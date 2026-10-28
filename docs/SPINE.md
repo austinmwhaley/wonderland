@@ -356,8 +356,8 @@ benchmark receipt (DEC-389), not a design debate.
 | A2 | **Depth** — how many layers | **LAW (DEC-400): derived from held-out convergence; card's `layers 2` = inherited, pending re-derivation** |
 | A3 | **Gates** — which gates exist, where, measured init | **LAW (DEC-401): full lawful set — write + event-locked persistence + read gates; mass never gated; measured init; step-0 stability receipt** |
 | A4 | **Normalization** — allowed where? (BANNED on state paths — mass additivity C3 + contractivity analysis; per-sample norms only on bend paths) | **LAW (DEC-402): per-sample, bend-path inputs only, admitted by receipt; unnormalized magnitude lane mandatory** |
-| A5 | **Residuals** — skip structure (legal in channel space; never through state) | **open — presenting now** |
-| A6 | **Attention's place** — allowed only as read-side pooling; may never be the state (DEC-386) | open (constraint already law) |
+| A5 | **Residuals** — skip structure (legal in channel space; never through state) | **LAW (DEC-403): channel-space skips + read taps, learned neutral-init gains (depth fairness); dense concat parked** |
+| A6 | **Attention's place** — allowed only as read-side pooling; may never be the state (DEC-386) | **open — presenting now (last of the A-series)** |
 
 ### A1 — Block anatomy (presented 2026-10-27)
 
@@ -453,6 +453,40 @@ ruling would force that lane to be reinvented unlawfully.
 Ruling pending (recommend **B**). Plain summary: **the past may be re-read, the present may be
 short-circuited, the fade may never be bypassed** — and every shortcut has to *earn* how much
 it contributes.
+
+Ratified: **B (DEC-403)** — channel-space skips + per-layer read taps, learned gains at the
+neutral element (zero contribution at step 0) for **depth fairness**. Dense concat parked with
+a **pre-registered admission trigger** (separable-access failure demonstrated by matched
+control) — never relitigated by opinion.
+
+### A6 — Attention's place (presented 2026-10-27 — closes the A-series)
+
+Family ruling (DEC-386) and A1 already settled that attention may **never be the memory**.
+What remains: may it be a *read* behavior? Note one sub-case is already occupied ground —
+"which layer's tap should I trust?" is exactly A3's read gates (learned positive weights), so
+a separate layer-attention mechanism would be a duplicate (prefer-deletion). The genuine
+question is content-adaptive aggregation on the read side.
+
+| # | Option | In one line | For | Against | Verdict |
+|---|---|---|---|---|---|
+| A | Banned outright (fixed poolings: last/mean/max/magnitude + A3 tap ensemble) | zero risk | fewest parts; nothing can re-import history | discards a capability the readout doctrine lists as available (content-adaptive "summarize the ticks that matter") | ⚠️ baseline |
+| B | **Read-side only, resident objects only** ⭐ | pooling weights computed from the customer's own current state, scoring what the **fixed-size state already carries** (taps + state-resident summaries); no KV cache; no raw-history access; positive weights (no softmax that can collapse to one branch) | content-adaptive reading without touching any law: state stays constant-size, merge law untouched, serve stays O(1) | needs the **residency receipt** kept current (below) or it quietly becomes D | ✅ |
+| C | Also over a bounded recent window of raw ticks (serve-side KV cache) | sharper short-range reads | — | window = literal + a per-customer history buffer ⇒ constant-state contract broken at serve; train≠serve | ✗ |
+| D | Full-history attention at read (retrieve over the whole event log) | "just look it up" | — | **PATH A in disguise**: the brain starts depending on raw material the ledger owns; O(history) serving cost; the frozen-donor contract (consumers read *embeddings*) is void | ✗ |
+
+Folded rulings:
+1. **Residency law** (the load-bearing one): any read path may read **only what the fixed-size
+   state carries**. Receipt: the readout is re-implemented against the frozen artifact alone —
+   no raw events reachable — and must be bitwise-equal to the training-time readout. If a read
+   needs anything else, it is rejected as D in disguise.
+2. Training-time attention obeys the same residency rule, never reads the future, never
+   crosses customers (per-sample contract, DEC-402).
+3. **Positive weights, no collapsing softmax**; gate init measured (A3's rule).
+4. **Attention weights are diagnostics**: emitted as a receipt of *where the voice looked*
+   (caterpillar reads them), never used to gate mass, never fed back into training signal.
+
+Ruling pending (recommend **B**). Plain summary: **attention may be a way of looking, never a
+way of remembering.**
 
 ### What the encoder is NOT
 - Not a consumer of labels/downstream tasks (firewall; PATH A's table is a
@@ -790,3 +824,13 @@ this order when implementation opens.
   endangers contractivity); dense concat readout parked as a receipted duplicate of A3's
   read gates. Noted lock with DEC-402: the mandatory unnormalized magnitude lane IS the
   residual path. Pending: A5 ruling; then A6 (attention's place) closes the A-series.
+- 2026-10-27 s28 — operator asked to understand **B vs D on residuals** (skips+read taps vs
+  dense concat). Answered in the open: add-in-place vs keep-everything; D's only genuine
+  advantage is *separable* per-source access (per-source linear maps vs scalar-gain sums),
+  which is why it is parked with a **pre-registered admission trigger** rather than banned;
+  D also breaks the depth-fairness nesting property and grows wiring with depth² and served
+  width with depth × width. **A5 = B ratified (DEC-403)**. A6 (attention's place) presented:
+  recommendation B — read-side only, **resident objects only**, with the residency law
+  (a read path may read only what the fixed-size state carries; receipt = readout re-implemented
+  against the frozen artifact alone, bitwise-equal), positive weights, attention weights as
+  diagnostics. Pending: A6 ruling → **A-series closes**.
