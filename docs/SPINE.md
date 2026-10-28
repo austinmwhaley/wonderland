@@ -48,6 +48,12 @@ designs that pass the gates, the higher maxim wins.
 | M3 | **Lawful** | correct algebra per quantity; exact symmetries (field order, time shift, sequence-merge); laws rank above efficiency because the laws are the *mechanism* of speed |
 | M4 | **Efficient / fast** | linear time, constant state, O(1) incremental update, vectorized; runtime receipts |
 
+### Standing tie-breaker — OVERMATCH (operator doctrine, DEC-385)
+Between "build the correct thing structurally **now**" and "defer until a receipt proves
+the need," choose **now** where costs are comparable. Correctness is not a cost to
+postpone — and under strict-frozen, a deferred interface error costs a full refit, so
+"wait and see" is the *expensive* option at any interface the encoder controls.
+
 ### The parameter trichotomy
 Every parameter lives in exactly one column; wrong column = bug.
 | Column | Meaning | Examples |
@@ -302,3 +308,8 @@ stage; each state moves only on a receipt. "Mastered" = all six working.
   (why / why not / recommendation); operator decides.** Feature 4 (shape/mass split)
   options A/B/C/D presented; recommendation A (split as law, engine + polar interface
   rule). Awaiting ruling.
+- 2026-10-27 s9 — operator: **Feature 4 = A ratified (DEC-385)** + **Overmatch doctrine**
+  adopted as standing constitutional tie-breaker (build the correct thing now, not when
+  needed; freeze makes deferral expensive). Feature 5 (the engine) options presented:
+  A fade+tick continuous-time recurrence (recommended), B attention-over-history,
+  C fixed-window binning, D event-indexed discrete recurrence, E ledger-only (PATH A).
