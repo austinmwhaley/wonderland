@@ -298,3 +298,7 @@ stage; each state moves only on a receipt. "Mastered" = all six working.
   `red_king` role; certified via `white_queen`). Recorded as DEC-384. Consumer set now
   four; trace table and bucket table updated (`response` approved-not-built). Next:
   queue item 4 — the shape/mass split.
+- 2026-10-27 s8 — operator protocol adopted: **every feature presented as options table
+  (why / why not / recommendation); operator decides.** Feature 4 (shape/mass split)
+  options A/B/C/D presented; recommendation A (split as law, engine + polar interface
+  rule). Awaiting ruling.
