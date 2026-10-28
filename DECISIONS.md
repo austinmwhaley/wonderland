@@ -2844,3 +2844,34 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - Principles served: Honest (the head cannot rescue the encoder), Diagnosable (gap attributed to
   the right axis), A1 (reject rather than compensate), M4 (cheapest instrument that can do the
   job), principle 14 (sklearn for estimators/metrics, derived for every default).
+
+## DEC-408 — Factory ratified: spec-interpreted engine + gated custom escape (C8); unsupervised instrument set ratified (C9)
+
+- **C8 ruling (B + C):** a supervised plugin **is** a declarative target spec
+  (`target`, `grain`, `label window`, `task`, `read` set, `budget: auto`) + trained artifact +
+  receipt, produced by **one** spec-interpreted engine. Generated-code scaffolds rejected
+  (correctness diffuses into editable copies the card cannot see); free-form reviewed code
+  rejected (review does not scale to thousands, and unreviewed paths become unfalsifiable
+  claims about the encoder). Hand-written **`custom`** plugins are admissible only if they pass
+  the same gates and emit the same receipts; a growing `custom` count is itself a card signal
+  that the factory is deficient.
+- Engine-owned discipline (implemented once, never per consumer): as_of-anchored time-ordered
+  splits (no future information); features restricted to published columns and to the declared
+  `read` set; linear shipping head at derived capacity (DEC-407); calibration with measured
+  coverage; both comparators (capacity-matched control **and** strong PATH A incumbent) with
+  paired CIs; degenerate targets excluded and reported; residency re-check (scorer runs from the
+  published table alone, DEC-404); pinning to artifact version + hash (DEC-405 rule 4); receipt
+  with N, commit, hashes. `sklearn`/`scipy` provide estimators, splits, calibration, statistics
+  (principle 14); **every library default is overridden by a derived value and emitted in a
+  derived-values receipt** — sklearn ergonomics, not sklearn guesswork.
+- **C9 ruling (ratified as presented):** unsupervised consumers are generated from the same
+  published rows with no labels in fitting. Dumb instrument set: distance/kNN (similarity =
+  shared futures — the S5 distance pressure) · PCA/whitening (rank & isotropy diagnostics) ·
+  k-means/HDBSCAN (segments) · IsolationForest/Mahalanobis read with `uncertainty` (anomaly) ·
+  cross-cohort transfer. Clusters/neighbors/contamination/components are **derived and
+  receipted**, never typed. Comparators are always **table / random / destroyed**; a structure
+  claim beating neither is excluded, not celebrated. Geometry gates (isotropy, effective rank,
+  decay) attach to the **artifact**, not to per-consumer re-derivations.
+- Principles served: single source of truth (discipline implemented once), Honest (claims without
+  receipts cannot be displayed), M1 (scales to thousands), M4 (mechanical generation),
+  principle 14 (vetted libraries), A1 (exclusion and reporting over forced PASS).
