@@ -92,12 +92,16 @@ def _torch_block() -> dict:
         block["device_name"] = torch.cuda.get_device_name(0)
         block["capability"] = ".".join(str(v) for v in torch.cuda.get_device_capability(0))
         # Kernel-availability smoke: an actual matmul on device, not just a device listing.
+        # Warmup first -- the first CUDA call pays context init and kernel load, so an unwarmed
+        # timing here would be a meaningless number on the receipt.
         try:
             import time
 
             n = 2048
             a = torch.randn(n, n, device="cuda", dtype=torch.bfloat16)
             b = torch.randn(n, n, device="cuda", dtype=torch.bfloat16)
+            (a @ b).float().sum().item()  # warmup: load kernels, init context
+            torch.cuda.synchronize()
             t0 = time.perf_counter()
             c = (a @ b).float().sum().item()
             torch.cuda.synchronize()
@@ -106,8 +110,10 @@ def _torch_block() -> dict:
                 "ok": bool(c == c),  # not NaN
                 "n": n,
                 "dtype": "bfloat16",
+                "warmup": True,
                 "seconds": round(dt, 4),
                 "tflops_approx": round(2 * n**3 / dt / 1e12, 2),
+                "note": "smoke test only -- DEC-389 adoption benchmarks are separate receipts",
             }
         except Exception as exc:
             block["matmul_smoke"] = {"ok": False, "error": repr(exc)}
@@ -121,9 +127,62 @@ def _cupy_block() -> dict:
         return {"installed": False, "error": repr(exc)}
     try:
         a = cupy.random.rand(1024, 1024)
-        return {"installed": True, "version": cupy.__version__, "smoke_ok": bool((a @ a).sum().item() > 0)}
+        return {
+            "installed": True,
+            "version": cupy.__version__,
+            "smoke_ok": bool((a @ a).sum().item() > 0),
+        }
     except Exception as exc:
-        return {"installed": True, "version": cupy.__version__, "smoke_ok": False, "error": repr(exc)}
+        return {
+            "installed": True,
+            "version": cupy.__version__,
+            "smoke_ok": False,
+            "error": repr(exc),
+        }
+
+
+def _pytest_fast_tier(timeout: int = 3600) -> dict:
+    """Run the fast test tier and record its counts, so the environment receipt also certifies the
+    inherited suite's state at this commit (regenerable with one command; not a /tmp artifact)."""
+    import xml.etree.ElementTree as ET
+
+    xml_path = REPO_ROOT / ".pytest_last.xml"
+    cmd = [
+        sys.executable,
+        "-m",
+        "pytest",
+        "-m",
+        "not slow",
+        "-q",
+        "--tb=no",
+        "-p",
+        "no:warnings",
+        f"--junitxml={xml_path}",
+    ]
+    try:
+        proc = subprocess.run(cmd, cwd=REPO_ROOT, capture_output=True, text=True, timeout=timeout)
+    except Exception as exc:
+        return {"ran": False, "error": repr(exc), "command": " ".join(cmd)}
+    out = {"ran": True, "returncode": proc.returncode, "command": " ".join(cmd)}
+    # Counts come from JUnit XML, not text parsing: pytest 9's -q omits the count line entirely
+    # when nothing fails, which previously produced a silently zero receipt.
+    try:
+        suite = ET.parse(xml_path).getroot()
+        if suite.tag != "testsuite":
+            suite = suite.find("testsuite")
+        for key in ("tests", "failures", "errors", "skipped"):
+            out[key] = int(suite.get(key, 0)) if suite is not None else 0
+        out["passed"] = out["tests"] - out["failures"] - out["errors"] - out["skipped"]
+        out["failing_tests"] = sorted(
+            f"{tc.get('classname', '')}::{tc.get('name', '')}"
+            for tc in (suite.iter("testcase") if suite is not None else [])
+            if tc.find("failure") is not None or tc.find("error") is not None
+        )[:40]
+    except Exception as exc:
+        out["parse_error"] = repr(exc)
+    finally:
+        xml_path.unlink(missing_ok=True)
+    return out
 
 
 def main() -> int:
@@ -133,6 +192,11 @@ def main() -> int:
         default=str(REPO_ROOT / "docs" / "report_cards" / "experiments" / "env_receipt.json"),
     )
     ap.add_argument("--print", action="store_true", dest="do_print")
+    ap.add_argument(
+        "--with-tests",
+        action="store_true",
+        help="also run the fast test tier and record its counts (one command regenerates the baseline)",
+    )
     a = ap.parse_args()
 
     receipt = {
@@ -172,6 +236,7 @@ def main() -> int:
         "gpu": _nvidia_smi(),
         "torch": _torch_block(),
         "cupy": _cupy_block(),
+        "fast_test_tier": _pytest_fast_tier() if a.with_tests else {"ran": False},
     }
 
     out = Path(a.out)

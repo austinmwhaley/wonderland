@@ -65,3 +65,6 @@ logs/
 
 # interactive demo page (generated, but it IS the deliverable)
 !index.html
+
+# transient junit xml written by scripts/env_receipt.py --with-tests
+.pytest_last.xml

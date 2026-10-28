@@ -6,7 +6,7 @@ scipy
 scikit-learn
 polars>=1.30,<2
 pyarrow
-duckdb
+duckdb>=1.5,<2
 tqdm
 gymnasium
 matplotlib

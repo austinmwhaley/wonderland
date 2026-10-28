@@ -13,7 +13,7 @@ dependencies = [
     "scikit-learn",
     "polars>=1.30,<2",
     "pyarrow",
-    "duckdb",
+    "duckdb>=1.5,<2",  # 2.x removed Relation.pl(), the sanctioned no-pandas duckdb->polars read (DEC-416)
     "tqdm",
     "gymnasium",
     "matplotlib",

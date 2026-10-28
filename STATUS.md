@@ -8,15 +8,18 @@
 
 ## CURRENT STATE — 2026-10-27 (read this first; supersedes older sections)
 
-> **Design re-think: DESIGN PHASE COMPLETE (2026-10-27).** `docs/SPINE.md` is the single steering
-> document — constitution, four consumers, judge = PATH B > PATH A, S1–S6 spine, buckets + ledger
-> companion, derived battery, judge-first card, GPU-first on the GB10. **T-series closed
-> (DEC-399) · A-series closed (DEC-404) · C-series closed (DEC-412) · Outlet Standard O1–O8 law ·
-> O6 serving & refresh law (DEC-414).** DEC trail DEC-383…414; decision rights DEC-413.
-> Remaining before/at implementation: GPU work-map (fused into the plan), the parked C10
-> decision-platform items, and Layer-1 certification (deferred by design, disclosed).
-> **Awaiting operator "go"; step 0 = CUDA environment rebuild (torch aarch64/CUDA-13).**
-> Until "go", the existing card/pipeline above remains the operational status quo.
+> **IMPLEMENTATION OPENED on branch `foundation-rebuild` (2026-10-28).** Design phase complete
+> (T-series DEC-399 · A-series DEC-404 · C-series DEC-412 · Outlet Standard O1–O8 · O6 DEC-414);
+> DEC trail DEC-383…416. **Step 0 done:** GB10 CUDA env built in `.venv` (torch 2.14.1+cu130,
+> CUDA 13.0, compute cap 12.1, cupy 14.2; receipt
+> `docs/report_cards/experiments/env_receipt.json`). **Step 1 done:** the judge card exists —
+> `scripts/judge_spec.py` (frozen gates) + `scripts/judge_card.py` → `JUDGE_CARD.md`, currently
+> **0/8 legs green, 0/6 stages green, NOT DONE** by design (the court before the cases), with 18
+> tests proving it cannot be talked into a PASS. Inherited-suite baseline at this commit:
+> **512 collected / 504 passed / 8 failed** (duckdb 2.0 API break pinned to `>=1.5,<2`; 7 failures
+> need `python3-dev` for `torch.compile`; 1 typed-tolerance drift). Blocking operator action:
+> `sudo apt-get install -y python3-dev build-essential`. Nothing pushed.
+> The status-quo `REPORT_CARD.md` remains the operational reference for the inherited pipeline.
 
 **Repository state:** `main` now contains the former `primary-encoder` demo work. The duplicate
 report card, stale roadmap, duplicate receipt orchestrator, one-off OPE wrappers, and generator

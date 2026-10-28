@@ -1,0 +1,82 @@
+{
+  "cupy": {
+    "installed": true,
+    "smoke_ok": true,
+    "version": "14.2.0"
+  },
+  "fast_test_tier": {
+    "command": "/home/austin_whaley/Documents/Repos/wonderland/.venv/bin/python -m pytest -m not slow -q --tb=no -p no:warnings --junitxml=/home/austin_whaley/Documents/Repos/wonderland/.pytest_last.xml",
+    "errors": 0,
+    "failing_tests": [
+      "tests.test_objectives_portfolio::test_geometry_bank_penalties_and_governor",
+      "tests.test_scan_accel::test_scan_accel_batch_equivalent",
+      "tests.test_scan_accel::test_scan_accel_equivalent[dtype0-130]",
+      "tests.test_scan_accel::test_scan_accel_equivalent[dtype0-7]",
+      "tests.test_scan_accel::test_scan_accel_equivalent[dtype1-130]",
+      "tests.test_scan_accel::test_scan_accel_equivalent[dtype1-1]",
+      "tests.test_scan_accel::test_scan_accel_equivalent[dtype1-7]",
+      "tests.test_scan_accel::test_scan_accel_preserves_initial_state"
+    ],
+    "failures": 8,
+    "passed": 504,
+    "ran": true,
+    "returncode": 1,
+    "skipped": 0,
+    "tests": 512
+  },
+  "generated_at": "2026-10-28T13:35:15.948237+00:00",
+  "git": {
+    "branch": "foundation-rebuild",
+    "commit": "595abac138c95f1b790412754e73bb7b421ba223",
+    "dirty": true
+  },
+  "gpu": {
+    "available": true,
+    "compute_cap": "12.1",
+    "driver_version": "580.159.03",
+    "memory_total": "[N/A]",
+    "name": "NVIDIA GB10"
+  },
+  "kind": "env_receipt",
+  "packages": {
+    "duckdb": "1.5.6",
+    "numpy": "2.5.4",
+    "polars": "1.44.2",
+    "pyarrow": "26.0.0",
+    "pytest": "9.2.0",
+    "ruff": "0.17.3",
+    "scikit-learn": "1.9.1",
+    "scipy": "1.18.1",
+    "torch": "2.14.1+cu130"
+  },
+  "platform": {
+    "logical_cpus": 20,
+    "machine": "aarch64",
+    "release": "6.17.0-1022-nvidia",
+    "system": "Linux"
+  },
+  "python": {
+    "executable": "/home/austin_whaley/Documents/Repos/wonderland/.venv/bin/python",
+    "prefix": "/home/austin_whaley/Documents/Repos/wonderland/.venv",
+    "version": "3.12.3",
+    "virtualenv": true
+  },
+  "torch": {
+    "built_with_cuda": "13.0",
+    "capability": "12.1",
+    "cuda_available": true,
+    "device_count": 1,
+    "device_name": "NVIDIA GB10",
+    "installed": true,
+    "matmul_smoke": {
+      "dtype": "bfloat16",
+      "n": 2048,
+      "note": "smoke test only -- DEC-389 adoption benchmarks are separate receipts",
+      "ok": true,
+      "seconds": 0.0004,
+      "tflops_approx": 41.66,
+      "warmup": true
+    },
+    "version": "2.14.1+cu130"
+  }
+}

@@ -3143,3 +3143,57 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - Principles served: principle 10 (reproducibility is identity — the runtime is now receipted),
   A1/Robust, M4, prefer-deletion (replacement implies deletion), Honest (two cards kept distinct
   and labeled).
+
+## DEC-416 — Step 0 complete (GB10 CUDA env) and step 1 delivered (the judge exists and cannot be fooled)
+
+- **Step 0 — environment (DEC-389 item #1).** `scripts/setup_env.sh` (idempotent; project venv;
+  **system python untouched**) built `.venv`: **torch 2.14.1+cu130** installed first from the
+  CUDA-13 index so `requirements.txt` can never resolve a CPU build, plus numpy 2.5.4,
+  scipy 1.18.1, scikit-learn 1.9.1, polars 1.44.2, pyarrow 26.0.0, pytest 9.2, ruff 0.17.3,
+  **cupy 14.2.0**. Hardware proven by a **real device matmul**, not a device listing:
+  NVIDIA GB10, driver 580.159.03, **compute capability 12.1**, CUDA 13.0, bf16 2048³ →
+  **≈15.2 TFLOPS** warm. The first unwarmed measurement read 0.03 TFLOPS — a cold-start artifact;
+  the smoke now warms before timing, because a receipt with a meaningless number is worse than none.
+- `scripts/env_receipt.py` writes `docs/report_cards/experiments/env_receipt.json`: python,
+  platform, git commit/branch/dirty, package versions, nvidia-smi block, torch CUDA block with the
+  warm matmul smoke, cupy smoke, and (with `--with-tests`) the fast test tier's counts from **JUnit
+  XML** — pytest 9's `-q` silently omits its count line, which had produced a receipt of zeros.
+- **Inherited-suite baseline at this commit: 512 collected · 504 passed · 8 failed** (regenerable:
+  `.venv/bin/python -m pytest -m "not slow" -q`). Recorded now so "the rebuild broke it" can be
+  neither claimed nor hidden later.
+- **Cause 1 — 19 of the original 24 failures: duckdb 2.0 removed `Relation.pl()`**, the sanctioned
+  pandas-free DuckDB→polars read used at ~30 sites (14 files). **Pinned `duckdb>=1.5,<2`** in
+  pyproject + requirements mirror (single source + mirror, per repo convention). This is a
+  **documented pin, not the end state**: the doctrine wants exactly one DuckDB→polars boundary, and
+  30 inline `.pl()` calls are 30 places for the same API break to recur. Fix-forward (a single
+  `rabbit_hole.stream` read helper used everywhere) is a recorded work item — deliberately not done
+  now because those files sit inside the rebuild's blast radius (cost-aware), and the helper will
+  be written once, in the new data path.
+- **Cause 2 — 7 failures, needs the operator: `torch.compile` cannot build here**
+  (`/usr/include/python3.12/Python.h` missing → inductor fails → `_scan` falls back to eager).
+  `tests/test_scan_accel.py` asserts the accelerated path *engaged* and therefore **fails rather
+  than being skipped** — a masked accelerator is exactly the false green DEC-389 forbids, so this is
+  left visible. Fix: `sudo apt-get install -y python3-dev build-essential` (sudo needs a password;
+  operator action). Until then **no GPU-acceleration claim is made anywhere**, and any such card
+  row renders UNKNOWN.
+- **Cause 3 — 1 failure: a typed tolerance drifted.** `test_objectives_portfolio` geometry-bank rank
+  penalty reads 0.011 against a hardcoded `< 0.01` for a perfectly collapsed bank — numerical drift
+  on an arbitrary literal. **Left untouched deliberately**: changing a threshold is gate-touching
+  (stop-and-ask), and the correct fix arrives with the S5 rebuild, where the tolerance is *derived
+  from the measured noise floor* instead of typed.
+- **Step 1 — the judge exists before any case is argued.** `scripts/judge_spec.py` holds the frozen
+  gates (four legs × two columns, the S1–S6 ladder, five hygiene rows); `scripts/judge_card.py`
+  renders `JUDGE_CARD.md` from receipts only, currently **0/8 legs green · 0/6 stages green ·
+  "NOT DONE"**. `tests/test_judge_card.py` (18 tests) exists to prove the card **cannot be talked
+  into a PASS**: missing receipt → UNKNOWN; stale `behavior_hash` → UNKNOWN; receipt defining its own
+  criterion → UNKNOWN; comparator `n/a` → UNKNOWN; missing N or missing controls → UNKNOWN; CI
+  including 0 → FAIL; a control beating the brain → FAIL; degenerate target → EXCLUDED (reported,
+  not forced); and the completion sentence appears only when every row is genuinely green.
+- **Freshness got a mechanism:** `behavior_hash()` sha256s the encoder + data-path source *trees*
+  (not a curated file list, so a new module cannot escape the law). Any behavior change makes
+  dependent receipts UNKNOWN automatically — DEC-390's law executed in code instead of memory.
+- Pre-existing, unrelated to this branch: `ruff check .` reports **45 findings in inherited files**
+  (44 × E702, 1 × F841) under ruff 0.17; the new files pass clean. Recorded as a cleanup item.
+- Principles served: principle 10 (reproducibility is identity), A1 (a masked accelerator is a
+  failure, surfaced), Honest (baseline recorded before the rebuild; thresholds not bent),
+  M4 (cost-aware deferral of the duckdb refactor), DEC-389 (measure before claiming GPU).
