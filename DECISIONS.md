@@ -2178,3 +2178,34 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   `docs/AUDIT_CARD.md` remain the current authority.
 - Principle served: `AGENTS.md` #6 (single source of truth; no duplication) and #13 (prefer
   deletion over accretion).
+
+## DEC-383 — Ledger ships as a companion (Option 3); Option 4 preserved as training pressure
+
+- Context: first-principles restructure (`docs/SPINE.md`) reached the `measure` ("ledger")
+  question. The judge is PATH B (event stream → encoder) > PATH A (wide table → GBM). A
+  ledger blended into headline scores would make ledger-backed "wins" secretly table-vs-table
+  (receipt: ledger category purity 0.261 vs table 0.265 — same object).
+- Decision: **Option 3 (companion)** adopted. The foundation is **certified on the brain
+  alone**; the artifact **ships brain ⊕ ledger** as named buckets side by side. Ledger points
+  never count toward a B-win. The card carries two numbers: **brain-vs-incumbent = the
+  progress judge**; **brain+ledger-vs-incumbent = delivery** (never-worse guarantee).
+  Slogan: the brain earns the win; the ledger prevents the loss.
+- Guardrails MANDATORY whenever the ledger ships: G1 mechanical-only (fixed recipe —
+  count/sum/first/last/distinct/share — applied to every S1-discovered field; no
+  hand-picked columns or windows), G2 history-only (as-of respected), G3 target-blind,
+  G4 never feeds the brain's training inputs (keeps learned vs copied separable), G5
+  attribution always (brain / ledger / both rows with destroyed controls).
+- Alternative considered: Option 1 (brain only) — rejected: ships worse than the table on
+  ledger-served tasks (category identity, anomaly) and invites per-consumer PATH A rebuilds.
+  Option 2 (blended) — rejected: contaminates the judge. Option 4 (learned ledger) —
+  **preserved, not deleted**: serving on the brain's learned mass channel stays a live
+  target, and the ledger's exact aggregates remain admissible as S5 auxiliary reconstruction
+  targets (self-supervised pressure from the visible past, permitted while G4 bans ledger as
+  an *input*). Serving ledger retires only when the brain earns those rows outright.
+- Trade-offs: Option 3 adds attribution bookkeeping (enforced by the card, not trust) and
+  ~32% more state dimensions per customer (~734 ledger floats beside 2265 brain); inference
+  cost verified as an accumulation pass (0.19 s/600 customers vs 0.316 s warm forward), not
+  a stored table.
+- Principles served: A2 Honest (two-number judge kills self-deception), M1/M2 (ledger is
+  mechanical + derived, zero hand-picked features), M3 Lawful (exact additive algebra),
+  M4 Efficient (odometer, not table).
