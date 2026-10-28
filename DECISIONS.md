@@ -2875,3 +2875,49 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - Principles served: single source of truth (discipline implemented once), Honest (claims without
   receipts cannot be displayed), M1 (scales to thousands), M4 (mechanical generation),
   principle 14 (vetted libraries), A1 (exclusion and reporting over forced PASS).
+
+## DEC-409 — C10 re-scoped: the spine defines a decision-PLATFORM contract; RL algorithms live in peer mini-projects (open arc)
+
+- **Operator correction accepted:** `white_queen` is **pure offline RL** and is its own
+  mini-project, exactly like `red_king`. My first C10 draft over-reached by designing the RL
+  ladder as if the spine owned RL internals. It does not. Standard **online** RL must also be
+  supported, and *how* the system enables it is an open design question — recorded as such
+  rather than papered over with a tidy tier table.
+- **Scope ruling:** the spine specifies only (a) what a decision consumer may **read**, (b) what
+  it must **emit**, and (c) the **safety envelope** it may not leave. Algorithm choice —
+  offline OPE (white_queen), counterfactual modeling (red_king), or any future online-RL
+  project — is internal to that mini-project, which has its own gate and its own receipts. All
+  are peers: each reads the published artifact, each writes to its **own** namespace, none may
+  touch B (DEC-405).
+- **Invariants adopted now** (cheap to honor later, expensive to retrofit):
+  1. **No gradients upstream, ever.** An agent owns its head, its replay, its policy state. The
+     encoder is read-only to all of them.
+  2. **Everything is artifact-mediated.** Decisions, transitions, and evaluations are written to
+     tables; no agent calls B, and B never calls an agent. The same publish/consume law as C1.
+  3. **An agent pins the encoder version it was trained on** (hash + commit). The freshness law
+     (DEC-390) therefore applies to policies: **a re-fit of B invalidates every policy trained
+     on its embeddings** — they go UNKNOWN and must be re-derived and re-certified. Named here
+     because it is the operational hazard most likely to be discovered in production.
+  4. **Guardrails live outside the learner** (a learner cannot police itself): shadow mode
+     (decide without acting), per-customer caps, budget caps, kill switch, and rollback to the
+     logging baseline — which is also the standing rule *never ship worse than logging*.
+  5. **Simulator-first.** Where a certified world model exists (`red_king`, validated against
+     known effects), policy learning happens against it before any live exposure; live
+     exploration is offline-first and requires explicit operator approval.
+  6. **One objective** for every decision consumer: discounted **incremental** gross margin —
+     causal lift, never correlated margin.
+- **Open items — parked as their own arc, not silently dropped:** (1) the **decision/transition
+  log schema** (`entity_key`, `as_of`, artifact hash, policy version, action, propensity,
+  reward-at-time) — the learning data has no home yet; (2) **actuation feedback** (was the action
+  actually delivered, and when) — without it `(s,a,r,s')` cannot be closed honestly;
+  (3) **incremental reward online** — incremental requires randomization or a certified
+  simulator, so T-2/T-3-style learning is *gated on* the randomization budget, not on the
+  agent's sophistication; (4) **invalidation & re-certification workflow** for policies on
+  encoder version bump.
+- The earlier tier ladder (offline analysis → certified offline policy → constrained online
+  learning → approved randomized exploration) is retained as the **evidence ladder** — how much
+  proof a deployment needs — and is explicitly *not* a design of RL internals or of which
+  algorithm a mini-project must use.
+- Principles served: modularity/one-way flow (peer mini-projects over a published artifact),
+  A1/Robust (guardrails outside the learner, rollback, invalidation), Honest (open items named
+  instead of a false-complete design), M1 (future RL capability admissible with no encoder edit).
