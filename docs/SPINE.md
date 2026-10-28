@@ -871,6 +871,54 @@ Ratified (DEC-412). O3's shipped conformance kit and O8's unconditional-read cla
 the rest restate ratified law as one promise. **O6 (the wall is live) is the sole undesigned
 clause → the serving & refresh arc.**
 
+### O6 — Keeping the wall live (serving & refresh) — **RATIFIED (DEC-414)**
+
+Operator inputs: stale = *"when the embedding fails to do its job anymore"*; 30–90 days between
+re-fits is tolerable but cadence must be **measured from performance degradation, not static**;
+and training/retraining/inference should be **as cheap as possible**, with shortcuts welcome if
+they change the answer.
+
+**The insight that reconciles them: freshness of embeddings and re-fitting the encoder are
+different problems.** Conflating them is what makes refresh expensive.
+
+| Clock | What it does | Cost | Exactness |
+|---|---|---|---|
+| **A — scoring** (continuous) | publish embeddings for **changed** customers on the **frozen** encoder | O(1) per tick; unchanged customers never recomputed (content-addressed by input-window hash) | **exact** — O(1) incremental state (DEC-395) + merge law (chunk-exact), so delta scoring is *not* an approximation |
+| **B — re-fit** (rare) | re-train the encoder when the **degradation detector** fires | expensive, event-triggered | champion/challenger; never ship worse than the champion |
+
+**Degradation detector — "fails to do its job," measured per consumer leg:**
+
+1. **Label-free tier (cheap, early).** Re-run the **self-supervised battery** on fresh data: if
+   held-out SSL losses drift beyond the measured noise floor, the encoder is going stale *before*
+   any label proves it. Companions: input drift on the S1/S2 statistics already collected,
+   **unseen-value mass** (T2), geometry drift (isotropy / effective rank).
+2. **Label tier (confirms, per leg).** A **backtest ledger**: every published cohort is scored at
+   `as_of` and resolved when labels mature → an honest time series of the brain-vs-PATH-A
+   advantage *by cohort age*. Stale = the advantage decayed by more than **N × measured SE** (the
+   convergence rule of "plateau within measurement noise", aimed at time instead of steps).
+
+Staleness is **per-leg and per-bucket**, never global (churn may be live while value is dead). A
+fired leg renders **UNKNOWN, never PASS**, and the faceplate publishes the verdict, last-good
+publish, next check, and which trigger fired. Serving a refused artifact is a **refusal**, not a
+degraded pass.
+
+**No static interval.** The backstop is derived by fitting the **utility-decay curve** (metric vs
+cohort age) from the backtest ledger across historical re-fits — the backstop is the age at which
+the trigger would have fired anyway. The operator's 30–90 days is recorded as the **outer
+envelope**, not the schedule; until enough re-fits exist to fit the curve, a conservative derived
+fallback runs **with a fallback-fired receipt**.
+
+**Cost law — "exactness is free; approximation must be bought with a receipt."**
+*Exact, adopted outright:* delta scoring from state, content-addressed caching, batch-everything
+GPU execution (DEC-389), O(1) serve. *Certified shortcuts (they change outputs):* **warm-started
+re-fits** (validated against a **cold-start control** on the card, with periodic cold starts so
+successive warm starts cannot accumulate drift), bf16/fp16 within stated tolerance, sampled
+re-fit cohorts, partial-battery re-training (full battery is the certified fallback). Every
+speedup is benchmarked before adoption and keeps the slow-but-certified path as fallback.
+
+Cost budgets are **derived from data + hardware**, and the concrete re-fit compute ceiling is
+presented for **authorization** at implementation go-time (material spend).
+
 ### C-series — CLOSED (2026-10-27), one open arc
 
 | # | Decision | Status |
@@ -886,6 +934,7 @@ clause → the serving & refresh arc.**
 | C9 | Unsupervised instruments | **LAW** — dumb set, derived counts, table/random/destroyed comparators (DEC-408) |
 | C10 | Decision & RL | **open arc** — decision-platform contract + 6 invariants; 4 items parked (DEC-409) |
 | — | **The Outlet Standard** | **LAW** — O1–O8; "works" defined mechanically (DEC-412) |
+| **O6** | Serving & refresh | **LAW (DEC-414)** — two clocks; degradation-triggered re-fit; exactness-free-of-cost |
 | — | Cleanup owed | backward imports (B→white_queen ×5, C→B ×3 incl. `rehearsal → update_day`); leaf `contracts/` module |
 
 ## 7. Progress mechanics (DEC-390) — the card IS the judge
@@ -1231,3 +1280,19 @@ this order when implementation opens.
   [PRINCIPLE] / [AUTHORIZATION] / gate-touching items stay the operator's and are *always*
   surfaced; [TECHNICAL] items I decide, cite a principle, log with rejected alternatives, and are
   adopted unless vetoed on principle-fit.
+- 2026-10-27 s37 — operator answered the three **[PRINCIPLE]** questions on O6: stale = *when the
+  embedding fails to do its job anymore*; 30–90 days between re-fits tolerable but cadence must be
+  **measured from performance degradation, not static** (their day-job's static 30-day cycle was
+  explicitly rejected as a model); and train/retrain/infer **as cheap as possible**, shortcuts
+  welcome if they change the answer. **O6 ratified as DEC-414** on the reconciling insight that
+  **embedding freshness and encoder re-fit are different problems**: Clock A = continuous, exact,
+  nearly free delta scoring of changed customers on the frozen encoder (O(1) + merge law);
+  Clock B = rare, event-triggered re-fit fired by a **two-tier degradation detector** (label-free
+  SSL-battery + drift signals first, matured-label backtest ledger confirming), with staleness
+  per-leg, UNKNOWN-never-PASS, a **derived** backstop from the fitted utility-decay curve (30–90d
+  recorded only as the outer envelope), and the cost law **"exactness is free; approximation must
+  be bought with a receipt"** (warm starts, quantization, sampled cohorts and partial-battery
+  retraining each need a certification receipt against a cold/full control). Design phase is now
+  complete: T · A · C series closed, O1–O8 law, O6 law; remaining = GPU work-map (fused into the
+  implementation plan) and the parked C10 items. Next: **implementation go/no-go**
+  ([AUTHORIZATION] — step 0 rebuilds the CUDA env on the GB10).
