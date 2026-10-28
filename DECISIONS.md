@@ -2588,3 +2588,36 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   are separate dials; "why not 5" is legitimate only for the second.
 - Principles served: M3 (axes of mixing derived from what information must do), M2 (depth
   measured), M4 (runtime receipts), Honest (inheritance named out loud).
+
+## DEC-401 — Gate set: full lawful set with event-locked persistence (A3 = B)
+
+- Ruling: **Option B**. The engine's gate set is: (1) **write gates** and **bilinear
+  content×state coupling** at event ticks (already law, DEC-398); (2) an **event-locked
+  persistence (forget) gate** — at each event, content may retune each channel's holding
+  time; **between events the decay is an exact exponential at locked parameters**, so the
+  merge law survives and T6's chunked scanning stays free; (3) **per-layer read gates**;
+  (4) **positive-weight readout ensembles**. τ may move only inside **bands derived from
+  the spectral peak's bootstrap uncertainty** — the measurement's own error bar sets the
+  leash, so no typed-in bound is introduced.
+- Folded rulings made explicit:
+  1. **The mass pathway is never gated** — gating a sum falsifies sums (mass-additivity
+     gate C3 measures exact zero error; a gate would make that unmeasurable).
+  2. **Measured gate initialization** (T7's rule applied to gates): write-gate biases from
+     measured event rate/redundancy; persistence gates start at the static-τ equivalent
+     from the spectrum. Random init rejected.
+  3. **Determinism:** gates are deterministic functions; no stochastic gates at serve;
+     training-time noise is seed-reproducible under the C4 receipt.
+  4. **Stability law binds:** persistence gates ship a **step-0 stability receipt** (stable
+     from the first iteration); lr from the curvature bound; divergence is a hard failure,
+     never a governor rescue.
+- Rejected: minimal set (⚠️ legitimate baseline — loses content-dependent memory duration;
+  admissible as a receipted ablation, not as doctrine); decay steered continuously *between*
+  events (voids the merge law → T6's free lunch revoked; endangers stability — sacred spring,
+  DEC-398); bare recurrence (contradicts the measured 1.79× rank receipts).
+- Capability bought: event *meaning* may set memory *duration* (a churn signal should
+  persist where routine noise should fade) — the same channel, event-dependent holding time.
+- Richer-than-exponential dynamics remain admissible only as a **receipted parallel
+  mechanism** beside the core, each carrying its own merge test (DEC-398 pattern).
+- Principles served: M3 (law kept exact; bends only at events), M2 (bands and init measured,
+  not typed), A1 (determinism, step-0 stability, reject-not-clamp), Honest (capability
+  claimed only where a receipt exists).
