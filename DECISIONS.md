@@ -2689,3 +2689,36 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - Principles served: M3 (fade exactness, mass additivity), M2 (gain learned), M4 (runtime
   receipts), A1 (step-0 stability, identity-preserving), Honest (depth verdict attributable),
   prefer-deletion (single mechanism for multi-source readout).
+
+## DEC-404 — Attention: read-side only, resident objects only (A6 = B); residency law adopted
+
+- Ruling: **Option B**. Attention may be a way of **looking**, never a way of **remembering**.
+  Admitted on the **read side only**: pooling weights computed from the customer's own current
+  state, scoring what the **fixed-size state already carries** (per-layer read taps +
+  state-resident summaries). No KV cache, no raw-event access, positive weights (no softmax
+  that can collapse the readout to a single branch), gate/pool initialization measured (A3's
+  rule).
+- **Residency law (load-bearing, new):** *any read path may read only what the fixed-size state
+  carries.* Receipt: the readout is re-implemented against the frozen artifact alone — raw
+  events unreachable — and must be **bitwise-equal** to the training-time readout. A read that
+  needs anything outside the state is rejected as full-history attention in disguise.
+- Also law from this ruling: training-time attention obeys the same residency rule, never reads
+  the future, never crosses customers (per-sample contract, DEC-402). **Attention weights are
+  diagnostics, not machinery** — emitted as a receipt of *where the voice looked* (readable by
+  `caterpillar`), never used to gate mass, never fed back as a training signal.
+- Duplicate deleted by ruling: "which layer's tap to trust" is A3's read gates (learned positive
+  weights) — no separate layer-attention mechanism (prefer-deletion, single implementation).
+- Rejected: banned outright (⚠️ legitimate minimalism, but the first *prohibition* rather than
+  *gate* offered this session; discards a capability the readout doctrine lists as available);
+  bounded recent-window raw ticks with a serve-side cache (window = literal + per-customer
+  history buffer ⇒ constant-state contract broken at serve, train≠serve); full-history attention
+  at read (**PATH A wearing our clothes** — brain depends on raw material the ledger owns,
+  O(history) serving, frozen-donor contract void).
+- With A6 the **A-series (microarchitecture) is CLOSED**: A1 two-subblock recurrence+MLP ·
+  A2 depth measured · A3 full lawful gate set · A4 per-sample norms on bend paths ·
+  A5 channel-space skips with neutral-init gains · A6 read-side attention under the residency
+  law. Attention hybrids from A1 (recent-window attention, conv pre-stage) remain parked as
+  receipted candidates.
+- Principles served: M3 (merge law, constant state), M4 (O(1) serve preserved), A1 (train=serve,
+  reject-not-clamp), Honest (residency proven by receipt, not assertion), Diagnosable (attention
+  weights as read-only diagnostics).
