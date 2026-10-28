@@ -2722,3 +2722,55 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - Principles served: M3 (merge law, constant state), M4 (O(1) serve preserved), A1 (train=serve,
   reject-not-clamp), Honest (residency proven by receipt, not assertion), Diagnosable (attention
   weights as read-only diagnostics).
+
+## DEC-405 — The boundary is a published artifact, not an interface (C1, operator directive)
+
+- **Operator directive (binding):** plugins are **dumb consumers**. They must not have the
+  *ability* to talk to Layer B, and there may be **thousands** of them. Therefore B publishes
+  artifacts and is **oblivious to the existence of consumers**; consumers read artifacts.
+  The earlier C1 draft's "single typed accessor at read time" is **withdrawn** — any mechanism
+  that sits in the consumption path is a dependency waiting to happen, and with thousands of
+  consumers per-consumer coupling is fatal (fan-out, not aesthetics, is the argument).
+- **The law:**
+  1. **Artifact = the interface.** `customer_key × as_of` keyed tables (donor/state embeddings,
+     buckets, ledger, uncertainty) written by exactly **one** producer path. A consumer is
+     anyone who can run a SELECT — that is what "accommodates unknown consumers by
+     construction" means: the contract is a *schema*, not a function signature.
+  2. **No talking back — the banned shapes:** no import path between B and C in either
+     direction; no consumer-invokable compute in B (no request-driven recomputation, no
+     callback, no gateway that B answers); no shared mutable state; no consumer-specific
+     columns, tables, or logic in B's namespace; consumers write only to their own namespace.
+     Mechanically checkable by import-graph + call-site scan (owed in `principle_audit.py
+     --strict` / CI).
+  3. **Read-only in fact, not in prose:** producer output is immutable and content-addressed
+     (hash + version + build commit), consumers get read-only access. Physical enforcement
+     replaces discipline.
+  4. **Self-describing artifact** (required *because* there may be thousands of consumers,
+     who cannot be individually coordinated with): the artifact carries its own
+     validity/metadata (version, hash, `as_of`, freshness bound, bucket inventory), so each
+     consumer can **self-validate and locally refuse** a stale or out-of-support artifact
+     without asking B — reject, never clamp, at the boundary.
+  5. **Producer-side materialization** (the consequence usually missed): anything a consumer
+     needs that is *derived from B's own guarantees* (e.g. pre-action cuts, ledger companion
+     views) must be **materialized by the producer**. Thousands of consumers re-deriving a cut
+     each their own way is guaranteed drift, and it silently escapes the encoder's
+     certification. B stays oblivious; it just publishes more columns.
+  6. **Judgment stays outside both sides:** "which buckets a consumer actually used" is
+     established by the judge's **read-only observations** (declared manifest in the plugin's
+     own code + static column-reference extraction + a knob-turn receipt: zero/permute a bucket
+     and see whether the score moves), never by a gate inside B. Nothing flows back into B.
+- **Existing violations named (cleanup owed, one work item):** `looking_glass/
+  white_queen_bridge.py` (×4) and `looking_glass/candidate_roster.py` import
+  `white_queen.tribunal.ope.api` (**B → downstream**); `plugins/inference.py`,
+  `plugins/ablation.py`, `plugins/rehearsal.py` import `looking_glass.*` (**C → B**), including
+  `rehearsal.py → daily_states.update_day`, i.e. a consumer that can **produce its own input**
+  — the worst form of the loop. Shared constants move to a leaf `contracts/` module that
+  imports nothing. Certification call sites relocate to the judge/card layer, which is
+  permitted to read everything (the `caterpillar` pattern).
+- **Disclosed costs:** declarations become self-reported (made honest by the knob-turn
+  receipt, since concealing a ledger read buys a consumer nothing); version pinning is matched
+  by the judge rather than observed in a call path (hence rule 4's stamped metadata). Coupling
+  that a receipt can catch beats coupling that a wall merely forbids.
+- Principles served: one-way flow (doctrine), M1/universal (schema contract accommodates the
+  unimagined consumer), A1/Robust (read-only, immutable, local refusal), Honest (attribution
+  by measurement), prefer-deletion (no wrapper layer), single source of truth (one writer).
