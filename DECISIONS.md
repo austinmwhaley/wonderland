@@ -2209,3 +2209,29 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - Principles served: A2 Honest (two-number judge kills self-deception), M1/M2 (ledger is
   mechanical + derived, zero hand-picked features), M3 Lawful (exact additive algebra),
   M4 Efficient (odometer, not table).
+
+## DEC-384 — Fourth consumer declared (the simulator, serves red_king); `response` bucket approved (Option B)
+
+- Context: bucket audit (SPINE §5) found the "response" content class ("what happens if we
+  DO something?") had no outlet — RL consumed pre-action cuts only — and the RL/causal leg
+  was the weakest. Pressure-first (Option C) was rejected by the operator in favor of the
+  direct fix.
+- Decision 1: **The simulator is the fourth consumer** — the frozen object must support
+  counterfactual questions ("what if we did X to this cohort?") from its own state. This
+  traces to `red_king` (counterfactual effect recovery / decision improvement), certified by
+  `white_queen` (OPE). Consumer set is now supervised / unsupervised / RL / simulator.
+- Decision 2: **`response` becomes a bucket (Option B)**: head outputs predicting outcomes
+  given the logged action (action + pre-action state → future outcome), exposed as a named
+  view. Justification: the simulator consumer makes it mandatory, not merely useful.
+- Legality under the firewall: logged actions and their outcomes are events already in the
+  stream — predicting them is self-supervision (A2 legal). Discipline (binding):
+  (a) the bucket holds **conditional predictions with uncertainty**, never causal claims;
+  (b) causal interpretation attaches only where the stream logged randomization
+  (Layer-A arms), else uncertainty widens (A1); (c) pre-action cuts still apply — the
+  state is always taken strictly before the action timestamp.
+- Trade-offs: the encoder now models actions (mild complexity; actions remain ordinary
+  events — no per-domain action code, M1 intact); new bucket must earn its place per the
+  audit rule (negative controls + attribution like every other row).
+- Principles served: consumer-backward tracing (the bucket exists because a consumer
+  demands it), A1 (uncertainty over claims), A2 (stream-only supervision), Diagnosable
+  (named outlet → attributable receipts for the RL leg).
