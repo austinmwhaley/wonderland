@@ -144,9 +144,9 @@ the table as a T-feature (same protocol: options, why/why not, recommendation, r
 | # | Internal decision | Where | Status |
 |---|---|---|---|
 | T1 | **Token unit** — what one "tick" of the engine is | S2 | **LAW (DEC-391): one event = one tick** |
-| T2 | Categorical vocab policy — caps, hashing for id-like fields, unseen-value path | S2 | open |
+| T2 | Categorical vocab policy — caps, hashing for id-like fields, unseen-value path | S2 | **open — presenting now** |
 | T3 | Numeric encoding — learned monotone transform vs fallback | S2 | open |
-| T4 | **Missing/unknown/zero semantics** — three-way field presence | S2 | **open — presenting now** |
+| T4 | **Missing/unknown/zero semantics** — three-way field presence | S2 | **LAW (DEC-392): not-applicable / unknown / present, data-pruned** |
 
 **Canonical input schema (contract column, DEC-391):** `entity_id | event_ts | event_type |
 event_attributes` — entity_id hashed to identity view (never numeric); event_ts feeds
@@ -191,10 +191,26 @@ failures correlate with cohorts/channels).
 | C | **Mask-and-ignore** (BERT-style) | treat missingness only as a training-noise device | the masking objective is a fine *pressure* (stays in the battery) | not a semantics answer — says nothing about what missing means at serving; complementary, not an alternative | as pressure only |
 | D | **Drop high-missing fields** | schema hygiene | cleaner input | throws away signal; the missing pattern was the signal; M1 (deletion decided by data anyway) | ✗ (data-derived pruning of *constant* fields stays in S1) |
 
-Ruling pending. Consequences if B: presence profile becomes S1 receipt content; the
-uncertainty objective predicts a real three-way state (currently predicts a collapsed one);
-ledger counting distinguishes present-value counts; accessibility gates include presence
-recovery probes (can a simple head tell unknown from zero?).
+Ratified: **B (DEC-392)**. Presence profile is S1 receipt content; accessibility gains the
+unknown-vs-zero probe gate; ledger counts present-values.
+
+### T2 — Categorical vocabulary policy (presented 2026-10-27)
+
+Which values get their own learned embedding, what happens to the long tail and to
+id-like fields (sku, campaign_id), and what happens when a never-seen value arrives at
+serving. (T4 governs *unrecorded*; T2's unseen path governs *recorded but new* — they
+compose.)
+
+| # | Option | In one line | For | Against | Verdict |
+|---|---|---|---|---|---|
+| A | **Full vocab** — every observed value gets a row | everyone gets a name | simple; no collisions | parameter mass dominated by long tails (99% of values carry ~1% of events); singleton embeddings are memorized noise (overfit by construction); no principled unseen path | ✗ |
+| B | **Measured head + hashed tail + id-typing + seen-before discipline** ⭐ | S1 measures each field's value-mass curve: **head** values (the measured mass cover) get dedicated embeddings; **tail** hashes into a budgeted shared region sized from measured tail cardinality (collision-rate receipt); **id-like fields** (high cardinality + heavy tail, discovered by profile not by name) route to identity-view hashed embeddings, never polluting category space; **unseen at serve** → hash-routed tail + support flag; if unseen mass exceeds the calibrated coverage bound, the stream is flagged (reject/widen, never silent) | capacity spent where event mass is; ids don't collide with categories; unseen handled without clamping or crashing (A1); every cap is a measurement (M2) — the ledger already practices 0.99 coverage | more machinery than A; needs collision + coverage receipts kept honest | ✅ |
+| C | **Hash everything** (fixed tables, no measured vocab) | one big hat, name anyone in | simplest fixed memory | head values — the most important categories — eat collisions while the tail eats space; throws away the measured distribution S1 just paid to compute (M2 regression) | ✗ |
+| D | **Drop high-cardinality fields** | complexity control by deletion | simple | identity-bearing signal discarded (channel/identity receipts show it matters); deletion must be data-derived (lives in S1), not a schema verdict | ✗ |
+
+Ruling pending. Receipts required if B: vocab-coverage receipt per field (values + mass),
+collision-budget receipt (tail buckets sized from measured cardinality, target collision
+rate), serve-time unseen-mass monitor wired to the support bucket.
 
 ### What the encoder is NOT
 - Not a consumer of labels/downstream tasks (firewall; PATH A's table is a
@@ -460,3 +476,7 @@ this order when implementation opens.
   (`entity_id | event_ts | event_type | event_attributes`, contract column). T4
   (missing/unknown/zero) options presented A–D, recommendation B (explicit presence
   semantics, data-pruned). Pending: T4 ruling; then T2, T3, T6.
+- 2026-10-27 s16 — operator: **T4 = B ratified (DEC-392)** (three-way presence,
+  data-pruned; unknown-vs-zero accessibility gate added). T2 (vocab policy) options
+  presented A–D, recommendation B (measured head + hashed tail + id-typing + unseen
+  discipline with coverage/collision receipts). Pending: T2 ruling; then T3, T6.
