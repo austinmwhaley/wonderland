@@ -2621,3 +2621,31 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - Principles served: M3 (law kept exact; bends only at events), M2 (bands and init measured,
   not typed), A1 (determinism, step-0 stability, reject-not-clamp), Honest (capability
   claimed only where a receipt exists).
+
+## DEC-402 — Normalization: per-sample, bend-path inputs only, admitted by receipt (A4 = B)
+
+- Ruling: **Option B**. Per-sample norms (RMSNorm-style — statistics from THAT customer's
+  own activations) are admissible on **bend-path inputs only**: the channel-MLP input and
+  the gate projections. **Never** on the state, the mass pathway, or the readout. Each norm
+  enters only when a **training-behavior receipt** shows that path is actually unstable
+  (prefer-deletion: placement is fenced now so it cannot drift later; presence is evidence-
+  gated).
+- Hard conditions (never relaxable):
+  1. **Per-sample only** — a norm reading across customers is a capacity fabricator, not a
+     normalization (DEC-398's ZCA scandal; train≠serve divergence).
+  2. **Never the only path** — any rescaling ships with a **parallel unnormalized magnitude
+     lane**. Magnitude is information; a contractive core is forbidden to lose level (the
+     thing RFM-style summaries keep).
+- Why norms stay off state/mass (restated as law): state-normalization is non-affine in the
+  state ⇒ **merge law voided** (T6's free chunking revoked); it destroys level; it breaks
+  additive sums (mass gate C3 currently measures exactly zero error).
+- Rejected: none-anywhere (⚠️ legitimate start position, but leaves an emergency with no
+  lawful instrument on the shelf — emergencies invite unlawful fixes: a clamp, a batch stat,
+  a state norm); state-normalizing SSMs / unit-sphere variants (voids merge exactness +
+  destroys level); batch-coupled norms (closed by DEC-398).
+- Doctrine line adopted: **norms may wash the pen and the voice, never the inkwell.**
+- Receipts owed: placement audit (which tensors may carry a norm) + per-norm instability
+  justification.
+- Principles served: A1 (stability without clamps; reject-not-clamp), M3 (affineness and the
+  merge law preserved), Honest (level preserved; no batch-fabricated capacity),
+  prefer-deletion (evidence-gated presence).
