@@ -2452,3 +2452,24 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   0.150/0.257/0.620).
 - Principles served: M3 (order law enforced, shape learned), M2 (distribution measured),
   A1 (reject/widen on OOD), A2 (no batch-coupled capacity faking).
+
+## DEC-395 — Sequence construction: chunked streaming with exact composition (T6 = B)
+
+- Ruling: **Option B**. Histories are split at arbitrary chunk boundaries; the scan
+  composes state chunk-by-chunk. The merge law (DEC-386, exactness receipt 8.88e-16) makes
+  chunked scanning **identical** to whole-history scanning — chunk boundaries cannot harm,
+  because sequence-merge = state-composition is a proven law of the engine. The engine
+  never "knows" a sequence length, only "state so far."
+- Derived-column values, receipted, never literals: **token budget** (from GB10 hardware,
+  DEC-389), **training anchor density** (as-of cuts sampled from the data; the causality
+  rule — no future information — stays in the Contract column), **checkpoint cadence**
+  (from arrival/query patterns, so any past as-of answers from the latest checkpoint).
+- Serving: first pass builds state (chunked, vectorized); thereafter O(1) per-event ticks;
+  replay only on cache miss and always chunked. The ledger composes identically (same
+  monoid property).
+- Rejected: truncate-to-N (fixed literal; severs exactly the deep past the slowest
+  timescales exist to carry); sliding windows with overlap (window literal, double
+  counting, fights tick-at-event physics); downsampling (destroys irregular timing —
+  banned binning family).
+- Principles served: M3 (the merge law pays rent — laws are for this), M4 (bounded memory
+  without information loss), M2 (budgets derived from hardware/data).
