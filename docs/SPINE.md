@@ -638,7 +638,7 @@ how does it know the artifact changed under it, and where does personalization l
 | C2 | **Permitted head classes** | **LAW (DEC-407): linear is the only shipping supervised head; kNN → unsupervised; MLP → diagnostic; head-ladder receipt tests it** |
 | C3 | **Firewall rules** — no mutation, no label leakage upstream, no ledger-as-brain-win, no future information at serve | open (constraints already law) |
 | C4 | **Per-consumer gates** — who produces the receipt, who verifies it, independence requirement (Definition-of-done #3) | open |
-| C5 | **The unknown-consumer guarantee** — how "covered BY CONSTRUCTION, not by enumeration" is carried (mechanism ruling) | open — the deepest row |
+| C5 | **The unknown-consumer guarantee** | **LAW (DEC-410): the coverage lattice — proven form, measured content, hunted unknown, per-consumer falsification; "universal" retired until green; v1 stub hunter** |
 | C6 | **Version & compatibility contract** — what a consumer pins, what breaks on re-fit, refusal on incompatibility | open |
 | C7 | **Personalization** — where per-customer/segment adaptation legally lives | open |
 | C8 | **The factory** — supervised plugin generation from a target spec (operator directive, DEC-406) | **LAW (DEC-408): spec-interpreted engine + gated `custom` escape** |
@@ -837,6 +837,38 @@ The tier ladder (offline analysis → certified offline policy → constrained o
 approved randomized exploration) is retained as the **evidence ladder** — how much proof a
 deployment needs — and is explicitly *not* a design of RL internals or of which algorithm a
 mini-project must use.
+
+### The Outlet Standard — what "plug in and be powered" obligates us to build (presented 2026-10-27)
+
+Operator's intent, adopted as the C-series capstone: **any plugin plugs into the wall outlet and
+is powered and works.** An outlet achieves that with five properties, none of which is
+"the utility knows your appliance." Translated into obligations, with the ruling that already
+guarantees each:
+
+| Clause | The outlet property | Our obligation | Guaranteed by |
+|---|---|---|---|
+| **O1 Shape** | the socket is a standard, not a bespoke harness | one published schema: `entity_key × as_of` + named bucket columns + faceplate; never a function signature | DEC-405 |
+| **O2 Power** | voltage delivered to spec, at every socket | the content is there **and recoverable by a simple plug** (linear head / kNN): the coverage lattice's content leg + geometry gates on the artifact | DEC-407, DEC-410 |
+| **O3 Tester** | you find out in one second, alone | a **conformance kit** ships *with* the artifact: schema check, residency check (scorer runs from the table alone), knob-turn (zero/permute a bucket → does the score move?), head-ladder, both comparators → verdict **SERVED / GAP-accessibility / GAP-sufficiency / NOT-SERVED** | DEC-408 (mechanisms), **new as a shipped kit** |
+| **O4 Spec sheet on the faceplate** | no phone call to the utility | the artifact self-describes: version + hash + commit, column/bucket inventory, measured geometry stats, freshness bound, pointer to the served-target registry, and the non-promise text (functions of the observed stream only) | DEC-405 rule 4, DEC-410 |
+| **O5 Breakers** | it fails safe instead of burning the house | out-of-support → refuse with widened uncertainty; stale → UNKNOWN; uncertified → advertised as uncertified | axioms, DEC-390, **C4 open** |
+| **O6 The wall is live** | outlets are on when you need them | a **published cadence** and a visible "last good publish" stamp — a dead outlet is worse than no outlet | **open (serving & refresh arc)** |
+| **O7 Adapters, not rewiring** | weird plugs are legal, walls are not rebuilt | `custom` consumers and the parked receipted mechanisms are adapters: same gates, labeled, and never a per-consumer wall | DEC-408, DEC-390/398 |
+| **O8 Anyone may plug in** | no permission slip | **read access is unconditional; certification is opt-in** — registration exists to be *judged*, never to be *allowed* (oblivious producer, thousands of consumers) | DEC-405, DEC-406; **new as a stated clause** |
+
+**"Works," defined mechanically** (otherwise the sentence is a slogan): a conforming plug whose
+target is a function of the observed stream receives (a) a **verdict** from the kit, (b) if
+served, performance within a bounded gap of the **full-history oracle** at its declared capacity,
+and (c) if not served, an **attributed cause** — accessibility gap (our trunk's defect) or
+sufficiency gap (the information is not in the window) — never a silent shrug.
+
+**What a wall cannot do, stated to every plug-in author:** it cannot make a broken appliance work
+(a plugin that ignores as_of discipline still fails its own gate, and the card says so), and it
+cannot power a device that needs gas (a target requiring unlogged covariates is a data problem,
+not an encoder problem — the faceplate says so up front, so nobody discovers it after building).
+
+Ruling pending: adopt O1–O8 as the capstone (O3's shipped kit and O8 as stated clauses are **new**;
+the rest restate ratified law), and close C3/C4/C6/C7 under it.
 
 ## 7. Progress mechanics (DEC-390) — the card IS the judge
 
@@ -1136,3 +1168,15 @@ this order when implementation opens.
   observed stream**; unlogged events carried as uncertainty). Rule pending on E and on the
   **v1 stub hunter** (random projections + programmatic future functionals) that keeps the row
   non-empty — a receipt addition touching DEC-390's deferral, so flagged for explicit approval.
+- 2026-10-27 s35 — operator: **C5 = E ratified, stub hunter approved for v1 (DEC-410)**, and
+  adopted the metaphor as the standard: *"I want ANY plugin to plug in to my wall outlet and be
+  powered and work."* Presented **The Outlet Standard (O1–O8)** as the C-series capstone:
+  O1 shape (schema, not signature) · O2 power (content recoverable by a simple plug) · O3 a
+  **shipped conformance kit** giving SERVED / GAP-accessibility / GAP-sufficiency / NOT-SERVED in
+  one second (new) · O4 faceplate metadata · O5 breakers (refuse, never burn the house) · O6 the
+  wall is **live** — published cadence + last-good-publish stamp (open, serving arc) · O7 adapters
+  not rewiring (`custom`, receipted mechanisms) · O8 **read access unconditional, certification
+  opt-in** (new). "Works" defined mechanically: conforming plug + target measurable on the
+  observed stream ⇒ a verdict, and if served a bounded gap to the full-history oracle at declared
+  capacity, and if not served an attributed cause. Plus the two honest limits: the wall cannot fix
+  a broken appliance or power a device that needs gas. Pending: ratify O1–O8 and close C3/C4/C6/C7.
