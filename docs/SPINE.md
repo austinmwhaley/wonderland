@@ -144,8 +144,8 @@ the table as a T-feature (same protocol: options, why/why not, recommendation, r
 | # | Internal decision | Where | Status |
 |---|---|---|---|
 | T1 | **Token unit** — what one "tick" of the engine is | S2 | **LAW (DEC-391): one event = one tick** |
-| T2 | Categorical vocab policy — caps, hashing for id-like fields, unseen-value path | S2 | **open — presenting now** |
-| T3 | Numeric encoding — learned monotone transform vs fallback | S2 | open |
+| T2 | Categorical vocab policy — caps, hashing for id-like fields, unseen-value path | S2 | **LAW (DEC-393): measured head + hashed tail + profile id-typing** |
+| T3 | Numeric encoding — learned monotone transform vs fallback | S2 | **open — presenting now** |
 | T4 | **Missing/unknown/zero semantics** — three-way field presence | S2 | **LAW (DEC-392): not-applicable / unknown / present, data-pruned** |
 
 **Canonical input schema (contract column, DEC-391):** `entity_id | event_ts | event_type |
@@ -208,9 +208,28 @@ compose.)
 | C | **Hash everything** (fixed tables, no measured vocab) | one big hat, name anyone in | simplest fixed memory | head values — the most important categories — eat collisions while the tail eats space; throws away the measured distribution S1 just paid to compute (M2 regression) | ✗ |
 | D | **Drop high-cardinality fields** | complexity control by deletion | simple | identity-bearing signal discarded (channel/identity receipts show it matters); deletion must be data-derived (lives in S1), not a schema verdict | ✗ |
 
-Ruling pending. Receipts required if B: vocab-coverage receipt per field (values + mass),
-collision-budget receipt (tail buckets sized from measured cardinality, target collision
-rate), serve-time unseen-mass monitor wired to the support bucket.
+Ratified: **B (DEC-393)**. Receipts required and kept current: vocab-coverage per field,
+collision budget, serve-time unseen-mass monitor wired to support.
+
+### T3 — Numeric encoding (presented 2026-10-27)
+
+Raw numbers are hostile learners: heavy tails ($0.01…$10,000 with most purchases under
+$50), fields in incompatible units (dollars vs seconds vs counts), stream-specific scales.
+Exactness is NOT at risk — exact totals live in the ledger (DEC-383) and polar separation
+holds (DEC-385) — the brain's numerics are free to be *meaning positions*.
+
+| # | Option | In one line | For | Against | Verdict |
+|---|---|---|---|---|---|
+| A | Raw + standardize (mean/std) | center and scale | familiar | outliers still dominate after z-scoring; mean/std are **batch statistics** (banned coupling at serve); unit-inconsistent across fields/streams | ✗ |
+| B | Fixed signed log1p squash | one guess that usually works | cheap heavy-tail taming, sign-safe, deterministic | the shape is a **guess** — right for dollars, not for everything | ⚠️ documented **fallback** only (per doctrine), with fallback-fired receipt |
+| C | **Measured monotone transform** (quantile/spline fit at fit time, frozen in artifact) ⭐ | a number becomes its *rank in its own field's measured distribution* — "what does $40 mean in THIS stream" | unit-free by construction (re-scale dollars→cents and embeddings are identical — a testable law); strictly order-preserving (monotone: 2 always ≥ 1 — a law, not a hope); deterministic per-sample at serve (no batch coupling); OOD values clip + support-widen (A1); zero-inflated fields get an explicit **zero atom** so "how much above zero" stays readable | fit-time bookkeeping (knots stored in the artifact — negligible) | ✅ primary |
+| D | Free-learned transform per field (small MLP end-to-end) | let the net invent the scale | most flexible | **monotonicity not guaranteed — order can be violated (lawlessness)**; gradient fragility at scale boundaries; memorizes noise; uninspectable | ✗ |
+
+Ruling pending. If C: per-field transform receipts (knots/breaks + coverage + fallback
+fired), unit-invariance law test wired into construction gates, zero-atom handling
+standard. Timing numerics (gaps) are special: engine physics owns the clock; the measured
+gap channel stays (existing attribution receipt: removing it collapses performance
+0.339/0.430/0.941 → 0.150/0.257/0.620).
 
 ### What the encoder is NOT
 - Not a consumer of labels/downstream tasks (firewall; PATH A's table is a
@@ -480,3 +499,7 @@ this order when implementation opens.
   data-pruned; unknown-vs-zero accessibility gate added). T2 (vocab policy) options
   presented A–D, recommendation B (measured head + hashed tail + id-typing + unseen
   discipline with coverage/collision receipts). Pending: T2 ruling; then T3, T6.
+- 2026-10-27 s17 — operator: **T2 = B ratified (DEC-393)**. T3 (numeric encoding)
+  options presented A–D: recommendation C (measured monotone transform, quantile/spline,
+  frozen in artifact; unit-invariance law test; zero atoms) with B (signed log1p) as the
+  documented fallback. Pending: T3 ruling; then T6 (chunking/sequence construction).
