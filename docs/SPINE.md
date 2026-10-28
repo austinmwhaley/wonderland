@@ -156,7 +156,7 @@ open bag S1 interprets. Schema-agnosticism applies inside the bag and to column 
 | T5 | Composition law — how fields combine into one event vector | S2 | **law** (permutation-equivariant symmetric composition; C1 receipt) |
 | — | Time is not a feature; periodicity from data-derived spectral peaks | S2/S3 | **law** (DEC-386) + receipt (Fourier-off hurts orders) |
 | T6 | Sequence construction — chunking long histories, budgets, as-of cuts | S3 | **open — presenting now** |
-| T7 | Timescale allocation — how many τ channels, from what statistic | S3 | open (rule: from measured spectrum peaks) |
+| T7 | Timescale allocation — how many τ channels, from what statistic | S3 | **open — presenting now** |
 | T8 | Nonlinearity placement — gating/bilinear coupling where rank needs it | S3 | open (micro; iterate-to-convergence scans only) |
 | T9 | Capacity d | S3 | open — deferred to retention-vs-d curve (DEC-390) |
 | T10 | Bucket membership — which head outputs live in which bucket | S4 | open |
@@ -240,11 +240,23 @@ state and one batch holds finite memory. What feeds the scan?
 | C | Sliding windows with overlap | overlapping context windows | smoother context | window size literal, overlap double-counts, fights tick-at-event physics (same family DEC-386 rejected) | ✗ |
 | D | Resample / downsample long histories | thin the events | cheap | destroys the irregular timing the project exists to model (banned binning family) | ✗ |
 
-Related derived quantities pinned to the Derived column (never literals): training
-**anchor density** (as-of cuts sampled from the data; causality — no future information —
-is Contract column), **token budget** (from hardware), **checkpoint cadence** (from
-arrival/query patterns). Serving: incremental per-event ticks after first build; replay
-only on cache miss and always chunked.
+Ratified: **B (DEC-395)**.
+
+### T7 — Timescale allocation (presented 2026-10-27)
+
+The engine remembers at several speeds (fast channels for "next event", slow channels for
+tenure/loyalty). How many speeds, and which ones?
+
+| # | Option | In one line | For | Against | Verdict |
+|---|---|---|---|---|---|
+| A | Human ladder: hours/days/weeks/months | a watchmaker's dial | readable; familiar | business-clock **cadence literals** (banned family); an hourly-gig stream and a seasonal-retail stream would get the same dial | ✗ |
+| B | **Measured rhythm spectrum → allocate** ⭐ | S1 already measures each stream's autocorrelation/FFT spectrum + gap quantiles; **number of channels = number of significant spectral peaks** (significance vs a measured shuffle-noise floor), each τ **initialized at its peak** and then **learned** onward | the stream picks its own rhythms (M2 exactly); doubles as the DEC-386 ansatz-detector (flat/odd spectrum = receipted warning); peak count is data, so it generalizes to any stream | spectral estimation needs a noise-floor calibration (shuffle null) — one more receipt | ✅ primary |
+| C | Overbuild a geometric ladder, prune the quiet ones | 16 log-spaced τs, delete channels whose measured contribution < noise | robust; no spectral machinery | wastes capacity until pruned; pruning threshold must itself be noise-calibrated | ⚠️ documented **fallback** (small/flat-spectrum streams), pruning receipt required |
+| D | Free-learned τ, no measured init | every channel invents its own speed | maximal adaptivity | unmotivated channels collapse onto each other and leave holes (known degenerate behavior); throws away the spectrum S1 already paid for | ✗ as init policy (the *learning* part of D is kept: τ stays learnable after peak-init) |
+
+Ruling pending (recommend B with C fallback, τ learnable after init). Depth companion:
+layer count follows the convergence/validation doctrine (derived budget, not a literal).
+Receipts: spectrum receipt (peaks, powers, noise floor), fallback-fired + prune receipts.
 
 ### What the encoder is NOT
 - Not a consumer of labels/downstream tasks (firewall; PATH A's table is a
@@ -522,3 +534,8 @@ this order when implementation opens.
   presented: recommendation B (chunked streaming with exact composition via the merge law;
   hardware-derived token budgets; derived anchors/checkpoints). Pending: T6 ruling; then
   T7 (timescale allocation), T10 (bucket membership), T8/T11 micros.
+- 2026-10-27 s19 — operator: **T6 = B ratified (DEC-395)**. T7 (timescale allocation)
+  presented: recommendation B (measured spectrum peaks allocate channels; τ peak-initialized
+  then learned), fallback C (geometric ladder + noise-calibrated pruning). Pending: T7
+  ruling; then T10 (bucket membership), T8 (nonlinearity placement), T11 (mask rates,
+  horizons, weight-learning mechanism).
