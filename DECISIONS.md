@@ -2367,3 +2367,21 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   adversary-now (taxes every v1 loop iteration for a Layer-1 guarantee).
 - Principles served: A2 Honest, certification-integrity protocol, judge-first consumer
   tracing, "generate, don't narrate."
+
+## DEC-391 — Token unit ratified: one event = one tick (T1 = A); canonical schema recorded
+
+- T1 ruling: **Option A**. One event = one tick of the engine: the event arrives whole;
+  fields are encoded by their measured kind (T2/T3/T4 pending); the timestamp drives the
+  fade physics (time is not a feature — existing law). Rejected: text-ifying events for a
+  text model (translation layer = quiet information loss, external dependency, unproven
+  universality per the JAIR survey), day-aggregation (cadence literal; destroys intra-day
+  order — same family DEC-386 rejected), field-per-tick (breaks tick-at-event physics).
+- **Canonical input schema (contract column)**: `entity_id | event_ts | event_type |
+  event_attributes`. Interpretation: `entity_id` is an identifier (hashed, identity view —
+  never numeric); `event_ts` feeds the engine's continuous-time physics; `event_type` is
+  both conditioning context and a predictable (target-blind rules still apply);
+  `event_attributes` is the open bag whose meaning S1 discovers — schema-agnosticism applies
+  *inside* the bag and to the column names themselves (renamed-schema test C5 keeps its
+  teeth: the four columns are our loader's canonical form, not privileged knowledge).
+- Principles served: M1 (read the stream directly, no translation), M3 (tick-at-event law),
+  A2 (schema recorded as contract, not assumption).
