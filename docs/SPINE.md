@@ -125,6 +125,30 @@ Facts pinned by code (single source of truth):
   strictly before an action. Buckets are what; cuts are when. (RL consumes `shape`/
   `learned_state` as pre-action cuts.)
 - Every card row must name the bucket it used (the layout exists for that).
+- **Yes, that list (6 content + 1 bundle) is ALL the artifact publishes today.** Each
+  bucket exists because a component of the machine emits it:
+
+| Bucket | Emitted by (origin in the machine) |
+|---|---|
+| `shape` | the core recurrence's output `E` |
+| `learned_state` | the per-timescale memory cells + learned mass (internal contents, exposed) |
+| `forecast` | the past/future summary heads from the training battery (kept at serve) |
+| `uncertainty` | the missingness/gap heads |
+| `heads` | the identity / next-event / relational head outputs |
+| `measure` | the ledger builder — accumulation **outside the network** (`measure_state.py`), vocabulary resolved once at fit time and persisted (no re-scan at serve) |
+| `full` | nobody — it is the permanently-fixed concatenation of the five brain buckets (a bundle, not new content) |
+
+### Bucket audit — is the set derived or accidental? (open, queue item 3)
+Derived-from-consumers checklist vs the current set:
+
+| Content class a consumer provably needs | Bucket serving it | Verdict |
+|---|---|---|
+| predictive shape ("who") | `shape` (+`learned_state`, `heads`) | ✓ |
+| magnitude ("how much") | `learned_state` mass, `forecast`, ledger | ✓ (brain side partially — corr² 0.568) |
+| support ("what did I see") | `uncertainty` | ✓ |
+| exact counts | ledger | ✓ (as companion, pending decision) |
+| **response ("what if we do X")** | **none — RL gets a cut of `shape`, no dedicated bucket** | **gap** (consistent with RL being our weakest leg) |
+| redundant? | `learned_state` (internals dump, but empirically earns its keep: channel purity 0.72); `heads` (network's own guesses — consumer bucket or training scaffolding?) | audit |
 
 ### The ledger question — OPTIONS (OPEN; operator deciding)
 
@@ -149,6 +173,21 @@ Correct and empirically true — the ledger ≈ the table. Options:
 
 Recommended: **Option 3 (companion) + all five guardrails.** Slogan: *the brain earns the
 win; the ledger prevents the loss.*
+
+### How Option 3 works at inference (verified against `measure_state.py`, 2026-10-27)
+
+The ledger is **not a stored wide table** — nothing to keep, nothing to join. It is an
+accumulation channel, like an odometer: the recipe (which fields/values to tally — the
+"vocabulary") is resolved once at fit time and rides inside the frozen artifact; each
+customer's ledger numbers are produced by ticking counters as their events stream through
+(+1, += value), in one vectorized columnar pass, and extend per new event thereafter.
+Measured (6k report card): ledger pass 0.19 s for 600 customers vs warm brain forward
+0.316 s — same order of magnitude, simple arithmetic, no network. Storage: +~734 floats per
+customer next to the ~2265 the brain already keeps. If option 4 replaced it, the same
+arithmetic would be hidden inside the network — paid for in **capacity** (the scarce
+resource the U metric holds us to), approximate instead of exact (violates the exact-additive
+mass law, receipt C3 = 0), with a bigger slower forward. **Counting is the cheapest thing the
+engine does; teaching a neural net to count is the expensive move.**
 
 ## 6. The consumer-backward trace
 
@@ -231,3 +270,10 @@ stage; each state moves only on a receipt. "Mastered" = all six working.
   pre-action = a cut, not a bucket); ledger guardrails G1–G5 made MANDATORY; ledger
   OPTIONS 1–4 tabled with companion recommendation (Option 3) — operator deciding.
   Vocabulary adopted: brain / ledger.
+- 2026-10-27 s5 — operator leans Option 3 but asks the inference-time cost question
+  (fearing a stored table). Verified vs code: ledger = accumulation channel (odometer),
+  recipe persisted in artifact, no table kept; measured pass 0.19s/600 customers vs
+  0.316s warm forward → Option 3 remains recommended; Option 4 re-pays the cost in
+  capacity + inexactness. Bucket origin table + derived-set audit added: current 6+1 set
+  is ALL that publishes; **`response` bucket gap** found (RL has cuts, no bucket);
+  `learned_state`/`heads` flagged for the minimality audit (queue item 3).
