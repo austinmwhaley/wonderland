@@ -2473,3 +2473,26 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   banned binning family).
 - Principles served: M3 (the merge law pays rent — laws are for this), M4 (bounded memory
   without information loss), M2 (budgets derived from hardware/data).
+
+## DEC-396 — Timescale allocation from the measured rhythm spectrum (T7 = B, fallback C)
+
+- Ruling: **Option B**. The number of memory-speed (τ) channels = the number of **significant
+  spectral peaks** in the stream's measured rhythm spectrum (autocorrelation/FFT + gap
+  quantiles from S1), significance judged against a **measured shuffle-noise floor**; each
+  τ is initialized at its peak and **remains learnable** throughout training.
+- Operator's challenge resolved in the open (worth recording): B vs D differ only in
+  *starting position*, not in whether learning occurs. D's blind start fails on faint
+  rhythms — gradients cannot teach a channel to seek a rhythm it cannot currently register
+  — and permits channel collapse (duplicates + coverage holes). B is "D with an evidence-
+  based start": identical outcomes on easy streams, strictly better on hard ones, and
+  data-deterministic init (seed-stable, A1). General rule reaffirmed: **measure what
+  measurement can see; learn what only learning can do.**
+- Fallback (documented): **Option C** — geometric ladder with noise-calibrated pruning —
+  for flat/unreliable spectra (small streams); prune + fallback-fired receipts required.
+  Rejected as policies: human clock ladders (cadence literals); free-τ with no measured
+  init as an init policy (its learning component is retained).
+- Companion: the spectrum receipt doubles as the DEC-386 ansatz detector (flat/odd spectrum
+  surfaces as a receipted warning). Layer count remains a derived budget chosen on held-out
+  convergence behavior.
+- Principles served: M2 (the stream picks its own rhythms), M3 (spectrum = law-instrument),
+  A1 (determinism, reject-not-guess), A2 (measured noise floor, not a threshold).
