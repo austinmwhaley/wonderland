@@ -1,8 +1,8 @@
 # JUDGE CARD — PATH B > PATH A
 
-*Generated `2026-10-28T13:14:13+00:00` · commit `595abac` (`foundation-rebuild` · dirty) · encoder behavior `ae2a9008f4041ae2`*
+*Generated `2026-10-28T14:18:39+00:00` · commit `c76be49` (`foundation-rebuild` · dirty) · encoder behavior `67755d365dd02bc8`*
 
-**Assessment:** NOT DONE. Legs green: 0/8 · stages green: 0/6. This is a statement about receipts, not about effort; nothing here is a claim of universality (DEC-410: that word appears only when the coverage rows are green).
+**Assessment:** NOT DONE. Legs green: 0/8 · stages green: 2/6. This is a statement about receipts, not about effort; nothing here is a claim of universality (DEC-410: that word appears only when the coverage rows are green).
 
 The verdict is a pure function of the receipts under `docs/report_cards/experiments/`.
 Ledger points never count as progress: `brain alone` is the judge, `brain + ledger` is delivery.
@@ -24,19 +24,19 @@ Ledger points never count as progress: `brain alone` is the judge, `brain + ledg
 
 | Stage | Working-state proof | Verdict | Evidence |
 |---|---|---|---|
-| **S1** Schema resolution (universal input) | renamed-schema + new-field pass, zero code edits | ❔ UNKNOWN | judge_stages.json missing |
-| **S2** Vocabulary & numeric encoding | unseen-value path exercised; transform receipts; permutation invariance <= tol | ❔ UNKNOWN | judge_stages.json missing |
-| **S3** Lawful dynamics (the engine) | merge/equivariance/mass-additivity exact on data; tau receipted from spectra; stable from step 0 | ❔ UNKNOWN | judge_stages.json missing |
-| **S4** Buckets (the outlets) | per-bucket accessibility parity + per-bucket negative controls | ❔ UNKNOWN | judge_stages.json missing |
-| **S5** The objective battery | every content pressure beats its naive comparator (or is excluded and reported) | ❔ UNKNOWN | judge_stages.json missing |
-| **S6** Certification (the card) | one command regenerates the card at a recorded commit + hashes | ❔ UNKNOWN | judge_stages.json missing |
+| **S1** Schema resolution (universal input) | renamed-schema + new-field pass, zero code edits | ✅ PASS | [renamed_end_to_end] OK: renamed client_id/occurred_at/event/attributes/total -> onboard resolved {'customer_key': 'client_id', 'event_ts': 'occurred_at', 'even |
+| **S2** Vocabulary & numeric encoding | unseen-value path exercised; transform receipts; permutation invariance <= tol | ✅ PASS | [unseen_value_path] OK: frozen schema (11 event types, vocab sizes [4, 10, 16, 6, 4, 7, 4, 24, 4, 4, 0, 77, 3, 4, 4, 5, 7]) encoded a batch containing unseen ev |
+| **S3** Lawful dynamics (the engine) | merge/equivariance/mass-additivity exact on data; tau receipted from spectra; stable from step 0 | ❔ UNKNOWN | no measurement recorded for S3 |
+| **S4** Buckets (the outlets) | per-bucket accessibility parity + per-bucket negative controls | ❔ UNKNOWN | no measurement recorded for S4 |
+| **S5** The objective battery | every content pressure beats its naive comparator (or is excluded and reported) | ❔ UNKNOWN | no measurement recorded for S5 |
+| **S6** Certification (the card) | one command regenerates the card at a recorded commit + hashes | ❔ UNKNOWN | no measurement recorded for S6 |
 
 ## Certification hygiene
 
 | # | Check | Verdict | Evidence |
 |---|---|---|---|
 | H1 | Environment receipted | ✅ PASS | env_receipt.json device matmul ok |
-| H2 | Behavior hash recorded | ✅ PASS | behavior_hash ae2a9008f4041ae2 |
+| H2 | Behavior hash recorded | ✅ PASS | behavior_hash 67755d365dd02bc8 |
 | H3 | N recorded | ✅ PASS | enforced per row (no PASS without N) |
 | H4 | Controls present | ✅ PASS | enforced per row (no PASS without controls) |
 | H5 | Comparator finite and fair | ✅ PASS | enforced per row (comparator must be finite and fair) |
@@ -51,12 +51,10 @@ Ledger points never count as progress: `brain alone` is the judge, `brain + ledg
 - `judge_leg_rl.json — receipt missing`
 - `judge_leg_simulator.json — receipt missing`
 - `judge_leg_simulator.json — receipt missing`
-- `judge_stages.json — judge_stages.json missing`
-- `judge_stages.json — judge_stages.json missing`
-- `judge_stages.json — judge_stages.json missing`
-- `judge_stages.json — judge_stages.json missing`
-- `judge_stages.json — judge_stages.json missing`
-- `judge_stages.json — judge_stages.json missing`
+- `judge_stages.json — no measurement recorded for S3`
+- `judge_stages.json — no measurement recorded for S4`
+- `judge_stages.json — no measurement recorded for S5`
+- `judge_stages.json — no measurement recorded for S6`
 
 ---
 

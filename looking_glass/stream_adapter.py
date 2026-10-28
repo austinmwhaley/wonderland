@@ -15,7 +15,9 @@ Input contract (canonical stream):
 from __future__ import annotations
 
 import datetime
+import io
 import math
+import uuid
 import zlib
 from dataclasses import asdict, dataclass, field
 
@@ -96,6 +98,56 @@ def _validate(df: pl.DataFrame):
         raise ValueError("event_ts contains nulls")
 
 
+def to_ts_expr(col):
+    """Parse an event-timestamp expression into NAIVE LOCAL wall-clock datetimes.
+
+    polars >= 1.44 refuses ``str.to_datetime()`` (no format, no zone) when the data carries a
+    time zone. Both shapes must work without code changes (universal input): naive strings are
+    read as local wall time (the pipeline's canonical form -- ``_offs`` re-derives the zone
+    offset from them downstream); tz-bearing strings are parsed as instants and expressed in
+    local wall time, so both land in the same frame of reference.
+    """
+    txt = col.cast(pl.String).str.strip_chars()
+    has_tz = txt.str.contains(r"(Z|[+-]\d{2}:?\d{2})$", literal=False).fill_null(False)
+    naive_txt = pl.when(~has_tz).then(txt).otherwise(None)
+    aware_txt = pl.when(has_tz).then(txt).otherwise(None)
+    naive = naive_txt.str.to_datetime(strict=False)
+    aware = (
+        aware_txt.str.to_datetime(time_zone="UTC", strict=False)
+        .dt.convert_time_zone(_local_tz())
+        .dt.replace_time_zone(None)
+    )
+    return pl.coalesce([naive, aware])
+
+
+def _decode_attrs(series: pl.Series) -> pl.DataFrame:
+    """Decode a JSON-string attribute column into inferred fields (vectorized, Arrow).
+
+    polars >= 1.21 made ``str.json_decode`` require an explicit dtype; schema inference now
+    lives in the NDJSON reader. Empty / ``null`` attribute strings decode as all-null rows
+    (the same absence-of-fields semantics the old path produced), and results are re-aligned
+    to the input order. One shared decoder keeps training (``discover``) and serving
+    (``transform``) from ever drifting apart.
+    """
+    txt = series.cast(pl.String)
+    keep = txt.is_not_null() & (txt != "") & (txt != "null")
+    pos = np.flatnonzero(keep.to_numpy())
+    if pos.size == 0:
+        return pl.DataFrame()
+    blob = "\n".join(txt.filter(keep).to_list())
+    try:
+        parsed = pl.read_ndjson(io.StringIO(blob), infer_schema_length=None)
+    except TypeError:  # older/newer polars without the inference knob
+        parsed = pl.read_ndjson(io.StringIO(blob))
+    tag = f"_attr_row_{uuid.uuid4().hex[:8]}"
+    parsed = parsed.with_columns(pl.Series(tag, pos, dtype=pl.Int64))
+    return (
+        pl.DataFrame({tag: np.arange(series.len(), dtype=np.int64)})
+        .join(parsed, on=tag, how="left")
+        .drop(tag)
+    )
+
+
 def _apply_categorical(df: pl.DataFrame, g: dict) -> pl.Expr:
     """Map one field with the frozen vocabulary (or frozen hash buckets)."""
     name = f"_gc_{g['field']}"
@@ -133,7 +185,7 @@ def transform(df: pl.DataFrame, schema: Schema, as_of_ts: float | None = None):
 
     base = (
         df.select([pl.col(c) for c in REQUIRED])
-        .with_columns(pl.col("event_ts").cast(pl.String).str.to_datetime().alias("ts"))
+        .with_columns(to_ts_expr(pl.col("event_ts")).alias("ts"))
         .filter(pl.col("ts") <= pl.lit(datetime.datetime.fromtimestamp(as_of)))
         .sort(["customer_key", "ts"])
         .with_columns(
@@ -157,8 +209,8 @@ def transform(df: pl.DataFrame, schema: Schema, as_of_ts: float | None = None):
     )
     n = base.height
 
-    attrs = base["event_attributes"].cast(pl.String).str.json_decode(infer_schema_length=None)
-    frame = base.with_columns(attrs.alias("_j")).unnest("_j")
+    dec = _decode_attrs(base["event_attributes"])
+    frame = base.hstack(dec) if dec.width else base
 
     etA = (
         base["_et"]
@@ -298,14 +350,14 @@ def discover(
         raise ValueError("cannot discover a schema from an empty stream")
 
     parsed = (
-        raw.with_columns(pl.col("event_ts").cast(pl.String).str.to_datetime().alias("ts"))
+        raw.with_columns(to_ts_expr(pl.col("event_ts")).alias("ts"))
         .filter(pl.col("ts") <= pl.lit(datetime.datetime.fromtimestamp(as_of)))
         .sort(["customer_key", "ts"])
     )
     if parsed.height == 0:
         raise ValueError("no events at or before as_of")
-    attrs = parsed["event_attributes"].cast(pl.String).str.json_decode(infer_schema_length=None)
-    frame = parsed.with_columns(attrs.alias("_j")).unnest("_j")
+    dec = _decode_attrs(parsed["event_attributes"])
+    frame = parsed.hstack(dec) if dec.width else parsed
     n = frame.height
 
     reserved = {

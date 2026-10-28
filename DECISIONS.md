@@ -3197,3 +3197,49 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - Principles served: principle 10 (reproducibility is identity), A1 (a masked accelerator is a
   failure, surfaced), Honest (baseline recorded before the rebuild; thresholds not bent),
   M4 (cost-aware deferral of the duckdb refactor), DEC-389 (measure before claiming GPU).
+
+## DEC-417 — S1/S2 measured and PASSING; the input law was quietly dead in the new environment
+
+- **Context.** SPINE §8 step 2: produce real S1 (schema resolution) and S2 (vocabulary/numeric)
+  receipts. The inherited claim (`measure_construction.py`: `Es.shape[0] > 0` on an absent
+  `/tmp` dataset) certified nothing; replaced by `scripts/measure_input_law.py`, six checks on the
+  real 6k-customer / 2.35M-event demo stream, feeding `judge_stages.json` → `JUDGE_CARD.md`.
+- **Falsification found immediately.** The canonical adapter (`stream_adapter.discover/transform`)
+  was **completely broken under the rebuilt environment's polars 1.44**: `str.json_decode` now
+  requires a dtype (schema inference moved to the NDJSON reader), and `str.to_datetime()` on a tz-
+  bearing column is a hard error. The baseline suite had passed around this because the fast tier
+  never exercises the decode path — `tests/test_stream_adapter.py` passes even against the broken
+  code (coverage gap noted for the suite). Same class of latent break as duckdb 2.0: environment
+  rebuild exposing inherited code that no gate was actually running.
+- **Fix (in the adapter, one shared mechanism — not call-site patches):**
+  `_decode_attrs` = Arrow NDJSON vectorized schema-inference decode, null/empty-safe, order-
+  preserving, used by BOTH `discover` (training) and `transform` (serving) so the two can never
+  drift; `to_ts_expr` = pre-splits by tz pattern (polars' policy check is data-dependent),
+  naive strings parse as local wall time (the pipeline's canonical form), tz-bearing strings parse
+  as instants and convert to local wall time — **both shapes work with no code changes**
+  (Principle 4, universal input), garbage/null stays null (reject, not clamp — Principle 7).
+- **Measurements (all six PASS, receipts in `judge_stages.json`):**
+  S1 — *renamed_end_to_end*: `client_id/occurred_at/event/attributes/total` → `onboard` resolved
+  every alias → canonical → discover → encoder trained (zero pipeline-code edits);
+  *new_field_ingested*: `loyalty_tier` (novel categories) + `session_seconds` injected into every
+  event automatically resolved into catspec/num and trained on.
+  S2 — *unseen_value_path*: frozen schema encoded 2.35M+2 rows incl. two brand-new customers with
+  unseen event types/categories/1e12 numerics → OOV slot 0, all finite, vocab never re-derived at
+  serving; *numeric_transform_law*: signed log1p verified (exact formula match, monotone,
+  odd-symmetric, finite at 1e12); *field_permutation_invariance*: permuted attribute order →
+  bit-identical sequence digest over 60k rows; *training_determinism*: two seed-0 runs → E
+  bit-identical, best-val equal.
+- **Verdict movement is receipt-driven:** `JUDGE_CARD.md` now 2/6 stages PASS (S3–S6 UNKNOWN),
+  legs still 0/8, assessment still **NOT DONE**. The card was regenerated, not edited.
+- **Trade-offs.** Runtime ≈ 5 min for all six checks (four 1-epoch d=64 trainings) — kept at
+  1× per principle (earn scale at 1× first). The renamed end-to-end goes through
+  `train_encoder(prepared=…)` rather than the demo harness's file reader, because the harness
+  pre-selects the four canonical column names (schema knowledge duplicated in the wrong place);
+  deleting that duplication is a recorded fix-forward, deliberately not done mid-measurement.
+- Rejected alternatives: (a) keep `measure_construction.py` and just point it at the demo dir —
+  measures shape, not behavior; (b) fix polars breaks at each call site — 4 sites, drift-prone,
+  violates single-source-of-truth; (c) pin old polars — the doctrine pins only where a learned
+  path is unavailable; the NDJSON reader is strictly better (vectorized, inferred).
+- Principles served: Honest (the run is the measurement; a dead path was exposed within one
+  loop of building the gate), Lawful/Universal (both timestamp shapes, any schema, zero edits),
+  Robust (reject-not-clamp on garbage timestamps), M9 (grounded gates over inherited folklore).
