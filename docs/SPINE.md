@@ -635,15 +635,15 @@ how does it know the artifact changed under it, and where does personalization l
 | # | Question | Status |
 |---|---|---|
 | C1 | **The read surface** — what exactly does a consumer receive, and how is "brain-only" made mechanical? | **LAW (DEC-405): artifact = the interface; dumb consumers; no ability to talk back** |
-| C2 | **Permitted head classes** — {linear, kNN, small MLP} is locked (Q3); open: how "small" is bounded (derived, not a literal) and whether the set is closed | open |
+| C2 | **Permitted head classes** | **LAW (DEC-407): linear is the only shipping supervised head; kNN → unsupervised; MLP → diagnostic; head-ladder receipt tests it** |
 | C3 | **Firewall rules** — no mutation, no label leakage upstream, no ledger-as-brain-win, no future information at serve | open (constraints already law) |
 | C4 | **Per-consumer gates** — who produces the receipt, who verifies it, independence requirement (Definition-of-done #3) | open |
 | C5 | **The unknown-consumer guarantee** — how "covered BY CONSTRUCTION, not by enumeration" is carried (mechanism ruling) | open — the deepest row |
 | C6 | **Version & compatibility contract** — what a consumer pins, what breaks on re-fit, refusal on incompatibility | open |
 | C7 | **Personalization** — where per-customer/segment adaptation legally lives | open |
-| C8 | **The factory** — supervised plugin generation from a target spec (operator directive, DEC-406) | **open — presenting now** |
-| C9 | **Unsupervised instruments** — dumb instrument set for structure/geometry/anomaly, template-generated | **open — presenting now** |
-| C10 | **Decision & RL consumers** — white_queen primary; online RL admissible under tiered discipline | **open — presenting now** |
+| C8 | **The factory** — supervised plugin generation from a target spec (operator directive, DEC-406) | **LAW (DEC-408): spec-interpreted engine + gated `custom` escape** |
+| C9 | **Unsupervised instruments** — dumb instrument set for structure/geometry/anomaly, template-generated | **LAW (DEC-408): ratified set, derived counts, table/random/destroyed comparators** |
+| C10 | **Decision & RL consumers** — decision-platform contract only; RL internals live in peer mini-projects | **open arc (DEC-409)** — invariants adopted, 4 open items named |
 
 ### C1 — The read surface — **RATIFIED by operator directive (DEC-405): the artifact *is* the interface**
 
@@ -706,8 +706,32 @@ with N, commit, hashes. `sklearn`/`scipy` supply estimators, splits, calibration
 and **never** flow into B. Encoder selection stays on held-out self-supervised loss (DEC-387) —
 the factory consumes the encoder, it does not train it.
 
-Ruling pending (recommend **B + C**). Plain summary: **you supply the question; the factory
-supplies the question's honesty.**
+Ratified: **B + C (DEC-408)**. Plain summary: **you supply the question; the factory supplies
+the question's honesty.**
+
+### C2 — The head ceiling — **RATIFIED (DEC-407): linear is the shipping head**
+
+The trio is not a menu; the head follows from what the foundation is *for*.
+
+| Instrument | Role | Why |
+|---|---|---|
+| **Linear** | **the shipping supervised head** | accessibility means information is recoverable by *simple* consumers; if a linear head cannot read a target off the published columns, that is an **encoder defect**, not a cue to strengthen the head. Strengthening the head is how a foundation gets relieved of its obligations |
+| **kNN / distance** | **the unsupervised product** (C9) | here distance *is* the deliverable (similarity = shared futures); it is not a supervised head in this architecture |
+| **Small MLP** | **diagnostic tier only** — labeled, read-only, never ships, never earns a card row | attribution: linear fails + MLP succeeds ⇒ **accessibility gap** (trunk work item); linear fails + MLP fails ⇒ information genuinely **absent** (sufficiency gap) |
+
+**Head-ladder receipt (new card row, the test the operator asked for):** every certified supervised
+target reports all three instruments at derived capacity, identical splits, paired CIs. MLP
+beating linear beyond noise renders as an **accessibility gap against the encoder** — never as
+permission to ship the MLP. A `custom` consumer may request an MLP head; its row is labeled
+`custom/MLP` and does **not** count as evidence for the donor.
+
+Capacity is **derived** from the consumer's own data (no typed unit counts; `sklearn` defaults
+overridden with derived values, emitted in a derived-values receipt), trained to convergence,
+calibrated with measured coverage, and **capacity is a card column**. Comparators: a
+capacity-matched linear row on PATH A features (the fair fight) **and** the strong PATH A
+incumbent GBM (the practical bar) — a PASS needs both. The shipping set is closed but
+re-openable by receipt (locked trio cannot reach a certified target *and* the candidate stays
+dumb: published columns only, no reach into B).
 
 ### C9 — Unsupervised instruments (sklearn-grade, same template discipline)
 
@@ -720,27 +744,47 @@ Every count that would otherwise be typed — clusters, neighbors, contamination
 claim that beats neither is excluded, not celebrated. Geometry gates (isotropy, effective rank,
 decay) attach to the **artifact**, not to each consumer's re-derivation.
 
-### C10 — Decision & RL consumers (white_queen primary, online RL admissible)
+Ratified (DEC-408).
 
-`white_queen` (OPE tribunal) is the primary decision instrument **and the certifier**: no policy
-ships that it has not certified, and it certifies against **known effects** in the randomized arms
-(Definition-of-done #4). The layer nonetheless admits a **tiered** RL ladder — higher tiers
-require more evidence, never less:
+### C10 — Decision & RL consumers — **re-scoped (DEC-409): a decision-PLATFORM contract, not an RL design**
 
-| Tier | What it may do | What it must show |
-|---|---|---|
-| **T-0 Offline analysis** | evaluate/compare policies from logged data | OPE with paired CIs; known-effect recovery; beats table & random |
-| **T-1 Offline policy, certified deploy** | choose actions live, **never explore** | white_queen certification — stream gate **and** broad acceptance contract shown separately — plus improvement with/without `red_king` |
-| **T-2 Constrained online learning** | update its **own** head from observed outcomes | frozen encoder (state-only, **no gradients upstream**), off-policy correction, drift/stability receipts, rollback path, operator pre-authorization |
-| **T-3 Live exploration** | randomized arms at a **small, derived rate** | pre-registered protocol, guardrails, explicit operator approval — this tier is what *creates* the ground truth T-0..T-2 certify against |
+Operator correction accepted: `white_queen` is **pure offline RL** and is its own mini-project,
+exactly like `red_king`. The spine does not own RL internals. It specifies only **(a)** what a
+decision consumer may **read**, **(b)** what it must **emit**, **(c)** the **safety envelope** it
+may not leave. Algorithm choice — offline OPE, counterfactual modeling, future online RL — is
+internal to each mini-project, which carries its own gate and receipts. All are peers: each reads
+the published artifact, each writes to its **own** namespace, none may touch B (DEC-405).
 
-Non-negotiables: every decision consumer optimizes the same objective — discounted
-**incremental** gross margin (causal lift, never correlated margin); action space, cadence, and
-exploration rate are **derived**, with any declared value a receipted fallback; an RL consumer owns
-its head, replay, and policy state — **never** the encoder's weights; counterfactual reads are
-lawful only where randomization is logged, otherwise they carry widened uncertainty.
+**Invariants adopted now** (cheap to honor later, expensive to retrofit):
 
-Ruling pending (recommend the tiered ladder as written).
+1. **No gradients upstream, ever.** An agent owns its head, its replay, its policy state.
+2. **Everything artifact-mediated** — decisions, transitions, evaluations are tables; no agent
+   calls B and B never calls an agent.
+3. **Agents pin the encoder version** (hash + commit). The freshness law therefore applies to
+   *policies*: **a re-fit of B invalidates every policy trained on its embeddings** — they go
+   UNKNOWN and must be re-derived and re-certified. Named here because it is the operational
+   hazard most likely to be discovered in production instead.
+4. **Guardrails live outside the learner** (a learner cannot police itself): shadow mode,
+   per-customer caps, budget caps, kill switch, rollback to the logging baseline — which is also
+   the standing rule *never ship worse than logging*.
+5. **Simulator-first**: where a certified world model exists (`red_king`, validated on known
+   effects), policy learning happens there before any live exposure; live exploration is
+   offline-first and requires explicit operator approval.
+6. **One objective**: discounted **incremental** gross margin — causal lift, never correlated
+   margin.
+
+**Open items — parked as their own arc, not silently dropped:** (1) the **decision/transition log
+schema** (`entity_key`, `as_of`, artifact hash, policy version, action, propensity,
+reward-at-time) — the learning data currently has no home; (2) **actuation feedback** (was the
+action delivered, and when) — without it `(s,a,r,s')` cannot be closed honestly; (3) **incremental
+reward online** — incrementality requires randomization or a certified simulator, so
+online/explorative learning is gated on the randomization budget rather than on the agent's
+sophistication; (4) **invalidation & re-certification workflow** for policies on encoder bump.
+
+The tier ladder (offline analysis → certified offline policy → constrained online learning →
+approved randomized exploration) is retained as the **evidence ladder** — how much proof a
+deployment needs — and is explicitly *not* a design of RL internals or of which algorithm a
+mini-project must use.
 
 ## 7. Progress mechanics (DEC-390) — the card IS the judge
 
@@ -1012,3 +1056,17 @@ this order when implementation opens.
   ladder T-0 offline → T-1 certified offline policy → T-2 constrained online learning → T-3
   live randomized exploration, all under the single discounted-incremental-margin objective and
   with gradients never reaching B. Pending: rulings on C2, C8, C9, C10.
+- 2026-10-27 s33 — operator rulings. **C2**: recommendation accepted with the operator's
+  amendment "only do 1 of the trio, happy to test" → derived to **linear as the sole shipping
+  supervised head**, kNN reassigned as the unsupervised product, MLP demoted to the diagnostic
+  tier, plus a **head-ladder receipt** (all three reported per target; MLP beating linear = an
+  accessibility gap against the *encoder*, never permission to ship it) as the test **(DEC-407)**.
+  **C8** ratified (spec-interpreted engine + gated `custom` escape) and **C9** ratified
+  **(DEC-408)**. **C10**: operator corrected the scope — `white_queen` is pure offline RL and is
+  its own mini-project, like `red_king`; standard online RL must be supported but the enabling
+  system is unknown → **re-scoped to a decision-platform contract**: six invariants adopted now
+  (no gradients upstream; artifact-mediated; agents pin the encoder version so a re-fit
+  invalidates every policy; guardrails outside the learner; simulator-first; one
+  incremental-margin objective) and four open items parked as their own arc — decision/transition
+  log schema, actuation feedback, online incrementality (gated on randomization), and policy
+  invalidation workflow **(DEC-409)**.
