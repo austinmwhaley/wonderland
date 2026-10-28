@@ -155,7 +155,7 @@ open bag S1 interprets. Schema-agnosticism applies inside the bag and to column 
 (C5 renamed-schema test keeps its teeth).
 | T5 | Composition law — how fields combine into one event vector | S2 | **law** (permutation-equivariant symmetric composition; C1 receipt) |
 | — | Time is not a feature; periodicity from data-derived spectral peaks | S2/S3 | **law** (DEC-386) + receipt (Fourier-off hurts orders) |
-| T6 | Sequence construction — chunking long histories, budgets, as-of cuts | S3 | open |
+| T6 | Sequence construction — chunking long histories, budgets, as-of cuts | S3 | **open — presenting now** |
 | T7 | Timescale allocation — how many τ channels, from what statistic | S3 | open (rule: from measured spectrum peaks) |
 | T8 | Nonlinearity placement — gating/bilinear coupling where rank needs it | S3 | open (micro; iterate-to-convergence scans only) |
 | T9 | Capacity d | S3 | open — deferred to retention-vs-d curve (DEC-390) |
@@ -225,11 +225,26 @@ holds (DEC-385) — the brain's numerics are free to be *meaning positions*.
 | C | **Measured monotone transform** (quantile/spline fit at fit time, frozen in artifact) ⭐ | a number becomes its *rank in its own field's measured distribution* — "what does $40 mean in THIS stream" | unit-free by construction (re-scale dollars→cents and embeddings are identical — a testable law); strictly order-preserving (monotone: 2 always ≥ 1 — a law, not a hope); deterministic per-sample at serve (no batch coupling); OOD values clip + support-widen (A1); zero-inflated fields get an explicit **zero atom** so "how much above zero" stays readable | fit-time bookkeeping (knots stored in the artifact — negligible) | ✅ primary |
 | D | Free-learned transform per field (small MLP end-to-end) | let the net invent the scale | most flexible | **monotonicity not guaranteed — order can be violated (lawlessness)**; gradient fragility at scale boundaries; memorizes noise; uninspectable | ✗ |
 
-Ruling pending. If C: per-field transform receipts (knots/breaks + coverage + fallback
-fired), unit-invariance law test wired into construction gates, zero-atom handling
-standard. Timing numerics (gaps) are special: engine physics owns the clock; the measured
-gap channel stays (existing attribution receipt: removing it collapses performance
-0.339/0.430/0.941 → 0.150/0.257/0.620).
+Ratified: **C primary + B as documented fallback (DEC-394)**. Unit-invariance law test
+wired into construction gates; zero atoms standard; fallback-fired receipts required.
+
+### T6 — Sequence construction / chunking (presented 2026-10-27)
+
+Problem: a customer can have 50,000 events over a decade; the engine keeps constant
+state and one batch holds finite memory. What feeds the scan?
+
+| # | Option | In one line | For | Against | Verdict |
+|---|---|---|---|---|---|
+| A | **Truncate to last N events** | forget the ancient past | simple, bounded memory | N is a **fixed literal**; the deepest past is exactly what the slowest timescales (tenure/loyalty) exist to carry — loss is arbitrary, detectable only by receipts | ✗ as doctrine |
+| B | **Chunked streaming, exact composition** ⭐ | split history at *arbitrary* chunk boundaries; scan chunk 1 → state feeds chunk 2 → … The merge law (DEC-386; receipt 8.88e-16) makes this **exact, not approximate**. Chunk size = token budget derived from VRAM/hardware, never an event count. Ledger composes the same way. State checkpoints at derived cadence so any past as-of answers from the latest checkpoint, not a full replay | no truncation, no loss; the engine never "knows" a sequence length — only "state so far"; memory bounded honestly; serve = O(1) ticks after first pass | checkpoint cadence + anchor density must stay derived (receipts), not hardcoded | ✅ |
+| C | Sliding windows with overlap | overlapping context windows | smoother context | window size literal, overlap double-counts, fights tick-at-event physics (same family DEC-386 rejected) | ✗ |
+| D | Resample / downsample long histories | thin the events | cheap | destroys the irregular timing the project exists to model (banned binning family) | ✗ |
+
+Related derived quantities pinned to the Derived column (never literals): training
+**anchor density** (as-of cuts sampled from the data; causality — no future information —
+is Contract column), **token budget** (from hardware), **checkpoint cadence** (from
+arrival/query patterns). Serving: incremental per-event ticks after first build; replay
+only on cache miss and always chunked.
 
 ### What the encoder is NOT
 - Not a consumer of labels/downstream tasks (firewall; PATH A's table is a
@@ -503,3 +518,7 @@ this order when implementation opens.
   options presented A–D: recommendation C (measured monotone transform, quantile/spline,
   frozen in artifact; unit-invariance law test; zero atoms) with B (signed log1p) as the
   documented fallback. Pending: T3 ruling; then T6 (chunking/sequence construction).
+- 2026-10-27 s18 — operator: **T3 = C+B ratified (DEC-394)**. T6 (sequence construction)
+  presented: recommendation B (chunked streaming with exact composition via the merge law;
+  hardware-derived token budgets; derived anchors/checkpoints). Pending: T6 ruling; then
+  T7 (timescale allocation), T10 (bucket membership), T8/T11 micros.
