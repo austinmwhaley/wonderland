@@ -2428,3 +2428,27 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - Boundary pinned with T4 (DEC-392): T4 = unrecorded; T2 = recorded-but-new. Composable.
 - Principles served: M2 (every cap is a measurement), A1 (unseen = flag, not clamp),
   M1 (id-typing by profile — works on unseen schemas), minimality (capacity follows mass).
+
+## DEC-394 — Numeric encoding: measured monotone transform, log-squash fallback (T3 = C+B)
+
+- Ruling: **Option C primary** — at fit time each field's distribution is measured and a
+  **monotone transform (quantile/spline)** frozen into the artifact maps values to their
+  mass-position ("what does $40 mean in THIS stream"). **Option B (signed log1p) retained
+  as the documented fallback** (fallback-fired receipt required) for degenerate measured
+  distributions.
+- Properties made law-adjacent: **unit-free by construction** (re-scale dollars→cents,
+  embeddings byte-identical — wired into construction gates as a test), **order-preserving
+  by construction** (monotonicity: 2 ≥ 1 always), **per-sample deterministic at serve**
+  (no batch coupling), OOD values clip **with support flag/widen** (A1, never silent),
+  zero-inflated fields get an explicit **zero atom** so "how much above zero" is readable.
+- Exactness is never at risk because exact totals live in the ledger (DEC-383) with polar
+  separation (DEC-385) — the brain's numerics are free to be meaning positions.
+- Rejected: raw+standardize (outliers survive z-scoring; batch statistics banned at serve);
+  fixed log1p-as-primary (shape is a guess, right for dollars only); free-learned
+  transforms (monotonicity not guaranteed — "an encoding that could map 2 purchases below
+  1 is not more adaptive, it is illiterate").
+- Timing numerics unchanged: engine owns the clock; measured gap-channel retained (its
+  removal receipt remains the audit's most violent number: 0.339/0.430/0.941 →
+  0.150/0.257/0.620).
+- Principles served: M3 (order law enforced, shape learned), M2 (distribution measured),
+  A1 (reject/widen on OOD), A2 (no batch-coupled capacity faking).
