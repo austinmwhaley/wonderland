@@ -1001,8 +1001,8 @@ this order when implementation opens.
 
 | # | Step | Why this order |
 |---|---|---|
-| 0 | **Environment rebuild** — torch aarch64/CUDA-13, xgboost-cuda, numpy; runtime-receipt smoke test on the GB10 | DEC-389 item #1; nothing runs otherwise |
-| 1 | **Judge-first card skeleton** — two-number × four-leg top line, freshness law, UNKNOWN default (existing receipts feed it; missing rows render UNKNOWN) | build the court before the cases: every later step is judged by this |
+| 0 | **Environment rebuild** — torch aarch64/CUDA-13, xgboost-cuda, numpy; runtime-receipt smoke test on the GB10 | ✅ **done 2026-10-28** (DEC-416): torch 2.14.1+cu130 on the GB10, compute cap 12.1, warm bf16 matmul ≈15.2 TFLOPS; `scripts/setup_env.sh` + `scripts/env_receipt.py`. One operator action outstanding: `python3-dev` for `torch.compile` |
+| 1 | **Judge-first card skeleton** — two-number × four-leg top line, freshness law, UNKNOWN default (existing receipts feed it; missing rows render UNKNOWN) | ✅ **done 2026-10-28** (DEC-416): `scripts/judge_spec.py` + `scripts/judge_card.py` → `JUDGE_CARD.md` (0/8 legs, 0/6 stages, NOT DONE); 18 tests prove it cannot be talked into a PASS; freshness enforced via `behavior_hash()` |
 | 2 | **S1/S2 receipts** — renamed-schema + new-field pass, resolution receipt, unseen-value path, transform receipts | cheapest; proves M1/M2 claims are real |
 | 3 | **S3 compliance receipts** — homomorphism/equivariance/mass-additivity on data; τ-from-spectrum; stability step 0 | ratifies DEC-386 with paper |
 | 4 | **Battery completion** — distance-regression + action-conditioned outcome + ledger-reconstruction; naive comparators; prune pass | the two known gaps; expected biggest progress jump (DEC-387) |
@@ -1296,3 +1296,26 @@ this order when implementation opens.
   complete: T · A · C series closed, O1–O8 law, O6 law; remaining = GPU work-map (fused into the
   implementation plan) and the parked C10 items. Next: **implementation go/no-go**
   ([AUTHORIZATION] — step 0 rebuilds the CUDA env on the GB10).
+- 2026-10-28 s38 — operator: **GO**, on a new branch: "what you are doing now will replace the core
+  of the project when it is merged back in." Branch **`foundation-rebuild`** created (DEC-415);
+  "replaces the core" interpreted as a **deletion obligation** — superseded paths get deleted when
+  the new judge is green, not kept as a parallel implementation.
+  **Step 0 done (DEC-416):** `.venv` on the GB10 with torch **2.14.1+cu130** (CUDA 13.0, compute cap
+  12.1, warm bf16 matmul ≈15.2 TFLOPS — the first unwarmed read said 0.03, a cold-start artifact, so
+  the smoke now warms before timing), cupy 14.2, numpy 2.5.4, polars 1.44.2;
+  `scripts/setup_env.sh` + `scripts/env_receipt.py` →
+  `docs/report_cards/experiments/env_receipt.json`. **Inherited-suite baseline recorded: 512
+  collected · 504 passed · 8 failed** — 19 of the original 24 failures were **duckdb 2.0 removing
+  `Relation.pl()`** (~30 sites), pinned to `duckdb>=1.5,<2` with a fix-forward item for one
+  DuckDB→polars boundary; 7 failures are `torch.compile` failing to build without `python3-dev`
+  (**operator action**: `sudo apt-get install -y python3-dev build-essential`) and stay failing
+  rather than skipped, because a masked accelerator is the false green DEC-389 forbids; 1 failure is
+  a typed `0.01` tolerance drifting, untouched because threshold edits are gate-touching.
+  **Step 1 done (DEC-416):** the judge exists before any case is argued — `scripts/judge_spec.py`
+  (frozen gates) + `scripts/judge_card.py` → **`JUDGE_CARD.md`**, currently **0/8 legs · 0/6 stages
+  · NOT DONE**, with `tests/test_judge_card.py` (18 tests) proving no route to a false PASS (missing
+  receipt, stale behavior hash, self-defined criterion, `n/a` comparator, missing N, missing controls
+  → UNKNOWN; CI including zero or a control beating the brain → FAIL; degenerate → EXCLUDED).
+  Freshness is mechanical now via `behavior_hash()` over the encoder + data-path source trees.
+  Next per §8: **step 2 — S1/S2 receipts** (renamed-schema + new-field pass, resolution receipt,
+  unseen-value path, transform receipts).
