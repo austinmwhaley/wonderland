@@ -1003,7 +1003,7 @@ this order when implementation opens.
 |---|---|---|
 | 0 | **Environment rebuild** — torch aarch64/CUDA-13, xgboost-cuda, numpy; runtime-receipt smoke test on the GB10 | ✅ **done 2026-10-28** (DEC-416): torch 2.14.1+cu130 on the GB10, compute cap 12.1, warm bf16 matmul ≈15.2 TFLOPS; `scripts/setup_env.sh` + `scripts/env_receipt.py`. One operator action outstanding: `python3-dev` for `torch.compile` |
 | 1 | **Judge-first card skeleton** — two-number × four-leg top line, freshness law, UNKNOWN default (existing receipts feed it; missing rows render UNKNOWN) | ✅ **done 2026-10-28** (DEC-416): `scripts/judge_spec.py` + `scripts/judge_card.py` → `JUDGE_CARD.md` (0/8 legs, 0/6 stages, NOT DONE); 18 tests prove it cannot be talked into a PASS; freshness enforced via `behavior_hash()` |
-| 2 | **S1/S2 receipts** — renamed-schema + new-field pass, resolution receipt, unseen-value path, transform receipts | cheapest; proves M1/M2 claims are real |
+| 2 | **S1/S2 receipts** — renamed-schema + new-field pass, resolution receipt, unseen-value path, transform receipts | ✅ **done 2026-10-28** (DEC-417/418): 6 checks PASS via `scripts/measure_input_law.py`; falsified a dead canonical adapter (polars 1.44) + a masked accelerator (root-owned triton cache, DEC-389 vindicated) — both fixed at the right layer |
 | 3 | **S3 compliance receipts** — homomorphism/equivariance/mass-additivity on data; τ-from-spectrum; stability step 0 | ratifies DEC-386 with paper |
 | 4 | **Battery completion** — distance-regression + action-conditioned outcome + ledger-reconstruction; naive comparators; prune pass | the two known gaps; expected biggest progress jump (DEC-387) |
 | 5 | **`response` bucket + decodability contracts** — build bucket (DEC-384 disciplines); per-bucket ρ + accessibility parity (DEC-388), tolerances frozen pre-run | completes bucket set + pays the frozen tax |
@@ -1319,3 +1319,23 @@ this order when implementation opens.
   Freshness is mechanical now via `behavior_hash()` over the encoder + data-path source trees.
   Next per §8: **step 2 — S1/S2 receipts** (renamed-schema + new-field pass, resolution receipt,
   unseen-value path, transform receipts).
+- 2026-10-28 s39 — **step 2 delivered: S1/S2 PASS by receipt** (DEC-417/418).
+  `scripts/measure_input_law.py` runs six real checks on the 6k-customer/2.35M-event demo stream:
+  renamed schema (client_id/occurred_at/event/attributes + value alias) ingests end-to-end through
+  `onboard` → `discover` → encoder training with zero pipeline-code edits; injected novel fields
+  (`loyalty_tier`, `session_seconds`) auto-resolve into the vocabulary; the frozen schema encodes
+  unseen event types/categories/1e12 numerics via the OOV slot without re-derivation; numeric
+  encoding verified against the signed-log1p law (exact match, monotone, odd-symmetric);
+  attribute-field permutation yields a bit-identical sequence digest; two seed-0 trainings are
+  bit-identical. **The gate found its first corpses:** (1) the canonical adapter was entirely dead
+  under polars 1.44 (`json_decode` now needs a dtype; tz strings hard-error in
+  `str.to_datetime()`) — fixed in `stream_adapter` with one shared NDJSON-inference decoder and one
+  tz-safe timestamp parser used by both training and serving; the inherited
+  `tests/test_stream_adapter.py` had been passing around the broken code (fast-tier coverage gap —
+  noted for the suite rebuild). (2) `~/.triton/cache` was root-owned, so `torch.compile` silently
+  fell back to eager whenever an uncached kernel was needed — the scan-accel test caught it;
+  `cfm_model` now pins a per-uid cache (DEC-389's masked accelerator, eliminated at the layer
+  where compilation lives). Fast tier now **511/512** (the 1 is the typed-tolerance drift,
+  gate-touching, deferred to S5). Card: **2/6 stages · 0/8 legs · NOT DONE**.
+  Next per §8: **step 3 — S3 compliance receipts** (homomorphism/equivariance/mass-additivity on
+  data; τ-from-spectrum; stability from step 0).
