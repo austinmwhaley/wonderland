@@ -2540,3 +2540,28 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   make histories free.
 - Principles served: M3 (laws kept exact; bends placed where measured), M4, A1 (stability,
   determinism), Honest (bend justified by receipt, not taste).
+
+## DEC-399 — Final knobs derived from measurement (T11 = A, C fallback); internals arc CLOSED
+
+- Ruling: **Option A** with **C shelved as documented fallback** (grid-search on held-out
+  self-supervised loss — allowed if the learned mechanism proves unstable; search on the
+  graded metric stays banned; a fallback may fire only with a receipt).
+- The three traditionally typed-in numbers become measured quantities:
+  **mask rate** per field from measured missingness + entropy (mask what THIS stream
+  withholds — the objective becomes "predict this stream's own blank patterns");
+  **horizon set** sampled from measured behavioral-time statistics (event-gap quantiles,
+  activity spans — replaces the 30/60/90-day cadence literal, so short-lived customers
+  are not graded on horizons their histories cannot contain);
+  **objective weights** via learned balancing on measured per-objective noise/gradient
+  scales, zero-decayed weights triggering the prune pass, selection on held-out
+  self-supervised loss only (DEC-387 lock).
+- Pinned to the Derived column from training doctrine: **learning rate measured from
+  curvature** (stability bound lr < 2/L — the curve sets the speed, not a schedule
+  template) and **patience from validation SE** (converge, never count).
+- Rationale A-over-C: a search picks the best of a few guesses after expensive trials; a
+  mechanism computes the answer from statistics already collected — and re-answers
+  automatically for every new stream (M1/M2).
+- With T11, the T-series (internals) is complete: T1–T8, T10, T11 law; T9 (capacity)
+  deferred to the retention-vs-size curve (DEC-390, implementation step 7).
+- Principles served: M2 (every knob measured), Honest (never self-graded), M1 (knobs
+  re-derive per stream), prefer-deletion (prune pass).
