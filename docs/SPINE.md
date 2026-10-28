@@ -746,6 +746,58 @@ decay) attach to the **artifact**, not to each consumer's re-derivation.
 
 Ratified (DEC-408).
 
+### C5 — The unknown-consumer guarantee (presented 2026-10-27 — the deepest row)
+
+The claim to be carried: any present or future consumer — ours or another team's, **known or
+unknown** — is covered **by construction, not by enumeration**. Stated plainly first, because the
+honest answer is not a single mechanism: **no available mechanism proves it.** What we can build is
+a stack in which (a) part of the claim is genuinely proven, (b) the rest is measured over a
+*declared* family, (c) the unknown is *hunted*, and (d) any consumer can falsify the claim in
+seconds — and in which **the word "universal" is never printed unless the card derives it.**
+
+| # | Option | What it claims | Verdict |
+|---|---|---|---|
+| A | Enumerate consumers/tasks (a benchmark) | "we tested N targets and they passed" | ✗ — not universality; gameable by flattering tasks; the next consumer is unaccounted for. This is what most "foundation model" claims actually are |
+| B | The algebra proves it (law only) | the merge homomorphism + contractivity + fixed capacity make the state a sufficient statistic | ⚠️ **true but partial** — the algebra guarantees *form* (it is a state of the stream, not a feature vector for our tasks) and *consistency*, never *content*: bounded memory means forgetting, and how much is lost is a measurement, not a theorem |
+| C | Measure worst case over a declared family (the `U` metric) | `U = 1 − worst-case oracle-gap` vs full-history at fixed capacity | ✅ necessary, but coverage = the family's width; a published family is honest, an unpublished one is marketing |
+| D | Hunt adversarially (the task-hunter) | search over functions of the future for a target the donor cannot serve | ✅ the only mechanism that reaches a consumer we have not met — and it inherits its own blind spot (the hunter searches its own hypothesis class) |
+| E | **The coverage lattice** — B + C + D + per-consumer falsification, with the claim retired until earned | ⭐ recommended (below) | ✅ |
+
+**The lattice — four legs, each with its guarantee type declared:**
+
+| Leg | What it carries | Guarantee type |
+|---|---|---|
+| **1. Form** | bounded, mergeable homomorphism; explicitly parameterized forgetting; per-sample; schema-agnostic; two pathways | **proven by construction**, verified by receipts (merge 8.88e-16, equivariance, mass additivity) |
+| **2. Content** | battery's six content classes; `Δ_suff` vs shuffled null; oracle-gap `U` at fixed capacity over a self-supervised family whose members are **published on the card** | **measured**, family-bounded and visibly so |
+| **3. Adversary** | synthesized targets (random functionals of the future, programmatic targets, "find me a target the donor can't serve"); each blind spot becomes a new battery pressure with its own row | **minimax estimate**, hunter-class disclosed |
+| **4. Boundary falsification** | every consumer — known or unknown — gets a machine verdict on *"is my target served?"* from the factory's head-ladder + matched comparators + knob-turn receipt, at zero cost to us; NOT-SERVED is a defect attributed to the **encoder** | **immediate, per-consumer, falsifying** |
+
+**What is genuinely by construction (claim these, they are free credibility):**
+
+| Promise | Why it is a law, not a hope |
+|---|---|
+| **Additive/aggregate targets** (counts, sums, recency/frequency/value style features) | the mass pathway is exact-additive and never decayed/gated/normalized (DEC-401/402) ⇒ every additive aggregate of the window is **linearly recoverable** — a whole commercially important target class is covered by construction, with the linear shipping head (DEC-407) |
+| **Consistency under chunking / time-translation** | merge exactness + equivariance receipts ⇒ a consumer reading a cut at `t` gets the same answer whether the history was streamed or batched |
+| **Usable distances** for kNN-style consumers | geometry gates (isotropy, effective rank, decay) live on the **artifact**, so similarity is certified, not rediscovered per consumer |
+| **Refusal over clamping** | out-of-support → abstain with widened uncertainty (axiom), so an unaccommodated consumer is told so rather than misled |
+
+**What we cannot promise (stated in the artifact's metadata, not in a footnote):** coverage is over
+**functions of the observed stream**. Unlogged events, hidden confounders, and covariates never
+entering the stream are carried as **uncertainty**, never faked. A consumer needing them is not
+covered by any encoder — it is covered by getting data.
+
+**Honest disclosures required with E:** (1) v1 measures leg 2 over a *declared* family and (if the
+operator approves the stub below) hunts with a cheap class, so the v1 card's wording is "**no
+unserved target found among battery ∪ registered consumers ∪ stub-hunter**, as of receipt/commit"
+— which is strictly weaker than "all consumers," and must be printed that way; (2) the full
+task-hunter stays a **Layer-1** item (DEC-390), disclosed as an open frontier row; (3) the word
+**"universal" never appears in a generated artifact unless the coverage rows are green.**
+
+Ruling pending (recommend **E**, plus the **cheap stub hunter in v1**: fixed random projections + a
+few programmatic functionals of the future, self-supervised, GPU-cheap — so C5's row is non-empty
+on day one). Note the stub is a *receipt addition*, not a gate change, but it touches DEC-390's
+deferral, so it is named for explicit approval.
+
 ### C10 — Decision & RL consumers — **re-scoped (DEC-409): a decision-PLATFORM contract, not an RL design**
 
 Operator correction accepted: `white_queen` is **pure offline RL** and is its own mini-project,
@@ -1070,3 +1122,17 @@ this order when implementation opens.
   incremental-margin objective) and four open items parked as their own arc — decision/transition
   log schema, actuation feedback, online incrementality (gated on randomization), and policy
   invalidation workflow **(DEC-409)**.
+- 2026-10-27 s34 — operator chose **C5 (the unknown-consumer guarantee)**. Presented with the
+  honest premise that **no mechanism proves** "covered by construction, not by enumeration":
+  enumeration is a benchmark, the algebra guarantees *form and consistency* but not *content*,
+  the `U` metric measures only over its declared family, and an adversary inherits its own blind
+  spot. Recommendation **E — the coverage lattice**: (1) form = proven by construction;
+  (2) content = measured over a **published** family; (3) adversary = hunted, class disclosed;
+  (4) **boundary falsification** = every consumer gets a free machine verdict on "is my target
+  served?" with NOT-SERVED attributed to the encoder. Plus a **by-construction subset** we may
+  claim truthfully (additive/aggregate targets via the exact-additive mass pathway + the linear
+  shipping head; chunking/time-translation consistency; certified geometry for distances;
+  refusal over clamping) and an explicit non-promise (coverage is over **functions of the
+  observed stream**; unlogged events carried as uncertainty). Rule pending on E and on the
+  **v1 stub hunter** (random projections + programmatic future functionals) that keeps the row
+  non-empty — a receipt addition touching DEC-390's deferral, so flagged for explicit approval.
