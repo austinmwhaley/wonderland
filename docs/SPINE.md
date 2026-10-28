@@ -10,19 +10,23 @@
 ## 0. The goal, one sentence
 
 Input any event stream → output a **frozen** foundation model (one per stream) whose state
-supports **supervised**, **unsupervised**, and **RL** heads using simple consumers.
+supports **supervised**, **unsupervised**, **RL**, and **simulator** heads using simple
+consumers.
 
-## 1. The three consumers come first (tracing rule — operator ruling 2026-10-27)
+## 1. The four consumers come first (tracing rule — operator ruling 2026-10-27)
 
 Everything in the system must trace to the consumer set as a whole ("no feature without a
 trace"): a component exists only if it can name a consumer need it serves or a gate it
-satisfies.
+satisfies. Consumers map to project layers: supervised/unsupervised/RL heads live in
+`plugins` (RL certified by `white_queen`); the simulator is the `red_king` role
+(counterfactual effect recovery / decisions), also certified via `white_queen` OPE.
 
 | Consumer | The question it asks | What it needs from the frozen state |
 |---|---|---|
 | **Supervised** (predict churn, value, orders…) | "What will happen to this customer?" | The state must **contain** everything predictive about the customer, and a plain line must be able to **read** it |
 | **Unsupervised** (segments, lookalikes, anomalies) | "Who is like this customer?" | **Distance = behavioral similarity**: neighbors genuinely share futures |
 | **RL** (email frequency, offers…) | "What should we do?" | Customer state **just before** an action + response structure, where the logged data tested actions |
+| **Simulator** *(added 2026-10-27, DEC-384 — the red_king role)* | "What would happen IF we did X to this cohort?" | An **action-conditioned** future model in the state: outcomes given actions, with uncertainty; causal claims only where the stream randomized |
 
 ## 2. The constitution (ACCEPTED 2026-10-27)
 
@@ -123,7 +127,8 @@ need. Real names below; "brain vs ledger" = learned-by-the-network vs computed-o
 | `uncertainty` | brain | 23 | missingness / support / gap — "what did I actually see" | anomaly detection; careful heads abstaining |
 | `heads` | brain | 127 | head outputs: identity / next-event / relational predictions | identity probes, next-event consumers |
 | `measure` | **LEDGER** | data-derived (~734, coverage 0.99) | exact lawful tallies computed **outside the network** (counts, totals, shares per category, first/last…) | category identity, anomaly — the only place these currently work |
-| `full` | brain bundle | 2265 | **permanently defined** concatenation of shape + learned_state + forecast + uncertainty + heads (order fixed; **`measure` excluded by definition**) | strongest supervised view |
+| `response` | brain | **approved, not built** (DEC-384) | action-conditioned outcome predictions (given the logged action + pre-action state) — conditional predictions with uncertainty, never causal claims; causal reading only where the stream randomized | RL + simulator (red_king) |
+| `full` | brain bundle | 2265 | **permanently defined** concatenation of shape + learned_state + forecast + uncertainty + heads (order fixed; **`measure` excluded by definition**; `response` joins only if the audit earns it) | strongest supervised view |
 
 Facts pinned by code (single source of truth):
 - `FULL_ORDER = (shape, learned_state, forecast, uncertainty, heads)` — `full` is the brain
@@ -154,7 +159,7 @@ Derived-from-consumers checklist vs the current set:
 | magnitude ("how much") | `learned_state` mass, `forecast`, ledger | ✓ (brain side partially — corr² 0.568) |
 | support ("what did I see") | `uncertainty` | ✓ |
 | exact counts | ledger | ✓ (as companion, pending decision) |
-| **response ("what if we do X")** | **none — RL gets a cut of `shape`, no dedicated bucket** | **gap** (consistent with RL being our weakest leg) |
+| **response ("what if we do X")** | **DECIDED: `response` bucket approved (DEC-384)** — outlet + training pressure; conditional predictions + uncertainty; causal claims only under logged randomization | ✅ closed by decision; build pending |
 | redundant? | `learned_state` (internals dump, but empirically earns its keep: channel purity 0.72); `heads` (network's own guesses — consumer bucket or training scaffolding?) | audit |
 
 ### The ledger question — OPTIONS (OPEN; operator deciding)
@@ -198,12 +203,12 @@ engine does; teaching a neural net to count is the expensive move.**
 
 ## 6. The consumer-backward trace
 
-| Layer | Supervised | Unsupervised | RL |
-|---|---|---|---|
-| Needed property | predictive sufficiency | behavioral metric (distance = shared futures) | decision-usefulness (v1 bar) |
-| Buckets that serve it (real names) | `full`, `forecast`, `learned_state`, `shape` | `shape` geometry; `uncertainty` for anomaly; ledger for category identity | pre-action cuts of `shape`/`learned_state` |
-| Stage that creates it | S3 + S5 + S4 | S3 + **S5 distance pressure (missing today)** + S4 | S3 + S5 response pressure + pre-action cut + randomized data (Layer A) |
-| Progress gate (receipt) | beats PATH A with paired CI; ≥50% of ceiling gap | distance↔truth-similarity beats table/random; kNN transfer > table | known-effect + IPS beats table & random with CI |
+| Layer | Supervised | Unsupervised | RL | Simulator (red_king) |
+|---|---|---|---|---|
+| Needed property | predictive sufficiency | behavioral metric (distance = shared futures) | decision-usefulness (v1 bar) | action-conditioned future + uncertainty |
+| Buckets that serve it (real names) | `full`, `forecast`, `learned_state`, `shape` | `shape` geometry; `uncertainty` for anomaly; ledger for category identity | pre-action cuts of `shape`/`learned_state`; `response` (approved) | `response` (approved) + pre-action cuts |
+| Stage that creates it | S3 + S5 + S4 | S3 + **S5 distance pressure (missing today)** + S4 | S3 + S5 response pressure + pre-action cut + randomized data (Layer A) | S3 + S5 action-conditioned pressure + S4 + randomized data (Layer A) |
+| Progress gate (receipt) | beats PATH A with paired CI; ≥50% of ceiling gap | distance↔truth-similarity beats table/random; kNN transfer > table | known-effect + IPS beats table & random with CI | known-effect recovery of built-in effects; counterfactual agreement vs randomized arms with CI |
 
 Single-object record: the three properties are projections of ONE object — the stream's
 future-predictive law (action-conditioned where identified). Supervised = determine it;
@@ -288,3 +293,8 @@ stage; each state moves only on a receipt. "Mastered" = all six working.
   ACCEPTED (DEC-383)**; Option 4 explicitly preserved (brain absorbs counting over time;
   ledger as S5 reconstruction target, never as input). Next: queue item 3 — bucket audit,
   headline finding = missing `response` bucket.
+- 2026-10-27 s7 — operator: **Option B chosen** (new `response` bucket directly, skipping
+  pressure-first C); **Q6 YES — simulator declared fourth consumer** (maps to the
+  `red_king` role; certified via `white_queen`). Recorded as DEC-384. Consumer set now
+  four; trace table and bucket table updated (`response` approved-not-built). Next:
+  queue item 4 — the shape/mass split.
