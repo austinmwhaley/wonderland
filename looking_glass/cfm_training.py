@@ -174,7 +174,8 @@ def train_cfm(cfg: CFMConfig):
         event_residual=getattr(cfg, "event_residual", False),
         readout_scale=getattr(cfg, "readout_scale", False),
         stats_pathway=getattr(cfg, "stats_pathway", False),
-        continuous_time=getattr(cfg, "continuous_time", False),
+        # binding default: continuous-time (DEC-419)
+        continuous_time=getattr(cfg, "continuous_time", True),
         accumulator=getattr(cfg, "use_accumulator", True),
         counter=getattr(cfg, "use_counter", False),
         counter_registers=getattr(cfg, "counter_registers", 1),
@@ -634,7 +635,7 @@ def train_cfm(cfg: CFMConfig):
             "event_residual": bool(getattr(cfg, "event_residual", False)),
             "readout_scale": bool(getattr(cfg, "readout_scale", False)),
             "stats_pathway": bool(getattr(cfg, "stats_pathway", False)),
-            "continuous_time": bool(getattr(cfg, "continuous_time", False)),
+            "continuous_time": bool(getattr(cfg, "continuous_time", True)),
             "counter": bool(getattr(cfg, "use_counter", False)),
             "counter_registers": int(getattr(cfg, "counter_registers", 1)),
             "counter_compact": bool(getattr(cfg, "counter_compact", False)),

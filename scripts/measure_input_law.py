@@ -338,7 +338,7 @@ def check_numeric_transform(data: Path) -> dict:
         )
         for k in disc["keys"]
     }
-    encoded = [per_cust[f"numcust_{i}"] for i in range(len(values))]
+    encoded = [per_cust[f"numcust_{i}"] for i, _ in enumerate(values)]
     expected = [float(np.sign(v) * np.log1p(abs(v))) for v in values]
     law_ok = all(abs(a - b) < 1e-4 for a, b in zip(encoded, expected))
     order = [0, 1, 2, 3, 4]
@@ -438,6 +438,48 @@ def check_training_determinism(data: Path) -> dict:
     }
 
 
+def stamp_merge_write(out_path: Path, stages: dict, command: str) -> dict:
+    """Stamp _meta (freshness law) and merge stage blocks into the judge receipt.
+
+    Single definition shared by every measurement script writing judge_stages.json,
+    so stamps can never drift between producers.
+    """
+    existing = {}
+    p = Path(out_path)
+    if p.exists():
+        try:
+            existing = json.loads(p.read_text())
+        except Exception:  # noqa: BLE001 - rebuild rather than merge with garbage
+            existing = {}
+    existing.update(
+        {
+            "_meta": {
+                "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                "git_commit": JC.git("rev-parse", "HEAD"),
+                "behavior_hash": JC.behavior_hash(),
+                "command": command,
+                "producer": Path(sys.argv[0]).name,
+            },
+            **stages,
+        }
+    )
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(json.dumps(existing, indent=2, sort_keys=True, default=str) + "\n")
+    return existing
+
+
+def _rollup(checks: dict) -> dict:
+    working = all(c["working"] for c in checks.values())
+    return {
+        "working": working,
+        "evidence": " | ".join(
+            f"[{name}] {'OK' if c['working'] else 'FAILED'}: {c['evidence']}"
+            for name, c in checks.items()
+        ),
+        "checks": checks,
+    }
+
+
 # --------------------------------------------------------------------------- main
 
 
@@ -467,38 +509,14 @@ def main() -> int:
     }
 
     def rollup(checks: dict) -> dict:
-        working = all(c["working"] for c in checks.values())
-        return {
-            "working": working,
-            "evidence": " | ".join(
-                f"[{name}] {'OK' if c['working'] else 'FAILED'}: {c['evidence']}"
-                for name, c in checks.items()
-            ),
-            "checks": checks,
-        }
+        return _rollup(checks)
 
-    existing = {}
     out_path = Path(a.out)
-    if out_path.exists():
-        try:
-            existing = json.loads(out_path.read_text())
-        except Exception:  # noqa: BLE001 - rebuild rather than merge with garbage
-            existing = {}
-    existing.update(
-        {
-            "_meta": {
-                "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-                "git_commit": JC.git("rev-parse", "HEAD"),
-                "behavior_hash": JC.behavior_hash(),
-                "command": " ".join([Path(__file__).name] + sys.argv[1:]),
-                "data": str(data),
-            },
-            "S1": rollup(s1_checks),
-            "S2": rollup(s2_checks),
-        }
+    existing = stamp_merge_write(
+        out_path,
+        {"S1": rollup(s1_checks), "S2": rollup(s2_checks)},
+        " ".join([Path(__file__).name] + sys.argv[1:]),
     )
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(json.dumps(existing, indent=2, sort_keys=True, default=str) + "\n")
 
     print(f"judge stages -> {out_path}")
     for stage in ("S1", "S2"):

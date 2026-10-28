@@ -6,21 +6,31 @@
 > first to restore state; update it before yielding. The retired `ROADMAP.md`
 > is archived at `docs/archive/ROADMAP.md`.
 
-## CURRENT STATE — 2026-10-27 (read this first; supersedes older sections)
+## CURRENT STATE — 2026-10-28 (read this first; supersedes older sections)
 
 > **IMPLEMENTATION OPENED on branch `foundation-rebuild` (2026-10-28).** Design phase complete
 > (T-series DEC-399 · A-series DEC-404 · C-series DEC-412 · Outlet Standard O1–O8 · O6 DEC-414);
-> DEC trail DEC-383…417. **Steps 0–1 done (DEC-416):** GB10 CUDA env in `.venv` (torch
+> DEC trail DEC-383…419. **Steps 0–1 done (DEC-416):** GB10 CUDA env in `.venv` (torch
 > 2.14.1+cu130, warm bf16 ≈15.2 TFLOPS, `python3-dev` installed — all scan-accel tests pass);
 > judge card live (`scripts/judge_spec.py` + `judge_card.py` → `JUDGE_CARD.md`, 18 anti-false-PASS
-> tests). **Step 2 delivered (DEC-417):** S1/S2 **PASS** on real evidence — renamed schema + new
+> tests). **Step 2 delivered (DEC-417/418):** S1/S2 **PASS** on real evidence — renamed schema + new
 > fields end-to-end with zero code edits, unseen-value path, signed-log1p law, permutation
 > invariance, bit-identical determinism (`scripts/measure_input_law.py` → `judge_stages.json`);
-> the measurement immediately falsified a **dead canonical adapter** (polars 1.44 broke attrs-JSON
-> decode + tz timestamps; fast tier never exercised it) — fixed in `stream_adapter` with one
-> shared decode/parse mechanism. Card now **2/6 stages · 0/8 legs · NOT DONE**. Baseline: 512/511
+> the measurement falsified a **dead canonical adapter** (polars 1.44) and a **masked accelerator**
+> (root-owned triton cache) — both fixed at the right layer. **Step 3 delivered (DEC-419):** S3
+> **PASS** — 7/7 laws on the continuous-time production checkpoint (`scripts/measure_dynamics_law.py`):
+> merge law 1.2e-15, chunked continuation 1.1e-07 with all recurrent states carried (h-only serving
+> drift 8.6e-03 disclosed as an O6 bought approximation), mass additivity 6.0e-16, week-shift exact
+> (0.0) with a live spring (gaps×10 → 3.8e-01), step-0 finite, τ×100 tracks cadence, governed
+> stability clean. The receipt caught and fixed a **doctrine-violating default** (`continuous_time`
+> typed `False` against the binding AGENTS time default — measured time-blind) and an **uncarried
+> intent-filter state**. Card now **3/6 stages · 0/8 legs · NOT DONE**. Baseline: 512/511
 > /1 (the 1 is a typed-tolerance drift left alone — gate-touching). Nothing pushed.
 > The status-quo `REPORT_CARD.md` remains the operational reference for the inherited pipeline.
+>
+> **Ledger items owed (DEC-419 disclosures):** `cfm_state.absorb()` must carry intent-filter
+> states (O6 receipt); reconcile the two clocks (`cfm_data` stored `ts` UTC vs `_to_epoch`
+> local — 28800 s apart); `tau_from_spectrum` measurement costs ~460 s (two `discover` runs).
 
 **Repository state:** `main` now contains the former `primary-encoder` demo work. The duplicate
 report card, stale roadmap, duplicate receipt orchestrator, one-off OPE wrappers, and generator

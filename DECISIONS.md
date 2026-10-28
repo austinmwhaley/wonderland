@@ -3269,3 +3269,63 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - Principles served: Robust (deterministic from step 0 — including the accelerator's engagement),
   Honest (a silent fallback was surfaced and eliminated, not papered over), M16 (runtime receipt
   with warm matmul + real test-tier counts).
+
+## DEC-419 — S3 ratified on the continuous-time engine: the binding time default restored, and every recurrent state made continuable
+
+- **Context.** Step 3 of SPINE §8 asked for S3 compliance receipts (merge law, mass
+  additivity, time laws, τ-from-spectrum, step-0 stability, governed training) on the
+  PRODUCTION stack — the checkpoint produced by the canonical trainer command on the real
+  demo stream. Two honest findings surfaced while building the paper and had to be fixed
+  before any receipt could be signed.
+- **Finding 1 — the typed default violated the doctrine.** `CFMConfig.continuous_time`
+  was typed `False`, while the AGENTS "principle-first defaults" (binding) declare the
+  default to be the continuous-time gated SSM (`h_t = exp(-Δt/τ)·h_{t-1} + …`, τ learned,
+  initialized from stream statistics). A discrete-step spring ignores elapsed time between
+  events — the first S3 checkpoint (trained under the old default) proved it: stretching
+  gaps 10× with tokens fixed moved the state by exactly **0** (time-blind). Fixed at the
+  config layer (`cfm_config` default → `True`; both `cfm_training` getattr fallbacks
+  aligned). The re-trained checkpoint's spring responds (gaps×10 → state/E drift 3.8e-01).
+- **Finding 2 — the merge law was broken by an uncarried state.** Chunked continuation
+  (encode first half, resume from state) drifted 1.5e-2 because the `IntentFilter` EMAs
+  (slow-expert content filter + wrapper slow-intent filter) restart from zero on every
+  chunk. The filter is itself an affine recurrence — exactness is *free*, so `IntentFilter
+  .forward` gained `h0` and the expert/wrapper SSM forwards gained `f0`/`g0`: **all**
+  recurrent states now carry, and the merge check closes at **1.1e-07** (float32 noise).
+  `cfm_state.absorb()` (incremental serving) still carries only the main state `h` —
+  disclosed inside the receipt (h-only drift 8.6e-03) as an O6 **bought approximation
+  awaiting its receipt**, not silently gated.
+- **Clock-law control redesigned honestly.** The naive control (shift everything by 12.5h)
+  measures the *clock features*, not the *spring* — and on this stream the attributes
+  already carry clock information. The honest pair: (a) shift every event by exactly one
+  week (lcm of the hour/day cycles, gaps identical) ⇒ state/E must **not** move — measured
+  **0.000e+00**; (b) stretch gaps ×10 with tokens FIXED (drive `dt` directly, bypassing
+  clock features entirely) ⇒ state **must** move — measured 3.8e-01. Disclosed alongside:
+  `w_tod` is learned-live (norm 9.09), and `cfm_data`'s stored `ts` (UTC) vs the model's
+  `_to_epoch` parse (local wall) differ by 28800 s — two clocks to reconcile before
+  horizons depend on them.
+- **τ is from the spectrum, not from a typed constant.** Base taus = gap quantiles of the
+  stream; compress cadence ×100 and the derived taus follow at median ratio **100.0×**
+  (gate ≥10×, non-constant). Registry resolved half_life_days=2.44, seq_len=606 — both
+  data-derived.
+- **Result.** `scripts/measure_dynamics_law.py` — **7/7 PASS** on the continuous-time
+  production checkpoint: scan associativity 1.2e-15 (float64, model's own modules),
+  chunked merge 1.1e-07, mass additivity 6.0e-16, clock law exact, step-0 finite (0
+  non-finite of 686,592), τ×100 tracks, governed training finite/never-diverged.
+  Card: **3/6 stages · 0/8 legs · NOT DONE**. S1/S2 re-stamped under the new source.
+- **Alternatives rejected.** (1) Gate the merge check h-only (would launder the filter-
+  state gap into a PASS or force a loose tolerance) — instead disclosed as the O6
+  approximation it is. (2) Keep the shift-everything control (a dead control: measures
+  clock features, and passed/failed on token effects) — replaced per the law "exactness is
+  free; approximation must be bought with a receipt". (3) Leave `continuous_time=False` as
+  "discrete for now" — a typed literal contradicting a binding default, and the S3 receipt
+  measured it dead on arrival.
+- **Housekeeping (pure refactor, no version bump).** The two ruff-split `86400.0` unit
+  conversions in `cfm_model` now divide by the single `TIME_UNIT_SECONDS` constant in
+  `cfm_config` (single source of truth; principle-audit 0 findings on touched files).
+  Fast tier holds at **512 collected · 511 pass · 1 fail** — the failure re-verified as the
+  pre-existing `GeometryBank` typed-tolerance drift (config-free test; not touched by the
+  flip; still gate-touching, deferred to S5).
+- **Principles served.** Lawful (compositionality/equivariance enforced as laws over the
+  continuous state, v6.0 macro filter), Robust (the spring responds; stability measured,
+  not assumed), Honest (both findings surfaced in the receipt text, nothing clamped),
+  Efficient (exact continuation costs one extra multiply per filter).

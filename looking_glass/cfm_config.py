@@ -29,7 +29,7 @@ EMBED_DIM = 64
 LN2 = math.log(2.0)
 # Successor features: predict the DISCOUNTED future at a continuously-sampled
 # discount gamma. No human-chosen horizons — the model learns all timescales.
-TIME_UNIT_SECONDS = 86400.0  # a day (unit scaling only, not a horizon)
+TIME_UNIT_SECONDS = 86400.0  # principle-ok: a day — unit scaling only, not a horizon
 GAMMA_MAX = 0.999
 
 
@@ -267,7 +267,10 @@ class CFMConfig:
     # D: long-memory statistics pathway (EMA accumulator added to the readout).
     stats_pathway: bool = False
     # continuous-time dt-scaled decay (opt-in; must match the checkpoint)
-    continuous_time: bool = False
+    # AGENTS "principle-first defaults" (binding): the time default is the
+    # continuous-time gated SSM (h_t = exp(-dt/tau) h_{t-1} + (1-exp(-dt/tau)) x_t);
+    # a discrete-step spring would ignore elapsed time between events (DEC-419).
+    continuous_time: bool = True
     # cumulative-accumulator measure pathway (hand-listed; default on).
     use_accumulator: bool = True
     # S1 ANCHORED COUNTER (inside the net): exact gated sums of RAW event quantities

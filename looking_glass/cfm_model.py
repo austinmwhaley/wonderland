@@ -9,7 +9,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from looking_glass.cfm_config import _f, _to_epoch
+from looking_glass.cfm_config import TIME_UNIT_SECONDS, _f, _to_epoch
 
 
 # ---------------------------------------------------------------------------
@@ -440,12 +440,12 @@ class SelectiveSSM(nn.Module):
         yn = self.readout_norm(y)
         return yn + self.readout_scale(mom) if mom is not None else yn
 
-    def forward(self, x, h0=None, mask=None, ev=None, ev_prev=None, dt=None):
+    def forward(self, x, h0=None, mask=None, ev=None, ev_prev=None, dt=None, f0=None):
         if self.input_norm is not None:
             x = self.input_norm(x)
         xs = x  # post-input-norm token for the readout skip (current event)
         if self.smooth is not None:
-            x = self.smooth(x, mask=mask)
+            x = self.smooth(x, mask=mask, h0=f0)
         bm = getattr(self, "band_mask", None)
         if bm is not None:
             wd = F.linear(x, self.W_delta.weight * bm, self.W_delta.bias)
@@ -458,7 +458,7 @@ class SelectiveSSM(nn.Module):
         # between events, so a channel's memory is in TIME units (irregular streams).
         # decay = exp(-delta * dt_days); dt is log1p(seconds) -> days.
         if dt is not None and self.continuous_time:
-            dt_days = torch.expm1(dt) / 86400.0  # (B,T,1)  # principle-ok: seconds->days unit conversion
+            dt_days = torch.expm1(dt) / TIME_UNIT_SECONDS  # (B,T,1) seconds->days scaling
             decay = torch.exp(-delta * dt_days)
         else:
             decay = torch.exp(-delta)
@@ -596,7 +596,7 @@ class IntentFilter(nn.Module):
             r0 = np.full(dim, float(r0))
         self.logit = nn.Parameter(torch.tensor(np.log(r0 / (1.0 - r0)), dtype=torch.float32))
 
-    def forward(self, x, mask=None):
+    def forward(self, x, mask=None, h0=None):
         r = torch.sigmoid(self.logit).view(1, 1, -1)
         e = self.W_intent(x) if self.use_proj else x
         d = r.expand_as(e)
@@ -604,7 +604,11 @@ class IntentFilter(nn.Module):
             m = mask.unsqueeze(-1)
             d = d * m + (1.0 - m)  # pad: hold the EMA state
             e = e * m
-        _, H = _scan(d, (1.0 - d) * e)
+        D, H = _scan(d, (1.0 - d) * e)
+        if h0 is not None:
+            # exact continuation (merge law): the filter is an affine recurrence like
+            # the main scan, so its state must carry across chunks — DEC-419/O6.
+            H = H + D * (h0 if h0.dim() >= 3 else h0.unsqueeze(-2))
         return H
 
 
@@ -736,7 +740,7 @@ class MultiScaleSSM(nn.Module):
             r0 = float(np.exp(-np.logaddexp(0.0, delta_biases[self.slow_idx])))  # residual
             self.intent = IntentFilter(chan, retention_init=r0)
 
-    def forward(self, x, h0=None, mask=None, ev=None, ev_prev=None, dt=None):
+    def forward(self, x, h0=None, mask=None, ev=None, ev_prev=None, dt=None, f0=None, g0=None):
         # NOTE: context-gated mixtures (M2 softmax gate, M5 sparse top-k) were
         # both REJECTED by the battery — the gate attenuated channels and
         # collapsed their diversity (unique-coverage fell). Experts stay
@@ -745,9 +749,10 @@ class MultiScaleSSM(nn.Module):
         for i, e in enumerate(self.experts):
             xi = x
             if self.slow_intent and i == self.slow_idx:
-                xi = self.intent(x, mask=mask)
+                xi = self.intent(x, mask=mask, h0=g0)
             hi = None if h0 is None else h0[..., i * self.chan : (i + 1) * self.chan]
-            yi, ho = e(xi, h0=hi, mask=mask, ev=ev, ev_prev=ev_prev, dt=dt)
+            fi = None if f0 is None else f0[..., i * self.chan : (i + 1) * self.chan]
+            yi, ho = e(xi, h0=hi, mask=mask, ev=ev, ev_prev=ev_prev, dt=dt, f0=fi)
             ys.append(yi)
             hs.append(ho)
         return torch.cat(ys, dim=-1), torch.cat(hs, dim=-1)
@@ -1246,8 +1251,8 @@ class CFM(nn.Module):
         hl = float(getattr(self, "half_life_days", 30.0)) or 30.0
         secs = (torch.expm1(t["dt"]).squeeze(-1) * t["mask"]).cumsum(1)
         age = secs[:, -1:] - secs
-        for k in (0.3, 1.0, 3.0, 10.0):
-            w = 0.5 ** (age / (hl * k * 86400.0)) * t["mask"]  # principle-ok: seconds->days unit conversion
+        for k in (0.3, 1.0, 3.0, 10.0):  # principle-ok: relative multiples of the derived half-life
+            w = 0.5 ** (age / (hl * k * TIME_UNIT_SECONDS)) * t["mask"]  # seconds->days
             feats.append((tok * w.unsqueeze(-1)).sum(1))
             feats.append(w.sum(1, keepdim=True))
         m = t["mask"]

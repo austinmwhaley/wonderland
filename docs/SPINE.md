@@ -1004,7 +1004,7 @@ this order when implementation opens.
 | 0 | **Environment rebuild** — torch aarch64/CUDA-13, xgboost-cuda, numpy; runtime-receipt smoke test on the GB10 | ✅ **done 2026-10-28** (DEC-416): torch 2.14.1+cu130 on the GB10, compute cap 12.1, warm bf16 matmul ≈15.2 TFLOPS; `scripts/setup_env.sh` + `scripts/env_receipt.py`. One operator action outstanding: `python3-dev` for `torch.compile` |
 | 1 | **Judge-first card skeleton** — two-number × four-leg top line, freshness law, UNKNOWN default (existing receipts feed it; missing rows render UNKNOWN) | ✅ **done 2026-10-28** (DEC-416): `scripts/judge_spec.py` + `scripts/judge_card.py` → `JUDGE_CARD.md` (0/8 legs, 0/6 stages, NOT DONE); 18 tests prove it cannot be talked into a PASS; freshness enforced via `behavior_hash()` |
 | 2 | **S1/S2 receipts** — renamed-schema + new-field pass, resolution receipt, unseen-value path, transform receipts | ✅ **done 2026-10-28** (DEC-417/418): 6 checks PASS via `scripts/measure_input_law.py`; falsified a dead canonical adapter (polars 1.44) + a masked accelerator (root-owned triton cache, DEC-389 vindicated) — both fixed at the right layer |
-| 3 | **S3 compliance receipts** — homomorphism/equivariance/mass-additivity on data; τ-from-spectrum; stability step 0 | ratifies DEC-386 with paper |
+| 3 | **S3 compliance receipts** — homomorphism/equivariance/mass-additivity on data; τ-from-spectrum; stability step 0 | ✅ **done 2026-10-28** (DEC-419): 7/7 PASS via `scripts/measure_dynamics_law.py` on the continuous-time production checkpoint — merge law 1.2e-15, chunked continuation 1.1e-07 **with all recurrent states carried** (h-only serving gap disclosed as an O6 bought approximation), mass 6.0e-16, week-shift exact 0.0, spring alive (gaps×10 → 3.8e-01), τ×100 tracks, governed stable; restored the binding continuous-time default the typed `False` had violated |
 | 4 | **Battery completion** — distance-regression + action-conditioned outcome + ledger-reconstruction; naive comparators; prune pass | the two known gaps; expected biggest progress jump (DEC-387) |
 | 5 | **`response` bucket + decodability contracts** — build bucket (DEC-384 disciplines); per-bucket ρ + accessibility parity (DEC-388), tolerances frozen pre-run | completes bucket set + pays the frozen tax |
 | 6 | **Ledger companion formalized** — G1–G5 as code-enforced tests | DEC-383 made mechanical |
@@ -1339,3 +1339,21 @@ this order when implementation opens.
   gate-touching, deferred to S5). Card: **2/6 stages · 0/8 legs · NOT DONE**.
   Next per §8: **step 3 — S3 compliance receipts** (homomorphism/equivariance/mass-additivity on
   data; τ-from-spectrum; stability from step 0).
+- 2026-10-28 s40 — **step 3 delivered: S3 PASS by receipt** (DEC-419).
+  `scripts/measure_dynamics_law.py` signs seven checks on the canonical trainer's production
+  checkpoint: scan associativity 1.2e-15 (float64, the model's own decay/drive), chunked merge
+  1.1e-07 with **every** recurrent state carried (`IntentFilter` gained `h0`, experts/wrapper
+  gained `f0`/`g0` — exactness is free), mass additivity 6.0e-16, week-shift drift exactly 0.0
+  vs gaps×10 spring response 3.8e-01, step-0 finite over 686,592 values under random weights,
+  derived taus tracking a ×100 cadence compression at 100.0×, governed training finite and
+  never diverged (half_life_days=2.44, seq_len=606 — both data-derived). **The receipt caught
+  two corpses:** the typed `continuous_time=False` default contradicted the binding AGENTS
+  time default and measured time-blind (gaps×10 moved nothing), and chunked continuation
+  silently restarted the intent-filter EMAs (1.5e-2 drift). Both fixed at their source; the
+  remaining h-only drift of `cfm_state.absorb()` (8.6e-03) is disclosed in the receipt as an
+  O6 bought approximation awaiting its receipt, not gated away. Two-clock disclosure: stored
+  `ts` (UTC) vs `_to_epoch` (local) differ 28800 s — reconcile before horizons depend on it.
+  Card: **3/6 stages · 0/8 legs · NOT DONE**; fast tier holds 511/512 (the 1 re-verified as
+  the pre-existing config-free GeometryBank tolerance drift).
+  Next per §8: **step 4 — battery completion** (distance-regression + action-conditioned
+  outcome + ledger-reconstruction probes, naive comparators, prune pass).
