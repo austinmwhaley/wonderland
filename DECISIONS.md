@@ -2962,3 +2962,91 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - Principles served: Honest (the claim is bounded and falsifiable, not asserted), M1 (unimagined
   consumers accommodated or *seen to fail*), A1 (refusal over clamping), M3 (form as law),
   Diagnosable (a stranger's failure is attributed to the encoder, naming the axis).
+
+## DEC-412 — The Outlet Standard (O1–O8) ratified; C3, C4, C6, C7 closed under it
+
+- **Operator intent adopted as the C-series capstone:** *"I want ANY plugin to plug in to my wall
+  outlet and be powered and work."* Ratified as eight obligations, each traced to the ruling that
+  guarantees it: **O1 shape** (published schema, never a function signature) · **O2 power**
+  (content recoverable by a simple plug) · **O3 tester** (a conformance kit SHIPPED with the
+  artifact) · **O4 faceplate** (self-describing metadata) · **O5 breakers** (fail safe) · **O6 the
+  wall is live** (published cadence — the one clause still undesigned, → serving & refresh arc) ·
+  **O7 adapters not rewiring** · **O8 read access unconditional, certification opt-in**.
+- **"Works" defined mechanically**, so the promise is testable rather than inspirational: a
+  conforming plug whose target is measurable on the observed stream receives (a) a verdict from
+  the kit, (b) if served, performance within a **bounded gap of the full-history oracle** at its
+  declared capacity, and (c) if not served, an **attributed cause** — accessibility gap (the
+  trunk's defect) or sufficiency gap (not in the window). Two limits published on the faceplate:
+  the wall cannot fix a broken appliance, and cannot power a device that needs gas.
+- **O3 (new deliverable):** the conformance kit is a *shipped* artifact — schema check, residency
+  check, knob-turn, head-ladder, both comparators → `SERVED / GAP-accessibility /
+  GAP-sufficiency / NOT-SERVED`. It is what makes thousands of consumers support-free.
+- **O8 (new clause):** registration exists to be **judged**, never to be **allowed**. The producer
+  stays oblivious; nothing requires permission to read.
+- **C3 closed — the firewall, including the vector nobody names:** no mutation of B; no backward
+  edges; labels join by key at the factory and never reach B; encoder selection on held-out
+  self-supervised loss only (DEC-387); no future information at serve. **New data-mediated
+  leakage law:** the stream ingests only *source-system* events — **no derived or consumed table
+  may be registered as an event source.** A plugin's predictions re-ingested as events would leak
+  downstream signal into the encoder through the *data*, where no import-graph scan could ever see
+  it. Enforcement is one **firewall receipt**: import-graph scan + source-provenance register
+  (with refusal) + residency receipt + knob-turn.
+- **C4 closed — gates are computed, never claimed:** plugin gates are produced by the card
+  generator from receipts (generate-don't-narrate); each gate uses ground truth, compares against
+  PATH A (both comparators), never uses the metric the encoder optimized, and its thresholds are
+  **frozen before the run**; degenerate targets are excluded and reported. **Uncertified is
+  advertised** — a stale or failed plugin is marked as such in the artifact metadata and on the
+  card, so nobody can consume it unaware.
+- **C6 closed — compatibility contract:** the version label encodes behavior (a change that can
+  alter outputs bumps; a refactor does not); **additive-only within a version line** — a column's
+  meaning is never redefined, new content is a new column, and removals run through a
+  **deprecation ledger** so no consumer is broken silently; consumers pin **major + hash** and the
+  loader **refuses** mismatched reads; a geometry-changing re-fit bumps a **geometry epoch** so
+  distance/kNN consumers can detect that cached indexes must be rebuilt; one generator, one
+  schema.
+- **C7 closed — personalization is an adapter, never rewiring:** the wall is standardized for
+  every room, so there are **no per-segment outlets**. Personalization is a spec field
+  (`by: [segment_key]`) producing per-segment **linear** heads at derived capacity, with a
+  **derived minimum-support floor**: segments below it **fall back to the global head with
+  widened uncertainty** rather than overfit. Personalization reads published columns only
+  (residency), preserves as_of discipline, never mutates the foundation, and never stores private
+  per-customer encoder state beyond what the constant-state encoder itself carries.
+- Principles served: M1 (any plug, unimagined included), A1 (fail safe, refuse, advertise
+  uncertified), Honest (claims computed; leakage closed at the data layer too), M4 (support-free at
+  scale), principle 6 (one schema, one generator), principle 10 (version = behavior).
+
+## DEC-413 — Decision rights: what the operator decides, what the agent decides (working-mode protocol)
+
+- **Operator statement:** "Most of what I can do is provide you with principles and context… I am
+  going to pick your recommendation most of the time because I don't know enough to agree or
+  disagree."
+- **Governance risk named, not accepted silently:** the operator's judgment is the project's only
+  external check, and this project twice produced a "SOLVED" label that an adversarial review
+  overturned (DEC-228, DEC-234). If the operator defers on everything, the stop-and-ask controls
+  become decorative and the agent becomes its own judge. The fix is not to ask more technical
+  questions the operator cannot evaluate — it is to **change what is asked**.
+- **Decision rights:**
+  - **Operator decides (never delegated):** principles and the objective; what "good" means for the
+    business; **risk appetite and live exposure** (customer-facing actions, exploration budgets);
+    **irreversible or externally visible actions** (push, destructive deletes, spend above a
+    threshold); **any change to a gate, threshold, criterion, or frontier definition**; **any
+    completion claim** ("SOLVED", "universal", PASS language); and whether to continue or stop.
+  - **Agent decides, citing the principle it serves and recording it in `DECISIONS.md`:** all
+    architecture and mechanism choices, derived thresholds, library selection, experiment design,
+    sequencing. The agent's recommendation is **adopted unless the operator objects.**
+  - **Always surfaced for an explicit word, even with a recommendation:** anything that would move
+    a verdict FAIL→PASS, weaken or redefine a gate, touch a frozen definition or the judge, spend
+    material compute/money, or expose anything to customers.
+- **How questions are asked (so deferral stays safe):** every item is tagged
+  **[PRINCIPLE]** (only the operator can answer — intent, values, risk) · **[AUTHORIZATION]**
+  (needs their word) · **[TECHNICAL]** (agent decides; shown for **principle-fit veto**, not
+  mechanism review). The operator's veto power is "this doesn't fit the principles," which is
+  evaluable without domain expertise — and the four-option table is retained only for genuine
+  forks that touch the objective or risk, so routine rows become: decision · principle served ·
+  what was rejected and why.
+- **Agent commitment:** keep the audit trail complete (every decision logged with rejected
+  alternatives), keep presenting the *reasoning shape* rather than conclusions alone, and never
+  treat silence-as-assent for any item in the "always surfaced" class.
+- Principles served: Honest (the check on self-deception is preserved, not laundered),
+  Diagnosable, principle 12 (implement the intent of the operator's role, not the letter of
+  approving every item).
