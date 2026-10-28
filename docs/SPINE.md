@@ -249,10 +249,25 @@ Single-object record: the three properties are projections of ONE object — the
 future-predictive law (action-conditioned where identified). Supervised = determine it;
 unsupervised = distance equals discrepancy between laws; RL = use it under actions.
 
-## 7. Progress mechanics (the diagnostic ladder beneath the judge)
+## 7. Progress mechanics (DEC-390) — the card IS the judge
 
-Judge = PATH B > PATH A (§3). When B doesn't beat A, this ladder names the bottleneck
-stage; each state moves only on a receipt. "Mastered" = all six working.
+**Card top line (the judge):** four consumer legs × two numbers —
+**brain vs PATH A = progress** · **brain+ledger vs PATH A = delivery**, each with paired
+CIs and random/destroyed controls. Beneath: the stage ladder, states derived only from
+receipts. Unmeasured or stale rows render **UNKNOWN, never PASS**.
+
+**Freshness law (binding):** any behavior change to the encoder or serving path marks
+dependent receipts stale → UNKNOWN until regenerated. One command regenerates the card at
+a recorded commit with hashes.
+
+**Encoder done (v1), mechanically:** (1) all six stage states working by receipt;
+(2) all four consumer legs green vs PATH A (paired CIs + controls); (3) card fully fresh,
+one command, recorded commit + hashes; (4) capacity certified — retention-vs-size curve
+measured, k_min recorded (settles the width question with data). Adversarial task-hunter
+deferred to Layer 1 **by design, disclosed on the card** — layering, not a softened gate.
+
+When B doesn't beat A, this ladder names the bottleneck stage; each state moves only on a
+receipt. "Mastered" = all six working.
 
 | Stage | Working-state proof | Not-working looks like |
 |---|---|---|
@@ -271,6 +286,22 @@ stage; each state moves only on a receipt. "Mastered" = all six working.
 3. Which column is its parameter in (contract / derived / learned)?
 4. What receipt moves that stage's state? What negative control catches the failure?
 5. Record in `DECISIONS.md`; regenerate card; accept or revert.
+
+### Implementation order (recorded; **awaiting operator "go" — no code until then**)
+One axis per loop; each step = one commit chunk + card regeneration; GPU work follows
+DEC-389 (benchmark receipt per adoption, CPU fallback kept). `PLAN.md` gets reconciled to
+this order when implementation opens.
+
+| # | Step | Why this order |
+|---|---|---|
+| 0 | **Environment rebuild** — torch aarch64/CUDA-13, xgboost-cuda, numpy; runtime-receipt smoke test on the GB10 | DEC-389 item #1; nothing runs otherwise |
+| 1 | **Judge-first card skeleton** — two-number × four-leg top line, freshness law, UNKNOWN default (existing receipts feed it; missing rows render UNKNOWN) | build the court before the cases: every later step is judged by this |
+| 2 | **S1/S2 receipts** — renamed-schema + new-field pass, resolution receipt, unseen-value path, transform receipts | cheapest; proves M1/M2 claims are real |
+| 3 | **S3 compliance receipts** — homomorphism/equivariance/mass-additivity on data; τ-from-spectrum; stability step 0 | ratifies DEC-386 with paper |
+| 4 | **Battery completion** — distance-regression + action-conditioned outcome + ledger-reconstruction; naive comparators; prune pass | the two known gaps; expected biggest progress jump (DEC-387) |
+| 5 | **`response` bucket + decodability contracts** — build bucket (DEC-384 disciplines); per-bucket ρ + accessibility parity (DEC-388), tolerances frozen pre-run | completes bucket set + pays the frozen tax |
+| 6 | **Ledger companion formalized** — G1–G5 as code-enforced tests | DEC-383 made mechanical |
+| 7 | **Capacity curve** — retention-vs-d sweep → k_min certified; settle d=128 (derived or replaced) | DEC-390 done-item (4); answers Feature 7's width question |
 
 ## 9. Literature anchors (compressed; full citations in git history of FIRST_PRINCIPLES.md)
 
@@ -354,3 +385,9 @@ stage; each state moves only on a receipt. "Mastered" = all six working.
   to the capacity curve). **GPU-first directive issued (DEC-389)** — hardware verified as
   NVIDIA GB10 / DGX Spark; policy recorded, execution sequenced post-structure. Feature 8
   (receipts & progress) presented — the final feature.
+- 2026-10-27 s13 — operator: **Feature 8 = C ratified (DEC-390)**. **Structure phase
+  CLOSED.** All eight features decided: constitution (axioms/maxims/overmatch), four
+  consumers + judge (B > A), S1–S6 spine, buckets + ledger companion + `response` bucket,
+  split-as-law engine, derived battery, accessibility guarantee, judge-first card with
+  freshness law and encoder-done (v1). Implementation order recorded (§8), **awaiting
+  operator "go"** — step 0 is the CUDA environment rebuild. DEC trail: DEC-383…390.
