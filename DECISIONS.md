@@ -2496,3 +2496,25 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   convergence behavior.
 - Principles served: M2 (the stream picks its own rhythms), M3 (spectrum = law-instrument),
   A1 (determinism, reject-not-guess), A2 (measured noise floor, not a threshold).
+
+## DEC-397 — Bucket membership: content class + earned-keep (T10 = B); `heads` provisional
+
+- Ruling: **Option B**. A bucket exists **iff** (1) it maps to a content class a consumer
+  provably needs, and (2) at least one card row currently **wins** in it (attribution
+  receipt). Buckets that stop earning dissolve at the next card regeneration — buckets can
+  never fossilize (prefer-deletion made mechanical).
+- Concretely: `shape`, `learned_state` (earned: channel purity 0.72), `forecast` (earned:
+  best churn view), `uncertainty`, `measure` (ledger), and `response` (class what-if)
+  stand. **`heads` is PROVISIONAL** — its next-event/identity/relational predictions must
+  win a card row by attribution or the bucket dissolves (consumers re-derive predictions
+  from `shape` via their own heads).
+- **Discipline boundaries are bucket boundaries:** `response` is deliberately NOT folded
+  into `heads` despite both being predictions — response outputs carry obligations
+  (uncertainty always attached; causal reading only under logged randomization). Separate
+  outlet ⇒ discipline travels with the outlet and cannot be forgotten by consumers.
+- Rejected: freeze-current (blesses the grab-bag; accretion by inheritance); single blob
+  (measured dilution of distance probes; breaks DEC-388 per-bucket contracts);
+  consumer-shaped buckets (forbidden — known use cases would SHAPE the foundation;
+  veto-never-shape).
+- Principles served: M1 (unknown consumers stay accommodated), A2 (membership by receipt),
+  A1 (discipline-carrying outlets), prefer-deletion.
