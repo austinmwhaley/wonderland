@@ -2407,3 +2407,24 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   never seen at fit time* — adjacent, distinct, composable.
 - Principles served: A1 (uncertainty first, reject-don't-clamp), M2 (status set derived
   from data), A2/Honest (no faked calibration), consumer trace (abstention).
+
+## DEC-393 — Vocabulary policy: measured head + hashed tail + id-typing (T2 = Option B)
+
+- Ruling: **Option B**. Per field, S1 measures the value-mass curve and assigns:
+  **head** values (whatever covers the measured mass — no hardcoded percentage) get
+  dedicated learned embeddings; the **tail** hashes into a shared region sized from the
+  measured tail cardinality; **id-like fields** are discovered by profile (cardinality +
+  reuse pattern), not by name, and route to identity-view hashed embeddings so identifiers
+  never collide with category space; **unseen values at serve** hash-route to tail +
+  support flag, and unseen mass beyond the calibrated coverage bound **flags the stream**
+  (reject/widen — never silently absorbed).
+- Rejected: full vocab (tail memorization = overfitting by construction; no unseen path);
+  hash-everything (head values eat collisions while dead tail eats space; discards the
+  measured distribution — M2 regression); dropping high-cardinality fields (identity
+  signal discarded; deletion-by-data already lives in S1).
+- Required receipts: vocab-coverage per field (values + mass), collision budget (bucket
+  count from measured cardinality, target collision rate), serve-time unseen-mass monitor
+  wired to the support bucket.
+- Boundary pinned with T4 (DEC-392): T4 = unrecorded; T2 = recorded-but-new. Composable.
+- Principles served: M2 (every cap is a measurement), A1 (unseen = flag, not clamp),
+  M1 (id-typing by profile — works on unseen schemas), minimality (capacity follows mass).
