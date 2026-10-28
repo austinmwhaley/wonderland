@@ -157,7 +157,7 @@ open bag S1 interprets. Schema-agnosticism applies inside the bag and to column 
 | — | Time is not a feature; periodicity from data-derived spectral peaks | S2/S3 | **law** (DEC-386) + receipt (Fourier-off hurts orders) |
 | T6 | Sequence construction — chunking long histories, budgets, as-of cuts | S3 | **open — presenting now** |
 | T7 | Timescale allocation — how many τ channels, from what statistic | S3 | **open — presenting now** |
-| T8 | Nonlinearity placement — gating/bilinear coupling where rank needs it | S3 | open (micro; iterate-to-convergence scans only) |
+| T8 | Nonlinearity placement — gating/bilinear coupling where rank needs it | S3 | **open — presenting now** |
 | T9 | Capacity d | S3 | open — deferred to retention-vs-d curve (DEC-390) |
 | T10 | Bucket membership — which head outputs live in which bucket | S4 | **open — presenting now** |
 | T11 | Weight-learning mechanism, horizons, mask rates | S5 | partially open (all derived-from-data per DEC-387) |
@@ -274,9 +274,27 @@ next-event/relational **predictions** — the suspect grab-bag) · measure (ledg
 | C | One giant blob; consumers slice | just `full` | fewest names | measured harm — concatenation dilutes distance probes; breaks per-bucket decodability contracts (DEC-388) | ✗ |
 | D | Consumer-shaped buckets (`churn_bucket`, `value_bucket`…) | a bucket per known downstream task | maximally convenient for today's consumers | **forbidden**: known use cases would SHAPE the foundation (veto-never-shape); also guarantees the next consumer is unaccommodated | ✗ |
 
-Ruling pending (recommend B). Note `response` is deliberately NOT folded into `heads`:
-action-conditioned predictions carry their own disciplines (uncertainty always on, causal
-reading only under randomization) — a discipline boundary is a bucket boundary.
+Ratified: **B (DEC-397)**. `heads` provisional pending attribution; `response` separate by
+discipline boundary; earned-keep is permanent — buckets that stop winning dissolve.
+
+### T8 — Where the engine may bend (nonlinearity placement; presented 2026-10-27)
+
+The core is a linear spring: exponential fade between events + additive ticks. Pure
+linearism caps expressivity (your own v6 spike measured bilinear content×state coupling
+raising usable rank 1.79× — pure linear was measurably not enough). But every bend is a
+bet, and a bend in the wrong place breaks a ratified law. Where may nonlinearity live?
+
+| # | Option | In one line | For | Against | Verdict |
+|---|---|---|---|---|---|
+| A | **Bend at write and read; never between** ⭐ | nonlinearity only (1) **at event ticks**: learned gates (which events write, how strongly) + bilinear content×state coupling, and (2) **at readout** (per-bucket ensemble, learned positive weights — no softmax collapse). The fade between events stays **exactly linear** | keeps merge exactness (receipt 8.88e-16 → T6 chunking stays free), stability law (contractive linear core), determinism; spends bends exactly where content meets state — where the v6 receipts say rank comes from | bilinear coupling costs compute at ticks (GPU: fine) | ✅ |
+| B | No bends (pure linear) | lawfulness maximal | provable everything | **measured failure**: rank/expressivity too low; soft linear workarounds (centering) were measured as no-ops — rejected by experiment | ✗ |
+| C | Bend the fade itself (nonlinear decay ODEs, MLPs running between events) | richer dynamics | could express non-exponential memory | **voids the merge law** (chunked scanning no longer exact — T6's free lunch revoked), stability law at risk, determinism degraded | ✗ as edit to the core; admissible ONLY as a **second, parallel mechanism** added by battery receipt (DEC-386 ansatz-detector path), each mechanism carrying its own merge test |
+| D | Batch-coupled bends (batchnorm/ZCA family) | normalize by the batch | — | **banned absolutely**: per-sample contract; batch statistics manufacture capacity (the ZCA scandal this repo has already lived once); train≠serve divergence | ✗ |
+
+Ruling pending (recommend A). Plain summary: **the spring between events is sacred; the
+pen at write time and the voice at readout may bend.** Bending where content meets state
+is where the measured rank lives; bending the spring costs the laws that make histories
+free and runs stable.
 
 ### What the encoder is NOT
 - Not a consumer of labels/downstream tasks (firewall; PATH A's table is a
@@ -564,3 +582,8 @@ this order when implementation opens.
   collapse failure mode) — recorded in DEC-396. **T7 = B ratified (DEC-396)** with C
   fallback. T10 (bucket membership) presented: recommendation B (content class +
   earned-keep; `heads` provisional; `response` separate by discipline boundary).
+- 2026-10-27 s21 — operator: **T10 = B ratified (DEC-397)**. T8 (nonlinearity placement)
+  presented: recommendation A (bend at write — gates + bilinear content×state — and at
+  readout — learned positive weights; fade between events stays exactly linear; nonlinear
+  decay only as a receipted second mechanism; batch-coupled bends banned absolutely).
+  Pending: T8 ruling; then T11 (last derived knobs) closes the internals arc.
