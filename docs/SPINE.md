@@ -159,7 +159,7 @@ open bag S1 interprets. Schema-agnosticism applies inside the bag and to column 
 | T7 | Timescale allocation — how many τ channels, from what statistic | S3 | **open — presenting now** |
 | T8 | Nonlinearity placement — gating/bilinear coupling where rank needs it | S3 | open (micro; iterate-to-convergence scans only) |
 | T9 | Capacity d | S3 | open — deferred to retention-vs-d curve (DEC-390) |
-| T10 | Bucket membership — which head outputs live in which bucket | S4 | open |
+| T10 | Bucket membership — which head outputs live in which bucket | S4 | **open — presenting now** |
 | T11 | Weight-learning mechanism, horizons, mask rates | S5 | partially open (all derived-from-data per DEC-387) |
 | — | Training regime (convergence not counts, stability law, early stop) | S5 | doctrine (AGENTS.md) — needs spine receipts |
 | — | Freeze semantics | S6 | **law** (A3 lock) |
@@ -254,9 +254,29 @@ tenure/loyalty). How many speeds, and which ones?
 | C | Overbuild a geometric ladder, prune the quiet ones | 16 log-spaced τs, delete channels whose measured contribution < noise | robust; no spectral machinery | wastes capacity until pruned; pruning threshold must itself be noise-calibrated | ⚠️ documented **fallback** (small/flat-spectrum streams), pruning receipt required |
 | D | Free-learned τ, no measured init | every channel invents its own speed | maximal adaptivity | unmotivated channels collapse onto each other and leave holes (known degenerate behavior); throws away the spectrum S1 already paid for | ✗ as init policy (the *learning* part of D is kept: τ stays learnable after peak-init) |
 
-Ruling pending (recommend B with C fallback, τ learnable after init). Depth companion:
-layer count follows the convergence/validation doctrine (derived budget, not a literal).
-Receipts: spectrum receipt (peaks, powers, noise floor), fallback-fired + prune receipts.
+Ratified: **B with fallback C (DEC-396)** — spectrum receipt (peaks, powers, shuffle-noise
+floor) required; τ learnable after peak-init; layer count = derived convergence budget.
+Operator challenge on B-vs-D answered in the open and recorded in DEC-396.
+
+### T10 — Bucket membership (presented 2026-10-27)
+
+Which outputs deserve to BE a bucket? Rule from the Feature-3 audit: a bucket = a content
+class a consumer provably needs. Today's six content buckets, examined: shape (who) ·
+learned_state (memory internals — empirically earned: channel purity 0.72) · forecast
+(when/summaries — earned: best churn view) · uncertainty (what-I-saw) · heads (identity/
+next-event/relational **predictions** — the suspect grab-bag) · measure (ledger) · plus
+`response` approved (what-if, DEC-384) and `full` (fixed brain bundle).
+
+| # | Option | In one line | For | Against | Verdict |
+|---|---|---|---|---|---|
+| A | Freeze current membership | what ships is what stays | zero rework; receipt continuity | blesses `heads` (a bag of network predictions, not a content class) without an earned-keep verdict — accretion by inheritance | ✗ |
+| B | **Content class + earned-keep** ⭐ | a bucket exists iff (1) it maps to a content class and (2) at least one card row currently WINS in it (attribution receipt); buckets that stop earning are dissolved (prefer deletion). Concretely: shape/learned_state/forecast/uncertainty/measure/response stand (each earns today); **`heads` is PROVISIONAL** — next-event/identity outputs must win a card row by attribution or the bucket dissolves (consumers re-derive predictions from `shape` via their own heads; `response` stays separate — different class, different disciplines) | membership is decided by receipts, not habit; keeps the bucket set exactly as big as the consumers' needs | bookkeeping: per-row attribution must stay current (already required by DEC-390) | ✅ |
+| C | One giant blob; consumers slice | just `full` | fewest names | measured harm — concatenation dilutes distance probes; breaks per-bucket decodability contracts (DEC-388) | ✗ |
+| D | Consumer-shaped buckets (`churn_bucket`, `value_bucket`…) | a bucket per known downstream task | maximally convenient for today's consumers | **forbidden**: known use cases would SHAPE the foundation (veto-never-shape); also guarantees the next consumer is unaccommodated | ✗ |
+
+Ruling pending (recommend B). Note `response` is deliberately NOT folded into `heads`:
+action-conditioned predictions carry their own disciplines (uncertainty always on, causal
+reading only under randomization) — a discipline boundary is a bucket boundary.
 
 ### What the encoder is NOT
 - Not a consumer of labels/downstream tasks (firewall; PATH A's table is a
@@ -539,3 +559,8 @@ this order when implementation opens.
   then learned), fallback C (geometric ladder + noise-calibrated pruning). Pending: T7
   ruling; then T10 (bucket membership), T8 (nonlinearity placement), T11 (mask rates,
   horizons, weight-learning mechanism).
+- 2026-10-27 s20 — operator challenged B-vs-D on T7 (maximal adaptivity); answered in
+  open (start position vs learning; gradients can't teach what the channel can't hear;
+  collapse failure mode) — recorded in DEC-396. **T7 = B ratified (DEC-396)** with C
+  fallback. T10 (bucket membership) presented: recommendation B (content class +
+  earned-keep; `heads` provisional; `response` separate by discipline boundary).
