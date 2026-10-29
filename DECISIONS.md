@@ -3843,3 +3843,77 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - **Status of the row.** Kept as FAIL. The gate is not softened, the criterion is not changed,
   and the outlet is not relabeled. What changed is that a failure that previously read "the head
   is weak" now reads "the action representation carries no incremental signal, measured".
+
+## DEC-427 — [TECHNICAL] the `measure` outlet gets built: the ledger ships as a certified companion, with G1–G5 as executable checks (SPINE §8 step 6, implementing DEC-383)
+
+- **Context.** SPINE §5 ratified the ledger as Option 3 (operator ruling 2026-10-27): the
+  foundation is certified on the **brain alone** and the artifact ships **brain ⊕ ledger** as
+  named buckets side by side, with five mandatory guardrails (G1 mechanical-only, G2
+  history-only, G3 target-blind, G4 never-feeds-the-brain, G5 attribution-always). The recipe
+  already existed — `measure_state.MeasureBuilder` computes the exact tallies, and
+  `evaluate_foundation_state.py` had been using them for the legacy Layer-A arms — but **no
+  CFM release ever wrote them**, so the wall printed `NOT SERVED: measure` while the numbers
+  were one columnar pass away. Worse, the guardrails lived only as prose in a design doc: a
+  guardrail nobody can execute is a wish, and this repo has already paid twice for prose-only
+  invariants (DEC-228/234).
+- **Alternatives considered.** (1) *Ship the tallies, document the guardrails* — rejected:
+  G2 (no future events) and G4 (the brain never reads the ledger) are precisely the laws that
+  cannot be seen in a passing run, so documenting them certifies nothing. (2) *Make G1 demand
+  the declared vocabulary coverage (0.99)* — built, then **rejected by measurement**: it fired
+  on the real artifact (worst achieved 0.177), because the recipe *deliberately* caps a
+  high-cardinality field at a mass-derived budget and discloses the remainder in the "other"
+  bucket. Demanding 0.99 would have made an id field a hard failure for a design that is
+  working as intended. G1 now verifies the stronger, correct property: the published
+  vocabulary is **reproducible from the counts by the recipe formula** — which is what
+  "no human ever hand-picks columns" actually means. (3) *Recompute the ledger at serve time
+  from the frame* — rejected: the vocabulary must be resolved once at fit time (SPINE §5's
+  odometer), and a second schema scan would be a second definition of "which fields exist".
+- **Decision.** New `looking_glass/ledger_state.py` publishes the ledger as the `measure` view
+  (6 parts: `event_mass, total_events, category_share, missing_rate, richness, numeric_stats`).
+  The encoder is never touched; the release stays additive (`not_served: measure` if it
+  refuses). Key commitments:
+  - **The layout has one owner.** `MeasureBuilder.part_slices()` is the single definition of
+    the column layout; the faceplate widths, the published rows and `view_layout.PART_ORDER`
+    all derive from it. The per-field blocks INTERLEAVE, so a part is a list of runs —
+    flattening them into one span would have published wrong numbers silently (the DEC-425
+    class of defect).
+  - **The audit runs before the write.** A hard guardrail failure raises *before* any row is
+    stored, so a ledger that fails its own audit is not merely marked bad, it is unreadable.
+  - **G2 cannot be "truncate and compare"**. Shortening a history legitimately changes its
+    tallies, so that check can only ever fail (it did, on honest data). The real law is that
+    the boundary binds: (a) no event survives the cut, (b) the ledger equals an independent
+    vectorized recount. A publisher that silently ignored `as_of` is caught by (a).
+  - **A check with nothing to look for says VACUOUS.** On this artifact
+    `exogenous_events`/`action_fields` are empty (the DEC-426 finding), so G3's name-scan has
+    nothing to scan; it reports `vacuous=true` rather than reading like a green.
+  - **The adapter must not launder the vocabulary boundary.** `MeasureBuilder` reserves index
+    0 as "not logged" and the encoder's tokenizer routes unseen values to `len(map)`; sizing
+    the columns by the bare vocabularies would have `np.clip`-folded every unseen value onto
+    the LAST real value — a silent substitution wearing a column name. Columns are sized
+    `n_et+1` / `n_attr+2` and the null mask drives numeric counts, each pinned by a test.
+  - **G5 is produced by the card, not by the build.** `measure_views_law.py` gains
+    `ledger_attribution`, measuring `learned_only` / `ledger_only` / `both` /
+    `ledger_destroyed` per generative trait with paired CIs. The products-time receipt reports
+    it as `pending` rather than laundering it into a green. **Frozen before the run:**
+    `working` = all four arms measured AND the ledger beats its own destroyed control on ≥1
+    target. It is NOT required to beat the brain — per the operator's corollary a
+    ledger-backed number can never be a B-win.
+- **Outcome (measured on `0.11.0r469048`, 2500 customers).** `NOT SERVED` is gone: **7 views /
+  17 500 rows**, `measure` = 591-d (12/12 discovered fields vocabularied), guardrails
+  G1–G4 ok, G5 pending-at-build. S4 = **4 OK + the honest `response` FAIL** (DEC-426). The
+  ledger decoded on its own (7/7 views beat random+destroyed) and the attribution row reads,
+  on `h0`: **ledger-only 0.9846, learned-only (brain) 0.9071, both 0.9805, destroyed −1.3976**;
+  the ledger beats destroyed on 5/7 traits and adds beyond the brain on 2/7.
+- **The finding worth having.** The ledger **beats the brain** on the exact-mass traits, and
+  `both` is *not better* than `ledger_only` there. That is SPINE's corollary reproduced as a
+  number rather than asserted in prose: the ledger is mechanically what PATH A's table already
+  is, so it prevents the loss and cannot earn the win — and a future run that "improves"
+  supervised by leaning on it would be moving the judge, not improving the brain. It is also
+  the first quantitative evidence for the operator's Option-3 ruling.
+- **Trade-offs recorded.** A third full pass over the stream in `build_products` (states →
+  response → ledger), receipted as its own phase (`products_ledger`, peak RSS 13.09 GB,
+  MemAvailable low 18.5 GB against the 8 GB floor). "Exact" means exact over the visible
+  history up to each row's own boundary — the ledger is deliberately NOT truncated to the
+  encoder's `seq_len` window, since calling a windowed tally "exact" would be a false claim.
+  Numeric `0` remains ambiguous with "unlogged" under the recipe's pre-existing law (the stream's
+  null mask is honoured where present); the receipt reports counts so a reader can see it.

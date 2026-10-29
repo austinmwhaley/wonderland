@@ -446,6 +446,112 @@ def check_response_outlet(head: dict | None, faceplate: dict) -> dict:
     }
 
 
+def check_ledger_attribution(views: dict, truth: dict, akeys, bkeys, faceplate: dict) -> dict:
+    """G5 (SPINE §5): a served ledger must come with brain / ledger / both + a destroyed control.
+
+    The rule this enforces is the operator's 2026-10-27 corollary: **the brain earns the win,
+    the ledger prevents the loss.** The ledger is mechanically what PATH A's table already is,
+    so a number it carries can never be booked as a B-win. The row therefore does NOT gate on
+    the ledger beating the brain — it gates on the four arms being MEASURED and reported, and
+    on the ledger at least beating its own destroyed control (a ledger that cannot beat a
+    column-permuted copy of itself is not carrying customer information at all).
+
+    Frozen before the run (DEC-427): `working` = the measure view is served, every reported
+    target carries all four finite arms, and `paired_ci_lo(ledger vs destroyed) > 0` on at least
+    one target. Changing what this measures after seeing a number is a new protocol version.
+    """
+    if "measure" not in views:
+        unserved = "measure" in (faceplate.get("not_served") or {})
+        return {
+            "working": False,
+            "evidence": "ledger (measure view) NOT served"
+            + (
+                " — advertised as not_served by the faceplate"
+                if unserved
+                else " — and the faceplate does not advertise it either: the artifact is stale"
+            )
+            + "; produce it with the `products` command",
+            "served": False,
+        }
+    usable, _excluded = _target_matrix(truth, akeys, bkeys)
+    brain_parts = [v for v in V.FULL_ORDER if v in views]
+    if not usable or not brain_parts:
+        return {
+            "working": False,
+            "evidence": f"cannot attribute: targets={sorted(usable)} brain views={brain_parts}",
+            "served": True,
+        }
+
+    # `_matrix` takes a {customer: vector} map, so the concatenations are built explicitly
+    def _cat(view_names, keys):
+        mats = []
+        for vn in view_names:
+            m = _matrix(views[vn], keys)
+            if m is None:
+                return None
+            mats.append(m)
+        return np.hstack(mats)
+
+    brain_a, brain_b = _cat(brain_parts, akeys), _cat(brain_parts, bkeys)
+    led_a, led_b = _matrix(views["measure"], akeys), _matrix(views["measure"], bkeys)
+    if any(x is None for x in (brain_a, brain_b, led_a, led_b)):
+        return {
+            "working": False,
+            "evidence": "attribution unmeasurable: a view is ragged or missing rows (see outlet_schema)",
+            "served": True,
+        }
+    both_a, both_b = np.hstack([brain_a, led_a]), np.hstack([brain_b, led_b])
+    rng = np.random.default_rng(SEED)
+    _rand, destroyed_b = _controls(rng, led_b)
+    arms, adds_any, real_any = {}, False, False
+    for name, (ya, yb) in usable.items():
+        p_brain, r2_brain = _ridge_oos(brain_a, ya, brain_b, yb)
+        p_led, r2_led = _ridge_oos(led_a, ya, led_b, yb)
+        p_both, r2_both = _ridge_oos(both_a, ya, both_b, yb)
+        p_dest, r2_dest = _ridge_oos(led_a, ya, destroyed_b, yb)
+        if any(p is None for p in (p_brain, p_led, p_both, p_dest)):
+            continue
+        _, lo_add, _ = _paired_ci((yb - p_brain) ** 2 - (yb - p_both) ** 2)
+        _, lo_real, _ = _paired_ci((yb - p_dest) ** 2 - (yb - p_led) ** 2)
+        arms[name] = {
+            "learned_only": round(float(r2_brain), 4),
+            "ledger_only": round(float(r2_led), 4),
+            "both": round(float(r2_both), 4),
+            "ledger_destroyed": round(float(r2_dest), 4),
+            "ci_lo_ledger_adds": round(float(lo_add), 6),
+            "ci_lo_ledger_vs_destroyed": round(float(lo_real), 6),
+        }
+        adds_any = adds_any or lo_add > 0
+        real_any = real_any or (lo_real > 0 and r2_led > 0)
+    if not arms:
+        return {
+            "working": False,
+            "evidence": "no target could be attributed (all degenerate) — see the excluded list",
+            "served": True,
+        }
+    best = max(arms.items(), key=lambda kv: kv[1]["ledger_only"])
+    return {
+        # the frozen rule: the arms must all be measured AND the ledger must beat its own
+        # destroyed control somewhere. It is NOT required to beat the brain.
+        "working": bool(real_any) and bool(arms),
+        "evidence": (
+            f"attribution measured on {len(arms)} trait(s); best ledger-only R2="
+            f"{best[1]['ledger_only']} on '{best[0]}' (its destroyed control "
+            f"{best[1]['ledger_destroyed']}, learned-only {best[1]['learned_only']}, both "
+            f"{best[1]['both']}); ledger beats destroyed on "
+            f"{sum(1 for v in arms.values() if v['ci_lo_ledger_vs_destroyed'] > 0)}/{len(arms)} "
+            f"and adds beyond the brain on "
+            f"{sum(1 for v in arms.values() if v['ci_lo_ledger_adds'] > 0)}/{len(arms)} "
+            f"— a ledger-backed number is never booked as a brain win (SPINE §5)"
+            + ("" if real_any else " | WARNING: the ledger never beats its destroyed control")
+        ),
+        "served": True,
+        "arms": arms,
+        "ledger_carries_signal": bool(real_any),
+        "ledger_adds_beyond_brain": bool(adds_any),
+    }
+
+
 def _products_db(products: str | Path) -> Path:
     """Resolve `--products` to the products DB, accepting a directory OR a file path.
 
@@ -496,6 +602,9 @@ def main() -> int:
         # head, not encoder geometry — decodable traits alone cannot show it is conditional on
         # the action, nor that its published uncertainty covers.
         "response_outlet": check_response_outlet(_load_response(db), faceplate),
+        # DEC-427 / SPINE §5 G5: a served ledger must be attributable. This is also the receipt
+        # the products-time G1-G5 audit leaves pending, so the loop closes here.
+        "ledger_attribution": check_ledger_attribution(views, truth, akeys, bkeys, faceplate),
     }
     stamp_merge_write(
         Path(a.out),

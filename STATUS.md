@@ -826,7 +826,13 @@ observability, prefer deletion, best tool, cost-aware, **speed-first (16)**.
 >    head does not beat the state-only head (paired CI lo=-0.000113), and the receipt now says
 >    *why* — `delta_incremental_r2=0.0018` at effective rank 1.34, i.e. the action's state
 >    transition is the recurrence's own step, not the action's identity. Gate not softened.
-> 3. Ledger companion as code-enforced G1–G5 (step 6) so `measure` stops being `not_served`.
+> 3. ~~Ledger companion as code-enforced G1–G5 (step 6) so `measure` stops being
+>    `not_served`~~ **BUILT and PUBLISHED** (DEC-427): `measure` = 591-d over 6 parts,
+>    **7 views / 17 500 rows, no `NOT SERVED` left**. G1–G4 run as executable checks at release
+>    time (G1 recomputes the vocabulary from the counts, so a hand-picked column cannot survive;
+>    G2 recounts independently, so a forward leak cannot either); G5 is produced by the card.
+>    Attribution measured on `h0`: ledger-only **0.9846** vs brain **0.9071** — SPINE's
+>    "the ledger prevents the loss, it cannot earn the win" reproduced as a number.
 > 4. Judge-leg producers (top line is 0/8: nothing writes `judge_leg_*.json`).
 > 5. The batch=20 capped run that re-measures the DEC-420 baseline under the new protocol (this
 >    is also the first run that will exercise the `[step-time]` receipt).

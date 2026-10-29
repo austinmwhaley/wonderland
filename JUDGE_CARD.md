@@ -1,8 +1,8 @@
 # JUDGE CARD — PATH B > PATH A
 
-*Generated `2026-10-29T17:43:58+00:00` · commit `746c2f6` (`foundation-rebuild` · dirty) · encoder behavior `82dfe8c385ce20a5`*
+*Generated `2026-10-29T19:54:48+00:00` · commit `92184b7` (`foundation-rebuild` · dirty) · encoder behavior `50b60942ed7ae205`*
 
-**Assessment:** NOT DONE. Legs green: 0/8 · stages green: 4/6. This is a statement about receipts, not about effort; nothing here is a claim of universality (DEC-410: that word appears only when the coverage rows are green).
+**Assessment:** NOT DONE. Legs green: 0/8 · stages green: 3/6. This is a statement about receipts, not about effort; nothing here is a claim of universality (DEC-410: that word appears only when the coverage rows are green).
 
 The verdict is a pure function of the receipts under `docs/report_cards/experiments/`.
 Ledger points never count as progress: `brain alone` is the judge, `brain + ledger` is delivery.
@@ -27,7 +27,7 @@ Ledger points never count as progress: `brain alone` is the judge, `brain + ledg
 | **S1** Schema resolution (universal input) | renamed-schema + new-field pass, zero code edits | ✅ PASS | [renamed_end_to_end] OK: renamed client_id/occurred_at/event/attributes/total -> onboard resolved {'customer_key': 'client_id', 'event_ts': 'occurred_at', 'even |
 | **S2** Vocabulary & numeric encoding | unseen-value path exercised; transform receipts; permutation invariance <= tol | ✅ PASS | [unseen_value_path] OK: frozen schema (11 event types, vocab sizes [4, 10, 16, 6, 4, 7, 4, 24, 4, 4, 0, 77, 3, 4, 4, 5, 7]) encoded a batch containing unseen ev |
 | **S3** Lawful dynamics (the engine) | merge/equivariance/mass-additivity exact on data; tau receipted from spectra; stable from step 0 | ✅ PASS | [scan_associativity] OK: merge law F(g∘f)=F(g)∘F(f) on 6 real sequences x 5 split points (float64, model's own decay/drive, continuous_time=True): worst relativ |
-| **S4** Buckets (the outlets) | per-bucket accessibility parity + per-bucket negative controls | ✅ PASS | [outlet_schema] OK: 5 views / 12500 rows; declared-not-served ['response', 'measure'] advertised | [decodability] OK: linear-head decoders beat random+destroyed |
+| **S4** Buckets (the outlets) | per-bucket accessibility parity + per-bucket negative controls | ❌ FAIL | [outlet_schema] OK: 7 views / 17500 rows; declared-not-served [] advertised | [decodability] OK: linear-head decoders beat random+destroyed (paired CI lo>0) for |
 | **S5** The objective battery | every content pressure beats its naive comparator (or is excluded and reported) | ❌ FAIL | [ledger_reconstruction] FAILED: ledger recomputed from the raw stream by DuckDB (not a table copy); LINEAR head on the learned-shape donor (embedding = model.pr |
 | **S6** Certification (the card) | one command regenerates the card at a recorded commit + hashes | ❔ UNKNOWN | no measurement recorded for S6 |
 
@@ -36,7 +36,7 @@ Ledger points never count as progress: `brain alone` is the judge, `brain + ledg
 | # | Check | Verdict | Evidence |
 |---|---|---|---|
 | H1 | Environment receipted | ✅ PASS | env_receipt.json device matmul ok |
-| H2 | Behavior hash recorded | ✅ PASS | behavior_hash 82dfe8c385ce20a5 |
+| H2 | Behavior hash recorded | ✅ PASS | behavior_hash 50b60942ed7ae205 |
 | H3 | N recorded | ✅ PASS | enforced per row (no PASS without N) |
 | H4 | Controls present | ✅ PASS | enforced per row (no PASS without controls) |
 | H5 | Comparator finite and fair | ✅ PASS | enforced per row (comparator must be finite and fair) |
@@ -51,6 +51,7 @@ Ledger points never count as progress: `brain alone` is the judge, `brain + ledg
 - `judge_leg_rl.json — receipt missing`
 - `judge_leg_simulator.json — receipt missing`
 - `judge_leg_simulator.json — receipt missing`
+- `judge_stages.json — [outlet_schema] OK: 7 views / 17500 rows; declared-not-served [] advertised | [decodability] OK: linear-head decoders beat random+destroyed (paired CI lo>0) for`
 - `judge_stages.json — [ledger_reconstruction] FAILED: ledger recomputed from the raw stream by DuckDB (not a table copy); LINEAR head on the learned-shape donor (embedding = model.pr`
 - `judge_stages.json — no measurement recorded for S6`
 

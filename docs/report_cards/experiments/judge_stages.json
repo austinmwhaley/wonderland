@@ -95,9 +95,9 @@
   "S4": {
     "checks": {
       "accessibility_parity": {
-        "evidence": "42 view x target pairs at parity within 3x the paired SE; accessibility gaps: none",
+        "evidence": "49 view x target pairs at parity within 3x the paired SE; accessibility gaps: none",
         "gaps": [],
-        "pairs": 42,
+        "pairs": 49,
         "working": true
       },
       "decodability": {
@@ -114,6 +114,10 @@
             "r2": 0.9096,
             "target": "h0"
           },
+          "measure": {
+            "r2": 0.9846,
+            "target": "h0"
+          },
           "response": {
             "r2": 0.8676,
             "target": "x0"
@@ -127,19 +131,85 @@
             "target": "x0"
           }
         },
-        "evidence": "linear-head decoders beat random+destroyed (paired CI lo>0) for 6/6 views; undecodable: none; carried by {'x0': 3, 'h0': 3}",
+        "evidence": "linear-head decoders beat random+destroyed (paired CI lo>0) for 7/7 views; undecodable: none; carried by {'x0': 3, 'h0': 4}",
         "targets_excluded": [],
         "undecodable": [],
         "working": true
       },
+      "ledger_attribution": {
+        "arms": {
+          "churn_day": {
+            "both": 0.6283,
+            "ci_lo_ledger_adds": -207.461644,
+            "ci_lo_ledger_vs_destroyed": 70114.230562,
+            "learned_only": 0.6515,
+            "ledger_destroyed": -16.8063,
+            "ledger_only": 0.0592
+          },
+          "final_regime_days": {
+            "both": -0.0248,
+            "ci_lo_ledger_adds": -1357.062142,
+            "ci_lo_ledger_vs_destroyed": -134.656311,
+            "learned_only": -0.0142,
+            "ledger_destroyed": -0.0651,
+            "ledger_only": -0.0236
+          },
+          "h0": {
+            "both": 0.9805,
+            "ci_lo_ledger_adds": 2.928146,
+            "ci_lo_ledger_vs_destroyed": 100.836083,
+            "learned_only": 0.9071,
+            "ledger_destroyed": -1.3976,
+            "ledger_only": 0.9846
+          },
+          "price_sensitivity": {
+            "both": -0.0777,
+            "ci_lo_ledger_adds": -0.002657,
+            "ci_lo_ledger_vs_destroyed": -0.00102,
+            "learned_only": -0.0487,
+            "ledger_destroyed": -0.057,
+            "ledger_only": -0.0373
+          },
+          "regime_switches": {
+            "both": 0.0142,
+            "ci_lo_ledger_adds": -0.003921,
+            "ci_lo_ledger_vs_destroyed": 0.011186,
+            "learned_only": -0.0125,
+            "ledger_destroyed": -0.0632,
+            "ledger_only": 0.0007
+          },
+          "return_proneness": {
+            "both": 0.5979,
+            "ci_lo_ledger_adds": 0.007176,
+            "ci_lo_ledger_vs_destroyed": 0.010774,
+            "learned_only": 0.1347,
+            "ledger_destroyed": -0.0928,
+            "ledger_only": 0.6089
+          },
+          "x0": {
+            "both": 0.8927,
+            "ci_lo_ledger_adds": -0.003756,
+            "ci_lo_ledger_vs_destroyed": 1.467459,
+            "learned_only": 0.8911,
+            "ledger_destroyed": -1.2188,
+            "ledger_only": 0.8896
+          }
+        },
+        "evidence": "attribution measured on 7 trait(s); best ledger-only R2=0.9846 on 'h0' (its destroyed control -1.3976, learned-only 0.9071, both 0.9805); ledger beats destroyed on 5/7 and adds beyond the brain on 2/7 \u2014 a ledger-backed number is never booked as a brain win (SPINE \u00a75)",
+        "ledger_adds_beyond_brain": true,
+        "ledger_carries_signal": true,
+        "served": true,
+        "working": true
+      },
       "outlet_schema": {
-        "evidence": "6 views / 15000 rows; declared-not-served ['measure'] advertised",
+        "evidence": "7 views / 17500 rows; declared-not-served [] advertised",
         "missing": [],
-        "seconds": 0.001,
+        "seconds": 0.002,
         "views": [
           "forecast",
           "heads",
           "learned_state",
+          "measure",
           "response",
           "shape",
           "uncertainty"
@@ -170,7 +240,7 @@
         "working": false
       }
     },
-    "evidence": "[outlet_schema] OK: 6 views / 15000 rows; declared-not-served ['measure'] advertised | [decodability] OK: linear-head decoders beat random+destroyed (paired CI lo>0) for 6/6 views; undecodable: none; carried by {'x0': 3, 'h0': 3} | [accessibility_parity] OK: 42 view x target pairs at parity within 3x the paired SE; accessibility gaps: none | [response_outlet] FAILED: conditional outcome head: holdout R2=0.0696 on n=126895 B-rows (LEAKY ceiling 0.0701 \u2014 the most any head could predict from this target), coverage 0.800 (nominal 0.80, band +/-0.002), randomized fraction 0.1991, measured sigma 0.295346/0.304317 (rand/unrand, mean interval width 0.775419), delta incremental R2=0.0018 (effective rank delta=1.3432 state=2.0863), actions from /home/austin_whaley/wonderland_work/demo/relational_reference_truth.json | action-blind (state only) not beaten (paired CI lo=-0.000113)",
+    "evidence": "[outlet_schema] OK: 7 views / 17500 rows; declared-not-served [] advertised | [decodability] OK: linear-head decoders beat random+destroyed (paired CI lo>0) for 7/7 views; undecodable: none; carried by {'x0': 3, 'h0': 4} | [accessibility_parity] OK: 49 view x target pairs at parity within 3x the paired SE; accessibility gaps: none | [response_outlet] FAILED: conditional outcome head: holdout R2=0.0696 on n=126895 B-rows (LEAKY ceiling 0.0701 \u2014 the most any head could predict from this target), coverage 0.800 (nominal 0.80, band +/-0.002), randomized fraction 0.1991, measured sigma 0.295346/0.304317 (rand/unrand, mean interval width 0.775419), delta incremental R2=0.0018 (effective rank delta=1.3432 state=2.0863), actions from /home/austin_whaley/wonderland_work/demo/relational_reference_truth.json | action-blind (state only) not beaten (paired CI lo=-0.000113) | [ledger_attribution] OK: attribution measured on 7 trait(s); best ledger-only R2=0.9846 on 'h0' (its destroyed control -1.3976, learned-only 0.9071, both 0.9805); ledger beats destroyed on 5/7 and adds beyond the brain on 2/7 \u2014 a ledger-backed number is never booked as a brain win (SPINE \u00a75)",
     "pairs": [
       {
         "beats_controls": true,
@@ -244,8 +314,78 @@
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 661.4833131740428,
-        "ci_lo_vs_random": 1020.5733925302376,
+        "ci_lo_vs_destroyed": 1.3562929232348384,
+        "ci_lo_vs_random": 68676055083.29214,
+        "gap": null,
+        "r2_linear": 0.8896025011162477,
+        "r2_mlp": 0.017848379793402924,
+        "target": "x0",
+        "view": "measure"
+      },
+      {
+        "beats_controls": true,
+        "ci_lo_vs_destroyed": 113.93588165071714,
+        "ci_lo_vs_random": 397597110318.8834,
+        "gap": null,
+        "r2_linear": 0.9846443077331212,
+        "r2_mlp": 0.8664672130714244,
+        "target": "h0",
+        "view": "measure"
+      },
+      {
+        "beats_controls": false,
+        "ci_lo_vs_destroyed": -0.00020950826690672035,
+        "ci_lo_vs_random": 18001526818.329895,
+        "gap": null,
+        "r2_linear": -0.037346703059731645,
+        "r2_mlp": -2.1252571688311392,
+        "target": "price_sensitivity",
+        "view": "measure"
+      },
+      {
+        "beats_controls": true,
+        "ci_lo_vs_destroyed": 0.011252013328240799,
+        "ci_lo_vs_random": 2125551918.2726762,
+        "gap": null,
+        "r2_linear": 0.6089460333912864,
+        "r2_mlp": -2.455607215042676,
+        "target": "return_proneness",
+        "view": "measure"
+      },
+      {
+        "beats_controls": true,
+        "ci_lo_vs_destroyed": 70135.72615040868,
+        "ci_lo_vs_random": 3394183059320491.0,
+        "gap": null,
+        "r2_linear": 0.059241016358772325,
+        "r2_mlp": -9.214489365205113,
+        "target": "churn_day",
+        "view": "measure"
+      },
+      {
+        "beats_controls": true,
+        "ci_lo_vs_destroyed": 0.022188137944934835,
+        "ci_lo_vs_random": 388019306946.4154,
+        "gap": null,
+        "r2_linear": 0.0007147412978562029,
+        "r2_mlp": -1.2546108779720018,
+        "target": "regime_switches",
+        "view": "measure"
+      },
+      {
+        "beats_controls": false,
+        "ci_lo_vs_destroyed": -623.4148747140824,
+        "ci_lo_vs_random": 1.3726618357049476e+16,
+        "gap": null,
+        "r2_linear": -0.023632581872370162,
+        "r2_mlp": -0.4219272548349493,
+        "target": "final_regime_days",
+        "view": "measure"
+      },
+      {
+        "beats_controls": true,
+        "ci_lo_vs_destroyed": 625.7241969922626,
+        "ci_lo_vs_random": 1123.1114132295056,
         "gap": null,
         "r2_linear": 0.8879437735589013,
         "r2_mlp": 0.8028379547923514,
@@ -254,8 +394,8 @@
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 50871.9201800771,
-        "ci_lo_vs_random": 98528.50772450412,
+        "ci_lo_vs_destroyed": 48649.75076169212,
+        "ci_lo_vs_random": 98824.39826641888,
         "gap": null,
         "r2_linear": 0.9123262421275306,
         "r2_mlp": 0.9191994772145693,
@@ -264,8 +404,8 @@
       },
       {
         "beats_controls": false,
-        "ci_lo_vs_destroyed": -0.0012092062321524713,
-        "ci_lo_vs_random": -0.0008377181727405242,
+        "ci_lo_vs_destroyed": -0.0019470612426589966,
+        "ci_lo_vs_random": -0.0006195703857100586,
         "gap": null,
         "r2_linear": -0.025526606234376414,
         "r2_mlp": -1.4795727635135956,
@@ -274,8 +414,8 @@
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 137.06640698241856,
-        "ci_lo_vs_random": 203.67779241684997,
+        "ci_lo_vs_destroyed": 151.00791126039664,
+        "ci_lo_vs_random": 227.46297610153562,
         "gap": null,
         "r2_linear": 0.011468952879493566,
         "r2_mlp": -2.1748296268187652,
@@ -284,8 +424,8 @@
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 581700.7559665005,
-        "ci_lo_vs_random": 1451092.8258265643,
+        "ci_lo_vs_destroyed": 559088.1766714981,
+        "ci_lo_vs_random": 1658001.0126175368,
         "gap": null,
         "r2_linear": 0.6412879572814043,
         "r2_mlp": -0.720010491044559,
@@ -294,8 +434,8 @@
       },
       {
         "beats_controls": false,
-        "ci_lo_vs_destroyed": -0.0003644061622889134,
-        "ci_lo_vs_random": 0.001445991811663288,
+        "ci_lo_vs_destroyed": -0.003355846921044248,
+        "ci_lo_vs_random": 0.018196583126160792,
         "gap": null,
         "r2_linear": 0.004331432626917597,
         "r2_mlp": -0.21279549714772106,
@@ -304,8 +444,8 @@
       },
       {
         "beats_controls": false,
-        "ci_lo_vs_destroyed": -371.6045046716578,
-        "ci_lo_vs_random": 18.922876507051274,
+        "ci_lo_vs_destroyed": -79.55104820715395,
+        "ci_lo_vs_random": 799.3543767718684,
         "gap": null,
         "r2_linear": 0.002894174712400721,
         "r2_mlp": -0.11200175645794119,
@@ -314,8 +454,8 @@
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 3.9961224103461648,
-        "ci_lo_vs_random": 199381.00861007575,
+        "ci_lo_vs_destroyed": 4.159732595815536,
+        "ci_lo_vs_random": 221513.24545858623,
         "gap": null,
         "r2_linear": 0.8906843263183519,
         "r2_mlp": 0.7551431263719465,
@@ -324,8 +464,8 @@
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 675.1034405380889,
-        "ci_lo_vs_random": 19977962.294361748,
+        "ci_lo_vs_destroyed": 740.0740084452744,
+        "ci_lo_vs_random": 21749195.71898242,
         "gap": null,
         "r2_linear": 0.9095749929371003,
         "r2_mlp": 0.9359539686556699,
@@ -334,8 +474,8 @@
       },
       {
         "beats_controls": false,
-        "ci_lo_vs_destroyed": -0.0017587105134871039,
-        "ci_lo_vs_random": 5.264884645625377,
+        "ci_lo_vs_destroyed": -0.0016549338458480907,
+        "ci_lo_vs_random": 5.182069955116655,
         "gap": null,
         "r2_linear": -0.03277579020859589,
         "r2_mlp": -1.7464609693937825,
@@ -344,8 +484,8 @@
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 1.133217994483271,
-        "ci_lo_vs_random": 16640.62427718774,
+        "ci_lo_vs_destroyed": 1.0690053556602095,
+        "ci_lo_vs_random": 17052.72714546266,
         "gap": null,
         "r2_linear": 0.07255464109208831,
         "r2_mlp": -2.8285276908706223,
@@ -354,8 +494,8 @@
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 5657.782032984169,
-        "ci_lo_vs_random": 28393369.159369964,
+        "ci_lo_vs_destroyed": 6059.783768791834,
+        "ci_lo_vs_random": 28522163.31649657,
         "gap": null,
         "r2_linear": 0.6543578024806522,
         "r2_mlp": -0.32739158575593974,
@@ -363,9 +503,9 @@
         "view": "learned_state"
       },
       {
-        "beats_controls": true,
-        "ci_lo_vs_destroyed": 0.0017807794280981849,
-        "ci_lo_vs_random": 98.25444140287951,
+        "beats_controls": false,
+        "ci_lo_vs_destroyed": -0.008872180232247347,
+        "ci_lo_vs_random": 101.88561388813694,
         "gap": null,
         "r2_linear": 0.001586462056337501,
         "r2_mlp": -0.24165922443573162,
@@ -374,8 +514,8 @@
       },
       {
         "beats_controls": false,
-        "ci_lo_vs_destroyed": 66.70802891645944,
-        "ci_lo_vs_random": 2725154.5349583565,
+        "ci_lo_vs_destroyed": -415.55782550053397,
+        "ci_lo_vs_random": 3043759.3091032477,
         "gap": null,
         "r2_linear": -0.00040934199960873663,
         "r2_mlp": -0.165362546471975,
@@ -384,8 +524,8 @@
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 1105.4409684967193,
-        "ci_lo_vs_random": 828837.817677621,
+        "ci_lo_vs_destroyed": 1146.9071626702282,
+        "ci_lo_vs_random": 861202.5205536581,
         "gap": null,
         "r2_linear": 0.890730363959831,
         "r2_mlp": 0.7822557497063338,
@@ -394,8 +534,8 @@
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 127153.6881905916,
-        "ci_lo_vs_random": 107035529.29195064,
+        "ci_lo_vs_destroyed": 132793.55664071508,
+        "ci_lo_vs_random": 100417131.83284928,
         "gap": null,
         "r2_linear": 0.9046058990513205,
         "r2_mlp": 0.8565697113513175,
@@ -404,8 +544,8 @@
       },
       {
         "beats_controls": false,
-        "ci_lo_vs_destroyed": -0.0017054814480500925,
-        "ci_lo_vs_random": 4.220943917730027,
+        "ci_lo_vs_destroyed": -0.0018731189144291914,
+        "ci_lo_vs_random": 3.9870308637289065,
         "gap": null,
         "r2_linear": -0.03011085582525519,
         "r2_mlp": -1.2515323305661559,
@@ -414,8 +554,8 @@
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 518.7681623978867,
-        "ci_lo_vs_random": 399824.6541024385,
+        "ci_lo_vs_destroyed": 518.4904657878482,
+        "ci_lo_vs_random": 403848.32796628785,
         "gap": null,
         "r2_linear": 0.1642627890124858,
         "r2_mlp": -2.459451406087314,
@@ -424,8 +564,8 @@
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 21968932.219124593,
-        "ci_lo_vs_random": 14976019684.672253,
+        "ci_lo_vs_destroyed": 20093676.80513498,
+        "ci_lo_vs_random": 15745719508.925856,
         "gap": null,
         "r2_linear": 0.639732639823956,
         "r2_mlp": -0.5011059452573592,
@@ -434,8 +574,8 @@
       },
       {
         "beats_controls": false,
-        "ci_lo_vs_destroyed": -0.00933220442521465,
-        "ci_lo_vs_random": 82.62732776062882,
+        "ci_lo_vs_destroyed": -0.009288795936653481,
+        "ci_lo_vs_random": 78.0777963495022,
         "gap": null,
         "r2_linear": -0.0027250533894256357,
         "r2_mlp": -0.28473988089617186,
@@ -444,8 +584,8 @@
       },
       {
         "beats_controls": false,
-        "ci_lo_vs_destroyed": -417.8750529764022,
-        "ci_lo_vs_random": 1411606.4414488012,
+        "ci_lo_vs_destroyed": -263.3986935513174,
+        "ci_lo_vs_random": 1294991.3976702283,
         "gap": null,
         "r2_linear": -0.0043129192503494895,
         "r2_mlp": -0.11393066318020151,
@@ -454,8 +594,8 @@
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 0.28542092354960114,
-        "ci_lo_vs_random": 116.02497010895125,
+        "ci_lo_vs_destroyed": 0.2864415072503447,
+        "ci_lo_vs_random": 113.21025613979486,
         "gap": null,
         "r2_linear": 0.2186469972599827,
         "r2_mlp": 0.24148677616093372,
@@ -464,8 +604,8 @@
       },
       {
         "beats_controls": false,
-        "ci_lo_vs_destroyed": 1.592951763858831,
-        "ci_lo_vs_random": 1434.4378309902859,
+        "ci_lo_vs_destroyed": 0.0014368496368430512,
+        "ci_lo_vs_random": 1404.9439098410091,
         "gap": null,
         "r2_linear": -0.012413945817096872,
         "r2_mlp": -0.00679289059817445,
@@ -474,8 +614,8 @@
       },
       {
         "beats_controls": false,
-        "ci_lo_vs_destroyed": -7.681275352506454e-05,
-        "ci_lo_vs_random": 0.0032716185030285515,
+        "ci_lo_vs_destroyed": -0.00010574302408636248,
+        "ci_lo_vs_random": 0.003040103379333335,
         "gap": null,
         "r2_linear": -0.005823594399064991,
         "r2_mlp": -0.027936189740467743,
@@ -484,8 +624,8 @@
       },
       {
         "beats_controls": false,
-        "ci_lo_vs_destroyed": -0.00012006445754278347,
-        "ci_lo_vs_random": 0.0071557547277654,
+        "ci_lo_vs_destroyed": -0.00010608216561272397,
+        "ci_lo_vs_random": 0.005909587035487941,
         "gap": null,
         "r2_linear": -0.002755902836672597,
         "r2_mlp": -0.024471542805186264,
@@ -494,8 +634,8 @@
       },
       {
         "beats_controls": false,
-        "ci_lo_vs_destroyed": -46.88315269720857,
-        "ci_lo_vs_random": 6021.386678420767,
+        "ci_lo_vs_destroyed": -18.81973982538998,
+        "ci_lo_vs_random": 5672.881169874126,
         "gap": null,
         "r2_linear": -0.005411335048719934,
         "r2_mlp": -37.38296091170097,
@@ -504,8 +644,8 @@
       },
       {
         "beats_controls": false,
-        "ci_lo_vs_destroyed": -0.0034756405760847883,
-        "ci_lo_vs_random": 0.1218045991786817,
+        "ci_lo_vs_destroyed": -0.002857211354578123,
+        "ci_lo_vs_random": 0.16921528595042587,
         "gap": null,
         "r2_linear": 0.000830106403513442,
         "r2_mlp": -0.01141324960867518,
@@ -514,8 +654,8 @@
       },
       {
         "beats_controls": false,
-        "ci_lo_vs_destroyed": -122.74913482897202,
-        "ci_lo_vs_random": 3115.6801876595327,
+        "ci_lo_vs_destroyed": -142.82939536229756,
+        "ci_lo_vs_random": 2902.158377495654,
         "gap": null,
         "r2_linear": -0.0038371986023100213,
         "r2_mlp": -1.8012380740503087,
@@ -524,8 +664,8 @@
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 0.6929280228390186,
-        "ci_lo_vs_random": 3003.4931589682365,
+        "ci_lo_vs_destroyed": 0.8044882083140104,
+        "ci_lo_vs_random": 2993.688517314907,
         "gap": null,
         "r2_linear": 0.5145995887060483,
         "r2_mlp": 0.5401330756864496,
@@ -534,8 +674,8 @@
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 58.11084934272558,
-        "ci_lo_vs_random": 359981.4257434061,
+        "ci_lo_vs_destroyed": 57.09198053252823,
+        "ci_lo_vs_random": 365577.76701263495,
         "gap": null,
         "r2_linear": 0.2053394974514865,
         "r2_mlp": 0.2403133789206675,
@@ -544,8 +684,8 @@
       },
       {
         "beats_controls": false,
-        "ci_lo_vs_destroyed": -0.0006501692193139432,
-        "ci_lo_vs_random": 1.6866051337764434,
+        "ci_lo_vs_destroyed": -0.0008909738266588464,
+        "ci_lo_vs_random": 1.6733820640153563,
         "gap": null,
         "r2_linear": -0.009610306996512774,
         "r2_mlp": -0.11033762980350592,
@@ -554,8 +694,8 @@
       },
       {
         "beats_controls": false,
-        "ci_lo_vs_destroyed": -1.4790725356606541e-05,
-        "ci_lo_vs_random": 0.25465563961175036,
+        "ci_lo_vs_destroyed": -6.017607892668912e-05,
+        "ci_lo_vs_random": 0.23846564372607448,
         "gap": null,
         "r2_linear": 0.0025139636047698533,
         "r2_mlp": -0.13926519655249447,
@@ -564,8 +704,8 @@
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 1754.9029108669758,
-        "ci_lo_vs_random": 56535430.05738091,
+        "ci_lo_vs_destroyed": 2015.9361342161246,
+        "ci_lo_vs_random": 55974961.16445548,
         "gap": null,
         "r2_linear": 0.04013921474111537,
         "r2_mlp": -7.250793987624412,
@@ -574,8 +714,8 @@
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 0.00795598708993099,
-        "ci_lo_vs_random": 159.87216670464647,
+        "ci_lo_vs_destroyed": 0.0012781627811914865,
+        "ci_lo_vs_random": 153.42327521546403,
         "gap": null,
         "r2_linear": 0.0016712950125528092,
         "r2_mlp": -0.06524052620718557,
@@ -584,8 +724,8 @@
       },
       {
         "beats_controls": false,
-        "ci_lo_vs_destroyed": -240.25334344203705,
-        "ci_lo_vs_random": 3469313.4690708783,
+        "ci_lo_vs_destroyed": -77.23174448380391,
+        "ci_lo_vs_random": 3207626.5806859382,
         "gap": null,
         "r2_linear": -0.005122392702114675,
         "r2_mlp": -0.23963183913847486,
@@ -622,10 +762,10 @@
     "working": false
   },
   "_meta": {
-    "behavior_hash": "16853fe6633d8958",
+    "behavior_hash": "50b60942ed7ae205",
     "command": "measure_views_law.py --products /home/austin_whaley/wonderland_work/cfm_views --demo /home/austin_whaley/wonderland_work/demo",
-    "generated_at": "2026-10-29T19:11:57+00:00",
-    "git_commit": "2bf2fb682099401d82f7bc3b77436c42ae9016b4",
+    "generated_at": "2026-10-29T19:54:24+00:00",
+    "git_commit": "92184b724b2a62e3e3581667cf0a5d268052e354",
     "producer": "measure_views_law.py"
   }
 }

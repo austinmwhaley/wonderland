@@ -869,6 +869,98 @@ def _publish_response_outlet(cfg, model, df, keys, split, store) -> dict | None:
     return head
 
 
+def _publish_ledger_outlet(cfg, model, vocab, df, keys, split, store) -> dict | None:
+    """Build and publish the `measure` outlet (SPINE §5 / DEC-383): the ledger, outside the net.
+
+    The recipe already existed (`measure_state.MeasureBuilder`) but was never written into a
+    release, so the wall advertised `NOT SERVED: measure` while the numbers were one pass away.
+    This publishes them AND runs the five guardrails: G1–G4 are HARD (a ledger whose recipe was
+    hand-picked, peeked forward, read the targets, or fed the brain is not a ledger — it is PATH
+    A wearing a bucket name, so publishing it would be laundering), and the release refuses it
+    rather than shipping that. G5 is a soft receipt: the attribution row is produced by the card,
+    so before the card has run it is an honest gap, not a defect in the data.
+
+    Returns the stamp payload (vocabulary + guardrail receipts) or None to advertise not_served.
+    """
+    import gc
+
+    from looking_glass import gpu_budget, ledger_state
+
+    # The `products` command calls build_products with vocab=None (the frozen artifact carries
+    # its own), so the model is the authority here rather than a second source to disagree with.
+    vocab = vocab if vocab is not None else getattr(model, "vocab", None)
+    if vocab is None:
+        raise LookupError(
+            "ledger: neither a vocabulary argument nor model.vocab — nothing to tally against"
+        )
+    # full history, every customer with at least one event — the ledger is an odometer over
+    # everything visible before the cut, NOT the encoder's seq_len window (calling a windowed
+    # tally "exact" would be a false claim of the first order)
+    seqs = build_sequences(df, keys, cfg, split, with_anchors=False, min_events=1)
+    if not seqs:
+        raise LookupError("ledger: no customer has a single event, so there is nothing to tally")
+    train_keys = [k for k in keys if split.get(k, "A") == "A"]
+    cut = as_of_epoch(cfg.as_of) if getattr(cfg, "as_of", None) else None
+    builder, vocab_receipt = ledger_state.fit_vocabulary(
+        seqs, vocab, train_keys, coverage=getattr(cfg, "ledger_coverage", None), as_of=cut
+    )
+    rows = ledger_state.publish_rows(seqs, builder, vocab, version=cfg.tag, as_of=cut)
+    # The audit sees the SAME adapter output the publisher used, so it is auditing the artifact
+    # and not a second, more convenient reading of the stream — and it runs BEFORE the write,
+    # because a ledger that fails its own audit must never be readable at all.
+    tuples_a = ledger_state.seqs_to_tuples(
+        [s for s in seqs if split.get(s["customer"], "A") == "A"], vocab, as_of=cut
+    )
+    receipts = ledger_state.guardrails(
+        builder,
+        vocab,
+        tuples_a,
+        cfg,
+        train_keys,
+        target_names=tuple(getattr(cfg, "exogenous_events", ()))
+        + tuple(getattr(cfg, "action_fields", ())),
+        as_of=cut,
+    )
+    hard_names = ("G1_mechanical", "G2_history_only", "G3_target_blind", "G4_not_a_brain_input")
+    hard = [g for g in hard_names if not receipts[g]["working"]]
+    if hard:
+        raise RuntimeError(
+            "ledger refused: "
+            + "; ".join(f"{g} — {receipts[g]['evidence']}" for g in hard)
+            + " (the guardrails are what make this a ledger rather than a hand-built table)"
+        )
+    n = store.bulk_view_rows(rows)
+    payload = {
+        "kind": "ledger",
+        "version": str(cfg.tag),
+        "vocabulary": vocab_receipt,
+        "slices": {p: [list(r) for r in runs] for p, runs in builder.part_slices().items()},
+        "n_rows": n,
+        "guardrails": receipts,
+        # G1–G4 are hard (the release refused above if any failed). G5 is produced LATER, by the
+        # card, so it is reported as pending rather than folded into one green/red.
+        "working": all(receipts[g]["working"] for g in hard_names),
+        "pending": sorted(g for g, r in receipts.items() if r.get("pending")),
+    }
+    seqs = rows = tuples_a = None
+    gc.collect()
+    gpu_budget.release(cfg, "products_ledger")
+    print(
+        f"[ledger] published {payload['vocabulary']['dim']}-d measure view over "
+        f"{len(view_layout.PART_ORDER['measure'])} parts ({n} rows); "
+        f"{payload['vocabulary']['n_fields_vocabularied']}"
+        f"/{payload['vocabulary']['n_fields_discovered']} fields vocabularied at coverage "
+        f"{payload['vocabulary']['coverage']}; guardrails "
+        + " ".join(
+            f"{g.split('_')[0]}="
+            + ("ok" if r["working"] else "pending" if r.get("pending") else "FAIL")
+            for g, r in receipts.items()
+        ),
+        flush=True,
+    )
+    return payload
+
+
 def build_products(cfg, model, vocab, df, keys, split):
     # The `products` command runs this WITHOUT train_cfm, so the co-tenant cap must be
     # applied here too (idempotent when train_cfm already did it). DEC-423.
@@ -974,7 +1066,23 @@ def build_products(cfg, model, vocab, df, keys, split):
             flush=True,
         )
         head = None
-    _fp = view_layout.faceplate(model, cfg, head=head)
+    # ------------------------------------------------------------------- the `measure` outlet
+    # SPINE §5 / DEC-383: the ledger as a named companion. Additive for the same reason the
+    # response outlet is — a release that cannot satisfy the guardrails ships without it and
+    # says so, rather than shipping a tally nobody audited.
+    ledger = None
+    try:
+        ledger = _publish_ledger_outlet(cfg, model, vocab, df, keys, split, store)
+    except Exception as exc:
+        import traceback
+
+        print(
+            f"[ledger] outlet NOT published: {type(exc).__name__}: {exc} — the faceplate "
+            f"will advertise it as not_served\n{traceback.format_exc()}",
+            flush=True,
+        )
+        ledger = None
+    _fp = view_layout.faceplate(model, cfg, head=head, ledger=ledger)
     n_view += store.bulk_view_rows(view_rows)
     store.write_faceplate(_fp)
     store.verify_outlets(_fp)

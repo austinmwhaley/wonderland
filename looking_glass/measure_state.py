@@ -33,6 +33,28 @@ class MeasureSpec:
 class MeasureBuilder:
     """Fixed-width exact measure vector per customer history."""
 
+    @staticmethod
+    def derive_keep(counts, coverage: float):
+        """THE mechanical vocabulary recipe: coverage-capped, mass-budgeted, from counts alone.
+
+        Extracted from `__init__` so the G1 guardrail can recompute a published vocabulary from
+        the data and compare — a persisted or hand-edited vocabulary that disagrees with what the
+        formula produces is exactly the "PATH A smuggled back in" failure G1 exists to catch.
+        One definition, not a second copy in the audit.
+        """
+        counts = np.asarray(counts, dtype=np.int64)
+        nonzero = np.flatnonzero(counts > 0)
+        if len(nonzero) == 0:
+            return np.array([], dtype=np.int64)
+        order = nonzero[np.argsort(counts[nonzero])[::-1]]
+        cumulative = np.cumsum(counts[order]) / max(float(counts.sum()), 1.0)
+        n_keep = int(np.searchsorted(cumulative, coverage, side="left") + 1)
+        # Bounded vocabulary: a high-cardinality identifier must not dominate the
+        # state. Budget derived from the field's observed mass.
+        budget = max(8, int(np.sqrt(max(int(counts.sum()), 1))))
+        n_keep = min(n_keep, budget)
+        return np.sort(order[:n_keep]).astype(np.int64)
+
     def __init__(self, seqs, train_keys, vs, coverage: float = 0.99):
         self.vs = vs
         self.coverage = float(coverage)
@@ -47,18 +69,7 @@ class MeasureBuilder:
                 col = col[(col > 0) & (col < size)]
                 if len(col):
                     counts += np.bincount(col, minlength=size)[:size]
-            nonzero = np.flatnonzero(counts > 0)
-            if len(nonzero) == 0:
-                keep.append(np.array([], dtype=np.int64))
-                continue
-            order = nonzero[np.argsort(counts[nonzero])[::-1]]
-            cumulative = np.cumsum(counts[order]) / max(float(counts.sum()), 1.0)
-            n_keep = int(np.searchsorted(cumulative, self.coverage, side="left") + 1)
-            # Bounded vocabulary: a high-cardinality identifier must not dominate the
-            # state. Budget derived from the field's observed mass.
-            budget = max(8, int(np.sqrt(max(int(counts.sum()), 1))))
-            n_keep = min(n_keep, budget)
-            keep.append(np.sort(order[:n_keep]).astype(np.int64))
+            keep.append(self.derive_keep(counts, self.coverage))
         self.keep = tuple(keep)
         self.dim = int(self.n_et + 1 + sum(len(k) + 3 for k in self.keep) + 6 * self.n_numeric)
         self.spec = MeasureSpec(
@@ -68,6 +79,37 @@ class MeasureBuilder:
             n_event_types=self.n_et,
             dim=self.dim,
         )
+
+    def part_slices(self) -> dict:
+        """{part name: [(lo, hi), ...]} — THE definition of the column layout `transform` makes.
+
+        Owned by the builder rather than by the publisher because the builder IS the recipe: a
+        second list of widths somewhere else is a second definition, and the two drift (the
+        ragged-`shape` bug of DEC-425 was exactly that class of defect). The per-field blocks
+        are INTERLEAVED in `transform` (field j's share, missing, richness, then field j+1), so
+        a part is a LIST of runs, not one span — flattening them into a single range would
+        silently publish the wrong numbers.
+        """
+        off = self.n_et + 1
+        runs = {"category_share": [], "missing_rate": [], "richness": []}
+        for keep in self.keep:
+            width = len(keep) + 1
+            runs["category_share"].append((off, off + width))
+            off += width
+            runs["missing_rate"].append((off, off + 1))
+            off += 1
+            runs["richness"].append((off, off + 1))
+            off += 1
+        runs["event_mass"] = [(0, self.n_et)]
+        runs["total_events"] = [(self.n_et, self.n_et + 1)]
+        runs["numeric_stats"] = [(off, off + 6 * self.n_numeric)]
+        off += 6 * self.n_numeric
+        if off != self.dim:
+            raise RuntimeError(
+                f"ledger layout {off} != derived dim {self.dim} — the recipe and its published "
+                f"column widths disagree; fix the recipe, do not restamp the artifact"
+            )
+        return runs
 
     def transform(self, seqs, keys):
         """Return (len(keys), dim) float32; one row per requested key."""

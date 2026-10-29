@@ -32,8 +32,10 @@ from __future__ import annotations
 # contract change and must be recorded in DECISIONS.md.
 FULL_ORDER = ("shape", "learned_state", "forecast", "uncertainty", "heads")
 
-#: Every outlet the project has approved. `response`/`measure` are declared-but-not-emitted
-#: by this producer; `DECLARED` is what the faceplate and the card must account for.
+#: Every outlet the project has approved. A view is `DECLARED` whether or not this producer
+#: writes it — `response` (DEC-426) and `measure` (DEC-383) are emitted only when their own
+#: producers succeed, and `describe()` moves them between `emitted` and `not_served` from what
+#: was actually written, never from what was intended.
 DECLARED = ("shape", "learned_state", "forecast", "uncertainty", "heads", "response", "measure")
 
 #: What each approved outlet is FOR (SPINE §1 consumer trace). The card prints this; it is
@@ -92,6 +94,11 @@ PART_ORDER = {view: [name for name, _ in spec] for view, spec in _PARTS.items()}
 from looking_glass.response_outlet import PARTS as RESPONSE_PARTS  # noqa: E402
 
 PART_ORDER["response"] = list(RESPONSE_PARTS)
+# Likewise the ledger (DEC-383): its parts are the ledger's own column contract, and the
+# widths come from the recipe itself (`MeasureBuilder.part_slices`), never from a list here.
+from looking_glass.ledger_state import PARTS as LEDGER_PARTS  # noqa: E402
+
+PART_ORDER["measure"] = list(LEDGER_PARTS)
 
 
 def _parts_for(model):
@@ -145,16 +152,17 @@ def emit(model, y, h) -> dict:
     }
 
 
-def describe(model, head=None) -> dict:
+def describe(model, head=None, ledger=None) -> dict:
     """{view: dim} plus the part breakdown, DERIVED by running the heads on a zero state.
 
     Zeroes are used rather than real data because only the shapes are wanted: this must not
     depend on having a stream open, and a zero input cannot make a Linear/GELU head return
     a different width.
 
-    `head` is the fitted `response` head (DEC-426). Passing it is what MOVES `response` from
-    `declared_not_emitted` to `emitted`: the wall advertises a socket only when the producer
-    actually wrote it, so the outlet can never be advertised into existence.
+    `head` is the fitted `response` head (DEC-426) and `ledger` the fitted ledger vocabulary
+    (DEC-383). Passing them is what MOVES those views from `declared_not_emitted` to `emitted`:
+    the wall advertises a socket only when the producer actually wrote it, so an outlet can
+    never be advertised into existence.
     """
     import torch
 
@@ -167,6 +175,12 @@ def describe(model, head=None) -> dict:
     if head:
         views["response"] = len(RESPONSE_PARTS)
         parts_by_view["response"] = {p: 1 for p in RESPONSE_PARTS}
+    if ledger:
+        # widths come from the recipe, so the faceplate cannot describe a layout the ledger
+        # does not build (the same guard `verify_outlets` checks against, from the other side)
+        widths = {p: sum(hi - lo for lo, hi in runs) for p, runs in ledger["slices"].items()}
+        views["measure"] = int(sum(widths.values()))
+        parts_by_view["measure"] = widths
     emitted = sorted(views)
     return {
         "views": views,
@@ -186,14 +200,14 @@ def _concat(group: dict) -> dict:
     return {v: torch.cat([p for p in g.values()], dim=-1) for v, g in group.items()}
 
 
-def faceplate(model, cfg, head=None) -> dict:
+def faceplate(model, cfg, head=None, ledger=None) -> dict:
     """The self-describing stamp a consumer validates against (Outlet Standard O4).
 
     Fan-out to thousands of uncoordinated consumers is why this exists: each one
     self-checks the columns it was told to read and refuses locally, rather than asking the
     encoder a question it cannot answer (DEC-405 rule 4).
     """
-    d = describe(model, head=head)
+    d = describe(model, head=head, ledger=ledger)
     return {
         "kind": "view_faceplate",
         "version": str(cfg.tag),
@@ -210,4 +224,8 @@ def faceplate(model, cfg, head=None) -> dict:
         "response_calibration": (
             {k: v for k, v in head.items() if not k.startswith("_")} if head else None
         ),
+        # The ledger travels with its resolved vocabulary (so serving rebuilds it without a
+        # re-scan) AND with the G1-G5 receipts: a companion whose guardrails are unaudited is
+        # a companion that will eventually be mistaken for the brain.
+        "ledger": ledger,
     }
