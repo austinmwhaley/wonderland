@@ -364,3 +364,20 @@ def test_a_real_failure_outranks_a_vacuous_control(tmp_path):
     )
     _, info = JC.render(tmp_path, HASH)
     assert info["verdicts"][_ident(J.LEG_SUPERVISED, "brain")] == J.FAIL
+
+
+def test_an_empty_porcelain_means_clean_not_dirty():
+    """`git()` returns "?" when a command printed nothing; empty status IS the clean tree.
+
+    Observed on the real repo: with the card committed and nothing else modified, the card
+    rendered `dirty` — because the sentinel for "no output" was counted as a changed file. That is
+    the DEC-430 defect in its worse direction: not a flag that is always red, but one whose honest
+    value (clean) is unreachable, so a reader learns to ignore the single signal rule 6 has.
+    """
+    assert JC._worktree_dirty("") is False
+    assert JC._worktree_dirty("?") is False
+    # the card's own bytes never count: a render is allowed to rewrite them
+    assert JC._worktree_dirty(" M docs/JUDGE_CARD.md") is False
+    # a source edit does, and that is the whole point of the check
+    assert JC._worktree_dirty(" M scripts/judge_card.py") is True
+    assert JC._worktree_dirty("?? notes.md") is True

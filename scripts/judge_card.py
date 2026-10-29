@@ -69,6 +69,13 @@ def _worktree_dirty(status_porcelain: str) -> bool:
     rule 6 ("regenerated at a clean, recorded commit") was unreachable — a flag that can never
     say the truth is worse than no flag, because readers learn to ignore it.
     """
+    # `git()` returns "?" when a command produced NO output, and an empty `status --porcelain`
+    # IS the clean tree. Taking the sentinel at face value made every truly clean tree render
+    # `dirty` — the same "a flag that always says one thing is not a flag" defect DEC-430 removed
+    # for the card's own bytes, and it was worse this way round: the honest state was unreachable
+    # and a reader would learn to ignore the only signal rule 6 has.
+    if status_porcelain.strip() in ("", "?"):
+        return False
     return any(line.strip() and CARD_NAME not in line for line in status_porcelain.splitlines())
 
 
