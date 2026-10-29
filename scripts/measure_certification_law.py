@@ -155,6 +155,7 @@ def _diff_line(a: str, b: str) -> int:
 
 
 def main() -> int:
+    SR.ensure_boundary()
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--products", default=str(ROOT / "looking_glass/artifacts/cfm"))
     ap.add_argument("--demo", default=str(ROOT / "rabbit_hole/data"))
