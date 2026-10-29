@@ -169,14 +169,62 @@ def test_phase_receipts_accumulate_only_when_capped():
         assert gpu_budget.release(cfg, phase) is not None
     rec = gpu_budget.receipt(cfg)
     assert [p["phase"] for p in rec["phases"]] == ["train", "whiten_save"]
-    assert {
-        "peak_allocated_gb",
-        "peak_reserved_gb",
-        "peak_rss_gb",
-        "mem_available_gb",
-        "recap_budget_gb",
-        "recap_fraction",
-    } <= set(rec["phases"][0])
+    # an ordinary phase boundary records the peak and NOTHING else: no re-derivation
+    assert "recap_budget_gb" not in rec["phases"][0]
+
+
+@_NEEDS_CUDA
+def test_the_cap_is_re_derived_only_at_the_informed_moment(monkeypatch):
+    """`release` re-basing at every boundary means the guard takes a second opinion the run
+    never asked for — and at an abort boundary it invents a budget out of the wreckage of
+    the crash (measured 2026-10-29: 0.0 GB, on a run that had trained 99 steps fine)."""
+    cfg = CFMConfig()
+    cfg._gpu_budget_receipt = dict(_budget(), applied=True)
+    asked = []
+    monkeypatch.setattr(
+        gpu_budget, "enforce", lambda *a, **k: asked.append(k.get("rebase")) or _budget()
+    )
+    assert gpu_budget.release(cfg, "train") is not None
+    assert asked == []
+    gpu_budget.release(cfg, "pre_train", rebase=True)
+    assert asked == [True]
+
+
+@_NEEDS_CUDA
+def test_a_crash_receipt_never_replaces_the_crash(monkeypatch, capsys):
+    """`release(cfg, "train_aborted")` runs INSIDE an `except BaseException` handler. If it
+    raises there, the receipt eats the failure it was written to document and the loop
+    reports the wrong crash. It must record, warn, and stay silent about control flow."""
+    cfg = CFMConfig()
+    cfg._gpu_budget_receipt = dict(_budget(), applied=True)
+
+    def refuse(*a, **k):  # the re-derivation decides the run is unaffordable
+        raise SystemExit("gpu-budget: only 0.0 GB is left after the system floor")
+
+    monkeypatch.setattr(gpu_budget, "enforce", refuse)
+    boom = RuntimeError("the real crash (an OOM in the step loop)")
+    with pytest.raises(RuntimeError) as exc:
+        try:
+            raise boom
+        except BaseException:
+            gpu_budget.release(cfg, "train_aborted", rebase=True)
+            raise
+    assert exc.value is boom  # the original exception survives, unmodified
+    assert "RECAP skipped" in capsys.readouterr().out  # the refusal is reported, not swallowed
+    assert [p["phase"] for p in gpu_budget.receipt(cfg)["phases"]] == ["train_aborted"]
+
+
+@_NEEDS_CUDA
+def test_release_cannot_raise(monkeypatch, capsys):
+    """Total function by contract: a memory guard that can throw from a cleanup path turns
+    one failure into two, and the second one is the one you see."""
+    cfg = CFMConfig()
+    cfg._gpu_budget_receipt = dict(_budget(), applied=True)
+    monkeypatch.setattr(
+        torch.cuda, "memory_stats", lambda *a, **k: (_ for _ in ()).throw(RuntimeError("driver"))
+    )
+    assert gpu_budget.release(cfg, "train") is None
+    assert "release('train') failed" in capsys.readouterr().out  # reported, never silent
 
 
 @_NEEDS_CUDA
@@ -201,7 +249,7 @@ def test_rebase_re_derives_from_current_memory_and_keeps_history(monkeypatch):
 
 def test_floor_limit_and_reserve_are_config_not_code():
     cfg = CFMConfig()
-    assert (cfg.gpu_system_floor_gb, cfg.gpu_mem_limit_gb, cfg.gpu_reserve_gb) == (8.0, 0.0, 1.0)
+    assert (cfg.gpu_system_floor_gb, cfg.gpu_mem_limit_gb, cfg.gpu_reserve_gb) == (8.0, 0.0, 0.5)
     cfg.set_overrides = ["gpu_mem_limit_gb=18", "gpu_system_floor_gb=10", "gpu_reserve_gb=2"]
     # int literals into float fields must widen — the fix command this module prints says
     # `--set gpu_mem_limit_gb=20`, and a rejection there is a dead end.

@@ -211,12 +211,19 @@ def enforce(cfg, *, device: str | None = None, rebase: bool = False) -> dict:
     return rec
 
 
-def release(cfg, phase: str, *, reset_peak: bool = True) -> dict | None:
+def release(cfg, phase: str, *, reset_peak: bool = True, rebase: bool = False) -> dict | None:
     """Phase boundary: return cached segments to the driver and record the peak.
 
     Training, whitening, product build and portfolio grading have completely different
     allocation shapes; without this the allocator hoards the training peak right through
     the bulk-write phases (fragmentation inflates `reserved` and starves the co-tenant).
+
+    `rebase=True` re-derives the cap for the NEXT phase from what is free NOW. It is
+    legitimate at exactly one call site — the informed moment before the step loop, where
+    the stream is resident and the allocator has just been emptied. Everywhere else it is
+    a lie: at an *abort* boundary MemAvailable is at its lowest precisely because the
+    phase blew up, so re-deriving there invents a budget the run never needed and (as
+    measured 2026-10-29) can refuse the run while the real crash goes unreported.
     """
     try:
         import torch
@@ -249,13 +256,38 @@ def release(cfg, phase: str, *, reset_peak: bool = True) -> dict | None:
             f"avail={rec['mem_available_gb']} GB",
             flush=True,
         )
-        # This is the informed moment: the allocator is empty and the host footprint of the
-        # phase just finished is real, so the cap for the NEXT phase is re-derived from what
-        # is actually free rather than from what was free at launch.
-        recap = enforce(cfg, rebase=True)
-        rec["recap_budget_gb"], rec["recap_fraction"] = recap["budget_gb"], recap["fraction"]
+        # The informed moment only when the caller asked for it (see the docstring): the
+        # allocator is empty and the host footprint of the phase just finished is real.
+        if rebase:
+            # A phase-boundary re-derivation may TIGHTEN the cap, but it may never abort a
+            # run that was viable at launch: what is free here reflects what the finished
+            # phase left behind, not what the pool can supply. Refusing here is how a guard
+            # starts rejecting work it can genuinely do — measured 2026-10-29, a cap
+            # re-derived at an abort boundary came out at 0.0 GB and killed a run that had
+            # already trained 99 steps, masking the real crash. The floor is the watchdog's
+            # job; report and continue.
+            try:
+                recap = enforce(cfg, rebase=True)
+            except SystemExit as exc:
+                print(f"[gpu-budget] RECAP skipped, keeping the current cap: {exc}", flush=True)
+            else:
+                rec["recap_budget_gb"], rec["recap_fraction"] = (
+                    recap["budget_gb"],
+                    recap["fraction"],
+                )
+                # The next phase must at least be able to reproduce this one. If it cannot,
+                # say so HERE rather than discovering it as an OOM three phases later.
+                if recap["budget_gb"] < rec["peak_allocated_gb"]:
+                    print(
+                        f"[gpu-budget] WARN re-derived cap {recap['budget_gb']} GB is below "
+                        f"the {phase} peak {rec['peak_allocated_gb']} GB — the next phase will "
+                        "not fit; raise the pool share or shrink the phase",
+                        flush=True,
+                    )
         return rec
-    except Exception:
+    except Exception as exc:
+        # A silent guard is indistinguishable from a dead one, and this one guards memory.
+        print(f"[gpu-budget] release({phase!r}) failed: {type(exc).__name__}: {exc}", flush=True)
         return None
 
 

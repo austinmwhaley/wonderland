@@ -417,11 +417,14 @@ class CFMConfig:
         8.0  # operator-set 2026-10-29: OS + desktop measured ~8 GB resident
     )
     # Device memory the process holds OUTSIDE the capped allocator (CUDA context + cuBLAS /
-    # cuDNN workspaces), so it must come out of the budget too. principle-ok: documented
-    # conservative fallback — measured breach was 0.3 GB over a 21.1 GB cap (2026-10-29, the
-    # run that drove MemAvailable to 7.7 GB); 1.0 GB is the next round unit above it, and
-    # the external watchdog still enforces the floor if a run needs more.
-    gpu_reserve_gb: float = 1.0
+    # cuDNN / Triton workspaces), so it must come out of the budget too. principle-ok:
+    # documented conservative fallback, now measured twice on the production step loop
+    # (2026-10-29): (MemAvailable at the re-base) − (allocator peak) − (MemAvailable at the
+    # train peak) = 0.31 GB, and the one historical breach was 0.3 GB over a 21.1 GB cap.
+    # 0.5 GB is the next round unit above the worst measurement, which leaves ~0.5 GB more of
+    # the pool for the step loop — the difference between fitting and refusing. The hard
+    # stop is not this number: `scripts/gpu_watchdog.py` SIGTERMs at the system floor.
+    gpu_reserve_gb: float = 0.5
     # Activation checkpointing (DEC-423): recompute the MultiScaleSSM scan in backward instead
     # of holding its activations. The attribute CE over [B,T,F,V] logits is the dominant
     # activation, and on a unified-memory box held activations are taken from the same pool the

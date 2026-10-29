@@ -11,6 +11,7 @@ import torch
 from looking_glass.cfm_config import CFMConfig, LN2, _to_epoch, as_of_epoch
 from looking_glass.cfm_data import build_sequences
 from looking_glass.cfm_model import CFM
+from looking_glass import view_layout
 
 
 # ---------------------------------------------------------------------------
@@ -399,6 +400,19 @@ class StateStore:
             "as_of_epoch DOUBLE, version TEXT, n_absorbed BIGINT, n_idle BIGINT, "
             "n_embeddings BIGINT, device TEXT, wall_seconds DOUBLE, ran_at TIMESTAMP)"
         )
+        # PUBLISHED OUTLETS (SPINE §5, DEC-424): the named views the frozen artifact owes
+        # its consumers. Long format, one row per customer x view x PART — a card row can
+        # attribute a score to a part and the conformance kit can zero or permute exactly
+        # one of them (DEC-405 rule 6). `full` is deliberately NOT stored: it is the
+        # documented concatenation of `view_layout.FULL_ORDER`, a bundle and not content.
+        self.con.execute(
+            "CREATE TABLE IF NOT EXISTS view_embeddings ("
+            "customer_key TEXT, as_of_epoch DOUBLE, version TEXT, view TEXT, part TEXT, "
+            "dim INT, embedding FLOAT[])"
+        )
+        # The faceplate (Outlet Standard O4): the artifact describes itself so thousands of
+        # consumers can self-validate and locally refuse a stale or short artifact.
+        self.con.execute("CREATE TABLE IF NOT EXISTS view_faceplate (version TEXT, stamp JSON)")
 
     def record_receipt(self, epoch, n_absorbed, n_idle, n_embeddings, device, wall_seconds):
         """One insert path for state_job_receipts (daily job AND the encoder's
@@ -673,6 +687,66 @@ class StateStore:
             finally:
                 self.con.unregister("_br")
 
+    def bulk_view_rows(self, view_rows) -> int:
+        """Insert one bounded buffer of outlet rows (the caller owns the buffer budget —
+        see `build_products`, which flushes on a size derived from the pool).
+
+        Chunking matters: polars materialises the whole list of dicts before DuckDB sees any
+        of it, and on a pool shared with an LLM server an unbounded build buffer is what puts
+        `MemAvailable` under the system floor (measured 2026-10-29: the products phase reached
+        6.7 GB against the 8.0 floor and the watchdog killed the run).
+        """
+        import polars as pl
+
+        if not view_rows:
+            return 0
+        df = pl.DataFrame(view_rows)
+        self.con.register("_vr", df)
+        try:
+            self.con.execute("INSERT INTO view_embeddings SELECT * FROM _vr")
+        finally:
+            self.con.unregister("_vr")
+        return len(view_rows)
+
+    def verify_outlets(self, stamp: dict) -> None:
+        """Refuse a release whose published columns disagree with the artifact's own stamp.
+
+        This is the invariant the first build of DEC-424 violated: the heads were fed the
+        PER-STEP readout, so a view's width varied with each customer's sequence length and
+        the table silently published ragged vectors. A consumer validating against the
+        faceplate would then have read something the stamp never described (O4), so this is
+        checked in SQL against the stored arrays and RAISES — a bad artifact must not be
+        readable at all (Principle 7: reject, do not clamp).
+        """
+        bad = []
+        for view, part, n_distinct, lo, hi in self.con.execute(
+            "SELECT view, part, count(DISTINCT array_length(embedding)), "
+            "min(array_length(embedding)), max(array_length(embedding)) "
+            "FROM view_embeddings GROUP BY view, part ORDER BY view, part"
+        ).fetchall():
+            declared = ((stamp.get("parts") or {}).get(view) or {}).get(part)
+            if n_distinct != 1:
+                bad.append(f"{view}.{part}: ragged widths {lo}..{hi}")
+            elif declared is not None and hi != int(declared):
+                bad.append(f"{view}.{part}: stored {hi} != faceplate {declared}")
+        if bad:
+            raise RuntimeError(
+                "published outlets contradict the faceplate: "
+                + "; ".join(bad)
+                + " — the producer is feeding the heads the wrong readout; fix the producer, "
+                "do not restamp the artifact"
+            )
+
+    def write_faceplate(self, stamp: dict) -> None:
+        """Stamp the artifact with its own column inventory (O4). Rewritten per release, so
+        the faceplate can never be newer or older than the tables it describes."""
+        import json
+
+        self.con.execute("DELETE FROM view_faceplate")
+        self.con.execute(
+            "INSERT INTO view_faceplate VALUES (?, ?)", [str(stamp["version"]), json.dumps(stamp)]
+        )
+
     def count(self):
         s = self.con.execute("SELECT count(*) FROM customer_state").fetchone()[0]
         t = self.con.execute("SELECT count(*) FROM anchor_embeddings").fetchone()[0]
@@ -699,17 +773,34 @@ def build_products(cfg, model, vocab, df, keys, split):
     # run the recurrence per customer, WRITE IN BULK (row-at-a-time commits
     # dominated this phase; identical rows, one insert)
     state_rows = []
+    # PUBLISHED OUTLETS (SPINE §5 / DEC-424): the named views are taken from the SAME
+    # forward that produced the state rows. Paying for the encoder once and publishing
+    # several things is the cost doctrine (Principle 15); a second pass would be a second
+    # chance for the views to disagree with the state they claim to summarize.
+    view_rows = []
+    n_view = 0
+    _flush_at = None  # derived once, from the first customer's own row width
+    # principle-ok: an I/O buffer budget, derived from the pool the run actually has (2% of
+    # MemAvailable, 32 MB floor) — the size is a resource decision, not a modeling constant.
+    _buffer_bytes = max(32 << 20, int(0.02 * gpu_budget.available_gb() * 2**30))
     # min_events=1: states exist for every customer with at least one customer
     # event (the blanket 3 silently starved long-tail customers of states).
     for seq in build_sequences(df, keys, cfg, split, with_anchors=False, min_events=1):
         with torch.no_grad():
             _y, h = model(seq)
             emb = model.embed(h)
+            # `y` is the PER-STEP readout [T, dim]; an outlet is one vector per customer,
+            # so the heads read the readout at the customer's LAST event — the same tick
+            # `h` is summarized at. Feeding the whole [T, dim] here would (and did) publish
+            # a column whose width varies with sequence length, which is not a view.
+            # Batched (1, dim) so the batched readout path is the one that ships.
+            group = view_layout.parts(model, _y[-1].unsqueeze(0), h.unsqueeze(0))
         last_ts = seq["event_ts"][-1]
+        epoch = float(_to_epoch(last_ts))
         state_rows.append(
             {
                 "customer_key": seq["customer"],
-                "as_of_epoch": float(_to_epoch(last_ts)),
+                "as_of_epoch": epoch,
                 "version": cfg.tag,
                 "dim": int(h.shape[0]),
                 "state": h.tolist(),
@@ -717,7 +808,52 @@ def build_products(cfg, model, vocab, df, keys, split):
                 "last_event_ts": str(last_ts),
             }
         )
+        for view, group_parts in group.items():
+            for part, tensor in group_parts.items():
+                view_rows.append(
+                    {
+                        "customer_key": seq["customer"],
+                        # The outlet is stamped at the customer's OWN last event, not at
+                        # as_of: the heads read the readout at that tick, and fading a `y`
+                        # is not defined (only the state fades). The daily job owns
+                        # boundary-faded `shape`; conflating the two would be a silent
+                        # train/serve skew wearing a bucket name.
+                        "as_of_epoch": epoch,
+                        "version": cfg.tag,
+                        "view": view,
+                        "part": part,
+                        "dim": int(tensor.shape[-1]),
+                        "embedding": tensor.reshape(-1).tolist(),
+                    }
+                )
+        if _flush_at is None and view_rows:
+            # one customer's worth of rows (all parts) sizes the buffer for the rest
+            _width = sum(len(r["embedding"]) for r in view_rows)
+            _flush_at = max(len(view_rows), int(_buffer_bytes / max(8 * _width, 1)))
+        if _flush_at and len(view_rows) >= _flush_at:
+            n_view += store.bulk_view_rows(view_rows)
+            view_rows.clear()
     store.bulk_states(state_rows)
+    state_rows.clear()
+    # Phase receipt (P11) at the point where this phase historically breached the system
+    # floor: the build buffers here, not the step loop, are what put MemAvailable at 6.7 GB
+    # against an 8.0 GB floor on 2026-10-29. Naming the phase is what makes the fix a
+    # measurement rather than a guess.
+    gpu_budget.release(cfg, "products_states")
+    _fp = view_layout.faceplate(model, cfg)
+    n_view += store.bulk_view_rows(view_rows)
+    store.write_faceplate(_fp)
+    store.verify_outlets(_fp)
+    # The outlet receipt (O4): what the wall actually has sockets for, printed at the moment
+    # it is written. An outlet that is approved but not served is printed too — a gap that
+    # is not named is a gap that gets narrated away.
+    print(
+        f"[outlets] published {_fp['full_dim']}-d full bundle over {len(_fp['emitted'])} views: "
+        + ", ".join(f"{v}={_fp['views'][v]}" for v in _fp["emitted"])
+        + (f" | NOT SERVED: {', '.join(_fp['not_served'])}" if _fp["not_served"] else "")
+        + f" ({n_view} rows)",
+        flush=True,
+    )
     # (1) also CLOSES day 1: fade every state to the as_of boundary (UTC day
     # start = all of yesterday absorbed, today excluded) and materialize that
     # day's inference embeddings. The daily job therefore only handles days >= 2
@@ -758,8 +894,15 @@ def build_products(cfg, model, vocab, df, keys, split):
                 # train/serve skew; on real data it cost served AUC.)
                 gap = float(seq["anchor_epoch"]) - float(seq["ts"][-1])
                 h_read = fade(h, gap, cfg.state_half_life_days)
-                dsq = model.donor_seq(y, h_read, seq)  # legacy entity-pooled readout
+                # The legacy entity-pooled readout (`donor_seq`) died with the role-free
+                # Layer B (DEC-210/211) and this caller was never updated, so EVERY train
+                # run aborted here and published ZERO rows in both tables — plugins read an
+                # empty artifact. Restoring entity pooling would resurrect deleted role
+                # machinery, and deleting the table would break every consumer's SQL, so
+                # the two tables are now honestly the same object: the state-consistent
+                # readout. Recorded in DECISIONS.md; collapsing them is a named follow-up.
                 dnr = model.donor(h_read)  # state-consistent readout (inference)
+                dsq = dnr
             anchor_rows.append(
                 {
                     "customer_key": seq["customer"],

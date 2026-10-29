@@ -3589,3 +3589,144 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   axis, or (c) the no-GPU boundary diagnostic. Two receipts this decision owes: the
   full-budget capped run reproducing the frozen DEC-420 baseline receipt, and an operator
   decision on the empty `donor_embeddings` path.
+
+## DEC-424 — [TECHNICAL] the outlets of SPINE §5 get built: the production producer publishes named views, per part, with a self-describing faceplate (S4)
+
+- **Context.** `docs/SPINE.md` §5 states the frozen artifact "exposes named views (buckets)
+  so simple consumers select what they need", and lists `shape / learned_state / forecast /
+  uncertainty / heads / measure` with dimensions (128 / 1152 / 835 / 23 / 127 / ~734). Audited
+  against the code on 2026-10-29: **none of that is published by the production path.** The
+  `train`/`products` command writes one fused 256-d vector per customer
+  (`state_embeddings.embedding = proj(h)`), and the only module describing named views,
+  `looking_glass/state_layout.py`, is hardwired to the **deleted demo `Enc` stack** — it reads
+  `model.ssm[0].e`, `model.head_hist`, `model.use_suffix`, none of which exist on `CFM`. That
+  is why stage **S4 renders UNKNOWN rather than FAIL**: there was nothing to measure. The
+  dimensions in §5 came from `scripts/measure_runtime.py` reading the demo `FrozenFoundation`
+  cache, i.e. the card's outlet table described an artifact the rebuild does not make.
+- **Alternatives considered.** (1) *Revive `state_layout.py` and adapt it to `CFM`* — rejected:
+  it would have to invent blocks `CFM` does not emit, i.e. write the schema from memory of a
+  deleted stack, which is narrating a capability. (2) *Keep one fused vector, consumers slice* —
+  SPINE §5 option C, rejected by measurement ("concatenation dilutes distance probes; breaks
+  per-bucket decodability contracts", DEC-388). (3) *Publish per-view tables only* — rejected:
+  the conformance kit's knob-turn receipt (DEC-405 rule 6) must be able to zero **one** thing,
+  so parts have to be addressable, not just views. (4) **Chosen:** derive the outlet table
+  from what `CFM` actually computes.
+- **Decision.** New single source of truth `looking_glass/view_layout.py`: `PARTS` maps each
+  content class to the heads that produce it (`shape` ← the public readout; `learned_state`
+  ← the recurrence + `head_ledger`/`head_recon` mass; `forecast` ← `head_foresight` /
+  `head_psr` / `head_recency`; `uncertainty` ← `head_dt` / `head_occ`; `heads` ← `head_next`),
+  and `describe()` gets every width by **running the heads on a zero state** — no dimension is
+  typed anywhere (Principle 1: a head that changes width changes the receipt automatically).
+  `build_products` publishes them in the SAME forward that produces the state rows (cost
+  doctrine P15: pay for the encoder once), into a long-format `view_embeddings` table keyed by
+  `customer × view × part`, plus `view_faceplate` — the artifact's self-description (Outlet
+  Standard O4) so thousands of consumers can validate and locally refuse (DEC-405 rule 4).
+  `full` is never stored: it is the documented concat of `FULL_ORDER` (a bundle, not content).
+- **Absent is declared, not hidden.** `response` (DEC-384) and `measure` (DEC-383) are approved
+  outlets this producer does not emit yet. They stay in `DECLARED` and are printed on the
+  faceplate under `not_served`, so the card renders them UNKNOWN and a consumer selecting one
+  gets a refusal with a reason — never a zero-filled column (O5: advertise as uncertified).
+- **Ruling taken inside this change — `anchor_embeddings` (surface if you disagree).** The
+  anchor loop still called `model.donor_seq(...)`, a method deleted in `dcdbdca`
+  (DEC-210/211, role-free Layer B) whose caller was never removed, so **every `train` run
+  aborted at the end of `build_products` and published ZERO rows in both
+  `anchor_embeddings` and `donor_embeddings`** — the whole plugin layer has been reading an
+  empty artifact. Options: (a) restore `donor_seq` = resurrect the entity-role machinery a
+  ratified decision deleted (accretion, contradicts DEC-210/211); (b) delete the table =
+  break every consumer's SQL (`plugins/base.py` defaults to it) and the inherited card; (c)
+  **chosen:** both tables now publish `donor(h_read)`, the state-consistent readout — the two
+  became the same object the moment entity pooling died, and publishing the same object twice
+  is duplication to be *collapsed later*, not a defect to be crashed on. Reverting is one
+  line; the alternative is an artifact that publishes nothing.
+- **Principles served.** Accessible (A3: the encoder pre-adapts to consumers it never meets —
+  it cannot do that through one anonymous vector), Universal (the contract is a schema, not a
+  function signature), Diagnosable (per-part attribution, so a card row can name what earned
+  its keep — DEC-397's earned-keep rule needs exactly this), Honest (controls are mandatory in
+  the S4 receipt; an unmeasured outlet stays UNKNOWN).
+- **Owed by this decision (named, not silently deferred).** (1) `response` outlet: build the
+  action-conditioned head + uncertainty and publish it, reusing the known-effect probe of
+  DEC-420 (step 5 proper). (2) `measure` outlet: formalize the ledger companion as code-enforced
+  G1–G5 (step 6). (3) Collapse `anchor_embeddings`/`donor_embeddings` once consumers migrate.
+  (4) `state_embeddings` publishes `proj(h)` while the documented public readout is
+  `donor(h) = _boundary(proj(h))` — two definitions of "shape"; the S4 receipt measures the
+  published column and the divergence is to be reconciled, not narrated.
+- **Status at writing.** `view_layout` + 7 tests green; `build_products` wiring compiles;
+  **the S4 verdict is not claimed** — it awaits the receipt from
+  `scripts/measure_views_law.py` on a products run.
+- **Measured (same day, `scripts/measure_views_law.py --products wonderland_work/cfm_views
+  --demo wonderland_work/demo`, encoder `0.11.0r469048`, N=2500 customers / 1776 A / 724 B):**
+  **S4 = PASS, 3/3 checks**, and it moved from UNKNOWN to PASS on the card (stages 4/6).
+  `[outlets] published 793-d full bundle over 5 views: shape=256, learned_state=261,
+  forecast=263, uncertainty=2, heads=11` (10 parts × 2500 = 25 000 rows); `response` and
+  `measure` printed as NOT SERVED. Linear-head decoders beat random **and** destroyed controls
+  with the paired CI excluding zero for **5/5 views**; best R²: `shape 0.912`,
+  `learned_state 0.910`, `forecast 0.905`, `heads 0.515`, `uncertainty 0.219`. Accessibility
+  parity: 35 view×target pairs, **no** pair where the diagnostic MLP beat the linear head
+  beyond 3× the paired SE.
+- **Disclosed with the PASS, not under it.** (1) The five views are carried by only two
+  traits — `carried by {'h0': 3, 'x0': 2}` — so this is "each outlet is linearly readable and
+  fails when destroyed", **not** "five outlets decode five distinct things". The receipt
+  stores all 35 pairs so the card cannot blur them. (2) `uncertainty` decodes weakly (R²
+  0.219). (3) This products build ran on the **frozen DEC-420 checkpoint** (batch 27); the
+  batch=20 protocol change is separate and does not contaminate this row.
+- **What the first build got wrong (found by its own gate, fixed).** `CFM.forward` returns the
+  per-step readout `y=[T,dim]` and the final state `h=[dim]`. Feeding those to the heads
+  published one value per EVENT, so a published column's width varied with each customer's
+  sequence length (1801 vs 2426 in the same view) and the S4 script crashed in `np.vstack`.
+  Three fixes, all kept: the outlet now reads `y[-1].unsqueeze(0)` (the readout at the
+  customer's last event, the same tick `h` summarizes); `view_layout.parts` **raises** on the
+  `[T,dim]`-with-`[dim]` combination naming the fix, so the mistake cannot be repeated
+  silently; and `StateStore.verify_outlets` refuses any release whose stored widths disagree
+  with its own faceplate (O4), checked in SQL against the arrays. The memory story inverted
+  with it: those ragged arrays were the products-phase blowup the watchdog caught (peak RSS
+  9.02 GB → 4.22 GB, MemAvailable low-water 16.4 GB → 22.1 GB), so the "products breaches the
+  floor" symptom was this regression, not a pre-existing defect — reported as such rather
+  than absorbed into DEC-423.
+- **Also fixed in passing (surface if you disagree).** The anchor loop's `model.donor_seq`
+  call — deleted in `dcdbdca` (DEC-210/211) with its caller never removed — aborted every
+  `train`/`products` run at the end of `build_products`, so `anchor_embeddings` and
+  `donor_embeddings` had **0 rows** in every artifact ever published. This run:
+  `training_embeddings=2883` (4 anchors × the B sample, minus short sequences).
+
+## DEC-425 — [TECHNICAL] the GPU guard was wrong in two ways found while validating DEC-424: a phase boundary may not re-derive the cap unless asked, and a receipt path may never eat the exception it documents
+
+- **Context.** DEC-423 shipped `gpu_budget.release(cfg, phase)` calling `enforce(rebase=True)`
+  at *every* phase boundary, on the theory that each boundary is an "informed moment". It is
+  not. At an **abort** boundary `MemAvailable` is at its lowest precisely because the phase
+  blew up, so re-deriving there invents a budget out of the wreckage. Measured 2026-10-29: a
+  run that trained 99 steps cleanly hit a step-loop OOM, `release(cfg, "train_aborted")`
+  re-derived a **0.0 GB** cap, `enforce` raised its "too little to train on" `SystemExit`
+  **inside the `except BaseException` handler**, and the run reported the guard's refusal
+  instead of the crash it had just had. A second run reproduced it exactly. Meanwhile
+  `gpu_reserve_gb = 1.0` was DEC-423's documented fallback (typed from one breach at 0.3 GB)
+  while two later measurements put the real non-allocator device overhead at 0.31 GB and
+  0.3 GB — a typed constant sitting on ~0.5 GB of the pool, which at batch 20 was the
+  difference between fitting and refusing.
+- **Alternatives considered.** (1) *Re-base only on non-abort phases* — rejected: it is a
+  policy inference inside the guard that still surprises the caller, and a phase that
+  finishes normally is still not the moment that needs a second opinion. (2) *Make the
+  re-derived cap a warning-only floor adjustment* — rejected: silently refusing to tighten a
+  cap is how an over-budget run reaches the floor anyway; the watchdog owns the hard stop.
+  (3) *Leave `gpu_reserve_gb` at 1.0 "for safety"* — rejected: a fallback that stops being
+  re-derived against new measurements is a magic number with a receipt attached.
+- **Decision.** `release(cfg, phase, *, reset_peak=True, rebase=False)`: the cap is
+  re-derived **only** when the caller asks, and exactly one call site does —
+  `cfm_training.py`'s `release(cfg, "pre_train", rebase=True)`, where the stream is resident
+  and the allocator has just been emptied. `release` is now **total**: it cannot raise, a
+  refused re-derivation prints `[gpu-budget] RECAP skipped, keeping the current cap`, and a
+  re-derived cap *below* the phase just measured prints a WARN naming both numbers instead of
+  waiting for the next phase to OOM. `gpu_reserve_gb` is **0.5**, the next round unit above
+  the worst of the two measurements, with the measurements and the date written into the
+  field's comment (P1: a surviving literal must be a documented conservative fallback, and a
+  fallback must be re-derived when better data exists).
+- **Principles served.** Robust (a guard whose cleanup path can throw turns one failure into
+  two, and the one you see is the wrong one), Honest/Diagnosable (the crash that actually
+  happened is now reportable; a silent guard is indistinguishable from a dead one, so every
+  swallowed path now prints), Efficient (0.5 GB returned to the step loop).
+- **Tests.** `tests/test_gpu_budget.py` 24 → 30: the cap is re-derived only at the informed
+  moment; a crash receipt never replaces the crash (`exc.value is boom`, refusal printed);
+  `release` cannot raise when the driver call throws; ordinary phase boundaries carry no
+  `recap_*` keys; the reserve/limit/floor config surface tracks the new default.
+- **Trade-off.** Between the informed moment and the next phase the cap can be up to the
+  finished phase's leftover too generous; that window is bounded by the watchdog's floor,
+  which is the layer that can actually stop the machine.

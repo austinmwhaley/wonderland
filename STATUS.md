@@ -72,6 +72,30 @@
 > `bilinear_recurrence` is un-adoptable until its converged fixed-point gate `H*` is carried as
 > recurrent state (DEC-422).
 
+> **Step 4.5 delivered — S4 CLOSED (DEC-424, 2026-10-29):** the SPINE §5 outlets exist. The
+> production producer published one fused 256-d vector and the only "named views" module
+> (`state_layout.py`) was wired to the deleted demo `Enc` stack, so **S4 was UNKNOWN, not
+> failing** — there was nothing to measure. `looking_glass/view_layout.py` is now the single
+> source of truth for the outlet schema (dims **derived by running the heads**, never typed),
+> and `build_products` publishes `view_embeddings` (long format: customer × view × **part**) +
+> `view_faceplate` from the *same* forward. Card: **4/6 stages · 0/8 legs** — S4 **PASS** on
+> `scripts/measure_views_law.py`: 793-d full bundle over 5 views (`shape 256 / learned_state
+> 261 / forecast 263 / uncertainty 2 / heads 11`, 25 000 rows), linear heads beat random AND
+> destroyed controls with paired CI lo>0 for **5/5 views**, and **0 accessibility gaps** in 35
+> view×target pairs (MLP never beats linear beyond 3× the paired SE). Disclosed with the PASS:
+> the five views are carried by only two traits (`h0`×3, `x0`×2) and `uncertainty` decodes
+> weakly (R² 0.219). `response`/`measure` are advertised `not_served` → the card renders them
+> UNKNOWN rather than absent. The first build fed the heads the per-step readout `[T,dim]`
+> (ragged columns, and the products-phase memory blowup the watchdog caught — peak RSS 9.02 →
+> **4.22 GB** after the fix); the outlet now reads `y[-1]`, `view_layout.parts` **raises** on
+> that mistake, and `StateStore.verify_outlets` refuses any release whose columns disagree
+> with its own faceplate. The `donor_seq` crash is fixed: `anchor_embeddings`/
+> `donor_embeddings` now publish `donor(h_read)` (**2 883 rows**, the first non-empty value
+> those tables have ever had — operator ratification requested, DEC-424).
+> **Owed:** `response` outlet (step 5), ledger companion G1–G5 (step 6), judge-leg producers
+> (0/8), the batch=20 capped re-run of the DEC-420 baseline (new protocol version), and
+> reconciling `state_embeddings.embedding = proj(h)` with the documented `donor(h)`.
+
 **Repository state:** `main` now contains the former `primary-encoder` demo work. The duplicate
 report card, stale roadmap, duplicate receipt orchestrator, one-off OPE wrappers, and generator
 alias were removed; the superseded demo contract/audit moved to `docs/archive/`.

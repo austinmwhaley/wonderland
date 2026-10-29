@@ -599,7 +599,7 @@ def train_cfm(cfg: CFMConfig):
     # the same pool the step loop will allocate from. The launch-time cap was affordable
     # BEFORE the data existed (measured: 2.4 GB too big, run died at the floor). This
     # flushes the seeding cache, receipts the warmup peak, and re-bases for the step loop.
-    gpu_budget.release(cfg, "pre_train")
+    gpu_budget.release(cfg, "pre_train", rebase=True)
     try:
         gov, best_state = AT.govern(
             train_step, val_metric, budget, res.eval_every, res.patience, cfg.seed
