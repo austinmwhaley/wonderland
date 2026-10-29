@@ -4157,3 +4157,128 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   3/6) — the two supervised columns already FAIL for real reasons, which is the precedence test
   passing on live data. Three new pins in `tests/test_judge_card.py` (absurd controls → UNKNOWN,
   one readable control → PASS still allowed, real loss → FAIL outranks vacuity), 26 green there.
+
+## DEC-434 — [TECHNICAL] the other three legs get producers: same geometry, same incumbent, a statistic that actually asks each leg's question
+
+- **Context.** The judge is asked four questions and answered one. `unsupervised`, `rl` and
+  `simulator` have no producer, so six of the eight top-line rows render UNKNOWN — honest, but a
+  top line that is ¼ answered cannot steer. The card's own "what is blocking" list has been
+  printing the same four missing receipts for several decisions.
+- **Alternatives considered.** (1) *Promote the S5 battery probes to leg receipts* — rejected:
+  they compare against naive comparators (frequency bag, population constant), not against
+  **PATH A**; a leg row without the wide table and the frozen incumbent violates rule 5 (fair,
+  finite comparator). (2) *Write a fresh evaluation harness for consumers* — rejected under
+  principle 6: the arms, the A/B split, the linear head, the incumbent, the controls and the
+  paired CI already exist in this repo; a fifth copy of that geometry is how baselines drift.
+  (3) *Leave the legs UNKNOWN until the encoder improves* — rejected: an unmeasured row is a gap
+  to close, not a verdict to defer, and "the encoder is not good yet" is a conclusion the leg is
+  supposed to produce, not presuppose.
+- **Decision.** Three producers in `scripts/measure_judge_law.py` under the DEC-428 protocol —
+  both arms fit on split A and scored on split B, one cited incumbent, controls through the
+  brain's own head, degenerate targets excluded-and-reported, and no verdict string in any receipt.
+  Each leg gets the statistic its own definition asks for, with the SAME value on both sides of
+  the paired CI (no mixing a point score with a different CI statistic):
+  - `unsupervised` ("distance equals shared futures; structure beats table/random/destroyed"):
+    **`latent_geometry`** and **`future_geometry`** — R² of the representation's pairwise distance
+    against the lab's true pairwise distance (persona latents, then future outcomes), both
+    representations and the truth standardized on split A so neither arm chooses its own scaling;
+    **`segment_structure`** — ARI of k-means fit on A and applied to B against the lab's declared
+    `segment`, with k derived from that label's own cardinality (not typed).
+  - `rl` ("policy value beats table and random on randomized/known-effect data"):
+    **`known_effect_uplift`** — R² on the per-customer uplift identified from the randomized
+    offer arm; **`policy_value`** — area under the top-k realized-uplift curve under each arm's
+    own ranking, bootstrapped **re-selecting inside each replicate** (a selection-dependent
+    statistic cannot be averaged per unit and called paired).
+  - `simulator` ("recovers the built-in counterfactual effects, the red_king role"):
+    **`dose_response_curve`** — R² of the recovered response surface on the identified
+    (customer × offer level) cells; **`argmax_optimum`** — does `argmax_level f(representation,
+    level)` hit the customer's declared `offer_opt` at all. A model that nails the mean but cannot
+    say which arm helps whom is not a simulator.
+- **One definition, not two.** The uplift/dose-response identification moves out of
+  `check_action_conditioned_outcome` into `arm_cells` / `identified_uplift` /
+  `identified_dose_response` in `measure_battery_law.py`, used by BOTH the battery and the judge.
+  The identification is randomization-based, so a second copy of that SQL is a second chance for
+  the two to disagree about what "identified" means. Verified by re-running S5 and requiring the
+  committed evidence numbers to be unchanged.
+- **Acceptance metrics, frozen before the run.** Each leg must emit both columns with finite
+  `brain`/`pathA`/`ci_lo`/`ci_hi`/`n` and both controls, or an explicit `note` saying what is
+  missing (e.g. too few customers with ≥ `MIN_ARM_DAYS` identified arm-days per side). The card
+  computes the verdicts; a leg with a thin identified population reports its n rather than
+  passing quietly. Pair statistics are computed over a seeded subsample when the pair count
+  exceeds a memory-derived budget (the pair count is ≫ the customer count; the subsample bounds
+  memory, it does not reduce the population) and the count is recorded.
+- **Single axis changed.** Producer/measurement only. No encoder, no objective, no gate, no
+  comparator content moved; the incumbent is DEC-428's, unchanged.
+- **Trade-offs recorded.** The legs' statistics are not label-R², so one rule
+  (`brain > pathA` with a CI excluding 0) is applied to a distance-R², an ARI and a curve area —
+  each is "higher is better, compared to PATH A on the same rows", but they are not the same
+  units and must never be averaged into a composite. `rl`/`simulator` inherit the identifiability
+  floor, so their n is the identified subset (battery measured 233 of 724 for uplift) and that n
+  travels in every row.
+
+## DEC-435 — [TECHNICAL] the first run of the three new legs returned two worthless numbers; both producers were fixed and the committed evidence re-verified
+
+- **Context.** DEC-434's legs ran for the first time and the card rendered eight top-line rows.
+  Two of the numbers were arithmetically valid and informationally worthless, and the card would
+  have published them as evidence:
+  1. `unsupervised` scored **MSE-R² of two raw pairwise-distance vectors**. The donor, the wide
+     table and the lab's truth live on different scales, so the loss measured UNITS: brain
+     **-649.5**, PATH A **-88.5**, and a control at **-4.6e15**. "Distance equals shared futures"
+     is a claim about AGREEMENT, which no scale-dependent loss can express.
+  2. The negative controls came from `measure_views_law._controls`, which draws gaussian noise at
+     **one scalar sigma for the whole matrix**. On the `brain + ledger` column the measure view
+     puts raw event counts beside fractions, so one sigma is right for neither column: the control
+     scored **R² = -3.4e11** on every supervised target. Because DEC-433 gives an unreadable
+     control the power to veto a PASS, an arithmetic artifact had the power to decide a verdict.
+- **Alternatives considered.** (1) *Leave both and let `controls_unreadable` disclose them* —
+  rejected: disclosure does not make a number evidence, and the whole point of the legs is to
+  produce numbers the card can act on. (2) *Fix `_controls` in place* — rejected: the S1–S6
+  battery and the view laws publish **committed evidence** through it, so editing it would
+  silently rewrite numbers the card already stands on. Unifying them is a re-measurement decision
+  for the operator, not a cleanup to slip through in a refactor. (3) *Recalibrate each arm's
+  distances onto the truth's scale with A-fitted mean/SD and keep the MSE loss* — rejected after
+  working the algebra: a near-constant control then lands near the -1 vacuity boundary, i.e. the
+  fix would have moved the artifact instead of removing it.
+- **Decision.** Two producer fixes, no change to any gate, comparator, population or incumbent.
+  - `leg_unsupervised`'s distance tasks score **squared correlation** between the arm's pairwise
+    distances and the lab's true distances: in [0, 1] for arms and controls alike, invariant to
+    any positive affine rescaling of either arm, and ≈ 0 for a control that knows nothing. The
+    paired CI is a bootstrap that **re-correlates inside each replicate** (a correlation is not a
+    per-unit mean, so averaging a per-pair surrogate would be the fake-CI pattern rule 5 bans);
+    the resample is capped at `BOOT_PAIRS` and the cap travels in the receipt as
+    `n_bootstrap_pairs`, while `n` remains the full pair population.
+  - New `controls_matched(rng, X_fit, X_score)` in `measure_battery_law.py`: noise drawn at the
+    **arm's own per-column** mean/SD fitted on split A, plus the same column-permutation
+    `destroyed` definition. **All four judge legs use it** — one control generator inside one
+    judge (principle 6); `_controls` is left untouched for the battery and the view laws.
+  - Cluster controls now go through the **same fit-on-A / score-on-B path as the arms**; they were
+    being clustered on the rows they were scored on, which is an easier experiment and would have
+    made the arm-vs-control gap measure the protocol.
+- **Verification that nothing committed moved.** `measure_battery_law`'s S5 block re-ran after the
+  `arm_cells` / `identified_uplift` extraction: **byte-identical** to the committed block apart
+  from the `seconds` timing field. `leg_supervised` re-ran on the shared `_arms` geometry and the
+  matched controls: **70/70 primary fields (brain / pathA / ci_lo / ci_hi / n) byte-identical**;
+  only the control columns moved, and they moved in the sane direction (-3.4e11 → -0.17). New
+  `tests/test_judge_law_producers.py` (10 tests) pins the invariants those two fixes exist for:
+  scale-invariance of the distance statistic, per-column control scale, row integrity destroyed,
+  the uplift identifiability floor, and arm-intersection populations. principle-audit 0.
+- **What the card now says (computed, not narrated): legs green 1/8.** `rl :: brain + ledger`
+  PASSes (policy value 0.0614 vs PATH A 0.0308, paired CI [0.0092, 0.0527]). The findings worth
+  reading, all against the frozen incumbent on the same rows:
+  - `rl :: brain` FAILs because the **destroyed control beats the donor** on identified uplift
+    (-0.0039 vs -0.0092) — and both arms sit **below the population constant** (R² < 0). The
+    donor does not decode who responds; the ledger does.
+  - `simulator` FAILs both columns. The donor's recovered surface names the customer's optimum at
+    **0.2698 — the base rate — and identical to both controls**, i.e. its argmax is constant: it
+    learns the level effect and nothing about *which customer* the level helps. PATH A: 0.4690.
+    That is the red_king role, unmet, measured.
+  - `unsupervised` FAILs both columns: the donor's geometry agrees with the lab's truth at
+    corr² ≈ **0.001** while the wide table reaches **0.0456** on the future-outcome geometry, and
+    k-means on the donor is at chance (ARI ≈ -0.002) against the declared `segment`.
+- **Open item surfaced, not decided.** DEC-433's frozen vacuity threshold (`R² < -1`) is defined
+  on MSE-R². Two of the new legs report a squared correlation and an ARI, where the threshold
+  cannot fire, so `controls_unreadable` there reports only controls that produced NO number. I did
+  **not** invent a replacement threshold — thresholds are an operator ruling (rule 1) — and the
+  gap is listed for ratification rather than quietly filled.
+- **Single axis changed.** Producer/measurement code under `scripts/`, plus one new shared control
+  generator. No gate, threshold, criterion, comparator content or frozen baseline touched.

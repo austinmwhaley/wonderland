@@ -881,7 +881,19 @@ observability, prefer deletion, best tool, cost-aware, **speed-first (16)**.
 >    G2 recounts independently, so a forward leak cannot either); G5 is produced by the card.
 >    Attribution measured on `h0`: ledger-only **0.9846** vs brain **0.9071** — SPINE's
 >    "the ledger prevents the loss, it cannot earn the win" reproduced as a number.
-> 4. Judge-leg producers (top line is 0/8: nothing writes `judge_leg_*.json`).
+> 4. ~~Judge-leg producers (top line is 0/8: nothing writes `judge_leg_*.json`)~~ **BUILT** — all
+>    four legs now have producers under the DEC-428 protocol (DEC-434/435). **Top line: 1/8 green.**
+>    `rl :: brain + ledger` PASSes (policy value 0.0614 vs PATH A 0.0308, CI [0.0092, 0.0527]).
+>    The three red legs say something specific: the donor's identified-uplift R² (-0.009) is
+>    **worse than its own column-shuffled control** and below the population constant; the donor
+>    names the offer optimum at **0.2698 = the base rate, identical to both controls** (constant
+>    argmax — it learns the level, not who the level helps) where PATH A reaches 0.4690; and the
+>    donor's geometry agrees with the lab's truth at corr² ≈ **0.001** vs the table's 0.0456, with
+>    k-means at chance (ARI ≈ -0.002). The first run of these legs produced two worthless numbers
+>    (a scale-dependent distance loss, a global-sigma control) — DEC-435 records both fixes and the
+>    proof that no committed evidence moved.
+>    **Open for ratification:** DEC-433's vacuity threshold is defined on MSE-R² and cannot fire on
+>    the new correlation/ARI metrics; no replacement threshold was invented.
 > 5. The batch=20 capped run that re-measures the DEC-420 baseline under the new protocol (this
 >    is also the first run that will exercise the `[step-time]` receipt).
 > 6. Reconcile `state_embeddings.embedding = proj(h)` with the documented `donor(h)`.

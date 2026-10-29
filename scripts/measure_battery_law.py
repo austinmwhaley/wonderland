@@ -96,15 +96,26 @@ def _load_all(products: str, demo: Path):
     return reg, truth, emb, raw_state, stream, bkeys, akeys, as_of
 
 
-def _ridge_oos(Ea, ya, Eb, yb):
-    """Fit ridge head on split A, score split B (honest out-of-sample). sklearn defaults."""
+def _ridge_head():
+    """THE shipping head: standardized ridge with a self-selecting alpha grid.
+
+    One definition on purpose (principle 6) — the battery probes, the view laws and every judge
+    leg score through it, and the judge's whole claim is that a *dumb consumer* can read the donor
+    (DEC-407). Callers that need the fitted object (e.g. to query the head at unobserved actions)
+    build it here rather than re-typing the pipeline.
+    """
     from sklearn.linear_model import RidgeCV
     from sklearn.pipeline import make_pipeline
     from sklearn.preprocessing import StandardScaler
 
+    return make_pipeline(StandardScaler(), RidgeCV(alphas=np.logspace(-3, 3, 25)))
+
+
+def _ridge_oos(Ea, ya, Eb, yb):
+    """Fit ridge head on split A, score split B (honest out-of-sample). sklearn defaults."""
     if len(Ea) < 8 or float(np.std(ya)) < 1e-12 or float(np.std(yb)) < 1e-12:
         return None, None
-    m = make_pipeline(StandardScaler(), RidgeCV(alphas=np.logspace(-3, 3, 25)))
+    m = _ridge_head()
     m.fit(Ea, ya)
     p = m.predict(Eb)
     ss = float(np.sum((yb - yb.mean()) ** 2))
@@ -290,21 +301,25 @@ def check_distance_regression(truth, emb, raw_state, bkeys):
     }
 
 
-def check_action_conditioned_outcome(stream, truth, emb, akeys, bkeys):
-    """'What if': the lab's one-factor-daily randomized offer arm has the KNOWN effect
-    q *= (1 - 0.22*|offer-offer_opt|). Per-customer uplift P(buy|arm=opt) -
-    P(buy|arm off by >=2) is causally identified (randomized arm); a linear head on the
-    donor must decode it better than the population constant."""
-    t0 = time.perf_counter()
+def arm_cells(stream, truth) -> "pl.DataFrame":
+    """(customer_key, offer level, days, buys, declared optimum) for the randomized offer arm.
+
+    ONE DuckDB pass, aggregated columnar to one row per (customer, level). The battery's uplift
+    probe (S5) and the judge's `rl` and `simulator` legs (DEC-434) both consume this: the uplift is
+    identified by RANDOMIZATION, so a second copy of this SQL would be a second chance for the two
+    to disagree about what "identified" means — the drift principle 6 exists to prevent.
+    """
     import duckdb
 
     con = duckdb.connect()
     con.register("s", stream)
-    opts = pl.DataFrame(
-        {"customer_key": list(truth.keys()), "opt": [truth[k]["offer_opt"] for k in truth]}
+    con.register(
+        "o",
+        pl.DataFrame(
+            {"customer_key": list(truth.keys()), "opt": [truth[k]["offer_opt"] for k in truth]}
+        ),
     )
-    con.register("o", opts)
-    stats = con.execute(
+    cells = con.execute(
         """
         with arms as (
             select customer_key, cast(event_ts as date) as d,
@@ -316,29 +331,100 @@ def check_action_conditioned_outcome(stream, truth, emb, akeys, bkeys):
         buys as (
             select distinct customer_key, cast(event_ts as date) as d
             from s where event_type='purchase'
-        ),
-        j as (
-            select a.customer_key, a.off, (b.d is not null) as bought, o.opt
-            from arms a join o using (customer_key) left join buys b
-              on a.customer_key = b.customer_key and a.d = b.d
         )
-        select customer_key,
-               sum(case when off = opt then 1 else 0 end)::bigint as good_days,
-               sum(case when off = opt and bought then 1 else 0 end)::bigint as good_buys,
-               sum(case when abs(off - opt) >= 2 then 1 else 0 end)::bigint as bad_days,
-               sum(case when abs(off - opt) >= 2 and bought then 1 else 0 end)::bigint as bad_buys
-        from j group by 1
+        select a.customer_key, a.off, o.opt, count(*) as days,
+               sum(case when b.d is not null then 1 else 0 end) as buys
+        from arms a join o using (customer_key) left join buys b
+          on a.customer_key = b.customer_key and a.d = b.d
+        group by 1, 2, 3
         """
     ).pl()
     con.close()
-    up = {}
-    for r in stats.to_dicts():
-        if (
-            r["good_days"] >= MIN_ARM_DAYS
-            and r["bad_days"] >= MIN_ARM_DAYS
-            and r["customer_key"] in truth
-        ):
-            up[r["customer_key"]] = r["good_buys"] / r["good_days"] - r["bad_buys"] / r["bad_days"]
+    return cells
+
+
+def controls_matched(rng, X_fit, X_score):
+    """Random and destroyed controls with the ARM's OWN per-column scale, fitted on split A.
+
+    Why this exists next to `measure_views_law._controls` rather than replacing it: that one
+    draws noise at a single GLOBAL sigma. For a donor whose columns share a scale that is fine;
+    for the `brain + ledger` column, where the measure view puts raw event counts beside
+    fractions, the same sigma makes some control columns 10^6x too wide — and the control then
+    scores R2 = -4.6e15, failing for an arithmetic reason that has nothing to do with the
+    information it was supposed to lack. A negative control has to fail for the RIGHT reason or
+    it is not evidence (DEC-433 makes an unreadable control block a PASS, so the artifact has
+    teeth). `_controls` stays untouched: the S1-S6 battery and the view laws publish committed
+    evidence through it, and silently rewriting those numbers under a refactor banner is a
+    re-measurement decision, not a cleanup.
+
+    `destroyed` keeps the column-permutation definition (same marginals, no customer identity);
+    `random` is drawn per column at A's mean and spread.
+    """
+    X_fit = np.asarray(X_fit, dtype=np.float64)
+    mu, sd = X_fit.mean(0), X_fit.std(0)
+    sd = np.where(sd < 1e-12, 1.0, sd)
+    rand = rng.normal(loc=mu, scale=sd, size=np.asarray(X_score).shape)
+    destroyed = np.column_stack([rng.permutation(X_score[:, j]) for j in range(X_score.shape[1])])
+    return rand, destroyed
+
+
+def identified_uplift(cells, min_days: int = MIN_ARM_DAYS) -> dict:
+    """Per-customer causal uplift P(buy|offer=opt) − P(buy|offer off by ≥2), where identified.
+
+    A customer appears only with `min_days` arm-days on BOTH sides: an under-sampled contrast is
+    not a noisy estimate, it is an unidentified one, and reporting it as the former would let a
+    handful of days carry a causal claim. Columnar aggregation, then a lookup dict — the event
+    scan already happened in SQL, so this loop is over (customer × level) aggregates.
+    """
+    sides = (
+        cells.with_columns(
+            pl.col("days").cast(pl.Int64),
+            pl.col("buys").cast(pl.Int64),
+            (pl.col("off") == pl.col("opt")).cast(pl.Int64).alias("good"),
+            ((pl.col("off") - pl.col("opt")).abs() >= 2).cast(pl.Int64).alias("bad"),
+        )
+        .group_by("customer_key")
+        .agg(
+            (pl.col("days") * pl.col("good")).sum().alias("good_days"),
+            (pl.col("buys") * pl.col("good")).sum().alias("good_buys"),
+            (pl.col("days") * pl.col("bad")).sum().alias("bad_days"),
+            (pl.col("buys") * pl.col("bad")).sum().alias("bad_buys"),
+        )
+    )
+    return {
+        r["customer_key"]: r["good_buys"] / r["good_days"] - r["bad_buys"] / r["bad_days"]
+        for r in sides.iter_rows(named=True)
+        if r["good_days"] >= min_days and r["bad_days"] >= min_days
+    }
+
+
+def identified_dose_response(cells, min_days: int = MIN_ARM_DAYS) -> dict:
+    """Per-customer identified purchase rate AT EACH offer level: {key: {level: (rate, days)}}.
+
+    The counterfactual object the `simulator` leg grades (DEC-434): recovering the built-in effect
+    needs the response at every arm level, not only the optimum-vs-bad contrast that
+    `identified_uplift` collapses it to. Levels with fewer than `min_days` arm-days are absent —
+    unidentified, not zero.
+    """
+    ok = cells.with_columns(pl.col("days").cast(pl.Int64), pl.col("buys").cast(pl.Int64)).filter(
+        pl.col("days") >= min_days
+    )
+    out: dict = {}
+    for r in ok.iter_rows(named=True):
+        out.setdefault(r["customer_key"], {})[int(r["off"])] = (
+            r["buys"] / r["days"],
+            int(r["days"]),
+        )
+    return out
+
+
+def check_action_conditioned_outcome(stream, truth, emb, akeys, bkeys):
+    """'What if': the lab's one-factor-daily randomized offer arm has the KNOWN effect
+    q *= (1 - 0.22*|offer-offer_opt|). Per-customer uplift P(buy|arm=opt) -
+    P(buy|arm off by >=2) is causally identified (randomized arm); a linear head on the
+    donor must decode it better than the population constant."""
+    t0 = time.perf_counter()
+    up = identified_uplift(arm_cells(stream, truth))
     bk = [k for k in bkeys if k in up and k in emb]
     ak = [k for k in akeys if k in up and k in emb]
     if len(bk) < 30 or len(ak) < 30:
