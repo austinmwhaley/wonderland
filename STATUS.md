@@ -79,6 +79,8 @@
 > source of truth for the outlet schema (dims **derived by running the heads**, never typed),
 > and `build_products` publishes `view_embeddings` (long format: customer × view × **part**) +
 > `view_faceplate` from the *same* forward. Card: **4/6 stages · 0/8 legs** — S4 **PASS** on
+> *(measured at DEC-424 with 5 views; S4 is **FAIL** today because `response` became served under
+> DEC-426 and its gate does not pass — see the step-5/6/7 block below, which supersedes this)*
 > `scripts/measure_views_law.py`: 793-d full bundle over 5 views (`shape 256 / learned_state
 > 261 / forecast 263 / uncertainty 2 / heads 11`, 25 000 rows), linear heads beat random AND
 > destroyed controls with paired CI lo>0 for **5/5 views**, and **0 accessibility gaps** in 35
@@ -95,6 +97,45 @@
 > **Owed:** `response` outlet (step 5), ledger companion G1–G5 (step 6), judge-leg producers
 > (0/8), the batch=20 capped re-run of the DEC-420 baseline (new protocol version), and
 > reconciling `state_embeddings.embedding = proj(h)` with the documented `donor(h)`.
+
+> **Steps 5–7 delivered — the outlets ship and the top line is measured for the first time
+> (DEC-426 … DEC-431, 2026-10-29).** `response` is now a post-freeze head on population A
+> (readout at `t-1`, action = the recurrence transition `Δ_t = y_t − fade(y_{t−1})`, SF target
+> via the shared `discounted_future`), with three frozen gates; its uncertainty head was
+> **reversed by measurement** to per-group split-conformal width after the fitted σ needed a
+> 22932× multiplier, and the leaky ceiling (0.0701 vs 0.0696) is published as disclosure.
+> `measure` ships as the sixth/seventh outlet with **G1–G5 as executable checks** (G1 proves the
+> vocabulary is reproducible, G3 reports VACUOUS rather than green when nothing is declared), and
+> the audit runs BEFORE the write. `scripts/measure_judge_law.py` is the judge's top-line
+> producer (DEC-428): one canonical GBM incumbent pinned by citation, both arms fit on A and
+> scored on B, the table encoded once over A ∪ B.
+> **The first answer to `PATH B > PATH A` is FAIL on both columns** (7 traits, 724 B-rows vs
+> 1 776 A-rows); `h0` is the only trait PATH B wins (brain 0.7963 / ledger 0.9837 vs the table's
+> −0.1213). Fairness verified before reporting: no served state reads a post-`as_of` event
+> (max stamp 2024-12-31T23:59:41 < as_of; **0 / 2 500** customers leak).
+> **Two defects this chunk found and fixed at the root.** (1) **DEC-429:** `state_embeddings` —
+> the table plugins are told to read — shipped **EMPTY for six decisions**: DEC-425's memory fix
+> emptied `state_rows` a few lines above the `if state_rows:` guard, so the day-1 fade +
+> materialize never ran, nothing printed a count, and no gate read that table. The guard now asks
+> the stored table and `StateStore.verify_state_serving` prints both counts and REFUSES a release
+> that serves nothing (real build: `customer_state=2500 state_embeddings=2500`, MemAvailable low
+> 17.2 GB). (2) **DEC-430:** `judge_stages.json` carried ONE `_meta` for five blocks written by
+> four producers, so re-running S4's producer certified S1/S2/S3/S5 as current — including blocks
+> measured against deleted `/tmp` inputs. Every block now carries its own `_stamp`, the reader
+> validates per-block (stale/unstamped/self-contradictory → UNKNOWN), and a red stage row names
+> its failing check instead of its first check.
+> **Card now 3/6 stages · 0/8 legs** (`pass 8 / fail 4 / unknown 7`).
+> **Also owed:** `xgboost` was imported unguarded by four scripts and declared nowhere (now
+> declared — PATH A could not run in a clean checkout); `grad_checkpoint` measured and **not
+> adopted** (identical peak_alloc 9.92 GB and identical val 6.3864 on both legs).
+> **Open for operator ratification:** the `anchor_embeddings = donor(h_read)` alias; batch 27→20
+> as a new protocol version; whether the action declaration may be derived at TRAIN time (today
+> it is derived at publish time from `reference_truth.json → meta`); whether the action should be
+> represented by its declared attributes rather than the state step it produced; whether
+> `mean over φ dims` is the right response-target reduction; and **whether PATH A's 48-column
+> table is a fair comparator at all** — the ledger alone scores 0.9846 on `h0` where that table
+> scores −0.1213, so either the baseline is under-built or SPINE §5's "the ledger is what the
+> table already is" corollary is wrong.
 
 **Repository state:** `main` now contains the former `primary-encoder` demo work. The duplicate
 report card, stale roadmap, duplicate receipt orchestrator, one-off OPE wrappers, and generator

@@ -4007,6 +4007,48 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   build rather than the consumer's query — a louder failure in a place where a failed build is
   cheaper to diagnose.
 
+## DEC-430 — [TECHNICAL] a merged receipt may not let one producer vouch for another's evidence: per-BLOCK stamps, and a red stage must name its failing check
+
+- **Context.** `judge_stages.json` is a MERGE: S1/S2 from `measure_input_law.py`, S3 from
+  `measure_dynamics_law.py`, S4 from `measure_views_law.py`, S5 from `measure_battery_law.py`.
+  `stamp_merge_write` wrote ONE file-level `_meta` with the current `behavior_hash`, and the card
+  validated only that. So re-running S4's producer stamped S1/S2/S3/S5 as current — including
+  blocks last measured against `/tmp/opencode/...` inputs that had since been deleted. That is
+  certification rules 6 and 7 failing open: a receipt was certifying evidence it never produced.
+  Two related defects surfaced in the same read: a red stage rendered its block-level `evidence`
+  string, which begins with whatever check was inserted first, so S4 and S5 read
+  `[outlet_schema] OK: …` while failing; and a block could report `working: true` beside checks
+  that say otherwise.
+- **Alternatives considered.** (1) *One producer per file* (split `judge_stages.json` into five)
+  — rejected as more churn than the defect needs: the merge exists so one card render reads one
+  file, and the problem is provenance, not co-location. (2) *Re-run every producer whenever any
+  stage is needed* — rejected on cost (S1 alone is ~4 min of retraining) and it hides staleness
+  instead of reporting it. (3) *Stamp the file with the OLDEST block's hash* — rejected: it makes
+  fresh evidence look stale, which trains readers to ignore the stamp.
+- **Decision.** Every merged block carries its own `_stamp` (`generated_at`, `git_commit`,
+  `behavior_hash`, `command`, `producer`) written by the producer that measured it; `_meta`
+  remains only as provenance for the file as a whole. The reader's law is per-block
+  (`_block_problem`): no stamp, no hash, or a hash that differs from the encoder behavior now
+  being judged → **UNKNOWN** with the producer's name and the command that fixes it. Same
+  function also refuses a block that denies itself (`working: true` with non-working checks) —
+  the frozen criterion stays `working`, so this reports a producer defect rather than laundering
+  it. And `_stage_why` makes a red row name the failing check plus its measured evidence
+  (principle 8: an unattributed red is not a diagnosis). `stamp_merge_write(...,
+  stamp_blocks=False)` keeps single-writer leg files free of redundant per-block stamps.
+- **Single axis changed.** Certification/reader axis only. No gate threshold moved: the checks,
+  their thresholds, and the `working` criterion are untouched; two routes to an unearned green
+  are closed, which can only turn green rows red.
+- **And the card's own `dirty` flag.** It counted `git status --porcelain` including
+  `JUDGE_CARD.md`, the file the render had just rewritten — so every render printed `dirty`
+  forever and certification rule 6 ("regenerated at a clean, recorded commit") was unreachable.
+  A flag that can never tell the truth is worse than no flag: readers learn to ignore it. The
+  render now excludes only its own output; anything else uncommitted still says `dirty`.
+- **Measured.** After the change the card reports `pass 8 / fail 4 / unknown 7`, stages green
+  3/6, and every stage row carries `·producer on commit`; S4 now reads
+  `FAILED response_outlet: …` and S5 `FAILED action_conditioned_outcome: … (+2 more)`. Four
+  new pins in `tests/test_judge_card.py` (stale block, unstamped block, self-contradictory
+  block, red row names its failing check), 22 green in that file.
+
 ## DEC-431 — [TECHNICAL] the supervised leg measured for the first time: FAIL on both columns, and the two disclosures the measurement forced
 - **Context.** DEC-428 built the producer; this is the first run against a real artifact. Seven
   live traits on 724 B-rows against 1 776 A-rows, comparator PATH A (48-column wide table,

@@ -33,6 +33,9 @@ sys.path.insert(0, str(ROOT / "scripts"))
 import judge_spec as J  # noqa: E402
 
 EXP = ROOT / "docs" / "report_cards" / "experiments"
+# the card is a committed GENERATED artifact: its own bytes are the only thing a render is
+# allowed to leave uncommitted, so they must not decide the `dirty` flag (see _worktree_dirty)
+CARD_NAME = "JUDGE_CARD.md"
 
 
 # --------------------------------------------------------------------------- freshness
@@ -56,6 +59,17 @@ def behavior_hash() -> str:
         h.update(f.read_bytes())
         h.update(b"\0")
     return h.hexdigest()[:16]
+
+
+def _worktree_dirty(status_porcelain: str) -> bool:
+    """Working-tree state, EXCLUDING the card's own output.
+
+    The card is a committed generated artifact, so its own bytes are the only thing a render is
+    allowed to dirty. Counting them meant every render printed `dirty` forever and certification
+    rule 6 ("regenerated at a clean, recorded commit") was unreachable — a flag that can never
+    say the truth is worse than no flag, because readers learn to ignore it.
+    """
+    return any(line.strip() and CARD_NAME not in line for line in status_porcelain.splitlines())
 
 
 def git(*args: str) -> str:
@@ -103,6 +117,59 @@ def _meta_problem(receipt, current_hash: str, bhash_key: str = "behavior_hash") 
             f"stale: encoder behavior changed since receipt ({meta[bhash_key]} != {current_hash})"
         )
     return None
+
+
+def _block_problem(block, current_hash: str) -> str | None:
+    """Per-PRODUCER freshness (certification rules 6 and 7).
+
+    `judge_stages.json` is a MERGE: five stage blocks written by four different scripts at four
+    different times. The file's own `_meta` therefore belongs to whoever wrote it LAST, which
+    let one re-run of `measure_views_law` make every other block look current — including blocks
+    whose inputs (`/tmp/opencode/...`) had been deleted. A block must show it was measured
+    against the encoder behavior now being judged, or it is not evidence about this encoder.
+    """
+    if not isinstance(block, dict):
+        return None  # scalars carry no stamp of their own; the file-level check covers them
+    stamp = block.get("_stamp")
+    if not isinstance(stamp, dict):
+        return "block has no producer stamp (legacy receipt) — re-run its producer"
+    bhash = str(stamp.get("behavior_hash") or "")
+    if not bhash:
+        return "block stamp records no behavior_hash — re-run its producer"
+    if bhash != current_hash:
+        return (
+            f"stale: measured by {stamp.get('producer', '?')} against behavior {bhash[:12]} "
+            f"(current {current_hash[:12]}) — re-run that producer"
+        )
+    # A block that contradicts itself is not evidence either (rule 7: self-consistency). The
+    # frozen criterion is still the block's `working` flag — this only refuses a block whose own
+    # recorded checks deny it, rather than letting `working: true` outrank its receipts.
+    checks = block.get("checks")
+    if isinstance(checks, dict) and checks and block.get("working"):
+        denied = [k for k, v in checks.items() if not (isinstance(v, dict) and v.get("working"))]
+        if denied:
+            return (
+                f"self-contradictory: reports working=True but "
+                f"{len(denied)} check(s) did not ({', '.join(sorted(denied)[:3])}) — re-run its producer"
+            )
+    return None
+
+
+def _stage_why(val: dict) -> str:
+    """Evidence for a stage row — names WHAT FAILED rather than whatever the summary starts with.
+
+    A red stage is a diagnosis to act on (principle 8), so the row has to name the failing check
+    and its measured reason. The block-level `evidence` string is a concatenation of every check
+    in insertion order, so on S4/S5 it began with an OK row and a red stage read like a green one.
+    """
+    checks = val.get("checks") or {}
+    # fail safe: a check that cannot say it worked did not work (reject, do not assume)
+    failing = {k: v for k, v in checks.items() if not (isinstance(v, dict) and v.get("working"))}
+    if failing:
+        name, check = next(iter(failing.items()))
+        rest = f" (+{len(failing) - 1} more)" if len(failing) > 1 else ""
+        return f"FAILED {name}: {str(check.get('evidence', ''))[:110]}{rest}"
+    return str(val.get("evidence", ""))[:140]
 
 
 def eval_tasks(tasks, bhash_note: str | None) -> tuple[str, str, list]:
@@ -221,8 +288,18 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
         elif isinstance(val, bool):
             verdict, why = (J.PASS, "reported working") if val else (J.FAIL, "reported not working")
         elif isinstance(val, dict) and "working" in val:
-            verdict = J.PASS if val["working"] else J.FAIL
-            why = str(val.get("evidence", ""))[:160]
+            block_note = _block_problem(val, current_hash)
+            if block_note:
+                verdict, why = J.UNKNOWN, block_note
+            else:
+                verdict = J.PASS if val["working"] else J.FAIL
+                # provenance travels with the number: a reader must be able to see WHICH artifact
+                # this block describes without opening the JSON and guessing from the merge order
+                st = val["_stamp"]
+                why = (
+                    _stage_why(val)
+                    + f"  ·{st.get('producer', '?')} on {str(st.get('git_commit', ''))[:7]}"
+                )
         else:
             verdict, why = J.UNKNOWN, f"malformed entry for {s.ident}"
         verdict, why = record(verdict, why, "judge_stages.json")
@@ -271,7 +348,8 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
             "# JUDGE CARD — PATH B > PATH A",
             "",
             f"*Generated `{generated}` · commit `{git('rev-parse', '--short', 'HEAD')}` "
-            f"(`{git('rev-parse', '--abbrev-ref', 'HEAD')}`{' · dirty' if git('status', '--porcelain') else ''}) "
+            f"(`{git('rev-parse', '--abbrev-ref', 'HEAD')}`"
+            f"{' · dirty' if _worktree_dirty(git('status', '--porcelain')) else ' · clean'}) "
             f"· encoder behavior `{current_hash}`*",
             "",
             f"**Assessment:** {assessment}",

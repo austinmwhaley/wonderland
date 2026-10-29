@@ -438,11 +438,23 @@ def check_training_determinism(data: Path) -> dict:
     }
 
 
-def stamp_merge_write(out_path: Path, stages: dict, command: str) -> dict:
+def stamp_merge_write(
+    out_path: Path, stages: dict, command: str, *, stamp_blocks: bool = True
+) -> dict:
     """Stamp _meta (freshness law) and merge stage blocks into the judge receipt.
 
     Single definition shared by every measurement script writing judge_stages.json,
     so stamps can never drift between producers.
+
+    EACH BLOCK IS STAMPED BY THE PRODUCER THAT MEASURED IT. This file is a MERGE of five blocks
+    written by four different scripts at four different times, so a file-level `_meta` alone let
+    the last writer certify evidence it never produced: one re-run of `measure_views_law` made
+    every other stage's rows look current, including blocks measured against `/tmp` inputs that
+    have since been deleted (certification rules 6 and 7). The block's own `_stamp` is what the
+    reader validates; `_meta` remains for provenance of the file as a whole.
+
+    `stamp_blocks=False` is for a receipt written whole by ONE producer (a leg file), where the
+    file-level `_meta` already describes every byte of it and per-block stamps would be noise.
     """
     existing = {}
     p = Path(out_path)
@@ -451,18 +463,22 @@ def stamp_merge_write(out_path: Path, stages: dict, command: str) -> dict:
             existing = json.loads(p.read_text())
         except Exception:  # noqa: BLE001 - rebuild rather than merge with garbage
             existing = {}
-    existing.update(
-        {
-            "_meta": {
-                "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-                "git_commit": JC.git("rev-parse", "HEAD"),
-                "behavior_hash": JC.behavior_hash(),
-                "command": command,
-                "producer": Path(sys.argv[0]).name,
-            },
-            **stages,
-        }
-    )
+    stamp = {
+        "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "git_commit": JC.git("rev-parse", "HEAD"),
+        "behavior_hash": JC.behavior_hash(),
+        "command": command,
+        "producer": Path(sys.argv[0]).name,
+    }
+    mine = {
+        k: (
+            {**v, "_stamp": dict(stamp)}
+            if stamp_blocks and isinstance(v, dict) and "_stamp" not in v
+            else v
+        )
+        for k, v in stages.items()
+    }
+    existing.update({"_meta": stamp, **mine})
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(json.dumps(existing, indent=2, sort_keys=True, default=str) + "\n")
     return existing

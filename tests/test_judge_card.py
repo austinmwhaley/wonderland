@@ -59,6 +59,18 @@ def _good():
     return _receipt({"brain": tasks, "brain_ledger": tasks})
 
 
+def _stage_blocks(h=HASH, producer="measure_input_law.py"):
+    """Stage blocks as a producer actually writes them: each carries its OWN stamp.
+
+    `judge_stages.json` is a merge of four producers, so the file-level `_meta` belongs to
+    whoever wrote last — a block without a stamp of its own cannot claim currency (rules 6, 7).
+    """
+    stamp = dict(_meta(h), command=f"{producer} --products x", producer=producer)
+    return {
+        s.ident: {"working": True, "evidence": "x", "_stamp": dict(stamp)} for s in J.STAGE_ROWS
+    }
+
+
 def test_honest_receipt_passes(tmp_path):
     _write(tmp_path, "judge_leg_supervised.json", _good())
     _, info = JC.render(tmp_path, HASH)
@@ -174,15 +186,78 @@ def test_stages_pass_only_when_reported_working(tmp_path):
     _write(
         tmp_path,
         "judge_stages.json",
-        dict(
-            {
-                "_meta": _meta(),
-                **{s.ident: {"working": True, "evidence": "x"} for s in J.STAGE_ROWS},
-            }
-        ),
+        dict({"_meta": _meta(), **_stage_blocks()}),
     )
     _, info = JC.render(tmp_path, HASH)
     assert all(info["verdicts"][s.ident] == J.PASS for s in J.STAGE_ROWS)
+
+
+def test_a_stage_measured_against_other_behavior_cannot_be_green(tmp_path):
+    """A merged file must not let one producer vouch for another's evidence (rules 6, 7).
+
+    The real defect this pins: `judge_stages.json` carried one `_meta` for five blocks written
+    by four scripts, so re-running S4's producer stamped S1/S2/S3/S5 — measured days earlier
+    against `/tmp` inputs that no longer exist — as current.
+    """
+    blocks = _stage_blocks(h="stalehash")
+    _write(tmp_path, "judge_stages.json", dict({"_meta": _meta(), **blocks}))
+    _, info = JC.render(tmp_path, HASH)
+    assert all(info["verdicts"][s.ident] == J.UNKNOWN for s in J.STAGE_ROWS), info["verdicts"]
+    # and the reason names who measured it and against what, so the fix is a command not a guess
+    md, _info = JC.render(tmp_path, HASH)
+    assert "stalehash" in md and "measure_input_law.py" in md
+
+
+def test_a_stage_block_with_no_stamp_of_its_own_cannot_be_green(tmp_path):
+    """A block that cannot say who measured it, or against which build, is not evidence."""
+    untracked = {s.ident: {"working": True, "evidence": "x"} for s in J.STAGE_ROWS}
+    _write(tmp_path, "judge_stages.json", dict({"_meta": _meta(), **untracked}))
+    _, info = JC.render(tmp_path, HASH)
+    assert all(info["verdicts"][s.ident] == J.UNKNOWN for s in J.STAGE_ROWS)
+
+
+def test_a_block_that_denies_its_own_checks_cannot_be_green(tmp_path):
+    """Self-consistency (rule 7): `working: true` may not outrank the checks recorded beside it.
+
+    The frozen criterion is still the block's `working` flag — this refuses only a block whose own
+    receipts contradict it, which is a producer defect the reader must not launder into a PASS.
+    """
+    blocks = _stage_blocks()
+    first = J.STAGE_ROWS[0].ident
+    blocks[first] = dict(
+        blocks[first],
+        working=True,
+        checks={"the_law": {"working": False, "evidence": "F(g∘f) != F(g)∘F(f)"}},
+    )
+    _write(tmp_path, "judge_stages.json", dict({"_meta": _meta(), **blocks}))
+    _, info = JC.render(tmp_path, HASH)
+    assert info["verdicts"][first] == J.UNKNOWN
+    md, _ = JC.render(tmp_path, HASH)
+    assert "self-contradictory" in md and "the_law" in md
+
+
+def test_a_red_stage_names_the_check_that_failed(tmp_path):
+    """Diagnosability (principle 8): a red row must name its failing check, not its first check.
+
+    Real defect: S4/S5 rendered `[outlet_schema] OK: ...` — the summary began with a passing
+    check, so a red stage visually read as a green one.
+    """
+    blocks = _stage_blocks()
+    ident = J.STAGE_ROWS[0].ident
+    blocks[ident] = dict(
+        blocks[ident],
+        working=False,
+        evidence="[good] OK: looks fine | [bad] FAILED: the law did not hold",
+        checks={
+            "good": {"working": True, "evidence": "looks fine"},
+            "bad": {"working": False, "evidence": "the law did not hold"},
+        },
+    )
+    _write(tmp_path, "judge_stages.json", dict({"_meta": _meta(), **blocks}))
+    md, info = JC.render(tmp_path, HASH)
+    assert info["verdicts"][ident] == J.FAIL
+    assert "FAILED bad: the law did not hold" in md
+    assert "[good] OK" not in md
 
 
 def test_assessment_never_claims_done_without_green_rows(tmp_path):
@@ -198,12 +273,7 @@ def test_assessment_claims_done_only_when_everything_is_green(tmp_path):
     _write(
         tmp_path,
         "judge_stages.json",
-        dict(
-            {
-                "_meta": _meta(),
-                **{s.ident: {"working": True, "evidence": "x"} for s in J.STAGE_ROWS},
-            }
-        ),
+        dict({"_meta": _meta(), **_stage_blocks()}),
     )
     _write(tmp_path, "env_receipt.json", {"torch": {"matmul_smoke": {"ok": True}}})
     _, info = JC.render(tmp_path, HASH)
@@ -213,3 +283,19 @@ def test_assessment_claims_done_only_when_everything_is_green(tmp_path):
 def test_behavior_hash_is_stable_and_content_sensitive(tmp_path):
     h1 = JC.behavior_hash()
     assert h1 == JC.behavior_hash()  # deterministic
+
+
+def test_the_card_can_report_a_clean_tree(tmp_path):
+    """Certification rule 6 asks for a card regenerated at a CLEAN recorded commit.
+
+    The card is a committed generated artifact, so before this fix every render counted its own
+    uncommitted bytes and printed `dirty` forever — a flag that can never tell the truth trains
+    readers to ignore it. Anything else in the tree must still make it dirty.
+    """
+    assert JC._worktree_dirty("") is False
+    assert JC._worktree_dirty(f"M {JC.CARD_NAME}") is False
+    assert (
+        JC._worktree_dirty(f" M {JC.CARD_NAME}\n") is False
+    )  # real porcelain lines have a lead space
+    assert JC._worktree_dirty(f"?? {JC.CARD_NAME}\n M looking_glass/cfm_state.py") is True
+    assert JC._worktree_dirty("?? docs/report_cards/experiments/judge_leg_rl.json") is True
