@@ -4,6 +4,7 @@ numpy
 torch
 scipy
 scikit-learn
+xgboost>=2.1
 polars>=1.30,<2
 pyarrow
 duckdb>=1.5,<2

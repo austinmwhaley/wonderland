@@ -3917,3 +3917,94 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   encoder's `seq_len` window, since calling a windowed tally "exact" would be a false claim.
   Numeric `0` remains ambiguous with "unlogged" under the recipe's pre-existing law (the stream's
   null mask is honoured where present); the receipt reports counts so a reader can see it.
+
+## DEC-428 — [TECHNICAL] the judge card gets a producer, starting with the `supervised` leg: one canonical GBM incumbent, both arms fit on A and scored on B
+
+- **Context.** The JUDGE card's top line is the project's definition of progress —
+  `PATH B (stream → frozen encoder → simple head) > PATH A (wide table → GBM incumbent)` — asked
+  per leg and reported twice per leg (`brain` = PROGRESS, `brain + ledger` = DELIVERY, DEC-383).
+  **No script has ever written `judge_leg_<leg>.json`**, so all eight top-line rows render
+  UNKNOWN: the card has been honest about a hole it could not fill. Step 6 (DEC-427) unblocked
+  the second column — until the `measure` view existed there was no ledger to deliver.
+- **Alternatives considered.** (1) *Reuse the existing `measure_ceiling.py` XGBoost
+  `device="cuda"` config* — rejected for this producer: the GPU is a shared, contested resource
+  (the LLM server holds ~80 GB of the 121 GB pool; DEC-423's whole co-tenant mechanism exists for
+  this), the job is CPU-feasible, and adopting a GPU path without a measured benchmark is exactly
+  what AGENTS.md's "measure before adopting" forbids. (2) *Five-fold OOF for the incumbent,
+  fit-on-A for the brain* — rejected as unfair: different evaluation geometry on the two sides is
+  how a baseline quietly becomes unbeatable, and the card's whole verdict is the paired delta
+  between those two arms. (3) *Cross-validate the incumbent with `KFold(shuffle=True)` over all
+  customers* — rejected: `encoder_samples` already freezes the population split, and shuffling
+  rows across the A/B boundary would let the incumbent train on the scored rows.
+- **Decision.** New `scripts/measure_judge_law.py`, one producer for the top line, starting with
+  `--legs supervised` (the others are additive follow-ups).
+  - **One canonical incumbent**, because AGENTS.md fixes "the table baseline" but nothing in the
+    repo pinned the model: `xgboost.XGBRegressor(n_estimators=200, max_depth=5,
+    learning_rate=0.06, tree_method="hist", device="cpu", random_state=SEED)` — the config already
+    used by `measure_causal.py`, chosen over four other ad-hoc copies rather than invented, and
+    recorded here so the baseline is fixed by citation, not by drift. Every future leg uses this.
+  - **Symmetric geometry**: both arms fit on split A (`encoder_samples.split='A'`) and scored on
+    split B. Same rows, same splits, no CV crossing the boundary.
+  - **The table is built once over A ∪ B and then sliced by position**, not built twice:
+    `table_features` one-hot-encodes the values it *observes*, so encoding the two splits
+    separately can produce two different column sets and silently mis-align the arms.
+  - **Reuse, do not re-derive**: `_load_all` / `_ridge_oos` / `_paired_ci`
+    (`measure_battery_law`), `_target_matrix` / `_controls` / `_matrix` (`measure_views_law`, so
+    the judge scores the SAME frozen trait set S4 scores), `_rollup` / `stamp_merge_write`
+    (`measure_input_law`). The PATH A matrix comes from the existing canonical
+    `demo.auto_encoder.table_features` — a fifth inline copy of that rule would be the drift
+    principle 6 exists to prevent.
+  - Controls go through the brain's own head (a control beaten by a weaker head proves nothing),
+    and degenerate traits are excluded-and-reported, never dropped.
+- **Acceptance metric (frozen before the run).** Per trait: `brain` and `pathA` are held-out R²
+  on split B; `ci_lo`/`ci_hi` are the paired per-customer bootstrap CI of
+  `(y − pred_table)² − (y − pred_brain)²`, so positive = brain wins; `random` and `destroyed`
+  through the same linear head. The leg PASSES only if every non-degenerate trait has
+  `ci_lo > 0` and `brain > pathA`. The verdict is the card's, computed from this receipt; this
+  script never states a verdict string, and no key in the receipt may be a `criterion`/`rule`
+  (certification rule 3).
+- **Single axis changed.** Consumer side only: no encoder, no objective, no gate change. Nothing
+  about the artifact moves — this produces the receipt that grades it.
+- **Trade-offs recorded.** The brain uses a linear head while the incumbent is a GBM; that
+  asymmetry is the *question* (a frozen donor must be usable by a dumb consumer, DEC-405/C2), not
+  an accident, and the head-ladder receipt is where the linear-only rule is tested. `table_features`
+  is row-dict-based (a known anti-pattern in the existing canonical builder) — reused rather than
+  rewritten so the judge cannot be measuring a fifth variant of the table.
+
+## DEC-431 — [TECHNICAL] the supervised leg measured for the first time: FAIL on both columns, and the two disclosures the measurement forced
+- **Context.** DEC-428 built the producer; this is the first run against a real artifact. Seven
+  live traits on 724 B-rows against 1 776 A-rows, comparator PATH A (48-column wide table,
+  2 500 customers, the DEC-428 GBM incumbent). Both columns FAIL, so the card's top line is
+  `supervised: FAIL / FAIL` — the honest first answer to `PATH B > PATH A`. `h0` is the only
+  trait PATH B wins (brain 0.7963, ledger 0.9837, against the table's −0.1213).
+- **Fairness checked before reporting the numbers** (rule 5 — a win over an unfair comparator is
+  worth nothing). PATH B reads a state stamped at the customer's last event; the maximum
+  `view_embeddings.as_of_epoch` is `2024-12-31T23:59:41`, strictly before `as_of = 1735689600`
+  (2025-01-01T00:00:00Z), and **0 / 2 500** customers read any post-`as_of` event. So the
+  asymmetry on `h0` is not a window artifact: the 48-column table genuinely cannot see what the
+  ledger sees.
+- **Alternatives considered.** (1) *Silently widen PATH A* (add columns until the baseline stops
+  looking broken) — refused: what the comparator contains is a frozen definition, and an operator
+  ruling is required (stop-and-ask). (2) *Drop the traits where the control sits at R² ≈ −5e10* —
+  refused: removing rows to make a gate meaningful changes what the gate measures. (3) *Report the
+  PASS-shaped point estimates and leave the controls unexamined* — refused: the H4 gate
+  (`control <= brain`) is trivially satisfied by a control at R² = −1e10, so on those traits the
+  negative control is not evidence of anything.
+- **Decision.** Report the measurement plus two disclosures, both produced by the script and
+  neither of which moves a verdict:
+  - `controls_unreadable` per task — a control whose R² < −1 (SSE more than double SST) is
+    flagged as a conditioning artifact of the wide design (the 591-d ledger's rare indicator
+    columns), stated in the receipt's own evidence line. The gate is untouched; the reader is told
+    the gate passed on a control it cannot read.
+  - `diagnostics.ledger_only` — scores the ledger ALONE through the same head, rows and splits.
+    This tests SPINE §5's corollary that "the ledger is mechanically what PATH A's table already
+    is", the premise for never booking a ledger number as a brain win. On this build it does NOT
+    hold (ledger-only 0.9846 on `h0` vs the table's −0.1213), which the evidence line says out
+    loud and which is escalated below for an operator ruling.
+- **Also fixed here (a reproducibility defect, not a decision of record).** `xgboost` was
+  imported unguarded by four scripts — including the one that produces "the table baseline",
+  which AGENTS.md makes non-negotiable — and declared in neither `pyproject.toml` nor
+  `requirements.txt`: PATH A could not run in a clean checkout. Declared as `xgboost>=2.1` in
+  both, and the pinned incumbent (DEC-428) is unchanged by it.
+- **Single axis changed.** Consumer/measurement side. No encoder, no objective, no gate, no
+  comparator definition moved.

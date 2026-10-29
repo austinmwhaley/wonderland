@@ -429,5 +429,7 @@ def attribution_receipt(arms: dict) -> dict:
     return {
         "kind": "ledger_attribution",
         "controls": {k: (None if v is None else round(float(v), 6)) for k, v in arms.items()},
-        "rule": "the brain earns the win; the ledger prevents the loss (SPINE §5 Option 3)",
+        # named `principle`, not `rule`: a receipt may not introduce a criterion/rule string
+        # (certification rule 3) — this states which ruling the arms serve, it decides nothing
+        "principle": "the brain earns the win; the ledger prevents the loss (SPINE §5 Option 3)",
     }
