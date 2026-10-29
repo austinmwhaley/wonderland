@@ -10,7 +10,7 @@
 
 > **IMPLEMENTATION OPENED on branch `foundation-rebuild` (2026-10-28).** Design phase complete
 > (T-series DEC-399 · A-series DEC-404 · C-series DEC-412 · Outlet Standard O1–O8 · O6 DEC-414);
-> DEC trail DEC-383…420. **Steps 0–1 done (DEC-416):** GB10 CUDA env in `.venv` (torch
+> DEC trail DEC-383…422. **Steps 0–1 done (DEC-416):** GB10 CUDA env in `.venv` (torch
 > 2.14.1+cu130, warm bf16 ≈15.2 TFLOPS, `python3-dev` installed — all scan-accel tests pass);
 > judge card live (`scripts/judge_spec.py` + `judge_card.py` → `JUDGE_CARD.md`, 18 anti-false-PASS
 > tests). **Step 2 delivered (DEC-417/418):** S1/S2 **PASS** on real evidence — renamed schema + new
@@ -32,6 +32,15 @@
 > 0.006), known randomized-offer uplift undecodable (R²≈0); prune pass wired (deletion
 > list empty, disclosed). S5 is a **measured FAIL with named axes** — state/geometry
 > deepest, then mass pressure, then successor features.
+> **DEC-421 measured (DEC-422, 2026-10-28):** the structural rank mechanism (bilinear content×state)
+> is **NOT adopted**. It moved what it was built to move — raw pre-boundary state ρ 0.006→**0.067**
+> (11×) and donor ρ 0.086→**0.124** — but the served boundary still loses to the frequency bag
+> (0.181, paired CI lo<0); `bank_rank` fell to 0.0196 with λ pinned at 1e6; and chunked continuation
+> broke the mechanism's OWN declared tolerance (state rel err **7.9e-3** vs a derived **1e-3** gate),
+> so a Lawful leg fails too. `bilinear_recurrence` stays `False`. The retrained baseline reproduced
+> the DEC-420 receipt exactly, so the control was valid. Measured cost: **1.45 s/step** plain vs
+> **1.93 s/step** bilinear — one trainer saturates the GB10, so **train arms sequentially** (two
+> concurrent arms buy no throughput and crashed the box 3× with the local LLM server resident).
 > Card now **3/6 stages · 0/8 legs · NOT DONE** (8 PASS · 1 measured FAIL · 10 UNKNOWN).
 > Baseline: 512/511
 > /1 (the 1 is a typed-tolerance drift left alone — gate-touching). Nothing pushed.
@@ -39,7 +48,9 @@
 >
 > **Ledger items owed (DEC-419 disclosures):** `cfm_state.absorb()` must carry intent-filter
 > states (O6 receipt); reconcile the two clocks (`cfm_data` stored `ts` UTC vs `_to_epoch`
-> local — 28800 s apart); `tau_from_spectrum` measurement costs ~460 s (two `discover` runs).
+> local — 28800 s apart); `tau_from_spectrum` measurement costs ~460 s (two `discover` runs);
+> `bilinear_recurrence` is un-adoptable until its converged fixed-point gate `H*` is carried as
+> recurrent state (DEC-422).
 
 **Repository state:** `main` now contains the former `primary-encoder` demo work. The duplicate
 report card, stale roadmap, duplicate receipt orchestrator, one-off OPE wrappers, and generator

@@ -1,0 +1,54 @@
+{
+  "S3": {
+    "checks": {
+      "clock_periodicity": {
+        "evidence": "week-shift (exact cycle multiple): worst state/E drift 0.000e+00 (gate 1e-4); gaps-x10 control (tokens fixed): min state/E drift 3.943e-01 (gate >1e-3) \u2014 the spring responds to elapsed time. DISCLOSED: absolute-clock features used, w_tod norm 9.09; cfm_data stored ts vs model _to_epoch differ 28800s (UTC vs local frame) \u2014 reconcile before horizons depend on it",
+        "seconds": 0.4,
+        "working": true
+      },
+      "governed_stability": {
+        "evidence": "governed training: 10 finite epoch values, non-finite tokens=0, diverged=False, worst epoch-to-epoch rise 5.29 vs 6x noise 21.4; registry resolved: half_life_days=2.4427025462962964 seq_len=606",
+        "seconds": 0.0,
+        "working": true
+      },
+      "mass_additivity": {
+        "evidence": "mass additivity scan(d, b1+b2) == scan(d,b1)+scan(d,b2) on real drives (disjoint event supports, float64): worst relative error 6.013e-16 (gate 1e-10)",
+        "seconds": 0.2,
+        "working": true,
+        "worst_rel_err": 6.012797862982725e-16
+      },
+      "scan_associativity": {
+        "evidence": "merge law F(g\u2218f)=F(g)\u2218F(f) on 6 real sequences x 5 split points (float64, model's own decay/drive, continuous_time=True): worst relative error 9.416e-16 (gate 1e-10)",
+        "seconds": 7.8,
+        "working": true,
+        "worst_rel_err": 9.416003622829685e-16
+      },
+      "ssm_merge_exact": {
+        "evidence": "one-shot vs split-at-midpoint continuation WITH all recurrent states carried (scan h + intent-filter f + wrapper g) over 6 real sequences: state rel err 1.122e-07, readout 1.688e-07 (gate 5e-05); DISCLOSED: h-only continuation (today's cfm_state.absorb) drifts 1.574e-02 \u2014 the filter state is not carried by serving, a bought approximation awaiting its O6 receipt",
+        "h_only_drift": 0.015740796644441266,
+        "seconds": 0.6,
+        "working": true,
+        "worst_state_rel": 1.1222304194919752e-07
+      },
+      "step0_finite": {
+        "evidence": "randomly re-initialized trunk (step-0 architecture, N(0,0.5) weights), 6 real sequences: 0 non-finite out of 704768 state/output/E values",
+        "seconds": 0.2,
+        "working": true
+      },
+      "tau_from_spectrum": {
+        "evidence": "taus are gap quantiles of the stream (no literal): base taus=[0.357, 0.979, 2.48]s days -> cadence x100 taus=[35.736, 97.917, 248.058] (median ratio 100.0x, gate >=10x, non-constant=True)",
+        "seconds": 469.0,
+        "working": true
+      }
+    },
+    "evidence": "[scan_associativity] OK: merge law F(g\u2218f)=F(g)\u2218F(f) on 6 real sequences x 5 split points (float64, model's own decay/drive, continuous_time=True): worst relative error 9.416e-16 (gate 1e-10) | [ssm_merge_exact] OK: one-shot vs split-at-midpoint continuation WITH all recurrent states carried (scan h + intent-filter f + wrapper g) over 6 real sequences: state rel err 1.122e-07, readout 1.688e-07 (gate 5e-05); DISCLOSED: h-only continuation (today's cfm_state.absorb) drifts 1.574e-02 \u2014 the filter state is not carried by serving, a bought approximation awaiting its O6 receipt | [mass_additivity] OK: mass additivity scan(d, b1+b2) == scan(d,b1)+scan(d,b2) on real drives (disjoint event supports, float64): worst relative error 6.013e-16 (gate 1e-10) | [clock_periodicity] OK: week-shift (exact cycle multiple): worst state/E drift 0.000e+00 (gate 1e-4); gaps-x10 control (tokens fixed): min state/E drift 3.943e-01 (gate >1e-3) \u2014 the spring responds to elapsed time. DISCLOSED: absolute-clock features used, w_tod norm 9.09; cfm_data stored ts vs model _to_epoch differ 28800s (UTC vs local frame) \u2014 reconcile before horizons depend on it | [step0_finite] OK: randomly re-initialized trunk (step-0 architecture, N(0,0.5) weights), 6 real sequences: 0 non-finite out of 704768 state/output/E values | [tau_from_spectrum] OK: taus are gap quantiles of the stream (no literal): base taus=[0.357, 0.979, 2.48]s days -> cadence x100 taus=[35.736, 97.917, 248.058] (median ratio 100.0x, gate >=10x, non-constant=True) | [governed_stability] OK: governed training: 10 finite epoch values, non-finite tokens=0, diverged=False, worst epoch-to-epoch rise 5.29 vs 6x noise 21.4; registry resolved: half_life_days=2.4427025462962964 seq_len=606",
+    "working": true
+  },
+  "_meta": {
+    "behavior_hash": "6950962b06ba73b8",
+    "command": "measure_dynamics_law.py --ckpt-dir /home/austin_whaley/wonderland_work/cfm_s3b --train-log /home/austin_whaley/wonderland_work/cfm_train_baseline.log --db /home/austin_whaley/wonderland_work/demo/customer_event_stream.parquet --out /home/austin_whaley/wonderland_work/dyn_baseline.json",
+    "generated_at": "2026-10-29T00:55:06+00:00",
+    "git_commit": "ca8e332d4e32590fcf0a017edb776331b589944b",
+    "producer": "measure_dynamics_law.py"
+  }
+}

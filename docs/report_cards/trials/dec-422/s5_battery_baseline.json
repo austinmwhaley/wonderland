@@ -1,0 +1,35 @@
+{
+  "S5": {
+    "checks": {
+      "action_conditioned_outcome": {
+        "evidence": "known-effect uplift from the one-factor-daily randomized offer arm (P(buy|offer=opt) - P(buy|off>=2), >= 10 arm-days/side): 233 holdout B customers identified from 724, head fitted on 609 A customers; brain OOS R2=-0.009 vs population-constant naive R2=-0.002; Spearman(brain,truth)=0.084; paired MSE-gain 95%CI [-0.00111,0.00089] (gate lo>0)",
+        "seconds": 0.3,
+        "working": false
+      },
+      "distance_regression": {
+        "evidence": "lab-truth latent distance (x0/h0/d0/price_sens/return_prone/touch_pref, z-scored) vs distance over 20000 customer pairs from 724 holdout B customers: donor Spearman 0.086 vs naive bag-of-event-types 0.181; paired-over-pairs gain 95%CI [-0.096,-0.095] (gate lo>0); diagnostic raw-state(pre-boundary) Spearman 0.006",
+        "seconds": 0.4,
+        "working": false
+      },
+      "ledger_reconstruction": {
+        "evidence": "ledger recomputed from the raw stream by DuckDB (not a table copy); LINEAR head on the learned-shape donor (embedding = model.proj(h), no served measure blocks \u2014 the claim is learned-only), fitted on 1776 split-A customers and scored on the 724 holdout B; naive comparator = same head on the full event-type bag + recency (target-defining type excluded \u2014 no label leakage into the comparator); spend: brain R2=0.805 naive R2=0.935 MSE-gain 95%CI[-0.050,-0.028] | margin: brain R2=0.791 naive R2=0.897 MSE-gain 95%CI[-0.045,-0.021] | n_purch: brain R2=0.832 naive R2=0.894 MSE-gain 95%CI[-0.026,-0.008] | n_ret: brain R2=0.375 naive R2=0.237 MSE-gain 95%CI[0.048,0.153]",
+        "seconds": 10.2,
+        "working": false
+      },
+      "prune_pass": {
+        "evidence": "per-objective weights recorded: 34 objectives, min=0.6136, trajectory snapshots=8, selection rule='heldout_combined_objective (all active objectives)' (frozen held-out-SSL); weights <= 0.01 -> DELETE list: EMPTY \u2014 equal-weight mode never decays a task to zero (disclosed: vacuous today, enforced the day a learned mixture is adopted)",
+        "seconds": 0.0,
+        "working": true
+      }
+    },
+    "evidence": "[ledger_reconstruction] FAILED: ledger recomputed from the raw stream by DuckDB (not a table copy); LINEAR head on the learned-shape donor (embedding = model.proj(h), no served measure blocks \u2014 the claim is learned-only), fitted on 1776 split-A customers and scored on the 724 holdout B; naive comparator = same head on the full event-type bag + recency (target-defining type excluded \u2014 no label leakage into the comparator); spend: brain R2=0.805 naive R2=0.935 MSE-gain 95%CI[-0.050,-0.028] | margin: brain R2=0.791 naive R2=0.897 MSE-gain 95%CI[-0.045,-0.021] | n_purch: brain R2=0.832 naive R2=0.894 MSE-gain 95%CI[-0.026,-0.008] | n_ret: brain R2=0.375 naive R2=0.237 MSE-gain 95%CI[0.048,0.153] | [distance_regression] FAILED: lab-truth latent distance (x0/h0/d0/price_sens/return_prone/touch_pref, z-scored) vs distance over 20000 customer pairs from 724 holdout B customers: donor Spearman 0.086 vs naive bag-of-event-types 0.181; paired-over-pairs gain 95%CI [-0.096,-0.095] (gate lo>0); diagnostic raw-state(pre-boundary) Spearman 0.006 | [action_conditioned_outcome] FAILED: known-effect uplift from the one-factor-daily randomized offer arm (P(buy|offer=opt) - P(buy|off>=2), >= 10 arm-days/side): 233 holdout B customers identified from 724, head fitted on 609 A customers; brain OOS R2=-0.009 vs population-constant naive R2=-0.002; Spearman(brain,truth)=0.084; paired MSE-gain 95%CI [-0.00111,0.00089] (gate lo>0) | [prune_pass] OK: per-objective weights recorded: 34 objectives, min=0.6136, trajectory snapshots=8, selection rule='heldout_combined_objective (all active objectives)' (frozen held-out-SSL); weights <= 0.01 -> DELETE list: EMPTY \u2014 equal-weight mode never decays a task to zero (disclosed: vacuous today, enforced the day a learned mixture is adopted)",
+    "working": false
+  },
+  "_meta": {
+    "behavior_hash": "6950962b06ba73b8",
+    "command": "measure_battery_law.py --products /home/austin_whaley/wonderland_work/cfm_s3b/cfm_products.duckdb --demo /home/austin_whaley/wonderland_work/demo --out /home/austin_whaley/wonderland_work/battery_baseline.json",
+    "generated_at": "2026-10-29T00:14:53+00:00",
+    "git_commit": "ca8e332d4e32590fcf0a017edb776331b589944b",
+    "producer": "measure_battery_law.py"
+  }
+}

@@ -3385,3 +3385,108 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - **Principles served.** Honest (falsifiable, comparators + CIs, no clamp),
   Diagnosable (each FAIL names its axis and its cheapest isolation experiment),
   M9 (ground-truth gates), M13 (prune pass wired: nothing accretes without earning keep).
+
+## DEC-421 — [TECHNICAL] matched-control experiment: turn ON the structural rank mechanism (bilinear content×state) that FR v2.0 pointed at and production left off
+
+- **Context.** DEC-420 named the deepest axis: state/geometry (raw trunk distance-Spearman
+  0.006; donor 0.086 vs naive bag 0.181). Diagnosis before intervention: the production
+  checkpoint's geometry bank ran with `lambda_final = 1e6` (PINNED at the ceiling) while
+  `bank_rank` sat at 0.032 vs the 0.32 target — the soft pressure is measured exhausted.
+  FR v2.0 (DEC-044) had already removed the soft loss-invariants for exactly this reason
+  ("they stiffened the landscape: L~2e6 -> lr collapse") and declared "rank is enforced in
+  the update" — the bilinear recurrence — yet `bilinear_recurrence` defaults False. The
+  repo's only measured rank-raiser is the §4.3 spike: bilinear `h⊗x` raised TRANSFERABLE
+  cross-sample rank 1.79×.
+- **Decision (one axis: nonlinearity placement / T8).** Retrain the smoke control —
+  identical data, customers=2500, anchors=4, as_of, version/seed — with
+  `--set bilinear_recurrence=true`; compare against the existing baseline
+  (`/tmp/opencode/cfm_s3b`) on the SAME battery probes (matched control).
+- **Rejected alternatives.** (1) Raise the geometry-bank ceiling/target: the governor is
+  already pinned at 1e6 — adding ceiling launders "no clip ceiling does the work" into
+  more clip (violates monotonic stability, DEC-039). (2) Boundary whitening (batch-coupled
+  ZCA): banned by v6.0 — fakes capacity the trunk lacks. (3) Grow `dim`: capacity is the
+  step-7 derived curve, and rank ≠ width (PR 5.7 of 256 says width is not the bottleneck).
+- **Acceptance gate — FROZEN BEFORE RUNNING (certification integrity §1):**
+  - PRIMARY: `distance_regression` on the new checkpoint — donor Spearman vs the lab-truth
+    latent distance MUST exceed the naive bag Spearman, paired-over-pairs CI lo > 0.
+  - SUPPORTING: registry `bank_rank >= 0.10` (meaningful move from 0.032) AND
+    `lambda_final < lam_max` (governor off the ceiling).
+  - DO NO HARM: the seven S3 laws re-sign on the new checkpoint (the chunked-merge
+    tolerance now DERIVES from the model's own `bilinear_tol` — the mechanism's declared
+    convergence criterion replaces a hand-set constant, same law); `ledger_reconstruction`
+    and `action_conditioned_outcome` must not regress below baseline; governed stability
+    clean (no divergence, no non-finite); bilinear wall-time cost recorded (M16).
+  - Adoption rule: all three hold → flip the config default to True and re-certify
+    canonically. Otherwise the flag stays off and this DEC records the failure.
+- **Trade account (coupling).** Bilinear buys rank at WRITE time by paying compute at
+  ticks (fixed-point iterated scans, cap 8, converge-to-tol); chunk-continuation exactness
+  becomes tol-based at the model's declared `bilinear_tol=1e-4` instead of float32-exact.
+  Both sides are measured, not assumed.
+- **Principles served.** Lawful (nonlinearity inside the update keeps the scan's merge law
+  the mechanism of exactness; v6.0 "rank-needed nonlinearity is solved by iterate-to-
+  convergence scans"), Honest (exhausted soft pressure surfaced, not papered),
+  Diagnosable (one axis isolated on ground truth with a matched control), M2, M16.
+
+## DEC-422 — DEC-421 measured: the bilinear recurrence is NOT adopted — trunk geometry moves 11×, the served boundary still loses to the frequency bag, and chunked continuation breaks the mechanism's OWN tolerance
+
+- **Context.** DEC-421 froze a three-part gate BEFORE any run (PRIMARY donor > naive bag with
+  paired CI lo>0; SUPPORTING `bank_rank >= 0.10` AND `lambda_final < lam_max`; DO NO HARM = S3
+  7/7 laws + no regression on the other two probes + governed stability + M16 cost). Executed on
+  `foundation-rebuild` at `ca8e332` as a true matched control: same stream, seed, `customers=2500`,
+  `anchors=4`, `as_of=2025-01-01`, same behavior tag `0.11.0r469048`; only `bilinear_recurrence`
+  differs.
+- **Control validity first.** The retrained baseline reproduced the frozen DEC-420 receipt
+  **exactly** (donor 0.086 vs bag 0.181, CI [-0.096,-0.095]; spend 0.805 / margin 0.791 / n_purch
+  0.832 / n_ret 0.375; uplift R² -0.009, ρ 0.084). The arms are therefore like-for-like.
+- **PRIMARY — FAIL.** donor ρ **0.124** vs the frozen bag comparator **0.181**, paired-over-pairs
+  CI **[-0.058,-0.058]** (gate lo>0). It does move what it was built to move: the raw pre-boundary
+  state goes **0.006 → 0.067 (11×)** and the donor goes 0.086 → 0.124 — the trunk effect FR v2.0
+  predicted. The served geometry still loses to pure frequency counts.
+- **SUPPORTING — FAIL.** registry `bank_rank` **0.0196** (needed ≥ 0.10; the baseline is 0.0321, so
+  it went DOWN) and `lambda_final` **1e6 = `lam_max`** — the soft pressure is still pinned at the
+  ceiling; the structural term did not relieve it.
+- **DO NO HARM — FAIL on the Lawful leg; mixed elsewhere.** S3 on the bilinear checkpoint:
+  **6/7 PASS, `ssm_merge_exact` FAILS** — one-shot vs split-at-midpoint continuation with ALL
+  recurrent states carried gives **state rel err 7.904e-03** against a gate of **1e-03**, and that
+  gate is already the generous one DERIVED from the mechanism's own `bilinear_tol=1e-4` (×10 float32
+  slack). h-only serving drift also worsened (6.790e-03 → 2.347e-02). Ledger rows all IMPROVE
+  (spend 0.818, margin 0.802, n_purch 0.850, n_ret 0.412) but still lose the race to the bag on
+  three of four; the uplift probe improves on R² (-0.006 vs -0.009) while its Spearman REGRESSES
+  (0.084 → 0.044). Governed stability clean: `diverged=false`, `lr_collapsed=false`, step-0 finite.
+- **Why the merge law breaks (mechanism, not noise).** The vectorized bilinear path solves its
+  fixed point by iterated **sequence-global** scans and then takes ONE differentiable pass with the
+  detached global gate `H*` (`cfm_model.py`, bilinear branch). `H*` couples every timestep, and it
+  is **not part of the recurrent state**, so a midpoint split cannot reproduce the same fixed point
+  from carried state. Continuation error at 79× the mechanism's own declared tolerance is the
+  measurement of that missing state.
+- **Verdict (DEC-421's adoption rule).** All three groups were required; two fail outright and the
+  third fails on a Lawful leg. **`bilinear_recurrence` stays `False`.** The tolerance-derivation in
+  `scripts/measure_dynamics_law.py` is KEPT — it is the achievable floor for any bilinear model, and
+  with the flag off non-bilinear experts hold the unchanged 5e-5 floor (baseline re-signed **7/7**
+  under the edited script).
+- **Cost account (M16).** Concurrent arms finished in 43m30s / 43m37s — concurrency HID the cost.
+  A controlled re-run of both arms **sequentially** on warm caches measured steady-state
+  **1.45 s/step plain vs 1.93 s/step bilinear (1.33× compute to attempt the rank)**, and showed the
+  two-arm total is the same either way (sequential ≈ 39 min of stepping vs parallel ≈ 42 min): one
+  trainer already saturates the device, so a second buys no throughput. Running two concurrently is
+  also **unsafe** while the local LLM server is resident — three hard crashes were logged as
+  `NVRM: nvCheckOkFailedNoLog: Out of memory [NV_ERR_NO_MEMORY]` (16:06, 16:25, 18:17) whenever the
+  0.70–0.72-utilization vLLM process coexisted with GPU training; the one 43-min concurrent run that
+  survived had that server down (65 GB free). **Adopted practice: one trainer at a time, and check
+  `MemAvailable` before launching** (a watchdog killing the trainer below 6 GB was used on the
+  surviving run).
+- **Receipt durability (§6).** These crashes wipe `/tmp`; every artifact here was rebuilt under
+  `~/wonderland_work` (deterministic demo stream, both checkpoints + registries, battery and
+  dynamics receipts, logs). The stream regenerates in 11 s via `scripts/make_demo_data.py`.
+- **Next loop (one axis).** Axis remains state/geometry; the cheapest isolation experiment changes.
+  Either (a) **carry the converged fixed-point gate `H*` in the recurrent state** so the bilinear
+  recurrence is chunk-continuable (a `cfm_state` change that also feeds the owed O6 `absorb()`
+  receipt) and re-run this same frozen gate, or (b) set the structural hypothesis aside for this
+  cycle and take the **objective-pressure** axis DEC-420 named second (mass rows lose to the bag on
+  spend/margin/n_purch — a pressure change, no new mechanism). (a) reuses every frozen probe; (b) is
+  cheaper. Still rejected: raising the bank ceiling/target (pinned λ launders clip, DEC-039),
+  batch-coupled whitening (banned, v6.0), growing `dim` (rank ≠ width).
+- **Principles served.** Honest (pre-registered gate reported as FAIL, including the inconvenient
+  11× trunk gain that still does not clear the bar), Lawful + Robust (a compositionality break is
+  disqualifying regardless of metric movement), Diagnosable (the failure names the missing state,
+  not "train longer"), M16 (per-step cost measured, not assumed).

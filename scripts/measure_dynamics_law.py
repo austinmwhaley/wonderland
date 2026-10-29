@@ -182,7 +182,11 @@ def check_ssm_merge(model, seqs) -> dict:
     residual gap of that approximation is measured and disclosed here (O6: exactness is
     free; an approximation must be bought with a receipt)."""
     t0 = time.perf_counter()
-    tol = 5e-5
+    ex0 = model.ssm.experts[0]
+    # tolerance DERIVES from the mechanism's own declared convergence criterion: a bilinear
+    # expert solves its fixed point to bilinear_tol, so that (x10 float32 slack) is the law's
+    # achievable floor; a non-bilinear expert holds only float32 scan noise (5e-5 floor).
+    tol = max(5e-5, 10.0 * float(getattr(ex0, "bilinear_tol", 0.0)))
     ssm = model.ssm
     experts = ssm.experts
     hidden = [i for i, e in enumerate(experts) if getattr(e, "stats_proj", None) is not None]
