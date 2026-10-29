@@ -4376,3 +4376,100 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   change to the demo generator, i.e. a new artifact version, so it is surfaced rather than done.
 - **Recorded cost.** v1: 131 s, ~1.5 GB peak, 687 candidates. v2: OOM-killed the host. Nothing
   from either version is committed.
+
+## DEC-439 — [TECHNICAL] the machine must not be crashable by this repo: a hard cgroup cap per job, and a guard that cannot miss one
+
+- **Context.** A memory exhaustion I caused took the host down while the LLM server was resident
+  (DEC-437 records the failing audit). The post-mortem is not "be more careful": two structural
+  facts made it possible, and both are fixable.
+  1. **Nothing enforced a limit on a single job.** The repo's guard (`gpu_watchdog`) *observes*
+     `MemAvailable` and SIGTERMs known processes once the system is already at its 8 GB floor. That
+     is a race against a fast allocator — and the kernel's own OOM killer is not obliged to pick
+     the offender, so the casualty can be the LLM server or the desktop instead.
+  2. **The guard had a fixed list of four script names.** The runaway ran inside a script that was
+     not on it, with no guard running at all, so nothing was in a position to stop it. A guard that
+     only knows some of the jobs is a guard with a hole shaped like the next script.
+- **Alternatives considered.** (1) *Teach myself to be careful* — rejected: the failure was
+  structural, and a policy with no enforcement is exactly what failed. (2) *Lower the watchdog's
+  floor and poll faster* — rejected: still a race, still system-wide, still after the fact.
+  (3) *`ulimit -v` everywhere* — rejected as the primary mechanism: `RLIMIT_AS` bounds one
+  process's address space, so a job that forks three workers gets three times the budget, and it
+  trips on legitimate large virtual reservations rather than on real use. (4) *cgroup per job* —
+  **adopted**: the kernel enforces it on the whole process tree, and on breach it kills inside
+  that cgroup, so the rest of the machine does not notice.
+- **Decision.** Two layers, both in the repo, both tested.
+  - **`scripts/safe_run.py`** launches a job in a `systemd-run --user --scope` cgroup with
+    `MemoryMax` and `MemorySwapMax=0`. The budget is **derived at launch**, never typed:
+    `cap = min(--max-gb, MemAvailable − floor)`, with the floor defaulting to the operator's 8 GB.
+    If what remains is below a viability minimum (1 GB), it **refuses to start** — a job that
+    cannot fit leaves a half-written receipt, which is worse than no receipt (fail safe, principle
+    7). A machine without a user systemd falls back to `RLIMIT_AS` and the receipt *names* the
+    weaker mechanism rather than passing it off as the same guarantee.
+  - **`measure_certification_law`** runs every producer of the S6 chain through that cap, so the
+    single command the card's reproducibility rests on is safe **by construction**, and the S6
+    block carries the cap and its derivation as a memory receipt.
+  - **`gpu_watchdog.DEFAULT_PATTERNS`** now covers every `scripts/measure_*.py` producer (21
+    patterns), and `tests/test_memory_guard.py` **derives** the required list from the directory, so
+    adding a producer without policing it fails the suite instead of leaving a hole.
+- **Verification (measured, not asserted).** A child allocating 3 GB inside a 2 GB scope is killed
+  by the kernel (`returncode -9`, normalised to 137) and `MemAvailable` is unchanged afterwards —
+  the crash reproduced deliberately and contained. A job that fits returns its own status
+  untouched. Nine tests in `tests/test_safe_run.py` (budget arithmetic, refusal, both mechanisms,
+  the deliberate kill) and three in `tests/test_memory_guard.py` (coverage derived from the repo,
+  self-exclusion, matching). The coverage test failed on first run and named six unpoliced
+  producers — which is the mechanism working.
+- **Single axis changed.** Operational safety only. No measurement, gate, comparator or artifact
+  definition moved; the cap is a launch parameter and travels in the receipt.
+- **Trade-offs recorded.** The cap costs one `systemd-run` wrapper per job (negligible) and its
+  budget is derived from *available* memory at launch, so two jobs started a second apart each
+  believe they own the remainder; the guard, not the cap, is what prevents that by stopping GPU
+  jobs at the floor. `MemorySwapMax=0` means a job that exceeds its cap dies instead of crawling
+  through swap: that is deliberate (a 100x slowdown is not a result), and it is the reason the cap
+  must be generous rather than tight.
+
+## DEC-440 — [TECHNICAL] one boundary for the whole project: a memory-capped systemd slice every job re-enters by itself
+
+- **Context.** DEC-439 gave each job a cap, but the user's requirement is stronger: the project
+  should live in one bounded box with a fixed allowance, and "that is it". Per-job discipline has
+  a structural hole — a job launched some other way is outside the cap — and the failure that
+  started this (DEC-437) was exactly a direct launch with no guard.
+- **Alternatives considered.** (1) **Docker with `--memory`** — the obvious reading of "container",
+  and rejected on fit rather than on safety: the project's virtualenv, its 3.3M-event demo data,
+  the frozen checkpoints and the GPU device all live on this host, so a container would duplicate
+  the environment, need GPU passthrough, and make every measurement a different environment from
+  the one the receipts were produced in. (2) *A VM* — rejected: same duplication with more cost and
+  no benefit; memory is the axis at issue. (3) *One cap per job (DEC-439 alone)* — kept as the
+  second layer, but rejected as the answer: it protects the machine and not the project, and two
+  modest jobs can still add up to an immodest one. (4) **A systemd user slice** — adopted: it is
+  the same kernel cgroup mechanism Docker's `--memory` uses, with one shared ceiling and no
+  duplicated environment.
+- **Decision.** Three pieces, all in the repo and all tested.
+  - **`deploy/wonderland.slice.in` + `scripts/install_memory_slice.sh`** install a user slice with
+    `MemoryMax` = **half of physical RAM** (derived at install time — 60 GB on this 121 GB box),
+    `MemorySwapMax=0` and `MemoryAccounting=yes`. Half leaves the other half for the LLM server,
+    the desktop and the operator's 8 GB floor. Reproducible from the repo, so the boundary is not
+    an undocumented machine state (rule 6).
+  - **`safe_run.ensure_boundary()`** is called at the top of every chain producer: if
+    `/proc/self/cgroup` says the process is outside the slice, it **re-launches itself inside** and
+    exits with the child's status. A direct `python scripts/measure_*.py` is therefore inside the
+    ceiling without anyone remembering a flag. It is a no-op when the slice is absent (fresh clone,
+    CI means "no boundary to enter", not "cannot measure"), prints what it did, and carries an env
+    marker so a host where re-entry cannot take effect cannot fork forever.
+  - **`gpu_watchdog`** now treats slice membership as a rule: any policed producer found outside
+    the slice is stopped (`--outside-slice kill`, default), and its police list covers every
+    `scripts/measure_*.py` (21 patterns), kept honest by a test that derives the list from the repo.
+- **Verification, deliberately destructive.** A child allocating 3 GB into a 2 GB job cap is killed
+  by the kernel at 137 and `MemAvailable` is unchanged. Two 700 MB jobs inside a 1 GB test slice
+  cannot both run: the second pushed the slice over the ceiling and the kernel killed the first —
+  the SHARED-budget property, which is the point of a slice. A script launched directly (no
+  launcher, no guard) reported its own cgroup as `…/wonderland.slice/run-….scope`. A
+  producer-shaped process launched outside the slice was detected and SIGTERMed by the guard. 21
+  tests across `tests/test_safe_run.py` and `tests/test_memory_guard.py`.
+- **Single axis changed.** Operational containment only. No measurement, gate, comparator or
+  artifact definition moved.
+- **Trade-offs recorded.** A slice is not a filesystem or network container: it bounds MEMORY,
+  which is what crashed the machine, and does not isolate anything else. `MemorySwapMax=0` means a
+  job over the ceiling dies rather than crawling through swap — deliberate. The ceiling is shared,
+  so a genuinely large new workload may need the unit raised (one line, `--check` reports it)
+  rather than being silently squeezed; the guard's low-memory log is what tells an operator the
+  budget was the constraint.

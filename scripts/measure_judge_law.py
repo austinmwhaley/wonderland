@@ -1015,6 +1015,13 @@ def math_ok(t: dict) -> bool:
 
 
 def main() -> int:
+    # every run of this producer happens inside the project's one memory ceiling (DEC-440):
+    # a direct launch is re-entered into the slice, so the boundary does not depend on the
+    # caller remembering to use the launcher.
+    from safe_run import ensure_boundary
+
+    ensure_boundary()
+
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument(
         "--products",

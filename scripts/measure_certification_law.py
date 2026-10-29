@@ -43,6 +43,7 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts"))
 
 import judge_card as JC  # noqa: E402  (one definition of the card, and of git state)
+import safe_run as SR  # noqa: E402  (one definition of the memory cap)
 from measure_input_law import _rollup, stamp_merge_write  # noqa: E402  (one definition)
 
 EXP = ROOT / "docs/report_cards/experiments"
@@ -83,22 +84,29 @@ def _artifact(path: Path) -> dict:
     return {"sha256": _sha256(path), "bytes": path.stat().st_size}
 
 
-def _run_producer(script: str, argv: list[str]) -> dict:
-    """One producer, as a real child process.
+def _run_producer(script: str, argv: list[str], cap_gb: float) -> dict:
+    """One producer, as a real child process, inside its own hard memory cap.
 
     The chain has to survive being invoked the way an operator invokes it, from a clean shell, not
     only as an import inside this interpreter — a chain that only works in-process is a chain that
     will silently stop working the first time a producer gains a `main()` side effect.
+
+    It also has to be uncrashable. Each child is launched through `safe_run`'s cgroup cap, so a
+    producer that runs away is killed by the kernel at the cap and the machine keeps running; the
+    chain then reports that producer as failed instead of half-writing a receipt.
     """
     cmd = [sys.executable, str(ROOT / "scripts" / script), *argv]
+    run_cmd, mechanism = SR.capped_command(cmd, cap_gb)
     t0 = time.perf_counter()
-    proc = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True)
+    proc = subprocess.run(run_cmd, cwd=ROOT, capture_output=True, text=True)
     tail = (proc.stdout or proc.stderr or "").strip().splitlines()
     return {
         "command": " ".join([script, *argv]),
         "exit": proc.returncode,
         "seconds": round(time.perf_counter() - t0, 1),
         "last_line": tail[-1][:160] if tail else "",
+        "cap_gb": round(cap_gb, 1),
+        "cap_mechanism": mechanism,
     }
 
 
@@ -154,6 +162,12 @@ def main() -> int:
         "--train-log", default="", help="defaults to <products parent>/cfm_train_baseline.log"
     )
     ap.add_argument("--legs", default=ALL_LEGS)
+    ap.add_argument(
+        "--floor-gb",
+        type=float,
+        default=SR.DEFAULT_FLOOR_GB,
+        help="system memory to leave free; each producer is capped at what remains",
+    )
     ap.add_argument("--receipts", default=str(EXP))
     ap.add_argument("--out", default=str(EXP / "judge_stages.json"))
     ap.add_argument("--card", default=str(CARD))
@@ -193,6 +207,13 @@ def main() -> int:
         "stages_out": str(stages_out),
     }
 
+    # ---- 0. the memory budget, derived from the machine before anything is launched -----------
+    cap_gb, cap_ok, cap_why = SR.plan(SR.mem_available_gb(), a.floor_gb)
+    if not cap_ok:
+        print(f"certification: REFUSING to run the chain — {cap_why}", file=sys.stderr)
+        return 2
+    print(f"  [cap   ] {cap_gb:.1f} GB per producer, via {SR.capped_command(['x'], cap_gb)[1]}")
+
     # ---- 1. the chain, run for real ---------------------------------------------------------
     t_start = time.time()
     runs: dict[str, dict] = {}
@@ -202,7 +223,7 @@ def main() -> int:
             argv += ["--out", str(stages_out)]
         else:
             argv += ["--out-dir", str(receipts)]
-        runs[label] = _run_producer(script, argv)
+        runs[label] = _run_producer(script, argv, cap_gb)
         r = runs[label]
         print(f"  [{label:5s}] {script} exit={r['exit']} {r['seconds']}s — {r['last_line'][:88]}")
     failed = {k: v["exit"] for k, v in runs.items() if v["exit"] != 0}
@@ -302,6 +323,11 @@ def main() -> int:
     # ---- write S6, then render the card it describes ---------------------------------------
     body = _rollup(checks)
     body["chain"] = runs
+    body["memory"] = {
+        "cap_gb": round(cap_gb, 1),
+        "derivation": cap_why,
+        "mechanism": runs["legs"]["cap_mechanism"],
+    }
     body["artifacts"] = artifacts
     body["inputs"] = {"products": str(products), "demo": str(demo), "legs": a.legs}
     body["n_rows"] = n_rows

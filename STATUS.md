@@ -849,6 +849,26 @@ observability, prefer deletion, best tool, cost-aware, **speed-first (16)**.
   (no weekday/hour send seasonality, no churn, push = 32% of events) —
   ROADMAP P3; MoE/multi-entity (M3/M5) rejected.
 
+## Memory boundary (2026-10-29) — the project runs in one capped slice
+
+A memory exhaustion took this host down while the LLM server was resident. The answer is
+structural, not a resolution to be careful:
+
+- **`wonderland.slice`** (installed by `scripts/install_memory_slice.sh` from
+  `deploy/wonderland.slice.in`) holds ONE ceiling — `MemoryMax` = half of physical RAM (60 GB of
+  121 GB), `MemorySwapMax=0`. The kernel kills inside the slice when it is hit; the LLM server,
+  the desktop and the OS never notice. Same cgroup mechanism as Docker `--memory`, without
+  duplicating the venv/data/GPU onto another image (DEC-440).
+- **Direct launches bound themselves**: every chain producer calls
+  `safe_run.ensure_boundary()` first and re-enters the slice if it is outside it.
+- **`scripts/safe_run.py`** is the launcher for anything else, with an optional tighter per-job
+  cap inside the slice.
+- **`scripts/gpu_watchdog.py`** stops any policed producer found OUTSIDE the slice, and covers
+  every `scripts/measure_*.py`.
+- Verified by killing things on purpose: a 3 GB job in a 2 GB cap dies at 137 with the machine
+  untouched, two 700 MB jobs cannot share a 1 GB slice, and a direct launch reports a cgroup
+  inside `wonderland.slice`. 21 tests.
+
 ## Next tasks (priority order)
 
 > **Rebuild priority (2026-10-29, SPINE §8 order — this supersedes the inherited list below

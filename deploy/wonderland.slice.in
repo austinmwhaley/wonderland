@@ -1,0 +1,19 @@
+# The project's memory boundary (DEC-440). Installed by scripts/install_memory_slice.sh.
+#
+# Every job the wonderland repo runs is launched into this slice, and the slice has ONE hard
+# ceiling: the kernel kills inside it when the ceiling is hit, so no job here can take the LLM
+# server, the desktop or the OS down with it. That is the same cgroup mechanism Docker's --memory
+# uses; a slice rather than a container because the venv, the data and the GPU device live on this
+# host, and a container would duplicate all three.
+#
+# __CAP_DOC__
+[Unit]
+Description=Wonderland project — one memory boundary for every job
+Documentation=file://@REPO@/DECISIONS.md
+
+[Slice]
+MemoryAccounting=yes
+MemoryMax=__CAP__
+MemorySwapMax=0
+# The cap is the point: do not let the OOM killer wander outside this cgroup.
+ManagedOOMPreference=avoid

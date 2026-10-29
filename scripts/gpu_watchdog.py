@@ -33,8 +33,30 @@ from pathlib import Path
 
 DEFAULT_PATTERNS = (  # principle-ok: process identities, not tuning constants
     "looking_glass.customer_foundation_model",
+    # every producer that can hold a large frame, model or DuckDB aggregate. A job this guard
+    # does not recognise is a job it cannot stop, which is how the 2026-10-29 crash happened: the
+    # runaway ran inside a script that was not on the list. `tests/test_memory_guard.py` fails if
+    # a `scripts/measure_*.py` producer exists that is not covered here, so the list cannot drift
+    # behind the repo again.
+    "measure_battery.py",
     "measure_battery_law.py",
+    "measure_causal.py",
+    "measure_ceiling.py",
+    "measure_certification_law.py",
+    "measure_construction.py",
+    "measure_controls.py",
+    "measure_data.py",
+    "measure_demo_plugins.py",
+    "measure_donor.py",
     "measure_dynamics_law.py",
+    "measure_identity.py",
+    "measure_input_law.py",
+    "measure_judge_law.py",
+    "measure_objectives.py",
+    "measure_response.py",
+    "measure_rl_v2.py",
+    "measure_runtime.py",
+    "measure_views_law.py",
     "env_receipt.py",
 )
 
@@ -74,6 +96,24 @@ def gpu_jobs(patterns: tuple[str, ...], proc_root: Path = Path("/proc")) -> list
         if any(pat in cmd for pat in patterns):
             out.append(pid)
     return out
+
+
+def in_slice(pid: int, slice_name: str, proc_root: Path = Path("/proc")) -> bool:
+    """Is this process inside the project's memory slice? (DEC-440)
+
+    `/proc/<pid>/cgroup` names every cgroup the process belongs to, so membership is read from the
+    kernel rather than inferred from how the job was launched. A job started some other way is
+    outside the boundary by definition, however well-intentioned the launch was.
+    """
+    try:
+        cg = (proc_root / str(pid) / "cgroup").read_text()
+    except OSError:
+        return False  # vanished or unreadable: treat as outside, the caller may only warn
+    return slice_name in cg
+
+
+def outside_slice(jobs: list[int], slice_name: str, proc_root: Path = Path("/proc")) -> list[int]:
+    return [pid for pid in jobs if not in_slice(pid, slice_name, proc_root)]
 
 
 def _kill(pid: int, dry_run: bool) -> str:
@@ -142,6 +182,18 @@ def main(argv=None, *, arm: bool = True) -> int:
         "--pattern", action="append", default=None, help="cmdline substring to police (repeatable)"
     )
     ap.add_argument(
+        "--slice",
+        default="wonderland.slice",
+        help="the project's memory slice; jobs outside it are not bounded by the ceiling",
+    )
+    ap.add_argument(
+        "--outside-slice",
+        choices=("kill", "warn", "ignore"),
+        default="kill",
+        help="what to do with a policed job that is running OUTSIDE the slice (default kill: an "
+        "unbounded producer is the hazard this guard exists for)",
+    )
+    ap.add_argument(
         "--report-delta-gb",
         type=float,
         default=0.5,
@@ -176,7 +228,8 @@ def main(argv=None, *, arm: bool = True) -> int:
     # version of this script died at startup while a trainer was allocating under it.
     print(
         f"{time.strftime('%T')} WATCHDOG-UP floor={a.floor_gb} GB interval={a.interval}s "
-        f"policing={len(patterns)} pattern(s) avail={mem_available_gb():.1f} GB "
+        f"policing={len(patterns)} pattern(s) slice={a.slice}({a.outside_slice}) "
+        f"avail={mem_available_gb():.1f} GB "
         f"pid={os.getpid()} self_ending={self_ending}"
         f"{' [dry-run]' if a.dry_run else ''}",
         flush=True,
@@ -210,6 +263,23 @@ def main(argv=None, *, arm: bool = True) -> int:
         except Exception as exc:  # noqa: BLE001 - fail safe, loudly
             print(f"{time.strftime('%T')} WATCHDOG-FAULT {type(exc).__name__}: {exc}", flush=True)
             avail, jobs = float("inf"), []
+        if jobs and a.outside_slice != "ignore":
+            strays = outside_slice(jobs, a.slice)
+            for pid in strays:
+                if a.outside_slice == "kill":
+                    print(
+                        f"{time.strftime('%T')} OUTSIDE-SLICE {pid} is not in {a.slice} -> "
+                        f"stopping it ({_kill(pid, a.dry_run)})",
+                        flush=True,
+                    )
+                    killed = killed or not a.dry_run
+                else:
+                    print(
+                        f"{time.strftime('%T')} OUTSIDE-SLICE {pid} is not in {a.slice} "
+                        f"(warn only)",
+                        flush=True,
+                    )
+            jobs = [pid for pid in jobs if pid not in strays] if a.outside_slice == "kill" else jobs
         if jobs:
             low_water = avail if math.isnan(low_water) else min(low_water, avail)
         if avail < a.floor_gb and jobs:
