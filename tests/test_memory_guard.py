@@ -107,3 +107,33 @@ def test_the_project_slice_exists_with_a_finite_ceiling():
 
         pytest.skip(f"no user slice {SR.DEFAULT_SLICE} on this host")
     assert cap is not None and cap > 0
+
+
+def test_a_shell_that_mentions_a_producer_is_not_the_producer(tmp_path):
+    """Measured mistake: the guard SIGTERMed the launcher shell, not the job.
+
+    `cd repo && nohup python scripts/x.py` puts the script's name in the BASH cmdline, and bash is
+    outside the slice while the job it launched is inside. Matching the command line as a string
+    therefore punished the messenger — and could signal whichever shell typed the command.
+    """
+    shell = tmp_path / "21"
+    job = tmp_path / "22"
+    for d, cmd in (
+        (shell, b"/bin/bash\0-c\0cd repo && nohup python scripts/measure_judge_law.py\0"),
+        (job, b"/usr/bin/python3\0scripts/measure_judge_law.py\0--legs\0rl\0"),
+    ):
+        d.mkdir()
+        (d / "cmdline").write_bytes(cmd)
+    found = GW.gpu_jobs(GW.DEFAULT_PATTERNS, proc_root=tmp_path)
+    assert 22 in found  # the interpreter running the producer
+    assert 21 not in found  # the shell that launched it
+
+
+def test_a_module_pattern_still_matches_its_interpreter(tmp_path):
+    """`python -m looking_glass.customer_foundation_model` has no `.py` argument to compare."""
+    d = tmp_path / "31"
+    d.mkdir()
+    (d / "cmdline").write_bytes(
+        b"/usr/bin/python3\0-m\0looking_glass.customer_foundation_model\0train\0"
+    )
+    assert 31 in GW.gpu_jobs(GW.DEFAULT_PATTERNS, proc_root=tmp_path)

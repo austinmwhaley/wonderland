@@ -90,10 +90,28 @@ def gpu_jobs(patterns: tuple[str, ...], proc_root: Path = Path("/proc")) -> list
             cmd = (proc_root / entry.name / "cmdline").read_bytes().decode(errors="replace")
         except OSError:  # pid vanished between listing and read, or unreadable: not a target
             continue
-        cmd = cmd.replace("\0", " ")
-        if "gpu_watchdog" in cmd:
+        argv = [a for a in cmd.split("\0") if a]
+        if not argv:
             continue
-        if any(pat in cmd for pat in patterns):
+        # A SHELL whose command text merely mentions a producer is not the producer. Matching the
+        # command line as a string killed the launcher (`cd repo && nohup python scripts/x.py`)
+        # because the wrapper is outside the slice while the job it launched is inside — punishing
+        # the messenger and, worse, signalling whatever shell happened to type the command.
+        # So: a `.py` pattern must be the BASENAME of an argument to a python interpreter, and a
+        # module pattern (no ".py") matches any argument.
+        exe = os.path.basename(argv[0])
+        is_python = exe.startswith("python")
+        args = argv[1:]
+        hit = False
+        for pat in patterns:
+            if pat.endswith(".py"):
+                if is_python and any(os.path.basename(a) == pat for a in args):
+                    hit = True
+                    break
+            elif any(pat in a for a in args):
+                hit = True
+                break
+        if hit:
             out.append(pid)
     return out
 
