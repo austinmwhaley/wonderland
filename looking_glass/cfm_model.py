@@ -183,6 +183,15 @@ if "TRITON_CACHE_DIR" not in os.environ:
         os.environ["TRITON_CACHE_DIR"] = _tc
     except OSError:  # pragma: no cover - keep default behavior if /tmp is hostile too
         pass
+# Same reasoning as the triton pin, for memory: on a unified-memory box the allocator's
+# cached segments are memory the co-tenant LLM server can no longer see. Expandable
+# segments let the allocator return whole pages instead of hoarding fragmented ones, and
+# a GC threshold makes it reclaim before the pool runs dry (identical numerics — this is
+# an allocator policy, not a math change). Operator-set value always wins.
+if "PYTORCH_CUDA_ALLOC_CONF" not in os.environ:
+    os.environ["PYTORCH_CUDA_ALLOC_CONF"] = (
+        "expandable_segments:True,garbage_collection_threshold:0.6"
+    )
 _scan_compiled = None
 _scan_disabled = _SCAN_MODE == "eager"
 
@@ -686,8 +695,15 @@ class MultiScaleSSM(nn.Module):
         readout_scale=False,
         stats_pathway=False,
         continuous_time=False,
+        grad_checkpoint=False,
     ):
         super().__init__()
+        # Activation checkpointing (DEC-423): on the shared GB10 the step loop's retained
+        # activations are the binding budget, not the scan. Recomputing each expert in
+        # backward trades ~one extra forward for holding its activations. OFF by default —
+        # adopted only against a measured peak, and it changes no math (the forward has no
+        # RNG, so the recomputed activations and the gradients from them are the same).
+        self.grad_checkpoint = bool(grad_checkpoint)
         if delta_spectrum:
             # v4.0: ONE wide selective SSM with a per-channel timescale spectrum.
             self.chan = chan
@@ -752,7 +768,23 @@ class MultiScaleSSM(nn.Module):
                 xi = self.intent(x, mask=mask, h0=g0)
             hi = None if h0 is None else h0[..., i * self.chan : (i + 1) * self.chan]
             fi = None if f0 is None else f0[..., i * self.chan : (i + 1) * self.chan]
-            yi, ho = e(xi, h0=hi, mask=mask, ev=ev, ev_prev=ev_prev, dt=dt, f0=fi)
+            if self.grad_checkpoint and torch.is_grad_enabled() and xi.requires_grad:
+                # Training only: recompute this expert in backward rather than holding its
+                # activations. Inference (`no_grad`) and eval forwards skip it — there is
+                # nothing to recompute, and checkpointing them would only cost time.
+                yi, ho = torch.utils.checkpoint.checkpoint(
+                    e,
+                    xi,
+                    h0=hi,
+                    mask=mask,
+                    ev=ev,
+                    ev_prev=ev_prev,
+                    dt=dt,
+                    f0=fi,
+                    use_reentrant=False,
+                )
+            else:
+                yi, ho = e(xi, h0=hi, mask=mask, ev=ev, ev_prev=ev_prev, dt=dt, f0=fi)
             ys.append(yi)
             hs.append(ho)
         return torch.cat(ys, dim=-1), torch.cat(hs, dim=-1)
@@ -779,6 +811,11 @@ class CFM(nn.Module):
         stats_pathway: bool = False,
         continuous_time: bool = False,
         accumulator: bool = True,
+        # Activation checkpointing (DEC-423): recompute experts in backward instead of
+        # holding their activations. The GB10 step loop is memory-bound on a shared pool,
+        # so this is a capacity lever, not a speed one (it costs ~one extra forward).
+        # OFF by default; adopted only against a measured peak. No math changes.
+        grad_checkpoint: bool = False,
         counter: bool = False,
         counter_registers: int = 1,
         counter_compact: bool = False,

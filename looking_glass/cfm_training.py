@@ -104,6 +104,12 @@ def _pick_warm_checkpoint(out_dir, as_of, cfg=None):
 
 def train_cfm(cfg: CFMConfig):
     _seed_everything(cfg.seed)
+    # Co-tenant GPU policy BEFORE anything touches CUDA (DEC-423): take the remainder of
+    # the unified pool after the LLM server and the system floor, and cap to it, so an
+    # over-allocation raises in Python instead of faulting the driver and the machine.
+    from looking_glass import gpu_budget
+
+    gpu_budget.enforce(cfg)
     df = _read_stream(cfg)
     _apply_data_revision(cfg, df)
     keys = _customer_keys(df, cfg)
@@ -187,6 +193,8 @@ def train_cfm(cfg: CFMConfig):
         action_fields=getattr(cfg, "action_fields", ()),
         effect_dim=getattr(cfg, "_effect_dim", 0),
         mtp_k=getattr(cfg, "mtp_k", 0),
+        # DEC-423: recompute the SSM scan in backward — see CFMConfig.grad_checkpoint.
+        grad_checkpoint=bool(getattr(cfg, "grad_checkpoint", False)),
     ).to(device)
     # v4.0: differentiable ZCA in the forward during training (gradients shape the
     # consumed isotropy); off at eval/save so the frozen transform is used.
@@ -409,6 +417,20 @@ def train_cfm(cfg: CFMConfig):
             b = rng.choice(tr_idx, size=min(cfg.batch, len(tr_idx)), replace=False)
             items = [a_seqs[i] for i in b]
             opt.zero_grad()
+            # ARMIJO BACKTRACKING LINE SEARCH (v6 DEC-039): accept the step iff the
+            # training loss does not increase; else revert and halve lr.
+            # Optimizer-agnostic, monotone descent by construction, no phase lag.
+            #
+            # θ₀ is measured BEFORE the training graph is built. Same parameters, same
+            # batch, same self-seeded `_eval_loss` => the same number the old position
+            # produced; only the peak changes. The old order held the ~38-head autograd
+            # graph AND this no_grad forward at the same instant, and that is exactly where
+            # the capped run died (13.17 GB held, 598 MiB refused at `attr_next`). It is
+            # also RNG-equivalent rather than merely close: `_eval_loss` re-seeds itself, so
+            # the training forward still starts at the state a seeded eval forward leaves
+            # behind (checked against the old order by step-loss trace, DEC-423).
+            loss0 = _eval_loss(b)
+            theta0 = [p.detach().clone() for p in params]
             with torch.autocast(device_type=device.type, dtype=_amp_dtype, enabled=use_amp):
                 task_loss, inv_loss = _loss_split(
                     model, vocab, items, cfg, weights=balancer.weights(), scales=loss_scales
@@ -423,11 +445,7 @@ def train_cfm(cfg: CFMConfig):
                     inv_loss = inv_loss + bank.lam * (
                         pen["redundancy_bank"] + pen["eigfloor"] + pen["barrier"]
                     )
-            # ARMIJO BACKTRACKING LINE SEARCH (v6 DEC-039): accept the step iff
-            # the training loss does not increase; else revert and halve lr.
-            # Optimizer-agnostic, monotone descent by construction, no phase lag.
-            loss0 = _eval_loss(b)
-            theta0 = [p.detach().clone() for p in params]
+            # The accept/reject comparison happens after the step, at `loss1` (DEC-039).
             if cfg.pcgrad and use_amp:
                 scaler.scale(task_loss + inv_loss).backward()
                 scaler.unscale_(opt)
@@ -576,9 +594,22 @@ def train_cfm(cfg: CFMConfig):
         )
     _update_scales({k: float(v) for k, v in _seed_T.items()})
     print(f"[scale] seeded loss_scales from {len(_seed_T)} tasks", flush=True)
-    gov, best_state = AT.govern(
-        train_step, val_metric, budget, res.eval_every, res.patience, cfg.seed
-    )  # lr is controlled per-step by the Armijo line search (no eval-cadence lag)
+    # RE-DERIVE the cap at the informed moment: the stream, the sequences and the seeding
+    # pass are now resident, and on a unified-memory box that host-side demand comes out of
+    # the same pool the step loop will allocate from. The launch-time cap was affordable
+    # BEFORE the data existed (measured: 2.4 GB too big, run died at the floor). This
+    # flushes the seeding cache, receipts the warmup peak, and re-bases for the step loop.
+    gpu_budget.release(cfg, "pre_train")
+    try:
+        gov, best_state = AT.govern(
+            train_step, val_metric, budget, res.eval_every, res.patience, cfg.seed
+        )  # lr is controlled per-step by the Armijo line search (no eval-cadence lag)
+    except BaseException:
+        # A receipt must survive the crash. The peak of an OOM-killed run is exactly the
+        # number the next decision needs (which phase, how big); losing it turns a
+        # falsifiable failure into an anecdote. Record, then let it propagate unchanged.
+        gpu_budget.release(cfg, "train_aborted")
+        raise
     # STABILITY IS A HARD INVARIANT (v6): a divergent run is a FAILURE, never a
     # rescued green. Record it; the portfolio gate fails on an unstable run.
     cfg._stable = not bool(gov.get("diverged", False))
@@ -601,6 +632,9 @@ def train_cfm(cfg: CFMConfig):
         )
     if best_state is not None:
         model.load_state_dict(best_state)
+    # The autograd peak belongs to training; hand it back before the bulk phases
+    # (whitening/save/portfolio grade have unrelated allocation shapes).
+    gpu_budget.release(cfg, "train")
     # eval/save use the FROZEN boundary transform, not the training-time ZCA
     model.zca_train = False
     # compute whitening BEFORE saving so the checkpoint ships WITH the frozen
@@ -670,6 +704,7 @@ def train_cfm(cfg: CFMConfig):
         print(f"[measure] Layer-B compression fit on {m_train.shape} train measure", flush=True)
     # grade the trained encoder on its whole portfolio (DEC-008: every train
     # is graded, not claimed) — receipt lands next to the checkpoint
+    gpu_budget.release(cfg, "whiten_save")
     from looking_glass.portfolio import evaluate as _portfolio_evaluate
 
     port = _portfolio_evaluate(model, vocab, cfg, a_seqs, seed=cfg.seed, tag=cfg.tag)
@@ -2015,6 +2050,7 @@ def _registry(
                 "loss_scales": dict(getattr(cfg, "final_loss_scales", {}) or {}),
                 "bank": dict(getattr(cfg, "final_bank_stats", {}) or {}),
                 "whiten": dict(getattr(cfg, "_whiten_receipt", {}) or {}),
+                "gpu_budget": dict(getattr(cfg, "_gpu_budget_receipt", {}) or {}),
                 "trained_at": datetime.now(timezone.utc).isoformat(),
             },
             indent=1,

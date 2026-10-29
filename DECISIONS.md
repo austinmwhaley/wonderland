@@ -3490,3 +3490,102 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   11× trunk gain that still does not clear the bar), Lawful + Robust (a compositionality break is
   disqualifying regardless of metric movement), Diagnosable (the failure names the missing state,
   not "train longer"), M16 (per-step cost measured, not assumed).
+
+## DEC-423 — [TECHNICAL] co-tenant GPU budget: the trainer takes only the room that is left, and a cap that cannot be installed REFUSES the run
+
+- **Context.** The GB10 is a **unified-memory** device: one 121.6 GB pool feeds the resident
+  LLM server (this conversation's `vllm/nvidia/Qwen3.8-Flash-Next-FP4-Local`, root-owned in a
+  Docker/`moby` container, `--gpu-memory-utilization 0.70` → 85.1 GB held statically, which
+  does NOT shrink when idle) and this project's trainer. Over-committing does not fail inside
+  the process: it fails in the driver (`NVRM: nvCheckOkFailedNoLog: Out of memory
+  [NV_ERR_NO_MEMORY]`) and takes the machine down — measured three times during the DEC-421/422
+  sessions, each ~10 min into GPU training. Operator policy 2026-10-29: **the LLM keeps what it
+  needs (0.70 is its minimum, below that the model + KV cache will not load), the system keeps
+  an 8 GB floor, the trainer gets the remainder — on GPU**, no CPU path, no batch shrink.
+- **Alternatives considered.** (1) CPU training — rejected by the operator, and the CPU path
+  carries a known unfixed defect (`torch.autograd.grad(0, params)` → `TypeError` in the PCGrad
+  branch). (2) Shrink `batch` — deferred by the operator; it also shrinks the thing being
+  measured. (3) The cap alone — measured insufficient: a 17.99 GB cap on a run that wants
+  ~21 GB converts the crash into a failure, it does not make the run fit. (4) **Chosen:**
+  derive the budget, cap hard, **re-base it at the informed moment**, receipt every phase,
+  guard from outside the process, and delete the redundant forward pass that was the actual
+  peak driver.
+- **One pool, measured — the fact the whole policy rests on.** 12 GiB of `torch.empty` on
+  `cuda` moved `MemAvailable` 26.89 → 15.54 (−11.35 GiB) and driver-free 22.47 → 11.11; host
+  `bytearray` allocations move both as well; `driver_free ≈ MemAvailable − 4.4 GB` across all
+  three samples. Device pages and host pages are the same money, so a budget derived before
+  the stream is loaded is **systematically too big** — which is what killed the first capped
+  run (cap 17.99 GB, actual demand ≈ 17.6 device + 4.4 host).
+- **Mechanisms.** `looking_glass/gpu_budget.py`: `enforce()` (hard
+  `set_per_process_memory_fraction` on `(min(MemAvailable − floor, driver_free) − reserve) /
+  total`), `release()` (phase boundary: `empty_cache` + per-phase peak alloc/reserved/**RSS** +
+  re-derive), `receipt()` (registry `gpu_budget` block, M16). `scripts/gpu_watchdog.py`: the
+  external floor enforcer — the fraction cap governs PyTorch's *caching allocator* only, and
+  cuDNN workspaces / Triton buffers / CUDA graphs allocate around it. `scripts/verify_gpu_cap.py`:
+  proves the cap binds, rather than trusting that it was requested.
+- **Receipt — the cap binds.** `verify_gpu_cap`: `held=17.70 GB of an 18.26 GB budget
+  (97% utilisation)`, `outcome=OutOfMemoryError`, `floor_shortfall=0.00`. A Python exception
+  that costs a run, instead of a driver fault that costs the box.
+- **Receipt — the run fits, and the plan's bottleneck assumption was wrong.** Capped 99-step
+  run: `pre_train peak_alloc 5.13 / RSS 4.38` → RECAP cut the cap 17.99 → **13.56 GB** once the
+  host-side data landed → `train peak_alloc 13.32` (fitting a 13.56 cap) → `whiten_save 1.04` →
+  `pre_products 2.70`; watchdog low-water **8.7 GB against the 8.0 floor**. The pre-fix OOM was
+  `cfm_training.py:994 attr_next` cross-entropy — the ~38 task heads — **not** the differentiable
+  bilinear scan the plan had targeted for checkpointing (which is off since DEC-422 anyway).
+- **The peak was a double forward, and removing it cost nothing.** `train_step` built the
+  autograd graph and *then* called `_eval_loss(b)` for the Armijo θ₀ comparison, holding both at
+  once (13.17 GB held, 598 MiB refused). θ₀ is now evaluated **before** the graph exists. The
+  move is claimed RNG-equivalent because `_eval_loss` re-seeds itself — **proved, not asserted**:
+  the same config run both ways (`customers=800`, `batch=64` untouched, `max_steps=40`) produced
+  **71/71 identical printed numbers** across the whole log (health, scales, every loss, the skill
+  table, geometry, ABS baselines); only dynamo warning metadata differs, and it differs in the
+  way that confirms the change is real (old order's last compile trigger `GLOBAL_STATE changed:
+  grad_mode`, new order's a shape change).
+- **Defects found and fixed, each with a test.**
+  1. *A guard that fails quietly manufactures confidence.* `set_per_process_memory_fraction`
+     rejects the string `"cuda"` (`ValueError: Expected a torch.device with a specified index
+     or an integer`); my `except TypeError` missed it, the generic handler recorded
+     `applied=False` and **printed nothing**, so the trainer ran **uncapped** and reached 7.7 GB
+     against the 8.0 floor. Now: an int device index, and a CUDA run whose cap cannot be
+     installed **exits** ("refusing to train uncapped on a shared GPU"). Reject, do not clamp.
+  2. The watchdog died at startup on `Path.isdigit()` **while a trainer was allocating under
+     it** — a dead guard indistinguishable from a healthy one. Now parameterized on
+     `proc_root` and tested against a fixture `/proc`, and a sampling fault logs
+     `WATCHDOG-FAULT` and keeps watching instead of exiting.
+  3. The watchdog logged its kill **after** performing it (`_kill` blocks up to 5 s waiting for
+     the death), so a kill inside that window left no receipt — which is exactly how the first
+     capped kill ended up unlogged. Now logs the decision, then the action, and reports a
+     low-water mark on exit *and* on SIGTERM.
+  4. `--set gpu_mem_limit_gb=20` — the fix this module itself prints — was **rejected** (int
+     literal into a float field), and `--set field=garbage` raised a raw `ValueError` from
+     `float()` instead of naming the field (same defect class as DEC-047).
+- **Honest limits.** (a) The fit is thin: `train` peaked at 13.32 GB against a 13.56 GB cap
+  (≈2% headroom) — *this* config fits, a bigger graph hits the cap and fails cleanly. (b)
+  `gpu_reserve_gb=1.0` is a documented conservative fallback (measured breach 0.3 GB), not a
+  derivation. (c) The fraction cap cannot bound cuDNN/Triton/CUDA-graph memory; that is what
+  the watchdog is for, and it has already had to be right twice. (d) A `--set max_steps=99`
+  receipt is a 99-step peak, not a full-budget peak — the full run is the validation.
+- **Separate finding (pre-existing, NOT introduced here; blocks the products path).**
+  `cfm_state.py:761` calls `model.donor_seq(...)`, a method **deleted in `dcdbdca` (DEC-210/211,
+  role-free Layer B)** whose caller was never removed. Every `train` run with group-B anchors
+  therefore aborts at the end of `build_products` with `AttributeError: 'CFM' object has no
+  attribute 'donor_seq'`, leaving `donor_embeddings` and `anchor_embeddings` **empty** — confirmed
+  in the DEC-422 artifacts (0 rows each) and the same traceback is already in
+  `cfm_train_baseline.log` / `cfm_train_bilinear.log`. `measure_battery_law.py` reads
+  `state_embeddings` (populated), so DEC-422's numbers stand; but `plugins/ablation.py`,
+  `plugins/inference.py` and `plugins/targets.py` read `donor_embeddings`. Left unfixed on
+  purpose: what those rows should contain (legacy entity-pooled readout vs the state-consistent
+  `model.donor(h_read)`) is a definition of the served artifact and needs the operator.
+- **Principles served.** Robust (the failure mode is a rebooted box; the seatbelt is now proven
+  to bind, and the guard refuses to be absent), Honest (the assumed bottleneck was wrong and is
+  reported as such; the equivalence claim carries a receipt; the thin headroom and the fallback
+  literal are stated), Diagnosable (peak attributed to the 38-head CE path, not "train cheaper"),
+  M15/M16 (per-phase receipts, and a redundant full forward deleted from the hot loop),
+  Principle 1 (budget derived from `MemAvailable`/driver-free at the most informed moment; the
+  one surviving literal is documented and overridable), Principle 7/11 (reject rather than
+  clamp; every decision emits a receipt).
+- **Next loop.** Training on this box is safe again, so resume DEC-422's named axes: (a) carry
+  the converged fixed-point gate `H*` in the recurrent state, (b) take the objective-pressure
+  axis, or (c) the no-GPU boundary diagnostic. Two receipts this decision owes: the
+  full-budget capped run reproducing the frozen DEC-420 baseline receipt, and an operator
+  decision on the empty `donor_embeddings` path.

@@ -683,6 +683,12 @@ class StateStore:
 
 
 def build_products(cfg, model, vocab, df, keys, split):
+    # The `products` command runs this WITHOUT train_cfm, so the co-tenant cap must be
+    # applied here too (idempotent when train_cfm already did it). DEC-423.
+    from looking_glass import gpu_budget
+
+    gpu_budget.enforce(cfg)
+    gpu_budget.release(cfg, "pre_products")
     # Rebuild fresh each release so embedding dims never mix across runs.
     pdb = Path(cfg.out_dir) / "cfm_products.duckdb"
     if pdb.exists():

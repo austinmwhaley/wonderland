@@ -65,17 +65,32 @@ def apply_set_overrides(cfg, receipt: dict | None = None) -> dict:
             try:
                 val = ast.literal_eval(s)
             except (ValueError, SyntaxError):
-                if isinstance(cur, int):
-                    val = int(float(s))
-                elif isinstance(cur, float):
-                    val = float(s)
-                else:
-                    val = s
+                # Numeric text that literal_eval rejects ("25000s", "1e3."): coerce against
+                # the FIELD's type, but a value that cannot be coerced is a REJECTION with
+                # the field named, not a raw ValueError traceback from float()/int().
+                try:
+                    if isinstance(cur, int) and not isinstance(cur, bool):
+                        val = int(float(s))
+                    elif isinstance(cur, float):
+                        val = float(s)
+                    else:
+                        val = s
+                except (TypeError, ValueError):
+                    raise SystemExit(
+                        f"--set {k}: {s!r} is not a valid {type(cur).__name__}"
+                        f" (current value {cur!r})"
+                    ) from None
         if cur is not None and not isinstance(val, type(cur)):
-            raise SystemExit(
-                f"--set {k}: {val!r} ({type(val).__name__}) does not match field"
-                f" type {type(cur).__name__}"
-            )
+            # An int literal into a float field (`--set gpu_mem_limit_gb=20`) is a
+            # widening, not a type error — rejecting it made the very fix command this
+            # module prints fail. Same defect class as the bool coercion (DEC-047).
+            if isinstance(cur, float) and isinstance(val, int) and not isinstance(val, bool):
+                val = float(val)
+            else:
+                raise SystemExit(
+                    f"--set {k}: {val!r} ({type(val).__name__}) does not match field"
+                    f" type {type(cur).__name__}"
+                )
         setattr(cfg, k, val)
         applied[k] = val
         if receipt is not None:
@@ -391,6 +406,29 @@ class CFMConfig:
     # A3: autocast dtype. bf16 (default) has fp32 range -> no loss scaling, fewer Armijo
     # reverts than fp16; set "fp16" on hardware where fp16 is materially faster.
     amp_dtype: str = "bf16"
+    # --- GPU memory budget (DEC-423), enforced by `looking_glass/gpu_budget.py` -------
+    # The GB10 pool is unified and shared with the resident LLM server, whose reservation
+    # is static (it does NOT shrink when idle) and must not be displaced. The trainer
+    # takes what is left after the server and after the system floor — derived at launch,
+    # never assumed. Over-allocating here is not slow, it is fatal to the machine
+    # (measured: 3x driver `NV_ERR_NO_MEMORY` hard crashes).
+    gpu_mem_limit_gb: float = 0.0  # 0 = DERIVE from MemAvailable - floor; >0 = operator override
+    gpu_system_floor_gb: float = (
+        8.0  # operator-set 2026-10-29: OS + desktop measured ~8 GB resident
+    )
+    # Device memory the process holds OUTSIDE the capped allocator (CUDA context + cuBLAS /
+    # cuDNN workspaces), so it must come out of the budget too. principle-ok: documented
+    # conservative fallback — measured breach was 0.3 GB over a 21.1 GB cap (2026-10-29, the
+    # run that drove MemAvailable to 7.7 GB); 1.0 GB is the next round unit above it, and
+    # the external watchdog still enforces the floor if a run needs more.
+    gpu_reserve_gb: float = 1.0
+    # Activation checkpointing (DEC-423): recompute the MultiScaleSSM scan in backward instead
+    # of holding its activations. The attribute CE over [B,T,F,V] logits is the dominant
+    # activation, and on a unified-memory box held activations are taken from the same pool the
+    # resident LLM server uses — a peak that fits on a free GPU can crash the machine here.
+    # Default OFF: it changes no value, but it does trade ~30% step time for headroom, so it is
+    # a measured choice recorded in the registry, not a default.
+    grad_checkpoint: bool = False
     # B5: multi-token prediction horizon k (opt-in via objectives+="mtp"). 0 = off.
     mtp_k: int = 4
 

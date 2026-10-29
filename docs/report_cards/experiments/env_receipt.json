@@ -11,16 +11,16 @@
       "tests.test_objectives_portfolio::test_geometry_bank_penalties_and_governor"
     ],
     "failures": 1,
-    "passed": 511,
+    "passed": 538,
     "ran": true,
     "returncode": 1,
     "skipped": 0,
-    "tests": 512
+    "tests": 539
   },
-  "generated_at": "2026-10-28T14:31:44.483723+00:00",
+  "generated_at": "2026-10-29T16:10:15.351739+00:00",
   "git": {
     "branch": "foundation-rebuild",
-    "commit": "093b419b2980eb9dca3d0dc8e2dbb719ec772859",
+    "commit": "67a0bbaba7127ebd4843bad521c28f2da28ceb19",
     "dirty": true
   },
   "gpu": {
@@ -66,8 +66,8 @@
       "n": 2048,
       "note": "smoke test only -- DEC-389 adoption benchmarks are separate receipts",
       "ok": true,
-      "seconds": 0.0004,
-      "tflops_approx": 43.67,
+      "seconds": 0.0005,
+      "tflops_approx": 31.85,
       "warmup": true
     },
     "version": "2.14.1+cu130"

@@ -44,6 +44,26 @@
 > Card now **3/6 stages · 0/8 legs · NOT DONE** (8 PASS · 1 measured FAIL · 10 UNKNOWN).
 > Baseline: 512/511
 > /1 (the 1 is a typed-tolerance drift left alone — gate-touching). Nothing pushed.
+> **GPU co-tenant budget (DEC-423, 2026-10-29):** GPU training is safe alongside the resident
+> LLM server again. `looking_glass/gpu_budget.py` derives the trainer's budget from
+> `MemAvailable`/driver-free at launch **and re-bases it after the stream is loaded** (one
+> unified pool: 12 GiB of device `torch.empty` moved `MemAvailable` by 11.35 GiB), caps
+> PyTorch's allocator to it, and receipts every phase; `scripts/gpu_watchdog.py` enforces the
+> 8 GB floor from outside (cuDNN/Triton/CUDA-graph memory bypasses the fraction cap);
+> `scripts/verify_gpu_cap.py` proves the cap binds (**17.70 GB held of 18.26 GB, 97%, clean
+> `OutOfMemoryError`, floor intact**). A cap that cannot be installed now **refuses the run** —
+> the version that swallowed that failure let the trainer run uncapped to 7.7 GB against the
+> 8.0 floor. The real peak was not the scan: `train_step` ran the Armijo θ₀ forward while the
+> ~38-head autograd graph was still alive, so θ₀ moved ahead of the graph (proved trajectory-
+> identical: 71/71 printed numbers equal on an identical config both ways).
+> **Owed:** the full-budget capped run must reproduce the frozen DEC-420 receipt.
+> **Found while validating (pre-existing, needs an operator decision):** `cfm_state.py:761`
+> calls `model.donor_seq(...)` — a method deleted in `dcdbdca` (DEC-210/211) whose caller was
+> never removed — so every `train` run with group-B anchors aborts at the end of
+> `build_products` and leaves `donor_embeddings` + `anchor_embeddings` **empty** (0 rows in the
+> DEC-422 artifacts, same traceback already in their logs). Battery probes read
+> `state_embeddings`, so DEC-422's numbers stand; `plugins/{ablation,inference,targets}` read
+> the empty table.
 > The status-quo `REPORT_CARD.md` remains the operational reference for the inherited pipeline.
 >
 > **Ledger items owed (DEC-419 disclosures):** `cfm_state.absorb()` must carry intent-filter
