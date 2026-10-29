@@ -299,3 +299,68 @@ def test_the_card_can_report_a_clean_tree(tmp_path):
     )  # real porcelain lines have a lead space
     assert JC._worktree_dirty(f"?? {JC.CARD_NAME}\n M looking_glass/cfm_state.py") is True
     assert JC._worktree_dirty("?? docs/report_cards/experiments/judge_leg_rl.json") is True
+
+
+def _ident(leg, column):
+    """Row identity as the SPEC defines it, so a spec rename cannot silently pass a test."""
+    return next(r.ident for r in J.LEG_ROWS if r.leg == leg and r.column == column)
+
+
+# ------------------------------------------------------------------ H4 vacuity (DEC-433)
+
+
+def test_a_pass_may_not_rest_on_a_control_that_could_never_have_won(tmp_path):
+    """H4 is satisfied only by a control that COULD have caught the row.
+
+    Plain language: a negative control is a deliberately-broken copy of the input. If the model
+    predicts well from that too, the harness is fooling itself. A control at R2 = -5000 was never
+    in the running, so "we beat it" proves the head is not insane — not that the embedding carries
+    signal. Before this, such a row could go green on a gate that could not have gone red.
+    """
+    absurd = [
+        _task(
+            "churn90", brain=0.80, pathA=0.60, lo=0.05, hi=0.20, random=-5000.0, destroyed=-9000.0
+        )
+    ]
+    _write(
+        tmp_path, "judge_leg_supervised.json", _receipt({"brain": absurd, "brain_ledger": absurd})
+    )
+    _, info = JC.render(tmp_path, HASH)
+    assert info["verdicts"][_ident(J.LEG_SUPERVISED, "brain")] == J.UNKNOWN
+    md, _ = JC.render(tmp_path, HASH)
+    assert "H4 is vacuous" in md
+
+
+def test_one_readable_control_is_enough_for_a_pass(tmp_path):
+    """The rule refuses VACUITY, not difficulty: a destroyed control at 0.4 is a real test.
+
+    `random` is a gaussian draw and is distribution-mismatched by construction on wide designs
+    (it legitimately lands far below zero); `destroyed` permutes each column and keeps its
+    marginals, so it is the informative one. Requiring *one* readable control keeps the gate
+    honest without demanding the impossible from the gaussian arm.
+    """
+    mixed = [
+        _task("churn90", brain=0.80, pathA=0.60, lo=0.05, hi=0.20, random=-5000.0, destroyed=0.40)
+    ]
+    _write(tmp_path, "judge_leg_supervised.json", _receipt({"brain": mixed, "brain_ledger": mixed}))
+    _, info = JC.render(tmp_path, HASH)
+    assert info["verdicts"][_ident(J.LEG_SUPERVISED, "brain")] == J.PASS
+
+
+def test_a_real_failure_outranks_a_vacuous_control(tmp_path):
+    """Ordering matters: a row that loses to PATH A must read FAIL, not hide behind UNKNOWN.
+
+    Without this precedence, adding the vacuity rule would have relabelled the supervised leg's
+    honest FAIL (5 traits not beating the incumbent) as an unmeasured gap — the one way a
+    tightening could accidentally make the card look less committed than it is.
+    """
+    losing = [
+        _task(
+            "churn90", brain=0.40, pathA=0.60, lo=-0.05, hi=0.02, random=-5000.0, destroyed=-9000.0
+        )
+    ]
+    _write(
+        tmp_path, "judge_leg_supervised.json", _receipt({"brain": losing, "brain_ledger": losing})
+    )
+    _, info = JC.render(tmp_path, HASH)
+    assert info["verdicts"][_ident(J.LEG_SUPERVISED, "brain")] == J.FAIL

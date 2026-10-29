@@ -82,11 +82,24 @@ Every parameter lives in exactly one column; wrong column = bug.
 Everything below serves this judge. The stage ladder (§7) is the diagnostic layer beneath
 it: when B fails to beat A, the ladder names which stage is the bottleneck.
 
-**Corollary (derived 2026-10-27, from the ledger discussion):** any score contributed by
-the ledger cannot count as a B-*win*, because the ledger is mechanically what PATH A's
-table already is (receipt: ledger category purity 0.261 vs table 0.265 — same object).
-The ledger can only prevent B from *losing*; **the brain earns the win, the ledger
-prevents the loss.** Hence the two-role rule (see §5): certify the foundation on the
+**Corollary (derived 2026-10-27 from the ledger discussion; premise corrected by measurement
+2026-10-29, DEC-431):** any score contributed by the ledger cannot count as a B-*win*; the
+ledger can only prevent B from *losing*, and **the brain earns the win, the ledger prevents the
+loss.** The original justification — that the ledger "is mechanically what PATH A's table already
+is" (receipt: ledger category purity 0.261 vs table 0.265) — **does not hold on the exact-mass
+traits.** Through the same head, on the same rows and splits, the ledger ALONE reaches held-out
+R² 0.9846 on `h0` where the 48-column legacy table reaches −0.1213, i.e. worse than that table's
+own mean (receipt: `judge_leg_supervised.json → diagnostics.ledger_only`). The two objects agree
+only on the columns both happen to carry; on what the legacy table threw away (exact per-value
+tallies) the ledger is strictly richer. So the veto stands **unchanged** — a ledger-backed
+number never counts as a brain win, and certify-on-brain-alone is untouched — but the premise may
+no longer be used in the other direction either: a ledger result cannot be dismissed as something
+"PATH A has anyway." (PATH A is by operator ruling the **faithful legacy competitor** — one row
+per customer, every non-label column the legacy table carries, one GBM incumbent, DEC-428 — and
+may not be widened toward the ledger's shape to make a comparison easier; making it stronger can
+only turn a PASS into a FAIL.)
+
+Hence the two-role rule (see §5): certify the foundation on the
 brain alone; serve with brain ⊕ ledger.
 
 ## 4. The derivation spine (S1 → S6), each stage forced by a gap

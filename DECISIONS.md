@@ -4086,3 +4086,74 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   both, and the pinned incumbent (DEC-428) is unchanged by it.
 - **Single axis changed.** Consumer/measurement side. No encoder, no objective, no gate, no
   comparator definition moved.
+
+## DEC-432 — [OPERATOR RULING] PATH A is the faithful legacy competitor — audited, not assumed; and the "the ledger is what the table already is" premise is falsified
+
+- **Context.** DEC-431 surfaced that the ledger ALONE scores 0.9846 on `h0` where PATH A's
+  48-column table scores −0.1213 — worse than the table's own mean. Two readings were live: the
+  baseline is under-built (a straw PATH A makes PATH B look good), or SPINE §3/§5's corollary —
+  "the ledger is mechanically what PATH A's table already is" — is false. What the comparator
+  contains is a frozen definition, so this was stop-and-ask, not a fix.
+- **Operator ruling.** "PATH A should be whatever we would do previously with 1 row per customer
+  when making supervised models… it is the faithful competitor to legacy / the current way of
+  doing things." That is a definition of the baseline's *content*, and it settles the question:
+  PATH A is the legacy practitioner's table, and it may not be widened toward the ledger's shape
+  to make the comparison easier.
+- **Audit performed before acting on it.** `demo.auto_encoder.table_features` (the single
+  canonical table builder the judge reuses) takes **every** column of
+  `path_a/path_a_wide_table.parquet` except the `y_*` labels, `customer_key`, and `signup_ts`:
+  41 legacy features — RFM (`recency_days`, `n_orders`, `purchase_value`, `value_30d/90d`),
+  per-event counts, per-category and per-channel tallies, `tenure_days`, `purchase_rate`,
+  `return_rate`, `avg_order_value`, `category_entropy`, `discount_mean`, `qty_sum` — with the four
+  categorics one-hotted to the 48-column matrix the incumbent is fit on. **The baseline is not
+  under-built**: the GBM already sees everything a legacy analyst would have handed it. So the
+  −0.12 on `h0` is a fact about the legacy table, not an artifact of a weak comparator.
+- **Consequence for the corollary (docs change, no gate moved).** The §3 premise "the ledger is
+  mechanically what PATH A's table already is" is **falsified on the exact-mass traits**: through
+  the same head, rows and splits the ledger reaches 0.9846 on `h0` where the faithful table is
+  below its own mean. The two objects agree only where both carry the column (the original
+  receipt — category purity 0.261 vs 0.265 — establishes agreement on category shares, nothing
+  more). The **veto is kept unchanged** — a ledger-backed number still never counts as a brain
+  win, and the foundation is still certified on the brain alone — because that direction is the
+  conservative one; what is removed is the license to dismiss a ledger result as something
+  "PATH A has anyway."
+- **Alternatives considered.** (1) *Widen PATH A with ledger-style columns until it stops
+  looking broken* — refused by the ruling and by rule 1: what the comparator contains is part of
+  the protocol. (2) *Quietly drop `h0` from the trait list* — refused: removing a trait that
+  measures badly changes what the judge measures. (3) *Leave the premise in the SPINE as
+  historical prose* — refused: the card's own corollary is load-bearing for attribution, and a
+  false premise there licenses the opposite error later.
+- **Single axis changed.** The judge's stated premise and its documentation. No gate, threshold,
+  comparator content, or receipt field changed; the measurement that falsified the premise is
+  committed as `diagnostics.ledger_only`.
+
+## DEC-433 — [TECHNICAL] H4 may not be satisfied by a control that could never have won: a PASS needs one READABLE negative control
+- **Context.** The card's H4 gate requires every trait's `random` and `destroyed` controls to sit
+  below the brain. On the first supervised receipt, `random` sits at R² = −2181 (brain column) and
+  below −1 on 4/7 and 7/7 traits — so the gate was satisfied *trivially*: a control wilder than
+  "predict the mean" by orders of magnitude cannot fail, and beating it proves the head is not
+  insane, not that the representation carries signal. `random` is a single-scale gaussian draw, so
+  on a wide design (the 591-d ledger, rare indicator columns) it is distribution-mismatched by
+  construction; `destroyed` permutes each column and preserves marginals, so it is the
+  informative one.
+- **Alternatives considered.** (1) *Replace `random` with a marginal-preserving control* —
+  refused for now: what a control contains is part of the evaluation contract, and the operator
+  was asked and could not rule ("I don't know what any of this means"), so a new protocol version
+  is not ours to declare. (2) *Delete the gaussian control* — refused: reporting fewer controls
+  to make the gate meaningful is what "exclude-and-report" exists to prevent. (3) *Leave it and
+  rely on the receipt's `controls_unreadable` disclosure* — insufficient: a disclosure the reader
+  has to open a JSON to find is not a gate, and the card's row evidence showed the *first*
+  failing reason, not this one.
+- **Decision.** `judge_spec.VACUOUS_CONTROL_R2 = -1.0` (an evaluation-contract constant, not a
+  tuned threshold: R² = 1 − SSE/SST, so −1 is where the control's squared error exceeds the
+  target's own variance by more than that variance again). The reader marks a control below it
+  **vacuous**; a leg column may not PASS unless every live trait has at least one control at or
+  above it. Precedence is deliberate: a genuine failure (control above brain, or CI not excluding
+  0 vs PATH A) still returns FAIL, so tightening H4 cannot relabel an honest red as UNKNOWN —
+  pinned by a test. The row's notes state the vacuity and both control values.
+- **Single axis changed.** Reader-side validation only. No control definition, threshold, or
+  producer measurement moved; the rule can only turn a would-be green red.
+- **Measured.** Card unchanged by the render (`pass 8 / fail 4 / unknown 7`, legs 0/8, stages
+  3/6) — the two supervised columns already FAIL for real reasons, which is the precedence test
+  passing on live data. Three new pins in `tests/test_judge_card.py` (absurd controls → UNKNOWN,
+  one readable control → PASS still allowed, real loss → FAIL outranks vacuity), 26 green there.

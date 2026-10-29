@@ -207,6 +207,21 @@ def eval_tasks(tasks, bhash_note: str | None) -> tuple[str, str, list]:
                 return J.UNKNOWN, f"{name}: control '{ctl}' missing (H4)", notes
             if t[ctl] > t["brain"]:
                 return J.FAIL, f"{name}: {ctl} control >= brain ({t[ctl]} vs {t['brain']})", notes
+        # H4 is only satisfied if a control COULD have won. A control at R2 << 0 is not beaten, it
+        # is absurd: beating it proves the head is not insane, not that the representation carries
+        # signal. Such a control is reported as vacuous, and a column may not PASS on vacuity.
+        readable = [
+            ctl
+            for ctl in ("random", "destroyed")
+            if _finite(t[ctl]) and t[ctl] >= J.VACUOUS_CONTROL_R2
+        ]
+        if not readable:
+            t = dict(t, _no_readable_control=True)
+            notes.append(
+                f"{name}: H4 VACUOUS — both controls below R2={J.VACUOUS_CONTROL_R2} "
+                f"(random {t['random']:.4g}, destroyed {t['destroyed']:.4g}); beating them is "
+                f"not evidence of signal"
+            )
         live.append(t)
         notes.append(
             f"{name}: brain {t['brain']:.4g} vs PATH A {t['pathA']:.4g} "
@@ -219,6 +234,17 @@ def eval_tasks(tasks, bhash_note: str | None) -> tuple[str, str, list]:
     if failing:
         names = ", ".join(t["name"] for t in failing)
         return J.FAIL, f"does not beat PATH A with CI excluding 0: {names}", notes
+    # A green row must rest on a control that could have caught it (DEC-433). This can only turn a
+    # would-be PASS into UNKNOWN — it never turns a red row green, so it tightens H4 rather than
+    # moving a verdict in our favor.
+    vacuous = [t["name"] for t in live if t.get("_no_readable_control")]
+    if vacuous:
+        return (
+            J.UNKNOWN,
+            f"beats PATH A but H4 is vacuous on {len(vacuous)}/{len(live)} trait(s) "
+            f"({', '.join(vacuous[:3])}): no control readable enough to have failed",
+            notes,
+        )
     return (
         J.PASS,
         f"{len(live)} task(s) beat PATH A; paired CI excludes 0; controls below brain",

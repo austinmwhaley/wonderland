@@ -132,10 +132,17 @@
 > as a new protocol version; whether the action declaration may be derived at TRAIN time (today
 > it is derived at publish time from `reference_truth.json → meta`); whether the action should be
 > represented by its declared attributes rather than the state step it produced; whether
-> `mean over φ dims` is the right response-target reduction; and **whether PATH A's 48-column
-> table is a fair comparator at all** — the ledger alone scores 0.9846 on `h0` where that table
-> scores −0.1213, so either the baseline is under-built or SPINE §5's "the ledger is what the
-> table already is" corollary is wrong.
+> `mean over φ dims` is the right response-target reduction.
+> **Ruled and closed (2026-10-29):** *is PATH A's 48-column table a fair comparator?* — operator
+> ruling: PATH A is the **faithful legacy competitor** (one row per customer, whatever we would
+> have built by hand), and the audit confirms it already is: `table_features` feeds the incumbent
+> every non-label column of the legacy table, so the −0.12 on `h0` is a fact about the legacy
+> table, not a weak baseline. That falsifies SPINE §3's premise that "the ledger is mechanically
+> what PATH A's table already is" (ledger-only 0.9846 on `h0`); the **veto is kept** — a
+> ledger-backed number never counts as a brain win — but a ledger result may no longer be
+> dismissed as something PATH A has anyway (DEC-432). *Are the negative controls real?* — H4 can
+> no longer be satisfied by a control at R² < −1: a green row needs one readable control, while a
+> genuine loss still reports FAIL (DEC-433).
 
 **Repository state:** `main` now contains the former `primary-encoder` demo work. The duplicate
 report card, stale roadmap, duplicate receipt orchestrator, one-off OPE wrappers, and generator

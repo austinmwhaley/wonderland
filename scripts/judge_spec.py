@@ -176,6 +176,15 @@ REQUIRED_TASK_FIELDS = (
 #: fields a receipt may not add without pre-registration
 UNREGISTERED_NOTE = "receipt defines its own criterion"
 
+#: A negative control whose held-out R2 falls below this is VACUOUS: it is not evidence that the
+#: real arm has signal, only that the control was absurd. R2 = 1 - SSE/SST, so -1.0 is the point
+#: where the control's squared error exceeds the target's own variance by more than that variance
+#: again — predictions wilder than "predict the mean" by a full factor of the target's spread.
+#: A gate satisfied by such a control ("control <= brain") is satisfied trivially, which is the
+#: false green this constant exists to refuse (DEC-433). It is an evaluation-contract constant,
+#: not a tuned threshold: nothing is ever adjusted to make a row pass.
+VACUOUS_CONTROL_R2 = -1.0
+
 #: What "behavior change" means, mechanically (DEC-390 freshness law: any behavior change to the
 #: encoder or serving path marks dependent receipts stale). Derived from the package tree rather
 #: than a curated file list, so a new module cannot be accidentally excluded from the law.
