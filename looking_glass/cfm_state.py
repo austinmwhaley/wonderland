@@ -764,6 +764,35 @@ class StateStore:
             "INSERT INTO view_faceplate VALUES (?, ?)", [str(stamp["version"]), json.dumps(stamp)]
         )
 
+    def verify_state_serving(self, n_states: int, n_embeddings: int, close_at: float) -> None:
+        """Refuse a release that serves an empty `state_embeddings` next to a full `customer_state`.
+
+        Plugins are told to read `state_embeddings`; `customer_state` is what it is derived from.
+        The two counts can disagree only through a defect — the day-1 close was once guarded on a
+        buffer that had already been freed, so the served table shipped EMPTY while the build
+        printed nothing alarming — and a consumer reading an empty table gets a failure it cannot
+        diagnose. So the counts are PRINTED every build (O11) and RAISED on disagreement
+        (Principle 7: reject, do not let a silent absence become someone else's zero).
+        """
+        print(
+            f"[states] served: customer_state={n_states} state_embeddings={n_embeddings} "
+            f"at boundary {close_at:.0f}",
+            flush=True,
+        )
+        if n_states and n_embeddings == 0:
+            raise RuntimeError(
+                f"release refused: customer_state has {n_states} rows but state_embeddings is "
+                f"EMPTY — every plugin reading the served table would get nothing. The day-1 "
+                f"close (fade_idle + materialize_state_embeddings) did not run; check that it is "
+                f"not guarded on a build buffer that was already freed."
+            )
+        if n_embeddings != n_states:
+            raise RuntimeError(
+                f"release refused: state_embeddings={n_embeddings} != customer_state={n_states} "
+                f"at boundary {close_at:.0f} — the odometer lost customers between the state and "
+                f"its served embedding"
+            )
+
     def count(self):
         s = self.con.execute("SELECT count(*) FROM customer_state").fetchone()[0]
         t = self.con.execute("SELECT count(*) FROM anchor_embeddings").fetchone()[0]
@@ -1100,7 +1129,16 @@ def build_products(cfg, model, vocab, df, keys, split):
     # start = all of yesterday absorbed, today excluded) and materialize that
     # day's inference embeddings. The daily job therefore only handles days >= 2
     # — no redundant day-1 absorb/fade/materialize work.
-    if state_rows:
+    #
+    # ASK THE TABLE, NOT THE BUFFER. This guard used to read `if state_rows:`, but the buffer is
+    # emptied a few lines above (DEC-425's memory fix), so the condition was false on every build
+    # since: the day-1 fade + materialize never ran, `state_embeddings` shipped EMPTY, and every
+    # plugin read an empty served table. Nothing printed a count and no gate read that table, so
+    # it stayed invisible for six decisions. A guard that consults an in-memory buffer to decide
+    # whether a STORED table was written is asking the wrong source of truth — the same class of
+    # defect as the ragged-`shape` column (layout described in one place, built in another).
+    n_states = int(store.con.execute("SELECT count(*) FROM customer_state").fetchone()[0])
+    if n_states:
         import time as _time
 
         t_close = _time.perf_counter()
@@ -1116,6 +1154,11 @@ def build_products(cfg, model, vocab, df, keys, split):
         # no absorbs (states were just built from full history); every customer
         # was faded idly to the boundary, so idle == embeddings
         store.record_receipt(close_at, 0, n_emb, n_emb, "encoder", _time.perf_counter() - t_close)
+        store.verify_state_serving(n_states, n_emb, close_at)
+    else:
+        # Named, not skipped: a build with no states is a fact a reader can see, and the
+        # `state_embeddings` table it leaves behind is empty for a REASON stated in the log.
+        print("[states] customer_state is empty — no day-1 close to perform", flush=True)
     # training embeddings: Population B SAMPLE at anchors (states stay for everyone)
     anchor_split = split
     if cfg.sample_b_customers is not None:

@@ -3971,6 +3971,42 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   is row-dict-based (a known anti-pattern in the existing canonical builder) — reused rather than
   rewritten so the judge cannot be measuring a fifth variant of the table.
 
+## DEC-429 — [TECHNICAL] the served state table was EMPTY for six decisions: a guard may not consult a build buffer to decide whether a STORED table was written
+
+- **Context.** `build_products` closes day 1 by fading every state to the `as_of` boundary and
+  materializing `state_embeddings` — the table plugins are told to read. Since DEC-425 the guard
+  around that block was `if state_rows:`, but DEC-425's own memory fix empties `state_rows` a few
+  lines earlier (the flush that bounds peak RSS). So the condition was false on **every build
+  since**: the fade and materialize never ran, `state_embeddings` shipped zero rows, the build
+  exited 0, and nothing printed a count. No gate read that table either — S4 counts rows in the
+  *view* tables, S5 reads `customer_state`. The first consequence the judge exposed: PATH B's
+  `brain` arm had nothing to read.
+- **Alternatives considered.** (1) *Move the guard before the flush* — rejected: it re-couples a
+  lifetime decision (when the buffer may be freed) to a correctness decision (whether the store
+  was written), which is the actual defect; the next memory optimization would silently re-break
+  it. (2) *Print a warning when `state_embeddings` is empty* — rejected under principle 7: a
+  warning in a 60-line log is what we already had in the form of silence, and an empty served
+  table is not a degraded state a consumer can proceed through. (3) *Drop `state_embeddings` and
+  have plugins derive it from `customer_state`* — rejected: it moves a defect into every consumer
+  and re-derives a readout in N places (principle 6).
+- **Decision.** Ask the table, never the buffer: the guard is now
+  `n_states = SELECT count(*) FROM customer_state`, and an empty store is *named* in the log
+  (`customer_state is empty — no day-1 close to perform`) instead of skipped. The release then
+  runs `StateStore.verify_state_serving(n_states, n_embeddings, close_at)`, which PRINTS both
+  counts every build (principle 11 — the specific reason this survived six decisions is that the
+  number was never printed) and RAISES on disagreement (principle 5/7): states without served
+  embeddings, or a count mismatch, refuse the release with the fixing instruction in the message.
+- **Single axis changed.** Serving/interface axis only: no encoder, no objective, no gate change;
+  the fix cannot make the embedding better, only make what is actually shipped true.
+- **Measured.** Real 2 500-customer build: `[states] served: customer_state=2500
+  state_embeddings=2500 at boundary 1735689600` (was 0 on every build since DEC-425), exit 0,
+  MemAvailable low **17.2 GB** against the operator's 8 GB floor, peak RSS 13.09 GB — the guard
+  costs nothing at the memory scale DEC-425 was protecting.
+- **Trade-offs recorded.** A build that legitimately has no states now prints a line it did not
+  print before (noise, not cost). The invariant is enforced at release, so a defect fails the
+  build rather than the consumer's query — a louder failure in a place where a failed build is
+  cheaper to diagnose.
+
 ## DEC-431 — [TECHNICAL] the supervised leg measured for the first time: FAIL on both columns, and the two disclosures the measurement forced
 - **Context.** DEC-428 built the producer; this is the first run against a real artifact. Seven
   live traits on 724 B-rows against 1 776 A-rows, comparator PATH A (48-column wide table,
