@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-import math
 from pathlib import Path
 from types import SimpleNamespace
 
 import torch
 
-from looking_glass.cfm_config import CFMConfig, LN2, _to_epoch, as_of_epoch
+from looking_glass.cfm_config import CFMConfig, LN2, TIME_UNIT_SECONDS, _to_epoch, as_of_epoch
 from looking_glass.cfm_data import build_sequences
 from looking_glass.cfm_model import CFM
 from looking_glass import view_layout
@@ -17,12 +16,16 @@ from looking_glass import view_layout
 # ---------------------------------------------------------------------------
 # state operations (fade / absorb)
 # ---------------------------------------------------------------------------
-def fade(h: torch.Tensor, dt_seconds: float, half_life_days: float) -> torch.Tensor:
-    """Decay the state when time passes with NO events."""
-    if dt_seconds <= 0:
-        return h
-    decay = math.exp(-LN2 * dt_seconds / max(half_life_days * 86400.0, 1.0))
-    return h * decay
+def fade(h: torch.Tensor, dt_seconds, half_life_days: float) -> torch.Tensor:
+    """Decay the state when time passes with NO events.
+
+    `dt_seconds` is a scalar OR a tensor broadcastable against `h` (the `response` outlet fades a
+    whole padded batch in one op, DEC-426). One law, one expression: a tensor path written
+    separately is a second definition of the same law, and the two drift.
+    """
+    dt = torch.as_tensor(dt_seconds, dtype=h.dtype, device=h.device)
+    decay = torch.exp(-(LN2 * dt) / max(half_life_days * TIME_UNIT_SECONDS, 1.0))
+    return h * torch.where(dt > 0, decay, torch.ones_like(decay))
 
 
 def absorb(model: CFM, seq, h0: torch.Tensor | None = None, as_of_epoch: float | None = None):
@@ -413,6 +416,10 @@ class StateStore:
         # The faceplate (Outlet Standard O4): the artifact describes itself so thousands of
         # consumers can self-validate and locally refuse a stale or short artifact.
         self.con.execute("CREATE TABLE IF NOT EXISTS view_faceplate (version TEXT, stamp JSON)")
+        # The fitted `response` head (DEC-426) with its calibration receipt: the outlet is
+        # reproducible from the artifact alone, and a consumer can see the coverage its
+        # intervals actually achieved. Rewritten per release, like the faceplate.
+        self.con.execute("CREATE TABLE IF NOT EXISTS response_head (version TEXT, stamp JSON)")
 
     def record_receipt(self, epoch, n_absorbed, n_idle, n_embeddings, device, wall_seconds):
         """One insert path for state_job_receipts (daily job AND the encoder's
@@ -604,9 +611,9 @@ class StateStore:
         dt = torch.tensor(
             [float(now_epoch) - float(r[1]) for r in rows], dtype=torch.float32
         ).unsqueeze(1)
-        decay = torch.exp(-LN2 * dt / max(self.cfg.state_half_life_days * 86400.0, 1.0)).clamp(
-            max=1.0
-        )  # dt <= 0 -> identity, matching fade()
+        decay = torch.exp(
+            -LN2 * dt / max(self.cfg.state_half_life_days * TIME_UNIT_SECONDS, 1.0)
+        ).clamp(max=1.0)  # dt <= 0 -> identity, matching fade()
         dev = next(self.model.parameters()).device
         with torch.no_grad():
             H = H * decay
@@ -708,6 +715,16 @@ class StateStore:
             self.con.unregister("_vr")
         return len(view_rows)
 
+    def record_response_head(self, head: dict) -> None:
+        """Publish the fitted response head + its calibration receipt (one row per release)."""
+        import json
+
+        self.con.execute("DELETE FROM response_head")
+        self.con.execute(
+            "INSERT INTO response_head VALUES (?, ?)",
+            [str(head.get("version", "")), json.dumps(head)],
+        )
+
     def verify_outlets(self, stamp: dict) -> None:
         """Refuse a release whose published columns disagree with the artifact's own stamp.
 
@@ -754,6 +771,102 @@ class StateStore:
 
     def close(self):
         self.con.close()
+
+
+def _publish_response_outlet(cfg, model, df, keys, split, store) -> dict | None:
+    """Fit and publish the `response` outlet (DEC-384 / DEC-426); returns the head for the stamp.
+
+    Fitted on population A only and calibrated on B, AFTER the encoder is frozen. Returns None
+    (→ the faceplate advertises `response` as not served) when the stream has no logged actions
+    or too few rows to calibrate honestly — a thin outlet is worse than an advertised gap,
+    because a consumer would read its interval as real.
+    """
+    import gc
+
+    import numpy as np
+    import polars as pl
+
+    from looking_glass import gpu_budget, response_outlet
+
+    # γ is derived from the stream's own cadence, in one columnar pass (no Python loop over
+    # events): the horizon the outcome is measured over is one typical inter-event interval.
+    gaps_s = (
+        df.sort(["customer_key", "event_ts"])
+        .with_columns(
+            pl.col("event_ts")
+            .str.to_datetime(time_zone="UTC", strict=False)
+            .dt.epoch("s")
+            .diff()
+            .over("customer_key")
+            .alias("_gap_s")
+        )["_gap_s"]
+        .drop_nulls()
+    )
+    gamma, gamma_receipt = response_outlet.derive_gamma(gaps_s.to_numpy() / TIME_UNIT_SECONDS)
+    # The action family comes from the stream's own declaration (the generator's truth file),
+    # never from an event name typed here. No declaration → no outlet, with the reason printed.
+    design = response_outlet.declare_action_design(cfg.db)
+
+    seqs = build_sequences(df, keys, cfg, split, with_anchors=False, min_events=2)
+    rows = response_outlet.collect(model, cfg, seqs, gamma=gamma, action_design=design)
+    if rows is None or len(rows["target"]) == 0:
+        print(
+            "[response] no logged action events in the stream — outlet stays not_served", flush=True
+        )
+        return None
+    grp = {str(k): split.get(k, "A") for k in keys}
+    is_a = np.asarray([grp.get(c, "A") == "A" for c in rows["customer"]], dtype=bool)
+
+    def pick(mask):
+        """Rows for one population — the same action-event rows, split by A/B. A customer's
+        rows can only land on one side (the split is by customer), so fit and calibration
+        never share a customer."""
+        return {
+            k: (v[mask] if isinstance(v, np.ndarray) else np.asarray(v, dtype=object)[mask])
+            for k, v in rows.items()
+            if k != "n_actions"
+        }
+
+    rows_a, rows_b = pick(is_a), pick(~is_a)
+    if len(rows_a["target"]) < 30 or len(rows_b["target"]) < 30:
+        print(
+            f"[response] too few action rows to fit AND calibrate honestly "
+            f"(A={len(rows_a['target'])}, B={len(rows_b['target'])}) — not_served rather than "
+            f"publishing an interval nobody measured",
+            flush=True,
+        )
+        return None
+    head = response_outlet.fit(rows_a, rows_b)
+    head["gamma_derivation"] = gamma_receipt
+    head["action_design"] = {k: (list(v) if isinstance(v, tuple) else v) for k, v in design.items()}
+    head["version"] = str(cfg.tag)
+    pub = response_outlet.publish_rows(rows, head, version=cfg.tag)
+    # Stamped at the customer's own last event, the same convention as every other view: the
+    # response summarizes the actions that actually happened in that customer's history.
+    last = {str(s.get("customer")): float(_to_epoch(s["event_ts"][-1])) for s in seqs}
+    for r in pub:
+        r["as_of_epoch"] = last.get(r["customer_key"])
+    pub = [r for r in pub if r["as_of_epoch"] is not None]
+    n = store.bulk_view_rows(pub)
+    store.record_response_head(head)
+    # Release the build buffers before the next phase (the pool is shared; freeing them late is
+    # how a products phase reaches the system floor). Assigning None rather than `del` keeps
+    # the names bound — the row slices above close over `rows`, and deleting it out from under
+    # a closure is a bug that only appears at the worst moment.
+    seqs = rows = rows_a = rows_b = pub = None
+    gc.collect()
+    gpu_budget.release(cfg, "products_response")
+    print(
+        f"[response] published: fit on {head['n_fit']} A-rows, calibrated on {head['n_calibrate']} "
+        f"B-rows; τ={gamma_receipt['tau_days']}d γ={gamma_receipt['gamma']}; holdout R²="
+        f"{head['target_r2_holdout']} (leaky ceiling {head['target_r2_ceiling_leaky']}); "
+        f"coverage {head['coverage_empirical']} (nominal {head['coverage_nominal']}) at measured "
+        f"σ {head['sigma_randomized']} rand / {head['sigma_unrandomized']} unrand, mean interval "
+        f"width {head['mean_interval_width']}; randomized fraction "
+        f"{head['randomized_frac']}; {n} rows",
+        flush=True,
+    )
+    return head
 
 
 def build_products(cfg, model, vocab, df, keys, split):
@@ -840,7 +953,28 @@ def build_products(cfg, model, vocab, df, keys, split):
     # against an 8.0 GB floor on 2026-10-29. Naming the phase is what makes the fix a
     # measurement rather than a guess.
     gpu_budget.release(cfg, "products_states")
-    _fp = view_layout.faceplate(model, cfg)
+    # ---------------------------------------------------------------- the `response` outlet
+    # SPINE §5 / DEC-384, built by DEC-426: conditional outcome given the LOGGED action, with
+    # measured uncertainty. The encoder is READ, never trained — the head is fitted on
+    # population A after freezing, and the release still succeeds without it (the faceplate
+    # then advertises `not_served: response`, which is an absence the card can see, not one it
+    # has to trust).
+    head = None
+    try:
+        head = _publish_response_outlet(cfg, model, df, keys, split, store)
+    except Exception as exc:  # an additive outlet must not hold the release hostage
+        # Print WHERE it died. Dropping the traceback here is the DEC-425 failure mode again:
+        # the operator sees "not published" and a one-line message, and has to reproduce the
+        # crash to find it. A failure you cannot attribute is a failure you cannot fix.
+        import traceback
+
+        print(
+            f"[response] outlet NOT published: {type(exc).__name__}: {exc} — the faceplate "
+            f"will advertise it as not_served\n{traceback.format_exc()}",
+            flush=True,
+        )
+        head = None
+    _fp = view_layout.faceplate(model, cfg, head=head)
     n_view += store.bulk_view_rows(view_rows)
     store.write_faceplate(_fp)
     store.verify_outlets(_fp)

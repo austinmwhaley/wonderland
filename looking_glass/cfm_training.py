@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 import json
 import math
+import time
 from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -412,8 +413,28 @@ def train_cfm(cfg: CFMConfig):
             )
         return float((tl + il).detach())
 
+    step_times = []
+    # Runtime receipt (P11/P16). The trainer has NEVER reported seconds-per-step, so DEC-422's
+    # "1.45 s/step" and DEC-389's "measure before adopting" for `grad_checkpoint` had to be
+    # done by differencing whole-run wall clock — which a warm torch-inductor cache silently
+    # invalidates (measured 2026-10-29: the checkpointed leg ran FASTER than the plain leg at
+    # identical steps and identical peak, because it ran third). The number belongs here, next
+    # to the loop that produces it, and must name the knobs it describes.
+    #
+    # Two numbers, because they answer different questions: per-step ENQUEUE time (no sync —
+    # syncing per step would destroy CPU/GPU pipelining and measure the instrument) and
+    # THROUGHPUT (one sync per `train_step` call, so the GPU's real time is attributed). Enqueue
+    # ≈ throughput means the loop is CPU/launch-bound, and a memory-recompute knob cannot help;
+    # throughput >> enqueue means it is GPU-bound and checkpointing must COST time.
+    _dev_str = str(model._dev())
+    _sync = torch.cuda.synchronize if _dev_str.startswith("cuda") else (lambda: None)
+    _t_step = time.perf_counter
+    call_spans = []
+
     def train_step(n):
+        _t_call = _t_step()
         for _ in range(n):
+            _t0 = _t_step()
             b = rng.choice(tr_idx, size=min(cfg.batch, len(tr_idx)), replace=False)
             items = [a_seqs[i] for i in b]
             opt.zero_grad()
@@ -489,6 +510,11 @@ def train_cfm(cfg: CFMConfig):
             opt.param_groups[0]["lr"] = _lr
             cfg.lr = _lr
             model.ema(tau)
+            step_times.append(_t_step() - _t0)
+        # one sync per CALL, not per step: the GPU's real time is attributed to the loop
+        # without breaking the CPU/GPU pipelining the measurement is supposed to describe.
+        _sync()
+        call_spans.append((n, _t_step() - _t_call))
 
     def val_metric():
         # bound eval cost (speed principle): subsample the validation set;
@@ -610,6 +636,35 @@ def train_cfm(cfg: CFMConfig):
         # falsifiable failure into an anecdote. Record, then let it propagate unchanged.
         gpu_budget.release(cfg, "train_aborted")
         raise
+    # The step-time receipt (P16). Printed AND stored, because a decision that cannot be
+    # explained is not finished, and the `grad_checkpoint` adoption decision was blocked for
+    # lack of exactly this number.
+    if call_spans:
+        _n = sum(n for n, _ in call_spans)
+        _secs = sum(s for _, s in call_spans)
+        _st = sorted(step_times)
+        cfg._step_time_receipt = {
+            "steps": int(_n),
+            "seconds": round(float(_secs), 2),
+            "s_per_step": round(float(_secs) / max(_n, 1), 4),
+            "enqueue_median_s": round(float(_st[len(_st) // 2]), 4) if _st else None,
+            "enqueue_p95_s": round(float(_st[int(0.95 * (len(_st) - 1))]), 4) if _st else None,
+            "batch": int(cfg.batch),
+            "grad_checkpoint": bool(getattr(cfg, "grad_checkpoint", False)),
+            "device": _dev_str,
+        }
+        _r = cfg._step_time_receipt
+        print(
+            f"[step-time] {_r['s_per_step']} s/step over {_r['steps']} steps "
+            f"({_r['seconds']} s); enqueue median {_r['enqueue_median_s']} s "
+            f"(batch={_r['batch']} grad_checkpoint={_r['grad_checkpoint']} device={_r['device']})"
+            + (
+                " — enqueue-bound: the loop waits on the CPU, a recompute knob cannot help"
+                if _r["enqueue_median_s"] and _r["enqueue_median_s"] > 0.7 * _r["s_per_step"]
+                else " — GPU-bound: recompute work costs step time"
+            ),
+            flush=True,
+        )
     # STABILITY IS A HARD INVARIANT (v6): a divergent run is a FAILURE, never a
     # rescued green. Record it; the portfolio gate fails on an unstable run.
     cfg._stable = not bool(gov.get("diverged", False))
@@ -970,6 +1025,24 @@ def _target_valid_mask(t, vocab):
     else:
         _next_is_action = torch.zeros_like(_next_is_pad)
     return t["mask"][:, :-1] * (1.0 - _next_is_action) * (1.0 - _next_is_pad)
+
+
+def discounted_future(phi, decay):
+    """Exact reverse affine scan: `R_i = sum_{j>i} (prod_{i<k<=j} decay_k) * phi_j`.
+
+    One definition, used by the SF objective AND by the `response` outlet (DEC-426) — the
+    outlet's target must be the SAME future the encoder was pressured to hold, or the two drift
+    and the outlet measures a different quantity than the objective trained on. Vectorized
+    through `_scan`; no Python loop over time (P16).
+    """
+    prev = torch.flip(decay, dims=[1])
+    dprime = torch.zeros_like(prev)
+    dprime[:, 1:] = prev[:, :-1]
+    phir = torch.flip(phi, dims=[1])
+    bprime = torch.zeros_like(phir)
+    bprime[:, 1:] = dprime[:, 1:] * phir[:, :-1]
+    _, Sf = _scan(dprime, bprime)
+    return torch.flip(Sf, dims=[1])
 
 
 def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
@@ -1454,15 +1527,9 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
     de = dt_days.unsqueeze(1).expand(B, GAMS, T, 1).reshape(B * GAMS, T, 1)
     g = gamma.view(B, GAMS, 1, 1).expand(B, GAMS, T, 1).reshape(B * GAMS, T, 1) ** de
     pe = phi.unsqueeze(1).expand(B, GAMS, T, PD).reshape(B * GAMS, T, PD)
-    # Exact reverse affine scan: R_i = sum_{j>i} (prod g) phi_j.
-    prev = torch.flip(g, dims=[1])
-    dprime = torch.zeros_like(prev)
-    dprime[:, 1:] = prev[:, :-1]
-    phir = torch.flip(pe, dims=[1])
-    bprime = torch.zeros_like(phir)
-    bprime[:, 1:] = dprime[:, 1:] * phir[:, :-1]
-    _, Sf = _scan(dprime, bprime)
-    R = torch.flip(Sf, dims=[1])  # (B*S,T,PD) = discounted future phi (the SF VALUE)
+    # Exact reverse affine scan — ONE definition (DEC-426): the `response` outlet predicts the
+    # very future this objective holds, so the two can never drift apart.
+    R = discounted_future(pe, g)  # (B*S,T,PD) = discounted future phi (the SF VALUE)
     mask_e = t["mask"].unsqueeze(1).expand(B, GAMS, T).reshape(B * GAMS, T)
     # scale-free but LEVEL-PRESERVING: standardize each phi dim GLOBALLY over the
     # batch's valid entries (cross-customer), NOT per-sequence-over-time. The SF
@@ -2051,6 +2118,7 @@ def _registry(
                 "bank": dict(getattr(cfg, "final_bank_stats", {}) or {}),
                 "whiten": dict(getattr(cfg, "_whiten_receipt", {}) or {}),
                 "gpu_budget": dict(getattr(cfg, "_gpu_budget_receipt", {}) or {}),
+                "step_time": dict(getattr(cfg, "_step_time_receipt", {}) or {}),
                 "trained_at": datetime.now(timezone.utc).isoformat(),
             },
             indent=1,

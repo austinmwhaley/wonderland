@@ -115,3 +115,26 @@ def test_advance_incremental_matches_reference(tiny_model, tmp_path):
     ).fetchone()
     assert row2[0] == _to_epoch(first[1]["event_ts"][-1])
     store.close()
+
+
+def test_fade_accepts_a_tensor_delta_without_a_second_definition():
+    """The `response` outlet fades a whole padded batch at once (DEC-426). If the tensor path
+    were a second implementation of the decay law, the two would drift and serve-time states
+    would disagree with the outlet's — so the tensor result must equal the scalar one exactly.
+    """
+    import torch
+
+    from looking_glass.cfm_state import fade
+
+    # the shape the outlet actually uses: one delta per (batch, time), broadcast over features
+    h = torch.randn(2, 3, 4)
+    dts = torch.tensor(
+        [[0.0, 3600.0, 30 * 86400.0], [7200.0, 0.0, 5 * 86400.0]]
+    ).unsqueeze(-1)
+    got = fade(h, dts, half_life_days=30.0)
+    for b in range(2):
+        for t_ in range(3):
+            want = fade(h[b, t_], float(dts[b, t_, 0]), half_life_days=30.0)
+            assert torch.allclose(got[b, t_], want, atol=0, rtol=1e-6), (b, t_)
+    # no time passed must be EXACTLY unchanged: a decayed "no-op" is a silent state leak
+    assert torch.equal(fade(h, torch.zeros(2, 3, 1), half_life_days=30.0), h)

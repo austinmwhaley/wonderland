@@ -209,4 +209,9 @@ def test_the_published_part_order_is_the_contract():
     """The S4 receipt rebuilds a view from the published parts, so the order the producer
     concatenated in has to be readable WITHOUT a model — otherwise the consumer guesses."""
     assert V.PART_ORDER["learned_state"] == ["recurrence", "ledger_totals", "rfm_recon"]
-    assert set(V.PART_ORDER) == set(V.FULL_ORDER)
+    assert V.PART_ORDER["response"] == ["outcome_mean", "outcome_sigma", "support", "randomized"]
+    # Every named view is an approved outlet, and every content class in the `full` bundle has
+    # a published part list. `response` is approved but NOT in the bundle, so it may not be
+    # equated with FULL_ORDER — that distinction is what keeps the ledger out of `full`.
+    assert set(V.PART_ORDER) <= set(V.DECLARED)
+    assert set(V.FULL_ORDER) <= set(V.PART_ORDER)

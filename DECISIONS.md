@@ -3730,3 +3730,116 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - **Trade-off.** Between the informed moment and the next phase the cap can be up to the
   finished phase's leftover too generous; that window is bounded by the watchdog's floor,
   which is the layer that can actually stop the machine.
+
+## DEC-426 — [TECHNICAL] the `response` outlet gets built (SPINE §8 step 5, implementing DEC-384): pre-action state + logged action → conditional outcome with uncertainty
+
+- **Context.** SPINE §8 step 5 is the `response` bucket + its decodability contract. DEC-384
+  already ratified it (the simulator is the fourth consumer; `response` is Option B: "head
+  outputs predicting outcomes given the logged action — action + pre-action state → future
+  outcome, exposed as a named view") and pinned three binding disciplines: **(a)** the bucket
+  holds **conditional** predictions with uncertainty, never causal claims; **(b)** causal
+  reading attaches only where the stream logged randomization, else uncertainty **widens**;
+  **(c)** pre-action cuts — the state is always taken strictly BEFORE the action timestamp.
+  DEC-424 published five of the six outlets and left `response` in `not_served`. S5 already
+  knows the hard fact: the donor cannot decode the lab's randomized-offer uplift (R²≈0,
+  DEC-420), so the outlet must be built so that a FAIL names the axis instead of hiding it.
+- **Alternatives considered.** (1) *Train the response head as a joint Layer-B objective* —
+  rejected for this iteration: it pressures the encoder with outcome prediction and re-bases
+  the frozen protocol AGAIN (third protocol change in two days); the measurement we need first
+  is whether the FROZEN state can support the outlet at all. If it cannot, the fix is an
+  encoder objective — a separate decision with the matched-control receipt DEC-421/422's
+  pattern demands. (2) *Publish `head_sf` as the response outlet* — rejected: `head_sf`
+  conditions on state and discount only, never on the action, so it is a value outlet, not a
+  response outlet; publishing it under the `response` name would be relabeling. (3) *Roll the
+  encoder forward with a hypothetical action and read `head_sf`* — kept as the **simulator's
+  read path** (it is lawful and needs no new parameters) but rejected as the published outlet:
+  DEC-384 says the bucket holds predictions given the **logged** action, and a rollout column
+  would silently make counterfactual claims the encoder was never certified for.
+- **Decision.** New `looking_glass/response_outlet.py`, fit **after** the encoder is frozen,
+  on **population A only**, and published as the sixth named view — the encoder's own
+  parameters never change (P: a frozen foundation is read, never mutated), and the head is a
+  separate artifact stored with the products, so a release without it keeps
+  `not_served: response` exactly as today.
+  - **Condition (DEC-384c):** the readout at `t-1`, strictly before the action step.
+  - **Action representation:** the action's own **state transition** `Δ_t = y_t − fade(y_{t−1})`
+    — what the event did to the state. Schema-agnostic (no business event names, no per-domain
+    action code, M1 intact), derived from the frozen encoder, and it is the same object the
+    recurrence consumed. The action events themselves come from `is_action`, which the data
+    layer already derives (`exogenous_events` ∪ non-null action fields).
+  - **Target:** the stream's own discounted future value, `φ = [log1p|value|, one-hot(event_type)]`
+    decayed by `γ**Δt_days` — the SF target (DEC-009: agnostic φ, no objective may name a
+    business event), reached by extracting train_step's exact reverse affine scan into one
+    shared helper (`cfm_training.discounted_future`) so the outlet and the objective cannot
+    drift apart. γ is **derived from the stream's own gap spectrum**, not typed, and the value
+    used is printed in the receipt.
+  - **Uncertainty (a, b):** a Gaussian NLL head gives `μ` and `σ`; `σ` is then **empirically
+    calibrated** on held-out rows (conformal: scale so the empirical 80%/95% coverage matches
+    nominal, receipted), and where the action family has no logged randomization the published
+    `σ` is **widened by the measured coverage shortfall**, never by a typed multiplier —
+    fail safe by carrying more uncertainty, never by refusing the column.
+  - **Parts published** (so the S4 conformance kit can zero one at a time):
+    `response.outcome_mean`, `response.outcome_sigma`, `response.support` (how many action-days
+    the estimate rests on) and `response.randomized` (the fraction of that support that was a
+    logged randomized arm — the object DEC-384b attaches causality to).
+- **Acceptance gate (frozen here, before the run), in `scripts/measure_views_law.py`:**
+  1. the `response` view must pass the S4 gates it shares with every other outlet (linear head
+     beats random AND destroyed, paired CI lo>0) on the **conditional** outcome target;
+  2. **attribution control:** the state+action head must beat the **action-blind** head
+     (target from state alone) and the **state-blind** head (target from `Δ_t` alone) with the
+     paired CI excluding zero — if `action-only` matches `state+action`, the outlet carries no
+     customer information and the row says so rather than passing on action main effects;
+  3. **calibration:** empirical 80% coverage within a derived band (± the binomial SE at the
+     evaluated N, ×2 tolerance), and coverage must be **no better** where the arm was not
+     randomized than where it was, unless `σ` was widened there.
+  A FAIL is the expected and useful outcome given DEC-420; it is reported, never softened.
+  Publishing the view also means S4 now gates on it — an undecodable socket must fail the wall.
+- **Principles served.** Honest/A1 (uncertainty first, calibrated against ground truth, never
+  a point estimate), Lawful (the action enters as the recurrence's own transition, and the
+  target reuses the one SF scan definition), Accessible (a named socket the RL and simulator
+  consumers can read without re-deriving anything), Diagnosable (state-blind/action-blind
+  attribution names which side of "action-conditioned" is missing).
+- **Trade-offs recorded.** The head is fit on A and read on B, but the encoder saw A's actions
+  during training — so the receipt reports the *unfitted* controls alongside and the row is a
+  serve-time claim, not a training-set one. Fitting on frozen states costs a second pass over
+  the stream in `build_products` (bounded, chunked, receipted as its own phase).
+
+- **Outcome (measured on `0.11.0r469048`, 2500 customers, `products` + `measure_views_law`).**
+  S4 = **FAIL**, 4 stages, and the failure is the pre-registered gate 2, not a crash:
+  `action-blind (state only) not beaten, paired CI lo = -0.000113`. The outlet published
+  (`response=4` parts over 10 000 rows, fit on 315 410 A-rows / calibrated on 126 895 B-rows,
+  τ=0.799 d, γ=0.286069). Gate 1 and gate 3 pass: holdout **R²=0.0696**, coverage **0.800**
+  against nominal 0.80 (band ±0.002) at measured σ 0.295346 rand / 0.304317 unrand.
+- **Two corrections to this decision's plan, both forced by measurement (recorded, not
+  silently applied — neither touches a gate, threshold or criterion):**
+  1. **Uncertainty is measured per group, not fitted.** The planned heteroscedastic σ head was
+     built and then removed: on the real build it predicted σ≈1e-6 for a large share of rows
+     while missing them badly, so the single multiplier needed to reach nominal coverage came
+     out at **22932×** — ±3000 intervals for well-predicted customers, tight ones for the
+     over-confident rows, exactly backwards. A bracketed bisection (typed `hi=16`) had also been
+     silently *giving up* and publishing 0.722 empirical coverage against a nominal 0.80 while
+     reporting "scale 1.0". The published σ is now the split-conformal quantile of the held-out
+     residuals, measured separately for randomized and unrandomized rows (DEC-384b as two
+     measured widths + a receipted floor), and `mean_interval_width` is disclosed so width is
+     never mistaken for virtue. Calibrated-homoscedastic beats uncalibrated-heteroscedastic:
+     sharpness only counts after calibration (P8).
+  2. **A leaky ceiling is published beside the score.** The same head fitted on the readout AT
+     the action step (which has already absorbed the outcome's own step) scores **0.0701** where
+     the served head scores 0.0696. So the target is nearly irreducible at this state, and the
+     row must be read as "little signal existed", not "the head is weak". It is a disclosure
+     field (`target_r2_ceiling_leaky`), never a feature and never a comparator.
+- **Axis attribution for the FAIL (diagnosable, and the reason the row is worth having).** The
+  receipt now carries `delta_incremental_r2` = the R² of the target on the part of Δ that the
+  pre-action state CANNOT explain, plus the effective rank of each block. Measured:
+  **0.0018** (rank: delta 1.34, state 2.09 over 256 columns; on the 400-customer probe, Δ is
+  40.5% explained linearly by the pre-action state and its perpendicular carries R²=-0.0001).
+  **`Δ_t = y_t − fade(y_{t−1})` — this decision's chosen action representation — is dominated by
+  the recurrence's own relaxation plus the event's input content, not by the action's identity.**
+  Rank-matched reruns (k=16/32/64) keep the gate at lo≈0, so it is not a ridge-capacity artifact.
+  The action-blind gate is therefore not satisfiable by this representation, and the candidate
+  fixes (declaring the action design at TRAIN time so the encoder learns an action-conditioned
+  transition; or representing the action by its declared attributes / event embedding rather
+  than by the state step it produced) both change what the encoder sees or what the frozen
+  action representation is → **new protocol versions, operator rulings, not this chunk.**
+- **Status of the row.** Kept as FAIL. The gate is not softened, the criterion is not changed,
+  and the outlet is not relabeled. What changed is that a failure that previously read "the head
+  is weak" now reads "the action representation carries no incremental signal, measured".

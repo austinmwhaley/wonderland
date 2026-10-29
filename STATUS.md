@@ -802,6 +802,37 @@ observability, prefer deletion, best tool, cost-aware, **speed-first (16)**.
   ROADMAP P3; MoE/multi-entity (M3/M5) rejected.
 
 ## Next tasks (priority order)
+
+> **Rebuild priority (2026-10-29, SPINE §8 order — this supersedes the inherited list below
+> for the Layer-B rebuild).**
+> 1. **Operator ratification requested (5 items):**
+>    - `anchor_embeddings` and `donor_embeddings` both publishing `donor(h_read)` (DEC-424).
+>    - batch 27 → 20 as a recorded `--set` override (makes any comparison to the frozen DEC-420
+>      baseline a **new protocol version**) (DEC-423).
+>    - ~~adopting `grad_checkpoint` once the A/B lands~~ **measured, NOT adopted** (identical
+>      `peak_alloc` 9.92 GB both legs, identical val 6.3864; the "faster" leg was inductor cache
+>      warmth). The step-time receipt that would have decided it is now built into `train_step`.
+>    - **whether to derive the action declaration at TRAIN time.** The frozen artifact trained
+>      with `exogenous_events: []` / `action_fields: []`, so the encoder never saw any event as
+>      an action (`is_action` all-zeros) — a candidate cause of DEC-420's R²≈0 uplift failure on
+>      the input/tokenizer axis. Deriving it from `reference_truth.json → meta` is what the
+>      response outlet does at PUBLISH time; doing it at train time retrains the encoder = new
+>      protocol version.
+>    - **whether the action representation should change** (Δ as the recurrence's own step is
+>      measured to carry no incremental signal — see the DEC-426 outcome block), and whether the
+>      `mean over φ dims` target reduction is the right contract for the response target.
+> 2. ~~`response` outlet (SPINE §8 step 5)~~ **BUILT and PUBLISHED** (`response=4` parts, 6
+>    views, DEC-426). **S4 = FAIL** on the pre-registered attribution gate: the state+action
+>    head does not beat the state-only head (paired CI lo=-0.000113), and the receipt now says
+>    *why* — `delta_incremental_r2=0.0018` at effective rank 1.34, i.e. the action's state
+>    transition is the recurrence's own step, not the action's identity. Gate not softened.
+> 3. Ledger companion as code-enforced G1–G5 (step 6) so `measure` stops being `not_served`.
+> 4. Judge-leg producers (top line is 0/8: nothing writes `judge_leg_*.json`).
+> 5. The batch=20 capped run that re-measures the DEC-420 baseline under the new protocol (this
+>    is also the first run that will exercise the `[step-time]` receipt).
+> 6. Reconcile `state_embeddings.embedding = proj(h)` with the documented `donor(h)`.
+> 7. Close S6 (one command regenerates the card at a recorded commit + hashes).
+
 1. ~~Fix the 4 test-flagged bugs~~ DONE (see "Bugs surfaced by the new tests").
 2. Wire per-customer HTE values into red_queen: personalize the
    switchback-identified, population fallback elsewhere (+ hierarchical

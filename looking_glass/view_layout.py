@@ -87,6 +87,11 @@ _PARTS = {
 
 #: {view: [part names in publication order]} — the contract, readable without a model.
 PART_ORDER = {view: [name for name, _ in spec] for view, spec in _PARTS.items()}
+# The `response` parts are owned by their producer (DEC-426), imported rather than repeated so
+# the wall cannot advertise sockets the outlet does not write.
+from looking_glass.response_outlet import PARTS as RESPONSE_PARTS  # noqa: E402
+
+PART_ORDER["response"] = list(RESPONSE_PARTS)
 
 
 def _parts_for(model):
@@ -140,12 +145,16 @@ def emit(model, y, h) -> dict:
     }
 
 
-def describe(model) -> dict:
+def describe(model, head=None) -> dict:
     """{view: dim} plus the part breakdown, DERIVED by running the heads on a zero state.
 
     Zeroes are used rather than real data because only the shapes are wanted: this must not
     depend on having a stream open, and a zero input cannot make a Linear/GELU head return
     a different width.
+
+    `head` is the fitted `response` head (DEC-426). Passing it is what MOVES `response` from
+    `declared_not_emitted` to `emitted`: the wall advertises a socket only when the producer
+    actually wrote it, so the outlet can never be advertised into existence.
     """
     import torch
 
@@ -153,11 +162,17 @@ def describe(model) -> dict:
         h = torch.zeros(1, int(model.dim), device=model._dev())
         y = torch.zeros(1, int(model.dim), device=model._dev())
         group = parts(model, y, h)
+    views = {v: int(t.shape[-1]) for v, t in _concat(group).items()}
+    parts_by_view = {v: {k: int(t.shape[-1]) for k, t in g.items()} for v, g in group.items()}
+    if head:
+        views["response"] = len(RESPONSE_PARTS)
+        parts_by_view["response"] = {p: 1 for p in RESPONSE_PARTS}
+    emitted = sorted(views)
     return {
-        "views": {v: int(t.shape[-1]) for v, t in _concat(group).items()},
-        "parts": {v: {k: int(t.shape[-1]) for k, t in g.items()} for v, g in group.items()},
-        "emitted": sorted(group),
-        "declared_not_emitted": [v for v in DECLARED if v not in group],
+        "views": views,
+        "parts": parts_by_view,
+        "emitted": emitted,
+        "declared_not_emitted": [v for v in DECLARED if v not in views],
         "full_order": list(FULL_ORDER),
         "full_dim": int(
             sum(int(t.shape[-1]) for v, t in _concat(group).items() if v in FULL_ORDER)
@@ -171,14 +186,14 @@ def _concat(group: dict) -> dict:
     return {v: torch.cat([p for p in g.values()], dim=-1) for v, g in group.items()}
 
 
-def faceplate(model, cfg) -> dict:
+def faceplate(model, cfg, head=None) -> dict:
     """The self-describing stamp a consumer validates against (Outlet Standard O4).
 
     Fan-out to thousands of uncoordinated consumers is why this exists: each one
     self-checks the columns it was told to read and refuses locally, rather than asking the
     encoder a question it cannot answer (DEC-405 rule 4).
     """
-    d = describe(model)
+    d = describe(model, head=head)
     return {
         "kind": "view_faceplate",
         "version": str(cfg.tag),
@@ -190,4 +205,9 @@ def faceplate(model, cfg) -> dict:
             v: "declared (SPINE §5) but not emitted by this producer"
             for v in d["declared_not_emitted"]
         },
+        # The response outlet's calibration travels WITH the columns it describes, so a
+        # consumer reads the coverage the interval actually achieved, not the claim.
+        "response_calibration": (
+            {k: v for k, v in head.items() if not k.startswith("_")} if head else None
+        ),
     }

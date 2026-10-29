@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 import time
 from collections import Counter
@@ -307,6 +308,144 @@ def check_accessibility_parity(recs: list, excluded: list) -> dict:
     }
 
 
+def _load_response(db: Path) -> dict | None:
+    """The fitted `response` head + its calibration receipt, as the artifact carries them."""
+    import duckdb
+
+    con = duckdb.connect(str(db), read_only=True)
+    try:
+        row = con.execute("select stamp from response_head limit 1").fetchone()
+    except Exception:  # noqa: BLE001 - a pre-DEC-426 artifact simply has no such table
+        row = None
+    con.close()
+    return json.loads(row[0]) if row else None
+
+
+def check_response_outlet(head: dict | None, faceplate: dict) -> dict:
+    """DEC-426's three gates for the `response` outlet, frozen in DECISIONS.md before the run.
+
+    The outlet is the only view whose content is a FITTED head rather than encoder geometry, so
+    it owns its own contract on top of the shared per-view gates:
+
+    1. **It predicts.** Its held-out predictions beat the two comparators a conditional-outlet
+       claim must beat — the fitted population constant ("I know nothing about this customer")
+       and a destroyed version of itself (same marginals, customer alignment permuted) — with
+       the paired CI excluding zero.
+    2. **It is actually action-conditioned.** The state+action head must beat the
+       **action-blind** head (state only) and the **state-blind** head (the action's transition
+       only). If either matches it, the outlet is a main effect wearing the name "response".
+    3. **Its interval means what it says.** Empirical coverage of the nominal band within the
+       derived tolerance (2x the binomial SE at the evaluated N), and coverage on rows whose arm
+       was NOT randomized may not be better than on randomized rows unless σ was widened there.
+
+    An outlet the producer never served is NOT a failure here: it is advertised in the
+    faceplate's `not_served` (the `measure` precedent, DEC-383), and the row says which.
+    """
+    if not head:
+        unserved = "response" in (faceplate.get("not_served") or {})
+        return {
+            "working": False,
+            "evidence": "response outlet NOT served"
+            + (
+                " — advertised as not_served by the faceplate (the stream declared no action "
+                "design, so there is nothing to condition on)"
+                if unserved
+                else " — and the faceplate does not advertise it either: the artifact is stale"
+            ),
+            "served": False,
+        }
+    problems = []
+    ph = head.get("_pred_holdout") or {}
+    need = ("state_action", "truth", "action_blind", "state_blind")
+    if not all(k in ph for k in need):
+        return {
+            "working": False,
+            "evidence": f"response head published without its predictions ({need}) — the gate "
+            f"cannot be computed from the artifact, so the claim is UNKNOWN",
+            "served": True,
+        }
+    y = np.asarray(ph["truth"], dtype=np.float64)
+    full = np.asarray(ph["state_action"], dtype=np.float64)
+    rng = np.random.default_rng(SEED)
+    comparators = {
+        "population constant": np.full_like(y, float(head.get("target_mean_fit", y.mean()))),
+        "destroyed": rng.permutation(full),
+        "action-blind (state only)": np.asarray(ph["action_blind"], dtype=np.float64),
+        "state-blind (action only)": np.asarray(ph["state_blind"], dtype=np.float64),
+    }
+    cis = {}
+    for name, pred in comparators.items():
+        _, lo, _ = _paired_ci((y - pred) ** 2 - (y - full) ** 2)
+        cis[name] = float(lo)
+        if not lo > 0:
+            problems.append(f"{name} not beaten (paired CI lo={lo:+.4g})")
+    # 3. calibration, at the N actually evaluated
+    n = int(head.get("n_calibrate") or len(y))
+    nominal = float(head.get("coverage_nominal", 0.80))
+    got = float(head.get("coverage_empirical", 0.0))
+    se = math.sqrt(max(nominal * (1 - nominal), 1e-12) / max(n, 1))
+    band = 2.0 * se  # DEC-426: +/- the binomial SE at the evaluated N, x2 tolerance
+    if got < nominal - band:
+        problems.append(f"coverage {got:.3f} below nominal {nominal:.3f} - band {band:.3f}")
+    by = head.get("coverage_by_randomization") or {}
+    r, u = by.get("randomized"), by.get("unrandomized")
+    # each group's OWN claim is checked against its OWN measured coverage: one global number can
+    # hide a group that misses badly while the other over-covers
+    for tag, grp in (("randomized", r), ("unrandomized", u)):
+        if grp and float(grp["coverage"]) < nominal - band:
+            problems.append(
+                f"{tag} rows: coverage {float(grp['coverage']):.3f} below nominal "
+                f"{nominal:.3f} - band {band:.3f} (n={grp.get('n')})"
+            )
+    if r and u:
+        # DEC-384b is an ORDERING property of the published widths, not of a multiplier: the
+        # rows whose arm was never logged as randomized may not carry the tighter interval.
+        # Both widths are measured on their own rows, so a violation means the data said so and
+        # the floor had to be applied — which the receipt is required to admit.
+        s_r, s_u = float(head.get("sigma_randomized", 0)), float(head.get("sigma_unrandomized", 0))
+        if s_u < s_r:
+            problems.append(
+                f"unrandomized sigma {s_u:g} narrower than randomized {s_r:g} (DEC-384b)"
+            )
+        if u["coverage"] > r["coverage"] + band and not head.get("sigma_forced_wider_unrandomized"):
+            problems.append(
+                f"unrandomized coverage {u['coverage']:.3f} > randomized {r['coverage']:.3f} "
+                f"without widened sigma (DEC-384b)"
+            )
+    # a claim without its provenance is not a claim: what was treated as an action, and over
+    # what derived horizon, must travel with the columns
+    for k, what in (
+        ("action_design", "which events were treated as actions"),
+        ("gamma_derivation", "the derived discount/horizon"),
+    ):
+        if not head.get(k):
+            problems.append(f"receipt missing {k} ({what})")
+    return {
+        "working": not problems,
+        "evidence": (
+            f"conditional outcome head: holdout R2={head.get('target_r2_holdout')} on "
+            f"n={n} B-rows (LEAKY ceiling {head.get('target_r2_ceiling_leaky')} — the most any "
+            f"head could predict from this target), coverage {got:.3f} (nominal {nominal:.2f}, "
+            f"band +/-{band:.3f}), randomized fraction {head.get('randomized_frac')}, measured "
+            f"sigma {head.get('sigma_randomized')}/{head.get('sigma_unrandomized')} "
+            f"(rand/unrand, mean interval width {head.get('mean_interval_width')}"
+            + (
+                ", unrandomized floor forced wider"
+                if head.get("sigma_forced_wider_unrandomized")
+                else ""
+            )
+            + f"), delta incremental R2={head.get('delta_incremental_r2')} "
+            f"(effective rank delta={head.get('delta_effective_rank')} "
+            f"state={head.get('state_effective_rank')}), actions from "
+            f"{head.get('action_design', {}).get('source', '?')}"
+            + (" | " + "; ".join(problems) if problems else "")
+        ),
+        "served": True,
+        "paired_ci_lo": {k: round(v, 6) for k, v in cis.items()},
+        "coverage_by_randomization": by,
+    }
+
+
 def _products_db(products: str | Path) -> Path:
     """Resolve `--products` to the products DB, accepting a directory OR a file path.
 
@@ -353,6 +492,10 @@ def main() -> int:
         "outlet_schema": check_outlet_schema(views, faceplate, akeys + bkeys),
         "decodability": check_decodability(recs, unreadable, excluded, len(views)),
         "accessibility_parity": check_accessibility_parity(recs, excluded),
+        # DEC-426: the response outlet owns a second contract because its content is a fitted
+        # head, not encoder geometry — decodable traits alone cannot show it is conditional on
+        # the action, nor that its published uncertainty covers.
+        "response_outlet": check_response_outlet(_load_response(db), faceplate),
     }
     stamp_merge_write(
         Path(a.out),
