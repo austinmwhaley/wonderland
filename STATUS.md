@@ -897,6 +897,14 @@ observability, prefer deletion, best tool, cost-aware, **speed-first (16)**.
 > 5. The batch=20 capped run that re-measures the DEC-420 baseline under the new protocol (this
 >    is also the first run that will exercise the `[step-time]` receipt).
 > 6. Reconcile `state_embeddings.embedding = proj(h)` with the documented `donor(h)`.
+> 6b. **Comparator fairness: measured once, code withdrawn** (DEC-437). A one-off audit proved
+>    13 of PATH A's 36 feature columns could not have been computed with the future included
+>    (0 leaks, 0 ambiguous, 22 unaudited because they are ratios/`n_unique`/windowed sums), and
+>    confirmed `value_30d`/`value_90d` are BACKWARD windows anchored at `as_of`. The code is not in
+>    the tree: its second version OOM-killed the host (see DEC-437), and Robust outranks the check.
+>    A cheap permanent fix was surfaced to the operator — have `build_path_a` stamp each column's
+>    provenance (`hist` vs `fut`) at build time, which needs no re-derivation at all.
+>
 > 7. ~~Close S6 (one command regenerates the card at a recorded commit + hashes)~~ — producer
 >    written (`scripts/measure_certification_law.py`, DEC-436): one command runs the whole chain
 >    (S1–S5 → the four legs → the card) and measures the five clauses of the frozen gate as checks.

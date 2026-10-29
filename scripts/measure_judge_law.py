@@ -57,7 +57,6 @@ from measure_input_law import _rollup, stamp_merge_write  # noqa: E402
 from measure_views_law import (  # noqa: E402  (one definition)
     TARGETS,
     _load_views,
-    _matrix,
     _products_db,
     _target_matrix,
 )
@@ -116,10 +115,6 @@ def _table_matrix(demo: Path, keys: list[str]):
         "n_requested": len(keys),
         "n_present": len(kept),
     }
-
-
-def _rows(table: dict, keys: list[str]) -> np.ndarray:
-    return np.vstack([table[k] for k in keys])
 
 
 def _paired_ci_many(deltas, n_boot: int = N_BOOT, seed: int = SEED, cap: int | None = None):
@@ -230,8 +225,12 @@ def _arms(db: Path, demo: Path) -> dict:
 
     brain_a = _rows_by_key(emb, akeys, "state_embeddings(A)", problems)
     brain_b = _rows_by_key(emb, bkeys, "state_embeddings(B)", problems)
-    led_a = _rows_by_key(ledger, akeys, "measure view(A)", problems)
-    led_b = _rows_by_key(ledger, bkeys, "measure view(B)", problems)
+    # a missing ledger is NOT an alignment failure: `brain` is still measurable and the card must
+    # see it, with `brain + ledger` alone going UNKNOWN. Lumping them would let one absent view
+    # silence the whole judge.
+    ledger_problems: list = []
+    led_a = _rows_by_key(ledger, akeys, "measure view(A)", ledger_problems)
+    led_b = _rows_by_key(ledger, bkeys, "measure view(B)", ledger_problems)
     tab = _rows_by_key(table or {}, list(akeys) + list(bkeys), "PATH A table", problems)
 
     columns = {"brain": {"A": brain_a, "B": brain_b}}
@@ -245,10 +244,12 @@ def _arms(db: Path, demo: Path) -> dict:
         "akeys": akeys,
         "bkeys": bkeys,
         "columns": columns,
+        "ledger": {"A": led_a, "B": led_b},
         "table": tab,
         "path_a": tmeta,
         "problems": problems,
-        "ledger_served": bool(led_a and led_b),
+        "ledger_problems": ledger_problems,
+        "ledger_served": bool(led_a and led_b) and not ledger_problems,
     }
 
 
@@ -373,49 +374,54 @@ def _tasks_for(arm_a, arm_b, table_a, table_b, usable, rng) -> list[dict]:
 
 def leg_supervised(db: Path, demo: Path) -> dict:
     """The supervised leg: the frozen donor + a linear head vs the wide table + the GBM incumbent."""
-    _reg, truth, emb, _raw, _stream, bkeys, akeys, _as_of = _load_all(str(db), demo)
+    # ONE geometry for all four legs (DEC-434): the same split, the same table encoding over
+    # A ∪ B, the same two column definitions. This leg used to carry its own near-copy of that
+    # setup, which is precisely how a fourth judge could drift into existence.
+    a = _arms(db, demo)
+    truth, akeys, bkeys = a["truth"], a["akeys"], a["bkeys"]
     usable, excluded = _target_matrix(truth, akeys, bkeys)
     if not usable:
         return {
             "columns": _empty_columns("no usable generative trait on these splits"),
             "excluded": excluded,
         }
-    brain_a, brain_b = _matrix(emb, akeys), _matrix(emb, bkeys)
-    if brain_a is None or brain_b is None:
+    tmeta = a["path_a"]
+    if a["problems"]:
         return {
             "columns": _empty_columns(
-                "state_embeddings are ragged or missing judged customers (see S4 outlet_schema)"
+                "arms not aligned: "
+                + "; ".join(a["problems"][:3])
+                + " — dropping a customer from one arm only would compare two different "
+                "populations, so the leg refuses instead"
             ),
             "excluded": excluded,
         }
-    table, tmeta = _table_matrix(demo, list(akeys) + list(bkeys))
-    if table is None:
+    if a["table"] is None:
         return {
             "columns": _empty_columns(
                 f"PATH A is unavailable ({tmeta.get('error')}) — a leg with no baseline is UNKNOWN, never a pass"
             ),
             "excluded": excluded,
         }
-    try:
-        table_a, table_b = _rows(table, akeys), _rows(table, bkeys)
-    except KeyError as exc:
-        return {
-            "columns": _empty_columns(
-                f"a judged customer is absent from the wide table ({exc}) — dropping them from one arm "
-                f"only would compare two different populations, so the leg refuses instead"
-            ),
-            "excluded": excluded,
-        }
 
-    views, _stamp = _load_views(db)
-    led_a, led_b = (
-        _matrix(views.get("measure", {}), akeys),
-        _matrix(views.get("measure", {}), bkeys),
+    def rows(source: dict, side: str, keys) -> np.ndarray:
+        return np.vstack([source[side][k] for k in keys])
+
+    brain_a, brain_b = (
+        rows(a["columns"]["brain"], "A", akeys),
+        rows(a["columns"]["brain"], "B", bkeys),
+    )
+    table_a, table_b = (
+        np.vstack([a["table"][k] for k in akeys]),
+        np.vstack([a["table"][k] for k in bkeys]),
     )
     rng = np.random.default_rng(SEED)
     columns = {"brain": {"tasks": _tasks_for(brain_a, brain_b, table_a, table_b, usable, rng)}}
     diagnostics: dict = {}
-    if led_a is not None and led_b is not None:
+    led_a = led_b = None
+    if a["ledger_served"]:
+        led_a = rows(a["ledger"], "A", akeys)
+        led_b = rows(a["ledger"], "B", bkeys)
         # DELIVERY: the brain plus the mechanical ledger, same head, same rows, same splits
         columns["brain_ledger"] = {
             "tasks": _tasks_for(
@@ -430,7 +436,10 @@ def leg_supervised(db: Path, demo: Path) -> dict:
     else:
         columns["brain_ledger"] = {
             "tasks": [],
-            "note": "the measure view is not served (DEC-427) — there is no ledger to deliver",
+            "note": (
+                "the measure view is not served (DEC-427) — there is no ledger to deliver"
+                + (f" ({'; '.join(a['ledger_problems'][:2])})" if a["ledger_problems"] else "")
+            ),
         }
     if led_a is not None and led_b is not None:
         # DIAGNOSTIC (measured, never gated — the card's two columns are the court): SPINE §5's

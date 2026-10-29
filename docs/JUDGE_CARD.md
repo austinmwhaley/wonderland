@@ -1,6 +1,6 @@
 # JUDGE CARD — PATH B > PATH A
 
-*Generated `2026-10-29T22:35:06+00:00` · commit `283402b` (`foundation-rebuild` · clean) · encoder behavior `33c12077e1b70129`*
+*Generated `2026-10-29T23:32:53+00:00` · commit `1c7339a` (`foundation-rebuild` · dirty) · encoder behavior `33c12077e1b70129`*
 
 **Assessment:** NOT DONE. Legs green: 1/8 · stages green: 3/6. This is a statement about receipts, not about effort; nothing here is a claim of universality (DEC-410: that word appears only when the coverage rows are green).
 
@@ -24,11 +24,11 @@ Ledger points never count as progress: `brain alone` is the judge, `brain + ledg
 
 | Stage | Working-state proof | Verdict | Evidence |
 |---|---|---|---|
-| **S1** Schema resolution (universal input) | renamed-schema + new-field pass, zero code edits | ✅ PASS | [renamed_end_to_end] OK: renamed client_id/occurred_at/event/attributes/total -> onboard resolved {'customer_key': 'client_id', 'event_ts':   ·measure_input_law.py on 3374044 |
-| **S2** Vocabulary & numeric encoding | unseen-value path exercised; transform receipts; permutation invariance <= tol | ✅ PASS | [unseen_value_path] OK: frozen schema (11 event types, vocab sizes [4, 10, 16, 6, 4, 7, 4, 24, 4, 4, 0, 77, 3, 4, 4, 5, 7]) encoded a batch   ·measure_input_law.py on 3374044 |
-| **S3** Lawful dynamics (the engine) | merge/equivariance/mass-additivity exact on data; tau receipted from spectra; stable from step 0 | ✅ PASS | [scan_associativity] OK: merge law F(g∘f)=F(g)∘F(f) on 6 real sequences x 5 split points (float64, model's own decay/drive, continuous_time=  ·measure_dynamics_law.py on 3374044 |
-| **S4** Buckets (the outlets) | per-bucket accessibility parity + per-bucket negative controls | ❌ FAIL | FAILED response_outlet: conditional outcome head: holdout R2=0.0696 on n=126895 B-rows (LEAKY ceiling 0.0701 — the most any head could  ·measure_views_law.py on 3374044 |
-| **S5** The objective battery | every content pressure beats its naive comparator (or is excluded and reported) | ❌ FAIL | FAILED action_conditioned_outcome: known-effect uplift from the one-factor-daily randomized offer arm (P(buy|offer=opt) - P(buy|off>=2), >= 10 ar (+2 more)  ·measure_battery_law.py on 3374044 |
+| **S1** Schema resolution (universal input) | renamed-schema + new-field pass, zero code edits | ✅ PASS | [renamed_end_to_end] OK: renamed client_id/occurred_at/event/attributes/total -> onboard resolved {'customer_key': 'client_id', 'event_ts':   ·measure_input_law.py on 1c7339a |
+| **S2** Vocabulary & numeric encoding | unseen-value path exercised; transform receipts; permutation invariance <= tol | ✅ PASS | [unseen_value_path] OK: frozen schema (11 event types, vocab sizes [4, 10, 16, 6, 4, 7, 4, 24, 4, 4, 0, 77, 3, 4, 4, 5, 7]) encoded a batch   ·measure_input_law.py on 1c7339a |
+| **S3** Lawful dynamics (the engine) | merge/equivariance/mass-additivity exact on data; tau receipted from spectra; stable from step 0 | ✅ PASS | [scan_associativity] OK: merge law F(g∘f)=F(g)∘F(f) on 6 real sequences x 5 split points (float64, model's own decay/drive, continuous_time=  ·measure_dynamics_law.py on 1c7339a |
+| **S4** Buckets (the outlets) | per-bucket accessibility parity + per-bucket negative controls | ❌ FAIL | FAILED response_outlet: conditional outcome head: holdout R2=0.0696 on n=126895 B-rows (LEAKY ceiling 0.0701 — the most any head could  ·measure_views_law.py on 1c7339a |
+| **S5** The objective battery | every content pressure beats its naive comparator (or is excluded and reported) | ❌ FAIL | FAILED action_conditioned_outcome: known-effect uplift from the one-factor-daily randomized offer arm (P(buy|offer=opt) - P(buy|off>=2), >= 10 ar (+2 more)  ·measure_battery_law.py on 1c7339a |
 | **S6** Certification (the card) | one command regenerates the card at a recorded commit + hashes | ❔ UNKNOWN | no measurement recorded for S6 |
 
 ## Certification hygiene
@@ -50,8 +50,8 @@ Ledger points never count as progress: `brain alone` is the judge, `brain + ledg
 - `judge_leg_rl.json :: brain — known_effect_uplift: destroyed control >= brain (-0.003858 vs -0.009245)`
 - `judge_leg_simulator.json :: brain — does not beat PATH A with CI excluding 0: dose_response_curve, argmax_optimum`
 - `judge_leg_simulator.json :: brain_ledger — does not beat PATH A with CI excluding 0: dose_response_curve, argmax_optimum`
-- `judge_stages.json — FAILED response_outlet: conditional outcome head: holdout R2=0.0696 on n=126895 B-rows (LEAKY ceiling 0.0701 — the most any head could  ·measure_views_law.py on 3374044`
-- `judge_stages.json — FAILED action_conditioned_outcome: known-effect uplift from the one-factor-daily randomized offer arm (P(buy|offer=opt) - P(buy|off>=2), >= 10 ar (+2 more)  ·measure_battery_law.py on 3374044`
+- `judge_stages.json — FAILED response_outlet: conditional outcome head: holdout R2=0.0696 on n=126895 B-rows (LEAKY ceiling 0.0701 — the most any head could  ·measure_views_law.py on 1c7339a`
+- `judge_stages.json — FAILED action_conditioned_outcome: known-effect uplift from the one-factor-daily randomized offer arm (P(buy|offer=opt) - P(buy|off>=2), >= 10 ar (+2 more)  ·measure_battery_law.py on 1c7339a`
 - `judge_stages.json — no measurement recorded for S6`
 
 ---

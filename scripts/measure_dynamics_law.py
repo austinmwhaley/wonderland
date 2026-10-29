@@ -74,11 +74,21 @@ def _real_sequences(db: str, cfg, n=6, lo=30, hi=600):
     from rabbit_hole.stream import read_frame
 
     df = read_frame(db)
-    keys = df["customer_key"].unique().to_list()[:400]
+    # SORTED, not "first 400 in whatever order the engine returned": `polars.unique()` does not
+    # promise an order, and `build_sequences` internally does `list(set(keys))`, whose iteration
+    # order is Python-hash-randomized per process. The result was that this producer claimed
+    # "6 real sequences" while sampling a DIFFERENT six on every run (measured: 707840 vs 624640
+    # state values between two consecutive runs of an unchanged build), which quietly made S3 —
+    # and therefore any card rebuilt from it — non-reproducible (principle 10, certification
+    # rule 6). Sorting is the fix that does not touch `looking_glass/`: the population and the
+    # seeds are unchanged, only the arbitrary order is pinned.
+    keys = sorted(df["customer_key"].unique().to_list())[:400]
     split = assign_split(keys, cfg)
     seqs = build_sequences(df, keys, cfg, split, with_anchors=False)
     items = list(seqs.values()) if isinstance(seqs, dict) else list(seqs)
-    out = [s for s in items if lo <= len(s["event_type"]) <= hi]
+    out = sorted(
+        (s for s in items if lo <= len(s["event_type"]) <= hi), key=lambda s: str(s["customer"])
+    )
     if len(out) < 3:
         raise SystemExit(f"only {len(out)} usable sequences ({lo}..{hi} events) — widen the range")
     return out[:n]

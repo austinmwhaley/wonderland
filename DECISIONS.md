@@ -4327,3 +4327,52 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   the S6 block is only as fresh as that chain — a card whose S6 is green but whose S1–S5 blocks are
   stale is caught by DEC-430's per-block stamp, not by S6. The hashes are truncated to 16 hex
   characters, enough to detect a changed input in practice, not a collision-resistant identity.
+
+## DEC-437 — [TECHNICAL] the PATH A leak audit was ATTEMPTED, MEASURED, and WITHDRAWN for cost; the finding survives, the code does not
+
+- **Context.** The whole top line is `brain > PATH A`, and PATH A is `table_features` — every
+  non-`y_*` column of the lab's wide table. The card's H5 row checks only that the comparator's
+  *name* is not in `INVALID_COMPARATORS`: a table computed with the future included would have
+  passed H5 while containing the answer, and every FAIL published this cycle would then have been
+  an artifact of the comparison rather than a finding about the encoder. The brain side already had
+  an audit (0/2500 customers read a post-`as_of` event, via `view_embeddings.as_of_epoch`); the
+  table side had none. So I set out to turn "fair" from a string into a measurement.
+- **What the builder says (cheap, and decisive on its own).**
+  `rabbit_hole/generators/path_a_build.py::build_path_a` filters ONCE —
+  `hist = ev.filter(ts_dt <= as_of)` — and every feature is aggregated from `hist`; `fut` feeds
+  only the `y_*` targets, which `table_features` drops. `value_30d` / `value_90d` are
+  **backward**-looking windows (`ts > as_of - 30d` *within* `hist`), anchored at `as_of` and not
+  at the end of the stream — the reading that would have made them labels, and the first thing
+  worth doubting in a column with that name.
+- **The mechanical audit, and what it found before it was withdrawn.** Regenerate candidate
+  aggregates from the stream (event type x {count, sum, avg, nunique, one-hot} x {all history,
+  30d, 90d, uncut}) with no hand-typed column->recipe map, and credit a published column only to a
+  candidate that (a) matches it exactly and (b) **would have come out different had the future
+  been included**. First version, 687 candidates: **13 of 36 feature columns proven pre-`as_of`
+  and decisive** (`n_events`; the seven event counts; `purchase_value`, `purchase_margin`,
+  `qty_sum`, `avg_order_value`, `discount_mean`), **0 matched with or without the future**, **0
+  leak suspects**, 22 unaudited (ratios, entropy, `n_unique`, the two windowed sums whose
+  inclusivity my generator got wrong). `segment` matches either way and is uninformative — it is a
+  signup attribute, not a behavioural aggregate. Conclusion: PATH A is clean on the columns that
+  were checked, and the unchecked ones rest on the single `hist` filter cited above.
+- **Why it is not in the tree.** The second version (broader candidate families, ~1900
+  aggregates, extracting attributes once into a temp table to cut cost) **OOM-killed the machine**
+  it ran on — the same box that hosts the LLM server, under the operator's explicit memory policy
+  ("the LLM server keeps what it needs, system floor 8 GB, the trainer gets the remainder"). An
+  audit is not worth a reboot, and Robust outranks every other consideration in the conflict
+  order. A cost result is a result: the audit is **withdrawn**, not deferred-to-later-as-code. The
+  finding above stands as a one-off measurement recorded here; it is not a row in any receipt.
+- **Alternatives considered.** (1) *Keep a bounded version in the judge producer* — rejected: it
+  adds ~2 min and an unbounded DuckDB planner surface to every leg run, on a box whose memory is
+  already contested, to re-derive a fact that changes only when one filter in
+  `path_a_build.py` changes. Wrong place for the check. (2) *Add a card row gating on the audit* —
+  rejected under rule 1: a new threshold is an operator ruling, and the audit is not strong enough
+  to carry one. (3) *Re-implement the builder inside the audit to cover the remaining 22 columns* —
+  rejected under principle 6: that is a second copy of the definition, and the copy is what drifts.
+- **What would actually close this properly, for the operator to choose.** A per-column provenance
+  stamp written by `build_path_a` itself (`{column: {cut_at: as_of, source: hist|fut}}`) would make
+  the property checkable in O(1) per column with no re-derivation, no stream scan and no
+  candidate search — the producer already knows which filter each column came from. That is a
+  change to the demo generator, i.e. a new artifact version, so it is surfaced rather than done.
+- **Recorded cost.** v1: 131 s, ~1.5 GB peak, 687 candidates. v2: OOM-killed the host. Nothing
+  from either version is committed.
