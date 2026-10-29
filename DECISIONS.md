@@ -4282,3 +4282,48 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   gap is listed for ratification rather than quietly filled.
 - **Single axis changed.** Producer/measurement code under `scripts/`, plus one new shared control
   generator. No gate, threshold, criterion, comparator content or frozen baseline touched.
+
+## DEC-436 — [TECHNICAL] S6 gets a producer: the card must be rebuildable by one command, and the command has to prove it
+
+- **Context.** S6 ("one command regenerates the card at a recorded commit + hashes", the frozen
+  gate in `judge_spec.STAGE_ROWS`) has never had a producer, so it renders UNKNOWN — the one row
+  of the ladder that says "we cannot rebuild what we published". It is not a rhetorical row:
+  DEC-430 found five stage blocks written by four scripts at four times, two of them against `/tmp`
+  inputs that no longer exist. `judge_card.py` renders from whatever receipts are on disk, so
+  "I regenerated the card" was never evidence about the card, and there was no repo command that
+  rebuilds the chain end to end.
+- **Alternatives considered.** (1) *Mark S6 PASS because `judge_card.py` exists* — rejected: that
+  is the "tag exists → PASS" reader the repo already deleted once (`reproducibility_receipt.py`
+  replaced it for the same reason), and it would have been the cheapest possible self-deception.
+  (2) *Write a shell wrapper and call it the command* — rejected under principle 11: a wrapper
+  records nothing, so the commit, the hashes and the per-producer exit codes would be unverifiable,
+  which is exactly what rule 6 asks for. (3) *Have the card assert its own reproducibility* —
+  rejected under rule 3: the card is the reader; a reader may not vouch for its own inputs.
+- **Decision.** `scripts/measure_certification_law.py` is that one command and the S6 producer. It
+  runs, as real child processes, `measure_input_law` → `measure_dynamics_law` → `measure_views_law`
+  → `measure_battery_law` → `measure_judge_law` (all four legs), then writes its own S6 block
+  through the shared `stamp_merge_write` (so DEC-430's per-producer stamp applies to it too) and
+  renders the card last. Four checks, each a measurement of one clause of the frozen gate:
+  `full_chain_in_one_invocation` (every producer ran here and exited 0, with the legs' completeness
+  read off the receipt mtimes so a run that quietly re-measured one leg cannot call itself full),
+  `render_is_deterministic` (the card rendered twice from those receipts is byte-identical apart
+  from its own timestamp line), `commit_recorded_clean` (HEAD recorded; the tree clean apart from
+  the generated artifacts this command is authorized to rewrite), `artifact_hashes_recorded`
+  (sha256 + size of the products DB, the checkpoint, the registry, the stream, the truth file, the
+  PATH A table, the train log) and `every_row_reports_n` (N measured off the receipts, not off the
+  renderer's intent). No verdict string lives in this file.
+- **Self-reference, handled the DEC-430 way.** Determinism is measured with every producer's
+  receipt present and **S6's own block absent**: a check may not be taken over bytes that include
+  its own result. Likewise the clean-tree rule excludes only the card and the receipt files the
+  command itself regenerates — a rule that can never be satisfied is not a rule (DEC-430), and
+  source edits still make it dirty, which is the point of the check.
+- **Acceptance metrics, frozen before the run.** The chain exits 0 on all five producers; the two
+  renders are identical apart from the timestamp; ≥ 1 artifact hashed with none missing; every
+  published leg row reports N; S6's block carries its own `_stamp` with the current behavior hash,
+  and the card's S6 row reads PASS only because the reader computed it from those checks.
+- **Single axis changed.** Certification plumbing only. No encoder, objective, gate, threshold or
+  comparator moved; the S6 gate text itself is untouched and is still `judge_spec`'s.
+- **Trade-offs recorded.** The command costs the full chain (≈ 20 min) rather than a render, and
+  the S6 block is only as fresh as that chain — a card whose S6 is green but whose S1–S5 blocks are
+  stale is caught by DEC-430's per-block stamp, not by S6. The hashes are truncated to 16 hex
+  characters, enough to detect a changed input in practice, not a collision-resistant identity.

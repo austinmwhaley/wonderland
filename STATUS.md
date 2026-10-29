@@ -897,7 +897,10 @@ observability, prefer deletion, best tool, cost-aware, **speed-first (16)**.
 > 5. The batch=20 capped run that re-measures the DEC-420 baseline under the new protocol (this
 >    is also the first run that will exercise the `[step-time]` receipt).
 > 6. Reconcile `state_embeddings.embedding = proj(h)` with the documented `donor(h)`.
-> 7. Close S6 (one command regenerates the card at a recorded commit + hashes).
+> 7. ~~Close S6 (one command regenerates the card at a recorded commit + hashes)~~ — producer
+>    written (`scripts/measure_certification_law.py`, DEC-436): one command runs the whole chain
+>    (S1–S5 → the four legs → the card) and measures the five clauses of the frozen gate as checks.
+>    Its block stamp is per-producer, so a stale S1 cannot hide behind a fresh S6.
 
 1. ~~Fix the 4 test-flagged bugs~~ DONE (see "Bugs surfaced by the new tests").
 2. Wire per-customer HTE values into red_queen: personalize the
