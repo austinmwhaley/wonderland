@@ -3,22 +3,22 @@
     "_stamp": {
       "behavior_hash": "33c12077e1b70129",
       "command": "measure_input_law.py --data /home/austin_whaley/wonderland_work/demo --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
-      "generated_at": "2026-10-29T22:55:58+00:00",
-      "git_commit": "1c7339abc606cbff82a3672c86eb027faf46ac2e",
+      "generated_at": "2026-10-29T23:49:31+00:00",
+      "git_commit": "c5e3a3da4ac1402c8460cab788c90f019d5941f6",
       "producer": "measure_input_law.py"
     },
     "checks": {
       "new_field_ingested": {
         "evidence": "injected loyalty_tier (novel categories) + session_seconds into every event's attributes: resolved into catspec=['acquisition_channel', 'brand', 'campaign_id', 'category_code', 'channel', 'dow', 'freq', 'hour', 'loyalty_tier', 'offer', 'order_id', 'product_id', 'qty', 'reason', 'region', 'segment', 'touch'] num=['discount', 'margin', 'price', 'session_seconds', 'signup_ts', 'value']; encoder trained on the variant (d=64,L=1,e=1): E finite=True, best=56.3714; zero pipeline-code edits",
         "n_rows": 3328381,
-        "seconds": 180.3,
+        "seconds": 109.8,
         "working": true
       },
       "renamed_end_to_end": {
         "evidence": "renamed client_id/occurred_at/event/attributes/total -> onboard resolved {'customer_key': 'client_id', 'event_ts': 'occurred_at', 'event_type': 'event', 'brand': None, 'entity_type': None, 'entity_id': None, 'source_table': None, 'value': 'total', 'event_attributes': ['attributes']}; 3328381 rows kept (source 3328381); 6000 customers encoded; encoder trained on the resolved stream (d=64,L=1,e=1): E finite=True, best=53.0010; zero pipeline-code edits",
         "n_customers": 6000,
         "n_rows": 3328381,
-        "seconds": 194.5,
+        "seconds": 145.7,
         "working": true
       }
     },
@@ -29,15 +29,15 @@
     "_stamp": {
       "behavior_hash": "33c12077e1b70129",
       "command": "measure_input_law.py --data /home/austin_whaley/wonderland_work/demo --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
-      "generated_at": "2026-10-29T22:55:58+00:00",
-      "git_commit": "1c7339abc606cbff82a3672c86eb027faf46ac2e",
+      "generated_at": "2026-10-29T23:49:31+00:00",
+      "git_commit": "c5e3a3da4ac1402c8460cab788c90f019d5941f6",
       "producer": "measure_input_law.py"
     },
     "checks": {
       "field_permutation_invariance": {
         "evidence": "attribute field order ['touch', 'target_key', 'freq', 'hour']... vs permuted ['reason', 'order_id', 'dow', 'region']... over 60000 rows: sequence digests identical (4c44abeb87398213 vs 4c44abeb87398213)",
         "n_rows": 60000,
-        "seconds": 1.7,
+        "seconds": 1.2,
         "working": true
       },
       "numeric_transform_law": {
@@ -48,13 +48,13 @@
       "training_determinism": {
         "evidence": "two seed-0 runs (d=64,L=1,e=1) on identical prepared inputs: E bit-identical=True, best-val equal (49.219457 == 49.219457)",
         "n_customers": 6000,
-        "seconds": 224.5,
+        "seconds": 133.3,
         "working": true
       },
       "unseen_value_path": {
         "evidence": "frozen schema (11 event types, vocab sizes [4, 10, 16, 6, 4, 7, 4, 24, 4, 4, 0, 77, 3, 4, 4, 5, 7]) encoded a batch containing unseen event types/categories/1e12 numerics: rows=2348780, entities=6002, all arrays finite=True, novel rows -> OOV slot 0 = True, vocab unchanged after serving = True (never re-derived)",
         "n_rows": 2348780,
-        "seconds": 25.9,
+        "seconds": 14.9,
         "working": true
       }
     },
@@ -64,20 +64,20 @@
   "S3": {
     "_stamp": {
       "behavior_hash": "33c12077e1b70129",
-      "command": "measure_dynamics_law.py --ckpt-dir /home/austin_whaley/wonderland_work/cfm_views --db /home/austin_whaley/wonderland_work/demo/customer_event_stream.parquet --train-log /home/austin_whaley/wonderland_work/cfm_train_baseline.log",
-      "generated_at": "2026-10-29T23:31:58+00:00",
-      "git_commit": "1c7339abc606cbff82a3672c86eb027faf46ac2e",
+      "command": "measure_dynamics_law.py --ckpt-dir /home/austin_whaley/wonderland_work/cfm_views --db /home/austin_whaley/wonderland_work/demo/customer_event_stream.parquet --train-log /home/austin_whaley/wonderland_work/cfm_train_baseline.log --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
+      "generated_at": "2026-10-29T23:57:26+00:00",
+      "git_commit": "c5e3a3da4ac1402c8460cab788c90f019d5941f6",
       "producer": "measure_dynamics_law.py"
     },
     "checks": {
       "clock_periodicity": {
         "evidence": "week-shift (exact cycle multiple): worst state/E drift 0.000e+00 (gate 1e-4); gaps-x10 control (tokens fixed): min state/E drift 3.821e-01 (gate >1e-3) \u2014 the spring responds to elapsed time. DISCLOSED: absolute-clock features used, w_tod norm 9.09; cfm_data stored ts vs model _to_epoch differ 28800s (UTC vs local frame) \u2014 reconcile before horizons depend on it",
-        "seconds": 0.6,
+        "seconds": 0.5,
         "working": true
       },
       "governed_stability": {
         "evidence": "governed training: 10 finite epoch values, non-finite tokens=0, diverged=False, worst epoch-to-epoch rise 5.29 vs 6x noise 21.4; registry resolved: half_life_days=2.4427025462962964 seq_len=606",
-        "seconds": 0.01,
+        "seconds": 0.0,
         "working": true
       },
       "mass_additivity": {
@@ -88,7 +88,7 @@
       },
       "scan_associativity": {
         "evidence": "merge law F(g\u2218f)=F(g)\u2218F(f) on 6 real sequences x 5 split points (float64, model's own decay/drive, continuous_time=True): worst relative error 1.095e-15 (gate 1e-10)",
-        "seconds": 2.9,
+        "seconds": 3.2,
         "working": true,
         "worst_rel_err": 1.0954190731274889e-15
       },
@@ -106,7 +106,7 @@
       },
       "tau_from_spectrum": {
         "evidence": "taus are gap quantiles of the stream (no literal): base taus=[0.357, 0.979, 2.48]s days -> cadence x100 taus=[35.736, 97.917, 248.058] (median ratio 100.0x, gate >=10x, non-constant=True)",
-        "seconds": 463.7,
+        "seconds": 467.7,
         "working": true
       }
     },
@@ -117,8 +117,8 @@
     "_stamp": {
       "behavior_hash": "33c12077e1b70129",
       "command": "measure_views_law.py --products /home/austin_whaley/wonderland_work/cfm_views --demo /home/austin_whaley/wonderland_work/demo --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
-      "generated_at": "2026-10-29T23:10:29+00:00",
-      "git_commit": "1c7339abc606cbff82a3672c86eb027faf46ac2e",
+      "generated_at": "2026-10-29T23:58:23+00:00",
+      "git_commit": "c5e3a3da4ac1402c8460cab788c90f019d5941f6",
       "producer": "measure_views_law.py"
     },
     "checks": {
@@ -232,7 +232,7 @@
       "outlet_schema": {
         "evidence": "7 views / 17500 rows; declared-not-served [] advertised",
         "missing": [],
-        "seconds": 0.137,
+        "seconds": 0.002,
         "views": [
           "forecast",
           "heads",
@@ -767,24 +767,24 @@
     "_stamp": {
       "behavior_hash": "33c12077e1b70129",
       "command": "measure_battery_law.py --products /home/austin_whaley/wonderland_work/cfm_views/cfm_products.duckdb --demo /home/austin_whaley/wonderland_work/demo --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
-      "generated_at": "2026-10-29T23:10:37+00:00",
-      "git_commit": "1c7339abc606cbff82a3672c86eb027faf46ac2e",
+      "generated_at": "2026-10-29T23:58:25+00:00",
+      "git_commit": "c5e3a3da4ac1402c8460cab788c90f019d5941f6",
       "producer": "measure_battery_law.py"
     },
     "checks": {
       "action_conditioned_outcome": {
         "evidence": "known-effect uplift from the one-factor-daily randomized offer arm (P(buy|offer=opt) - P(buy|off>=2), >= 10 arm-days/side): 233 holdout B customers identified from 724, head fitted on 609 A customers; brain OOS R2=-0.009 vs population-constant naive R2=-0.002; Spearman(brain,truth)=0.084; paired MSE-gain 95%CI [-0.00111,0.00089] (gate lo>0)",
-        "seconds": 0.9,
+        "seconds": 0.3,
         "working": false
       },
       "distance_regression": {
         "evidence": "lab-truth latent distance (x0/h0/d0/price_sens/return_prone/touch_pref, z-scored) vs distance over 20000 customer pairs from 724 holdout B customers: donor Spearman 0.086 vs naive bag-of-event-types 0.181; paired-over-pairs gain 95%CI [-0.096,-0.095] (gate lo>0); diagnostic raw-state(pre-boundary) Spearman 0.006",
-        "seconds": 0.4,
+        "seconds": 0.3,
         "working": false
       },
       "ledger_reconstruction": {
         "evidence": "ledger recomputed from the raw stream by DuckDB (not a table copy); LINEAR head on the learned-shape donor (embedding = model.proj(h), no served measure blocks \u2014 the claim is learned-only), fitted on 1776 split-A customers and scored on the 724 holdout B; naive comparator = same head on the full event-type bag + recency (target-defining type excluded \u2014 no label leakage into the comparator); spend: brain R2=0.805 naive R2=0.935 MSE-gain 95%CI[-0.050,-0.028] | margin: brain R2=0.791 naive R2=0.897 MSE-gain 95%CI[-0.045,-0.021] | n_purch: brain R2=0.832 naive R2=0.894 MSE-gain 95%CI[-0.026,-0.008] | n_ret: brain R2=0.375 naive R2=0.237 MSE-gain 95%CI[0.048,0.153]",
-        "seconds": 2.8,
+        "seconds": 0.6,
         "working": false
       },
       "prune_pass": {
@@ -796,11 +796,127 @@
     "evidence": "[ledger_reconstruction] FAILED: ledger recomputed from the raw stream by DuckDB (not a table copy); LINEAR head on the learned-shape donor (embedding = model.proj(h), no served measure blocks \u2014 the claim is learned-only), fitted on 1776 split-A customers and scored on the 724 holdout B; naive comparator = same head on the full event-type bag + recency (target-defining type excluded \u2014 no label leakage into the comparator); spend: brain R2=0.805 naive R2=0.935 MSE-gain 95%CI[-0.050,-0.028] | margin: brain R2=0.791 naive R2=0.897 MSE-gain 95%CI[-0.045,-0.021] | n_purch: brain R2=0.832 naive R2=0.894 MSE-gain 95%CI[-0.026,-0.008] | n_ret: brain R2=0.375 naive R2=0.237 MSE-gain 95%CI[0.048,0.153] | [distance_regression] FAILED: lab-truth latent distance (x0/h0/d0/price_sens/return_prone/touch_pref, z-scored) vs distance over 20000 customer pairs from 724 holdout B customers: donor Spearman 0.086 vs naive bag-of-event-types 0.181; paired-over-pairs gain 95%CI [-0.096,-0.095] (gate lo>0); diagnostic raw-state(pre-boundary) Spearman 0.006 | [action_conditioned_outcome] FAILED: known-effect uplift from the one-factor-daily randomized offer arm (P(buy|offer=opt) - P(buy|off>=2), >= 10 arm-days/side): 233 holdout B customers identified from 724, head fitted on 609 A customers; brain OOS R2=-0.009 vs population-constant naive R2=-0.002; Spearman(brain,truth)=0.084; paired MSE-gain 95%CI [-0.00111,0.00089] (gate lo>0) | [prune_pass] OK: per-objective weights recorded: 34 objectives, min=0.6136, trajectory snapshots=8, selection rule='heldout_combined_objective (all active objectives)' (frozen held-out-SSL); weights <= 0.01 -> DELETE list: EMPTY \u2014 equal-weight mode never decays a task to zero (disclosed: vacuous today, enforced the day a learned mixture is adopted)",
     "working": false
   },
+  "S6": {
+    "_stamp": {
+      "behavior_hash": "33c12077e1b70129",
+      "command": "measure_certification_law.py --products /home/austin_whaley/wonderland_work/cfm_views --demo /home/austin_whaley/wonderland_work/demo",
+      "generated_at": "2026-10-29T23:59:23+00:00",
+      "git_commit": "c5e3a3da4ac1402c8460cab788c90f019d5941f6",
+      "producer": "measure_certification_law.py"
+    },
+    "artifacts": {
+      "cfm_0_11_0r469048.pt": {
+        "bytes": 37317843,
+        "sha256": "10b7806f3879d084"
+      },
+      "cfm_products.duckdb": {
+        "bytes": 41168896,
+        "sha256": "c4aaf60e833ef10a"
+      },
+      "cfm_train_baseline.log": {
+        "bytes": 5099,
+        "sha256": "7f601c1f31536845"
+      },
+      "customer_event_stream.parquet": {
+        "bytes": 40284703,
+        "sha256": "fd28bfa3dd825f49"
+      },
+      "path_a_wide_table.parquet": {
+        "bytes": 647733,
+        "sha256": "9e8f8eda7d47c75c"
+      },
+      "reference_truth.json": {
+        "bytes": 2676499,
+        "sha256": "47bad2c3af0e4e2f"
+      },
+      "registry_0_11_0r469048.json": {
+        "bytes": 20647,
+        "sha256": "9c16fcb5d918146e"
+      }
+    },
+    "chain": {
+      "S1+S2": {
+        "cap_gb": 107.8,
+        "cap_mechanism": "slice wonderland.slice MemoryMax",
+        "command": "measure_input_law.py --data /home/austin_whaley/wonderland_work/demo --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
+        "exit": 0,
+        "last_line": "S1 working=True  S2 working=True",
+        "seconds": 406.1
+      },
+      "S3": {
+        "cap_gb": 107.8,
+        "cap_mechanism": "slice wonderland.slice MemoryMax",
+        "command": "measure_dynamics_law.py --ckpt-dir /home/austin_whaley/wonderland_work/cfm_views --db /home/austin_whaley/wonderland_work/demo/customer_event_stream.parquet --train-log /home/austin_whaley/wonderland_work/cfm_train_baseline.log --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
+        "exit": 0,
+        "last_line": "S3 working=True",
+        "seconds": 474.2
+      },
+      "S4": {
+        "cap_gb": 107.8,
+        "cap_mechanism": "slice wonderland.slice MemoryMax",
+        "command": "measure_views_law.py --products /home/austin_whaley/wonderland_work/cfm_views --demo /home/austin_whaley/wonderland_work/demo --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
+        "exit": 1,
+        "last_line": "S4 -> /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
+        "seconds": 56.5
+      },
+      "S5": {
+        "cap_gb": 107.8,
+        "cap_mechanism": "slice wonderland.slice MemoryMax",
+        "command": "measure_battery_law.py --products /home/austin_whaley/wonderland_work/cfm_views/cfm_products.duckdb --demo /home/austin_whaley/wonderland_work/demo --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
+        "exit": 0,
+        "last_line": "S5 working=False",
+        "seconds": 2.1
+      },
+      "legs": {
+        "cap_gb": 107.8,
+        "cap_mechanism": "slice wonderland.slice MemoryMax",
+        "command": "measure_judge_law.py --products /home/austin_whaley/wonderland_work/cfm_views --demo /home/austin_whaley/wonderland_work/demo --legs supervised,unsupervised,rl,simulator --out-dir /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments",
+        "exit": 0,
+        "last_line": "judge_leg_simulator -> /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_leg_simulator.json (10.6s): 2 live task(s) (+0 degener",
+        "seconds": 57.5
+      }
+    },
+    "checks": {
+      "artifact_hashes_recorded": {
+        "evidence": "7 input artifact(s) hashed (122.1 MB) \u2014 the bytes the receipts were measured against",
+        "working": true
+      },
+      "commit_recorded_clean": {
+        "evidence": "commit c5e3a3da4ac1 on foundation-rebuild, behavior 33c12077e1b70129; tree clean apart from the generated artifacts this command rewrites",
+        "working": true
+      },
+      "every_row_reports_n": {
+        "evidence": "28 live leg-row(s) in the regenerated receipts, all report N",
+        "working": true
+      },
+      "full_chain_in_one_invocation": {
+        "evidence": "5 producer(s) run by this one command (S1+S2 406.1s, S3 474.2s, S4 56.5s, S5 2.1s, legs 57.5s); legs regenerated: ['rl', 'simulator', 'supervised', 'unsupervised'] of ['rl', 'simulator', 'supervised', 'unsupervised']; non-zero exit: {'S4': 1}",
+        "working": false
+      },
+      "render_is_deterministic": {
+        "evidence": "rendered the card twice from the same receipts: identical apart from the timestamp line (5398 chars, 58 lines)",
+        "working": true
+      }
+    },
+    "evidence": "[full_chain_in_one_invocation] FAILED: 5 producer(s) run by this one command (S1+S2 406.1s, S3 474.2s, S4 56.5s, S5 2.1s, legs 57.5s); legs regenerated: ['rl', 'simulator', 'supervised', 'unsupervised'] of ['rl', 'simulator', 'supervised', 'unsupervised']; non-zero exit: {'S4': 1} | [render_is_deterministic] OK: rendered the card twice from the same receipts: identical apart from the timestamp line (5398 chars, 58 lines) | [commit_recorded_clean] OK: commit c5e3a3da4ac1 on foundation-rebuild, behavior 33c12077e1b70129; tree clean apart from the generated artifacts this command rewrites | [artifact_hashes_recorded] OK: 7 input artifact(s) hashed (122.1 MB) \u2014 the bytes the receipts were measured against | [every_row_reports_n] OK: 28 live leg-row(s) in the regenerated receipts, all report N",
+    "inputs": {
+      "demo": "/home/austin_whaley/wonderland_work/demo",
+      "legs": "supervised,unsupervised,rl,simulator",
+      "products": "/home/austin_whaley/wonderland_work/cfm_views"
+    },
+    "memory": {
+      "cap_gb": 107.8,
+      "derivation": "MemAvailable 115.8 GB - floor 8.0 GB",
+      "mechanism": "slice wonderland.slice MemoryMax"
+    },
+    "n_rows": 28,
+    "working": false
+  },
   "_meta": {
     "behavior_hash": "33c12077e1b70129",
-    "command": "measure_dynamics_law.py --ckpt-dir /home/austin_whaley/wonderland_work/cfm_views --db /home/austin_whaley/wonderland_work/demo/customer_event_stream.parquet --train-log /home/austin_whaley/wonderland_work/cfm_train_baseline.log",
-    "generated_at": "2026-10-29T23:31:58+00:00",
-    "git_commit": "1c7339abc606cbff82a3672c86eb027faf46ac2e",
-    "producer": "measure_dynamics_law.py"
+    "command": "measure_certification_law.py --products /home/austin_whaley/wonderland_work/cfm_views --demo /home/austin_whaley/wonderland_work/demo",
+    "generated_at": "2026-10-29T23:59:23+00:00",
+    "git_commit": "c5e3a3da4ac1402c8460cab788c90f019d5941f6",
+    "producer": "measure_certification_law.py"
   }
 }

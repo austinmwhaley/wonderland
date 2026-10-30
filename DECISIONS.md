@@ -4473,3 +4473,29 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   so a genuinely large new workload may need the unit raised (one line, `--check` reports it)
   rather than being silently squeezed; the guard's low-memory log is what tells an operator the
   budget was the constraint.
+
+## DEC-441 — [TECHNICAL] S6 measures "did the chain run", not "did everything pass": exit 1 is a measurement
+
+- **Context.** The first real S6 run came back red with `S4 exit=1`. S4's producer returns
+  `0 if all(c["working"]) else 1` — by design, a failing check is what it is FOR — so my check was
+  calling a legitimate red measurement a broken chain. Left as it was, the only way to a green S6
+  would have been to make producers exit 0 regardless of what they measured, i.e. to reward the
+  exact behaviour the card exists to detect.
+- **Alternatives considered.** (1) *Keep it and accept a permanently red S6* — rejected: S6's
+  frozen gate is "one command regenerates the card at a recorded commit + hashes", which is a
+  statement about REGENERATION. A red stage does not contradict it, and a row that is red for a
+  reason unrelated to its gate is the kind of noise certification rules 3 and 7 forbid.
+  (2) *Make producers exit 0* — rejected outright: that is weakening the very signal. (3) *Use
+  exit codes alone* — rejected: a producer that crashes while still managing exit 1 would pass.
+- **Decision.** `chain_verdict()` is a pure function over three independent facts, and the chain
+  passes only when all hold: every producer was invoked; **every one wrote a fresh artifact**
+  (stage block `_stamp.generated_at` at or after the chain's start, or a leg receipt with a fresh
+  mtime); and no producer exited >= 2 ("could not run at all"). Exit 1 is recorded and reported in
+  the evidence as "reported a FAILING CHECK (a measurement, not a chain failure)" — visible, never
+  fatal. The artifact, not the exit status, is the evidence, which is the same rule the rest of the
+  card follows.
+- **Verification.** Five tests in `tests/test_certification_chain.py`: a failing check passes the
+  chain; exit >= 2 fails it; a stale stage receipt fails it even at exit 0; a missing leg receipt
+  fails it; all-green is green.
+- **Single axis changed.** The S6 producer's verdict logic only. No stage gate, threshold or
+  comparator moved; S4 and S5 remain FAIL in the card because they measured FAIL.

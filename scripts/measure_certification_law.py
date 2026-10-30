@@ -36,6 +36,7 @@ import json
 import subprocess
 import sys
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -147,6 +148,37 @@ def _rows_report_n(receipts: Path) -> tuple[int, list]:
     return rows, missing
 
 
+STAGES = ("S1", "S2", "S3", "S4", "S5")
+
+
+def chain_verdict(
+    exits: dict[str, int],
+    fresh_stages: set,
+    want_stages: set,
+    fresh_legs: set,
+    want_legs: set,
+    n_producers: int,
+) -> tuple[bool, dict]:
+    """Did the chain RUN, as distinct from did it measure everything green? (DEC-441)
+
+    Three outcomes are routinely confused, and only one of them is a broken chain:
+    * exit 0 — ran, every check passed;
+    * exit 1 — ran, at least one check FAILED. That is a measurement, and the card is supposed to
+      carry failing rows: `measure_views_law` documents exactly this contract.
+    * exit >= 2, or no fresh artifact — the producer did not run. THIS is the chain failing.
+    A gate that demanded exit 0 would push producers to report green in order to look healthy,
+    which is the incentive this whole card exists to remove.
+    """
+    fatal = {k: v for k, v in exits.items() if v >= 2}
+    missing = sorted(want_stages - fresh_stages) + sorted(want_legs - fresh_legs)
+    ok = not fatal and not missing and fresh_legs == want_legs and len(exits) == n_producers
+    return ok, {
+        "fatal": fatal,
+        "missing": missing,
+        "reported_failing": sorted(k for k, v in exits.items() if v == 1),
+    }
+
+
 def _diff_line(a: str, b: str) -> int:
     for i, (x, y) in enumerate(zip(a.splitlines(), b.splitlines())):
         if x != y:
@@ -217,6 +249,7 @@ def main() -> int:
 
     # ---- 1. the chain, run for real ---------------------------------------------------------
     t_start = time.time()
+    t_start_iso = datetime.now(timezone.utc).isoformat(timespec="seconds")
     runs: dict[str, dict] = {}
     for label, script, template, blocks in CHAIN:
         argv = [arg.format(**fmt) for arg in template]
@@ -227,25 +260,47 @@ def main() -> int:
         runs[label] = _run_producer(script, argv, cap_gb)
         r = runs[label]
         print(f"  [{label:5s}] {script} exit={r['exit']} {r['seconds']}s — {r['last_line'][:88]}")
-    failed = {k: v["exit"] for k, v in runs.items() if v["exit"] != 0}
-    timing = ", ".join(f"{k} {v['seconds']}s" for k, v in runs.items())
-    # a "full" regeneration that quietly re-measured one leg would satisfy the count and lie about
-    # the substance, so the top line's completeness is measured off the receipts' mtimes
+    # A producer exits 1 when a CHECK failed (measure_views_law: `0 if all working else 1`) and 2
+    # when it could not run at all. Those are different things, and conflating them would report a
+    # legitimate failing measurement as a broken chain — or, worse, would tempt someone to make a
+    # producer exit 0 to get a green S6. The gate here is "the card was REGENERATED", so the
+    # evidence is fresh artifacts, not happy exit codes.
     want_legs = {s.strip() for s in a.legs.split(",") if s.strip()}
     fresh_legs = {
         f.stem.removeprefix("judge_leg_")
         for f in receipts.glob("judge_leg_*.json")
         if f.stat().st_mtime >= t_start - 1
     }
-    legs_complete = fresh_legs == want_legs
+    stages_now = json.loads(stages_out.read_text()) if stages_out.exists() else {}
+    fresh_stages = {
+        name
+        for name in STAGES
+        if str(stages_now.get(name, {}).get("_stamp", {}).get("generated_at", "")) >= t_start_iso
+    }
+    ok_chain, detail = chain_verdict(
+        {k: v["exit"] for k, v in runs.items()},
+        fresh_stages,
+        set(STAGES),
+        fresh_legs,
+        want_legs,
+        len(CHAIN),
+    )
+    timing = ", ".join(f"{k} {v['seconds']}s" for k, v in runs.items())
 
     checks: dict[str, dict] = {
         "full_chain_in_one_invocation": {
-            "working": not failed and len(runs) == len(CHAIN) and legs_complete,
+            "working": ok_chain,
             "evidence": (
                 f"{len(runs)} producer(s) run by this one command ({timing}); "
-                f"legs regenerated: {sorted(fresh_legs) or 'none'} of {sorted(want_legs)}; "
-                + ("all exited 0" if not failed else f"non-zero exit: {failed}")
+                f"fresh receipts: stages {sorted(fresh_stages)}, legs {sorted(fresh_legs)}"
+                + (
+                    f"; {len(detail['reported_failing'])} reported a FAILING CHECK (a "
+                    f"measurement, not a chain failure): {detail['reported_failing']}"
+                    if detail["reported_failing"]
+                    else ""
+                )
+                + (f"; COULD NOT RUN (exit>=2): {detail['fatal']}" if detail["fatal"] else "")
+                + (f"; MISSING FRESH EVIDENCE: {detail['missing']}" if detail["missing"] else "")
             ),
         }
     }
