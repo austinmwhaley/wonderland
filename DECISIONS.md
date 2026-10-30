@@ -4940,3 +4940,51 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   the operator should choose between (a) leave the encoder at C and work the consumer side, or
   (b) authorize D (contrastive/paired effect target) knowing it costs another train+chain cycle.
 - **Cost.** Train 941.7 s + chain ~17 min, inside the 20 GB container with Qwen up throughout.
+
+## DEC-453 — [PRE-REGISTERED] protocol D: a bilinear (QTE-form) effect head, so the uplift contrast is linear in the state
+
+- **Context (measured, DEC-452).** Protocol C activated the effect objective and response
+  propensity followed (`return_proneness` −0.007 → 0.389), but the judged `known_effect_uplift`
+  got *more* negative (−0.0042 → −0.0174) and the random control overtook it, losing the rl row.
+- **Diagnosis (read from the code, not assumed).** The judged probe never touches `head_effect`:
+  it is a ridge regression on the donor state E (`measure_judge_law.leg_rl`: `_ridge_oos(Ea, ya,
+  Eb, yb)`). So the effect objective influences the verdict only by reshaping E. C made the
+  response LEVEL linearly readable from E (the propensity jump proves it) but the judged quantity
+  is the arm CONTRAST — and an MLP head `f(concat(s, onehot))` has no reason to make that
+  contrast linear in s, so ridge on E cannot recover it (E is a linear whitened projection of s).
+  The DEC-172 comment says the MLP was chosen because "a linear head would force the whole
+  per-action shape into the state (measured weak)" — that measured the wrong target: what the
+  decision needs is not an expressive head, it is a state whose CONTRAST is linear.
+- **Decision — protocol D = protocol C + `effect_head=bilinear`.** A quantitative-treatment-effect
+  head: `logit(s, a) = s·W[:, a] + b[a]`, called through the SAME interface as the MLP
+  (`head_effect(cat([s, onehot])) -> (…,1)`). Consequences by construction: the per-arm factual
+  level stays linear-in-s per level (Q=4 levels, expressive enough), and the arm contrast
+  `f(s,q1) − f(s,q2) = s·(W[:,q1] − W[:,q2]) + const` is linear in s — hence in E. If the head
+  fits the randomized factuals (which it is trained on, never on the eval truth), the contrast it
+  encodes is a linear functional of E, which is exactly what the frozen ridge probe can consume.
+  Config field `effect_head` (default `mlp`: protocols A/B/C are byte-reproducible); the value is
+  stored in the checkpoint blob so `cfm_state` rebuilds the same class; the tag hash includes the
+  head kind ONLY when `effect_actions` is non-empty (an absent head is not a protocol axis, so
+  A/B's shared tag is untouched; C's recorded tag predates the extension and stays as recorded).
+- **Frozen acceptance (checked BEFORE any verdict language):**
+  1. registry: `overrides {batch:20, effect_actions:['offer'], effect_head:'bilinear'}`,
+     `objectives` contains `effect`, `loss_scales` has `effect`;
+  2. checkpoint blob carries `effect_head='bilinear'`; `head_effect.proj.weight` has shape
+     (effect_dim, dim) with `effect_dim == 4`, and NO `head_effect.2.*` keys (the MLP's second
+     layer) — proof the bilinear class was trained, not the default;
+  3. losses finite, effect loss does not diverge (report first/last); governor stops on
+     tolerance; `[step-time]` receipt present;
+  4. tag ≠ protocol C's tag, and stable across two constructions of the same config.
+- **Named measurement axes (the only ones the protocol was built to move):** rl
+  `known_effect_uplift` brain (must beat the random control — the frozen gate that fired), rl
+  `policy_value`, S5 `action_conditioned_outcome`; regression guards: supervised
+  `return_proneness` (C got 0.389 — losing it is a real cost, report it) and `h0`.
+- **Not changed:** gates, thresholds, controls, comparator, probe definitions. One variable per
+  protocol: D differs from C by the head form only.
+- **Alternatives considered.** (1) *Have the probe consume `head_effect` directly* — rejected:
+  that edits the frozen eval contract, an operator ruling, and would let the head's nonlinearity
+  launder a weak state. (2) *Distill the head's contrast into a state direction* — more moving
+  parts, trains a target on itself; the bilinear form achieves the same by construction.
+  (3) *Train on the 233 identified uplifts* — leakage: that is the eval target on the scored
+  population. (4) *Raise the effect loss scale* — a tuning knob, not a fix for a linearity
+  mismatch; protocol discipline keeps one variable.
