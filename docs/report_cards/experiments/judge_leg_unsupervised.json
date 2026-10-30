@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "522614cd6b1f191f",
-    "command": "measure_judge_law.py --products /work/cfm_c_eff --demo /work/demo --legs supervised,unsupervised,rl,simulator --out-dir /repo/docs/report_cards/experiments",
-    "generated_at": "2026-10-30T18:14:15+00:00",
-    "git_commit": "6298bb6042a710a8f5982be0c38a92f60b8bcd87",
+    "behavior_hash": "ab30e0f8c036b557",
+    "command": "measure_judge_law.py --products /work/cfm_d_qte --demo /work/demo --legs supervised,unsupervised,rl,simulator --out-dir /repo/docs/report_cards/experiments",
+    "generated_at": "2026-10-30T20:12:00+00:00",
+    "git_commit": "90c20f039aa6de7ca1edf8acaca6c1af65b47c1b",
     "producer": "measure_judge_law.py"
   },
   "arms": {
@@ -21,12 +21,12 @@
     "brain": {
       "tasks": [
         {
-          "brain": 2.6e-05,
-          "ci_hi": -0.000165,
-          "ci_lo": -0.000658,
+          "brain": 2.1e-05,
+          "ci_hi": -0.000166,
+          "ci_lo": -0.00066,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": 0.000162,
+          "destroyed": 0.000149,
           "metric": "squared correlation between the arm's pairwise distances and the lab's true distances (2 fields: d0, segment)",
           "n": 261726,
           "n_bootstrap_pairs": 100000,
@@ -35,12 +35,12 @@
           "random": 0.00093
         },
         {
-          "brain": 5.3e-05,
-          "ci_hi": -0.043168,
-          "ci_lo": -0.048143,
+          "brain": 0.000115,
+          "ci_hi": -0.043114,
+          "ci_lo": -0.048081,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": 0.000843,
+          "destroyed": 0.000586,
           "metric": "squared correlation between the arm's pairwise distances and the lab's true distances (5 fields: x0, h0, price_sensitivity, return_proneness, churn_day)",
           "n": 261726,
           "n_bootstrap_pairs": 100000,
@@ -49,12 +49,12 @@
           "random": 0.000102
         },
         {
-          "brain": -0.002281,
-          "ci_hi": 0.007158,
-          "ci_lo": -0.009616,
+          "brain": -0.000806,
+          "ci_hi": 0.008826,
+          "ci_lo": -0.00856,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": -0.000943,
+          "destroyed": 0.00208,
           "metric": "ARI of k-means (k=5, from the label's own cardinality) against the lab's declared segment",
           "n": 724,
           "name": "segment_structure",
@@ -66,9 +66,9 @@
     "brain_ledger": {
       "tasks": [
         {
-          "brain": 0.000582,
-          "ci_hi": 0.00041,
-          "ci_lo": -0.000203,
+          "brain": 0.000547,
+          "ci_hi": 0.000367,
+          "ci_lo": -0.000228,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
           "destroyed": 0.0006,
@@ -80,12 +80,12 @@
           "random": 4.2e-05
         },
         {
-          "brain": 0.012086,
-          "ci_hi": -0.032519,
-          "ci_lo": -0.037545,
+          "brain": 0.012358,
+          "ci_hi": -0.03227,
+          "ci_lo": -0.037299,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": 0.000223,
+          "destroyed": 0.00058,
           "metric": "squared correlation between the arm's pairwise distances and the lab's true distances (5 fields: x0, h0, price_sensitivity, return_proneness, churn_day)",
           "n": 261726,
           "n_bootstrap_pairs": 100000,
@@ -94,12 +94,12 @@
           "random": 0.000101
         },
         {
-          "brain": -0.001826,
-          "ci_hi": 0.006966,
-          "ci_lo": -0.00761,
+          "brain": -8.1e-05,
+          "ci_hi": 0.009127,
+          "ci_lo": -0.008314,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": -0.000919,
+          "destroyed": -0.000312,
           "metric": "ARI of k-means (k=5, from the label's own cardinality) against the lab's declared segment",
           "n": 724,
           "name": "segment_structure",
@@ -119,9 +119,9 @@
     "source": "/work/demo/path_a/path_a_wide_table.parquet"
   },
   "products": {
-    "path": "/work/cfm_c_eff",
-    "registry_sha256": "fff6a44f95fc55b7",
-    "tag": "0.11.0r103115-b20d256e3lr3e-04o549abbe1"
+    "path": "/work/cfm_d_qte",
+    "registry_sha256": "a6e3a4eb11f9b2b1",
+    "tag": "0.11.0r103115-b20d256e3lr3e-04occdbe290"
   },
   "splits": {
     "n_fit_A": 1776,

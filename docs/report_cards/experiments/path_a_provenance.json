@@ -10,7 +10,7 @@
     "values_match": {
       "working": true,
       "evidence": "6000 rows joined on customer_key, 50 columns compared exactly (CPU-built artifact, CPU rebuild): identical",
-      "seconds": 0.01
+      "seconds": 0.02
     },
     "provenance_complete": {
       "working": true,
@@ -295,7 +295,7 @@
   },
   "inputs": {
     "demo": "/work/demo",
-    "products_dir": "/work/cfm_c_eff"
+    "products_dir": "/work/cfm_d_qte"
   },
-  "generated_at": "2026-10-30T18:14:26+00:00"
+  "generated_at": "2026-10-30T20:12:11+00:00"
 }

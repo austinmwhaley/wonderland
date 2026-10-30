@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "522614cd6b1f191f",
-    "command": "measure_judge_law.py --products /work/cfm_c_eff --demo /work/demo --legs supervised,unsupervised,rl,simulator --out-dir /repo/docs/report_cards/experiments",
-    "generated_at": "2026-10-30T18:14:17+00:00",
-    "git_commit": "6298bb6042a710a8f5982be0c38a92f60b8bcd87",
+    "behavior_hash": "ab30e0f8c036b557",
+    "command": "measure_judge_law.py --products /work/cfm_d_qte --demo /work/demo --legs supervised,unsupervised,rl,simulator --out-dir /repo/docs/report_cards/experiments",
+    "generated_at": "2026-10-30T20:12:02+00:00",
+    "git_commit": "90c20f039aa6de7ca1edf8acaca6c1af65b47c1b",
     "producer": "measure_judge_law.py"
   },
   "arms": {
@@ -21,60 +21,60 @@
     "brain": {
       "tasks": [
         {
-          "brain": -0.017376,
-          "ci_hi": 0.004737,
-          "ci_lo": 0.000839,
+          "brain": -0.013031,
+          "ci_hi": 0.004791,
+          "ci_lo": 0.000912,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": 0.001787,
+          "destroyed": -0.005753,
           "metric": "R2 on the identified per-customer uplift (P(buy|offer=opt) - P(buy|offer off by >=2))",
           "n": 233,
           "name": "known_effect_uplift",
           "pathA": -0.172714,
-          "random": -0.015658
+          "random": -1e-05
         },
         {
-          "brain": 0.053291,
-          "ci_hi": 0.042384,
-          "ci_lo": 0.001754,
+          "brain": 0.05568,
+          "ci_hi": 0.044858,
+          "ci_lo": 0.004239,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": 0.049502,
+          "destroyed": 0.040687,
           "metric": "area under the top-k realized-uplift curve on randomized arm-days (bootstrap re-selects inside each replicate)",
           "n": 233,
           "name": "policy_value",
           "pathA": 0.030808,
-          "random": 0.041452
+          "random": 0.04949
         }
       ]
     },
     "brain_ledger": {
       "tasks": [
         {
-          "brain": -0.017545,
-          "ci_hi": 0.004739,
-          "ci_lo": 0.000896,
+          "brain": -0.010882,
+          "ci_hi": 0.004877,
+          "ci_lo": 0.00104,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": -0.048561,
+          "destroyed": -0.041235,
           "metric": "R2 on the identified per-customer uplift (P(buy|offer=opt) - P(buy|offer off by >=2))",
           "n": 233,
           "name": "known_effect_uplift",
           "pathA": -0.172714,
-          "random": -0.016614
+          "random": -0.012777
         },
         {
-          "brain": 0.054394,
-          "ci_hi": 0.044444,
-          "ci_lo": 0.002686,
+          "brain": 0.055656,
+          "ci_hi": 0.045881,
+          "ci_lo": 0.004104,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": 0.030615,
+          "destroyed": 0.033139,
           "metric": "area under the top-k realized-uplift curve on randomized arm-days (bootstrap re-selects inside each replicate)",
           "n": 233,
           "name": "policy_value",
           "pathA": 0.030808,
-          "random": 0.044903
+          "random": 0.047597
         }
       ]
     }
@@ -93,9 +93,9 @@
     "source": "/work/demo/path_a/path_a_wide_table.parquet"
   },
   "products": {
-    "path": "/work/cfm_c_eff",
-    "registry_sha256": "fff6a44f95fc55b7",
-    "tag": "0.11.0r103115-b20d256e3lr3e-04o549abbe1"
+    "path": "/work/cfm_d_qte",
+    "registry_sha256": "a6e3a4eb11f9b2b1",
+    "tag": "0.11.0r103115-b20d256e3lr3e-04occdbe290"
   },
   "splits": {
     "n_fit_A": 1776,
