@@ -201,6 +201,34 @@ def outside_slice(jobs: list[int], slice_name: str, proc_root: Path = Path("/pro
     return [pid for pid in jobs if not in_slice(pid, slice_name, proc_root)]
 
 
+def _top_rss(n: int = 6) -> list[str]:
+    """Top RSS processes by (rss_gb, pid, comm) — the LOW-MEM witness line's source.
+
+    /proc only, stdlib only: the guard must never fail to explain a stop because a
+    helper (ps, psutil) is missing on the host it polices.
+    """
+    rows = []
+    for d in os.listdir("/proc"):
+        if not d.isdigit():
+            continue
+        try:
+            with open(f"/proc/{d}/status") as fh:
+                rss_kb = comm = 0
+                for ln in fh:
+                    if ln.startswith("VmRSS:"):
+                        rss_kb = int(ln.split()[1])
+                    elif ln.startswith("Name:"):
+                        comm = ln.split()[1]
+                    if rss_kb and comm:
+                        break
+            if rss_kb > 2**20:  # > 1 GB only: the witnesses that matter at an 8 GB floor
+                rows.append((rss_kb / 2**20, int(d), comm))
+        except OSError:
+            continue  # process vanished / unreadable mid-scan — a witness list may be partial
+    rows.sort(reverse=True)
+    return [f"{g:.2f} GB pid={p} {c}" for g, p, c in rows[:n]]
+
+
 def _kill(pid: int, dry_run: bool) -> str:
     if dry_run:
         return f"would SIGTERM {pid}"
@@ -390,6 +418,13 @@ def main(argv=None, *, arm: bool = True) -> int:
         if targets:
             low_water = avail if math.isnan(low_water) else min(low_water, avail)
         if avail < a.floor_gb and targets:
+            # Attribution before action: when the floor is breached, the guard must say WHO
+            # holds the memory (trainer vs Qwen vs an external burst) — a bare "avail dipped"
+            # line leaves the retry decision blind (measured 2026-10-30: an external 12 GB
+            # burst in 6 s sacrificed the trainer before its first step, indistinguishable
+            # from a trainer ramp in the old receipt).
+            for line in _top_rss():
+                print(f"{time.strftime('%T')} LOWMEM-WITNESS {line}", flush=True)
             for pid in targets:
                 # Log the DECISION before acting: `_kill` blocks for up to 5 s waiting for
                 # the process to die, and a guard killed inside that window would leave no
