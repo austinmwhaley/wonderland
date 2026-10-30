@@ -436,3 +436,57 @@ def test_grad_checkpoint_lowers_the_step_peak():
 
     plain, ckpt = peak(False), peak(True)
     assert ckpt < 0.9 * plain, f"checkpointing saved nothing: {plain:.3f} -> {ckpt:.3f} GB"
+
+
+# ---------------------------------------------------------------- the container ceiling (DEC-450)
+
+
+def test_container_ceiling_clamps_the_derived_budget_and_is_receipted():
+    """A container's --memory is a real kernel limit; device allocations are NOT charged to
+    it (measured with vLLM: 337 MiB reported, 97 GiB held), so the allocator cap must leave
+    host usage + overhead INSIDE the ceiling. min(derived, limit - used - reserve)."""
+    r = _budget(container_limit_gb=20.0, container_used_gb=4.0, reserve_gb=1.0)
+    assert r["source"] == "derived+cgroup"
+    assert r["budget_gb"] == 15.0  # 20 - 4 - 1; the host-derived 19 was looser
+    assert (r["container_limit_gb"], r["container_used_gb"]) == (20.0, 4.0)
+    assert r["container_clamp_gb"] == 15.0
+
+
+def test_a_loose_container_ceiling_does_not_change_the_derived_budget():
+    r = _budget(container_limit_gb=60.0, container_used_gb=2.0)
+    assert (r["source"], r["budget_gb"]) == ("derived", 19.0)
+    assert r["container_clamp_gb"] == 57.0  # recorded, but it did not bind
+
+
+def test_an_explicit_override_cannot_escape_the_container():
+    """The operator may accept the co-tenant risk; they cannot override the kernel."""
+    r = _budget(limit_gb=25.0, container_limit_gb=20.0, container_used_gb=5.0, reserve_gb=0.5)
+    assert r["source"] == "explicit+cgroup"
+    assert r["budget_gb"] == 14.5  # 20 - 5 - 0.5, not 25
+
+
+def test_cgroup_reader_treats_max_and_missing_as_unlimited(tmp_path):
+    (tmp_path / "max").write_text("max")
+    assert gpu_budget.cgroup_memory_gb(str(tmp_path / "max"), str(tmp_path / "cur")) == (0.0, 0.0)
+    assert gpu_budget.cgroup_memory_gb(str(tmp_path / "nope"), str(tmp_path / "cur")) == (0.0, 0.0)
+    (tmp_path / "max").write_text(str(20 * 2**30))
+    (tmp_path / "cur").write_text(str(3 * 2**30))
+    lim, used = gpu_budget.cgroup_memory_gb(str(tmp_path / "max"), str(tmp_path / "cur"))
+    assert (lim, used) == (20.0, 3.0)
+
+
+def test_watchdog_polices_a_container_client_but_never_a_shell_that_names_it(tmp_path):
+    """The containerized job is invisible to /proc (it is not python), so the guard matches
+    the `docker run` CLIENT by container name. A shell whose command text mentions the name
+    must not match — that is the measured launcher-kill defect one layer over."""
+    fake = _fake_proc(
+        tmp_path,
+        **{
+            "500": "docker run --rm --init --name wonderland-run wonderland-runtime",
+            "501": "/bin/bash -c echo --name wonderland-run",
+            "502": "docker run --rm --name other image",
+            "503": "docker ps",
+            "504": "podman run --name=wonderland-run image",
+        },
+    )
+    assert sorted(gpu_watchdog.container_jobs("wonderland-run", proc_root=fake)) == [500, 504]

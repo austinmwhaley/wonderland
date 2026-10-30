@@ -117,6 +117,42 @@ def gpu_jobs(patterns: tuple[str, ...], proc_root: Path = Path("/proc")) -> list
     return out
 
 
+def container_jobs(name: str, proc_root: Path = Path("/proc")) -> list[int]:
+    """PIDs of the `docker`/`podman run` CLIENT for container `name` (DEC-450).
+
+    A container is outside the project slice BY DESIGN — it has its own cgroup, which is
+    the whole point — so this is a FLOOR target only, never a slice stray. The engine's
+    child processes are invisible here (not python), so matching the client is what lets
+    the guard stop a containerized GPU job when the host floor is breached. Only an actual
+    container CLI matches: a shell whose command text mentions the name must not.
+    """
+    me = os.getpid()
+    out: list[int] = []
+    for entry in proc_root.iterdir():
+        if not entry.name.isdigit():
+            continue
+        pid = int(entry.name)
+        if pid == me:
+            continue
+        try:
+            cmd = (proc_root / entry.name / "cmdline").read_bytes().decode(errors="replace")
+        except OSError:
+            continue
+        argv = [a for a in cmd.split("\0") if a]
+        if not argv or os.path.basename(argv[0]) not in ("docker", "podman"):
+            continue
+        args = argv[1:]
+        if "run" not in args:
+            continue
+        for i, arg in enumerate(args):
+            if (arg == "--name" and i + 1 < len(args) and args[i + 1] == name) or (
+                arg == f"--name={name}"
+            ):
+                out.append(pid)
+                break
+    return out
+
+
 def in_slice(pid: int, slice_name: str, proc_root: Path = Path("/proc")) -> bool:
     """Is this process inside the project's memory slice? (DEC-440)
 
@@ -229,6 +265,12 @@ def main(argv=None, *, arm: bool = True) -> int:
         "--pattern", action="append", default=None, help="cmdline substring to police (repeatable)"
     )
     ap.add_argument(
+        "--container",
+        default=None,
+        help="also police the `docker/podman run` client of this container NAME: a containerized "
+        "job is outside the slice by design, so this is a floor target only (DEC-450)",
+    )
+    ap.add_argument(
         "--slice",
         default="wonderland.slice",
         help="the project's memory slice; jobs outside it are not bounded by the ceiling",
@@ -314,9 +356,14 @@ def main(argv=None, *, arm: bool = True) -> int:
         try:
             avail = mem_available_gb()
             jobs = gpu_jobs(patterns)
+            cjobs = container_jobs(a.container) if a.container else []
         except Exception as exc:  # noqa: BLE001 - fail safe, loudly
             print(f"{time.strftime('%T')} WATCHDOG-FAULT {type(exc).__name__}: {exc}", flush=True)
-            avail, jobs = float("inf"), []
+            avail, jobs, cjobs = float("inf"), [], []
+        # The floor covers everything this guard knows how to stop: matched producers AND
+        # the container client. Slice policing applies only to the producers — a container
+        # is outside the slice on purpose.
+        targets = jobs + cjobs
         if jobs and a.outside_slice != "ignore":
             strays = [
                 pid
@@ -338,10 +385,10 @@ def main(argv=None, *, arm: bool = True) -> int:
                         flush=True,
                     )
             jobs = [pid for pid in jobs if pid not in strays] if a.outside_slice == "kill" else jobs
-        if jobs:
+        if targets:
             low_water = avail if math.isnan(low_water) else min(low_water, avail)
-        if avail < a.floor_gb and jobs:
-            for pid in jobs:
+        if avail < a.floor_gb and targets:
+            for pid in targets:
                 # Log the DECISION before acting: `_kill` blocks for up to 5 s waiting for
                 # the process to die, and a guard killed inside that window would leave no
                 # record of the kill it just made (measured: a capped trainer was correctly
@@ -353,20 +400,22 @@ def main(argv=None, *, arm: bool = True) -> int:
                 )
                 print(f"{time.strftime('%T')} KILLED {pid}: {_kill(pid, a.dry_run)}", flush=True)
             killed = True
-        elif jobs and (math.isnan(last_report) or abs(avail - last_report) >= a.report_delta_gb):
+        elif targets and (math.isnan(last_report) or abs(avail - last_report) >= a.report_delta_gb):
             # Sample every `interval`, but only WRITE when memory moves materially: a 40-min
             # run at 5 s polls is 480 identical lines, and a wall of noise hides the ramp
             # that matters. `--once` always reports.
             last_report = avail
             print(
                 f"{time.strftime('%T')} avail={avail:.1f} GB floor={a.floor_gb} "
-                f"low={low_water:.1f} GPU jobs={len(jobs)}",
+                f"low={low_water:.1f} GPU jobs={len(jobs)}"
+                + (f" container={len(cjobs)}" if a.container else ""),
                 flush=True,
             )
         elif a.once:
             print(
                 f"{time.strftime('%T')} avail={avail:.1f} GB floor={a.floor_gb} "
-                f"low={low_water:.1f} GPU jobs={len(jobs)}",
+                f"low={low_water:.1f} GPU jobs={len(jobs)}"
+                + (f" container={len(cjobs)}" if a.container else ""),
                 flush=True,
             )
         if a.once:

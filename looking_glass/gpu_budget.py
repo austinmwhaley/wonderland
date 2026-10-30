@@ -44,6 +44,10 @@ import resource
 
 _GB = 1024**3
 _MEMINFO = "/proc/meminfo"
+#: cgroup v2 files. Inside a `docker --memory=20g` container these carry the container's
+#: ceiling; on the bare host `memory.max` is usually absent (root cgroup) and reads as no limit.
+_CGROUP_LIMIT = "/sys/fs/cgroup/memory.max"
+_CGROUP_USED = "/sys/fs/cgroup/memory.current"
 
 # principle-ok: documented conservative fallback, not a tuning knob. Below ~2% of the
 # pool a CUDA context plus a single batch cannot exist, so a smaller budget means
@@ -65,6 +69,34 @@ def available_gb(path: str = _MEMINFO) -> float:
     return 0.0
 
 
+def cgroup_memory_gb(
+    limit_path: str = _CGROUP_LIMIT, used_path: str = _CGROUP_USED
+) -> tuple[float, float]:
+    """(limit, current) of THIS process's cgroup in GB; (0, 0) when there is no finite cap.
+
+    A container's `--memory` is a HARD ceiling on host RAM, but on the GB10 the CUDA driver
+    allocates from the same pool WITHOUT being charged to that cgroup (measured with vLLM:
+    the container reported 337 MiB while holding 97 GiB). So the container ceiling cannot
+    cap the GPU by itself; the allocator fraction must be derived from it instead
+    (DEC-450). Reading it here is what makes the budget the tighter of two real limits
+    rather than the host's optimistic `MemAvailable`, which inside a container still
+    reports the whole machine.
+    """
+
+    def _read(path: str) -> float | None:
+        try:
+            with open(path) as fh:
+                raw = fh.read().strip()
+        except OSError:
+            return None
+        if raw == "max" or not raw.isdigit():
+            return None  # unlimited / unreadable -> not a ceiling
+        gb = int(raw) / _GB
+        return gb if gb > 0 else None
+
+    return (_read(limit_path) or 0.0), (_read(used_path) or 0.0)
+
+
 def compute_budget(
     *,
     mem_available_gb: float,
@@ -73,6 +105,8 @@ def compute_budget(
     system_floor_gb: float,
     reserve_gb: float,
     limit_gb: float = 0.0,
+    container_limit_gb: float = 0.0,
+    container_used_gb: float = 0.0,
 ) -> dict:
     """Pure budget arithmetic (no CUDA), so the policy is testable off-device.
 
@@ -82,6 +116,12 @@ def compute_budget(
     argument, not a default: `CFMConfig.gpu_reserve_gb` is its single source of truth.
     `limit_gb > 0` is an operator override — taken verbatim, no deduction, because the
     operator has accepted the risk.
+
+    `container_limit_gb > 0` adds a HARDER ceiling: the container's cgroup (DEC-450). Device
+    allocations are not charged to that cgroup, so the guard must leave the container's
+    current host usage (`container_used_gb`) plus this process's device overhead inside the
+    limit — budget + used + reserve <= limit. An explicit `limit_gb` is clamped too: an
+    operator may accept the co-tenant risk, but not override a kernel ceiling.
     """
     if limit_gb and float(limit_gb) > 0:
         budget, source = float(limit_gb), "explicit"
@@ -89,6 +129,12 @@ def compute_budget(
         headroom = min(float(mem_available_gb) - float(system_floor_gb), float(driver_free_gb))
         budget = max(0.0, headroom - float(reserve_gb))
         source = "derived"
+    container_clamp = 0.0
+    if container_limit_gb and float(container_limit_gb) > 0:
+        limit = float(container_limit_gb)
+        container_clamp = max(0.0, limit - float(container_used_gb) - float(reserve_gb))
+        if container_clamp < budget:
+            budget, source = container_clamp, f"{source}+cgroup"
     fraction = 0.0 if total_gb <= 0 else min(1.0, budget / float(total_gb))
     return {
         "applied": False,
@@ -98,6 +144,9 @@ def compute_budget(
         "driver_free_gb": round(float(driver_free_gb), 2),
         "system_floor_gb": round(float(system_floor_gb), 2),
         "reserve_gb": round(float(reserve_gb), 2),
+        "container_limit_gb": round(float(container_limit_gb), 2),
+        "container_used_gb": round(float(container_used_gb), 2),
+        "container_clamp_gb": round(container_clamp, 2),
         "budget_gb": round(budget, 2),
         "fraction": round(fraction, 4),
         "alloc_conf": os.environ.get("PYTORCH_CUDA_ALLOC_CONF", "(default)"),
@@ -159,6 +208,7 @@ def enforce(cfg, *, device: str | None = None, rebase: bool = False) -> dict:
             )
         idx = _device_index(torch, device)
         free, total = torch.cuda.mem_get_info(idx)
+        cg_limit, cg_used = cgroup_memory_gb()
         rec = compute_budget(
             mem_available_gb=available_gb(),
             driver_free_gb=free / _GB,
@@ -166,13 +216,21 @@ def enforce(cfg, *, device: str | None = None, rebase: bool = False) -> dict:
             system_floor_gb=float(getattr(cfg, "gpu_system_floor_gb", 8.0)),
             reserve_gb=float(getattr(cfg, "gpu_reserve_gb", 1.0)),
             limit_gb=float(getattr(cfg, "gpu_mem_limit_gb", 0.0)),
+            container_limit_gb=cg_limit,
+            container_used_gb=cg_used,
         )
         if rec["fraction"] < _MIN_VIABLE_FRACTION:
+            where = (
+                f"the container's {rec['container_limit_gb']} GB ceiling "
+                f"({rec['container_used_gb']} GB already used) and "
+                if rec["container_limit_gb"] > 0
+                else "the LLM server holds the rest"
+            )
             raise SystemExit(
-                f"gpu-budget: only {rec['budget_gb']} GB is left after the "
+                f"gpu-budget: only {rec['budget_gb']} GB is left after {where} the "
                 f"{rec['system_floor_gb']} GB system floor and {rec['reserve_gb']} GB "
-                "device overhead (the LLM server holds the rest) — too little to train "
-                "on. Free the co-tenant, or set an explicit budget and accept the risk: "
+                "device overhead — too little to train on. Free the co-tenant, raise "
+                "WONDER_MEM, or set an explicit budget and accept the risk: "
                 "  --set gpu_mem_limit_gb=<GB>"
             )
         try:
@@ -191,6 +249,8 @@ def enforce(cfg, *, device: str | None = None, rebase: bool = False) -> dict:
             f"({rec['fraction']:.3f} of {rec['mem_total_gb']} GB) source={rec['source']} "
             f"avail={rec['mem_available_gb']} GB driver_free={rec['driver_free_gb']} GB "
             f"floor={rec['system_floor_gb']} GB reserve={rec['reserve_gb']} GB "
+            f"container={rec['container_limit_gb']} GB (used {rec['container_used_gb']}, "
+            f"clamp {rec['container_clamp_gb']}) "
             f"dev={idx} alloc={rec['alloc_conf']}",
             flush=True,
         )

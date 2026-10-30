@@ -4823,3 +4823,42 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
      too weak / the head reads the wrong tensor), both publishable.
   4. No gate, threshold, comparator, control or data definition moves. Protocol A and B receipts
      remain the record of their protocols; nothing is pooled across them.
+
+## DEC-450 — [TECHNICAL] the 20 GB ceiling covers the GPU too: the container reads its own cgroup, and the guard can stop it
+
+- **Context.** Operator restatement (2026-10-30): *"this entire project runs within 20 GB of
+  memory ... lots of CPU and GPU processing but limited to 20GB."* The container (DEC-442) already
+  put a hard cgroup ceiling on host RAM, but deliberately left GPU out: on the GB10 the GPU and CPU
+  draw on one unified pool and CUDA allocations are **not charged to the container's cgroup**
+  (measured with vLLM: 337 MiB reported while holding 97 GiB). So `--memory=20g` alone could not
+  stop a runaway CUDA job, and the wrapper ran CPU-only. That gap is exactly the operator's ask.
+- **Decision — three layers, because one cannot cover this hardware.**
+  1. **Container cgroup** (`--memory` == `--memory-swap`, no swap): hard kernel ceiling on host
+     RAM; a job that exceeds it dies at 137, the host and the LLM are untouched (re-verified this
+     chunk: 25 × 1 GiB inside a 20 GB container died after 19 GiB, host free unchanged).
+  2. **GPU allocator cap aware of the cgroup** (`gpu_budget.cgroup_memory_gb` + a
+     `container_limit/used` clamp in `compute_budget`): because device allocations bypass the
+     cgroup, the torch fraction is derived so that `device + host usage + reserve <= limit`.
+     Verified inside `--gpu`: cap 19.16 GB (`source=derived+cgroup`), a 22 GiB request refused,
+     1 GiB allocated, host free unchanged. An explicit `--set gpu_mem_limit_gb` is clamped by the
+     container too — an operator may accept the co-tenant risk, not override the kernel.
+  3. **Floor guard for the container** (`gpu_watchdog --container NAME`): the container's python
+     jobs are invisible to host `/proc` (they are not host processes), so the guard matches the
+     `docker run` CLIENT by name — never a shell that merely names it — and stops it if the real
+     `MemAvailable` reaches the 8 GB floor. This covers non-torch CUDA allocations (cuDNN, Triton,
+     CUDA graphs) that bypass the allocator fraction.
+- **Entry point.** `scripts/wonder_container.sh` now takes `--gpu` (adds `--gpus all` and starts
+  the guard), `--out HOST[:CONTAINER]` (writable out-dir for training/products, default `/out`),
+  `--name`, `--plan` (prints the exact argv, runs nothing), and keeps `--check`. Compute is not
+  throttled anywhere: no `--cpus`, no GPU rate limit — only memory. Verified end to end: a real
+  producer ran inside the wrapper; the guard logged `container=1` and tracked low-water.
+- **Alternatives considered.** (1) *Cap the GPU in the Dockerfile* — impossible: cgroup accounting
+  happens outside the image, and the driver is not charged to it. (2) *Rely on the watchdog alone*
+  — rejected: it kills after the fact, at the floor, and a driver fault can precede the signal;
+  the allocator cap is the seatbelt that fails the RUN, not the box. (3) *Keep `--gpus` opt-in and
+  tell the operator to use the host slice* — that is what this replaces; it makes "the whole
+  project in a 20 GB box" true for GPU work as well. (4) *A second image with CUDA baked in* —
+  rejected: the mounted venv already has cu130 and the host driver is injected by the runtime; a
+  second environment is a second thing to drift.
+- **Cost.** One behavior-hash bump (`looking_glass/gpu_budget.py`), so the full chain re-runs —
+  the freshness law's normal price, and the chain itself is now a production run of the wrapper.
