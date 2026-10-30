@@ -855,13 +855,15 @@ The machine is shared with an LLM server (Qwen3-Flash) and a runaway job has tak
 more than once. Two ceilings now apply, both kernel-enforced, and the tighter one is reported:
 
 - **Container:** `scripts/wonder_container.sh -- <cmd>` runs the job in
-  `deploy/Dockerfile.wonder` with `--memory=24g --memory-swap=24g`, `/work` mounted read-only.
-  Verified: a 30 GB allocation inside it dies at 137 and the host is untouched.
-- **Outer slice:** `wonderland.slice` at **30 GB** (`min(half of RAM, 30)`, installed by
-  `scripts/install_memory_slice.sh`), so even a job launched outside the container cannot exceed
-  30 GB. Every producer re-enters it by itself (`safe_run.ensure_boundary`).
-- `safe_run --print-plan` reports the REAL ceiling: 30.0 GB on the host, 24.0 GB inside the
-  container — the number the kernel will enforce, not the one a formula guessed.
+  `deploy/Dockerfile.wonder` with `--memory=20g --memory-swap=20g`, `/work` mounted read-only.
+  Verified: a 25 GB allocation inside it dies at 137 and the host is untouched.
+- **Outer slice:** `wonderland.slice` at **20 GB**, the same number, so a job is bounded identically
+  whether it runs in the container or is launched directly. Every producer re-enters it by itself.
+- **The budget, on one 121.6 GB unified pool:** Qwen (0.70 reservation) 85.1 + project 20 + system
+  8 = **113.1 GB → 8.5 GB slack**. `scripts/wonder_container.sh --check` prints it; 24 GB would
+  leave 4.5 and 30 GB does not fit at all (DEC-443).
+- `safe_run --print-plan` reports the REAL ceiling: 20.0 GB on the host and in the container — the
+  number the kernel enforces, not the one a formula guessed.
 - `scripts/gpu_watchdog.py` stops any policed producer found outside the slice.
 
 ## (superseded) earlier note: one capped slice

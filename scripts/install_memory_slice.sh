@@ -14,10 +14,11 @@ dest="$unit_dir/wonderland.slice"
 
 total_mb=$(awk '/^MemTotal:/{print $2}' /proc/meminfo)
 half_gb=$(( total_mb / 1024 / 1024 / 2 ))
-# The operator's band for the project is 20-30 GB: the machine is shared with an LLM server, and
-# the ceiling must leave it room no matter what this repo does. So the cap is the SMALLER of half
-# of RAM and the band's top. 30 GB of 121 GB leaves the LLM server ~90 GB.
-band_top_gb=30
+# The ceiling is the project's BUDGET, derived from the machine's own numbers: the box has one
+# 121.6 GB unified pool, Qwen reserves 0.70 of it, and the operator keeps 8 GB for the system.
+# That leaves 28.5 GB, and 20 is what keeps ~8.5 GB of slack. It is the same number the container
+# uses, so a job is bounded identically whether it runs in the container or is launched directly.
+band_top_gb=20
 derived_gb=$(( half_gb < band_top_gb ? half_gb : band_top_gb ))
 cap="${MEMORY_MAX:-${derived_gb}G}"
 

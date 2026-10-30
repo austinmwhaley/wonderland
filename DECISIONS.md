@@ -4548,3 +4548,46 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   not a security boundary against hostile code; it is a resource boundary against runaway code.
   GPU access is off by default (`WONDER_EXTRA_ARGS='--gpus all'` opts in) because the LLM server
   holds the device and the measurements in this cycle are CPU-only.
+
+## DEC-443 — [TECHNICAL] the project's ceiling is 20 GB because that is what is left after Qwen and the system
+
+- **Context.** DEC-442 set the container to 24 GB and the outer slice to 30 GB, both inside the
+  operator's "20-30 GB" band. That band was a preference, not arithmetic. The operator then stated
+  the actual intent — project container + local Qwen3.8-Flash-Next + 8 GB for the system — and the
+  three numbers have to add up on a box with **one** 121.6 GB unified pool.
+- **The arithmetic, from the machine's own configuration.** `~/vllm-qwen-serve.sh` pins
+  `--gpu-memory-utilization 0.70`, which on GB10 reserves **85.1 GB** (the weights are ~76.9 GB and
+  the rest is KV cache; the comment in that script records 0.8 leaving 400 MB available, which is
+  what froze the machine before). So the project's share is
+  `121.6 − 85.1 − 8 = 28.5 GB`.
+  - project **30 GB** → 123.1 GB committed → **−1.5 GB**: does not fit.
+  - project **24 GB** → 117.1 GB → +4.5 GB slack: fits, but a single stray allocation from anything
+    else takes the system below its floor.
+  - project **20 GB** → 113.1 GB → **+8.5 GB slack**: fits with room for the desktop, page cache
+    and the kernel.
+- **Alternatives considered.** (1) *Keep 24 GB* — rejected: 4.5 GB of slack on a unified-memory box
+  where the driver's own allocations are explicitly NOT cgroup-accounted (the vLLM notes record a
+  container reporting 337 MiB while holding 97 GiB) is not a margin. (2) *Lower Qwen to 0.65* —
+  rejected as an operator decision about serving quality, not something a measurement script gets
+  to change: it would cost KV cache and change what the LLM server can do. (3) *Leave the slice at
+  30 and the container at 24* — rejected: two different bounds for the same project, one of which
+  does not fit the budget at all.
+- **Decision.** Both ceilings are **20 GB** and they are the same number: `WONDER_MEM` default 20g
+  and the slice's `MemoryMax` 20 GB, so a job is bounded identically whether it runs in the
+  container or is launched directly. `scripts/wonder_container.sh --check` now prints the budget
+  with its sources — Qwen's reservation is read from the serve script, not repeated as a literal,
+  and the slack is shown with its sign so an over-commitment cannot look like a plan.
+- **Verification.** `safe_run --print-plan` reports 20.0 GB on the host and 20.0 GB in the container;
+  a 25 GB allocation inside the container exits 137 with the host unchanged; `--check` prints
+  `Qwen 85.1 + project 20 + system 8 = 113.1 of 121.6 GB -> +8.5 GB slack`.
+- **Single axis changed.** Two budget numbers and the receipt that reports them. No measurement,
+  gate or comparator moved.
+- **Trade-offs recorded.** 20 GB is a real constraint on this project: the demo-scale measurements
+  run in 5-12 GB, but a larger stream or a training run would need `WONDER_MEM` raised and the
+  slack re-checked. The alternative — a bigger project budget — is paid for out of Qwen's KV cache
+  or the system floor, and the operator owns that trade, which is why `--check` now prints it
+  instead of hiding it in a comment.
+- **Known limit, recorded.** Driver allocations are not cgroup-accounted on GB10 (measured in the
+  vLLM notes). The container is therefore CPU-only by default and `--gpus` is opt-in: giving it the
+  GPU would put its allocations outside the 20 GB ceiling, which is exactly the failure mode this
+  budget exists to prevent.

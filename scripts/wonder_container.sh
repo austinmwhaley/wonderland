@@ -7,14 +7,19 @@
 #
 # The point: the machine is shared with an LLM server, and a runaway job has taken the host down.
 # `--memory` is enforced by the kernel on the whole container, so nothing started here can take
-# the LLM server's memory. The ceiling is 24 GB by default (the operator's 20-30 GB band) and is
-# the ONLY place the number appears — override with WONDER_MEM=20g.
+# the LLM server's memory.
+#
+# The ceiling is 20 GB, and it is a BUDGET, not a round number: the box has one 121.6 GB unified
+# pool, vLLM reserves 0.70 of it for Qwen (85.1 GB, per ~/vllm-qwen-serve.sh), and the operator
+# keeps 8 GB for the system. That leaves 121.6 - 85.1 - 8 = 28.5 GB for this project; 20 keeps
+# 8.5 GB of slack, 24 leaves 4.5, and 30 does not fit at all. Override with WONDER_MEM=24g if a
+# run genuinely needs it — but then say so, because the slack is the thing that keeps Qwen up.
 set -euo pipefail
 
 repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 work="${WONDER_WORK:-$HOME/wonderland_work}"
 image="${WONDER_IMAGE:-wonderland-runtime:24.04}"
-mem="${WONDER_MEM:-24g}"
+mem="${WONDER_MEM:-20g}"
 name="${WONDER_NAME:-wonderland-run}"
 
 build() {
@@ -30,7 +35,17 @@ fi
 
 if [[ "${1:-}" == "--check" ]]; then
   echo "image:      $image ($(docker image inspect -f '{{.Id}}' "$image" 2>/dev/null | cut -c1-19 || echo 'not built'))"
-  echo "memory cap: $mem  (WONDER_MEM overrides; the operator's band is 20-30 GB)"
+  total_gb=$(awk '/^MemTotal:/{printf "%.1f", $2/1048576}' /proc/meminfo)
+  qwen_frac=$(grep -oE 'gpu-memory-utilization[[:space:]]+[0-9.]+' "$HOME/vllm-qwen-serve.sh" 2>/dev/null | awk '{print $2}' | head -1)
+  qwen_frac="${qwen_frac:-0.70}"
+  cap_gb="${mem%g}"
+  python3 - "$total_gb" "$qwen_frac" "$cap_gb" <<'PY'
+import sys
+total, frac, cap = float(sys.argv[1]), float(sys.argv[2]), float(sys.argv[3])
+qwen, floor = frac * total, 8.0
+print(f"memory cap: {cap:.0f} GB  (WONDER_MEM overrides)")
+print(f"budget:     Qwen {qwen:.1f} + project {cap:.0f} + system {floor:.0f} = {qwen+cap+floor:.1f} of {total:.1f} GB -> {total-qwen-cap-floor:+.1f} GB slack")
+PY
   echo "repo:       $repo -> /repo (rw)"
   echo "work data:  $work -> /work (ro)"
   echo "host free:  $(awk '/MemAvailable/{printf "%.0f GB", $2/1048576}' /proc/meminfo)"
