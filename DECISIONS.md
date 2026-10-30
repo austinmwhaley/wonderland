@@ -4988,3 +4988,50 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   (3) *Train on the 233 identified uplifts* — leakage: that is the eval target on the scored
   population. (4) *Raise the effect loss scale* — a tuning knob, not a fix for a linearity
   mismatch; protocol discipline keeps one variable.
+
+## DEC-454 — [RESULT] protocol D measured: the bilinear head restored the rl row and improved every C-named axis
+
+- **What ran.** Protocol D = protocol C + `effect_head=bilinear` (DEC-453's pre-registered QTE
+  head), trained on GPU inside the 20 GB container with Qwen serving the whole time (host
+  low-water **8.8 GB** against the 8 GB floor — the closest coexistence yet, guard never fired).
+  Artifact `0.11.0r103115-b20d256e3lr3e-04occdbe290`; governor stopped itself at step 728
+  (best val 6.5179, all evals finite); `[step-time]` 1.338 s/step enqueue-bound.
+- **Frozen acceptance (DEC-453) — all four held, checked before any verdict language.**
+  (1) registry `overrides {batch:20, effect_actions:['offer'], effect_head:'bilinear'}`,
+  objectives contains `effect`, `loss_scales` effect present (39 tasks);
+  (2) checkpoint `effect_head='bilinear'`, `head_effect.proj.weight (4,256)` + bias (4,) and NO
+  MLP layer keys — the QTE class was genuinely trained;
+  (3) losses finite (val finite at all 7 evals; final per-task table `effect skill +0.0015±0.0005`);
+  (4) tag distinct from C (`occdbe290` vs `549abbe1`) and deterministic across constructions.
+  Serving-path regression: protocol C's pre-`effect_head` checkpoint still loads with missing=0.
+- **What it changed (protocol C → D, same artifact family).**
+  | named axis | C | D | PATH A |
+  |---|---|---|---|
+  | `known_effect_uplift` (brain / brain+ledger) | −0.0174 / −0.0175 | **−0.0130 / −0.0109** | −0.173 |
+  | `policy_value` (brain / brain+ledger) | 0.0533 / 0.0544 | **0.0557 / 0.0557** | 0.0308 |
+  | `return_proneness` (regression guard) | **0.389** | 0.295 | 0.673 |
+  | `h0` (regression guard) | **0.842** | 0.839 | — |
+  | `churn_day` | 0.571 | 0.582 | 0.721 |
+  S5 unchanged: still red on `action_conditioned_outcome`, `distance_regression`,
+  `ledger_reconstruction`. `argmax_optimum` bit-identical again (0.2698 vs PATH A 0.4690).
+- **Top line: 0/8 → 1/8.** The green row is `rl :: brain + ledger (DELIVERY)`: both tasks beat
+  PATH A with paired CI excluding 0 and controls below brain. **Stated plainly, with its weak-
+  ness:** the row passes the frozen control gate on `known_effect_uplift` by 0.002 — brain
+  −0.0109 vs random control −0.0128 — and both values are fits-to-noise (negative R²). The row
+  is green because policy_value (0.0557 vs 0.0308) is genuinely strong; the uplift task is
+  passing the gate mechanically, not by understanding the treatment effect. `rl :: brain alone`
+  stays red precisely because its control gate did NOT pass (random −0.00001 > brain −0.0130).
+- **Verdict against the pre-registered hypothesis.** The linearity thesis held directionally:
+  making the contrast a linear functional of the state moved uplift +0.006 on both columns and
+  policy value to its best measured value, without the effect objective's MLP capacity. But
+  uplift R² is still negative on every protocol — the state does not yet rank WHO responds
+  better than noise; it only stopped being actively worse. What C showed (level is learnable)
+  plus what D shows (contrast linearization helps but does not close the gap) localizes the
+  remaining failure in what the state carries about the treatment, not in the probe's form.
+- **Decision — D is the recorded protocol.** It was pre-registered on a mechanism (DEC-453),
+  its acceptance held, and it weakly-dominates C on every named axis; adopting it is not
+  selecting by verdict. The B-vs-D trade is reported, not resolved by fiat: B had the best
+  uplift level (−0.0042, the row green on policy value too) but no response propensity at all
+  (−0.007); D has propensity (0.295) and slightly worse uplift. Remaining reds (uplift rank,
+  S5's three probes, simulator argmax) stay encoder-side. Operator queue unchanged.
+- **Cost.** Train 974 s + chain ~17 min, inside the 20 GB container with Qwen up throughout.
