@@ -6,7 +6,7 @@
 > first to restore state; update it before yielding. The retired `ROADMAP.md`
 > is archived at `docs/archive/ROADMAP.md`.
 
-## CURRENT STATE — 2026-10-28 (read this first; supersedes older sections)
+## CURRENT STATE — 2026-10-30 (read this first; supersedes older sections)
 
 > **IMPLEMENTATION OPENED on branch `foundation-rebuild` (2026-10-28).** Design phase complete
 > (T-series DEC-399 · A-series DEC-404 · C-series DEC-412 · Outlet Standard O1–O8 · O6 DEC-414);
@@ -143,6 +143,56 @@
 > dismissed as something PATH A has anyway (DEC-432). *Are the negative controls real?* — H4 can
 > no longer be satisfied by a control at R² < −1: a green row needs one readable control, while a
 > genuine loss still reports FAIL (DEC-433).
+
+> **Steps 8–9 delivered — the four legs stand on one geometry, the box is uncrashable, protocol
+> B trains on GPU, and the chain certifies its own comparator (DEC-434 … DEC-446, 2026-10-29/30).**
+> `measure_judge_law.py` now produces **all four legs** (supervised/unsupervised/rl/simulator)
+> under one protocol on one shared `_arms()` geometry; the first run's two meaningless numbers were
+> fixed by measurement, not narration — distance tasks score squared correlation (scale-invariant)
+> and controls use the per-column scale from split A (`controls_matched`), never the raw split-B
+> scale (DEC-434/435). **S6 is one repo command** (`scripts/measure_certification_law.py`, DEC-436):
+> six producers as capped child processes, per-producer stamps, deterministic render checked twice,
+> hashes of the bytes the receipts describe, clean-tree commit record, and the card rendered last
+> — it certifies *the chain ran and produced fresh artifacts*; a failing measurement is exit 1, a
+> chain failure is exit ≥2 (DEC-441).
+> **The memory stack (DEC-439/440/442/443), because the box hosts the resident LLM:** every
+> `measure_*` producer is boundary-enforced (`safe_run.ensure_boundary` re-execs it into the
+> `wonderland.slice`, `MemoryMax=20G` = 121.6 GB pool − Qwen's 85.1 GB reservation − 8 GB system
+> floor), the chain runs its producers inside a **20 GB CPU-only container** with `/work` mounted
+> read-only, and `scripts/gpu_watchdog.py` polices the floor and slice membership from outside.
+> Verified destructively: oversized allocations die at 137 with the host untouched; a stray
+> producer outside the slice is matched and killed (two matcher defects found that way and fixed:
+> `.py` patterns matched a shell's command text; module patterns did not require an interpreter).
+> **Protocol B (DEC-444):** the batch=20 re-run trained on GPU into a NEW artifact dir
+> (`cfm_b20`), governor stopping itself at step 693; the registry carries `overrides {batch:20}`
+> and `resolved.batch=20` while `derived` still prints `-> 27` — the protocol change is inside the
+> artifact. The `[step-time]` receipt settled `grad_checkpoint` permanently: **0.9705 s/step,
+> enqueue median 0.9576 — enqueue-bound, a recompute knob cannot help.** Capability is flat vs
+> protocol A (`h0` 0.796→0.806, ledger `h0` 0.984→0.984, `argmax_optimum` 0.2698 both), so the
+> smaller batch costs nothing measurable at this scale. It is NOT a DEC-420 reproduction and the
+> two protocols are never pooled. **Found open (DEC-445):** the two protocols share tag
+> `0.11.0r469048` — `CFMConfig.tag` omits batch, and the freshness law hashes source, not the
+> artifact — proposed fix (tag the resolved protocol axes; refuse to mix legs across artifacts)
+> awaits the operator, since it costs a behavior-hash bump.
+> **The comparator is now a measurement (DEC-446, closing DEC-437):** `build_path_a` stamps every
+> column `{source: hist|fut|customers, cut_at}` derived from its own expression lists and REFUSES
+> an unstamped column; `scripts/measure_path_a_provenance.py` rebuilds the frozen table from the
+> lab's own `relational/` inputs, requires exact value equality (51/51 columns, identical, 0.02 s),
+> and requires the comparator — the drop rule imported from `table_features` itself — to read only
+> `hist|customers` columns while every `fut` column is dropped. S6's sixth check
+> `comparator_provenance_certified` fails the chain if that fact is missing, failed, or stale.
+> `cfm_data.build_sequences` also sorted its key list, defusing the DEC-438 hash-order landmine
+> (behavior → `fc533e2c09846f7e`; all receipts re-measured, every leg value byte-identical
+> modulo metadata).
+> **Card: 5/6 stages · 1/8 legs (`pass 11 / fail 8 / unknown 0`)** — S4 passes on measurement
+> (response outlet R² 0.0671 against a leaky ceiling of 0.0681, n=126 895); S5 stays red on its
+> three counterfactual probes, which were audited this chunk and found faithful (the pre-boundary
+> raw-state diagnostic, ρ 0.005, says the geometry gap is inside the encoder, not the serving
+> transform). The only green leg remains `rl :: brain+ledger` (policy value 0.054 vs 0.031).
+> **Owed / open for the operator:** everything owed by the step 5–7 block stands, plus — DEC-445's
+> tag/provenance extension; S5's three red axes are encoder-capability work whose obvious levers
+> (serving representation content, an offer-response objective) touch objectives/interface and
+> belong to the ruling queue, not to the loop.
 
 **Repository state:** `main` now contains the former `primary-encoder` demo work. The duplicate
 report card, stale roadmap, duplicate receipt orchestrator, one-off OPE wrappers, and generator

@@ -1,0 +1,301 @@
+{
+  "working": true,
+  "evidence": "[columns_match] OK: published 51 cols vs rebuilt 51 cols (missing: [], extra: []) | [values_match] OK: 6000 rows joined on customer_key, 50 columns compared exactly (CPU-built artifact, CPU rebuild): identical | [provenance_complete] OK: 53 of 50 published columns stamped (hist=37, fut=10, customers=6) | [comparator_clean] OK: table_features selects 39 columns, all stamped hist|customers; all 10 fut columns are dropped by the comparator's own rule (10 dropped)",
+  "checks": {
+    "columns_match": {
+      "working": true,
+      "evidence": "published 51 cols vs rebuilt 51 cols (missing: [], extra: [])",
+      "seconds": 0.0
+    },
+    "values_match": {
+      "working": true,
+      "evidence": "6000 rows joined on customer_key, 50 columns compared exactly (CPU-built artifact, CPU rebuild): identical",
+      "seconds": 0.01
+    },
+    "provenance_complete": {
+      "working": true,
+      "evidence": "53 of 50 published columns stamped (hist=37, fut=10, customers=6)",
+      "seconds": 0.0
+    },
+    "comparator_clean": {
+      "working": true,
+      "evidence": "table_features selects 39 columns, all stamped hist|customers; all 10 fut columns are dropped by the comparator's own rule (10 dropped)",
+      "seconds": 0.0
+    }
+  },
+  "as_of": "2025-01-01",
+  "provenance": {
+    "n_events": {
+      "source": "hist",
+      "cut_at": "2025-01-01T00:00:00"
+    },
+    "n_orders": {
+      "source": "hist",
+      "cut_at": "2025-01-01T00:00:00"
+    },
+    "n_returns": {
+      "source": "hist",
+      "cut_at": "2025-01-01T00:00:00"
+    },
+    "n_support": {
+      "source": "hist",
+      "cut_at": "2025-01-01T00:00:00"
+    },
+    "n_sends": {
+      "source": "hist",
+      "cut_at": "2025-01-01T00:00:00"
+    },
+    "n_views": {
+      "source": "hist",
+      "cut_at": "2025-01-01T00:00:00"
+    },
+    "n_carts": {
+      "source": "hist",
+      "cut_at": "2025-01-01T00:00:00"
+    },
+    "n_searches": {
+      "source": "hist",
+      "cut_at": "2025-01-01T00:00:00"
+    },
+    "purchase_value": {
+      "source": "hist",
+      "cut_at": "2025-01-01T00:00:00"
+    },
+    "purchase_margin": {
+      "source": "hist",
+      "cut_at": "2025-01-01T00:00:00"
+    },
+    "return_value": {
+      "source": "hist",
+      "cut_at": "2025-01-01T00:00:00"
+    },
+    "value_30d": {
+      "source": "hist",
+      "cut_at": "2025-01-01T00:00:00"
+    },
+    "value_90d": {
+      "source": "hist",
+      "cut_at": "2025-01-01T00:00:00"
+    },
+    "n_products": {
+      "source": "hist",
+      "cut_at": "2025-01-01T00:00:00"
+    },
+    "n_channels": {
+      "source": "hist",
+      "cut_at": "2025-01-01T00:00:00"
+    },
+    "n_campaigns": {
+      "source": "hist",
+      "cut_at": "2025-01-01T00:00:00"
+    },
+    "discount_mean": {
+      "source": "hist",
+      "cut_at": "2025-01-01T00:00:00"
+    },
+    "qty_sum": {
+      "source": "hist",
+      "cut_at": "2025-01-01T00:00:00"
+    },
+    "last_event_ts": {
+      "source": "hist",
+      "cut_at": "2025-01-01T00:00:00"
+    },
+    "first_event_ts": {
+      "source": "hist",
+      "cut_at": "2025-01-01T00:00:00"
+    },
+    "last_purchase_ts": {
+      "source": "hist",
+      "cut_at": "2025-01-01T00:00:00"
+    },
+    "hist_cat_apparel": {
+      "source": "hist",
+      "cut_at": "2025-01-01T00:00:00"
+    },
+    "hist_cat_footwear": {
+      "source": "hist",
+      "cut_at": "2025-01-01T00:00:00"
+    },
+    "hist_cat_accessories": {
+      "source": "hist",
+      "cut_at": "2025-01-01T00:00:00"
+    },
+    "hist_cat_beauty": {
+      "source": "hist",
+      "cut_at": "2025-01-01T00:00:00"
+    },
+    "hist_cat_home": {
+      "source": "hist",
+      "cut_at": "2025-01-01T00:00:00"
+    },
+    "hist_cat_outdoor": {
+      "source": "hist",
+      "cut_at": "2025-01-01T00:00:00"
+    },
+    "hist_channel_web": {
+      "source": "hist",
+      "cut_at": "2025-01-01T00:00:00"
+    },
+    "hist_channel_app": {
+      "source": "hist",
+      "cut_at": "2025-01-01T00:00:00"
+    },
+    "hist_channel_store": {
+      "source": "hist",
+      "cut_at": "2025-01-01T00:00:00"
+    },
+    "recency_days": {
+      "source": "hist",
+      "cut_at": "2025-01-01T00:00:00"
+    },
+    "days_since_last_purchase": {
+      "source": "hist",
+      "cut_at": "2025-01-01T00:00:00"
+    },
+    "avg_order_value": {
+      "source": "hist",
+      "cut_at": "2025-01-01T00:00:00"
+    },
+    "return_rate": {
+      "source": "hist",
+      "cut_at": "2025-01-01T00:00:00"
+    },
+    "net_value": {
+      "source": "hist",
+      "cut_at": "2025-01-01T00:00:00"
+    },
+    "y_orders_30": {
+      "source": "fut",
+      "cut_at": "2025-01-31T00:00:00"
+    },
+    "y_value_30": {
+      "source": "fut",
+      "cut_at": "2025-01-31T00:00:00"
+    },
+    "y_margin_30": {
+      "source": "fut",
+      "cut_at": "2025-01-31T00:00:00"
+    },
+    "y_next_days_30": {
+      "source": "fut",
+      "cut_at": "2025-01-31T00:00:00"
+    },
+    "y_churn_30": {
+      "source": "fut",
+      "cut_at": "2025-01-31T00:00:00"
+    },
+    "y_orders_90": {
+      "source": "fut",
+      "cut_at": "2025-04-01T00:00:00"
+    },
+    "y_value_90": {
+      "source": "fut",
+      "cut_at": "2025-04-01T00:00:00"
+    },
+    "y_margin_90": {
+      "source": "fut",
+      "cut_at": "2025-04-01T00:00:00"
+    },
+    "y_next_days_90": {
+      "source": "fut",
+      "cut_at": "2025-04-01T00:00:00"
+    },
+    "y_churn_90": {
+      "source": "fut",
+      "cut_at": "2025-04-01T00:00:00"
+    },
+    "tenure_days": {
+      "source": "customers",
+      "cut_at": "2025-01-01T00:00:00"
+    },
+    "purchase_rate": {
+      "source": "hist",
+      "cut_at": "2025-01-01T00:00:00"
+    },
+    "category_entropy": {
+      "source": "hist",
+      "cut_at": "2025-01-01T00:00:00"
+    },
+    "signup_ts": {
+      "source": "customers",
+      "cut_at": null
+    },
+    "segment": {
+      "source": "customers",
+      "cut_at": null
+    },
+    "region": {
+      "source": "customers",
+      "cut_at": null
+    },
+    "acquisition_channel": {
+      "source": "customers",
+      "cut_at": null
+    },
+    "loyalty_tier": {
+      "source": "customers",
+      "cut_at": null
+    }
+  },
+  "comparator_columns": [
+    "segment",
+    "region",
+    "acquisition_channel",
+    "loyalty_tier",
+    "n_events",
+    "n_orders",
+    "n_returns",
+    "n_support",
+    "n_sends",
+    "n_views",
+    "n_carts",
+    "n_searches",
+    "purchase_value",
+    "purchase_margin",
+    "return_value",
+    "value_30d",
+    "value_90d",
+    "n_products",
+    "n_channels",
+    "n_campaigns",
+    "discount_mean",
+    "qty_sum",
+    "hist_cat_apparel",
+    "hist_cat_footwear",
+    "hist_cat_accessories",
+    "hist_cat_beauty",
+    "hist_cat_home",
+    "hist_cat_outdoor",
+    "hist_channel_web",
+    "hist_channel_app",
+    "hist_channel_store",
+    "recency_days",
+    "days_since_last_purchase",
+    "avg_order_value",
+    "return_rate",
+    "net_value",
+    "tenure_days",
+    "purchase_rate",
+    "category_entropy"
+  ],
+  "artifacts": {
+    "path_a_wide_table.parquet": {
+      "sha256": "9e8f8eda7d47c75c",
+      "bytes": 647733
+    },
+    "relational/events.parquet": {
+      "sha256": "6cb2156b1e49a60a",
+      "bytes": 54920360
+    },
+    "relational/customers.parquet": {
+      "sha256": "b506ee060645a5dc",
+      "bytes": 20615
+    }
+  },
+  "inputs": {
+    "demo": "/work/demo",
+    "products_dir": "/work/cfm_b20"
+  },
+  "generated_at": "2026-10-30T14:03:12+00:00"
+}
