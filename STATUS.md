@@ -194,6 +194,18 @@
 > (serving representation content, an offer-response objective) touch objectives/interface and
 > belong to the ruling queue, not to the loop.
 
+> **Protocol C measured (DEC-452, 2026-10-30): the dormant effect objective was activated, and the
+> top line moved 1/8 → 0/8.** With `--set effect_actions=offer` the state learns response
+> propensity — `return_proneness` −0.007 → **0.389** (PATH A 0.673), `h0` 0.806 → 0.842, churn
+> 0.551 → 0.571 — but `known_effect_uplift` slipped from −0.0042 to −0.0174, far enough that the
+> random control now beats it and the one green row (`rl :: brain+ledger`, policy value 0.0544 vs
+> 0.0308) goes red. `argmax_optimum` is bit-identical. The objective is not inert; the
+> direct-method head does not convert it into identified uplift. Kept as the measured protocol —
+> reverting to B to restore a green row would be selecting a protocol by its verdict. Next lever
+> for uplift is a pre-registered protocol D (paired/contrastive effect target), operator's call.
+> Artifact `0.11.0r103115-b20d256e3lr3e-04o549abbe1`; trained in the 20 GB container with Qwen
+> serving throughout (low-water 10.7 GB); S6 6/6 at commit `6298bb6`.
+
 **Repository state:** `main` now contains the former `primary-encoder` demo work. The duplicate
 report card, stale roadmap, duplicate receipt orchestrator, one-off OPE wrappers, and generator
 alias were removed; the superseded demo contract/audit moved to `docs/archive/`.
@@ -899,22 +911,32 @@ observability, prefer deletion, best tool, cost-aware, **speed-first (16)**.
   (no weekday/hour send seasonality, no churn, push = 32% of events) —
   ROADMAP P3; MoE/multi-entity (M3/M5) rejected.
 
-## Memory boundary (2026-10-29) — the project runs in a 24 GB container inside a 30 GB slice
+## Memory boundary (2026-10-30) — the whole project runs in a 20 GB container, GPU included
 
 The machine is shared with an LLM server (Qwen3-Flash) and a runaway job has taken the host down
-more than once. Two ceilings now apply, both kernel-enforced, and the tighter one is reported:
+more than once. One budget, three enforcement layers that together cover every allocation kind:
 
-- **Container:** `scripts/wonder_container.sh -- <cmd>` runs the job in
-  `deploy/Dockerfile.wonder` with `--memory=20g --memory-swap=20g`, `/work` mounted read-only.
-  Verified: a 25 GB allocation inside it dies at 137 and the host is untouched.
-- **Outer slice:** `wonderland.slice` at **20 GB**, the same number, so a job is bounded identically
-  whether it runs in the container or is launched directly. Every producer re-enters it by itself.
+- **Container:** `scripts/wonder_container.sh [--gpu] [--out HOST[:CTR]] -- <cmd>` runs the job in
+  `deploy/Dockerfile.wonder` with `--memory=20g --memory-swap=20g` (no swap escape), `/work`
+  read-only. Verified destructively: 25 × 1 GiB inside it dies at 137 after 19 GiB, host untouched.
+- **GPU, inside the same 20 GB:** on the GB10 CUDA allocations are NOT charged to the container
+  cgroup (measured with vLLM: 337 MiB reported while holding 97 GiB), so `gpu_budget` reads the
+  container's own `memory.max` and clamps the torch allocator so device + host usage + reserve
+  ≤ 20 GB (`source=derived+cgroup`). Verified: cap 19.16 GB, a 22 GiB request refused, 1 GiB
+  allocated, host free unchanged. An explicit `gpu_mem_limit_gb` cannot override the container.
+- **Floor guard:** `gpu_watchdog --container NAME` matches the `docker run` client (a container's
+  python is invisible to host /proc) and stops it at the 8 GB host floor — covering non-torch CUDA
+  allocations that bypass the allocator fraction. Compute is never throttled: no `--cpus`, no GPU
+  rate limit, only memory.
+- **Sequencing (DEC-451):** `--gpu` waits for `vllm-qwen` `/health` and a settled footprint before
+  launching. A GPU job started during vLLM's load once drove MemAvailable to 6 GiB and both guards
+  fired; the preflight makes that ordering impossible.
 - **The budget, on one 121.6 GB unified pool:** Qwen (0.70 reservation) 85.1 + project 20 + system
-  8 = **113.1 GB → 8.5 GB slack**. `scripts/wonder_container.sh --check` prints it; 24 GB would
-  leave 4.5 and 30 GB does not fit at all (DEC-443).
-- `safe_run --print-plan` reports the REAL ceiling: 20.0 GB on the host and in the container — the
-  number the kernel enforces, not the one a formula guessed.
-- `scripts/gpu_watchdog.py` stops any policed producer found outside the slice.
+  8 = **113.1 GB → 8.5 GB slack**. `scripts/wonder_container.sh --check` prints it.
+- **Outer slice:** `wonderland.slice` at **20 GB** for direct host launches; every producer
+  re-enters it by itself. `safe_run --print-plan` reports the real ceiling the kernel enforces.
+- **Measured coexistence:** protocol C trained with Qwen serving the whole time — host low-water
+  **10.7 GB** (floor 8), Qwen healthy throughout, 20 GB container cap never breached.
 
 ## (superseded) earlier note: one capped slice
 
