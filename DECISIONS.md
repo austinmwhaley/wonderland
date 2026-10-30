@@ -5120,3 +5120,56 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   full-history summaries in E certify "served-statistic sufficiency", not learned-shape).
   (3) Use the MLP/kNN as the shipping head — rejected: DEC-407 froze linear as the shipping
   head; the judge's claim IS that a dumb consumer can read the donor.
+
+## DEC-457 — [PRE-REGISTERED] protocol E: a self-supervised survival objective on the serving (faded-query) path
+
+- **Context (DEC-456 attribution).** The operator set the order: master SUPERVISED first
+  ("anything before everything"). The access-axis receipt says: `churn_day` is PRESENT in the
+  state but NONLINEARLY entangled (kNN 0.668 vs linear 0.582; serving-boundary re-whitening
+  tested and ruled out as the lever); `x0`/`return_proneness` are absent (rate loss); the
+  regime/price traits are unreadable by any permitted consumer (last in line). The frozen
+  shipping head is linear (DEC-407) and the judge's claim IS that a dumb linear consumer can
+  read the donor — so the duty is on the encoder: make what is present LINEARLY accessible.
+- **Decision — one variable: `survival=on` (default off) adds the `survive` objective.**
+  Mechanism (mirrors the existing `query` block exactly, no new constants): sample a position i,
+  a uniform time inside the gap to the next event, fade the state as serving does — then train a
+  linear head `head_survive = Linear(dim, K)` on the **survival curve** of the faded state: for
+  each horizon Δ_k, the binary target "does the next event arrive within Δ_k of the query time"
+  (multi-label BCE, masked, action-next positions excluded). The judgment-relevant quantity —
+  how long the customer has been silent and whether they will return — is forced to be a
+  per-horizon LINEAR readout of the exact path serving reads. The existing `recency` head fits
+  a velocity (windowed count), and `occur` a single horizon on the un-faded state; neither
+  grades the faded path across horizons — that gap is the mechanism's justification.
+- **Horizons are derived, not typed.** K and the Δ-grid are quantiles of the stream's own
+  inter-event gap distribution; the number of horizons is the gap range's order-of-magnitude
+  decades (clamped 3..9 as a documented sanity range). Receipted in `cfg._survival_horizons_s`,
+  stored in the checkpoint blob (`survive_dim`) and the registry.
+- **Frozen acceptance (checked before any verdict language):**
+  1. registry: `overrides` carries `survival=true` plus the protocol-D axes
+     (`batch=20, effect_actions=['offer'], effect_head='bilinear'`); `objectives` contains
+     `survive`; `loss_scales` has `survive` (40 tasks);
+  2. checkpoint: `survive_dim == len(_survival_horizons_s)` with K in [3, 9];
+     `head_survive.weight` present with that shape; horizons all > 0, strictly increasing,
+     receipted in the registry;
+  3. losses finite; governor stops on tolerance; `[step-time]` receipt; no new non-finite;
+  4. tag ≠ protocol D (objectives hash moved) and stable across constructions.
+- **Named measurement axes (what E was built to move):** PRIMARY — `churn_day` on brain alone
+  (D: 0.5824; acceptance of the AXIS: ≥ 0.66, i.e. the linear head reaches where kNN already
+  reads) and brain+ledger (D: 0.5398 — must rise at least as much); SECONDARY — the access-axis
+  receipt's kNN-minus-linear margin on churn_day must shrink toward 0 (entanglement removed).
+- **Regression guards (a move elsewhere is a real cost, reported):** h0, x0, return_proneness,
+  price_sensitivity on both supervised columns within ±0.02 of protocol D; the rl `policy_value`
+  row and S5 not made worse; no leg value non-finite. If churn moves < +0.03 the objective is
+  NOT adopted (recorded, flag reverted) — a knob that does not move its named axis does not
+  get to stay in the protocol.
+- **Not changed:** gates, thresholds, criteria, controls, comparator, probe definitions, the
+  linear shipping head, E's content (survive trains a readout; it adds nothing to the served
+  table — this is objective pressure, not an E-content change).
+- **Alternatives considered.** (1) Serve the raw accumulator for x0 — rejected twice (DEC-456:
+  circular-evaluation rule #4). (2) kNN as shipping head — rejected (DEC-407 frozen). (3) Raise
+  `recency`'s loss scale — rejected: `recency` targets a windowed count (velocity), not the
+  faded-path survival curve; more pressure on the wrong target. (4) Add survival targets to the
+  `query` loss without its own head — rejected: couples two targets on one head, blurring which
+  mechanism moved the axis (the loop needs one axis per protocol).
+- **Cost.** One GPU train (~16–20 min alongside Qwen, in the 20 GB container) + chain (~17 min)
+  + `measure_access_axis` re-run (~1 min). Artifacts: new dir `cfm_e_surv` (never pooled).
