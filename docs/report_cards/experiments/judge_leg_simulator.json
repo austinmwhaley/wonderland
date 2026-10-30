@@ -2,8 +2,8 @@
   "_meta": {
     "behavior_hash": "33c12077e1b70129",
     "command": "measure_judge_law.py --products /work/cfm_b20 --demo /work/demo --legs supervised,unsupervised,rl,simulator --out-dir /repo/docs/report_cards/experiments",
-    "generated_at": "2026-10-30T02:23:45+00:00",
-    "git_commit": "4d317451ec86da9a1a5129363764021be422c343",
+    "generated_at": "2026-10-30T02:49:14+00:00",
+    "git_commit": "85e865172ac7f72ef8736e399792b80a50eee7e8",
     "producer": "measure_judge_law.py"
   },
   "arms": {
