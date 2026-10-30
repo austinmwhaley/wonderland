@@ -134,6 +134,42 @@ fi
 
 docker image inspect "$image" >/dev/null 2>&1 || build
 
+# ---- GPU co-tenant preflight (DEC-451) ------------------------------------------------------
+# Measured 2026-10-30: a GPU job started while vLLM was still LOADING derived its budget from
+# the transient free memory (40 GB), vLLM then claimed that memory back, MemAvailable fell to
+# 6 GiB, this project's guard stopped the trainer -- and vLLM's own load guard (6 GiB floor)
+# stopped the LLM. The host was fine, but the sequencing was wrong. A serving model's footprint
+# is stable; a loading model's is not. So: if vLLM is up, wait until it answers /health, then
+# require the load to have settled before starting anything that allocates GPU memory.
+if [[ $gpu -eq 1 ]] && docker ps --format '{{.Names}}' 2>/dev/null | grep -qx "vllm-qwen"; then
+  wait_s="${WONDER_WAIT_S:-300}"
+  echo "waiting for vllm-qwen to finish loading (max ${wait_s}s)..." >&2
+  ready=0
+  for _ in $(seq 1 "$wait_s"); do
+    if curl -sf -o /dev/null --max-time 2 http://127.0.0.1/health 2>/dev/null; then
+      ready=1
+      break
+    fi
+    sleep 1
+  done
+  if [[ $ready -ne 1 ]]; then
+    echo "REFUSING to start: vllm-qwen did not become healthy within ${wait_s}s; a GPU job" >&2
+    echo "started during its load can push the host under the LLM's own floor (DEC-451)." >&2
+    echo "Check: docker logs --tail 50 vllm-qwen" >&2
+    exit 2
+  fi
+  # health is the model answering; settle = its footprint is no longer moving.
+  prev="$(awk '/MemAvailable/{printf "%d", $2}' /proc/meminfo)"
+  sleep 5
+  cur="$(awk '/MemAvailable/{printf "%d", $2}' /proc/meminfo)"
+  drift=$((prev > cur ? prev - cur : cur - prev))
+  if [[ $drift -gt 1048576 ]]; then  # >1 GiB in 5 s: still growing, wait one more window
+    sleep 5
+    cur="$(awk '/MemAvailable/{printf "%d", $2}' /proc/meminfo)"
+  fi
+  echo "vllm-qwen serving; host free $((cur / 1048576)) GB" >&2
+fi
+
 guard_pid=""
 cleanup() {
   if [[ -n "$guard_pid" ]]; then
@@ -148,7 +184,7 @@ if [[ $gpu -eq 1 ]]; then
   guard_log="/tmp/opencode/wonder_container_${name}.guard.log"
   mkdir -p /tmp/opencode
   "$repo/.venv/bin/python" "$repo/scripts/gpu_watchdog.py" \
-    --floor-gb "$floor_gb" --interval 5 --outside-slice warn \
+    --floor-gb "$floor_gb" --interval 2 --outside-slice ignore \
     --container "$name" --pidfile "$pidfile" >"$guard_log" 2>&1 &
   guard_pid=$!
   sleep 1

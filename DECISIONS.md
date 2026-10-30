@@ -4862,3 +4862,36 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   second environment is a second thing to drift.
 - **Cost.** One behavior-hash bump (`looking_glass/gpu_budget.py`), so the full chain re-runs —
   the freshness law's normal price, and the chain itself is now a production run of the wrapper.
+
+## DEC-451 — [INCIDENT + FIX] a GPU job must not start while the co-tenant is still LOADING
+
+- **What happened (measured 2026-10-30, first protocol-C attempt).** Training was launched through
+  the new `--gpu` container while `vllm-qwen` had just been restarted and was still loading. At
+  launch `MemAvailable` was 40.4 GB, so the derived device budget was 19 GB (clamped by the
+  container). vLLM's load then claimed that memory back: availability fell 40.4 → 21.6 → 18.1 GB
+  over six minutes, and at 10:15:44 it hit **6.0 GB**. The project's guard stopped the trainer at
+  the floor (correct), and **vLLM's own load guard (6 GiB)** stopped the LLM (exit 137). The host
+  survived; no protocol-C artifacts were produced; `cfm_c_eff` was emptied before the retry.
+- **Diagnosis.** Not a cap-arithmetic defect: the clamp used the memory that was actually free at
+  the time, and the floor guard did exactly its job. The defect is **sequencing** — a *loading*
+  model's footprint is not stable, so any budget derived during the load is a budget the model
+  will take back. The serving state is stable; the loading state is a transient that needs the
+  whole pool.
+- **Fix (in the entry point, where the information is).** `wonder_container.sh --gpu` now refuses
+  to start while vLLM is up and not yet serving: it polls `http://127.0.0.1/health` for up to
+  `WONDER_WAIT_S` (default 300 s), then requires the footprint to be settled (>1 GiB drift in 5 s
+  buys another window). If health never arrives it exits 2 and names the check — never starts a
+  job that can starve the loader. The guard also samples every **2 s** (not 5) and runs with
+  `--outside-slice ignore` for container jobs: a container is outside the slice by design, and a
+  containerized producer matched by name is a floor target, not a stray.
+- **Alternatives considered.** (1) *Stop Qwen during training* — rejected by the operator's
+  policy and by this session's earlier explicit correction: Qwen keeps its reservation. (2) *Lower
+  the device cap so far that the race cannot matter* — rejected: the race is about the model's
+  load transient (tens of GB), not the project's few GB; no project-side cap can absorb it.
+  (3) *Retry on failure* — rejected: a retry loop around a memory race is how a machine gets
+  crashed twice; the precondition is the fix.
+- **Residual limit, stated plainly.** The driver does not charge device allocations to the
+  container cgroup, so the cgroup (20 GB) and the allocator cap (derived) bound different
+  quantities; their SUM is enforced by the floor guard, not by a single kernel counter. With Qwen
+  serving, the derived budget is ~15 GB (host-derived), which keeps the total under the 20 GB
+  budget with the 8 GB floor intact.
