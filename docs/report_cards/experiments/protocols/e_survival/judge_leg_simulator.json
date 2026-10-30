@@ -1,0 +1,112 @@
+{
+  "_meta": {
+    "behavior_hash": "b1bb86736e215954",
+    "command": "measure_judge_law.py --products /work/cfm_e_surv --demo /work/demo --legs supervised,unsupervised,rl,simulator --out-dir /repo/docs/report_cards/experiments",
+    "generated_at": "2026-10-30T22:50:02+00:00",
+    "git_commit": "858b63d8d77bddb399ad4864e3d9af224eeb889a",
+    "producer": "measure_judge_law.py"
+  },
+  "arms": {
+    "brain": "state_embeddings donor + level one-hot -> linear head on the identified curve",
+    "brain_ledger": "brain + measure view (ledger), same head and cells",
+    "pathA": "PATH A wide table + level one-hot -> the DEC-428 GBM incumbent"
+  },
+  "checks": {
+    "simulator": {
+      "evidence": "2 live task(s) (+0 degenerate) on n=724 B-rows scored against 1776 A-rows; comparator PATH A (GBM incumbent); table 48 cols / 2500 customers; brain+ledger 2 task(s)",
+      "working": true
+    }
+  },
+  "columns": {
+    "brain": {
+      "tasks": [
+        {
+          "brain": 0.251357,
+          "ci_hi": -0.000408,
+          "ci_lo": -0.001293,
+          "comparator": "PATH A (GBM incumbent)",
+          "controls_unreadable": [],
+          "destroyed": -0.756826,
+          "metric": "R2 on the identified (customer x offer level) purchase rate (4 levels: [0, 1, 2, 3])",
+          "n": 1132,
+          "name": "dose_response_curve",
+          "pathA": 0.318547,
+          "random": -0.710849
+        },
+        {
+          "brain": 0.269807,
+          "ci_hi": -0.141274,
+          "ci_lo": -0.250535,
+          "comparator": "PATH A (GBM incumbent)",
+          "controls_unreadable": [],
+          "destroyed": 0.269807,
+          "metric": "share of customers whose declared offer optimum is the argmax of the recovered response surface (ties -> lowest level)",
+          "n": 467,
+          "name": "argmax_optimum",
+          "pathA": 0.468951,
+          "random": 0.269807
+        }
+      ]
+    },
+    "brain_ledger": {
+      "tasks": [
+        {
+          "brain": 0.307769,
+          "ci_hi": 0.000198,
+          "ci_lo": -0.000438,
+          "comparator": "PATH A (GBM incumbent)",
+          "controls_unreadable": [],
+          "destroyed": -0.06631,
+          "metric": "R2 on the identified (customer x offer level) purchase rate (4 levels: [0, 1, 2, 3])",
+          "n": 1132,
+          "name": "dose_response_curve",
+          "pathA": 0.318547,
+          "random": -0.053781
+        },
+        {
+          "brain": 0.269807,
+          "ci_hi": -0.141274,
+          "ci_lo": -0.250535,
+          "comparator": "PATH A (GBM incumbent)",
+          "controls_unreadable": [],
+          "destroyed": 0.269807,
+          "metric": "share of customers whose declared offer optimum is the argmax of the recovered response surface (ties -> lowest level)",
+          "n": 467,
+          "name": "argmax_optimum",
+          "pathA": 0.468951,
+          "random": 0.269807
+        }
+      ]
+    }
+  },
+  "diagnostics": {},
+  "evidence": "[simulator] OK: 2 live task(s) (+0 degenerate) on n=724 B-rows scored against 1776 A-rows; comparator PATH A (GBM incumbent); table 48 cols / 2500 customers; brain+ledger 2 task(s)",
+  "excluded": [],
+  "identified": {
+    "customers": 4093,
+    "levels": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "rule": "an offer level is identified for a customer at >= 10 arm-days"
+  },
+  "path_a": {
+    "columns": 48,
+    "n_present": 2500,
+    "n_requested": 2500,
+    "source": "/work/demo/path_a/path_a_wide_table.parquet"
+  },
+  "products": {
+    "path": "/work/cfm_e_surv",
+    "registry_sha256": "256dc42eacd9c6d2",
+    "tag": "0.11.0r103115-b20d256e3lr3e-04o654d9bba"
+  },
+  "splits": {
+    "n_fit_A": 1776,
+    "n_score_B": 724,
+    "source": "encoder_samples"
+  },
+  "working": true
+}

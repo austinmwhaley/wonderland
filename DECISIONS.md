@@ -5173,3 +5173,87 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   mechanism moved the axis (the loop needs one axis per protocol).
 - **Cost.** One GPU train (~16–20 min alongside Qwen, in the 20 GB container) + chain (~17 min)
   + `measure_access_axis` re-run (~1 min). Artifacts: new dir `cfm_e_surv` (never pooled).
+
+## DEC-458 — [MEASURED] protocol E (survival objective): named axis unmoved — NOT adopted; card restored to protocol D
+
+- **What ran.** Protocol E = D + `survival=true` (DEC-457 pre-registered). Artifact
+  `cfm_e_surv`, tag `0.11.0r103115-b20d256e3lr3e-04o654d9bba` (≠ D, as required), K=9 octaves
+  0.02 d..4.96 d receipted; frozen acceptance 9/9 PASS before any verdict reading; chain S6 6/6.
+  Receipts archived: `docs/report_cards/experiments/protocols/e_survival/`.
+- **Named axis: FAILED.** brain-alone `churn_day` linear 0.5824 → **0.5897** (Δ +0.0073; the
+  frozen rule: adopt requires ≥ +0.03, the axis acceptance ≥ 0.66). The secondary axis — shrink
+  the kNN−linear margin — moved in form only and in the WRONG direction of quality: kNN fell
+  0.6678 → 0.6018 and MLP 0.114 → −0.095, so the margin closed (0.085 → 0.012) by the nonlinear
+  consumers collapsing toward the linear one, not by the linear head rising. Both now sit BELOW
+  the table's own linear (0.6554). Mechanism reading: fitting horizon-logit heads on the faded
+  path smoothed the state's neighborhood geometry without linearizing the time structure —
+  the entanglement is in the trunk's geometry, not in which readouts are trained. Head-side
+  pressure does not reach it.
+- **Regression guards: all PASS** (x0 0.7909→0.7958, h0 0.8390→0.8355, return 0.2947→0.3025,
+  price −0.0200→−0.0257; brain+ledger column likewise; every guard within ±0.02).
+- **Top-line, reported honestly and NOT used to adopt:** the card shows rl::brain flipping
+  red→green (2/8 legs). That green is fragile and not mechanistic: `policy_value` is unchanged
+  (0.0558 vs D's 0.0557) and `known_effect_uplift`'s point estimate actually WORSENED
+  (−0.0130 → −0.0147); the flip is its paired bootstrap CI clearing zero by +0.0009 at the
+  lower edge. A single-seed threshold-ride is not an adoption reason — DEC-452 kept C because
+  it moved its NAMED axis; E moved nothing it was registered to move. If the operator wants the
+  rl row pursued, it needs its own pre-registration with replication (new seeds), not this run.
+- **Disposition (per DEC-457's frozen rule).** NOT adopted: `survival` stays default-off
+  (A–E-protocols byte-reproducible as before), the recorded protocol stays D, the card is
+  restored to D's receipts (same commit — archived E receipts document the measurement).
+  The mechanism stays in the codebase off-by-default as recorded science, like the effect-head
+  ladder before it.
+- **Next (DEC-456's ordered attack, step 2).** x0/return_proneness remain ABSENT (the ledger
+  carries them: 0.889 — rate is what the contractive trunk loses). E's lesson redirects the
+  pressure from the faded path to the TRUNK itself: protocol F pre-registers a future-rate
+  objective on the non-faded state.
+
+## DEC-459 — [PRE-REGISTERED] protocol F: a future-rate objective on the non-faded trunk
+
+- **Context (DEC-456 attribution, DEC-458 lesson).** `x0` (latent base rate) and
+  `return_proneness` are ABSENT from the learned shape: no permitted consumer on brain gets
+  within 0.05 of the table (best 0.791 / 0.295 vs 0.890 / 0.687). The ledger-only arm reads
+  x0 at 0.889 — the ledger's counts are sufficient for the rate, so the CONTRACTIVE TRUNK is
+  what drops it. DEC-458's negative result pins the mechanism: training readout heads on the
+  faded serving path does not reorganize the trunk (it smoothed kNN geometry without lifting
+  linear readability). The pressure must sit on the shared, non-faded trunk state every head
+  already reads.
+- **Decision — one variable: `rate=on` (default off) adds the `rate` objective.** From the
+  NON-faded trunk state at position i, a linear head `head_rate = Linear(dim, 2 + n_et)`
+  predicts, over a future window W: (a) log1p of the FUTURE EVENT COUNT, (b) log1p of the
+  FUTURE PRIMARY-VALUE SUM, (c) log1p of FUTURE PER-EVENT-TYPE COUNTS (n_et columns — the
+  return-type column is return_proneness's proxy; x0's is the total count). Standardized MSE
+  per column (the loop's scale-free rule), masked to valid positions. W is derived, not typed:
+  `W = clamp(10 × median gap, min 1 d)` — exactly `recency`'s existing time anchor MIRRORED
+  into the future (recency predicts the PAST count over the same window; the trunk carries
+  velocity backward but not the rate forward — that asymmetry is the mechanism's justification,
+  and the demo's x0 being a generative RATE makes future-count the unbiased training proxy).
+- **Why not the alternatives.** (1) Up-weight `recency`/`occur` — rejected: they target the
+  past window and a single median-gap binary; neither pressures per-type future level.
+  (2) Serve the raw accumulator in E — rejected twice (circular-evaluation rule #4); this is
+  training pressure toward LEARNED shape, and the judged consumer still reads only E.
+  (3) Reuse E's survive head on the non-faded path — rejected: E's own receipt shows head-side
+  faded-path fitting is not the lever; and one axis per protocol keeps attribution clean.
+  (4) Poisson NLL on raw counts — rejected for consistency: every regression target in this
+  loop is standardized (scale-free rule); log1p+MSE matches `recency`.
+- **Frozen acceptance (checked before any verdict language):**
+  1. registry: `overrides` = protocol-D axes + `rate=true`; `objectives` contains `rate`;
+     `loss_scales` has `rate` (40 tasks: 39 base + rate);
+  2. blob: `rate_dim == 2 + n_et`; checkpoint `head_rate.weight` has shape (2+n_et, dim);
+     registry receipts `rate.window_s` (the derived W, > 0);
+  3. losses finite; governor stops on tolerance; `[step-time]` receipt; no new non-finite;
+  4. tag ≠ D and ≠ E; stable across constructions.
+- **Named measurement axes.** PRIMARY — brain-alone `x0` linear: D 0.7909, acceptance ≥ 0.84
+  (≥ +0.05 = more than half the distance to the table's 0.8904). SECONDARY — brain-alone
+  `return_proneness`: D 0.2947, acceptance ≥ 0.35.
+- **Adoption rule (frozen).** Adopt iff x0 Δ ≥ +0.03 vs D; else `rate` stays off, recorded,
+  protocol D remains the recorded artifact (DEC-457's discipline: a knob that does not move
+  its named axis does not stay in the protocol).
+- **Regression guards (a move elsewhere is a real cost, reported).** DEC-458's scar: kNN on
+  churn_day must NOT collapse — brain churn kNN ≥ 0.60 and linear within ±0.02 of D (0.5824);
+  h0 and price_sensitivity within ±0.02 on the brain column; rl `policy_value` ≥ 0.05 and S5
+  not made worse; ledger arm untouched; no leg value non-finite.
+- **Not changed:** gates, thresholds, criteria, controls, comparator, probe definitions, the
+  linear shipping head, E's content (an objective adds no served column).
+- **Cost.** One GPU train (~20 min alongside Qwen, 20 GB container) + chain (~17 min) +
+  access-axis re-run (~1 min). Artifact dir: `cfm_f_rate` (never pooled).

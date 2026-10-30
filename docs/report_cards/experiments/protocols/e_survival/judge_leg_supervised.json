@@ -1,0 +1,364 @@
+{
+  "_meta": {
+    "behavior_hash": "b1bb86736e215954",
+    "command": "measure_judge_law.py --products /work/cfm_e_surv --demo /work/demo --legs supervised,unsupervised,rl,simulator --out-dir /repo/docs/report_cards/experiments",
+    "generated_at": "2026-10-30T22:49:39+00:00",
+    "git_commit": "858b63d8d77bddb399ad4864e3d9af224eeb889a",
+    "producer": "measure_judge_law.py"
+  },
+  "arms": {
+    "brain": "state_embeddings donor + linear ridge head (DEC-407: linear is the shipping head)",
+    "brain_ledger": "brain (state_embeddings) + measure view, same linear head and rows"
+  },
+  "checks": {
+    "supervised": {
+      "evidence": "7 live task(s) (+0 degenerate) on n=724 B-rows scored against 1776 A-rows; comparator PATH A (GBM incumbent); table 48 cols / 2500 customers; brain+ledger 7 task(s); WARNING: negative control uninformative on 4/7 trait(s) (x0, h0, return_proneness, churn_day) \u2014 R2 < -1 is a conditioning artifact of the wide design, so 'control below brain' proves nothing there; ledger-only diagnostic: beats the table on 2/7 trait(s), best R2=0.984757 on 'h0' vs the table's -0.121274  \u2014 SPINE \u00a75's 'the ledger is what the table already is' does NOT hold here, so the baseline or the corollary needs an operator ruling",
+      "working": false
+    }
+  },
+  "columns": {
+    "brain": {
+      "tasks": [
+        {
+          "brain": 0.795751,
+          "ci_hi": -0.064386,
+          "ci_lo": -0.106689,
+          "comparator": "PATH A (GBM incumbent)",
+          "controls_unreadable": [
+            "random",
+            "destroyed"
+          ],
+          "destroyed": -82.804273,
+          "metric": "held-out R2 on split B",
+          "n": 724,
+          "name": "x0",
+          "pathA": 0.905649,
+          "random": -71.329379
+        },
+        {
+          "brain": 0.835483,
+          "ci_hi": 48.587565,
+          "ci_lo": 41.543617,
+          "comparator": "PATH A (GBM incumbent)",
+          "controls_unreadable": [
+            "random",
+            "destroyed"
+          ],
+          "destroyed": -347.189144,
+          "metric": "held-out R2 on split B",
+          "n": 724,
+          "name": "h0",
+          "pathA": -0.121274,
+          "random": -355.23492
+        },
+        {
+          "brain": -0.025742,
+          "ci_hi": 0.006401,
+          "ci_lo": 0.002511,
+          "comparator": "PATH A (GBM incumbent)",
+          "controls_unreadable": [],
+          "destroyed": -0.025531,
+          "metric": "held-out R2 on split B",
+          "n": 724,
+          "name": "price_sensitivity",
+          "pathA": -0.123715,
+          "random": -0.022557
+        },
+        {
+          "brain": 0.302512,
+          "ci_hi": -0.005353,
+          "ci_lo": -0.008116,
+          "comparator": "PATH A (GBM incumbent)",
+          "controls_unreadable": [
+            "random",
+            "destroyed"
+          ],
+          "destroyed": -1963.19008,
+          "metric": "held-out R2 on split B",
+          "n": 724,
+          "name": "return_proneness",
+          "pathA": 0.673431,
+          "random": -1886.091958
+        },
+        {
+          "brain": 0.589687,
+          "ci_hi": -380.030927,
+          "ci_lo": -832.097717,
+          "comparator": "PATH A (GBM incumbent)",
+          "controls_unreadable": [
+            "random",
+            "destroyed"
+          ],
+          "destroyed": -2.375406,
+          "metric": "held-out R2 on split B",
+          "n": 724,
+          "name": "churn_day",
+          "pathA": 0.720931,
+          "random": -2.517211
+        },
+        {
+          "brain": -0.000484,
+          "ci_hi": -0.063489,
+          "ci_lo": -0.162676,
+          "comparator": "PATH A (GBM incumbent)",
+          "controls_unreadable": [],
+          "destroyed": -0.042198,
+          "metric": "held-out R2 on split B",
+          "n": 724,
+          "name": "regime_switches",
+          "pathA": 0.127759,
+          "random": -0.030817
+        },
+        {
+          "brain": -0.00124,
+          "ci_hi": 574.641806,
+          "ci_lo": -3015.296677,
+          "comparator": "PATH A (GBM incumbent)",
+          "controls_unreadable": [],
+          "destroyed": -0.045801,
+          "metric": "held-out R2 on split B",
+          "n": 724,
+          "name": "final_regime_days",
+          "pathA": 0.033563,
+          "random": -0.056193
+        }
+      ]
+    },
+    "brain_ledger": {
+      "tasks": [
+        {
+          "brain": 0.883398,
+          "ci_hi": -0.010474,
+          "ci_lo": -0.023731,
+          "comparator": "PATH A (GBM incumbent)",
+          "controls_unreadable": [],
+          "destroyed": -0.056173,
+          "metric": "held-out R2 on split B",
+          "n": 724,
+          "name": "x0",
+          "pathA": 0.905649,
+          "random": -0.113207
+        },
+        {
+          "brain": 0.984916,
+          "ci_hi": 55.7726,
+          "ci_lo": 48.455242,
+          "comparator": "PATH A (GBM incumbent)",
+          "controls_unreadable": [
+            "random",
+            "destroyed"
+          ],
+          "destroyed": -1.333093,
+          "metric": "held-out R2 on split B",
+          "n": 724,
+          "name": "h0",
+          "pathA": -0.121274,
+          "random": -1.475252
+        },
+        {
+          "brain": -0.0532,
+          "ci_hi": 0.005425,
+          "ci_lo": 0.000997,
+          "comparator": "PATH A (GBM incumbent)",
+          "controls_unreadable": [],
+          "destroyed": -0.076092,
+          "metric": "held-out R2 on split B",
+          "n": 724,
+          "name": "price_sensitivity",
+          "pathA": -0.123715,
+          "random": -0.111443
+        },
+        {
+          "brain": 0.604874,
+          "ci_hi": -0.000595,
+          "ci_lo": -0.00193,
+          "comparator": "PATH A (GBM incumbent)",
+          "controls_unreadable": [],
+          "destroyed": -0.164315,
+          "metric": "held-out R2 on split B",
+          "n": 724,
+          "name": "return_proneness",
+          "pathA": 0.673431,
+          "random": -0.121017
+        },
+        {
+          "brain": 0.546059,
+          "ci_hi": -594.601937,
+          "ci_lo": -1038.292825,
+          "comparator": "PATH A (GBM incumbent)",
+          "controls_unreadable": [
+            "random",
+            "destroyed"
+          ],
+          "destroyed": -1.693616,
+          "metric": "held-out R2 on split B",
+          "n": 724,
+          "name": "churn_day",
+          "pathA": 0.720931,
+          "random": -1.731592
+        },
+        {
+          "brain": 0.014168,
+          "ci_hi": -0.052499,
+          "ci_lo": -0.148008,
+          "comparator": "PATH A (GBM incumbent)",
+          "controls_unreadable": [],
+          "destroyed": -0.104161,
+          "metric": "held-out R2 on split B",
+          "n": 724,
+          "name": "regime_switches",
+          "pathA": 0.127759,
+          "random": -0.150837
+        },
+        {
+          "brain": -0.016791,
+          "ci_hi": 162.307499,
+          "ci_lo": -3772.845853,
+          "comparator": "PATH A (GBM incumbent)",
+          "controls_unreadable": [],
+          "destroyed": -0.102516,
+          "metric": "held-out R2 on split B",
+          "n": 724,
+          "name": "final_regime_days",
+          "pathA": 0.033563,
+          "random": -0.108364
+        }
+      ]
+    }
+  },
+  "diagnostics": {
+    "ledger_only": {
+      "purpose": "tests SPINE \u00a75's premise that the ledger is what PATH A's table already is",
+      "tasks": [
+        {
+          "brain": 0.889294,
+          "ci_hi": -0.006176,
+          "ci_lo": -0.018814,
+          "comparator": "PATH A (GBM incumbent)",
+          "controls_unreadable": [
+            "destroyed"
+          ],
+          "destroyed": -1.045121,
+          "metric": "held-out R2 on split B",
+          "n": 724,
+          "name": "x0",
+          "pathA": 0.905649,
+          "random": -0.868209
+        },
+        {
+          "brain": 0.984757,
+          "ci_hi": 55.786354,
+          "ci_lo": 48.435768,
+          "comparator": "PATH A (GBM incumbent)",
+          "controls_unreadable": [
+            "random",
+            "destroyed"
+          ],
+          "destroyed": -1.462407,
+          "metric": "held-out R2 on split B",
+          "n": 724,
+          "name": "h0",
+          "pathA": -0.121274,
+          "random": -2.000892
+        },
+        {
+          "brain": -0.037307,
+          "ci_hi": 0.006022,
+          "ci_lo": 0.001852,
+          "comparator": "PATH A (GBM incumbent)",
+          "controls_unreadable": [],
+          "destroyed": -0.050673,
+          "metric": "held-out R2 on split B",
+          "n": 724,
+          "name": "price_sensitivity",
+          "pathA": -0.123715,
+          "random": -0.145752
+        },
+        {
+          "brain": 0.608502,
+          "ci_hi": -0.000528,
+          "ci_lo": -0.001851,
+          "comparator": "PATH A (GBM incumbent)",
+          "controls_unreadable": [],
+          "destroyed": -0.111952,
+          "metric": "held-out R2 on split B",
+          "n": 724,
+          "name": "return_proneness",
+          "pathA": 0.673431,
+          "random": -0.083686
+        },
+        {
+          "brain": 0.055575,
+          "ci_hi": -2502.740867,
+          "ci_lo": -3674.383314,
+          "comparator": "PATH A (GBM incumbent)",
+          "controls_unreadable": [
+            "random",
+            "destroyed"
+          ],
+          "destroyed": -17.179745,
+          "metric": "held-out R2 on split B",
+          "n": 724,
+          "name": "churn_day",
+          "pathA": 0.720931,
+          "random": -15.82879
+        },
+        {
+          "brain": 0.000792,
+          "ci_hi": -0.060906,
+          "ci_lo": -0.162869,
+          "comparator": "PATH A (GBM incumbent)",
+          "controls_unreadable": [],
+          "destroyed": -0.048839,
+          "metric": "held-out R2 on split B",
+          "n": 724,
+          "name": "regime_switches",
+          "pathA": 0.127759,
+          "random": -0.159889
+        },
+        {
+          "brain": -0.023064,
+          "ci_hi": -83.045005,
+          "ci_lo": -3945.872583,
+          "comparator": "PATH A (GBM incumbent)",
+          "controls_unreadable": [],
+          "destroyed": -0.050978,
+          "metric": "held-out R2 on split B",
+          "n": 724,
+          "name": "final_regime_days",
+          "pathA": 0.033563,
+          "random": -0.099625
+        }
+      ]
+    }
+  },
+  "evidence": "[supervised] FAILED: 7 live task(s) (+0 degenerate) on n=724 B-rows scored against 1776 A-rows; comparator PATH A (GBM incumbent); table 48 cols / 2500 customers; brain+ledger 7 task(s); WARNING: negative control uninformative on 4/7 trait(s) (x0, h0, return_proneness, churn_day) \u2014 R2 < -1 is a conditioning artifact of the wide design, so 'control below brain' proves nothing there; ledger-only diagnostic: beats the table on 2/7 trait(s), best R2=0.984757 on 'h0' vs the table's -0.121274  \u2014 SPINE \u00a75's 'the ledger is what the table already is' does NOT hold here, so the baseline or the corollary needs an operator ruling",
+  "excluded": [],
+  "incumbent": {
+    "device": "cpu",
+    "learning_rate": 0.06,
+    "library": "xgboost",
+    "max_depth": 5,
+    "model": "XGBRegressor",
+    "n_estimators": 200,
+    "random_state": 65537,
+    "tree_method": "hist"
+  },
+  "path_a": {
+    "columns": 48,
+    "n_present": 2500,
+    "n_requested": 2500,
+    "source": "/work/demo/path_a/path_a_wide_table.parquet"
+  },
+  "products": {
+    "path": "/work/cfm_e_surv",
+    "registry_sha256": "256dc42eacd9c6d2",
+    "tag": "0.11.0r103115-b20d256e3lr3e-04o654d9bba"
+  },
+  "splits": {
+    "n_fit_A": 1776,
+    "n_score_B": 724,
+    "source": "encoder_samples (the frozen population split)"
+  },
+  "working": false
+}

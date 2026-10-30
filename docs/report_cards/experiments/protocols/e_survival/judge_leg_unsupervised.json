@@ -1,0 +1,132 @@
+{
+  "_meta": {
+    "behavior_hash": "b1bb86736e215954",
+    "command": "measure_judge_law.py --products /work/cfm_e_surv --demo /work/demo --legs supervised,unsupervised,rl,simulator --out-dir /repo/docs/report_cards/experiments",
+    "generated_at": "2026-10-30T22:49:53+00:00",
+    "git_commit": "858b63d8d77bddb399ad4864e3d9af224eeb889a",
+    "producer": "measure_judge_law.py"
+  },
+  "arms": {
+    "brain": "state_embeddings donor; pairwise-distance and k-means geometry",
+    "brain_ledger": "brain + measure view (ledger), same distance/clustering geometry",
+    "pathA": "PATH A wide table, z-scored on split A only, same geometry"
+  },
+  "checks": {
+    "unsupervised": {
+      "evidence": "3 live task(s) (+0 degenerate) on n=724 B-rows scored against 1776 A-rows; comparator PATH A (GBM incumbent); table 48 cols / 2500 customers; brain+ledger 3 task(s)",
+      "working": false
+    }
+  },
+  "columns": {
+    "brain": {
+      "tasks": [
+        {
+          "brain": 3.6e-05,
+          "ci_hi": -0.000166,
+          "ci_lo": -0.000655,
+          "comparator": "PATH A (GBM incumbent)",
+          "controls_unreadable": [],
+          "destroyed": 0.000364,
+          "metric": "squared correlation between the arm's pairwise distances and the lab's true distances (2 fields: d0, segment)",
+          "n": 261726,
+          "n_bootstrap_pairs": 100000,
+          "name": "persona_geometry",
+          "pathA": 0.000345,
+          "random": 0.00093
+        },
+        {
+          "brain": 0.00049,
+          "ci_hi": -0.042607,
+          "ci_lo": -0.047573,
+          "comparator": "PATH A (GBM incumbent)",
+          "controls_unreadable": [],
+          "destroyed": 1.2e-05,
+          "metric": "squared correlation between the arm's pairwise distances and the lab's true distances (5 fields: x0, h0, price_sensitivity, return_proneness, churn_day)",
+          "n": 261726,
+          "n_bootstrap_pairs": 100000,
+          "name": "future_geometry",
+          "pathA": 0.04561,
+          "random": 0.000102
+        },
+        {
+          "brain": 0.000954,
+          "ci_hi": 0.011541,
+          "ci_lo": -0.00712,
+          "comparator": "PATH A (GBM incumbent)",
+          "controls_unreadable": [],
+          "destroyed": 0.002787,
+          "metric": "ARI of k-means (k=5, from the label's own cardinality) against the lab's declared segment",
+          "n": 724,
+          "name": "segment_structure",
+          "pathA": -0.001513,
+          "random": -0.001991
+        }
+      ]
+    },
+    "brain_ledger": {
+      "tasks": [
+        {
+          "brain": 0.000689,
+          "ci_hi": 0.000569,
+          "ci_lo": -9.1e-05,
+          "comparator": "PATH A (GBM incumbent)",
+          "controls_unreadable": [],
+          "destroyed": 0.000347,
+          "metric": "squared correlation between the arm's pairwise distances and the lab's true distances (2 fields: d0, segment)",
+          "n": 261726,
+          "n_bootstrap_pairs": 100000,
+          "name": "persona_geometry",
+          "pathA": 0.000345,
+          "random": 4.2e-05
+        },
+        {
+          "brain": 0.009195,
+          "ci_hi": -0.03539,
+          "ci_lo": -0.040398,
+          "comparator": "PATH A (GBM incumbent)",
+          "controls_unreadable": [],
+          "destroyed": 0.00044,
+          "metric": "squared correlation between the arm's pairwise distances and the lab's true distances (5 fields: x0, h0, price_sensitivity, return_proneness, churn_day)",
+          "n": 261726,
+          "n_bootstrap_pairs": 100000,
+          "name": "future_geometry",
+          "pathA": 0.04561,
+          "random": 0.000101
+        },
+        {
+          "brain": -0.002003,
+          "ci_hi": 0.006776,
+          "ci_lo": -0.008149,
+          "comparator": "PATH A (GBM incumbent)",
+          "controls_unreadable": [],
+          "destroyed": 0.001952,
+          "metric": "ARI of k-means (k=5, from the label's own cardinality) against the lab's declared segment",
+          "n": 724,
+          "name": "segment_structure",
+          "pathA": -0.001513,
+          "random": -0.001416
+        }
+      ]
+    }
+  },
+  "diagnostics": {},
+  "evidence": "[unsupervised] FAILED: 3 live task(s) (+0 degenerate) on n=724 B-rows scored against 1776 A-rows; comparator PATH A (GBM incumbent); table 48 cols / 2500 customers; brain+ledger 3 task(s)",
+  "excluded": [],
+  "path_a": {
+    "columns": 48,
+    "n_present": 2500,
+    "n_requested": 2500,
+    "source": "/work/demo/path_a/path_a_wide_table.parquet"
+  },
+  "products": {
+    "path": "/work/cfm_e_surv",
+    "registry_sha256": "256dc42eacd9c6d2",
+    "tag": "0.11.0r103115-b20d256e3lr3e-04o654d9bba"
+  },
+  "splits": {
+    "n_fit_A": 1776,
+    "n_score_B": 724,
+    "source": "encoder_samples"
+  },
+  "working": false
+}
