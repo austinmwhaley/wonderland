@@ -226,6 +226,38 @@
 > Artifact `0.11.0r103115-b20d256e3lr3e-04occdbe290`; trained in the 20 GB container with Qwen
 > serving throughout (low-water 8.8 GB); S6 6/6, chain ~17 min, train 974 s.
 
+> **Supervised-first directive + attribution (DEC-456, 2026-10-30).** The operator ordered the
+> ladder: master SUPERVISED before adding the other capabilities, using the card as the
+> increment-to-green instrument. `scripts/measure_access_axis.py` (judge geometry imported,
+> linear/kNN/MLP consumers, brain/ledger/table/rewhiten arms) attributes every red supervised
+> trait: `churn_day` PRESENT BUT NONLINEARLY ENTANGLED (kNN 0.668 vs linear 0.582 on brain;
+> re-whitening tested — no change, the serving-boundary ruling request was measured away);
+> `x0`/`return_proneness` ABSENT from the learned shape (best brain 0.791/0.295 vs table
+> 0.890/0.687; ledger carries x0 at 0.889 — rate is what the contractive trunk loses);
+> regime/price traits unreadable by any permitted consumer (last in line).
+
+> **Protocol E measured (DEC-457 pre-registered, DEC-458 outcome, 2026-10-30): NOT adopted.**
+> E = D + the `survive` objective (faded-serving-path survival curve, Linear(dim,K), octave-
+> derived horizons 0.02–4.96 d, K=9). Frozen acceptance 9/9 PASS pre-verdict; chain S6 6/6.
+> The named axis did not move: churn brain 0.5824 → 0.5897 (rule: adopt needs ≥ +0.03); the
+> kNN−linear margin closed only because kNN collapsed 0.668 → 0.602 — head-side pressure on
+> the faded path does not reorganize the trunk. Guards all held (±0.02). The run's card showed
+> rl::brain flipping green, but only via `known_effect_uplift`'s paired CI clearing zero by
+> +0.0009 with a WORSENED point estimate — reported, not used to adopt. `survival` stays
+> default-off; receipts archived at `docs/report_cards/experiments/protocols/e_survival/`;
+> the card was restored to D at the same commit.
+
+> **Protocol F pre-registered and implemented (DEC-459, 2026-10-30): training in flight.**
+> F = D + `rate=true`: from the NON-faded trunk, Linear(dim, 2+n_et) predicts log1p future
+> event count, future primary-value sum, and future per-type counts over W = clamp(10 × median
+> gap, ≥1 d) — recency's anchor mirrored forward (demo receipt: median gap 19.2 h → W = 8.0 d).
+> Named axis: brain-alone `x0` ≥ 0.84 (D 0.7909); secondary return_proneness ≥ 0.35; adoption
+> requires Δx0 ≥ +0.03; DEC-458's scar is a guard (kNN churn ≥ 0.60). Two training attempts
+> were sacrificed by the watchdog at the 8 GB host floor while Qwen served heavy traffic
+> (witness lines show the missing ~12 GB was GPU-side unified memory, not the trainer's
+> 4.8 GB RSS) — the watchdog + LOW-MEM witness dump (committed) make the retry evidence-based;
+> relaunch is gated on a quiet host. Artifact dir `cfm_f_rate`.
+
 **Repository state:** `main` now contains the former `primary-encoder` demo work. The duplicate
 report card, stale roadmap, duplicate receipt orchestrator, one-off OPE wrappers, and generator
 alias were removed; the superseded demo contract/audit moved to `docs/archive/`.
