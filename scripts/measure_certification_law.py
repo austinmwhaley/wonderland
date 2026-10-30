@@ -15,6 +15,7 @@ measures whether that command works, in the order the dependencies require:
     S4     measure_views_law        the outlets
     S5     measure_battery_law      the objective battery
     legs   measure_judge_law        the four-leg top line, both columns
+    prov   measure_path_a_provenance  the comparator's per-column provenance (DEC-446)
     S6     this file                the regeneration itself
     card   judge_card               rendered last, from the receipts above
 
@@ -68,6 +69,12 @@ CHAIN = (
         "legs",
         "measure_judge_law.py",
         ("--products", "{products}", "--demo", "{demo}", "--legs", "{legs}"),
+        (),
+    ),
+    (
+        "prov",
+        "measure_path_a_provenance.py",
+        ("--demo", "{demo}", "--products-dir", "{products}", "--out", "{prov_out}"),
         (),
     ),
 )
@@ -198,6 +205,33 @@ def chain_verdict(
     }
 
 
+def comparator_provenance_fact(prov_body: dict | None, fresh: bool) -> dict:
+    """The S6 check over the comparator's provenance receipt (DEC-446), as a pure predicate.
+
+    A table computed with the future included would make every "does not beat PATH A" an
+    artifact of the comparison, not a finding (DEC-437). The audit producer rebuilds the table
+    from the lab's own inputs and verifies the builder's per-column stamp against it; this says
+    what that receipt means: it must EXIST, be FRESH, and have every sub-check working.
+    """
+    if prov_body is None:
+        return {
+            "working": False,
+            "evidence": "no receipt — the provenance producer did not write it",
+        }
+    sub = prov_body.get("checks", {})
+    failed = sorted(k for k, c in sub.items() if not c.get("working"))
+    return {
+        "working": bool(prov_body.get("working")) and fresh and bool(sub),
+        "evidence": (
+            f"{len(prov_body.get('comparator_columns', []))} comparator column(s), each stamped "
+            f"pre-`as_of` by the builder and confirmed against a rebuild from the lab's own "
+            f"relational inputs (as_of {prov_body.get('as_of')}); sub-checks {sorted(sub)}"
+            + (f"; FAILED: {failed}" if failed else "")
+            + ("" if fresh else "; STALE (written before this run)")
+        ),
+    }
+
+
 def _diff_line(a: str, b: str) -> int:
     for i, (x, y) in enumerate(zip(a.splitlines(), b.splitlines())):
         if x != y:
@@ -257,6 +291,7 @@ def main() -> int:
         "train_log": str(train_log),
         "legs": a.legs,
         "stages_out": str(stages_out),
+        "prov_out": str(receipts / "path_a_provenance.json"),
     }
 
     # ---- 0. the memory budget, derived from the machine before anything is launched -----------
@@ -274,7 +309,7 @@ def main() -> int:
         argv = [arg.format(**fmt) for arg in template]
         if blocks:  # stage producers merge into one file; the legs write a directory
             argv += ["--out", str(stages_out)]
-        else:
+        elif "--out" not in template:  # single-receipt producers name their own file via {prov_out}
             argv += ["--out-dir", str(receipts)]
         runs[label] = _run_producer(script, argv, cap_gb)
         r = runs[label]
@@ -394,6 +429,13 @@ def main() -> int:
             + ("all report N" if not no_n else f"{len(no_n)} without N: {', '.join(no_n[:4])}")
         ),
     }
+
+    # ---- 5. the comparator's provenance: every column the FAILs compare against is stamped ----
+    prov_receipt = receipts / "path_a_provenance.json"
+    prov_body = json.loads(prov_receipt.read_text()) if prov_receipt.exists() else None
+    checks["comparator_provenance_certified"] = comparator_provenance_fact(
+        prov_body, str((prov_body or {}).get("generated_at", "")) >= t_start_iso
+    )
 
     # ---- write S6, then render the card it describes ---------------------------------------
     body = _rollup(checks)

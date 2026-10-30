@@ -726,12 +726,19 @@ def embed(model, seqs, ks, vs):
     return np.concatenate(out, 0), np.concatenate(mout, 0)
 
 
+def table_feature_columns(A):
+    """The comparator's column set — one definition (principle 6), shared by
+    `table_features` and the provenance audit (DEC-446). Dropping `y_*` is what makes
+    the table a *feature* table; a second copy of this rule is where a leak hides."""
+    return [
+        c for c in A.columns if not c.startswith("y_") and c not in ("customer_key", "signup_ts")
+    ]
+
+
 def table_features(A, hold):
     amap = {r["customer_key"]: r for r in A.to_dicts()}
     rows = [amap[k] for k in hold]
-    feat = [
-        c for c in A.columns if not c.startswith("y_") and c not in ("customer_key", "signup_ts")
-    ]
+    feat = table_feature_columns(A)
     X = pl.DataFrame([{c: r[c] for c in feat} for r in rows]).to_dummies(
         columns=[
             c for c in ("segment", "region", "acquisition_channel", "loyalty_tier") if c in feat

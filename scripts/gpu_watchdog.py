@@ -43,6 +43,7 @@ DEFAULT_PATTERNS = (  # principle-ok: process identities, not tuning constants
     "measure_causal.py",
     "measure_ceiling.py",
     "measure_certification_law.py",
+    "measure_path_a_provenance.py",
     "measure_construction.py",
     "measure_controls.py",
     "measure_data.py",

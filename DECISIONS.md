@@ -4677,3 +4677,60 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - **Status.** OPEN. The batch=20 run is valid and its receipts are correct; what is missing is an
   identity mechanism that makes "which artifact produced this row" a computed fact rather than a
   string a careful reader parses out of a command line.
+
+## DEC-446 — [TECHNICAL] the PATH A comparator's provenance becomes a computed fact: the builder stamps it, the chain audits it, and the `cfm_data` order landmine is defused
+
+- **Context.** Every top-line FAIL on the card reads "does not beat PATH A", and PATH A is
+  `table_features` over the lab's wide table. DEC-437 audited the comparator by candidate search:
+  13/36 columns proven pre-`as_of`, 0 leak suspects, the rest resting on the single
+  `hist = ev.filter(ts <= as_of)` filter in `build_path_a` — and the audit's second version
+  OOM-killed the host, so it was withdrawn. DEC-437 named the cheap close in advance: the builder
+  already knows which filter each column came from, so **the builder should stamp that at
+  construction** — O(1) per column, no stream scan, no candidate search. This is that close.
+- **Principles served.** Honest (the fair-comparator claim stops being a citation and becomes a
+  measurement), Diagnosable (a future leak in one column names itself), Observability/principle 11
+  (the receipt records what the producer knew), Fail-safe/principle 7 (a column built without
+  provenance is a hard error, not a silent pass). Principle 6 is honored by construction: the
+  provenance map is derived from the SAME expression lists the builder collects
+  (`e.meta.output_name()`), not a second hand-typed column inventory, and the audit imports the
+  comparator's drop-rule from the same file that defines it — three copies deleted at the source.
+- **Alternatives considered.** (1) *Re-run the DEC-437 candidate search* — rejected: it is the
+  version that killed the machine, and the stamp makes it unnecessary. (2) *Hand-write the column
+  → source map in the audit* — rejected under principle 6: a hand-typed inventory is exactly the
+  kind of copy that drifts, and it asserts rather than derives. (3) *Re-generate the frozen demo
+  so the artifact carries the stamp* — rejected: `wonderland_work/demo` is frozen and every receipt
+  describes it; rewriting the lab to add metadata would change the thing the card is about. The
+  audit instead **verifies the frozen table against the stamp** (rebuild from the demo's own
+  `relational/` inputs, compare columns and values) — the frozen artifact is read, never written.
+  (4) *A card row gating on the audit* — rejected under rule 1: a new gate is an operator ruling;
+  this chunk adds a chain check (chain integrity), not a capability gate, and moves no verdict.
+- **Decision.** (a) `path_a_build.py` gains per-site expression lists and a pure
+  `path_a_provenance(as_of, customer_cols)` derived from them (`hist` / `fut` / `customers` +
+  `cut_at`); `build_path_a` raises if any column it produced lacks a stamp, and puts the map in
+  `engine_state["provenance"]`; `gpu_path_a.py` writes it as `provenance.json` beside
+  `engine.json`. (b) New producer `scripts/measure_path_a_provenance.py` (boundary-enforced like
+  every `measure_*`): rebuilds the table from `demo/relational/` + manifest `as_of`, requires
+  column-set and value equality with the published wide table (joined on `customer_key`), requires
+  every comparator column (via `table_feature_columns`, extracted from `table_features` itself) to
+  be stamped `hist|customers`, and requires every `fut` column to be dropped by the comparator's
+  own rule. (c) The S6 chain runs it as a sixth producer and adds the check
+  `comparator_provenance_certified` — no other file changes what any row means. (d) The canary
+  that proves the stamp is not decoration: a test perturbs ONLY post-`as_of` events and requires
+  the features to come out byte-identical while the labels change.
+- **Also in this chunk (encoder tree, same re-measurement absorbs it).**
+  `cfm_data.build_sequences`: `want = list(set(keys))` becomes `sorted(set(keys))`. Today the order
+  is provably unobservable (it flows only into `is_in`; sequence order comes from
+  `partition_by(maintain_order=True)` over a deterministic scan) — which is why this was the
+  recorded landmine rather than an active bug: any future consumer that reads `want` positionally
+  would inherit per-process hash randomization. `sorted` removes the hazard without touching
+  values. It changes the behavior hash, so the whole card is re-measured — the law's cost, paid
+  willingly, not an obstacle.
+- **Frozen acceptance criteria, before the run.**
+  1. Features are invariant under any post-`as_of` perturbation while labels respond to it (test).
+  2. `path_a_provenance` covers exactly the union of `features ∪ labels` columns minus
+     `customer_key` (test), and `build_path_a` raises on an unstamped column (test).
+  3. On the frozen demo: rebuilt columns AND values equal the published table, all 36 comparator
+     columns stamped `hist|customers`, all `fut` columns dropped.
+  4. S6 reports 6/6 checks with `comparator_provenance_certified` PASS; **no leg or stage verdict
+     moves** (this audits the comparator's hygiene, not the encoder). If any row flips, that is a
+     finding to report, not to chase.

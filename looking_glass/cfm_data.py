@@ -445,7 +445,11 @@ def build_sequences(df, keys, cfg: CFMConfig, split, with_anchors: bool, min_eve
     losses can avoid predicting action targets. ``min_events`` gates who gets a
     sequence at all (training needs >= 3 events to learn from; STATE rows pass 1).
     """
-    want = list(set(keys))
+    # sorted, not set-ordered: today `want` only feeds `is_in` (order-independent), but a
+    # set's iteration order is per-process hash randomization — any future consumer reading
+    # it positionally would inherit nondeterminism. (DEC-446; the behavior-hash cost of the
+    # landmine DEC-438 recorded.)
+    want = sorted(set(keys))
     d = df.filter(pl.col("customer_key").is_in(want)).with_columns(
         pl.col("event_ts").str.to_datetime(time_zone="UTC", strict=False).dt.epoch("s").alias("_ts")
     )

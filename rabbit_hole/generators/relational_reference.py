@@ -340,9 +340,9 @@ def simulate(spec: RelationalSpec, use_cuda: bool = True):
     acq = lrng.integers(0, len(ACQ), C).astype(np.int64)
     segment = lrng.integers(0, 5, C).astype(np.int64)
     return_prone = np.clip(lrng.beta(1.5, 6.0, C), 0.0, 1.0)
-    churn_day = np.where(
-        lrng.random(C) < 0.18, lrng.uniform(0.45 * T, T, C), float(T)
-    ).astype(np.float32)
+    churn_day = np.where(lrng.random(C) < 0.18, lrng.uniform(0.45 * T, T, C), float(T)).astype(
+        np.float32
+    )
     x0 = lrng.uniform(0, 3, C).astype(np.float32)
     h0 = lrng.uniform(0, 24, C).astype(np.float32)
     d0 = lrng.uniform(0, 7, C).astype(np.float32)
@@ -491,7 +491,9 @@ def simulate(spec: RelationalSpec, use_cuda: bool = True):
         q = B.exp(-0.5 * ((B.to_f32(freq_act) - x0d) / 1.1) ** 2)
         q = q * B.exp(-0.5 * ((B.to_f32(hour_act) - h0d) / 3.0) ** 2)
         q = q * B.exp(-0.5 * ((B.to_f32(dow_act) - d0d) / 1.6) ** 2)
-        q = q * B.where(chan_act == chan_pref_d, B.full((C,), 1.0, "f32"), B.full((C,), 0.35, "f32"))
+        q = q * B.where(
+            chan_act == chan_pref_d, B.full((C,), 1.0, "f32"), B.full((C,), 0.35, "f32")
+        )
         q = q * (1.0 - 0.22 * B.abs(B.to_f32(off_act) - B.to_f32(offer_opt_d)))
         q = B.clip(1.0 + s * (q - 1.0), 0.05, 1.0)
 
@@ -510,14 +512,17 @@ def simulate(spec: RelationalSpec, use_cuda: bool = True):
         # path factor: last observed event changes the purchase propensity
         path = PATH_LUT_d[last]
         is_atc = last == ATC
-        is_view = last == VIEW
         pat = B.where(
             is_atc & (prev1 == VIEW) & (prev2 == SEARCH),
             1.15,
             B.where(
                 is_atc & (prev1 == VIEW),
                 1.35,
-                B.where((last == VIEW) & (prev1 == ATC), 0.75, B.where((last == PURCHASE) & (prev1 == ATC), 1.20, 1.0)),
+                B.where(
+                    (last == VIEW) & (prev1 == ATC),
+                    0.75,
+                    B.where((last == PURCHASE) & (prev1 == ATC), 1.20, 1.0),
+                ),
             ),
         )
         pat = 1.0 + s * (pat - 1.0)
@@ -527,11 +532,15 @@ def simulate(spec: RelationalSpec, use_cuda: bool = True):
         # action effects only when a send actually occurs
         chan_regime = B.where(
             sent,
-            1.0 + s * B.where((chan_act == chan_pref_d) == ((regime == 1) | (regime == 2)), 0.25, -0.15),
+            1.0
+            + s
+            * B.where((chan_act == chan_pref_d) == ((regime == 1) | (regime == 2)), 0.25, -0.15),
             B.full((C,), 1.0, "f32"),
         )
         action_discount = B.where(
-            sent, B.where(off_act == 0, 0.0, 0.05 + 0.06 * B.to_f32(off_act)), B.full((C,), 0.0, "f32")
+            sent,
+            B.where(off_act == 0, 0.0, 0.05 + 0.06 * B.to_f32(off_act)),
+            B.full((C,), 0.0, "f32"),
         )
         price_fit = B.where(
             sent,
@@ -731,8 +740,7 @@ def simulate(spec: RelationalSpec, use_cuda: bool = True):
                             pl.col("channel_a").alias("channel"),
                             "offer",
                         ]
-                    )
-                    .struct.json_encode()
+                    ).struct.json_encode()
                 )
                 .otherwise(
                     pl.struct(
@@ -746,8 +754,7 @@ def simulate(spec: RelationalSpec, use_cuda: bool = True):
                             pl.col("channel_a").alias("channel"),
                             "offer",
                         ]
-                    )
-                    .struct.json_encode()
+                    ).struct.json_encode()
                 )
                 .alias("attrs_json")
             )
@@ -817,8 +824,7 @@ def simulate(spec: RelationalSpec, use_cuda: bool = True):
                             "order_id",
                             "value",
                         ]
-                    )
-                    .struct.json_encode()
+                    ).struct.json_encode()
                 )
                 .otherwise(
                     pl.struct(
@@ -835,8 +841,7 @@ def simulate(spec: RelationalSpec, use_cuda: bool = True):
                             "order_id",
                             "value",
                         ]
-                    )
-                    .struct.json_encode()
+                    ).struct.json_encode()
                 )
                 .alias("attrs_json")
             )
@@ -879,7 +884,11 @@ def simulate(spec: RelationalSpec, use_cuda: bool = True):
             .with_columns(pl.Series("event_ts", _iso(start64, day)))
             .with_columns(
                 pl.when(pl.col("campaign_id").is_null())
-                .then(pl.struct(["product_id", "category_code", "touch", "brand"]).struct.json_encode())
+                .then(
+                    pl.struct(
+                        ["product_id", "category_code", "touch", "brand"]
+                    ).struct.json_encode()
+                )
                 .otherwise(
                     pl.struct(
                         ["product_id", "category_code", "touch", "campaign_id", "brand"]
@@ -1164,7 +1173,11 @@ def _path_a_via_gpu(base_events, customers, as_of):
     venv_py = _ROOT / ".venv-cudf" / "bin" / "python"
     script = _ROOT / "scripts" / "gpu_path_a.py"
     if not venv_py.exists() or not script.exists():
-        return None, {"requested": "gpu", "used": "cpu", "note": "`.venv-cudf` or gpu_path_a.py missing"}
+        return None, {
+            "requested": "gpu",
+            "used": "cpu",
+            "note": "`.venv-cudf` or gpu_path_a.py missing",
+        }
     try:
         with tempfile.TemporaryDirectory() as td:
             tdp = Path(td)
@@ -1233,7 +1246,10 @@ def main(argv=None):
         features, labels, wide, engine_state2 = build_path_a(
             tables["events"], tables["customers"], as_of, engine=None
         )
-        engine_state = {**engine_state, **{k: engine_state2[k] for k in ("used", "note")}}
+        engine_state = {
+            **engine_state,
+            **{k: engine_state2[k] for k in ("used", "note", "provenance")},
+        }
     else:
         features, labels, wide = gpu_res
     path_a = {"features": features, "labels": labels, "wide": wide}
@@ -1248,6 +1264,10 @@ def main(argv=None):
     path_a["features"].write_parquet(d / "path_a" / "customer_features.parquet", compression="zstd")
     path_a["labels"].write_parquet(d / "path_a" / "customer_labels.parquet", compression="zstd")
     path_a["wide"].write_parquet(d / "path_a" / "path_a_wide_table.parquet", compression="zstd")
+    # DEC-446: the builder's own per-column provenance, beside the table it describes.
+    (d / "path_a" / "provenance.json").write_text(
+        json.dumps(engine_state.get("provenance", {}), indent=2)
+    )
     stream.write_parquet(d / "path_b" / "path_b_customer_event_stream.parquet", compression="zstd")
     stream.write_parquet(d / "customer_event_stream.parquet", compression="zstd")
     path_a["wide"].write_parquet(d / "customer_wide_table.parquet", compression="zstd")
@@ -1355,7 +1375,9 @@ def main(argv=None):
         "truth": f"{a.name}_truth.json",
     }
     (d / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
-    print(json.dumps(manifest["counts"] | {"wide_columns": path_a["wide"].width, **receipt}, indent=1))
+    print(
+        json.dumps(manifest["counts"] | {"wide_columns": path_a["wide"].width, **receipt}, indent=1)
+    )
     if not a.no_validate:
         root = Path(__file__).resolve().parents[2]
         rc = subprocess.run(

@@ -22,6 +22,9 @@ LEGS = {"supervised", "unsupervised", "rl", "simulator"}
 
 
 def _run(exits, stages=None, legs=None):
+    # Producers not named by a test default to "ran, exit 0": a test names the exits it cares
+    # about and stays true as the chain grows (DEC-446 added the provenance producer).
+    exits = {label: exits.get(label, 0) for label, *_ in MC.CHAIN}
     return MC.chain_verdict(
         exits,
         STAGES if stages is None else stages,
@@ -92,3 +95,34 @@ def test_changed_paths_survives_the_leading_space_git_strips():
     ]
     assert MC.changed_paths("R  old.py -> new.py\0") == ["new.py"]
     assert MC.changed_paths("") == []
+
+
+def _prov_body(**over):
+    body = {
+        "working": True,
+        "as_of": "2025-01-01",
+        "comparator_columns": ["n_events", "purchase_value"],
+        "checks": {
+            "columns_match": {"working": True},
+            "values_match": {"working": True},
+            "provenance_complete": {"working": True},
+            "comparator_clean": {"working": True},
+        },
+    }
+    body.update(over)
+    return body
+
+
+def test_comparator_provenance_requires_receipt_freshness_and_green_subchecks():
+    """Every top-line FAIL is a claim against PATH A; S6 only certifies that claim if the audit
+    ran NOW (fresh), wrote its receipt, and every sub-check is working (DEC-446)."""
+    assert MC.comparator_provenance_fact(None, True)["working"] is False
+    assert MC.comparator_provenance_fact(_prov_body(), False)["working"] is False
+    broken = _prov_body(
+        working=False,
+        checks={**_prov_body()["checks"], "comparator_clean": {"working": False}},
+    )
+    fact = MC.comparator_provenance_fact(broken, True)
+    assert fact["working"] is False
+    assert "comparator_clean" in fact["evidence"]
+    assert MC.comparator_provenance_fact(_prov_body(), True)["working"] is True

@@ -38,6 +38,8 @@ def main():
     labels.write_parquet(out / "labels.parquet")
     wide.write_parquet(out / "wide.parquet")
     (out / "engine.json").write_text(json.dumps(state, indent=2))
+    # DEC-446: the producer stamps its own column provenance beside the table it describes.
+    (out / "provenance.json").write_text(json.dumps(state["provenance"], indent=2))
     print(json.dumps({"engine": state.get("used"), "rows": wide.height, "cols": wide.width}))
 
 
