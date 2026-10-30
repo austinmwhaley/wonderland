@@ -580,6 +580,71 @@ def test_effect_objective_off_without_target_and_dim():
     assert "effect" not in T_  # silently absent, never a NaN
 
 
+# ---- DEC-453 (protocol D): the bilinear QTE head -------------------------------------------
+
+
+def _seqs_eff3():
+    return [
+        _seq_eff("c1", [[0], [1], [2]], [1, 0, 0], day="2025-01-01"),
+        _seq_eff("c2", [[0], [1], [2]], [0, 1, 0], day="2025-01-02"),
+        _seq_eff("c3", [[0], [1], [2]], [0, 0, 1], day="2025-01-03"),
+    ]
+
+
+def test_bilinear_effect_head_contrast_is_linear_in_state():
+    """The whole reason DEC-453 exists: the judged probe is ridge(E -> uplift), so the ARM
+    CONTRAST must be a linear functional of the state. f(s,q1)-f(s,q2) = s.(W[:,q1]-W[:,q2])."""
+    import torch.nn.functional as F
+
+    vocab = EventVocab.build([_seq("c1"), _seq("c2", day="2025-01-02")])
+    torch.manual_seed(0)
+    model = CFM(vocab, dim=16, n_experts=1, effect_dim=3, effect_head="bilinear")
+    head = model.head_effect
+    s = torch.randn(7, 16)
+    oh1 = F.one_hot(torch.full((7,), 2, dtype=torch.long), 3).float()
+    oh0 = F.one_hot(torch.zeros(7, dtype=torch.long), 3).float()
+    got = head(torch.cat([s, oh1], -1)) - head(torch.cat([s, oh0], -1))
+    assert got.shape == (7, 1)
+    # contrast(s) = s . (W[:,q1]-W[:,q2]) + (b[q1]-b[q2]): linear IN s up to a constant offset.
+    slope = head.proj.weight[2] - head.proj.weight[0]
+    offset = head.proj.bias[2] - head.proj.bias[0]
+    assert torch.allclose(got.squeeze(-1), s @ slope + offset, atol=1e-5)
+    # the decision-relevant form: differences of contrasts ACROSS customers kill the offset
+    s2 = torch.randn(7, 16)
+    d = (head(torch.cat([s, oh1], -1)) - head(torch.cat([s, oh0], -1))) - (
+        head(torch.cat([s2, oh1], -1)) - head(torch.cat([s2, oh0], -1))
+    )
+    assert torch.allclose(d.squeeze(-1), (s - s2) @ slope, atol=1e-5)
+    # same call signature as the MLP head: (B,P,dim+Q) -> (B,P,1), so the loop never branches
+    oh1_p = oh1.unsqueeze(1).expand(-1, 3, -1)  # (7,3,3): the head broadcasts over periods
+    seq_out = head(torch.cat([s.unsqueeze(1).expand(-1, 3, -1), oh1_p], -1))
+    assert seq_out.shape == (7, 3, 1) and torch.isfinite(seq_out).all()
+
+
+def test_bilinear_effect_head_trains_through_the_same_loss():
+    """One loss site (cfm_training ~1279): the bilinear head must take gradient to the trunk."""
+    seqs = _seqs_eff3()
+    vocab = EventVocab.build(seqs)
+    torch.manual_seed(0)
+    model = CFM(vocab, dim=16, n_experts=1, effect_dim=3, effect_head="bilinear")
+    assert model.effect_head == "bilinear"
+    assert not isinstance(model.head_effect, torch.nn.Sequential)  # not the MLP by default
+    cfg = _cfg(objectives=(*CFMConfig().objectives, "effect"), effect_head="bilinear")
+    cfg._effect_levels = [3]
+    T_ = _task_losses(model, vocab, seqs, cfg)
+    assert "effect" in T_ and torch.isfinite(T_["effect"])
+    T_["effect"].backward()
+    assert model.head_effect.proj.weight.grad is not None
+    assert model.emb_et.weight.grad is not None  # gradient reaches the trunk
+
+
+def test_effect_head_choice_is_validated():
+    """A typo'd form must fail at build, not train an unintended head (DEC-453 acceptance 2)."""
+    vocab = EventVocab.build([_seq("c1")])
+    with pytest.raises(ValueError, match="effect_head"):
+        CFM(vocab, dim=16, n_experts=1, effect_dim=2, effect_head="linear")
+
+
 def test_mtp_objective_present_and_trains():
     """B5: multi-token prediction heads exist and the k-step loss is finite + trains."""
     seqs = [_seq(f"c{i}", day=f"2025-01-{(i % 28) + 1:02d}") for i in range(4)]

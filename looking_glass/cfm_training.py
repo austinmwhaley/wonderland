@@ -193,6 +193,7 @@ def train_cfm(cfg: CFMConfig):
         numeric_fields=getattr(cfg, "numeric_fields", ()),
         action_fields=getattr(cfg, "action_fields", ()),
         effect_dim=getattr(cfg, "_effect_dim", 0),
+        effect_head=str(getattr(cfg, "effect_head", "mlp")),
         mtp_k=getattr(cfg, "mtp_k", 0),
         # DEC-423: recompute the SSM scan in backward — see CFMConfig.grad_checkpoint.
         grad_checkpoint=bool(getattr(cfg, "grad_checkpoint", False)),
@@ -738,6 +739,9 @@ def train_cfm(cfg: CFMConfig):
             "action_receipt": dict(getattr(cfg, "_action_receipt", {}) or {}),
             "effect_dim": int(getattr(cfg, "_effect_dim", 0) or 0),
             "effect_actions": list(getattr(cfg, "effect_actions", ()) or ()),
+            # DEC-453: which class the head IS — cfm_state rebuilds the model from the blob and
+            # the weights only load into the matching form (a shape mismatch is a loud error).
+            "effect_head": str(getattr(cfg, "effect_head", "mlp")),
             "action_fields": list(getattr(cfg, "action_fields", ()) or ()),
             "primary_numeric": getattr(cfg, "primary_numeric", None),
             "whiten_mean": (model.whiten_mean if getattr(model, "whiten_on", False) else None),
@@ -1256,7 +1260,9 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
     # state that is decision-sufficient must let a head recover the customer's RESPONSE;
     # a purely predictive state can be outcome-sufficient yet response-blind (measured:
     # E->x0 R2 ~ 0). Self-supervised (targets from the stream); masked; the direct-method
-    # mirror of the decision gate's V(E, a).
+    # mirror of the decision gate's V(E, a). Head form is `cfg.effect_head` (DEC-453): the
+    # bilinear QTE form makes the ARM CONTRAST linear in the state, which is what the frozen
+    # ridge probe on E (measure_judge_law.leg_rl) actually scores.
     if (
         "effect" in cfg.objectives
         and getattr(model, "head_effect", None) is not None

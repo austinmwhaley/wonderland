@@ -790,6 +790,28 @@ class MultiScaleSSM(nn.Module):
         return torch.cat(ys, dim=-1), torch.cat(hs, dim=-1)
 
 
+class EffectQTEHead(nn.Module):
+    """Bilinear counterfactual-outcome head (DEC-453, protocol D) — QTE form.
+
+    `logit(s, a) = s . W[:, a] + b[a]`. Called through the SAME interface as the MLP head —
+    `forward(cat([state, onehot(action)])) -> (..., 1)` — so the training loop does not branch.
+    The point is not expressiveness, it is SHAPE: with this form the arm contrast
+    `f(s,q1) - f(s,q2) = s . (W[:,q1] - W[:,q2]) + const` is LINEAR in the state, hence in the
+    whitened projection E the frozen ridge probe regresses on (measure_judge_law.leg_rl scores
+    ridge(E -> identified uplift), never the head itself). The MLP head had no reason to put the
+    contrast anywhere linear (DEC-452: level became readable, contrast did not).
+    """
+
+    def __init__(self, dim: int, effect_dim: int):
+        super().__init__()
+        self.effect_dim = int(effect_dim)
+        self.proj = nn.Linear(dim, self.effect_dim)
+
+    def forward(self, feat: torch.Tensor) -> torch.Tensor:
+        s, oh = feat[..., : -self.effect_dim], feat[..., -self.effect_dim :]
+        return (self.proj(s) * oh).sum(-1, keepdim=True)
+
+
 class CFM(nn.Module):
     def __init__(
         self,
@@ -825,6 +847,7 @@ class CFM(nn.Module):
         numeric_fields: tuple = (),
         action_fields: tuple = (),
         effect_dim: int = 0,
+        effect_head: str = "mlp",
         mtp_k: int = 0,
     ):
         super().__init__()
@@ -952,8 +975,20 @@ class CFM(nn.Module):
         # the total number of action levels (the one-hot width). MLP (not linear): the state
         # then need only encode the latent response, and the head learns the response SHAPE —
         # a linear head would force the whole per-action shape into the state (measured weak).
+        # DEC-453: that measurement was about the LEVEL. The judged probe is ridge(E -> uplift)
+        # (measure_judge_law.leg_rl), so what must be linear is the arm CONTRAST; the "bilinear"
+        # QTE form makes it so by construction. Default "mlp" keeps pre-D protocols reproducible.
+        if str(effect_head).lower() not in ("mlp", "bilinear"):
+            raise ValueError(
+                f"effect_head={effect_head!r} is not one of 'mlp', 'bilinear' (DEC-453)"
+            )
+        self.effect_head = str(effect_head).lower()
         self.head_effect = (
-            nn.Sequential(nn.Linear(dim + effect_dim, dim), nn.GELU(), nn.Linear(dim, 1))
+            (
+                EffectQTEHead(dim, effect_dim)
+                if self.effect_head == "bilinear"
+                else nn.Sequential(nn.Linear(dim + effect_dim, dim), nn.GELU(), nn.Linear(dim, 1))
+            )
             if effect_dim
             else None
         )

@@ -239,6 +239,7 @@ def load_frozen_encoder(tag: str, cfm_dir):
         numeric_fields=tuple(blob.get("numeric_fields", ()) or ()),
         action_fields=tuple(blob.get("action_fields", ()) or ()),
         effect_dim=int(blob.get("effect_dim", 0) or 0),
+        effect_head=str(blob.get("effect_head", "mlp")),
     )
     # tolerate checkpoints from earlier revisions (e.g. a head added later):
     # load what matches, report what did not. The encoder trunk must match.

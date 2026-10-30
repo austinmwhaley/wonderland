@@ -327,6 +327,11 @@ class CFMConfig:
     # counterfactual/dose-response objective (`effect`) so `E` exposes the treatment
     # response (the per-customer mean reward per action level). Empty = objective off.
     effect_actions: tuple = ()
+    # Head form for the `effect` objective (DEC-453): "mlp" is the DEC-172 two-layer head;
+    # "bilinear" is the QTE form logit(s,a) = s.W[:,a] + b[a], which makes the arm CONTRAST
+    # linear in the state — the quantity the frozen ridge probe on E actually scores (protocol D).
+    # Default keeps every pre-D protocol byte-reproducible.
+    effect_head: str = "mlp"
     # exogenous ACTION fields to EXCLUDE from the generic measure (prevents the measure — and
     # hence `E` — from carrying the logged action, which would leak the treatment into the OPE).
     # Declared separately from `effect_actions` so the action's RESPONSE is still exposed.
@@ -461,6 +466,10 @@ class CFMConfig:
             base += f"s{int(n)}"
         obj = ",".join(str(o) for o in (getattr(self, "objectives", ()) or ()))
         eff = ",".join(str(e) for e in (getattr(self, "effect_actions", ()) or ()))
+        if eff:
+            # The head form is a protocol axis ONLY when the head exists (DEC-453); with the
+            # objective off it changes nothing, so the effect-off protocols' shared tag holds.
+            eff += f"|h{str(getattr(self, 'effect_head', 'mlp'))}"
         sig = hashlib.sha256(f"{obj}|{eff}".encode()).hexdigest()[:8]
         return (
             f"{base}-b{int(self.batch)}d{int(self.dim)}e{int(self.epochs)}"

@@ -53,6 +53,17 @@ def test_protocols_a_and_b_cannot_share_a_tag():
     assert a.tag != b.tag  # different protocol identity
 
 
+def test_effect_head_form_is_a_protocol_axis_only_when_the_head_exists():
+    """DEC-453 (protocol D): the bilinear head trains different weights, so two trainings
+    differing ONLY in `effect_head` must not share a tag. With the effect objective OFF the
+    head is never built, so the field must not split a protocol — A/B's shared tag holds."""
+    base = _cfg(batch=20, effect_actions=("offer",))
+    bil = _cfg(batch=20, effect_actions=("offer",), effect_head="bilinear")
+    assert base.tag != bil.tag
+    assert _cfg(batch=20, effect_actions=("offer",), effect_head="mlp").tag == base.tag
+    assert _cfg(batch=27).tag == _cfg(batch=27, effect_head="bilinear").tag
+
+
 # ---- --set: the declaration channel accepts a declaration (DEC-449) -----------------------
 
 
