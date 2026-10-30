@@ -4895,3 +4895,48 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   quantities; their SUM is enforced by the floor guard, not by a single kernel counter. With Qwen
   serving, the derived budget is ~15 GB (host-derived), which keeps the total under the 20 GB
   budget with the 8 GB floor intact.
+
+## DEC-452 — [RESULT] protocol C measured: the effect objective teaches response propensity and loses the rl green row
+
+- **What ran.** Protocol C = protocol B + the previously-dormant `effect` objective
+  (`--set effect_actions=offer`), trained on GPU inside the 20 GB container with Qwen serving
+  the whole time (DEC-451's preflight held until `/health`; host low-water **10.7 GB** against the
+  8 GB floor). Artifact `0.11.0r103115-b20d256e3lr3e-04o549abbe1`; governor stopped itself at step
+  728 (best 6.5968); `[step-time]` 1.2936 s/step, enqueue-bound (Qwen co-resident raises step time
+  from 0.97 s — disclosed, not a regression in the loop).
+  Registry proves the protocol: `overrides {batch:20, effect_actions:['offer']}`, `objectives`
+  contains `effect`, `loss_scales` 39 tasks, checkpoint carries `head_effect` (67 074 params).
+- **What it changed (protocol B → C, same artifact family, never pooled with A).**
+  | trait | B | C | PATH A |
+  |---|---|---|---|
+  | `return_proneness` | −0.007 | **0.389** | 0.673 |
+  | `h0` | 0.806 | **0.842** | −0.121 |
+  | `churn_day` | 0.551 | 0.571 | 0.721 |
+  | `x0` | 0.796 | 0.791 | 0.906 |
+  | `known_effect_uplift` (brain) | −0.0042 | **−0.0174** | −0.1727 |
+  | `policy_value` (brain) | 0.0540 | 0.0533 | 0.0308 |
+  | `dose_response_curve` | 0.247 | 0.260 | 0.319 |
+  | `argmax_optimum` | 0.2698 | 0.2698 | 0.4690 |
+  | `future_geometry` | 0.0012 | 0.0001 | 0.0456 |
+- **Verdict: the top line regressed 1/8 → 0/8.** The rl row was green on the policy-value task; it
+  is now red because the control gate (H4) fired: the random control for `known_effect_uplift`
+  (−0.0157) now beats the brain (−0.0174). The brain's uplift was already negative; the effect
+  objective made it slightly more negative, which is exactly the opposite of what it was added for.
+  Nothing else passed to compensate: S5 stays red on all three probes, `argmax_optimum` is
+  bit-identical (the simulator's argmax is unchanged by the encoder's response head), and the
+  unsupervised geometry got worse.
+- **What it did prove.** The effect pressure is not inert: `return_proneness` — the trait the
+  probe measures as "does the state know how this customer responds" — moved from noise to 0.389,
+  a 50× move toward PATH A's 0.673, and `h0` improved. So the objective reaches the state; the
+  direct-method head then fails to convert that into *identified uplift* on the randomized arm.
+  The likely axis (to be tested, not assumed): the effect head is trained on the full-history
+  state but the judged uplift is a *paired* contrast on 233 identified B-customers; the head may be
+  learning the level of response (which the supervised trait sees) rather than the action contrast
+  (which the uplift needs). That is a head/objective-design question, not a data question.
+- **Decision.** Keep the measurement and the artifact: protocol C is the recorded state of the
+  encoder, and the card now says 0/8. Do not revert to B to restore a green row — that would be
+  selecting the protocol by its verdict, which is the exact anti-pattern the certification rules
+  forbid. The next change must target the uplift contrast with a pre-registered protocol D, and
+  the operator should choose between (a) leave the encoder at C and work the consumer side, or
+  (b) authorize D (contrastive/paired effect target) knowing it costs another train+chain cycle.
+- **Cost.** Train 941.7 s + chain ~17 min, inside the 20 GB container with Qwen up throughout.
