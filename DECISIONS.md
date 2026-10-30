@@ -5079,3 +5079,44 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   frozen eval contract: stop-and-ask, operator ruling only.
 - **Cost.** 2.8 s CPU in the container. The script joins the watchdog pattern list (the
   coverage test is green). No gate, threshold, probe, or card row was touched.
+
+## DEC-456 — [TECHNICAL] supervised-leg attribution: what is absent from the state, what is only entangled, and what no consumer can read
+
+- **Why.** Operator directive (2026-10-30): master SUPERVISED first — "prove you can do
+  anything before you prove you can do everything" — and use the card as the increment-to-green
+  instrument. Before proposing encoder work, every failing supervised trait must name its axis
+  (the loop's Diagnosable rule; DEC-431's lesson: audit the probe, then the encoder).
+- **What was built.** `scripts/measure_access_axis.py` (CPU, container; watchdog-policed) scores
+  every trait through the judge's OWN geometry (`_arms`, `_target_matrix`, `_ridge_oos` imported,
+  never re-typed) with the three consumers A3 permits for shipping: linear (the frozen shipping
+  head), kNN (k=15), small MLP (64 units) — arms: brain, ledger, brain+ledger, table, and
+  `--rewhiten` (E re-served through the frozen whitening stored in the checkpoint, round-trip
+  verified before use). Receipt: `docs/report_cards/experiments/access_axis_supervised.json`.
+- **Findings (n=1 776 fit / 724 score; protocol-D artifact).**
+  * `churn_day`: **PRESENT BUT ENTANGLED** — kNN 0.668 vs linear 0.582 on brain; the table's
+    linear is 0.655 (the card's 0.721 is the GBM). The state carries the time-structure of
+    silence, the linear head cannot read it. The serving-boundary hypothesis was TESTED AND
+    KILLED: re-whitening changes every linear score to 4 decimals (ridge with a self-selecting
+    alpha is invariant to the transform) — the entanglement is NONLINEAR. Only training
+    pressure can linearize it.
+  * `x0` and `return_proneness`: **ABSENT from the learned shape** — no permitted consumer
+    reaches within 0.05 of the table (best brain 0.791/0.295 vs table 0.890/0.687). The ledger
+    carries x0 (0.889): rate/"how much" is what the contractive trunk loses. The route is
+    objective pressure on the TRUNK — not the raw accumulator in E, which would be the
+    circular served-statistic claim certification rule #4 forbids.
+  * `h0`: already delivered (ledger 0.985, brain 0.839). `price_sensitivity`, `regime_switches`,
+    `final_regime_days`: NO PERMITTED CONSUMER READS THEM on any arm (even the table's linear
+    is ~0.02–0.03; the card's PATH-A values 0.128/0.034/−0.124 come from the GBM's
+    nonlinearity). These are the hard end of the supervised ladder — last in line.
+- **Reading → the ordered attack (simple to hard), all encoder-side, no gate/contract touched:**
+  (1) a self-supervised SURVIVAL objective on the serving (faded-query) path so the nonlinear
+  silence structure the kNN finds becomes linearly readable — targets `churn_day`;
+  (2) rate/level pressure on the trunk so `x0`/`return_proneness` become PRESENT (successor/
+  aggregate-style targets already exist — the question is pressure, not content);
+  (3) segmentation/price traits last, possibly beyond this data's power (report honestly).
+- **Alternatives considered.** (1) Ask the operator to re-serve E through the stored whitening —
+  MEASURED INSTEAD (rewhiten ≡ brain): the ruling request is withdrawn before being asked.
+  (2) Serve the raw accumulator in E — rejected: circular-evaluation rule #4 (deterministic
+  full-history summaries in E certify "served-statistic sufficiency", not learned-shape).
+  (3) Use the MLP/kNN as the shipping head — rejected: DEC-407 froze linear as the shipping
+  head; the judge's claim IS that a dumb consumer can read the donor.
