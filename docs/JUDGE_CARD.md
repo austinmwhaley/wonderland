@@ -1,6 +1,6 @@
 # JUDGE CARD — PATH B > PATH A
 
-*Generated `2026-10-30T20:19:02+00:00` · commit `023d84f` (`foundation-rebuild` · dirty) · encoder behavior `ab30e0f8c036b557`*
+*Generated `2026-10-30T20:19:24+00:00` · commit `e283608` (`foundation-rebuild` · clean) · encoder behavior `ab30e0f8c036b557`*
 
 **Assessment:** NOT DONE. Legs green: 1/8 · stages green: 5/6. This is a statement about receipts, not about effort; nothing here is a claim of universality (DEC-410: that word appears only when the coverage rows are green).
 
