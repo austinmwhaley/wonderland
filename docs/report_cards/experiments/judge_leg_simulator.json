@@ -1,9 +1,9 @@
 {
   "_meta": {
     "behavior_hash": "33c12077e1b70129",
-    "command": "measure_judge_law.py --products /work/cfm_views --demo /work/demo --legs rl,simulator",
-    "generated_at": "2026-10-30T00:20:58+00:00",
-    "git_commit": "8b910ab8dfe77f914e85817f3ec30c0db0e56d20",
+    "command": "measure_judge_law.py --products /work/cfm_views --demo /work/demo --legs supervised,unsupervised,rl,simulator --out-dir /repo/docs/report_cards/experiments",
+    "generated_at": "2026-10-30T00:40:51+00:00",
+    "git_commit": "924a6fde10b7394021c958bace9ff53cf1265e5a",
     "producer": "measure_judge_law.py"
   },
   "arms": {
