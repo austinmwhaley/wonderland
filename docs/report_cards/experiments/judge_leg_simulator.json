@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "fc533e2c09846f7e",
+    "behavior_hash": "b162729c25f09776",
     "command": "measure_judge_law.py --products /work/cfm_b20 --demo /work/demo --legs supervised,unsupervised,rl,simulator --out-dir /repo/docs/report_cards/experiments",
-    "generated_at": "2026-10-30T14:03:09+00:00",
-    "git_commit": "843ba2c38ddf5d7e675adbffc96f373155080211",
+    "generated_at": "2026-10-30T16:54:28+00:00",
+    "git_commit": "6f50832c85fb6f3ee90f5fffa5d9b0b56a421fc5",
     "producer": "measure_judge_law.py"
   },
   "arms": {
@@ -29,12 +29,12 @@
             "random",
             "destroyed"
           ],
-          "destroyed": -2.604926,
+          "destroyed": -2.604922,
           "metric": "R2 on the identified (customer x offer level) purchase rate (4 levels: [0, 1, 2, 3])",
           "n": 1132,
           "name": "dose_response_curve",
           "pathA": 0.318547,
-          "random": -2.512579
+          "random": -2.512574
         },
         {
           "brain": 0.269807,
@@ -100,6 +100,11 @@
     "n_present": 2500,
     "n_requested": 2500,
     "source": "/work/demo/path_a/path_a_wide_table.parquet"
+  },
+  "products": {
+    "path": "/work/cfm_b20",
+    "registry_sha256": "eecc473e46a72977",
+    "tag": "0.11.0r469048"
   },
   "splits": {
     "n_fit_A": 1776,

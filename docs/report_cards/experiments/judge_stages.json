@@ -1,24 +1,24 @@
 {
   "S1": {
     "_stamp": {
-      "behavior_hash": "fc533e2c09846f7e",
+      "behavior_hash": "b162729c25f09776",
       "command": "measure_input_law.py --data /work/demo --out /repo/docs/report_cards/experiments/judge_stages.json",
-      "generated_at": "2026-10-30T13:53:18+00:00",
-      "git_commit": "843ba2c38ddf5d7e675adbffc96f373155080211",
+      "generated_at": "2026-10-30T16:44:10+00:00",
+      "git_commit": "6f50832c85fb6f3ee90f5fffa5d9b0b56a421fc5",
       "producer": "measure_input_law.py"
     },
     "checks": {
       "new_field_ingested": {
         "evidence": "injected loyalty_tier (novel categories) + session_seconds into every event's attributes: resolved into catspec=['acquisition_channel', 'brand', 'campaign_id', 'category_code', 'channel', 'dow', 'freq', 'hour', 'loyalty_tier', 'offer', 'order_id', 'product_id', 'qty', 'reason', 'region', 'segment', 'touch'] num=['discount', 'margin', 'price', 'session_seconds', 'signup_ts', 'value']; encoder trained on the variant (d=64,L=1,e=1): E finite=True, best=56.3784; zero pipeline-code edits",
         "n_rows": 3328381,
-        "seconds": 138.9,
+        "seconds": 129.3,
         "working": true
       },
       "renamed_end_to_end": {
         "evidence": "renamed client_id/occurred_at/event/attributes/total -> onboard resolved {'customer_key': 'client_id', 'event_ts': 'occurred_at', 'event_type': 'event', 'brand': None, 'entity_type': None, 'entity_id': None, 'source_table': None, 'value': 'total', 'event_attributes': ['attributes']}; 3328381 rows kept (source 3328381); 6000 customers encoded; encoder trained on the resolved stream (d=64,L=1,e=1): E finite=True, best=52.9978; zero pipeline-code edits",
         "n_customers": 6000,
         "n_rows": 3328381,
-        "seconds": 148.2,
+        "seconds": 150.5,
         "working": true
       }
     },
@@ -27,10 +27,10 @@
   },
   "S2": {
     "_stamp": {
-      "behavior_hash": "fc533e2c09846f7e",
+      "behavior_hash": "b162729c25f09776",
       "command": "measure_input_law.py --data /work/demo --out /repo/docs/report_cards/experiments/judge_stages.json",
-      "generated_at": "2026-10-30T13:53:18+00:00",
-      "git_commit": "843ba2c38ddf5d7e675adbffc96f373155080211",
+      "generated_at": "2026-10-30T16:44:10+00:00",
+      "git_commit": "6f50832c85fb6f3ee90f5fffa5d9b0b56a421fc5",
       "producer": "measure_input_law.py"
     },
     "checks": {
@@ -48,13 +48,13 @@
       "training_determinism": {
         "evidence": "two seed-0 runs (d=64,L=1,e=1) on identical prepared inputs: E bit-identical=True, best-val equal (49.225239 == 49.225239)",
         "n_customers": 6000,
-        "seconds": 171.8,
+        "seconds": 177.3,
         "working": true
       },
       "unseen_value_path": {
         "evidence": "frozen schema (11 event types, vocab sizes [4, 10, 16, 6, 4, 7, 4, 24, 4, 4, 0, 77, 3, 4, 4, 5, 7]) encoded a batch containing unseen event types/categories/1e12 numerics: rows=2348780, entities=6002, all arrays finite=True, novel rows -> OOV slot 0 = True, vocab unchanged after serving = True (never re-derived)",
         "n_rows": 2348780,
-        "seconds": 15.0,
+        "seconds": 14.3,
         "working": true
       }
     },
@@ -63,16 +63,16 @@
   },
   "S3": {
     "_stamp": {
-      "behavior_hash": "fc533e2c09846f7e",
+      "behavior_hash": "b162729c25f09776",
       "command": "measure_dynamics_law.py --ckpt-dir /work/cfm_b20 --db /work/demo/customer_event_stream.parquet --train-log /work/cfm_b20/train.log --out /repo/docs/report_cards/experiments/judge_stages.json",
-      "generated_at": "2026-10-30T14:01:28+00:00",
-      "git_commit": "843ba2c38ddf5d7e675adbffc96f373155080211",
+      "generated_at": "2026-10-30T16:52:26+00:00",
+      "git_commit": "6f50832c85fb6f3ee90f5fffa5d9b0b56a421fc5",
       "producer": "measure_dynamics_law.py"
     },
     "checks": {
       "clock_periodicity": {
         "evidence": "week-shift (exact cycle multiple): worst state/E drift 0.000e+00 (gate 1e-4); gaps-x10 control (tokens fixed): min state/E drift 3.758e-01 (gate >1e-3) \u2014 the spring responds to elapsed time. DISCLOSED: absolute-clock features used, w_tod norm 9.08; cfm_data stored ts vs model _to_epoch differ 0s (UTC vs local frame) \u2014 reconcile before horizons depend on it",
-        "seconds": 0.3,
+        "seconds": 0.5,
         "working": true
       },
       "governed_stability": {
@@ -88,25 +88,25 @@
       },
       "scan_associativity": {
         "evidence": "merge law F(g\u2218f)=F(g)\u2218F(f) on 6 real sequences x 5 split points (float64, model's own decay/drive, continuous_time=True): worst relative error 6.919e-16 (gate 1e-10)",
-        "seconds": 2.1,
+        "seconds": 2.3,
         "working": true,
         "worst_rel_err": 6.918993128966002e-16
       },
       "ssm_merge_exact": {
         "evidence": "one-shot vs split-at-midpoint continuation WITH all recurrent states carried (scan h + intent-filter f + wrapper g) over 6 real sequences: state rel err 1.665e-07, readout 2.563e-07 (gate 5e-05); DISCLOSED: h-only continuation (today's cfm_state.absorb) drifts 2.152e-02 \u2014 the filter state is not carried by serving, a bought approximation awaiting its O6 receipt",
         "h_only_drift": 0.021516640070275293,
-        "seconds": 0.3,
+        "seconds": 0.4,
         "working": true,
         "worst_state_rel": 1.6653948601251512e-07
       },
       "step0_finite": {
         "evidence": "randomly re-initialized trunk (step-0 architecture, N(0,0.5) weights), 6 real sequences: 0 non-finite out of 595968 state/output/E values",
-        "seconds": 0.1,
+        "seconds": 0.2,
         "working": true
       },
       "tau_from_spectrum": {
         "evidence": "taus are gap quantiles of the stream (no literal): base taus=[0.357, 0.979, 2.48]s days -> cadence x100 taus=[35.746, 97.917, 248.024] (median ratio 100.0x, gate >=10x, non-constant=True)",
-        "seconds": 485.5,
+        "seconds": 490.5,
         "working": true
       }
     },
@@ -115,10 +115,10 @@
   },
   "S4": {
     "_stamp": {
-      "behavior_hash": "fc533e2c09846f7e",
+      "behavior_hash": "b162729c25f09776",
       "command": "measure_views_law.py --products /work/cfm_b20 --demo /work/demo --out /repo/docs/report_cards/experiments/judge_stages.json",
-      "generated_at": "2026-10-30T14:02:22+00:00",
-      "git_commit": "843ba2c38ddf5d7e675adbffc96f373155080211",
+      "generated_at": "2026-10-30T16:53:33+00:00",
+      "git_commit": "6f50832c85fb6f3ee90f5fffa5d9b0b56a421fc5",
       "producer": "measure_views_law.py"
     },
     "checks": {
@@ -168,7 +168,7 @@
         "arms": {
           "churn_day": {
             "both": 0.6273,
-            "ci_lo_ledger_adds": -218.473387,
+            "ci_lo_ledger_adds": -218.472751,
             "ci_lo_ledger_vs_destroyed": 70114.230562,
             "learned_only": 0.6528,
             "ledger_destroyed": -16.8063,
@@ -176,7 +176,7 @@
           },
           "final_regime_days": {
             "both": -0.0217,
-            "ci_lo_ledger_adds": -1421.313084,
+            "ci_lo_ledger_adds": -1421.311655,
             "ci_lo_ledger_vs_destroyed": -134.656311,
             "learned_only": -0.0094,
             "ledger_destroyed": -0.0651,
@@ -184,7 +184,7 @@
           },
           "h0": {
             "both": 0.9819,
-            "ci_lo_ledger_adds": 2.67787,
+            "ci_lo_ledger_adds": 2.67789,
             "ci_lo_ledger_vs_destroyed": 100.836083,
             "learned_only": 0.9145,
             "ledger_destroyed": -1.3976,
@@ -249,94 +249,94 @@
           "randomized": {
             "coverage": 0.8,
             "n": 25260,
-            "sigma": 0.293321
+            "sigma": 0.293293
           },
           "unrandomized": {
             "coverage": 0.8,
             "n": 101635,
-            "sigma": 0.301774
+            "sigma": 0.301762
           }
         },
-        "evidence": "conditional outcome head: holdout R2=0.0671 on n=126895 B-rows (LEAKY ceiling 0.0681 \u2014 the most any head could predict from this target), coverage 0.800 (nominal 0.80, band +/-0.002), randomized fraction 0.1991, measured sigma 0.293321/0.301774 (rand/unrand, mean interval width 0.769165), delta incremental R2=0.002 (effective rank delta=1.3325 state=1.9251), actions from /home/austin_whaley/wonderland_work/demo/relational_reference_truth.json",
+        "evidence": "conditional outcome head: holdout R2=0.0671 on n=126895 B-rows (LEAKY ceiling 0.0681 \u2014 the most any head could predict from this target), coverage 0.800 (nominal 0.80, band +/-0.002), randomized fraction 0.1991, measured sigma 0.293293/0.301762 (rand/unrand, mean interval width 0.769126), delta incremental R2=0.002 (effective rank delta=1.3325 state=1.9251), actions from /home/austin_whaley/wonderland_work/demo/relational_reference_truth.json",
         "paired_ci_lo": {
           "action-blind (state only)": 0.000137,
-          "destroyed": 0.197778,
-          "population constant": 0.089861,
+          "destroyed": 0.197777,
+          "population constant": 0.08986,
           "state-blind (action only)": 0.024959
         },
         "served": true,
         "working": true
       }
     },
-    "evidence": "[outlet_schema] OK: 7 views / 17500 rows; declared-not-served [] advertised | [decodability] OK: linear-head decoders beat random+destroyed (paired CI lo>0) for 7/7 views; undecodable: none; carried by {'x0': 3, 'h0': 4} | [accessibility_parity] OK: 49 view x target pairs at parity within 3x the paired SE; accessibility gaps: none | [response_outlet] OK: conditional outcome head: holdout R2=0.0671 on n=126895 B-rows (LEAKY ceiling 0.0681 \u2014 the most any head could predict from this target), coverage 0.800 (nominal 0.80, band +/-0.002), randomized fraction 0.1991, measured sigma 0.293321/0.301774 (rand/unrand, mean interval width 0.769165), delta incremental R2=0.002 (effective rank delta=1.3325 state=1.9251), actions from /home/austin_whaley/wonderland_work/demo/relational_reference_truth.json | [ledger_attribution] OK: attribution measured on 7 trait(s); best ledger-only R2=0.9846 on 'h0' (its destroyed control -1.3976, learned-only 0.9145, both 0.9819); ledger beats destroyed on 5/7 and adds beyond the brain on 2/7 \u2014 a ledger-backed number is never booked as a brain win (SPINE \u00a75)",
+    "evidence": "[outlet_schema] OK: 7 views / 17500 rows; declared-not-served [] advertised | [decodability] OK: linear-head decoders beat random+destroyed (paired CI lo>0) for 7/7 views; undecodable: none; carried by {'x0': 3, 'h0': 4} | [accessibility_parity] OK: 49 view x target pairs at parity within 3x the paired SE; accessibility gaps: none | [response_outlet] OK: conditional outcome head: holdout R2=0.0671 on n=126895 B-rows (LEAKY ceiling 0.0681 \u2014 the most any head could predict from this target), coverage 0.800 (nominal 0.80, band +/-0.002), randomized fraction 0.1991, measured sigma 0.293293/0.301762 (rand/unrand, mean interval width 0.769126), delta incremental R2=0.002 (effective rank delta=1.3325 state=1.9251), actions from /home/austin_whaley/wonderland_work/demo/relational_reference_truth.json | [ledger_attribution] OK: attribution measured on 7 trait(s); best ledger-only R2=0.9846 on 'h0' (its destroyed control -1.3976, learned-only 0.9145, both 0.9819); ledger beats destroyed on 5/7 and adds beyond the brain on 2/7 \u2014 a ledger-backed number is never booked as a brain win (SPINE \u00a75)",
     "pairs": [
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 1.238611726705496,
-        "ci_lo_vs_random": 4440387764.308828,
+        "ci_lo_vs_destroyed": 1.2081995567216472,
+        "ci_lo_vs_random": 3877196.8386294763,
         "gap": null,
-        "r2_linear": 0.8681832888474725,
-        "r2_mlp": 0.866472680510318,
+        "r2_linear": 0.8681813320155485,
+        "r2_mlp": 0.8664726651566598,
         "target": "x0",
         "view": "response"
       },
       {
         "beats_controls": false,
-        "ci_lo_vs_destroyed": -0.06753298643570427,
-        "ci_lo_vs_random": 2723796.643534747,
+        "ci_lo_vs_destroyed": -0.06753089647823551,
+        "ci_lo_vs_random": 2717032.4494735845,
         "gap": null,
-        "r2_linear": -0.02887593307730585,
-        "r2_mlp": -0.03134414824179976,
+        "r2_linear": -0.02887594427214557,
+        "r2_mlp": -0.03134913131620132,
         "target": "h0",
         "view": "response"
       },
       {
         "beats_controls": false,
-        "ci_lo_vs_destroyed": -0.0001813080949596721,
-        "ci_lo_vs_random": 102550.46748587118,
+        "ci_lo_vs_destroyed": -0.00018130954238639596,
+        "ci_lo_vs_random": 102096.63927231169,
         "gap": null,
-        "r2_linear": -0.008364847883599147,
-        "r2_mlp": -0.038270101921034305,
+        "r2_linear": -0.008364633818953138,
+        "r2_mlp": -0.031827486252292925,
         "target": "price_sensitivity",
         "view": "response"
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 3.364310846277948e-08,
-        "ci_lo_vs_random": 3330.234976929435,
+        "ci_lo_vs_destroyed": 3.069371314449714e-08,
+        "ci_lo_vs_random": 3313.552645809311,
         "gap": null,
-        "r2_linear": 0.0005926080164752046,
-        "r2_mlp": -0.041423330371824996,
+        "r2_linear": 0.0005925741156493913,
+        "r2_mlp": -0.041147406518131646,
         "target": "return_proneness",
         "view": "response"
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 865.4009672650012,
-        "ci_lo_vs_random": 19662562785.067596,
+        "ci_lo_vs_destroyed": 865.2961173820117,
+        "ci_lo_vs_random": 19979430346.983906,
         "gap": null,
-        "r2_linear": 0.08337004317563146,
-        "r2_mlp": -26.541293349923723,
+        "r2_linear": 0.08336588790930877,
+        "r2_mlp": -26.541318259170787,
         "target": "churn_day",
         "view": "response"
       },
       {
         "beats_controls": false,
-        "ci_lo_vs_destroyed": -0.0036089648494534183,
-        "ci_lo_vs_random": 44638170.14541457,
+        "ci_lo_vs_destroyed": -0.0036094519514350562,
+        "ci_lo_vs_random": 44446989.80158185,
         "gap": null,
-        "r2_linear": 0.00040301104349049766,
-        "r2_mlp": -0.015837156529319607,
+        "r2_linear": 0.00040242624569886143,
+        "r2_mlp": -0.015962281523596467,
         "target": "regime_switches",
         "view": "response"
       },
       {
         "beats_controls": false,
-        "ci_lo_vs_destroyed": -153.25796642452764,
-        "ci_lo_vs_random": 899575978073.4326,
+        "ci_lo_vs_destroyed": -153.29451159345473,
+        "ci_lo_vs_random": 894884041164.8517,
         "gap": null,
-        "r2_linear": -0.007247986792754624,
-        "r2_mlp": -1.4240546179717022,
+        "r2_linear": -0.007248334805949552,
+        "r2_mlp": -1.4240523113497066,
         "target": "final_regime_days",
         "view": "response"
       },
@@ -412,363 +412,368 @@
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 258.5314189812633,
-        "ci_lo_vs_random": 492.5635290101735,
+        "ci_lo_vs_destroyed": 258.52431884846146,
+        "ci_lo_vs_random": 492.5304506719308,
         "gap": null,
-        "r2_linear": 0.8911488409960914,
-        "r2_mlp": 0.8426347378096027,
+        "r2_linear": 0.8911492382014934,
+        "r2_mlp": 0.8426651747543664,
         "target": "x0",
         "view": "shape"
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 117539.2848785522,
-        "ci_lo_vs_random": 183579.1434978533,
+        "ci_lo_vs_destroyed": 117532.39719468504,
+        "ci_lo_vs_random": 183574.87942689873,
         "gap": null,
-        "r2_linear": 0.9172980504938586,
-        "r2_mlp": 0.9049554415068093,
+        "r2_linear": 0.9172973865439802,
+        "r2_mlp": 0.9048844816737838,
         "target": "h0",
         "view": "shape"
       },
       {
         "beats_controls": false,
-        "ci_lo_vs_destroyed": -0.0013823677893679514,
-        "ci_lo_vs_random": -0.0002663200621577611,
+        "ci_lo_vs_destroyed": -0.001382370259260882,
+        "ci_lo_vs_random": -0.00026632015631539494,
         "gap": null,
-        "r2_linear": -0.0198978598507642,
-        "r2_mlp": -0.9114294117660173,
+        "r2_linear": -0.019897858543649782,
+        "r2_mlp": -0.9089177929407746,
         "target": "price_sensitivity",
         "view": "shape"
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 259.11576669742675,
-        "ci_lo_vs_random": 352.1496356534315,
+        "ci_lo_vs_destroyed": 259.1068666464398,
+        "ci_lo_vs_random": 352.148004443438,
         "gap": null,
-        "r2_linear": 0.04893264972962241,
-        "r2_mlp": -1.426185921033579,
+        "r2_linear": 0.048940262349726926,
+        "r2_mlp": -1.4262458802986675,
         "target": "return_proneness",
         "view": "shape"
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 10062696.806183439,
-        "ci_lo_vs_random": 18098071.750940435,
+        "ci_lo_vs_destroyed": 10063368.120405834,
+        "ci_lo_vs_random": 18096259.324413437,
         "gap": null,
-        "r2_linear": 0.6283650399009292,
-        "r2_mlp": -0.9911792155949273,
+        "r2_linear": 0.6283636252075296,
+        "r2_mlp": -0.9918465178351838,
         "target": "churn_day",
         "view": "shape"
       },
       {
         "beats_controls": false,
-        "ci_lo_vs_destroyed": -0.0003586761430433441,
-        "ci_lo_vs_random": 0.024927521048441367,
+        "ci_lo_vs_destroyed": -0.0003587071658957942,
+        "ci_lo_vs_random": 0.02492743132674514,
         "gap": null,
-        "r2_linear": 0.008288171980993742,
-        "r2_mlp": -0.1986831013183079,
+        "r2_linear": 0.008288166977127642,
+        "r2_mlp": -0.19816061367276117,
         "target": "regime_switches",
         "view": "shape"
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 4.023447792782162,
-        "ci_lo_vs_random": 1238.6808135612139,
+        "ci_lo_vs_destroyed": 4.0217235127003415,
+        "ci_lo_vs_random": 1238.6791962917098,
         "gap": null,
-        "r2_linear": 0.00882077863820685,
-        "r2_mlp": -0.13705301507870282,
+        "r2_linear": 0.008820770229521324,
+        "r2_mlp": -0.1368686904453793,
         "target": "final_regime_days",
         "view": "shape"
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 1.6653516167338729,
-        "ci_lo_vs_random": 125506.09571444345,
+        "ci_lo_vs_destroyed": 1.6653460192540015,
+        "ci_lo_vs_random": 125501.5410437458,
         "gap": null,
-        "r2_linear": 0.893221769227055,
-        "r2_mlp": 0.7809805340186795,
+        "r2_linear": 0.8932218085831574,
+        "r2_mlp": 0.7811493819999271,
         "target": "x0",
         "view": "learned_state"
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 934.1298857104866,
-        "ci_lo_vs_random": 39049380.044370815,
+        "ci_lo_vs_destroyed": 934.116965957476,
+        "ci_lo_vs_random": 39049821.69259508,
         "gap": null,
-        "r2_linear": 0.9174085520464075,
-        "r2_mlp": 0.9321399991632748,
+        "r2_linear": 0.9174079327060151,
+        "r2_mlp": 0.9309392096614879,
         "target": "h0",
         "view": "learned_state"
       },
       {
         "beats_controls": false,
-        "ci_lo_vs_destroyed": -0.0014162149062239972,
-        "ci_lo_vs_random": 13.991916779456908,
+        "ci_lo_vs_destroyed": -0.0014162186114435955,
+        "ci_lo_vs_random": 13.99186846674629,
         "gap": null,
-        "r2_linear": -0.031650375004906195,
-        "r2_mlp": -1.4215647780830074,
+        "r2_linear": -0.031650344397169405,
+        "r2_mlp": -1.423633791752085,
         "target": "price_sensitivity",
         "view": "learned_state"
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 0.9567242846606412,
-        "ci_lo_vs_random": 82732.36596626822,
+        "ci_lo_vs_destroyed": 0.9567556370201487,
+        "ci_lo_vs_random": 82733.43320259558,
         "gap": null,
-        "r2_linear": 0.15174457424427457,
-        "r2_mlp": -2.5635961479040277,
+        "r2_linear": 0.15174111970866655,
+        "r2_mlp": -2.5460192134808266,
         "target": "return_proneness",
         "view": "learned_state"
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 7691.1826166525225,
-        "ci_lo_vs_random": 94798901.33181027,
+        "ci_lo_vs_destroyed": 7691.154523724563,
+        "ci_lo_vs_random": 94795407.60837056,
         "gap": null,
-        "r2_linear": 0.6557060887027545,
-        "r2_mlp": -0.312491486774064,
+        "r2_linear": 0.6557059876034438,
+        "r2_mlp": -0.3188876523205153,
         "target": "churn_day",
         "view": "learned_state"
       },
       {
         "beats_controls": false,
-        "ci_lo_vs_destroyed": -0.0019339045309811277,
-        "ci_lo_vs_random": 393.5835236620729,
+        "ci_lo_vs_destroyed": -0.0019339061279608591,
+        "ci_lo_vs_random": 393.58369755927123,
         "gap": null,
-        "r2_linear": 0.004798550879295815,
-        "r2_mlp": -0.22311280472337014,
+        "r2_linear": 0.004798569574660072,
+        "r2_mlp": -0.2231121660019968,
         "target": "regime_switches",
         "view": "learned_state"
       },
       {
         "beats_controls": false,
-        "ci_lo_vs_destroyed": -194.7183218599325,
-        "ci_lo_vs_random": 10319564.56552643,
+        "ci_lo_vs_destroyed": -194.71455636281092,
+        "ci_lo_vs_random": 10319572.989854153,
         "gap": null,
-        "r2_linear": 0.004547432222666181,
-        "r2_mlp": -0.11968783420574458,
+        "r2_linear": 0.004547430979085942,
+        "r2_mlp": -0.1212740520433917,
         "target": "final_regime_days",
         "view": "learned_state"
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 101.65242342971356,
-        "ci_lo_vs_random": 166957.89647965092,
+        "ci_lo_vs_destroyed": 101.64777087705997,
+        "ci_lo_vs_random": 166905.4777781811,
         "gap": null,
-        "r2_linear": 0.8918382110480261,
-        "r2_mlp": 0.8024214395236344,
+        "r2_linear": 0.8918371170661811,
+        "r2_mlp": 0.8024206624871151,
         "target": "x0",
         "view": "forecast"
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 185243.48108132696,
-        "ci_lo_vs_random": 277728835.58685875,
+        "ci_lo_vs_destroyed": 185376.40298181464,
+        "ci_lo_vs_random": 277998611.93457186,
         "gap": null,
-        "r2_linear": 0.9059669215233088,
-        "r2_mlp": 0.8585718775885856,
+        "r2_linear": 0.9059909123426972,
+        "r2_mlp": 0.8574333833118015,
         "target": "h0",
         "view": "forecast"
       },
       {
         "beats_controls": false,
-        "ci_lo_vs_destroyed": -0.0016540739732633144,
-        "ci_lo_vs_random": 6.052421836748286,
+        "ci_lo_vs_destroyed": -0.001654079937373135,
+        "ci_lo_vs_random": 6.053317656967231,
         "gap": null,
-        "r2_linear": -0.028979690216604403,
-        "r2_mlp": -1.1490994912816759,
+        "r2_linear": -0.028979605385284213,
+        "r2_mlp": -1.1484632682025513,
         "target": "price_sensitivity",
         "view": "forecast"
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 469.080618191096,
-        "ci_lo_vs_random": 724659.9643593674,
+        "ci_lo_vs_destroyed": 469.8663574819476,
+        "ci_lo_vs_random": 725423.3986111474,
         "gap": null,
-        "r2_linear": 0.16447208926060586,
-        "r2_mlp": -2.0752185235364475,
+        "r2_linear": 0.16445995013508052,
+        "r2_mlp": -2.0856690350420912,
         "target": "return_proneness",
         "view": "forecast"
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 23122519.150787733,
-        "ci_lo_vs_random": 34499352246.79145,
+        "ci_lo_vs_destroyed": 23111329.52117178,
+        "ci_lo_vs_random": 34455852629.66654,
         "gap": null,
-        "r2_linear": 0.6396193600037093,
-        "r2_mlp": -0.4753588736920997,
+        "r2_linear": 0.6395808981781248,
+        "r2_mlp": -0.4746010358916197,
         "target": "churn_day",
         "view": "forecast"
       },
       {
         "beats_controls": false,
-        "ci_lo_vs_destroyed": -0.011075613055785844,
-        "ci_lo_vs_random": 162.8308951638774,
+        "ci_lo_vs_destroyed": -0.011075435517748573,
+        "ci_lo_vs_random": 162.8670180384883,
         "gap": null,
-        "r2_linear": -0.0028390917969551843,
-        "r2_mlp": -0.31340277293014474,
+        "r2_linear": -0.002839098532979367,
+        "r2_mlp": -0.31301643427910264,
         "target": "regime_switches",
         "view": "forecast"
       },
       {
         "beats_controls": false,
-        "ci_lo_vs_destroyed": -73.12779284867347,
-        "ci_lo_vs_random": 4041234.49681275,
+        "ci_lo_vs_destroyed": -73.11951149822654,
+        "ci_lo_vs_random": 4042231.922259959,
         "gap": null,
-        "r2_linear": -0.003238438878326866,
-        "r2_mlp": -0.10800486755962901,
+        "r2_linear": -0.0032385213860435247,
+        "r2_mlp": -0.10812012443048524,
         "target": "final_regime_days",
         "view": "forecast"
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 0.15947158052409713,
-        "ci_lo_vs_random": 90.0521168070442,
+        "ci_lo_vs_destroyed": 0.15947173616961116,
+        "ci_lo_vs_random": 90.05196175527387,
         "gap": null,
-        "r2_linear": 0.1446478634758539,
-        "r2_mlp": 0.16771671019174172,
+        "r2_linear": 0.1446479389255143,
+        "r2_mlp": 0.16771671679080802,
         "target": "x0",
         "view": "uncertainty"
       },
       {
         "beats_controls": false,
-        "ci_lo_vs_destroyed": -0.34315299295593826,
-        "ci_lo_vs_random": 3024.78852285638,
+        "ci_lo_vs_destroyed": -0.34315545971382144,
+        "ci_lo_vs_random": 3024.7921883658105,
         "gap": null,
-        "r2_linear": -0.020836321188681062,
-        "r2_mlp": -0.016641126670636774,
+        "r2_linear": -0.02083639327618747,
+        "r2_mlp": -0.016628185091656755,
         "target": "h0",
         "view": "uncertainty"
       },
       {
         "beats_controls": false,
-        "ci_lo_vs_destroyed": -5.301736389233147e-05,
-        "ci_lo_vs_random": 0.0028026951955977494,
+        "ci_lo_vs_destroyed": -5.301616325885692e-05,
+        "ci_lo_vs_random": 0.0028026134889008753,
         "gap": null,
-        "r2_linear": -0.006030379594611279,
-        "r2_mlp": -0.018485625915682924,
+        "r2_linear": -0.0060303807560013745,
+        "r2_mlp": -0.018485619521312335,
         "target": "price_sensitivity",
         "view": "uncertainty"
       },
       {
         "beats_controls": false,
-        "ci_lo_vs_destroyed": -6.465139159071157e-05,
-        "ci_lo_vs_random": 0.003957610896212281,
+        "ci_lo_vs_destroyed": -6.465112524952772e-05,
+        "ci_lo_vs_random": 0.003957570162306764,
         "gap": null,
-        "r2_linear": -0.0018154351836883187,
-        "r2_mlp": -0.05095453388412685,
+        "r2_linear": -0.0018154330661319662,
+        "r2_mlp": -0.050954527540549854,
         "target": "return_proneness",
         "view": "uncertainty"
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 45.0001295333764,
-        "ci_lo_vs_random": 255074.38363722718,
+        "ci_lo_vs_destroyed": 44.99986052102293,
+        "ci_lo_vs_random": 255074.51669353156,
         "gap": null,
-        "r2_linear": 0.012459421404087623,
-        "r2_mlp": -37.53423758741763,
+        "r2_linear": 0.012459367975035218,
+        "r2_mlp": -37.5342371263838,
         "target": "churn_day",
         "view": "uncertainty"
       },
       {
         "beats_controls": false,
-        "ci_lo_vs_destroyed": -0.004137072040221272,
-        "ci_lo_vs_random": 1.0683473199078133,
+        "ci_lo_vs_destroyed": -0.004137054876185808,
+        "ci_lo_vs_random": 1.0683433325341205,
         "gap": null,
-        "r2_linear": 0.002072350866281991,
-        "r2_mlp": -0.01631743390264928,
+        "r2_linear": 0.002072356297036171,
+        "r2_mlp": -0.016317243358766165,
         "target": "regime_switches",
         "view": "uncertainty"
       },
       {
         "beats_controls": false,
-        "ci_lo_vs_destroyed": -282.6312352827267,
-        "ci_lo_vs_random": 42891.53193593447,
+        "ci_lo_vs_destroyed": -282.6298702768774,
+        "ci_lo_vs_random": 42891.48466334802,
         "gap": null,
-        "r2_linear": -0.0014979422152503474,
-        "r2_mlp": -1.7609571487225804,
+        "r2_linear": -0.0014979353426542996,
+        "r2_mlp": -1.7609572249049887,
         "target": "final_regime_days",
         "view": "uncertainty"
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 0.9747159323450891,
-        "ci_lo_vs_random": 11436.528041966956,
+        "ci_lo_vs_destroyed": 0.9747137466445778,
+        "ci_lo_vs_random": 11436.425647105687,
         "gap": null,
-        "r2_linear": 0.5394372682543727,
-        "r2_mlp": 0.5354347541488403,
+        "r2_linear": 0.539437264876218,
+        "r2_mlp": 0.5354740489226633,
         "target": "x0",
         "view": "heads"
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 86.32969046146395,
-        "ci_lo_vs_random": 1892067.7251213084,
+        "ci_lo_vs_destroyed": 86.32959457645518,
+        "ci_lo_vs_random": 1892069.005023368,
         "gap": null,
-        "r2_linear": 0.24258434208225343,
-        "r2_mlp": 0.27666991153576415,
+        "r2_linear": 0.2425840690449219,
+        "r2_mlp": 0.2767504977089401,
         "target": "h0",
         "view": "heads"
       },
       {
         "beats_controls": false,
-        "ci_lo_vs_destroyed": -0.0008088613480680668,
-        "ci_lo_vs_random": 3.609721497413373,
+        "ci_lo_vs_destroyed": -0.0008088684474515048,
+        "ci_lo_vs_random": 3.609762466119393,
         "gap": null,
-        "r2_linear": -0.008439924076230287,
-        "r2_mlp": -0.1049436492372604,
+        "r2_linear": -0.008439926523608587,
+        "r2_mlp": -0.1047143771799508,
         "target": "price_sensitivity",
         "view": "heads"
       },
       {
         "beats_controls": false,
-        "ci_lo_vs_destroyed": -6.97573037502923e-05,
-        "ci_lo_vs_random": 0.22260060275042065,
+        "ci_lo_vs_destroyed": -6.97534435049096e-05,
+        "ci_lo_vs_random": 0.22259646726928817,
         "gap": null,
-        "r2_linear": 0.0020321569353354274,
-        "r2_mlp": -0.17961170162236928,
+        "r2_linear": 0.002032204997096665,
+        "r2_mlp": -0.17287240581469887,
         "target": "return_proneness",
         "view": "heads"
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 4800.364863817905,
-        "ci_lo_vs_random": 337730489.7100699,
+        "ci_lo_vs_destroyed": 4800.3192278759825,
+        "ci_lo_vs_random": 337727058.0804694,
         "gap": null,
-        "r2_linear": 0.078236067051633,
-        "r2_mlp": -8.309006404955735,
+        "r2_linear": 0.07823696789450263,
+        "r2_mlp": -8.309363206312995,
         "target": "churn_day",
         "view": "heads"
       },
       {
         "beats_controls": false,
-        "ci_lo_vs_destroyed": 0.026949919637293134,
-        "ci_lo_vs_random": 2088.4915103820467,
+        "ci_lo_vs_destroyed": 0.026949387181143918,
+        "ci_lo_vs_random": 2088.460928289474,
         "gap": null,
-        "r2_linear": -0.0021783884809203347,
-        "r2_mlp": -0.041751649506567734,
+        "r2_linear": -0.002178467393542105,
+        "r2_mlp": -0.043090659952011556,
         "target": "regime_switches",
         "view": "heads"
       },
       {
         "beats_controls": false,
-        "ci_lo_vs_destroyed": 928.8326068689939,
-        "ci_lo_vs_random": 97234728.37756054,
+        "ci_lo_vs_destroyed": 928.8228425789981,
+        "ci_lo_vs_random": 97234692.21405649,
         "gap": null,
-        "r2_linear": -0.0108414963643102,
-        "r2_mlp": -0.29059640318695856,
+        "r2_linear": -0.010841682844225486,
+        "r2_mlp": -0.29066031832306694,
         "target": "final_regime_days",
         "view": "heads"
       }
     ],
+    "products": {
+      "path": "/work/cfm_b20",
+      "registry_sha256": "eecc473e46a72977",
+      "tag": "0.11.0r469048"
+    },
     "working": true
   },
   "S5": {
     "_stamp": {
-      "behavior_hash": "fc533e2c09846f7e",
+      "behavior_hash": "b162729c25f09776",
       "command": "measure_battery_law.py --products /work/cfm_b20/cfm_products.duckdb --demo /work/demo --out /repo/docs/report_cards/experiments/judge_stages.json",
-      "generated_at": "2026-10-30T14:02:24+00:00",
-      "git_commit": "843ba2c38ddf5d7e675adbffc96f373155080211",
+      "generated_at": "2026-10-30T16:53:35+00:00",
+      "git_commit": "6f50832c85fb6f3ee90f5fffa5d9b0b56a421fc5",
       "producer": "measure_battery_law.py"
     },
     "checks": {
@@ -794,14 +799,19 @@
       }
     },
     "evidence": "[ledger_reconstruction] FAILED: ledger recomputed from the raw stream by DuckDB (not a table copy); LINEAR head on the learned-shape donor (embedding = model.proj(h), no served measure blocks \u2014 the claim is learned-only), fitted on 1776 split-A customers and scored on the 724 holdout B; naive comparator = same head on the full event-type bag + recency (target-defining type excluded \u2014 no label leakage into the comparator); spend: brain R2=0.809 naive R2=0.935 MSE-gain 95%CI[-0.048,-0.027] | margin: brain R2=0.793 naive R2=0.897 MSE-gain 95%CI[-0.044,-0.020] | n_purch: brain R2=0.836 naive R2=0.894 MSE-gain 95%CI[-0.025,-0.007] | n_ret: brain R2=0.402 naive R2=0.237 MSE-gain 95%CI[0.071,0.171] | [distance_regression] FAILED: lab-truth latent distance (x0/h0/d0/price_sens/return_prone/touch_pref, z-scored) vs distance over 20000 customer pairs from 724 holdout B customers: donor Spearman 0.067 vs naive bag-of-event-types 0.181; paired-over-pairs gain 95%CI [-0.115,-0.114] (gate lo>0); diagnostic raw-state(pre-boundary) Spearman 0.005 | [action_conditioned_outcome] FAILED: known-effect uplift from the one-factor-daily randomized offer arm (P(buy|offer=opt) - P(buy|off>=2), >= 10 arm-days/side): 233 holdout B customers identified from 724, head fitted on 609 A customers; brain OOS R2=-0.004 vs population-constant naive R2=-0.002; Spearman(brain,truth)=0.086; paired MSE-gain 95%CI [-0.00094,0.00088] (gate lo>0) | [prune_pass] OK: per-objective weights recorded: 34 objectives, min=0.6136, trajectory snapshots=8, selection rule='heldout_combined_objective (all active objectives)' (frozen held-out-SSL); weights <= 0.01 -> DELETE list: EMPTY \u2014 equal-weight mode never decays a task to zero (disclosed: vacuous today, enforced the day a learned mixture is adopted)",
+    "products": {
+      "path": "/work/cfm_b20/cfm_products.duckdb",
+      "registry_sha256": "eecc473e46a72977",
+      "tag": "0.11.0r469048"
+    },
     "working": false
   },
   "S6": {
     "_stamp": {
-      "behavior_hash": "fc533e2c09846f7e",
+      "behavior_hash": "b162729c25f09776",
       "command": "measure_certification_law.py --products /work/cfm_b20 --demo /work/demo --train-log /work/cfm_b20/train.log",
-      "generated_at": "2026-10-30T14:03:12+00:00",
-      "git_commit": "843ba2c38ddf5d7e675adbffc96f373155080211",
+      "generated_at": "2026-10-30T16:54:30+00:00",
+      "git_commit": "6f50832c85fb6f3ee90f5fffa5d9b0b56a421fc5",
       "producer": "measure_certification_law.py"
     },
     "artifacts": {
@@ -811,7 +821,7 @@
       },
       "cfm_products.duckdb": {
         "bytes": 41168896,
-        "sha256": "f4e52998dead2702"
+        "sha256": "c2b06c8405e98916"
       },
       "customer_event_stream.parquet": {
         "bytes": 40284703,
@@ -841,7 +851,7 @@
         "command": "measure_input_law.py --data /work/demo --out /repo/docs/report_cards/experiments/judge_stages.json",
         "exit": 0,
         "last_line": "S1 working=True  S2 working=True",
-        "seconds": 475.8
+        "seconds": 473.2
       },
       "S3": {
         "cap_gb": 20.0,
@@ -849,7 +859,7 @@
         "command": "measure_dynamics_law.py --ckpt-dir /work/cfm_b20 --db /work/demo/customer_event_stream.parquet --train-log /work/cfm_b20/train.log --out /repo/docs/report_cards/experiments/judge_stages.json",
         "exit": 0,
         "last_line": "S3 working=True",
-        "seconds": 490.4
+        "seconds": 496.0
       },
       "S4": {
         "cap_gb": 20.0,
@@ -857,7 +867,7 @@
         "command": "measure_views_law.py --products /work/cfm_b20 --demo /work/demo --out /repo/docs/report_cards/experiments/judge_stages.json",
         "exit": 0,
         "last_line": "S4 -> /repo/docs/report_cards/experiments/judge_stages.json",
-        "seconds": 53.5
+        "seconds": 66.6
       },
       "S5": {
         "cap_gb": 20.0,
@@ -865,15 +875,15 @@
         "command": "measure_battery_law.py --products /work/cfm_b20/cfm_products.duckdb --demo /work/demo --out /repo/docs/report_cards/experiments/judge_stages.json",
         "exit": 0,
         "last_line": "S5 working=False",
-        "seconds": 2.0
+        "seconds": 1.9
       },
       "legs": {
         "cap_gb": 20.0,
         "cap_mechanism": "container cgroup (docker --memory)",
         "command": "measure_judge_law.py --products /work/cfm_b20 --demo /work/demo --legs supervised,unsupervised,rl,simulator --out-dir /repo/docs/report_cards/experiments",
         "exit": 0,
-        "last_line": "judge_leg_simulator -> /repo/docs/report_cards/experiments/judge_leg_simulator.json (6.3s): 2 live task(s) (+0 degenerate) on n=724 B-rows scored against 1776 A",
-        "seconds": 45.1
+        "last_line": "judge_leg_simulator -> /repo/docs/report_cards/experiments/judge_leg_simulator.json (6.1s): 2 live task(s) (+0 degenerate) on n=724 B-rows scored against 1776 A",
+        "seconds": 53.4
       },
       "prov": {
         "cap_gb": 20.0,
@@ -881,7 +891,7 @@
         "command": "measure_path_a_provenance.py --demo /work/demo --products-dir /work/cfm_b20 --out /repo/docs/report_cards/experiments/path_a_provenance.json",
         "exit": 0,
         "last_line": "path_a_provenance working=True",
-        "seconds": 2.5
+        "seconds": 2.3
       }
     },
     "checks": {
@@ -890,7 +900,7 @@
         "working": true
       },
       "commit_recorded_clean": {
-        "evidence": "commit 843ba2c38ddf on foundation-rebuild, behavior fc533e2c09846f7e; tree clean apart from the generated artifacts this command rewrites",
+        "evidence": "commit 6f50832c85fb on foundation-rebuild, behavior b162729c25f09776; tree clean apart from the generated artifacts this command rewrites",
         "working": true
       },
       "comparator_provenance_certified": {
@@ -902,7 +912,7 @@
         "working": true
       },
       "full_chain_in_one_invocation": {
-        "evidence": "6 producer(s) run by this one command (S1+S2 475.8s, S3 490.4s, S4 53.5s, S5 2.0s, legs 45.1s, prov 2.5s); fresh receipts: stages ['S1', 'S2', 'S3', 'S4', 'S5'], legs ['rl', 'simulator', 'supervised', 'unsupervised']",
+        "evidence": "6 producer(s) run by this one command (S1+S2 473.2s, S3 496.0s, S4 66.6s, S5 1.9s, legs 53.4s, prov 2.3s); fresh receipts: stages ['S1', 'S2', 'S3', 'S4', 'S5'], legs ['rl', 'simulator', 'supervised', 'unsupervised']",
         "working": true
       },
       "render_is_deterministic": {
@@ -910,7 +920,7 @@
         "working": true
       }
     },
-    "evidence": "[full_chain_in_one_invocation] OK: 6 producer(s) run by this one command (S1+S2 475.8s, S3 490.4s, S4 53.5s, S5 2.0s, legs 45.1s, prov 2.5s); fresh receipts: stages ['S1', 'S2', 'S3', 'S4', 'S5'], legs ['rl', 'simulator', 'supervised', 'unsupervised'] | [render_is_deterministic] OK: rendered the card twice from the same receipts: identical apart from the timestamp line (5407 chars, 57 lines) | [commit_recorded_clean] OK: commit 843ba2c38ddf on foundation-rebuild, behavior fc533e2c09846f7e; tree clean apart from the generated artifacts this command rewrites | [artifact_hashes_recorded] OK: 7 input artifact(s) hashed (122.1 MB) \u2014 the bytes the receipts were measured against | [every_row_reports_n] OK: 28 live leg-row(s) in the regenerated receipts, all report N | [comparator_provenance_certified] OK: 39 comparator column(s), each stamped pre-`as_of` by the builder and confirmed against a rebuild from the lab's own relational inputs (as_of 2025-01-01); sub-checks ['columns_match', 'comparator_clean', 'provenance_complete', 'values_match']",
+    "evidence": "[full_chain_in_one_invocation] OK: 6 producer(s) run by this one command (S1+S2 473.2s, S3 496.0s, S4 66.6s, S5 1.9s, legs 53.4s, prov 2.3s); fresh receipts: stages ['S1', 'S2', 'S3', 'S4', 'S5'], legs ['rl', 'simulator', 'supervised', 'unsupervised'] | [render_is_deterministic] OK: rendered the card twice from the same receipts: identical apart from the timestamp line (5407 chars, 57 lines) | [commit_recorded_clean] OK: commit 6f50832c85fb on foundation-rebuild, behavior b162729c25f09776; tree clean apart from the generated artifacts this command rewrites | [artifact_hashes_recorded] OK: 7 input artifact(s) hashed (122.1 MB) \u2014 the bytes the receipts were measured against | [every_row_reports_n] OK: 28 live leg-row(s) in the regenerated receipts, all report N | [comparator_provenance_certified] OK: 39 comparator column(s), each stamped pre-`as_of` by the builder and confirmed against a rebuild from the lab's own relational inputs (as_of 2025-01-01); sub-checks ['columns_match', 'comparator_clean', 'provenance_complete', 'values_match']",
     "inputs": {
       "demo": "/work/demo",
       "legs": "supervised,unsupervised,rl,simulator",
@@ -925,10 +935,10 @@
     "working": true
   },
   "_meta": {
-    "behavior_hash": "fc533e2c09846f7e",
+    "behavior_hash": "b162729c25f09776",
     "command": "measure_certification_law.py --products /work/cfm_b20 --demo /work/demo --train-log /work/cfm_b20/train.log",
-    "generated_at": "2026-10-30T14:03:12+00:00",
-    "git_commit": "843ba2c38ddf5d7e675adbffc96f373155080211",
+    "generated_at": "2026-10-30T16:54:30+00:00",
+    "git_commit": "6f50832c85fb6f3ee90f5fffa5d9b0b56a421fc5",
     "producer": "measure_certification_law.py"
   }
 }
