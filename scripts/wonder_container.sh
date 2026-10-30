@@ -142,7 +142,7 @@ docker image inspect "$image" >/dev/null 2>&1 || build
 # is stable; a loading model's is not. So: if vLLM is up, wait until it answers /health, then
 # require the load to have settled before starting anything that allocates GPU memory.
 if [[ $gpu -eq 1 ]] && docker ps --format '{{.Names}}' 2>/dev/null | grep -qx "vllm-qwen"; then
-  wait_s="${WONDER_WAIT_S:-300}"
+  wait_s="${WONDER_WAIT_S:-1200}"
   echo "waiting for vllm-qwen to finish loading (max ${wait_s}s)..." >&2
   ready=0
   for _ in $(seq 1 "$wait_s"); do
