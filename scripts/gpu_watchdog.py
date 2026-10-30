@@ -108,7 +108,7 @@ def gpu_jobs(patterns: tuple[str, ...], proc_root: Path = Path("/proc")) -> list
                 if is_python and any(os.path.basename(a) == pat for a in args):
                     hit = True
                     break
-            elif any(pat in a for a in args):
+            elif is_python and any(pat in a for a in args):
                 hit = True
                 break
         if hit:

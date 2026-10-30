@@ -158,3 +158,24 @@ def test_process_age_is_read_from_the_kernel():
     age = GW.process_age_s(__import__("os").getpid())
     assert age is not None and age >= 0.0
     assert GW.process_age_s(999999999) is None
+
+
+def test_a_shell_running_a_MODULE_is_not_the_module(tmp_path):
+    """Second measured instance of the same mistake, in the module branch of the matcher.
+
+    `python -m looking_glass.customer_foundation_model train ...` put the module name in the BASH
+    wrapper's cmdline as well, and the `.py`-only interpreter check did not cover module patterns —
+    so the guard killed the trainer's launcher mid-run. A module can only be run BY an interpreter,
+    so the same requirement applies to both branches.
+    """
+    shell = tmp_path / "41"
+    job = tmp_path / "42"
+    for d, cmd in (
+        (shell, b"/bin/bash\0-c\0python -m looking_glass.customer_foundation_model train\0"),
+        (job, b"/usr/bin/python3\0-m\0looking_glass.customer_foundation_model\0train\0"),
+    ):
+        d.mkdir()
+        (d / "cmdline").write_bytes(cmd)
+    found = GW.gpu_jobs(GW.DEFAULT_PATTERNS, proc_root=tmp_path)
+    assert 42 in found
+    assert 41 not in found

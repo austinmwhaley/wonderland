@@ -4591,3 +4591,48 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   vLLM notes). The container is therefore CPU-only by default and `--gpus` is opt-in: giving it the
   GPU would put its allocations outside the 20 GB ceiling, which is exactly the failure mode this
   budget exists to prevent.
+
+## DEC-444 — [PROTOCOL] run B: the batch=20 encoder, trained on GPU, as a NEW protocol version (never a reproduction)
+
+- **Context.** The frozen baseline behind every current receipt is `0.11.0r469048`, trained with
+  `batch=27` (derived: `n_seqs=1776 seq_len=606 hw_cap=256 -> 27`). SPINE §8's last open item is
+  the capped re-run at `batch=20`, which is also the first run that exercises the `[step-time]`
+  receipt built after the `grad_checkpoint` A/B. DEC-423 records the operator's memory policy: the
+  LLM keeps what it needs, the system keeps an 8 GB floor, **the trainer gets the remainder, on
+  GPU**; no CPU path.
+- **Why this is a new protocol, not a reproduction.** `batch` changes the gradient noise per step,
+  which changes what the governor sees, which changes when it stops. A run at 20 cannot be compared
+  to a run at 27 as if it were the same experiment, and it may never be reported as "reproducing
+  DEC-420". It is **protocol version B**; the frozen 27-batch artifact stays protocol A and is not
+  overwritten.
+- **Alternatives considered.** (1) *Leave 27 and skip the item* — rejected: the item exists because
+  the previous run could not fit the co-tenant budget, and the evidence for whether 20 is better or
+  worse does not exist yet. (2) *CPU training* — rejected by the operator and by DEC-423; the CPU
+  path also carries a known unfixed defect. (3) *Reuse the frozen out-dir* — rejected outright:
+  `cfm_views` is the artifact every receipt on the card describes; writing into it would silently
+  change the thing the card is about.
+- **Decision.** `train` (which builds products) with the frozen config otherwise unchanged —
+  `--customers 2500 --as-of 2025-01-01`, db
+  `/home/austin_whaley/wonderland_work/demo/customer_event_stream.parquet`, `device=cuda` — plus
+  **`--set batch=20`**, into a NEW out-dir `/home/austin_whaley/wonderland_work/cfm_b20`. GPU only.
+  The override is recorded by the producer in `registry.overrides` and `resolved.batch`, which is
+  what makes the protocol change part of the artifact rather than a note in a log.
+- **Frozen acceptance criteria, before the run.**
+  1. Training completes: finite loss at every evaluation, no divergence, governor stops on its own
+     tolerance (not a step cap).
+  2. The registry records `overrides` containing `batch=20` and `resolved.batch == 20` — i.e. the
+     change is in the artifact, not only in the command.
+  3. A `[step-time]` receipt is present in the run log.
+  4. Products are built for the full judged population (2500 customers).
+  5. Every later measurement is re-run against **this** artifact, and the card is regenerated; the
+     old protocol-A receipts may not be reused for any claim about this encoder.
+- **Memory.** Qwen is stopped for the duration of this run (verified: service inactive, no
+  `vllm`/`EngineCore` process, 115.8 GB available). The trainer's own budget is derived by
+  `looking_glass.gpu_budget` at each phase from `MemAvailable − 8 GB`; the watchdog
+  (`scripts/gpu_watchdog.py --floor-gb 8`) runs outside the process and stops it if the floor is
+  approached. Nothing else may use the GPU while this runs.
+- **Single axis changed.** Batch size (a protocol parameter). No objective, gate, comparator,
+  threshold or data definition moves.
+- **Trade-offs recorded.** A smaller batch means more steps for the same number of sequences and a
+  noisier gradient; if the governor stops earlier the comparison against protocol A is confounded by
+  batch as well as by the run, which is exactly why the two are never pooled.
