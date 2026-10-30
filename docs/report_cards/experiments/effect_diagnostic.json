@@ -1,0 +1,52 @@
+{
+  "arm_response_by_level": {
+    "0": {
+      "days": 53509,
+      "rate": 0.11974
+    },
+    "1": {
+      "days": 53628,
+      "rate": 0.13364
+    },
+    "2": {
+      "days": 53929,
+      "rate": 0.13592
+    },
+    "3": {
+      "days": 54041,
+      "rate": 0.13593
+    }
+  },
+  "contrast_norm_ratio": 0.8499,
+  "head_factual_spearman": {
+    "0": {
+      "n_cells": 195,
+      "rho": null
+    },
+    "1": {
+      "n_cells": 177,
+      "rho": 0.0841
+    },
+    "2": {
+      "n_cells": 170,
+      "rho": 0.1183
+    },
+    "3": {
+      "n_cells": 205,
+      "rho": 0.0721
+    }
+  },
+  "head_uplift_spearman": 0.098,
+  "head_vs_ridge_cosine_absmean": 0.0307,
+  "head_vs_ridge_cosine_mean": 0.0013,
+  "interpretation": [],
+  "n_head_uplift": 233,
+  "n_identified_A": 609,
+  "n_identified_B": 233,
+  "probe_r2_check": -0.013,
+  "products": "/work/cfm_d_qte",
+  "roundtrip_max_err": 6.628036499023438e-05,
+  "seconds": 2.7,
+  "tag": "0.11.0r103115-b20d256e3lr3e-04occdbe290",
+  "working": true
+}

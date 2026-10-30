@@ -5035,3 +5035,47 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   (−0.007); D has propensity (0.295) and slightly worse uplift. Remaining reds (uplift rank,
   S5's three probes, simulator argmax) stay encoder-side. Operator queue unchanged.
 - **Cost.** Train 974 s + chain ~17 min, inside the 20 GB container with Qwen up throughout.
+
+## DEC-455 — [TECHNICAL] effect-axis diagnostic: the state holds a weak uplift direction; the frozen probe's fit set cannot find it
+
+- **Why (the loop's own rule — Diagnosable).** Uplift R² is negative on protocols B/C/D. Before
+  proposing any retrain or asking the operator to touch the eval contract, one cheap CPU receipt
+  must say WHERE the failure is. `scripts/measure_effect_diagnostic.py` (new; policed by the
+  watchdog; regenerates `docs/report_cards/experiments/effect_diagnostic.json`) reads the
+  protocol-D artifact through the judge's OWN geometry (`_arms`, `_ridge_head`, `arm_cells`,
+  `identified_uplift` — no second definitions), and maps E back to the head-consumed state with
+  the exact serving inverse, self-verified by round-trip (max err 6.6e-05).
+- **What the receipt says (n's recorded; diagnostic strings, NOT a gate — the card is untouched).**
+  1. (A) The randomized arm moves response in the logged data (rate 0.1197 @level0 → 0.1359/0.1359
+     @levels 2/3): the failure is NOT "no effect to learn" — the data axis is clear.
+  2. (W) The fitted head differentiates arms (contrast/spread ratio 0.85); (F) it fits the
+     factual per-level rates weakly-positive (ρ 0.084/0.118/0.072 at levels 1–3; level 0 has zero
+     rate variance on the B∩days≥10 subset — ρ uncomputable, recorded as null, to re-check).
+  3. (V) The head's own contrast (mirroring `identified_uplift` exactly: opt vs day-weighted
+     levels ≥2 away) ranks the 233 identified uplifts at Spearman **+0.098** — weak, and an
+     UPPER BOUND: the encoder saw B during training, so this is not population-OOS.
+  4. (R) The ridge direction the frozen probe fit on the ~104 identified A-customers is
+     **orthogonal** to the head's contrast direction (mean cosine 0.0013, |mean| 0.06): the probe
+     is fitting noise that has nothing to do with the direction learned from ~40 000 factual
+     (customer, level, day) observations. (P) probe_r2_check −0.0130 matches the card exactly —
+     the diagnostic reads the same arms the judge graded (DEC-428 drift rule satisfied).
+- **Reading (recorded as diagnosis, not verdict).** The state carries a weak but non-random arm
+  contrast; the binding constraint for the uplift task is now the PROBE'S FIT SET: ~104 labeled
+  customers whose uplift labels are two arm-rates over ≥10 days — label noise plausibly exceeds
+  the true spread, so a linear fit there cannot reliably recover ANY encoder's direction. That
+  makes three futures distinguishable, and they need one operator ruling each (see STATUS queue):
+  (a) leave the gate as is — uplift stays honestly red and we call the limit what it is;
+  (b) encoder-side protocol E (e.g. emphasize the `effect` objective so its direction dominates
+  state variance) — cheap to run, but if labels are noise-bound this can only flip the gate
+  mechanically, and the card will say so;
+  (c) eval-contract change (the probe consumes the trained head, or the MIN_ARM_DAYS/identified-n
+  floor changes) — the only route that can earn a genuine PASS, and by rule OPERATOR-OWNED.
+- **Alternatives considered.** (1) Retrain with a bigger effect-loss scale immediately —
+  rejected: the receipt must say which axis, or the retrain is a coin-flip (Diagnosable).
+  (2) Silently compute a split-half reliability of the uplift label — deferred: needs per-day
+  arm rows, which `arm_cells` does not expose; duplicating its SQL would fork the arm definition
+  (principle 6). If option (c) is chosen, the split-half receipt comes with it, built on the
+  single definition. (3) Have the probe consume the head inside this chunk — that edits the
+  frozen eval contract: stop-and-ask, operator ruling only.
+- **Cost.** 2.8 s CPU in the container. The script joins the watchdog pattern list (the
+  coverage test is green). No gate, threshold, probe, or card row was touched.
