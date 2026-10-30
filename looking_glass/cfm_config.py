@@ -332,6 +332,12 @@ class CFMConfig:
     # linear in the state — the quantity the frozen ridge probe on E actually scores (protocol D).
     # Default keeps every pre-D protocol byte-reproducible.
     effect_head: str = "mlp"
+    # DEC-457 (protocol E): self-supervised SURVIVAL objective on the serving (faded-query)
+    # path — "does the next event arrive within Δ_k" at data-derived horizons, fitted by a
+    # linear head on the exact state serving reads. Pressure to make silence structure
+    # LINEARLY readable (the frozen consumer is linear, DEC-407). Default off keeps every
+    # pre-E protocol byte-reproducible.
+    survival: bool = False
     # exogenous ACTION fields to EXCLUDE from the generic measure (prevents the measure — and
     # hence `E` — from carrying the logged action, which would leak the treatment into the OPE).
     # Declared separately from `effect_actions` so the action's RESPONSE is still exposed.

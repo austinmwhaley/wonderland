@@ -645,6 +645,65 @@ def test_effect_head_choice_is_validated():
         CFM(vocab, dim=16, n_experts=1, effect_dim=2, effect_head="linear")
 
 
+# ---- DEC-457 (protocol E): the survival objective on the faded serving path --------------------------
+
+
+def test_survival_head_is_linear_and_the_loss_trains_the_trunk():
+    """The head is Linear(dim,K) ON PURPOSE (DEC-407 linear consumer); the loss must be finite
+    and its gradient must reach the trunk — pressure on the state is the whole objective."""
+    seqs = [_seq("c1"), _seq("c2", day="2025-01-02"), _seq("c3", day="2025-01-03")]
+    vocab = EventVocab.build(seqs)
+    torch.manual_seed(0)
+    model = CFM(vocab, dim=16, n_experts=1, survive_dim=4)
+    assert isinstance(model.head_survive, torch.nn.Linear)
+    assert model.head_survive.out_features == 4
+    cfg = _cfg(objectives=(*CFMConfig().objectives, "survive"))
+    cfg._survival_horizons_s = [3600.0, 86400.0, 604800.0, 2592000.0]
+    T_ = _task_losses(model, vocab, seqs, cfg)
+    assert "survive" in T_ and torch.isfinite(T_["survive"])
+    T_["survive"].backward()
+    assert model.head_survive.weight.grad is not None
+    assert model.emb_et.weight.grad is not None  # gradient reaches the trunk
+
+
+def test_survival_off_by_default_and_never_a_nan():
+    seqs = [_seq("c1"), _seq("c2", day="2025-01-02")]
+    vocab = EventVocab.build(seqs)
+    model = CFM(vocab, dim=16, n_experts=1)
+    assert model.head_survive is None  # pre-E protocols are byte-reproducible
+    cfg = _cfg(objectives=(*CFMConfig().objectives, "survive"))  # objective but no horizons
+    T_ = _task_losses(model, vocab, seqs, cfg)
+    assert "survive" not in T_  # silently absent, never a NaN
+
+
+def test_survival_horizons_are_derived_from_the_streams_own_gaps():
+    """K and the Δ-grid are facts about the gap distribution (no typed constant): a stream
+    spanning ~4 decades of gaps must yield a strictly-increasing grid inside the clamp."""
+    import polars as pl
+
+    from looking_glass.cfm_data import _survival_horizons
+
+    ts, t = [], 0.0
+    for i in range(300):
+        t += 100.0 * (10.0 ** (4.0 * i / 300.0))
+        ts.append(t)
+    d = pl.DataFrame({"customer_key": ["c"] * len(ts), "_ts": ts})
+    hs = _survival_horizons(d)
+    assert 3 <= len(hs) <= 9
+    assert all(b > a for a, b in zip(hs, hs[1:])) and hs[0] > 0
+    # a stream with no range to probe yields nothing — the objective then simply does not fire
+    flat = pl.DataFrame({"customer_key": ["c"] * 64, "_ts": [float(i) * 60.0 for i in range(64)]})
+    assert _survival_horizons(flat) == []
+
+
+def test_survival_moves_the_protocol_tag_only_when_the_objective_is_on():
+    base = CFMConfig().tag
+    assert CFMConfig(survival=True).tag == base  # the field alone builds no head
+    on = CFMConfig()
+    on.objectives = (*on.objectives, "survive")
+    assert on.tag != base  # trained weights differ => the name must say so (DEC-448)
+
+
 def test_mtp_objective_present_and_trains():
     """B5: multi-token prediction heads exist and the k-step loss is finite + trains."""
     seqs = [_seq(f"c{i}", day=f"2025-01-{(i % 28) + 1:02d}") for i in range(4)]

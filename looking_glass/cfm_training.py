@@ -149,6 +149,10 @@ def train_cfm(cfg: CFMConfig):
     # schema-declared; the objective is a switch, not a magic number.
     if getattr(cfg, "effect_actions", None) and "effect" not in cfg.objectives:
         cfg.objectives = (*cfg.objectives, "effect")
+    # DEC-457: the switch flips the objective in the NAME too (the tag hashes objectives, so
+    # `--set survival=true` produces a distinct protocol identity without any typed tag).
+    if getattr(cfg, "survival", False) and "survive" not in cfg.objectives:
+        cfg.objectives = (*cfg.objectives, "survive")
     # B5: enable multi-token prediction when mtp_k > 0 (after --set, same rationale).
     if int(getattr(cfg, "mtp_k", 0) or 0) > 0 and "mtp" not in cfg.objectives:
         cfg.objectives = (*cfg.objectives, "mtp")
@@ -194,6 +198,7 @@ def train_cfm(cfg: CFMConfig):
         action_fields=getattr(cfg, "action_fields", ()),
         effect_dim=getattr(cfg, "_effect_dim", 0),
         effect_head=str(getattr(cfg, "effect_head", "mlp")),
+        survive_dim=len(getattr(cfg, "_survival_horizons_s", []) or []),
         mtp_k=getattr(cfg, "mtp_k", 0),
         # DEC-423: recompute the SSM scan in backward — see CFMConfig.grad_checkpoint.
         grad_checkpoint=bool(getattr(cfg, "grad_checkpoint", False)),
@@ -742,6 +747,8 @@ def train_cfm(cfg: CFMConfig):
             # DEC-453: which class the head IS — cfm_state rebuilds the model from the blob and
             # the weights only load into the matching form (a shape mismatch is a loud error).
             "effect_head": str(getattr(cfg, "effect_head", "mlp")),
+            # DEC-457: the survive head's horizon count (same rebuild-from-blob contract).
+            "survive_dim": int(len(getattr(cfg, "_survival_horizons_s", []) or [])),
             "action_fields": list(getattr(cfg, "action_fields", ()) or ()),
             "primary_numeric": getattr(cfg, "primary_numeric", None),
             "whiten_mean": (model.whiten_mean if getattr(model, "whiten_on", False) else None),
@@ -1309,6 +1316,34 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
         w = w * (1.0 - _next_act)
         denom = w.sum().clamp(min=1)
         T_["query"] = ((ce_q + mse_q) * w).sum() / denom
+    # ---- survival curve on the serving path (DEC-457, protocol E) ----------
+    # The SAME faded-query state `query` grades, scored at every data-derived horizon Δ_k on
+    # "does the next event arrive within Δ_k of the query time". The head is Linear(dim, K)
+    # ON PURPOSE: the shipping consumer is linear (DEC-407), and DEC-456 measured churn_day
+    # present-but-nonlinearly-entangled (kNN 0.668 vs linear 0.582) — this objective forces the
+    # survival structure of the served state into per-horizon LINEAR readouts.
+    if (
+        "survive" in cfg.objectives
+        and getattr(model, "head_survive", None) is not None
+        and getattr(cfg, "_survival_horizons_s", None)
+    ):
+        H = torch.tensor(
+            [float(x) for x in cfg._survival_horizons_s], device=dev, dtype=torch.float32
+        )
+        rows = torch.arange(B, device=dev)
+        i = torch.randint(0, max(T - 1, 1), (B,), device=dev)
+        i_next = (i + 1).clamp(max=T - 1)
+        m_i = t["mask"][rows, i] * t["mask"][rows, i_next]
+        gap_s = torch.expm1(t["dt"][rows, i_next]).squeeze(-1)  # seconds to next event
+        u = torch.rand(B, 1, device=dev)
+        off_s = (u * gap_s.unsqueeze(1)).squeeze(-1)  # query time inside the gap
+        decay = torch.exp(-LN2 * off_s / max(cfg.state_half_life_days * 86400.0, 1.0))
+        h_q = y[rows, i] * decay.unsqueeze(-1)  # the faded state serving would read
+        tgt = ((gap_s.unsqueeze(1) - off_s.unsqueeze(1)) <= H.unsqueeze(0)).float()  # (B,K)
+        _next_act = t["is_action"][rows, i_next] if "is_action" in t else torch.zeros_like(m_i)
+        w = m_i.clamp(min=0) * (1.0 - _next_act)
+        bce = F.binary_cross_entropy_with_logits(model.head_survive(h_q), tgt, reduction="none")
+        T_["survive"] = (bce * w.unsqueeze(1)).sum() / (w.sum().clamp(min=1) * H.numel())
     # ---- variance floor (VICReg-style, DEC-015) ---------------------------
     # Decorrelation (redundancy) removes correlation but not SCALE collapse:
     # the production runs measured eff-rank 0.23-0.26x null with redundancy
@@ -2114,6 +2149,14 @@ def _registry(
                 "vocab_sizes": {k: len(v) for k, v in vocab.dumps().items()},
                 "derived": (derived or {}).get("derived", {}),
                 "overrides": (derived or {}).get("overrides", {}),
+                # DEC-457 acceptance #2: the survival horizon grid must be receipted in the
+                # registry itself (the data-derived Δ_k the survive head's targets encode).
+                "survival": {
+                    "on": bool(getattr(cfg, "survival", False)),
+                    "horizons_s": [
+                        float(x) for x in (getattr(cfg, "_survival_horizons_s", []) or [])
+                    ],
+                },
                 "resolved": cfg_resolved or {},
                 "governor": governor or {},
                 "portfolio": portfolio or {},

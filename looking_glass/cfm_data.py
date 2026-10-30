@@ -437,6 +437,32 @@ def _action_flags(g, cfg: CFMConfig) -> np.ndarray:
     return g.select(expr.fill_null(False).alias("_is_action"))["_is_action"].to_numpy()
 
 
+def _survival_horizons(d) -> list[float]:
+    """Data-derived survival probe horizons (DEC-457), seconds, strictly increasing.
+
+    An OCTAVE grid over the stream's own inter-event gap support (robust edges p1..p99.5):
+    the number of horizons is the gap range's octaves (clamped to a documented sanity range
+    3..9), so the grid probes both the ordinary-gap bulk and the multi-day SILENCE tail the
+    churn judgment lives in — a rank-quantile grid clustered on the bulk and missed the tail
+    (measured on the demo: every horizon < 1.2 days). Every number is a fact about the stream.
+    """
+    import numpy as np
+
+    pairs = d.select("customer_key", "_ts").sort(["customer_key", "_ts"])
+    gaps = (
+        pairs.with_columns(g=(pl.col("_ts") - pl.col("_ts").shift(1)).over("customer_key"))
+        .filter(pl.col("g") > 0)["g"]
+        .to_numpy()
+    )
+    if gaps.size < 32:  # principle-ok: below this the quantiles are not statistics
+        return []
+    lo, hi = float(np.percentile(gaps, 1)), float(np.percentile(gaps, 99.5))
+    if lo <= 0 or hi <= lo:
+        return []
+    K = int(min(9, max(3, round(np.log2(hi / lo)) + 1)))  # octaves; clamp documented above
+    return [float(x) for x in np.geomspace(lo, hi, K)]
+
+
 def build_sequences(df, keys, cfg: CFMConfig, split, with_anchors: bool, min_events: int = 3):
     """Polars-first: partition once in Rust, then slice per group.
 
@@ -463,6 +489,10 @@ def build_sequences(df, keys, cfg: CFMConfig, split, with_anchors: bool, min_eve
         cfg._effect_cache = (_per, _levels)
         cfg._effect_levels = list(_levels or [])
         cfg._effect_dim = int(sum(_levels or []))
+    # DEC-457: survival probe horizons, derived from the stream's own gaps (cached once)
+    if getattr(cfg, "survival", False) and getattr(cfg, "_survival_cache", None) is None:
+        cfg._survival_cache = _survival_horizons(d)
+        cfg._survival_horizons_s = list(cfg._survival_cache)
     eff_map, _ = cfg._effect_cache
     attr_fields = tuple(getattr(cfg, "attr_fields", ()) or ())
     numeric_fields = tuple(getattr(cfg, "numeric_fields", ()) or ())

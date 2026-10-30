@@ -848,6 +848,7 @@ class CFM(nn.Module):
         action_fields: tuple = (),
         effect_dim: int = 0,
         effect_head: str = "mlp",
+        survive_dim: int = 0,
         mtp_k: int = 0,
     ):
         super().__init__()
@@ -993,6 +994,13 @@ class CFM(nn.Module):
             else None
         )
         self.effect_dim = int(effect_dim)
+        # DEC-457 (protocol E): survival-curve head — one logit per data-derived horizon Δ_k:
+        # "next event within Δ_k of the (faded) query time". DELIBERATELY Linear(dim, K): the
+        # whole point is that the survival curve of the served state must be a LINEAR readout
+        # (the frozen consumer is linear, DEC-407; DEC-456 measured the kNN>linear gap on
+        # churn_day that this objective exists to close).
+        self.survive_dim = int(survive_dim)
+        self.head_survive = nn.Linear(dim, self.survive_dim) if self.survive_dim else None
         self.head_sf = nn.Sequential(
             nn.Linear(dim + 1, dim), nn.ReLU(), nn.Linear(dim, self.sf_dim)
         )
