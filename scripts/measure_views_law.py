@@ -46,7 +46,7 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts"))
 
 from measure_battery_law import _load_all, _paired_ci, _ridge_oos  # noqa: E402  (one definition)
-from measure_input_law import _rollup, stamp_merge_write  # noqa: E402
+from measure_input_law import _rollup, products_identity, stamp_merge_write  # noqa: E402
 
 from looking_glass import view_layout as V  # noqa: E402
 
@@ -615,7 +615,8 @@ def main() -> int:
     }
     stamp_merge_write(
         Path(a.out),
-        {"S4": {**_rollup(checks), "pairs": recs}},
+        # DEC-448: name the artifact the outlet law measured (the reader refuses mixed cards).
+        {"S4": {**_rollup(checks), "pairs": recs, "products": products_identity(a.products)}},
         command=" ".join([Path(__file__).name] + sys.argv[1:]),
     )
     for name, c in checks.items():

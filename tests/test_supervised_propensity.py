@@ -273,11 +273,18 @@ def test_state_store_materializes_inference_embeddings(tmp_path):
     from looking_glass.cfm_state import StateStore
 
     class StubModel(torch.nn.Module):
-        """Minimal device-aware stand-in: the materializer only needs .proj."""
+        """Minimal device-aware stand-in: the materializer only needs the donor readout.
+
+        Mirrors the REAL interface (DEC-447): `donor_batch` is the consumed definition that
+        `donor_states` must call; `proj` alone is the old contract that skipped the boundary.
+        """
 
         def __init__(self, dim=4):
             super().__init__()
             self.proj = torch.nn.Linear(dim, dim)
+
+        def donor_batch(self, h):  # stub boundary = identity; the store's job is the table
+            return self.proj(h)
 
     cfg = CFMConfig()
     model = StubModel(4)

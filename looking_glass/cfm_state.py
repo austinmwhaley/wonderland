@@ -181,12 +181,15 @@ def advance_to_date(store, cfg, df, upto_epoch):
 
 
 def donor_states(model: CFM, states):
-    """Batched ``donor(h) = proj(h)`` for live states (the exact readout written
-    into ``donor_embeddings`` at training time, so heads transfer). Device-safe:
-    follows wherever the model lives (cuda when the job moved it there)."""
+    """Batched donor readout for live states: exactly ``model.donor(h)``, i.e. the
+    **certified** boundary readout (``_boundary(proj(h))``) that ``donor_embeddings``
+    publishes — one definition of the served donor (DEC-447, principle 6). Serving raw
+    ``proj(h)`` here skipped the certified boundary, so the table plugins are told to
+    read disagreed with the documented contract and with its sibling tables.
+    Device-safe: follows wherever the model lives (cuda when the job moved it there)."""
     with torch.no_grad():
         t = torch.as_tensor(states, dtype=torch.float32)
-        return model.proj(t.to(next(model.parameters()).device)).cpu().numpy()
+        return model.donor_batch(t.to(next(model.parameters()).device)).cpu().numpy()
 
 
 def load_frozen_encoder(tag: str, cfm_dir):

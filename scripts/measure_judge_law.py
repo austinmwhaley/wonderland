@@ -53,7 +53,7 @@ from measure_battery_law import (  # noqa: E402  (one definition for every arm, 
     _ridge_oos,
     controls_matched,
 )
-from measure_input_law import _rollup, stamp_merge_write  # noqa: E402
+from measure_input_law import _rollup, products_identity, stamp_merge_write  # noqa: E402
 from measure_views_law import (  # noqa: E402  (one definition)
     TARGETS,
     _load_views,
@@ -1063,6 +1063,9 @@ def main() -> int:
         body = LEGS[leg](db, demo)
         working, evidence = _evidence(leg, body)
         body.update(_rollup({leg: {"working": working, "evidence": evidence}}))
+        # DEC-448: name the artifact these numbers were measured against, so the reader
+        # can refuse a card that mixes encoders instead of rendering it as self-consistent.
+        body["products"] = products_identity(a.products)
         path = out_dir / f"judge_leg_{leg}.json"
         stamp_merge_write(
             path, body, " ".join([Path(__file__).name] + sys.argv[1:]), stamp_blocks=False

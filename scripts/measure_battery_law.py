@@ -48,7 +48,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from measure_input_law import _rollup, stamp_merge_write  # noqa: E402
+from measure_input_law import _rollup, products_identity, stamp_merge_write  # noqa: E402
 
 SEED = 65537  # principle-ok: evaluation-contract seed (frozen, recorded; DEC-410)
 N_BOOT = 2000  # principle-ok: evaluation-contract bootstrap count
@@ -541,9 +541,12 @@ def main() -> int:
         ),
         "prune_pass": check_prune_pass(reg),
     }
+    body = _rollup(checks)
+    # DEC-448: the artifact these probes measured (the reader refuses a card mixing encoders).
+    body["products"] = products_identity(a.products)
     existing = stamp_merge_write(
         Path(a.out),
-        {"S5": _rollup(checks)},
+        {"S5": body},
         " ".join([Path(__file__).name] + sys.argv[1:]),
     )
     print(f"judge stages -> {a.out}")

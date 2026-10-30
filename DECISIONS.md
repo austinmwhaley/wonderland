@@ -4734,3 +4734,92 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   4. S6 reports 6/6 checks with `comparator_provenance_certified` PASS; **no leg or stage verdict
      moves** (this audits the comparator's hygiene, not the encoder). If any row flips, that is a
      finding to report, not to chase.
+
+## DEC-447 — [TECHNICAL] `state_embeddings` serves the CERTIFIED donor, ending the three-way disagreement
+
+- **Context.** The operator ruled (2026-10-30) that the long-standing serving alias be reconciled.
+  The facts on the current artifact: the trained model has `isometric_boundary=True`, so the
+  documented donor readout is `donor(h) = _boundary(proj(h))` with a **global** learned orthogonal
+  `R` (Cayley, κ=1) — one rotation for every customer, not per-sample despite the docstring's
+  phrasing. Yet `materialize_state_embeddings` serves raw `model.proj(h)`, **skipping the
+  certified boundary**, while `donor_embeddings`/`anchor_embeddings` publish `model.donor(h_read)`
+  **with** it. Three tables, two definitions, and a `donor_states` docstring claiming parity it
+  does not have ("heads transfer"). The tables plugins are *told to read* are the one that
+  disagrees with the contract.
+- **Why it is safe to move (and honest).** A global invertible linear map cannot change what a
+  linear head can recover (up to ridge's non-rotation-invariant penalty), so decodability claims
+  are expected to survive; pairwise distances ARE preserved by the rotation (global orthogonal),
+  but the distance probe z-scores columns first, which is not rotation-invariant — so the probe
+  result can legitimately move either way. That is a measurement, not a tuning knob: this chunk
+  changes what consumers RECEIVE (the interface), touches no objective, gate, comparator or
+  threshold, and the operator approved it by name.
+- **Decision.** `donor_states` calls `model.donor_batch(h)` — the same `_boundary(proj(h))` every
+  other donor publisher uses — so the served `state_embeddings` **is** the documented donor
+  (principle 6: one definition of the readout; principle 7: a docstring that lies about parity is
+  fixed at the code, not re-worded). A test asserts `donor_states(model, S)` equals
+  `model.donor_batch(S)` and differs from raw `proj` when a non-identity boundary is installed.
+- **Run order (attribution).** This lands and is measured **before** DEC-449's retrain: rebuild
+  products from the existing protocol-B checkpoint (no training), then the full chain. Serving is
+  measured as its own axis; the encoder's capability is untouched in this run.
+
+## DEC-448 — [TECHNICAL] identity is a function of the protocol: `CFMConfig.tag` gains the resolved axes, and the card refuses to mix artifacts (closes DEC-445)
+
+- **Context.** DEC-445: protocol A and protocol B produced the same tag `0.11.0r469048`, because
+  `tag` covers version+revision+sample size and not `batch`; and the freshness law hashes source
+  trees, not artifacts — so a card assembled from legs measured against **different encoders**
+  would render as self-consistent. The operator approved the DEC-445 proposal (2026-10-30).
+- **Decision.** (a) `tag` becomes `…-b{batch}d{dim}e{epochs}lr{lr}o{sha8}`, the axes read from
+  the RESOLVED config and the `o`-hash covering `objectives + effect_actions` (what trains the
+  weights is what names the weights — the same logic as the existing sample-size suffix). (b) Each
+  products-consuming producer (`measure_judge_law`, `measure_battery_law`, `measure_views_law`)
+  records a `products` identity — `{path, tag, registry sha256}` — in its receipt; `judge_card`
+  (the reader, not a producer) marks rows/blocks UNKNOWN when the card mixes distinct identities.
+  Missing ids (older receipts) are exempt — the rule fires only on a demonstrated MIX, it is not
+  a new capability gate (operator approved exactly this mechanism, no verdict moves on its own).
+- **Alternatives considered.** (1) *Bump `CFMConfig.version` per protocol* — rejected in DEC-445:
+  version labels are operator-facing and bumping invalidates every receipt by declaration.
+  (2) *Derive identity from a content hash of the checkpoint alone* — rejected: it cannot tell two
+  configs apart before the bytes exist, and `.pt` hashing at every leg run costs more than it
+  informs; the registry (which already records `overrides`/`resolved`) hashed once is the artifact
+  that describes itself. (3) *Hand-tagging runs* — rejected: a name a human types is a note, not
+  an identity.
+- **Trade-off.** New artifacts get longer tags (filenames, version columns). Accepted: `0.11.0r469048s…-b20d256e3lr3e-04o…` is self-describing where the
+  old short tag was a collision. Existing artifacts keep their old tags and old receipts stay
+  valid (identity is additive, behavior hash does not care about tag strings).
+
+## DEC-449 — [PROTOCOL] protocol C: activate the EXISTING decision-sufficiency objective (`effect`) — the operator was right, it was already built, and never switched on
+
+- **Context.** Asked to approve "adding an offer-response training task", the operator replied
+  "I thought we were already doing #1". Investigation: they were nearly right — a complete
+  direct-method outcome objective exists and is untouched code: `_effect_targets` derives per
+  (customer, period) randomized-action/reward targets **from the stream** (self-supervised, per
+  the anti-overfit clause), the model builds `head_effect`, the training loop computes the
+  masked BCE with the recorded rationale "a purely predictive state can be outcome-sufficient
+  yet response-blind (measured)". It has never run: `effect_actions=()` by default, the lab
+  manifest declares no `action_keys`, and **both natural activation forms are rejected**
+  (`--set effect_actions=offer` → str-into-tuple REJECTED; `['offer']` → list REJECTED). The
+  only accepted form is the tuple literal — a switch reachable only by people who know the
+  incantation is a switch that is off (principle 4: adapt by construction; the declaration
+  channel must actually accept a declaration).
+- **Decision.** (a) `apply_set_overrides` accepts comma-separated strings for tuple fields
+  (`offer` → `("offer",)`, `offer,freq` → both), keeping every existing rejection; a test pins
+  both the acceptance and the still-rejected garbage forms. (b) **Protocol C** trains
+  `--set batch=20 --set "effect_actions=offer"` (offer is the lab's declared randomized arm;
+  the key comes from the operator's ruling naming this exact task, and it is recorded in the
+  registry's `overrides`, like batch in DEC-444). New out-dir `cfm_c_eff`; GPU only; Qwen
+  stopped for the duration; watchdog + gpu_budget as in DEC-444. It is a new protocol version,
+  never a reproduction of A or B.
+- **Frozen acceptance criteria (before the run).**
+  1. Registry: `overrides` includes `effect_actions=('offer',)`; `objectives` contains `effect`;
+     `loss_scales` contains `effect`; `_effect_dim == 4`; a checkpoint contains `head_effect`
+     weights. (If the objective silently no-ops again, the registry says so — that is the point
+     of recording it in the artifact.)
+  2. The `effect` task loss is finite at every evaluation, and the run is governed to its own
+     stopping rule (no divergence: monotonic-stability rules apply; a divergence is reported,
+     never rescued).
+  3. The full chain re-runs against protocol C; S5 `action_conditioned_outcome` and the `rl`
+     legs are the named axes this targets. They may stay FAIL — the honest outcomes are
+     "activated and uplift signal appeared", "activated and nothing moved" (→ the pressure is
+     too weak / the head reads the wrong tensor), both publishable.
+  4. No gate, threshold, comparator, control or data definition moves. Protocol A and B receipts
+     remain the record of their protocols; nothing is pooled across them.

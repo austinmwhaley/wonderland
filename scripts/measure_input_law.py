@@ -438,6 +438,29 @@ def check_training_determinism(data: Path) -> dict:
     }
 
 
+def products_identity(products) -> dict:
+    """The identity of the products artifact a producer measured (DEC-448, one definition).
+
+    A card whose legs were measured against DIFFERENT encoders would otherwise render as
+    self-consistent (DEC-445: batch changed, tag did not). Identity is the registry — the
+    artifact that describes itself: its tag and content hash. The path is recorded for the
+    reader's convenience, never compared (the same artifact mounts differently in the
+    container than on the host).
+    """
+    p = Path(products)
+    d = p.parent if p.suffix else p
+    out = {"path": str(p), "tag": None, "registry_sha256": None}
+    regs = sorted(d.glob("registry_*.json"))
+    if regs:
+        body = regs[-1].read_bytes()
+        out["registry_sha256"] = hashlib.sha256(body).hexdigest()[:16]
+        try:
+            out["tag"] = json.loads(body).get("tag")
+        except (ValueError, UnicodeDecodeError):
+            pass  # an unreadable registry is a missing identity, which the reader reports
+    return out
+
+
 def stamp_merge_write(
     out_path: Path, stages: dict, command: str, *, stamp_blocks: bool = True
 ) -> dict:

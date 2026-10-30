@@ -80,6 +80,15 @@ def apply_set_overrides(cfg, receipt: dict | None = None) -> dict:
                         f"--set {k}: {s!r} is not a valid {type(cur).__name__}"
                         f" (current value {cur!r})"
                     ) from None
+        if isinstance(cur, tuple) and isinstance(val, str):
+            # A comma-separated declaration for a tuple field (`--set effect_actions=offer`,
+            # or `offer,freq`): a switch whose only accepted spelling is a tuple literal is a
+            # switch that is OFF — the `effect` objective sat unreachable this way (DEC-449).
+            # A value declaring nothing is a rejection, never an empty tuple.
+            parts = tuple(x.strip() for x in val.split(",") if x.strip())
+            if not parts:
+                raise SystemExit(f"--set {k}: {s!r} declares no values for a tuple field")
+            val = parts
         if cur is not None and not isinstance(val, type(cur)):
             # An int literal into a float field (`--set gpu_mem_limit_gb=20`) is a
             # widening, not a type error — rejecting it made the very fix command this
@@ -438,10 +447,25 @@ class CFMConfig:
     @property
     def tag(self) -> str:
         # Artifact identity: the data revision alone is NOT enough — two runs with
-        # different training samples (e.g. 400 vs 2000) otherwise share a tag.
+        # different training samples (e.g. 400 vs 2000) otherwise share a tag. DEC-448
+        # extends the same argument to the whole resolved protocol: batch changes the
+        # gradient noise, objectives change what the weights are — an artifact trained
+        # under a different protocol must not carry the same name (DEC-445 measured two
+        # protocols shipping as `0.11.0r469048`). Derived from the resolved config, so
+        # the name is a function of the protocol, not a label a human types.
+        import hashlib
+
         base = f"{self.version}r{self.revision}"
         n = getattr(self, "sample_a_customers", None)
-        return f"{base}s{int(n)}" if n else base
+        if n:
+            base += f"s{int(n)}"
+        obj = ",".join(str(o) for o in (getattr(self, "objectives", ()) or ()))
+        eff = ",".join(str(e) for e in (getattr(self, "effect_actions", ()) or ()))
+        sig = hashlib.sha256(f"{obj}|{eff}".encode()).hexdigest()[:8]
+        return (
+            f"{base}-b{int(self.batch)}d{int(self.dim)}e{int(self.epochs)}"
+            f"lr{float(self.lr):.0e}o{sig}"
+        )
 
 
 def sample_a(n_customers: int, n_anchors: int, **kw):

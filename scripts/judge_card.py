@@ -271,6 +271,50 @@ def _badge(v: str) -> str:
     }[v]
 
 
+def _products_id(block) -> tuple | None:
+    p = (block or {}).get("products") or {}
+    if not p.get("registry_sha256") and not p.get("tag"):
+        return None
+    return (p.get("tag"), p.get("registry_sha256"))
+
+
+def _artifact_mismatch(receipts: Path, stages_rc: dict | None) -> dict:
+    """Rows measured against a DIFFERENT products artifact than the rest of the card are
+    refused (UNKNOWN), not quietly rendered side by side (DEC-448, closing DEC-445).
+
+    Two encoder protocols once shipped under one tag, so a card assembled from legs of both
+    would have rendered as self-consistent. Identity is the registry (tag + content hash);
+    receipts without an id (older artifacts) are exempt — this refuses a demonstrated MIX,
+    it is not a new capability gate. Deterministic: the majority artifact wins; ties break
+    lexicographically.
+    """
+    ids: dict[str, tuple] = {}
+    for row in J.LEG_ROWS:
+        i = _products_id(load(receipts, row.source))
+        if i:
+            ids[row.source] = i
+    for s in J.STAGE_ROWS:
+        if s.ident in ("S4", "S5"):
+            i = _products_id((stages_rc or {}).get(s.ident))
+            if i:
+                ids[f"stage::{s.ident}"] = i
+    distinct = set(ids.values())
+    if len(distinct) <= 1:
+        return {}
+    counts: dict[tuple, int] = {}
+    for v in ids.values():
+        counts[v] = counts.get(v, 0) + 1
+    top = max(sorted(counts), key=lambda k: counts[k])
+    return {
+        k: (
+            f"card mixes artifacts: this row measured tag={i[0]} sha={i[1]}, "
+            f"but the card's artifact is tag={top[0]} sha={top[1]}"
+        )
+        for k, i in ids.items()
+        if i != top
+    }
+
+
 def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
     generated = datetime.now(timezone.utc).isoformat(timespec="seconds")
     summary = {"pass": 0, "fail": 0, "unknown": 0, "excluded": 0}
@@ -283,6 +327,10 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
         return verdict, why
 
     # ---- top line: the judge ----------------------------------------------------
+    # Loaded before the legs so the single-artifact rule (DEC-448) can see every
+    # products-consuming receipt on the card, stage blocks included.
+    stages_rc = load(receipts, "judge_stages.json")
+    mix = _artifact_mismatch(receipts, stages_rc)
     judge_lines, verdicts = [], {}
     judge_lines += [
         "| Leg | Column | Verdict | Evidence |",
@@ -291,6 +339,8 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
     for row in J.LEG_ROWS:
         rc = load(receipts, row.source)
         note = _meta_problem(rc, current_hash)
+        if rc and not note:
+            note = mix.get(row.source)
         tasks = None
         if rc and not note:
             tasks = (rc.get("columns") or {}).get(row.column, {}).get("tasks")
@@ -307,7 +357,6 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
 
     # ---- stage ladder -----------------------------------------------------------
     stage_lines = ["| Stage | Working-state proof | Verdict | Evidence |", "|---|---|---|---|"]
-    stages_rc = load(receipts, "judge_stages.json")
     stage_note = _meta_problem(stages_rc, current_hash)
     for s in J.STAGE_ROWS:
         val = (stages_rc or {}).get(s.ident) if not stage_note else None
@@ -322,6 +371,8 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
             verdict, why = (J.PASS, "reported working") if val else (J.FAIL, "reported not working")
         elif isinstance(val, dict) and "working" in val:
             block_note = _block_problem(val, current_hash)
+            if not block_note:
+                block_note = mix.get(f"stage::{s.ident}")
             if block_note:
                 verdict, why = J.UNKNOWN, block_note
             else:
