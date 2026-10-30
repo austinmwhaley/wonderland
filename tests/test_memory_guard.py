@@ -137,3 +137,24 @@ def test_a_module_pattern_still_matches_its_interpreter(tmp_path):
         b"/usr/bin/python3\0-m\0looking_glass.customer_foundation_model\0train\0"
     )
     assert 31 in GW.gpu_jobs(GW.DEFAULT_PATTERNS, proc_root=tmp_path)
+
+
+def test_a_producer_gets_a_moment_to_re_enter_the_slice():
+    """Measured: the guard SIGTERMed the S6 launcher ~1 s before it moved into the slice itself.
+
+    Re-entry happens immediately, but the guard samples on a timer, and on its first sighting a
+    correctly-behaving producer is still outside. "Outside" therefore has to mean "outside for
+    longer than a startup grace", or the enforcement punishes the very mechanism that complies.
+    """
+    assert GW.should_stop_outside(age_s=0.4, grace_s=30.0) is False
+    assert GW.should_stop_outside(age_s=29.9, grace_s=30.0) is False
+    assert GW.should_stop_outside(age_s=31.0, grace_s=30.0) is True
+    # a process whose age cannot be read does not get the benefit of the doubt
+    assert GW.should_stop_outside(age_s=None, grace_s=30.0) is True
+
+
+def test_process_age_is_read_from_the_kernel():
+    """Age comes from /proc, not from when the guard first noticed the pid."""
+    age = GW.process_age_s(__import__("os").getpid())
+    assert age is not None and age >= 0.0
+    assert GW.process_age_s(999999999) is None

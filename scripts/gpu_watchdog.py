@@ -130,6 +130,34 @@ def in_slice(pid: int, slice_name: str, proc_root: Path = Path("/proc")) -> bool
     return slice_name in cg
 
 
+def process_age_s(pid: int, proc_root: Path = Path("/proc")) -> float | None:
+    """Seconds since this process started, from the kernel (field 22 of /proc/<pid>/stat)."""
+    try:
+        stat = (proc_root / str(pid) / "stat").read_text()
+        # `comm` can contain spaces and parentheses; everything after the LAST ')' is positional
+        fields = stat.rsplit(")", 1)[1].split()
+        start_ticks = float(fields[19])
+        hz = os.sysconf("SC_CLK_TCK")
+        with open("/proc/uptime") as fh:
+            uptime = float(fh.read().split()[0])
+    except (OSError, IndexError, ValueError):
+        return None
+    return max(0.0, uptime - start_ticks / hz)
+
+
+def should_stop_outside(age_s: float | None, grace_s: float) -> bool:
+    """A producer is allowed a moment to re-enter the slice before it is called a stray.
+
+    Measured: a direct launch calls `safe_run.ensure_boundary()`, which re-execs into the slice in
+    well under a second — but the guard polls, and on its first sighting the process is outside.
+    Killing it there punished the re-entry it exists to encourage (it killed the top-level launcher
+    of the S6 chain one second before the job moved into the slice). So "outside" means outside for
+    longer than a startup grace, not outside for an instant. An unreadable age is treated as old:
+    a process we cannot age is not given the benefit of the doubt.
+    """
+    return age_s is None or age_s >= grace_s
+
+
 def outside_slice(jobs: list[int], slice_name: str, proc_root: Path = Path("/proc")) -> list[int]:
     return [pid for pid in jobs if not in_slice(pid, slice_name, proc_root)]
 
@@ -203,6 +231,13 @@ def main(argv=None, *, arm: bool = True) -> int:
         "--slice",
         default="wonderland.slice",
         help="the project's memory slice; jobs outside it are not bounded by the ceiling",
+    )
+    ap.add_argument(
+        "--slice-grace-s",
+        type=float,
+        default=30.0,
+        help="how long a producer may be outside the slice before it is stopped: a re-entry takes "
+        "well under a second, and killing on first sight punishes the thing this encourages",
     )
     ap.add_argument(
         "--outside-slice",
@@ -282,7 +317,11 @@ def main(argv=None, *, arm: bool = True) -> int:
             print(f"{time.strftime('%T')} WATCHDOG-FAULT {type(exc).__name__}: {exc}", flush=True)
             avail, jobs = float("inf"), []
         if jobs and a.outside_slice != "ignore":
-            strays = outside_slice(jobs, a.slice)
+            strays = [
+                pid
+                for pid in outside_slice(jobs, a.slice)
+                if should_stop_outside(process_age_s(pid), a.slice_grace_s)
+            ]
             for pid in strays:
                 if a.outside_slice == "kill":
                     print(
