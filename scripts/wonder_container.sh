@@ -143,10 +143,13 @@ docker image inspect "$image" >/dev/null 2>&1 || build
 # require the load to have settled before starting anything that allocates GPU memory.
 if [[ $gpu -eq 1 ]] && docker ps --format '{{.Names}}' 2>/dev/null | grep -qx "vllm-qwen"; then
   wait_s="${WONDER_WAIT_S:-1200}"
+  # The port lives in the serve script (one definition); 8000 is its documented fallback.
+  vport=$(grep -oE -- '--port[[:space:]]+[0-9]+' "$HOME/vllm-qwen-serve.sh" 2>/dev/null | awk '{print $2}' | head -1)
+  vport="${vport:-8000}"
   echo "waiting for vllm-qwen to finish loading (max ${wait_s}s)..." >&2
   ready=0
   for _ in $(seq 1 "$wait_s"); do
-    if curl -sf -o /dev/null --max-time 2 http://127.0.0.1/health 2>/dev/null; then
+    if curl -sf -o /dev/null --max-time 2 "http://127.0.0.1:${vport}/health" 2>/dev/null; then
       ready=1
       break
     fi
