@@ -338,6 +338,12 @@ class CFMConfig:
     # LINEARLY readable (the frozen consumer is linear, DEC-407). Default off keeps every
     # pre-E protocol byte-reproducible.
     survival: bool = False
+    # DEC-459 (protocol F): future-RATE objective on the NON-faded trunk — log1p future event
+    # count, future primary-value sum and future per-type counts over W = 10 x median gap
+    # (recency's anchor mirrored into the future). The ledger proves the rate is knowable
+    # (x0 ledger-only 0.889); the contractive trunk drops it (brain 0.791) — this is the
+    # pressure to put it back. Default off keeps every pre-F protocol byte-reproducible.
+    rate: bool = False
     # exogenous ACTION fields to EXCLUDE from the generic measure (prevents the measure — and
     # hence `E` — from carrying the logged action, which would leak the treatment into the OPE).
     # Declared separately from `effect_actions` so the action's RESPONSE is still exposed.

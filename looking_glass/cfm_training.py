@@ -153,6 +153,9 @@ def train_cfm(cfg: CFMConfig):
     # `--set survival=true` produces a distinct protocol identity without any typed tag).
     if getattr(cfg, "survival", False) and "survive" not in cfg.objectives:
         cfg.objectives = (*cfg.objectives, "survive")
+    # DEC-459: same contract for the future-rate objective (protocol F).
+    if getattr(cfg, "rate", False) and "rate" not in cfg.objectives:
+        cfg.objectives = (*cfg.objectives, "rate")
     # B5: enable multi-token prediction when mtp_k > 0 (after --set, same rationale).
     if int(getattr(cfg, "mtp_k", 0) or 0) > 0 and "mtp" not in cfg.objectives:
         cfg.objectives = (*cfg.objectives, "mtp")
@@ -199,6 +202,8 @@ def train_cfm(cfg: CFMConfig):
         effect_dim=getattr(cfg, "_effect_dim", 0),
         effect_head=str(getattr(cfg, "effect_head", "mlp")),
         survive_dim=len(getattr(cfg, "_survival_horizons_s", []) or []),
+        # DEC-459: [future count, future primary-value sum, per-type future counts]
+        rate_dim=(2 + int(vocab.n_et)) if getattr(cfg, "rate", False) else 0,
         mtp_k=getattr(cfg, "mtp_k", 0),
         # DEC-423: recompute the SSM scan in backward — see CFMConfig.grad_checkpoint.
         grad_checkpoint=bool(getattr(cfg, "grad_checkpoint", False)),
@@ -749,6 +754,8 @@ def train_cfm(cfg: CFMConfig):
             "effect_head": str(getattr(cfg, "effect_head", "mlp")),
             # DEC-457: the survive head's horizon count (same rebuild-from-blob contract).
             "survive_dim": int(len(getattr(cfg, "_survival_horizons_s", []) or [])),
+            # DEC-459: the rate head's output count (2 + n_et when on, 0 when off).
+            "rate_dim": int((2 + int(vocab.n_et)) if getattr(cfg, "rate", False) else 0),
             "action_fields": list(getattr(cfg, "action_fields", ()) or ()),
             "primary_numeric": getattr(cfg, "primary_numeric", None),
             "whiten_mean": (model.whiten_mean if getattr(model, "whiten_on", False) else None),
@@ -1344,6 +1351,45 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
         w = m_i.clamp(min=0) * (1.0 - _next_act)
         bce = F.binary_cross_entropy_with_logits(model.head_survive(h_q), tgt, reduction="none")
         T_["survive"] = (bce * w.unsqueeze(1)).sum() / (w.sum().clamp(min=1) * H.numel())
+    # ---- future-rate pressure on the trunk (DEC-459, protocol F) ----------
+    # From the NON-faded trunk state, predict the level of what is about to happen: log1p
+    # future event count, future primary-value sum, and future per-type counts over
+    # W = 10 x median gap (recency's time anchor mirrored into the future). DEC-456 measured
+    # x0/return_proneness ABSENT from the learned shape while the ledger reads x0 at 0.889 —
+    # the rate is knowable but the contractive trunk drops it. DEC-458's negative result
+    # pinned the lever: readout-side pressure on the faded path does not reorganize the
+    # trunk, so this pressure sits on the shared trunk state every head reads.
+    if "rate" in cfg.objectives and getattr(model, "head_rate", None) is not None:
+        secs = torch.cumsum(torch.expm1(t["dt"]).squeeze(-1), dim=1)  # (B,T) clock
+        _gap = torch.expm1(t["dt"]).squeeze(-1)
+        _g = _gap[_gap > 0]
+        _med = torch.median(_g) if _g.numel() else torch.tensor(7.0 * 86400.0, device=dev)
+        W = torch.clamp(_med * 10.0, min=86400.0)  # documented mirror of recency's anchor
+        cfg._rate_window_s = float(W)  # receipted in the registry (acceptance #2)
+        _pv = cfg.primary_numeric if getattr(cfg, "primary_numeric", None) in t else None
+        val = (
+            t[_pv].to(torch.float32).clamp(min=0.0)
+            if _pv is not None
+            else torch.zeros(B, T, device=dev)
+        )
+        onehot = F.one_hot(t["et"].clamp(max=vocab.n_et - 1), vocab.n_et).to(torch.float32)
+        cnt = torch.zeros(B, T - 1, device=dev)
+        amt = torch.zeros(B, T - 1, device=dev)
+        typ = torch.zeros(B, T - 1, vocab.n_et, device=dev)
+        for a in range(0, T - 1, 32):  # chunked over positions to bound the (B,chunk,T) cost
+            b = min(a + 32, T - 1)
+            d = secs[:, None, :] - secs[:, a:b, None]  # secs_j - secs_i for chunk positions i
+            m = ((d > 0) & (d <= W)).to(torch.float32)  # events j strictly after i within W
+            cnt[:, a:b] = m.sum(-1)
+            amt[:, a:b] = torch.matmul(m, val.unsqueeze(-1)).squeeze(-1)
+            typ[:, a:b] = torch.matmul(m, onehot)
+        tgt = torch.log1p(torch.cat([cnt.unsqueeze(-1), amt.unsqueeze(-1), typ], dim=-1))
+        _m = valid_t > 0
+        _tv = tgt[_m]
+        mu = _tv.mean(0) if _m.any() else tgt.mean((0, 1))
+        sd = (_tv.std(0) if _m.any() else tgt.std((0, 1))).clamp(min=1e-6)
+        rl = F.mse_loss(model.head_rate(y[:, :-1]), (tgt - mu) / sd, reduction="none").mean(-1)
+        T_["rate"] = (rl * valid_t).sum() / nv
     # ---- variance floor (VICReg-style, DEC-015) ---------------------------
     # Decorrelation (redundancy) removes correlation but not SCALE collapse:
     # the production runs measured eff-rank 0.23-0.26x null with redundancy
@@ -2156,6 +2202,11 @@ def _registry(
                     "horizons_s": [
                         float(x) for x in (getattr(cfg, "_survival_horizons_s", []) or [])
                     ],
+                },
+                # DEC-459 acceptance #2: the derived future-window W must be receipted too.
+                "rate": {
+                    "on": bool(getattr(cfg, "rate", False)),
+                    "window_s": getattr(cfg, "_rate_window_s", None),
                 },
                 "resolved": cfg_resolved or {},
                 "governor": governor or {},

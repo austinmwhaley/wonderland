@@ -849,6 +849,7 @@ class CFM(nn.Module):
         effect_dim: int = 0,
         effect_head: str = "mlp",
         survive_dim: int = 0,
+        rate_dim: int = 0,
         mtp_k: int = 0,
     ):
         super().__init__()
@@ -1001,6 +1002,11 @@ class CFM(nn.Module):
         # churn_day that this objective exists to close).
         self.survive_dim = int(survive_dim)
         self.head_survive = nn.Linear(dim, self.survive_dim) if self.survive_dim else None
+        # DEC-459 (protocol F): future-rate head on the NON-faded trunk — [future count,
+        # future primary-value sum, per-type future counts]. Linear on purpose, same contract
+        # as head_survive: a linear consumer (DEC-407) must be able to read the rate back.
+        self.rate_dim = int(rate_dim)
+        self.head_rate = nn.Linear(dim, self.rate_dim) if self.rate_dim else None
         self.head_sf = nn.Sequential(
             nn.Linear(dim + 1, dim), nn.ReLU(), nn.Linear(dim, self.sf_dim)
         )

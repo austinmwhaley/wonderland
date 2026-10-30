@@ -241,6 +241,7 @@ def load_frozen_encoder(tag: str, cfm_dir):
         effect_dim=int(blob.get("effect_dim", 0) or 0),
         effect_head=str(blob.get("effect_head", "mlp")),
         survive_dim=int(blob.get("survive_dim", 0) or 0),
+        rate_dim=int(blob.get("rate_dim", 0) or 0),
     )
     # tolerate checkpoints from earlier revisions (e.g. a head added later):
     # load what matches, report what did not. The encoder trunk must match.

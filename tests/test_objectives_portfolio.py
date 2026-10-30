@@ -704,6 +704,83 @@ def test_survival_moves_the_protocol_tag_only_when_the_objective_is_on():
     assert on.tag != base  # trained weights differ => the name must say so (DEC-448)
 
 
+# ---- DEC-459 (protocol F): the future-rate objective on the non-faded trunk --------------------------
+
+
+def _sparse_seq(key="c1", gap_h=6, n=8):
+    import datetime as _dt
+
+    t0 = _dt.datetime(2025, 1, 1, tzinfo=_dt.timezone.utc)
+    ets = [
+        (t0 + _dt.timedelta(hours=gap_h * i)).isoformat().replace("+00:00", "+00:00")
+        for i in range(n)
+    ]
+    return {
+        "customer": key,
+        "group": "B",
+        "anchor_epoch": None,
+        "event_type": np.array(["view", "order"] * (n // 2), dtype=object),
+        "brand": np.array([None] * n, dtype=object),
+        "entity_type": np.array(["customer"] * n, dtype=object),
+        "entity_id": np.array([key] * n, dtype=object),
+        "value": np.arange(n, dtype=np.float32),
+        "event_ts": np.array(ets, dtype=object),
+        "co": [[0.0, 0.0]] * n,
+    }
+
+
+def test_rate_head_shape_finiteness_and_trunk_gradient():
+    """Linear(dim, 2+n_et) on purpose (DEC-407 consumer); the loss must be finite and its
+    gradient must reach the trunk — putting the rate BACK into the shape is the objective."""
+    seqs = [_seq("c1"), _seq("c2", day="2025-01-02"), _seq("c3", day="2025-01-03")]
+    vocab = EventVocab.build(seqs)
+    torch.manual_seed(0)
+    model = CFM(vocab, dim=16, n_experts=1, rate_dim=2 + vocab.n_et)
+    assert isinstance(model.head_rate, torch.nn.Linear)
+    assert model.head_rate.out_features == 2 + vocab.n_et
+    cfg = _cfg(objectives=(*CFMConfig().objectives, "rate"))
+    T_ = _task_losses(model, vocab, seqs, cfg)
+    assert "rate" in T_ and torch.isfinite(T_["rate"])
+    T_["rate"].backward()
+    assert model.head_rate.weight.grad is not None
+    assert model.emb_et.weight.grad is not None  # pressure on the shared trunk, not the head
+
+
+def test_rate_off_by_default_and_never_a_nan():
+    seqs = [_seq("c1"), _seq("c2", day="2025-01-02")]
+    vocab = EventVocab.build(seqs)
+    model = CFM(vocab, dim=16, n_experts=1)
+    assert model.head_rate is None  # pre-F protocols are byte-reproducible
+    cfg = _cfg(objectives=(*CFMConfig().objectives, "rate"))  # objective but no head built
+    T_ = _task_losses(model, vocab, seqs, cfg)
+    assert "rate" not in T_  # silently absent, never a NaN
+
+
+def test_rate_window_is_derived_from_the_stream_and_clamped():
+    """W = clamp(10 x median gap, min 1 d): a 6 h-gap stream gets W = 60 h, an hourly stream
+    hits the 1-day clamp — the window is a fact about the stream, not a typed constant."""
+    seqs_dense = [_seq("c1"), _seq("c2", day="2025-01-02")]  # hourly gaps
+    vocab = EventVocab.build(seqs_dense)
+    model = CFM(vocab, dim=16, n_experts=1, rate_dim=2 + vocab.n_et)
+    cfg = _cfg(objectives=(*CFMConfig().objectives, "rate"))
+    _task_losses(model, vocab, seqs_dense, cfg)
+    assert cfg._rate_window_s == 86400.0  # hourly: clamped to the documented 1 d floor
+    seqs_sparse = [_sparse_seq("c1", gap_h=6), _sparse_seq("c2", gap_h=6)]
+    vocab2 = EventVocab.build(seqs_sparse)
+    model2 = CFM(vocab2, dim=16, n_experts=1, rate_dim=2 + vocab2.n_et)
+    cfg2 = _cfg(objectives=(*CFMConfig().objectives, "rate"))
+    _task_losses(model2, vocab2, seqs_sparse, cfg2)
+    assert abs(cfg2._rate_window_s - 60 * 3600.0) < 3600.0  # 10 x 6 h
+
+
+def test_rate_moves_the_protocol_tag_only_when_the_objective_is_on():
+    base = CFMConfig().tag
+    assert CFMConfig(rate=True).tag == base  # the field alone builds no head
+    on = CFMConfig()
+    on.objectives = (*on.objectives, "rate")
+    assert on.tag != base  # trained weights differ => the name must say so (DEC-448)
+
+
 def test_mtp_objective_present_and_trains():
     """B5: multi-token prediction heads exist and the k-step loss is finite + trains."""
     seqs = [_seq(f"c{i}", day=f"2025-01-{(i % 28) + 1:02d}") for i in range(4)]
