@@ -76,3 +76,19 @@ def test_everything_green_is_green():
     ok, detail = _run({"S1+S2": 0, "S3": 0, "S4": 0, "S5": 0, "legs": 0})
     assert ok is True
     assert detail == {"fatal": {}, "missing": [], "reported_failing": []}
+
+
+def test_changed_paths_survives_the_leading_space_git_strips():
+    """Measured: a modified DECISIONS.md was reported as "ECISIONS.md".
+
+    `judge_card.git()` strips the whole stdout, which removes the leading space of the first
+    porcelain line (" M path") and shifts every later slice by one. Parsing `-z` output makes the
+    status/path boundary explicit instead of positional.
+    """
+    assert MC.changed_paths(" M DECISIONS.md\0") == ["DECISIONS.md"]
+    assert MC.changed_paths("?? deploy/x.slice\0 M scripts/y.py\0") == [
+        "deploy/x.slice",
+        "scripts/y.py",
+    ]
+    assert MC.changed_paths("R  old.py -> new.py\0") == ["new.py"]
+    assert MC.changed_paths("") == []

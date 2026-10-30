@@ -111,21 +111,40 @@ def _run_producer(script: str, argv: list[str], cap_gb: float) -> dict:
     }
 
 
+def changed_paths(porcelain: str) -> list[str]:
+    """Paths from `git status --porcelain -z` output, exactly.
+
+    `-z` terminates each entry with NUL and never quotes, so no status/path boundary is guessed.
+    The previous version sliced `line[3:]` on the line-oriented form, which was wrong for the
+    FIRST line of the output: `judge_card.git()` strips the whole stdout, eating the leading space
+    of " M path" and shifting every later slice by one — measured, it reported a modified file as
+    `ECISIONS.md`. A parser that mangles the path of the only file it names is not a check.
+    """
+    out = []
+    for entry in porcelain.split("\0"):
+        if len(entry) < 4:
+            continue
+        path = entry[3:]
+        if " -> " in path:  # rename: the destination is the file that exists now
+            path = path.split(" -> ")[-1]
+        out.append(path)
+    return out
+
+
 def _tree_dirty(exempt: set[str]) -> tuple[bool, list]:
     """Working-tree state, excluding the artifacts a regeneration is allowed to rewrite.
 
     These are committed generated files: a command whose whole job is to rewrite them can never
     report a clean tree *after* it ran, and a rule that can never be satisfied is the rule DEC-430
-    removed for the card's own bytes — a flag that always says the same thing is not a flag.
-    Source edits still count, which is the entire point of the check.
+    removed for the card's own bytes. Source edits still count, which is the whole point.
     """
-    changed = []
-    for line in JC.git("status", "--porcelain").splitlines():
-        # porcelain is "XY PATH", or "XY OLD -> NEW" for a rename: the New side is the file that
-        # exists now, and the two status columns must be dropped or "? scripts/x.py" is "changed"
-        path = line[3:].split(" -> ")[-1].strip() if len(line) > 3 else ""
-        if path and Path(path).name not in exempt:
-            changed.append(path)
+    raw = subprocess.run(
+        ["git", "status", "--porcelain", "-z"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    ).stdout
+    changed = [p for p in changed_paths(raw) if Path(p).name not in exempt]
     return bool(changed), changed
 
 

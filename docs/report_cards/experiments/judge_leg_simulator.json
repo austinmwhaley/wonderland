@@ -1,9 +1,9 @@
 {
   "_meta": {
     "behavior_hash": "33c12077e1b70129",
-    "command": "measure_judge_law.py --products /work/cfm_views --demo /work/demo --legs supervised,unsupervised,rl,simulator --out-dir /repo/docs/report_cards/experiments",
-    "generated_at": "2026-10-30T00:40:51+00:00",
-    "git_commit": "924a6fde10b7394021c958bace9ff53cf1265e5a",
+    "command": "measure_judge_law.py --products /work/cfm_b20 --demo /work/demo --legs supervised,unsupervised,rl,simulator --out-dir /repo/docs/report_cards/experiments",
+    "generated_at": "2026-10-30T02:23:45+00:00",
+    "git_commit": "4d317451ec86da9a1a5129363764021be422c343",
     "producer": "measure_judge_law.py"
   },
   "arms": {
@@ -13,7 +13,7 @@
   },
   "checks": {
     "simulator": {
-      "evidence": "2 live task(s) (+0 degenerate) on n=724 B-rows scored against 1776 A-rows; comparator PATH A (GBM incumbent); table 48 cols / 2500 customers; brain+ledger 2 task(s)",
+      "evidence": "2 live task(s) (+0 degenerate) on n=724 B-rows scored against 1776 A-rows; comparator PATH A (GBM incumbent); table 48 cols / 2500 customers; brain+ledger 2 task(s); WARNING: negative control uninformative on 1/2 trait(s) (dose_response_curve) \u2014 R2 < -1 is a conditioning artifact of the wide design, so 'control below brain' proves nothing there",
       "working": true
     }
   },
@@ -21,17 +21,20 @@
     "brain": {
       "tasks": [
         {
-          "brain": 0.244307,
-          "ci_hi": -0.000502,
-          "ci_lo": -0.001355,
+          "brain": 0.247,
+          "ci_hi": -0.000467,
+          "ci_lo": -0.001345,
           "comparator": "PATH A (GBM incumbent)",
-          "controls_unreadable": [],
-          "destroyed": -0.970022,
+          "controls_unreadable": [
+            "random",
+            "destroyed"
+          ],
+          "destroyed": -2.604926,
           "metric": "R2 on the identified (customer x offer level) purchase rate (4 levels: [0, 1, 2, 3])",
           "n": 1132,
           "name": "dose_response_curve",
           "pathA": 0.318547,
-          "random": -0.805558
+          "random": -2.512579
         },
         {
           "brain": 0.269807,
@@ -51,17 +54,17 @@
     "brain_ledger": {
       "tasks": [
         {
-          "brain": 0.302269,
-          "ci_hi": 0.000139,
-          "ci_lo": -0.000506,
+          "brain": 0.304809,
+          "ci_hi": 0.000166,
+          "ci_lo": -0.000469,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": -0.060468,
+          "destroyed": -0.06231,
           "metric": "R2 on the identified (customer x offer level) purchase rate (4 levels: [0, 1, 2, 3])",
           "n": 1132,
           "name": "dose_response_curve",
           "pathA": 0.318547,
-          "random": -0.040018
+          "random": -0.045823
         },
         {
           "brain": 0.269807,
@@ -80,7 +83,7 @@
     }
   },
   "diagnostics": {},
-  "evidence": "[simulator] OK: 2 live task(s) (+0 degenerate) on n=724 B-rows scored against 1776 A-rows; comparator PATH A (GBM incumbent); table 48 cols / 2500 customers; brain+ledger 2 task(s)",
+  "evidence": "[simulator] OK: 2 live task(s) (+0 degenerate) on n=724 B-rows scored against 1776 A-rows; comparator PATH A (GBM incumbent); table 48 cols / 2500 customers; brain+ledger 2 task(s); WARNING: negative control uninformative on 1/2 trait(s) (dose_response_curve) \u2014 R2 < -1 is a conditioning artifact of the wide design, so 'control below brain' proves nothing there",
   "excluded": [],
   "identified": {
     "customers": 4093,

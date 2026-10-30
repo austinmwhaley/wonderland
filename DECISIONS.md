@@ -4636,3 +4636,44 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - **Trade-offs recorded.** A smaller batch means more steps for the same number of sequences and a
   noisier gradient; if the governor stops earlier the comparison against protocol A is confounded by
   batch as well as by the run, which is exactly why the two are never pooled.
+
+## DEC-445 — [FINDING, OPEN] protocol A and protocol B share the same tag, so the freshness law cannot tell them apart
+
+- **What was measured.** The batch=20 run (DEC-444) wrote its artifacts into a new directory —
+  `wonderland_work/cfm_b20/` — but produced the **same tag**, `0.11.0r469048`, as the frozen
+  batch=27 artifact in `cfm_views/`. `CFMConfig.tag` is
+  `f"{version}r{revision}"` plus `s{sample_a_customers}` when a ladder receipt sized Sample A; no
+  ladder receipt exists for `as_of=2025-01-01`, so the sample suffix is absent and the batch — the
+  one thing this run changed — is not in the identity at all.
+- **Why it matters.** `CFMConfig.tag`'s own comment says the point of the suffix is that "two runs
+  with different training samples otherwise share a tag". The same argument applies verbatim to
+  `batch`: it changes the gradient noise, hence what the governor sees, hence when it stops. The
+  deeper problem is the card's freshness law: `judge_card.behavior_hash()` hashes the SOURCE TREES
+  (`looking_glass/`, `rabbit_hole/`), not the artifact, so two artifacts trained by identical code
+  on different protocols have **the same behavior hash** and their receipts are indistinguishable
+  to the automatic check. A card assembled from one protocol-A leg and three protocol-B legs would
+  render as current and self-consistent.
+- **What is true today (interim, not sufficient).** Every receipt records `_meta.command`, which
+  contains the `--products` path, and every leg receipt records `path_a.source`; the registry
+  carries `overrides: {batch: 20}` and `resolved.batch: 20` while `derived.batch` still prints
+  `-> 27`. So a reader who looks can tell B from A: the provenance is present, it is just not what
+  the automated check uses.
+- **Alternatives considered.** (1) *Bump `CFMConfig.version`* — rejected as a unilateral act:
+  version labels are artifact identity (principle 10) and, because `looking_glass/` is inside the
+  behavior hash, bumping it invalidates **every receipt in the tree** and forces a full
+  re-measurement. That is an operator decision with a known cost, not a cleanup. (2) *Rename the
+  tag in the registry after the fact* — rejected: a hand-edited identity is worse than a colliding
+  one, and the artifact would no longer describe itself. (3) *Have the judge compare artifact
+  identity as well as code identity* — **the right fix, and deferred deliberately**: it adds a
+  freshness criterion to the card, which is a gate-side change and must not be made in the same
+  cycle as the run it would judge.
+- **Proposed for ratification.** Extend `CFMConfig.tag` to include the resolved protocol axes that
+  can change behavior (batch, dim, epochs, lr, training-sample size), derived from the resolved
+  config rather than typed — so identity is a function of the protocol, exactly as the existing
+  sample-size suffix is. Cost: one behavior-hash bump and one re-measurement of the whole card.
+  Independently, add a judge-leg field naming the products artifact (path + registry sha256) and a
+  card rule that refuses to mix legs from different artifacts — that closes the mixing hazard even
+  if tags stay coarse.
+- **Status.** OPEN. The batch=20 run is valid and its receipts are correct; what is missing is an
+  identity mechanism that makes "which artifact produced this row" a computed fact rather than a
+  string a careful reader parses out of a command line.
