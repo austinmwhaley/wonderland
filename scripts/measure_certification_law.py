@@ -241,7 +241,7 @@ def main() -> int:
     }
 
     # ---- 0. the memory budget, derived from the machine before anything is launched -----------
-    cap_gb, cap_ok, cap_why = SR.plan(SR.mem_available_gb(), a.floor_gb)
+    cap_gb, cap_ok, cap_why = SR.resolve_cap(SR.DEFAULT_SLICE, a.floor_gb)
     if not cap_ok:
         print(f"certification: REFUSING to run the chain — {cap_why}", file=sys.stderr)
         return 2

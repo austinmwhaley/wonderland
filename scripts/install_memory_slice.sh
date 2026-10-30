@@ -4,15 +4,21 @@
 #   scripts/install_memory_slice.sh            # install / update
 #   scripts/install_memory_slice.sh --check    # report, change nothing
 #
-# The ceiling is DERIVED, not typed: half of physical RAM, which leaves the other half for the
-# LLM server, the desktop and the operator's 8 GB system floor. Override with MEMORY_MAX=40G.
+# The ceiling is DERIVED: the smaller of half of physical RAM and the operator's 30 GB band top,
+# because the machine also runs an LLM server that must never be starved. Override with
+# MEMORY_MAX=24G.
 set -euo pipefail
 repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 unit_dir="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
 dest="$unit_dir/wonderland.slice"
 
 total_mb=$(awk '/^MemTotal:/{print $2}' /proc/meminfo)
-derived_gb=$(( total_mb / 1024 / 1024 / 2 ))
+half_gb=$(( total_mb / 1024 / 1024 / 2 ))
+# The operator's band for the project is 20-30 GB: the machine is shared with an LLM server, and
+# the ceiling must leave it room no matter what this repo does. So the cap is the SMALLER of half
+# of RAM and the band's top. 30 GB of 121 GB leaves the LLM server ~90 GB.
+band_top_gb=30
+derived_gb=$(( half_gb < band_top_gb ? half_gb : band_top_gb ))
 cap="${MEMORY_MAX:-${derived_gb}G}"
 
 render() {

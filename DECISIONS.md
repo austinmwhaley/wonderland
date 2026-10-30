@@ -4499,3 +4499,52 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   fails it; all-green is green.
 - **Single axis changed.** The S6 producer's verdict logic only. No stage gate, threshold or
   comparator moved; S4 and S5 remain FAIL in the card because they measured FAIL.
+
+## DEC-442 — [TECHNICAL] the project runs in a container with a hard 24 GB ceiling; the outer slice is 30 GB
+
+- **Context.** The slice from DEC-440 fixed the enforcement mechanism but left one number wrong:
+  it was set to *half of RAM* (60 GB) on the reasoning that the kernel kills inside the slice. The
+  operator's real constraint is that this box also runs an LLM server (Qwen3-Flash) that must never
+  be starved, and 60 GB of a 121 GB machine is not obviously safe once the server's own working set
+  is unknown. Two further problems were measured while checking it: the S6 chain reported a
+  108 GB budget in its memory receipt while the slice enforced 60 (it computed `MemAvailable −
+  floor` instead of reading the ceiling in force), and nothing stopped a job from running outside
+  the slice entirely if it was started some other way.
+- **Alternatives considered.** (1) *Keep the slice only* — rejected: correct mechanism, wrong
+  number, and a slice bounds memory but shares the host's filesystem and network, which the
+  operator asked to move away from. (2) *Rebuild the environment inside a container image* —
+  rejected: the venv, the 3.3M-event demo data, the frozen checkpoints and the receipts all live on
+  this host, and a second environment is a second thing that can drift from the one the receipts
+  describe. (3) **Reuse the host's venv inside a matching base image** — adopted: the host is
+  Ubuntu 24.04 with `python3.12` at `/usr/bin/python3.12`, so an `ubuntu:24.04` container with the
+  `python3` metapackage runs the existing `.venv` unchanged (verified: torch 2.14.1+cu130, polars
+  1.44.2, duckdb 1.5.6, xgboost 3.4.1 all import).
+- **Decision.** `deploy/Dockerfile.wonder` + `scripts/wonder_container.sh`.
+  - The container runs with `--memory=24g --memory-swap=24g` (the operator's 20–30 GB band), so it
+    gets **no swap** and the kernel kills the job at the ceiling instead of thrashing the host.
+    `--pids-limit 1024`, `--init`, and `--user $(id -u):$(id -g)` bound the other ways a process
+    tree can hurt a shared machine and keep files it writes owned by the operator.
+  - `/repo` is mounted read-write (the job must write receipts) and `/work` (the demo, the products
+    DB, the frozen baseline log) **read-only** — the inputs a receipt describes must not be mutable
+    by the job measuring them.
+  - The **outer slice is now 30 GB**, derived as `min(half of RAM, 30)` from the operator's band
+    rather than half of RAM: even a process that somehow runs outside the container cannot take
+    more than 30 GB of a 121 GB machine.
+  - `safe_run.resolve_cap()` now reports **the tightest ceiling actually in force** — the slice, the
+    process's own cgroup (the container's `--memory`), or only failing both, the derived
+    `MemAvailable − floor`. Inside a container it also stops stacking a second per-job limit: the
+    container's cgroup is already the cap and every child inherits it.
+- **Verification, deliberately destructive.** A 30 GB allocation inside the 24 GB container exits
+  **137** and `MemAvailable` is unchanged. `safe_run --print-plan` reports **30.0 GB** on the host
+  (slice) and **24.0 GB** inside the container (cgroup). A real producer runs end to end in the
+  container (`measure_judge_law.py --legs rl,simulator`, 15 s, receipts written to `/repo` with the
+  operator's uid), and its numbers are byte-identical to the host run — only the recorded paths
+  change. 40 tests across the guard, launcher, chain and producer suites.
+- **Single axis changed.** Execution environment and the reported budget. No measurement, gate,
+  comparator or artifact definition moved.
+- **Trade-offs recorded.** Inside the container the reported cap is 24 GB, so a job that genuinely
+  needs more must be given `WONDER_MEM` — that is the point of a budget, and the reservation is
+  visible in the command and in the receipt. The container shares the host kernel (no VM) and is
+  not a security boundary against hostile code; it is a resource boundary against runaway code.
+  GPU access is off by default (`WONDER_EXTRA_ARGS='--gpus all'` opts in) because the LLM server
+  holds the device and the measurements in this cycle are CPU-only.

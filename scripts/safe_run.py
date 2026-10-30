@@ -104,6 +104,59 @@ def slice_cap_gb(name: str = DEFAULT_SLICE) -> float | None:
     return gb if gb > 0 else None
 
 
+def cgroup_leaf_cap_gb(path: str = "/sys/fs/cgroup/memory.max") -> float | None:
+    """The memory ceiling written on THIS process's cgroup, if it has one.
+
+    Inside a container that is `docker --memory`; inside a systemd scope it is the scope's limit.
+    Reading it is how a job reports the number the kernel will actually enforce instead of the
+    number it computed before entering.
+    """
+    try:
+        raw = Path(path).read_text().strip()
+    except OSError:
+        return None
+    if not raw.isdigit():
+        return None  # "max" means unlimited
+    gb = int(raw) / 2**30
+    return gb if gb > 0 else None
+
+
+def in_container() -> bool:
+    """Docker/Podman leave /.dockerenv (or a container= env) behind."""
+    return Path("/.dockerenv").exists() or os.environ.get("container") is not None
+
+
+def resolve_cap(
+    slice_name: str | None = DEFAULT_SLICE,
+    floor_gb: float = DEFAULT_FLOOR_GB,
+    max_gb: float | None = None,
+) -> tuple[float, bool, str]:
+    """The budget to report and enforce: the SMALLEST ceiling that applies, and why.
+
+    Order of candidacy: the project slice's `MemoryMax`, this process's own cgroup limit (a
+    container's `--memory`, or the scope it is already in), and — only when neither exists — the
+    budget derived from `MemAvailable - floor`. The smallest wins, because every one of them is a
+    real kernel limit and the effective one is the tightest. Reporting a computed number that is
+    larger than the ceiling actually in force is how a receipt ends up claiming 108 GB for a job
+    that could never use more than 60.
+    """
+    sliced = slice_cap_gb(slice_name) if slice_name else None
+    leaf = cgroup_leaf_cap_gb()
+    derived, ok_derived, why_derived = plan(mem_available_gb(), floor_gb, max_gb)
+    cands = [(v, f"slice {slice_name} MemoryMax") for v in [sliced] if v]
+    cands += [(v, "this process's cgroup limit") for v in [leaf] if v]
+    if not cands:
+        return derived, ok_derived, why_derived
+    cap = min(v for v, _ in cands)
+    if max_gb is not None:
+        cap = min(cap, max_gb)
+    ok = cap >= MIN_CAP_GB
+    why = f"{min(cands)[1]} of {cap:.1f} GB is the tightest ceiling in force"
+    if not ok:
+        why += f" — below the {MIN_CAP_GB:.1f} GB viability floor"
+    return cap, ok, why
+
+
 def systemd_scope_available() -> bool:
     """`systemd-run --user --scope` needs a running user manager and cgroup v2 delegation."""
     if not shutil.which("systemd-run"):
@@ -136,6 +189,10 @@ def capped_command(
     same one.
     """
     gb = f"{cap_gb:.1f}G"
+    if in_container():
+        # Already bounded by the container's cgroup, which every child inherits. A per-job limit on
+        # top would be a second, smaller ceiling nobody asked for.
+        return argv, "container cgroup (docker --memory)"
     sliced = slice_cap_gb(slice_name) if slice_name else None
     if sliced is not None:
         # The slice is the ceiling for the PROJECT; a tighter `--max-gb` is a ceiling for THIS job
@@ -210,7 +267,7 @@ def ensure_boundary(slice_name: str = DEFAULT_SLICE, cap_gb: float | None = None
     if slice_name in current_slice():
         return
     sliced = slice_cap_gb(slice_name)
-    if sliced is None:
+    if sliced is None or in_container():
         return
     # Re-entry needs a real script to re-exec. `python -c "..."` has no file to hand back to the
     # interpreter (`sys.argv[0]` is literally "-c"), so there is nothing to relaunch; `python -m
@@ -250,18 +307,9 @@ def main(argv: list[str] | None = None) -> int:
     a = ap.parse_args(argv)
 
     cmd = a.cmd[1:] if a.cmd and a.cmd[0] == "--" else a.cmd
-    avail = mem_available_gb()
-    sliced = slice_cap_gb(a.slice) if a.slice else None
-    if sliced is not None:
-        cap = min(sliced, a.max_gb) if a.max_gb is not None else sliced
-        ok = cap >= MIN_CAP_GB
-        why = f"slice {a.slice} MemoryMax {sliced:.1f} GB (the project's one boundary)" + (
-            f", tightened to {cap:.1f} GB for this job" if cap < sliced else ""
-        )
-        if not ok:
-            why += f" — below the {MIN_CAP_GB:.1f} GB viability floor"
-    else:
-        cap, ok, why = plan(avail, a.floor_gb, a.max_gb)
+    cap, ok, why = resolve_cap(a.slice or None, a.floor_gb, a.max_gb)
+    if not ok:
+        why += f" — below the {MIN_CAP_GB:.1f} GB viability floor"
     if a.print_plan or not cmd:
         print(f"safe-run plan: cap={cap:.1f} GB ({why}); ok={ok}")
         if not cmd:

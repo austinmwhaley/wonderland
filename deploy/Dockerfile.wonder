@@ -1,0 +1,49 @@
+# The project's runtime container (DEC-442).
+#
+# Why a container at all: the machine is shared with an LLM server (Qwen3-Flash), and a runaway
+# analysis job has taken the host down more than once. A container with `--memory` puts a hard
+# kernel ceiling around everything the project runs, so the LLM server's memory can never be
+# taken away from it. The ceiling is applied at `docker run` time (see scripts/wonder_container.sh),
+# not baked in here, so the same image can be run with a different budget.
+#
+# Base image deliberately matches the HOST (Ubuntu 24.04, python3.12 at /usr/bin/python3.12): the
+# repo's existing virtualenv is mounted in and works as-is, instead of being rebuilt inside the
+# image. That keeps one environment — the one the receipts were produced in — rather than a
+# second one that can drift.
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    HOME=/tmp
+
+# Runtime libraries the venv's wheels dlopen at import time. `libgomp1` is OpenMP, required by
+# torch and xgboost; the rest are what a slim base lacks and those wheels assume.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      python3 \
+      python3.12 \
+      python3.12-venv \
+      libgomp1 \
+      libglib2.0-0 \
+      libstdc++6 \
+      ca-certificates \
+      tzdata \
+      git \
+ && rm -rf /var/lib/apt/lists/*
+
+# The repo's venv symlinks `bin/python3` -> /usr/bin/python3 (see .venv/pyvenv.cfg), which is why the
+# `python3` metapackage is installed above: without it the mounted venv cannot be exec'd.
+
+# Run as the invoking user (mapped at run time) so files the job writes into the mounted repo are
+# owned by them, not by root. A placeholder account exists for when no mapping is supplied.
+ARG UID=1000
+ARG GID=1000
+RUN groupadd -g "${GID}" wonder 2>/dev/null || true \
+ && useradd -m -u "${UID}" -g "${GID}" -s /bin/bash wonder 2>/dev/null || true
+
+WORKDIR /repo
+
+# No ENTRYPOINT: the caller passes the command explicitly, so nothing is hidden behind a wrapper
+# inside the image and the receipt can record exactly what ran.
+CMD ["/bin/bash"]

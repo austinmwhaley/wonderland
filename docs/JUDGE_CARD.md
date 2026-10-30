@@ -1,8 +1,8 @@
 # JUDGE CARD — PATH B > PATH A
 
-*Generated `2026-10-29T23:59:23+00:00` · commit `c5e3a3d` (`foundation-rebuild` · dirty) · encoder behavior `33c12077e1b70129`*
+*Generated `2026-10-30T00:18:37+00:00` · commit `8b910ab` (`foundation-rebuild` · dirty) · encoder behavior `33c12077e1b70129`*
 
-**Assessment:** NOT DONE. Legs green: 1/8 · stages green: 3/6. This is a statement about receipts, not about effort; nothing here is a claim of universality (DEC-410: that word appears only when the coverage rows are green).
+**Assessment:** NOT DONE. Legs green: 1/8 · stages green: 4/6. This is a statement about receipts, not about effort; nothing here is a claim of universality (DEC-410: that word appears only when the coverage rows are green).
 
 The verdict is a pure function of the receipts under `docs/report_cards/experiments/`.
 Ledger points never count as progress: `brain alone` is the judge, `brain + ledger` is delivery.
@@ -24,12 +24,12 @@ Ledger points never count as progress: `brain alone` is the judge, `brain + ledg
 
 | Stage | Working-state proof | Verdict | Evidence |
 |---|---|---|---|
-| **S1** Schema resolution (universal input) | renamed-schema + new-field pass, zero code edits | ✅ PASS | [renamed_end_to_end] OK: renamed client_id/occurred_at/event/attributes/total -> onboard resolved {'customer_key': 'client_id', 'event_ts':   ·measure_input_law.py on c5e3a3d |
-| **S2** Vocabulary & numeric encoding | unseen-value path exercised; transform receipts; permutation invariance <= tol | ✅ PASS | [unseen_value_path] OK: frozen schema (11 event types, vocab sizes [4, 10, 16, 6, 4, 7, 4, 24, 4, 4, 0, 77, 3, 4, 4, 5, 7]) encoded a batch   ·measure_input_law.py on c5e3a3d |
-| **S3** Lawful dynamics (the engine) | merge/equivariance/mass-additivity exact on data; tau receipted from spectra; stable from step 0 | ✅ PASS | [scan_associativity] OK: merge law F(g∘f)=F(g)∘F(f) on 6 real sequences x 5 split points (float64, model's own decay/drive, continuous_time=  ·measure_dynamics_law.py on c5e3a3d |
-| **S4** Buckets (the outlets) | per-bucket accessibility parity + per-bucket negative controls | ❌ FAIL | FAILED response_outlet: conditional outcome head: holdout R2=0.0696 on n=126895 B-rows (LEAKY ceiling 0.0701 — the most any head could  ·measure_views_law.py on c5e3a3d |
-| **S5** The objective battery | every content pressure beats its naive comparator (or is excluded and reported) | ❌ FAIL | FAILED action_conditioned_outcome: known-effect uplift from the one-factor-daily randomized offer arm (P(buy|offer=opt) - P(buy|off>=2), >= 10 ar (+2 more)  ·measure_battery_law.py on c5e3a3d |
-| **S6** Certification (the card) | one command regenerates the card at a recorded commit + hashes | ❌ FAIL | FAILED full_chain_in_one_invocation: 5 producer(s) run by this one command (S1+S2 406.1s, S3 474.2s, S4 56.5s, S5 2.1s, legs 57.5s); legs regenerat  ·measure_certification_law.py on c5e3a3d |
+| **S1** Schema resolution (universal input) | renamed-schema + new-field pass, zero code edits | ✅ PASS | [renamed_end_to_end] OK: renamed client_id/occurred_at/event/attributes/total -> onboard resolved {'customer_key': 'client_id', 'event_ts':   ·measure_input_law.py on 8b910ab |
+| **S2** Vocabulary & numeric encoding | unseen-value path exercised; transform receipts; permutation invariance <= tol | ✅ PASS | [unseen_value_path] OK: frozen schema (11 event types, vocab sizes [4, 10, 16, 6, 4, 7, 4, 24, 4, 4, 0, 77, 3, 4, 4, 5, 7]) encoded a batch   ·measure_input_law.py on 8b910ab |
+| **S3** Lawful dynamics (the engine) | merge/equivariance/mass-additivity exact on data; tau receipted from spectra; stable from step 0 | ✅ PASS | [scan_associativity] OK: merge law F(g∘f)=F(g)∘F(f) on 6 real sequences x 5 split points (float64, model's own decay/drive, continuous_time=  ·measure_dynamics_law.py on 8b910ab |
+| **S4** Buckets (the outlets) | per-bucket accessibility parity + per-bucket negative controls | ❌ FAIL | FAILED response_outlet: conditional outcome head: holdout R2=0.0696 on n=126895 B-rows (LEAKY ceiling 0.0701 — the most any head could  ·measure_views_law.py on 8b910ab |
+| **S5** The objective battery | every content pressure beats its naive comparator (or is excluded and reported) | ❌ FAIL | FAILED action_conditioned_outcome: known-effect uplift from the one-factor-daily randomized offer arm (P(buy|offer=opt) - P(buy|off>=2), >= 10 ar (+2 more)  ·measure_battery_law.py on 8b910ab |
+| **S6** Certification (the card) | one command regenerates the card at a recorded commit + hashes | ✅ PASS | [full_chain_in_one_invocation] OK: 5 producer(s) run by this one command (S1+S2 364.2s, S3 467.6s, S4 40.9s, S5 2.0s, legs 45.8s); fresh rec  ·measure_certification_law.py on 8b910ab |
 
 ## Certification hygiene
 
@@ -50,9 +50,8 @@ Ledger points never count as progress: `brain alone` is the judge, `brain + ledg
 - `judge_leg_rl.json :: brain — known_effect_uplift: destroyed control >= brain (-0.003858 vs -0.009245)`
 - `judge_leg_simulator.json :: brain — does not beat PATH A with CI excluding 0: dose_response_curve, argmax_optimum`
 - `judge_leg_simulator.json :: brain_ledger — does not beat PATH A with CI excluding 0: dose_response_curve, argmax_optimum`
-- `judge_stages.json — FAILED response_outlet: conditional outcome head: holdout R2=0.0696 on n=126895 B-rows (LEAKY ceiling 0.0701 — the most any head could  ·measure_views_law.py on c5e3a3d`
-- `judge_stages.json — FAILED action_conditioned_outcome: known-effect uplift from the one-factor-daily randomized offer arm (P(buy|offer=opt) - P(buy|off>=2), >= 10 ar (+2 more)  ·measure_battery_law.py on c5e3a3d`
-- `judge_stages.json — FAILED full_chain_in_one_invocation: 5 producer(s) run by this one command (S1+S2 406.1s, S3 474.2s, S4 56.5s, S5 2.1s, legs 57.5s); legs regenerat  ·measure_certification_law.py on c5e3a3d`
+- `judge_stages.json — FAILED response_outlet: conditional outcome head: holdout R2=0.0696 on n=126895 B-rows (LEAKY ceiling 0.0701 — the most any head could  ·measure_views_law.py on 8b910ab`
+- `judge_stages.json — FAILED action_conditioned_outcome: known-effect uplift from the one-factor-daily randomized offer arm (P(buy|offer=opt) - P(buy|off>=2), >= 10 ar (+2 more)  ·measure_battery_law.py on 8b910ab`
 
 ---
 

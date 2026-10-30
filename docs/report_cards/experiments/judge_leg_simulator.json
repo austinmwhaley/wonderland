@@ -1,9 +1,9 @@
 {
   "_meta": {
     "behavior_hash": "33c12077e1b70129",
-    "command": "measure_judge_law.py --products /home/austin_whaley/wonderland_work/cfm_views --demo /home/austin_whaley/wonderland_work/demo --legs supervised,unsupervised,rl,simulator --out-dir /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments",
-    "generated_at": "2026-10-29T23:59:22+00:00",
-    "git_commit": "c5e3a3da4ac1402c8460cab788c90f019d5941f6",
+    "command": "measure_judge_law.py --products /work/cfm_views --demo /work/demo --legs rl,simulator",
+    "generated_at": "2026-10-30T00:20:58+00:00",
+    "git_commit": "8b910ab8dfe77f914e85817f3ec30c0db0e56d20",
     "producer": "measure_judge_law.py"
   },
   "arms": {
@@ -96,7 +96,7 @@
     "columns": 48,
     "n_present": 2500,
     "n_requested": 2500,
-    "source": "/home/austin_whaley/wonderland_work/demo/path_a/path_a_wide_table.parquet"
+    "source": "/work/demo/path_a/path_a_wide_table.parquet"
   },
   "splits": {
     "n_fit_A": 1776,

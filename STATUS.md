@@ -849,7 +849,22 @@ observability, prefer deletion, best tool, cost-aware, **speed-first (16)**.
   (no weekday/hour send seasonality, no churn, push = 32% of events) —
   ROADMAP P3; MoE/multi-entity (M3/M5) rejected.
 
-## Memory boundary (2026-10-29) — the project runs in one capped slice
+## Memory boundary (2026-10-29) — the project runs in a 24 GB container inside a 30 GB slice
+
+The machine is shared with an LLM server (Qwen3-Flash) and a runaway job has taken the host down
+more than once. Two ceilings now apply, both kernel-enforced, and the tighter one is reported:
+
+- **Container:** `scripts/wonder_container.sh -- <cmd>` runs the job in
+  `deploy/Dockerfile.wonder` with `--memory=24g --memory-swap=24g`, `/work` mounted read-only.
+  Verified: a 30 GB allocation inside it dies at 137 and the host is untouched.
+- **Outer slice:** `wonderland.slice` at **30 GB** (`min(half of RAM, 30)`, installed by
+  `scripts/install_memory_slice.sh`), so even a job launched outside the container cannot exceed
+  30 GB. Every producer re-enters it by itself (`safe_run.ensure_boundary`).
+- `safe_run --print-plan` reports the REAL ceiling: 30.0 GB on the host, 24.0 GB inside the
+  container — the number the kernel will enforce, not the one a formula guessed.
+- `scripts/gpu_watchdog.py` stops any policed producer found outside the slice.
+
+## (superseded) earlier note: one capped slice
 
 A memory exhaustion took this host down while the LLM server was resident. The answer is
 structural, not a resolution to be careful:
