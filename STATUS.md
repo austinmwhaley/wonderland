@@ -184,11 +184,13 @@
 > `cfm_data.build_sequences` also sorted its key list, defusing the DEC-438 hash-order landmine
 > (behavior → `fc533e2c09846f7e`; all receipts re-measured, every leg value byte-identical
 > modulo metadata).
-> **Card: 5/6 stages · 1/8 legs (`pass 11 / fail 8 / unknown 0`)** — S4 passes on measurement
-> (response outlet R² 0.0671 against a leaky ceiling of 0.0681, n=126 895); S5 stays red on its
-> three counterfactual probes, which were audited this chunk and found faithful (the pre-boundary
-> raw-state diagnostic, ρ 0.005, says the geometry gap is inside the encoder, not the serving
-> transform). The only green leg remains `rl :: brain+ledger` (policy value 0.054 vs 0.031).
+> **Card: 5/6 stages · 1/8 legs (`pass 11 / fail 8 / unknown 0`)** — on **protocol-D** receipts
+> (S4 passes on measurement — response outlet R² 0.0696 against a leaky ceiling of 0.0695,
+> n=126 989; S5 stays red on its three counterfactual probes, which were audited and found
+> faithful — the pre-boundary raw-state diagnostic, ρ 0.005, says the geometry gap is inside the
+> encoder, not the serving transform). The only green leg remains `rl :: brain+ledger` (policy
+> value 0.0557 vs PATH A 0.0308; the uplift control gate passes by only 0.002 on fits-to-noise,
+> stated in DEC-454).
 > **Owed / open for the operator:** everything owed by the step 5–7 block stands, plus — DEC-445's
 > tag/provenance extension; S5's three red axes are encoder-capability work whose obvious levers
 > (serving representation content, an offer-response objective) touch objectives/interface and
@@ -205,6 +207,24 @@
 > for uplift is a pre-registered protocol D (paired/contrastive effect target), operator's call.
 > Artifact `0.11.0r103115-b20d256e3lr3e-04o549abbe1`; trained in the 20 GB container with Qwen
 > serving throughout (low-water 10.7 GB); S6 6/6 at commit `6298bb6`.
+
+> **Protocol D measured (DEC-454, 2026-10-30): the bilinear QTE effect head restored the rl row;
+> top line 0/8 → 1/8.** D = C + `effect_head=bilinear` (DEC-453's pre-registered mechanism: the
+> judged probe is ridge(E → uplift), so the arm CONTRAST must be linear in the state; the QTE
+> head `logit(s,a)=s·W[:,a]+b[a]` makes it so by construction). All four frozen acceptance
+> checks held pre-verdict (three-axis overrides, genuine QTE weights `(4,256)` in the
+> checkpoint, finite losses, unique+stable tag). Every C-named axis improved: uplift
+> −0.0174 → −0.0130 (brain) and −0.0175 → −0.0109 (brain+ledger), policy value to its best
+> measured 0.0557 vs 0.0308; `return_proneness` gives back part of C's gain (0.389 → 0.295),
+> `churn_day` improved (0.582). S5 unchanged red; `argmax_optimum` bit-identical. The green row
+> (`rl :: brain+ledger`) passes the uplift control gate by 0.002 on fits-to-noise — genuinely
+> green on policy value, mechanically green on uplift, and the card says so. **D is the recorded
+> protocol** (adopted on its pre-registered mechanism, weakly dominating C on every named axis);
+> the B-vs-D trade (B: best uplift level −0.0042, no propensity; D: propensity 0.295, uplift
+> −0.0109) is reported, not resolved by fiat. Uplift R² is negative on every protocol — the
+> remaining failure is in what the state carries about the treatment, not the probe's form.
+> Artifact `0.11.0r103115-b20d256e3lr3e-04occdbe290`; trained in the 20 GB container with Qwen
+> serving throughout (low-water 8.8 GB); S6 6/6, chain ~17 min, train 974 s.
 
 **Repository state:** `main` now contains the former `primary-encoder` demo work. The duplicate
 report card, stale roadmap, duplicate receipt orchestrator, one-off OPE wrappers, and generator
@@ -935,8 +955,8 @@ more than once. One budget, three enforcement layers that together cover every a
   8 = **113.1 GB → 8.5 GB slack**. `scripts/wonder_container.sh --check` prints it.
 - **Outer slice:** `wonderland.slice` at **20 GB** for direct host launches; every producer
   re-enters it by itself. `safe_run --print-plan` reports the real ceiling the kernel enforces.
-- **Measured coexistence:** protocol C trained with Qwen serving the whole time — host low-water
-  **10.7 GB** (floor 8), Qwen healthy throughout, 20 GB container cap never breached.
+- **Measured coexistence:** protocols C and D trained with Qwen serving the whole time — host
+  low-water **10.7 GB** (C) and **8.8 GB** (D) against the 8 GB floor; guard never fired.
 
 ## (superseded) earlier note: one capped slice
 
