@@ -6140,3 +6140,42 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - **Receipts.** `docs/report_cards/experiments/protocols/diag_action_profile_ci_2026_10_31.py`
   + `.json` (all 7 traits, all 14 arms, controls, N, artifact tag). Principle audit strict: 0
   findings; `ruff check`/`format` clean.
+
+## DEC-493 — [MEASURED] S5 `ledger_reconstruction` is a target-transform artifact: raw extensive mass passes, log1p hides it
+- **Context.** The S5 battery is red on three checks. Before pre-registering any mass-pressure
+  protocol, this diagnostic asked WHICH axis the `ledger_reconstruction` failure names: absent
+  content, inaccessible content, or the evaluation transform. DEC-462/464 rule: cheapest test of
+  the premise first. Not a protocol; no gate changed.
+- **What ran.** `docs/report_cards/experiments/protocols/diag_ledger_axis_2026_10_31.py` on M2
+  (`...04o1e051d9d`), frozen judge split (A=1776 / B=724), the check's own linear ridge head and
+  naive event-type-bag+recency comparator. Same four exact past totals, scored under **both**
+  `raw` and the frozen check's `log1p` target. Representations: `state_embeddings` (proj(h), the
+  judged column), raw `customer_state`, `shape`, `learned_state`, `full`, and the `measure`
+  ledger (reference only).
+- **Measured — raw extensive mass (the algebra SPINE mandates).**
+  * spend: brain **0.9238** vs naive **0.8683** (Δ +0.0554, paired CI excludes 0); ledger view
+    **0.9941**.
+  * margin: brain **0.9084** vs naive **0.8130** (Δ +0.0954, CI excludes 0); ledger **0.9998**.
+  * n_purch: brain 0.9496 vs naive 0.8689 (CI excludes 0); n_ret: 0.6572 vs 0.2354 (CI excludes 0).
+  **All four pass under raw.**
+- **Measured — the frozen `log1p` target.** spend: brain **0.9190** vs naive **0.9350**
+  (CI [−0.00795,−0.00177], loses); margin: 0.9026 vs 0.8966 (CI [−0.00312,+0.00629], tie); the
+  ledger view falls to **0.6325 / 0.6298** — the exact tallies become unreadable through log1p,
+  which is the signature of a transform/probe mismatch, not a missing signal.
+- **Conclusion.** The donor carries exact extensive mass: under the correct algebra (raw additive
+  units) it beats the count bag on every target with a paired CI, and the ledger is near-exact.
+  The S5 `ledger_reconstruction` FAIL is caused by the check's `log1p` target, which favors
+  log-count features and destroys the linear readout of an additive sum. A mass-pressure training
+  protocol would be fixing a measurement artifact; **none is proposed.**
+- **Ruling required (gate-touching, NOT adopted unilaterally).** Should the `ledger_reconstruction`
+  check score raw extensive mass (spend/margin in units; counts raw), preserving the same naive
+  comparator and CI? Recommendation: **yes** — it is the SPINE C3 algebra (additive mass is exact),
+  it is not a weakening (the comparator moves with the target), and the current log1p check is
+  demonstrably measuring the wrong scale. This would turn the mass check green; S5 still stays red
+  on `distance_regression` and `action_conditioned_outcome`, which are separate axes.
+- **Principles.** Lawful (correct algebra per quantity: additive mass is linear in raw units),
+  Honest (a gate may not be changed post-hoc; the finding is reported, not adopted), Diagnosable
+  (the axis is the evaluation transform, not the encoder).
+- **Not changed.** Gates, thresholds, comparator, probes, E's content, ledger, card. No training
+  run. **Receipts.** `docs/report_cards/experiments/protocols/diag_ledger_axis_2026_10_31.py`
+  + `.json`; principle audit strict 0 findings; ruff clean.

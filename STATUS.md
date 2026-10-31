@@ -2388,3 +2388,14 @@ resolves to a receipt; the "what is not claimed" panel repeats the card's disclo
 > S6 6/6, and **every measured value is byte-identical** to the M2 card (1/8 legs, 5/6 stages,
 > pass 11 / fail 8 / unknown 0) — only stamps, paths and the behavior hash moved. Receipts and card
 > are committed at the recorded commit.
+
+> **2026-10-31 DEC-493 — S5 mass check is a transform artifact, not a content gap.** On M2's
+> frozen judge split, under **raw** extensive mass the brain beats the count bag on all four
+> exact totals: spend 0.9238 vs 0.8683 (+0.055, CI excludes 0), margin 0.9084 vs 0.8130 (+0.095),
+> n_purch 0.9496 vs 0.8689, n_ret 0.6572 vs 0.2354; the ledger view is near-exact (0.9941 / 0.9998).
+> Under the check's frozen `log1p` target, spend loses (0.9190 vs 0.9350) and margin ties — and the
+> ledger falls to 0.63. The S5 `ledger_reconstruction` FAIL therefore names the **target transform**,
+> not the encoder. No pressure protocol proposed. A gate-touching ruling is requested: score raw
+> additive mass (recommended) or keep log1p. Receipt:
+> `docs/report_cards/experiments/protocols/diag_ledger_axis_2026_10_31.{py,json}`.
+> S5 would still be red on `distance_regression` and `action_conditioned_outcome`.
