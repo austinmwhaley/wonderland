@@ -258,16 +258,19 @@
 > default-off; receipts archived at `docs/report_cards/experiments/protocols/e_survival/`;
 > the card was restored to D at the same commit.
 
-> **Protocol F pre-registered and implemented (DEC-459, 2026-10-30): training in flight.**
-> F = D + `rate=true`: from the NON-faded trunk, Linear(dim, 2+n_et) predicts log1p future
-> event count, future primary-value sum, and future per-type counts over W = clamp(10 × median
-> gap, ≥1 d) — recency's anchor mirrored forward (demo receipt: median gap 19.2 h → W = 8.0 d).
-> Named axis: brain-alone `x0` ≥ 0.84 (D 0.7909); secondary return_proneness ≥ 0.35; adoption
-> requires Δx0 ≥ +0.03; DEC-458's scar is a guard (kNN churn ≥ 0.60). Two training attempts
-> were sacrificed by the watchdog at the 8 GB host floor while Qwen served heavy traffic
-> (witness lines show the missing ~12 GB was GPU-side unified memory, not the trainer's
-> 4.8 GB RSS) — the watchdog + LOW-MEM witness dump (committed) make the retry evidence-based;
-> relaunch is gated on a quiet host. Artifact dir `cfm_f_rate`.
+> **Protocol F pre-registered and implemented (DEC-459, 2026-10-30): measured — NOT adopted
+> (DEC-462).** F = D + `rate=true` (future count/value/type aggregates over W = 10 × median
+> gap = 8.0 d). Frozen acceptance 8/8 PASS; named axis FAILED: brain x0 0.7909 → 0.7950
+> (needs +0.03), return_proneness 0.2947 → 0.2687. All guards passed (kNN churn 0.663,
+> policy_value 0.0564 best yet, uplift −0.0098 improved). The objective fit its own target
+> but the trait did not move: **the target was a lookalike, not x0's generating structure**.
+> Root cause found in the generator: `x0` = the customer's optimal weekly marketing
+> FREQUENCY (`reference.py:197`), revealed only by the randomized action design; churn_day
+> and return_proneness are likewise latent parameters. Rate stays off; card stays on D.
+> **Protocol G pre-registered (DEC-463) and training now on the dedicated host (vLLM
+> stopped by operator ruling, DEC-461):** `effect_actions=('offer','freq')` — the freq arm
+> of the one-factor randomized design forces the state to fit the conversion curve whose
+> peak IS x0. Frozen acceptance + named axis (brain x0 ≥ 0.84) recorded before the run.
 
 **Repository state:** `main` now contains the former `primary-encoder` demo work. The duplicate
 report card, stale roadmap, duplicate receipt orchestrator, one-off OPE wrappers, and generator
