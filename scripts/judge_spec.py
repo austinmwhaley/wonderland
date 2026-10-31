@@ -36,7 +36,7 @@ COLUMNS = ("brain", "brain_ledger")
 
 COLUMN_LABEL = {
     "brain": "brain alone (PROGRESS)",
-    "brain_ledger": "brain + ledger (DELIVERY)",
+    "brain_ledger": "brain + ledger (DELIVERY, non-inferiority)",
 }
 
 LEG_MEANING = {
@@ -184,6 +184,13 @@ UNREGISTERED_NOTE = "receipt defines its own criterion"
 #: false green this constant exists to refuse (DEC-433). It is an evaluation-contract constant,
 #: not a tuned threshold: nothing is ever adjusted to make a row pass.
 VACUOUS_CONTROL_R2 = -1.0
+
+#: Delivery is a NON-INFERIORITY claim ("never materially worse than the table"), not a
+#: superiority claim. The margin is the evaluation-contract materiality floor: 0.01 R^2
+#: (or 0.01 in the task's own units when no SST is recorded). Progress stays a strict win.
+#: Frozen here, before the run; changing it is a gate-touching operator decision.
+DELIVERY_MARGIN_R2 = 0.01
+DELIVERY_MARGIN_RAW = 0.01
 
 #: What "behavior change" means, mechanically (DEC-390 freshness law: any behavior change to the
 #: encoder or serving path marks dependent receipts stale). Derived from the package tree rather

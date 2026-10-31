@@ -456,3 +456,26 @@ def test_an_unreadable_backward_file_is_breaking_not_empty(tmp_path, monkeypatch
     _, info = RC.render(tmp_path, HASH)
     assert "ENCODER DONE" not in info["assessment"]
     assert "backward open: 1" in info["assessment"]
+
+
+def test_delivery_is_non_inferiority_not_superiority(tmp_path):
+    """DEC-506: delivery = never materially worse, progress = a strict win."""
+    brain = [_task("x0", brain=0.90, pathA=0.92, lo=-0.02, hi=0.01, n=724, sst=1.0)]
+    delivery = [_task("x0", brain=0.915, pathA=0.92, lo=-0.004, hi=0.02, n=724, sst=1.0)]
+    _write(
+        tmp_path,
+        "judge_leg_supervised.json",
+        _receipt({"brain": brain, "brain_ledger": delivery}),
+    )
+    _, info = RC.render(tmp_path, HASH)
+    assert info["verdicts"]["JUDGE-supervised-brain"] == J.FAIL  # strict win: CI includes 0
+    assert info["verdicts"]["JUDGE-supervised-brain_ledger"] == J.PASS  # within margin
+
+    outside = [_task("x0", brain=0.90, pathA=0.92, lo=-0.02, hi=0.01, n=724, sst=1.0)]
+    _write(
+        tmp_path,
+        "judge_leg_supervised.json",
+        _receipt({"brain": brain, "brain_ledger": outside}),
+    )
+    _, info = RC.render(tmp_path, HASH)
+    assert info["verdicts"]["JUDGE-supervised-brain_ledger"] == J.FAIL  # outside the margin

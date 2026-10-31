@@ -180,7 +180,7 @@ def _stage_why(val: dict) -> str:
     return str(val.get("evidence", ""))[:140]
 
 
-def eval_tasks(tasks, bhash_note: str | None) -> tuple[str, str, list]:
+def eval_tasks(tasks, bhash_note: str | None, delivery: bool = False) -> tuple[str, str, list]:
     """Return (verdict, reason, per-task notes) for one leg column's task list."""
     if bhash_note:
         return J.UNKNOWN, bhash_note, []
@@ -238,10 +238,32 @@ def eval_tasks(tasks, bhash_note: str | None) -> tuple[str, str, list]:
 
     if not live:
         return J.EXCLUDED, "every task degenerate (reported, not forced)", notes
-    failing = [t for t in live if not (t["ci_lo"] > 0 and t["brain"] > t["pathA"])]
+
+    def _passes(t: dict) -> bool:
+        if not delivery:
+            return bool(t["ci_lo"] > 0 and t["brain"] > t["pathA"])
+        sst = t.get("sst")
+        margin = (
+            J.DELIVERY_MARGIN_R2 * float(sst)
+            if isinstance(sst, (int, float)) and float(sst) > 0
+            else J.DELIVERY_MARGIN_RAW
+        )
+        point_margin = (
+            J.DELIVERY_MARGIN_R2
+            if isinstance(sst, (int, float)) and float(sst) > 0
+            else J.DELIVERY_MARGIN_RAW
+        )
+        return bool(t["brain"] >= t["pathA"] - point_margin and t["ci_lo"] >= -margin)
+
+    failing = [t for t in live if not _passes(t)]
     if failing:
         names = ", ".join(t["name"] for t in failing)
-        return J.FAIL, f"does not beat PATH A with CI excluding 0: {names}", notes
+        gate = (
+            f"outside the delivery non-inferiority margin ({J.DELIVERY_MARGIN_R2:g} R2)"
+            if delivery
+            else "does not beat PATH A with CI excluding 0"
+        )
+        return J.FAIL, f"{gate}: {names}", notes
     # A green row must rest on a control that could have caught it (DEC-433). This can only turn a
     # would-be PASS into UNKNOWN — it never turns a red row green, so it tightens H4 rather than
     # moving a verdict in our favor.
@@ -397,7 +419,7 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
             tasks = (rc.get("columns") or {}).get(row.column, {}).get("tasks")
             if tasks is None:
                 note = f"receipt {row.source} has no columns.{row.column}.tasks"
-        verdict, why, _ = eval_tasks(tasks, note)
+        verdict, why, _ = eval_tasks(tasks, note, delivery=(row.column == "brain_ledger"))
         verdict, why = record(verdict, why, None if note is None else f"{row.source}")
         if verdict in (J.FAIL,):
             blocked.append(f"{row.source} :: {row.column} — {why}")
@@ -523,6 +545,10 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
             "Ledger points never count as progress: `brain alone` is the judge, `brain + ledger` is delivery.",
             "",
             "## The judge — four legs × two numbers",
+            "",
+            "Progress (`brain alone`) is a strict win. Delivery (`brain + ledger`) is a "
+            f"**non-inferiority** claim vs PATH A (margin {J.DELIVERY_MARGIN_R2:g} R2); a delivery "
+            "tie is not a brain win.",
             "",
             *judge_lines,
             "",

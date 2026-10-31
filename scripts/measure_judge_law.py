@@ -318,11 +318,20 @@ def _gbm_oos(Xa, ya, Xb) -> np.ndarray:
     return np.asarray(model.predict(Xb), dtype=np.float64)
 
 
-def _tasks_for(arm_a, arm_b, table_a, table_b, usable, rng) -> list[dict]:
-    """Score one column's tasks: PATH B's linear head on `arm_*` vs the incumbent on `table_*`."""
+def _tasks_for(arm_a, arm_b, table_a, table_b, usable, rng, head: str = "linear") -> list[dict]:
+    """Score one column's tasks: PATH B's head on `arm_*` vs the incumbent on `table_*`.
+
+    `head="linear"` is the shipping head for the brain-alone progress column (DEC-407).
+    `head="gbm"` is the delivery-column contract (DEC-506): the same XGBoost class as PATH A,
+    applied to the brain+ledger arm AND its controls, so head class is not confounded with content.
+    """
     tasks = []
     for name, (ya, yb) in usable.items():
-        p_brain, r2_brain = _ridge_oos(arm_a, ya, arm_b, yb)
+        if head == "gbm":
+            p_brain = _gbm_oos(arm_a, ya, arm_b)
+            r2_brain = _r2(yb, p_brain)
+        else:
+            p_brain, r2_brain = _ridge_oos(arm_a, ya, arm_b, yb)
         if p_brain is None:
             tasks.append(
                 {
@@ -337,8 +346,12 @@ def _tasks_for(arm_a, arm_b, table_a, table_b, usable, rng) -> list[dict]:
         # global sigma made the `brain + ledger` column's control score R2 = -4.6e15, which is an
         # arithmetic artifact, and DEC-433 gives an unreadable control the power to block a PASS.
         rand, destroyed = controls_matched(rng, arm_a, arm_b)
-        _, r2_rand = _ridge_oos(arm_a, ya, rand, yb)
-        _, r2_dest = _ridge_oos(arm_a, ya, destroyed, yb)
+        if head == "gbm":
+            r2_rand = _r2(yb, _gbm_oos(arm_a, ya, rand))
+            r2_dest = _r2(yb, _gbm_oos(arm_a, ya, destroyed))
+        else:
+            _, r2_rand = _ridge_oos(arm_a, ya, rand, yb)
+            _, r2_dest = _ridge_oos(arm_a, ya, destroyed, yb)
         p_tab = _gbm_oos(table_a, ya, table_b)
         # paired per-customer squared-error advantage of the brain over the incumbent:
         # a positive CI means the brain is better ON THE SAME customers, not on average-of-averages
@@ -363,6 +376,7 @@ def _tasks_for(arm_a, arm_b, table_a, table_b, usable, rng) -> list[dict]:
                 "ci_lo": round(float(lo), 6),
                 "ci_hi": round(float(hi), 6),
                 "n": int(len(yb)),
+                "sst": round(float(np.sum((np.asarray(yb, float) - np.mean(yb)) ** 2)), 6),
                 "random": None if r2_rand is None else round(float(r2_rand), 6),
                 "destroyed": None if r2_dest is None else round(float(r2_dest), 6),
                 "comparator": COMPARATOR,
@@ -431,6 +445,7 @@ def leg_supervised(db: Path, demo: Path) -> dict:
                 table_b,
                 usable,
                 rng,
+                head="gbm",
             )
         }
     else:
@@ -467,7 +482,7 @@ def leg_supervised(db: Path, demo: Path) -> dict:
         "incumbent": {"library": "xgboost", "model": "XGBRegressor", **INCUMBENT},
         "arms": {
             "brain": "state_embeddings donor + linear ridge head (DEC-407: linear is the shipping head)",
-            "brain_ledger": "brain (state_embeddings) + measure view, same linear head and rows",
+            "brain_ledger": "brain + measure view; delivery head = the same XGBoost class as PATH A (DEC-506); same rows",
         },
     }
 
