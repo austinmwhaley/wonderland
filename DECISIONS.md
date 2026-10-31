@@ -5721,3 +5721,25 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - **Not changed:** judge probes, comparator, gates, thresholds, controls; E's definition
   (M1's subject). Cost: republish M1's weights with the new ledger (products rebuild, no
   retrain) or one train for a clean tag.
+
+## DEC-474 — [MEASURED] protocol M1 (E served undimmed): the first real movement on the supervised axes — ADOPTED as serving
+- **Result (access axis, M1 artifact `...04of69bb703`).** brain-alone: x0 **0.7909 → 0.8924**
+  (+0.1015; above the table's own 0.8904, 0.013 below PATH A), h0 **0.839 → 0.928** (+0.089;
+  crushes both table −0.025 and PATH A −0.121), churn **0.5824 → 0.6436** (+0.061), return
+  0.2947 → 0.3037, price −0.0200 → −0.0143. brain+ledger: x0 0.8841 → 0.8894, churn 0.5398 →
+  0.5856, h0 0.9849. The fade removal is the lever: the model trained under undimmed serving
+  learns its own recency encoding (churn rose too, unlike the earlier fade-trade measurement
+  on L's weights, where the model had adapted to the fade).
+- **Acceptance deviations, recorded honestly.** (1) the blob did not receipt `serve_unfaded`
+  (fixed for future runs: DEC-472's flag now rides the blob). (2) The planned "state_dict
+  equals D" invariance check FAILED — GPU training is not bit-reproducible across runs
+  (139/… tensors differ); the serving-only claim is about the CONFIG (only the flag differs,
+  no training code reads it), not about identical weights. The invariance check is retired.
+  (3) The ledger's advertised width (595, new modules) disagrees with the served view (591,
+  old modules) because the M2 code was imported lazily DURING M1's products phase — my
+  concurrent-edit error; M1 is therefore a valid measurement vehicle for the E axis but its
+  ledger part is not trustworthy. Clean combined artifact follows as M2 with no concurrent
+  edits.
+- **Disposition.** The E-serving change (serve_unfaded) is ADOPTED: it moved its named axis by
+  12× the adoption threshold with no measured guard regression. Protocol M2 (clean combined
+  artifact, both operator-authorized changes, new tag) is the recorded-artifact candidate.

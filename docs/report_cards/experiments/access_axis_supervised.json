@@ -1,36 +1,23 @@
 {
   "excluded": [],
   "interpretation": [
-    "x0: no permitted consumer on brain reaches within 0.05 of the table (best brain 0.7909 vs table 0.8904) \u2014 ABSENT from the state (dynamics/objective axis)",
-    "return_proneness: no permitted consumer on brain reaches within 0.05 of the table (best brain 0.2947 vs table 0.6874) \u2014 ABSENT from the state (dynamics/objective axis)",
-    "churn_day: a permitted consumer beats the linear head on brain by >0.05 (lin 0.5824, knn 0.6678, mlp 0.114) \u2014 PRESENT BUT ENTANGLED (served-geometry accessibility axis)"
+    "return_proneness: no permitted consumer on brain reaches within 0.05 of the table (best brain 0.3037 vs table 0.6874) \u2014 ABSENT from the state (dynamics/objective axis)"
   ],
   "n_fit_A": 1776,
   "n_score_B": 724,
-  "products": "/work/cfm_d_qte",
-  "rewhiten_roundtrip_max_err": 43.66951232654549,
-  "seconds": 48.3,
+  "products": "/work/cfm_m1_unfaded",
+  "seconds": 20.6,
   "traits": {
     "churn_day": {
       "brain": {
-        "knn": 0.6678,
-        "linear": 0.5824,
-        "mlp": 0.114
+        "knn": 0.256,
+        "linear": 0.6436,
+        "mlp": 0.0127
       },
       "brain_ledger": {
-        "knn": 0.482,
-        "linear": 0.5398,
-        "mlp": -7.8809
-      },
-      "brain_ledger_rewhiten": {
-        "knn": 0.482,
-        "linear": 0.5398,
-        "mlp": -7.8809
-      },
-      "brain_rewhiten": {
-        "knn": 0.6639,
-        "linear": 0.5824,
-        "mlp": 0.114
+        "knn": 0.0909,
+        "linear": 0.5856,
+        "mlp": -5.5555
       },
       "ledger": {
         "knn": -0.0019,
@@ -45,24 +32,14 @@
     },
     "final_regime_days": {
       "brain": {
-        "knn": -0.0415,
-        "linear": 0.0033,
-        "mlp": -0.1758
+        "knn": -0.0682,
+        "linear": 0.0131,
+        "mlp": -0.1289
       },
       "brain_ledger": {
-        "knn": -0.0365,
-        "linear": -0.0144,
-        "mlp": -0.6104
-      },
-      "brain_ledger_rewhiten": {
-        "knn": -0.0365,
-        "linear": -0.0144,
-        "mlp": -0.6104
-      },
-      "brain_rewhiten": {
-        "knn": -0.0414,
-        "linear": 0.0033,
-        "mlp": -0.1758
+        "knn": -0.0552,
+        "linear": -0.0072,
+        "mlp": -0.3851
       },
       "ledger": {
         "knn": -0.0399,
@@ -77,24 +54,14 @@
     },
     "h0": {
       "brain": {
-        "knn": 0.3386,
-        "linear": 0.839,
-        "mlp": 0.8493
+        "knn": 0.3657,
+        "linear": 0.928,
+        "mlp": 0.924
       },
       "brain_ledger": {
-        "knn": 0.3284,
+        "knn": 0.3401,
         "linear": 0.9849,
-        "mlp": 0.5626
-      },
-      "brain_ledger_rewhiten": {
-        "knn": 0.3284,
-        "linear": 0.9849,
-        "mlp": 0.5626
-      },
-      "brain_rewhiten": {
-        "knn": 0.3382,
-        "linear": 0.839,
-        "mlp": 0.8493
+        "mlp": 0.6464
       },
       "ledger": {
         "knn": 0.2573,
@@ -109,24 +76,14 @@
     },
     "price_sensitivity": {
       "brain": {
-        "knn": -0.0747,
-        "linear": -0.02,
-        "mlp": -1.236
+        "knn": -0.095,
+        "linear": -0.0143,
+        "mlp": -1.2302
       },
       "brain_ledger": {
-        "knn": -0.0579,
-        "linear": -0.0477,
-        "mlp": -5.4771
-      },
-      "brain_ledger_rewhiten": {
-        "knn": -0.0579,
-        "linear": -0.0477,
-        "mlp": -5.4771
-      },
-      "brain_rewhiten": {
-        "knn": -0.0911,
-        "linear": -0.02,
-        "mlp": -1.236
+        "knn": -0.083,
+        "linear": -0.0457,
+        "mlp": -5.6002
       },
       "ledger": {
         "knn": -0.0652,
@@ -141,24 +98,14 @@
     },
     "regime_switches": {
       "brain": {
-        "knn": -0.0442,
-        "linear": 0.0027,
-        "mlp": -0.3488
+        "knn": -0.0489,
+        "linear": 0.0066,
+        "mlp": -0.3077
       },
       "brain_ledger": {
-        "knn": -0.0249,
-        "linear": 0.013,
-        "mlp": -0.8093
-      },
-      "brain_ledger_rewhiten": {
-        "knn": -0.0249,
-        "linear": 0.013,
-        "mlp": -0.8093
-      },
-      "brain_rewhiten": {
-        "knn": -0.0424,
-        "linear": 0.0027,
-        "mlp": -0.3488
+        "knn": -0.0126,
+        "linear": 0.0206,
+        "mlp": -0.7148
       },
       "ledger": {
         "knn": -0.0089,
@@ -173,24 +120,14 @@
     },
     "return_proneness": {
       "brain": {
-        "knn": -0.0492,
-        "linear": 0.2947,
-        "mlp": -1.7943
+        "knn": -0.0404,
+        "linear": 0.3037,
+        "mlp": -1.5899
       },
       "brain_ledger": {
-        "knn": 0.1884,
-        "linear": 0.6041,
-        "mlp": -6.5148
-      },
-      "brain_ledger_rewhiten": {
-        "knn": 0.1884,
-        "linear": 0.6041,
-        "mlp": -6.5148
-      },
-      "brain_rewhiten": {
-        "knn": -0.0489,
-        "linear": 0.2947,
-        "mlp": -1.7943
+        "knn": 0.1894,
+        "linear": 0.605,
+        "mlp": -6.7608
       },
       "ledger": {
         "knn": 0.2996,
@@ -205,24 +142,14 @@
     },
     "x0": {
       "brain": {
-        "knn": 0.5586,
-        "linear": 0.7909,
-        "mlp": 0.7276
+        "knn": 0.6007,
+        "linear": 0.8924,
+        "mlp": 0.8023
       },
       "brain_ledger": {
-        "knn": 0.6579,
-        "linear": 0.8832,
-        "mlp": -0.4875
-      },
-      "brain_ledger_rewhiten": {
-        "knn": 0.6579,
-        "linear": 0.8832,
-        "mlp": -0.4875
-      },
-      "brain_rewhiten": {
-        "knn": 0.5551,
-        "linear": 0.7909,
-        "mlp": 0.7276
+        "knn": 0.6671,
+        "linear": 0.8894,
+        "mlp": -0.4013
       },
       "ledger": {
         "knn": 0.678,
