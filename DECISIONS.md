@@ -5512,3 +5512,39 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   linear shipping head, the content of E (an objective input-space fix; the head is still a
   training-time readout). Cost: one GPU train (~22 min) + chain (~17 min) + access axis.
   Artifact `cfm_i_served`.
+
+## DEC-467 — [PRE-REGISTERED] protocol J: the profile objective gets a loss with gradient — per-field cross-entropy
+
+- **Measured failure of I's objective, not of its mechanism.** I trained the profile head on
+  the served path exactly (acceptance 10/10; overrides + registry + blob all confirm
+  `profile_served=true`). The head learned NOTHING: its own portfolio line reads
+  `profile skill +0.0000 ± 0.0000 FAIL`, and a direct measurement of head(E_served) against
+  the window histogram gives R² 0.001/−0.000/−0.003/−0.000 per freq level, argmax 33%
+  (chance). Cause: the DWA-weighted profile task sat at scale **0.072** against top tasks
+  5.1–6.0, and MSE on probabilities ~0.1 yields ~0.007 of weighted loss — a negligible
+  gradient. The state is not the blocker: ridge on I's served E reads the histogram at
+  0.642/0.196/0.059/0.532 per level, and ridge on the pre-proj trunk reads
+  0.740/0.307/0.094/0.589 with y→x0 = 0.8776. A properly-weighted head must move it.
+- **Decision — one variable: `profile_loss="ce"` (default "mse").** The profile head's
+  outputs are interpreted per field as logits over the observed level counts, and the loss is
+  the per-field cross-entropy to the normalized histogram, `-Σ_q t_q log softmax(z)_q`,
+  averaged over fields. This is the correct loss for a distribution target; it starts at
+  ~ln(Q) per field (≈1.4×5 ≈ 7 raw) so the balancer gives it a comparable scale, and its
+  gradients stay strong on confident errors. Ceilings stay as measured (E→hist already
+  0.64/0.20/0.06/0.53; y→x0 0.878; hist→x0 0.899). The tag carries the loss form as a
+  protocol axis; MSE stays the default so H and I are byte-reproducible.
+- **Frozen acceptance:** overrides = D axes + `action_profile=true` + five fields +
+  `profile_served=true` + `profile_loss="ce"`; 40 loss scales incl. `profile`; registry
+  `action_profile.served=true` and `profile_loss="ce"`; blob `profile_served=true`,
+  `profile_loss="ce"`, `action_profile_dim=43`, head shape (43,256); losses finite; tag ≠
+  D/E/F/H/I.
+- **Named axis.** PRIMARY — brain-alone `x0` linear: acceptance ≥ 0.84; adoption iff Δ ≥ +0.03
+  vs D (0.7909). The mechanism now predicts the served geometry moves toward the measured
+  headroom (y→x0 0.878). Falsifier: head skill stays ~0 or x0 stays within ±0.01.
+  SECONDARY (reported) — churn kNN/h0/return/price moves on the same profile pressure.
+- **Guards:** identical to DEC-465/466 (churn kNN ≥ 0.60 & linear ±0.02; h0 ±0.02; return
+  ±0.03; price ±0.02; rl policy_value ≥ 0.05; uplift not worse; S5 not worse; brain+ledger
+  x0 ≥ 0.8841 − 0.02; every leg row finite).
+- **Not changed:** gates, thresholds, criteria, controls, comparator, probe definitions, the
+  linear shipping head, E's content. Cost: one GPU train (~22 min) + chain (~17 min) +
+  access axis. Artifact `cfm_j_ce`.
