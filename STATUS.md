@@ -283,9 +283,14 @@
 > measured (E→x0 0.7904, stored state→x0 0.8033, rebuilt window h→x0 0.8797, proj rank
 > 255/256) and the wall is the state's HISTOGRAM MIDDLE LEVELS (E→hist 0.64/0.20/0.06/0.53):
 > the profile term is one scalar per 128-event window against 128 per-token losses, so the
-> optimizer will not spend capacity on it. **Protocol L in flight (DEC-470): profile_weight
-> = 25, applied at combination time so scale-free DWA cannot cancel it.** Falsifier: if 25×
-> pressure moves nothing, the lever is architectural (counter pathway), not objective.
+> optimizer will not spend capacity on it. **Protocol L measured (DEC-470/471): 25× pressure moved NOTHING** — profile skill finally
+> positive (+0.021 PASS) but x0 0.7899 and served histogram readability byte-identical. The
+> served transform is the wall, fully decomposed: rebuilt h→x0 0.879, stored state→0.803,
+> served E→0.790; E = boundary(proj(state × idle-fade)) (cos 1.000, proj rank 255/256). The
+> idle fade is the churn channel and the magnitude-trait killer (x0 +0.076 unfaded, churn
+> −0.195). Measured levers: ledger recency (4 features) lifts ledger churn 0.056→0.650;
+> unfaded E lifts x0 to 0.879/h0 0.893. Both change the served artifact contract → **operator
+> ruling requested (DEC-471 options); loop paused at the card's recorded protocol D, 1/8 legs.**
 
 **Repository state:** `main` now contains the former `primary-encoder` demo work. The duplicate
 report card, stale roadmap, duplicate receipt orchestrator, one-off OPE wrappers, and generator
