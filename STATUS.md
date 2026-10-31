@@ -2452,3 +2452,7 @@ resolves to a receipt; the "what is not claimed" panel repeats the card's disclo
 > next lever is a content/architecture protocol (exact-count channel in the trunk), not measurement.
 > **S5 mass fairness (DEC-501):** under a matching raw-count comparator, spend is a **tie**, not a
 > win; the earlier "transform artifact" claim is corrected. No raw-mass gate change.
+> **DEC-504 bucket diagnostic:** no bucket shortcut — `full`/`learned_state` add ~0.01 at best and
+> close no supervised row (`full+ledger` return 0.6069 vs b+l 0.6050; churn 0.6485 vs 0.6528; x0
+> 0.8911 vs 0.8898). The served state's content is the wall; the next lever is a content/architecture
+> training protocol (exact-count channel / interaction-aware trunk), not another view/metric/consumer.

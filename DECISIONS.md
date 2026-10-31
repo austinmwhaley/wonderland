@@ -6467,3 +6467,27 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - **Not changed.** Targets, truth, levels, gates, encoder, ledger, artifact. Principle served:
   Honest (fair expansion; failed honestly), Diagnosable (consumer vs content isolated),
   Efficient (no training).
+
+## DEC-504 — [MEASURED] no bucket shortcut: `full`/`learned_state` do not close the supervised gaps
+- **Context.** M6/M7 showed metric and consumer levers fail on content. Before a training
+  protocol, test whether the judge's `brain` column is simply under-reading the brain: the card
+  uses `state_embeddings` (256-d) while SPINE §5 calls `full` (793-d) the strongest supervised
+  view. Same frozen split/targets/GBM/paired CI; views `shape`, `learned_state`, `forecast`,
+  `heads`, `full` (shape+learned_state+forecast+uncertainty+heads), and `full+ledger`.
+- **Measured (paired CI vs PATH A; `+` = CI lo>0).**
+  * x0: PATH A 0.9056; best view `learned_state` 0.8936, `full` 0.8930, `full+ledger` 0.8911 —
+    all negative. No bucket closes the 0.013 gap.
+  * return: PATH A 0.6734; `learned_state` 0.3403 (vs `state_embeddings` 0.2974), `full` 0.3673,
+    `full+ledger` 0.6069 — still negative; the ledger adds most of it, not `full`.
+  * churn: PATH A 0.7209; best `full+ledger` 0.6485 vs b+l 0.6528 — no improvement.
+  * regime_switches: PATH A 0.1278; best `full+ledger` 0.0307 — no.
+  * h0 and price remain green for every view; `heads` alone is weak (as expected).
+- **Conclusion.** The brain column is **not** under-reading a bucket: `full` and `learned_state`
+  add ~0.01 at best and do not close any supervised row. The served state's **content** is the
+  wall, consistent with M6/M7 and the earlier training levers. No bucket/consumer contract change
+  is proposed (`full` is not a shortcut).
+- **Next.** A content/architecture training protocol is the only remaining honest lever: the
+  exact-count channel in the trunk (learned mass/counter path) or an interaction-aware trunk.
+  Both are new protocols with new artifacts; the existing M2 cannot be patched into green.
+- **Not changed.** Gates, targets, comparator, buckets, encoder, ledger, artifact. Diagnostic only;
+  no card change.
