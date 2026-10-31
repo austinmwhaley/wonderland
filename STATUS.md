@@ -2428,3 +2428,8 @@ resolves to a receipt; the "what is not claimed" panel repeats the card's disclo
 > The inherited B+B+C card is archived at `docs/archive/REPORT_CARD_INHERITED.md` (disclosure only).
 > BACKWARD findings are written to `docs/BACKWARD_CARD.md` and `docs/backward_requirements.json`
 > and rendered into `REPORT_CARD.md`; open BREAKING/MAJOR requirements block completion.
+> **DEC-498:** BACKWARD also audits **principle alignment** into root `AUDIT.md` — the scorecard
+> covers the top-level principles and AGENTS E1–E16, including vectorization/SPEED violations
+> (e.g., a per-row loop in a hot path), and every finding carries one `B-<id>` across
+> `AUDIT.md`, `BACKWARD_CARD.md`, and the structured card requirements. The first BACKWARD has not
+> run (the card is not green); `AUDIT.md` is explicitly "not yet audited" rather than falsely aligned.

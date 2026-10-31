@@ -401,9 +401,11 @@ def test_an_open_breaking_backward_requirement_blocks_done(tmp_path, monkeypatch
                     {
                         "id": "B-001",
                         "severity": "BREAKING",
+                        "principle": "P4/E16 (SPEED)",
                         "status": "open",
                         "finding": "the comparator leaks a future column",
                         "forward_subgoal": "rebuild the comparator without the future column",
+                        "audit_ref": "A-001",
                     }
                 ]
             }
@@ -414,6 +416,7 @@ def test_an_open_breaking_backward_requirement_blocks_done(tmp_path, monkeypatch
     assert "ENCODER DONE" not in info["assessment"]
     assert "backward open: 1" in info["assessment"]
     assert "B-001" in md
+    assert "P4/E16" in md and "A-001" in md
     assert info["verdicts"]["JUDGE-supervised-brain"] == J.PASS  # rows stay what they are
 
 

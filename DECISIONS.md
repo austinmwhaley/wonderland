@@ -6306,3 +6306,30 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   either a real capability protocol or an operator-gated contract decision. First forward chunk:
   regenerate `REPORT_CARD.md` through the chain and start with the measured geometry/mass findings
   (DEC-493/495).
+
+## DEC-498 — [OPERATOR RULING] BACKWARD audits principle alignment into `AUDIT.md`
+- **Ruling (2026-10-31).** "It is important for ADVERSARIAL/BACKWARDS to audit for how principles
+  are being aligned. Like if something is not vectorized and should be (violated SPEED principle)
+  that should be added to AUDIT.md."
+- **What was added.** `AUDIT.md` at the repo root is the principle-alignment audit: a scorecard
+  for the eight top-level principles and AGENTS.md E1–E16, open/closed findings, mechanical
+  baseline, and a closure protocol. `PROMPT_BACKWARD.md` now has a binding §4b that audits every
+  principle with concrete checks (renamed schema, derived config, merge/mass algebra, per-row
+  loops and measured speed, determinism/clamps, pre-registration/CIs, linear accessibility,
+  axis attribution, and the engineering principles), and requires every finding to be written to
+  three places with the same ID: `docs/BACKWARD_CARD.md` (narrative), `AUDIT.md` (principle
+  record), and `docs/backward_requirements.json` (machine gate rendered into `REPORT_CARD.md`).
+  Requirements now carry `principle` and `audit_ref`; the card renders both columns.
+- **Completion condition.** An open **BREAKING** or **MAJOR** principle finding blocks
+  `ENCODER DONE`, exactly like a measurement finding. `BREAKING` can only be closed by evidence;
+  `MAJOR` may be closed by a forwarding protocol or operator-accepted; `MINOR`/`INFO` are
+  disclosed and do not block. The card remains the single machine gate; `AUDIT.md` is the
+  detailed record and may not disagree with it.
+- **Canonical example recorded.** A per-row Python loop in a hot path that should be vectorized
+  violates SPEED/E16: **MAJOR** in a committed evidence script (the standing vectorization/audit
+  rule), **MINOR** in a one-off non-evidence diagnostic — but it always goes in `AUDIT.md`.
+- **Tests.** The card-gate test now asserts that `principle` and `audit_ref` render and that an
+  open requirement blocks DONE; 30 tests pass.
+- **Not changed.** No gate, threshold, comparator, probe, encoder, ledger, artifact, or receipt.
+  The first BACKWARD review has not run yet (the card is not all green); `AUDIT.md` says so
+  explicitly rather than claiming alignment.

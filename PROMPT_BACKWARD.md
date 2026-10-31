@@ -19,9 +19,10 @@
 4. `STATUS.md` — the claimed state and blockers.
 5. `docs/report_cards/experiments/` — every receipt the card cites.
 6. `docs/backward_requirements.json` — the requirements already on the card.
-7. `docs/SPINE.md`, `AGENTS.md` — the goal, laws, and certification integrity rules.
-8. The code and tests at the recorded commit.
-9. The last `docs/BACKWARD_CARD.md` — findings already raised, and their disposition.
+7. `AUDIT.md` — the principle-alignment audit and its open findings.
+8. `docs/SPINE.md`, `AGENTS.md` — the goal, laws, and certification integrity rules.
+9. The code and tests at the recorded commit.
+10. The last `docs/BACKWARD_CARD.md` — findings already raised, and their disposition.
 
 Record the exact **commit, behavior hash, artifact tag/hash, and card hash** at the top
 of the review. A review of an unrecorded tree is not evidence.
@@ -192,7 +193,68 @@ For **every** leg-column, stage, and hygiene row:
 
 ---
 
-## 5. Required output: `docs/BACKWARD_CARD.md` + `docs/backward_requirements.json`
+## 4b. Principle-alignment audit (binding)
+
+A green card can still be built on code that violates the principles. Audit the work against
+AGENTS.md principles 1–16 and the top-level charter, not just the metrics. For every principle,
+record **aligned / gap / violated / not assessed** in `AUDIT.md` with evidence.
+
+### How to test (specific, not vibes)
+
+- **Universal (P1):** renamed-schema + new-field end-to-end with zero code edits; an unseen
+  stream refuses (no cross-application); no business field names or domain literals in code;
+  per-stream model.
+- **Adaptive (P2):** no fixed `dim`/`layers`/`epochs`/`seq_len`/thresholds; values derived at
+  fit; `--set` overrides receipted; runtime toggles in config, not code.
+- **Lawful (P3):** merge/equivariance/mass-additivity receipts; per-sample at serve; no
+  batch-coupled normalization; additive mass scored in raw units; no un-faded second copy of
+  history; the correct algebra per quantity.
+- **Efficient / SPEED (P4, E15, E16):** search the hot paths for per-row Python loops
+  (`for ... in range(len(`, `.iterrows()`, `.itertuples()`, Python loops over customers/time in
+  `looking_glass/` or `scripts/measure_*`); require scans/gathers/einsum/Polars; run
+  `python3 scripts/principle_audit.py --strict`; time the hot path and compare to a vectorized
+  alternative; check O(1) serve, constant state, and caps.
+- **Robust (P5, E7):** determinism (same seed → identical); divergence = hard failure; no
+  silent clamps/NaNs/swallowed exceptions; OOD → refuse or widen; memory caps enforced.
+- **Honest (P6):** pre-registration before the run; frozen acceptance; paired CIs; controls;
+  no training on the graded metric; no post-hoc gate edits; no unadopted receipts.
+- **Accessible (P7):** linear shipping head; kNN for unsupervised; MLP diagnostic only;
+  decodability and per-bucket parity; no hidden bucket dilution.
+- **Diagnosable (P8):** each red row names its axis; the protocol changes one axis; rejected
+  alternatives recorded; coupling and trade-offs disclosed.
+- **Engineering (E1–E16):** magic numbers; convergence vs counts; learned vs taught;
+  schema adaptation; modularity and cross-layer imports; single source of truth; uncertainty;
+  measurement; versioning; observability; intent; deletion; best tool; cost; speed.
+
+### What counts as a finding
+
+A principle finding needs:
+
+- the **principle** and the **mechanism** (file:line, code pattern, or design choice);
+- the **consequence** (e.g., "4.2 s per 1k rows, O(N) Python overhead"; "batch-coupled ZCA at
+  serve"; "fixed `dim=256`"; "comparator trained on the scored split");
+- a **reproduction** (command, benchmark, grep, test);
+- a **severity**: **BREAKING** if it invalidates a green claim or the project's ability to reach
+  the goal; **MAJOR** if it is a material principle violation that must become a forward
+  subgoal; **MINOR/INFO** otherwise;
+- an entry in `AUDIT.md` **and** a matching `B-<id>` requirement with `principle` and
+  `audit_ref`.
+
+**The canonical example:** a per-row Python loop in a hot path that should be vectorized
+violates SPEED/E16. In a committed evidence script it is at least **MAJOR** (the standing rule
+requires evidence scripts to be vectorized and pass `principle_audit.py --strict`); in a one-off
+diagnostic that is not evidence it may be **MINOR** — but it still goes in `AUDIT.md`.
+
+### Do not
+
+- Do not call a principle "aligned" because the card is green.
+- Do not file a style nit as a principle violation.
+- Do not propose a gate/threshold change as the fix.
+- Do not accept "it runs" as evidence of speed or correctness; time and measure it.
+
+---
+
+## 5. Required output: `docs/BACKWARD_CARD.md` + `docs/backward_requirements.json` + `AUDIT.md`
 
 Write exactly this shape:
 
@@ -231,14 +293,20 @@ For **every** finding, append a requirement to `docs/backward_requirements.json`
 {
   "id": "B-<n>",
   "severity": "BREAKING|MAJOR|MINOR|INFO",
+  "principle": "P4/E16 (SPEED) or 'none' for a measurement finding",
   "status": "open",
   "finding": "one sentence, with the receipt/number",
   "forward_subgoal": "the named-axis subgoal that would close it",
   "gate_touched": false,
   "evidence": "file:line or receipt key",
+  "audit_ref": "A-<n>",
   "date": "YYYY-MM-DD"
 }
 ```
+
+Append the matching entry to `AUDIT.md` under **Open findings** with the same IDs, and
+update the principle's scorecard row. The machine-readable file is the gate; `AUDIT.md` is
+the detailed record. They may not disagree.
 
 The renderer displays this file in `REPORT_CARD.md`; an open `BREAKING` or `MAJOR`
 requirement blocks the completion condition. FORWARD closes a requirement only by

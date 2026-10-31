@@ -367,7 +367,8 @@ engineering doctrine above, the doctrine above wins.
 one measured axis per run, pre-register before running, end every run by writing the
 results to `REPORT_CARD.md`. `PROMPT_BACKWARD.md` is the read-only adversarial review:
 run it only when the card's gate-of-record section is all green; it must try to falsify
-the completion claim and document every finding for the next forward run. If BACKWARD
+the completion claim, audit principle alignment (including vectorization/SPEED) into `AUDIT.md`,
+and document every finding as a structured requirement for the next forward run. If BACKWARD
 returns a BREAKING finding, the tick-tock returns to FORWARD; it stops only when the
 card is all green **and** BACKWARD has no BREAKING findings. These prompts elaborate
 this file's working loop and certification integrity; where they conflict, this file's

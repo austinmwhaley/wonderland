@@ -444,16 +444,20 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
         if str(r.get("status", "open")) == "open"
         and str(r.get("severity", "")).upper() in ("BREAKING", "MAJOR")
     ]
-    req_lines = ["| ID | Severity | Status | Finding | Forward subgoal |", "|---|---|---|---|---|"]
+    req_lines = [
+        "| ID | Severity | Principle | Status | Finding | Forward subgoal | AUDIT |",
+        "|---|---|---|---|---|---|---|",
+    ]
     if not reqs:
         req_lines.append(
-            "| — | — | — | no backward review recorded | run `PROMPT_BACKWARD.md` after the card is green |"
+            "| — | — | — | — | no backward review recorded | run `PROMPT_BACKWARD.md` after the card is green | — |"
         )
     else:
         for r in reqs:
             req_lines.append(
-                f"| {r.get('id', '?')} | {r.get('severity', '?')} | {r.get('status', '?')} | "
-                f"{str(r.get('finding', ''))[:140]} | {str(r.get('forward_subgoal', ''))[:140]} |"
+                f"| {r.get('id', '?')} | {r.get('severity', '?')} | {r.get('principle', '—')} | "
+                f"{r.get('status', '?')} | {str(r.get('finding', ''))[:140]} | "
+                f"{str(r.get('forward_subgoal', ''))[:140]} | {r.get('audit_ref', '—')} |"
             )
 
     # ---- verdict rollup ---------------------------------------------------------
@@ -462,7 +466,7 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
     if legs_green and stages_green and not open_blocking:
         assessment = (
             "ENCODER DONE (v1): all four legs PASS in both columns, every stage is working by "
-            "receipt, and no BREAKING/MAJOR backward requirement is open. Capacity certification "
+            "receipt, and no BREAKING/MAJOR backward or principle requirement is open. Capacity certification "
             "(k_min) is reported separately below."
         )
     else:
@@ -510,6 +514,8 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
             *([f"- `{b}`" for b in blocked] or ["- nothing — all rows evaluated"]),
             "",
             "## Backward requirements (from PROMPT_BACKWARD)",
+            "",
+            "Principle-alignment findings live in `AUDIT.md`; the machine-readable gate is this table.",
             "",
             *req_lines,
             "",
