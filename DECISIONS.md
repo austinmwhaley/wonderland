@@ -5351,3 +5351,44 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   alignment (the trait is not the aggregate), and the protocol must train on the trait's
   generating structure instead of a lookalike; (3) if the proxy is not readable, the trunk
   is the wall and the pressure design (not the target) is wrong.
+
+## DEC-463 — [PRE-REGISTERED] protocol G: the frequency response arm in the effect objective (x0's generating structure)
+
+- **Diagnostic finding that fixes the target (the DEC-462 discipline, acted on).**
+  `x0` in the demo generator is NOT a latent activity rate: `reference.py:197`
+  `x0 = uniform(0,3)` = the customer's **optimal weekly marketing frequency**, revealed ONLY
+  through the randomized weekly action design (`reference.py:297-357`): a period's `freq`
+  arm moves conversion by `f_q = SOFT + (1-SOFT)·exp(-((freq-x0)/σ_f)²)`, i.e. x0 IS the
+  peak of the customer's response curve over the freq arm. `churn_day` and
+  `return_proneness` are likewise latent parameters, not aggregates. Protocol F regressed
+  future EVENT COUNTS — a lookalike that x0 does not generate; that is why its own target
+  fit and the trait did not move (+0.004). The trait's sufficient structure is the
+  ACTION-RESPONSE surface, which the one-factor randomized stream carries directly.
+- **Decision — one variable: `effect_actions=('offer','freq')` (D had `('offer',)`).**
+  No code change: `_effect_targets` already supports multiple randomized keys (per-period
+  action vectors, levels from data), the bilinear QTE head already takes the concatenated
+  one-hot, and the arm contrast is linear in the state by construction (DEC-453). Adding the
+  `freq` arm forces the state to fit the per-customer conversion curve over frequency — the
+  quantity x0 is the argmax of — so a linear probe on E can read the peak's location.
+- **Why not other levers.** (1) More rate-objective pressure — measured dead twice (E, F).
+  (2) hour/dow/channel arms in the same protocol — rejected: one axis per protocol; they are
+  the NEXT protocols if G moves x0 (h0/d0 are the analogous optima). (3) Serve response
+  aggregates — circular-evaluation rule #4. (4) kNN/MLP shipping head — DEC-407 frozen.
+- **Frozen acceptance (before any verdict language):**
+  1. registry overrides = protocol-D axes + `effect_actions=['offer','freq']`; objectives
+     unchanged (effect already on); `loss_scales` has `effect` (39 tasks);
+  2. checkpoint blob `effect_dim == 8` (= 4 offer levels + 4 freq levels, data-derived) and
+     `head_effect.proj.weight` has shape (8, 256);
+  3. losses finite; governor stops on tolerance; `[step-time]` receipt; no new non-finite;
+  4. tag ≠ D, ≠ E, ≠ F; stable across constructions.
+- **Named axis.** PRIMARY — brain-alone `x0` linear (D: 0.7909): acceptance ≥ 0.84; adoption
+  iff Δ ≥ +0.03. SECONDARY — brain+ledger x0 ≥ D's 0.8841 − 0.02 (the delivery column must
+  not pay for the progress gain).
+- **Regression guards (reported as real costs).** brain churn kNN ≥ 0.60 (D 0.6678) and
+  linear ±0.02 (D 0.5824); brain h0 ±0.02 (D 0.8390); brain return_proneness ±0.03
+  (D 0.2947); brain price_sensitivity ±0.02 (D −0.0200); rl `policy_value` ≥ 0.05 (D
+  0.0558); `known_effect_uplift` not worse than D (−0.0130/−0.0109); S5 not worse; every leg
+  row finite.
+- **Not changed:** gates, thresholds, criteria, controls, comparator, probe definitions, the
+  linear shipping head. Cost: one GPU train (~17 min dedicated) + chain (~17 min) + access
+  axis (~24 s). Artifact `cfm_g_freq`.
