@@ -5257,3 +5257,37 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   linear shipping head, E's content (an objective adds no served column).
 - **Cost.** One GPU train (~20 min alongside Qwen, 20 GB container) + chain (~17 min) +
   access-axis re-run (~1 min). Artifact dir: `cfm_f_rate` (never pooled).
+
+## DEC-460 — [OPERATOR RULING] the local LLM container is capped: growth outside its allotment is refused, not watched
+
+- **Ruling (2026-10-30, verbatim).** "Local LLM, whatever is in the container, should not
+  be allowed to grow outside of what it has been alloted." The night's evidence made it
+  concrete: three trainer sacrifices tonight were Qwen-side growth squeezing `avail` under
+  the 8 GB floor (a 12 GB / 6 s burst the witness RSS could not even attribute).
+- **What was found.** The `vllm-qwen` container had **no enforcement at all**:
+  `HostConfig.Memory=0` (unlimited cgroup). The serve script documents the ALLOTMENT
+  (0.70 GPU-utilization ⇒ 85.14 GiB unified reservation, "~27-29 GiB for the desktop",
+  RSS ~5 GB) but nothing made the kernel hold the container to it. Measured cgroup split:
+  system.slice 7 GiB + user.slice 6 GiB while the host shows 96 used — the 85 GiB GPU
+  reservation is NOT in any memory cgroup (driver-side allocation). Two surfaces, two
+  mechanisms.
+- **Layer 1 — process side (kernel-enforced cgroup).** `docker update --memory 11g
+  --memory-swap 15g vllm-qwen` applied LIVE (health 200 throughout, no restart, no
+  interruption), and baked into `~/bin/vllm-container-ensure.sh` (`--memory 11g
+  --memory-swap 15g`) so a recreated container is born capped. Budget vs measured
+  reality (6.9 GiB used / 7.4 GiB peak): ~50% headroom for serving growth, bounded at
+  worst-case non-GPU footprint 15 GiB. Mechanism verified destructively on a sacrificial
+  container (writes past the cap die INSIDE: OOMKilled=true exit 137, host untouched) —
+  same doctrine as DEC-450's destructive checks.
+- **Layer 2 — GPU side (the un-cgroupable reservation).** Its only bound is
+  `--gpu-memory-utilization` in the serve script. `vllm-container-ensure.sh` now REFUSES
+  to create the container if that number drifts above 0.70 (the serve script's own
+  measured desktop-starvation threshold), so the allotment survives config edits.
+- **Watchdog receipts upgraded accordingly** (`scripts/gpu_watchdog.py`): at every
+  LOW-MEM breach the guard now prints `LOWMEM-WITNESS` (top RSS) AND `CGROUP-WITNESS`
+  (per-scope `cur/peak/max` for docker-* scopes and the wonderland slice) — the max
+  column makes "is the cap actually in force?" checkable in the receipt itself. Live
+  dry-run drill on this host shows `docker-9c3953… cur=6.44GiB peak=6.87GiB
+  max=11811160064`. Test: `test_cgroup_witness_shows_usage_and_the_operators_cap`.
+- **Not changed:** the serve script itself, Qwen's running state (config-only update,
+  never stopped), any gate, threshold, or contract.

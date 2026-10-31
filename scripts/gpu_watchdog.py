@@ -229,6 +229,34 @@ def _top_rss(n: int = 6) -> list[str]:
     return [f"{g:.2f} GB pid={p} {c}" for g, p, c in rows[:n]]
 
 
+def _cgroup_witness(root: str = "/sys/fs/cgroup") -> list[str]:
+    """Container/slice memory-cgroup usage at breach time (DEC-460).
+
+    Process RSS alone could not explain tonight's breach (the 85 GiB LLM GPU
+    reservation lives OUTSIDE every memcg — cgroups summed 13 GiB while the host
+    showed 96 used). Per-scope current/peak/max separates 'the LLM container grew
+    past its cap' from 'the trainer ramped' from 'something else moved' — and the
+    max column shows whether the cap the operator ruled is actually in force.
+    A witness list may be partial (scopes vanish mid-scan); it must never fail.
+    """
+    out = []
+    base = Path(root) / "system.slice"
+    try:
+        scopes = sorted(p for p in base.iterdir() if p.name.startswith(("docker-", "wonderland")))
+    except OSError:
+        return ["(system.slice unreadable)"]
+    for sc in scopes:
+        try:
+            cur = int((sc / "memory.current").read_text())
+            pf = sc / "memory.peak"
+            peak = int(pf.read_text()) if pf.exists() else cur
+            mx = (sc / "memory.max").read_text().strip()
+        except OSError:
+            continue
+        out.append(f"{sc.name[:48]} cur={cur / 2**30:.2f}GiB peak={peak / 2**30:.2f}GiB max={mx}")
+    return out
+
+
 def _kill(pid: int, dry_run: bool) -> str:
     if dry_run:
         return f"would SIGTERM {pid}"
@@ -425,6 +453,8 @@ def main(argv=None, *, arm: bool = True) -> int:
             # from a trainer ramp in the old receipt).
             for line in _top_rss():
                 print(f"{time.strftime('%T')} LOWMEM-WITNESS {line}", flush=True)
+            for line in _cgroup_witness():
+                print(f"{time.strftime('%T')} CGROUP-WITNESS {line}", flush=True)
             for pid in targets:
                 # Log the DECISION before acting: `_kill` blocks for up to 5 s waiting for
                 # the process to die, and a guard killed inside that window would leave no

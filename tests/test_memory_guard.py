@@ -179,3 +179,32 @@ def test_a_shell_running_a_MODULE_is_not_the_module(tmp_path):
     found = GW.gpu_jobs(GW.DEFAULT_PATTERNS, proc_root=tmp_path)
     assert 42 in found
     assert 41 not in found
+
+
+def test_cgroup_witness_shows_usage_and_the_operators_cap(tmp_path):
+    """DEC-460 (operator ruling: the LLM must not grow outside its allotment): the
+    breach receipt must show per-scope usage AND whether a cap is in force — the
+    'max' column is the ruling's enforcement made visible."""
+    from gpu_watchdog import _cgroup_witness
+
+    sl = tmp_path / "system.slice"
+    llm = sl / "docker-abc123.scope"
+    llm.mkdir(parents=True)
+    (llm / "memory.current").write_text(str(int(6.5 * 2**30)))
+    (llm / "memory.peak").write_text(str(int(7.4 * 2**30)))
+    (llm / "memory.max").write_text(str(11 * 2**30))
+    trainer = sl / "wonderland.slice"
+    trainer.mkdir()
+    (trainer / "memory.current").write_text(str(2**30))
+    # memory.peak absent on older kernels -> must fall back, never crash
+    (trainer / "memory.max").write_text("max")
+    (sl / "not-a-container.scope").mkdir()  # ignored by design
+
+    rows = _cgroup_witness(str(tmp_path))
+    assert len(rows) == 2
+    llm_row = next(r for r in rows if "abc123" in r)
+    assert "cur=6.50GiB" in llm_row and "peak=7.40GiB" in llm_row
+    assert f"max={11 * 2**30}" in llm_row  # cap visible: enforcement is checkable
+    assert "max=max" in next(r for r in rows if "wonderland" in r)
+    # unreadable system.slice -> a partial witness, not a crash (witness doctrine)
+    assert _cgroup_witness(str(tmp_path / "nope")) == ["(system.slice unreadable)"]
