@@ -5885,3 +5885,11 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   its caps (11/15 GiB process side, GMU 0.70 with the refuse-above rule); `--restart no` keeps it
   down until started. Standing practice: vLLM stopped during GPU training, restarted on request or
   when a card-completing stretch ends; never killed mid-use without asking (DEC-460 unchanged).
+
+## DEC-481 — [OPERATOR RULING] Qwen retired pending Qwen4; the GPU loop runs normally
+- **Ruling (2026-10-31).** "Stop Qwen. I will wait for Qwen4 next week and use that as my local
+  LLM. Run this project like normal." vLLM stays stopped; the container and its caps are preserved
+  for reference but no restart is expected until Qwen4. The host GPU is dedicated to the card loop;
+  DEC-480's stop-while-training practice is now the standing state, not an exception.
+- **Consequence.** No co-tenancy negotiation is needed for the current ladder. Training runs use the
+  proven 15 GiB profile under caps only (DEC-476); M3 already running this way.
