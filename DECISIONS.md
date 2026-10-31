@@ -6560,3 +6560,71 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   the identifiability question.
 - **Not changed.** Progress gate, targets, splits, comparator, table, encoder, ledger, artifact.
   Cost: one chain re-run.
+
+## DEC-508 — [MEASURED] GBM delivery head NOT adopted; linear delivery restored; counter flags added to the tag
+- **Result.** The GBM delivery head (DEC-506) made x0/churn ties (0.9099/0.7222 vs 0.9056/0.7209)
+  but **broke price**: delivery price −0.1134 with random control −0.0774, while the linear
+  delivery was −0.0446 with control −0.077. The 851-d arm has 1,776 fit rows; the flexible head
+  overfits the price target, and the control gate catches it. A label-free low-rank delivery view
+  also failed (x0 0.894, churn 0.613, return 0.544).
+- **Decision.** GBM delivery head **reverted**. The delivery gate stays **non-inferiority**
+  (DEC-507); progress stays strict; the linear delivery head is restored. The card's delivery
+  evidence returns to the stable linear rows. The apparent x0/churn match was not content.
+- **Tag identity fix.** `CFMConfig.tag` did not include `use_counter`/`counter_*`, so a counter
+  run would have shared M2's tag. The counter flags are now part of the signature
+  (`|c<registers>|cc|ce|cv` only when `use_counter`), preserving M2's tag. This is required for
+  M8-A's artifact identity.
+- **Not changed.** Gates, targets, comparator, table, encoder, ledger, hyperparameters.
+
+## DEC-509 — [PRE-REGISTERED] protocol M8-A: exact-count content in the brain (CounterBlock)
+- **Why.** Every cheap lever (objective, capacity, serving, metric, consumer, bucket, GBM head)
+  has been measured and does not add content. The remaining untested content lever is the
+  in-network exact additive counter (`CounterBlock`, SPINE Option 4): raw event quantities summed
+  exactly, with per-event-type and per-type-value channels. The current M2 has `use_counter=False`.
+- **Decision — one axis: the counter content.** Train M8 = M2's resolved protocol (batch 20,
+  dim 256, effect actions `offer`/bilinear, `serve_unfaded`, `ledger_recency`) plus
+  `use_counter=True`, `counter_compact=True`, `counter_event_types=True`,
+  `counter_type_values=True`. Artifact `cfm_m8_counter`; the counter flags are in the tag
+  (DEC-508), so the artifact is distinct. No other axis.
+- **Measurement.** The counter is added to `y` (the per-step readout) via `w_counter`; the
+  `full` brain bundle (shape + learned_state + forecast + uncertainty + heads) is the natural
+  carrier. Measure the supervised traits on `state_embeddings`, `full`, and `full+ledger`, same
+  split/heads/table GBM as the judge; also measure the S5/geometry diagnostics. The card's
+  `brain` arm stays `state_embeddings` unless `full` wins; adopting `full` is a separate
+  pre-registered consumer-contract follow-up, not folded into this run.
+- **Frozen acceptance (mechanical).** Tag distinct; registry/checkpoint show the counter flags
+  and `counter_on`; every loss finite; governor stops on tolerance, no divergence; co-tenancy
+  budget respected. Named axis: `full` supervised **return_proneness or churn_day** must improve
+  by **≥ +0.03** over M2 (0.2974 / 0.6371) with no guard regression (x0 ≥ 0.88, h0 ≥ 0.90,
+  price ≥ −0.05). Adoption iff the named axis moves and the guards hold; otherwise NOT adopted.
+- **Falsifier.** `full` return/churn moves < +0.03, or the guards regress ⇒ the counter's
+  y-path does not reach the served brain; archive and revert. Do not retry a larger counter
+  without a new mechanism (counter-to-`h` or a counter view is a separate protocol).
+- **Cost.** One GPU train (~15–20 min) in the 20 GB container, co-tenant with the 27B at GMU 0.40;
+  chain + access axis. Not changed: data, targets, splits, comparator, gates, dim/serving/objectives.
+
+## DEC-510 — [MEASURED] M8-A exact-count content ADOPTED: return_proneness +0.12 in the brain
+- **What ran.** M8 = M2 + `use_counter=True`, `counter_compact=True`, `counter_event_types=True`,
+  `counter_type_values=True`; tag `0.11.0r103115-b20d256e3lr3e-04o317c8905` (distinct; counter
+  flags in the tag, DEC-508). 728 steps, 947 s, governor stopped on tolerance, no divergence;
+  trainer ~15 GB alongside the 27B at GMU 0.40; products published (595-d ledger, 793-d full).
+- **Named axis — PASS.** `state_embeddings` return_proneness **0.4176** (M2 0.2974, **+0.1202**);
+  `full` return **0.3872** (+0.0898); both exceed the frozen +0.03. `full` churn 0.6454 (M2
+  0.6371, +0.0083; below +0.03, reported). Guards: x0 **0.8874** (≥0.88), h0 **0.9201** (≥0.90),
+  price **−0.0140** (≥−0.05) — all hold. The counter content reaches the served brain, unlike
+  every previous lever.
+- **Delivery.** `full+ledger` return **0.6064** vs M2 0.6050 (+0.0014); still below PATH A 0.6734.
+  The ledger dilution remains; the brain's +0.12 is not enough to move the delivery row. The card
+  stays 1/8 legs, 5/6 stages: the supervised **progress** return is much closer but still red;
+  delivery return is still red (and non-inferiority cannot pass a 0.067 gap).
+- **Disposition.** **Adopted as the recorded artifact.** M8 dominates M2 on the named axis; the
+  guards hold; the tag is distinct. The card/chain are regenerated against `cfm_m8_counter`; M2 is
+  preserved as the prior artifact. The training portfolio's `num_next:segment`/`value` and ABS
+  baseline failures are disclosed; they are not the judge gate (segment is the known independent
+  latent).
+- **Next.** The counter moved **return** content but not churn/x0/regime. M9: a mechanical
+  return-ratio ledger part (return count / purchase count, return value / spend) to carry the
+  brain's new return content into delivery; then churn hazard / regime identifiability. The card
+  is still red; this is the first content step, not the finish.
+- **Not changed.** Gates, targets, splits, comparator, table, dim/serving/objectives, ledger
+  recipe. Cost: one chain + access axis.

@@ -445,7 +445,6 @@ def leg_supervised(db: Path, demo: Path) -> dict:
                 table_b,
                 usable,
                 rng,
-                head="gbm",
             )
         }
     else:
@@ -482,7 +481,7 @@ def leg_supervised(db: Path, demo: Path) -> dict:
         "incumbent": {"library": "xgboost", "model": "XGBRegressor", **INCUMBENT},
         "arms": {
             "brain": "state_embeddings donor + linear ridge head (DEC-407: linear is the shipping head)",
-            "brain_ledger": "brain + measure view; delivery head = the same XGBoost class as PATH A (DEC-506); same rows",
+            "brain_ledger": "brain (state_embeddings) + measure view, same linear head and rows",
         },
     }
 

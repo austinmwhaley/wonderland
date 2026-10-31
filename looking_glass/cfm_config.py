@@ -538,6 +538,16 @@ class CFMConfig:
         if getattr(self, "ledger_recency", False):
             # DEC-473: the ledger's part list is part of the artifact identity too.
             sig_extra += "|lr"
+        if getattr(self, "use_counter", False):
+            # DEC-508: the counter is a content/architecture axis; its flags change the
+            # trained weights and the served readout, so they are part of the identity.
+            sig_extra += f"|c{int(getattr(self, 'counter_registers', 1))}"
+            if getattr(self, "counter_compact", False):
+                sig_extra += "|cc"
+            if getattr(self, "counter_event_types", False):
+                sig_extra += "|ce"
+            if getattr(self, "counter_type_values", False):
+                sig_extra += "|cv"
         sig = hashlib.sha256(f"{obj}|{eff}{prof}{sig_extra}".encode()).hexdigest()[:8]
         return (
             f"{base}-b{int(self.batch)}d{int(self.dim)}e{int(self.epochs)}"
