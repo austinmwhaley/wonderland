@@ -5770,3 +5770,27 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   * churn: hazard-style interaction features (silence × activity) to close 0.653→0.721;
   * regime: the hard end — the regime process is not in any linear aggregate measured so far.
   The next protocol (N) is a pre-registered ledger-content extension with those columns.
+
+## DEC-476 — [OPERATOR RULING] caps are the operating model; the host-floor watchdog is opt-in
+
+- **Ruling (2026-10-31).** "I just want a cap on vLLM and this training container... my system
+  is never going to be above 8GB so if those others are capped then there should never be an
+  issue." The two container caps are the operating model. The host-floor guard is no longer
+  started by default; `scripts/wonder_container.sh --watchdog` opts in for a run.
+- **What remains capped (unchanged, kernel-enforced):** vLLM process side 11 GiB / 15 GiB
+  including swap (live `memory.max=11811160064`; the cap survived the 2026-10-31 restart);
+  vLLM GPU reservation 0.70 = 85 GiB, with the ensure script refusing drift above 0.70;
+  training/producer containers `--memory == --memory-swap` = 20 GB, with the torch allocator
+  clamped to the cgroup budget. CPU/GPU compute uncapped by design.
+- **Arithmetic, for the record.** Steady state measured: 85 GiB GPU reservation + ~7 GiB
+  vLLM process + ~14 GiB trainer + ~8 GiB desktop ≈ 114 of 121.6 GiB → ~7 GiB headroom,
+  which is why the old floor sat at 8. The caps are ceilings; the sum of the ceilings
+  (85+15+20+8=128) exceeds physical by ~6 GiB, so a simultaneous worst case can still
+  OOM — the kernel then picks the victim. The one measured exception that the caps cannot
+  cover is vLLM's driver-side burst under live traffic (12 GiB / 6 s, outside every cgroup);
+  that risk is accepted by this ruling.
+- **What this changes:** `wonder_container.sh` no longer starts `gpu_watchdog.py` unless
+  `--watchdog` is passed (default caps-only). The watchdog script, its tests, and the
+  breach-witness receipts stay in the repo and remain correct when opted in.
+- **Not changed:** the caps themselves, the Qwen ensure script's refuse-above-0.70 rule, the
+  20 GB project slice, any gate/contract.

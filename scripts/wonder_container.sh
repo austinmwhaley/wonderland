@@ -24,9 +24,11 @@
 #      are NOT charged to the container's cgroup (measured with vLLM: 337 MiB reported while
 #      holding 97 GiB). So `looking_glass.gpu_budget` reads this container's `memory.max` and
 #      derives the torch allocator fraction that keeps `device + host usage + reserve <= 20 GB`.
-#   3. HOST FLOOR guard: `scripts/gpu_watchdog.py --container NAME` watches the real
-#      MemAvailable from outside and stops the container if the 8 GB system floor is reached
-#      (e.g. a non-torch CUDA allocation that bypasses the allocator cap).
+#   3. HOST FLOOR guard (OPT-IN, DEC-476): `--watchdog` starts `scripts/gpu_watchdog.py
+#      --container NAME`, which watches the real MemAvailable from outside and stops the
+#      container if the 8 GB system floor is reached (e.g. a non-torch CUDA allocation that
+#      bypasses the allocator cap). The operator's ruling: the two caps above are the
+#      operating model; the guard is not started unless asked for with --watchdog.
 #
 # CPU and GPU COMPUTE are not limited here — no --cpus, no --gpus-per-run throttle. Only memory.
 set -euo pipefail
@@ -41,6 +43,7 @@ floor_gb="${WONDER_FLOOR_GB:-8}"
 gpu=0
 check=0
 plan=0
+watchdog=0  # DEC-476 operator ruling: caps-only by default; --watchdog opts in
 out_mounts=()
 cmd=()
 
@@ -60,6 +63,7 @@ while [[ $# -gt 0 ]]; do
     --check) check=1; shift ;;
     --plan) plan=1; shift ;;
     --gpu) gpu=1; shift ;;
+    --watchdog) watchdog=1; shift ;;
     --name) [[ -n "${2:-}" ]] || { echo "--name needs a value" >&2; exit 2; }; name="$2"; shift 2 ;;
     --out)
       [[ -n "${2:-}" ]] || { echo "--out needs HOST[:CONTAINER]" >&2; exit 2; }
@@ -182,7 +186,7 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-if [[ $gpu -eq 1 ]]; then
+if [[ $gpu -eq 1 && $watchdog -eq 1 ]]; then
   pidfile="/tmp/opencode/wonder_container_${name}.pid"
   guard_log="/tmp/opencode/wonder_container_${name}.guard.log"
   mkdir -p /tmp/opencode
