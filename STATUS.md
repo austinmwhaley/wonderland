@@ -2345,3 +2345,9 @@ recency/frequency aggregates. NOT decided unilaterally — receipts above.
 Plugins, Customer Explorer, Evidence), deep-linkable via `#tab`, no server or network required.
 The Customer Explorer samples 260 holdout customers from the frozen embedding. Every figure
 resolves to a receipt; the "what is not claimed" panel repeats the card's disclosures.
+
+> **DEC-479 (2026-10-31): M3 launch crashed on co-tenancy, host-safe.** Qwen's 85 GiB
+> reservation leaves ~4 GiB device-free; the frozen 15 GiB training profile cannot fit. Trainer
+> died inside its cap (by design); Qwen healthy; DEC-478 pre-registration stands, artifact reset.
+> Operator ruling requested: train with Qwen stopped, lower Qwen GMU (restart), or train in idle
+> windows only.

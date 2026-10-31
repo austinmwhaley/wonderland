@@ -5861,3 +5861,21 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - **Not changed:** gates, thresholds, criteria, controls, comparator, probe definitions, E's
   content (serve_unfaded already authorized DEC-472), ledger (ledger_recency DEC-473). One axis:
   the profile objective is ON where M2 had it off. Cost: one GPU train + chain + access axis.
+
+## DEC-479 — [MEASURED] co-tenancy receipt: the frozen training profile does not fit while Qwen holds its 85 GiB reservation
+- **What happened.** M3 (DEC-478) launched under the operator's caps-only ruling (DEC-476) while
+  vllm-qwen was serving. The torch allocator clamped the trainer to 9.02 GiB (container 20 GB cap,
+  gpu_budget derivation) and the profile CE step requested +462 MiB with only 4.2 GiB physically
+  free on the unified-memory device: CUDA OOM inside the container, exit 1 — the trainer died, the
+  host and Qwen were untouched (both confirmed healthy; Qwen /health 200 after). This is DEC-476's
+  recorded arithmetic observed: the ceilings sum above physical (85+15+20+8=128 > 121.6), and when
+  that happens the caps make the TRAINING job the victim, as intended.
+- **What is NOT broken.** No protocol was invalidated: M3 never produced products/receipts (early
+  crash, artifact dir reset), DEC-478's pre-registration stands, no card change. No gate weakened.
+- **The physical wall, measured.** Qwen's reservation (85 GiB GMU 0.70) + vLLM process + desktop
+  + OS leave ~22 GB host-available; the frozen training profile (batch=20, the D-lineage axis)
+  peaks at ~15 GiB device-side (M1/M2 RECAP receipts) and needs workspace above that. The trainer
+  cannot fit without either (a) releasing Qwen's reservation, (b) shrinking it (lower GMU — a Qwen
+  restart, operator's call per DEC-460), or (c) moving the training profile off the frozen axis
+  (batch halving = a new protocol axis, and even ~7-8 GiB was not available at the crash instant).
+  Deferring this to "retry later" is not a fix: the reservation is static while Qwen runs.
