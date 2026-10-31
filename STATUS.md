@@ -2369,3 +2369,15 @@ resolves to a receipt; the "what is not claimed" panel repeats the card's disclo
 > delivery contract (compact action-profile arm), (2) exclude the measured-degenerate rows
 > (segment_structure, argmax_optimum), (3) architecture/consumer change. M2 remains the recorded
 > artifact; 27B LLM is up and validated at GMU 0.40; co-tenancy held across two full runs.
+
+> **2026-10-31 DEC-492 — ruling #1 is measured moot.** The compact action-profile view was scored
+> on the frozen judge geometry (A=1776/B=724, same GBM incumbent, paired per-customer CI):
+> `action_profile` x0 **0.9082** vs PATH A **0.9056** (Δ +0.0025, CI **[−0.00301,+0.00708]**);
+> `freq_counts` 0.9090 (CI [−0.00233,+0.00773]). The 0.909 point estimate is a statistical
+> **tie**, not a CI win; concatenating the view into brain/ledger still loses (0.8941 vs 0.9056).
+> It also does not close return/churn/regime. Recommendation: **do not add a separate arm** — it
+> would change the artifact contract for zero card movement. Receipt:
+> `docs/report_cards/experiments/protocols/diag_action_profile_ci_2026_10_31.{py,json}`.
+> **Two rulings remain:** (2) degenerate rows — exclude-and-report (segment_structure,
+> argmax_optimum, persona's segment half) vs amend the generator; (3) architecture/consumer
+> change — interaction-aware simulator head or an exact-count channel in the trunk.

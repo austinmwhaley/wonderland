@@ -6103,3 +6103,40 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   interaction-aware consumer, or excluding the measured-degenerate rows.
 - **Receipts.** Access axis archived under `protocols/m5_d384/`; live receipt restored to M2's
   committed bytes. Chain not run (adoption gated on the named axis first); no card change.
+
+## DEC-492 — [MEASURED] the action-profile view ties PATH A under a paired CI; a separate judge arm would move no card row
+- **Context.** Operator ruling #1 (pending): may a compact action-profile view be a separate
+  judge arm? DEC-484 had measured the isolated statistic at 0.9090 (freq counts) / 0.9158 (mode)
+  vs PATH A 0.9056, but explicitly noted the paired CI vs PATH A had not been measured and the
+  arms "may still tie." This is the pre-verdict diagnostic (DEC-462/464 rule), not a protocol and
+  not an adoption.
+- **What ran.** `docs/report_cards/experiments/protocols/diag_action_profile_ci_2026_10_31.py`
+  (CPU, read-only, 82 s) on M2's recorded artifact `...04o1e051d9d`, the frozen judge geometry
+  (A=1776 fit / B=724 score, history cut at `as_of`), the same GBM incumbent (48-column PATH A
+  table, DEC-428), and the same paired per-customer SSE CI. Views are mechanical, history-only,
+  target-blind: `freq_counts` 4-d (DEC-464 ceiling, reported not proposed), `action_counts` 43-d
+  (all declared action fields), `action_profile` 48-d (counts + observed mode per field). Each
+  was scored alone and concatenated with brain / ledger.
+- **Named measurement (x0).** PATH A **0.905649**. `action_profile` **0.9082** (Δ +0.0025, CI
+  **[−0.00301, +0.00708]**); `freq_counts` **0.9090** (Δ +0.0033, CI [−0.00233, +0.00773]);
+  `action_counts` 0.9082 (CI [−0.00303,+0.00716]); `brain` 0.8924 (CI [−0.01684,−0.00351]);
+  `brain+ledger` 0.8898; `brain+ledger+action_profile` 0.8941 (CI [−0.01427,−0.00304]).
+  **Every x0 action-profile CI includes zero.** The 0.909 point estimate is a statistical
+  **tie**, not a win, and concatenating the view into the judged column still loses.
+- **Other traits, same probe.** `h0` is already green and improves under the view (brain+profile
+  0.9536, ledger+profile 0.9861 vs PATH A −0.1213). The view does not close `return_proneness`
+  (brain+ledger+profile 0.6027 vs 0.6050), `churn_day` (0.6532 vs 0.6528), or the regime traits
+  (regime_switches −0.1105 vs −0.1045; final_regime_days −0.0546 vs −0.0374).
+- **Conclusion.** Ruling #1 is measured **moot**: adopting a separate action-profile arm would
+  change the artifact/consumer contract for **zero** verdict movement (the card's x0 row requires
+  a paired CI excluding 0, which the view does not have). Recommendation: do **not** add the arm.
+  This does not deny that the histogram information is real (DEC-484 stands pointwise); it says
+  the judged bar is a CI win and the view ties. The x0 gap is therefore a **tie at the top**, not
+  a delivery-contract deficit.
+- **Principles.** Honest (a point estimate may never adopt; the CI is the verdict), Accessible
+  (the information is readable, but not better than the incumbent), Efficient (no new contract
+  surface for no capability).
+- **Not changed.** Gates, thresholds, comparator, probes, E's content, ledger, card. No chain run.
+- **Receipts.** `docs/report_cards/experiments/protocols/diag_action_profile_ci_2026_10_31.py`
+  + `.json` (all 7 traits, all 14 arms, controls, N, artifact tag). Principle audit strict: 0
+  findings; `ruff check`/`format` clean.
