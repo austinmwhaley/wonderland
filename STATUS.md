@@ -267,10 +267,18 @@
 > Root cause found in the generator: `x0` = the customer's optimal weekly marketing
 > FREQUENCY (`reference.py:197`), revealed only by the randomized action design; churn_day
 > and return_proneness are likewise latent parameters. Rate stays off; card stays on D.
-> **Protocol G pre-registered (DEC-463) and training now on the dedicated host (vLLM
-> stopped by operator ruling, DEC-461):** `effect_actions=('offer','freq')` — the freq arm
-> of the one-factor randomized design forces the state to fit the conversion curve whose
-> peak IS x0. Frozen acceptance + named axis (brain x0 ≥ 0.84) recorded before the run.
+> **Protocol G aborted pre-verdict (DEC-464, measured):** the response curve does NOT
+> identify x0 (ridge curve→x0 = 0.053 — binomial noise). The measured sufficient statistic is
+> the ACTION-FIELD HISTOGRAM: freq hist → x0 = 0.909, freq mode → 0.916, corr 0.958 —
+> above PATH A's 0.9056. x0 (and h0/d0) are the customers' OPTIMA of the randomized decision
+> fields, not event rates. Diagnostic: `scripts/measure_proxy_alignment.py`.
+> **Protocols H–K (DEC-465…468): three consecutive structural findings, each measured:**
+> H (profile MSE on the trunk) → head skill 0, no move. I (served path = normalize(proj(y))) →
+> still no move; the head never trained (DWA weight 0.072 vs 5–6). J (per-field CE, weight
+> 1.85) → still no move; y recovered nothing (y→x0 −0.02). K (in flight): the decisive
+> discovery — `model.encode` returns (y readout, h recurrent); SERVING publishes
+> `normalize(proj(h_final))`, while every head had trained on `y[-1]`. K trains the CE
+> profile head on h, tensor-for-tensor the served embedding.
 
 **Repository state:** `main` now contains the former `primary-encoder` demo work. The duplicate
 report card, stale roadmap, duplicate receipt orchestrator, one-off OPE wrappers, and generator
