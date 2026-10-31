@@ -393,9 +393,10 @@ def _all_green(tmp_path):
 def test_an_open_breaking_backward_requirement_blocks_done(tmp_path, monkeypatch):
     """DEC-497: BACKWARD findings are card requirements, not prose beside the card."""
     _all_green(tmp_path)
-    req = tmp_path / "backward_requirements.json"
+    req = tmp_path / "AUDIT.md"
     req.write_text(
-        json.dumps(
+        "<!-- BACKWARD_REQUIREMENTS_JSON\n"
+        + json.dumps(
             {
                 "requirements": [
                     {
@@ -410,8 +411,9 @@ def test_an_open_breaking_backward_requirement_blocks_done(tmp_path, monkeypatch
                 ]
             }
         )
+        + "\n-->\n"
     )
-    monkeypatch.setattr(RC, "BACKWARD_REQUIREMENTS", req)
+    monkeypatch.setattr(RC, "AUDIT_MD", req)
     md, info = RC.render(tmp_path, HASH)
     assert "ENCODER DONE" not in info["assessment"]
     assert "backward open: 1" in info["assessment"]
@@ -422,9 +424,10 @@ def test_an_open_breaking_backward_requirement_blocks_done(tmp_path, monkeypatch
 
 def test_a_closed_backward_requirement_does_not_block_done(tmp_path, monkeypatch):
     _all_green(tmp_path)
-    req = tmp_path / "backward_requirements.json"
+    req = tmp_path / "AUDIT.md"
     req.write_text(
-        json.dumps(
+        "<!-- BACKWARD_REQUIREMENTS_JSON\n"
+        + json.dumps(
             {
                 "requirements": [
                     {
@@ -437,8 +440,9 @@ def test_a_closed_backward_requirement_does_not_block_done(tmp_path, monkeypatch
                 ]
             }
         )
+        + "\n-->\n"
     )
-    monkeypatch.setattr(RC, "BACKWARD_REQUIREMENTS", req)
+    monkeypatch.setattr(RC, "AUDIT_MD", req)
     _, info = RC.render(tmp_path, HASH)
     assert "ENCODER DONE" in info["assessment"]
     assert info["summary"]["backward_open"] == 0
@@ -446,9 +450,9 @@ def test_a_closed_backward_requirement_does_not_block_done(tmp_path, monkeypatch
 
 def test_an_unreadable_backward_file_is_breaking_not_empty(tmp_path, monkeypatch):
     _all_green(tmp_path)
-    req = tmp_path / "backward_requirements.json"
-    req.write_text("{not json")
-    monkeypatch.setattr(RC, "BACKWARD_REQUIREMENTS", req)
+    req = tmp_path / "AUDIT.md"
+    req.write_text("<!-- BACKWARD_REQUIREMENTS_JSON\n{not json\n-->\n")
+    monkeypatch.setattr(RC, "AUDIT_MD", req)
     _, info = RC.render(tmp_path, HASH)
     assert "ENCODER DONE" not in info["assessment"]
     assert "backward open: 1" in info["assessment"]

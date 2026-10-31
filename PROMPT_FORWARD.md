@@ -21,8 +21,7 @@
 6. `docs/AUDIT_CARD.md` — the full research audit; never hide an open row.
 7. `AUDIT.md` — the principle-alignment audit written by BACKWARD.
 8. `docs/report_cards/experiments/` — the receipts every number must trace to.
-9. `docs/backward_requirements.json` — structured BACKWARD findings rendered into the card.
-10. `PLAN.md`, `loop/UNIVERSALITY.md` — forward plan and Layer-1 contract.
+9. `PLAN.md`, `loop/UNIVERSALITY.md` — forward plan and Layer-1 contract.
 
 If a file contradicts another, the order is: **AGENTS.md doctrine → SPINE laws →
 frozen gate definitions → receipts → STATUS/DECISIONS narrative**. Narrative never
@@ -119,24 +118,24 @@ measures the old pipeline and is **disclosure only**, never the gate.
 ## Certification hygiene
   H1..H5
 ## Backward requirements
-  the structured findings from docs/backward_requirements.json
+  the structured findings from `AUDIT.md`
 ## What is blocking
   exact missing receipts and open backward requirements
 ```
 
 The renderer reads receipts under `docs/report_cards/experiments/` and
-`docs/backward_requirements.json`; it never invents a number. A run that edits the card
+`AUDIT.md`; it never invents a number. A run that edits the card
 by hand is not evidence.
 
 ### Backward requirements are card requirements
 
-`PROMPT_BACKWARD.md` writes every finding to three places: `docs/BACKWARD_CARD.md`
-(narrative), `AUDIT.md` (the principle-alignment audit), and
-`docs/backward_requirements.json` (structured). Each requirement has an `id`, `severity`
+`PROMPT_BACKWARD.md` writes **one file, `AUDIT.md`**: the narrative, the principle-alignment
+scorecard, and the `BACKWARD_REQUIREMENTS_JSON` block at the end. BACKWARD writes no other file.
+Each requirement has an `id`, `severity`
 (`BREAKING`/`MAJOR`/`MINOR`/`INFO`), `principle`, `status` (`open`/`closed`/`accepted`),
 `finding`, `forward_subgoal`, `gate_touched`, `evidence`, `audit_ref`, and `date`. The
-renderer displays them in `REPORT_CARD.md`; an open `BREAKING` or `MAJOR` requirement
-blocks the completion condition. `MAJOR` may be closed by a forwarding protocol or
+renderer reads that block and displays the requirements in `REPORT_CARD.md`; an open
+`BREAKING` or `MAJOR` requirement blocks the completion condition. `MAJOR` may be closed by a forwarding protocol or
 explicitly `accepted` by the operator; `BREAKING` may never be accepted, only closed by
 evidence.
 
@@ -152,9 +151,9 @@ All of the following, simultaneously:
    every row reports N).
 3. Freshness: the receipts' `behavior_hash` equals the current tree; no stale block;
    no unadopted receipt on the card.
-4. **No open BREAKING/MAJOR backward or principle requirement** in
-   `docs/backward_requirements.json`; every `MAJOR` is closed or operator-accepted. This
-   includes every open `AUDIT.md` finding with the same IDs.
+4. **No open BREAKING/MAJOR backward or principle requirement** in `AUDIT.md`'s
+   `BACKWARD_REQUIREMENTS_JSON` block; every `MAJOR` is closed or operator-accepted. This
+   includes every open finding in the same file.
 5. No open operator ruling blocks a row; every stop-and-ask item is resolved or
    explicitly recorded as a non-blocking disclosure.
 6. The generated assessment says the completion condition. A hand-written "SOLVED",
@@ -195,11 +194,9 @@ Follow AGENTS.md's certification integrity rules 1–8. In practice:
 | `STATUS.md` | macro (goal, stage, progress, blockers) + micro (current task, last completed, next 3, environment). Update **before yielding**. |
 | `DECISIONS.md` | append-only. Pre-registration before every run; measured outcome after; context / alternatives / decision+principle / trade-offs. Never edit old entries. |
 | `REPORT_CARD.md` | the run report + gate-of-record section (§4). Regenerated each run; no hand-written numbers. |
-| `docs/backward_requirements.json` | structured BACKWARD findings rendered into `REPORT_CARD.md` (§4). |
-| `AUDIT.md` | the principle-alignment audit; BACKWARD appends findings, FORWARD closes them with receipts. |
+| `AUDIT.md` | the single BACKWARD file: principle audit + findings + `BACKWARD_REQUIREMENTS_JSON` block rendered into `REPORT_CARD.md` (§4). |
 | `docs/AUDIT_CARD.md` | the full research audit; never hide an open row. |
 | `docs/report_cards/experiments/` | receipts; `protocols/<name>/` archives for non-adopted runs. |
-| `docs/BACKWARD_CARD.md` | the last adversarial review and its open findings. |
 | `PLAN.md` | the forward plan; reconcile at every phase transition. |
 
 **Commit discipline:** every coherent verified chunk is committed; code + docs only;

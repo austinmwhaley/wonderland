@@ -18,11 +18,11 @@
 3. `DECISIONS.md` — the pre-registrations and measured outcomes.
 4. `STATUS.md` — the claimed state and blockers.
 5. `docs/report_cards/experiments/` — every receipt the card cites.
-6. `docs/backward_requirements.json` — the requirements already on the card.
-7. `AUDIT.md` — the principle-alignment audit and its open findings.
+6. `AUDIT.md` — the single BACKWARD file: principle audit, findings, and the
+   `BACKWARD_REQUIREMENTS_JSON` block already on the card.
 8. `docs/SPINE.md`, `AGENTS.md` — the goal, laws, and certification integrity rules.
 9. The code and tests at the recorded commit.
-10. The last `docs/BACKWARD_CARD.md` — findings already raised, and their disposition.
+9. The findings already in `AUDIT.md` — their disposition.
 
 Record the exact **commit, behavior hash, artifact tag/hash, and card hash** at the top
 of the review. A review of an unrecorded tree is not evidence.
@@ -254,12 +254,12 @@ diagnostic that is not evidence it may be **MINOR** — but it still goes in `AU
 
 ---
 
-## 5. Required output: `docs/BACKWARD_CARD.md` + `docs/backward_requirements.json` + `AUDIT.md`
+## 5. Required output: one file — `AUDIT.md`
 
 Write exactly this shape:
 
 ```text
-# BACKWARD_CARD — adversarial review <date>
+# AUDIT — adversarial review <date>
 ## Header
   commit, behavior hash, artifact tag/hash, card hash, reviewer, date
 ## Verdict
@@ -287,7 +287,7 @@ every finding cites a receipt/line/number or a concrete missing receipt.
 
 ### Structured handoff (required)
 
-For **every** finding, append a requirement to `docs/backward_requirements.json`:
+For **every** finding, append a requirement to the `BACKWARD_REQUIREMENTS_JSON` block at the end of `AUDIT.md`:
 
 ```json
 {
@@ -304,9 +304,9 @@ For **every** finding, append a requirement to `docs/backward_requirements.json`
 }
 ```
 
-Append the matching entry to `AUDIT.md` under **Open findings** with the same IDs, and
-update the principle's scorecard row. The machine-readable file is the gate; `AUDIT.md` is
-the detailed record. They may not disagree.
+Append the matching entry to the **Open findings** table in `AUDIT.md` with the same ID, and
+update the principle's scorecard row. The JSON block is the machine gate; the narrative is
+the record. They may not disagree. No other file is written.
 
 The renderer displays this file in `REPORT_CARD.md`; an open `BREAKING` or `MAJOR`
 requirement blocks the completion condition. FORWARD closes a requirement only by
@@ -325,7 +325,7 @@ loop:
     if not all_green:                 # PROMPT_FORWARD §4
         state = FORWARD
         continue
-    run PROMPT_BACKWARD ->  docs/BACKWARD_CARD.md
+    run PROMPT_BACKWARD ->  AUDIT.md
     if verdict == BREAKING:
         append a DECISIONS entry (review + findings)
         update STATUS.md (blockers)

@@ -2426,12 +2426,12 @@ resolves to a receipt; the "what is not claimed" panel repeats the card's disclo
 > to FORWARD; stop only when the card is green **and** BACKWARD has no BREAKING findings.
 > **Card contract (DEC-497):** `REPORT_CARD.md` is the single card; `docs/JUDGE_CARD.md` is retired.
 > The inherited B+B+C card is archived at `docs/archive/REPORT_CARD_INHERITED.md` (disclosure only).
-> BACKWARD findings are written to `docs/BACKWARD_CARD.md` and `docs/backward_requirements.json`
-> and rendered into `REPORT_CARD.md`; open BREAKING/MAJOR requirements block completion.
-> **DEC-498:** BACKWARD also audits **principle alignment** into root `AUDIT.md` — the scorecard
-> covers the top-level principles and AGENTS E1–E16, including vectorization/SPEED violations
-> (e.g., a per-row loop in a hot path), and every finding carries one `B-<id>` across
-> `AUDIT.md`, `BACKWARD_CARD.md`, and the structured card requirements. The first BACKWARD has not
+> BACKWARD findings are written to **one file, `AUDIT.md`**, whose `BACKWARD_REQUIREMENTS_JSON`
+> block is rendered into `REPORT_CARD.md`; open BREAKING/MAJOR requirements block completion.
+> **DEC-498/505:** BACKWARD audits **principle alignment** into the same single file, `AUDIT.md`
+> — the scorecard covers the top-level principles and AGENTS E1–E16, including vectorization/SPEED
+> violations (e.g., a per-row loop in a hot path), and every finding carries one `B-<id>` in the
+> audit narrative and the `BACKWARD_REQUIREMENTS_JSON` block. No separate backward JSON/MD exists. The first BACKWARD has not
 > run (the card is not green); `AUDIT.md` is explicitly "not yet audited" rather than falsely aligned.
 
 > **2026-10-31 M6 measured (DEC-499/500): NOT adopted — the fair comparator wins the metric.**

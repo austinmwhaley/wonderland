@@ -1,4 +1,0 @@
-{
-  "schema": "Backward review requirements rendered into REPORT_CARD.md (DEC-497/498). severity: BREAKING|MAJOR|MINOR|INFO; status: open|closed|accepted; accepted is operator-only for MAJOR, never for BREAKING. principle: the AGENTS.md principle the finding audits (or 'none' for a measurement finding). audit_ref: the matching entry in AUDIT.md.",
-  "requirements": []
-}

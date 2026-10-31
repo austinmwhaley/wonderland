@@ -6491,3 +6491,23 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   Both are new protocols with new artifacts; the existing M2 cannot be patched into green.
 - **Not changed.** Gates, targets, comparator, buckets, encoder, ledger, artifact. Diagnostic only;
   no card change.
+
+## DEC-505 — [OPERATOR RULING] BACKWARD writes one file: `AUDIT.md` is the audit and the machine gate
+- **Ruling (2026-10-31).** "I want backwards to only write to a single .md."
+- **What changed.** `AUDIT.md` is the **only** BACKWARD output: narrative, principle scorecard,
+  open/closed findings, and a `BACKWARD_REQUIREMENTS_JSON` fenced block at the end. The renderer
+  `scripts/report_card.py` parses that block and renders the requirements in `REPORT_CARD.md`;
+  no separate `docs/BACKWARD_CARD.md` and no `docs/backward_requirements.json` (deleted). The
+  block is the machine gate; the narrative must agree. A missing `AUDIT.md` means no review has
+  run; an existing file with a missing/malformed block is a **BREAKING** requirement, not empty.
+- **Prompts and docs.** `PROMPT_BACKWARD.md` now requires one output file and the exact block
+  format; `PROMPT_FORWARD.md`, `AGENTS.md`, `STATUS.md` point to `AUDIT.md`; the three-file
+  handoff of DEC-497/498 is retired (their content rules stand). The card tests were updated to
+  monkeypatch `AUDIT.md`: open BREAKING blocks DONE, closed does not, an unreadable block is
+  BREAKING. All 30 pass.
+- **All-green condition unchanged.** No open BREAKING/MAJOR requirement in the `AUDIT.md` block;
+  MAJOR may be closed or operator-accepted, BREAKING only by evidence. `MINOR`/`INFO` are
+  disclosed and do not block.
+- **Not changed.** No gate, threshold, comparator, probe, encoder, ledger, artifact, or receipt.
+  The loop remains: FORWARD until `REPORT_CARD.md` is all green, then BACKWARD writes/updates
+  `AUDIT.md`; a BREAKING/MAJOR finding returns to FORWARD.

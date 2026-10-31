@@ -33,7 +33,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 import judge_spec as J  # noqa: E402
 
 EXP = ROOT / "docs" / "report_cards" / "experiments"
-BACKWARD_REQUIREMENTS = ROOT / "docs" / "backward_requirements.json"
+AUDIT_MD = ROOT / "AUDIT.md"
 # the card is a committed GENERATED artifact: its own bytes are the only thing a render is
 # allowed to leave uncommitted, so they must not decide the `dirty` flag (see _worktree_dirty)
 CARD_NAME = "REPORT_CARD.md"
@@ -317,24 +317,49 @@ def _artifact_mismatch(receipts: Path, stages_rc: dict | None) -> dict:
 
 
 def _requirements() -> list[dict]:
-    """Backward findings become card requirements (DEC-497).
+    """Backward findings become card requirements (DEC-505).
 
-    The renderer never invents a requirement: it displays the structured file BACKWARD writes.
-    An unreadable file is a BREAKING requirement, not an empty list — absence of evidence is
-    never a green.
+    BACKWARD writes ONE file, `AUDIT.md`; its `BACKWARD_REQUIREMENTS_JSON` block is the
+    machine-readable gate. The renderer never invents a requirement. A file that exists but
+    cannot be parsed is a BREAKING requirement, not an empty list — absence of evidence is
+    never a green. A missing file means no review has run yet.
     """
-    if not BACKWARD_REQUIREMENTS.exists():
+    if not AUDIT_MD.exists():
         return []
+    text = AUDIT_MD.read_text(errors="replace")
+    start = text.find("<!-- BACKWARD_REQUIREMENTS_JSON")
+    if start < 0:
+        return [
+            {
+                "id": "B-???",
+                "severity": "BREAKING",
+                "status": "open",
+                "finding": "AUDIT.md has no BACKWARD_REQUIREMENTS_JSON block",
+                "forward_subgoal": "repair AUDIT.md (one .md, one JSON block)",
+            }
+        ]
+    end = text.find("-->", start)
+    brace = text.find("{", start)
+    if end < 0 or brace < 0 or brace > end:
+        return [
+            {
+                "id": "B-???",
+                "severity": "BREAKING",
+                "status": "open",
+                "finding": "AUDIT.md has a malformed BACKWARD_REQUIREMENTS_JSON block",
+                "forward_subgoal": "repair AUDIT.md (one .md, one JSON block)",
+            }
+        ]
     try:
-        data = json.loads(BACKWARD_REQUIREMENTS.read_text())
+        data = json.loads(text[brace:end].strip())
     except Exception as exc:
         return [
             {
                 "id": "B-???",
                 "severity": "BREAKING",
                 "status": "open",
-                "finding": f"backward requirements file is unreadable: {exc!r}",
-                "forward_subgoal": "repair docs/backward_requirements.json",
+                "finding": f"AUDIT.md requirements block is unreadable: {exc!r}",
+                "forward_subgoal": "repair AUDIT.md (one .md, one JSON block)",
             }
         ]
     reqs = data.get("requirements", [])

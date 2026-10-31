@@ -3,8 +3,9 @@
 > **Written by `PROMPT_BACKWARD.md`. Read by `PROMPT_FORWARD.md`.**
 > This is the detailed, human-readable audit of **how the work aligns with the principles**
 > (AGENTS.md 1–16 + the top-level charter). It is not a second report card: the machine-readable
-> gate is `docs/backward_requirements.json`, which is rendered into `REPORT_CARD.md`. Every
-> finding here carries the same `B-<id>` as its requirement, so the two cannot drift.
+> gate is the `BACKWARD_REQUIREMENTS_JSON` block at the end of **this file**, which
+> `REPORT_CARD.md` renders. BACKWARD writes this one `.md` and nothing else. Every finding here
+> carries the same `B-<id>` as its JSON requirement, so the two cannot drift.
 >
 > **Status:** no all-green card has been reviewed by BACKWARD yet. The scorecard below is
 > unfilled on purpose; a review that has not run may not claim alignment. The first
@@ -14,20 +15,21 @@
 
 ## 1. How to use this file
 
-**BACKWARD (append-only).**
+**BACKWARD (one file only).**
 1. Verify the finding with a concrete check, command, or receipt — never a vibe.
-2. Append a requirement to `docs/backward_requirements.json`:
+2. Append the finding under **Open findings** here, and append the matching object to the
+   `BACKWARD_REQUIREMENTS_JSON` block at the end of this same file:
    `id` (B-<n>), `severity`, `principle`, `status: open`, `finding`, `forward_subgoal`,
    `gate_touched`, `evidence`, `audit_ref: A-<n>`, `date`.
-3. Append the matching entry under **Open findings** here, with the same IDs.
-4. Mark the principle's scorecard row with the finding ID.
+3. Mark the principle's scorecard row with the finding ID.
+4. Write **no other file**. `docs/BACKWARD_CARD.md` and `docs/backward_requirements.json` are retired.
 
-**FORWARD (close with evidence).**
+**FORWARD (close with evidence, same file).**
 1. Run the pre-registered protocol that resolves the finding.
-2. Append the measured receipt/decision and set the requirement's `status` to `closed`
-   (or, for a `MAJOR` only, ask the operator to set `accepted` with a reason).
-3. Append a **Closure** entry here with the receipt, date, and behavior hash. Never edit the
-   original finding text.
+2. Set the requirement's `status` to `closed` in the JSON block (or, for a `MAJOR` only, ask
+   the operator to set `accepted` with a reason).
+3. Append a **Closure** entry under Closed findings with the receipt, date, and behavior hash.
+   Never edit the original finding text.
 4. `BREAKING` is never accepted, only closed by evidence. An open `BREAKING`/`MAJOR` blocks the
    completion condition in `REPORT_CARD.md`.
 
@@ -131,3 +133,16 @@ The card is not all green while any **BREAKING** or **MAJOR** finding here is op
 `MAJOR` may be closed by a forwarding protocol or explicitly `accepted` by the operator;
 a `BREAKING` may only be closed by evidence. `MINOR`/`INFO` findings are disclosed and may
 remain open without blocking completion.
+
+---
+
+## 8. Machine-readable requirements (the only gate BACKWARD writes)
+
+> **BACKWARD:** append each finding here with the same `B-<id>` as the Open findings table.
+> **FORWARD:** close it here with evidence; do not delete the finding.
+
+<!-- BACKWARD_REQUIREMENTS_JSON
+{
+  "requirements": []
+}
+-->
