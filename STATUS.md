@@ -226,6 +226,17 @@
 > Artifact `0.11.0r103115-b20d256e3lr3e-04occdbe290`; trained in the 20 GB container with Qwen
 > serving throughout (low-water 8.8 GB); S6 6/6, chain ~17 min, train 974 s.
 
+> **Operator ruling enforced (DEC-460, 2026-10-30): the local LLM is capped.** "Local LLM,
+> whatever is in the container, should not be allowed to grow outside of what it has been
+> alloted." `vllm-qwen` was found with `Memory=0` (unlimited); the serve script documented
+> the allotment but nothing enforced it. Now: kernel cgroup cap 11 GiB RAM / 15 GiB total
+> (applied live, health 200 throughout; ~50% headroom over the 6.9 used / 7.4 peak), baked
+> into `~/bin/vllm-container-ensure.sh` so recreation is born capped, and the GPU-side
+> reservation's only bound (`--gpu-memory-utilization`, driver-allocated outside all memcgs)
+> is refuse-above-0.70 in the ensure script. The watchdog prints per-scope `cur/peak/max`
+> at every breach so the cap's enforcement is visible in the receipt. Tonight's three
+> trainer sacrifices were Qwen-side bursts; with the cap, the floor belongs to the host.
+
 > **Supervised-first directive + attribution (DEC-456, 2026-10-30).** The operator ordered the
 > ladder: master SUPERVISED before adding the other capabilities, using the card as the
 > increment-to-green instrument. `scripts/measure_access_axis.py` (judge geometry imported,
