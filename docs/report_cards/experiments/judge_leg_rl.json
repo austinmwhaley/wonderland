@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "babee652be3856c5",
-    "command": "measure_judge_law.py --products /home/austin_whaley/wonderland_work/cfm_m2_clean --demo /home/austin_whaley/wonderland_work/demo --legs supervised,unsupervised,rl,simulator --out-dir /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments",
-    "generated_at": "2026-10-31T22:11:37+00:00",
-    "git_commit": "b939996e55f8a83b3412d98f6ddb77e17a602e04",
+    "behavior_hash": "3363292e01f7b8f6",
+    "command": "measure_judge_law.py --products /home/austin_whaley/wonderland_work/cfm_m8_counter --demo /home/austin_whaley/wonderland_work/demo --legs supervised,unsupervised,rl,simulator --out-dir /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments",
+    "generated_at": "2026-10-31T22:49:28+00:00",
+    "git_commit": "e4490fa711359fa500d7e880186d42489f4e88d1",
     "producer": "measure_judge_law.py"
   },
   "arms": {
@@ -14,73 +14,73 @@
   "checks": {
     "rl": {
       "evidence": "2 live task(s) (+0 degenerate) on n=724 B-rows scored against 1776 A-rows; comparator PATH A (GBM incumbent); table 48 cols / 2500 customers; brain+ledger 2 task(s)",
-      "working": false
+      "working": true
     }
   },
   "columns": {
     "brain": {
       "tasks": [
         {
-          "brain": -0.003115,
-          "ci_hi": 0.004936,
-          "ci_lo": 0.001161,
+          "brain": 0.001155,
+          "ci_hi": 0.005035,
+          "ci_lo": 0.001245,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": -0.002777,
+          "destroyed": -0.003956,
           "metric": "R2 on the identified per-customer uplift (P(buy|offer=opt) - P(buy|offer off by >=2))",
           "n": 233,
           "name": "known_effect_uplift",
           "pathA": -0.172714,
-          "random": -0.004661
+          "random": -0.034827
         },
         {
-          "brain": 0.054165,
-          "ci_hi": 0.042474,
-          "ci_lo": 0.003016,
+          "brain": 0.056058,
+          "ci_hi": 0.047035,
+          "ci_lo": 0.00493,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": 0.045176,
+          "destroyed": 0.041121,
           "metric": "area under the top-k realized-uplift curve on randomized arm-days (bootstrap re-selects inside each replicate)",
           "n": 233,
           "name": "policy_value",
           "pathA": 0.030808,
-          "random": 0.050416
+          "random": 0.03011
         }
       ]
     },
     "brain_ledger": {
       "tasks": [
         {
-          "brain": 0.002217,
-          "ci_hi": 0.00509,
-          "ci_lo": 0.001232,
+          "brain": 0.000392,
+          "ci_hi": 0.005053,
+          "ci_lo": 0.001236,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": -0.066786,
+          "destroyed": -0.050177,
           "metric": "R2 on the identified per-customer uplift (P(buy|offer=opt) - P(buy|offer off by >=2))",
           "n": 233,
           "name": "known_effect_uplift",
           "pathA": -0.172714,
-          "random": -0.037882
+          "random": -0.052005
         },
         {
-          "brain": 0.060094,
-          "ci_hi": 0.051026,
-          "ci_lo": 0.00828,
+          "brain": 0.059374,
+          "ci_hi": 0.050199,
+          "ci_lo": 0.007695,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": 0.026592,
+          "destroyed": 0.030419,
           "metric": "area under the top-k realized-uplift curve on randomized arm-days (bootstrap re-selects inside each replicate)",
           "n": 233,
           "name": "policy_value",
           "pathA": 0.030808,
-          "random": 0.04224
+          "random": 0.038887
         }
       ]
     }
   },
   "diagnostics": {},
-  "evidence": "[rl] FAILED: 2 live task(s) (+0 degenerate) on n=724 B-rows scored against 1776 A-rows; comparator PATH A (GBM incumbent); table 48 cols / 2500 customers; brain+ledger 2 task(s)",
+  "evidence": "[rl] OK: 2 live task(s) (+0 degenerate) on n=724 B-rows scored against 1776 A-rows; comparator PATH A (GBM incumbent); table 48 cols / 2500 customers; brain+ledger 2 task(s)",
   "excluded": [],
   "identified": {
     "population": 2099,
@@ -93,14 +93,14 @@
     "source": "/home/austin_whaley/wonderland_work/demo/path_a/path_a_wide_table.parquet"
   },
   "products": {
-    "path": "/home/austin_whaley/wonderland_work/cfm_m2_clean",
-    "registry_sha256": "114a37039af04dcf",
-    "tag": "0.11.0r103115-b20d256e3lr3e-04o1e051d9d"
+    "path": "/home/austin_whaley/wonderland_work/cfm_m8_counter",
+    "registry_sha256": "a1aa8175fd3deada",
+    "tag": "0.11.0r103115-b20d256e3lr3e-04o317c8905"
   },
   "splits": {
     "n_fit_A": 1776,
     "n_score_B": 724,
     "source": "encoder_samples"
   },
-  "working": false
+  "working": true
 }

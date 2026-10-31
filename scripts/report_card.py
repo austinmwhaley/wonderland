@@ -181,13 +181,33 @@ def _stage_why(val: dict) -> str:
 
 
 def eval_tasks(tasks, bhash_note: str | None, delivery: bool = False) -> tuple[str, str, list]:
-    """Return (verdict, reason, per-task notes) for one leg column's task list."""
+    """Return (verdict, reason, per-task notes) for one leg column's task list.
+
+    Failure attribution is by TASK ORDER: a control failure on a later task may not hide an
+    earlier task's CI failure (the price-control bug that masked x0/return in DEC-510).
+    """
     if bhash_note:
         return J.UNKNOWN, bhash_note, []
     if not isinstance(tasks, list) or not tasks:
         return J.UNKNOWN, "no tasks recorded in this column", []
 
-    notes, live = [], []
+    def _passes(t: dict) -> bool:
+        if not delivery:
+            return bool(t["ci_lo"] > 0 and t["brain"] > t["pathA"])
+        sst = t.get("sst")
+        margin = (
+            J.DELIVERY_MARGIN_R2 * float(sst)
+            if isinstance(sst, (int, float)) and float(sst) > 0
+            else J.DELIVERY_MARGIN_RAW
+        )
+        point_margin = (
+            J.DELIVERY_MARGIN_R2
+            if isinstance(sst, (int, float)) and float(sst) > 0
+            else J.DELIVERY_MARGIN_RAW
+        )
+        return bool(t["brain"] >= t["pathA"] - point_margin and t["ci_lo"] >= -margin)
+
+    notes, live, failures = [], [], []
     for t in tasks:
         name = str(t.get("name", "?"))
         if t.get("degenerate"):
@@ -210,14 +230,16 @@ def eval_tasks(tasks, bhash_note: str | None, delivery: bool = False) -> tuple[s
         if t["ci_lo"] == t["ci_hi"]:
             notes.append(f"{name}: zero-width CI (point estimate only)")
             t = dict(t, _zero_width=True)
+
+        control_fail = None
         for ctl in ("random", "destroyed"):
             if ctl not in t or not _finite(t[ctl]):
                 return J.UNKNOWN, f"{name}: control '{ctl}' missing (H4)", notes
             if t[ctl] > t["brain"]:
-                return J.FAIL, f"{name}: {ctl} control >= brain ({t[ctl]} vs {t['brain']})", notes
-        # H4 is only satisfied if a control COULD have won. A control at R2 << 0 is not beaten, it
-        # is absurd: beating it proves the head is not insane, not that the representation carries
-        # signal. Such a control is reported as vacuous, and a column may not PASS on vacuity.
+                control_fail = f"{ctl} control >= brain ({t[ctl]} vs {t['brain']})"
+                break
+        if control_fail:
+            failures.append((name, control_fail))
         readable = [
             ctl
             for ctl in ("random", "destroyed")
@@ -230,6 +252,13 @@ def eval_tasks(tasks, bhash_note: str | None, delivery: bool = False) -> tuple[s
                 f"(random {t['random']:.4g}, destroyed {t['destroyed']:.4g}); beating them is "
                 f"not evidence of signal"
             )
+        if not control_fail and not _passes(t):
+            gate = (
+                f"outside the delivery non-inferiority margin ({J.DELIVERY_MARGIN_R2:g} R2)"
+                if delivery
+                else "does not beat PATH A with CI excluding 0"
+            )
+            failures.append((name, gate))
         live.append(t)
         notes.append(
             f"{name}: brain {t['brain']:.4g} vs PATH A {t['pathA']:.4g} "
@@ -238,35 +267,10 @@ def eval_tasks(tasks, bhash_note: str | None, delivery: bool = False) -> tuple[s
 
     if not live:
         return J.EXCLUDED, "every task degenerate (reported, not forced)", notes
-
-    def _passes(t: dict) -> bool:
-        if not delivery:
-            return bool(t["ci_lo"] > 0 and t["brain"] > t["pathA"])
-        sst = t.get("sst")
-        margin = (
-            J.DELIVERY_MARGIN_R2 * float(sst)
-            if isinstance(sst, (int, float)) and float(sst) > 0
-            else J.DELIVERY_MARGIN_RAW
-        )
-        point_margin = (
-            J.DELIVERY_MARGIN_R2
-            if isinstance(sst, (int, float)) and float(sst) > 0
-            else J.DELIVERY_MARGIN_RAW
-        )
-        return bool(t["brain"] >= t["pathA"] - point_margin and t["ci_lo"] >= -margin)
-
-    failing = [t for t in live if not _passes(t)]
-    if failing:
-        names = ", ".join(t["name"] for t in failing)
-        gate = (
-            f"outside the delivery non-inferiority margin ({J.DELIVERY_MARGIN_R2:g} R2)"
-            if delivery
-            else "does not beat PATH A with CI excluding 0"
-        )
-        return J.FAIL, f"{gate}: {names}", notes
-    # A green row must rest on a control that could have caught it (DEC-433). This can only turn a
-    # would-be PASS into UNKNOWN — it never turns a red row green, so it tightens H4 rather than
-    # moving a verdict in our favor.
+    if failures:
+        first_name, first_reason = failures[0]
+        names = ", ".join(dict.fromkeys(n for n, _ in failures))
+        return J.FAIL, f"{first_name}: {first_reason}; failing: {names}", notes
     vacuous = [t["name"] for t in live if t.get("_no_readable_control")]
     if vacuous:
         return (

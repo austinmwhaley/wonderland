@@ -6628,3 +6628,20 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   is still red; this is the first content step, not the finish.
 - **Not changed.** Gates, targets, splits, comparator, table, dim/serving/objectives, ledger
   recipe. Cost: one chain + access axis.
+
+## DEC-511 — [FIX] card failure attribution: report failures in task order (price control no longer masks x0)
+- **Bug.** `eval_tasks` returned immediately on the first **control** failure it encountered while
+  iterating tasks, before evaluating later tasks' CI gates — and before the aggregate `failing`
+  list. On M8 the supervised brain row reported only
+  `price_sensitivity: destroyed control >= brain`, masking the earlier, material failures
+  `x0`, `return_proneness`, `churn_day`, `regime_switches`.
+- **Fix.** Collect per-task failures (control or gate) in task order, return the **first** task's
+  reason, and name all failing tasks in the evidence. No gate, threshold, verdict, or receipt
+  changed; this is a reader/diagnosis fix. New test
+  `test_failure_attribution_is_task_order_not_control_order` (32 card tests pass).
+- **M8 card result (DEC-510).** **3/8 legs**: `unsupervised :: brain+ledger` (non-inferiority),
+  `rl :: brain`, `rl :: brain+ledger` PASS. Supervised still red: progress fails x0/return/churn/
+  regime (price control also fails); delivery fails x0/return/churn/regime. The counter's return
+  gain is real but not enough for the supervised rows.
+- **Next.** M9: a mechanical return-ratio ledger part to carry the brain's +0.12 return content
+  into delivery; then churn/regime. The card is 3/8, not done.

@@ -479,3 +479,15 @@ def test_delivery_is_non_inferiority_not_superiority(tmp_path):
     )
     _, info = RC.render(tmp_path, HASH)
     assert info["verdicts"]["JUDGE-supervised-brain_ledger"] == J.FAIL  # outside the margin
+
+
+def test_failure_attribution_is_task_order_not_control_order(tmp_path):
+    """DEC-511: an earlier CI failure must not be masked by a later control failure."""
+    x0 = _task("x0", brain=0.90, pathA=0.95, lo=-0.02, hi=0.01, n=724, sst=1.0)
+    price = _task(
+        "price", brain=-0.01, pathA=-0.12, lo=0.001, hi=0.002, n=724, sst=1.0, destroyed=0.0
+    )
+    _write(tmp_path, "judge_leg_supervised.json", _receipt({"brain": [x0, price]}))
+    md, _info = RC.render(tmp_path, HASH)
+    assert "x0: does not beat PATH A" in md
+    assert "failing: x0, price" in md  # price is still named, after the earlier failure
