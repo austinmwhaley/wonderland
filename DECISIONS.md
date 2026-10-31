@@ -5577,3 +5577,29 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - **Not changed:** gates, thresholds, criteria, controls, comparator, probe definitions, the
   linear shipping head, E's content. Cost: one GPU train + chain + access axis. Artifact
   `cfm_k_hstate`.
+
+## DEC-469 — [MEASURED] protocol K: pressure on the served tensor h — x0 unmoved; the state's histogram middle levels are the wall
+
+- **What ran.** K = J + `profile_state="h"` (DEC-468). Acceptance: overrides correct
+  (`profile_state='h'`, CE, served), registry receipts `action_profile.state='h'` +
+  `loss='ce'`, dims 43, tag `...04ofc43197b`, losses finite. Access axis (named axis):
+  brain x0 **0.7904** (D 0.7909) — flat. Guards hold within noise.
+- **The composition is now exact and measured end-to-end.** `E_db` =
+  `boundary(proj(state × fade))` (cos 1.000 with the stored composition, fade=1.0 on this
+  close); `E_db → x0 = 0.7904`; stored state `→ x0 = 0.8033`; rebuilt window h `→ x0 =
+  0.8797`; proj near-full-rank (255/256 at 1%). So the served path is not the wall: the
+  stored state itself carries the histogram only partially, and the judged loss is real but
+  concentrated in the histogram's MIDDLE freq levels (E→hist 0.64/0.20/0.06/0.53).
+  A linear map of 256 dims can carry 4 counts; the state's CONTENT lacks levels 1–2 because
+  the token-level losses do not need them and the profile term is one scalar per 128-event
+  window against 128× per-token terms — the optimizer does not spend capacity on it.
+- **K's head did not fit its own target** (R² 0.00/−0.03/0.00/+0.08 in the served space,
+  argmax 42%): not a weight-registration failure (DWA scale 1.84 ≈ other tasks' units), but
+  the same capacity competition — the pressure cannot out-vote the token losses at the final
+  position. The mechanism is real; its magnitude is the problem.
+- **Consequence.** The next protocol must change the PRESSURE MAGNITUDE, not the target: L =
+  K + an explicit `profile_weight` multiplier (pre-registered), bounded so the portfolio val
+  and the guards can catch destabilization. Falsifier: with a material multiplier (≥10×) the
+  histogram middle levels and x0 still do not move ⇒ the constraint is architectural capacity
+  of a single 256-d recurrent summary, and the lever moves to the counter pathway (S1) or a
+  served-state content change — both of which are bigger, separately pre-registered steps.
