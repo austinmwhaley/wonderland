@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "634100b1b4d3beae",
-    "command": "measure_judge_law.py --products /work/cfm_h_profile --demo /work/demo --legs supervised,unsupervised,rl,simulator --out-dir /repo/docs/report_cards/experiments",
-    "generated_at": "2026-10-31T02:40:23+00:00",
-    "git_commit": "b5c28aa05875c3a86a7ba7073df4b6cab688cc45",
+    "behavior_hash": "ab30e0f8c036b557",
+    "command": "measure_judge_law.py --products /work/cfm_d_qte --demo /work/demo --legs supervised,unsupervised,rl,simulator --out-dir /repo/docs/report_cards/experiments",
+    "generated_at": "2026-10-30T20:12:09+00:00",
+    "git_commit": "90c20f039aa6de7ca1edf8acaca6c1af65b47c1b",
     "producer": "measure_judge_law.py"
   },
   "arms": {
@@ -21,17 +21,17 @@
     "brain": {
       "tasks": [
         {
-          "brain": 0.256703,
-          "ci_hi": -0.000351,
-          "ci_lo": -0.001202,
+          "brain": 0.259044,
+          "ci_hi": -0.000321,
+          "ci_lo": -0.001173,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": -0.608241,
+          "destroyed": -0.843393,
           "metric": "R2 on the identified (customer x offer level) purchase rate (4 levels: [0, 1, 2, 3])",
           "n": 1132,
           "name": "dose_response_curve",
           "pathA": 0.318547,
-          "random": -0.503207
+          "random": -0.885696
         },
         {
           "brain": 0.269807,
@@ -51,17 +51,17 @@
     "brain_ledger": {
       "tasks": [
         {
-          "brain": 0.309683,
-          "ci_hi": 0.000221,
-          "ci_lo": -0.000416,
+          "brain": 0.309341,
+          "ci_hi": 0.000213,
+          "ci_lo": -0.00042,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": -0.055751,
+          "destroyed": -0.054812,
           "metric": "R2 on the identified (customer x offer level) purchase rate (4 levels: [0, 1, 2, 3])",
           "n": 1132,
           "name": "dose_response_curve",
           "pathA": 0.318547,
-          "random": -0.04451
+          "random": -0.047803
         },
         {
           "brain": 0.269807,
@@ -99,9 +99,9 @@
     "source": "/work/demo/path_a/path_a_wide_table.parquet"
   },
   "products": {
-    "path": "/work/cfm_h_profile",
-    "registry_sha256": "0cbe07e3b81b70e0",
-    "tag": "0.11.0r103115-b20d256e3lr3e-04o19160d67"
+    "path": "/work/cfm_d_qte",
+    "registry_sha256": "a6e3a4eb11f9b2b1",
+    "tag": "0.11.0r103115-b20d256e3lr3e-04occdbe290"
   },
   "splits": {
     "n_fit_A": 1776,

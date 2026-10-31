@@ -5631,3 +5631,40 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   the governor's own tolerance (the governor stops on that); every leg row finite.
 - **Not changed:** gates, thresholds, criteria, controls, comparator, probe definitions, E's
   content. Cost: one GPU train + chain + access axis. Artifact `cfm_l_w25`.
+
+## DEC-471 — [MEASURED] protocol L: 25× pressure still flat — the served transform is the wall; measured design levers and the operator decision they imply
+
+- **L's frozen falsifier is met.** `profile_weight=25` (applied in `_combine` so DWA cannot
+  cancel it: registry receipts weight 25.0; the profile portfolio line finally reads
+  `skill +0.0211 PASS`), yet brain-alone x0 = **0.7899** (D 0.7909) and the served E's
+  histogram readability is byte-identical to K (0.643/0.194/0.059/0.533). The head learned
+  to read what was already there; the state did not change. Pressure magnitude is not the
+  lever. Recorded: `rate`, `survival`, `action_profile` all remain default-off; protocol D
+  stays the recorded artifact.
+- **The served transform, fully decomposed (L artifact, judge population/split).**
+  * rebuilt window h (unfaded) → x0 = **0.8793**; y readout → **0.8781**
+  * stored `customer_state` → x0 = **0.8034**; served E → **0.7904**
+  * E = boundary(proj(state × idle-decay)), composition verified cos = 1.000; proj rank
+    255/256 (near-isometry — not the loss).
+  * per-trait fade trade (stored/faded vs rebuilt/unfaded): x0 0.803→**0.879** (+0.076),
+    h0 0.834→**0.893** (+0.058), churn 0.588→0.393 (−0.195), return 0.348→0.266 (−0.082).
+    The idle fade bakes recency into every dimension: it IS the churn channel and it COSTS the
+    magnitude traits. No objective can invert it for silent customers — the model cannot know
+    `as_of` at the last event, so a per-customer scalar multiplies the state after the fact.
+- **Measured design levers (no artifact changed yet).**
+  1. The ledger (measure view) lacks recency: adding four features (log silence, tenure,
+     span, count) lifts ledger-only churn **0.0556 → 0.6501** (the table's own linear is
+     0.6554), leaves x0 0.892, h0 0.985, return 0.608 unchanged. SPINE §5's ledger companion
+     is missing exactly the table's recency columns.
+  2. Serving E unfaded (or as [faded, unfaded]) restores x0/h0: 0.879/0.893 at the cost of
+     churn in E — which the ledger recency then covers in the brain+ledger column.
+  3. price_sensitivity stays ~0 on every linear consumer (table linear −0.009; PATH A 0.128
+     is GBM nonlinearity on offer-response columns) — it needs a response-slope encoding, not
+     a count profile.
+- **Why this is an operator decision, not the next protocol.** (1) and (2) change the served
+  artifact's definition — the ledger's content and E's recency semantics — which is the
+  eval contract the operator reserved. The judge's probe, comparator, gates, and thresholds
+  are untouched by either, but what the rows MEASURE changes, so the recorded protocol's
+  identity changes with it. DEC-471 therefore ends the autonomous stretch here: the next
+  step is the operator's ruling on the served-artifact contract (options below), and the loop
+  resumes with a pre-registered protocol on the granted design.
