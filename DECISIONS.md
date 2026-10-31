@@ -6237,3 +6237,38 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - **Not changed.** Gates, probes, comparator, E's content, ledger, card. No training run.
   **Receipts.** `docs/report_cards/experiments/protocols/diag_geometry_metric_2026_10_31.py`
   + `.json`; principle audit strict 0 findings; ruff clean.
+
+## DEC-496 — [PROCESS] the forward/backward operating prompts and the run-report contract
+- **Context.** Operator request: a `PROMPT_FORWARD.md` that drives the project to its goal
+  one measured axis per run with results written to `REPORT_CARD.md`, and a
+  `PROMPT_BACKWARD.md` that runs only on an all-green card, attacks the completion claim
+  adversarially, and hands breaking findings back to FORWARD; the two tick-tock until the card
+  is all-green and BACKWARD has no breaking suggestions.
+- **Card conflict found and resolved.** The branch has two cards (DEC-415): `REPORT_CARD.md` is
+  the inherited B+B+C card and is already 28/28 + 6/6 on the old pipeline; `docs/JUDGE_CARD.md`
+  is the rebuild gate (1/8 legs, 5/6 stages). Gating completion on the inherited card would
+  certify the wrong system. Resolution: `REPORT_CARD.md` is the **run report**; its mandatory
+  gate-of-record section is generated from `docs/JUDGE_CARD.md`; the inherited card is
+  disclosure only and may never certify the rebuild. Building the one-command renderer for that
+  shape is the **first FORWARD subgoal** (no hand-edited cards).
+- **Decision.** `PROMPT_FORWARD.md` and `PROMPT_BACKWARD.md` are the operating prompts. FORWARD:
+  read order, goal, principles, one-axis loop, pre-registration, diagnostic-before-protocol,
+  documentation upkeep, evidence integrity, caps/co-tenancy, end-of-run checklist, stop-and-ask.
+  BACKWARD: read-only, trigger only on all-green, attack measurement + construct validity, severity
+  taxonomy (BREAKING/MAJOR/MINOR/INFO), evidence required per finding, `docs/BACKWARD_CARD.md`
+  output, and the tick-tock state machine. `AGENTS.md` now points to both; its doctrine wins on
+  conflict.
+- **All-green definition (frozen in FORWARD §4).** 0 FAIL, 0 UNKNOWN; 8/8 leg-columns PASS or
+  EXCLUDED-and-reported under a frozen operator-approved rule; 6/6 stages; hygiene 5/5; S6 6/6;
+  freshness current; clean recorded commit; `REPORT_CARD` gate section agrees with the judge; no
+  open blocking ruling; the generated assessment says the completion condition. A hand-written
+  "SOLVED" remains a bug.
+- **Alternatives rejected.** (1) Use the inherited `REPORT_CARD.md` as the literal gate — false
+  green on the old pipeline. (2) Make `JUDGE_CARD.md` the only card and drop the run report —
+  ignores the operator's requested output artifact. (3) Free-form adversarial review — not
+  reproducible; the prompts require evidence and a committed review.
+- **Trade-offs.** Adds the renderer as a forward subgoal; the word "card" now has two layers
+  (run report vs gate of record), documented in both prompts and STATUS. No gate, threshold,
+  comparator, artifact, or encoder behavior changed.
+- **Not changed.** `docs/JUDGE_CARD.md`, `REPORT_CARD.md` content, `docs/report_cards/experiments/`,
+  the encoder, the ledger, the recorded artifact. No push.

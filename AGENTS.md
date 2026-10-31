@@ -363,6 +363,16 @@ prefer doing over asking, stop only for genuine decisions/blockers. The
 sections below are the execution framework; where they disagree with the
 engineering doctrine above, the doctrine above wins.
 
+**Operating prompts (tick-tock).** `PROMPT_FORWARD.md` is the forward loop prompt:
+one measured axis per run, pre-register before running, end every run by writing the
+results to `REPORT_CARD.md`. `PROMPT_BACKWARD.md` is the read-only adversarial review:
+run it only when the card's gate-of-record section is all green; it must try to falsify
+the completion claim and document every finding for the next forward run. If BACKWARD
+returns a BREAKING finding, the tick-tock returns to FORWARD; it stops only when the
+card is all green **and** BACKWARD has no BREAKING findings. These prompts elaborate
+this file's working loop and certification integrity; where they conflict, this file's
+doctrine wins.
+
 ### The working loop (binding)
 
 The job is **not** to write code — it is to *move the project toward its goal while

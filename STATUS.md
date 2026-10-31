@@ -2418,3 +2418,14 @@ resolves to a receipt; the "what is not claimed" panel repeats the card's disclo
 > argmax_optimum, persona's segment half); (3) architecture/consumer — now has a measured option:
 > frozen whitened geometry view (DEC-495) greens the unsupervised geometry rows; (4) S5 exact-mass
 > probe — score raw extensive mass instead of log1p (DEC-493).
+
+> **2026-10-31 operating prompts created.** `PROMPT_FORWARD.md` is the forward loop prompt:
+> goal, principles, documentation upkeep, the `REPORT_CARD.md` run-report shape (its mandatory
+> gate-of-record section is generated from `docs/JUDGE_CARD.md`), the all-green contract, and the
+> stop-and-ask triggers. `PROMPT_BACKWARD.md` is the read-only adversarial review and tick-tock:
+> run only on an all-green card; attack every row and the goal itself; a BREAKING finding returns
+> to FORWARD; stop only when the card is green **and** BACKWARD has no BREAKING findings.
+> **Card contract:** the inherited B+B+C `REPORT_CARD.md` is disclosure only and can never certify
+> the rebuild (it is already 28/28 + 6/6 on the old pipeline); the rebuild gate is `JUDGE_CARD.md`.
+> **First forward subgoal:** build the one-command `REPORT_CARD.md` gate-of-record renderer, so the
+> run report is generated, not hand-edited.
