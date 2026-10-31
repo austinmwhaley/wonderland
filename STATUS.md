@@ -295,9 +295,17 @@
 > 0.7909 → **0.8924** (+0.1015), h0 0.839 → **0.928**, churn 0.5824 → **0.6436**; adopted.
 > (Two honest defects: the blob missed the flag — fixed; the ledger faceplate/table disagreed
 > because M2 code was imported during M1's products phase — the concurrent-edit lesson.)
-> **M2 (clean combined: undimmed E + ledger recency part, 595-d) training now; no code edits
-> during runs.** Next: acceptance → chain → access axis → adopt the recorded artifact and
-> regenerate the card at a clean commit.
+> **M2 measured and ADOPTED (DEC-475):** artifact `...04o1e051d9d`, acceptance 8/8, chain
+> S6 6/6 at a clean commit, ledger 7 parts / 595-d. Card (1/8 legs, 5/6 stages): **h0 and
+> price are GREEN** in both columns; supervised is now blocked by exact, named gaps —
+> x0 0.8924/0.8898 vs PATH A 0.9056 (−0.013), return b+l 0.6050 vs 0.6734 (−0.002, CI
+> [−0.0019,−0.0006]), churn b+l 0.6528 vs 0.7209 (−0.068), regime 0.023 vs 0.128 / −0.004
+> vs 0.034. Ledger recency receipt: ledger-only churn 0.0556 → 0.6554.
+> **Measured next-step ceilings (quick features, partially misaligned):** action histograms +
+> ratios + hazard interactions lift x0 0.8915→0.8963, return 0.6085→0.6319, churn
+> 0.6554→0.6725 — each helps, none closes. The clean action-histogram ceiling measured
+> earlier is 0.909 (x0), so the ledger's action-profile part is the next pre-registration;
+> then return ratios, then the churn hazard, then the regime traits (hard end).
 
 **Repository state:** `main` now contains the former `primary-encoder` demo work. The duplicate
 report card, stale roadmap, duplicate receipt orchestrator, one-off OPE wrappers, and generator
