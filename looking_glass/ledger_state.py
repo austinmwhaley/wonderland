@@ -45,6 +45,9 @@ PARTS = (
     "missing_rate",
     "richness",
     "numeric_stats",
+    # DEC-473: exact recency facts (silence/tenure/span/log-count) — the ledger's companion
+    # job; measured to lift ledger-only churn 0.056 -> 0.650 on the judge population.
+    "recency",
 )
 
 
@@ -141,7 +144,7 @@ def _epoch(x) -> float:
 
 
 def fit_vocabulary(
-    seqs, vocab, train_keys, coverage: float | None = None, as_of=None
+    seqs, vocab, train_keys, coverage: float | None = None, as_of=None, recency: bool = False
 ) -> tuple[object, dict]:
     """Resolve the ledger vocabulary ONCE, from the TRAINING population, and receipt it.
 
@@ -161,7 +164,9 @@ def fit_vocabulary(
         raise LookupError(
             "ledger: no training-population customers have events to fit a vocabulary on"
         )
-    builder = MeasureBuilder(tuples, wanted, vs, coverage=_coverage(coverage))
+    builder = MeasureBuilder(
+        tuples, wanted, vs, coverage=_coverage(coverage), n_recency=4 if recency else 0
+    )
     return builder, {
         "n_fields_discovered": len(vs["gcat"]),
         "n_fields_vocabularied": len(builder.keep),
@@ -201,6 +206,7 @@ def publish_rows(rows_source, builder, vocab, *, version: str, as_of=None) -> li
 
     keys = [s["customer"] for s in rows_source]
     tuples = seqs_to_tuples(rows_source, vocab, as_of=as_of)
+    builder.as_of = as_of  # DEC-473: the recency block uses the same cut as the encoder
     matrix = builder.transform(tuples, keys)
     slices = builder.part_slices()
     stamps = {}

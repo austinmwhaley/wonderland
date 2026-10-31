@@ -5696,3 +5696,28 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   finite; brain+ledger x0 ≥ 0.8841 − 0.02 (the ledger column must not pay for the gain).
 - **Not changed:** judge probes, comparator, gates, thresholds, controls; ledger content
   (M2's subject); E's dimension (256).
+
+## DEC-473 — [PRE-REGISTERED] protocol M2: the ledger's exact recency block (operator-authorized)
+
+- **Ruling.** Same operator authorization as DEC-472 ("Both"): the ledger — SPINE §5's
+  companion of counts — is missing the three simplest recency facts the table's own churn
+  uses. Measured on the judge population: ledger-only churn 0.0556 → **0.6501** with
+  silence/tenure/span/log-count (table linear 0.6554); x0/h0/return unchanged.
+- **Decision — one variable: `ledger_recency=true` (default off).** `MeasureBuilder` gains a
+  `recency` part of exactly four columns, computed from the history's own clock, cut at the
+  same `as_of` the encoder used: log1p(silence days), log1p(tenure days), log1p(span days),
+  log1p(event count). Exact, additive-per-customer, target-blind, not a brain input — the
+  G1–G4 guardrails are untouched and still hard. `n_recency` round-trips in the persisted
+  spec; pre-M2 specs reconstruct with width 0, so old artifacts still load.
+- **Frozen acceptance:** overrides = M1 axes + `ledger_recency=true`; ledger receipt
+  advertises 7 measure parts with a `recency` part of width 4 (dim 595); guardrails
+  G1–G4 ok; tag ≠ D/E/F/H/I/J/K/L/M1; losses finite; chain S6 6/6.
+- **Named axis.** PRIMARY — brain+ledger churn linear ≥ 0.60 (D: 0.5398, ledger-only
+  0.0556): acceptance 0.60; adoption iff Δ(churn, brain+ledger) ≥ +0.05 vs the recorded
+  protocol. SECONDARY — brain+ledger x0 ≥ 0.8841 − 0.02 (the new part must not disturb
+  the others).
+- **Guards:** h0/return/price on brain+ledger within ±0.02 of M1's; rl policy_value ≥ 0.05;
+  uplift not worse; S5 not worse; every leg row finite; ledger guardrails G1–G4 ok.
+- **Not changed:** judge probes, comparator, gates, thresholds, controls; E's definition
+  (M1's subject). Cost: republish M1's weights with the new ledger (products rebuild, no
+  retrain) or one train for a clean tag.

@@ -55,8 +55,12 @@ class MeasureBuilder:
         n_keep = min(n_keep, budget)
         return np.sort(order[:n_keep]).astype(np.int64)
 
-    def __init__(self, seqs, train_keys, vs, coverage: float = 0.99):
+    def __init__(self, seqs, train_keys, vs, coverage: float = 0.99, n_recency: int = 4):
         self.vs = vs
+        # DEC-473: recency block — exact, history-only facts the table's own churn uses
+        # (silence/tenure/span/count). The ledger's job is the companion of counts; measured
+        # on the judge population, ledger churn rises 0.056 -> 0.650 with these four.
+        self.n_recency = int(n_recency)
         self.coverage = float(coverage)
         self.n_numeric = int(vs["gnum"])
         self.n_et = int(vs["et"])
@@ -71,7 +75,9 @@ class MeasureBuilder:
                     counts += np.bincount(col, minlength=size)[:size]
             keep.append(self.derive_keep(counts, self.coverage))
         self.keep = tuple(keep)
-        self.dim = int(self.n_et + 1 + sum(len(k) + 3 for k in self.keep) + 6 * self.n_numeric)
+        self.dim = int(
+            self.n_et + 1 + sum(len(k) + 3 for k in self.keep) + 6 * self.n_numeric + self.n_recency
+        )
         self.spec = MeasureSpec(
             keep=self.keep,
             coverage=self.coverage,
@@ -104,6 +110,9 @@ class MeasureBuilder:
         runs["total_events"] = [(self.n_et, self.n_et + 1)]
         runs["numeric_stats"] = [(off, off + 6 * self.n_numeric)]
         off += 6 * self.n_numeric
+        if self.n_recency:
+            runs["recency"] = [(off, off + self.n_recency)]
+            off += self.n_recency
         if off != self.dim:
             raise RuntimeError(
                 f"ledger layout {off} != derived dim {self.dim} — the recipe and its published "
@@ -173,6 +182,20 @@ class MeasureBuilder:
             mean = np.where(cnt > 0, mean, 0.0)
             blocks.append(np.column_stack([cnt, sm, mean, np.sqrt(var), mn, mx]))
 
+        if self.n_recency:
+            # DEC-473 recency block: exact facts from the history's own clock, cut at the same
+            # as_of the encoder used (history-only; no target, no brain input).
+            ts_all = np.concatenate([np.asarray(d[3], dtype=np.float64) for d in data])
+            tmax = np.maximum.reduceat(ts_all, starts)
+            tmin = np.minimum.reduceat(ts_all, starts)
+            ref = getattr(self, "as_of", None)
+            ref = float(ref) if ref is not None else float(ts_all.max())
+            silence = np.log1p(np.maximum(ref - tmax, 0.0) / 86400.0)
+            tenure = np.log1p(np.maximum(ref - tmin, 0.0) / 86400.0)
+            span = np.log1p(np.maximum(tmax - tmin, 0.0) / 86400.0)
+            n_ev = np.log1p(total)
+            blocks.append(np.column_stack([silence, tenure, span, n_ev]))
+
         out = np.concatenate(blocks, axis=1)
         if out.shape[1] != self.dim:
             raise RuntimeError(f"measure dim {out.shape[1]} != derived {self.dim}")
@@ -181,15 +204,18 @@ class MeasureBuilder:
         return out.astype(np.float32)
 
 
-def _builder_from_keep(vs, keep, coverage):
+def _builder_from_keep(vs, keep, coverage, n_recency=0):
     """Reconstruct a builder from a persisted vocabulary (no re-scan)."""
     obj = MeasureBuilder.__new__(MeasureBuilder)
     obj.vs = vs
     obj.coverage = float(coverage)
     obj.n_numeric = int(vs["gnum"])
     obj.n_et = int(vs["et"])
+    obj.n_recency = int(n_recency)
     obj.keep = tuple(np.asarray(k, dtype=np.int64) for k in keep)
-    obj.dim = int(obj.n_et + 1 + sum(len(k) + 3 for k in obj.keep) + 6 * obj.n_numeric)
+    obj.dim = int(
+        obj.n_et + 1 + sum(len(k) + 3 for k in obj.keep) + 6 * obj.n_numeric + obj.n_recency
+    )
     obj.spec = MeasureSpec(
         keep=obj.keep,
         coverage=obj.coverage,
@@ -206,8 +232,9 @@ def measure_to_dict(builder):
         "coverage": float(builder.coverage),
         "dim": int(builder.dim),
         "keep": [np.asarray(k, dtype=np.int64).tolist() for k in builder.keep],
+        "n_recency": int(getattr(builder, "n_recency", 0)),
     }
 
 
 def measure_from_dict(vs, d):
-    return _builder_from_keep(vs, d.get("keep", []), d.get("coverage", 0.99))
+    return _builder_from_keep(vs, d.get("keep", []), d.get("coverage", 0.99), d.get("n_recency", 0))

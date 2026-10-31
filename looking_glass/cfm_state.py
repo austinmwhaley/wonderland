@@ -938,7 +938,12 @@ def _publish_ledger_outlet(cfg, model, vocab, df, keys, split, store) -> dict | 
     train_keys = [k for k in keys if split.get(k, "A") == "A"]
     cut = as_of_epoch(cfg.as_of) if getattr(cfg, "as_of", None) else None
     builder, vocab_receipt = ledger_state.fit_vocabulary(
-        seqs, vocab, train_keys, coverage=getattr(cfg, "ledger_coverage", None), as_of=cut
+        seqs,
+        vocab,
+        train_keys,
+        coverage=getattr(cfg, "ledger_coverage", None),
+        as_of=cut,
+        recency=bool(getattr(cfg, "ledger_recency", False)),
     )
     rows = ledger_state.publish_rows(seqs, builder, vocab, version=cfg.tag, as_of=cut)
     # The audit sees the SAME adapter output the publisher used, so it is auditing the artifact
