@@ -5994,3 +5994,19 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   (interaction-aware head, or redefining the task as a direct probe of the optimum) and therefore
   an operator ruling. Recorded; not acted on. Together with DEC-485 this means two of the card's
   failing rows are degenerate under the frozen measurement, independent of the encoder.
+
+## DEC-487 — [BUILT+VALIDATED] interim local LLM: vllm-qwen27b (Qwen3.8-27B-FP8, GMU 0.40)
+- **Why.** Flash-Next's 85 GiB reservation cannot co-exist with the frozen 15 GiB trainer
+  (DEC-479). The 27B FP8 is ~27 GB of weights, so at `--gpu-memory-utilization 0.40` (48.65 GiB)
+  the three-way budget is 48.7 (LLM) + 15 (trainer) + ~12 (desktop) = ~76 of 121.6 GiB — ~45 GiB
+  headroom. This is the co-tenancy configuration the operator asked about, measured.
+- **Artifacts.** `~/vllm-qwen27b-serve.sh` (FP8, 131k context, fp8 KV, max-num-seqs 2, prefix
+  caching, qwen3 reasoning / qwen3_coder tool parsers); container `vllm-qwen27b` created by the
+  now-parameterized `~/bin/vllm-container-ensure.sh` (NAME/SERVE/MAX_GMU/MEM/MEM_SWAP), with the
+  same 100 MB/s read cap, seccomp=unconfined, `--restart no`; process-side caps 12 GiB / 16 GiB.
+- **Validated.** `/health` 200; `/v1/models` lists `Qwen/Qwen3.8-27B-FP8` (max_model_len 131072);
+  a chat completion returned correctly (62 prompt / 54 completion tokens incl. 26 reasoning,
+  7.5 s including first-call overhead); cgroup max 12 GiB / current 7 GiB; weights persist in the
+  mounted HF blobs (no re-download on restart). Flash-Next remains stopped (DEC-481).
+- **Not adopted into the judge.** The LLM is not a consumer in any card leg; this changes nothing
+  about x0/return/churn/regime or the unsupervised/simulator rows (the operator's question).
