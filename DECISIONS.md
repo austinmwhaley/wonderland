@@ -5821,3 +5821,43 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   45-dim ratio block); it is not adopted unilaterally. Remaining supervised gaps move on the
   BRAIN axis, which is training: the H-L profile-objective ladder was falsified by the idle fade
   (DEC-471), and that fade no longer exists after M1 — the objective axis is legitimately reopened.
+
+## DEC-478 — [PRE-REGISTERED] protocol M3: the profile objective rerun under undimmed serving (the fade that killed H-L is gone)
+- **Why (measured premise, DEC-462/464 rule satisfied BEFORE the run).** Same diagnostic
+  (`protocols/diag_ledger_profile_2026_10_31.py`, principle-audit clean), `state_embeddings` view,
+  judge population/split, judge-identical `_ridge_oos` per-bin on the numeric `freq` histogram
+  (4 levels, full history — a more permissive target than K/L's last-window). The K/L receipt
+  (faded serving) was E->hist **0.643/0.194/0.059/0.533**; M2 (undimmed) reads
+  **0.679/0.226/0.122/0.543**. The fade removal helps but does NOT unlock the histogram: the
+  middle levels remain near-unreadable. The wall is not (only) the fade. M3 is therefore NOT a
+  validated-lever run — it is the DECISIVE capacity-vs-objective experiment: the profile
+  objective has never trained under undimmed serving, and its frozen falsifier below closes the
+  question either way. (Honest correction recorded in-session: this entry initially cited
+  readability numbers that had not been measured; the commit was reverted before publication and
+  the numbers above are the measured ones.)
+- **Decision — one variable vs M2: add the profile objective.** Overrides = M2's
+  (`batch=20, effect_actions=offer, effect_head=bilinear, serve_unfaded=true, ledger_recency=true`)
+  + `action_profile=True, action_profile_fields=[freq,hour,dow,channel,offer], profile_served=True,
+  profile_loss=ce, profile_state=h` (K's configuration, which DEC-469/470/471 showed is the one that
+  actually trains the head — skill +0.021 at L). Artifact `cfm_m3_profile`; new tag (profile flags
+  carry a tag axis like the others).
+- **Frozen acceptance (checked before any verdict).** A1 overrides exactly the set above; registry
+  `config` and blob carry every profile flag AND both M2 serving flags; A2 no training-code change
+  (git diff touches only the profile path already committed for H-L); A3 all final loss scales
+  finite and the profile portfolio line reports skill > 0 (the head learned, the L-era receipt);
+  A4 tag distinct from D/E/F/G/H/I/J/K/L/M1/M2. Losses/finitemess/governor identical to M2.
+- **Named axis (adoption iff this moves).** brain-alone `x0` linear: acceptance ≥ 0.84 (M2 0.8924);
+  **adopt iff Δ ≥ +0.01 vs M2** (i.e. x0 ≥ 0.9024, toward PATH A 0.9056). The premise measurement
+  says the middle levels are still unreadable — this run tests whether pressure on the undimmed
+  trunk can move what neither pressure (L, 25x) nor fade removal (M2) moved.
+- **Guards (all must hold or the run is not adopted):** h0 brain ±0.02 of M2 (0.9278); churn brain
+  ±0.02 of 0.6371; return brain ±0.03; price brain not worse (−0.0143 ± 0.02); every rl/unsupervised
+  leg row finite; portfolio val not worse than M2's beyond the governor's own tolerance; ledger
+  guardrails G1–G4 green.
+- **Falsifier.** x0 within ±0.005 of M2 AND per-bin freq readability not materially above the
+  measured M2 baseline 0.679/0.226/0.122/0.543 ⇒ the objective cannot move the state even
+  undimmed; the wall is trunk capacity, and the lever moves to the counter pathway (S1) or an
+  encoder-architecture step — both separately pre-registered, never smuggled in.
+- **Not changed:** gates, thresholds, criteria, controls, comparator, probe definitions, E's
+  content (serve_unfaded already authorized DEC-472), ledger (ledger_recency DEC-473). One axis:
+  the profile objective is ON where M2 had it off. Cost: one GPU train + chain + access axis.
