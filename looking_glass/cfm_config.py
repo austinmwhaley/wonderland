@@ -344,6 +344,16 @@ class CFMConfig:
     # (x0 ledger-only 0.889); the contractive trunk drops it (brain 0.791) — this is the
     # pressure to put it back. Default off keeps every pre-F protocol byte-reproducible.
     rate: bool = False
+    # DEC-465 (protocol H): ACTION-FIELD PROFILE objective. From the final trunk state, a
+    # LINEAR head predicts the per-field normalized histogram of the window's own declared
+    # action-field values (e.g. freq/hour/dow/channel/offer). DEC-464 measured that the
+    # action-field histogram IS the generating structure of the decision traits (freq
+    # histogram -> x0 R2 0.909, mode 0.916) while every non-action aggregate is a lookalike.
+    # `action_profile_fields` declares WHICH schema fields to profile (empty = objective off:
+    # a switch with no fields builds no head). Default off keeps every pre-H protocol
+    # byte-reproducible.
+    action_profile: bool = False
+    action_profile_fields: tuple = ()
     # exogenous ACTION fields to EXCLUDE from the generic measure (prevents the measure — and
     # hence `E` — from carrying the logged action, which would leak the treatment into the OPE).
     # Declared separately from `effect_actions` so the action's RESPONSE is still exposed.

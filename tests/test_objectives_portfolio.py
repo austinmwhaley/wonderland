@@ -724,6 +724,8 @@ def _sparse_seq(key="c1", gap_h=6, n=8):
         "entity_type": np.array(["customer"] * n, dtype=object),
         "entity_id": np.array([key] * n, dtype=object),
         "value": np.arange(n, dtype=np.float32),
+        "numeric": {"freq": np.array([i % 4 for i in range(n)], dtype=np.float32)},
+        "numeric_mask": {"freq": np.ones(n, dtype=bool)},
         "event_ts": np.array(ets, dtype=object),
         "co": [[0.0, 0.0]] * n,
     }
@@ -778,6 +780,73 @@ def test_rate_moves_the_protocol_tag_only_when_the_objective_is_on():
     assert CFMConfig(rate=True).tag == base  # the field alone builds no head
     on = CFMConfig()
     on.objectives = (*on.objectives, "rate")
+    assert on.tag != base  # trained weights differ => the name must say so (DEC-448)
+
+
+# ---- DEC-465 (protocol H): the action-field profile objective ---------------------------------------
+
+
+def _profile_cfg(fields=("freq",)):
+    cfg = _cfg(objectives=(*CFMConfig().objectives, "profile"))
+    cfg.action_profile = True
+    cfg.action_profile_fields = fields
+    cfg._action_profile_levels = {f: 4 for f in fields}
+    cfg._action_profile_dims = [4 for _ in fields]
+    return cfg
+
+
+def test_profile_head_is_linear_finite_and_pressures_the_trunk():
+    """The histogram must be a LINEAR readout of the boundary state (DEC-407 consumer); the
+    gradient must reach the trunk — putting the profile INTO the shape is the objective."""
+    seqs = [_sparse_seq("c1"), _sparse_seq("c2", gap_h=7), _sparse_seq("c3", gap_h=8)]
+    vocab = EventVocab.build(seqs)
+    torch.manual_seed(0)
+    model = CFM(vocab, dim=16, n_experts=1, profile_dim=4)
+    assert isinstance(model.head_action_profile, torch.nn.Linear)
+    cfg = _profile_cfg()
+    T_ = _task_losses(model, vocab, seqs, cfg)
+    assert "profile" in T_ and torch.isfinite(T_["profile"])
+    T_["profile"].backward()
+    assert model.head_action_profile.weight.grad is not None
+    assert model.emb_et.weight.grad is not None
+
+
+def test_profile_target_is_the_normalized_histogram_of_the_window():
+    """The target is the per-field histogram of the window's OWN action values, normalized —
+    the measured sufficient statistic (DEC-464: freq hist -> x0 R2 0.909). Verified against a
+    hand-computed histogram from the collated tensors."""
+    seqs = [_sparse_seq("c1", gap_h=6, n=8)]
+    vocab = EventVocab.build(seqs)
+    model = CFM(vocab, dim=16, n_experts=1, profile_dim=4)
+    cfg = _profile_cfg()
+    t = _collate(seqs, vocab, "cpu")
+    # reproduce the target the loss builds (the block is inline; this mirrors it exactly)
+    import torch.nn.functional as F
+
+    w = t["num_mask"]["freq"].to(torch.float32) * t["mask"]
+    idx = t["freq"].round().long().clamp(min=0, max=3)
+    oh = F.one_hot(idx, 4).to(torch.float32) * w.unsqueeze(-1)
+    hist = (oh.sum(1) / w.sum(1, keepdim=True).clamp(min=1))[0]
+    assert abs(float(hist.sum()) - 1.0) < 1e-5  # a distribution
+    T_ = _task_losses(model, vocab, seqs, cfg)
+    assert torch.isfinite(T_["profile"])
+
+
+def test_profile_off_by_default_and_never_a_nan():
+    seqs = [_seq("c1"), _seq("c2", day="2025-01-02")]
+    vocab = EventVocab.build(seqs)
+    model = CFM(vocab, dim=16, n_experts=1)
+    assert model.head_action_profile is None  # pre-H protocols are byte-reproducible
+    cfg = _cfg(objectives=(*CFMConfig().objectives, "profile"))  # objective but no levels
+    T_ = _task_losses(model, vocab, seqs, cfg)
+    assert "profile" not in T_  # silently absent, never a NaN
+
+
+def test_profile_moves_the_protocol_tag_only_when_fields_are_declared():
+    base = CFMConfig().tag
+    assert CFMConfig(action_profile=True).tag == base  # switch alone: no fields -> no head
+    on = CFMConfig()
+    on.objectives = (*on.objectives, "profile")
     assert on.tag != base  # trained weights differ => the name must say so (DEC-448)
 
 

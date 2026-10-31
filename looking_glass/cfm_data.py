@@ -493,6 +493,25 @@ def build_sequences(df, keys, cfg: CFMConfig, split, with_anchors: bool, min_eve
     if getattr(cfg, "survival", False) and getattr(cfg, "_survival_cache", None) is None:
         cfg._survival_cache = _survival_horizons(d)
         cfg._survival_horizons_s = list(cfg._survival_cache)
+    # DEC-465: per-field level counts for the action-profile objective (cached once). Levels
+    # are facts about the stream (max observed level + 1), never typed.
+    if (
+        getattr(cfg, "action_profile", False)
+        and getattr(cfg, "action_profile_fields", ())
+        and getattr(cfg, "_profile_cache", None) is None
+    ):
+        levels: dict[str, int] = {}
+        for f in cfg.action_profile_fields:
+            if f in d.columns:
+                try:
+                    mx = d[f].cast(pl.Float64, strict=False).max()
+                except Exception:  # noqa: BLE001 - non-numeric field: not profile-able
+                    continue
+                if mx is not None and float(mx) >= 0:
+                    levels[str(f)] = int(float(mx)) + 1
+        cfg._profile_cache = levels
+        cfg._action_profile_levels = levels
+        cfg._action_profile_dims = [levels[f] for f in cfg.action_profile_fields if f in levels]
     eff_map, _ = cfg._effect_cache
     attr_fields = tuple(getattr(cfg, "attr_fields", ()) or ())
     numeric_fields = tuple(getattr(cfg, "numeric_fields", ()) or ())

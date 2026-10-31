@@ -156,6 +156,14 @@ def train_cfm(cfg: CFMConfig):
     # DEC-459: same contract for the future-rate objective (protocol F).
     if getattr(cfg, "rate", False) and "rate" not in cfg.objectives:
         cfg.objectives = (*cfg.objectives, "rate")
+    # DEC-465: action-profile objective (protocol H) — only with declared fields (no fields
+    # means no head, so the name must not move either).
+    if (
+        getattr(cfg, "action_profile", False)
+        and getattr(cfg, "action_profile_fields", ())
+        and "profile" not in cfg.objectives
+    ):
+        cfg.objectives = (*cfg.objectives, "profile")
     # B5: enable multi-token prediction when mtp_k > 0 (after --set, same rationale).
     if int(getattr(cfg, "mtp_k", 0) or 0) > 0 and "mtp" not in cfg.objectives:
         cfg.objectives = (*cfg.objectives, "mtp")
@@ -204,6 +212,8 @@ def train_cfm(cfg: CFMConfig):
         survive_dim=len(getattr(cfg, "_survival_horizons_s", []) or []),
         # DEC-459: [future count, future primary-value sum, per-type future counts]
         rate_dim=(2 + int(vocab.n_et)) if getattr(cfg, "rate", False) else 0,
+        # DEC-465: per-field histogram widths for the declared profile fields
+        profile_dim=int(sum(getattr(cfg, "_action_profile_dims", []) or [])),
         mtp_k=getattr(cfg, "mtp_k", 0),
         # DEC-423: recompute the SSM scan in backward — see CFMConfig.grad_checkpoint.
         grad_checkpoint=bool(getattr(cfg, "grad_checkpoint", False)),
@@ -756,6 +766,9 @@ def train_cfm(cfg: CFMConfig):
             "survive_dim": int(len(getattr(cfg, "_survival_horizons_s", []) or [])),
             # DEC-459: the rate head's output count (2 + n_et when on, 0 when off).
             "rate_dim": int((2 + int(vocab.n_et)) if getattr(cfg, "rate", False) else 0),
+            # DEC-465: the profile head's output count (Σ Q_f when on, 0 when off).
+            "action_profile_dim": int(sum(getattr(cfg, "_action_profile_dims", []) or [])),
+            "action_profile_fields": list(getattr(cfg, "action_profile_fields", ()) or ()),
             "action_fields": list(getattr(cfg, "action_fields", ()) or ()),
             "primary_numeric": getattr(cfg, "primary_numeric", None),
             "whiten_mean": (model.whiten_mean if getattr(model, "whiten_on", False) else None),
@@ -1408,6 +1421,34 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
         sd = (_tv.std(0) if _m.any() else tgt.std((0, 1))).clamp(min=1e-6)
         rl = F.mse_loss(model.head_rate(y[:, :-1]), (tgt - mu) / sd, reduction="none").mean(-1)
         T_["rate"] = (rl * valid_t).sum() / nv
+    # ---- action-field PROFILE on the served (final) state (DEC-465, protocol H) ----
+    # The judged traits x0/h0/d0 are the customers' OPTIMA of the decision fields, and DEC-464
+    # measured that the action-field HISTOGRAM is their generating structure (freq hist -> x0
+    # R2 0.909, mode 0.916) while every non-action aggregate is a lookalike. Pressure: the
+    # per-field normalized histogram of the sequence window must be a LINEAR readout of the
+    # final trunk state (the state serving hands to the frozen linear consumer).
+    if (
+        "profile" in cfg.objectives
+        and getattr(model, "head_action_profile", None) is not None
+        and getattr(cfg, "_action_profile_levels", None)
+    ):
+        rows = torch.arange(B, device=dev)
+        Lc = t["mask"].sum(1).long().clamp(min=1) - 1
+        s_full = y[rows, Lc.clamp(max=y.shape[1] - 1)]  # the boundary state serving reads
+        parts = []
+        for f in cfg.action_profile_fields:
+            Q = cfg._action_profile_levels.get(str(f))
+            if not Q or f not in t:
+                continue
+            pres = (t.get("num_mask") or {}).get(f)
+            pres = pres if pres is not None else torch.ones_like(t["mask"])
+            w = pres.to(torch.float32) * t["mask"]  # real events where the field exists
+            idx = t[f].round().long().clamp(min=0, max=int(Q) - 1)
+            oh = F.one_hot(idx, int(Q)).to(torch.float32) * w.unsqueeze(-1)
+            parts.append(oh.sum(1) / w.sum(1, keepdim=True).clamp(min=1))  # (B,Q) sums to 1
+        if parts:
+            tgt = torch.cat(parts, dim=-1)
+            T_["profile"] = F.mse_loss(model.head_action_profile(s_full), tgt)
     # ---- variance floor (VICReg-style, DEC-015) ---------------------------
     # Decorrelation (redundancy) removes correlation but not SCALE collapse:
     # the production runs measured eff-rank 0.23-0.26x null with redundancy
@@ -2225,6 +2266,13 @@ def _registry(
                 "rate": {
                     "on": bool(getattr(cfg, "rate", False)),
                     "window_s": getattr(cfg, "_rate_window_s", None),
+                },
+                # DEC-465 acceptance #2: profile fields + data-derived level counts.
+                "action_profile": {
+                    "on": bool(getattr(cfg, "action_profile", False)),
+                    "fields": list(getattr(cfg, "action_profile_fields", ()) or ()),
+                    "levels": dict(getattr(cfg, "_action_profile_levels", {}) or {}),
+                    "dims": list(getattr(cfg, "_action_profile_dims", []) or []),
                 },
                 "resolved": cfg_resolved or {},
                 "governor": governor or {},

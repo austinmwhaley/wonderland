@@ -850,6 +850,7 @@ class CFM(nn.Module):
         effect_head: str = "mlp",
         survive_dim: int = 0,
         rate_dim: int = 0,
+        profile_dim: int = 0,
         mtp_k: int = 0,
     ):
         super().__init__()
@@ -1007,6 +1008,12 @@ class CFM(nn.Module):
         # as head_survive: a linear consumer (DEC-407) must be able to read the rate back.
         self.rate_dim = int(rate_dim)
         self.head_rate = nn.Linear(dim, self.rate_dim) if self.rate_dim else None
+        # DEC-465 (protocol H): action-field profile head — the per-field histogram of the
+        # window's own decision fields. Linear on purpose (same contract as the other
+        # pressure heads): the frozen consumer reads E linearly, so the histogram must be a
+        # linear readout of the served state.
+        self.profile_dim = int(profile_dim)
+        self.head_action_profile = nn.Linear(dim, self.profile_dim) if self.profile_dim else None
         self.head_sf = nn.Sequential(
             nn.Linear(dim + 1, dim), nn.ReLU(), nn.Linear(dim, self.sf_dim)
         )
