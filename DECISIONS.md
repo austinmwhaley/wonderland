@@ -5978,3 +5978,19 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   segment half of `persona_geometry`) EXCLUDED-and-reported as degenerate, or amend the demo
   generator so segment influences behavior (a new stream version, never a silent edit). Meanwhile
   the unsupervised leg's only winnable row is `future_geometry`.
+
+## DEC-486 — [MEASURED, STRUCTURAL] simulator `argmax_optimum` cannot pass with the frozen linear consumer
+- **The consumer is additive by construction.** The brain arm is "state_embeddings + one-hot(level)
+  -> linear ridge head" (`measure_judge_law.leg_simulator.cells`). A linear model over
+  `[E_k, onehot(l)]` predicts `w·E_k + v_l` — the customer term is IDENTICAL across levels, so the
+  argmax over levels is `argmax(v)`: one constant level for every customer, no matter what the
+  encoder carries. The same holds for both controls, so all three land on the same constant.
+- **Receipt.** Brain, random and destroyed hit rates are byte-identical at **0.269807** (6 dp) —
+  the signature of a constant argmax. That is the share of customers whose true `offer_opt` is the
+  chosen level (level shares on the identified population are ~0.24-0.27). PATH A's GBM learns
+  customer x level interactions and reaches **0.46895**, so the row fails by construction, not by
+  donor quality. (The donor's x0/offer information is irrelevant to an additive head.)
+- **Disposition.** No training change can move this row. Fixing it is a consumer/gate change
+  (interaction-aware head, or redefining the task as a direct probe of the optimum) and therefore
+  an operator ruling. Recorded; not acted on. Together with DEC-485 this means two of the card's
+  failing rows are degenerate under the frozen measurement, independent of the encoder.
