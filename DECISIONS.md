@@ -5431,3 +5431,45 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   diagnostic can test must be tested before GPU time: DEC-462's diagnostic-before-protocol
   rule caught this one after ~5 minutes of training instead of a 17-minute chain plus a
   verdict that would have taught the same lesson at 10× the cost.
+
+## DEC-465 — [PRE-REGISTERED] protocol H: the action-field profile objective (x0's measured sufficient statistic)
+
+- **Context (DEC-464, measured).** The action-field histogram IS x0's generating structure:
+  ridge(freq histogram → x0) = 0.9090, mode → 0.9158 (corr 0.958), above PATH A's 0.9056. The
+  served state E already reads most other things better than this (x0 0.7909) — what it lacks
+  is the linearly-readable PROFILE of the decision fields. Every prior lever failed for the
+  same reason: it pressured the trunk with a TARGET THAT DOES NOT GENERATE THE TRAIT (future
+  count F, response curve G). This one is the measured sufficient statistic.
+- **Decision — one variable: `action_profile=true` (default off), fields declared.**
+  Protocol H runs with `action_profile_fields=(freq,hour,dow,channel,offer)` — the demo's
+  declared decision fields (`reference.py:447` action_keys). Mechanism: from the final trunk
+  state of each sequence window, a LINEAR head `head_action_profile = Linear(dim, Σ Q_f)`
+  predicts the per-field normalized histogram of that window's own action-field values
+  (presence-masked; levels Q_f derived from the stream's max level + 1; each field's target
+  sums to 1). Training this head forces the field histogram — hence x0 as its argmax — into
+  the served state as a linear readout. Self-supervised: targets are the sequence's own
+  action attributes, the same class as `recency`/`occur`; nothing raw is served in E
+  (circular-evaluation rule #4 stays intact — the judged consumer still reads only E).
+- **Why the linear head + final state.** The frozen consumer is linear (DEC-407) and the card
+  reads the boundary state; a linear head on the boundary is the tightest pressure that can
+  make that consumer succeed. (The effect head's lesson — head absorbability — is handled by
+  the target being a histogram with no shortcut: the state must actually carry counts.)
+- **Frozen acceptance (before any verdict language):**
+  1. registry overrides = protocol-D axes + `action_profile=true` +
+     `action_profile_fields=['freq','hour','dow','channel','offer']`; objectives contains
+     `profile`; loss_scales has `profile` (40 tasks);
+  2. blob `action_profile_dim == Σ Q_f` with Q_f data-derived, receipted in the registry
+     (`action_profile.dims`); checkpoint `head_action_profile.weight` shape (Σ Q_f, dim);
+  3. losses finite; governor stops on tolerance; `[step-time]` receipt; no new non-finite;
+  4. tag ≠ D/E/F; stable across constructions.
+- **Named axis.** PRIMARY — brain-alone `x0` linear (D: 0.7909): acceptance ≥ 0.84; adoption
+  iff Δ ≥ +0.03 (measured sufficient ceiling 0.909 — the row is reachable in principle).
+  SECONDARY (reported, not adoption-gating) — h0/d0-type traits may rise on the same
+  mechanism (hour/dow histograms); if so, that is the next axis's head start.
+- **Regression guards.** brain churn kNN ≥ 0.60 and linear ±0.02 (D 0.5824); brain h0 ±0.02
+  (D 0.8390); brain return_proneness ±0.03 (D 0.2947); brain price_sensitivity ±0.02
+  (D −0.0200); rl `policy_value` ≥ 0.05 (D 0.0558); `known_effect_uplift` not worse than D;
+  S5 not worse; every leg row finite; brain+ledger x0 ≥ 0.8841 − 0.02.
+- **Not changed:** gates, thresholds, criteria, controls, comparator, probe definitions, the
+  linear shipping head, E's content. Cost: one GPU train (~17 min dedicated) + chain (~17 min)
+  + access axis (~24 s). Artifact `cfm_h_profile`.
