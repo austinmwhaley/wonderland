@@ -277,8 +277,15 @@
 > still no move; the head never trained (DWA weight 0.072 vs 5–6). J (per-field CE, weight
 > 1.85) → still no move; y recovered nothing (y→x0 −0.02). K (in flight): the decisive
 > discovery — `model.encode` returns (y readout, h recurrent); SERVING publishes
-> `normalize(proj(h_final))`, while every head had trained on `y[-1]`. K trains the CE
-> profile head on h, tensor-for-tensor the served embedding.
+> `boundary(proj(h × idle-fade))` from `customer_state` (composition verified cos 1.000),
+> while every head had trained on `y[-1]`. K trained the CE profile head on h (the served
+> tensor) at normal weight: still x0 0.7904 — the exact end-to-end composition is now
+> measured (E→x0 0.7904, stored state→x0 0.8033, rebuilt window h→x0 0.8797, proj rank
+> 255/256) and the wall is the state's HISTOGRAM MIDDLE LEVELS (E→hist 0.64/0.20/0.06/0.53):
+> the profile term is one scalar per 128-event window against 128 per-token losses, so the
+> optimizer will not spend capacity on it. **Protocol L in flight (DEC-470): profile_weight
+> = 25, applied at combination time so scale-free DWA cannot cancel it.** Falsifier: if 25×
+> pressure moves nothing, the lever is architectural (counter pathway), not objective.
 
 **Repository state:** `main` now contains the former `primary-encoder` demo work. The duplicate
 report card, stale roadmap, duplicate receipt orchestrator, one-off OPE wrappers, and generator
