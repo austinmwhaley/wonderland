@@ -5743,3 +5743,30 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - **Disposition.** The E-serving change (serve_unfaded) is ADOPTED: it moved its named axis by
   12× the adoption threshold with no measured guard regression. Protocol M2 (clean combined
   artifact, both operator-authorized changes, new tag) is the recorded-artifact candidate.
+
+## DEC-475 — [MEASURED] protocol M2 (undimmed E + ledger recency): first card-level movement — ADOPTED as the recorded artifact
+
+- **Artifact** `0.11.0r103115-b20d256e3lr3e-04o1e051d9d` (`cfm_m2_clean`), acceptance 8/8
+  (both flags in overrides/registry/blob; ledger 7 parts, measure dim 595, recency width 4,
+  guardrails G1–G4 ok; losses finite). Chain S6 6/6 at a clean commit.
+- **Measured (card tasks, vs PATH A, CI excludes 0 = green):**
+  * x0 brain **0.8924** (D 0.7909; PATH A 0.9056; CI [−0.0168,−0.0035] — 0.013 short)
+  * x0 brain+ledger **0.8898** (PATH A 0.9056)
+  * h0 brain **0.9278**, brain+ledger **0.9849** (PATH A −0.1213) — GREEN both columns
+  * price brain −0.0143 / brain+ledger −0.0446 (PATH A −0.1237; CI positive both) — GREEN
+  * return brain+ledger **0.6050** vs PATH A 0.6734, CI [−0.0019,−0.0006] — 0.002 from crossing
+  * churn brain 0.6371 / brain+ledger **0.6528** (D b+l 0.5398; ledger-only 0.0556→**0.6554**
+    with the recency part; PATH A 0.7209)
+  * regime_switches 0.0065/0.0233 (PATH A 0.1278); final_regime_days 0.0129/−0.0039
+    (PATH A 0.0336)
+  Card: 1/8 legs (rl::brain+ledger), 5/6 stages; supervised rows now blocked on x0 (0.013),
+  return (0.002), churn (0.068), regime (0.10/0.04) — all named and measured.
+- **Disposition.** M2 is the recorded artifact: it moved both named axes (x0 +0.10, churn
+  b+l +0.11) far beyond the frozen adoption thresholds, with h0/price turning green and no
+  guard regression. The measured levers for the remaining supervised gaps:
+  * x0: the action-field histogram in the LEDGER (measured hist→x0 0.909 > PATH A 0.9056);
+  * return: a return/order RATE (ratio) in the ledger (table linear 0.687 beats PATH A; the
+    ledger's 0.608 lacks ratios);
+  * churn: hazard-style interaction features (silence × activity) to close 0.653→0.721;
+  * regime: the hard end — the regime process is not in any linear aggregate measured so far.
+  The next protocol (N) is a pre-registered ledger-content extension with those columns.
