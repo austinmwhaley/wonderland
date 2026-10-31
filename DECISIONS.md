@@ -6059,3 +6059,27 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   the next lever named by M3's falsifier is CAPACITY, which is a separate pre-registration (M5).
 - **Receipts.** Access axis archived under `protocols/m4_surv_unfaded/`; live receipt restored to
   M2's committed bytes. Chain not run (adoption gated on the named axis first); no card change.
+
+## DEC-490 — [PRE-REGISTERED] protocol M5: capacity ladder (state dim 256 -> 384)
+- **Why.** M3's frozen falsifier was met: objective pressure on the 256-d trunk does not write the
+  action-field histogram into h under faded OR unfaded serving (L, M3). The named wall is "what the
+  trunk writes into a single 256-d recurrent summary". M5 tests capacity alone: same data, same
+  objectives (none of the auxiliary ones), same serving (unfaded + ledger recency), wider state.
+- **Decision — one variable vs M2: `dim=384` (default 256).** The tag's capacity field moves
+  (base ...b20d384...), so the artifact is distinct by construction. No profile/survival/rate
+  flags. Artifact `cfm_m5_d384`.
+- **Frozen acceptance (mechanical):** overrides = M2's + `dim=384`; registry config dim=384;
+  checkpoint tensors consistent with 384 (proj/readout dims), no survive/profile heads; all loss
+  scales finite (39 tasks); ledger 7 parts/595-d; tag contains `d384` and ≠ every prior tag.
+- **Named axis.** brain-alone `x0` linear: axis acceptance ≥ **0.90**; adoption iff Δ ≥ **+0.01**
+  vs M2 (0.8924 => ≥ 0.9024). SECONDARY (mechanism): the freq histogram middle bins — the exact
+  wall (M2 baseline 0.226/0.122) — must rise materially; reported with the same per-bin probe.
+- **Guards:** h0 ≥ 0.9078; price ≥ −0.0343; return ≥ 0.2674; churn ≥ 0.6171; every leg value
+  finite; ledger G1–G4 green; governor stops on tolerance; no non-finite loss.
+- **Falsifier.** x0 within ±0.005 of M2 AND middle bins not materially above 0.226/0.122 ⇒ capacity
+  at 384 is not the wall either; the remaining lever is an architectural/served-contract change,
+  which is an operator ruling. (A 512-d retry is NOT automatic: it would be a new pre-registration
+  with a measured justification, not a ladder rung climbed by hope.)
+- **Not changed:** gates, thresholds, criteria, controls, comparator, probes, E's content, ledger.
+  Cost: one GPU train + chain + access axis. Co-tenancy: run first alongside the 27B (15.08 GB
+  budget); if the allocator OOMs inside the cap, stop the LLM and retry once, receipted.
