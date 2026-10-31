@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "27ed33330b42a6eb",
-    "command": "measure_judge_law.py --products /work/cfm_m2_clean --demo /work/demo --legs supervised,unsupervised,rl,simulator --out-dir /repo/docs/report_cards/experiments",
-    "generated_at": "2026-10-31T05:55:23+00:00",
-    "git_commit": "b4b1e57ff8fabffda49d9e09721f7cce2e24f6f1",
+    "behavior_hash": "babee652be3856c5",
+    "command": "measure_judge_law.py --products /home/austin_whaley/wonderland_work/cfm_m2_clean --demo /home/austin_whaley/wonderland_work/demo --legs supervised,unsupervised,rl,simulator --out-dir /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments",
+    "generated_at": "2026-10-31T18:56:52+00:00",
+    "git_commit": "d838479b0b9f44b2a76c20a0784d14352e612b46",
     "producer": "measure_judge_law.py"
   },
   "arms": {
@@ -340,10 +340,10 @@
     "columns": 48,
     "n_present": 2500,
     "n_requested": 2500,
-    "source": "/work/demo/path_a/path_a_wide_table.parquet"
+    "source": "/home/austin_whaley/wonderland_work/demo/path_a/path_a_wide_table.parquet"
   },
   "products": {
-    "path": "/work/cfm_m2_clean",
+    "path": "/home/austin_whaley/wonderland_work/cfm_m2_clean",
     "registry_sha256": "114a37039af04dcf",
     "tag": "0.11.0r103115-b20d256e3lr3e-04o1e051d9d"
   },

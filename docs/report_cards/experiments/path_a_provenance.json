@@ -294,8 +294,8 @@
     }
   },
   "inputs": {
-    "demo": "/work/demo",
-    "products_dir": "/work/cfm_m2_clean"
+    "demo": "/home/austin_whaley/wonderland_work/demo",
+    "products_dir": "/home/austin_whaley/wonderland_work/cfm_m2_clean"
   },
-  "generated_at": "2026-10-31T05:55:48+00:00"
+  "generated_at": "2026-10-31T18:57:24+00:00"
 }

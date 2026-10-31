@@ -2381,3 +2381,10 @@ resolves to a receipt; the "what is not claimed" panel repeats the card's disclo
 > **Two rulings remain:** (2) degenerate rows — exclude-and-report (segment_structure,
 > argmax_optimum, persona's segment half) vs amend the generator; (3) architecture/consumer
 > change — interaction-aware simulator head or an exact-count channel in the trunk.
+
+> **2026-10-31 card refreshed (S6 6/6).** The live card had gone stale on the source hash: M3/M4/M5
+> changed encoder sources (`27ed3333…` → `babee652be3856c5`) while the recorded artifact stayed M2.
+> `measure_certification_law.py` was re-run against M2 at commit `d838479`: all six producers exit 0,
+> S6 6/6, and **every measured value is byte-identical** to the M2 card (1/8 legs, 5/6 stages,
+> pass 11 / fail 8 / unknown 0) — only stamps, paths and the behavior hash moved. Receipts and card
+> are committed at the recorded commit.
