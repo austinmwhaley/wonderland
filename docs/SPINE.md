@@ -1015,7 +1015,7 @@ this order when implementation opens.
 | # | Step | Why this order |
 |---|---|---|
 | 0 | **Environment rebuild** — torch aarch64/CUDA-13, xgboost-cuda, numpy; runtime-receipt smoke test on the GB10 | ✅ **done 2026-10-28** (DEC-416): torch 2.14.1+cu130 on the GB10, compute cap 12.1, warm bf16 matmul ≈15.2 TFLOPS; `scripts/setup_env.sh` + `scripts/env_receipt.py`. One operator action outstanding: `python3-dev` for `torch.compile` |
-| 1 | **Judge-first card skeleton** — two-number × four-leg top line, freshness law, UNKNOWN default (existing receipts feed it; missing rows render UNKNOWN) | ✅ **done 2026-10-28** (DEC-416): `scripts/judge_spec.py` + `scripts/judge_card.py` → `JUDGE_CARD.md` (0/8 legs, 0/6 stages, NOT DONE); 18 tests prove it cannot be talked into a PASS; freshness enforced via `behavior_hash()` |
+| 1 | **Judge-first card skeleton** — two-number × four-leg top line, freshness law, UNKNOWN default (existing receipts feed it; missing rows render UNKNOWN) | ✅ **done 2026-10-28** (DEC-416): `scripts/judge_spec.py` + `scripts/report_card.py` → `REPORT_CARD.md` (0/8 legs, 0/6 stages, NOT DONE); 18 tests prove it cannot be talked into a PASS; freshness enforced via `behavior_hash()` |
 | 2 | **S1/S2 receipts** — renamed-schema + new-field pass, resolution receipt, unseen-value path, transform receipts | ✅ **done 2026-10-28** (DEC-417/418): 6 checks PASS via `scripts/measure_input_law.py`; falsified a dead canonical adapter (polars 1.44) + a masked accelerator (root-owned triton cache, DEC-389 vindicated) — both fixed at the right layer |
 | 3 | **S3 compliance receipts** — homomorphism/equivariance/mass-additivity on data; τ-from-spectrum; stability step 0 | ✅ **done 2026-10-28** (DEC-419): 7/7 PASS via `scripts/measure_dynamics_law.py` on the continuous-time production checkpoint — merge law 1.2e-15, chunked continuation 1.1e-07 **with all recurrent states carried** (h-only serving gap disclosed as an O6 bought approximation), mass 6.0e-16, week-shift exact 0.0, spring alive (gaps×10 → 3.8e-01), τ×100 tracks, governed stable; restored the binding continuous-time default the typed `False` had violated |
 | 4 | **Battery completion** — distance-regression + action-conditioned outcome + ledger-reconstruction; naive comparators; prune pass | ✅ **receipts delivered 2026-10-28** (DEC-420): all three probes signed on the 724 holdout-B customers with fair naive comparators + paired CIs — and they **FAIL honestly** (mass loses to the frequency head, geometry ≈ absent, what-if undecodable; the donor does WIN returns-proneness). Prune pass wired (deletion list empty, disclosed). S5 = measured FAIL with named axes — the stage fix is now the ladder's work, not the receipt's |
@@ -1325,8 +1325,8 @@ this order when implementation opens.
   rather than skipped, because a masked accelerator is the false green DEC-389 forbids; 1 failure is
   a typed `0.01` tolerance drifting, untouched because threshold edits are gate-touching.
   **Step 1 done (DEC-416):** the judge exists before any case is argued — `scripts/judge_spec.py`
-  (frozen gates) + `scripts/judge_card.py` → **`JUDGE_CARD.md`**, currently **0/8 legs · 0/6 stages
-  · NOT DONE**, with `tests/test_judge_card.py` (18 tests) proving no route to a false PASS (missing
+  (frozen gates) + `scripts/report_card.py` → **`REPORT_CARD.md`**, currently **0/8 legs · 0/6 stages
+  · NOT DONE**, with `tests/test_report_card_gate.py` (30 tests) proving no route to a false PASS (missing
   receipt, stale behavior hash, self-defined criterion, `n/a` comparator, missing N, missing controls
   → UNKNOWN; CI including zero or a control beating the brain → FAIL; degenerate → EXCLUDED).
   Freshness is mechanical now via `behavior_hash()` over the encoder + data-path source trees.

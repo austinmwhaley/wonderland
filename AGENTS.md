@@ -472,11 +472,12 @@ fallbacks) → `Stage 3: Scale` (optimize only where measured data justifies).
 - **`DECISIONS.md`** — append-only decision log (context / alternatives /
   decision+principle / trade-offs). Check it before non-trivial changes;
   log every non-trivial decision so choices are never re-litigated.
-- **Primary B + B+C report card** — `scripts/report_card.py` → `REPORT_CARD.md` at the repo
-  root. The full research audit is `scripts/audit_card.py` → `docs/AUDIT_CARD.md`. The older
-  cockpit generator (`scripts/full_report_card.py`) is retained only for reproducing the
-  archived v4 research cards; it is not the project's primary card. **The whole project is
-  steered from the primary card and audit:** every milestone/chunk ends by printing the
+- **The single report card** — `scripts/report_card.py` → `REPORT_CARD.md` at the repo root,
+  generated from `scripts/judge_spec.py` + the receipts under `docs/report_cards/experiments/`,
+  plus the structured BACKWARD requirements in `docs/backward_requirements.json`. The full
+  research audit is `scripts/audit_card.py` → `docs/AUDIT_CARD.md`. The inherited B+B+C card is
+  archived at `docs/archive/REPORT_CARD_INHERITED.md` (disclosure only). **The whole project is
+  steered from `REPORT_CARD.md` and the audit:** every milestone/chunk ends by printing the
   rendered Markdown (never fenced), and the card — not a hand summary — is the source of
   truth for what is PASS and what is next.
 

@@ -3,7 +3,7 @@
 
     python3 scripts/measure_certification_law.py [--products DIR] [--demo DIR]
 
-Why this file exists. `judge_card.py` renders the card from whatever receipts happen to be on
+Why this file exists. `report_card.py` renders the card from whatever receipts happen to be on
 disk, so "I regenerated the card" was never evidence about the card: its five stage blocks were
 last written by four different scripts, at four different times, two of them against `/tmp` inputs
 that no longer exist (DEC-430 found exactly this). A card nobody can rebuild from a commit is not
@@ -17,7 +17,7 @@ measures whether that command works, in the order the dependencies require:
     legs   measure_judge_law        the four-leg top line, both columns
     prov   measure_path_a_provenance  the comparator's per-column provenance (DEC-446)
     S6     this file                the regeneration itself
-    card   judge_card               rendered last, from the receipts above
+    card   report_card              rendered last, from the receipts above
 
 What "regenerated" has to mean, as checks rather than prose: the whole chain ran in ONE invocation
 and every producer exited 0; the card renders from those receipts deterministically (twice,
@@ -26,7 +26,7 @@ apart from the files this command is authorized to rewrite; the inputs the recei
 hashed; and every row the card publishes reports its N.
 
 Like every other producer here, this file records measurements. It contains no verdict string, and
-`judge_card.py` — not this file — decides what S6 means (certification rule 3).
+`report_card.py` — not this file — decides what S6 means (certification rule 3).
 """
 
 from __future__ import annotations
@@ -44,12 +44,12 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts"))
 
-import judge_card as JC  # noqa: E402  (one definition of the card, and of git state)
+import report_card as RC  # noqa: E402  (one definition of the card, and of git state)
 import safe_run as SR  # noqa: E402  (one definition of the memory cap)
 from measure_input_law import _rollup, stamp_merge_write  # noqa: E402  (one definition)
 
 EXP = ROOT / "docs/report_cards/experiments"
-CARD = ROOT / "docs/JUDGE_CARD.md"
+CARD = ROOT / "REPORT_CARD.md"
 ALL_LEGS = "supervised,unsupervised,rl,simulator"
 
 #: the chain, in dependency order. Each entry is (label, script, argv template, the stage blocks
@@ -123,7 +123,7 @@ def changed_paths(porcelain: str) -> list[str]:
 
     `-z` terminates each entry with NUL and never quotes, so no status/path boundary is guessed.
     The previous version sliced `line[3:]` on the line-oriented form, which was wrong for the
-    FIRST line of the output: `judge_card.git()` strips the whole stdout, eating the leading space
+    FIRST line of the output: `report_card.git()` strips the whole stdout, eating the leading space
     of " M path" and shifting every later slice by one — measured, it reported a modified file as
     `ECISIONS.md`. A parser that mangles the path of the only file it names is not a check.
     """
@@ -366,7 +366,7 @@ def main() -> int:
         ln for ln in md.splitlines() if not ln.startswith("*Generated `")
     )
 
-    renders = [strip(JC.render(receipts, JC.behavior_hash())[0]) for _ in range(2)]
+    renders = [strip(RC.render(receipts, RC.behavior_hash())[0]) for _ in range(2)]
     same = renders[0] == renders[1] and bool(renders[0])
     checks["render_is_deterministic"] = {
         "working": same,
@@ -382,12 +382,12 @@ def main() -> int:
     }
 
     # ---- 3. commit, tree, and the hashes of what the receipts describe ----------------------
-    commit, branch = JC.git("rev-parse", "HEAD"), JC.git("rev-parse", "--abbrev-ref", "HEAD")
+    commit, branch = RC.git("rev-parse", "HEAD"), RC.git("rev-parse", "--abbrev-ref", "HEAD")
     dirty, changed = _tree_dirty(_exempt(receipts, card))
     checks["commit_recorded_clean"] = {
         "working": bool(commit) and commit != "?" and not dirty,
         "evidence": (
-            f"commit {commit[:12]} on {branch}, behavior {JC.behavior_hash()[:16]}; "
+            f"commit {commit[:12]} on {branch}, behavior {RC.behavior_hash()[:16]}; "
             + (
                 "tree clean apart from the generated artifacts this command rewrites"
                 if not dirty
@@ -449,7 +449,7 @@ def main() -> int:
     body["inputs"] = {"products": str(products), "demo": str(demo), "legs": a.legs}
     body["n_rows"] = n_rows
     stamp_merge_write(stages_out, {"S6": body}, " ".join([Path(__file__).name] + sys.argv[1:]))
-    md, info = JC.render(receipts, JC.behavior_hash())
+    md, info = RC.render(receipts, RC.behavior_hash())
     card.parent.mkdir(parents=True, exist_ok=True)
     card.write_text(md)
 

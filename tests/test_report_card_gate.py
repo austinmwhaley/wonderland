@@ -14,7 +14,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
-import judge_card as JC  # noqa: E402
+import report_card as RC  # noqa: E402
 import judge_spec as J  # noqa: E402
 
 HASH = "abc123"
@@ -73,22 +73,22 @@ def _stage_blocks(h=HASH, producer="measure_input_law.py"):
 
 def test_honest_receipt_passes(tmp_path):
     _write(tmp_path, "judge_leg_supervised.json", _good())
-    _, info = JC.render(tmp_path, HASH)
+    _, info = RC.render(tmp_path, HASH)
     assert info["verdicts"]["JUDGE-supervised-brain"] == J.PASS
     assert info["verdicts"]["JUDGE-supervised-brain_ledger"] == J.PASS
 
 
 def test_missing_receipt_is_unknown_not_pass(tmp_path):
-    _, info = JC.render(tmp_path, HASH)
+    _, info = RC.render(tmp_path, HASH)
     assert info["verdicts"]["JUDGE-supervised-brain"] == J.UNKNOWN
     assert info["verdicts"]["JUDGE-rl-brain"] == J.UNKNOWN
-    md, _ = JC.render(tmp_path, HASH)
+    md, _ = RC.render(tmp_path, HASH)
     assert "judge_leg_supervised.json" in md  # names the exact missing receipt
 
 
 def test_stale_behavior_hash_is_unknown(tmp_path):
     _write(tmp_path, "judge_leg_supervised.json", _good())
-    _, info = JC.render(tmp_path, "different_hash")
+    _, info = RC.render(tmp_path, "different_hash")
     assert info["verdicts"]["JUDGE-supervised-brain"] == J.UNKNOWN
 
 
@@ -96,7 +96,7 @@ def test_receipt_without_meta_is_unknown(tmp_path):
     r = _good()
     r["_meta"].pop("behavior_hash")
     _write(tmp_path, "judge_leg_supervised.json", r)
-    _, info = JC.render(tmp_path, HASH)
+    _, info = RC.render(tmp_path, HASH)
     assert info["verdicts"]["JUDGE-supervised-brain"] == J.UNKNOWN
 
 
@@ -104,7 +104,7 @@ def test_receipt_may_not_define_its_own_criterion(tmp_path):
     r = _good()
     r["criterion"] = "PASS if it feels right"
     _write(tmp_path, "judge_leg_supervised.json", r)
-    _, info = JC.render(tmp_path, HASH)
+    _, info = RC.render(tmp_path, HASH)
     assert info["verdicts"]["JUDGE-supervised-brain"] == J.UNKNOWN
 
 
@@ -112,7 +112,7 @@ def test_no_pass_with_a_self_comparator(tmp_path):
     r = _good()
     r["columns"]["brain"]["tasks"][0]["comparator"] = "n/a"
     _write(tmp_path, "judge_leg_supervised.json", r)
-    _, info = JC.render(tmp_path, HASH)
+    _, info = RC.render(tmp_path, HASH)
     assert info["verdicts"]["JUDGE-supervised-brain"] == J.UNKNOWN
 
 
@@ -120,7 +120,7 @@ def test_no_pass_when_ci_includes_zero(tmp_path):
     r = _good()
     r["columns"]["brain"]["tasks"][0]["ci_lo"] = -0.01
     _write(tmp_path, "judge_leg_supervised.json", r)
-    _, info = JC.render(tmp_path, HASH)
+    _, info = RC.render(tmp_path, HASH)
     assert info["verdicts"]["JUDGE-supervised-brain"] == J.FAIL
 
 
@@ -130,7 +130,7 @@ def test_no_pass_when_beats_a_weak_number_only(tmp_path):
     for t in r["columns"]["brain"]["tasks"]:
         t["ci_lo"] = -0.001
     _write(tmp_path, "judge_leg_supervised.json", r)
-    _, info = JC.render(tmp_path, HASH)
+    _, info = RC.render(tmp_path, HASH)
     assert info["verdicts"]["JUDGE-supervised-brain"] == J.FAIL
 
 
@@ -138,7 +138,7 @@ def test_no_pass_without_controls(tmp_path):
     r = _good()
     del r["columns"]["brain"]["tasks"][0]["destroyed"]
     _write(tmp_path, "judge_leg_supervised.json", r)
-    _, info = JC.render(tmp_path, HASH)
+    _, info = RC.render(tmp_path, HASH)
     assert info["verdicts"]["JUDGE-supervised-brain"] == J.UNKNOWN
 
 
@@ -146,7 +146,7 @@ def test_no_pass_when_a_control_beats_the_brain(tmp_path):
     r = _good()
     r["columns"]["brain"]["tasks"][0]["random"] = 0.99
     _write(tmp_path, "judge_leg_supervised.json", r)
-    _, info = JC.render(tmp_path, HASH)
+    _, info = RC.render(tmp_path, HASH)
     assert info["verdicts"]["JUDGE-supervised-brain"] == J.FAIL
 
 
@@ -156,7 +156,7 @@ def test_degenerate_targets_are_excluded_not_forced(tmp_path):
         t["degenerate"] = True
         t["degenerate_reason"] = "target has no variance"
     _write(tmp_path, "judge_leg_supervised.json", r)
-    _, info = JC.render(tmp_path, HASH)
+    _, info = RC.render(tmp_path, HASH)
     assert info["verdicts"]["JUDGE-supervised-brain"] == J.EXCLUDED
     assert info["summary"]["excluded"] >= 1
 
@@ -165,7 +165,7 @@ def test_non_finite_measurement_is_unknown(tmp_path):
     r = _good()
     r["columns"]["brain"]["tasks"][0]["brain"] = float("nan")
     _write(tmp_path, "judge_leg_supervised.json", r)
-    _, info = JC.render(tmp_path, HASH)
+    _, info = RC.render(tmp_path, HASH)
     assert info["verdicts"]["JUDGE-supervised-brain"] == J.UNKNOWN
 
 
@@ -173,12 +173,12 @@ def test_missing_n_is_unknown(tmp_path):
     r = _good()
     del r["columns"]["brain"]["tasks"][0]["n"]
     _write(tmp_path, "judge_leg_supervised.json", r)
-    _, info = JC.render(tmp_path, HASH)
+    _, info = RC.render(tmp_path, HASH)
     assert info["verdicts"]["JUDGE-supervised-brain"] == J.UNKNOWN
 
 
 def test_stages_unknown_without_receipt(tmp_path):
-    _, info = JC.render(tmp_path, HASH)
+    _, info = RC.render(tmp_path, HASH)
     assert all(info["verdicts"][s.ident] == J.UNKNOWN for s in J.STAGE_ROWS)
 
 
@@ -188,7 +188,7 @@ def test_stages_pass_only_when_reported_working(tmp_path):
         "judge_stages.json",
         dict({"_meta": _meta(), **_stage_blocks()}),
     )
-    _, info = JC.render(tmp_path, HASH)
+    _, info = RC.render(tmp_path, HASH)
     assert all(info["verdicts"][s.ident] == J.PASS for s in J.STAGE_ROWS)
 
 
@@ -201,10 +201,10 @@ def test_a_stage_measured_against_other_behavior_cannot_be_green(tmp_path):
     """
     blocks = _stage_blocks(h="stalehash")
     _write(tmp_path, "judge_stages.json", dict({"_meta": _meta(), **blocks}))
-    _, info = JC.render(tmp_path, HASH)
+    _, info = RC.render(tmp_path, HASH)
     assert all(info["verdicts"][s.ident] == J.UNKNOWN for s in J.STAGE_ROWS), info["verdicts"]
     # and the reason names who measured it and against what, so the fix is a command not a guess
-    md, _info = JC.render(tmp_path, HASH)
+    md, _info = RC.render(tmp_path, HASH)
     assert "stalehash" in md and "measure_input_law.py" in md
 
 
@@ -212,7 +212,7 @@ def test_a_stage_block_with_no_stamp_of_its_own_cannot_be_green(tmp_path):
     """A block that cannot say who measured it, or against which build, is not evidence."""
     untracked = {s.ident: {"working": True, "evidence": "x"} for s in J.STAGE_ROWS}
     _write(tmp_path, "judge_stages.json", dict({"_meta": _meta(), **untracked}))
-    _, info = JC.render(tmp_path, HASH)
+    _, info = RC.render(tmp_path, HASH)
     assert all(info["verdicts"][s.ident] == J.UNKNOWN for s in J.STAGE_ROWS)
 
 
@@ -230,9 +230,9 @@ def test_a_block_that_denies_its_own_checks_cannot_be_green(tmp_path):
         checks={"the_law": {"working": False, "evidence": "F(g∘f) != F(g)∘F(f)"}},
     )
     _write(tmp_path, "judge_stages.json", dict({"_meta": _meta(), **blocks}))
-    _, info = JC.render(tmp_path, HASH)
+    _, info = RC.render(tmp_path, HASH)
     assert info["verdicts"][first] == J.UNKNOWN
-    md, _ = JC.render(tmp_path, HASH)
+    md, _ = RC.render(tmp_path, HASH)
     assert "self-contradictory" in md and "the_law" in md
 
 
@@ -254,14 +254,14 @@ def test_a_red_stage_names_the_check_that_failed(tmp_path):
         },
     )
     _write(tmp_path, "judge_stages.json", dict({"_meta": _meta(), **blocks}))
-    md, info = JC.render(tmp_path, HASH)
+    md, info = RC.render(tmp_path, HASH)
     assert info["verdicts"][ident] == J.FAIL
     assert "FAILED bad: the law did not hold" in md
     assert "[good] OK" not in md
 
 
 def test_assessment_never_claims_done_without_green_rows(tmp_path):
-    _, info = JC.render(tmp_path, HASH)
+    _, info = RC.render(tmp_path, HASH)
     assert "NOT DONE" in info["assessment"]
     assert "SOLVED" not in info["assessment"]
     assert "universal" not in info["assessment"].lower().replace("universality", "")
@@ -276,13 +276,13 @@ def test_assessment_claims_done_only_when_everything_is_green(tmp_path):
         dict({"_meta": _meta(), **_stage_blocks()}),
     )
     _write(tmp_path, "env_receipt.json", {"torch": {"matmul_smoke": {"ok": True}}})
-    _, info = JC.render(tmp_path, HASH)
+    _, info = RC.render(tmp_path, HASH)
     assert "ENCODER DONE" in info["assessment"]
 
 
 def test_behavior_hash_is_stable_and_content_sensitive(tmp_path):
-    h1 = JC.behavior_hash()
-    assert h1 == JC.behavior_hash()  # deterministic
+    h1 = RC.behavior_hash()
+    assert h1 == RC.behavior_hash()  # deterministic
 
 
 def test_the_card_can_report_a_clean_tree(tmp_path):
@@ -292,13 +292,13 @@ def test_the_card_can_report_a_clean_tree(tmp_path):
     uncommitted bytes and printed `dirty` forever — a flag that can never tell the truth trains
     readers to ignore it. Anything else in the tree must still make it dirty.
     """
-    assert JC._worktree_dirty("") is False
-    assert JC._worktree_dirty(f"M {JC.CARD_NAME}") is False
+    assert RC._worktree_dirty("") is False
+    assert RC._worktree_dirty(f"M {RC.CARD_NAME}") is False
     assert (
-        JC._worktree_dirty(f" M {JC.CARD_NAME}\n") is False
+        RC._worktree_dirty(f" M {RC.CARD_NAME}\n") is False
     )  # real porcelain lines have a lead space
-    assert JC._worktree_dirty(f"?? {JC.CARD_NAME}\n M looking_glass/cfm_state.py") is True
-    assert JC._worktree_dirty("?? docs/report_cards/experiments/judge_leg_rl.json") is True
+    assert RC._worktree_dirty(f"?? {RC.CARD_NAME}\n M looking_glass/cfm_state.py") is True
+    assert RC._worktree_dirty("?? docs/report_cards/experiments/judge_leg_rl.json") is True
 
 
 def _ident(leg, column):
@@ -325,9 +325,9 @@ def test_a_pass_may_not_rest_on_a_control_that_could_never_have_won(tmp_path):
     _write(
         tmp_path, "judge_leg_supervised.json", _receipt({"brain": absurd, "brain_ledger": absurd})
     )
-    _, info = JC.render(tmp_path, HASH)
+    _, info = RC.render(tmp_path, HASH)
     assert info["verdicts"][_ident(J.LEG_SUPERVISED, "brain")] == J.UNKNOWN
-    md, _ = JC.render(tmp_path, HASH)
+    md, _ = RC.render(tmp_path, HASH)
     assert "H4 is vacuous" in md
 
 
@@ -343,7 +343,7 @@ def test_one_readable_control_is_enough_for_a_pass(tmp_path):
         _task("churn90", brain=0.80, pathA=0.60, lo=0.05, hi=0.20, random=-5000.0, destroyed=0.40)
     ]
     _write(tmp_path, "judge_leg_supervised.json", _receipt({"brain": mixed, "brain_ledger": mixed}))
-    _, info = JC.render(tmp_path, HASH)
+    _, info = RC.render(tmp_path, HASH)
     assert info["verdicts"][_ident(J.LEG_SUPERVISED, "brain")] == J.PASS
 
 
@@ -362,7 +362,7 @@ def test_a_real_failure_outranks_a_vacuous_control(tmp_path):
     _write(
         tmp_path, "judge_leg_supervised.json", _receipt({"brain": losing, "brain_ledger": losing})
     )
-    _, info = JC.render(tmp_path, HASH)
+    _, info = RC.render(tmp_path, HASH)
     assert info["verdicts"][_ident(J.LEG_SUPERVISED, "brain")] == J.FAIL
 
 
@@ -374,10 +374,78 @@ def test_an_empty_porcelain_means_clean_not_dirty():
     the DEC-430 defect in its worse direction: not a flag that is always red, but one whose honest
     value (clean) is unreachable, so a reader learns to ignore the single signal rule 6 has.
     """
-    assert JC._worktree_dirty("") is False
-    assert JC._worktree_dirty("?") is False
+    assert RC._worktree_dirty("") is False
+    assert RC._worktree_dirty("?") is False
     # the card's own bytes never count: a render is allowed to rewrite them
-    assert JC._worktree_dirty(" M docs/JUDGE_CARD.md") is False
+    assert RC._worktree_dirty(" M REPORT_CARD.md") is False
     # a source edit does, and that is the whole point of the check
-    assert JC._worktree_dirty(" M scripts/judge_card.py") is True
-    assert JC._worktree_dirty("?? notes.md") is True
+    assert RC._worktree_dirty(" M scripts/report_card.py") is True
+    assert RC._worktree_dirty("?? notes.md") is True
+
+
+def _all_green(tmp_path):
+    for leg in J.LEGS:
+        _write(tmp_path, f"judge_leg_{leg}.json", _good())
+    _write(tmp_path, "judge_stages.json", dict({"_meta": _meta(), **_stage_blocks()}))
+    _write(tmp_path, "env_receipt.json", {"torch": {"matmul_smoke": {"ok": True}}})
+
+
+def test_an_open_breaking_backward_requirement_blocks_done(tmp_path, monkeypatch):
+    """DEC-497: BACKWARD findings are card requirements, not prose beside the card."""
+    _all_green(tmp_path)
+    req = tmp_path / "backward_requirements.json"
+    req.write_text(
+        json.dumps(
+            {
+                "requirements": [
+                    {
+                        "id": "B-001",
+                        "severity": "BREAKING",
+                        "status": "open",
+                        "finding": "the comparator leaks a future column",
+                        "forward_subgoal": "rebuild the comparator without the future column",
+                    }
+                ]
+            }
+        )
+    )
+    monkeypatch.setattr(RC, "BACKWARD_REQUIREMENTS", req)
+    md, info = RC.render(tmp_path, HASH)
+    assert "ENCODER DONE" not in info["assessment"]
+    assert "backward open: 1" in info["assessment"]
+    assert "B-001" in md
+    assert info["verdicts"]["JUDGE-supervised-brain"] == J.PASS  # rows stay what they are
+
+
+def test_a_closed_backward_requirement_does_not_block_done(tmp_path, monkeypatch):
+    _all_green(tmp_path)
+    req = tmp_path / "backward_requirements.json"
+    req.write_text(
+        json.dumps(
+            {
+                "requirements": [
+                    {
+                        "id": "B-001",
+                        "severity": "BREAKING",
+                        "status": "closed",
+                        "finding": "fixed",
+                        "forward_subgoal": "done",
+                    }
+                ]
+            }
+        )
+    )
+    monkeypatch.setattr(RC, "BACKWARD_REQUIREMENTS", req)
+    _, info = RC.render(tmp_path, HASH)
+    assert "ENCODER DONE" in info["assessment"]
+    assert info["summary"]["backward_open"] == 0
+
+
+def test_an_unreadable_backward_file_is_breaking_not_empty(tmp_path, monkeypatch):
+    _all_green(tmp_path)
+    req = tmp_path / "backward_requirements.json"
+    req.write_text("{not json")
+    monkeypatch.setattr(RC, "BACKWARD_REQUIREMENTS", req)
+    _, info = RC.render(tmp_path, HASH)
+    assert "ENCODER DONE" not in info["assessment"]
+    assert "backward open: 1" in info["assessment"]

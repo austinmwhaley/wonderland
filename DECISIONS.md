@@ -6272,3 +6272,37 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   comparator, artifact, or encoder behavior changed.
 - **Not changed.** `docs/JUDGE_CARD.md`, `REPORT_CARD.md` content, `docs/report_cards/experiments/`,
   the encoder, the ledger, the recorded artifact. No push.
+
+## DEC-497 — [OPERATOR RULING] `REPORT_CARD.md` is the single card; JUDGE_CARD is retired; BACKWARD findings become card requirements
+- **Ruling (2026-10-31).** "I don't want JUDGE_CARD. Integrate all functionality we need to prove
+  project is successful into REPORT_CARD.md. Importantly, if BACKWARDS finds something, that
+  requirement is communicated via documentation and being added to REPORT_CARD.md. Once these are
+  complete, run PROMPT_FORWARD until REPORT_CARD is all green."
+- **What changed.** The rebuild renderer (`scripts/judge_card.py`) was renamed to
+  `scripts/report_card.py` and now writes `REPORT_CARD.md`; the inherited B+B+C generator was
+  moved to `scripts/inherited_report_card.py` and archives to
+  `docs/archive/REPORT_CARD_INHERITED.md`; `docs/JUDGE_CARD.md` is deleted. The unified card keeps
+  the full proof functionality: 8 leg-columns × 2 numbers, S1–S6, H1–H5, freshness, anti-false-PASS
+  tests, and S6. `scripts/measure_certification_law.py` now renders `REPORT_CARD.md`.
+- **BACKWARD requirements are card rows.** `docs/backward_requirements.json` is the structured
+  handoff: `id`, `severity` (BREAKING/MAJOR/MINOR/INFO), `status` (open/closed/accepted),
+  `finding`, `forward_subgoal`, `gate_touched`, `evidence`, `date`. The renderer displays it in
+  `REPORT_CARD.md`; the generated assessment is `ENCODER DONE` only when all rows/stages are green
+  **and** no BREAKING/MAJOR requirement is open. BREAKING can only be closed by evidence; MAJOR may
+  be closed or operator-accepted. An unreadable requirements file renders as BREAKING, never empty.
+- **Tests.** `tests/test_report_card_gate.py` (renamed from `test_judge_card.py`) keeps all 27
+  anti-false-PASS tests and adds 3: an open BREAKING requirement blocks DONE; a closed one does not;
+  an unreadable requirements file is BREAKING. The inherited card generator is archived, not the
+  gate.
+- **Documentation.** `AGENTS.md`, `PROMPT_FORWARD.md`, `PROMPT_BACKWARD.md`, `docs/SPINE.md`, and
+  `STATUS.md` now name `REPORT_CARD.md` as the single card; the prompts define the tick-tock and the
+  requirements handoff. DEC-496's two-card contract is superseded on the card architecture; its
+  process rules (one axis, frozen acceptance, read-only BACKWARD) stand.
+- **Not changed.** The frozen gates, thresholds, comparator, probes, encoder, ledger, recorded
+  artifact, and receipts. The card's **measurement contract** is unchanged; only its identity and
+  the requirement channel changed. The inherited B+B+C card (28/28 + 6/6 on the old pipeline) is
+  disclosure only and can never certify the rebuild.
+- **Next.** Run PROMPT_FORWARD against the unified card until it is all green; every red row is
+  either a real capability protocol or an operator-gated contract decision. First forward chunk:
+  regenerate `REPORT_CARD.md` through the chain and start with the measured geometry/mass findings
+  (DEC-493/495).

@@ -18,9 +18,9 @@
 4. `DECISIONS.md` — append-only decision log. Read the tail; never re-litigate a
    settled decision without new evidence.
 5. `REPORT_CARD.md` — the run report and gate-of-record section (see §4).
-6. `docs/JUDGE_CARD.md` — the rebuild's generated gate of record.
-7. `docs/AUDIT_CARD.md` — the full research audit; never hide an open row.
-8. `docs/report_cards/experiments/` — the receipts every number must trace to.
+6. `docs/AUDIT_CARD.md` — the full research audit; never hide an open row.
+7. `docs/report_cards/experiments/` — the receipts every number must trace to.
+8. `docs/backward_requirements.json` — structured BACKWARD findings rendered into the card.
 9. `PLAN.md`, `loop/UNIVERSALITY.md` — forward plan and Layer-1 contract.
 
 If a file contradicts another, the order is: **AGENTS.md doctrine → SPINE laws →
@@ -93,61 +93,64 @@ A run that cannot name its axis, its frozen acceptance, or its receipt is not a 
 
 ---
 
-## 4. The cards and the completion contract
+## 4. The single card and the completion contract
 
-This branch has two cards. They are **not interchangeable** (DEC-415):
+**Operator ruling (DEC-497): `REPORT_CARD.md` is the one card.** The separate
+`docs/JUDGE_CARD.md` is retired. The rebuild judge's full proof functionality — the
+8 leg-columns, the 6-stage ladder, certification hygiene, freshness, the anti-false-PASS
+rules, and S6 — is integrated into `REPORT_CARD.md` by the single renderer
+`scripts/report_card.py`.
 
-| Card | What it is | Role |
-|---|---|---|
-| `docs/JUDGE_CARD.md` | the rebuild's generated judge (8 leg-columns × 6 stages, freshness hash, anti-false-PASS tests) | **gate of record** |
-| `REPORT_CARD.md` | the run report; its mandatory top section is the gate of record; the inherited B+B+C card is **disclosure only** | **the artifact every run writes** |
+The inherited B+B+C card is archived at `docs/archive/REPORT_CARD_INHERITED.md`; it
+measures the old pipeline and is **disclosure only**, never the gate.
 
-**Hard rule:** `REPORT_CARD.md` may never be green while `docs/JUDGE_CARD.md` is not.
-The inherited B+B+C section (28/28 + 6/6 on the old pipeline) is status-quo disclosure,
-not evidence for the rebuild. If the operator ever rules that `REPORT_CARD.md` itself
-is the literal gate of record, that is a **gate-touching** change and must be recorded
-before use.
-
-### Required `REPORT_CARD.md` shape
-
-Every run writes/regenerates:
+### Required `REPORT_CARD.md` shape (generated, never hand-edited)
 
 ```text
-# REPORT_CARD — run <id> · <date>
-## Gate of record (rebuild)
-  - generated from docs/JUDGE_CARD.md; behavior hash; commit; artifact tag/hash
-  - legs green x/8; stages green x/6; assessment (NOT DONE / ...)
-  - every blocking row with its exact missing receipt
-## Run decision
-  - DEC id, named axis, frozen acceptance, measured value, verdict
-  - adopted / reverted; receipts (paths); N; controls
-## Card delta
-  - rows that moved; rows that went UNKNOWN/stale; rows excluded-and-reported
-## Backward status
-  - last BACKWARD verdict; open BREAKING findings; date
-## Provenance
-  - exact commands; hashes; clean-tree commit; N; data/as_of
-## Inherited status-quo card (disclosure only — not the rebuild gate)
-  - the existing B+B+C card content, clearly labelled
+# REPORT_CARD — PATH B > PATH A
+  header: generated_at · commit · branch · clean/dirty · encoder behavior hash
+## Assessment
+  the generated completion condition (NOT DONE / ENCODER DONE)
+## The judge — four legs × two numbers
+  8 rows: supervised/unsupervised/rl/simulator × brain alone / brain + ledger
+## The stage ladder
+  S1..S6, each with its working-state proof and verdict
+## Certification hygiene
+  H1..H5
+## Backward requirements
+  the structured findings from docs/backward_requirements.json
+## What is blocking
+  exact missing receipts and open backward requirements
 ```
 
-No number may appear in the run sections that is not copied from a generated
-receipt/card. If the renderer for this shape does not exist yet, **building it is the
-first FORWARD subgoal**; do not hand-edit the card.
+The renderer reads receipts under `docs/report_cards/experiments/` and
+`docs/backward_requirements.json`; it never invents a number. A run that edits the card
+by hand is not evidence.
+
+### Backward requirements are card requirements
+
+`PROMPT_BACKWARD.md` writes every finding to `docs/BACKWARD_CARD.md` (narrative) **and**
+to `docs/backward_requirements.json` (structured). Each requirement has an `id`,
+`severity` (`BREAKING`/`MAJOR`/`MINOR`/`INFO`), `status` (`open`/`closed`/`accepted`),
+`finding`, `forward_subgoal`, `gate_touched`, `evidence`, and `date`. The renderer
+displays them in `REPORT_CARD.md`; an open `BREAKING` or `MAJOR` requirement blocks the
+completion condition. `MAJOR` may be closed by a forwarding protocol or explicitly
+`accepted` by the operator; `BREAKING` may never be accepted, only closed by evidence.
 
 ### "All green" — the only definition that counts
 
 All of the following, simultaneously:
 
-1. `docs/JUDGE_CARD.md`: **0 FAIL, 0 UNKNOWN**; every one of the 8 leg-columns is PASS
-   or **EXCLUDED-and-reported** under a frozen, operator-approved exclusion rule; all
+1. `REPORT_CARD.md`: **0 FAIL, 0 UNKNOWN**; every one of the 8 leg-columns is PASS or
+   **EXCLUDED-and-reported** under a frozen, operator-approved exclusion rule; all
    **6/6 stages** PASS.
 2. Hygiene 5/5 (environment, behavior hash, N, controls, finite/fair comparator);
    S6 6/6 (one command, deterministic render, clean recorded commit, artifact hashes,
    every row reports N).
 3. Freshness: the receipts' `behavior_hash` equals the current tree; no stale block;
    no unadopted receipt on the card.
-4. `REPORT_CARD.md`'s gate section agrees with the generated judge; no contradiction.
+4. **No open BREAKING/MAJOR backward requirement** in
+   `docs/backward_requirements.json`; every `MAJOR` is closed or operator-accepted.
 5. No open operator ruling blocks a row; every stop-and-ask item is resolved or
    explicitly recorded as a non-blocking disclosure.
 6. The generated assessment says the completion condition. A hand-written "SOLVED",
@@ -188,7 +191,7 @@ Follow AGENTS.md's certification integrity rules 1–8. In practice:
 | `STATUS.md` | macro (goal, stage, progress, blockers) + micro (current task, last completed, next 3, environment). Update **before yielding**. |
 | `DECISIONS.md` | append-only. Pre-registration before every run; measured outcome after; context / alternatives / decision+principle / trade-offs. Never edit old entries. |
 | `REPORT_CARD.md` | the run report + gate-of-record section (§4). Regenerated each run; no hand-written numbers. |
-| `docs/JUDGE_CARD.md` | the generated gate of record. Never hand-edit. |
+| `docs/backward_requirements.json` | structured BACKWARD findings rendered into `REPORT_CARD.md` (§4). |
 | `docs/AUDIT_CARD.md` | the full research audit; never hide an open row. |
 | `docs/report_cards/experiments/` | receipts; `protocols/<name>/` archives for non-adopted runs. |
 | `docs/BACKWARD_CARD.md` | the last adversarial review and its open findings. |
@@ -203,8 +206,8 @@ commit; a receipt that no repo command regenerates is not evidence.
 
 - One-command chain + card:
   `python3 scripts/measure_certification_law.py --products <recorded artifact> --demo <demo> --train-log <artifact>/train.log`
-- Judge render: `python3 scripts/judge_card.py`
-- Inherited status-quo card (disclosure only): `python3 scripts/report_card.py`
+- Report card render (the single card): `python3 scripts/report_card.py`
+- Inherited status-quo card (archive only): `python3 scripts/inherited_report_card.py`
 - Principle audit: `python3 scripts/principle_audit.py --strict <changed evidence scripts>`
 
 The chain command is the only S6-certifying path. A hand-rendered card is not evidence.
@@ -237,7 +240,7 @@ per-row Python loops in hot paths), and emit a runtime receipt.
 3. Adopted → keep; not adopted → revert + archive receipt + restore live receipts.
 4. `STATUS.md` updated; `DECISIONS.md` outcome appended.
 5. `REPORT_CARD.md` run sections written from generated cards; gate-of-record section
-   agrees with `docs/JUDGE_CARD.md`.
+   agrees with the renderer's own generated bytes; no contradiction.
 6. Clean-tree commit recorded; hashes/N/controls present; no `/tmp`-only evidence.
 7. `python3 scripts/principle_audit.py --strict` clean on changed evidence scripts;
    ruff/tests per the repo's gates (or the known-failure baseline disclosed).

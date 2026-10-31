@@ -1,658 +1,547 @@
-"""Generate the primary B + B+C report card (`REPORT_CARD.md` at repo root).
+#!/usr/bin/env python3
+"""Render the REPORT_CARD (DEC-390) — the project's single steering artifact.
 
-B  = the frozen encoder judged alone (construction, donor, content, objectives).
-B+C = the frozen encoder + six plugin heads (2 supervised, 2 unsupervised, 2 RL).
-Layer-1 causal/decision-sufficiency is *not* claimed here; it stays in
-`docs/AUDIT_CARD.md`, which this card links and summarises.
+    python3 scripts/report_card.py [--receipts DIR] [--out REPORT_CARD.md]
 
-Every row resolves to a receipt.  No number is hand-written.
+Design rules, all enforced in code rather than in prose:
+
+* **The verdict is computed, never narrated.** This file contains no numbers; every value comes
+  from a receipt under the receipts dir.
+* **Absence is UNKNOWN, never PASS.** A missing receipt names the exact file that must be
+  produced.
+* **The freshness law is mechanical** (DEC-390): each source receipt must carry the `behavior_hash`
+  of the encoder/serving code that produced it. If that code changed since, the row is UNKNOWN.
+* **No PASS without a finite comparator, a paired CI excluding zero, controls below the brain,
+  and a recorded N** (certification-integrity rules 3-5).
+* A receipt that defines its own criterion is UNKNOWN, not evidence.
 """
 
 from __future__ import annotations
 
+import argparse
+import hashlib
 import json
+import math
 import subprocess
-from dataclasses import dataclass
-from datetime import date
-from pathlib import Path
-
 import sys
+from datetime import datetime, timezone
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
-import card_spec as S  # noqa: E402
-import audit_card as R  # noqa: E402
+import judge_spec as J  # noqa: E402
 
-EXP = ROOT / "docs/report_cards/experiments"
-DEMO = EXP
+EXP = ROOT / "docs" / "report_cards" / "experiments"
+BACKWARD_REQUIREMENTS = ROOT / "docs" / "backward_requirements.json"
+# the card is a committed GENERATED artifact: its own bytes are the only thing a render is
+# allowed to leave uncommitted, so they must not decide the `dirty` flag (see _worktree_dirty)
+CARD_NAME = "REPORT_CARD.md"
 
 
-def load(name: str):
-    for p in (EXP / name, DEMO / name):
-        if p.exists():
-            return json.loads(p.read_text())
+# --------------------------------------------------------------------------- freshness
+
+
+def behavior_hash() -> str:
+    """sha256 over the behavior-bearing source tree (encoder + data path).
+
+    Derived from the package trees, not a curated file list: a newly added module is covered by
+    the freshness law automatically, which is the whole point of the law.
+    """
+    h = hashlib.sha256()
+    files: list[Path] = []
+    for tree in J.BEHAVIOR_TREES:
+        base = ROOT / tree
+        if base.is_dir():
+            files.extend(p for p in sorted(base.rglob("*")) if p.suffix in J.BEHAVIOR_SUFFIXES)
+    for f in files:
+        h.update(str(f.relative_to(ROOT)).encode())
+        h.update(b"\0")
+        h.update(f.read_bytes())
+        h.update(b"\0")
+    return h.hexdigest()[:16]
+
+
+def _worktree_dirty(status_porcelain: str) -> bool:
+    """Working-tree state, EXCLUDING the card's own output.
+
+    The card is a committed generated artifact, so its own bytes are the only thing a render is
+    allowed to dirty. Counting them meant every render printed `dirty` forever and certification
+    rule 6 ("regenerated at a clean, recorded commit") was unreachable — a flag that can never
+    say the truth is worse than no flag, because readers learn to ignore it.
+    """
+    # `git()` returns "?" when a command produced NO output, and an empty `status --porcelain`
+    # IS the clean tree. Taking the sentinel at face value made every truly clean tree render
+    # `dirty` — the same "a flag that always says one thing is not a flag" defect DEC-430 removed
+    # for the card's own bytes, and it was worse this way round: the honest state was unreachable
+    # and a reader would learn to ignore the only signal rule 6 has.
+    if status_porcelain.strip() in ("", "?"):
+        return False
+    return any(line.strip() and CARD_NAME not in line for line in status_porcelain.splitlines())
+
+
+def git(*args: str) -> str:
+    try:
+        out = subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True, timeout=20)
+        return out.stdout.strip() or "?"
+    except Exception:
+        return "?"
+
+
+def load(receipts: Path, name: str):
+    p = receipts / name
+    if not p.exists():
+        return None
+    try:
+        return json.loads(p.read_text())
+    except Exception as exc:
+        return {"_load_error": repr(exc)}
+
+
+# --------------------------------------------------------------------------- evaluation
+
+
+def _finite(x) -> bool:
+    return isinstance(x, (int, float)) and not isinstance(x, bool) and math.isfinite(x)
+
+
+def _meta_problem(receipt, current_hash: str, bhash_key: str = "behavior_hash") -> str | None:
+    """Why this receipt cannot be trusted as fresh/current, or None if it can."""
+    if receipt is None:
+        return "receipt missing"
+    if "_load_error" in receipt:
+        return f"receipt unreadable: {receipt['_load_error']}"
+    if J.CRITERION_KEYS & set(receipt.keys()):
+        return J.UNREGISTERED_NOTE
+    meta = receipt.get("_meta") or {}
+    if not meta.get("generated_at"):
+        return "receipt has no generated_at"
+    if not meta.get("git_commit"):
+        return "receipt has no git_commit"
+    if not meta.get(bhash_key):
+        return "receipt has no behavior_hash (freshness unverifiable)"
+    if meta[bhash_key] != current_hash:
+        return (
+            f"stale: encoder behavior changed since receipt ({meta[bhash_key]} != {current_hash})"
+        )
     return None
 
 
-@dataclass
-class BC:
-    ident: str
-    name: str
-    metric: str
-    comparator: str
-    gate: str
-    source: str
-    kind: str
+def _block_problem(block, current_hash: str) -> str | None:
+    """Per-PRODUCER freshness (certification rules 6 and 7).
 
-
-BC_ROWS = [
-    BC(
-        "SUP-1",
-        "value90 (E vs floor / ceiling)",
-        "R² vs legacy floor + ceiling gap",
-        "legacy floor",
-        "2SE over floor and >=50% of gap",
-        "encoder_ceiling.json",
-        "ceiling_value",
-    ),
-    BC(
-        "SUP-2",
-        "orders90 (E vs floor / ceiling)",
-        "R² vs legacy floor + ceiling gap",
-        "legacy floor",
-        "2SE over floor and >=50% of gap",
-        "encoder_ceiling.json",
-        "ceiling_orders",
-    ),
-    BC(
-        "UNS-1",
-        "Retrieval — churn neighbours",
-        "1-NN outcome consistency",
-        "table",
-        "paired CI > 0",
-        "plugin_unsupervised.json",
-        "churn_nn",
-    ),
-    BC(
-        "UNS-2",
-        "Retrieval — value neighbours",
-        "1-NN value-rank margin",
-        "table",
-        "not worse than table (2SE)",
-        "plugin_unsupervised.json",
-        "retrieval_parity",
-    ),
-    BC(
-        "RL-1",
-        "offer known-effect",
-        "10-NN purity vs randomized optimum",
-        "table",
-        "paired CI > 0",
-        "plugin_rl_known.json",
-        "offer",
-    ),
-    BC(
-        "RL-2",
-        "freq known-effect",
-        "10-NN purity vs randomized optimum",
-        "table",
-        "paired CI > 0",
-        "plugin_rl_known.json",
-        "freq",
-    ),
-    # Layer-1 decision-sufficiency (IPS policy value) is measured in scripts/measure_response.py
-    # and reported in docs/AUDIT_CARD.md -- it is out of the Layer-0 demo scope.
-]
-
-
-def _eval_b(row, docs):
-    """Custom B rows that replace the research-card definitions."""
-    if row.ident == "A1c":
-        u = docs["plugin_unsupervised.json"]["arms"]["E"]
-        ok = u["retrieval"] > 0 and u["churn_nn"] > 0.6
+    `judge_stages.json` is a MERGE: five stage blocks written by four different scripts at four
+    different times. The file's own `_meta` therefore belongs to whoever wrote it LAST, which
+    let one re-run of `measure_views_law` make every other block look current — including blocks
+    whose inputs (`/tmp/opencode/...`) had been deleted. A block must show it was measured
+    against the encoder behavior now being judged, or it is not evidence about this encoder.
+    """
+    if not isinstance(block, dict):
+        return None  # scalars carry no stamp of their own; the file-level check covers them
+    stamp = block.get("_stamp")
+    if not isinstance(stamp, dict):
+        return "block has no producer stamp (legacy receipt) — re-run its producer"
+    bhash = str(stamp.get("behavior_hash") or "")
+    if not bhash:
+        return "block stamp records no behavior_hash — re-run its producer"
+    if bhash != current_hash:
         return (
-            f"retr {u['retrieval']:.3f} · churn-nn {u['churn_nn']:.3f}",
-            "PASS" if ok else "FAIL",
-            "retrieval > 0, churn-nn > 0.6",
+            f"stale: measured by {stamp.get('producer', '?')} against behavior {bhash[:12]} "
+            f"(current {current_hash[:12]}) — re-run that producer"
         )
-    if row.ident == "A3c":
-        c = docs["plugin_rl_known.json"]["channel"]
-        ok = c["lo"] > 0 and c["E"] > c["table"]
-        return (f"ch {c['E']:.3f}/{c['table']:.3f}", "PASS" if ok else "FAIL", "paired CI > 0")
-    if row.ident == "A4c":
-        r = docs["encoder_donor.json"]["results"]["churn90"]
-        ok = r["E"] >= r["raw"]
-        return (f"E {r['E']:.4f} vs raw {r['raw']:.4f}", "PASS" if ok else "FAIL", "E >= raw table")
-    if row.ident == "O1p":
-        o = docs["encoder_objectives.json"]["objectives"]["next"]
-        ok = o["skill"] >= o["naive"] - 2 * o["se"]
-        return (
-            f"skill {o['skill']:+.3f} vs naive {o['naive']:+.3f} (±{o['se']:.3f})",
-            "PASS" if ok else "FAIL",
-            "not worse than naive (2SE)",
-        )
-    return R.evaluate(row, docs.get(row.source[0]))
+    # A block that contradicts itself is not evidence either (rule 7: self-consistency). The
+    # frozen criterion is still the block's `working` flag — this only refuses a block whose own
+    # recorded checks deny it, rather than letting `working: true` outrank its receipts.
+    checks = block.get("checks")
+    if isinstance(checks, dict) and checks and block.get("working"):
+        denied = [k for k, v in checks.items() if not (isinstance(v, dict) and v.get("working"))]
+        if denied:
+            return (
+                f"self-contradictory: reports working=True but "
+                f"{len(denied)} check(s) did not ({', '.join(sorted(denied)[:3])}) — re-run its producer"
+            )
+    return None
 
 
-def _b_rows():
-    out = []
-    for r in S.ROWS:
-        if r.ident == "A6":  # Layer-1 decision sufficiency: not a B row
+def _stage_why(val: dict) -> str:
+    """Evidence for a stage row — names WHAT FAILED rather than whatever the summary starts with.
+
+    A red stage is a diagnosis to act on (principle 8), so the row has to name the failing check
+    and its measured reason. The block-level `evidence` string is a concatenation of every check
+    in insertion order, so on S4/S5 it began with an OK row and a red stage read like a green one.
+    """
+    checks = val.get("checks") or {}
+    # fail safe: a check that cannot say it worked did not work (reject, do not assume)
+    failing = {k: v for k, v in checks.items() if not (isinstance(v, dict) and v.get("working"))}
+    if failing:
+        name, check = next(iter(failing.items()))
+        rest = f" (+{len(failing) - 1} more)" if len(failing) > 1 else ""
+        return f"FAILED {name}: {str(check.get('evidence', ''))[:110]}{rest}"
+    return str(val.get("evidence", ""))[:140]
+
+
+def eval_tasks(tasks, bhash_note: str | None) -> tuple[str, str, list]:
+    """Return (verdict, reason, per-task notes) for one leg column's task list."""
+    if bhash_note:
+        return J.UNKNOWN, bhash_note, []
+    if not isinstance(tasks, list) or not tasks:
+        return J.UNKNOWN, "no tasks recorded in this column", []
+
+    notes, live = [], []
+    for t in tasks:
+        name = str(t.get("name", "?"))
+        if t.get("degenerate"):
+            notes.append(
+                f"{name}: EXCLUDED (degenerate — {t.get('degenerate_reason', 'no variance')})"
+            )
             continue
-        if r.ident == "A1":
-            out.append(S.Row(S.AXES, "A1c", r.name, r.metric, r.comparator, r.gate, None, "custom"))
-        elif r.ident == "A3":
-            out.append(
-                S.Row(
-                    S.AXES,
-                    "A3c",
-                    "Identity — channel",
-                    "kNN channel purity",
-                    "table",
-                    "not worse than table (CI > 0)",
-                    None,
-                    "custom",
-                )
+        missing = [f for f in J.REQUIRED_TASK_FIELDS if f not in t]
+        if missing:
+            return J.UNKNOWN, f"{name}: missing {missing}", notes
+        if not all(_finite(t[f]) for f in ("brain", "pathA", "ci_lo", "ci_hi")) or not _finite(
+            t.get("n")
+        ):
+            return J.UNKNOWN, f"{name}: non-finite measurement or N", notes
+        if t["ci_lo"] > t["ci_hi"]:
+            return J.UNKNOWN, f"{name}: ci_lo > ci_hi", notes
+        comp = str(t.get("comparator", "PATH A (GBM incumbent)")).strip().lower()
+        if comp in J.INVALID_COMPARATORS:
+            return J.UNKNOWN, f"{name}: comparator '{comp}' is not a fair comparator", notes
+        if t["ci_lo"] == t["ci_hi"]:
+            notes.append(f"{name}: zero-width CI (point estimate only)")
+            t = dict(t, _zero_width=True)
+        for ctl in ("random", "destroyed"):
+            if ctl not in t or not _finite(t[ctl]):
+                return J.UNKNOWN, f"{name}: control '{ctl}' missing (H4)", notes
+            if t[ctl] > t["brain"]:
+                return J.FAIL, f"{name}: {ctl} control >= brain ({t[ctl]} vs {t['brain']})", notes
+        # H4 is only satisfied if a control COULD have won. A control at R2 << 0 is not beaten, it
+        # is absurd: beating it proves the head is not insane, not that the representation carries
+        # signal. Such a control is reported as vacuous, and a column may not PASS on vacuity.
+        readable = [
+            ctl
+            for ctl in ("random", "destroyed")
+            if _finite(t[ctl]) and t[ctl] >= J.VACUOUS_CONTROL_R2
+        ]
+        if not readable:
+            t = dict(t, _no_readable_control=True)
+            notes.append(
+                f"{name}: H4 VACUOUS — both controls below R2={J.VACUOUS_CONTROL_R2} "
+                f"(random {t['random']:.4g}, destroyed {t['destroyed']:.4g}); beating them is "
+                f"not evidence of signal"
             )
-        elif r.ident == "A4":
-            out.append(S.Row(S.AXES, "A4c", r.name, r.metric, r.comparator, r.gate, None, "custom"))
-        elif r.ident == "O1":
-            out.append(
-                S.Row(
-                    S.OBJECTIVES,
-                    "O1p",
-                    "next-event parity",
-                    "linear probe next-event skill",
-                    "naive (marginal)",
-                    "not worse than naive (2SE)",
-                    None,
-                    "custom",
-                )
-            )
-        else:
-            out.append(r)
-    return out
+        live.append(t)
+        notes.append(
+            f"{name}: brain {t['brain']:.4g} vs PATH A {t['pathA']:.4g} "
+            f"(delta {t['brain'] - t['pathA']:+.4g}, CI [{t['ci_lo']:+.4g}, {t['ci_hi']:+.4g}], n={t['n']})"
+        )
 
-
-def _eval_bc(row, docs):
-    d = docs.get(row.source)
-    if d is None:
-        return ("—", "NOT MEASURED", "missing receipt")
-    if row.kind in ("ceiling_value", "ceiling_orders"):
-        t = "value90" if row.kind == "ceiling_value" else "orders90"
-        c = d["results"][t]
-        ok = bool(c["beats_floor_2se"] and c["reaches_ceiling"])
+    if not live:
+        return J.EXCLUDED, "every task degenerate (reported, not forced)", notes
+    failing = [t for t in live if not (t["ci_lo"] > 0 and t["brain"] > t["pathA"])]
+    if failing:
+        names = ", ".join(t["name"] for t in failing)
+        return J.FAIL, f"does not beat PATH A with CI excluding 0: {names}", notes
+    # A green row must rest on a control that could have caught it (DEC-433). This can only turn a
+    # would-be PASS into UNKNOWN — it never turns a red row green, so it tightens H4 rather than
+    # moving a verdict in our favor.
+    vacuous = [t["name"] for t in live if t.get("_no_readable_control")]
+    if vacuous:
         return (
-            f"floor {c['floor']:.3f} · E {c['E']:.3f} · ceiling {c['ceiling']:.3f} "
-            f"({c['E_minus_floor']:+.4f}±{c['se']:.4f})",
-            "PASS" if ok else "FAIL",
-            "2SE + reaches ceiling",
+            J.UNKNOWN,
+            f"beats PATH A but H4 is vacuous on {len(vacuous)}/{len(live)} trait(s) "
+            f"({', '.join(vacuous[:3])}): no control readable enough to have failed",
+            notes,
         )
-    if row.kind == "retrieval_parity":
-        u = d["arms"]["E"]
-        t = d["arms"]["table"]
-        ci = u["retrieval_ci"]
-        diff = u["retrieval"] - t["retrieval"]
-        ok = diff >= -2 * ci["se"]
-        return (
-            f"{u['retrieval']:.4f} vs {t['retrieval']:.4f} (delta {diff:+.4f}, 2SE {2 * ci['se']:.4f})",
-            "PASS" if ok else "FAIL",
-            "not worse (2SE)",
-        )
-    if row.kind == "response_channel":
-        return _eval_bc_response(d, "channel")
-    if row.kind == "churn_nn":
-        u = d["arms"]["E"]
-        t = d["arms"]["table"]
-        ci = u["churn_nn_ci"]
-        return (
-            f"{u['churn_nn']:.4f} vs {t['churn_nn']:.4f} (CI {ci['lo']:+.4f})",
-            "PASS" if ci["lo"] > 0 else "FAIL",
-            "paired CI > 0",
-        )
-    r = d[row.kind]
     return (
-        f"{r['E']:.4f} vs {r['table']:.4f} (CI {r['lo']:+.4f})",
-        "PASS" if r["lo"] > 0 else "FAIL",
-        "paired CI > 0",
+        J.PASS,
+        f"{len(live)} task(s) beat PATH A; paired CI excludes 0; controls below brain",
+        notes,
     )
 
 
-def _eval_bc_response(d, key):
-    r = d.get(key)
-    if not r:
-        return ("—", "NOT MEASURED", "missing arm")
-    dr = r["E_minus_random"]
-    dt = r["E_minus_table"]
-    ok = bool(dr["lo"] > 0 and dt["mean"] >= 0)
-    return (
-        f"IPS {r['E']['ips']:.1f} vs random {r['random']['ips']:.1f} (Δ {dr['mean']:+.1f} "
-        f"[{dr['lo']:+.1f},{dr['hi']:+.1f}]) · vs table Δ {dt['mean']:+.1f}",
-        "PASS" if ok else "FAIL",
-        "E > random (CI>0) and E >= table",
-    )
+# --------------------------------------------------------------------------- rendering
 
 
-def _state_attribution(docs):
-    """Render which part of the frozen foundation state carries the signal."""
-    fs = docs.get("foundation_state.json")
-    out = ["## State attribution — what carries the signal", ""]
-    if not fs:
-        out += ["NOT MEASURED (no `foundation_state.json` receipt).", ""]
-        return out
-    arms = ["table", "shape", "learned_state", "forecast", "measure", "full_legacy", "full_measure"]
-    label = {
-        "table": "table (baseline)",
-        "shape": "**shape** (`E`, 128-d)",
-        "learned_state": "learned_state (per-timescale state/mass)",
-        "forecast": "forecast (past/future summary heads)",
-        "measure": "**measure** (lawful typed statistics)",
-        "full_legacy": "full legacy (`E` + blocks)",
-        "full_measure": "full + measure",
+def _badge(v: str) -> str:
+    return {
+        J.PASS: "✅ PASS",
+        J.FAIL: "❌ FAIL",
+        J.UNKNOWN: "❔ UNKNOWN",
+        J.EXCLUDED: "⚪ EXCLUDED",
+    }[v]
+
+
+def _products_id(block) -> tuple | None:
+    p = (block or {}).get("products") or {}
+    if not p.get("registry_sha256") and not p.get("tag"):
+        return None
+    return (p.get("tag"), p.get("registry_sha256"))
+
+
+def _artifact_mismatch(receipts: Path, stages_rc: dict | None) -> dict:
+    """Rows measured against a DIFFERENT products artifact than the rest of the card are
+    refused (UNKNOWN), not quietly rendered side by side (DEC-448, closing DEC-445).
+
+    Two encoder protocols once shipped under one tag, so a card assembled from legs of both
+    would have rendered as self-consistent. Identity is the registry (tag + content hash);
+    receipts without an id (older artifacts) are exempt — this refuses a demonstrated MIX,
+    it is not a new capability gate. Deterministic: the majority artifact wins; ties break
+    lexicographically.
+    """
+    ids: dict[str, tuple] = {}
+    for row in J.LEG_ROWS:
+        i = _products_id(load(receipts, row.source))
+        if i:
+            ids[row.source] = i
+    for s in J.STAGE_ROWS:
+        if s.ident in ("S4", "S5"):
+            i = _products_id((stages_rc or {}).get(s.ident))
+            if i:
+                ids[f"stage::{s.ident}"] = i
+    distinct = set(ids.values())
+    if len(distinct) <= 1:
+        return {}
+    counts: dict[tuple, int] = {}
+    for v in ids.values():
+        counts[v] = counts.get(v, 0) + 1
+    top = max(sorted(counts), key=lambda k: counts[k])
+    return {
+        k: (
+            f"card mixes artifacts: this row measured tag={i[0]} sha={i[1]}, "
+            f"but the card's artifact is tag={top[0]} sha={top[1]}"
+        )
+        for k, i in ids.items()
+        if i != top
     }
-    out += [
-        "Same holdout, same head, same folds. A view is a *named selection*, not a claim that "
-        "the compact embedding alone is sufficient. Concatenating every view dilutes raw-distance "
-        "probes; consumers should select the view their task needs.",
-        "",
-        f"Measure state: **{fs['config']['measure_dim']}** dims, coverage "
-        f"{fs['config']['measure_coverage']}. Full state: "
-        f"**{fs['config']['layout']['full_dim']}** dims.",
-        "",
-        "### Supervised (R² / AUC)",
-        "",
-        "| arm | value90 | orders90 | churn90 |",
+
+
+def _requirements() -> list[dict]:
+    """Backward findings become card requirements (DEC-497).
+
+    The renderer never invents a requirement: it displays the structured file BACKWARD writes.
+    An unreadable file is a BREAKING requirement, not an empty list — absence of evidence is
+    never a green.
+    """
+    if not BACKWARD_REQUIREMENTS.exists():
+        return []
+    try:
+        data = json.loads(BACKWARD_REQUIREMENTS.read_text())
+    except Exception as exc:
+        return [
+            {
+                "id": "B-???",
+                "severity": "BREAKING",
+                "status": "open",
+                "finding": f"backward requirements file is unreadable: {exc!r}",
+                "forward_subgoal": "repair docs/backward_requirements.json",
+            }
+        ]
+    reqs = data.get("requirements", [])
+    return [r for r in reqs if isinstance(r, dict)]
+
+
+def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
+    generated = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    summary = {"pass": 0, "fail": 0, "unknown": 0, "excluded": 0}
+    blocked: list[str] = []
+
+    def record(verdict: str, why: str, needs: str | None = None):
+        summary[verdict.lower()] += 1
+        if verdict in (J.UNKNOWN, J.FAIL) and needs:
+            blocked.append(f"{needs} — {why}")
+        return verdict, why
+
+    # ---- top line: the judge ----------------------------------------------------
+    # Loaded before the legs so the single-artifact rule (DEC-448) can see every
+    # products-consuming receipt on the card, stage blocks included.
+    stages_rc = load(receipts, "judge_stages.json")
+    mix = _artifact_mismatch(receipts, stages_rc)
+    judge_lines, verdicts = [], {}
+    judge_lines += [
+        "| Leg | Column | Verdict | Evidence |",
         "|---|---|---|---|",
     ]
-    for a in arms:
-        r = fs["supervised"]
-        out.append(
-            f"| {label[a]} | {r['value90'][a]:.4f} | {r['orders90'][a]:.4f} | {r['churn90'][a]:.4f} |"
+    for row in J.LEG_ROWS:
+        rc = load(receipts, row.source)
+        note = _meta_problem(rc, current_hash)
+        if rc and not note:
+            note = mix.get(row.source)
+        tasks = None
+        if rc and not note:
+            tasks = (rc.get("columns") or {}).get(row.column, {}).get("tasks")
+            if tasks is None:
+                note = f"receipt {row.source} has no columns.{row.column}.tasks"
+        verdict, why, _ = eval_tasks(tasks, note)
+        verdict, why = record(verdict, why, None if note is None else f"{row.source}")
+        if verdict in (J.FAIL,):
+            blocked.append(f"{row.source} :: {row.column} — {why}")
+        verdicts[row.ident] = verdict
+        judge_lines.append(
+            f"| {row.leg} | {J.COLUMN_LABEL[row.column]} | {_badge(verdict)} | {why} |"
         )
-    out += [
-        "",
-        "### Identity (kNN purity vs truth) and geometry",
-        "",
-        "| arm | channel | category | retrieval | churn-nn | anomaly AUC | regime NMI |",
-        "|---|---|---|---|---|---|---|",
+
+    # ---- stage ladder -----------------------------------------------------------
+    stage_lines = ["| Stage | Working-state proof | Verdict | Evidence |", "|---|---|---|---|"]
+    stage_note = _meta_problem(stages_rc, current_hash)
+    for s in J.STAGE_ROWS:
+        val = (stages_rc or {}).get(s.ident) if not stage_note else None
+        if stage_note:
+            verdict, why = (
+                J.UNKNOWN,
+                stage_note if "missing" not in stage_note else "judge_stages.json missing",
+            )
+        elif val is None:
+            verdict, why = J.UNKNOWN, f"no measurement recorded for {s.ident}"
+        elif isinstance(val, bool):
+            verdict, why = (J.PASS, "reported working") if val else (J.FAIL, "reported not working")
+        elif isinstance(val, dict) and "working" in val:
+            block_note = _block_problem(val, current_hash)
+            if not block_note:
+                block_note = mix.get(f"stage::{s.ident}")
+            if block_note:
+                verdict, why = J.UNKNOWN, block_note
+            else:
+                verdict = J.PASS if val["working"] else J.FAIL
+                # provenance travels with the number: a reader must be able to see WHICH artifact
+                # this block describes without opening the JSON and guessing from the merge order
+                st = val["_stamp"]
+                why = (
+                    _stage_why(val)
+                    + f"  ·{st.get('producer', '?')} on {str(st.get('git_commit', ''))[:7]}"
+                )
+        else:
+            verdict, why = J.UNKNOWN, f"malformed entry for {s.ident}"
+        verdict, why = record(verdict, why, "judge_stages.json")
+        verdicts[s.ident] = verdict
+        stage_lines.append(f"| **{s.ident}** {s.name} | {s.gate} | {_badge(verdict)} | {why} |")
+
+    # ---- hygiene ----------------------------------------------------------------
+    hyg_lines = ["| # | Check | Verdict | Evidence |", "|---|---|---|---|"]
+    env_rc = load(receipts, "env_receipt.json")
+    env_ok = bool(env_rc and (env_rc.get("torch") or {}).get("matmul_smoke", {}).get("ok"))
+    checks = {
+        "H1": (
+            env_ok,
+            "env_receipt.json device matmul ok" if env_ok else "run scripts/env_receipt.py",
+        ),
+        "H2": (bool(current_hash), f"behavior_hash {current_hash}"),
+        "H3": (True, "enforced per row (no PASS without N)"),
+        "H4": (True, "enforced per row (no PASS without controls)"),
+        "H5": (True, "enforced per row (comparator must be finite and fair)"),
+    }
+    for h in J.HYGIENE_ROWS:
+        ok, why = checks[h.ident]
+        verdict, why = record(J.PASS if ok else J.UNKNOWN, why, h.ident)
+        verdicts[h.ident] = verdict
+        hyg_lines.append(f"| {h.ident} | {h.name} | {_badge(verdict)} | {why} |")
+
+    # ---- backward requirements (DEC-497) ---------------------------------------
+    reqs = _requirements()
+    open_blocking = [
+        r
+        for r in reqs
+        if str(r.get("status", "open")) == "open"
+        and str(r.get("severity", "")).upper() in ("BREAKING", "MAJOR")
     ]
-    for a in arms:
-        i, g = fs["identity"][a], fs["geometry"][a]
-        out.append(
-            f"| {label[a]} | {i['channel']:.4f} | {i['category']:.4f} | {g['retrieval']:.4f} | "
-            f"{g['churn_nn']:.4f} | {g['anomaly_auc']:.4f} | {g['nmi_regime']:.4f} |"
+    req_lines = ["| ID | Severity | Status | Finding | Forward subgoal |", "|---|---|---|---|---|"]
+    if not reqs:
+        req_lines.append(
+            "| — | — | — | no backward review recorded | run `PROMPT_BACKWARD.md` after the card is green |"
         )
-    vm = fs["supervised"]["value90"]
-    out += [
-        "",
-        "**Reading.** `shape` alone trails the table on value/orders but beats it on churn "
-        f"({fs['supervised']['churn90']['shape']:.4f} vs {fs['supervised']['churn90']['table']:.4f}). "
-        "`measure` nearly matches the table on category identity "
-        f"({fs['identity']['measure']['category']:.4f} vs {fs['identity']['table']['category']:.4f}) "
-        "and is the best non-table anomaly view. `learned_state` carries channel identity. "
-        f"`full` is the strongest supervised view (value90 {vm['full_measure']:.4f} vs table "
-        f"{vm['table']:.4f}). No single view wins everywhere; that is why the artifact exposes "
-        "named views instead of one opaque vector.",
-        "",
-    ]
-    return out
+    else:
+        for r in reqs:
+            req_lines.append(
+                f"| {r.get('id', '?')} | {r.get('severity', '?')} | {r.get('status', '?')} | "
+                f"{str(r.get('finding', ''))[:140]} | {str(r.get('forward_subgoal', ''))[:140]} |"
+            )
 
+    # ---- verdict rollup ---------------------------------------------------------
+    legs_green = all(verdicts[r.ident] == J.PASS for r in J.LEG_ROWS)
+    stages_green = all(verdicts[s.ident] == J.PASS for s in J.STAGE_ROWS)
+    if legs_green and stages_green and not open_blocking:
+        assessment = (
+            "ENCODER DONE (v1): all four legs PASS in both columns, every stage is working by "
+            "receipt, and no BREAKING/MAJOR backward requirement is open. Capacity certification "
+            "(k_min) is reported separately below."
+        )
+    else:
+        assessment = (
+            f"NOT DONE. Legs green: {sum(1 for r in J.LEG_ROWS if verdicts[r.ident] == J.PASS)}"
+            f"/{len(J.LEG_ROWS)} · stages green: "
+            f"{sum(1 for s in J.STAGE_ROWS if verdicts[s.ident] == J.PASS)}/{len(J.STAGE_ROWS)}"
+            f" · backward open: {len(open_blocking)}. "
+            "This is a statement about receipts, not about effort; nothing here is a claim of "
+            "universality (DEC-410: that word appears only when the coverage rows are green)."
+        )
 
-def _serving_contract(docs):
-    """Render the frozen artifact contract and the measured serving cost."""
-    rt = docs.get("runtime.json")
-    out = ["## Serving contract — frozen artifact", ""]
-    out += [
-        "`looking_glass/foundation.py` exposes `FrozenFoundation`: load → `state(seqs, keys, "
-        "views=[...])`. The artifact carries weights, schema/config, the state layout, the lawful "
-        "measure vocabulary, and provenance (data, seed, axes, git SHA, hash).",
-        "",
-        "| view | dims | consumer use |",
-        "|---|---|---|",
-        "| `shape` | 128 | compact behavioural state |",
-        "| `learned_state` | 1152 | per-timescale recurrent state + learned mass |",
-        "| `forecast` | 835 | self-supervised past/future summaries |",
-        "| `uncertainty` | 23 | missingness / support / gap |",
-        "| `heads` | 127 | identity / next-event / relational predictions |",
-        "| `measure` | varies (data-derived) | lawful exact statistics (category identity, "
-        "anomaly) |",
-        "| `full` | 2265 | strongest supervised view |",
-        "",
-        "The encoder refuses to emit a state when its `as_of` timestamp is missing or the output is "
-        "non-finite — it never silently sanitizes.",
-        "",
-    ]
-    if rt:
-        out += [
-            "### Measured serving cost",
+    for r in open_blocking:
+        blocked.append(f"backward {r.get('id', '?')} — {r.get('finding', '')}")
+    summary["backward_open"] = len(open_blocking)
+
+    md = "\n".join(
+        [
+            "# REPORT_CARD — PATH B > PATH A",
             "",
-            f"Stream load (cached): **{rt['load_data_s']}s** · artifact load "
-            f"**{rt['artifact_load_s']}s** · measure transform **{rt['measure_transform_s']}s** "
-            f"for {rt['n_entities']} entities ({rt['measure_rows_per_s']} rows/s) · frozen forward "
-            f"cold **{rt.get('state_forward_cold_s', 'n/a')}s** (includes compile), warm "
-            f"**{rt.get('state_forward_warm_s', 'n/a')}s** ({rt['state_rows_per_s']} rows/s) · "
-            f"5-fold head fit **{rt['head_fit_5fold_s']}s** · peak RSS **{rt['peak_rss_mb']} MB**.",
+            f"*Generated `{generated}` · commit `{git('rev-parse', '--short', 'HEAD')}` "
+            f"(`{git('rev-parse', '--abbrev-ref', 'HEAD')}`"
+            f"{' · dirty' if _worktree_dirty(git('status', '--porcelain')) else ' · clean'}) "
+            f"· encoder behavior `{current_hash}`*",
+            "",
+            f"**Assessment:** {assessment}",
+            "",
+            "The verdict is a pure function of the receipts under `docs/report_cards/experiments/`.",
+            "Ledger points never count as progress: `brain alone` is the judge, `brain + ledger` is delivery.",
+            "",
+            "## The judge — four legs × two numbers",
+            "",
+            *judge_lines,
+            "",
+            "## The stage ladder — what is broken when a leg is red",
+            "",
+            *stage_lines,
+            "",
+            "## Certification hygiene",
+            "",
+            *hyg_lines,
+            "",
+            "## What is blocking (exact missing receipts)",
+            "",
+            *([f"- `{b}`" for b in blocked] or ["- nothing — all rows evaluated"]),
+            "",
+            "## Backward requirements (from PROMPT_BACKWARD)",
+            "",
+            *req_lines,
+            "",
+            "---",
+            "",
+            "*The inherited status-quo card is archived at "
+            "`docs/archive/REPORT_CARD_INHERITED.md`; it measures the pipeline as it was and is "
+            "disclosure only (DEC-497).*",
             "",
         ]
-    out += [
-        "**Corrected finding:** the frozen forward is not the steady-state bottleneck. The earlier "
-        "~110 rows/s figure was dominated by `torch.compile` warm-up; warm throughput is ~2,000 "
-        "rows/s and does not improve materially with larger batches. Cold compilation and the "
-        "supervised head fit are the real measured costs.",
-        "",
-    ]
-    return out
+    )
+    return md, {"summary": summary, "assessment": assessment, "verdicts": verdicts}
 
 
-def _view_selection(docs):
-    """Render the pre-registered, train-only view selection result."""
-    vs = docs.get("view_selection.json")
-    out = ["## View selection — chosen on training folds only", ""]
-    if not vs:
-        out += ["NOT MEASURED (no `view_selection.json`).", ""]
-        return out
-    p = vs["protocol"]
-    out += [
-        f"Candidates `{', '.join(p['candidates'])}` were declared before scoring. Selection used "
-        f"**{p['selection']}** on {p['n_train']:,} training customers; the {p['n_hold']:,} holdout "
-        "customers were scored once afterwards. No view was chosen using holdout performance.",
-        "",
-        "| target | selected view | holdout selected | table | delta | 95% CI |",
-        "|---|---|---|---|---|---|",
-    ]
-    for t, e in vs["targets"].items():
-        d = e["selected_minus_table"]
-        out.append(
-            f"| {t} | `{e['selected_view']}` | {e['holdout']['selected']:.4f} | "
-            f"{e['holdout']['table']:.4f} | {d['mean']:+.4f} | [{d['lo']:+.4f}, {d['hi']:+.4f}] |"
-        )
-    out += [
-        "",
-        "The selected view is the one with the best **training-fold** score per target, so "
-        "`shape` is not assumed to be the product: consumers receive a state the training data "
-        "actually supports. Churn's interval crosses zero and is reported as a tie.",
-        "",
-    ]
-    return out
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--receipts", default=str(EXP))
+    ap.add_argument("--out", default=str(ROOT / "REPORT_CARD.md"))
+    ap.add_argument("--print", action="store_true", dest="do_print")
+    a = ap.parse_args()
 
-
-def _rl_policy_value(docs):
-    """Pre-action, customer-grouped policy value against valid comparators."""
-    d = docs.get("plugin_response.json")
-    out = ["## RL policy value — pre-action, grouped", ""]
-    if not d:
-        out += ["NOT MEASURED (no `plugin_response.json`).", ""]
-        return out
-    pr = d.get("protocol", {})
-    out += [
-        "Separate from the known-effect rows above. The response model sees a state cut strictly "
-        "**before** each randomized send and uses the logged uniform propensity; intervals come "
-        "from a customer-grouped bootstrap. The comparator is the **uniform policy**, not a "
-        "shuffled-state model (which converged to the same policy and produced a fake zero-width "
-        "CI). No deploy claim is made.",
-        "",
-        f"Reward window {pr.get('reward_days')} days · up to {pr.get('maxsends')} sends/customer · "
-        f"split `{pr.get('split')}`.",
-        "",
-        "| arm | E IPS | table IPS | uniform | E − uniform | E − table |",
-        "|---|---|---|---|---|---|",
-    ]
-    for key in ("channel", "offer"):
-        r = d.get(key)
-        if not r:
-            continue
-        er, et = r["E_minus_random"], r["E_minus_table"]
-        out.append(
-            f"| {key} | {r['E']['ips']:.2f} | {r['table']['ips']:.2f} | "
-            f"{r['random']['ips']:.2f} | {er['mean']:+.2f} [{er['lo']:+.2f}, {er['hi']:+.2f}] | "
-            f"{et['mean']:+.2f} [{et['lo']:+.2f}, {et['hi']:+.2f}] |"
-        )
-    out += [
-        "",
-        "Read honestly: the channel policy beats the uniform comparator while tying the table; the "
-        "offer policy beats the table while tying the uniform comparator. No arm dominates both "
-        "comparators, so this is evidence of a working response interface — not a deploy-grade "
-        "policy-value certificate.",
-        "",
-    ]
-    return out
-
-
-def main():
-    docs = {}
-    for p in list((ROOT / "docs/report_cards").glob("*.json")) + list(EXP.glob("*.json")):
-        try:
-            docs[p.name] = json.loads(p.read_text())
-        except Exception:
-            pass
-    data = docs.get("data_receipt.json") or {}
-    b_rows = _b_rows()
-
-    b_eval = []
-    for r in b_rows:
-        val, verdict, note = _eval_b(r, docs)
-        b_eval.append((r, val, verdict, note))
-    bc_eval = [(r, *_eval_bc(r, docs)) for r in BC_ROWS]
-    b_pass = sum(v == "PASS" for _, _, v, _ in b_eval)
-    b_fail = sum(v in ("FAIL", "NOT MEASURED") for _, _, v, _ in b_eval)
-    bc_pass = sum(v == "PASS" for _, _, v, _ in bc_eval)
-    bc_fail = sum(v in ("FAIL", "NOT MEASURED") for _, _, v, _ in bc_eval)
-
-    try:
-        commit = subprocess.check_output(
-            ["git", "rev-parse", "--short", "HEAD"], cwd=ROOT, text=True
-        ).strip()
-    except Exception:
-        commit = "unknown"
-    try:
-        branch = subprocess.check_output(
-            ["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=ROOT, text=True
-        ).strip()
-    except Exception:
-        branch = "unknown"
-
-    L = []
-    A = L.append
-    A("# REPORT_CARD — B (encoder) + B+C (plugins) [GENERATED]")
-    A("")
-    A(
-        "> Generated by `python3 scripts/report_card.py`. Gates live in `scripts/card_spec.py` "
-        "(B) and `scripts/report_card.py` (B+C). Every row resolves to a receipt. "
-        "The full research audit is [`docs/AUDIT_CARD.md`](docs/AUDIT_CARD.md)."
-    )
-    A("")
-    A(
-        f"- **Generated:** {date.today().isoformat()} · **commit:** `{commit}` · **branch:** {branch}"
-    )
-    A("- **Data:** synthetic relational reference (6k) · harness, no business data.")
-    cfg = docs.get("encoder_config.json") or {}
-    if cfg.get("manifest"):
-        A(
-            f"- **Run artifact:** `{Path(cfg.get('manifest')).name}` · cache "
-            f"`{cfg.get('cache_sha256', 'n/a')[:12]}` · built `{cfg.get('built_at', 'n/a')}` "
-            f"at `{cfg.get('git_sha', 'n/a')}`."
-        )
-    if cfg:
-        A(
-            f"- **Encoder config:** axes `{','.join(cfg.get('axes') or []) or 'baseline'}` · "
-            f"d {cfg.get('d')} · layers {cfg.get('layers')} · readout dim {cfg.get('n_read')} · "
-            f"E dim {cfg.get('E_dim')} · state dim {cfg.get('state_dim')}"
-            + (f" · histogram dim {cfg.get('hist_dim')}" if cfg.get("hist_dim") else "")
-            + "."
-        )
-    A(
-        f"- **Scale:** {data.get('path_b', {}).get('customers', 0):,} customers · "
-        f"{data.get('path_b', {}).get('rows', 0):,} events · as-of `{data.get('as_of', 'n/a')}`."
-    )
-    A(
-        "- **Arm:** B/C rows use the published state; the *State attribution* section below "
-        "separates shape, learned_state, forecast, and lawful measure so no row implies the "
-        "compact embedding alone is sufficient. The audit names every arm."
-    )
-    A(
-        f"- **B (encoder alone):** **{'CERTIFIED' if b_fail == 0 else 'OPEN'}** — {b_pass} PASS · {b_fail} FAIL"
-    )
-    A(
-        f"- **B+C (plugins):** **{'CERTIFIED' if bc_fail == 0 else 'OPEN'}** — {bc_pass} PASS · {bc_fail} FAIL"
-    )
-    A("")
-    A("## Demo dataset (A)")
-    A("")
-    pb = data.get("path_b", {})
-    ev = pb.get("event_types", {})
-    top = ", ".join(f"{k} {v:,}" for k, v in sorted(ev.items(), key=lambda kv: -kv[1])[:6])
-    A(
-        f"{pb.get('customers', 0):,} customers · {pb.get('rows', 0):,} events · "
-        f"as-of `{data.get('as_of', 'n/a')}` · seed `{data.get('seed')}` · one 540-day window.  "
-        f"Event mix: {top}."
-    )
-    labs = data.get("labels") or []
-    if labs:
-        A(f"Label set: {', '.join(labs)}.")
-    A("")
-    A(
-        "The generator emits a canonical 4-column event stream plus a wide baseline table, a "
-        "known-truth receipt, and PATH A/B validation.  Labels are 30/90-day value, orders, churn "
-        "and margin; the truth receipt carries each customer's optimum for freq, hour, dow, channel "
-        "and offer.  Actions are randomized one factor per day, with the other factors at that "
-        "customer's optimum, so the data supports supervised labels, unsupervised geometry, and "
-        "known-effect RL."
-    )
-    A("")
-    A("## Goal")
-    A("")
-    A(
-        "Input an event stream → train one self-supervised encoder → freeze it → use it as the "
-        "foundation for supervised, unsupervised, and RL plugins. **B** judges the encoder alone; "
-        "**B+C** judges the encoder plus six plugin heads (2 per group). Layer-1 decision-sufficiency "
-        "is explicitly out of scope here and remains open in the audit."
-    )
-    A("")
-
-    A("## B — encoder alone")
-    A("")
-    A(
-        "Rows with a `c` suffix (A1c/A3c/A4c) are the declared-scope variants; the audit keeps "
-        "the original combined A1/A3/A4 gates and the category-identity row."
-    )
-    A("")
-    sections = [
-        (S.CONSTRUCTION, "Construction — invariants by construction"),
-        (S.DONOR, "Donor — does not lose / adds / controls"),
-        (S.AXES, "Content axes"),
-        (S.OBJECTIVES, "Objectives — self-supervised battery"),
-    ]
-    for sec, title in sections:
-        A(f"### {title}")
-        A("")
-        A("| # | Item | Metric | Comparator | Gate | Value | Verdict |")
-        A("|---|---|---|---|---|---|---|")
-        for r, val, verdict, _ in b_eval:
-            if r.section != sec:
-                continue
-            A(
-                f"| {r.ident} | {r.name} | {r.metric} | {r.comparator} | {r.gate} | {val} | **{verdict}** |"
-            )
-        A("")
-
-    L.extend(_state_attribution(docs))
-    L.extend(_serving_contract(docs))
-    L.extend(_view_selection(docs))
-    L.extend(_rl_policy_value(docs))
-
-    A("## B+C — encoder + plugins")
-    A("")
-    A("| # | Plugin | Metric | Comparator | Gate | Value | Verdict |")
-    A("|---|---|---|---|---|---|---|")
-    for r, val, verdict, _ in bc_eval:
-        A(
-            f"| {r.ident} | {r.name} | {r.metric} | {r.comparator} | {r.gate} | {val} | **{verdict}** |"
-        )
-    A("")
-    A(
-        "All five randomized action arms pass known-effect recovery: channel 0.685, offer 0.616, "
-        "freq 0.884, hour 0.556, dow 0.336 vs table 0.251 / 0.303 / 0.546 / 0.289 / 0.152. "
-        "The table shows two of them (offer, freq); channel is reported in B's identity row (A3c)."
-    )
-    A("")
-
-    A("## Verdict")
-    A("")
-    if b_fail == 0 and bc_fail == 0:
-        A(
-            "**B is certified for the declared encoder scope, and B+C is certified for the six "
-            "plugin gates.** The encoder is a reusable foundation: it does not lose to the table, "
-            "adds signal, passes its construction laws and negative controls, and its state supports "
-            "supervised prediction, unsupervised retrieval/identity, and randomized-action recovery."
-        )
-    else:
-        A(f"**Open.** B: {b_fail} failing row(s); B+C: {bc_fail} failing row(s). See the tables.")
-    A("")
-
-    A("## Limitations / Layer 1 (not claimed)")
-    A("")
-    A(
-        "- **Category identity** — E trails the table on category-preference purity; the channel "
-        "identity row above is the claimed identity axis."
-    )
-    idn = docs.get("encoder_identity.json") or {}
-    cat = idn.get("category") or {}
-    if cat:
-        A(f"  Current 6k receipt: category E {cat.get('E')} vs table {cat.get('table')}.")
-    cc = docs.get("encoder_causal_ci.json") or []
-    if isinstance(cc, list) and len(cc) >= 2:
-        c0, c1 = cc[0], cc[1]
-        A(
-            f"- **IPS policy value (A6)** — v1 last-send protocol on 6k: channel {c0.get('diff'):+.1f} "
-            f"[{c0.get('lo'):+.1f}, {c0.get('hi'):+.1f}] (tie); offer {c1.get('diff'):+.1f} "
-            f"[{c1.get('lo'):+.1f}, {c1.get('hi'):+.1f}] (table better). The clean randomized-action "
-            "v2 (`docs/report_cards/experiments/plugin_rl.json`) is underpowered (CIs cross 0). "
-            "The demo's RL rows are known-effect recovery, not an IPS deploy claim."
-        )
-    else:
-        A("- **IPS policy value (A6)** — not claimed; see the audit.")
-    o = (docs.get("encoder_objectives.json") or {}).get("objectives", {}).get("next") or {}
-    if o:
-        A(
-            f"- **O1 next-event** — parity: {o.get('skill'):+.4f} vs naive {o.get('naive'):+.4f} "
-            f"(±{o.get('se'):.4f}); the strict 'beats naive' point gate is a 0.001 tie, not a win."
-        )
-    A(
-        "- **Anomaly / segmentation** — the full unsupervised menu includes probes that do not beat "
-        "the table on this encoder; they are reported in `docs/report_cards/experiments/plugin_unsupervised.json` and "
-        "are not claimed."
-    )
-    ch = (docs.get("encoder_ceiling.json") or {}).get("results", {}).get("churn90") or {}
-    if ch:
-        A(
-            f"- **churn90** — E-floor {ch.get('E_minus_floor'):+.4f}±{ch.get('se'):.4f} "
-            f"(ceiling gap {ch.get('gap'):+.3f}): a tie, not claimed as a supervised win."
-        )
-    A(
-        "- **value90 / orders90 floor/ceiling** — now PASS on the 6k demo dataset (see the B+C "
-        "table); the older `ref_gpu` receipt that failed value90 is superseded."
-    )
-    A("")
-    A(
-        "- **Provenance** — donor, controls, identity, ceiling, content A1/A3/A4 and the objective "
-        "battery are the current 6k frozen run; construction, uncertainty and order/relational come "
-        "from the frozen probe receipts. Every source is named in `AUDIT_CARD.md`."
-    )
-    A("")
-    A("## Full audit")
-    A("")
-    A(
-        "The complete steering card with every open item, including A3 category, A6 causal, O1's "
-        "strict point gate, and the supervised floor/ceiling rows, is "
-        "[`docs/AUDIT_CARD.md`](docs/AUDIT_CARD.md). This card is the demo claim; that card is the audit."
-    )
-    A("")
-    (ROOT / "REPORT_CARD.md").write_text("\n".join(L).rstrip() + "\n")
-    print("\n".join(L))
-    print(f"\nSUMMARY B {b_pass}/{len(b_eval)} · B+C {bc_pass}/{len(bc_eval)}")
-    print("WROTE", ROOT / "REPORT_CARD.md")
+    current = behavior_hash()
+    md, info = render(Path(a.receipts), current)
+    Path(a.out).write_text(md)
+    print(f"report card -> {a.out}")
+    print(f"behavior hash: {current}")
+    print("summary:", json.dumps(info["summary"], sort_keys=True))
+    print(info["assessment"])
+    if a.do_print:
+        print(md)
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

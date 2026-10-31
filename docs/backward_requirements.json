@@ -1,0 +1,4 @@
+{
+  "schema": "Backward review requirements rendered into REPORT_CARD.md (DEC-497). severity: BREAKING|MAJOR|MINOR|INFO; status: open|closed|accepted; accepted is operator-only for MAJOR, never for BREAKING.",
+  "requirements": []
+}

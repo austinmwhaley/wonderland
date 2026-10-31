@@ -15,7 +15,7 @@ with real evidence for the two spine stages:
       permuting attribute-field order changes nothing (field identity is by name);
       two seed-0 training runs on identical prepared inputs are bit-identical.
 
-Writes (merges) docs/report_cards/experiments/judge_stages.json for scripts/judge_card.py.
+Writes (merges) docs/report_cards/experiments/judge_stages.json for scripts/report_card.py.
 
     .venv/bin/python scripts/measure_input_law.py [--data /tmp/opencode/wonderland_demo]
 
@@ -43,7 +43,7 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "scripts" / "demo"))
 
-import judge_card as JC  # noqa: E402  (behavior_hash/git: single source for the freshness stamp)
+import report_card as RC  # noqa: E402  (behavior_hash/git: single source for the freshness stamp)
 
 from looking_glass import stream_adapter as SA  # noqa: E402
 from looking_glass.stream_adapter import to_ts_expr  # noqa: E402
@@ -488,8 +488,8 @@ def stamp_merge_write(
             existing = {}
     stamp = {
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "git_commit": JC.git("rev-parse", "HEAD"),
-        "behavior_hash": JC.behavior_hash(),
+        "git_commit": RC.git("rev-parse", "HEAD"),
+        "behavior_hash": RC.behavior_hash(),
         "command": command,
         "producer": Path(sys.argv[0]).name,
     }

@@ -144,7 +144,7 @@ def test_donor_states_serves_the_certified_boundary_readout():
 
 
 def test_mixed_artifact_card_refuses_the_minority_rows(tmp_path):
-    import judge_card as JC
+    import report_card as RC
     import judge_spec as J
 
     ident_a = {"path": "/work/cfm_b", "tag": "t-b20", "registry_sha256": "aaaa"}
@@ -176,7 +176,7 @@ def test_mixed_artifact_card_refuses_the_minority_rows(tmp_path):
         (tmp_path / name).write_text(
             json.dumps(receipt(ident_a if i < len(sources) - 1 else ident_b))
         )
-    mix = JC._artifact_mismatch(tmp_path, None)
+    mix = RC._artifact_mismatch(tmp_path, None)
     assert mix, "a card mixing two artifacts must produce a mismatch note"
     # the last source is the lone protocol-A row: it is the minority and gets the note
     assert sources[-1] in mix
@@ -185,7 +185,7 @@ def test_mixed_artifact_card_refuses_the_minority_rows(tmp_path):
     # a uniform card (all A) produces no notes at all
     for name in sources:
         (tmp_path / name).write_text(json.dumps(receipt(ident_a)))
-    assert JC._artifact_mismatch(tmp_path, None) == {}
+    assert RC._artifact_mismatch(tmp_path, None) == {}
     # stage blocks participate too: an S4 from the other artifact is named
-    mix2 = JC._artifact_mismatch(tmp_path, {"S4": {"working": True, "products": dict(ident_b)}})
+    mix2 = RC._artifact_mismatch(tmp_path, {"S4": {"working": True, "products": dict(ident_b)}})
     assert "stage::S4" in mix2

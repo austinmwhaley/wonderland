@@ -14,11 +14,11 @@
 ## 0. Read order
 
 1. `REPORT_CARD.md` — the run report and the all-green gate-of-record section.
-2. `docs/JUDGE_CARD.md` — the generated judge; the exact rows under attack.
-3. `docs/AUDIT_CARD.md` — the full research audit and its open frontier rows.
-4. `DECISIONS.md` — the pre-registrations and measured outcomes.
-5. `STATUS.md` — the claimed state and blockers.
-6. `docs/report_cards/experiments/` — every receipt the card cites.
+2. `docs/AUDIT_CARD.md` — the full research audit and its open frontier rows.
+3. `DECISIONS.md` — the pre-registrations and measured outcomes.
+4. `STATUS.md` — the claimed state and blockers.
+5. `docs/report_cards/experiments/` — every receipt the card cites.
+6. `docs/backward_requirements.json` — the requirements already on the card.
 7. `docs/SPINE.md`, `AGENTS.md` — the goal, laws, and certification integrity rules.
 8. The code and tests at the recorded commit.
 9. The last `docs/BACKWARD_CARD.md` — findings already raised, and their disposition.
@@ -177,7 +177,7 @@ For **every** leg-column, stage, and hygiene row:
 - Are there **open operator rulings** that block a row? Is a [TECHNICAL] decision
   masquerading as settled? Is silence treated as assent?
 - Is the **card current**? Is `STATUS.md` current? Is `DECISIONS.md` append-only? Does
-  `REPORT_CARD.md` agree with `JUDGE_CARD.md`?
+  `REPORT_CARD.md` agree with its receipts and its generated assessment?
 
 ### F. Economics and operations
 
@@ -192,7 +192,7 @@ For **every** leg-column, stage, and hygiene row:
 
 ---
 
-## 5. Required output: `docs/BACKWARD_CARD.md`
+## 5. Required output: `docs/BACKWARD_CARD.md` + `docs/backward_requirements.json`
 
 Write exactly this shape:
 
@@ -222,6 +222,29 @@ Write exactly this shape:
 
 The review is committed with the next forward chunk. It is evidence, not narration:
 every finding cites a receipt/line/number or a concrete missing receipt.
+
+### Structured handoff (required)
+
+For **every** finding, append a requirement to `docs/backward_requirements.json`:
+
+```json
+{
+  "id": "B-<n>",
+  "severity": "BREAKING|MAJOR|MINOR|INFO",
+  "status": "open",
+  "finding": "one sentence, with the receipt/number",
+  "forward_subgoal": "the named-axis subgoal that would close it",
+  "gate_touched": false,
+  "evidence": "file:line or receipt key",
+  "date": "YYYY-MM-DD"
+}
+```
+
+The renderer displays this file in `REPORT_CARD.md`; an open `BREAKING` or `MAJOR`
+requirement blocks the completion condition. FORWARD closes a requirement only by
+appending the measured receipt/decision that resolves it and setting `status` to
+`closed` (or, for `MAJOR` only, the operator sets `accepted` with a reason). `BREAKING`
+is never accepted, only closed.
 
 ---
 

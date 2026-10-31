@@ -84,7 +84,7 @@ def test_everything_green_is_green():
 def test_changed_paths_survives_the_leading_space_git_strips():
     """Measured: a modified DECISIONS.md was reported as "ECISIONS.md".
 
-    `judge_card.git()` strips the whole stdout, which removes the leading space of the first
+    `report_card.git()` strips the whole stdout, which removes the leading space of the first
     porcelain line (" M path") and shifts every later slice by one. Parsing `-z` output makes the
     status/path boundary explicit instead of positional.
     """
