@@ -5956,3 +5956,25 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   question (does "brain + ledger" mean the 595-d concat, or may a declared action-profile view be
   a separate arm?), which is an operator ruling under AGENTS.md's stop-and-ask triggers. Not
   adopted unilaterally.
+
+## DEC-485 — [MEASURED] the unsupervised segment row is degenerate by measurement design, not by missing information
+- **What the generator does** (`rabbit_hole/generators/relational_reference.py`). `segment` is a
+  uniform latent draw (line 341) with NO behavioral role; it appears only in the relational
+  customers table and the truth receipt, and once per customer in the stream's `customer_signup`
+  event attributes. So it is observable, but it is independent of behavior.
+- **Measured.** From M2's ledger `numeric_stats` ALONE (66 dims), the latent segment is recovered
+  exactly by rounding a single column in **99.12%** of 2500 customers (corr 0.984; the residual is
+  the segment=0 / not-logged convention). The information is present bit-exactly, in one dimension.
+- **Yet the judged task reads ~0.** `segment_structure` is ARI of k-means (k=5) on the z-scored
+  ~850-dim brain+ledger geometry vs that label: brain+ledger **0.00012**, PATH A **−0.00151**,
+  random control **−0.00199** — all noise. One informative dimension among 850 cannot drive
+  k-means, and no method (including the incumbent) can satisfy it without privileging an arbitrary
+  independent label. `persona_geometry` shares the problem: its target matrix is d0 + segment;
+  PATH A 0.000345, brain 0.000073, random 0.00093 — all at noise level. `future_geometry`
+  (x0,h0,price,return,churn) is the only non-degenerate task: PATH A 0.0456, brain+ledger 0.0414.
+- **Disposition.** Recorded as a degeneracy receipt, NOT acted on: changing what the unsupervised
+  row measures is a gate/frontier change and an explicit operator stop-and-ask trigger (AGENTS.md
+  certification rules). Recommendation to the operator: either mark `segment_structure` (and the
+  segment half of `persona_geometry`) EXCLUDED-and-reported as degenerate, or amend the demo
+  generator so segment influences behavior (a new stream version, never a silent edit). Meanwhile
+  the unsupervised leg's only winnable row is `future_geometry`.
