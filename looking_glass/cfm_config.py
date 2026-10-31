@@ -360,6 +360,9 @@ class CFMConfig:
     # Measured: y and h are different vectors and neither carries x0 in J (-0.02), while the
     # served E reads 0.791 — no protocol had ever pressured the served tensor.
     profile_state: str = "y"
+    # DEC-470 (protocol L): explicit multiplier on the profile task's term — the measured
+    # pressure-magnitude lever (K's normal-weight CE could not out-vote 128 per-token terms).
+    profile_weight: float = 1.0
     # DEC-467 (protocol J): loss form for the profile objective — "mse" (H/I) or "ce"
     # (per-field cross-entropy on the normalized histogram; strong gradients, DWA weight
     # comparable to the top tasks). "mse" stays the default so H and I are reproducible.
@@ -517,6 +520,7 @@ class CFMConfig:
                 prof += "|served"
             prof += f"|l{str(getattr(self, 'profile_loss', 'mse'))}"
             prof += f"|st{str(getattr(self, 'profile_state', 'y'))}"
+            prof += f"|w{float(getattr(self, 'profile_weight', 1.0)):.3g}"
         sig = hashlib.sha256(f"{obj}|{eff}{prof}".encode()).hexdigest()[:8]
         return (
             f"{base}-b{int(self.batch)}d{int(self.dim)}e{int(self.epochs)}"

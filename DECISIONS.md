@@ -5603,3 +5603,31 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   histogram middle levels and x0 still do not move ⇒ the constraint is architectural capacity
   of a single 256-d recurrent summary, and the lever moves to the counter pathway (S1) or a
   served-state content change — both of which are bigger, separately pre-registered steps.
+
+## DEC-470 — [PRE-REGISTERED] protocol L: profile pressure at material magnitude (weight 25)
+
+- **Why.** DEC-469 measured that K's objective trains on the exact served tensor with a
+  normal-weight CE term, yet the state's histogram middle levels stay absent (E→hist
+  0.64/0.20/0.06/0.53) and x0 stays flat. The profile term is one scalar per 128-event window
+  against per-token losses at every one of 128 positions; a normal weight cannot out-vote
+  them. Capacity is not the constraint (a 256-d linear map carries four counts), so the test
+  is magnitude.
+- **Decision — one variable: `profile_weight=25.0` (default 1.0).** The profile task's term
+  in `_combine` is multiplied by this factor (a protocol axis in the tag). 25 is chosen as
+  the smallest round multiplier that makes the profile gradient comparable to the
+  token-family total at the final position (measured: the portfolio eval's profile line and
+  x0 both flat at ~1×; token losses dominate by roughly an order of magnitude, so 25 leaves
+  the profile ~2-3× the per-window token signal at the last position, not 100×). The guards
+  (val, churn kNN, rl, finiteness) are the destabilization detectors.
+- **Frozen acceptance:** overrides = K's + `profile_weight=25.0`; registry
+  `action_profile.weight=25.0`; blob `profile_weight=25.0`; 40 loss scales; dims 43; losses
+  finite; governor stops on tolerance; tag ≠ D/E/F/H/I/J/K.
+- **Named axis.** PRIMARY — brain-alone `x0` linear: acceptance ≥ 0.84; adoption iff Δ ≥
+  +0.03 vs D (0.7909). Falsifier: at 25× pressure x0 still within ±0.01 AND E→hist middle
+  levels do not rise ⇒ capacity/architecture is the wall (counter pathway next).
+- **Guards:** profile CE must fall (skill > 0 in the portfolio line is the first receipt);
+  churn kNN ≥ 0.60 and linear ±0.02; h0 ±0.02; return ±0.03; price ±0.02; rl policy_value ≥
+  0.05; uplift not worse; S5 not worse; portfolio val not worse than K's 7.53 by more than
+  the governor's own tolerance (the governor stops on that); every leg row finite.
+- **Not changed:** gates, thresholds, criteria, controls, comparator, probe definitions, E's
+  content. Cost: one GPU train + chain + access axis. Artifact `cfm_l_w25`.

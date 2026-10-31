@@ -774,6 +774,7 @@ def train_cfm(cfg: CFMConfig):
             "profile_served": bool(getattr(cfg, "profile_served", False)),
             "profile_loss": str(getattr(cfg, "profile_loss", "mse")),
             "profile_state": str(getattr(cfg, "profile_state", "y")),
+            "profile_weight": float(getattr(cfg, "profile_weight", 1.0) or 1.0),
             "action_fields": list(getattr(cfg, "action_fields", ()) or ()),
             "primary_numeric": getattr(cfg, "primary_numeric", None),
             "whiten_mean": (model.whiten_mean if getattr(model, "whiten_on", False) else None),
@@ -1918,7 +1919,13 @@ def _combine(model, T, cfg, weights: dict | None = None, scales: dict | None = N
 
     def _boost(k):
         # explicit per-objective boost wins; else the geometry-family boost; else 1.0.
-        return float(_ob[k]) if k in _ob else (boost if k in GEOMETRY_FAMILY else 1.0)
+        if k in _ob:
+            return float(_ob[k])
+        if k == "profile":
+            # DEC-470: the profile term's measured-pressure multiplier. Applied HERE (not in
+            # the loss value) so the scale-free DWA normalization cannot cancel it.
+            return float(getattr(cfg, "profile_weight", 1.0) or 1.0)
+        return boost if k in GEOMETRY_FAMILY else 1.0
 
     def wk(k):
         w = weights.get(k, 1.0) if weights else 1.0
@@ -2314,6 +2321,7 @@ def _registry(
                     "served": bool(getattr(cfg, "profile_served", False)),
                     "loss": str(getattr(cfg, "profile_loss", "mse")),
                     "state": str(getattr(cfg, "profile_state", "y")),
+                    "weight": float(getattr(cfg, "profile_weight", 1.0) or 1.0),
                 },
                 "resolved": cfg_resolved or {},
                 "governor": governor or {},
