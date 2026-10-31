@@ -1,0 +1,106 @@
+{
+  "_meta": {
+    "behavior_hash": "ca8696e8ca2a7b69",
+    "command": "measure_judge_law.py --products /work/cfm_f_rate --demo /work/demo --legs supervised,unsupervised,rl,simulator --out-dir /repo/docs/report_cards/experiments",
+    "generated_at": "2026-10-31T01:55:34+00:00",
+    "git_commit": "68854dea140947763e58a920de64102c479b1858",
+    "producer": "measure_judge_law.py"
+  },
+  "arms": {
+    "brain": "state_embeddings donor + linear ridge head on the identified uplift",
+    "brain_ledger": "brain + measure view (ledger), same head and rows",
+    "pathA": "PATH A wide table + the DEC-428 GBM incumbent, same rows"
+  },
+  "checks": {
+    "rl": {
+      "evidence": "2 live task(s) (+0 degenerate) on n=724 B-rows scored against 1776 A-rows; comparator PATH A (GBM incumbent); table 48 cols / 2500 customers; brain+ledger 2 task(s)",
+      "working": false
+    }
+  },
+  "columns": {
+    "brain": {
+      "tasks": [
+        {
+          "brain": -0.009787,
+          "ci_hi": 0.00487,
+          "ci_lo": 0.000998,
+          "comparator": "PATH A (GBM incumbent)",
+          "controls_unreadable": [],
+          "destroyed": -0.001982,
+          "metric": "R2 on the identified per-customer uplift (P(buy|offer=opt) - P(buy|offer off by >=2))",
+          "n": 233,
+          "name": "known_effect_uplift",
+          "pathA": -0.172714,
+          "random": -0.011862
+        },
+        {
+          "brain": 0.056395,
+          "ci_hi": 0.045293,
+          "ci_lo": 0.005047,
+          "comparator": "PATH A (GBM incumbent)",
+          "controls_unreadable": [],
+          "destroyed": 0.045253,
+          "metric": "area under the top-k realized-uplift curve on randomized arm-days (bootstrap re-selects inside each replicate)",
+          "n": 233,
+          "name": "policy_value",
+          "pathA": 0.030808,
+          "random": 0.045881
+        }
+      ]
+    },
+    "brain_ledger": {
+      "tasks": [
+        {
+          "brain": -0.007098,
+          "ci_hi": 0.004935,
+          "ci_lo": 0.001113,
+          "comparator": "PATH A (GBM incumbent)",
+          "controls_unreadable": [],
+          "destroyed": -0.032182,
+          "metric": "R2 on the identified per-customer uplift (P(buy|offer=opt) - P(buy|offer off by >=2))",
+          "n": 233,
+          "name": "known_effect_uplift",
+          "pathA": -0.172714,
+          "random": -0.016219
+        },
+        {
+          "brain": 0.057001,
+          "ci_hi": 0.049223,
+          "ci_lo": 0.00438,
+          "comparator": "PATH A (GBM incumbent)",
+          "controls_unreadable": [],
+          "destroyed": 0.035546,
+          "metric": "area under the top-k realized-uplift curve on randomized arm-days (bootstrap re-selects inside each replicate)",
+          "n": 233,
+          "name": "policy_value",
+          "pathA": 0.030808,
+          "random": 0.042114
+        }
+      ]
+    }
+  },
+  "diagnostics": {},
+  "evidence": "[rl] FAILED: 2 live task(s) (+0 degenerate) on n=724 B-rows scored against 1776 A-rows; comparator PATH A (GBM incumbent); table 48 cols / 2500 customers; brain+ledger 2 task(s)",
+  "excluded": [],
+  "identified": {
+    "population": 2099,
+    "rule": ">= 10 identified arm-days on each side of the contrast"
+  },
+  "path_a": {
+    "columns": 48,
+    "n_present": 2500,
+    "n_requested": 2500,
+    "source": "/work/demo/path_a/path_a_wide_table.parquet"
+  },
+  "products": {
+    "path": "/work/cfm_f_rate",
+    "registry_sha256": "8b6954982bb4003c",
+    "tag": "0.11.0r103115-b20d256e3lr3e-04oa0ed1ac3"
+  },
+  "splits": {
+    "n_fit_A": 1776,
+    "n_score_B": 724,
+    "source": "encoder_samples"
+  },
+  "working": false
+}
