@@ -775,6 +775,10 @@ def train_cfm(cfg: CFMConfig):
             "profile_loss": str(getattr(cfg, "profile_loss", "mse")),
             "profile_state": str(getattr(cfg, "profile_state", "y")),
             "profile_weight": float(getattr(cfg, "profile_weight", 1.0) or 1.0),
+            # DEC-472/473: serving-definition flags (they change the published artifact, not
+            # the weights; the registry carries them too so a products rebuild replays them).
+            "serve_unfaded": bool(getattr(cfg, "serve_unfaded", False)),
+            "ledger_recency": bool(getattr(cfg, "ledger_recency", False)),
             "action_fields": list(getattr(cfg, "action_fields", ()) or ()),
             "primary_numeric": getattr(cfg, "primary_numeric", None),
             "whiten_mean": (model.whiten_mean if getattr(model, "whiten_on", False) else None),
