@@ -6083,3 +6083,23 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - **Not changed:** gates, thresholds, criteria, controls, comparator, probes, E's content, ledger.
   Cost: one GPU train + chain + access axis. Co-tenancy: run first alongside the 27B (15.08 GB
   budget); if the allocator OOMs inside the cap, stop the LLM and retry once, receipted.
+
+## DEC-491 — [MEASURED] protocol M5: capacity 384 — x0 flat, return COLLAPSED; the falsifier is met, NOT adopted
+- **What ran.** M5 = M2 + `dim=384`, artifact `0.11.0r103115-b20d384e3lr3e-04o1e051d9d`,
+  acceptance 8/8 (overrides exact, proj (384,384), no auxiliary heads, 39 finite losses, ledger
+  595-d). Ran alongside the 27B at 15.07 GB — co-tenancy held again.
+- **Named axis: FAILED, falsifier met.** brain x0 **0.8866** (M2 0.8924; Δ −0.0058, slightly worse,
+  outside the ±0.005 band on the wrong side). Frequency-histogram middle bins **0.202/0.129** vs
+  M2 **0.226/0.122** — unchanged (one down, one up). Wider state does not write the histogram into
+  the trunk and does not improve its linear readout.
+- **Guard failure.** return_proneness brain **0.0002** (M2 0.2974) — a collapse far outside the
+  ±0.03 guard. churn 0.6447 (+0.008), h0 0.9339, price −0.0158; brain+ledger x0 0.8919, churn
+  0.6497, return 0.6040.
+- **Disposition.** NOT adopted. M2 stays the recorded artifact. Capacity at 384 is falsified as
+  the wall; a 512-d retry is explicitly NOT automatic (DEC-490). With M3 (objective pressure at
+  256) and M5 (capacity at 384) both flat, the supervised brain axis has no remaining
+  pre-registerable training lever that does not change the artifact/consumer contract. The next
+  step is an operator ruling (see DEC-484/485/486): a compact action-profile arm, an
+  interaction-aware consumer, or excluding the measured-degenerate rows.
+- **Receipts.** Access axis archived under `protocols/m5_d384/`; live receipt restored to M2's
+  committed bytes. Chain not run (adoption gated on the named axis first); no card change.

@@ -2361,3 +2361,11 @@ resolves to a receipt; the "what is not claimed" panel repeats the card's disclo
 > segment 99.1% from one dim; k-means ARI ~0; PATH A fails too) — also an operator ruling.
 > Interim local LLM: `vllm-qwen27b` (Qwen3.8-27B-FP8, GMU 0.40, 12/16 GiB caps) is being
 > validated; Qwen Flash-Next remains stopped. M2 (`...04o1e051d9d`) is still the recorded artifact.
+
+> **2026-10-31 final:** M4 (survival on the unfaded path) churn +0.016 and M5 (capacity 384) x0
+> −0.006 / return collapsed — both NOT adopted (DEC-489/491). The supervised brain axis has no
+> remaining pre-registerable training lever: objective pressure (M3) and capacity (M5) are both
+> falsified at the measured wall. Three operator rulings now gate further progress: (1) x0
+> delivery contract (compact action-profile arm), (2) exclude the measured-degenerate rows
+> (segment_structure, argmax_optimum), (3) architecture/consumer change. M2 remains the recorded
+> artifact; 27B LLM is up and validated at GMU 0.40; co-tenancy held across two full runs.
