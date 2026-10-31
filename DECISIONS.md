@@ -5392,3 +5392,42 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - **Not changed:** gates, thresholds, criteria, controls, comparator, probe definitions, the
   linear shipping head. Cost: one GPU train (~17 min dedicated) + chain (~17 min) + access
   axis (~24 s). Artifact `cfm_g_freq`.
+
+## DEC-464 — [MEASURED, PRE-VERDICT] the response curve does not identify x0; the ACTION-FIELD PROFILE does (R² 0.909) — protocol G aborted, target corrected
+
+- **Protocol G aborted pre-verdict on measured evidence, not on a guess.** G was pre-registered
+  (DEC-463) on the premise "x0 is the peak of the conversion curve over the freq arm, so
+  training the effect objective on that arm makes it readable". The pre-verdict diagnostic
+  (`scripts/measure_proxy_alignment.py`, receipt
+  `docs/report_cards/experiments/proxy_alignment.json`) measured the premise before the chain:
+  * ridge(observed freq-response curve → x0) = **0.0529** — the per-customer curve from the
+    randomized periods is binomial-noise dominated (~10 periods/level), so it does NOT
+    identify x0. G's mechanism could not have worked.
+  * ridge(E → curve level) = 0.12–0.27 — the served state already reads the noisy curve
+    better than linear-chance, so the trunk is not the wall for it.
+  G was therefore stopped at step ~208/2070 (no products, no chain, no card change; artifact
+  discarded). No verdict language is attached to G: it is recorded as pre-registered and
+  aborted by its own premise's measurement. The 4 pre-registered acceptance checks are moot.
+- **The correction (measured, same diagnostic session).** The demo's one-factor design fixes
+  every non-randomized action field at the customer's OWN optimum (`reference.py:309-310`).
+  Therefore the OBSERVED `freq` values contain `round(x0)` as their mode on the pinned
+  periods, plus randomized values around it. Measured directly from the stream:
+  * ridge(freq histogram → x0)   = **0.9090**
+  * ridge(freq mode → x0)        = **0.9158**
+  * corr(freq mode, x0)          = 0.9578
+  These explain the table's own 0.8904 and identify the sufficient statistic: **x0 is the
+  mode/argmax of the action-field histogram**, not a response-curve peak and not an event
+  rate. (Same construction applies to h0 = hour optimum, d0 = dow optimum: their action-field
+  histograms are the sufficient statistics; `offer_opt` likewise. `price_sensitivity` is a
+  separate latent beta draw whose generator-side signal is a response SLOPE, and the table's
+  own linear price R² is −0.0093 — the price row is explicitly the hardest and stays last.)
+- **Consequence for the ladder.** The next protocol must pressure the state toward the
+  ACTION-FIELD PROFILE (histogram of each declared action field over the customer's history).
+  This is a different objective from F's event counts (the event stream does not generate x0;
+  the action design does) and from G's response curve (noise). The sufficient-statistic
+  ceiling is 0.909, above PATH A's 0.9056 — so the primary row is, for the first time,
+  reachable in principle, not just "closer".
+- **Rule reaffirmed (loop discipline).** A pre-registration whose premise a cheap pre-verdict
+  diagnostic can test must be tested before GPU time: DEC-462's diagnostic-before-protocol
+  rule caught this one after ~5 minutes of training instead of a 17-minute chain plus a
+  verdict that would have taught the same lesson at 10× the cost.

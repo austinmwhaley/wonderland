@@ -1,0 +1,21 @@
+{
+ "working": true,
+ "arm": "brain (state_embeddings)",
+ "n_fit": 1776,
+ "n_score": 724,
+ "freq_levels": 4,
+ "curve_missing_A": 0,
+ "curve_missing_B": 0,
+ "x0_from_E": {
+  "x0_r2": 0.7909
+ },
+ "x0_from_curve": {
+  "x0_r2": 0.0529
+ },
+ "curve_from_E": {
+  "level_0": 0.1222,
+  "level_1": 0.1381,
+  "level_2": 0.2522,
+  "level_3": 0.2679
+ }
+}
