@@ -2433,3 +2433,11 @@ resolves to a receipt; the "what is not claimed" panel repeats the card's disclo
 > (e.g., a per-row loop in a hot path), and every finding carries one `B-<id>` across
 > `AUDIT.md`, `BACKWARD_CARD.md`, and the structured card requirements. The first BACKWARD has not
 > run (the card is not green); `AUDIT.md` is explicitly "not yet audited" rather than falsely aligned.
+
+> **2026-10-31 M6 measured (DEC-499/500): NOT adopted — the fair comparator wins the metric.**
+> The lawful Marchenko–Pastur-whitened geometry metric was applied to **every** arm. Future_geometry:
+> brain **0.0536**, brain+ledger **0.0658**, PATH A **0.1684**; paired CIs both negative. The metric
+> helps our arm but helps the table more. **DEC-495's "geometry is metric-limited" is withdrawn**:
+> under a fair comparator the gap is content, not metric. Receipt archived at
+> `docs/report_cards/experiments/protocols/m6_geometry_metric/`; the live leg receipt was restored;
+> no card change. Lesson recorded: any metric transform must be applied to the comparator too.

@@ -6333,3 +6333,62 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - **Not changed.** No gate, threshold, comparator, probe, encoder, ledger, artifact, or receipt.
   The first BACKWARD review has not run yet (the card is not all green); `AUDIT.md` says so
   explicitly rather than claiming alignment.
+
+## DEC-499 — [PRE-REGISTERED] protocol M6: lawful geometry metric (Marchenko–Pastur whitening, fit on A)
+- **Why.** DEC-495 measured that the unsupervised geometry gap is metric-limited: PCA-whitening
+  fit on split A lifts `future_geometry` brain 0.0178→~0.053 and brain+ledger 0.0414→~0.066 vs
+  PATH A 0.0456, with paired CIs excluding zero. That diagnostic swept k on B (exploratory); a
+  lawful implementation needs a **label-free, data-derived** k. SPINE v6 names the
+  Marchenko–Pastur conditioning floor `λ₊=(1+√(D/N))²`; use it: k = number of eigenvalues of the
+  split-A covariance above `λ₊`, capped at min(D−1, N−1).
+- **Decision — one axis: the unsupervised distance metric.** Replace the leg's z-scored Euclidean
+  distance with a frozen PCA-whitening fit on split A (per arm), k from the MP edge; transform B;
+  pairwise distance unchanged otherwise. The target distance, comparator (PATH A GBM/table), task
+  definitions, controls, bootstrap, and every other leg are unchanged. No truth labels are used to
+  fit the metric or choose k.
+- **Frozen acceptance (mechanical).** `future_geometry` must beat PATH A with a paired CI
+  excluding zero in **both** columns (brain and brain+ledger); `persona_geometry` must not regress
+  below M2 (it currently fails on the random control, so a CI win is the target); the random and
+  destroyed controls must remain below the brain and readable; every other leg value finite and
+  unchanged (this protocol touches only `leg_unsupervised`); the receipt records the per-arm k and
+  the MP edge. Adoption iff both future CIs clear zero and persona does not regress.
+- **Guards.** Supervised/RL/simulator rows unchanged; no encoder, ledger, artifact, target,
+  threshold, or comparator change; one producer re-run + chain; cost ≈ one leg (seconds) + chain.
+- **Falsifier.** Either future CI includes zero, or persona regresses, or controls rise above the
+  brain ⇒ the metric is not a lawful improvement; archive and revert. `segment_structure` is a
+  separate target-validity question (M7), not part of this axis.
+- **Not changed.** The frozen gates, the target distance, the comparator, E's content, the ledger,
+  the recorded artifact. Principle served: Accessible (simple distance consumers can read the
+  geometry), Lawful (label-free noise-floor k; per-sample at serve), Honest (frozen acceptance
+  before the run), Efficient (no training).
+
+## DEC-500 — [MEASURED] M6 geometry metric: NOT adopted; the fair comparator improves more, correcting DEC-495
+- **What ran.** M6 as pre-registered (DEC-499): the unsupervised leg's pairwise distance becomes a
+  PCA-whitening fit on split A, k = #eigenvalues above the Marchenko–Pastur edge, applied to B.
+  **The same metric is applied to every arm, including PATH A** — this is the fair comparison the
+  diagnostic lacked. One leg re-run (37 s), no training, M2 artifact.
+- **Measured (future_geometry, PATH A whitened).** brain **0.05362**, brain+ledger **0.06580**,
+  PATH A **0.16839**. Paired CIs vs PATH A: brain **[−0.12098,−0.11133]**, b+l
+  **[−0.10531,−0.09620]** — both lose. `persona_geometry` does win (brain 0.00317, b+l 0.02017 vs
+  PATH A 0.000053, CIs positive), but the named axis (future in both columns) fails.
+- **Falsifier met, NOT adopted.** The metric was reverted; the live `judge_leg_unsupervised.json`
+  was restored to the committed chain bytes; the measured receipt is archived at
+  `docs/report_cards/experiments/protocols/m6_geometry_metric/`.
+- **Correction to DEC-495 (binding).** DEC-495 compared a **whitened** arm against an
+  **unwhitened** PATH A (0.0721 vs 0.0456) and concluded "geometry is metric-limited". That was an
+  unfair comparator: under the same whitening, PATH A reaches 0.1684 — the table's geometry is
+  stronger, and the gap is **content**, not metric. The DEC-495 recommendation to publish a
+  whitened geometry view is withdrawn as an unsupervised-green path. The underlying fact that
+  whitening helps the brain (0.0178→0.0536) is kept; it is not sufficient.
+- **Lesson.** Any metric/representation transform must be applied to **the comparator too** before
+  a diagnostic is used to propose a protocol. A one-arm transform is not evidence; it is a
+  different experiment. This is the second time a fair-comparator check caught a would-be green
+  (the first was the circular spend comparator, DEC-420).
+- **Next.** The geometry gap is content: the table's per-column state carries more behavioral
+  structure than the served 256-d shape or the 851-d brain+ledger concatenation. The remaining
+  levers are the operator-gated architecture/consumer protocols (exact-count channel,
+  interaction-aware head) or a target-validity exclusion for `segment_structure`; a metric retry is
+  not justified.
+- **Not changed.** Gates, targets, comparator, encoder, ledger, artifact, other legs. Principle
+  served: Honest (the fair comparison killed a false green), Lawful (derived k), Efficient (37 s,
+  no training).

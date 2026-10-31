@@ -2,8 +2,8 @@
   "_meta": {
     "behavior_hash": "babee652be3856c5",
     "command": "measure_judge_law.py --products /home/austin_whaley/wonderland_work/cfm_m2_clean --demo /home/austin_whaley/wonderland_work/demo --legs supervised,unsupervised,rl,simulator --out-dir /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments",
-    "generated_at": "2026-10-31T18:57:19+00:00",
-    "git_commit": "d838479b0b9f44b2a76c20a0784d14352e612b46",
+    "generated_at": "2026-10-31T21:18:52+00:00",
+    "git_commit": "07d6353632a5bf8450970d8a0206d34ad4a2ce2c",
     "producer": "measure_judge_law.py"
   },
   "arms": {

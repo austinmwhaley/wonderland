@@ -1,0 +1,164 @@
+{
+  "_meta": {
+    "behavior_hash": "babee652be3856c5",
+    "command": "measure_judge_law.py --products /home/austin_whaley/wonderland_work/cfm_m2_clean --demo /home/austin_whaley/wonderland_work/demo --legs unsupervised --out-dir docs/report_cards/experiments",
+    "generated_at": "2026-10-31T21:22:04+00:00",
+    "git_commit": "07d6353632a5bf8450970d8a0206d34ad4a2ce2c",
+    "producer": "measure_judge_law.py"
+  },
+  "arms": {
+    "brain": "state_embeddings donor; pairwise-distance and k-means geometry",
+    "brain_ledger": "brain + measure view (ledger), same distance/clustering geometry",
+    "pathA": "PATH A wide table, z-scored on split A only, same geometry"
+  },
+  "checks": {
+    "unsupervised": {
+      "evidence": "3 live task(s) (+0 degenerate) on n=724 B-rows scored against 1776 A-rows; comparator PATH A (GBM incumbent); table 48 cols / 2500 customers; brain+ledger 3 task(s)",
+      "working": true
+    }
+  },
+  "columns": {
+    "brain": {
+      "tasks": [
+        {
+          "brain": 0.003169,
+          "ci_hi": 0.004044,
+          "ci_lo": 0.002615,
+          "comparator": "PATH A (GBM incumbent)",
+          "controls_unreadable": [],
+          "destroyed": 0.000216,
+          "metric": "squared correlation between the arm's pairwise distances and the lab's true distances (2 fields: d0, segment); PCA-whitening fit on split A, k = count of eigenvalues above the Marchenko-Pastur edge (1+sqrt(D/N))^2",
+          "metric_mp": {
+            "brain_edge": 1.903471,
+            "brain_k": 17,
+            "destroyed_k": 1,
+            "pathA_edge": 1.355825,
+            "pathA_k": 8,
+            "random_k": 1
+          },
+          "n": 261726,
+          "n_bootstrap_pairs": 100000,
+          "name": "persona_geometry",
+          "pathA": 5.3e-05,
+          "random": 2e-05
+        },
+        {
+          "brain": 0.053624,
+          "ci_hi": -0.111328,
+          "ci_lo": -0.120984,
+          "comparator": "PATH A (GBM incumbent)",
+          "controls_unreadable": [],
+          "destroyed": 0.0,
+          "metric": "squared correlation between the arm's pairwise distances and the lab's true distances (5 fields: x0, h0, price_sensitivity, return_proneness, churn_day); PCA-whitening fit on split A, k = count of eigenvalues above the Marchenko-Pastur edge (1+sqrt(D/N))^2",
+          "metric_mp": {
+            "brain_edge": 1.903471,
+            "brain_k": 17,
+            "destroyed_k": 1,
+            "pathA_edge": 1.355825,
+            "pathA_k": 8,
+            "random_k": 1
+          },
+          "n": 261726,
+          "n_bootstrap_pairs": 100000,
+          "name": "future_geometry",
+          "pathA": 0.168387,
+          "random": 4e-05
+        },
+        {
+          "brain": 0.002365,
+          "ci_hi": 0.013994,
+          "ci_lo": -0.006041,
+          "comparator": "PATH A (GBM incumbent)",
+          "controls_unreadable": [],
+          "destroyed": 0.00233,
+          "metric": "ARI of k-means (k=5, from the label's own cardinality) against the lab's declared segment",
+          "n": 724,
+          "name": "segment_structure",
+          "pathA": -0.001513,
+          "random": -0.001991
+        }
+      ]
+    },
+    "brain_ledger": {
+      "tasks": [
+        {
+          "brain": 0.020171,
+          "ci_hi": 0.021509,
+          "ci_lo": 0.018234,
+          "comparator": "PATH A (GBM incumbent)",
+          "controls_unreadable": [],
+          "destroyed": 0.000436,
+          "metric": "squared correlation between the arm's pairwise distances and the lab's true distances (2 fields: d0, segment); PCA-whitening fit on split A, k = count of eigenvalues above the Marchenko-Pastur edge (1+sqrt(D/N))^2",
+          "metric_mp": {
+            "brain_edge": 2.863604,
+            "brain_k": 31,
+            "destroyed_k": 4,
+            "pathA_edge": 1.355825,
+            "pathA_k": 8,
+            "random_k": 1
+          },
+          "n": 261726,
+          "n_bootstrap_pairs": 100000,
+          "name": "persona_geometry",
+          "pathA": 5.3e-05,
+          "random": 0.000597
+        },
+        {
+          "brain": 0.065796,
+          "ci_hi": -0.096199,
+          "ci_lo": -0.105313,
+          "comparator": "PATH A (GBM incumbent)",
+          "controls_unreadable": [],
+          "destroyed": 0.000623,
+          "metric": "squared correlation between the arm's pairwise distances and the lab's true distances (5 fields: x0, h0, price_sensitivity, return_proneness, churn_day); PCA-whitening fit on split A, k = count of eigenvalues above the Marchenko-Pastur edge (1+sqrt(D/N))^2",
+          "metric_mp": {
+            "brain_edge": 2.863604,
+            "brain_k": 31,
+            "destroyed_k": 4,
+            "pathA_edge": 1.355825,
+            "pathA_k": 8,
+            "random_k": 1
+          },
+          "n": 261726,
+          "n_bootstrap_pairs": 100000,
+          "name": "future_geometry",
+          "pathA": 0.168387,
+          "random": 0.000591
+        },
+        {
+          "brain": 0.00012,
+          "ci_hi": 0.010956,
+          "ci_lo": -0.007397,
+          "comparator": "PATH A (GBM incumbent)",
+          "controls_unreadable": [],
+          "destroyed": -0.002358,
+          "metric": "ARI of k-means (k=5, from the label's own cardinality) against the lab's declared segment",
+          "n": 724,
+          "name": "segment_structure",
+          "pathA": -0.001513,
+          "random": 0.001062
+        }
+      ]
+    }
+  },
+  "diagnostics": {},
+  "evidence": "[unsupervised] OK: 3 live task(s) (+0 degenerate) on n=724 B-rows scored against 1776 A-rows; comparator PATH A (GBM incumbent); table 48 cols / 2500 customers; brain+ledger 3 task(s)",
+  "excluded": [],
+  "path_a": {
+    "columns": 48,
+    "n_present": 2500,
+    "n_requested": 2500,
+    "source": "/home/austin_whaley/wonderland_work/demo/path_a/path_a_wide_table.parquet"
+  },
+  "products": {
+    "path": "/home/austin_whaley/wonderland_work/cfm_m2_clean",
+    "registry_sha256": "114a37039af04dcf",
+    "tag": "0.11.0r103115-b20d256e3lr3e-04o1e051d9d"
+  },
+  "splits": {
+    "n_fit_A": 1776,
+    "n_score_B": 724,
+    "source": "encoder_samples"
+  },
+  "working": true
+}
