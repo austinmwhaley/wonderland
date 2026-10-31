@@ -1,0 +1,167 @@
+{
+  "excluded": [],
+  "interpretation": [
+    "return_proneness: no permitted consumer on brain reaches within 0.05 of the table (best brain 0.3473 vs table 0.6874) \u2014 ABSENT from the state (dynamics/objective axis)"
+  ],
+  "n_fit_A": 1776,
+  "n_score_B": 724,
+  "products": "/work/cfm_m3_profile",
+  "seconds": 26.8,
+  "traits": {
+    "churn_day": {
+      "brain": {
+        "knn": 0.3178,
+        "linear": 0.6367,
+        "mlp": 0.1483
+      },
+      "brain_ledger": {
+        "knn": 0.2581,
+        "linear": 0.6522,
+        "mlp": -4.7494
+      },
+      "ledger": {
+        "knn": 0.2081,
+        "linear": 0.6554,
+        "mlp": -6.0647
+      },
+      "table": {
+        "knn": 0.5382,
+        "linear": 0.6554,
+        "mlp": 0.5876
+      }
+    },
+    "final_regime_days": {
+      "brain": {
+        "knn": -0.068,
+        "linear": 0.0114,
+        "mlp": -0.1259
+      },
+      "brain_ledger": {
+        "knn": -0.0452,
+        "linear": -0.0054,
+        "mlp": -0.2603
+      },
+      "ledger": {
+        "knn": -0.0236,
+        "linear": 0.002,
+        "mlp": -0.2869
+      },
+      "table": {
+        "knn": 0.0423,
+        "linear": 0.0197,
+        "mlp": 0.0618
+      }
+    },
+    "h0": {
+      "brain": {
+        "knn": 0.3614,
+        "linear": 0.9307,
+        "mlp": 0.9218
+      },
+      "brain_ledger": {
+        "knn": 0.3462,
+        "linear": 0.9854,
+        "mlp": 0.607
+      },
+      "ledger": {
+        "knn": 0.2627,
+        "linear": 0.9847,
+        "mlp": 0.8801
+      },
+      "table": {
+        "knn": -0.1227,
+        "linear": -0.0248,
+        "mlp": -0.1383
+      }
+    },
+    "price_sensitivity": {
+      "brain": {
+        "knn": -0.094,
+        "linear": -0.0115,
+        "mlp": -1.1363
+      },
+      "brain_ledger": {
+        "knn": -0.0946,
+        "linear": -0.0415,
+        "mlp": -3.2209
+      },
+      "ledger": {
+        "knn": -0.0675,
+        "linear": -0.0351,
+        "mlp": -2.2242
+      },
+      "table": {
+        "knn": -0.0593,
+        "linear": -0.0093,
+        "mlp": -0.4976
+      }
+    },
+    "regime_switches": {
+      "brain": {
+        "knn": -0.0507,
+        "linear": 0.0061,
+        "mlp": -0.2413
+      },
+      "brain_ledger": {
+        "knn": 0.0023,
+        "linear": 0.0223,
+        "mlp": -1.0178
+      },
+      "ledger": {
+        "knn": 0.013,
+        "linear": 0.0171,
+        "mlp": -0.3799
+      },
+      "table": {
+        "knn": 0.0778,
+        "linear": 0.029,
+        "mlp": -0.0194
+      }
+    },
+    "return_proneness": {
+      "brain": {
+        "knn": -0.0554,
+        "linear": 0.3473,
+        "mlp": -1.8581
+      },
+      "brain_ledger": {
+        "knn": 0.1906,
+        "linear": 0.6054,
+        "mlp": -6.0366
+      },
+      "ledger": {
+        "knn": 0.2997,
+        "linear": 0.6085,
+        "mlp": -4.9172
+      },
+      "table": {
+        "knn": 0.4758,
+        "linear": 0.6874,
+        "mlp": 0.2114
+      }
+    },
+    "x0": {
+      "brain": {
+        "knn": 0.5957,
+        "linear": 0.8914,
+        "mlp": 0.7809
+      },
+      "brain_ledger": {
+        "knn": 0.6706,
+        "linear": 0.8907,
+        "mlp": 0.3941
+      },
+      "ledger": {
+        "knn": 0.6948,
+        "linear": 0.8915,
+        "mlp": 0.4798
+      },
+      "table": {
+        "knn": 0.543,
+        "linear": 0.8904,
+        "mlp": 0.839
+      }
+    }
+  },
+  "working": true
+}

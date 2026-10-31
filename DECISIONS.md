@@ -5909,3 +5909,50 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   traits at this geometry (DEC-477 profile block, DEC-482 per-type recency). The remaining gaps
   (x0 0.013, return 0.002 on the paired test, churn 0.068, regime) require the BRAIN axis — objective
   or architecture — which is what M3 tests. Recorded so this lever is not retried.
+
+## DEC-483 — [MEASURED] protocol M3: profile objective under undimmed serving — named axis FLAT, NOT adopted; the falsifier is met
+- **What ran.** M3 = M2 + the five profile flags (DEC-478), artifact
+  `0.11.0r103115-b20d256e3lr3e-04ofaba6af5`, acceptance 8/8 (overrides exact, flags in
+  registry+blob, 40 loss scales incl. `profile`=1.8389 finite, ledger 7 parts/595-d).
+- **Named axis: FAILED, falsifier MET.** brain x0 **0.8914** (M2 0.8924; Δ −0.0010, inside the
+  ±0.005 falsifier band). The histogram middle levels — the wall DEC-469 named — are unchanged:
+  E→freq per-bin **0.223/0.124** (M2 0.226/0.122); outer bins rose modestly
+  (0.709/0.608 vs 0.679/0.543) but do not move x0. Pressure on the undimmed trunk does not write
+  the histogram into h. Per DEC-478, the wall is what the trunk writes into a single 256-d
+  recurrent summary, not objective pressure and not the fade.
+- **Side movements (reported, not adoption grounds).** return brain 0.2974 → **0.3473** (+0.050,
+  outside the ±0.03 band; an improvement, not a regression), h0 0.9278 → 0.9307, churn
+  0.6371 → 0.6367, price −0.0143 → −0.0115, ledger columns unchanged (x0 0.8907, churn 0.6522).
+- **Chain not run, deliberately.** Adoption is gated on the named axis first; the axis failed, so
+  the guard battery (which protects an adopted artifact) is moot. Receipts archived under
+  `protocols/m3_profile/`; the live access-axis receipt was restored to M2's committed bytes
+  (`git checkout 79ce6c6`) so the card keeps its recorded artifact. No card change.
+- **Disposition.** NOT adopted. M2 stays the recorded artifact. The supervised objective axis is
+  now falsified twice under two different serving regimes (L faded, M3 undimmed) — it is retired
+  unless the state/readout architecture changes (operator-level contract question, DEC-484).
+
+## DEC-484 — [MEASURED] x0's sufficient statistic is real (0.909, now reproducible) but the frozen probe cannot exploit it inside the ledger; ledger content is closed
+- **DEC-464 re-derived exactly, committed recipe** (`protocols/rederive_hist_x0_2026_10_31.py`,
+  judge geometry n=1776/724, history cut at as_of): ridge(freq **counts** → x0) = **0.9090**,
+  shares = **0.9132**, mode = **0.9158**, corr(mode, x0) = **0.9582**. The claim was previously a
+  narrative number with no committed script (protocol rule 6); it is now evidence and it exceeds
+  PATH A's 0.9056.
+- **But the ledger cannot carry it into the judged column.** Measured variants on M2's artifact
+  (same probe, same split):
+  * per-event-type recency (DEC-482): churn +0.007, return 0.000;
+  * per-level histograms for ALL integer fields (104 dims): ledger+block x0 0.8924, block-only
+    0.8964;
+  * only the declared action family (freq/hour/dow/channel/offer, 90 dims counts+shares):
+    counts 0.8985, shares 0.8271, ledger+counts 0.8919, **ledger + 4 freq counts 0.8930**;
+  * churn/return move ≤ +0.007 in every variant.
+  The block alone can reach 0.90, but a 4-dim signal concatenated into ~600 dims is shrunk by the
+  frozen RidgeCV probe (`measure_battery_law._ridge_head`, standardized, self-selecting alpha) and
+  lands at 0.893 — below PATH A 0.9056.
+- **Honest conclusion.** (1) Ledger CONTENT is exhausted for the card's supervised traits; every
+  history-only extension measured lands ≤ 0.893 joint. (2) The 0.909 ceiling is reachable only as
+  a compact standalone view — adding an `action_profile` measure part would still be diluted by
+  concatenation, and a freq-only block chosen because we know it generates x0 would violate G3
+  (target-blind) and is NOT proposed. (3) The x0 DELIVERY gap is therefore an ARTIFACT-CONTRACT
+  question (does "brain + ledger" mean the 595-d concat, or may a declared action-profile view be
+  a separate arm?), which is an operator ruling under AGENTS.md's stop-and-ask triggers. Not
+  adopted unilaterally.
