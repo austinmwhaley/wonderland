@@ -6042,3 +6042,20 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   content, the ledger. One axis: survival pressure ON, on the unfaded served path. Cost: one GPU
   train + chain + access axis. Co-tenancy: the 27B LLM runs at GMU 0.40 (DEC-487), so this run
   also measures the caps-only three-way budget live.
+
+## DEC-489 — [MEASURED] protocol M4: survival on the unfaded served path — named axis short of the bar, NOT adopted
+- **What ran.** M4 = M2 + `survival=true`, with the query tensor fixed to the served path
+  (`faded_query=false` receipted). Artifact `0.11.0r103115-b20d256e3lr3e-04o154929cf`, acceptance
+  10/10 (K=9 horizons 1479 s..4.96 d, `head_survive` (9,256), `survive` loss 0.547 finite, ledger
+  7 parts/595-d). Ran alongside the 27B at GMU 0.40: trainer budget 15.08 GB, driver free 31.2 GB,
+  host 50 GB available — the co-tenancy arithmetic of DEC-487 held for the whole run.
+- **Named axis: SHORT.** brain churn_day **0.6534** (M2 0.6371; Δ **+0.0163**; axis acceptance ≥0.66
+  and adoption Δ≥+0.03 both missed). brain+ledger churn **0.6492** (M2 0.6528; Δ −0.0036) — the
+  ledger column did not move at all. Brain return 0.3379 (M2 0.2974, +0.041; second protocol in a
+  row to lift return by ~+0.04) — reported, not adoption grounds. x0 0.8918, h0 0.9251, price
+  −0.0185 (all inside guards).
+- **Falsifier met.** Survival/hazard pressure does not linearly unlock churn under either serving
+  regime (E faded +0.007, M4 unfaded +0.016). The objective axis is retired for churn and return;
+  the next lever named by M3's falsifier is CAPACITY, which is a separate pre-registration (M5).
+- **Receipts.** Access axis archived under `protocols/m4_surv_unfaded/`; live receipt restored to
+  M2's committed bytes. Chain not run (adoption gated on the named axis first); no card change.
