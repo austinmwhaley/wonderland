@@ -355,6 +355,11 @@ class CFMConfig:
     action_profile: bool = False
     action_profile_fields: tuple = ()
 
+    # DEC-468 (protocol K): which tensor the profile head reads — "y" (the per-position
+    # readout H/I/J used) or "h" (the final RECURRENT state that serving publishes as E).
+    # Measured: y and h are different vectors and neither carries x0 in J (-0.02), while the
+    # served E reads 0.791 — no protocol had ever pressured the served tensor.
+    profile_state: str = "y"
     # DEC-467 (protocol J): loss form for the profile objective — "mse" (H/I) or "ce"
     # (per-field cross-entropy on the normalized histogram; strong gradients, DWA weight
     # comparable to the top tasks). "mse" stays the default so H and I are reproducible.
@@ -511,6 +516,7 @@ class CFMConfig:
             if getattr(self, "profile_served", False):
                 prof += "|served"
             prof += f"|l{str(getattr(self, 'profile_loss', 'mse'))}"
+            prof += f"|st{str(getattr(self, 'profile_state', 'y'))}"
         sig = hashlib.sha256(f"{obj}|{eff}{prof}".encode()).hexdigest()[:8]
         return (
             f"{base}-b{int(self.batch)}d{int(self.dim)}e{int(self.epochs)}"

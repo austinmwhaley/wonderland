@@ -850,6 +850,29 @@ def test_profile_moves_the_protocol_tag_only_when_fields_are_declared():
     assert on.tag != base  # trained weights differ => the name must say so (DEC-448)
 
 
+def test_profile_state_is_a_protocol_axis_and_h_path_reaches_the_served_tensor():
+    """DEC-468: y (readout) and h (recurrent state) are different tensors — serving
+    publishes h. The tag must distinguish them, and the h path must produce a finite loss
+    whose gradient reaches the trunk."""
+    f = ("freq",)
+    y_cfg = CFMConfig(action_profile_fields=f, profile_loss="ce")
+    h_cfg = CFMConfig(action_profile_fields=f, profile_loss="ce", profile_state="h")
+    assert y_cfg.tag != h_cfg.tag
+    seqs = [_sparse_seq("c1"), _sparse_seq("c2", gap_h=7)]
+    vocab = EventVocab.build(seqs)
+    torch.manual_seed(0)
+    model = CFM(vocab, dim=16, n_experts=1, profile_dim=4)
+    cfg = _profile_cfg()
+    cfg.profile_served = True
+    cfg.profile_loss = "ce"
+    cfg.profile_state = "h"
+    T_ = _task_losses(model, vocab, seqs, cfg)
+    assert torch.isfinite(T_["profile"])
+    T_["profile"].backward()
+    assert model.emb_et.weight.grad is not None
+    assert model.proj.weight.grad is not None and model.proj.weight.grad.abs().sum() > 0
+
+
 def test_profile_ce_is_a_protocol_axis_and_finite():
     f = ("freq",)
     assert (

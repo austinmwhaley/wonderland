@@ -773,6 +773,7 @@ def train_cfm(cfg: CFMConfig):
             # trunk state, I = served normalize(proj(state)) path).
             "profile_served": bool(getattr(cfg, "profile_served", False)),
             "profile_loss": str(getattr(cfg, "profile_loss", "mse")),
+            "profile_state": str(getattr(cfg, "profile_state", "y")),
             "action_fields": list(getattr(cfg, "action_fields", ()) or ()),
             "primary_numeric": getattr(cfg, "primary_numeric", None),
             "whiten_mean": (model.whiten_mean if getattr(model, "whiten_on", False) else None),
@@ -1438,7 +1439,12 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
     ):
         rows = torch.arange(B, device=dev)
         Lc = t["mask"].sum(1).long().clamp(min=1) - 1
-        s_full = y[rows, Lc.clamp(max=y.shape[1] - 1)]  # the boundary state serving reads
+        # DEC-468: serving publishes normalize(proj(h_final)) — h is the recurrent state, y
+        # is the readout. Heads trained on y never touch the served tensor (measured).
+        if str(getattr(cfg, "profile_state", "y")).lower() == "h":
+            s_full = h  # (B, dim) final recurrent state — the served state
+        else:
+            s_full = y[rows, Lc.clamp(max=y.shape[1] - 1)]  # the readout used by H/I/J
         parts = []
         for f in cfg.action_profile_fields:
             Q = cfg._action_profile_levels.get(str(f))
@@ -2307,6 +2313,7 @@ def _registry(
                     "dims": list(getattr(cfg, "_action_profile_dims", []) or []),
                     "served": bool(getattr(cfg, "profile_served", False)),
                     "loss": str(getattr(cfg, "profile_loss", "mse")),
+                    "state": str(getattr(cfg, "profile_state", "y")),
                 },
                 "resolved": cfg_resolved or {},
                 "governor": governor or {},
