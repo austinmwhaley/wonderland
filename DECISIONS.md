@@ -5893,3 +5893,19 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   DEC-480's stop-while-training practice is now the standing state, not an exception.
 - **Consequence.** No co-tenancy negotiation is needed for the current ladder. Training runs use the
   proven 15 GiB profile under caps only (DEC-476); M3 already running this way.
+
+## DEC-482 — [MEASURED, PRE-VERDICT] per-event-type recency does not close the churn/return gaps — ledger content is exhausted
+- **Premise tested** (CPU only, no GPU): the table's churn advantage might come from per-event-type
+  recency (days since last purchase/return/etc.); the ledger only has GLOBAL silence/tenure/span.
+  Diagnostic `diag_per_type_recency_2026_10_31.py` added, name-blind over the encoder's own event
+  vocabulary: log1p days since last occurrence of each event type (unseen -> tenure sentinel), plus
+  optionally days since first occurrence. Same judge population/split/probe as every receipt.
+- **Result (ledger | +rec | +rec+first | rec-only | PATH A).** churn 0.6554 | 0.6628 | 0.6636 |
+  0.5777 | 0.7209; return 0.6085 | 0.6081 | 0.6040 | 0.2859 | 0.6734; x0 0.8915 | 0.8903 | 0.8900 |
+  0.2241 | 0.9056; h0 flat. Per-type recency is individually strong for churn (0.578 alone) but the
+  ledger's global recency + numeric stats already carry it; the addition is +0.007 churn and zero
+  return, far below any adoption threshold.
+- **Disposition.** No protocol. Ledger content is now measured exhausted for the card's supervised
+  traits at this geometry (DEC-477 profile block, DEC-482 per-type recency). The remaining gaps
+  (x0 0.013, return 0.002 on the paired test, churn 0.068, regime) require the BRAIN axis — objective
+  or architecture — which is what M3 tests. Recorded so this lever is not retried.
