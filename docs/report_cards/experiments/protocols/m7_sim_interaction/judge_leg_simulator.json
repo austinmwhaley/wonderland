@@ -1,0 +1,112 @@
+{
+  "_meta": {
+    "behavior_hash": "babee652be3856c5",
+    "command": "measure_judge_law.py --products /home/austin_whaley/wonderland_work/cfm_m2_clean --demo /home/austin_whaley/wonderland_work/demo --legs simulator --out-dir docs/report_cards/experiments",
+    "generated_at": "2026-10-31T21:26:31+00:00",
+    "git_commit": "c1e5e7de8f68757752350f770e2cc93add101750",
+    "producer": "measure_judge_law.py"
+  },
+  "arms": {
+    "brain": "state_embeddings donor + level one-hot + interaction -> linear head on the identified curve",
+    "brain_ledger": "brain + measure view (ledger), same interaction head and cells",
+    "pathA": "PATH A wide table + level one-hot -> the DEC-428 GBM incumbent"
+  },
+  "checks": {
+    "simulator": {
+      "evidence": "2 live task(s) (+0 degenerate) on n=724 B-rows scored against 1776 A-rows; comparator PATH A (GBM incumbent); table 48 cols / 2500 customers; brain+ledger 2 task(s)",
+      "working": true
+    }
+  },
+  "columns": {
+    "brain": {
+      "tasks": [
+        {
+          "brain": 0.282174,
+          "ci_hi": 0.00038,
+          "ci_lo": -0.000528,
+          "comparator": "PATH A (GBM incumbent)",
+          "controls_unreadable": [],
+          "destroyed": -0.351359,
+          "metric": "R2 on the identified (customer x offer level) purchase rate; interaction-aware [rep, onehot, rep\u2297onehot] features (4 levels: [0, 1, 2, 3])",
+          "n": 1132,
+          "name": "dose_response_curve",
+          "pathA": 0.287935,
+          "random": -0.306785
+        },
+        {
+          "brain": 0.312634,
+          "ci_hi": -0.038544,
+          "ci_lo": -0.156317,
+          "comparator": "PATH A (GBM incumbent)",
+          "controls_unreadable": [],
+          "destroyed": 0.237687,
+          "metric": "share of customers whose declared offer optimum is the argmax of the interaction-aware response surface (ties -> lowest level); [rep, onehot, rep\u2297onehot] on every arm",
+          "n": 467,
+          "name": "argmax_optimum",
+          "pathA": 0.411135,
+          "random": 0.252677
+        }
+      ]
+    },
+    "brain_ledger": {
+      "tasks": [
+        {
+          "brain": 0.280009,
+          "ci_hi": 0.000336,
+          "ci_lo": -0.000527,
+          "comparator": "PATH A (GBM incumbent)",
+          "controls_unreadable": [],
+          "destroyed": -0.164306,
+          "metric": "R2 on the identified (customer x offer level) purchase rate; interaction-aware [rep, onehot, rep\u2297onehot] features (4 levels: [0, 1, 2, 3])",
+          "n": 1132,
+          "name": "dose_response_curve",
+          "pathA": 0.287935,
+          "random": -0.201309
+        },
+        {
+          "brain": 0.35546,
+          "ci_hi": 0.002195,
+          "ci_lo": -0.11349,
+          "comparator": "PATH A (GBM incumbent)",
+          "controls_unreadable": [],
+          "destroyed": 0.252677,
+          "metric": "share of customers whose declared offer optimum is the argmax of the interaction-aware response surface (ties -> lowest level); [rep, onehot, rep\u2297onehot] on every arm",
+          "n": 467,
+          "name": "argmax_optimum",
+          "pathA": 0.411135,
+          "random": 0.276231
+        }
+      ]
+    }
+  },
+  "diagnostics": {},
+  "evidence": "[simulator] OK: 2 live task(s) (+0 degenerate) on n=724 B-rows scored against 1776 A-rows; comparator PATH A (GBM incumbent); table 48 cols / 2500 customers; brain+ledger 2 task(s)",
+  "excluded": [],
+  "identified": {
+    "customers": 4093,
+    "levels": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "rule": "an offer level is identified for a customer at >= 10 arm-days"
+  },
+  "path_a": {
+    "columns": 48,
+    "n_present": 2500,
+    "n_requested": 2500,
+    "source": "/home/austin_whaley/wonderland_work/demo/path_a/path_a_wide_table.parquet"
+  },
+  "products": {
+    "path": "/home/austin_whaley/wonderland_work/cfm_m2_clean",
+    "registry_sha256": "114a37039af04dcf",
+    "tag": "0.11.0r103115-b20d256e3lr3e-04o1e051d9d"
+  },
+  "splits": {
+    "n_fit_A": 1776,
+    "n_score_B": 724,
+    "source": "encoder_samples"
+  },
+  "working": true
+}

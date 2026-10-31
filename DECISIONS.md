@@ -6392,3 +6392,78 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - **Not changed.** Gates, targets, comparator, encoder, ledger, artifact, other legs. Principle
   served: Honest (the fair comparison killed a false green), Lawful (derived k), Efficient (37 s,
   no training).
+
+## DEC-501 — [MEASURED] the S5 mass gap is partly real: matching the comparator's algebra makes spend a tie, not a win
+- **Context.** DEC-493 measured raw extensive mass with the frame's **log1p** event-type bag as the
+  comparator and concluded "the S5 `ledger_reconstruction` failure is a target-transform artifact."
+  The M6 lesson (DEC-500) is that a transform must be applied to the comparator too. This
+  diagnostic re-scored the same four totals under raw target + **raw-count** comparator features
+  (plus recency), same split/head/CI.
+- **Measured (raw target, raw-count comparator).** spend: brain **0.9238** vs naive **0.9178**
+  (Δ +0.0059, CI **[−60384.7,+155973.4]** — a tie); margin: 0.9084 vs 0.8566 (Δ +0.0519, CI
+  positive); n_purch: 0.9496 vs 0.9006 (CI positive); n_ret: 0.6572 vs 0.2485 (CI positive).
+  The earlier "all four pass" used a raw target scored against log-count features — an unfair
+  comparator.
+- **Correction to DEC-493.** The mass check is **not** a clean transform artifact: spend is a
+  real content gap (or a tie at best); margin/counts do win under the matching algebra. No raw-mass
+  gate change is proposed. The frozen `log1p` check stays red on spend; changing it would not be
+  a capability gain.
+- **Not run / not adopted.** No protocol, no code change, no card change. Diagnostic only; the
+  lesson from DEC-500 is applied before a protocol, not after.
+- **Next.** The simulator consumer is the next real lever: its additive `[state, onehot(level)]`
+  head has a customer-constant argmax by construction (DEC-486); an interaction-aware feature map
+  is a consumer contract change that can be measured without retraining.
+
+## DEC-502 — [PRE-REGISTERED] protocol M7: interaction-aware simulator consumer (fair on every arm)
+- **Why.** The simulator leg's consumer is `[state, onehot(offer level)]` with a linear ridge head.
+  Its fitted curve is `state·w + b_level`, so the argmax over levels is **customer-constant** — the
+  structural failure DEC-486 measured (brain=random=destroyed at 0.269807). The state may carry
+  action-conditioned signal; the consumer cannot express it. The QTE form used by the effect head
+  (DEC-453) is the same idea: per-level slopes `state·W[:,a]+b[a]`.
+- **Decision — one axis: the simulator consumer's feature map.** Replace `[rep, onehot(level)]`
+  with `[rep, onehot(level), rep ⊗ onehot(level)]`, keeping the **same linear ridge head**
+  (`_ridge_head`) and the same fit/score split. This is a fixed bilinear feature expansion, not an
+  MLP and not a new trained head. Apply the **identical expansion to every arm** — brain,
+  brain+ledger, PATH A table + GBM, random, destroyed — so the comparator gets the same advantage
+  (the DEC-500 fairness lesson).
+- **Frozen acceptance (mechanical).** Both simulator tasks must pass in **both** columns:
+  `dose_response_curve` paired CI vs PATH A excludes 0; `argmax_optimum` paired CI excludes 0 and
+  both controls sit below the brain. Adoption iff the named axis (`argmax_optimum`) moves off the
+  structural constant and both columns' argmax CIs clear zero, with `dose_response_curve` not
+  regressing. If only one task/column moves, NOT adopted.
+- **Guards.** Supervised/unsupervised/RL rows unchanged; no encoder, ledger, artifact, target,
+  level set, threshold, or comparator change; the same identified customers/levels and the same
+  GBM incumbent (with the same interaction features); one leg re-run + chain.
+- **Falsifier.** `argmax_optimum` remains customer-constant (brain == random == destroyed) or the
+  CI includes zero, or `dose_response_curve` regresses ⇒ the consumer interaction is not enough;
+  archive and revert. A state-content protocol (not another consumer tweak) is then required.
+- **Principles.** Diagnosable (the failure is the consumer's expressiveness, not the target),
+  Honest (fair expansion on every arm), Efficient (no training, one leg re-run), Accessible
+  (a fixed linear feature map remains a simple consumer).
+- **Not changed.** Targets, truth, levels, gates, encoder, ledger, recorded artifact.
+
+## DEC-503 — [MEASURED] M7 simulator interaction: the structural constant is fixed, but PATH A still wins; NOT adopted
+- **What ran.** M7 as pre-registered (DEC-502): the simulator consumer's feature map becomes
+  `[rep, onehot(level), rep⊗onehot(level)]`, same linear ridge head, same identified customers/
+  levels, **the same expansion on every arm** including PATH A and the controls. One simulator leg
+  re-run (157 s), no training, M2 artifact.
+- **Measured — argmax_optimum.** brain **0.312634**, brain+ledger **0.355460**, PATH A
+  **0.411135**. Paired CIs: brain **[−0.15632,−0.03854]**, b+l **[−0.11349,+0.00220]** — both
+  lose. Controls: brain random 0.252677 / destroyed 0.237687; b+l random 0.276231 / destroyed
+  0.252677 — the brain now beats its controls (the additive head's constant 0.269807 is gone).
+- **Measured — dose_response_curve.** brain **0.282174** vs PATH A **0.287935** (CI
+  [−0.000528,+0.000380]); b+l 0.280009 (CI [−0.000527,+0.000336]) — a tie, not a win.
+- **Falsifier met, NOT adopted.** Reverted; live `judge_leg_simulator.json` restored; receipt
+  archived at `docs/report_cards/experiments/protocols/m7_sim_interaction/`.
+- **Refinement of DEC-486.** The *additive* consumer was structurally unpassable; an
+  interaction-aware consumer makes the argmax task **expressible** and the brain beats random/
+  destroyed. The remaining failure is **content**: PATH A's table carries a better response
+  surface (0.411 vs 0.355). Another consumer/target tweak is not the fix; the state must carry
+  the response.
+- **Pattern across M6/M7.** Metric (M6) and consumer expressiveness (M7) both fail because PATH A
+  has more content. This is the same wall as DEC-421/483/489/491: the brain's served state loses
+  behavioral content to the table. The remaining honest lever is a **content/architecture**
+  protocol (exact-count channel in the trunk / interaction-aware trunk), not measurement.
+- **Not changed.** Targets, truth, levels, gates, encoder, ledger, artifact. Principle served:
+  Honest (fair expansion; failed honestly), Diagnosable (consumer vs content isolated),
+  Efficient (no training).

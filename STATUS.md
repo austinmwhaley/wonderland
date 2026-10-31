@@ -2441,3 +2441,14 @@ resolves to a receipt; the "what is not claimed" panel repeats the card's disclo
 > under a fair comparator the gap is content, not metric. Receipt archived at
 > `docs/report_cards/experiments/protocols/m6_geometry_metric/`; the live leg receipt was restored;
 > no card change. Lesson recorded: any metric transform must be applied to the comparator too.
+
+> **2026-10-31 M7 measured (DEC-502/503): NOT adopted — the interaction consumer is expressible,
+> but PATH A still wins.** With `[rep, onehot, rep⊗onehot]` on every arm, brain argmax **0.3126**
+> (controls 0.2527/0.2377), b+l **0.3555**, PATH A **0.4111**; CIs negative; dose-response is a tie.
+> The additive head's structural constant is fixed (DEC-486 refined), but the state lacks the
+> response content the table carries. Receipt archived at
+> `docs/report_cards/experiments/protocols/m7_sim_interaction/`; live leg restored; no card change.
+> **Pattern:** M6 (metric) and M7 (consumer) both fail because PATH A's table has more content. The
+> next lever is a content/architecture protocol (exact-count channel in the trunk), not measurement.
+> **S5 mass fairness (DEC-501):** under a matching raw-count comparator, spend is a **tie**, not a
+> win; the earlier "transform artifact" claim is corrected. No raw-mass gate change.
