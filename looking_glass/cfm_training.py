@@ -772,6 +772,7 @@ def train_cfm(cfg: CFMConfig):
             # DEC-466: which input space the profile head was trained in (provenance: H = raw
             # trunk state, I = served normalize(proj(state)) path).
             "profile_served": bool(getattr(cfg, "profile_served", False)),
+            "profile_loss": str(getattr(cfg, "profile_loss", "mse")),
             "action_fields": list(getattr(cfg, "action_fields", ()) or ()),
             "primary_numeric": getattr(cfg, "primary_numeric", None),
             "whiten_mean": (model.whiten_mean if getattr(model, "whiten_on", False) else None),
@@ -1461,7 +1462,25 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
                 if getattr(cfg, "profile_served", False)
                 else s_full
             )
-            T_["profile"] = F.mse_loss(model.head_action_profile(s_in), tgt)
+            logits = model.head_action_profile(s_in)
+            # DEC-467 (protocol J): per-field cross-entropy is the correct loss for a
+            # distribution target and keeps gradients strong (MSE sat at DWA scale 0.072
+            # and the head never trained — measured skill 0.0000).
+            if str(getattr(cfg, "profile_loss", "mse")).lower() == "ce":
+                ce, off = 0.0, 0
+                nf = 0
+                for f in cfg.action_profile_fields:
+                    Q = cfg._action_profile_levels.get(str(f))
+                    if not Q or f not in t:
+                        continue
+                    lg = logits[:, off : off + int(Q)]
+                    tq = tgt[:, off : off + int(Q)]
+                    ce = ce + F.cross_entropy(lg, tq, reduction="mean")
+                    off += int(Q)
+                    nf += 1
+                T_["profile"] = ce / max(nf, 1)
+            else:
+                T_["profile"] = F.mse_loss(logits, tgt)
     # ---- variance floor (VICReg-style, DEC-015) ---------------------------
     # Decorrelation (redundancy) removes correlation but not SCALE collapse:
     # the production runs measured eff-rank 0.23-0.26x null with redundancy
@@ -2287,6 +2306,7 @@ def _registry(
                     "levels": dict(getattr(cfg, "_action_profile_levels", {}) or {}),
                     "dims": list(getattr(cfg, "_action_profile_dims", []) or []),
                     "served": bool(getattr(cfg, "profile_served", False)),
+                    "loss": str(getattr(cfg, "profile_loss", "mse")),
                 },
                 "resolved": cfg_resolved or {},
                 "governor": governor or {},

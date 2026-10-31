@@ -354,6 +354,11 @@ class CFMConfig:
     # byte-reproducible.
     action_profile: bool = False
     action_profile_fields: tuple = ()
+
+    # DEC-467 (protocol J): loss form for the profile objective — "mse" (H/I) or "ce"
+    # (per-field cross-entropy on the normalized histogram; strong gradients, DWA weight
+    # comparable to the top tasks). "mse" stays the default so H and I are reproducible.
+    profile_loss: str = "mse"
     # DEC-466 (protocol I): train the profile head on the SERVED embedding path
     # E = normalize(proj(state)) — the exact vector the judge and plugins consume — instead of
     # the raw trunk state. Measured on H: the trunk carries x0 at y->x0 0.878 while the served
@@ -505,6 +510,7 @@ class CFMConfig:
             prof = "|p" + ",".join(str(f) for f in self.action_profile_fields)
             if getattr(self, "profile_served", False):
                 prof += "|served"
+            prof += f"|l{str(getattr(self, 'profile_loss', 'mse'))}"
         sig = hashlib.sha256(f"{obj}|{eff}{prof}".encode()).hexdigest()[:8]
         return (
             f"{base}-b{int(self.batch)}d{int(self.dim)}e{int(self.epochs)}"

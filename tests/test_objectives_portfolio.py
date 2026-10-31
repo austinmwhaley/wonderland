@@ -850,6 +850,26 @@ def test_profile_moves_the_protocol_tag_only_when_fields_are_declared():
     assert on.tag != base  # trained weights differ => the name must say so (DEC-448)
 
 
+def test_profile_ce_is_a_protocol_axis_and_finite():
+    f = ("freq",)
+    assert (
+        CFMConfig(action_profile_fields=f).tag
+        != CFMConfig(action_profile_fields=f, profile_loss="ce").tag
+    )
+    seqs = [_sparse_seq("c1"), _sparse_seq("c2", gap_h=7)]
+    vocab = EventVocab.build(seqs)
+    torch.manual_seed(0)
+    model = CFM(vocab, dim=16, n_experts=1, profile_dim=4)
+    cfg = _profile_cfg()
+    cfg.profile_served = True
+    cfg.profile_loss = "ce"
+    T_ = _task_losses(model, vocab, seqs, cfg)
+    assert torch.isfinite(T_["profile"]) and float(T_["profile"]) > 0
+    T_["profile"].backward()
+    assert model.head_action_profile.weight.grad is not None
+    assert model.proj.weight.grad is not None and model.proj.weight.grad.abs().sum() > 0
+
+
 def test_profile_served_is_a_protocol_axis_and_changes_the_head_input_space():
     """DEC-466: H and I train the same head in DIFFERENT input spaces — the name must
     distinguish them, and the served path must be the exact published function."""
