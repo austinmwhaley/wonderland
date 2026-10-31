@@ -5318,3 +5318,36 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - **vLLM restart policy.** Left stopped while the loop trains. Restart is NOT part of any
   protocol step; it will be proposed to the operator when the judged card's remaining red
   rows no longer need dedicated GPU windows (or immediately if asked).
+
+## DEC-462 — [MEASURED] protocol F (future-rate on the trunk): named axis unmoved — NOT adopted; card stays on D
+
+- **What ran.** F = D + `rate=true` (DEC-459 pre-registered), first dedicated-host run
+  (vLLM stopped per DEC-461). Artifact `cfm_f_rate`, tag
+  `0.11.0r103115-b20d256e3lr3e-04oa0ed1ac3`. Frozen acceptance 8/8 PASS before any verdict
+  reading (overrides = D axes + rate, objectives contain rate not survive, 40 loss scales,
+  registry `rate.window_s=90 324 000 s = 10 × the 19.2 h median gap` as designed, blob
+  `rate_dim=12=2+n_et`, `head_rate.weight (12,256)`, tag distinct, losses finite). Chain
+  S6 6/6. Receipts: `docs/report_cards/experiments/protocols/f_rate/`.
+- **Named axes: FAILED.** brain-alone `x0` linear 0.7909 → **0.7950** (Δ +0.0041; frozen
+  adoption needs ≥ +0.03; the axis acceptance ≥ 0.84). `return_proneness` 0.2947 →
+  **0.2687** (went DOWN). The objective did what it was asked — the trunk state can now
+  linearly regress future count/value/type aggregates — but that readout does NOT propagate
+  to the judge's x0 trait: the proxy moved, the trait did not.
+- **Guards: all PASS (several improved).** kNN churn 0.6627 (floor 0.60); linear churn
+  0.5949 (within ±0.02 of D's 0.5824); h0 0.8406 (Δ +0.0016); price −0.0186 (Δ +0.0014);
+  rl `policy_value` 0.0564/0.0570 (floor 0.05; best measured yet); `known_effect_uplift`
+  improved to −0.0098/−0.0071 (D: −0.0130/−0.0109); every leg row finite.
+- **Disposition (per DEC-459's frozen rule).** NOT adopted: `rate` stays default-off
+  (A–F protocols byte-reproducible), the recorded protocol stays D, card unchanged.
+- **The lesson that redirects the ladder.** Two protocols (E faded-path survival, F trunk
+  future-rate) were built on real measurements and neither moved a supervised trait. Both
+  pressed the trunk with an objective whose own training target is well-fit (F's losses
+  finite and falling; E's heads fit), yet the judged linear probe on the SERVED state did
+  not move. Before another protocol, the loop must measure what the served state actually
+  carries about the judged traits — not what its heads can fit. Ordered next: (1) a
+  diagnostic that scores the served E against the RATE PROXY ITSELF (recent-count aggregates
+  computed from the stream) to separate "proxy misaligned with the trait" from "trunk cannot
+  expose it"; (2) if the proxy is linearly readable while x0 is not, the failure is target
+  alignment (the trait is not the aggregate), and the protocol must train on the trait's
+  generating structure instead of a lookalike; (3) if the proxy is not readable, the trunk
+  is the wall and the pressure design (not the target) is wrong.

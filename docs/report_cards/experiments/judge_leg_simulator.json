@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "ab30e0f8c036b557",
-    "command": "measure_judge_law.py --products /work/cfm_d_qte --demo /work/demo --legs supervised,unsupervised,rl,simulator --out-dir /repo/docs/report_cards/experiments",
-    "generated_at": "2026-10-30T20:12:09+00:00",
-    "git_commit": "90c20f039aa6de7ca1edf8acaca6c1af65b47c1b",
+    "behavior_hash": "ca8696e8ca2a7b69",
+    "command": "measure_judge_law.py --products /work/cfm_f_rate --demo /work/demo --legs supervised,unsupervised,rl,simulator --out-dir /repo/docs/report_cards/experiments",
+    "generated_at": "2026-10-31T01:55:40+00:00",
+    "git_commit": "68854dea140947763e58a920de64102c479b1858",
     "producer": "measure_judge_law.py"
   },
   "arms": {
@@ -21,17 +21,17 @@
     "brain": {
       "tasks": [
         {
-          "brain": 0.259044,
-          "ci_hi": -0.000321,
-          "ci_lo": -0.001173,
+          "brain": 0.25495,
+          "ci_hi": -0.000361,
+          "ci_lo": -0.001228,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": -0.843393,
+          "destroyed": -0.864802,
           "metric": "R2 on the identified (customer x offer level) purchase rate (4 levels: [0, 1, 2, 3])",
           "n": 1132,
           "name": "dose_response_curve",
           "pathA": 0.318547,
-          "random": -0.885696
+          "random": -0.958761
         },
         {
           "brain": 0.269807,
@@ -51,17 +51,17 @@
     "brain_ledger": {
       "tasks": [
         {
-          "brain": 0.309341,
-          "ci_hi": 0.000213,
-          "ci_lo": -0.00042,
+          "brain": 0.309948,
+          "ci_hi": 0.000222,
+          "ci_lo": -0.000412,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": -0.054812,
+          "destroyed": -0.063556,
           "metric": "R2 on the identified (customer x offer level) purchase rate (4 levels: [0, 1, 2, 3])",
           "n": 1132,
           "name": "dose_response_curve",
           "pathA": 0.318547,
-          "random": -0.047803
+          "random": -0.042732
         },
         {
           "brain": 0.269807,
@@ -99,9 +99,9 @@
     "source": "/work/demo/path_a/path_a_wide_table.parquet"
   },
   "products": {
-    "path": "/work/cfm_d_qte",
-    "registry_sha256": "a6e3a4eb11f9b2b1",
-    "tag": "0.11.0r103115-b20d256e3lr3e-04occdbe290"
+    "path": "/work/cfm_f_rate",
+    "registry_sha256": "8b6954982bb4003c",
+    "tag": "0.11.0r103115-b20d256e3lr3e-04oa0ed1ac3"
   },
   "splits": {
     "n_fit_A": 1776,
