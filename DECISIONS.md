@@ -5668,3 +5668,31 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   identity changes with it. DEC-471 therefore ends the autonomous stretch here: the next
   step is the operator's ruling on the served-artifact contract (options below), and the loop
   resumes with a pre-registered protocol on the granted design.
+
+## DEC-472 — [PRE-REGISTERED] protocol M1: serve the donor E from the pre-fade state (operator-authorized artifact change)
+
+- **Ruling.** Operator authorized "Both" (DEC-471 options): ledger recency + E served undimmed.
+  This decision covers M1 (E); M2 (ledger recency through the guarded MeasureBuilder) follows
+  as its own pre-registration because it touches a guarded outlet recipe and gets its own tests.
+- **Decision — one variable: `serve_unfaded=true` (default off).** In the day-1 close,
+  `materialize_state_embeddings` (E = boundary(proj(state))) runs BEFORE `fade_idle`, so the
+  published donor is the last-event state; `customer_state` is still faded to the boundary
+  (recency consumers keep it). The flag is a tag axis (the published embedding's definition is
+  part of artifact identity). Training is untouched by construction — same weights, new
+  serving — and M1 retrains only to obtain a clean artifact identity; the state_dict is
+  compared to D's as the invariance receipt.
+- **Why (measured, DEC-471):** the idle fade multiplies each customer's state by a different
+  unknown scalar. x0: 0.879 unfaded vs 0.803 faded; h0 0.893 vs 0.834; churn the reverse
+  (0.393 vs 0.588). Serving E unfaded restores the magnitude traits; recency moves to the
+  ledger (M2) where SPINE §5 puts counts.
+- **Frozen acceptance:** overrides = D axes + `serve_unfaded=true`; registry config carries
+  the flag; blob `serve_unfaded=true`; tag ≠ D/E/F/H/I/J/K/L; state_dict tensors equal to D's
+  (serving-only change, bit-identical weights); losses finite; chain S6 6/6.
+- **Named axes.** PRIMARY — brain-alone x0 linear ≥ 0.84 (expected ≈0.879 per measurement);
+  adoption iff Δ ≥ +0.03 vs D (0.7909). SECONDARY — brain h0 ≥ 0.85 (expected ≈0.893);
+  brain churn is EXPECTED TO FALL (measured 0.393 unfaded) and is NOT a guard for M1 alone —
+  it is the M2 subject; it must be reported, not hidden.
+- **Guards (reported):** return/price on brain, rl policy_value/uplift, S5, every leg row
+  finite; brain+ledger x0 ≥ 0.8841 − 0.02 (the ledger column must not pay for the gain).
+- **Not changed:** judge probes, comparator, gates, thresholds, controls; ledger content
+  (M2's subject); E's dimension (256).

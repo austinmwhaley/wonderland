@@ -1156,8 +1156,16 @@ def build_products(cfg, model, vocab, df, keys, split):
                 store.con.execute("SELECT max(as_of_epoch) FROM customer_state").fetchone()[0]
             )
         )
-        store.fade_idle(close_at)
-        n_emb = store.materialize_state_embeddings(model, close_at)
+        if getattr(cfg, "serve_unfaded", False):
+            # DEC-472: publish E from the LAST-EVENT state, before the idle fade. The fade is
+            # still applied to customer_state below (recency consumers keep it), but the
+            # donor's magnitude traits survive: a per-customer unknown scalar multiplying the
+            # state makes linear readouts of x0/h0/return unrecoverable (measured).
+            n_emb = store.materialize_state_embeddings(model, close_at)
+            store.fade_idle(close_at)
+        else:
+            store.fade_idle(close_at)
+            n_emb = store.materialize_state_embeddings(model, close_at)
         # no absorbs (states were just built from full history); every customer
         # was faded idly to the boundary, so idle == embeddings
         store.record_receipt(close_at, 0, n_emb, n_emb, "encoder", _time.perf_counter() - t_close)

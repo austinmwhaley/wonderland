@@ -360,6 +360,12 @@ class CFMConfig:
     # Measured: y and h are different vectors and neither carries x0 in J (-0.02), while the
     # served E reads 0.791 — no protocol had ever pressured the served tensor.
     profile_state: str = "y"
+    # DEC-472 (protocol M): serve the donor E from the state at the customer's last event,
+    # BEFORE the idle fade to as_of. The fade bakes recency into every dimension (it is the
+    # churn channel) but multiplies each customer by a different unknown scalar, destroying
+    # magnitude traits (measured: x0 0.879 unfaded vs 0.803 faded; churn the reverse). The
+    # faded state still drives customer_state; only the published embedding changes.
+    serve_unfaded: bool = False
     # DEC-470 (protocol L): explicit multiplier on the profile task's term — the measured
     # pressure-magnitude lever (K's normal-weight CE could not out-vote 128 per-token terms).
     profile_weight: float = 1.0
@@ -521,7 +527,12 @@ class CFMConfig:
             prof += f"|l{str(getattr(self, 'profile_loss', 'mse'))}"
             prof += f"|st{str(getattr(self, 'profile_state', 'y'))}"
             prof += f"|w{float(getattr(self, 'profile_weight', 1.0)):.3g}"
-        sig = hashlib.sha256(f"{obj}|{eff}{prof}".encode()).hexdigest()[:8]
+        if getattr(self, "serve_unfaded", False):
+            # DEC-472: the published embedding's definition is part of the artifact identity.
+            sig_extra = "|unfaded"
+        else:
+            sig_extra = ""
+        sig = hashlib.sha256(f"{obj}|{eff}{prof}{sig_extra}".encode()).hexdigest()[:8]
         return (
             f"{base}-b{int(self.batch)}d{int(self.dim)}e{int(self.epochs)}"
             f"lr{float(self.lr):.0e}o{sig}"
