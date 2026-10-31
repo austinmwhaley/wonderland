@@ -5473,3 +5473,42 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - **Not changed:** gates, thresholds, criteria, controls, comparator, probe definitions, the
   linear shipping head, E's content. Cost: one GPU train (~17 min dedicated) + chain (~17 min)
   + access axis (~24 s). Artifact `cfm_h_profile`.
+
+## DEC-466 — [MEASURED + PRE-REGISTERED] the served readout is a lossy bypass: every pressure head trained on the trunk, the judge reads through proj+normalize — protocol I trains on the served path
+
+- **Measured bottleneck (protocol H artifact, same population/split as the judge).**
+  * trunk state y → x0 = **0.8776**
+  * served embedding E = normalize(proj(H)) → x0 = **0.7900**
+  * y → window freq-histogram per level: 0.740/0.307/0.094/0.589
+  * E → window freq-histogram per level: 0.640/0.193/0.059/0.520
+  The trunk carries nearly the whole measured sufficient statistic (window hist → x0 =
+  0.8989, full history 0.9090), and the served path loses a systematic ~0.09 on x0. Cause:
+  `proj` + L2 normalize sit between every trained head (effect E, survive E, rate F, profile
+  H) and the judged E. The heads read the raw trunk state; `proj` receives no gradient from
+  them, so the optimizer satisfies each head without moving the consumed geometry. This
+  explains why E/F/H all "fit their target" yet moved no judged trait — a head-side bypass,
+  not a property of the targets (the targets were wrong for F and G for other reasons, but H's
+  target was the measured sufficient statistic and STILL did not move the judge).
+- **Decision — one variable: `profile_served=true` (protocol I).** I = H + the profile head
+  reads `F.normalize(model.proj(s_full), dim=-1)` — the exact function that publishes
+  `state_embeddings` (cfm_state `materialize`: `normalize(proj(H))`; verified this is the
+  vector the judge read, because a linear boundary(proj(y)) would have preserved y→x0 0.878
+  and E reads 0.790 instead). Gradient now flows through proj into the trunk, forcing the
+  SERVED geometry to carry the action-field histogram linearly. `profile_served` and the
+  field list are added to the tag signature (DEC-448: different input space ⇒ different
+  artifact name).
+- **Frozen acceptance:** overrides = D axes + `action_profile=true` + fields +
+  `profile_served=true`; 40 loss scales incl. `profile`; registry `action_profile.served=true`;
+  blob `profile_served=true`, `action_profile_dim=43`, `head_action_profile.weight (43,256)`;
+  losses finite; tag ≠ D/E/F/H.
+- **Named axis.** PRIMARY — brain-alone `x0` linear: acceptance ≥ 0.84; adoption iff Δ ≥ +0.03
+  vs D (0.7909). The measured headroom is y→x0 0.878, so the mechanism predicts up to
+  +0.088; anything ≤ +0.01 falsifies served-path pressure as the lever for this trait.
+  SECONDARY (reported) — h0/d0-churn moves if the profile flows.
+- **Guards:** identical to DEC-465 (churn kNN ≥ 0.60 & linear ±0.02; h0 ±0.02; return ±0.03;
+  price ±0.02; rl policy_value ≥ 0.05; uplift not worse; S5 not worse; brain+ledger x0 ≥
+  0.8841 − 0.02; all leg rows finite).
+- **Not changed:** gates, thresholds, criteria, controls, comparator, probe definitions, the
+  linear shipping head, the content of E (an objective input-space fix; the head is still a
+  training-time readout). Cost: one GPU train (~22 min) + chain (~17 min) + access axis.
+  Artifact `cfm_i_served`.

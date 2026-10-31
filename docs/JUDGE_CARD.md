@@ -1,6 +1,6 @@
 # JUDGE CARD — PATH B > PATH A
 
-*Generated `2026-10-31T01:55:43+00:00` · commit `68854de` (`foundation-rebuild` · dirty) · encoder behavior `ca8696e8ca2a7b69`*
+*Generated `2026-10-31T02:40:27+00:00` · commit `b5c28aa` (`foundation-rebuild` · dirty) · encoder behavior `634100b1b4d3beae`*
 
 **Assessment:** NOT DONE. Legs green: 1/8 · stages green: 5/6. This is a statement about receipts, not about effort; nothing here is a claim of universality (DEC-410: that word appears only when the coverage rows are green).
 
@@ -13,9 +13,9 @@ Ledger points never count as progress: `brain alone` is the judge, `brain + ledg
 |---|---|---|---|
 | supervised | brain alone (PROGRESS) | ❌ FAIL | does not beat PATH A with CI excluding 0: x0, return_proneness, churn_day, regime_switches, final_regime_days |
 | supervised | brain + ledger (DELIVERY) | ❌ FAIL | does not beat PATH A with CI excluding 0: x0, return_proneness, churn_day, regime_switches, final_regime_days |
-| unsupervised | brain alone (PROGRESS) | ❌ FAIL | persona_geometry: random control >= brain (0.00093 vs 6e-06) |
-| unsupervised | brain + ledger (DELIVERY) | ❌ FAIL | persona_geometry: destroyed control >= brain (0.000398 vs 0.000333) |
-| rl | brain alone (PROGRESS) | ❌ FAIL | known_effect_uplift: destroyed control >= brain (-0.001982 vs -0.009787) |
+| unsupervised | brain alone (PROGRESS) | ❌ FAIL | persona_geometry: random control >= brain (0.00093 vs 0.0) |
+| unsupervised | brain + ledger (DELIVERY) | ❌ FAIL | does not beat PATH A with CI excluding 0: persona_geometry, future_geometry, segment_structure |
+| rl | brain alone (PROGRESS) | ❌ FAIL | known_effect_uplift: random control >= brain (-0.009467 vs -0.017002) |
 | rl | brain + ledger (DELIVERY) | ✅ PASS | 2 task(s) beat PATH A; paired CI excludes 0; controls below brain |
 | simulator | brain alone (PROGRESS) | ❌ FAIL | does not beat PATH A with CI excluding 0: dose_response_curve, argmax_optimum |
 | simulator | brain + ledger (DELIVERY) | ❌ FAIL | does not beat PATH A with CI excluding 0: dose_response_curve, argmax_optimum |
@@ -24,19 +24,19 @@ Ledger points never count as progress: `brain alone` is the judge, `brain + ledg
 
 | Stage | Working-state proof | Verdict | Evidence |
 |---|---|---|---|
-| **S1** Schema resolution (universal input) | renamed-schema + new-field pass, zero code edits | ✅ PASS | [renamed_end_to_end] OK: renamed client_id/occurred_at/event/attributes/total -> onboard resolved {'customer_key': 'client_id', 'event_ts':   ·measure_input_law.py on 68854de |
-| **S2** Vocabulary & numeric encoding | unseen-value path exercised; transform receipts; permutation invariance <= tol | ✅ PASS | [unseen_value_path] OK: frozen schema (11 event types, vocab sizes [4, 10, 16, 6, 4, 7, 4, 24, 4, 4, 0, 77, 3, 4, 4, 5, 7]) encoded a batch   ·measure_input_law.py on 68854de |
-| **S3** Lawful dynamics (the engine) | merge/equivariance/mass-additivity exact on data; tau receipted from spectra; stable from step 0 | ✅ PASS | [scan_associativity] OK: merge law F(g∘f)=F(g)∘F(f) on 6 real sequences x 5 split points (float64, model's own decay/drive, continuous_time=  ·measure_dynamics_law.py on 68854de |
-| **S4** Buckets (the outlets) | per-bucket accessibility parity + per-bucket negative controls | ✅ PASS | [outlet_schema] OK: 7 views / 17500 rows; declared-not-served [] advertised | [decodability] OK: linear-head decoders beat random+destroyed   ·measure_views_law.py on 68854de |
-| **S5** The objective battery | every content pressure beats its naive comparator (or is excluded and reported) | ❌ FAIL | FAILED action_conditioned_outcome: known-effect uplift from the one-factor-daily randomized offer arm (P(buy|offer=opt) - P(buy|off>=2), >= 10 ar (+2 more)  ·measure_battery_law.py on 68854de |
-| **S6** Certification (the card) | one command regenerates the card at a recorded commit + hashes | ✅ PASS | [full_chain_in_one_invocation] OK: 6 producer(s) run by this one command (S1+S2 452.4s, S3 478.1s, S4 54.2s, S5 2.1s, legs 46.8s, prov 2.5s)  ·measure_certification_law.py on 68854de |
+| **S1** Schema resolution (universal input) | renamed-schema + new-field pass, zero code edits | ✅ PASS | [renamed_end_to_end] OK: renamed client_id/occurred_at/event/attributes/total -> onboard resolved {'customer_key': 'client_id', 'event_ts':   ·measure_input_law.py on b5c28aa |
+| **S2** Vocabulary & numeric encoding | unseen-value path exercised; transform receipts; permutation invariance <= tol | ✅ PASS | [unseen_value_path] OK: frozen schema (11 event types, vocab sizes [4, 10, 16, 6, 4, 7, 4, 24, 4, 4, 0, 77, 3, 4, 4, 5, 7]) encoded a batch   ·measure_input_law.py on b5c28aa |
+| **S3** Lawful dynamics (the engine) | merge/equivariance/mass-additivity exact on data; tau receipted from spectra; stable from step 0 | ✅ PASS | [scan_associativity] OK: merge law F(g∘f)=F(g)∘F(f) on 6 real sequences x 5 split points (float64, model's own decay/drive, continuous_time=  ·measure_dynamics_law.py on b5c28aa |
+| **S4** Buckets (the outlets) | per-bucket accessibility parity + per-bucket negative controls | ✅ PASS | [outlet_schema] OK: 7 views / 17500 rows; declared-not-served [] advertised | [decodability] OK: linear-head decoders beat random+destroyed   ·measure_views_law.py on b5c28aa |
+| **S5** The objective battery | every content pressure beats its naive comparator (or is excluded and reported) | ❌ FAIL | FAILED action_conditioned_outcome: known-effect uplift from the one-factor-daily randomized offer arm (P(buy|offer=opt) - P(buy|off>=2), >= 10 ar (+2 more)  ·measure_battery_law.py on b5c28aa |
+| **S6** Certification (the card) | one command regenerates the card at a recorded commit + hashes | ✅ PASS | [full_chain_in_one_invocation] OK: 6 producer(s) run by this one command (S1+S2 466.2s, S3 476.3s, S4 44.2s, S5 2.1s, legs 46.2s, prov 2.4s)  ·measure_certification_law.py on b5c28aa |
 
 ## Certification hygiene
 
 | # | Check | Verdict | Evidence |
 |---|---|---|---|
 | H1 | Environment receipted | ✅ PASS | env_receipt.json device matmul ok |
-| H2 | Behavior hash recorded | ✅ PASS | behavior_hash ca8696e8ca2a7b69 |
+| H2 | Behavior hash recorded | ✅ PASS | behavior_hash 634100b1b4d3beae |
 | H3 | N recorded | ✅ PASS | enforced per row (no PASS without N) |
 | H4 | Controls present | ✅ PASS | enforced per row (no PASS without controls) |
 | H5 | Comparator finite and fair | ✅ PASS | enforced per row (comparator must be finite and fair) |
@@ -45,12 +45,12 @@ Ledger points never count as progress: `brain alone` is the judge, `brain + ledg
 
 - `judge_leg_supervised.json :: brain — does not beat PATH A with CI excluding 0: x0, return_proneness, churn_day, regime_switches, final_regime_days`
 - `judge_leg_supervised.json :: brain_ledger — does not beat PATH A with CI excluding 0: x0, return_proneness, churn_day, regime_switches, final_regime_days`
-- `judge_leg_unsupervised.json :: brain — persona_geometry: random control >= brain (0.00093 vs 6e-06)`
-- `judge_leg_unsupervised.json :: brain_ledger — persona_geometry: destroyed control >= brain (0.000398 vs 0.000333)`
-- `judge_leg_rl.json :: brain — known_effect_uplift: destroyed control >= brain (-0.001982 vs -0.009787)`
+- `judge_leg_unsupervised.json :: brain — persona_geometry: random control >= brain (0.00093 vs 0.0)`
+- `judge_leg_unsupervised.json :: brain_ledger — does not beat PATH A with CI excluding 0: persona_geometry, future_geometry, segment_structure`
+- `judge_leg_rl.json :: brain — known_effect_uplift: random control >= brain (-0.009467 vs -0.017002)`
 - `judge_leg_simulator.json :: brain — does not beat PATH A with CI excluding 0: dose_response_curve, argmax_optimum`
 - `judge_leg_simulator.json :: brain_ledger — does not beat PATH A with CI excluding 0: dose_response_curve, argmax_optimum`
-- `judge_stages.json — FAILED action_conditioned_outcome: known-effect uplift from the one-factor-daily randomized offer arm (P(buy|offer=opt) - P(buy|off>=2), >= 10 ar (+2 more)  ·measure_battery_law.py on 68854de`
+- `judge_stages.json — FAILED action_conditioned_outcome: known-effect uplift from the one-factor-daily randomized offer arm (P(buy|offer=opt) - P(buy|off>=2), >= 10 ar (+2 more)  ·measure_battery_law.py on b5c28aa`
 
 ---
 

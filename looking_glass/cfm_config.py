@@ -354,6 +354,12 @@ class CFMConfig:
     # byte-reproducible.
     action_profile: bool = False
     action_profile_fields: tuple = ()
+    # DEC-466 (protocol I): train the profile head on the SERVED embedding path
+    # E = normalize(proj(state)) — the exact vector the judge and plugins consume — instead of
+    # the raw trunk state. Measured on H: the trunk carries x0 at y->x0 0.878 while the served
+    # E reads 0.790; proj+normalize is a lossy bottleneck NO objective head trains through.
+    # Default off keeps protocol H byte-reproducible.
+    profile_served: bool = False
     # exogenous ACTION fields to EXCLUDE from the generic measure (prevents the measure — and
     # hence `E` — from carrying the logged action, which would leak the treatment into the OPE).
     # Declared separately from `effect_actions` so the action's RESPONSE is still exposed.
@@ -492,7 +498,14 @@ class CFMConfig:
             # The head form is a protocol axis ONLY when the head exists (DEC-453); with the
             # objective off it changes nothing, so the effect-off protocols' shared tag holds.
             eff += f"|h{str(getattr(self, 'effect_head', 'mlp'))}"
-        sig = hashlib.sha256(f"{obj}|{eff}".encode()).hexdigest()[:8]
+        prof = ""
+        if getattr(self, "action_profile_fields", ()):
+            # DEC-465/466: the profiled FIELDS and the head's INPUT SPACE are protocol axes —
+            # two runs differing in either train different weights and must not share a tag.
+            prof = "|p" + ",".join(str(f) for f in self.action_profile_fields)
+            if getattr(self, "profile_served", False):
+                prof += "|served"
+        sig = hashlib.sha256(f"{obj}|{eff}{prof}".encode()).hexdigest()[:8]
         return (
             f"{base}-b{int(self.batch)}d{int(self.dim)}e{int(self.epochs)}"
             f"lr{float(self.lr):.0e}o{sig}"

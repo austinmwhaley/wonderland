@@ -850,6 +850,38 @@ def test_profile_moves_the_protocol_tag_only_when_fields_are_declared():
     assert on.tag != base  # trained weights differ => the name must say so (DEC-448)
 
 
+def test_profile_served_is_a_protocol_axis_and_changes_the_head_input_space():
+    """DEC-466: H and I train the same head in DIFFERENT input spaces — the name must
+    distinguish them, and the served path must be the exact published function."""
+    f = ("freq",)
+    h = CFMConfig(action_profile_fields=f)
+    i = CFMConfig(action_profile_fields=f, profile_served=True)
+    assert h.tag != i.tag  # the input space is a protocol axis
+    assert CFMConfig(action_profile_fields=f, profile_served=True).tag == i.tag  # stable
+
+
+def test_profile_served_reads_the_normalized_projection_path():
+    """With profile_served on, the profile loss must depend on proj (gradient reaches it) —
+    with it off, proj is bypassed. That is the measured bottleneck (y->x0 0.878 vs E->x0
+    0.790)."""
+    seqs = [_sparse_seq("c1"), _sparse_seq("c2", gap_h=7)]
+    vocab = EventVocab.build(seqs)
+    torch.manual_seed(0)
+    model = CFM(vocab, dim=16, n_experts=1, profile_dim=4)
+    cfg = _profile_cfg()
+    cfg.profile_served = True
+    T_ = _task_losses(model, vocab, seqs, cfg)
+    assert torch.isfinite(T_["profile"])
+    T_["profile"].backward()
+    assert model.proj.weight.grad is not None
+    assert model.proj.weight.grad.abs().sum() > 0  # the served path is under pressure
+    model.zero_grad()
+    cfg2 = _profile_cfg()  # served OFF -> proj untouched by this loss
+    T2 = _task_losses(model, vocab, seqs, cfg2)
+    T2["profile"].backward()
+    assert model.proj.weight.grad is None or model.proj.weight.grad.abs().sum() == 0
+
+
 def test_future_targets_masks_padding_out_of_the_window_sum():
     """Right-padded rows repeat the last real timestamp across pads; an unmasked window
     sum counts them as phantom future events (measured +5 on a length-3 row padded to 8).

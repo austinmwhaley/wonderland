@@ -769,6 +769,9 @@ def train_cfm(cfg: CFMConfig):
             # DEC-465: the profile head's output count (Σ Q_f when on, 0 when off).
             "action_profile_dim": int(sum(getattr(cfg, "_action_profile_dims", []) or [])),
             "action_profile_fields": list(getattr(cfg, "action_profile_fields", ()) or ()),
+            # DEC-466: which input space the profile head was trained in (provenance: H = raw
+            # trunk state, I = served normalize(proj(state)) path).
+            "profile_served": bool(getattr(cfg, "profile_served", False)),
             "action_fields": list(getattr(cfg, "action_fields", ()) or ()),
             "primary_numeric": getattr(cfg, "primary_numeric", None),
             "whiten_mean": (model.whiten_mean if getattr(model, "whiten_on", False) else None),
@@ -1448,7 +1451,17 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
             parts.append(oh.sum(1) / w.sum(1, keepdim=True).clamp(min=1))  # (B,Q) sums to 1
         if parts:
             tgt = torch.cat(parts, dim=-1)
-            T_["profile"] = F.mse_loss(model.head_action_profile(s_full), tgt)
+            # DEC-466 (protocol I): when `profile_served` is on, the head reads the SERVED
+            # embedding path E = normalize(proj(state)) — the vector the judge consumes — so
+            # the gradient flows through proj into the trunk and moves the judged geometry.
+            # With it off (protocol H) the head reads the raw trunk state (measured: y->x0
+            # 0.878 vs E->x0 0.790 — proj+normalize is a lossy head-side bypass).
+            s_in = (
+                F.normalize(model.proj(s_full), dim=-1)
+                if getattr(cfg, "profile_served", False)
+                else s_full
+            )
+            T_["profile"] = F.mse_loss(model.head_action_profile(s_in), tgt)
     # ---- variance floor (VICReg-style, DEC-015) ---------------------------
     # Decorrelation (redundancy) removes correlation but not SCALE collapse:
     # the production runs measured eff-rank 0.23-0.26x null with redundancy
@@ -2273,6 +2286,7 @@ def _registry(
                     "fields": list(getattr(cfg, "action_profile_fields", ()) or ()),
                     "levels": dict(getattr(cfg, "_action_profile_levels", {}) or {}),
                     "dims": list(getattr(cfg, "_action_profile_dims", []) or []),
+                    "served": bool(getattr(cfg, "profile_served", False)),
                 },
                 "resolved": cfg_resolved or {},
                 "governor": governor or {},
