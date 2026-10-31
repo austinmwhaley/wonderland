@@ -2453,6 +2453,9 @@ resolves to a receipt; the "what is not claimed" panel repeats the card's disclo
 > **S5 mass fairness (DEC-501):** under a matching raw-count comparator, spend is a **tie**, not a
 > win; the earlier "transform artifact" claim is corrected. No raw-mass gate change.
 > **DEC-504 bucket diagnostic:** no bucket shortcut — `full`/`learned_state` add ~0.01 at best and
-> close no supervised row (`full+ledger` return 0.6069 vs b+l 0.6050; churn 0.6485 vs 0.6528; x0
-> 0.8911 vs 0.8898). The served state's content is the wall; the next lever is a content/architecture
-> training protocol (exact-count channel / interaction-aware trunk), not another view/metric/consumer.
+> close no supervised row. **DEC-505…511: M8-A exact-count content ADOPTED.** M8 = M2 + the
+> in-network `CounterBlock`; tag `...317c8905`; return_proneness **0.2974→0.4176** on the served
+> state (+0.120), `full` 0.3872; guards held. The card moved **1/8 → 3/8**: `unsupervised::brain+ledger`
+> (non-inferiority), `rl::brain`, `rl::brain+ledger` PASS. Supervised is still red (x0/return/churn/
+> regime; price control); delivery return 0.6061 vs PATH A 0.6734. Card certified S6 6/6 at 20dd178;
+> recorded artifact is M8 `cfm_m8_counter`. Next: M9 return-ratio ledger part, then churn/regime.
