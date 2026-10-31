@@ -290,7 +290,14 @@
 > idle fade is the churn channel and the magnitude-trait killer (x0 +0.076 unfaded, churn
 > −0.195). Measured levers: ledger recency (4 features) lifts ledger churn 0.056→0.650;
 > unfaded E lifts x0 to 0.879/h0 0.893. Both change the served artifact contract → **operator
-> ruling requested (DEC-471 options); loop paused at the card's recorded protocol D, 1/8 legs.**
+> ruling requested (DEC-471 options). **Operator authorized "Both" (DEC-472/473).**
+> **M1 measured (DEC-474): E served undimmed is the first real movement** — brain x0
+> 0.7909 → **0.8924** (+0.1015), h0 0.839 → **0.928**, churn 0.5824 → **0.6436**; adopted.
+> (Two honest defects: the blob missed the flag — fixed; the ledger faceplate/table disagreed
+> because M2 code was imported during M1's products phase — the concurrent-edit lesson.)
+> **M2 (clean combined: undimmed E + ledger recency part, 595-d) training now; no code edits
+> during runs.** Next: acceptance → chain → access axis → adopt the recorded artifact and
+> regenerate the card at a clean commit.
 
 **Repository state:** `main` now contains the former `primary-encoder` demo work. The duplicate
 report card, stale roadmap, duplicate receipt orchestrator, one-off OPE wrappers, and generator
