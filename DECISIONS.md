@@ -5879,3 +5879,9 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   restart, operator's call per DEC-460), or (c) moving the training profile off the frozen axis
   (batch halving = a new protocol axis, and even ~7-8 GiB was not available at the crash instant).
   Deferring this to "retry later" is not a fix: the reservation is static while Qwen runs.
+
+## DEC-480 — [OPERATOR RULING] Qwen stops while the GPU trains; restart on request
+- **Ruling (2026-10-31, in response to DEC-479).** "Stop Qwen while I train." The container keeps
+  its caps (11/15 GiB process side, GMU 0.70 with the refuse-above rule); `--restart no` keeps it
+  down until started. Standing practice: vLLM stopped during GPU training, restarted on request or
+  when a card-completing stretch ends; never killed mid-use without asking (DEC-460 unchanged).
