@@ -2351,3 +2351,13 @@ resolves to a receipt; the "what is not claimed" panel repeats the card's disclo
 > died inside its cap (by design); Qwen healthy; DEC-478 pre-registration stands, artifact reset.
 > Operator ruling requested: train with Qwen stopped, lower Qwen GMU (restart), or train in idle
 > windows only.
+
+> **2026-10-31 late:** M3 (profile objective under undimmed serving) measured FLAT and is NOT
+> adopted (DEC-483): x0 0.8914 vs M2 0.8924; histogram middle bins unchanged. The objective axis
+> is retired under both serving regimes. DEC-484 re-derived x0's 0.909 sufficient statistic
+> exactly and proved every ledger content extension still lands <= 0.893 joint (frozen probe
+> dilutes a 4-dim signal in ~600 dims) — the x0 DELIVERY gap is an artifact-contract question for
+> the operator. DEC-485: the unsupervised segment row is geometry-degenerate (ledger recovers
+> segment 99.1% from one dim; k-means ARI ~0; PATH A fails too) — also an operator ruling.
+> Interim local LLM: `vllm-qwen27b` (Qwen3.8-27B-FP8, GMU 0.40, 12/16 GiB caps) is being
+> validated; Qwen Flash-Next remains stopped. M2 (`...04o1e051d9d`) is still the recorded artifact.
