@@ -1,0 +1,105 @@
+{
+  "diagnostic": "geometry metric + distance-pressure proxy (diagnostic only)",
+  "artifact": "0.11.0r103115-b20d256e3lr3e-04o1e051d9d",
+  "splits": {
+    "n_fit_A": 1776,
+    "n_score_B": 724
+  },
+  "trait_fields": {
+    "future": [
+      "x0",
+      "h0",
+      "price_sensitivity",
+      "return_proneness",
+      "churn_day"
+    ],
+    "persona": [
+      "d0",
+      "segment"
+    ]
+  },
+  "proxy": {
+    "definition": "per-customer last 20% of events; log1p counts by event type + action field levels",
+    "action_plus_type_alignment": 0.020112,
+    "event_type_only_alignment": 0.011433,
+    "n_customers": 724
+  },
+  "metric": {
+    "brain": {
+      "pca_whiten_16": {
+        "future_geometry": {
+          "brain": 0.04422,
+          "pathA": 0.04561,
+          "ci_lo": -0.003159,
+          "ci_hi": 0.003855,
+          "n_pairs": 261726,
+          "n_bootstrap_pairs": 100000
+        },
+        "persona_geometry": {
+          "brain": 0.003079,
+          "pathA": 0.000345,
+          "ci_lo": 0.002099,
+          "ci_hi": 0.003539,
+          "n_pairs": 261726,
+          "n_bootstrap_pairs": 100000
+        }
+      },
+      "pca_whiten_20": {
+        "future_geometry": {
+          "brain": 0.049214,
+          "pathA": 0.04561,
+          "ci_lo": 0.001411,
+          "ci_hi": 0.008006,
+          "n_pairs": 261726,
+          "n_bootstrap_pairs": 100000
+        },
+        "persona_geometry": {
+          "brain": 0.005114,
+          "pathA": 0.000345,
+          "ci_lo": 0.003928,
+          "ci_hi": 0.005673,
+          "n_pairs": 261726,
+          "n_bootstrap_pairs": 100000
+        }
+      }
+    },
+    "brain_ledger": {
+      "pca_whiten_16": {
+        "future_geometry": {
+          "brain": 0.072094,
+          "pathA": 0.04561,
+          "ci_lo": 0.023756,
+          "ci_hi": 0.030283,
+          "n_pairs": 261726,
+          "n_bootstrap_pairs": 100000
+        },
+        "persona_geometry": {
+          "brain": 0.002789,
+          "pathA": 0.000345,
+          "ci_lo": 0.001861,
+          "ci_hi": 0.00307,
+          "n_pairs": 261726,
+          "n_bootstrap_pairs": 100000
+        }
+      },
+      "pca_whiten_20": {
+        "future_geometry": {
+          "brain": 0.064197,
+          "pathA": 0.04561,
+          "ci_lo": 0.016104,
+          "ci_hi": 0.022264,
+          "n_pairs": 261726,
+          "n_bootstrap_pairs": 100000
+        },
+        "persona_geometry": {
+          "brain": 0.015636,
+          "pathA": 0.000345,
+          "ci_lo": 0.013818,
+          "ci_hi": 0.016657,
+          "n_pairs": 261726,
+          "n_bootstrap_pairs": 100000
+        }
+      }
+    }
+  }
+}

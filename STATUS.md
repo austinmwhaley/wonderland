@@ -2399,3 +2399,22 @@ resolves to a receipt; the "what is not claimed" panel repeats the card's disclo
 > additive mass (recommended) or keep log1p. Receipt:
 > `docs/report_cards/experiments/protocols/diag_ledger_axis_2026_10_31.{py,json}`.
 > S5 would still be red on `distance_regression` and `action_conditioned_outcome`.
+
+> **2026-10-31 DEC-494/495 — training lever falsified; the geometry wall is the metric.** The only
+> remaining non-contract training lever (S5 distance pressure) was tested **before** a run: the
+> self-supervised future-distance proxy aligns with the judged trait distance at only **0.011
+> (event-type)** / **0.020 (action+type)**, below the current brain+ledger state (0.0414) and PATH A
+> (0.0456). Training on it would optimize a lookalike, so **no M6 run was launched**. Instead, a
+> frozen PCA-whitening fit on split A shows the geometry is present but anisotropically scaled:
+> `future_geometry` brain **0.0492** at k=20 (CI [+0.0014,+0.0080], a win) and brain+ledger **0.0721**
+> at k=16 (CI [+0.0238,+0.0303], strong win) vs PATH A 0.0456; persona wins too. This is a
+> **consumer/artifact contract change** (a frozen whitened geometry view), so it is an operator
+> ruling, not a unilateral change. **Caveat:** k was swept on B and is exploratory; a valid rule must
+> derive k on A without truth labels. Receipt:
+> `docs/report_cards/experiments/protocols/diag_geometry_metric_2026_10_31.{py,json}`.
+
+> **Ruling queue (updated 2026-10-31):** (1) action-profile separate arm — **measured moot** (tie,
+> DEC-492); (2) degenerate rows — exclude-and-report vs amend the generator (segment_structure,
+> argmax_optimum, persona's segment half); (3) architecture/consumer — now has a measured option:
+> frozen whitened geometry view (DEC-495) greens the unsupervised geometry rows; (4) S5 exact-mass
+> probe — score raw extensive mass instead of log1p (DEC-493).

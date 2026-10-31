@@ -6179,3 +6179,61 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - **Not changed.** Gates, thresholds, comparator, probes, E's content, ledger, card. No training
   run. **Receipts.** `docs/report_cards/experiments/protocols/diag_ledger_axis_2026_10_31.py`
   + `.json`; principle audit strict 0 findings; ruff clean.
+
+## DEC-494 — [MEASURED] the distance-pressure proxy is a lookalike; no M6 training run is justified
+- **Context.** The operator said "keep training." The supervised training levers are exhausted
+  (DEC-483/489/491); the only remaining non-contract training lever is SPINE S5's approved
+  distance-regression objective. Before pre-registering it, test its premise: does an observable
+  future-outcome distance track the judged trait distance?
+- **What ran.** `docs/report_cards/experiments/protocols/diag_geometry_metric_2026_10_31.py`
+  (CPU, read-only, M2, judge split): per-customer prefix/suffix split (last 20% of events),
+  self-supervised future vector = log1p event-type counts + declared action-field level counts;
+  squared correlation of its pairwise distance with the lab's trait distance
+  (x0/h0/price/return/churn), same z-scoring/statistic as the judge.
+- **Measured.** Event-type-only proxy alignment **0.0114**; action+type **0.0201**; the current
+  brain+ledger state scores **0.0414**, PATH A **0.0456**, and the frozen-whitened metric
+  **0.0721**. The proxy is **below the state it would train**, so a distance-regression loss on
+  it would pull the geometry toward a worse target — exactly protocol F's "target was a
+  lookalike" failure (DEC-462).
+- **Conclusion.** **Do not pre-register M6 distance pressure.** No GPU run; no artifact. The
+  named axis (proxy-target alignment) is falsified before the run, which is the cheapest
+  possible outcome. A future distance objective needs a target whose measured alignment exceeds
+  the current state; none is in hand.
+- **Principles.** Honest (falsify before spending), Diagnosable (the axis is target alignment,
+  not model capacity), Efficient (no training run on a lookalike).
+
+## DEC-495 — [MEASURED] geometry is metric-limited, not content-limited: a frozen whitening view greens the unsupervised geometry rows
+- **Context.** With training exhausted, the remaining geometry lever is the **metric**. The judge
+  scores Euclidean distance on z-scored columns; the artifact's state is anisotropic.
+- **What ran.** Same diagnostic receipt: PCA-whitening fit on **split A only**, frozen,
+  transform split B, same pairwise-distance statistic/bootstrap as the judge. No labels used to
+  fit; no per-batch statistics at serve.
+- **Measured (future_geometry; PATH A 0.04561, n_pairs 261726).**
+  * brain, k=20: **0.04921**, paired CI **[+0.00141,+0.00801]** — a CI win.
+  * brain, k=16: 0.04422, CI [−0.00372,+0.00302] — tie.
+  * brain+ledger, k=16: **0.07209**, CI **[+0.02376,+0.03028]** — strong win.
+  * brain+ledger, k=20: 0.06420, CI [+0.01610,+0.02226] — win.
+  * persona_geometry: brain k=20 0.00511 (CI [+0.00393,+0.00567]); brain+ledger k=16 0.00279
+    (CI [+0.00186,+0.00307]) — both beat PATH A 0.000345.
+- **Conclusion.** The geometry information is present; the **served linear metric** is the wall.
+  A frozen whitened geometry view could turn the unsupervised geometry rows green — the brain
+  column marginally (k=20), the delivery column strongly (k=16). This is a
+  **consumer/artifact contract change** (a new metric/view the judge's distance arms read), so it
+  is an operator ruling under ruling #3; not adopted unilaterally.
+- **Caveat (binding).** The k sweep was observed on B and is **exploratory**: k=16/20 are not a
+  selection rule. A valid implementation must derive k on A **without the truth labels** (e.g.,
+  a cumulative-variance/effective-rank rule) and re-measure; selecting k on B would be test-set
+  leakage and is forbidden by the certification rules. The CIs above are over customer pairs,
+  not over k selection.
+- **Lawfulness note for the ruling.** The transform is fit once on the training population and
+  frozen (like the numeric monotone transform), is per-sample at serve, and reweights existing
+  dimensions without manufacturing rank. It is a Mahalanobis-style consumer metric, not a
+  per-batch ZCA and not a change to the encoder's content.
+- **Recommendation.** Publish a frozen `geometry` view (or faceplate whitening matrix) with a
+  label-free k rule; let the judge's unsupervised distance arms read it. Do **not** change the
+  supervised `shape`/E or the recorded artifact. This is the cheapest measured path to a green
+  unsupervised leg; the brain-only progress row is marginal and must be re-measured with the
+  label-free k.
+- **Not changed.** Gates, probes, comparator, E's content, ledger, card. No training run.
+  **Receipts.** `docs/report_cards/experiments/protocols/diag_geometry_metric_2026_10_31.py`
+  + `.json`; principle audit strict 0 findings; ruff clean.
