@@ -1396,8 +1396,16 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
         gap_s = torch.expm1(t["dt"][rows, i_next]).squeeze(-1)  # seconds to next event
         u = torch.rand(B, 1, device=dev)
         off_s = (u * gap_s.unsqueeze(1)).squeeze(-1)  # query time inside the gap
-        decay = torch.exp(-LN2 * off_s / max(cfg.state_half_life_days * 86400.0, 1.0))
-        h_q = y[rows, i] * decay.unsqueeze(-1)  # the faded state serving would read
+        # DEC-488: the query tensor must be the state SERVING reads at that moment.
+        # With serve_unfaded (DEC-472) serving materializes the readout before fade_idle,
+        # so the fade is not part of the served path and must not be applied here; the
+        # original protocol-E form (always faded) trained against a path that no longer
+        # ships. One flag, one definition of the served path.
+        if bool(getattr(cfg, "serve_unfaded", False)):
+            h_q = y[rows, i]  # the unfaded readout the boundary materializes
+        else:
+            decay = torch.exp(-LN2 * off_s / max(cfg.state_half_life_days * 86400.0, 1.0))
+            h_q = y[rows, i] * decay.unsqueeze(-1)  # the faded state serving would read
         tgt = ((gap_s.unsqueeze(1) - off_s.unsqueeze(1)) <= H.unsqueeze(0)).float()  # (B,K)
         _next_act = t["is_action"][rows, i_next] if "is_action" in t else torch.zeros_like(m_i)
         w = m_i.clamp(min=0) * (1.0 - _next_act)
@@ -2310,6 +2318,10 @@ def _registry(
                     "horizons_s": [
                         float(x) for x in (getattr(cfg, "_survival_horizons_s", []) or [])
                     ],
+                    # DEC-488: the query tensor is the state serving reads — with
+                    # serve_unfaded the served path has no fade, so the objective's
+                    # faded-query form is disabled (and receipted here).
+                    "faded_query": bool(not getattr(cfg, "serve_unfaded", False)),
                 },
                 # DEC-459 acceptance #2: the derived future-window W must be receipted too.
                 "rate": {

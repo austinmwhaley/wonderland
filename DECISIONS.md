@@ -6010,3 +6010,35 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   mounted HF blobs (no re-download on restart). Flash-Next remains stopped (DEC-481).
 - **Not adopted into the judge.** The LLM is not a consumer in any card leg; this changes nothing
   about x0/return/churn/regime or the unsupervised/simulator rows (the operator's question).
+
+## DEC-488 — [PRE-REGISTERED] protocol M4: the survival objective on the ACTUAL served path (undimmed)
+- **Why (premise).** Protocol E (DEC-457/458) trained a survival head on the FADED query state
+  because that was what serving read; with `serve_unfaded` (DEC-472) the served path has no fade,
+  so E's mechanism trained against a path that no longer ships. Churn remains the closest real
+  gap: brain 0.6371 (M2), ledger+recency 0.6554, table/PATH A 0.7209; DEC-456 measured churn
+  present-but-nonlinearly-entangled and the objective exists to force the hazard into a LINEAR
+  readout. This is a NEW protocol (new mechanism + new artifact), not an E reproduction.
+- **Mechanism change (one code path).** `serve_unfaded=true` => the survival query tensor is the
+  unfaded readout `y[i]`; with it off the original faded form is unchanged. The registry receipts
+  `survival.faded_query` so the artifact is self-describing. Default-off; M2/M3 artifacts unchanged.
+- **Decision — one variable vs M2: `survival=true`.** Overrides = M2's exactly
+  (`batch=20, effect_actions=offer, effect_head=bilinear, serve_unfaded=true, ledger_recency=true`)
+  + `survival=true`. Artifact `cfm_m4_surv_unfaded`; new tag (objectives hash moves).
+- **Frozen acceptance (mechanical, checked before any verdict):** overrides exact; registry
+  `survival.on=true` with K horizons in [3,9], strictly increasing, all > 0; `faded_query=false`;
+  checkpoint `survive_dim=K` and `head_survive.weight` has that shape; registry+blob carry
+  `serve_unfaded=true`; all loss scales finite (40 tasks incl. `survive`); tag ≠ D/E/F/G/H/I/J/K/L/
+  M1/M2/M3.
+- **Named axis.** PRIMARY brain-alone `churn_day` linear: axis acceptance ≥ **0.66**; adoption iff
+  Δ ≥ **+0.03** vs M2 (0.6371 => ≥ 0.6671), and brain+ledger churn must move at least as much
+  (M2 0.6528 => ≥ 0.6828). SECONDARY, reported not guarded: return_proneness brain (M2 0.2974) —
+  the same hazard pressure may lift return timing.
+- **Guards (adoption blocked if any fails):** x0 brain ≥ 0.8724 (M2−0.02); h0 ≥ 0.9078;
+  price ≥ −0.0343; return ≥ 0.2674; every leg value finite; ledger guardrails G1–G4 green;
+  governor stops on tolerance; no new non-finite loss.
+- **Falsifier.** churn Δ < +0.03 ⇒ the survival/hazard objective is retired under BOTH serving
+  regimes; the next lever is capacity/architecture, which is a separate pre-registration.
+- **Not changed:** gates, thresholds, criteria, controls, comparator, probe definitions, E's
+  content, the ledger. One axis: survival pressure ON, on the unfaded served path. Cost: one GPU
+  train + chain + access axis. Co-tenancy: the 27B LLM runs at GMU 0.40 (DEC-487), so this run
+  also measures the caps-only three-way budget live.
