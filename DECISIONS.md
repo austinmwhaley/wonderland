@@ -5794,3 +5794,30 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   breach-witness receipts stay in the repo and remain correct when opted in.
 - **Not changed:** the caps themselves, the Qwen ensure script's refuse-above-0.70 rule, the
   20 GB project slice, any gate/contract.
+
+## DEC-477 — [MEASURED, PRE-VERDICT] the ledger profile block does not move the judge head — protocol N aborted before it was pre-registered
+- **Premise tested (DEC-462/464 rule, same-session correction included).** N was to extend the
+  ledger with the DEC-464 sufficient statistic (action-field histograms, R2 0.909) plus name-blind
+  pairwise event log-ratios and hazard interactions. The diagnostic (/tmp/opencode/
+  diag_ledger_profile.py) built the features from the EXACT products path (frozen vocab, replayed
+  registry config, seqs_to_tuples, the judge's own _ridge_oos, PART_ORDER-concatenated ledger).
+- **Result (ledger | ledger+profile | profile-only | ledger+raw-counts | raw-only, PATH A).**
+  x0 0.8915 | 0.8910 | 0.6876 | 0.8884 | 0.8622 | 0.9056 — FLAT: the ledger's shares×total already
+  carry what the histogram adds; neither geometry (log1p or raw counts) approaches PATH A, and
+  +raw HURTS (dilution). h0 0.9847 | 0.9792 | -0.0814 | 0.9839 | -0.0526 — already green.
+  return 0.6085 | 0.6548 | 0.0933 | 0.6084 | 0.5639 | 0.6734 — the log-ratio block is the largest
+  honest lift measured (+0.046) but still 0.019 short of PATH A; churn 0.6554 | 0.6654 | 0.6761 |
+  0.6528 | 0.1464 | 0.7209 — the hazard block alone nearly carries churn (0.6761) but adds only
+  +0.010 to the ledger.
+- **Why DEC-464's 0.909 did not transfer.** That receipt was a 4-bin raw-count linear problem;
+  as a 489–573-dim ADDITIVE block under equal ridge penalty it is diluted (raw-only 0.8622), and
+  the ledger's existing shares+total already reach 0.8915. The information is present; adding
+  copies of it does not make it more linearly accessible.
+- **Disposition.** Protocol N is NOT run and NOT pre-registered (its named axis — x0 toward PATH A
+  — is measured dead at diagnostic cost, no GPU, no card change). Ledger content within the
+  operator-authorized contract (counts/shares/richness/numeric-stats/recency) is SATURATED against
+  the frozen judge head. The +0.046 return log-ratio block is recorded as an option requiring an
+  operator artifact-contract ruling (DEC-473 authorized the recency block specifically, not a new
+  45-dim ratio block); it is not adopted unilaterally. Remaining supervised gaps move on the
+  BRAIN axis, which is training: the H-L profile-objective ladder was falsified by the idle fade
+  (DEC-471), and that fade no longer exists after M1 — the objective axis is legitimately reopened.
