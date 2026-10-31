@@ -1063,6 +1063,35 @@ def discounted_future(phi, decay):
     return torch.flip(Sf, dims=[1])
 
 
+def _future_targets(t, n_et: int, w_s: float, val: torch.Tensor):
+    """Future aggregates per position i, within window w_s seconds: strict-after-i event
+    count, primary-value sum, and per-event-type counts. Returned RAW (the caller log1ps).
+
+    PAD TOKENS ARE MASKED OUT, and that is the point: right-padded rows repeat the last
+    real timestamp across every pad, so an unmasked window sum counts the pads as extra
+    future events (measured: a length-3 row padded to 8 gained +5 phantom counts at every
+    position whose window reached the sequence end — silently inflating x0's training
+    proxy toward "how padded am I"). The mask keeps the target a fact about events.
+    """
+    dev = val.device
+    B, T = val.shape
+    secs = torch.cumsum(torch.expm1(t["dt"]).squeeze(-1), dim=1)  # (B,T) clock
+    ev = t["mask"].to(torch.float32)  # (B,T) real-event indicator
+    onehot = F.one_hot(t["et"].clamp(max=n_et - 1), n_et).to(torch.float32) * ev.unsqueeze(-1)
+    W = torch.tensor(float(w_s), device=dev)
+    cnt = torch.zeros(B, T - 1, device=dev)
+    amt = torch.zeros(B, T - 1, device=dev)
+    typ = torch.zeros(B, T - 1, n_et, device=dev)
+    for a in range(0, T - 1, 32):  # chunked over positions to bound the (B,chunk,T) cost
+        b = min(a + 32, T - 1)
+        d = secs[:, None, :] - secs[:, a:b, None]  # secs_j - secs_i for chunk positions i
+        m = ((d > 0) & (d <= W)).to(torch.float32) * ev.unsqueeze(1)  # future REAL events
+        cnt[:, a:b] = m.sum(-1)
+        amt[:, a:b] = torch.matmul(m, val.unsqueeze(-1)).squeeze(-1)
+        typ[:, a:b] = torch.matmul(m, onehot)
+    return cnt, amt, typ
+
+
 def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
     dev = model._dev()
     t = _collate(items, vocab, dev)
@@ -1360,7 +1389,6 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
     # pinned the lever: readout-side pressure on the faded path does not reorganize the
     # trunk, so this pressure sits on the shared trunk state every head reads.
     if "rate" in cfg.objectives and getattr(model, "head_rate", None) is not None:
-        secs = torch.cumsum(torch.expm1(t["dt"]).squeeze(-1), dim=1)  # (B,T) clock
         _gap = torch.expm1(t["dt"]).squeeze(-1)
         _g = _gap[_gap > 0]
         _med = torch.median(_g) if _g.numel() else torch.tensor(7.0 * 86400.0, device=dev)
@@ -1372,17 +1400,7 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
             if _pv is not None
             else torch.zeros(B, T, device=dev)
         )
-        onehot = F.one_hot(t["et"].clamp(max=vocab.n_et - 1), vocab.n_et).to(torch.float32)
-        cnt = torch.zeros(B, T - 1, device=dev)
-        amt = torch.zeros(B, T - 1, device=dev)
-        typ = torch.zeros(B, T - 1, vocab.n_et, device=dev)
-        for a in range(0, T - 1, 32):  # chunked over positions to bound the (B,chunk,T) cost
-            b = min(a + 32, T - 1)
-            d = secs[:, None, :] - secs[:, a:b, None]  # secs_j - secs_i for chunk positions i
-            m = ((d > 0) & (d <= W)).to(torch.float32)  # events j strictly after i within W
-            cnt[:, a:b] = m.sum(-1)
-            amt[:, a:b] = torch.matmul(m, val.unsqueeze(-1)).squeeze(-1)
-            typ[:, a:b] = torch.matmul(m, onehot)
+        cnt, amt, typ = _future_targets(t, vocab.n_et, float(W), val)
         tgt = torch.log1p(torch.cat([cnt.unsqueeze(-1), amt.unsqueeze(-1), typ], dim=-1))
         _m = valid_t > 0
         _tv = tgt[_m]

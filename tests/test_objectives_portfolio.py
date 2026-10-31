@@ -781,6 +781,27 @@ def test_rate_moves_the_protocol_tag_only_when_the_objective_is_on():
     assert on.tag != base  # trained weights differ => the name must say so (DEC-448)
 
 
+def test_future_targets_masks_padding_out_of_the_window_sum():
+    """Right-padded rows repeat the last real timestamp across pads; an unmasked window
+    sum counts them as phantom future events (measured +5 on a length-3 row padded to 8).
+    The pad mask keeps the future count a fact about events, not about collation."""
+    from looking_glass.cfm_training import _collate, _future_targets
+
+    short = _sparse_seq("s", gap_h=2, n=4)  # events at 0h, 2h, 4h, 6h
+    long = _sparse_seq("l", gap_h=2, n=8)
+    vocab = EventVocab.build([short, long])
+    w_s = 86400.0
+    cnt_a, _, _ = _future_targets(
+        _collate([short], vocab, "cpu"), vocab.n_et, w_s, torch.zeros(1, 4)
+    )
+    cnt_b, _, _ = _future_targets(
+        _collate([long, short], vocab, "cpu"), vocab.n_et, w_s, torch.zeros(2, 8)
+    )
+    # 3 real future events inside 24 h from position 0 — the 4 pad copies of the 6 h
+    # timestamp must NOT join the count once the row is batch-padded to T=8.
+    assert int(cnt_a[0, 0]) == 3 and int(cnt_b[1, 0]) == 3
+
+
 def test_mtp_objective_present_and_trains():
     """B5: multi-token prediction heads exist and the k-step loss is finite + trains."""
     seqs = [_seq(f"c{i}", day=f"2025-01-{(i % 28) + 1:02d}") for i in range(4)]
