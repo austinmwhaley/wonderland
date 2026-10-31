@@ -5291,3 +5291,30 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   max=11811160064`. Test: `test_cgroup_witness_shows_usage_and_the_operators_cap`.
 - **Not changed:** the serve script itself, Qwen's running state (config-only update,
   never stopped), any gate, threshold, or contract.
+
+## DEC-461 — [OPERATOR RULING] vLLM stopped: the host is dedicated to training; the loop runs until the project is complete
+
+- **Ruling (2026-10-30).** "ok stop vLLM and start training. Loop until project is complete."
+  Explicit permission to stop the LLM. `docker stop vllm-qwen` performed; the container is
+  preserved (capped config intact per DEC-460, `--restart no`) and can be restarted with
+  `docker start vllm-qwen` when the operator asks or when the judged card is complete.
+- **Why it matters mechanically.** With the 85 GiB GPU reservation gone, host avail went
+  25 → 113 GB and the trainer's free-memory ceiling went from 1.66 GiB to the whole pool.
+  The night's failure mode (protocol F attempts dying of CUDA OOM behind live Qwen traffic)
+  is structurally removed while vLLM is down.
+- **Loop contract (what "until the project is complete" means operationally).** The
+  pre-registered discipline does not relax because the host is quiet: each protocol is
+  pre-registered (axis + frozen acceptance + guards) BEFORE its run, graded against the
+  frozen acceptance before any verdict language, adopted only on moving its named axis
+  (adoption thresholds frozen in the pre-registration), and recorded as a DEC either way.
+  The card is regenerated only at a clean commit with committed receipts. One GPU job at
+  a time; every verified chunk committed locally (pushes still need explicit permission).
+  The ladder order stands (supervised → unsupervised → rl → simulator, simple to hard,
+  per DEC-456 and the operator's "anything before everything").
+- **Current position in the loop.** Supervised: x0/return_proneness absent from the learned
+  shape (DEC-456), the faded-path lever measured dead (DEC-458), protocol F (future-rate on
+  the trunk, DEC-459) training now; after F's verdict: the regime/price end of the ladder,
+  then the unsupervised leg, rl's fragile uplift row and simulator.
+- **vLLM restart policy.** Left stopped while the loop trains. Restart is NOT part of any
+  protocol step; it will be proposed to the operator when the judged card's remaining red
+  rows no longer need dedicated GPU windows (or immediately if asked).
