@@ -5548,3 +5548,32 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - **Not changed:** gates, thresholds, criteria, controls, comparator, probe definitions, the
   linear shipping head, E's content. Cost: one GPU train (~22 min) + chain (~17 min) +
   access axis. Artifact `cfm_j_ce`.
+
+## DEC-468 — [MEASURED + PRE-REGISTERED] heads train on the READOUT (y), serving publishes the RECURRENT state (h) — protocol K trains on h
+
+- **Measured space mismatch (protocol J artifact).** `model.encode()` returns `(y, h)` where
+  `y` is the per-position READOUT and `h` is the final recurrent state; `forward_states`
+  (which publishes `customer_state`) returns **h**, and the publish path computes
+  `E = normalize(proj(h))`. Every pressure head to date (effect, survive, rate, profile H/I/J)
+  reads `y[:, last]`. Measured on J's checkpoint with the same windows/split as the judge:
+  * y → x0 = **−0.0225**
+  * h → x0 = **−0.0254**
+  * E_db (judge) → x0 = **0.7910**
+  (H's y→x0 was 0.878 — because H's profile head was trained ON y; the objective moved y, not
+  the served h. J moved pressure off y, so y lost it while the judge stayed at 0.79.)
+  So protocol J's `normalize(proj(y_last))` was the same FORMULA but a DIFFERENT TENSOR from
+  the served `normalize(proj(h_final))`. No protocol has ever pressured the served vector.
+- **Decision — one variable: `profile_state="h"` (default "y").** K = J + the profile head
+  reads `normalize(proj(h_final))` — tensor-for-tensor the published embedding. The CE
+  histogram pressure now flows through proj into the recurrent state itself.
+- **Frozen acceptance:** overrides = D axes + action_profile (5 fields) + `profile_served=true`
+  + `profile_loss="ce"` + `profile_state="h"`; 40 loss scales; registry
+  `action_profile.state="h"`; blob `profile_state="h"`; `action_profile_dim=43`; head shape
+  (43,256); losses finite; tag ≠ D/E/F/H/I/J.
+- **Named axis.** PRIMARY — brain-alone `x0` linear: acceptance ≥ 0.84; adoption iff Δ ≥ +0.03
+  vs D (0.7909). Falsifier: x0 within ±0.01 and head skill ~0 again.
+- **Guards:** identical to DEC-465..467; plus the J scar: portfolio val must not degrade
+  further (J's val 7.53 vs H's 7.27 — watch the governor stop and the finiteness receipt).
+- **Not changed:** gates, thresholds, criteria, controls, comparator, probe definitions, the
+  linear shipping head, E's content. Cost: one GPU train + chain + access axis. Artifact
+  `cfm_k_hstate`.
