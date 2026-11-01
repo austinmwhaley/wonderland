@@ -1,0 +1,113 @@
+{
+  "_meta": {
+    "producer": "measure_rank_attainability.py",
+    "generated_at": "2026-11-01T15:15:36+00:00",
+    "command": "measure_rank_attainability.py --products /home/austin_whaley/wonderland_work/cfm_m8_counter --db /home/austin_whaley/wonderland_work/demo/customer_event_stream.parquet",
+    "read_only": true,
+    "products": "/home/austin_whaley/wonderland_work/cfm_m8_counter",
+    "registry": "registry_0_11_0r486262-b8d256e1lr3e-04o9e37655b.json",
+    "registry_sha256": "f74ca5fe3397bd51",
+    "encoder_tag": "0.11.0r486262-b8d256e1lr3e-04o9e37655b",
+    "encoder_versions_served": [
+      "0.11.0r103115-b26d256e3lr3e-04o39ad8593"
+    ],
+    "db": "/home/austin_whaley/wonderland_work/demo/customer_event_stream.parquet",
+    "as_of": "2025-01-01",
+    "n": 724,
+    "n_measure_columns": 104,
+    "measure_fields": 104
+  },
+  "geometry": {
+    "learned_shape": {
+      "n_states": 724,
+      "dim": 256,
+      "eff_rank": 5.414,
+      "eff_rank_null": 110.585,
+      "eff_rank_ratio": 0.049,
+      "pr_frac": 0.0211,
+      "mp_null_frac": 0.7389,
+      "pr_score": -2.7494,
+      "mean_pairwise_cos": 0.1338,
+      "redundancy_offdiag": 0.31043,
+      "redundancy_offdiag_null": 0.02957,
+      "n": 724,
+      "mp_edge": 2.5429,
+      "mp_signal_dims": 13,
+      "parallel_dims": 15,
+      "parallel_frac": 0.0586,
+      "top_eig": 66.275,
+      "top5_eig": [
+        66.275,
+        57.853,
+        29.577,
+        19.523,
+        12.326
+      ],
+      "eig_above_edge_sum_frac": 0.8766
+    },
+    "full_history_measure": {
+      "n_states": 724,
+      "dim": 104,
+      "eff_rank": 1.015,
+      "eff_rank_null": 3.183,
+      "eff_rank_ratio": 0.319,
+      "pr_frac": 0.0098,
+      "mp_null_frac": 0.8714,
+      "pr_score": -6.7029,
+      "mean_pairwise_cos": 1.0,
+      "redundancy_offdiag": 0.11873,
+      "redundancy_offdiag_null": 0.02344,
+      "n": 724,
+      "mp_edge": 1.9017,
+      "mp_signal_dims": 9,
+      "parallel_dims": 15,
+      "parallel_frac": 0.1442,
+      "top_eig": 22.314,
+      "top5_eig": [
+        22.314,
+        12.285,
+        6.053,
+        4.255,
+        3.877
+      ],
+      "eig_above_edge_sum_frac": 0.6529
+    },
+    "served_E": {
+      "n_states": 724,
+      "dim": 360,
+      "eff_rank": 1.015,
+      "eff_rank_null": 3.201,
+      "eff_rank_ratio": 0.317,
+      "pr_frac": 0.0028,
+      "mp_null_frac": 0.6642,
+      "pr_score": -1.9698,
+      "mean_pairwise_cos": 1.0,
+      "redundancy_offdiag": 0.21355,
+      "redundancy_offdiag_null": 0.02752,
+      "n": 724,
+      "mp_edge": 2.9075,
+      "mp_signal_dims": 18,
+      "parallel_dims": 21,
+      "parallel_frac": 0.0583,
+      "top_eig": 71.325,
+      "top5_eig": [
+        71.325,
+        65.449,
+        30.994,
+        23.748,
+        17.182
+      ],
+      "eig_above_edge_sum_frac": 0.8161
+    }
+  },
+  "comparison": {
+    "card_rank_target": 0.1172,
+    "card_rank_target_dims": 30.0,
+    "learned_eff_rank": 5.414,
+    "learned_null_eff_rank": 110.585,
+    "measure_parallel_dims": 15,
+    "measure_parallel_frac": 0.1442,
+    "attainable_target_frac": 0.1442,
+    "learned_over_attainable": 0.3609
+  }
+}

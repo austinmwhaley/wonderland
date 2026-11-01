@@ -640,15 +640,34 @@ benchmark and the reason.
 **Known primitives:** `_scan` (affine prefix scan), `embed_batch_size`, `derive_batch`,
 `generic_measure`, `token-budget` batching, the existing SSM/scan paths.
 
-### Principle audit (mechanized)
+### Principle audit (mechanized — and it applies to code you RUN, not code you wrote)
 
-Run `python3 scripts/principle_audit.py` on changed files before committing. It flags:
-- Python loops over time/rows in `looking_glass/` or `scripts/`,
-- `86400`/`604800` and other cadence literals,
-- fixed `dim`/`layers`/`epochs`/`seq_len` literals,
-- new gate/criterion strings.
+The audit is **not** a commit-time formality over the files you touched. **Any code that
+executes is in scope** — model, training, serving, plugin, gate, measurement script, test —
+whether or not you wrote it, and whether or not you changed it this run. A number produced by
+un-audited code is not evidence. Auditing is continuous, not a one-off.
 
-Use `--strict` in CI; a warning must be resolved or marked `# principle-ok: <reason>`.
+```bash
+python3 scripts/principle_audit.py --all --strict     # whole behaviour surface (the real gate)
+python3 scripts/principle_audit.py --all --summary    # counts by file and reason
+python3 scripts/principle_audit.py --strict           # changed-vs-HEAD (pre-commit convenience)
+```
+
+It flags per-item Python loops over time/rows, cadence **windows** (`30 * 86400`, `604800`),
+fixed `dim`/`layers`/`seq_len` literals, and new criterion strings.
+
+**A physical unit is not a cadence assumption.** `x / 86400.0` (seconds → days) is a NOTE, never
+a violation. `30 * 86400.0` ("assume a 30-day window") is a finding. An audit that flags the unit
+150 times is an audit people learn to ignore, which is worse than none.
+
+**Enforcement is a ratchet.** `scripts/principle_audit_baseline.json` records accepted BLOCKING
+findings and **may only shrink**. `tests/test_principle_audit_clean.py` runs `--all --strict` on
+every pytest invocation, so a new violation *anywhere* fails the suite. Resolve it, or mark the
+line `# principle-ok: <reason>`. **Never grow the baseline to make a run green.**
+
+**The auditor is code too.** When it produces false positives (the unit literal is the canonical
+example; comments and docstrings are another), fix the auditor — do not teach the team to ignore
+its output. An untrusted audit is a broken gate.
 
 ---
 

@@ -43,41 +43,47 @@ it only runs against an all-green card).
 
 ## The one blocker
 
-**The encoder's representation is collapsed.** Measured on 266 held-out states:
+**The geometry gate's target is mis-derived — the encoder is not missing rank.** Measured
+read-only on 724 held-out B customers (`rank_attainability.json`, DEC-514):
 
-| quantity | value | reference |
+| quantity | value | meaning |
 |---|---|---|
-| effective rank | **6.155** | dim 256; random null ≈ 90.1; target ≈ 30 (`rank_target` 0.117) |
-| eff-rank ratio to null | **0.068** | 1.0 = as spread as the null |
-| mean pairwise cosine | 0.148 | high similarity between customers |
-| off-diagonal redundancy | 0.295 | null 0.049 |
+| exhaustive measure, parallel analysis | **15 directions** (of 104) | the stream's own signal rank |
+| learned shape, parallel analysis | **15 directions** (of 256) | already at that count |
+| learned shape effective rank | 5.414 / null 110.585 | variance concentrated in ~5 of the 15 |
+| served `E` | 21 directions (of 360) | |
+| **card target** | **30 directions** (0.117 × 256) | **2× what the stream carries** |
 
-Everything red traces to this. Information is *present* (7/7 views decode; ledger reconstruction
-R² 0.80–0.98 on spend/margin/purchase count) but it is not *accessible as a shared space*: a
-linear head on ~6 effective directions loses to a GBM on 48 wide-table columns, and the
-unsupervised geometry control is indistinguishable from random.
+So the earlier "6 of 30 directions" reading was comparing the state to a number the stream never
+supported. Pressuring for 0.117 means asking for twice the information that exists — which is
+rank manufacture, banned by the doctrine, and which the λ = 1,000,000 saturation already
+demonstrated is unreachable.
 
-**The geometry governor is saturated, not undertuned.** λ ramped 1.0 → **1,000,000 (its cap)**,
-bank rank 0.0228 against a 0.117 target, history populated (10 entries, 8192-row bank). More of
-the same soft pressure is not a lever. The project's own FR v2.0 receipt says the mechanism class
-is wrong: soft rank penalties were measurably rejected, while rank **by construction** inside the
-state update (bilinear `h⊗x`) raised *transferable* cross-sample rank **1.79×**.
+What is still true: the shape's variance is **unevenly weighted** (`pr_score` −2.749, mean pairwise
+cosine 0.148), and the consumer legs are red. Direction *count* is at capacity; direction
+*weighting* and *accessibility* are not.
 
-## Next 3 actions (in order)
+**Decision needed (certification rule 8 — gate change):** re-derive `rank_target` from parallel
+analysis (≈0.059 for a 256-dim shape) as a new protocol version, disclosed on the card as a
+weaker claim. Rejected: keep 0.117 and raise λ (saturated), raise `geometry_boost` (same
+mechanism), batch whitening (manufactures non-transferable rank).
 
-1. **Measure attainable rank** — eigendecomposition of the full-history measure. Is ~30 directions
-   actually supported by the stream, or is ~6 the truth? Cheap, read-only, and it converts an
-   open-ended optimization into a yes/no. *(If ~6 is attainable, `rank_target` is wrong and the
-   geometry gate is defensible; if ~30, the encoder is genuinely lossy.)*
-2. **Re-run the four stale stage producers** so S1/S2/S4/S6 carry the current behavior hash:
-   `measure_input_law.py`, `measure_views_law.py`, `measure_certification_law.py` (S3 and S5 are
-   already fresh). The card cannot count a stage green on a stale stamp.
-3. **Operator decision on geometry** — either (A) move rank into the recurrence by construction
-   (the mechanism class with evidence), or (B) re-derive `rank_target` from (1) and defend it.
-   These are mutually exclusive and gate-touching; they need the operator, not the loop.
+**Next axis: accessibility, not rank.** A linear head on 15 real but unevenly-weighted
+directions loses to a 48-column GBM — that is the measurement to make now.
 
 **Not the blocker:** receipts (fresh), ledger (8 parts publish, G1–G4 pass), stability (governed,
 no divergence), plumbing (products rebuild, config replay, UTC cut all fixed and committed).
+
+## Next 3 actions
+
+1. **Operator ruling on `rank_target`** — re-derive to ≈0.059 (parallel analysis) as a new
+   protocol version, disclosed on the card as a weaker claim; stop geometry pressure. This is a
+   gate change, so it is the operator's call, not the loop's.
+2. **Measure accessibility** — with direction count at capacity, test whether the red legs come
+   from uneven weighting/scale (`pr_score` −2.749, mean cosine 0.148) rather than missing rank.
+3. **Re-run the four stale stage producers** (`measure_input_law`, `measure_views_law`,
+   `measure_certification_law`) so S1/S2/S4/S6 carry the current behavior hash. S3's
+   `clock_periodicity` and S5's three failures are separate, real defects.
 
 ## Operating facts
 
@@ -91,7 +97,8 @@ no divergence), plumbing (products rebuild, config replay, UTC cut all fixed and
 
 ## Open operator decisions
 
-- **Geometry mechanism** (A) construction vs (B) re-derived target — see action 3.
+- **`rank_target`** — re-derive from parallel analysis (DEC-514, ≈0.059) as a new protocol
+  version, or keep 0.117 and accept that the geometry gate is unreachable by construction.
 - **P8 provenance** (`SPINE.md` Appendix B): the reference table contains random columns absent
   from the stream. Fix the generator and re-certify, or drop them from the fair baseline.
 - **P2 testbed**: the synthetic stream may not be able to test the learned bet at all. A

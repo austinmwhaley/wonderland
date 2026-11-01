@@ -6708,3 +6708,37 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - **Not changed.** Gates, thresholds, receipts, spec, verdicts, encoder, behavior hash
   (`94857be6815a96f3` unchanged; a cosmetic edit to `looking_glass/universality.py` was
   reverted precisely because it would have invalidated every receipt).
+
+## DEC-514 — [MEASURED] rank attainability: the 0.117 target is ~2x the stream's own signal rank
+- **Question.** Before spending more compute on geometry, is `rank_target 0.117` (30 of 256
+  directions) supported by the stream at all? Read-only; no gate, threshold, or encoder change.
+- **Method.** `scripts/measure_rank_attainability.py` on 724 held-out B customers
+  (tag `0.11.0r486262-b8d256e1lr3e-04o9e37655b`), reusing `looking_glass.portfolio._geometry`
+  (the SAME rank definition the portfolio gate grades) plus a scale-free, order-matched
+  **parallel analysis**: each eigenvalue of the correlation matrix is compared to the same-order
+  eigenvalue of the column-permuted null (marginals kept, joint structure destroyed). Correlation
+  space, so raw column scale (counts vs sums vs rates) cannot masquerade as rank.
+- **Measured.**
+  - exhaustive full-history measure, 104 columns: **15 directions** above its own null
+    (parallel analysis; 14.4% of its columns).
+  - learned shape, 256 dims: **15 directions** above its own null (5.9% of its columns);
+    effective rank 5.414 vs a permuted null of 110.585 (ratio 0.049); `pr_score` −2.749.
+  - served `E` (shape‖measure, 360 dims): 21 directions.
+  - card target: **30 directions** (0.117 × 256), i.e. **2.0×** the measure-supported rank.
+- **Verdict.** The stream's exhaustive measure supports ~15 independent directions; the learned
+  shape already spans ~15. **The target asks the encoder for twice the information the stream
+  carries.** Pressuring to 0.117 is therefore not a capability request — it is a request to
+  manufacture rank, which AGENTS.md (DEC-036 / FR v2.0) bans and which the λ=1e6 saturation
+  already confirmed is not reachable.
+- **What this does NOT say.** Not that the encoder is good: the shape's variance is concentrated
+  (`eff_rank` 5.4 of 15 real directions, `pr_score` −2.749), and the consumer legs are still red.
+  It says the *rank target* was mis-derived, so the geometry diagnosis changes from "collapsed"
+  to "at capacity in direction count, uneven in weighting".
+- **Consequence (operator decision required — certification rule 8).** Re-derive `rank_target`
+  from parallel analysis (≈0.059 for a 256-dim shape) as a **new protocol version**, disclosed
+  on the card as a weaker claim, and stop spending runs on geometry pressure. Rejected
+  alternatives: keep 0.117 and raise λ (saturated), raise `geometry_boost` (same mechanism),
+  batch whitening (banned: manufactures non-transferable rank).
+- **Next axis.** With direction count at capacity, the red legs point at **accessibility**
+  (a linear head on 15 real but unevenly-weighted directions losing to a 48-column GBM), not at
+  missing rank. That is the next measurement, not another geometry run.
