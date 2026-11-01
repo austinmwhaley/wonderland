@@ -7115,3 +7115,35 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   `{'action_keys': ('freq','hour','channel','offer'), 'arm_key': 'offer', 'action_period_seconds': 604800.0}`.
 - **Not changed.** No gate, threshold, comparator, task, or encoder change. This is a data-contract
   repair; the next chain measures the same pre-registered rows.
+
+## DEC-528 — [MEASURED + PRE-REGISTERED] the state loses LEVEL; restore the additive mass channel
+- **Measured (v2c, n=1485, per-task held-out R², brain = shape only vs PATH A):**
+
+  | task | brain | PATH A | delta |
+  |---|---:|---:|---:|
+  | x0 (rate) | 0.846 | 0.879 | −0.033 |
+  | **h0 (value scale)** | 0.832 | 0.971 | **−0.139** |
+  | price_sensitivity | 0.005 | −0.064 | +0.068 |
+  | **return_proneness** | 0.328 | 0.488 | **−0.160** |
+  | churn_day | 0.292 | −0.014 | **+0.306** |
+  | regime_switches | 0.109 | −0.008 | **+0.118** |
+  | final_regime_days | 0.006 | −0.075 | +0.080 |
+
+  The shape **wins every dynamic/regime trait** and **loses every static/level trait**. That is
+  the doctrine's own warning realised: "including magnitude/level (which summaries like RFM keep
+  and a contractive state must not lose)".
+- **Diagnosis, from the config.** `use_counter=False`, `use_measure=False`, `readout_norm=True`:
+  the state has no additive channel, so unbounded level (value scale, return propensity) is
+  attenuated by the contractive recurrence. Aggregates keep it trivially, which is why PATH A wins
+  those rows.
+- **Bundle (one causal story: restore the correct algebra for extensive mass).** Enable the
+  already-built **CounterBlock** (`use_counter=True`, `counter_type_values=True`) — a learned
+  additive exact-count channel inside the shape, measured in M8 to lift return_proneness by +0.12.
+  This is principle 3 (correct algebra per quantity: additive for extensive mass), not a penalty
+  and not whitening.
+- **Deliberately NOT enabled: `use_measure`.** Serving the oracle's measure inside `E` would make
+  "brain alone" a measure-carried claim (P1 circularity) and would pass these rows for the wrong
+  reason. The learned-shape claim must stand on the shape.
+- **Falsifier.** If h0 / return_proneness do not improve, or any dynamic trait regresses with a CI
+  excluding 0, revert the counter and record it.
+- **Not changed.** Gates, tasks, comparator, split, heads, ledger recipe.

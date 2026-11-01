@@ -1,9 +1,9 @@
 {
   "_meta": {
     "behavior_hash": "a4fdd768fbf009a0",
-    "command": "measure_judge_law.py --products /home/austin_whaley/wonderland_work/cfm_v2b --demo /home/austin_whaley/wonderland_work/demo_v2 --legs supervised,unsupervised,rl,simulator --out-dir /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments",
-    "generated_at": "2026-11-01T16:44:14+00:00",
-    "git_commit": "38170df30dc549e0dc3637e4d49e5e9cf6c75651",
+    "command": "measure_judge_law.py --products /home/austin_whaley/wonderland_work/cfm_v2c --demo /home/austin_whaley/wonderland_work/demo_v2 --legs supervised,unsupervised,rl,simulator --out-dir /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments",
+    "generated_at": "2026-11-01T17:21:03+00:00",
+    "git_commit": "b985646640a8be401963d1dfa3305ad7e6cc1afb",
     "producer": "measure_judge_law.py"
   },
   "arms": {
@@ -14,51 +14,51 @@
   "checks": {
     "unsupervised": {
       "evidence": "3 live task(s) (+0 degenerate) on n=1485 B-rows scored against 3515 A-rows; comparator PATH A (GBM incumbent); table 41 cols / 5000 customers; brain+ledger 3 task(s)",
-      "working": true
+      "working": false
     }
   },
   "columns": {
     "brain": {
       "tasks": [
         {
-          "brain": 0.037997,
-          "ci_hi": -0.320748,
-          "ci_lo": -0.342065,
+          "brain": 0.059185,
+          "ci_hi": -0.31345,
+          "ci_lo": -0.334649,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": 0.000563,
+          "destroyed": 3.5e-05,
           "metric": "squared correlation between the arm's pairwise distances and the lab's true distances (4 fields: bayes_fwd_count_90d, bayes_fwd_value_90d, d0, segment)",
           "n": 1101870,
           "n_bootstrap_pairs": 100000,
           "name": "persona_geometry",
-          "pathA": 0.368424,
-          "random": 0.000443
+          "pathA": 0.386663,
+          "random": 0.000598
         },
         {
-          "brain": 0.005203,
-          "ci_hi": -0.166531,
-          "ci_lo": -0.179174,
+          "brain": 0.008205,
+          "ci_hi": -0.163645,
+          "ci_lo": -0.176621,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": 0.001045,
+          "destroyed": 0.00018,
           "metric": "squared correlation between the arm's pairwise distances and the lab's true distances (7 fields: x0, h0, price_sensitivity, return_proneness, churn_day, regime_switches, final_regime_days)",
           "n": 1101870,
           "n_bootstrap_pairs": 100000,
           "name": "future_geometry",
-          "pathA": 0.18262,
-          "random": 0.00018
+          "pathA": 0.181009,
+          "random": 3.4e-05
         },
         {
-          "brain": 0.000678,
-          "ci_hi": -0.57328,
-          "ci_lo": -0.626183,
+          "brain": -0.000681,
+          "ci_hi": -0.242175,
+          "ci_lo": -0.296083,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": 0.000471,
+          "destroyed": 0.002331,
           "metric": "ARI of k-means (k=4, from the label's own cardinality) against the lab's declared segment",
           "n": 1485,
           "name": "segment_structure",
-          "pathA": 0.601119,
+          "pathA": 0.268486,
           "random": 0.000108
         }
       ]
@@ -66,51 +66,51 @@
     "brain_ledger": {
       "tasks": [
         {
-          "brain": 0.047596,
-          "ci_hi": -0.313651,
-          "ci_lo": -0.331082,
+          "brain": 0.06007,
+          "ci_hi": -0.322673,
+          "ci_lo": -0.337905,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": 0.000103,
+          "destroyed": 0.000587,
           "metric": "squared correlation between the arm's pairwise distances and the lab's true distances (4 fields: bayes_fwd_count_90d, bayes_fwd_value_90d, d0, segment)",
           "n": 1101870,
           "n_bootstrap_pairs": 100000,
           "name": "persona_geometry",
-          "pathA": 0.368424,
-          "random": 5.5e-05
+          "pathA": 0.386663,
+          "random": 0.000501
         },
         {
-          "brain": 0.022845,
-          "ci_hi": -0.156668,
-          "ci_lo": -0.167211,
+          "brain": 0.030929,
+          "ci_hi": -0.145633,
+          "ci_lo": -0.154662,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": 0.000282,
+          "destroyed": 0.000433,
           "metric": "squared correlation between the arm's pairwise distances and the lab's true distances (7 fields: x0, h0, price_sensitivity, return_proneness, churn_day, regime_switches, final_regime_days)",
           "n": 1101870,
           "n_bootstrap_pairs": 100000,
           "name": "future_geometry",
-          "pathA": 0.18262,
-          "random": 0.000114
+          "pathA": 0.181009,
+          "random": 1e-05
         },
         {
-          "brain": -0.000882,
-          "ci_hi": -0.57407,
-          "ci_lo": -0.62694,
+          "brain": -2.4e-05,
+          "ci_hi": -0.241392,
+          "ci_lo": -0.29466,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": 9.8e-05,
+          "destroyed": -0.000268,
           "metric": "ARI of k-means (k=4, from the label's own cardinality) against the lab's declared segment",
           "n": 1485,
           "name": "segment_structure",
-          "pathA": 0.601119,
-          "random": -0.00101
+          "pathA": 0.268486,
+          "random": 0.000561
         }
       ]
     }
   },
   "diagnostics": {},
-  "evidence": "[unsupervised] OK: 3 live task(s) (+0 degenerate) on n=1485 B-rows scored against 3515 A-rows; comparator PATH A (GBM incumbent); table 41 cols / 5000 customers; brain+ledger 3 task(s)",
+  "evidence": "[unsupervised] FAILED: 3 live task(s) (+0 degenerate) on n=1485 B-rows scored against 3515 A-rows; comparator PATH A (GBM incumbent); table 41 cols / 5000 customers; brain+ledger 3 task(s)",
   "excluded": [],
   "path_a": {
     "columns": 41,
@@ -119,14 +119,14 @@
     "source": "/home/austin_whaley/wonderland_work/demo_v2/path_a/path_a_wide_table.parquet"
   },
   "products": {
-    "path": "/home/austin_whaley/wonderland_work/cfm_v2b",
-    "registry_sha256": "067e8b31ef49bd56",
-    "tag": "0.11.0r923498-b17d256e3lr3e-04oef83ce13"
+    "path": "/home/austin_whaley/wonderland_work/cfm_v2c",
+    "registry_sha256": "339c9d1da6f68917",
+    "tag": "0.11.0r490759-b16d256e3lr3e-04oef83ce13"
   },
   "splits": {
     "n_fit_A": 3515,
     "n_score_B": 1485,
     "source": "encoder_samples"
   },
-  "working": true
+  "working": false
 }

@@ -10,7 +10,7 @@
     "values_match": {
       "working": true,
       "evidence": "5000 rows joined on customer_key, 49 columns compared exactly (CPU-built artifact, CPU rebuild): identical",
-      "seconds": 0.0
+      "seconds": 0.01
     },
     "provenance_complete": {
       "working": true,
@@ -276,21 +276,21 @@
   ],
   "artifacts": {
     "path_a_wide_table.parquet": {
-      "sha256": "e3c9aeca1d3d89f7",
-      "bytes": 523565
+      "sha256": "1bbacf2f379edf7d",
+      "bytes": 526901
     },
     "relational/events.parquet": {
-      "sha256": "8be4107df4b4ae8a",
-      "bytes": 26613774
+      "sha256": "a903fb6d6803d2ce",
+      "bytes": 28392387
     },
     "relational/customers.parquet": {
-      "sha256": "1d3060def9f83694",
-      "bytes": 24169
+      "sha256": "15af4824d612d933",
+      "bytes": 24152
     }
   },
   "inputs": {
     "demo": "/home/austin_whaley/wonderland_work/demo_v2",
-    "products_dir": "/home/austin_whaley/wonderland_work/cfm_v2b"
+    "products_dir": "/home/austin_whaley/wonderland_work/cfm_v2c"
   },
-  "generated_at": "2026-11-01T16:44:18+00:00"
+  "generated_at": "2026-11-01T17:21:34+00:00"
 }

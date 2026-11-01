@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "94857be6815a96f3",
-    "command": "measure_judge_law.py --products /home/austin_whaley/wonderland_work/cfm_m8_counter --demo /home/austin_whaley/wonderland_work/demo --legs supervised,unsupervised,rl,simulator --out-dir /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments",
-    "generated_at": "2026-11-01T14:20:34+00:00",
-    "git_commit": "83a8c0b5c277a73bd99289d06170a802972fc54b",
+    "behavior_hash": "a4fdd768fbf009a0",
+    "command": "measure_judge_law.py --products /home/austin_whaley/wonderland_work/cfm_v2c --demo /home/austin_whaley/wonderland_work/demo_v2 --legs supervised,unsupervised,rl,simulator --out-dir /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments",
+    "generated_at": "2026-11-01T17:21:32+00:00",
+    "git_commit": "b985646640a8be401963d1dfa3305ad7e6cc1afb",
     "producer": "measure_judge_law.py"
   },
   "arms": {
@@ -13,7 +13,7 @@
   },
   "checks": {
     "simulator": {
-      "evidence": "2 live task(s) (+0 degenerate) on n=724 B-rows scored against 1776 A-rows; comparator PATH A (GBM incumbent); table 48 cols / 2500 customers; brain+ledger 2 task(s); WARNING: negative control uninformative on 1/2 trait(s) (dose_response_curve) \u2014 R2 < -1 is a conditioning artifact of the wide design, so 'control below brain' proves nothing there",
+      "evidence": "2 live task(s) (+0 degenerate) on n=1485 B-rows scored against 3515 A-rows; comparator PATH A (GBM incumbent); table 41 cols / 5000 customers; brain+ledger 2 task(s); WARNING: negative control uninformative on 1/2 trait(s) (dose_response_curve) \u2014 R2 < -1 is a conditioning artifact of the wide design, so 'control below brain' proves nothing there",
       "working": true
     }
   },
@@ -21,72 +21,72 @@
     "brain": {
       "tasks": [
         {
-          "brain": 0.266438,
-          "ci_hi": -0.00021,
-          "ci_lo": -0.001093,
+          "brain": 0.30037,
+          "ci_hi": 0.000181,
+          "ci_lo": -0.00034,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [
             "random",
             "destroyed"
           ],
-          "destroyed": -1.478431,
+          "destroyed": -3.475294,
           "metric": "R2 on the identified (customer x offer level) purchase rate (4 levels: [0, 1, 2, 3])",
-          "n": 1132,
+          "n": 5000,
           "name": "dose_response_curve",
-          "pathA": 0.318547,
-          "random": -1.529061
+          "pathA": 0.303941,
+          "random": -3.351384
         },
         {
-          "brain": 0.269807,
-          "ci_hi": -0.141274,
-          "ci_lo": -0.250535,
+          "brain": 0.244444,
+          "ci_hi": 0.030976,
+          "ci_lo": -0.026936,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": 0.269807,
+          "destroyed": 0.244444,
           "metric": "share of customers whose declared offer optimum is the argmax of the recovered response surface (ties -> lowest level)",
-          "n": 467,
+          "n": 1485,
           "name": "argmax_optimum",
-          "pathA": 0.468951,
-          "random": 0.269807
+          "pathA": 0.241751,
+          "random": 0.244444
         }
       ]
     },
     "brain_ledger": {
       "tasks": [
         {
-          "brain": 0.311636,
-          "ci_hi": 0.00025,
-          "ci_lo": -0.000389,
+          "brain": 0.298739,
+          "ci_hi": 9.6e-05,
+          "ci_lo": -0.000338,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": -0.093577,
+          "destroyed": -0.051519,
           "metric": "R2 on the identified (customer x offer level) purchase rate (4 levels: [0, 1, 2, 3])",
-          "n": 1132,
+          "n": 5000,
           "name": "dose_response_curve",
-          "pathA": 0.318547,
-          "random": -0.072394
+          "pathA": 0.303941,
+          "random": -0.045361
         },
         {
-          "brain": 0.269807,
-          "ci_hi": -0.141274,
-          "ci_lo": -0.250535,
+          "brain": 0.244444,
+          "ci_hi": 0.030976,
+          "ci_lo": -0.026936,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": 0.269807,
+          "destroyed": 0.244444,
           "metric": "share of customers whose declared offer optimum is the argmax of the recovered response surface (ties -> lowest level)",
-          "n": 467,
+          "n": 1485,
           "name": "argmax_optimum",
-          "pathA": 0.468951,
-          "random": 0.269807
+          "pathA": 0.241751,
+          "random": 0.244444
         }
       ]
     }
   },
   "diagnostics": {},
-  "evidence": "[simulator] OK: 2 live task(s) (+0 degenerate) on n=724 B-rows scored against 1776 A-rows; comparator PATH A (GBM incumbent); table 48 cols / 2500 customers; brain+ledger 2 task(s); WARNING: negative control uninformative on 1/2 trait(s) (dose_response_curve) \u2014 R2 < -1 is a conditioning artifact of the wide design, so 'control below brain' proves nothing there",
+  "evidence": "[simulator] OK: 2 live task(s) (+0 degenerate) on n=1485 B-rows scored against 3515 A-rows; comparator PATH A (GBM incumbent); table 41 cols / 5000 customers; brain+ledger 2 task(s); WARNING: negative control uninformative on 1/2 trait(s) (dose_response_curve) \u2014 R2 < -1 is a conditioning artifact of the wide design, so 'control below brain' proves nothing there",
   "excluded": [],
   "identified": {
-    "customers": 4093,
+    "customers": 5000,
     "levels": [
       0,
       1,
@@ -96,19 +96,19 @@
     "rule": "an offer level is identified for a customer at >= 10 arm-days"
   },
   "path_a": {
-    "columns": 48,
-    "n_present": 2500,
-    "n_requested": 2500,
-    "source": "/home/austin_whaley/wonderland_work/demo/path_a/path_a_wide_table.parquet"
+    "columns": 41,
+    "n_present": 5000,
+    "n_requested": 5000,
+    "source": "/home/austin_whaley/wonderland_work/demo_v2/path_a/path_a_wide_table.parquet"
   },
   "products": {
-    "path": "/home/austin_whaley/wonderland_work/cfm_m8_counter",
-    "registry_sha256": "f74ca5fe3397bd51",
-    "tag": "0.11.0r486262-b8d256e1lr3e-04o9e37655b"
+    "path": "/home/austin_whaley/wonderland_work/cfm_v2c",
+    "registry_sha256": "339c9d1da6f68917",
+    "tag": "0.11.0r490759-b16d256e3lr3e-04oef83ce13"
   },
   "splits": {
-    "n_fit_A": 1776,
-    "n_score_B": 724,
+    "n_fit_A": 3515,
+    "n_score_B": 1485,
     "source": "encoder_samples"
   },
   "working": true
