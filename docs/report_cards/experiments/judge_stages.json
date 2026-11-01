@@ -3,22 +3,22 @@
     "_stamp": {
       "behavior_hash": "a4fdd768fbf009a0",
       "command": "measure_input_law.py --data /home/austin_whaley/wonderland_work/demo_v2 --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
-      "generated_at": "2026-11-01T16:13:16+00:00",
-      "git_commit": "76632e437e3003c34111901e846ac46a56e4fbb1",
+      "generated_at": "2026-11-01T16:41:31+00:00",
+      "git_commit": "38170df30dc549e0dc3637e4d49e5e9cf6c75651",
       "producer": "measure_input_law.py"
     },
     "checks": {
       "new_field_ingested": {
         "evidence": "injected loyalty_tier (novel categories) + session_seconds into every event's attributes: resolved into catspec=['acquisition_channel', 'brand', 'category_code', 'channel', 'dow', 'freq', 'hour', 'loyalty_tier', 'offer', 'product_id', 'qty', 'reason', 'region', 'segment', 'touch'] num=['discount', 'margin', 'price', 'session_seconds', 'signup_ts', 'value']; encoder trained on the variant (d=64,L=1,e=1): E finite=True, best=120.1832; zero pipeline-code edits",
         "n_rows": 2199684,
-        "seconds": 80.0,
+        "seconds": 43.5,
         "working": true
       },
       "renamed_end_to_end": {
         "evidence": "renamed client_id/occurred_at/event/attributes/total -> onboard resolved {'customer_key': 'client_id', 'event_ts': 'occurred_at', 'event_type': 'event', 'brand': None, 'entity_type': None, 'entity_id': None, 'source_table': 'source_table', 'value': 'value', 'event_attributes': ['attributes', 'total']}; 2199684 rows kept (source 2199684); 5000 customers encoded; encoder trained on the resolved stream (d=64,L=1,e=1): E finite=True, best=87.9051; zero pipeline-code edits",
         "n_customers": 5000,
         "n_rows": 2199684,
-        "seconds": 206.0,
+        "seconds": 75.0,
         "working": true
       }
     },
@@ -29,15 +29,15 @@
     "_stamp": {
       "behavior_hash": "a4fdd768fbf009a0",
       "command": "measure_input_law.py --data /home/austin_whaley/wonderland_work/demo_v2 --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
-      "generated_at": "2026-11-01T16:13:16+00:00",
-      "git_commit": "76632e437e3003c34111901e846ac46a56e4fbb1",
+      "generated_at": "2026-11-01T16:41:31+00:00",
+      "git_commit": "38170df30dc549e0dc3637e4d49e5e9cf6c75651",
       "producer": "measure_input_law.py"
     },
     "checks": {
       "field_permutation_invariance": {
         "evidence": "attribute field order ['value', 'margin', 'price', 'qty']... vs permuted ['hour', 'price', 'freq', 'segment']... over 60000 rows: sequence digests identical (5d82a577786e04bf vs 5d82a577786e04bf)",
         "n_rows": 60000,
-        "seconds": 2.2,
+        "seconds": 1.6,
         "working": true
       },
       "numeric_transform_law": {
@@ -48,13 +48,13 @@
       "training_determinism": {
         "evidence": "two seed-0 runs (d=64,L=1,e=1) on identical prepared inputs: E bit-identical=True, best-val equal (60.769491 == 60.769491)",
         "n_customers": 5000,
-        "seconds": 66.0,
+        "seconds": 37.8,
         "working": true
       },
       "unseen_value_path": {
         "evidence": "frozen schema (7 event types, vocab sizes [1, 10, 4, 3, 7, 3, 1, 4, 4, 396, 1, 1, 1, 4, 4]) encoded a batch containing unseen event types/categories/1e12 numerics: rows=1431664, entities=5002, all arrays finite=True, novel rows -> OOV slot 0 = True, vocab unchanged after serving = True (never re-derived)",
         "n_rows": 1431664,
-        "seconds": 12.1,
+        "seconds": 7.3,
         "working": true
       }
     },
@@ -64,68 +64,68 @@
   "S3": {
     "_stamp": {
       "behavior_hash": "a4fdd768fbf009a0",
-      "command": "measure_dynamics_law.py --ckpt-dir /home/austin_whaley/wonderland_work/cfm_v2 --db /home/austin_whaley/wonderland_work/demo_v2/customer_event_stream.parquet --train-log /home/austin_whaley/wonderland_work/cfm_v2/train.log --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
-      "generated_at": "2026-11-01T16:13:39+00:00",
-      "git_commit": "df44abd2b6ff3433b2b1400945c625877cf580e6",
+      "command": "measure_dynamics_law.py --ckpt-dir /home/austin_whaley/wonderland_work/cfm_v2b --db /home/austin_whaley/wonderland_work/demo_v2/customer_event_stream.parquet --train-log /home/austin_whaley/wonderland_work/cfm_v2b/train.log --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
+      "generated_at": "2026-11-01T16:41:45+00:00",
+      "git_commit": "38170df30dc549e0dc3637e4d49e5e9cf6c75651",
       "producer": "measure_dynamics_law.py"
     },
     "checks": {
       "clock_periodicity": {
         "evidence": "week-shift (exact cycle multiple): worst state/E drift 2.814e-02 (gate 1e-4); gaps-x10 control (tokens fixed): min state/E drift 5.241e-01 (gate >1e-3) \u2014 the spring responds to elapsed time. DISCLOSED: absolute-clock features used, w_tod norm 9.01; cfm_data stored ts vs model _to_epoch differ 0s (UTC vs local frame) \u2014 reconcile before horizons depend on it",
-        "seconds": 0.8,
+        "seconds": 0.3,
         "working": false
       },
       "governed_stability": {
-        "evidence": "training log missing: /home/austin_whaley/wonderland_work/cfm_v2/train.log",
+        "evidence": "training log missing: /home/austin_whaley/wonderland_work/cfm_v2b/train.log",
         "seconds": 0.0,
         "working": false
       },
       "mass_additivity": {
         "evidence": "mass additivity scan(d, b1+b2) == scan(d,b1)+scan(d,b2) on real drives (disjoint event supports, float64): worst relative error 5.930e-16 (gate 1e-10)",
-        "seconds": 0.2,
+        "seconds": 0.1,
         "working": true,
         "worst_rel_err": 5.93007857701319e-16
       },
       "scan_associativity": {
         "evidence": "merge law F(g\u2218f)=F(g)\u2218F(f) on 6 real sequences x 5 split points (float64, model's own decay/drive, continuous_time=True): worst relative error 9.745e-16 (gate 1e-10)",
-        "seconds": 7.8,
+        "seconds": 2.7,
         "working": true,
         "worst_rel_err": 9.744954934083692e-16
       },
       "ssm_merge_exact": {
         "evidence": "one-shot vs split-at-midpoint continuation WITH all recurrent states carried (scan h + intent-filter f + wrapper g) over 6 real sequences: state rel err 9.867e-08, readout 9.887e-08 (gate 5e-05); DISCLOSED: h-only continuation (today's cfm_state.absorb) drifts 2.559e-02 \u2014 the filter state is not carried by serving, a bought approximation awaiting its O6 receipt",
         "h_only_drift": 0.025589918409549255,
-        "seconds": 2.8,
+        "seconds": 0.4,
         "working": true,
         "worst_state_rel": 9.866968595905702e-08
       },
       "step0_finite": {
         "evidence": "randomly re-initialized trunk (step-0 architecture, N(0,0.5) weights), 6 real sequences: 0 non-finite out of 443648 state/output/E values",
-        "seconds": 0.3,
+        "seconds": 0.2,
         "working": true
       },
       "tau_from_spectrum": {
         "evidence": "taus are gap quantiles of the stream (no literal): base taus=[0.209, 0.777, 3.404]s days -> cadence x100 taus=[20.904, 77.734, 340.357] (median ratio 100.0x, gate >=10x, non-constant=True)",
-        "seconds": 7.3,
+        "seconds": 7.2,
         "working": true
       }
     },
-    "evidence": "[scan_associativity] OK: merge law F(g\u2218f)=F(g)\u2218F(f) on 6 real sequences x 5 split points (float64, model's own decay/drive, continuous_time=True): worst relative error 9.745e-16 (gate 1e-10) | [ssm_merge_exact] OK: one-shot vs split-at-midpoint continuation WITH all recurrent states carried (scan h + intent-filter f + wrapper g) over 6 real sequences: state rel err 9.867e-08, readout 9.887e-08 (gate 5e-05); DISCLOSED: h-only continuation (today's cfm_state.absorb) drifts 2.559e-02 \u2014 the filter state is not carried by serving, a bought approximation awaiting its O6 receipt | [mass_additivity] OK: mass additivity scan(d, b1+b2) == scan(d,b1)+scan(d,b2) on real drives (disjoint event supports, float64): worst relative error 5.930e-16 (gate 1e-10) | [clock_periodicity] FAILED: week-shift (exact cycle multiple): worst state/E drift 2.814e-02 (gate 1e-4); gaps-x10 control (tokens fixed): min state/E drift 5.241e-01 (gate >1e-3) \u2014 the spring responds to elapsed time. DISCLOSED: absolute-clock features used, w_tod norm 9.01; cfm_data stored ts vs model _to_epoch differ 0s (UTC vs local frame) \u2014 reconcile before horizons depend on it | [step0_finite] OK: randomly re-initialized trunk (step-0 architecture, N(0,0.5) weights), 6 real sequences: 0 non-finite out of 443648 state/output/E values | [tau_from_spectrum] OK: taus are gap quantiles of the stream (no literal): base taus=[0.209, 0.777, 3.404]s days -> cadence x100 taus=[20.904, 77.734, 340.357] (median ratio 100.0x, gate >=10x, non-constant=True) | [governed_stability] FAILED: training log missing: /home/austin_whaley/wonderland_work/cfm_v2/train.log",
+    "evidence": "[scan_associativity] OK: merge law F(g\u2218f)=F(g)\u2218F(f) on 6 real sequences x 5 split points (float64, model's own decay/drive, continuous_time=True): worst relative error 9.745e-16 (gate 1e-10) | [ssm_merge_exact] OK: one-shot vs split-at-midpoint continuation WITH all recurrent states carried (scan h + intent-filter f + wrapper g) over 6 real sequences: state rel err 9.867e-08, readout 9.887e-08 (gate 5e-05); DISCLOSED: h-only continuation (today's cfm_state.absorb) drifts 2.559e-02 \u2014 the filter state is not carried by serving, a bought approximation awaiting its O6 receipt | [mass_additivity] OK: mass additivity scan(d, b1+b2) == scan(d,b1)+scan(d,b2) on real drives (disjoint event supports, float64): worst relative error 5.930e-16 (gate 1e-10) | [clock_periodicity] FAILED: week-shift (exact cycle multiple): worst state/E drift 2.814e-02 (gate 1e-4); gaps-x10 control (tokens fixed): min state/E drift 5.241e-01 (gate >1e-3) \u2014 the spring responds to elapsed time. DISCLOSED: absolute-clock features used, w_tod norm 9.01; cfm_data stored ts vs model _to_epoch differ 0s (UTC vs local frame) \u2014 reconcile before horizons depend on it | [step0_finite] OK: randomly re-initialized trunk (step-0 architecture, N(0,0.5) weights), 6 real sequences: 0 non-finite out of 443648 state/output/E values | [tau_from_spectrum] OK: taus are gap quantiles of the stream (no literal): base taus=[0.209, 0.777, 3.404]s days -> cadence x100 taus=[20.904, 77.734, 340.357] (median ratio 100.0x, gate >=10x, non-constant=True) | [governed_stability] FAILED: training log missing: /home/austin_whaley/wonderland_work/cfm_v2b/train.log",
     "working": false
   },
   "S4": {
     "_stamp": {
       "behavior_hash": "a4fdd768fbf009a0",
-      "command": "measure_views_law.py --products /home/austin_whaley/wonderland_work/cfm_v2 --demo /home/austin_whaley/wonderland_work/demo_v2 --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
-      "generated_at": "2026-11-01T16:15:16+00:00",
-      "git_commit": "df44abd2b6ff3433b2b1400945c625877cf580e6",
+      "command": "measure_views_law.py --products /home/austin_whaley/wonderland_work/cfm_v2b --demo /home/austin_whaley/wonderland_work/demo_v2 --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
+      "generated_at": "2026-11-01T16:43:07+00:00",
+      "git_commit": "38170df30dc549e0dc3637e4d49e5e9cf6c75651",
       "producer": "measure_views_law.py"
     },
     "checks": {
       "accessibility_parity": {
-        "evidence": "42 view x target pairs at parity within 3x the paired SE; accessibility gaps: none",
+        "evidence": "49 view x target pairs at parity within 3x the paired SE; accessibility gaps: none",
         "gaps": [],
-        "pairs": 42,
+        "pairs": 49,
         "working": true
       },
       "decodability": {
@@ -146,6 +146,10 @@
             "r2": 0.8847,
             "target": "x0"
           },
+          "response": {
+            "r2": 0.1647,
+            "target": "x0"
+          },
           "shape": {
             "r2": 0.9009,
             "target": "h0"
@@ -155,7 +159,7 @@
             "target": "x0"
           }
         },
-        "evidence": "linear-head decoders beat random+destroyed (paired CI lo>0) for 6/6 views; undecodable: none; carried by {'x0': 3, 'h0': 3}",
+        "evidence": "linear-head decoders beat random+destroyed (paired CI lo>0) for 7/7 views; undecodable: none; carried by {'x0': 4, 'h0': 3}",
         "targets_excluded": [],
         "undecodable": [],
         "working": true
@@ -226,7 +230,7 @@
         "working": true
       },
       "outlet_schema": {
-        "evidence": "6 views / 30000 rows; declared-not-served ['response'] advertised",
+        "evidence": "7 views / 35000 rows; declared-not-served [] advertised",
         "missing": [],
         "seconds": 0.003,
         "views": [
@@ -234,23 +238,107 @@
           "heads",
           "learned_state",
           "measure",
+          "response",
           "shape",
           "uncertainty"
         ],
         "working": true
       },
       "response_outlet": {
-        "evidence": "response outlet NOT served \u2014 advertised as not_served by the faceplate (the stream declared no action design, so there is nothing to condition on)",
-        "served": false,
-        "working": false
+        "coverage_by_randomization": {
+          "unrandomized": {
+            "coverage": 0.8,
+            "n": 74393,
+            "sigma": 1.793109
+          }
+        },
+        "evidence": "conditional outcome head: holdout R2=0.1272 on n=74393 B-rows (LEAKY ceiling 0.1191 \u2014 the most any head could predict from this target), coverage 0.800 (nominal 0.80, band +/-0.003), randomized fraction 0.0, measured sigma 1.793109/1.793109 (rand/unrand, mean interval width 4.595923), delta incremental R2=0.0108 (effective rank delta=1.1547 state=2.1735), actions from /home/austin_whaley/wonderland_work/demo_v2/reference_truth.json",
+        "paired_ci_lo": {
+          "action-blind (state only)": 0.496896,
+          "destroyed": 15.376291,
+          "population constant": 6.966967,
+          "state-blind (action only)": 1.704404
+        },
+        "served": true,
+        "working": true
       }
     },
-    "evidence": "[outlet_schema] OK: 6 views / 30000 rows; declared-not-served ['response'] advertised | [decodability] OK: linear-head decoders beat random+destroyed (paired CI lo>0) for 6/6 views; undecodable: none; carried by {'x0': 3, 'h0': 3} | [accessibility_parity] OK: 42 view x target pairs at parity within 3x the paired SE; accessibility gaps: none | [response_outlet] FAILED: response outlet NOT served \u2014 advertised as not_served by the faceplate (the stream declared no action design, so there is nothing to condition on) | [ledger_attribution] OK: attribution measured on 7 trait(s); best ledger-only R2=0.8847 on 'x0' (its destroyed control -0.0479, learned-only 0.887, both 0.9458); ledger beats destroyed on 6/7 and adds beyond the brain on 3/7 \u2014 a ledger-backed number is never booked as a brain win (SPINE \u00a75)",
+    "evidence": "[outlet_schema] OK: 7 views / 35000 rows; declared-not-served [] advertised | [decodability] OK: linear-head decoders beat random+destroyed (paired CI lo>0) for 7/7 views; undecodable: none; carried by {'x0': 4, 'h0': 3} | [accessibility_parity] OK: 49 view x target pairs at parity within 3x the paired SE; accessibility gaps: none | [response_outlet] OK: conditional outcome head: holdout R2=0.1272 on n=74393 B-rows (LEAKY ceiling 0.1191 \u2014 the most any head could predict from this target), coverage 0.800 (nominal 0.80, band +/-0.003), randomized fraction 0.0, measured sigma 1.793109/1.793109 (rand/unrand, mean interval width 4.595923), delta incremental R2=0.0108 (effective rank delta=1.1547 state=2.1735), actions from /home/austin_whaley/wonderland_work/demo_v2/reference_truth.json | [ledger_attribution] OK: attribution measured on 7 trait(s); best ledger-only R2=0.8847 on 'x0' (its destroyed control -0.0479, learned-only 0.887, both 0.9458); ledger beats destroyed on 6/7 and adds beyond the brain on 3/7 \u2014 a ledger-backed number is never booked as a brain win (SPINE \u00a75)",
     "pairs": [
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 0.0019348113115322172,
-        "ci_lo_vs_random": 1509812.6731578296,
+        "ci_lo_vs_destroyed": 0.0006280723264131803,
+        "ci_lo_vs_random": 0.3601426499639459,
+        "gap": null,
+        "r2_linear": 0.16471779286380328,
+        "r2_mlp": 0.18012656687572615,
+        "target": "x0",
+        "view": "response"
+      },
+      {
+        "beats_controls": false,
+        "ci_lo_vs_destroyed": -0.00013354674944916357,
+        "ci_lo_vs_random": 4.267152861380326,
+        "gap": null,
+        "r2_linear": -0.003620107743532497,
+        "r2_mlp": -0.0061621397400541955,
+        "target": "h0",
+        "view": "response"
+      },
+      {
+        "beats_controls": false,
+        "ci_lo_vs_destroyed": -3.753238124617844e-05,
+        "ci_lo_vs_random": 0.0148215124274809,
+        "gap": null,
+        "r2_linear": 0.0011012433981592018,
+        "r2_mlp": 0.0015233670391678888,
+        "target": "price_sensitivity",
+        "view": "response"
+      },
+      {
+        "beats_controls": true,
+        "ci_lo_vs_destroyed": 6.600755247218496e-06,
+        "ci_lo_vs_random": 0.017821838026720327,
+        "gap": null,
+        "r2_linear": 0.0038903714021790714,
+        "r2_mlp": 0.0041549547193900915,
+        "target": "return_proneness",
+        "view": "response"
+      },
+      {
+        "beats_controls": true,
+        "ci_lo_vs_destroyed": 29.10862385857935,
+        "ci_lo_vs_random": 289218.9118729478,
+        "gap": null,
+        "r2_linear": 0.005527484733309995,
+        "r2_mlp": -0.024509250423139006,
+        "target": "churn_day",
+        "view": "response"
+      },
+      {
+        "beats_controls": true,
+        "ci_lo_vs_destroyed": 0.3292791652851399,
+        "ci_lo_vs_random": 375.699960344772,
+        "gap": null,
+        "r2_linear": 0.014085936820155354,
+        "r2_mlp": 0.006235079838292412,
+        "target": "regime_switches",
+        "view": "response"
+      },
+      {
+        "beats_controls": false,
+        "ci_lo_vs_destroyed": -11.249881280244564,
+        "ci_lo_vs_random": 11476.698677466036,
+        "gap": null,
+        "r2_linear": -0.0021588805617420714,
+        "r2_mlp": -0.016187794817076773,
+        "target": "final_regime_days",
+        "view": "response"
+      },
+      {
+        "beats_controls": true,
+        "ci_lo_vs_destroyed": 0.0019446510075584941,
+        "ci_lo_vs_random": 1423734.7009218435,
         "gap": null,
         "r2_linear": 0.8846728185546516,
         "r2_mlp": -5.252635763058463,
@@ -259,8 +347,8 @@
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 0.28490086232388484,
-        "ci_lo_vs_random": 484571696.0285558,
+        "ci_lo_vs_destroyed": 0.2819716560754195,
+        "ci_lo_vs_random": 487869643.53476197,
         "gap": null,
         "r2_linear": 0.7803106199569053,
         "r2_mlp": -0.22840582862381975,
@@ -269,8 +357,8 @@
       },
       {
         "beats_controls": false,
-        "ci_lo_vs_destroyed": -0.002054704585208498,
-        "ci_lo_vs_random": 339048438.37673074,
+        "ci_lo_vs_destroyed": -0.0034920782684366514,
+        "ci_lo_vs_random": 355193549.3990785,
         "gap": null,
         "r2_linear": -0.07302698072505298,
         "r2_mlp": -3.6007957946224884,
@@ -279,8 +367,8 @@
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 0.0017058122554559289,
-        "ci_lo_vs_random": 10455347.165408866,
+        "ci_lo_vs_destroyed": 0.0017628722140863844,
+        "ci_lo_vs_random": 9933022.204491142,
         "gap": null,
         "r2_linear": 0.4547276619587195,
         "r2_mlp": -3.6938147595845354,
@@ -289,8 +377,8 @@
       },
       {
         "beats_controls": false,
-        "ci_lo_vs_destroyed": 133.95230990524468,
-        "ci_lo_vs_random": 128003334190984.05,
+        "ci_lo_vs_destroyed": 407.91170851265804,
+        "ci_lo_vs_random": 128595015656469.47,
         "gap": null,
         "r2_linear": -0.019752981695260186,
         "r2_mlp": -0.14770776207086334,
@@ -299,8 +387,8 @@
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 0.9381299789754268,
-        "ci_lo_vs_random": 90800002780.07855,
+        "ci_lo_vs_destroyed": 0.5960981438698854,
+        "ci_lo_vs_random": 92832189773.36935,
         "gap": null,
         "r2_linear": 0.016319224592212356,
         "r2_mlp": -0.14435635800697422,
@@ -309,8 +397,8 @@
       },
       {
         "beats_controls": false,
-        "ci_lo_vs_destroyed": 17.136389403815055,
-        "ci_lo_vs_random": 24304847186164.996,
+        "ci_lo_vs_destroyed": -76.59367958327627,
+        "ci_lo_vs_random": 26930399143621.305,
         "gap": null,
         "r2_linear": -0.060970861748706584,
         "r2_mlp": -0.07713829883648726,
@@ -319,8 +407,8 @@
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 4.2600997598548735,
-        "ci_lo_vs_random": 7.620677991408454,
+        "ci_lo_vs_destroyed": 4.1678305033719285,
+        "ci_lo_vs_random": 7.70314843630615,
         "gap": null,
         "r2_linear": 0.8880064874479572,
         "r2_mlp": -0.5776304691882774,
@@ -329,8 +417,8 @@
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 1235.2647403548433,
-        "ci_lo_vs_random": 2189.8068683472056,
+        "ci_lo_vs_destroyed": 1242.9794469074147,
+        "ci_lo_vs_random": 1956.9679330507633,
         "gap": null,
         "r2_linear": 0.9009054651632377,
         "r2_mlp": 0.7727182187003071,
@@ -339,8 +427,8 @@
       },
       {
         "beats_controls": false,
-        "ci_lo_vs_destroyed": -0.00013069212051512388,
-        "ci_lo_vs_random": 0.0006963265179175783,
+        "ci_lo_vs_destroyed": -0.0003979602289591139,
+        "ci_lo_vs_random": 0.0011989818678066824,
         "gap": null,
         "r2_linear": -0.0038695377942483677,
         "r2_mlp": -0.2954686183497819,
@@ -349,8 +437,8 @@
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 12.782704999992413,
-        "ci_lo_vs_random": 27.349279336268268,
+        "ci_lo_vs_destroyed": 12.82556373137152,
+        "ci_lo_vs_random": 26.963879533029342,
         "gap": null,
         "r2_linear": 0.34067374697727126,
         "r2_mlp": -1.362971806496676,
@@ -359,8 +447,8 @@
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 106788636.231542,
-        "ci_lo_vs_random": 162016403.78846237,
+        "ci_lo_vs_destroyed": 102758431.9592247,
+        "ci_lo_vs_random": 157557446.1211296,
         "gap": null,
         "r2_linear": 0.2843649681997009,
         "r2_mlp": 0.15514954342349274,
@@ -369,8 +457,8 @@
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 47.57134834090981,
-        "ci_lo_vs_random": 201.70517134715618,
+        "ci_lo_vs_destroyed": 47.75550391339656,
+        "ci_lo_vs_random": 209.3475799177856,
         "gap": null,
         "r2_linear": 0.11984356204328328,
         "r2_mlp": 0.057750207193147385,
@@ -379,8 +467,8 @@
       },
       {
         "beats_controls": false,
-        "ci_lo_vs_destroyed": -4.081243991105201,
-        "ci_lo_vs_random": 332.20252045594435,
+        "ci_lo_vs_destroyed": -5.866663979780314,
+        "ci_lo_vs_random": 257.57033398262314,
         "gap": null,
         "r2_linear": -0.0004613868990377412,
         "r2_mlp": -0.028551457378171774,
@@ -389,8 +477,8 @@
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 0.03349942995476657,
-        "ci_lo_vs_random": 275.87649112069903,
+        "ci_lo_vs_destroyed": 0.031157654902364895,
+        "ci_lo_vs_random": 280.82246178977556,
         "gap": null,
         "r2_linear": 0.8880814949749022,
         "r2_mlp": -5.115310946739604,
@@ -399,8 +487,8 @@
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 14.678510633462073,
-        "ci_lo_vs_random": 115077.98065973038,
+        "ci_lo_vs_destroyed": 16.11587188005343,
+        "ci_lo_vs_random": 118269.56407378142,
         "gap": null,
         "r2_linear": 0.9015459482356549,
         "r2_mlp": 0.8343606326111508,
@@ -409,8 +497,8 @@
       },
       {
         "beats_controls": false,
-        "ci_lo_vs_destroyed": -6.087752516853058e-05,
-        "ci_lo_vs_random": 5.476531925370523,
+        "ci_lo_vs_destroyed": 1.404530347584124e-05,
+        "ci_lo_vs_random": 5.703652346741765,
         "gap": null,
         "r2_linear": -0.004383856324233992,
         "r2_mlp": -0.7090506261176746,
@@ -419,8 +507,8 @@
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 0.08192564647252756,
-        "ci_lo_vs_random": 1284.0383543239918,
+        "ci_lo_vs_destroyed": 0.07827905135144611,
+        "ci_lo_vs_random": 1325.3477960352009,
         "gap": null,
         "r2_linear": 0.34171750057753847,
         "r2_mlp": -3.2831922696134033,
@@ -429,8 +517,8 @@
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 732840.7115979065,
-        "ci_lo_vs_random": 2624684716.341037,
+        "ci_lo_vs_destroyed": 747772.654466936,
+        "ci_lo_vs_random": 2694049080.2499294,
         "gap": null,
         "r2_linear": 0.2871626546358568,
         "r2_mlp": 0.255779424469453,
@@ -439,8 +527,8 @@
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 10.861004061768497,
-        "ci_lo_vs_random": 119301.15087674136,
+        "ci_lo_vs_destroyed": 9.949467782347844,
+        "ci_lo_vs_random": 123285.02428857378,
         "gap": null,
         "r2_linear": 0.13391712279488577,
         "r2_mlp": 0.0635334440697618,
@@ -449,8 +537,8 @@
       },
       {
         "beats_controls": false,
-        "ci_lo_vs_destroyed": -35.779216431926336,
-        "ci_lo_vs_random": 466469.87983230304,
+        "ci_lo_vs_destroyed": -26.314684149489945,
+        "ci_lo_vs_random": 479788.91298224527,
         "gap": null,
         "r2_linear": -0.0036736370553203113,
         "r2_mlp": -0.013208394542763235,
@@ -459,8 +547,8 @@
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 22.680203115933985,
-        "ci_lo_vs_random": 19089.757974890184,
+        "ci_lo_vs_destroyed": 22.383939258719074,
+        "ci_lo_vs_random": 17825.395516696415,
         "gap": null,
         "r2_linear": 0.8829607639796718,
         "r2_mlp": -1.3906417678161054,
@@ -469,8 +557,8 @@
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 3618.5888508526527,
-        "ci_lo_vs_random": 3218814.0491383346,
+        "ci_lo_vs_destroyed": 3273.5273304007023,
+        "ci_lo_vs_random": 3026088.1403576517,
         "gap": null,
         "r2_linear": 0.8862845491675493,
         "r2_mlp": 0.632189089799102,
@@ -479,8 +567,8 @@
       },
       {
         "beats_controls": false,
-        "ci_lo_vs_destroyed": -0.0005976264882461679,
-        "ci_lo_vs_random": 2.6167548965325453,
+        "ci_lo_vs_destroyed": -0.00043249252313766153,
+        "ci_lo_vs_random": 2.517133926551364,
         "gap": null,
         "r2_linear": -0.004960568403143739,
         "r2_mlp": -0.45737418629729,
@@ -489,8 +577,8 @@
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 100.30709548659014,
-        "ci_lo_vs_random": 103211.32077375322,
+        "ci_lo_vs_destroyed": 100.08524188829212,
+        "ci_lo_vs_random": 93565.72472341689,
         "gap": null,
         "r2_linear": 0.30596201619546337,
         "r2_mlp": -2.3332532086151403,
@@ -499,8 +587,8 @@
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 333632618.36360496,
-        "ci_lo_vs_random": 312019609541.8081,
+        "ci_lo_vs_destroyed": 335406650.1476082,
+        "ci_lo_vs_random": 314784874679.8505,
         "gap": null,
         "r2_linear": 0.2716178002542782,
         "r2_mlp": 0.10194821263838616,
@@ -509,8 +597,8 @@
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 20.460929175565962,
-        "ci_lo_vs_random": 53437.938478963646,
+        "ci_lo_vs_destroyed": 23.316817710025436,
+        "ci_lo_vs_random": 49777.183718629865,
         "gap": null,
         "r2_linear": 0.10073779711137099,
         "r2_mlp": 0.008316491147533966,
@@ -519,8 +607,8 @@
       },
       {
         "beats_controls": false,
-        "ci_lo_vs_destroyed": 1.1629086486794094,
-        "ci_lo_vs_random": 144385.09585630792,
+        "ci_lo_vs_destroyed": 30.66537471151319,
+        "ci_lo_vs_random": 144520.73951460893,
         "gap": null,
         "r2_linear": -0.002086121629218951,
         "r2_mlp": -0.016315309972284586,
@@ -529,8 +617,8 @@
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 0.0006799148019520648,
-        "ci_lo_vs_random": 0.33459448355468013,
+        "ci_lo_vs_destroyed": 0.000683583464794492,
+        "ci_lo_vs_random": 0.3453061542794397,
         "gap": null,
         "r2_linear": 0.17884266809705907,
         "r2_mlp": 0.27300685622724674,
@@ -538,9 +626,9 @@
         "view": "uncertainty"
       },
       {
-        "beats_controls": true,
-        "ci_lo_vs_destroyed": 0.003566662513930223,
-        "ci_lo_vs_random": 2.307395627467727,
+        "beats_controls": false,
+        "ci_lo_vs_destroyed": -0.0013039655491277554,
+        "ci_lo_vs_random": 2.184622681570918,
         "gap": null,
         "r2_linear": 0.0006857857188714567,
         "r2_mlp": -0.023587999709866025,
@@ -549,8 +637,8 @@
       },
       {
         "beats_controls": false,
-        "ci_lo_vs_destroyed": -8.59740976431449e-05,
-        "ci_lo_vs_random": 0.0031883292907361025,
+        "ci_lo_vs_destroyed": -7.643402900750599e-05,
+        "ci_lo_vs_random": 0.005388770490244714,
         "gap": null,
         "r2_linear": 0.0003654322989712355,
         "r2_mlp": -0.009865402351842079,
@@ -559,8 +647,8 @@
       },
       {
         "beats_controls": false,
-        "ci_lo_vs_destroyed": -2.4868322205084875e-06,
-        "ci_lo_vs_random": -1.3684475588288721e-05,
+        "ci_lo_vs_destroyed": -3.5641005907472687e-06,
+        "ci_lo_vs_random": 3.529151015871616e-05,
         "gap": null,
         "r2_linear": -0.001781170200591875,
         "r2_mlp": -0.04334200712473302,
@@ -568,9 +656,9 @@
         "view": "uncertainty"
       },
       {
-        "beats_controls": false,
-        "ci_lo_vs_destroyed": -103.89762715168358,
-        "ci_lo_vs_random": 269094.1654815154,
+        "beats_controls": true,
+        "ci_lo_vs_destroyed": 254.7506890276043,
+        "ci_lo_vs_random": 270047.1798373235,
         "gap": null,
         "r2_linear": 0.005838658119379003,
         "r2_mlp": -0.06330709532040601,
@@ -579,8 +667,8 @@
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 0.28801932057879365,
-        "ci_lo_vs_random": 265.2661963953363,
+        "ci_lo_vs_destroyed": 0.24302742629565685,
+        "ci_lo_vs_random": 280.83486521775774,
         "gap": null,
         "r2_linear": 0.029527866670584713,
         "r2_mlp": 0.03110405895590207,
@@ -589,8 +677,8 @@
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 16.895783791134413,
-        "ci_lo_vs_random": 7495.614796886847,
+        "ci_lo_vs_destroyed": 3.8655939723730763,
+        "ci_lo_vs_random": 8060.56026164466,
         "gap": null,
         "r2_linear": 0.00392597199137279,
         "r2_mlp": -0.013567159523594885,
@@ -599,8 +687,8 @@
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 0.0021272834746766554,
-        "ci_lo_vs_random": 11.927491479478373,
+        "ci_lo_vs_destroyed": 0.002200170975474569,
+        "ci_lo_vs_random": 11.556250759037471,
         "gap": null,
         "r2_linear": 0.2801364573562326,
         "r2_mlp": 0.3433987488446377,
@@ -609,8 +697,8 @@
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 0.05165738427867149,
-        "ci_lo_vs_random": 883.898960925178,
+        "ci_lo_vs_destroyed": 0.0578467559979499,
+        "ci_lo_vs_random": 909.7258161869747,
         "gap": null,
         "r2_linear": 0.05508832551766085,
         "r2_mlp": 0.02393994943486555,
@@ -619,8 +707,8 @@
       },
       {
         "beats_controls": false,
-        "ci_lo_vs_destroyed": -7.01016838456208e-05,
-        "ci_lo_vs_random": 0.3449959946055157,
+        "ci_lo_vs_destroyed": -0.000122689921336346,
+        "ci_lo_vs_random": 0.32670218268073387,
         "gap": null,
         "r2_linear": -0.000751309054574989,
         "r2_mlp": -0.04328536391265225,
@@ -629,8 +717,8 @@
       },
       {
         "beats_controls": false,
-        "ci_lo_vs_destroyed": -1.2258282841353285e-05,
-        "ci_lo_vs_random": 0.1095848127652536,
+        "ci_lo_vs_destroyed": -7.933403726852022e-06,
+        "ci_lo_vs_random": 0.10757366452716415,
         "gap": null,
         "r2_linear": -0.0027714085563113056,
         "r2_mlp": -0.06033405424134619,
@@ -639,8 +727,8 @@
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 2582.7597687157318,
-        "ci_lo_vs_random": 22584923.54193202,
+        "ci_lo_vs_destroyed": 1782.3942596398645,
+        "ci_lo_vs_random": 21809949.673039906,
         "gap": null,
         "r2_linear": 0.03430816236843992,
         "r2_mlp": -0.0013552279867190542,
@@ -649,8 +737,8 @@
       },
       {
         "beats_controls": true,
-        "ci_lo_vs_destroyed": 1.5703699543413097,
-        "ci_lo_vs_random": 10905.030277829143,
+        "ci_lo_vs_destroyed": 1.528097296436106,
+        "ci_lo_vs_random": 10385.06327980953,
         "gap": null,
         "r2_linear": 0.03796553032863059,
         "r2_mlp": 0.016735648398760294,
@@ -658,9 +746,9 @@
         "view": "heads"
       },
       {
-        "beats_controls": false,
-        "ci_lo_vs_destroyed": -7.454160804051774,
-        "ci_lo_vs_random": 243579.82652445522,
+        "beats_controls": true,
+        "ci_lo_vs_destroyed": 3.2297240401471696,
+        "ci_lo_vs_random": 236688.3881559412,
         "gap": null,
         "r2_linear": 0.002862562272638036,
         "r2_mlp": -0.010627167516898739,
@@ -669,34 +757,34 @@
       }
     ],
     "products": {
-      "path": "/home/austin_whaley/wonderland_work/cfm_v2",
-      "registry_sha256": "055a524ea7fb155d",
+      "path": "/home/austin_whaley/wonderland_work/cfm_v2b",
+      "registry_sha256": "067e8b31ef49bd56",
       "tag": "0.11.0r923498-b17d256e3lr3e-04oef83ce13"
     },
-    "working": false
+    "working": true
   },
   "S5": {
     "_stamp": {
       "behavior_hash": "a4fdd768fbf009a0",
-      "command": "measure_battery_law.py --products /home/austin_whaley/wonderland_work/cfm_v2/cfm_products.duckdb --demo /home/austin_whaley/wonderland_work/demo_v2 --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
-      "generated_at": "2026-11-01T16:15:20+00:00",
-      "git_commit": "df44abd2b6ff3433b2b1400945c625877cf580e6",
+      "command": "measure_battery_law.py --products /home/austin_whaley/wonderland_work/cfm_v2b/cfm_products.duckdb --demo /home/austin_whaley/wonderland_work/demo_v2 --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
+      "generated_at": "2026-11-01T16:43:10+00:00",
+      "git_commit": "38170df30dc549e0dc3637e4d49e5e9cf6c75651",
       "producer": "measure_battery_law.py"
     },
     "checks": {
       "action_conditioned_outcome": {
         "evidence": "insufficient identified customers (A=0, B=0; >= 10 arm-days/side required)",
-        "seconds": 0.2,
+        "seconds": 0.1,
         "working": false
       },
       "distance_regression": {
         "evidence": "lab-truth latent distance (x0/h0/d0/price_sens/return_prone/touch_pref, z-scored) vs distance over 20000 customer pairs from 1485 holdout B customers: donor Spearman 0.063 vs naive bag-of-event-types 0.227; paired-over-pairs gain 95%CI [-0.164,-0.164] (gate lo>0); diagnostic raw-state(pre-boundary) Spearman 0.003",
-        "seconds": 0.4,
+        "seconds": 0.3,
         "working": false
       },
       "ledger_reconstruction": {
         "evidence": "ledger recomputed from the raw stream by DuckDB (not a table copy); LINEAR head on the learned-shape donor (embedding = model.proj(h), no served measure blocks \u2014 the claim is learned-only), fitted on 3515 split-A customers and scored on the 1485 holdout B; naive comparator = same head on the full event-type bag + recency (target-defining type excluded \u2014 no label leakage into the comparator); spend: brain R2=0.901 naive R2=0.622 MSE-gain 95%CI[0.235,0.289] | margin: brain R2=0.902 naive R2=0.622 MSE-gain 95%CI[0.234,0.288] | n_purch: brain R2=0.931 naive R2=0.903 MSE-gain 95%CI[0.007,0.017] | n_ret: brain R2=0.733 naive R2=0.262 MSE-gain 95%CI[0.236,0.280]",
-        "seconds": 1.8,
+        "seconds": 0.7,
         "working": true
       },
       "prune_pass": {
@@ -707,8 +795,8 @@
     },
     "evidence": "[ledger_reconstruction] OK: ledger recomputed from the raw stream by DuckDB (not a table copy); LINEAR head on the learned-shape donor (embedding = model.proj(h), no served measure blocks \u2014 the claim is learned-only), fitted on 3515 split-A customers and scored on the 1485 holdout B; naive comparator = same head on the full event-type bag + recency (target-defining type excluded \u2014 no label leakage into the comparator); spend: brain R2=0.901 naive R2=0.622 MSE-gain 95%CI[0.235,0.289] | margin: brain R2=0.902 naive R2=0.622 MSE-gain 95%CI[0.234,0.288] | n_purch: brain R2=0.931 naive R2=0.903 MSE-gain 95%CI[0.007,0.017] | n_ret: brain R2=0.733 naive R2=0.262 MSE-gain 95%CI[0.236,0.280] | [distance_regression] FAILED: lab-truth latent distance (x0/h0/d0/price_sens/return_prone/touch_pref, z-scored) vs distance over 20000 customer pairs from 1485 holdout B customers: donor Spearman 0.063 vs naive bag-of-event-types 0.227; paired-over-pairs gain 95%CI [-0.164,-0.164] (gate lo>0); diagnostic raw-state(pre-boundary) Spearman 0.003 | [action_conditioned_outcome] FAILED: insufficient identified customers (A=0, B=0; >= 10 arm-days/side required) | [prune_pass] OK: per-objective weights recorded: 31 objectives, min=1, trajectory snapshots=8, selection rule='heldout_combined_objective (all active objectives)' (frozen held-out-SSL); weights <= 0.01 -> DELETE list: EMPTY \u2014 equal-weight mode never decays a task to zero (disclosed: vacuous today, enforced the day a learned mixture is adopted)",
     "products": {
-      "path": "/home/austin_whaley/wonderland_work/cfm_v2/cfm_products.duckdb",
-      "registry_sha256": "055a524ea7fb155d",
+      "path": "/home/austin_whaley/wonderland_work/cfm_v2b/cfm_products.duckdb",
+      "registry_sha256": "067e8b31ef49bd56",
       "tag": "0.11.0r923498-b17d256e3lr3e-04oef83ce13"
     },
     "working": false
@@ -716,9 +804,9 @@
   "S6": {
     "_stamp": {
       "behavior_hash": "a4fdd768fbf009a0",
-      "command": "measure_certification_law.py --products /home/austin_whaley/wonderland_work/cfm_v2 --demo /home/austin_whaley/wonderland_work/demo_v2 --train-log /home/austin_whaley/wonderland_work/cfm_v2/train.log",
-      "generated_at": "2026-11-01T16:16:42+00:00",
-      "git_commit": "df44abd2b6ff3433b2b1400945c625877cf580e6",
+      "command": "measure_certification_law.py --products /home/austin_whaley/wonderland_work/cfm_v2b --demo /home/austin_whaley/wonderland_work/demo_v2 --train-log /home/austin_whaley/wonderland_work/cfm_v2b/train.log",
+      "generated_at": "2026-11-01T16:44:19+00:00",
+      "git_commit": "38170df30dc549e0dc3637e4d49e5e9cf6c75651",
       "producer": "measure_certification_law.py"
     },
     "artifacts": {
@@ -727,24 +815,24 @@
         "sha256": "93c4d6381060b1d3"
       },
       "cfm_products.duckdb": {
-        "bytes": 66072576,
-        "sha256": "1a61c6deea44bc1d"
+        "bytes": 67907584,
+        "sha256": "ceca06d9ca25f7e2"
       },
       "customer_event_stream.parquet": {
         "bytes": 23276739,
         "sha256": "4d523b00be36a145"
       },
       "path_a_wide_table.parquet": {
-        "bytes": 523524,
-        "sha256": "146a55744ae52f63"
+        "bytes": 523565,
+        "sha256": "e3c9aeca1d3d89f7"
       },
       "reference_truth.json": {
-        "bytes": 4950853,
-        "sha256": "3082481b7a7802f3"
+        "bytes": 4951002,
+        "sha256": "60663d46369a7fd9"
       },
       "registry_0_11_0r923498-b17d256e3lr3e-04oef83ce13.json": {
-        "bytes": 19446,
-        "sha256": "055a524ea7fb155d"
+        "bytes": 19421,
+        "sha256": "067e8b31ef49bd56"
       }
     },
     "chain": {
@@ -754,80 +842,80 @@
         "command": "measure_input_law.py --data /home/austin_whaley/wonderland_work/demo_v2 --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
         "exit": 0,
         "last_line": "S1 working=True  S2 working=True",
-        "seconds": 369.0
+        "seconds": 166.9
       },
       "S3": {
         "cap_gb": 20.0,
         "cap_mechanism": "slice wonderland.slice MemoryMax",
-        "command": "measure_dynamics_law.py --ckpt-dir /home/austin_whaley/wonderland_work/cfm_v2 --db /home/austin_whaley/wonderland_work/demo_v2/customer_event_stream.parquet --train-log /home/austin_whaley/wonderland_work/cfm_v2/train.log --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
+        "command": "measure_dynamics_law.py --ckpt-dir /home/austin_whaley/wonderland_work/cfm_v2b --db /home/austin_whaley/wonderland_work/demo_v2/customer_event_stream.parquet --train-log /home/austin_whaley/wonderland_work/cfm_v2b/train.log --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
         "exit": 0,
         "last_line": "S3 working=False",
-        "seconds": 21.5
+        "seconds": 12.8
       },
       "S4": {
         "cap_gb": 20.0,
         "cap_mechanism": "slice wonderland.slice MemoryMax",
-        "command": "measure_views_law.py --products /home/austin_whaley/wonderland_work/cfm_v2 --demo /home/austin_whaley/wonderland_work/demo_v2 --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
-        "exit": 1,
+        "command": "measure_views_law.py --products /home/austin_whaley/wonderland_work/cfm_v2b --demo /home/austin_whaley/wonderland_work/demo_v2 --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
+        "exit": 0,
         "last_line": "S4 -> /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
-        "seconds": 96.6
+        "seconds": 82.0
       },
       "S5": {
         "cap_gb": 20.0,
         "cap_mechanism": "slice wonderland.slice MemoryMax",
-        "command": "measure_battery_law.py --products /home/austin_whaley/wonderland_work/cfm_v2/cfm_products.duckdb --demo /home/austin_whaley/wonderland_work/demo_v2 --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
+        "command": "measure_battery_law.py --products /home/austin_whaley/wonderland_work/cfm_v2b/cfm_products.duckdb --demo /home/austin_whaley/wonderland_work/demo_v2 --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
         "exit": 0,
         "last_line": "S5 working=False",
-        "seconds": 4.2
+        "seconds": 2.3
       },
       "legs": {
         "cap_gb": 20.0,
         "cap_mechanism": "slice wonderland.slice MemoryMax",
-        "command": "measure_judge_law.py --products /home/austin_whaley/wonderland_work/cfm_v2 --demo /home/austin_whaley/wonderland_work/demo_v2 --legs supervised,unsupervised,rl,simulator --out-dir /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments",
+        "command": "measure_judge_law.py --products /home/austin_whaley/wonderland_work/cfm_v2b --demo /home/austin_whaley/wonderland_work/demo_v2 --legs supervised,unsupervised,rl,simulator --out-dir /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments",
         "exit": 1,
-        "last_line": "judge_leg_unsupervised -> /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_leg_unsupervised.json (16.7s): 3 live task(s) (+0 d",
-        "seconds": 79.9
+        "last_line": "judge_leg_unsupervised -> /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_leg_unsupervised.json (18.6s): 3 live task(s) (+0 d",
+        "seconds": 66.4
       },
       "prov": {
         "cap_gb": 20.0,
         "cap_mechanism": "slice wonderland.slice MemoryMax",
-        "command": "measure_path_a_provenance.py --demo /home/austin_whaley/wonderland_work/demo_v2 --products-dir /home/austin_whaley/wonderland_work/cfm_v2 --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/path_a_provenance.json",
-        "exit": 2,
-        "last_line": "path_a_provenance: cannot run \u2014 No such file or directory (os error 2): /home/austin_whaley/wonderland_work/demo_v2/relational/events.parquet",
-        "seconds": 1.6
+        "command": "measure_path_a_provenance.py --demo /home/austin_whaley/wonderland_work/demo_v2 --products-dir /home/austin_whaley/wonderland_work/cfm_v2b --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/path_a_provenance.json",
+        "exit": 0,
+        "last_line": "path_a_provenance working=True",
+        "seconds": 2.3
       }
     },
     "checks": {
       "artifact_hashes_recorded": {
-        "evidence": "6 input artifact(s) hashed (102.4 MB) \u2014 the bytes the receipts were measured against",
+        "evidence": "6 input artifact(s) hashed (104.2 MB) \u2014 the bytes the receipts were measured against",
         "working": true
       },
       "commit_recorded_clean": {
-        "evidence": "commit df44abd2b6ff on foundation-rebuild, behavior a4fdd768fbf009a0; tree clean apart from the generated artifacts this command rewrites",
+        "evidence": "commit 38170df30dc5 on foundation-rebuild, behavior a4fdd768fbf009a0; tree clean apart from the generated artifacts this command rewrites",
         "working": true
       },
       "comparator_provenance_certified": {
-        "evidence": "39 comparator column(s), each stamped pre-`as_of` by the builder and confirmed against a rebuild from the lab's own relational inputs (as_of 2025-01-01); sub-checks ['columns_match', 'comparator_clean', 'provenance_complete', 'values_match']; STALE (written before this run)",
-        "working": false
+        "evidence": "38 comparator column(s), each stamped pre-`as_of` by the builder and confirmed against a rebuild from the lab's own relational inputs (as_of 2025-01-01); sub-checks ['columns_match', 'comparator_clean', 'provenance_complete', 'values_match']",
+        "working": true
       },
       "every_row_reports_n": {
         "evidence": "28 live leg-row(s) in the regenerated receipts, all report N",
         "working": true
       },
       "full_chain_in_one_invocation": {
-        "evidence": "6 producer(s) run by this one command (S1+S2 369.0s, S3 21.5s, S4 96.6s, S5 4.2s, legs 79.9s, prov 1.6s); fresh receipts: stages ['S1', 'S2', 'S3', 'S4', 'S5'], legs ['supervised', 'unsupervised']; 2 reported a FAILING CHECK (a measurement, not a chain failure): ['S4', 'legs']; COULD NOT RUN (exit>=2): {'prov': 2}; MISSING FRESH EVIDENCE: ['rl', 'simulator']",
+        "evidence": "6 producer(s) run by this one command (S1+S2 166.9s, S3 12.8s, S4 82.0s, S5 2.3s, legs 66.4s, prov 2.3s); fresh receipts: stages ['S1', 'S2', 'S3', 'S4', 'S5'], legs ['supervised', 'unsupervised']; 1 reported a FAILING CHECK (a measurement, not a chain failure): ['legs']; MISSING FRESH EVIDENCE: ['rl', 'simulator']",
         "working": false
       },
       "render_is_deterministic": {
-        "evidence": "rendered the card twice from the same receipts: identical apart from the timestamp line (6768 chars, 70 lines)",
+        "evidence": "rendered the card twice from the same receipts: identical apart from the timestamp line (6736 chars, 69 lines)",
         "working": true
       }
     },
-    "evidence": "[full_chain_in_one_invocation] FAILED: 6 producer(s) run by this one command (S1+S2 369.0s, S3 21.5s, S4 96.6s, S5 4.2s, legs 79.9s, prov 1.6s); fresh receipts: stages ['S1', 'S2', 'S3', 'S4', 'S5'], legs ['supervised', 'unsupervised']; 2 reported a FAILING CHECK (a measurement, not a chain failure): ['S4', 'legs']; COULD NOT RUN (exit>=2): {'prov': 2}; MISSING FRESH EVIDENCE: ['rl', 'simulator'] | [render_is_deterministic] OK: rendered the card twice from the same receipts: identical apart from the timestamp line (6768 chars, 70 lines) | [commit_recorded_clean] OK: commit df44abd2b6ff on foundation-rebuild, behavior a4fdd768fbf009a0; tree clean apart from the generated artifacts this command rewrites | [artifact_hashes_recorded] OK: 6 input artifact(s) hashed (102.4 MB) \u2014 the bytes the receipts were measured against | [every_row_reports_n] OK: 28 live leg-row(s) in the regenerated receipts, all report N | [comparator_provenance_certified] FAILED: 39 comparator column(s), each stamped pre-`as_of` by the builder and confirmed against a rebuild from the lab's own relational inputs (as_of 2025-01-01); sub-checks ['columns_match', 'comparator_clean', 'provenance_complete', 'values_match']; STALE (written before this run)",
+    "evidence": "[full_chain_in_one_invocation] FAILED: 6 producer(s) run by this one command (S1+S2 166.9s, S3 12.8s, S4 82.0s, S5 2.3s, legs 66.4s, prov 2.3s); fresh receipts: stages ['S1', 'S2', 'S3', 'S4', 'S5'], legs ['supervised', 'unsupervised']; 1 reported a FAILING CHECK (a measurement, not a chain failure): ['legs']; MISSING FRESH EVIDENCE: ['rl', 'simulator'] | [render_is_deterministic] OK: rendered the card twice from the same receipts: identical apart from the timestamp line (6736 chars, 69 lines) | [commit_recorded_clean] OK: commit 38170df30dc5 on foundation-rebuild, behavior a4fdd768fbf009a0; tree clean apart from the generated artifacts this command rewrites | [artifact_hashes_recorded] OK: 6 input artifact(s) hashed (104.2 MB) \u2014 the bytes the receipts were measured against | [every_row_reports_n] OK: 28 live leg-row(s) in the regenerated receipts, all report N | [comparator_provenance_certified] OK: 38 comparator column(s), each stamped pre-`as_of` by the builder and confirmed against a rebuild from the lab's own relational inputs (as_of 2025-01-01); sub-checks ['columns_match', 'comparator_clean', 'provenance_complete', 'values_match']",
     "inputs": {
       "demo": "/home/austin_whaley/wonderland_work/demo_v2",
       "legs": "supervised,unsupervised,rl,simulator",
-      "products": "/home/austin_whaley/wonderland_work/cfm_v2"
+      "products": "/home/austin_whaley/wonderland_work/cfm_v2b"
     },
     "memory": {
       "cap_gb": 20.0,
@@ -839,9 +927,9 @@
   },
   "_meta": {
     "behavior_hash": "a4fdd768fbf009a0",
-    "command": "measure_certification_law.py --products /home/austin_whaley/wonderland_work/cfm_v2 --demo /home/austin_whaley/wonderland_work/demo_v2 --train-log /home/austin_whaley/wonderland_work/cfm_v2/train.log",
-    "generated_at": "2026-11-01T16:16:42+00:00",
-    "git_commit": "df44abd2b6ff3433b2b1400945c625877cf580e6",
+    "command": "measure_certification_law.py --products /home/austin_whaley/wonderland_work/cfm_v2b --demo /home/austin_whaley/wonderland_work/demo_v2 --train-log /home/austin_whaley/wonderland_work/cfm_v2b/train.log",
+    "generated_at": "2026-11-01T16:44:19+00:00",
+    "git_commit": "38170df30dc549e0dc3637e4d49e5e9cf6c75651",
     "producer": "measure_certification_law.py"
   }
 }

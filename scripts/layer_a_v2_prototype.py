@@ -126,6 +126,19 @@ def build(out_dir: Path, n_customers: int, days: int, as_of_day: int, seed: int)
             acc = rho * acc + rng.poisson(lam[d]) if d < days - 1 else acc
         lam = lam * (1.0 + 0.35 * exc)
 
+        # ---- randomized action (one factor: offer), and a KNOWN effect on intensity ----
+        # Every send declares `target_key: "offer"`: that is the one factor the design randomizes,
+        # so the response outlet can label randomized rows (it never guesses). The purchase
+        # intensity on a send day rises only when the drawn offer is the customer's optimum, scaled
+        # by a latent sensitivity -- a heterogeneous treatment effect by construction.
+        act_day = np.arange(signup_day[c] + 3, days, 7)
+        freq = rng.integers(0, 3, size=act_day.size)
+        offer = rng.integers(0, 4, size=act_day.size)
+        if act_day.size:
+            hit = (offer == offer_opt[c]) & (st[act_day] != 2)
+            sens = 0.6 + 2.4 * float(price_sens[c])
+            lam[act_day[hit]] *= 1.0 + sens * 1.25
+
         n_buy = rng.poisson(lam)
         n_view = rng.poisson(lam * 3.0)
         n_search = rng.poisson(lam * 1.5)
@@ -188,11 +201,7 @@ def build(out_dir: Path, n_customers: int, days: int, as_of_day: int, seed: int)
             )
             rows_attr.extend(['{"reason": "size"}'] * ret_days.size)
 
-        # weekly randomized action (the known-effect arm)
-        act_day = np.arange(signup_day[c] + 3, days, 7)
         if act_day.size:
-            freq = rng.integers(0, 3, size=act_day.size)
-            offer = rng.integers(0, 4, size=act_day.size)
             rows_key.append(np.full(act_day.size, key, dtype=object))
             rows_ts.append(
                 day_epoch[act_day] + rng.uniform(0, SECONDS_PER_DAY * 0.999, act_day.size)
@@ -205,6 +214,7 @@ def build(out_dir: Path, n_customers: int, days: int, as_of_day: int, seed: int)
                         {
                             "freq": int(freq[i]),
                             "offer": int(offer[i]),
+                            "target_key": "offer",
                             "channel": str(channel_pref[c]),
                             "touch": "email",
                             "hour": 12,
@@ -263,7 +273,13 @@ def build(out_dir: Path, n_customers: int, days: int, as_of_day: int, seed: int)
             # the response outlet reads it rather than guessing an event name.
             "action_keys": ["freq", "hour", "channel", "offer"],
             "arm_key": "offer",
-            "action": {"action_period_seconds": 7.0 * SECONDS_PER_DAY},
+            "action": {
+                "action_period_seconds": 7.0 * SECONDS_PER_DAY,
+                "action_design": "one_factor_weekly",
+                "note": "one-factor randomized weekly offer; other keys at the customer optimum; "
+                "purchase intensity rises only when the drawn offer is the customer's optimum, "
+                "scaled by latent price sensitivity.",
+            },
         },
         "customers": [
             {

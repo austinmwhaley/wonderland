@@ -1,25 +1,25 @@
 {
   "working": true,
-  "evidence": "[columns_match] OK: published 51 cols vs rebuilt 51 cols (missing: [], extra: []) | [values_match] OK: 6000 rows joined on customer_key, 50 columns compared exactly (CPU-built artifact, CPU rebuild): identical | [provenance_complete] OK: 53 of 50 published columns stamped (hist=37, fut=10, customers=6) | [comparator_clean] OK: table_features selects 39 columns, all stamped hist|customers; all 10 fut columns are dropped by the comparator's own rule (10 dropped)",
+  "evidence": "[columns_match] OK: published 50 cols vs rebuilt 50 cols (missing: [], extra: []) | [values_match] OK: 5000 rows joined on customer_key, 49 columns compared exactly (CPU-built artifact, CPU rebuild): identical | [provenance_complete] OK: 52 of 49 published columns stamped (hist=37, fut=10, customers=5) | [comparator_clean] OK: table_features selects 38 columns, all stamped hist|customers; all 10 fut columns are dropped by the comparator's own rule (10 dropped)",
   "checks": {
     "columns_match": {
       "working": true,
-      "evidence": "published 51 cols vs rebuilt 51 cols (missing: [], extra: [])",
+      "evidence": "published 50 cols vs rebuilt 50 cols (missing: [], extra: [])",
       "seconds": 0.0
     },
     "values_match": {
       "working": true,
-      "evidence": "6000 rows joined on customer_key, 50 columns compared exactly (CPU-built artifact, CPU rebuild): identical",
-      "seconds": 0.01
+      "evidence": "5000 rows joined on customer_key, 49 columns compared exactly (CPU-built artifact, CPU rebuild): identical",
+      "seconds": 0.0
     },
     "provenance_complete": {
       "working": true,
-      "evidence": "53 of 50 published columns stamped (hist=37, fut=10, customers=6)",
+      "evidence": "52 of 49 published columns stamped (hist=37, fut=10, customers=5)",
       "seconds": 0.0
     },
     "comparator_clean": {
       "working": true,
-      "evidence": "table_features selects 39 columns, all stamped hist|customers; all 10 fut columns are dropped by the comparator's own rule (10 dropped)",
+      "evidence": "table_features selects 38 columns, all stamped hist|customers; all 10 fut columns are dropped by the comparator's own rule (10 dropped)",
       "seconds": 0.0
     }
   },
@@ -217,32 +217,27 @@
       "source": "hist",
       "cut_at": "2025-01-01T00:00:00"
     },
-    "signup_ts": {
-      "source": "customers",
-      "cut_at": null
-    },
     "segment": {
-      "source": "customers",
-      "cut_at": null
-    },
-    "region": {
-      "source": "customers",
-      "cut_at": null
-    },
-    "acquisition_channel": {
       "source": "customers",
       "cut_at": null
     },
     "loyalty_tier": {
       "source": "customers",
       "cut_at": null
+    },
+    "signup_ts": {
+      "source": "customers",
+      "cut_at": null
+    },
+    "region": {
+      "source": "customers",
+      "cut_at": null
     }
   },
   "comparator_columns": [
     "segment",
-    "region",
-    "acquisition_channel",
     "loyalty_tier",
+    "region",
     "n_events",
     "n_orders",
     "n_returns",
@@ -281,21 +276,21 @@
   ],
   "artifacts": {
     "path_a_wide_table.parquet": {
-      "sha256": "9e8f8eda7d47c75c",
-      "bytes": 647733
+      "sha256": "e3c9aeca1d3d89f7",
+      "bytes": 523565
     },
     "relational/events.parquet": {
-      "sha256": "6cb2156b1e49a60a",
-      "bytes": 54920360
+      "sha256": "8be4107df4b4ae8a",
+      "bytes": 26613774
     },
     "relational/customers.parquet": {
-      "sha256": "b506ee060645a5dc",
-      "bytes": 20615
+      "sha256": "1d3060def9f83694",
+      "bytes": 24169
     }
   },
   "inputs": {
-    "demo": "/home/austin_whaley/wonderland_work/demo",
-    "products_dir": "/home/austin_whaley/wonderland_work/cfm_m8_counter"
+    "demo": "/home/austin_whaley/wonderland_work/demo_v2",
+    "products_dir": "/home/austin_whaley/wonderland_work/cfm_v2b"
   },
-  "generated_at": "2026-11-01T07:11:03+00:00"
+  "generated_at": "2026-11-01T16:44:18+00:00"
 }
