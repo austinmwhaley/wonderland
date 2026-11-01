@@ -1916,9 +1916,12 @@ class GeometryBank:
 
 
 GEOMETRY_FAMILY = (
+    # Structural invariants — these are ALWAYS enforced as priors and their
+    # gradients are projected orthogonally to the task gradient (PCGrad).
+    # They must never pull down predictive learning. Rank and redundancy are
+    # NOT invariants — they are the representation itself and must be trained
+    # as direct objectives with gradients flowing to the model.
     "variance",
-    "rank",
-    "redundancy",
     "decorr",
     "spectrum",
     "volume",
