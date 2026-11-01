@@ -7217,3 +7217,16 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - **Falsifier.** If h0 and return_proneness do not improve, revert and proceed to the (h, M) state
   pair (DEC-531 C). If any dynamic row regresses with a CI excluding 0, revert.
 - **Not changed.** Gates, tasks, comparator, split, heads, serving contract.
+
+## DEC-533 — [FALSIFIED] readout_scale does not restore level (fast A/B at n=1000)
+- **Fast loop (the process fix from the timing review).** Two 1,000-customer / 2-epoch runs
+  (~4 min each) with the supervised judge on both, instead of two 35-minute certifications.
+- **Measured (brain R², baseline -> readout_scale):**
+  x0 0.748 -> 0.757 (+0.009) · **h0 0.758 -> 0.711 (−0.047)** · price −0.009 -> −0.011 ·
+  **return 0.122 -> 0.089 (−0.033)** · churn 0.047 -> 0.051 · regime 0.057 -> 0.044 ·
+  final_regime 0.003 -> −0.002.
+- **Verdict: FALSIFIED.** The learned readout gain moves level the wrong way. Per DEC-532's
+  pre-registered falsifier, revert and take the `(h, M)` state pair.
+- **What the fast loop bought.** ~10 minutes for a verdict that would have cost ~70 at full
+  fidelity — the process fix pays for itself immediately.
+- **Not changed.** Nothing in the model; the flag was a `--set` only.
