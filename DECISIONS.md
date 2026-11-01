@@ -7273,3 +7273,18 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   (0.828 / 0.132) at n=1000, with no dynamic trait regressing outside noise.
 - **Not changed.** No gate, task, comparator or head change. The counter remains available behind
   its flag; the wiring stays (inert when `use_counter=False`).
+
+## DEC-536 — [OPEN BUG + STOP] compact mass readout hits a width mismatch (256 vs 39)
+- **Attempt.** Fold the additive half through the counter's trained `w_counter` map instead of
+  appending dimensions (which DEC-535 showed dilutes the linear head).
+- **Failure.** `RuntimeError: mat1 and mat2 shapes cannot be multiplied (1000x256 and 39x256)`:
+  the stored counter readout is **256-wide** while `w_counter.in_features` is **39**. The two
+  halves disagree on width, which means the readout width and the counter's declared `raw_dim`
+  are not the same quantity — precisely the class of duplicated-definition defect the audit rule
+  is meant to catch, here inside the model.
+- **Action.** Restore the working append path (behind `use_counter`, not adopted) and record the
+  defect rather than guess at widths under time pressure. A wrong resolution here would produce
+  plausible numbers from a mis-shaped channel — the worst kind of result.
+- **Next (concrete).** Make the counter expose ONE width definition (`counter_out_dim`) used by
+  `w_counter`, the stored readout, and `donor_states`; assert it at model construction. Then
+  re-run the compact A/B.

@@ -201,6 +201,10 @@ def donor_states(model: CFM, states, counters=None):
         t = torch.as_tensor(states, dtype=torch.float32, device=dev)
         emb = model.donor_batch(t)
         if counters is not None:
+            # Appended mass channel. DEC-535 measured that this dilutes a linear head at
+            # n~700, so it stays behind `use_counter` and is NOT the adopted path; the
+            # compact route hit a width mismatch (readout 256 vs w_counter.in_features 39)
+            # that must be resolved before it can be used.
             emb = torch.cat(
                 [emb, torch.as_tensor(counters, dtype=torch.float32, device=dev)], dim=1
             )
