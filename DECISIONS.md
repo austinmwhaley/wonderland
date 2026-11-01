@@ -7338,3 +7338,18 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   [−0.00036, −0.00018]) is not a missing-direction problem that more mass dimensions can fix.
   It is a *capacity/head* boundary: a linear head on a 256-dim fused state cannot fully reproduce
   the ratio structure the table gets from explicit count columns.
+
+## DEC-540 — [FIX] S3: the clock harness spoke LOCAL time; and the training log was never captured
+- **clock_periodicity, root cause.** The check shifts every timestamp by exactly one week and
+  requires the state to be unchanged. `_tod` is exactly week-periodic, so a correct model must pass.
+  The harness built the shifted strings with `datetime.fromtimestamp(...)` — **local time** (TZ is
+  PST) — while the model parses naive ISO as **UTC**. Every shifted sequence was therefore re-read
+  7–8 hours off, `_tod` moved, and a correct model was reported as time-dependent. Fixed by
+  formatting the shifted epochs UTC-aware. **clock_periodicity now PASSES.**
+- **governed_stability, root cause.** The check reads the training log; the run piped training
+  output to `tail` and never wrote `<out-dir>/train.log`, so the check had no evidence and failed.
+  A gate cannot pass on a log that was never captured. Process fix: every training run tees to
+  `<out-dir>/train.log` from now on.
+- **Both are measurement defects, not capability.** No gate, threshold or model change. This is why
+  S3 read `FAILED clock_periodicity (+1 more)` for several cycles: two independent harness bugs,
+  the second hidden behind the first.

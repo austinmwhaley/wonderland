@@ -290,9 +290,16 @@ def check_clock_periodicity(model, seqs) -> dict:
     t0 = time.perf_counter()
 
     def _restring(seq, ts_new):
+        # UTC-AWARE, necessarily: `_to_epoch` reads a naive ISO string as UTC, so formatting a
+        # shifted epoch with the LOCAL timezone (`fromtimestamp` alone) re-parses hours off and
+        # makes a correct model look time-dependent. The harness must speak the model's clock.
         from datetime import datetime as _D
+        from datetime import timezone as _TZ
 
-        return {**seq, "event_ts": [_D.fromtimestamp(float(s)).isoformat() for s in ts_new]}
+        return {
+            **seq,
+            "event_ts": [_D.fromtimestamp(float(s), tz=_TZ.utc).isoformat() for s in ts_new],
+        }
 
     worst_periodic = 0.0
     best_control = float("inf")
