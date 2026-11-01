@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "3363292e01f7b8f6",
+    "behavior_hash": "742184d8d7ec1a1a",
     "command": "measure_judge_law.py --products /home/austin_whaley/wonderland_work/cfm_m8_counter --demo /home/austin_whaley/wonderland_work/demo --legs supervised,unsupervised,rl,simulator --out-dir /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments",
-    "generated_at": "2026-10-31T23:03:14+00:00",
-    "git_commit": "20dd178f9563aede5efbc751705fce1eb5cee57e",
+    "generated_at": "2026-11-01T01:02:29+00:00",
+    "git_commit": "6d2a973e2e05342431a6287f149fa8c2e5cb865a",
     "producer": "measure_judge_law.py"
   },
   "arms": {
@@ -21,9 +21,9 @@
     "brain": {
       "tasks": [
         {
-          "brain": 0.0003,
-          "ci_hi": 0.000163,
-          "ci_lo": -0.00042,
+          "brain": 6e-05,
+          "ci_hi": -0.000154,
+          "ci_lo": -0.000645,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
           "destroyed": 0.000421,
@@ -35,12 +35,12 @@
           "random": 0.00093
         },
         {
-          "brain": 0.019903,
-          "ci_hi": -0.022813,
-          "ci_lo": -0.028507,
+          "brain": 0.000156,
+          "ci_hi": -0.042999,
+          "ci_lo": -0.047977,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": 0.000123,
+          "destroyed": 0.000206,
           "metric": "squared correlation between the arm's pairwise distances and the lab's true distances (5 fields: x0, h0, price_sensitivity, return_proneness, churn_day)",
           "n": 261726,
           "n_bootstrap_pairs": 100000,
@@ -49,12 +49,12 @@
           "random": 0.000102
         },
         {
-          "brain": -0.000612,
-          "ci_hi": 0.010372,
-          "ci_lo": -0.007799,
+          "brain": -0.000732,
+          "ci_hi": 0.010444,
+          "ci_lo": -0.008386,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": 0.001149,
+          "destroyed": 0.002983,
           "metric": "ARI of k-means (k=5, from the label's own cardinality) against the lab's declared segment",
           "n": 724,
           "name": "segment_structure",
@@ -66,45 +66,45 @@
     "brain_ledger": {
       "tasks": [
         {
-          "brain": 0.001091,
-          "ci_hi": 0.001195,
-          "ci_lo": 0.00044,
+          "brain": 0.000699,
+          "ci_hi": 0.000747,
+          "ci_lo": 7.2e-05,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": 1.5e-05,
+          "destroyed": 0.00203,
           "metric": "squared correlation between the arm's pairwise distances and the lab's true distances (2 fields: d0, segment)",
           "n": 261726,
           "n_bootstrap_pairs": 100000,
           "name": "persona_geometry",
           "pathA": 0.000345,
-          "random": 0.000282
+          "random": 3e-06
         },
         {
-          "brain": 0.045493,
-          "ci_hi": 0.001639,
-          "ci_lo": -0.004209,
+          "brain": 0.014372,
+          "ci_hi": -0.028365,
+          "ci_lo": -0.033454,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": 0.001652,
+          "destroyed": 0.000869,
           "metric": "squared correlation between the arm's pairwise distances and the lab's true distances (5 fields: x0, h0, price_sensitivity, return_proneness, churn_day)",
           "n": 261726,
           "n_bootstrap_pairs": 100000,
           "name": "future_geometry",
           "pathA": 0.04561,
-          "random": 0.002375
+          "random": 0.000792
         },
         {
-          "brain": 0.00186,
-          "ci_hi": 0.013352,
-          "ci_lo": -0.006015,
+          "brain": -0.000504,
+          "ci_hi": 0.010373,
+          "ci_lo": -0.007762,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": -0.002222,
+          "destroyed": -0.00065,
           "metric": "ARI of k-means (k=5, from the label's own cardinality) against the lab's declared segment",
           "n": 724,
           "name": "segment_structure",
           "pathA": -0.001513,
-          "random": 0.001062
+          "random": -0.002093
         }
       ]
     }

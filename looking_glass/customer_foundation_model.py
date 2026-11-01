@@ -142,6 +142,16 @@ def _replay_run_cfg(meta, rcfg, out: Path, cfg, anchors=None, sample_b=None):
     )
     rcfg.n_anchors = anchors if anchors is not None else run_cfg.get("n_anchors", rcfg.n_anchors)
     rcfg.agg_horizons_days = list((meta.get("resolved") or {}).get("agg_horizons_days") or [])
+    # Replay the schema-derived fields so the rebuild encodes the SAME inputs the
+    # encoder trained on (DEC-383: the ledger and state must be built over the
+    # identical stream reading). Without this, `build_products` would use defaults
+    # (empty attr/numeric fields, seq_len=128) and publish states that disagree
+    # with training — a silent train/serve skew.
+    rcfg.seq_len = run_cfg.get("seq_len", rcfg.seq_len)
+    rcfg.attr_fields = tuple(run_cfg.get("attr_fields", ()) or ())
+    rcfg.numeric_fields = tuple(run_cfg.get("numeric_fields", ()) or ())
+    rcfg.exogenous_events = tuple(run_cfg.get("exogenous_events", ()) or ())
+    rcfg.action_fields = tuple(run_cfg.get("action_fields", ()) or ())
     rcfg.set_overrides = getattr(cfg, "set_overrides", [])
     apply_set_overrides(rcfg)  # explicit --set wins over registry-derived config
     if rcfg.as_of is None:
