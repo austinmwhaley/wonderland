@@ -7024,3 +7024,23 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - **Next.** Promote v2 into Layer A as a new reference version, then re-certify end to end under a
   new data signature. Every threshold and receipt is re-derived from the new stream; the evaluation
   contract (heads, splits, gates, comparator) does not move.
+
+## DEC-523 — [IMPLEMENTED] Layer A v2 is the reference: stream + derivable PATH A + full truth
+- **Built.** `scripts/layer_a_v2_prototype.py` (generator) + `scripts/build_layer_a_v2.py` (demo
+  layout). One command emits everything the certification producers read:
+  `path_b/` stream, `path_a/` features+labels+wide table (via the single-source `build_path_a`),
+  `reference_truth.json`, `relational_reference_truth.json`, `manifest.json`.
+- **P8 closed by construction.** `segment`, `loyalty_tier`, `signup_ts`, `region` are written as a
+  real `customer_signup` event and then read **back out of the stream** to build the PATH A
+  customer table. PATH A cannot contain a fact the stream does not carry.
+- **Truth schema completed** so the existing judges read it unchanged: `regime_runs`,
+  `regime_switches`, `churn_day`, `final_regime_days` are derived from the realised regime path,
+  alongside the static latents and the Bayes conditional means.
+- **Measured at 5000 customers:** 2.2M events, PATH A 5000 x 50 columns, and the testbed-power gate
+  passes (DEC-522: oracle beats the aggregate on value, count and return).
+- **Status.** The v1 stream is superseded for future certification. The running v1 chain was
+  stopped: it was re-certifying a testbed we are replacing, and letting it finish would have
+  produced receipts that are stale on arrival (behaviour hash covers `rabbit_hole/`).
+- **Not yet done.** A full v2 certification run (train on the v2 stream -> products -> chain) and
+  the promotion of the generator from `scripts/` into `rabbit_hole/generators/` with a stable CLI.
+  Both are mechanical; neither changes a gate.

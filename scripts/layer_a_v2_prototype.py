@@ -62,6 +62,23 @@ def _regime_path(rng, days: int, persistence: float) -> np.ndarray:
     return out
 
 
+def _runs(st: np.ndarray) -> list[list]:
+    """[[state_name, n_days], ...] — run-length encoding of the realised regime path."""
+    out: list[list] = []
+    start = 0
+    for i in range(1, len(st) + 1):
+        if i == len(st) or st[i] != st[start]:
+            out.append([STATES[int(st[start])], int(i - start)])
+            start = i
+    return out
+
+
+def _churn_day(st: np.ndarray) -> int:
+    """First day in `dormant`; the horizon if the customer never enters it."""
+    idx = np.flatnonzero(st == 2)
+    return int(idx[0]) if idx.size else int(len(st))
+
+
 def build(out_dir: Path, n_customers: int, days: int, as_of_day: int, seed: int) -> dict:
     rng = np.random.default_rng(seed)
     start = datetime(2024, 1, 1, tzinfo=timezone.utc)
@@ -92,12 +109,14 @@ def build(out_dir: Path, n_customers: int, days: int, as_of_day: int, seed: int)
     rows_val: list[np.ndarray] = []
     rows_attr: list[str] = []
     states_at_anchor = np.empty(n_customers, dtype=np.int8)
+    paths: list[np.ndarray] = []
 
     rho = 0.86
     for c in range(n_customers):
         key = f"v2{c:07d}"
         st = _regime_path(rng, days, float(persistence[c]))
         states_at_anchor[c] = st[as_of_day]
+        paths.append(st)
         # intensity: rate x state x season x (1 + self-excitation)
         lam = base_rate[c] * STATE_INTENSITY[st] * season
         exc = np.zeros(days)
@@ -204,7 +223,9 @@ def build(out_dir: Path, n_customers: int, days: int, as_of_day: int, seed: int)
                 {
                     "segment": int(segment[c]),
                     "loyalty_tier": ["bronze", "silver", "gold", "platinum"][int(segment[c]) - 1],
-                    "signup_ts": (start - timedelta(days=int(rng.integers(1, 400)))).isoformat(),
+                    "signup_ts": (start - timedelta(days=int(rng.integers(1, 400))))
+                    .replace(tzinfo=None)
+                    .isoformat(),
                     "region": "north",
                     "acquisition_channel": "referral",
                 }
@@ -248,6 +269,10 @@ def build(out_dir: Path, n_customers: int, days: int, as_of_day: int, seed: int)
                 "channel_pref": str(channel_pref[c]),
                 "category_pref": str(category_pref[c]),
                 "regime0": STATES[int(states_at_anchor[c])],
+                "regime_runs": _runs(paths[c]),
+                "regime_switches": int((np.diff(paths[c]) != 0).sum()),
+                "churn_day": float(_churn_day(paths[c])),
+                "final_regime_days": int(_runs(paths[c])[-1][1]),
                 # Bayes conditional mean of the forward outcome given the latent state at the
                 # anchor. This is the oracle a sufficient statistic should match: the value
                 # process is rate x state-intensity x value-scale x state-value.
