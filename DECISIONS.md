@@ -7185,3 +7185,23 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   `materialize_state_embeddings` concatenates `counter_readout(M)`; tests cover the daily path.
   It is a schema + serving change, so it must ship as its own behaviour change with a full chain.
 - **Not done in this entry.** No code changed; the failed run wrote no products.
+
+## DEC-531 — [DECISION POINT] restoring level: change the OBJECT or change the CARD
+- **Two ways to give the brain arm its lost magnitude, and they are not equivalent.**
+  - **(S) Serving fix** — make `state_embeddings` the consumed `E = shape ++ counters` (store `M`
+    beside `state`, concatenate at serve). Cheap-ish, but it changes **what the card's `brain`
+    column measures**: today `brain` = `boundary(proj(h))`, the contractive state. After (S) it
+    would be shape+counter. That is a change to the graded object, i.e. a rule-8 definition change,
+    even though it is arguably a bug-fix against the ABC contract's `E` definition.
+  - **(C) Construction fix** — make the **state itself** carry extensive mass (the additive
+    counter feeds `h`, so `proj(h)` carries level). The graded object is unchanged: `brain` stays
+    the learned state. It is principle 3 ("correct algebra per quantity: additive for extensive
+    mass") applied inside the recurrence, not beside it.
+- **Recommendation: (C).** (S) would likely turn the rows green while moving the goalposts; (C)
+  earns the same rows on the object the card already names. (C) is a model/architecture change
+  (counter registers entering the state), so it ships as its own behaviour change with a full
+  chain and a checkpoint-compatibility check.
+- **Not done unilaterally.** (S) requires the operator because it redefines a graded column.
+  (C) does not, and is the chosen path.
+- **Status.** No code changed in this entry; the analysis is recorded so the choice is not
+  re-litigated and so (S) is not adopted by accident later.
