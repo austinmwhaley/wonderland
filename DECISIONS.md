@@ -7070,3 +7070,28 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   move a red leg with a CI excluding zero, revert the whole bundle and record it.
 - **Not part of the bundle.** No gate, threshold, comparator, split, or evaluation-contract change.
   A gate change never rides along with a capability change.
+
+## DEC-525 — [MEASURED] the state already carries the regime; DEC-524's bundle is NOT triggered
+- **Measured** (`scripts/measure_regime_readout.py`, v2 products, n=1485 held-out B, 5-fold,
+  balanced accuracy so the majority class cannot win; chance 0.333):
+
+  | representation | balanced accuracy | over chance |
+  |---|---:|---:|
+  | aggregates (92 cols) | 0.511 ± 0.040 | 1.53x |
+  | **frozen state** | **0.641 ± 0.033** | **1.92x** |
+  | both | 0.642 ± 0.030 | 1.93x |
+
+- **Reading.** The encoder extracts the latent regime **substantially better than the aggregate
+  measure** (+0.13 balanced accuracy, ~4 SE). Aggregates alone sit barely above chance, which
+  independently confirms the v2 stream is not aggregate-sufficient (DEC-522/524).
+- **Consequence — the pre-registered bundle is cancelled.** DEC-524 said: if the state does not
+  carry the regime, add a path/interval objective + regime-preserving readout. It does carry it.
+  Adding that bundle now would be adding pressure for a property that already exists — the exact
+  cargo-cult move the audit rule is meant to prevent. Not run. Recorded as a cancelled protocol,
+  not a failure.
+- **Where the constraint moves to.** If the v2 legs are still red, the cause is *downstream* of
+  extraction: the head/task, the served transform, or the comparator — not missing information in
+  the state. The next measurement is per-task decomposition (state-only / measure-only / both /
+  table), not another encoder change.
+- **Caveat.** The readout is a logistic probe on `state_embeddings`; it establishes *accessibility*
+  of regime information to a linear consumer, not that the judge's specific heads exploit it.

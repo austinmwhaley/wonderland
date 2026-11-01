@@ -88,7 +88,9 @@ def main(argv=None) -> int:
                 "select customer_key, embedding from state_embeddings"
             ).fetchall()
         }
-        served = [r[0] for r in con.execute("select distinct version from state_embeddings")]
+        served = [
+            r[0] for r in con.execute("select distinct version from state_embeddings").fetchall()
+        ]
     finally:
         con.close()
 

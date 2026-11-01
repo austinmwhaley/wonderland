@@ -1,0 +1,45 @@
+{
+  "_meta": {
+    "producer": "measure_regime_readout.py",
+    "generated_at": "2026-11-01T16:13:24+00:00",
+    "read_only": true,
+    "products": "/home/austin_whaley/wonderland_work/cfm_v2",
+    "demo": "/home/austin_whaley/wonderland_work/demo_v2",
+    "served_versions": [
+      "0.11.0r923498-b17d256e3lr3e-04oef83ce13"
+    ],
+    "n": 1485,
+    "regime_classes": [
+      "at_risk",
+      "dormant",
+      "loyal"
+    ],
+    "chance_balanced_accuracy": 0.3333,
+    "as_of": "2025-01-01"
+  },
+  "readout": {
+    "aggregates": {
+      "balanced_accuracy_mean": 0.5107,
+      "balanced_accuracy_sd": 0.0398,
+      "accuracy_mean": 0.5515,
+      "folds": 5
+    },
+    "state": {
+      "balanced_accuracy_mean": 0.641,
+      "balanced_accuracy_sd": 0.0326,
+      "accuracy_mean": 0.6579,
+      "folds": 5
+    },
+    "both": {
+      "balanced_accuracy_mean": 0.6416,
+      "balanced_accuracy_sd": 0.0297,
+      "accuracy_mean": 0.668,
+      "folds": 5
+    }
+  },
+  "interpretation": {
+    "state_beats_aggregates": true,
+    "state_to_chance_ratio": 1.923,
+    "aggregate_to_chance_ratio": 1.532
+  }
+}
