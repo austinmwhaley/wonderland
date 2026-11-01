@@ -220,6 +220,11 @@ per-row Python loops in hot paths), and emit a runtime receipt.
 
 ## 7. Resources and operating constraints
 
+- **Estimate before every run.** State the cost from MEASURED numbers — `s_per_step` in the last
+  registry x expected steps + producer timings — and say why the smallest rung that can answer the
+  question is not sufficient. A run whose estimate was not stated is a run that will overrun its
+  timeout. Calibration (v2, seq_len 996, batch 16, counter on): 1.72 s/step; a 5,000-customer
+  convergence is ~2,300 steps (~66 min); the full chain is ~8-12 min.
 - **One GPU job at a time.** Derive budgets from VRAM/hardware; keep the CPU fallback.
 - **Caps are the operating model:** vLLM 11 GiB RAM / 15 GiB total, GMU ≤ 0.70
   (refuse-above); training container 20 GB; system floor 8 GB. The watchdog is opt-in
