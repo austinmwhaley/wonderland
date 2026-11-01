@@ -130,6 +130,9 @@ def _replay_run_cfg(meta, rcfg, out: Path, cfg, anchors=None, sample_b=None):
     the ONE place registry -> live config happens (products + portfolio)."""
     run_cfg = meta.get("config", {})
     rcfg.out_dir = str(out)  # write artifacts next to the checkpoint
+    # The encoder was trained on `run_cfg["db"]`; the rebuild must read the SAME stream
+    # (otherwise the ledger is tallied over a different history than the encoder saw).
+    rcfg.db = run_cfg.get("db", rcfg.db)
     rcfg.as_of = run_cfg.get("as_of")
     rcfg.split_seed = run_cfg.get("split_seed", rcfg.split_seed)
     rcfg.sample_customers = run_cfg.get("sample_customers")

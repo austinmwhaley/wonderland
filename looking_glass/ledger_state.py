@@ -45,9 +45,12 @@ PARTS = (
     "missing_rate",
     "richness",
     "numeric_stats",
-    # DEC-473: exact recency facts (silence/tenure/span/log-count) — the ledger's companion
-    # job; measured to lift ledger-only churn 0.056 -> 0.650 on the judge population.
+    # DEC-473: exact recency facts (silence/tenure/span/log-count).
     "recency",
+    # M9: mechanical return/purchase split of the stream's primary numeric field. Value sign
+    # is the discriminator (returns reduce the balance, purchases increase it); no field or
+    # event names appear in the recipe — the amount field index is derived at build time.
+    "return_ratio",
 )
 
 
@@ -144,7 +147,13 @@ def _epoch(x) -> float:
 
 
 def fit_vocabulary(
-    seqs, vocab, train_keys, coverage: float | None = None, as_of=None, recency: bool = False
+    seqs,
+    vocab,
+    train_keys,
+    coverage: float | None = None,
+    as_of=None,
+    recency: bool = False,
+    amount_field: int | None = None,
 ) -> tuple[object, dict]:
     """Resolve the ledger vocabulary ONCE, from the TRAINING population, and receipt it.
 
@@ -165,7 +174,12 @@ def fit_vocabulary(
             "ledger: no training-population customers have events to fit a vocabulary on"
         )
     builder = MeasureBuilder(
-        tuples, wanted, vs, coverage=_coverage(coverage), n_recency=4 if recency else 0
+        tuples,
+        wanted,
+        vs,
+        coverage=_coverage(coverage),
+        n_recency=4 if recency else 0,
+        amount_field=amount_field,
     )
     return builder, {
         "n_fields_discovered": len(vs["gcat"]),

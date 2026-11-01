@@ -8,7 +8,7 @@ from types import SimpleNamespace
 import torch
 
 from looking_glass.cfm_config import CFMConfig, LN2, TIME_UNIT_SECONDS, _to_epoch, as_of_epoch
-from looking_glass.cfm_data import build_sequences
+from looking_glass.cfm_data import build_sequences, _primary_numeric_field
 from looking_glass.cfm_model import CFM
 from looking_glass import view_layout
 
@@ -937,6 +937,16 @@ def _publish_ledger_outlet(cfg, model, vocab, df, keys, split, store) -> dict | 
         raise LookupError("ledger: no customer has a single event, so there is nothing to tally")
     train_keys = [k for k in keys if split.get(k, "A") == "A"]
     cut = as_of_epoch(cfg.as_of) if getattr(cfg, "as_of", None) else None
+    # The amount field is the stream's dominant extensive numeric field (largest total
+    # absolute mass, ties broken by name) — derived from the data, never named. It indexes
+    # the numeric block the ledger tallies in raw units, so the return/purchase split below
+    # uses value sign as the mechanical discriminator (returns < 0, purchases > 0).
+    amount_field = None
+    amount_name = _primary_numeric_field(df, cfg)
+    if amount_name is not None:
+        nf = list(getattr(vocab, "numeric_fields", ()) or ())
+        if amount_name in nf:
+            amount_field = nf.index(amount_name)
     builder, vocab_receipt = ledger_state.fit_vocabulary(
         seqs,
         vocab,
@@ -944,6 +954,7 @@ def _publish_ledger_outlet(cfg, model, vocab, df, keys, split, store) -> dict | 
         coverage=getattr(cfg, "ledger_coverage", None),
         as_of=cut,
         recency=bool(getattr(cfg, "ledger_recency", False)),
+        amount_field=amount_field,
     )
     rows = ledger_state.publish_rows(seqs, builder, vocab, version=cfg.tag, as_of=cut)
     # The audit sees the SAME adapter output the publisher used, so it is auditing the artifact

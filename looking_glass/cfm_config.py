@@ -600,10 +600,17 @@ def as_of_epoch(s) -> float:
 
 
 def _to_epoch(s) -> float:
-    try:
-        return datetime.fromisoformat(str(s)).timestamp()
-    except Exception:
-        return 0.0
+    """Parse an ISO timestamp to a Unix epoch (seconds). Naive datetimes are
+    interpreted as UTC — matching Polars' ``str.to_datetime(..., time_zone="UTC")``
+    used in ``build_sequences`` — so inference and training see identical
+    ``dt``/``tod`` values (no local-timezone skew). Aware datetimes pass through.
+    """
+    from datetime import datetime, timezone
+
+    dt = datetime.fromisoformat(str(s))
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.timestamp()
 
 
 def _seed_everything(seed: int) -> None:

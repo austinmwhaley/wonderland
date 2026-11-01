@@ -55,7 +55,15 @@ class MeasureBuilder:
         n_keep = min(n_keep, budget)
         return np.sort(order[:n_keep]).astype(np.int64)
 
-    def __init__(self, seqs, train_keys, vs, coverage: float = 0.99, n_recency: int = 4):
+    def __init__(
+        self,
+        seqs,
+        train_keys,
+        vs,
+        coverage: float = 0.99,
+        n_recency: int = 4,
+        amount_field: int | None = None,
+    ):
         self.vs = vs
         # DEC-473: recency block — exact, history-only facts the table's own churn uses
         # (silence/tenure/span/count). The ledger's job is the companion of counts; measured
@@ -64,6 +72,15 @@ class MeasureBuilder:
         self.coverage = float(coverage)
         self.n_numeric = int(vs["gnum"])
         self.n_et = int(vs["et"])
+        # The amount field is the stream's dominant extensive numeric field, DERIVED
+        # (cfm_data._primary_numeric_field: largest total absolute mass, ties broken by name).
+        # It is stored by index only — no field name ever appears in the recipe — so the
+        # return/purchase split below is mechanical, target-blind (G3), and schema-agnostic.
+        self.amount_field = (
+            amount_field
+            if amount_field is not None and 0 <= amount_field < self.n_numeric
+            else None
+        )
         keep = []
         for j, size in enumerate(vs["gcat"]):
             size = int(size)
@@ -78,6 +95,12 @@ class MeasureBuilder:
         self.dim = int(
             self.n_et + 1 + sum(len(k) + 3 for k in self.keep) + 6 * self.n_numeric + self.n_recency
         )
+        # return_ratio: n_ret, n_pur, sum_ret, sum_pur, ret_count_ratio, ret_value_ratio.
+        # Value sign is the mechanical discriminator (returns reduce the balance, purchases
+        # increase it); zero/null events are neither. Exact additive counts/sums, ratios at
+        # readout — accumulate exactly, normalize only at readout.
+        if self.amount_field is not None:
+            self.dim += 6
         self.spec = MeasureSpec(
             keep=self.keep,
             coverage=self.coverage,
@@ -113,6 +136,9 @@ class MeasureBuilder:
         if self.n_recency:
             runs["recency"] = [(off, off + self.n_recency)]
             off += self.n_recency
+        if self.amount_field is not None:
+            runs["return_ratio"] = [(off, off + 6)]
+            off += 6
         if off != self.dim:
             raise RuntimeError(
                 f"ledger layout {off} != derived dim {self.dim} — the recipe and its published "
@@ -196,6 +222,27 @@ class MeasureBuilder:
             n_ev = np.log1p(total)
             blocks.append(np.column_stack([silence, tenure, span, n_ev]))
 
+        # return_ratio: exact counts and sums of the amount field split by value sign.
+        # Returns are negative-value events, purchases positive-value events; zero/null
+        # events are neither. Counts and sums are accumulated exactly (additive across
+        # customers and across split boundaries); the ratios are formed at readout.
+        af = self.amount_field
+        if af is not None:
+            x = graw[:, af]
+            neg = x < 0.0
+            pos = x > 0.0
+            n_ret = np.add.reduceat(neg.astype(np.float64), starts)
+            n_pur = np.add.reduceat(pos.astype(np.float64), starts)
+            sum_ret = np.add.reduceat(np.where(neg, x, 0.0), starts)
+            sum_pur = np.add.reduceat(np.where(pos, x, 0.0), starts)
+            safe_pur = np.maximum(n_pur, 1.0)
+            safe_spend = np.maximum(np.abs(sum_pur), 1.0)
+            ret_count_ratio = n_ret / safe_pur
+            ret_value_ratio = sum_ret / safe_spend  # negative / positive -> negative
+            blocks.append(
+                np.column_stack([n_ret, n_pur, sum_ret, sum_pur, ret_count_ratio, ret_value_ratio])
+            )
+
         out = np.concatenate(blocks, axis=1)
         if out.shape[1] != self.dim:
             raise RuntimeError(f"measure dim {out.shape[1]} != derived {self.dim}")
@@ -204,7 +251,7 @@ class MeasureBuilder:
         return out.astype(np.float32)
 
 
-def _builder_from_keep(vs, keep, coverage, n_recency=0):
+def _builder_from_keep(vs, keep, coverage, n_recency=0, amount_field=None):
     """Reconstruct a builder from a persisted vocabulary (no re-scan)."""
     obj = MeasureBuilder.__new__(MeasureBuilder)
     obj.vs = vs
@@ -212,10 +259,15 @@ def _builder_from_keep(vs, keep, coverage, n_recency=0):
     obj.n_numeric = int(vs["gnum"])
     obj.n_et = int(vs["et"])
     obj.n_recency = int(n_recency)
+    obj.amount_field = (
+        amount_field if amount_field is not None and 0 <= amount_field < obj.n_numeric else None
+    )
     obj.keep = tuple(np.asarray(k, dtype=np.int64) for k in keep)
     obj.dim = int(
         obj.n_et + 1 + sum(len(k) + 3 for k in obj.keep) + 6 * obj.n_numeric + obj.n_recency
     )
+    if obj.amount_field is not None:
+        obj.dim += 6
     obj.spec = MeasureSpec(
         keep=obj.keep,
         coverage=obj.coverage,
@@ -233,8 +285,15 @@ def measure_to_dict(builder):
         "dim": int(builder.dim),
         "keep": [np.asarray(k, dtype=np.int64).tolist() for k in builder.keep],
         "n_recency": int(getattr(builder, "n_recency", 0)),
+        "amount_field": builder.amount_field,
     }
 
 
 def measure_from_dict(vs, d):
-    return _builder_from_keep(vs, d.get("keep", []), d.get("coverage", 0.99), d.get("n_recency", 0))
+    return _builder_from_keep(
+        vs,
+        d.get("keep", []),
+        d.get("coverage", 0.99),
+        d.get("n_recency", 0),
+        d.get("amount_field"),
+    )
