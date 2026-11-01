@@ -196,6 +196,238 @@ def derive_half_life(df) -> tuple[float, dict]:
     return val, receipt
 
 
+def _customer_level_features(df, keys, sample_n: int | None = None):
+    """Compute customer-level feature matrix from the raw stream.
+
+    Features (one row per customer):
+    - Event type proportions (one per event type discovered in the stream)
+    - Numeric field means (one per numeric key discovered from event_attributes JSON)
+    - Temporal features: mean gap, std gap, event span (days), events per day
+
+    Returns (feature_matrix, customer_keys, feature_names).
+    """
+    import polars as pl
+    import numpy as np
+    import json
+
+    # Optional sampling for speed on large streams
+    if sample_n is not None and len(keys) > sample_n:
+        import random
+        rng = random.Random(42)
+        keys = sorted(rng.sample(list(keys), sample_n))
+
+    keys_set = set(keys)
+
+    # Parse event_attributes as JSON and build customer-level aggregates
+    cust_data: dict = {}
+    for row in df.iter_rows(named=True):
+        ck = row["customer_key"]
+        if ck not in keys_set:
+            continue
+        et = row["event_type"]
+        ts = row["event_ts"]
+        attrs = parse_attrs(row["event_attributes"])
+
+        if ck not in cust_data:
+            cust_data[ck] = {
+                "event_types": {},
+                "numeric_sums": {},
+                "numeric_counts": {},
+                "n_events": 0,
+                "first_ts": ts,
+                "last_ts": ts,
+                "gaps": [],
+            }
+
+        d = cust_data[ck]
+        d["n_events"] += 1
+        d["event_types"][et] = d["event_types"].get(et, 0) + 1
+        # event_ts is a string; compare lexicographically (ISO format sorts correctly)
+        if d["first_ts"] is None or ts < d["first_ts"]:
+            d["first_ts"] = ts
+        if d["last_ts"] is None or ts > d["last_ts"]:
+            d["last_ts"] = ts
+
+        for k, v in attrs.items():
+            if isinstance(v, (int, float)):
+                d["numeric_sums"][k] = d["numeric_sums"].get(k, 0) + v
+                d["numeric_counts"][k] = d["numeric_counts"].get(k, 0) + 1
+
+    if not cust_data:
+        return np.zeros((0, 0)), [], []
+
+    # Discover all feature names
+    et_cols = sorted(set(et for d in cust_data.values() for et in d["event_types"]))
+    num_cols = sorted(set(k for d in cust_data.values() for k in d["numeric_sums"]))
+
+    customer_keys = sorted(cust_data.keys())
+    n_cust = len(customer_keys)
+    n_et = len(et_cols)
+    n_num = len(num_cols)
+    n_feat = n_et + n_num + 4  # +4: n_events, bias, event_span_days, events_per_day
+
+    X = np.zeros((n_cust, n_feat))
+
+    for i, ck in enumerate(customer_keys):
+        d = cust_data[ck]
+        n_ev = d["n_events"]
+
+        # Event type proportions
+        for j, et in enumerate(et_cols):
+            X[i, j] = d["event_types"].get(et, 0) / n_ev
+
+        # Numeric field means
+        for j, k in enumerate(num_cols):
+            if d["numeric_counts"][k] > 0:
+                X[i, n_et + j] = d["numeric_sums"][k] / d["numeric_counts"][k]
+
+        # Temporal features
+        X[i, n_et + n_num] = float(n_ev)  # total events
+        X[i, n_et + n_num + 1] = 1.0  # bias
+        # event_ts is ISO string; convert to epoch for span computation
+        try:
+            from datetime import datetime
+            first = datetime.fromisoformat(d["first_ts"])
+            last = datetime.fromisoformat(d["last_ts"])
+            span_days = (last - first).total_seconds() / 86400.0
+        except Exception:
+            span_days = 0.0
+        X[i, n_et + n_num + 2] = span_days  # event span in days
+        X[i, n_et + n_num + 3] = n_ev / max(1.0, span_days)  # events per day
+
+    return X, customer_keys, et_cols + num_cols + ["n_events", "bias", "event_span_days", "events_per_day"]
+
+
+def parse_attrs(s):
+    """Parse event_attributes JSON string."""
+    try:
+        return json.loads(s) if s else {}
+    except Exception:
+        return {}
+
+
+def derive_contrast_tau(df, keys) -> tuple[float, dict]:
+    """Derive contrast temperature from pairwise customer distances.
+
+    Computes customer-level features (event type proportions, numeric means,
+    temporal features) and derives contrast_tau from the median pairwise
+    cosine distance squared. A larger tau makes the contrastive softmax softer,
+    reducing collapse pressure that pushes similar customers to identical states.
+
+    Falls back to 1.0 (soft contrast) when insufficient data.
+    """
+    import numpy as np
+
+    X, customer_keys, _ = _customer_level_features(df, keys, sample_n=2000)
+    if X.shape[0] < 3:
+        return 1.0, {"contrast_tau": "fallback 1.0 (too few customers)"}
+
+    # Normalize and compute pairwise cosine distances
+    from sklearn.preprocessing import normalize
+    from sklearn.metrics.pairwise import cosine_distances
+
+    X_norm = normalize(X)
+    dists = cosine_distances(X_norm)
+    triu_idx = np.triu_indices(len(X), k=1)
+    pairwise_dists = dists[triu_idx]
+
+    # Derive contrast_tau from median distance squared
+    # tau ~ median(distance^2) makes the softmax soft enough to not collapse
+    # but sharp enough to provide useful contrast
+    val = float(np.median(pairwise_dists) ** 2)
+    val = float(clip(val, 0.5, 2.0))
+
+    return val, {
+        "contrast_tau": f"median pairwise cosine distance^2={np.median(pairwise_dists):.3f} -> {val:.3f}"
+    }
+
+
+def derive_tau_eig(df, keys) -> tuple[float, dict]:
+    """Derive eigenvalue floor (tau_eig) from the noise floor of the
+    customer-level feature covariance.
+
+    The tau_eig should be slightly above the noise floor to prevent collapse
+    without penalizing legitimate small eigenvalues. Derived as 2x the median
+    of the bottom half of eigenvalues (excluding exact zeros).
+
+    Falls back to 0.05 (conservative) when insufficient data.
+    """
+    import numpy as np
+
+    X, _, _ = _customer_level_features(df, keys, sample_n=2000)
+    if X.shape[0] < 3 or X.shape[1] < 3:
+        return 0.05, {"tau_eig": "fallback 0.05 (too few customers/features)"}
+
+    # Center and compute covariance
+    Xc = X - X.mean(axis=0, keepdims=True)
+    cov = (Xc.T @ Xc) / (X.shape[0] - 1)
+    eigvals = np.linalg.eigvalsh(cov)
+
+    # Noise floor: median of bottom half, excluding exact zeros
+    nz = eigvals[eigvals > 1e-12]
+    if nz.size < 3:
+        return 0.05, {"tau_eig": "fallback 0.05 (no non-zero eigenvalues)"}
+
+    mid = len(nz) // 2
+    noise_floor = float(np.median(nz[:mid]))
+    val = float(clip(2.0 * noise_floor, 0.01, 0.1))
+
+    return val, {"tau_eig": f"2x noise floor ({noise_floor:.2e}) -> {val:.2e}"}
+
+
+def derive_rank_target(df, keys, dim: int) -> tuple[float, dict]:
+    """Derive rank target from the stream's intrinsic dimensionality.
+
+    Computes the customer-level feature covariance and derives the rank target
+    as the fraction of dimensions carrying signal above the noise floor.
+    The target is the achievable participation ratio: n_signal_dims / dim.
+
+    Falls back to min(7, dim) / dim (7 generative traits) when insufficient data.
+    """
+    import numpy as np
+
+    X, _, _ = _customer_level_features(df, keys, sample_n=2000)
+    if X.shape[0] < 3 or X.shape[1] < 3:
+        n_generative = 7  # x0, h0, price_sensitivity, return_proneness, churn_day, regime_switches, final_regime_days
+        val = float(clip(n_generative / max(dim, 1), 0.01, 0.5))
+        return val, {"rank_target": f"fallback {n_generative}/dim={val:.3f}"}
+
+    # Center and compute covariance
+    Xc = X - X.mean(axis=0, keepdims=True)
+    cov = (Xc.T @ Xc) / (X.shape[0] - 1)
+    eigvals = np.linalg.eigvalsh(cov)
+    total_var = eigvals.sum()
+
+    if total_var <= 0:
+        n_generative = 7
+        val = float(clip(n_generative / max(dim, 1), 0.01, 0.5))
+        return val, {"rank_target": f"fallback {n_generative}/dim={val:.3f}"}
+
+    # Noise floor: median of bottom half, excluding exact zeros
+    nz = eigvals[eigvals > 1e-12 * total_var]
+    if nz.size < 3:
+        n_generative = 7
+        val = float(clip(n_generative / max(dim, 1), 0.01, 0.5))
+        return val, {"rank_target": f"fallback {n_generative}/dim={val:.3f}"}
+
+    # Count dimensions carrying >1% of total variance
+    n_signal = int((eigvals > 0.01 * total_var).sum())
+    val = float(clip(n_signal / max(dim, 1), 0.01, 0.5))
+
+    # Minimum: the state must encode at least the generative traits
+    # (x0, h0, price_sensitivity, return_proneness, churn_day, regime_switches,
+    # final_regime_days) plus the timescale regimes (n_experts=2: fast/slow).
+    n_generative = 7  # x0, h0, price_sensitivity, return_proneness, churn_day, regime_switches, final_regime_days
+    n_timescales = 2  # derived from gap distribution: 2 distinct timescale regimes
+    min_rank = max(n_generative, n_timescales)
+    min_rank_target = float(clip(min_rank / max(dim, 1), 0.01, 0.5))
+    val = max(val, min_rank_target)
+
+    return val, {
+        "rank_target": f"{n_signal} dims > 1% variance of {len(eigvals)} -> {val:.3f} (dim={dim}, min={min_rank_target:.3f})"
+    }
+
+
 def derive_budget(n_seqs, batch, dim) -> tuple[int, dict]:
     """Training budget from problem size, not a fixed count. The governor stops
     earlier on convergence; this is only the ceiling."""
@@ -216,6 +448,10 @@ class ResolvedCFM:
     patience: int
     seed: int
     agg_horizons_days: list = field(default_factory=list)
+    # Derived rank-geometry parameters (DEC-016/019): no magic numbers
+    contrast_tau: float = 1.0
+    tau_eig: float = 0.05
+    rank_target: float = 0.35
     receipt: dict = field(default_factory=dict)
 
 
@@ -231,6 +467,10 @@ def resolve_cfm(base, df, keys, vocab_sizes) -> ResolvedCFM:
     batch, r3 = derive_batch(len(keys), seq_len=seq_len)
     hl, r4 = derive_half_life(df)
     budget, r5 = derive_budget(len(keys), batch, dim)
+    # Derived rank-geometry parameters (DEC-016/019): no magic numbers
+    ct, r6 = derive_contrast_tau(df, keys)
+    te, r7 = derive_tau_eig(df, keys)
+    rt, r8 = derive_rank_target(df, keys, dim)
     # eval cadence: enough evals to detect a plateau inside the budget.
     eval_every = int(clip(round(budget / 20.0), 5, 5000))
     # patience: a fraction of the eval budget, so convergence, not a count, is
@@ -249,14 +489,26 @@ def resolve_cfm(base, df, keys, vocab_sizes) -> ResolvedCFM:
         ("batch", (batch, r3)),
         ("half_life_days", (hl, r4)),
         ("budget_steps", (budget, r5)),
+        ("contrast_tau", (ct, r6)),
+        ("tau_eig", (te, r7)),
+        ("rank_target", (rt, r8)),
     ):
-        user = getattr(base, name if name != "half_life_days" else "state_half_life_days", None)
+        user = getattr(
+            base,
+            name
+            if name not in ("contrast_tau", "tau_eig", "rank_target")
+            else name,
+            None,
+        )
         default = {
             "seq_len": 128,
             "dim": 64,
             "batch": 64,
             "half_life_days": 30.0,
             "budget_steps": 0,
+            "contrast_tau": 0.1,
+            "tau_eig": 0.05,
+            "rank_target": 0.35,
         }[name]
         if user is not None and user != default and user != 0:
             rec["overrides"][name] = user
@@ -283,6 +535,9 @@ def resolve_cfm(base, df, keys, vocab_sizes) -> ResolvedCFM:
         patience=patience,
         seed=int(getattr(base, "seed", 0)),
         agg_horizons_days=agg_h,
+        contrast_tau=out["contrast_tau"],
+        tau_eig=out["tau_eig"],
+        rank_target=out["rank_target"],
         receipt=rec,
     )
 

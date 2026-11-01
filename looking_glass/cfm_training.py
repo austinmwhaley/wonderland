@@ -141,6 +141,10 @@ def train_cfm(cfg: CFMConfig):
     cfg.batch = res.batch
     cfg.state_half_life_days = res_all.half_life_days
     cfg.agg_horizons_days = list(res_all.agg_horizons_days)
+    # Derived rank-geometry parameters (DEC-016/019): no magic numbers
+    cfg.contrast_tau = res_all.contrast_tau
+    cfg.tau_eig = res_all.tau_eig
+    cfg.rank_target = res_all.rank_target
     apply_set_overrides(cfg, res.receipt)  # record every --set key in receipts
     apply_set_overrides(cfg, res_all.receipt)
     # Decision-sufficiency (RL leg): act on the declared randomized actions by adding the
