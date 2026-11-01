@@ -152,6 +152,15 @@ def _replay_run_cfg(meta, rcfg, out: Path, cfg, anchors=None, sample_b=None):
     rcfg.numeric_fields = tuple(run_cfg.get("numeric_fields", ()) or ())
     rcfg.exogenous_events = tuple(run_cfg.get("exogenous_events", ()) or ())
     rcfg.action_fields = tuple(run_cfg.get("action_fields", ()) or ())
+    # serve_unfaded controls whether state_embeddings are materialized from the
+    # pre-fade state (DEC-472). Without this, the rebuild defaults to fading first
+    # and publishes decayed embeddings — a silent train/serve skew that corrupts
+    # the rl leg (the donor magnitude is scaled by an unknown per-customer scalar).
+    rcfg.serve_unfaded = run_cfg.get("serve_unfaded", rcfg.serve_unfaded)
+    # ledger_recency controls whether the ledger's recency part is published.
+    # Without this, the rebuild defaults to not publishing the recency measure,
+    # which changes the ledger content and the delivery column.
+    rcfg.ledger_recency = run_cfg.get("ledger_recency", rcfg.ledger_recency)
     rcfg.set_overrides = getattr(cfg, "set_overrides", [])
     apply_set_overrides(rcfg)  # explicit --set wins over registry-derived config
     if rcfg.as_of is None:
