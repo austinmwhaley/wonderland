@@ -6897,3 +6897,52 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   and the removal is reverted with that receipt.
 - **Cost.** One retrain + one full chain (the receipts must be regenerated under the new
   behaviour hash).
+
+## DEC-520 — [PRE-REGISTERED] Layer A: measure testbed power first, then rebuild only if it fails
+- **Operator authorization.** Layer A (the stream generator) may be remade. This entry fixes the
+  order of operations and the acceptance rule BEFORE any generator change.
+- **Why this is the likely ceiling.** SPINE Appendix B, P2: the reference stream is additive /
+  RFM-like, so an aggregate *measure* is close to sufficient by construction. On such a stream
+  PATH A (measure + GBM) can only lose to a learned encoder by luck. If that is true here, no
+  amount of encoder work produces a legitimate PATH B win — which would explain 2/8 legs without
+  implicating the encoder at all.
+- **Step 1 — measure testbed power (read-only, cheap, no generator change).** On the current
+  reference stream, score held-out future prediction with the SAME head for three representations:
+  1. the exhaustive aggregate measure + GBM (PATH A's information),
+  2. the generator's **known latent truth** (the oracle: the sufficient statistic by construction),
+  3. the full history.
+  Pre-registered decision rule:
+  - if the latent oracle beats the measure by a paired-CI margin > 0 on **at least one**
+    pre-registered task, the testbed **has power** → the red legs are an encoder/accessibility
+    problem; **do not rebuild Layer A**;
+  - if the measure is within noise of the oracle on **every** task, the testbed is
+    **insufficient** → rebuild (Step 2).
+  Report both the per-task gaps and their CIs. A point estimate decides nothing.
+- **Step 2 — Layer A v2 (only if Step 1 fails).** Design constraints, all binding:
+  - **Same canonical nine-column schema** (`customer_key, event_ts, event_type, brand,
+    entity_type, entity_id, source_table, value, event_attributes`) — Layer B needs no code change
+    (principle 4, schema-agnostic).
+  - **Measure-insufficient by construction**: the future must depend on *sequence, timing and
+    regime*, not only on aggregates. Concretely: correlated latent factors, a regime process with
+    duration dependence (not first-order-iid), nonlinear interactions (e.g. response depends on
+    price-sensitivity x discount x recency x regime), heterogeneous multi-timescale cadence, and
+    exogenous shocks.
+  - **Known truth by construction**: latent traits and true counterfactual outcomes recorded at
+    anchor dates, so sufficiency and decision-sufficiency (`U`) are exact on this lab stream.
+  - **Randomized actions with a known effect** (the declared action/reward family), plus a
+    signal-free `snr=0` twin for null controls.
+  - **P8 fixed**: every PATH A column must be derivable from the stream. `segment`,
+    `loyalty_tier` and `signup_ts` are emitted as real events, not random hidden columns.
+  - **Acceptance for the new stream itself**: measure+GBM must be strictly beaten by the latent
+    oracle on at least one pre-registered task with a CI excluding 0. **If the new stream cannot
+    show that, it is rejected** — a testbed that cannot separate sufficient from insufficient is
+    worthless no matter how elaborate it is.
+- **What stays fixed.** The comparator, the task family, the gates, the split rule, the card. Only
+  the stream changes; the evaluation contract does not (certification rule 1).
+- **What is NOT allowed.** Building a stream *for* our known tasks, or one where the encoder's
+  peculiarities are favoured. The family stays self-supervised and broader than any consumer;
+  known use cases may veto, never shape.
+- **Cost.** A new reference version invalidates every receipt and threshold: full re-certification
+  under a new data signature. That is the price of a testbed that can actually fail the hypothesis.
+- **Sequencing.** The retrain + S6 chain is running; `rabbit_hole/` is in the behaviour hash, so no
+  generator edit until it completes. Step 1 runs first, as its own read-only measurement.
