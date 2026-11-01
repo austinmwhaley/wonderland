@@ -576,9 +576,9 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
             "",
             "---",
             "",
-            "*The inherited status-quo card is archived at "
-            "`docs/archive/REPORT_CARD_INHERITED.md`; it measures the pipeline as it was and is "
-            "disclosure only (DEC-497).*",
+            "*This is the only card. It is a pure function of the frozen gate spec "
+            "(`scripts/card_spec.py`) and the receipts under `docs/report_cards/experiments/`; "
+            "there is no separate audit card, and no row may be parked elsewhere (DEC-512).*",
             "",
         ]
     )

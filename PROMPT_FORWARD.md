@@ -20,7 +20,7 @@
 5. `REPORT_CARD.md` — the ONE card: run report, gate-of-record, and every open row (see §4).
 6. `AUDIT.md` — the principle-alignment audit written by BACKWARD.
 7. `docs/report_cards/experiments/` — the receipts every number must trace to.
-8. `PLAN.md`, `loop/UNIVERSALITY.md` — forward plan and Layer-1 contract.
+8. `docs/SPINE.md` Appendix A — the Layer-1 `U` contract.
 9. §11 below — the A/B/C pipeline contract (layers, schema, plugin surface, gates).
 
 If a file contradicts another, the order is: **AGENTS.md doctrine → SPINE laws →
@@ -101,9 +101,6 @@ no second card file: the old judge card was retired and its file deleted, and th
 `scripts/report_card.py` now carries the 8 leg-columns, the 6-stage ladder, certification
 hygiene, freshness, the anti-false-PASS rules, S6, **and** every open row. If a row is open it
 appears on the card; nothing may be parked in a side document.
-
-The inherited B+B+C card is archived at `docs/archive/REPORT_CARD_INHERITED.md`; it
-measures the old pipeline and is **disclosure only**, never the gate.
 
 ### Required `REPORT_CARD.md` shape (generated, never hand-edited)
 
@@ -197,7 +194,6 @@ Follow AGENTS.md's certification integrity rules 1–8. In practice:
 | `REPORT_CARD.md` | the run report + gate-of-record section (§4) and **every open row** — it is the only card; no row may be hidden. Regenerated each run; no hand-written numbers. |
 | `AUDIT.md` | the single BACKWARD file: principle audit + findings + `BACKWARD_REQUIREMENTS_JSON` block rendered into `REPORT_CARD.md` (§4). |
 | `docs/report_cards/experiments/` | receipts; `protocols/<name>/` archives for non-adopted runs. |
-| `PLAN.md` | the forward plan; reconcile at every phase transition. |
 
 **Commit discipline:** every coherent verified chunk is committed; code + docs only;
 data, checkpoints, logs, and virtualenvs are never committed. Commits stay **local**
@@ -209,7 +205,6 @@ commit; a receipt that no repo command regenerates is not evidence.
 - One-command chain + card:
   `python3 scripts/measure_certification_law.py --products <recorded artifact> --demo <demo> --train-log <artifact>/train.log`
 - Report card render (the single card): `python3 scripts/report_card.py`
-- Inherited status-quo card (archive only): `python3 scripts/inherited_report_card.py`
 - Principle audit: `python3 scripts/principle_audit.py --strict <changed evidence scripts>`
 
 The chain command is the only S6-certifying path. A hand-rendered card is not evidence.

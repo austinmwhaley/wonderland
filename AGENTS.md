@@ -47,7 +47,7 @@ The aspiration the certification layer measures (Layer 1, precise):
 the EXCESS loss (beyond the Bayes floor) of predicting the future from `E` vs from the **full
 history**, over a **broad, adversarial, held-out, self-supervised** family, at **fixed
 capacity**. `U → 1` ⟺ sufficient. Never judged against our known tasks. See
-`loop/UNIVERSALITY.md`.
+`docs/SPINE.md` Appendix A.
 
 **Anti-overfit clause (binding).** To stay universal and not drift into designing for our known
 use cases:
@@ -475,8 +475,7 @@ fallbacks) → `Stage 3: Scale` (optimize only where measured data justifies).
 - **The single report card** — `scripts/report_card.py` → `REPORT_CARD.md` at the repo root,
   generated from `scripts/judge_spec.py` + the receipts under `docs/report_cards/experiments/`,
   plus the single BACKWARD audit/requirements file `AUDIT.md`. There is **one card and one audit
-  file**: no second card, no separate audit card. The inherited B+B+C card is
-  archived at `docs/archive/REPORT_CARD_INHERITED.md` (disclosure only). **The whole project is
+  file**: no second card, no separate audit card. **The whole project is
   steered from `REPORT_CARD.md` and `AUDIT.md`:** every milestone/chunk ends by printing the
   rendered Markdown (never fenced), and the card — not a hand summary — is the source of
   truth for what is PASS and what is next.

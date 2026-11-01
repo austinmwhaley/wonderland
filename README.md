@@ -202,8 +202,7 @@ python3 scripts/run_demo.py
 The saved card is checked in and renders instantly; a full rebuild is compute-heavy
 (encoder training + GBM/XGBoost batteries). The dataset is deterministic for seed 17.
 
-Rebuild the interactive page itself with `python3 scripts/build_demo_site.py`; the
-tab payloads and regeneration order are documented in [`demo/README.md`](demo/README.md).
+Rebuild the interactive page itself with `python3 scripts/build_demo_site.py`.
 
 The output is [`REPORT_CARD.md`](REPORT_CARD.md). It is the single card: the deliberately
 open Layer-1 causal/IPS rows and unclaimed probes appear on it as open rows, not in a

@@ -1,6 +1,6 @@
 # REPORT_CARD — PATH B > PATH A
 
-*Generated `2026-11-01T15:06:29+00:00` · commit `f0207e9` (`foundation-rebuild` · clean) · encoder behavior `94857be6815a96f3`*
+*Generated `2026-11-01T15:08:53+00:00` · commit `cf8812e` (`foundation-rebuild` · dirty) · encoder behavior `94857be6815a96f3`*
 
 **Assessment:** NOT DONE. Legs green: 2/8 · stages green: 0/6 · backward open: 0. This is a statement about receipts, not about effort; nothing here is a claim of universality (DEC-410: that word appears only when the coverage rows are green).
 
@@ -68,4 +68,4 @@ Principle-alignment findings live in `AUDIT.md`; the machine-readable gate is th
 
 ---
 
-*The inherited status-quo card is archived at `docs/archive/REPORT_CARD_INHERITED.md`; it measures the pipeline as it was and is disclosure only (DEC-497).*
+*This is the only card. It is a pure function of the frozen gate spec (`scripts/card_spec.py`) and the receipts under `docs/report_cards/experiments/`; there is no separate audit card, and no row may be parked elsewhere (DEC-512).*

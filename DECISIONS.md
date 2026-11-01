@@ -6676,3 +6676,35 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   `scripts/inherited_report_card.py` uses its `evaluate()`; it is no longer in any chain and no
   command writes `docs/AUDIT_CARD.md`.
 - **Not changed.** Gates, thresholds, receipts, renderer, spec, verdicts. No row moved.
+
+## DEC-513 — [FIX] documentation cut to ten files; PLAN/loop/design docs retired
+- **Context.** DEC-512 left 45 markdown files. Operator directive: "ten max".
+- **Decision.** The repository keeps exactly **ten** markdown files, each with one job:
+  `AGENTS.md` (doctrine/rules), `docs/SPINE.md` (theory: goal, laws, four consumers, S1–S6,
+  the `U` contract via Appendix A, the structural problems P1–P8 via Appendix B),
+  `REPORT_CARD.md` (the card), `AUDIT.md` (BACKWARD findings), `DECISIONS.md` (log),
+  `STATUS.md` (live state, rewritten), `README.md` (repo map + run), `RUNBOOK.md` (production
+  loop), `PROMPT_FORWARD.md` (forward loop + A/B/C contract), `PROMPT_BACKWARD.md` (review).
+- **Principle.** 13 (prefer deletion over accretion) + 6 (single source of truth) + 8
+  (diagnosable: one place names the blocker).
+- **Preserved before deleting.** `loop/UNIVERSALITY.md` → SPINE Appendix A;
+  `docs/STRUCTURAL_PROBLEMS.md` → SPINE Appendix B. Everything else is recoverable at
+  commit `f652487` and earlier.
+- **Deleted (35 files + 2 dead scripts).** `PLAN.md` (the card is the plan); `docs/` design set
+  (CONTENT_AXES, ENCODER_DESIGN, FOUNDATION_MODEL, LAYER_A_CERTIFICATE, LAYER_A_DATA,
+  PEER_REVIEW_PROMPT, RELATIONAL_REFERENCE, STRUCTURAL_PROBLEMS); `docs/archive/` (4);
+  `docs/report_cards/` markdown snapshots (7: three cockpits, demo receipt, dec-422, protocol-e);
+  layer READMEs (`looking_glass/`, `rabbit_hole/`, `demo/`, `looking_glass/specs/` ×2,
+  `rabbit_hole/GENERATOR_DECISIONS.md`); `eighth_square/` READMEs (3); `loop/` (4 md + 2 sh —
+  the driver hardcoded `/home/austin-whaley/Documents/wonderland`, a path that does not exist,
+  and it is superseded by the PROMPT tick-tock); `.opencode/commands/loop.md` (auto-push
+  instruction contradicts the operator policy); `scripts/audit_card.py` +
+  `scripts/inherited_report_card.py` (dead: they rendered the deleted audit/archive cards).
+- **Code change.** `scripts/report_card.py` footer no longer points at the deleted archive;
+  `scripts/run_demo.py` no longer renders the audit card.
+- **Trade-off (disclosed).** The layer READMEs are gone; `README.md` now carries the layer map
+  and `RUNBOOK.md` the operating loop. `STATUS.md` is rewritten, not appended — history lives in
+  this file and in `git log`.
+- **Not changed.** Gates, thresholds, receipts, spec, verdicts, encoder, behavior hash
+  (`94857be6815a96f3` unchanged; a cosmetic edit to `looking_glass/universality.py` was
+  reverted precisely because it would have invalidated every receipt).

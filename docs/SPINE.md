@@ -1009,8 +1009,8 @@ as assent for any gate-touching or authorization item.
 
 ### Implementation order (recorded; **awaiting operator "go" — no code until then**)
 One axis per loop; each step = one commit chunk + card regeneration; GPU work follows
-DEC-389 (benchmark receipt per adoption, CPU fallback kept). `PLAN.md` gets reconciled to
-this order when implementation opens.
+DEC-389 (benchmark receipt per adoption, CPU fallback kept). This order is reconciled on the
+card when implementation opens.
 
 | # | Step | Why this order |
 |---|---|---|
@@ -1386,3 +1386,113 @@ this order when implementation opens.
   (state/geometry deepest, then mass/objective pressure, then successor features).
   Next per §8: the state/geometry axis via training-side pressure — never boundary
   cosmetics (batch-coupled whitening stays banned, v6.0).
+
+---
+
+## Appendix A — the universality metric (`U`)
+
+*(merged from the retired `loop/UNIVERSALITY.md` — this is the only copy)*
+
+The north star (AGENTS.md "Project goal"). `embedding(customer,t)` must be a **minimal,
+bounded, universal sufficient statistic of the stream**. This defines what that means
+*measurably*.
+
+### Definition
+
+`E` is **universal** iff it is sufficient for the **full observable future** — for every
+downstream function `τ` of the history, `L*_τ(history) − L*_τ(E) ≈ 0`, at **bounded capacity**.
+Operational form (conditional independence): **`future ⊥ history | E`** — once you know `E`,
+the full history adds nothing about the future.
+
+### The metric
+
+```text
+oracle-gap_τ = (excess loss predicting the future from E)
+             − (excess loss predicting it from the FULL HISTORY)      # Bayes-floor referenced
+U            = 1 − worst-case_{τ∈family} ( oracle-gap_τ normalized to the oracle's achievable range )
+U → 1  ⟺  universal at this capacity
+```
+
+Two legs: **predictive** (dense surrogate: future-prediction loss from `E` vs full history) and
+**decision** (the real target: `V*(full history) − V*(policy from E)` in discounted incremental
+margin).
+
+### What the measurement must get right
+
+1. **Reference the oracle, not a task** — the comparator is the full history reaching the
+   **Bayes floor** (excess loss beyond the aleatoric noise floor; noise is not lost information).
+2. **Family breadth = honesty** — "every function" is infinite; measure a broad family.
+3. **Worst-case, not average** — `max_τ gap_τ`; averages hide blind spots.
+4. **Capacity is a constraint** — sufficiency *at fixed `|E|`*, else "keep everything" wins.
+
+### Design pieces
+
+1. **Oracle-gap / history-residual test (core).** Predict the future from `E` alone vs from
+   `[E, full history]`; the difference is what the history adds. Task-free.
+2. **Broad, self-supervised, adversarially-grown family.** Targets = future observables (moments,
+   distributions, all horizons). Hold out part of the family for *selection* vs *grading*; add a
+   **growing adversary** that searches for the task where `E` loses most.
+3. **Ground truth on the Layer-A lab** (`rabbit_hole/lab.py`, `lab_oracles.py`). On synthetic
+   streams the true sufficient statistic is **known** ⇒ `gap` is **exact**; verify the
+   *measurement machinery* there before trusting it on real data.
+4. **Accessibility, measured separately from sufficiency** — simple probes (linear / kNN) on `E`
+   must reach the oracle's performance (accessibility parity).
+5. **Profile → scalar.** Report per-axis (shape, mass, identity, rate, uncertainty), per-horizon,
+   per-family, and the worst-case gap; reduce to `U`.
+
+Geometry (isotropy/rank/conservation) and **similarity-usability** (kNN label-transfer on a
+held-out split) are **separate gates** from sufficiency.
+
+### Anti-gaming (binding)
+
+- **Select on held-out self-supervised loss; GATE on `U`.** Never train on `U`.
+- The reference is the **full history** ⇒ the metric never encodes our tasks.
+- The family stays **broader than any consumer**, adversarially grown.
+- **Known use cases VETO, never SHAPE.**
+- Never weaken a gate/baseline/threshold to raise `U`.
+
+### Honest limits
+
+- "Unknown use cases" is only *approximated* by a broad + adversarial + held-out family.
+- Only the **observable, predictable** future is coverable; unlogged events/confounders are
+  carried as **uncertainty**, never faked.
+- `U` is **capacity-relative** and **family-relative** — always report both.
+
+### Acceptance for the metric itself
+
+- On the Layer-A lab, `U` is **exact** and reproduces the built-in sufficiency of the truth.
+- A deliberately lossy encoder scores a **lower `U`** than a sufficient one.
+- Adding capacity beyond the minimal sufficient size **does not raise `U`** (saturation).
+- An **adversary** can find a family member where `E` loses more than the average.
+
+---
+
+## Appendix B — known structural problems (P1–P8)
+
+*(merged from the retired `docs/STRUCTURAL_PROBLEMS.md`; binding: no SOLVED claim while any
+item is open)*
+
+The project bundles three bets, and past confusion came from treating the first's success as
+evidence for the others.
+
+| Bet | What it is | Verdict |
+|---|---|---|
+| **A. Schema-agnostic measure + point-in-time decision pipeline** | generic feature construction, leakage-safe as-of features, response blocks, null controls, certification harness | **Strong — the reliable asset** |
+| **B. Learned self-supervised encoder that beats the measure** | SSM donor/shape, distillation, counter | **Unproven, currently losing to the measure** |
+| **C. "Universal" across streams** | one architecture/pipeline, per-stream training | **Weakest — "universal" is the pipeline, not the model** |
+
+| ID | Problem | Status |
+|---|---|---|
+| **P1** | **Oracle circularity** — `E = shape ‖ measure` and the oracle *is* the full-history measure, so `U=1` is nearly guaranteed by construction. Measured: learned donor only `U 0.3576`, donor+measure `1.0`. | Attribution receipt implemented; the claim must be labelled "served-statistic sufficiency (measure-carried)" unless learned-only clears the bar. Not a model fix — a claim/measurement fix. |
+| **P2** | **Testbed insufficiency** — the synthetic reference is additive/RFM-like with one fixed schema, so a sufficient measure is easy and many objectives saturate (`NO_SIGNAL`). We cannot tell whether the learned encoder is a good idea from this stream. | **Open.** Needs one measure-insufficient stream (long memory, nonlinear interactions, exogenous shocks, heterogeneous cadence, confounders) with a pre-registered bar and kill criterion. |
+| **P3** | **Per-stream economics and the "universal" claim** — no shared weights, so each stream costs a training run. The moat is process, not a reusable model. | **Open.** Operator decision: few high-value streams vs many cheap ones. Do not use "universal" without a cross-stream predictive test. |
+| **P4** | **Sufficiency ≠ usefulness** — "nothing is lost" does not imply "better decisions". | **Open.** Needs a first-class usefulness gate: incremental margin on a randomized holdout, per-consumer cost, fair baseline, pre-registered bar. |
+| **P5** | **Weak or tautological consumer evidence** — transfer `0 add / 5 NO_SIGNAL`; the old unsupervised PASS was a `raw=nan` row; the unsupervised "E vs generic" compares the measure block to the same measure; the decision gate is model-independent; stream OPE `0/1` (broad acceptance is a different contract). | Transfer comparator fixed; donor increment still negative. Do not count tautological gates as transfer evidence. |
+| **P6** | **Gate/claim drift (governance)** — twice a "SOLVED" label was overturned (DEC-228, DEC-234) via post-hoc criteria, frontier relabeling, stale card text. | **Fixed at the process level** (AGENTS.md certification integrity; `objectives.py` rejects non-frozen criteria). Must be enforced every run. |
+| **P7** | **Reproducibility and provenance** — historically receipts lived in `/tmp` and the card's git did not match the solving commit. | **Implemented** (single-command certifier, recorded commit, N and hashes on the card). |
+| **P8** | **Reference table is not derivable from the stream** — `segment` and initial `loyalty_tier` are random and absent from the stream; `signup_ts` is hidden, so `tenure_days` is understated. | **Open.** Operator decision: emit the true values and re-certify (new reference version), or drop the non-derivable columns from the fair baseline. |
+
+**Kill criterion for bet B (pre-registered).** On the measure-insufficient stream, learned `E`
+must beat measure+GBM on (a) held-out value and (b) incremental margin on a randomized holdout,
+with a CI excluding 0. If it does not, the learned-foundation track is closed and the project
+ships as measure-first (bet A).
