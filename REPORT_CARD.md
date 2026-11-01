@@ -1,6 +1,6 @@
 # REPORT_CARD — PATH B > PATH A
 
-*Generated `2026-11-01T12:12:54+00:00` · commit `86277a4` (`foundation-rebuild` · dirty) · encoder behavior `94857be6815a96f3`*
+*Generated `2026-11-01T13:40:26+00:00` · commit `dcfbe93` (`foundation-rebuild` · clean) · encoder behavior `94857be6815a96f3`*
 
 **Assessment:** NOT DONE. Legs green: 0/8 · stages green: 0/6 · backward open: 0. This is a statement about receipts, not about effort; nothing here is a claim of universality (DEC-410: that word appears only when the coverage rows are green).
 
