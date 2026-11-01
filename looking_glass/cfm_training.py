@@ -2181,12 +2181,12 @@ def compute_whitening(model, vocab, cfg, seqs, n: int | None = None) -> dict:
     }
 
 
-def forward_states(model, seqs, h0s=None):
-    """Batched recurrence for state advance — same math as absorb()/model(seq),
-    one padded forward over a same-length bucket.
+def forward_states(model, seqs, h0s=None, m0s=None, return_m=False):
+    """Batched recurrence for state advance — same math as absorb()/model(seq).
 
-    Returns final h per sequence (B, dim) on the model's device; the caller
-    handles per-sequence pre-fades (fade-to-first-event) before stacking h0s.
+    Returns final h per sequence (B, dim). With `return_m` it also returns the counter
+    memory M (B, R*raw_dim) — the ADDITIVE half of the state. `m0s` continues a stored M so
+    the daily job is exact: M is an additive monoid (decay ≡ 1), never faded.
     """
     dev = model._dev()
     t = _collate(seqs, model.vocab, dev)
@@ -2196,6 +2196,13 @@ def forward_states(model, seqs, h0s=None):
         h0 = torch.stack([torch.as_tensor(h, dtype=torch.float32, device=dev) for h in h0s])
     with torch.no_grad():
         _y, h = model.encode_ev(tok, t, h0=h0)
+        if return_m and model.counter_on:
+            m0 = None
+            if m0s is not None:
+                m0 = torch.stack([torch.as_tensor(x, dtype=torch.float32, device=dev) for x in m0s])
+            raw = model.raw_fields(t)
+            _cre, M = model.counter(tok, raw, mask=t.get("mask"), m0=m0)
+            return h, M[:, -1]
     return h
 
 

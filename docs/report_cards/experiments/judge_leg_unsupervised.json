@@ -1,9 +1,9 @@
 {
   "_meta": {
     "behavior_hash": "a4fdd768fbf009a0",
-    "command": "measure_judge_law.py --products /home/austin_whaley/wonderland_work/cfm_v2d --demo /home/austin_whaley/wonderland_work/demo_v2 --legs supervised,unsupervised,rl,simulator --out-dir /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments",
-    "generated_at": "2026-11-01T17:51:58+00:00",
-    "git_commit": "b8df1a87ce9cb94939b78d25c05d31cfa02e7647",
+    "command": "measure_judge_law.py --products /home/austin_whaley/wonderland_work/cfm_v2g --demo /home/austin_whaley/wonderland_work/demo_v2 --legs supervised,unsupervised,rl,simulator --out-dir /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments",
+    "generated_at": "2026-11-01T19:34:02+00:00",
+    "git_commit": "61296563d77b7c2c2fdbdd20ce56d8f9d51c4e9b",
     "producer": "measure_judge_law.py"
   },
   "arms": {
@@ -21,12 +21,12 @@
     "brain": {
       "tasks": [
         {
-          "brain": 0.059875,
-          "ci_hi": -0.312959,
-          "ci_lo": -0.333982,
+          "brain": 0.036031,
+          "ci_hi": -0.33625,
+          "ci_lo": -0.358302,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": 0.000364,
+          "destroyed": 5.5e-05,
           "metric": "squared correlation between the arm's pairwise distances and the lab's true distances (4 fields: bayes_fwd_count_90d, bayes_fwd_value_90d, d0, segment)",
           "n": 1101870,
           "n_bootstrap_pairs": 100000,
@@ -35,12 +35,12 @@
           "random": 0.000598
         },
         {
-          "brain": 0.007833,
-          "ci_hi": -0.163991,
-          "ci_lo": -0.176972,
+          "brain": 0.003627,
+          "ci_hi": -0.167802,
+          "ci_lo": -0.181329,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": 0.000209,
+          "destroyed": 0.000126,
           "metric": "squared correlation between the arm's pairwise distances and the lab's true distances (7 fields: x0, h0, price_sensitivity, return_proneness, churn_day, regime_switches, final_regime_days)",
           "n": 1101870,
           "n_bootstrap_pairs": 100000,
@@ -49,12 +49,12 @@
           "random": 3.4e-05
         },
         {
-          "brain": -0.000802,
-          "ci_hi": -0.242441,
-          "ci_lo": -0.29567,
+          "brain": -0.000118,
+          "ci_hi": -0.241535,
+          "ci_lo": -0.296336,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": -0.001369,
+          "destroyed": -0.000748,
           "metric": "ARI of k-means (k=4, from the label's own cardinality) against the lab's declared segment",
           "n": 1485,
           "name": "segment_structure",
@@ -66,12 +66,12 @@
     "brain_ledger": {
       "tasks": [
         {
-          "brain": 0.060246,
-          "ci_hi": -0.322433,
-          "ci_lo": -0.337574,
+          "brain": 0.046506,
+          "ci_hi": -0.335319,
+          "ci_lo": -0.35167,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": 0.000596,
+          "destroyed": 0.00058,
           "metric": "squared correlation between the arm's pairwise distances and the lab's true distances (4 fields: bayes_fwd_count_90d, bayes_fwd_value_90d, d0, segment)",
           "n": 1101870,
           "n_bootstrap_pairs": 100000,
@@ -80,12 +80,12 @@
           "random": 0.000501
         },
         {
-          "brain": 0.030651,
-          "ci_hi": -0.145945,
-          "ci_lo": -0.154975,
+          "brain": 0.024238,
+          "ci_hi": -0.151615,
+          "ci_lo": -0.161089,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": 0.000437,
+          "destroyed": 0.00041,
           "metric": "squared correlation between the arm's pairwise distances and the lab's true distances (7 fields: x0, h0, price_sensitivity, return_proneness, churn_day, regime_switches, final_regime_days)",
           "n": 1101870,
           "n_bootstrap_pairs": 100000,
@@ -94,12 +94,12 @@
           "random": 1e-05
         },
         {
-          "brain": -0.00057,
-          "ci_hi": -0.242673,
-          "ci_lo": -0.295415,
+          "brain": -0.000722,
+          "ci_hi": -0.242302,
+          "ci_lo": -0.295242,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": -0.000397,
+          "destroyed": -3.6e-05,
           "metric": "ARI of k-means (k=4, from the label's own cardinality) against the lab's declared segment",
           "n": 1485,
           "name": "segment_structure",
@@ -119,9 +119,9 @@
     "source": "/home/austin_whaley/wonderland_work/demo_v2/path_a/path_a_wide_table.parquet"
   },
   "products": {
-    "path": "/home/austin_whaley/wonderland_work/cfm_v2d",
-    "registry_sha256": "6d25cb924ebefa8f",
-    "tag": "0.11.0r490759-b16d256e3lr3e-04o0847b247"
+    "path": "/home/austin_whaley/wonderland_work/cfm_v2g",
+    "registry_sha256": "c42f6c389ec56966",
+    "tag": "0.11.0r490759-b16d256e3lr3e-04o8f87baf6"
   },
   "splits": {
     "n_fit_A": 3515,

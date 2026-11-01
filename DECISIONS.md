@@ -7246,3 +7246,30 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - **Not yet enough.** h0 is still 0.828 vs PATH A 0.961 and return 0.132 vs 0.416, so the level
   rows will likely remain red at full size. It narrows the gap; it does not close it.
 - **Next if still red:** the `(h, M)` state pair (DEC-531 C), now with a smaller distance to cover.
+
+## DEC-535 — [FALSIFIED] the full counter readout dilutes the linear head; level needs a COMPACT channel
+- **Wiring fixed and verified.** `forward_states` now returns the additive memory when asked,
+  `advance` carries `signed_log1p(M)` (inverting it to continue the exact sum, never fading it),
+  and `donor_states` serves `shape ++ counter`. Served dim went **256 -> 512**, so the channel did
+  reach the graded object.
+- **Measured (n=1000, serve_unfaded=true on both arms):**
+
+  | task | unfaded | +counter | delta |
+  |---|---:|---:|---:|
+  | x0 | 0.778 | 0.752 | −0.026 |
+  | h0 | 0.828 | 0.801 | −0.028 |
+  | return_proneness | 0.132 | 0.105 | −0.027 |
+  | churn_day | 0.068 | 0.081 | +0.013 |
+  | regime_switches | 0.066 | 0.057 | −0.009 |
+
+  **FALSIFIED.** The additive channel carries level, but appending 256 more dimensions to a
+  **linear** head fitted on ~700 held-out rows costs more in variance than it buys in information.
+- **This reframes the remaining blocker.** The level gap is not "the state has no mass channel" —
+  it is **linear accessibility at fixed capacity**. The shipping head is linear by ruling
+  (DEC-407), so the encoder must expose level in a *few* directions, not two hundred.
+- **Next (pre-registered):** a **compact mass readout** — a small number of learnable scalars
+  (total value, count, and recency-weighted mass) appended to the shape, instead of the full
+  register readout. Acceptance: h0 and return_proneness improve over `serve_unfaded` alone
+  (0.828 / 0.132) at n=1000, with no dynamic trait regressing outside noise.
+- **Not changed.** No gate, task, comparator or head change. The counter remains available behind
+  its flag; the wiring stays (inert when `use_counter=False`).

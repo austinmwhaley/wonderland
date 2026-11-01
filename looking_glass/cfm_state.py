@@ -9,7 +9,7 @@ import torch
 
 from looking_glass.cfm_config import CFMConfig, LN2, TIME_UNIT_SECONDS, _to_epoch, as_of_epoch
 from looking_glass.cfm_data import build_sequences, _primary_numeric_field
-from looking_glass.cfm_model import CFM
+from looking_glass.cfm_model import CFM, signed_log1p
 from looking_glass import view_layout
 
 
@@ -180,16 +180,31 @@ def advance_to_date(store, cfg, df, upto_epoch):
     return len(with_events), len(as_of_by_key) - len(with_events)
 
 
-def donor_states(model: CFM, states):
-    """Batched donor readout for live states: exactly ``model.donor(h)``, i.e. the
-    **certified** boundary readout (``_boundary(proj(h))``) that ``donor_embeddings``
-    publishes — one definition of the served donor (DEC-447, principle 6). Serving raw
-    ``proj(h)`` here skipped the certified boundary, so the table plugins are told to
-    read disagreed with the documented contract and with its sibling tables.
-    Device-safe: follows wherever the model lives (cuda when the job moved it there)."""
+def _inv_signed_log1p(y: float) -> float:
+    """Inverse of signed_log1p: recover the raw additive accumulator from its readout."""
+    import math
+
+    return math.copysign(math.expm1(abs(float(y))), float(y))
+
+
+def donor_states(model: CFM, states, counters=None):
+    """Batched donor readout for live states: the **certified** boundary readout of the SHAPE
+    (``_boundary(proj(h))``), concatenated with the ADDITIVE half of the state (the anchored
+    counter readout ``signed_log1p(M)``) when it is served.
+
+    The doctrine's consumed embedding is ``E = shape ++ counter`` (ABC contract; DEC-198). The
+    counter is an exact additive monoid — extensive mass — so it carries magnitude/level that a
+    contractive recurrence cannot (DEC-528/534). One definition of the served donor (DEC-447).
+    """
     with torch.no_grad():
-        t = torch.as_tensor(states, dtype=torch.float32)
-        return model.donor_batch(t.to(next(model.parameters()).device)).cpu().numpy()
+        dev = next(model.parameters()).device
+        t = torch.as_tensor(states, dtype=torch.float32, device=dev)
+        emb = model.donor_batch(t)
+        if counters is not None:
+            emb = torch.cat(
+                [emb, torch.as_tensor(counters, dtype=torch.float32, device=dev)], dim=1
+            )
+        return emb.cpu().numpy()
 
 
 def load_frozen_encoder(tag: str, cfm_dir):
@@ -505,29 +520,37 @@ class StateStore:
             for k0 in range(0, len(keys), 4000):
                 chunk = keys[k0 : k0 + 4000]
                 ph = ",".join("?" * len(chunk))
-                for ck, as_of, st in self.con.execute(
-                    f"SELECT customer_key, as_of_epoch, state FROM customer_state "
+                for ck, as_of, st, cv in self.con.execute(
+                    f"SELECT customer_key, as_of_epoch, state, embedding FROM customer_state "
                     f"WHERE customer_key IN ({ph})",
                     chunk,
                 ).fetchall():
                     state_by_key[ck] = (
                         torch.tensor(st, dtype=torch.float32) if st is not None else None,
                         float(as_of) if as_of is not None else None,
+                        # the ADDITIVE half is stored as signed_log1p(M); invert it to continue
+                        # the exact sum. `M` is never faded (decay ≡ 1): mass is extensive.
+                        (
+                            torch.tensor([_inv_signed_log1p(v) for v in cv], dtype=torch.float32)
+                            if cv is not None and self.model.counter_on
+                            else None
+                        ),
                     )
         prepared = []  # (key, seq, h0_or_None, as_of_epoch, last_event_ts)
         for seq in seqs:
             if incremental:
-                h0, as_of = state_by_key.get(seq["customer"], (None, None))
+                h0, as_of, m0 = state_by_key.get(seq["customer"], (None, None, None))
             else:
-                h0, as_of = None, None
+                h0, as_of, m0 = None, None, None
             if h0 is not None:
-                # absorb()'s pre-fade: decay h0 to the first new event
+                # absorb()'s pre-fade: decay h0 to the first new event (NEVER to M)
                 h0 = fade(h0, _to_epoch(seq["event_ts"][0]) - as_of, self.cfg.state_half_life_days)
             prepared.append(
                 (
                     seq["customer"],
                     seq,
                     h0,
+                    m0,
                     _to_epoch(seq["event_ts"][-1]),
                     seq["event_ts"][-1],
                 )
@@ -547,14 +570,20 @@ class StateStore:
             for part, use_h0 in ((with_state, True), (without, False)):
                 if not part:
                     continue
-                H = forward_states(
+                out = forward_states(
                     self.model,
                     [b[1] for b in part],
                     [b[2] for b in part] if use_h0 else None,
+                    [b[3] for b in part] if use_h0 else None,
+                    return_m=True,
                 )
+                if isinstance(out, tuple):
+                    H, Mlast = out
+                else:  # counter off
+                    H, Mlast = out, None
                 with torch.no_grad():
-                    E = torch.nn.functional.normalize(self.model.proj(H), dim=1).cpu()
-                for k, (key, _seq, _h0, as_of_e, last_ts) in enumerate(part):
+                    E = signed_log1p(Mlast).cpu() if Mlast is not None else None
+                for k, (key, _seq, _h0, _m0, as_of_e, last_ts) in enumerate(part):
                     h = H[k].cpu()
                     rows.append(
                         {
@@ -563,7 +592,11 @@ class StateStore:
                             "version": self.cfg.tag,
                             "dim": int(h.shape[0]),
                             "state": h.tolist(),
-                            "embedding": E[k].tolist(),
+                            "embedding": (
+                                E[k].tolist()
+                                if E is not None
+                                else self.model.donor_batch(h.unsqueeze(0))[0].tolist()
+                            ),
                             "last_event_ts": str(last_ts),
                         }
                     )
@@ -651,11 +684,17 @@ class StateStore:
         """
         import polars as pl
 
-        rows = self.con.execute("SELECT customer_key, state FROM customer_state").fetchall()
+        rows = self.con.execute(
+            "SELECT customer_key, state, embedding FROM customer_state"
+        ).fetchall()
         if not rows:
             return 0
         keys = [r[0] for r in rows]
-        E = donor_states(model, [r[1] for r in rows])
+        counters = [r[2] for r in rows]
+        served = None
+        if getattr(model, "counter_on", False) and all(c is not None for c in counters):
+            served = counters
+        E = donor_states(model, [r[1] for r in rows], served)
         self.con.execute("DELETE FROM state_embeddings WHERE as_of_epoch = ?", [float(as_of_epoch)])
         df = pl.DataFrame(
             {

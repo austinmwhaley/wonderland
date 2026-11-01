@@ -1,9 +1,9 @@
 {
   "_meta": {
     "behavior_hash": "a4fdd768fbf009a0",
-    "command": "measure_judge_law.py --products /home/austin_whaley/wonderland_work/cfm_v2d --demo /home/austin_whaley/wonderland_work/demo_v2 --legs supervised,unsupervised,rl,simulator --out-dir /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments",
-    "generated_at": "2026-11-01T17:52:19+00:00",
-    "git_commit": "b8df1a87ce9cb94939b78d25c05d31cfa02e7647",
+    "command": "measure_judge_law.py --products /home/austin_whaley/wonderland_work/cfm_v2g --demo /home/austin_whaley/wonderland_work/demo_v2 --legs supervised,unsupervised,rl,simulator --out-dir /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments",
+    "generated_at": "2026-11-01T19:34:27+00:00",
+    "git_commit": "61296563d77b7c2c2fdbdd20ce56d8f9d51c4e9b",
     "producer": "measure_judge_law.py"
   },
   "arms": {
@@ -21,20 +21,20 @@
     "brain": {
       "tasks": [
         {
-          "brain": 0.298354,
-          "ci_hi": 0.000141,
-          "ci_lo": -0.000397,
+          "brain": 0.307579,
+          "ci_hi": 0.000328,
+          "ci_lo": -0.000157,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [
             "random",
             "destroyed"
           ],
-          "destroyed": -2.866652,
+          "destroyed": -5.513096,
           "metric": "R2 on the identified (customer x offer level) purchase rate (4 levels: [0, 1, 2, 3])",
           "n": 5000,
           "name": "dose_response_curve",
           "pathA": 0.303941,
-          "random": -3.27678
+          "random": -5.178164
         },
         {
           "brain": 0.244444,
@@ -54,17 +54,17 @@
     "brain_ledger": {
       "tasks": [
         {
-          "brain": 0.299153,
-          "ci_hi": 0.000105,
-          "ci_lo": -0.000328,
+          "brain": 0.299502,
+          "ci_hi": 0.000113,
+          "ci_lo": -0.000319,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": -0.048763,
+          "destroyed": -0.054107,
           "metric": "R2 on the identified (customer x offer level) purchase rate (4 levels: [0, 1, 2, 3])",
           "n": 5000,
           "name": "dose_response_curve",
           "pathA": 0.303941,
-          "random": -0.051228
+          "random": -0.045968
         },
         {
           "brain": 0.244444,
@@ -102,9 +102,9 @@
     "source": "/home/austin_whaley/wonderland_work/demo_v2/path_a/path_a_wide_table.parquet"
   },
   "products": {
-    "path": "/home/austin_whaley/wonderland_work/cfm_v2d",
-    "registry_sha256": "6d25cb924ebefa8f",
-    "tag": "0.11.0r490759-b16d256e3lr3e-04o0847b247"
+    "path": "/home/austin_whaley/wonderland_work/cfm_v2g",
+    "registry_sha256": "c42f6c389ec56966",
+    "tag": "0.11.0r490759-b16d256e3lr3e-04o8f87baf6"
   },
   "splits": {
     "n_fit_A": 3515,

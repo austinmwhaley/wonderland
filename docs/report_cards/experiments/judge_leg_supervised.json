@@ -1,9 +1,9 @@
 {
   "_meta": {
     "behavior_hash": "a4fdd768fbf009a0",
-    "command": "measure_judge_law.py --products /home/austin_whaley/wonderland_work/cfm_v2f --demo /home/austin_whaley/wonderland_work/demo_v2 --legs supervised,unsupervised,rl,simulator --out-dir /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments",
-    "generated_at": "2026-11-01T18:50:09+00:00",
-    "git_commit": "8f6eaef7ee1af0578f39ed14df24f2e1cc47b87d",
+    "command": "measure_judge_law.py --products /home/austin_whaley/wonderland_work/cfm_v2g --demo /home/austin_whaley/wonderland_work/demo_v2 --legs supervised,unsupervised,rl,simulator --out-dir /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments",
+    "generated_at": "2026-11-01T19:33:45+00:00",
+    "git_commit": "61296563d77b7c2c2fdbdd20ce56d8f9d51c4e9b",
     "producer": "measure_judge_law.py"
   },
   "arms": {
@@ -20,116 +20,116 @@
     "brain": {
       "tasks": [
         {
-          "brain": 0.847906,
-          "ci_hi": -4e-05,
-          "ci_lo": -0.000107,
+          "brain": 0.865413,
+          "ci_hi": -8e-06,
+          "ci_lo": -5.7e-05,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [
             "random",
             "destroyed"
           ],
-          "destroyed": -1462.773326,
+          "destroyed": -2167.572418,
           "metric": "held-out R2 on split B",
           "n": 1485,
           "name": "x0",
           "pathA": 0.879091,
-          "random": -1520.44152,
+          "random": -2034.861204,
           "sst": 3.474797
         },
         {
-          "brain": 0.843433,
-          "ci_hi": -0.03825,
-          "ci_lo": -0.050537,
+          "brain": 0.88161,
+          "ci_hi": -0.023373,
+          "ci_lo": -0.043114,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [
             "random",
             "destroyed"
           ],
-          "destroyed": -4557.321893,
+          "destroyed": -2797.098011,
           "metric": "held-out R2 on split B",
           "n": 1485,
           "name": "h0",
           "pathA": 0.970781,
-          "random": -4538.364799,
+          "random": -2701.753515,
           "sst": 515.223007
         },
         {
-          "brain": 0.005523,
-          "ci_hi": 0.004915,
-          "ci_lo": 0.002079,
+          "brain": 0.004457,
+          "ci_hi": 0.004813,
+          "ci_lo": 0.002012,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": -0.013575,
+          "destroyed": -0.017453,
           "metric": "held-out R2 on split B",
           "n": 1485,
           "name": "price_sensitivity",
           "pathA": -0.063629,
-          "random": -0.010415,
+          "random": -0.0139,
           "sst": 74.199002
         },
         {
-          "brain": 0.314282,
-          "ci_hi": -0.000452,
-          "ci_lo": -0.000852,
+          "brain": 0.345573,
+          "ci_hi": -0.000379,
+          "ci_lo": -0.000679,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [
             "random",
             "destroyed"
           ],
-          "destroyed": -5450.31136,
+          "destroyed": -9879.312038,
           "metric": "held-out R2 on split B",
           "n": 1485,
           "name": "return_proneness",
           "pathA": 0.487907,
-          "random": -6026.538641,
+          "random": -9596.410914,
           "sst": 5.40748
         },
         {
-          "brain": 0.266133,
-          "ci_hi": 6006.304451,
-          "ci_lo": 3941.619703,
+          "brain": 0.302702,
+          "ci_hi": 6739.20051,
+          "ci_lo": 4604.886698,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [
             "random",
             "destroyed"
           ],
-          "destroyed": -203.97886,
+          "destroyed": -2316.027379,
           "metric": "held-out R2 on split B",
           "n": 1485,
           "name": "churn_day",
           "pathA": -0.013748,
-          "random": -202.747344,
+          "random": -2373.780474,
           "sst": 26428837.140741
         },
         {
-          "brain": 0.108456,
-          "ci_hi": 2.221536,
-          "ci_lo": 1.174002,
+          "brain": 0.112537,
+          "ci_hi": 2.296047,
+          "ci_lo": 1.232114,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [
             "random",
             "destroyed"
           ],
-          "destroyed": -3.217016,
+          "destroyed": -5.785111,
           "metric": "held-out R2 on split B",
           "n": 1485,
           "name": "regime_switches",
           "pathA": -0.008355,
-          "random": -3.484183,
+          "random": -6.140855,
           "sst": 21678.300337
         },
         {
-          "brain": 0.005175,
-          "ci_hi": 460.42474,
-          "ci_lo": 204.916166,
+          "brain": 0.005243,
+          "ci_hi": 461.577114,
+          "ci_lo": 203.599385,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": -0.006646,
+          "destroyed": -0.023198,
           "metric": "held-out R2 on split B",
           "n": 1485,
           "name": "final_regime_days",
           "pathA": -0.074482,
-          "random": -0.011693,
+          "random": -0.018076,
           "sst": 6223426.494276
         }
       ]
@@ -137,110 +137,110 @@
     "brain_ledger": {
       "tasks": [
         {
-          "brain": 0.923667,
-          "ci_hi": 0.00015,
-          "ci_lo": 7.2e-05,
+          "brain": 0.941616,
+          "ci_hi": 0.000206,
+          "ci_lo": 0.000106,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [
             "random",
             "destroyed"
           ],
-          "destroyed": -62.396261,
+          "destroyed": -1790.079038,
           "metric": "held-out R2 on split B",
           "n": 1485,
           "name": "x0",
           "pathA": 0.879091,
-          "random": -67.037838,
+          "random": -1781.498789,
           "sst": 3.474797
         },
         {
-          "brain": 0.935979,
-          "ci_hi": -0.010273,
-          "ci_lo": -0.013888,
+          "brain": 0.942938,
+          "ci_hi": -0.007827,
+          "ci_lo": -0.011803,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [
             "random",
             "destroyed"
           ],
-          "destroyed": -2817.244662,
+          "destroyed": -2188.79258,
           "metric": "held-out R2 on split B",
           "n": 1485,
           "name": "h0",
           "pathA": 0.970781,
-          "random": -2637.534458,
+          "random": -2044.564584,
           "sst": 515.223007
         },
         {
-          "brain": -0.079486,
-          "ci_hi": 0.001289,
-          "ci_lo": -0.002862,
+          "brain": -0.081901,
+          "ci_hi": 0.001186,
+          "ci_lo": -0.002983,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": -0.085457,
+          "destroyed": -0.088804,
           "metric": "held-out R2 on split B",
           "n": 1485,
           "name": "price_sensitivity",
           "pathA": -0.063629,
-          "random": -0.08384,
+          "random": -0.067718,
           "sst": 74.199002
         },
         {
-          "brain": 0.467674,
-          "ci_hi": 0.0,
-          "ci_lo": -0.000152,
+          "brain": 0.465699,
+          "ci_hi": -7e-06,
+          "ci_lo": -0.000159,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": -0.125821,
+          "destroyed": -0.115914,
           "metric": "held-out R2 on split B",
           "n": 1485,
           "name": "return_proneness",
           "pathA": 0.487907,
-          "random": -0.119367,
+          "random": -0.113852,
           "sst": 5.40748
         },
         {
-          "brain": 0.197955,
-          "ci_hi": 4954.221951,
-          "ci_lo": 2667.485004,
+          "brain": 0.289391,
+          "ci_hi": 6517.806044,
+          "ci_lo": 4293.786451,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [
             "random",
             "destroyed"
           ],
-          "destroyed": -278.083003,
+          "destroyed": -460.488336,
           "metric": "held-out R2 on split B",
           "n": 1485,
           "name": "churn_day",
           "pathA": -0.013748,
-          "random": -303.582572,
+          "random": -459.838065,
           "sst": 26428837.140741
         },
         {
-          "brain": 0.023153,
-          "ci_hi": 1.038888,
-          "ci_lo": -0.127628,
+          "brain": 0.029475,
+          "ci_hi": 1.119998,
+          "ci_lo": -0.019513,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": -0.135232,
+          "destroyed": -0.144094,
           "metric": "held-out R2 on split B",
           "n": 1485,
           "name": "regime_switches",
           "pathA": -0.008355,
-          "random": -0.116289,
+          "random": -0.109486,
           "sst": 21678.300337
         },
         {
-          "brain": -0.0677,
-          "ci_hi": 205.132329,
-          "ci_lo": -147.914759,
+          "brain": -0.067338,
+          "ci_hi": 204.596915,
+          "ci_lo": -148.470662,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": -0.10662,
+          "destroyed": -0.10389,
           "metric": "held-out R2 on split B",
           "n": 1485,
           "name": "final_regime_days",
           "pathA": -0.074482,
-          "random": -0.131001,
+          "random": -0.141875,
           "sst": 6223426.494276
         }
       ]
@@ -370,9 +370,9 @@
     "source": "/home/austin_whaley/wonderland_work/demo_v2/path_a/path_a_wide_table.parquet"
   },
   "products": {
-    "path": "/home/austin_whaley/wonderland_work/cfm_v2f",
-    "registry_sha256": "d1cc0d58f901e877",
-    "tag": "0.11.0r490759-b16d256e3lr3e-04oef83ce13"
+    "path": "/home/austin_whaley/wonderland_work/cfm_v2g",
+    "registry_sha256": "c42f6c389ec56966",
+    "tag": "0.11.0r490759-b16d256e3lr3e-04o8f87baf6"
   },
   "splits": {
     "n_fit_A": 3515,
