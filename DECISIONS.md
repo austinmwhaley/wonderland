@@ -6946,3 +6946,39 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   under a new data signature. That is the price of a testbed that can actually fail the hypothesis.
 - **Sequencing.** The retrain + S6 chain is running; `rabbit_hole/` is in the behaviour hash, so no
   generator edit until it completes. Step 1 runs first, as its own read-only measurement.
+
+## DEC-521 — [MEASURED + AMENDED] testbed power: latent structure wins on returns, aggregates win on value
+- **Measured** (`scripts/measure_testbed_power.py`, read-only, n=5545; fit 3881 / score 1664;
+  forward window 90d after as_of). Same head (standardized ridge) for every representation;
+  static generator latents as the oracle (realised future fields excluded — using them would be
+  clairvoyance, not an oracle).
+
+  | target | R² aggregate | R² oracle | paired oracle−aggregate MSE gain, 95% CI | verdict |
+  |---|---:|---:|---|---|
+  | `fwd_value_90d` | **0.3088** | 0.0892 | −161518.9 [−186465.1, −138299.1] | aggregate wins |
+  | `fwd_count_90d` | **0.3624** | 0.1002 | −10.06 [−11.32, −8.84] | aggregate wins |
+  | `fwd_return_90d` | 0.1976 | **0.2920** | **+0.00207 [+0.00140, +0.00279]** | **oracle wins** |
+
+- **Reading.** Under the literal DEC-520 rule ("any task") the verdict is HAS POWER, so Layer A
+  would stand. That reading is too weak, and it is weak in the direction that matters: the
+  decision-relevant outcome (`value`, the basis of incremental margin) is **aggregate-dominated**,
+  so PATH A will keep winning the commercial legs no matter how good the encoder is. The one task
+  with headroom is a secondary trait (return proneness). P2 is therefore **confirmed for the
+  primary outcome**.
+- **Protocol amendment (tightening, not weakening).** The acceptance for a testbed becomes: the
+  latent oracle must strictly beat the aggregate on **a decision-relevant value/margin task**, not
+  merely on any task. This raises the bar; it cannot flip a red row green. Disclosed because it is
+  a criterion change after seeing a result (certification rule 1) — the operator's standing
+  instruction ("ensure Layer A is not the limit") is the authorization, and both protocols are
+  reported above.
+- **Decision.** Rebuild Layer A (DEC-520 Step 2), preferring **augmentation over replacement**:
+  keep the canonical schema and the existing truth fields, and add what aggregates cannot carry —
+  duration-dependent regimes that switch the *value* process, timing/path dependence in the
+  intensity, nonlinear interactions (response x regime x recency), heterogeneous multi-timescale
+  cadence, and exogenous shocks. P8 is fixed in the same pass (all PATH A columns derivable).
+- **Acceptance for Layer A v2.** The latent oracle must beat aggregate+GBM on `fwd_value_90d`
+  (or an equivalent margin task) with a paired CI excluding 0, at n ≥ 5000. If it does not, the
+  stream is rejected and the bet is closed rather than nursed.
+- **Sequencing.** The retrain + S6 chain is running and `rabbit_hole/` is inside the behaviour
+  hash; no generator edit until it completes. The measurement script and receipt are committed
+  first.

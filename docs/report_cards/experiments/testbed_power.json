@@ -1,0 +1,60 @@
+{
+  "_meta": {
+    "producer": "measure_testbed_power.py",
+    "generated_at": "2026-11-01T15:33:36+00:00",
+    "command": "measure_testbed_power.py --demo /home/austin_whaley/wonderland_work/demo",
+    "read_only": true,
+    "demo": "/home/austin_whaley/wonderland_work/demo",
+    "stream": "/home/austin_whaley/wonderland_work/demo/path_b/path_b_customer_event_stream.parquet",
+    "stream_sha256": "fd28bfa3dd825f49",
+    "as_of": "2025-01-01",
+    "horizon_days": 90,
+    "n_customers": 5545,
+    "n_fit": 3881,
+    "n_score": 1664,
+    "n_aggregate_columns": 104,
+    "n_latent_columns": 27,
+    "targets": {
+      "fwd_value_90d": "sum(value) on purchase events in (as_of, as_of+90d]",
+      "fwd_count_90d": "count(*) on purchase events in (as_of, as_of+90d]",
+      "fwd_return_90d": "returns / purchases in the forward window"
+    },
+    "oracle_features": "static generator latents only; churn_day/regime_runs excluded (realised future paths would be clairvoyance)"
+  },
+  "tasks": {
+    "fwd_value_90d": {
+      "n": 1664,
+      "r2_aggregate": 0.3088,
+      "r2_oracle": 0.0892,
+      "r2_both": 0.3595,
+      "oracle_minus_aggregate_mse": -161518.888733,
+      "ci_lo": -186465.07227,
+      "ci_hi": -138299.12433,
+      "oracle_strictly_better": false
+    },
+    "fwd_count_90d": {
+      "n": 1664,
+      "r2_aggregate": 0.3624,
+      "r2_oracle": 0.1002,
+      "r2_both": 0.4187,
+      "oracle_minus_aggregate_mse": -10.06199,
+      "ci_lo": -11.324508,
+      "ci_hi": -8.84325,
+      "oracle_strictly_better": false
+    },
+    "fwd_return_90d": {
+      "n": 1664,
+      "r2_aggregate": 0.1976,
+      "r2_oracle": 0.292,
+      "r2_both": 0.28,
+      "oracle_minus_aggregate_mse": 0.002066,
+      "ci_lo": 0.001396,
+      "ci_hi": 0.002788,
+      "oracle_strictly_better": true
+    }
+  },
+  "verdict": {
+    "has_power": true,
+    "rule": "ANY task with oracle-minus-aggregate paired-CI lower bound > 0 -> HAS POWER; EVERY task within noise -> INSUFFICIENT -> rebuild Layer A (DEC-520)"
+  }
+}
