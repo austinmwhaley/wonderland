@@ -10,7 +10,7 @@
     "values_match": {
       "working": true,
       "evidence": "5000 rows joined on customer_key, 49 columns compared exactly (CPU-built artifact, CPU rebuild): identical",
-      "seconds": 0.01
+      "seconds": 0.02
     },
     "provenance_complete": {
       "working": true,
@@ -290,7 +290,7 @@
   },
   "inputs": {
     "demo": "/home/austin_whaley/wonderland_work/demo_v2",
-    "products_dir": "/home/austin_whaley/wonderland_work/cfm_v2h"
+    "products_dir": "/home/austin_whaley/wonderland_work/cfm_v2j"
   },
-  "generated_at": "2026-11-01T21:17:11+00:00"
+  "generated_at": "2026-11-01T22:04:58+00:00"
 }

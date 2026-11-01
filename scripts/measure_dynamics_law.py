@@ -433,14 +433,28 @@ def check_tau_from_spectrum(db: str) -> dict:
 def check_governed_stability(train_log: Path, meta: dict) -> dict:
     """The governed run that produced this checkpoint: finite everywhere, never diverged."""
     t0 = time.perf_counter()
-    if not Path(train_log).exists():
-        return {"working": False, "evidence": f"training log missing: {train_log}", "seconds": 0.0}
-    text = Path(train_log).read_text()
-    vals = [float(v) for v in re.findall(r"val\s+([-+0-9.eE]+)", text)]
-    vals = [v for v in vals if abs(v) != float("inf")]
+    gov = meta.get("governor") or {}
+    # PRIMARY source: the registry's own eval series (recorded by the governor). The training log
+    # is a fallback for older artifacts — a log that may not exist cannot be the only receipt.
+    hist = gov.get("history")
+    text = Path(train_log).read_text() if Path(train_log).exists() else ""
+    if hist:
+        vals = [float(v) for v in hist]
+        nan_tokens = 0 if not gov.get("diverged") else 1
+        source = "registry.governor.history"
+    elif text:
+        vals = [float(v) for v in re.findall(r"val\s+([-+0-9.eE]+)", text)]
+        vals = [v for v in vals if abs(v) != float("inf")]
+        nan_tokens = len(re.findall(r"\bnan\b|\binf\b|UNSTABLE", text, flags=re.IGNORECASE))
+        source = "train.log"
+    else:
+        return {
+            "working": False,
+            "evidence": f"no governor history in the registry and no usable log: {train_log}",
+            "seconds": 0.0,
+        }
     finite_vals = [v for v in vals if np.isfinite(v)]
-    nan_tokens = len(re.findall(r"\bnan\b|\binf\b|UNSTABLE", text, flags=re.IGNORECASE))
-    diverged = bool((meta.get("governor") or {}).get("diverged", False))
+    diverged = bool(gov.get("diverged", False))
     if len(finite_vals) >= 3:
         diffs = np.abs(np.diff(finite_vals))
         noise = float(np.median(diffs)) if diffs.size else 0.0
@@ -454,7 +468,7 @@ def check_governed_stability(train_log: Path, meta: dict) -> dict:
     return {
         "working": ok,
         "evidence": (
-            f"governed training: {len(finite_vals)} finite epoch values, non-finite tokens={nan_tokens}, "
+            f"governed training ({source}): {len(finite_vals)} finite epoch values, non-finite tokens={nan_tokens}, "
             f"diverged={diverged}, worst epoch-to-epoch rise {worst_spike:.3g} vs 6x noise "
             f"{6 * noise:.3g}; registry resolved: half_life_days="
             f"{resolved.get('half_life_days', 'MISSING')} seq_len={resolved.get('seq_len', 'MISSING')}"

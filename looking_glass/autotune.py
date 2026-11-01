@@ -743,6 +743,9 @@ def govern(
         "eval_every": eval_every,
         "patience": patience,
         "evals": len(hist),
+        # The eval SERIES, not just its length: the stability gate needs the trajectory, and a
+        # log that may not have been captured is a duplicate source of truth (DEC-540).
+        "history": [float(x) for x in hist],
         "stopped": "converged" if steps < budget_steps else "budget",
         "final": hist[-1] if hist else None,
     }, best_state

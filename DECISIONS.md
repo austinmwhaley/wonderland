@@ -7353,3 +7353,18 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - **Both are measurement defects, not capability.** No gate, threshold or model change. This is why
   S3 read `FAILED clock_periodicity (+1 more)` for several cycles: two independent harness bugs,
   the second hidden behind the first.
+
+## DEC-541 — [FIX + PROCESS] S3 green on the fast rung; the governor records its series in the registry
+- **Fix.** The governor now writes `history` (the eval series) into the registry, and
+  `check_governed_stability` reads the ARTIFACT first, falling back to the log only for older
+  checkpoints. A log that may never have been captured cannot be the sole receipt (DEC-540).
+- **Fast rung validated (800 customers, 1 epoch, S3 only, ~3 min):** all seven S3 checks PASS —
+  `scan_associativity`, `ssm_merge_exact`, `mass_additivity`, `clock_periodicity`,
+  `step0_finite`, `tau_from_spectrum`, `governed_stability`. S3 working=True.
+- **Process (operator directive: earn the right to scale).**
+  - **Rung 0 (~3 min):** 800 customers, 1 epoch, ONE producer (the one whose row is red).
+  - **Rung 1 (~10 min):** 800–1000 customers, leg judge only.
+  - **Rung 2 (~30 min):** 5000 customers + full chain — ONLY to adopt a validated change.
+  - Every training run `mkdir -p`s the out-dir and `tee`s to `<out>/train.log` (the earlier `tee`
+    failed because the directory did not exist yet — a 20-minute run lost to a missing `mkdir`).
+- **No gate, threshold or model change** beyond recording one more field.

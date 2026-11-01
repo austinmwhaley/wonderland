@@ -1,9 +1,9 @@
 {
   "_meta": {
     "behavior_hash": "74dab6e535d1f519",
-    "command": "measure_judge_law.py --products /home/austin_whaley/wonderland_work/cfm_v2h --demo /home/austin_whaley/wonderland_work/demo_v2 --legs supervised,unsupervised,rl,simulator --out-dir /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments",
-    "generated_at": "2026-11-01T21:17:06+00:00",
-    "git_commit": "48bffa7a028aaef61dfbd551ff444215d6dd786a",
+    "command": "measure_judge_law.py --products /home/austin_whaley/wonderland_work/cfm_v2j --demo /home/austin_whaley/wonderland_work/demo_v2 --legs supervised,unsupervised,rl,simulator --out-dir /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments",
+    "generated_at": "2026-11-01T22:04:52+00:00",
+    "git_commit": "02a5bc3f4c69fa51834eab13f129f0593b1cd52f",
     "producer": "measure_judge_law.py"
   },
   "arms": {
@@ -99,8 +99,8 @@
     "source": "/home/austin_whaley/wonderland_work/demo_v2/path_a/path_a_wide_table.parquet"
   },
   "products": {
-    "path": "/home/austin_whaley/wonderland_work/cfm_v2h",
-    "registry_sha256": "bc61097a2ecc90d6",
+    "path": "/home/austin_whaley/wonderland_work/cfm_v2j",
+    "registry_sha256": "43145364bf060366",
     "tag": "0.11.0r490759-b16d256e3lr3e-04o4c3b5899"
   },
   "splits": {
