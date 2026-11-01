@@ -6742,3 +6742,25 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - **Next axis.** With direction count at capacity, the red legs point at **accessibility**
   (a linear head on 15 real but unevenly-weighted directions losing to a 48-column GBM), not at
   missing rank. That is the next measurement, not another geometry run.
+
+## DEC-515 — [FIX] receipts were stamped against the wrong registry (filename sort != newest run)
+- **Bug.** `measure_battery_law._load_all` (used by every judge leg and the S5 battery) selected
+  the config with `sorted(glob("registry_*.json"))[-1]` — a **filename** sort. The tags
+  `...04o9e37655b` and `...04o39ad8593` sort by hex string, not by time, and `o9e` sorts after
+  `o39` while being the **older** run. The products DB was served by
+  `0.11.0r103115-b26d256e3lr3e-04o39ad8593`, but the receipts would have been stamped with
+  `0.11.0r486262-b8d256e1lr3e-04o9e37655b` — a different config (notably `ledger_recency=False`
+  vs `True`). Every downstream number derived from that config was therefore mis-attributed.
+- **Fix.** Select the registry by the **served version** recorded in the products themselves
+  (`select distinct version from state_embeddings`), never by filename. If that registry is
+  missing, **refuse** rather than pair a receipt with the wrong config (principle 7: reject,
+  do not clamp). Where no products DB is available (`measure_input_law.products_identity`,
+  `ladder_curve._tag`), select by **mtime** instead, with a mismatch guard in
+  `measure_rank_attainability.py`.
+- **Principle.** 6 (single source of truth: the artifact knows its own tag) + 11 (observability:
+  a receipt must name the config that produced the bytes) + 7 (fail safe).
+- **Disclosure.** Fixing `looking_glass/ladder_curve.py` changes the behaviour hash
+  (`94857be6815a96f3` → `cb94deb974fc068b`) because the hash covers the source tree. The encoder's
+  computation is unchanged, but the honesty rule is mechanical: every receipt is regenerated
+  under the new hash by the S6 chain, not re-labelled.
+- **Not changed.** Gates, thresholds, targets, comparator, encoder math.

@@ -450,7 +450,8 @@ def products_identity(products) -> dict:
     p = Path(products)
     d = p.parent if p.suffix else p
     out = {"path": str(p), "tag": None, "registry_sha256": None}
-    regs = sorted(d.glob("registry_*.json"))
+    # newest RUN, not last filename: `...o9e...` sorts after `...o39...` but is older (DEC-515)
+    regs = sorted(d.glob("registry_*.json"), key=lambda q: q.stat().st_mtime)
     if regs:
         body = regs[-1].read_bytes()
         out["registry_sha256"] = hashlib.sha256(body).hexdigest()[:16]

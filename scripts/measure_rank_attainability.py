@@ -117,7 +117,7 @@ def main(argv=None) -> int:
 
     prod = Path(a.products)
     db = prod if prod.is_file() else prod / "cfm_products.duckdb"
-    regs = sorted(prod.glob("registry_*.json"))
+    regs = sorted(prod.glob("registry_*.json"), key=lambda q: q.stat().st_mtime)
     if not regs:
         print(f"no registry_*.json under {prod}", file=sys.stderr)
         return 2
@@ -147,6 +147,13 @@ def main(argv=None) -> int:
     finally:
         con.close()
 
+    if len(vers) == 1 and reg.get("tag") and vers[0] != reg.get("tag"):
+        print(
+            f"products served by {vers[0]!r} but newest registry is {reg.get(chr(34) + 'tag' + chr(34))!r}"
+            " — refusing to stamp a receipt with the wrong config",
+            file=sys.stderr,
+        )
+        return 2
     keys = [k for k in bkeys if k in emb]
     if len(keys) < 32:
         print(f"only {len(keys)} held-out B states — too few to measure", file=sys.stderr)

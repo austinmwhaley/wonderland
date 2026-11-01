@@ -33,7 +33,9 @@ RUNGS = ("L0_null", "L1_rate", "L2_markov", "L3_intent", "L4_trend", "L5_entity"
 
 
 def _tag(ckpt_dir):
-    reg = sorted(glob.glob(str(Path(ckpt_dir) / "registry_*.json")))
+    reg = sorted(
+        glob.glob(str(Path(ckpt_dir) / "registry_*.json")), key=lambda q: Path(q).stat().st_mtime
+    )
     return json.loads(Path(reg[-1]).read_text())["tag"] if reg else None
 
 

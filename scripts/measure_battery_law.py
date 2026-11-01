@@ -64,13 +64,31 @@ LATENT_COLS = ("x0", "h0", "d0", "price_sensitivity", "return_proneness")
 def _load_all(products: str, demo: Path):
     import duckdb
 
-    reg_path = sorted(Path(products).parent.glob("registry_*.json"))[-1]
+    con = duckdb.connect(products, read_only=True)
+    # The products know which encoder served them. Select THAT registry, never a filename sort:
+    # `o9e37655b` sorts after `o39ad8593` but is the OLDER run, so a name sort stamped receipts
+    # against a config that did not produce the bytes (DEC-515). Fail safe: if the served tag has
+    # no registry, refuse rather than silently pair a receipt with the wrong config.
+    served = [r[0] for r in con.execute("select distinct version from state_embeddings").fetchall()]
+    regs = sorted(Path(products).parent.glob("registry_*.json"), key=lambda p: p.stat().st_mtime)
+    if not regs:
+        raise SystemExit(f"no registry_*.json next to {products} — cannot stamp the receipt")
+    if len(served) == 1:
+        want = Path(products).parent / f"registry_{served[0].replace('.', '_')}.json"
+        if not want.exists():
+            raise SystemExit(
+                f"products were served by {served[0]!r} but {want.name} is absent — "
+                "rebuild products or restore the registry; refusing to mis-stamp"
+            )
+        reg_path = want
+    else:
+        print(f"[load] {len(served)} served versions {served} — falling back to newest registry")
+        reg_path = regs[-1]
     reg = json.loads(reg_path.read_text())
     truth = {
         c["customer"]: c
         for c in json.loads((demo / "reference_truth.json").read_text())["customers"]
     }
-    con = duckdb.connect(products, read_only=True)
     bkeys = [
         r[0]
         for r in con.execute("select customer_key from encoder_samples where split='B'").fetchall()
