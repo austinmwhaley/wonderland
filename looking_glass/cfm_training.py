@@ -498,6 +498,9 @@ def train_cfm(cfg: CFMConfig):
                 # Compute penalties from the CURRENT batch's projected state so the
                 # governor's penalties provide gradients back to the model.
                 # proj_h has shape (B, T, dim); flatten to (B*T, dim) for the bank.
+                # When B*T < dim//2 the batch covariance is ill-conditioned; the
+                # governor still fires using the bank buffer (accumulated across
+                # steps) but no gradient penalties are returned.
                 proj_h = model.proj(h).float().reshape(-1, h.shape[-1])
                 bank.push(proj_h.detach().cpu())
                 pen = bank.penalties(proj_h)
@@ -1873,51 +1876,68 @@ class GeometryBank:
     def penalties(self, z: "torch.Tensor | None" = None) -> dict:
         """(redundancy_bank, eigfloor, barrier) penalties + updated lambda.
         
-        If z is provided, penalties are computed from z (current batch — gradient
-        flows through to the model). If z is None, penalties are computed from the
-        bank buffer (governor only — no gradient flow, buffer is detached).
+        The governor (lambda adjustment) ALWAYS fires using the bank buffer
+        (detached, no gradient flow). Gradient penalties are computed from the
+        current batch `z` only when it is large enough (z.shape[0] >= dim//2)
+        to avoid ill-conditioned covariance matrices. When the batch is too
+        small, the governor still fires but no gradient penalties are returned.
         """
         import numpy as _np
 
-        if z is None:
-            z = self.states()
-        if z is None or z.shape[0] < self.dim // 2:
+        # Governor data source: use the current batch if large enough,
+        # otherwise fall back to the bank buffer (detached monitor).
+        if z is not None and z.shape[0] >= self.dim // 2:
+            gov_z = z
+        else:
+            gov_z = self.states()
+        if gov_z is None or gov_z.shape[0] < self.dim // 2:
             return {"redundancy_bank": None, "eigfloor": None, "bank_rank": None}
-        zc = z - z.mean(0, keepdim=True)
-        cov = (zc.T @ zc) / max(zc.shape[0] - 1, 1)
-        off = cov - torch.diag(cov.diagonal())
-        red = (off**2).mean()
-        # BARRIER (DEC-020): -log det(C + eps I) — an un-crossable wall
-        # as any eigenvalue -> 0. Epsilon-scaled to the trace so the wall
-        # position is scale-free.
-        sd = torch.sqrt(torch.diag(cov).clamp(min=1e-12))
-        corr = cov / torch.outer(sd, sd)
-        try:
-            d = corr.shape[0]
-            ev = torch.linalg.eigvalsh(
-                corr.double() + 1e-6 * torch.eye(d, dtype=torch.float64)
-            ).clamp(min=0.0)
-        except Exception:
-            ev = torch.ones(corr.shape[0], dtype=torch.float64)
-        floor = torch.relu(self.tau - ev.float()).sum()
-        eps = float(cov.diagonal().mean().clamp(min=1e-8)) * 1e-3
-        try:
-            barrier = -torch.logdet(cov + eps * torch.eye(cov.shape[0], device=cov.device))
-        except Exception:
-            barrier = torch.zeros((), device=cov.device)
-        # closed-loop governor: EMA-damped rank, proportional ramp
-        bank_rank = self.eff_rank(z)
+
+        # --- Governor: always fires using gov_z (buffer or batch) ---
+        bank_rank = self.eff_rank(gov_z)
         gap = self.target - bank_rank
         self.lam = float(
             _np.clip(self.lam * _np.exp(self.alpha * gap), 1.0, 1e6)
         )
         self.history.append({"bank_rank": round(bank_rank, 4), "lam": round(self.lam, 3)})
-        return {
-            "redundancy_bank": red,
-            "eigfloor": floor,
-            "barrier": barrier,
-            "bank_rank": bank_rank,
-        }
+
+        # --- Gradient penalties: only from the current batch when large enough ---
+        if z is not None and z.shape[0] >= self.dim // 2:
+            zc = z - z.mean(0, keepdim=True)
+            cov = (zc.T @ zc) / max(zc.shape[0] - 1, 1)
+            off = cov - torch.diag(cov.diagonal())
+            red = (off**2).mean()
+            # BARRIER (DEC-020): -log det(C + eps I) — an un-crossable wall
+            # as any eigenvalue -> 0. Epsilon-scaled to the trace so the wall
+            # position is scale-free.
+            sd = torch.sqrt(torch.diag(cov).clamp(min=1e-12))
+            corr = cov / torch.outer(sd, sd)
+            try:
+                d = corr.shape[0]
+                ev = torch.linalg.eigvalsh(
+                    corr.double() + 1e-6 * torch.eye(d, dtype=torch.float64)
+                ).clamp(min=0.0)
+            except Exception:
+                ev = torch.ones(corr.shape[0], dtype=torch.float64)
+            floor = torch.relu(self.tau - ev.float()).sum()
+            eps = float(cov.diagonal().mean().clamp(min=1e-8)) * 1e-3
+            try:
+                barrier = -torch.logdet(cov + eps * torch.eye(cov.shape[0], device=cov.device))
+            except Exception:
+                barrier = torch.zeros((), device=cov.device)
+            return {
+                "redundancy_bank": red,
+                "eigfloor": floor,
+                "barrier": barrier,
+                "bank_rank": bank_rank,
+            }
+        else:
+            return {
+                "redundancy_bank": None,
+                "eigfloor": None,
+                "barrier": None,
+                "bank_rank": bank_rank,
+            }
 
 
 GEOMETRY_FAMILY = (
