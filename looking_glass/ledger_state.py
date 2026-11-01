@@ -232,6 +232,11 @@ def publish_rows(rows_source, builder, vocab, *, version: str, as_of=None) -> li
     out = []
     for i, key in enumerate(keys):
         for part in PARTS:
+            # Skip parts the builder does not produce (e.g. recency when ledger_recency is off).
+            # A second list of widths somewhere else is a second definition that drifts —
+            # only the builder's part_slices defines the layout (DEC-425).
+            if part not in slices:
+                continue
             # a part is a LIST of runs (the per-field blocks interleave), so flatten them in
             # order rather than assuming one contiguous span
             embedding = [float(v) for lo, hi in slices[part] for v in matrix[i, lo:hi]]
