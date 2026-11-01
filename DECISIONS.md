@@ -6795,3 +6795,51 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - **Not done in this entry.** No `looking_glass/` edit: the S6 chain is mid-run, and this is a
   behaviour change that must go in as one axis and be re-certified end to end.
 - **Receipt.** `docs/report_cards/experiments/rank_attainability.json` (`derived_rank_target`).
+
+## DEC-517 — [PRE-REGISTERED] the correct definition of rank: directions above the noise edge
+- **Operator delegation.** "I know less about rank than you do. Change that to whatever is
+  correct." This entry freezes the definition BEFORE the run; the implementation follows it.
+- **The correct definition.** Rank is **the number of independent directions that rise above the
+  noise floor**, measured on the **correlation** spectrum (scale-invariant), with the floor taken
+  from Marchenko–Pastur at the actual sample size. It is **not** the participation ratio.
+
+  Why PR is the wrong quantity:
+  - `PR = (Σλ)² / Σλ²` rewards making all eigenvalues *equal*. Driving PR up is **whitening**,
+    which this project banned (DEC-036): it manufactures rank out of noise directions and does not
+    transfer.
+  - It is not what a consumer needs. The shipping head is ridge + `StandardScaler`, which is
+    invariant to per-dimension scale, so variance concentration is invisible to it.
+  - Empirically it made the gate unreachable and the governor saturate: PR 5.41 against a target
+    of 30, λ pinned at 1e6, no movement.
+
+- **One definition, three uses.**
+  1. **Derivation (A)** — on the exhaustive full-history measure, split A only:
+     `k* = #{λ_i > q95(λ_i^null)}` by order-matched parallel analysis (column-permuted null).
+     `rank_target = k* / dim`. Bootstrap over customers for the CI. Measured: **k* = 16, CI 16–17**
+     (DEC-516).
+  2. **Training** — the differentiable proxy is the **noise-edge floor**
+     `L_rank = mean_i relu(λ+ − λ_i)` with `λ+ = (1 + sqrt(D/N))²` computed from the actual state
+     dimension and sample size. Minimising it lifts mass above the edge, which is exactly what
+     raises the count. No PR term, no whitening, no per-dimension equalisation.
+  3. **Grading (C)** — `signal_dims(state on B) ≥ k_lo` (the lower bootstrap bound). Discrete,
+     falsifiable, carries uncertainty.
+- **Defect this corrects.** `tau_eig = 0.01` is a floor on the **correlation** scale, where the
+  mean eigenvalue is 1 and the MP edge at D=256, N=8192 is ≈1.38. A 0.01 floor is satisfied by
+  every direction, so `eigfloor` was identically zero — the penalty never existed. This is why the
+  bank's floor term did nothing while λ climbed.
+- **What changes (one axis: the definition of rank).**
+  - `autotune.derive_rank_target` → parallel analysis of `layer_b.generic_measure` on split A
+    (documented fallback to the schema count only if the measure cannot be built, recorded as a
+    fallback in the receipt).
+  - `cfm_training` `rank` objective → the MP-edge floor loss above; the PR form is deleted.
+  - `GeometryBank` bank rank → `signal_dims/dim` (not `eff_rank/dim`); target → `k*/dim`.
+  - `aib_target_rank`, `tau_mp` → consistent with the same `k*` (one derivation, no copies).
+  - `eff_rank`, `pr_frac`, `mean_pairwise_cos`, `redundancy` → **diagnostics**, never targets.
+- **Expected effect.** `rank_target ≈ 0.0625`; the state already carries 15 directions, so the
+  pressure is ~1 direction — a small, well-posed nudge instead of an impossible one. If the state
+  is genuinely missing a direction, this finds it; if it is not, the gate passes honestly.
+- **Falsifier.** If, after re-certification, `signal_dims(state)` does not reach `k_lo` and does
+  not move toward it, the MP-edge floor is not a usable proxy and the mechanism is reverted.
+- **Not changed.** Gates, thresholds, comparator, splits, the encoder trunk, the measure recipe.
+- **Sequencing.** The S6 chain is mid-run; `looking_glass/` is not edited until it completes. The
+  change goes in as one behaviour change under a new version, then the full chain is re-run.
