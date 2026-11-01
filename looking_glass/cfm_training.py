@@ -173,6 +173,15 @@ def train_cfm(cfg: CFMConfig):
     # B5: enable multi-token prediction when mtp_k > 0 (after --set, same rationale).
     if int(getattr(cfg, "mtp_k", 0) or 0) > 0 and "mtp" not in cfg.objectives:
         cfg.objectives = (*cfg.objectives, "mtp")
+    # DEC-016/019: rank objective — the participation ratio of the projected state
+    # is a training pressure that pushes the state to be diverse. Derived from data
+    # via rank_target (signal count / dim). Always active when rank_target > 0.
+    if cfg.rank_target > 0 and "rank" not in cfg.objectives:
+        cfg.objectives = (*cfg.objectives, "rank")
+    # Redundancy objective — off-diagonal decorrelation of the projected state.
+    # Active when rank_target > 0 to complement the rank pressure.
+    if cfg.rank_target > 0 and "redundancy" not in cfg.objectives:
+        cfg.objectives = (*cfg.objectives, "redundancy")
     a_seqs = build_sequences(df, a_keys, cfg, split, with_anchors=False)
     cfg.primary_numeric = _primary_numeric_field(df, cfg)
     vocab = EventVocab.build(
