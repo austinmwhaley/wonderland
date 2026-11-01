@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "4ea9684f506ddbf1",
-    "command": "measure_judge_law.py --products /home/austin_whaley/wonderland_work/cfm_v2h --demo /home/austin_whaley/wonderland_work/demo_v2 --legs supervised,unsupervised,rl,simulator --out-dir /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments",
-    "generated_at": "2026-11-01T20:30:38+00:00",
-    "git_commit": "00c8ddc92c0672cb9b9938bd84f48cbea344c8cd",
+    "behavior_hash": "32d15eb33e9956a4",
+    "command": "measure_judge_law.py --products /home/austin_whaley/wonderland_work/cfm_v2i --demo /home/austin_whaley/wonderland_work/demo_v2 --legs supervised,unsupervised,rl,simulator --out-dir /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments",
+    "generated_at": "2026-11-01T21:03:53+00:00",
+    "git_commit": "63b8d1e5c0a79c2fa854208afd8a8a0ab8e9c31a",
     "producer": "measure_judge_law.py"
   },
   "arms": {
@@ -20,119 +20,119 @@
     "brain": {
       "tasks": [
         {
-          "brain": 0.946143,
-          "ci_hi": 0.000216,
-          "ci_lo": 0.000117,
+          "brain": 0.942613,
+          "ci_hi": 0.000182,
+          "ci_lo": 0.00012,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [
             "random",
             "destroyed"
           ],
-          "destroyed": -2991.71859,
+          "destroyed": -1214.919368,
           "metric": "held-out R2 on split B",
           "n": 1485,
           "name": "x0",
           "pathA": 0.879091,
-          "random": -3056.223006,
+          "random": -1112.488717,
           "sst": 3.474797
         },
         {
-          "brain": 0.974382,
-          "ci_hi": 0.002049,
-          "ci_lo": 0.000601,
+          "brain": 0.974668,
+          "ci_hi": 0.002191,
+          "ci_lo": 0.000671,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [
             "random",
             "destroyed"
           ],
-          "destroyed": -5.942653,
+          "destroyed": -457.808801,
           "metric": "held-out R2 on split B",
           "n": 1485,
           "name": "h0",
           "pathA": 0.970781,
-          "random": -6.436534,
+          "random": -445.070678,
           "sst": 515.223007
         },
         {
-          "brain": 0.017531,
-          "ci_hi": 0.005567,
-          "ci_lo": 0.002588,
+          "brain": 0.014308,
+          "ci_hi": 0.006201,
+          "ci_lo": 0.001661,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [
             "random",
             "destroyed"
           ],
-          "destroyed": -1.726536,
+          "destroyed": -7339.608971,
           "metric": "held-out R2 on split B",
           "n": 1485,
           "name": "price_sensitivity",
           "pathA": -0.063629,
-          "random": -1.908414,
+          "random": -7370.570732,
           "sst": 74.199002
         },
         {
-          "brain": 0.414476,
-          "ci_hi": -0.000179,
-          "ci_lo": -0.00036,
+          "brain": 0.413204,
+          "ci_hi": -0.000175,
+          "ci_lo": -0.000379,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [
             "random",
             "destroyed"
           ],
-          "destroyed": -1738.971962,
+          "destroyed": -4083.853515,
           "metric": "held-out R2 on split B",
           "n": 1485,
           "name": "return_proneness",
           "pathA": 0.487907,
-          "random": -1619.843026,
+          "random": -4575.567668,
           "sst": 5.40748
         },
         {
-          "brain": 0.371659,
-          "ci_hi": 7905.327016,
-          "ci_lo": 5820.515868,
+          "brain": 0.379724,
+          "ci_hi": 8020.368218,
+          "ci_lo": 5999.338193,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [
             "random",
             "destroyed"
           ],
-          "destroyed": -7629.096917,
+          "destroyed": -408.544425,
           "metric": "held-out R2 on split B",
           "n": 1485,
           "name": "churn_day",
           "pathA": -0.013748,
-          "random": -8538.189121,
+          "random": -404.142583,
           "sst": 26428837.140741
         },
         {
-          "brain": 0.142389,
-          "ci_hi": 2.904386,
-          "ci_lo": 1.483989,
+          "brain": 0.146962,
+          "ci_hi": 3.038946,
+          "ci_lo": 1.53318,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [
             "random",
             "destroyed"
           ],
-          "destroyed": -3134.223087,
+          "destroyed": -3678.267724,
           "metric": "held-out R2 on split B",
           "n": 1485,
           "name": "regime_switches",
           "pathA": -0.008355,
-          "random": -3125.275533,
+          "random": -3743.920944,
           "sst": 21678.300337
         },
         {
-          "brain": 0.003484,
-          "ci_hi": 454.699475,
-          "ci_lo": 198.991069,
+          "brain": 0.002482,
+          "ci_hi": 451.967293,
+          "ci_lo": 189.232834,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": -0.00801,
+          "destroyed": -0.023016,
           "metric": "held-out R2 on split B",
           "n": 1485,
           "name": "final_regime_days",
           "pathA": -0.074482,
-          "random": -0.016039,
+          "random": -0.023672,
           "sst": 6223426.494276
         }
       ]
@@ -140,113 +140,110 @@
     "brain_ledger": {
       "tasks": [
         {
-          "brain": 0.93943,
-          "ci_hi": 0.000189,
-          "ci_lo": 0.000107,
+          "brain": 0.942684,
+          "ci_hi": 0.000203,
+          "ci_lo": 0.000109,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [
             "random",
             "destroyed"
           ],
-          "destroyed": -2907.274411,
+          "destroyed": -1857.736113,
           "metric": "held-out R2 on split B",
           "n": 1485,
           "name": "x0",
           "pathA": 0.879091,
-          "random": -2850.853336,
+          "random": -1702.173084,
           "sst": 3.474797
         },
         {
-          "brain": 0.971956,
-          "ci_hi": 0.00142,
-          "ci_lo": -0.000384,
+          "brain": 0.971241,
+          "ci_hi": 0.001145,
+          "ci_lo": -0.000651,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [
             "random",
             "destroyed"
           ],
-          "destroyed": -1.079058,
+          "destroyed": -463.453392,
           "metric": "held-out R2 on split B",
           "n": 1485,
           "name": "h0",
           "pathA": 0.970781,
-          "random": -1.181445,
+          "random": -464.294685,
           "sst": 515.223007
         },
         {
-          "brain": -0.078078,
-          "ci_hi": 0.001295,
-          "ci_lo": -0.002728,
+          "brain": -0.081666,
+          "ci_hi": 0.001199,
+          "ci_lo": -0.002992,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": -0.090259,
+          "destroyed": -0.13314,
           "metric": "held-out R2 on split B",
           "n": 1485,
           "name": "price_sensitivity",
           "pathA": -0.063629,
-          "random": -0.071848,
+          "random": -0.085807,
           "sst": 74.199002
         },
         {
-          "brain": 0.469138,
-          "ci_hi": 5e-06,
-          "ci_lo": -0.000144,
+          "brain": 0.465024,
+          "ci_hi": -9e-06,
+          "ci_lo": -0.000161,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": -0.106186,
+          "destroyed": -0.114195,
           "metric": "held-out R2 on split B",
           "n": 1485,
           "name": "return_proneness",
           "pathA": 0.487907,
-          "random": -0.101905,
+          "random": -0.137747,
           "sst": 5.40748
         },
         {
-          "brain": 0.233567,
-          "ci_hi": 6105.751367,
-          "ci_lo": 2246.102523,
+          "brain": 0.255528,
+          "ci_hi": 6195.168207,
+          "ci_lo": 3285.799203,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [
             "random",
             "destroyed"
           ],
-          "destroyed": -5403.765914,
+          "destroyed": -195.206805,
           "metric": "held-out R2 on split B",
           "n": 1485,
           "name": "churn_day",
           "pathA": -0.013748,
-          "random": -5541.760499,
+          "random": -180.456731,
           "sst": 26428837.140741
         },
         {
-          "brain": 0.031268,
-          "ci_hi": 1.440896,
-          "ci_lo": -0.297503,
+          "brain": 0.028641,
+          "ci_hi": 1.104057,
+          "ci_lo": -0.045606,
           "comparator": "PATH A (GBM incumbent)",
-          "controls_unreadable": [
-            "random",
-            "destroyed"
-          ],
-          "destroyed": -3236.420451,
+          "controls_unreadable": [],
+          "destroyed": -0.177336,
           "metric": "held-out R2 on split B",
           "n": 1485,
           "name": "regime_switches",
           "pathA": -0.008355,
-          "random": -3284.347396,
+          "random": -0.139732,
           "sst": 21678.300337
         },
         {
-          "brain": -0.07108,
-          "ci_hi": 186.619544,
-          "ci_lo": -156.885978,
+          "brain": -0.069107,
+          "ci_hi": 197.498662,
+          "ci_lo": -156.884156,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": -0.096325,
+          "destroyed": -0.09048,
           "metric": "held-out R2 on split B",
           "n": 1485,
           "name": "final_regime_days",
           "pathA": -0.074482,
-          "random": -0.126659,
+          "random": -0.113904,
           "sst": 6223426.494276
         }
       ]
@@ -262,12 +259,12 @@
           "ci_lo": -2.3e-05,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": -0.03749,
+          "destroyed": -0.064749,
           "metric": "held-out R2 on split B",
           "n": 1485,
           "name": "x0",
           "pathA": 0.879091,
-          "random": -0.082692,
+          "random": -0.059053,
           "sst": 3.474797
         },
         {
@@ -276,12 +273,12 @@
           "ci_lo": -0.072276,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": -0.082453,
+          "destroyed": -0.094957,
           "metric": "held-out R2 on split B",
           "n": 1485,
           "name": "h0",
           "pathA": 0.970781,
-          "random": -0.100185,
+          "random": -0.103942,
           "sst": 515.223007
         },
         {
@@ -290,12 +287,12 @@
           "ci_lo": -0.002901,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": -0.082274,
+          "destroyed": -0.067516,
           "metric": "held-out R2 on split B",
           "n": 1485,
           "name": "price_sensitivity",
           "pathA": -0.063629,
-          "random": -0.082092,
+          "random": -0.067063,
           "sst": 74.199002
         },
         {
@@ -304,12 +301,12 @@
           "ci_lo": -0.000145,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": -0.099501,
+          "destroyed": -0.085019,
           "metric": "held-out R2 on split B",
           "n": 1485,
           "name": "return_proneness",
           "pathA": 0.487907,
-          "random": -0.125559,
+          "random": -0.085217,
           "sst": 5.40748
         },
         {
@@ -318,12 +315,12 @@
           "ci_lo": -1331.032605,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": -0.10266,
+          "destroyed": -0.088294,
           "metric": "held-out R2 on split B",
           "n": 1485,
           "name": "churn_day",
           "pathA": -0.013748,
-          "random": -0.127708,
+          "random": -0.105039,
           "sst": 26428837.140741
         },
         {
@@ -332,12 +329,12 @@
           "ci_lo": -0.568429,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": -0.088692,
+          "destroyed": -0.08661,
           "metric": "held-out R2 on split B",
           "n": 1485,
           "name": "regime_switches",
           "pathA": -0.008355,
-          "random": -0.062114,
+          "random": -0.087031,
           "sst": 21678.300337
         },
         {
@@ -346,12 +343,12 @@
           "ci_lo": -161.248456,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": -0.087258,
+          "destroyed": -0.062426,
           "metric": "held-out R2 on split B",
           "n": 1485,
           "name": "final_regime_days",
           "pathA": -0.074482,
-          "random": -0.08877,
+          "random": -0.087783,
           "sst": 6223426.494276
         }
       ]
@@ -376,8 +373,8 @@
     "source": "/home/austin_whaley/wonderland_work/demo_v2/path_a/path_a_wide_table.parquet"
   },
   "products": {
-    "path": "/home/austin_whaley/wonderland_work/cfm_v2h",
-    "registry_sha256": "bc61097a2ecc90d6",
+    "path": "/home/austin_whaley/wonderland_work/cfm_v2i",
+    "registry_sha256": "85b345fed1826e3e",
     "tag": "0.11.0r490759-b16d256e3lr3e-04o4c3b5899"
   },
   "splits": {

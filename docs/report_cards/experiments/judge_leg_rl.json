@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "4ea9684f506ddbf1",
-    "command": "measure_judge_law.py --products /home/austin_whaley/wonderland_work/cfm_v2h --demo /home/austin_whaley/wonderland_work/demo_v2 --legs supervised,unsupervised,rl,simulator --out-dir /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments",
-    "generated_at": "2026-11-01T20:31:02+00:00",
-    "git_commit": "00c8ddc92c0672cb9b9938bd84f48cbea344c8cd",
+    "behavior_hash": "32d15eb33e9956a4",
+    "command": "measure_judge_law.py --products /home/austin_whaley/wonderland_work/cfm_v2i --demo /home/austin_whaley/wonderland_work/demo_v2 --legs supervised,unsupervised,rl,simulator --out-dir /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments",
+    "generated_at": "2026-11-01T21:04:20+00:00",
+    "git_commit": "63b8d1e5c0a79c2fa854208afd8a8a0ab8e9c31a",
     "producer": "measure_judge_law.py"
   },
   "arms": {
@@ -13,7 +13,7 @@
   },
   "checks": {
     "rl": {
-      "evidence": "2 live task(s) (+0 degenerate) on n=1485 B-rows scored against 3515 A-rows; comparator PATH A (GBM incumbent); table 41 cols / 5000 customers; brain+ledger 2 task(s); WARNING: negative control uninformative on 1/2 trait(s) (known_effect_uplift) \u2014 R2 < -1 is a conditioning artifact of the wide design, so 'control below brain' proves nothing there",
+      "evidence": "2 live task(s) (+0 degenerate) on n=1485 B-rows scored against 3515 A-rows; comparator PATH A (GBM incumbent); table 41 cols / 5000 customers; brain+ledger 2 task(s)",
       "working": true
     }
   },
@@ -21,69 +21,66 @@
     "brain": {
       "tasks": [
         {
-          "brain": 0.233934,
-          "ci_hi": 0.002392,
-          "ci_lo": 0.000733,
+          "brain": 0.235633,
+          "ci_hi": 0.002367,
+          "ci_lo": 0.000796,
           "comparator": "PATH A (GBM incumbent)",
-          "controls_unreadable": [
-            "random",
-            "destroyed"
-          ],
-          "destroyed": -1.188758,
+          "controls_unreadable": [],
+          "destroyed": -0.22513,
           "metric": "R2 on the identified per-customer uplift (P(buy|offer=opt) - P(buy|offer off by >=2))",
           "n": 1149,
           "name": "known_effect_uplift",
           "pathA": 0.179408,
-          "random": -1.226705
+          "random": -0.18707
         },
         {
-          "brain": 0.246447,
-          "ci_hi": 0.013823,
-          "ci_lo": 0.002779,
+          "brain": 0.246651,
+          "ci_hi": 0.01411,
+          "ci_lo": 0.002783,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": 0.183193,
+          "destroyed": 0.166895,
           "metric": "area under the top-k realized-uplift curve on randomized arm-days (bootstrap re-selects inside each replicate)",
           "n": 1149,
           "name": "policy_value",
           "pathA": 0.238244,
-          "random": 0.171273
+          "random": 0.168131
         }
       ]
     },
     "brain_ledger": {
       "tasks": [
         {
-          "brain": 0.17436,
-          "ci_hi": 0.000909,
-          "ci_lo": -0.001121,
+          "brain": 0.174543,
+          "ci_hi": 0.000942,
+          "ci_lo": -0.001144,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": -0.104244,
+          "destroyed": -0.096964,
           "metric": "R2 on the identified per-customer uplift (P(buy|offer=opt) - P(buy|offer off by >=2))",
           "n": 1149,
           "name": "known_effect_uplift",
           "pathA": 0.179408,
-          "random": -0.088091
+          "random": -0.077314
         },
         {
-          "brain": 0.239624,
-          "ci_hi": 0.008383,
-          "ci_lo": -0.004931,
+          "brain": 0.239376,
+          "ci_hi": 0.008231,
+          "ci_lo": -0.005492,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": 0.166764,
+          "destroyed": 0.166118,
           "metric": "area under the top-k realized-uplift curve on randomized arm-days (bootstrap re-selects inside each replicate)",
           "n": 1149,
           "name": "policy_value",
           "pathA": 0.238244,
-          "random": 0.167862
+          "random": 0.175252
         }
       ]
     }
   },
   "diagnostics": {},
-  "evidence": "[rl] OK: 2 live task(s) (+0 degenerate) on n=1485 B-rows scored against 3515 A-rows; comparator PATH A (GBM incumbent); table 41 cols / 5000 customers; brain+ledger 2 task(s); WARNING: negative control uninformative on 1/2 trait(s) (known_effect_uplift) \u2014 R2 < -1 is a conditioning artifact of the wide design, so 'control below brain' proves nothing there",
+  "evidence": "[rl] OK: 2 live task(s) (+0 degenerate) on n=1485 B-rows scored against 3515 A-rows; comparator PATH A (GBM incumbent); table 41 cols / 5000 customers; brain+ledger 2 task(s)",
   "excluded": [],
   "identified": {
     "population": 3840,
@@ -96,8 +93,8 @@
     "source": "/home/austin_whaley/wonderland_work/demo_v2/path_a/path_a_wide_table.parquet"
   },
   "products": {
-    "path": "/home/austin_whaley/wonderland_work/cfm_v2h",
-    "registry_sha256": "bc61097a2ecc90d6",
+    "path": "/home/austin_whaley/wonderland_work/cfm_v2i",
+    "registry_sha256": "85b345fed1826e3e",
     "tag": "0.11.0r490759-b16d256e3lr3e-04o4c3b5899"
   },
   "splits": {

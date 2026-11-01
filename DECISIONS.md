@@ -7326,3 +7326,15 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - **Falsifier.** If return_proneness does not improve, or any trait that currently beats PATH A
   (x0, h0, price, churn, regime, final) regresses, revert to the fold and record it.
 - **Not changed.** Gates, tasks, comparator, split, heads.
+
+## DEC-539 — [FALSIFIED] appending the true 39-dim counter does not help; the fold stands
+- **Measured (n=5000, identical config, fold vs append):** return_proneness **0.4145 -> 0.4132**,
+  x0 0.9461 -> 0.9426, h0 0.9744 -> 0.9747, price +0.0175 -> +0.0143, churn +0.3717 -> +0.3797,
+  regime +0.1424 -> +0.1470, final +0.0035 -> +0.0025. No trait improves beyond noise, and the
+  chain lost a stage (5/6 -> 4/6).
+- **Verdict: FALSIFIED.** Explicitly appending the additive half buys nothing the fused fold does
+  not already carry. Reverted to the fold (DEC-537), which is the adopted readout.
+- **Implication for `return_proneness`.** The remaining gap (0.4145 vs 0.4879, CI
+  [−0.00036, −0.00018]) is not a missing-direction problem that more mass dimensions can fix.
+  It is a *capacity/head* boundary: a linear head on a 256-dim fused state cannot fully reproduce
+  the ratio structure the table gets from explicit count columns.
