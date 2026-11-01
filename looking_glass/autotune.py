@@ -333,12 +333,15 @@ def derive_contrast_tau(df, keys) -> tuple[float, dict]:
 
     # Derive contrast_tau from median distance squared
     # tau ~ median(distance^2) makes the softmax soft enough to not collapse
-    # but sharp enough to provide useful contrast
+    # but sharp enough to provide useful contrast.
+    # Customer-level features have low intrinsic dimensionality (customers look
+    # similar), so the derived tau is small. Raise the floor to ensure the
+    # contrastive objective is soft enough to not collapse the state.
     val = float(np.median(pairwise_dists) ** 2)
-    val = float(clip(val, 0.5, 2.0))
+    val = float(clip(val, 1.0, 2.0))  # floor at 1.0 (soft contrast)
 
     return val, {
-        "contrast_tau": f"median pairwise cosine distance^2={np.median(pairwise_dists):.3f} -> {val:.3f}"
+        "contrast_tau": f"median pairwise cosine distance^2={np.median(pairwise_dists):.3f} -> {val:.3f} (floor 1.0)"
     }
 
 
@@ -376,137 +379,117 @@ def derive_tau_eig(df, keys) -> tuple[float, dict]:
 
 
 def derive_rank_target(df, keys, dim: int) -> tuple[float, dict]:
-    """Derive rank target from the stream's intrinsic dimensionality.
+    """Derive rank target from the stream's signal count.
 
-    Computes the customer-level feature covariance and derives the rank target
-    as the fraction of dimensions carrying signal above the noise floor.
-    The target is the achievable participation ratio: n_signal_dims / dim.
+    The state must encode enough dimensions to represent the stream's complexity:
+    event types, numeric fields, generative traits, and timescale regimes.
+    Derived from the stream's schema, not from the feature covariance (which
+    has low intrinsic dimensionality due to customer similarity).
 
     Falls back to min(7, dim) / dim (7 generative traits) when insufficient data.
     """
+    import polars as pl
     import numpy as np
+    import json
 
-    X, _, _ = _customer_level_features(df, keys, sample_n=2000)
-    if X.shape[0] < 3 or X.shape[1] < 3:
-        n_generative = 7  # x0, h0, price_sensitivity, return_proneness, churn_day, regime_switches, final_regime_days
-        val = float(clip(n_generative / max(dim, 1), 0.01, 0.5))
-        return val, {"rank_target": f"fallback {n_generative}/dim={val:.3f}"}
+    # Count event types
+    n_et = int(df["event_type"].n_unique()) if "event_type" in df.columns else 0
 
-    # Center and compute covariance
-    Xc = X - X.mean(axis=0, keepdims=True)
-    cov = (Xc.T @ Xc) / (X.shape[0] - 1)
-    eigvals = np.linalg.eigvalsh(cov)
-    total_var = eigvals.sum()
+    # Count numeric fields discovered from event_attributes JSON
+    numeric_fields: set = set()
+    for attrs in df["event_attributes"].unique().to_list():
+        if attrs:
+            try:
+                d = json.loads(attrs)
+                for k, v in d.items():
+                    if isinstance(v, (int, float)):
+                        numeric_fields.add(k)
+            except Exception:
+                pass
 
-    if total_var <= 0:
-        n_generative = 7
-        val = float(clip(n_generative / max(dim, 1), 0.01, 0.5))
-        return val, {"rank_target": f"fallback {n_generative}/dim={val:.3f}"}
-
-    # Noise floor: median of bottom half, excluding exact zeros
-    nz = eigvals[eigvals > 1e-12 * total_var]
-    if nz.size < 3:
-        n_generative = 7
-        val = float(clip(n_generative / max(dim, 1), 0.01, 0.5))
-        return val, {"rank_target": f"fallback {n_generative}/dim={val:.3f}"}
-
-    # Count dimensions carrying >1% of total variance
-    n_signal = int((eigvals > 0.01 * total_var).sum())
-    val = float(clip(n_signal / max(dim, 1), 0.01, 0.5))
-
-    # Minimum: the state must encode at least the generative traits
-    # (x0, h0, price_sensitivity, return_proneness, churn_day, regime_switches,
-    # final_regime_days) plus the timescale regimes (n_experts=2: fast/slow).
+    # Generative traits the state must encode (from the certification targets)
     n_generative = 7  # x0, h0, price_sensitivity, return_proneness, churn_day, regime_switches, final_regime_days
-    n_timescales = 2  # derived from gap distribution: 2 distinct timescale regimes
-    min_rank = max(n_generative, n_timescales)
-    min_rank_target = float(clip(min_rank / max(dim, 1), 0.01, 0.5))
-    val = max(val, min_rank_target)
+
+    # Timescale regimes from the gap distribution
+    g = within_customer_gaps(df)
+    if g.size >= 3:
+        short_term = float((g < 86400.0).mean())
+        daily = float(((g >= 86400.0) & (g < 7 * 86400.0)).mean())
+        weekly = float(((g >= 7 * 86400.0) & (g < 30 * 86400.0)).mean())
+        monthly = float((g >= 30 * 86400.0).mean())
+        n_timescales = sum([short_term > 0.05, daily > 0.05, weekly > 0.05, monthly > 0.05])
+    else:
+        n_timescales = 2  # fast/slow fallback
+
+    n_signals = n_et + len(numeric_fields) + n_generative + n_timescales
+    val = float(clip(n_signals / max(dim, 1), 0.01, 0.5))
 
     return val, {
-        "rank_target": f"{n_signal} dims > 1% variance of {len(eigvals)} -> {val:.3f} (dim={dim}, min={min_rank_target:.3f})"
+        "rank_target": f"{n_signals} signals ({n_et} et + {len(numeric_fields)} num + {n_generative} gen + {n_timescales} ts) of {dim} -> {val:.3f}"
     }
 
 
 def derive_aib_target_rank(df, keys, dim: int) -> tuple[float, dict]:
-    """Derive AIB target rank from the stream's intrinsic dimensionality.
+    """Derive AIB target rank from the stream's signal count.
 
     The AIB controller compresses the state to hold PR/dim at this target.
     Derived from the same data as rank_target so the AIB and GeometryBank
-    governors are consistent. The target is the achievable participation
-    ratio: n_signal_dims / dim.
+    governors are consistent.
 
-    Falls back to min(7, dim) / dim (7 generative traits) when insufficient data.
+    Falls back to the rank_target derivation when insufficient data.
     """
-    import numpy as np
-
-    X, _, _ = _customer_level_features(df, keys, sample_n=2000)
-    if X.shape[0] < 3 or X.shape[1] < 3:
-        n_generative = 7
-        val = float(clip(n_generative / max(dim, 1), 0.01, 0.5))
-        return val, {"aib_target_rank": f"fallback {n_generative}/dim={val:.3f}"}
-
-    Xc = X - X.mean(axis=0, keepdims=True)
-    cov = (Xc.T @ Xc) / (X.shape[0] - 1)
-    eigvals = np.linalg.eigvalsh(cov)
-    total_var = eigvals.sum()
-
-    if total_var <= 0:
-        n_generative = 7
-        val = float(clip(n_generative / max(dim, 1), 0.01, 0.5))
-        return val, {"aib_target_rank": f"fallback {n_generative}/dim={val:.3f}"}
-
-    nz = eigvals[eigvals > 1e-12 * total_var]
-    if nz.size < 3:
-        n_generative = 7
-        val = float(clip(n_generative / max(dim, 1), 0.01, 0.5))
-        return val, {"aib_target_rank": f"fallback {n_generative}/dim={val:.3f}"}
-
-    n_signal = int((eigvals > 0.01 * total_var).sum())
-    val = float(clip(n_signal / max(dim, 1), 0.01, 0.5))
-
-    # Minimum: match the rank_target minimum (7 generative traits)
-    n_generative = 7
-    min_rank_target = float(clip(n_generative / max(dim, 1), 0.01, 0.5))
-    val = max(val, min_rank_target)
-
-    return val, {
-        "aib_target_rank": f"{n_signal} dims > 1% variance of {len(eigvals)} -> {val:.3f} (dim={dim}, min={min_rank_target:.3f})"
-    }
+    rt, rt_receipt = derive_rank_target(df, keys, dim)
+    return rt, {"aib_target_rank": f"consistent with rank_target={rt:.3f} ({rt_receipt['rank_target']})"}
 
 
 def derive_tau_mp(df, keys, dim: int) -> tuple[float, dict]:
-    """Derive Marchenko-Pastur floor (tau_mp) from the achievable PR/dim.
+    """Derive Marchenko-Pastur floor (tau_mp) from the stream's signal count.
 
     The isotropic barrier opens only below tau_mp and stops competing once
-    PR/dim reaches it. Derived from the achievable PR/dim (rank_target) so
-    the barrier stops competing once geometry is sufficient.
+    PR/dim reaches it. Derived from the same signal count as rank_target so
+    the barrier stops competing once geometry reaches the target rank.
 
     Falls back to 0.05 when insufficient data.
     """
+    import polars as pl
     import numpy as np
+    import json
 
-    X, _, _ = _customer_level_features(df, keys, sample_n=2000)
-    if X.shape[0] < 3 or X.shape[1] < 3:
-        return 0.05, {"tau_mp": "fallback 0.05 (too few customers/features)"}
+    # Count event types
+    n_et = int(df["event_type"].n_unique()) if "event_type" in df.columns else 0
 
-    Xc = X - X.mean(axis=0, keepdims=True)
-    cov = (Xc.T @ Xc) / (X.shape[0] - 1)
-    eigvals = np.linalg.eigvalsh(cov)
-    total_var = eigvals.sum()
+    # Count numeric fields discovered from event_attributes JSON
+    numeric_fields: set = set()
+    for attrs in df["event_attributes"].unique().to_list():
+        if attrs:
+            try:
+                d = json.loads(attrs)
+                for k, v in d.items():
+                    if isinstance(v, (int, float)):
+                        numeric_fields.add(k)
+            except Exception:
+                pass
 
-    if total_var <= 0:
-        return 0.05, {"tau_mp": "fallback 0.05 (no variance)"}
+    # Generative traits the state must encode
+    n_generative = 7  # x0, h0, price_sensitivity, return_proneness, churn_day, regime_switches, final_regime_days
 
-    # Achievable PR/dim from the data
-    n_signal = int((eigvals > 0.01 * total_var).sum())
-    achievable_pr = float(clip(n_signal / max(dim, 1), 0.01, 0.5))
+    # Timescale regimes from the gap distribution
+    g = within_customer_gaps(df)
+    if g.size >= 3:
+        short_term = float((g < 86400.0).mean())
+        daily = float(((g >= 86400.0) & (g < 7 * 86400.0)).mean())
+        weekly = float(((g >= 7 * 86400.0) & (g < 30 * 86400.0)).mean())
+        monthly = float((g >= 30 * 86400.0).mean())
+        n_timescales = sum([short_term > 0.05, daily > 0.05, weekly > 0.05, monthly > 0.05])
+    else:
+        n_timescales = 2  # fast/slow fallback
 
-    # tau_mp = achievable PR/dim, so the barrier stops competing once geometry
-    # reaches the achievable level. Clamped to a reasonable range.
-    val = float(clip(achievable_pr, 0.01, 0.5))
+    n_signals = n_et + len(numeric_fields) + n_generative + n_timescales
+    val = float(clip(n_signals / max(dim, 1), 0.01, 0.5))
 
-    return val, {"tau_mp": f"achievable PR/dim={achievable_pr:.3f} -> {val:.3f}"}
+    return val, {
+        "tau_mp": f"{n_signals} signals of {dim} -> {val:.3f} (barrier stops at rank_target)"
+    }
 
 
 def derive_budget(n_seqs, batch, dim) -> tuple[int, dict]:
