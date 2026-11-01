@@ -428,6 +428,87 @@ def derive_rank_target(df, keys, dim: int) -> tuple[float, dict]:
     }
 
 
+def derive_aib_target_rank(df, keys, dim: int) -> tuple[float, dict]:
+    """Derive AIB target rank from the stream's intrinsic dimensionality.
+
+    The AIB controller compresses the state to hold PR/dim at this target.
+    Derived from the same data as rank_target so the AIB and GeometryBank
+    governors are consistent. The target is the achievable participation
+    ratio: n_signal_dims / dim.
+
+    Falls back to min(7, dim) / dim (7 generative traits) when insufficient data.
+    """
+    import numpy as np
+
+    X, _, _ = _customer_level_features(df, keys, sample_n=2000)
+    if X.shape[0] < 3 or X.shape[1] < 3:
+        n_generative = 7
+        val = float(clip(n_generative / max(dim, 1), 0.01, 0.5))
+        return val, {"aib_target_rank": f"fallback {n_generative}/dim={val:.3f}"}
+
+    Xc = X - X.mean(axis=0, keepdims=True)
+    cov = (Xc.T @ Xc) / (X.shape[0] - 1)
+    eigvals = np.linalg.eigvalsh(cov)
+    total_var = eigvals.sum()
+
+    if total_var <= 0:
+        n_generative = 7
+        val = float(clip(n_generative / max(dim, 1), 0.01, 0.5))
+        return val, {"aib_target_rank": f"fallback {n_generative}/dim={val:.3f}"}
+
+    nz = eigvals[eigvals > 1e-12 * total_var]
+    if nz.size < 3:
+        n_generative = 7
+        val = float(clip(n_generative / max(dim, 1), 0.01, 0.5))
+        return val, {"aib_target_rank": f"fallback {n_generative}/dim={val:.3f}"}
+
+    n_signal = int((eigvals > 0.01 * total_var).sum())
+    val = float(clip(n_signal / max(dim, 1), 0.01, 0.5))
+
+    # Minimum: match the rank_target minimum (7 generative traits)
+    n_generative = 7
+    min_rank_target = float(clip(n_generative / max(dim, 1), 0.01, 0.5))
+    val = max(val, min_rank_target)
+
+    return val, {
+        "aib_target_rank": f"{n_signal} dims > 1% variance of {len(eigvals)} -> {val:.3f} (dim={dim}, min={min_rank_target:.3f})"
+    }
+
+
+def derive_tau_mp(df, keys, dim: int) -> tuple[float, dict]:
+    """Derive Marchenko-Pastur floor (tau_mp) from the achievable PR/dim.
+
+    The isotropic barrier opens only below tau_mp and stops competing once
+    PR/dim reaches it. Derived from the achievable PR/dim (rank_target) so
+    the barrier stops competing once geometry is sufficient.
+
+    Falls back to 0.05 when insufficient data.
+    """
+    import numpy as np
+
+    X, _, _ = _customer_level_features(df, keys, sample_n=2000)
+    if X.shape[0] < 3 or X.shape[1] < 3:
+        return 0.05, {"tau_mp": "fallback 0.05 (too few customers/features)"}
+
+    Xc = X - X.mean(axis=0, keepdims=True)
+    cov = (Xc.T @ Xc) / (X.shape[0] - 1)
+    eigvals = np.linalg.eigvalsh(cov)
+    total_var = eigvals.sum()
+
+    if total_var <= 0:
+        return 0.05, {"tau_mp": "fallback 0.05 (no variance)"}
+
+    # Achievable PR/dim from the data
+    n_signal = int((eigvals > 0.01 * total_var).sum())
+    achievable_pr = float(clip(n_signal / max(dim, 1), 0.01, 0.5))
+
+    # tau_mp = achievable PR/dim, so the barrier stops competing once geometry
+    # reaches the achievable level. Clamped to a reasonable range.
+    val = float(clip(achievable_pr, 0.01, 0.5))
+
+    return val, {"tau_mp": f"achievable PR/dim={achievable_pr:.3f} -> {val:.3f}"}
+
+
 def derive_budget(n_seqs, batch, dim) -> tuple[int, dict]:
     """Training budget from problem size, not a fixed count. The governor stops
     earlier on convergence; this is only the ceiling."""
@@ -452,6 +533,8 @@ class ResolvedCFM:
     contrast_tau: float = 1.0
     tau_eig: float = 0.05
     rank_target: float = 0.35
+    aib_target_rank: float = 0.5
+    tau_mp: float = 0.70
     receipt: dict = field(default_factory=dict)
 
 
@@ -471,6 +554,8 @@ def resolve_cfm(base, df, keys, vocab_sizes) -> ResolvedCFM:
     ct, r6 = derive_contrast_tau(df, keys)
     te, r7 = derive_tau_eig(df, keys)
     rt, r8 = derive_rank_target(df, keys, dim)
+    atr, r9 = derive_aib_target_rank(df, keys, dim)
+    tmp, r10 = derive_tau_mp(df, keys, dim)
     # eval cadence: enough evals to detect a plateau inside the budget.
     eval_every = int(clip(round(budget / 20.0), 5, 5000))
     # patience: a fraction of the eval budget, so convergence, not a count, is
@@ -492,14 +577,10 @@ def resolve_cfm(base, df, keys, vocab_sizes) -> ResolvedCFM:
         ("contrast_tau", (ct, r6)),
         ("tau_eig", (te, r7)),
         ("rank_target", (rt, r8)),
+        ("aib_target_rank", (atr, r9)),
+        ("tau_mp", (tmp, r10)),
     ):
-        user = getattr(
-            base,
-            name
-            if name not in ("contrast_tau", "tau_eig", "rank_target")
-            else name,
-            None,
-        )
+        user = getattr(base, name, None)
         default = {
             "seq_len": 128,
             "dim": 64,
@@ -509,6 +590,8 @@ def resolve_cfm(base, df, keys, vocab_sizes) -> ResolvedCFM:
             "contrast_tau": 0.1,
             "tau_eig": 0.05,
             "rank_target": 0.35,
+            "aib_target_rank": 0.5,
+            "tau_mp": 0.70,
         }[name]
         if user is not None and user != default and user != 0:
             rec["overrides"][name] = user
@@ -538,6 +621,8 @@ def resolve_cfm(base, df, keys, vocab_sizes) -> ResolvedCFM:
         contrast_tau=out["contrast_tau"],
         tau_eig=out["tau_eig"],
         rank_target=out["rank_target"],
+        aib_target_rank=out["aib_target_rank"],
+        tau_mp=out["tau_mp"],
         receipt=rec,
     )
 

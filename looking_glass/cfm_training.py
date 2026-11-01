@@ -145,6 +145,8 @@ def train_cfm(cfg: CFMConfig):
     cfg.contrast_tau = res_all.contrast_tau
     cfg.tau_eig = res_all.tau_eig
     cfg.rank_target = res_all.rank_target
+    cfg.aib_target_rank = res_all.aib_target_rank
+    cfg.tau_mp = res_all.tau_mp
     apply_set_overrides(cfg, res.receipt)  # record every --set key in receipts
     apply_set_overrides(cfg, res_all.receipt)
     # Decision-sufficiency (RL leg): act on the declared randomized actions by adding the
