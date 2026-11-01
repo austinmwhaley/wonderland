@@ -13,16 +13,16 @@
 
 ## 0. Read order
 
-1. `REPORT_CARD.md` — the run report and the all-green gate-of-record section.
-2. `docs/AUDIT_CARD.md` — the full research audit and its open frontier rows.
-3. `DECISIONS.md` — the pre-registrations and measured outcomes.
-4. `STATUS.md` — the claimed state and blockers.
-5. `docs/report_cards/experiments/` — every receipt the card cites.
-6. `AUDIT.md` — the single BACKWARD file: principle audit, findings, and the
+1. `REPORT_CARD.md` — the run report, the all-green gate-of-record section, and **every
+   open row** (it is the only card; there is no separate audit card).
+2. `DECISIONS.md` — the pre-registrations and measured outcomes.
+3. `STATUS.md` — the claimed state and blockers.
+4. `docs/report_cards/experiments/` — every receipt the card cites.
+5. `AUDIT.md` — the single BACKWARD file: principle audit, findings, and the
    `BACKWARD_REQUIREMENTS_JSON` block already on the card.
-8. `docs/SPINE.md`, `AGENTS.md` — the goal, laws, and certification integrity rules.
-9. The code and tests at the recorded commit.
-9. The findings already in `AUDIT.md` — their disposition.
+6. `docs/SPINE.md`, `AGENTS.md` — the goal, laws, and certification integrity rules.
+7. The code and tests at the recorded commit.
+8. The findings already in `AUDIT.md` — their disposition.
 
 Record the exact **commit, behavior hash, artifact tag/hash, and card hash** at the top
 of the review. A review of an unrecorded tree is not evidence.

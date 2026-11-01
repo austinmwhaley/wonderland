@@ -318,7 +318,8 @@ BACKWARD requirements rendered in). The inherited B+B+C card is archived at
 only. The project is judged by the rebuild sections of `REPORT_CARD.md`; `PLAN.md` is the one
 forward plan.
 
-**Audit:** `docs/AUDIT_CARD.md` — the full research card (26 PASS / 3 FAIL). The three open
+**Audit:** the open research rows live on `REPORT_CARD.md` itself (26 PASS / 3 FAIL when
+that archive was written). The three open
 research rows are A3 category identity, A6 IPS policy value, and O1's strict next-event point
 gate; churn90 is a ceiling tie. These are disclosed in the primary card's limitations section
 and are **not** claimed by the demo.

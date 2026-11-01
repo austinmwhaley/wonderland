@@ -5,7 +5,7 @@
 > they were accepted or rejected, and the remaining work in execution order.
 >
 > **Read before acting:** `AGENTS.md`, this file, `STATUS.md`, `DECISIONS.md`,
-> `REPORT_CARD.md`, and `docs/AUDIT_CARD.md`. `AGENTS.md` always wins over this plan.
+> and `REPORT_CARD.md`. `AGENTS.md` always wins over this plan.
 >
 > **Checkpoint:** `971eeb2` on `primary-encoder`.
 
@@ -54,7 +54,7 @@ named state views
     ↓
 supervised / unsupervised / RL plugins
     ↓
-receipts → REPORT_CARD.md + docs/AUDIT_CARD.md
+receipts → REPORT_CARD.md
 ```
 
 ### Completion criteria
@@ -110,7 +110,7 @@ The following work is complete or already measured. Do not restart it without a 
   - cold and warm serving costs measured separately.
 - Tests for measure algebra, schema roles, artifact lifecycle, stream encoding, run-manifest
   identity, response bootstrap validity, and fail-safe frozen loading.
-- `REPORT_CARD.md` at repository root and `docs/AUDIT_CARD.md`.
+- `REPORT_CARD.md` at repository root (the one card; every open row is on it).
 
 ### 2.2 Current evidence
 
@@ -575,7 +575,7 @@ Known-effect recovery and policy-value evaluation remain separate claims.
 1. Generate the demo data through the documented command.
 2. Build the frozen artifact once from the final code.
 3. Generate all receipts from that exact artifact in one owned process.
-4. Generate `REPORT_CARD.md` and `docs/AUDIT_CARD.md`.
+4. Generate `REPORT_CARD.md`.
 5. Run focused tests, the fast suite, `ruff check`, `ruff format --check`, and the principle audit.
 6. Run the full suite if the environment permits; disclose any incomplete run.
 7. Present the terminal/Markdown demo with `scripts/run_demo.py` (it prints the card).
@@ -864,7 +864,7 @@ Four real bugs were found and fixed while verifying this:
 
 ```text
 REPORT_CARD.md      B 28/28 PASS · B+C 6/6 PASS · 34 PASS / 0 FAIL
-docs/AUDIT_CARD.md  26 PASS / 3 FAIL (open research rows preserved)
+                    (open rows are rows on this same card; no side audit file)
 ```
 
 Measured highlights:

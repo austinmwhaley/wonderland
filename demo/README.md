@@ -64,8 +64,8 @@ Every number on the page is generated from the sources above, so it cannot drift
 
 This page presents the positive results. Every number on it is a real measured number; losing or
 tie-level comparisons are not displayed here. The complete record — including category identity,
-anomaly/segmentation, the churn tie, and Layer-1 status — remains in `REPORT_CARD.md` and
-`docs/AUDIT_CARD.md`, which are the authority.
+anomaly/segmentation, the churn tie, and Layer-1 status — remains in `REPORT_CARD.md`,
+which is the authority.
 
 The eight axes include A6 (Causal), which is Layer-1 work: the card states that it is evaluated
 separately rather than showing a number.

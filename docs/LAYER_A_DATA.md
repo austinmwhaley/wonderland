@@ -80,5 +80,5 @@ is fixed-window engineering.
 
 The demo is this reference stream run through the normal pipeline:
 `python3 scripts/run_demo.py --generate --build --refresh` (or point `--data` at an
-existing build). The primary card is `REPORT_CARD.md`; the full audit is
-`docs/AUDIT_CARD.md`.
+existing build). The card is `REPORT_CARD.md` — it carries every open row; there is no
+separate audit file.

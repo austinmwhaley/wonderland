@@ -17,11 +17,11 @@
 3. `STATUS.md` — live state (macro + micro). Read first to restore context.
 4. `DECISIONS.md` — append-only decision log. Read the tail; never re-litigate a
    settled decision without new evidence.
-5. `REPORT_CARD.md` — the run report and gate-of-record section (see §4).
-6. `docs/AUDIT_CARD.md` — the full research audit; never hide an open row.
-7. `AUDIT.md` — the principle-alignment audit written by BACKWARD.
-8. `docs/report_cards/experiments/` — the receipts every number must trace to.
-9. `PLAN.md`, `loop/UNIVERSALITY.md` — forward plan and Layer-1 contract.
+5. `REPORT_CARD.md` — the ONE card: run report, gate-of-record, and every open row (see §4).
+6. `AUDIT.md` — the principle-alignment audit written by BACKWARD.
+7. `docs/report_cards/experiments/` — the receipts every number must trace to.
+8. `PLAN.md`, `loop/UNIVERSALITY.md` — forward plan and Layer-1 contract.
+9. §11 below — the A/B/C pipeline contract (layers, schema, plugin surface, gates).
 
 If a file contradicts another, the order is: **AGENTS.md doctrine → SPINE laws →
 frozen gate definitions → receipts → STATUS/DECISIONS narrative**. Narrative never
@@ -95,11 +95,12 @@ A run that cannot name its axis, its frozen acceptance, or its receipt is not a 
 
 ## 4. The single card and the completion contract
 
-**Operator ruling (DEC-497): `REPORT_CARD.md` is the one card.** The separate
-`docs/JUDGE_CARD.md` is retired. The rebuild judge's full proof functionality — the
-8 leg-columns, the 6-stage ladder, certification hygiene, freshness, the anti-false-PASS
-rules, and S6 — is integrated into `REPORT_CARD.md` by the single renderer
-`scripts/report_card.py`.
+**Operator ruling (DEC-497, extended): `REPORT_CARD.md` is the one and only card.** There is
+no second card file: the old judge card was retired and its file deleted, and the separate
+`docs/AUDIT_CARD.md` research audit was removed — the single renderer
+`scripts/report_card.py` now carries the 8 leg-columns, the 6-stage ladder, certification
+hygiene, freshness, the anti-false-PASS rules, S6, **and** every open row. If a row is open it
+appears on the card; nothing may be parked in a side document.
 
 The inherited B+B+C card is archived at `docs/archive/REPORT_CARD_INHERITED.md`; it
 measures the old pipeline and is **disclosure only**, never the gate.
@@ -193,9 +194,8 @@ Follow AGENTS.md's certification integrity rules 1–8. In practice:
 |---|---|
 | `STATUS.md` | macro (goal, stage, progress, blockers) + micro (current task, last completed, next 3, environment). Update **before yielding**. |
 | `DECISIONS.md` | append-only. Pre-registration before every run; measured outcome after; context / alternatives / decision+principle / trade-offs. Never edit old entries. |
-| `REPORT_CARD.md` | the run report + gate-of-record section (§4). Regenerated each run; no hand-written numbers. |
+| `REPORT_CARD.md` | the run report + gate-of-record section (§4) and **every open row** — it is the only card; no row may be hidden. Regenerated each run; no hand-written numbers. |
 | `AUDIT.md` | the single BACKWARD file: principle audit + findings + `BACKWARD_REQUIREMENTS_JSON` block rendered into `REPORT_CARD.md` (§4). |
-| `docs/AUDIT_CARD.md` | the full research audit; never hide an open row. |
 | `docs/report_cards/experiments/` | receipts; `protocols/<name>/` archives for non-adopted runs. |
 | `PLAN.md` | the forward plan; reconcile at every phase transition. |
 
@@ -281,6 +281,241 @@ a gate-touching or authorization item.
 - Per-row Python loops in hot paths; batch-coupled serving statistics; silent clamps.
 - Running a second LLM container, exceeding the caps, or training while the co-tenant
   is unbounded.
+
+---
+
+## 11. The A/B/C pipeline contract
+
+*(merged from the retired `docs/ABC_CONTRACT.md` — this is the only copy)*
+
+One canonical event stream in, one frozen foundation model out, plugins on top. Everything
+flows one way:
+
+```text
+Layer A: rabbit_hole (canonical events)
+    -> Layer B: looking_glass (one frozen CFM per stream, E(customer,t))
+        -> Layer C: plugins / gates / white_queen (read E at train AND serve)
+```
+
+Authoritative code: `rabbit_hole/schema.py`, `looking_glass/customer_foundation_model.py`,
+`looking_glass/cfm_training.py`, `looking_glass/cfm_state.py`, `looking_glass/layer_b.py`,
+`looking_glass/plugin_contract.py`, and the gates named below.
+
+### Layer A — canonical event stream
+
+`rabbit_hole` emits one append-only stream. Onboarding writes, and the CFM reader accepts, the
+nine-column `looking_glass.onboard.CANONICAL_COLUMNS`:
+
+```text
+customer_key, event_ts, event_type, brand, entity_type, entity_id,
+source_table, value, event_attributes
+```
+
+`rabbit_hole/schema.py` draws a stricter, deliberately minimal guarantee: every stream has
+`customer_key, event_ts, event_type, source_table, event_attributes` (`CANONICAL_FIELDS`).
+`brand`, `entity_type`, `entity_id`, `value` are *not* assumed universal there;
+`canonicalize_row()` folds any non-canonical column into the `event_attributes` JSON map and
+`canonical_view_sql()` exposes a wide table as the five-field canonical view
+(`customer_events_canonical`). `cfm_data._read_stream` accepts both forms — top-level content
+columns when present, otherwise extracted from `event_attributes` — and discovers every JSON
+attribute key so arbitrary schemas are consumed without code edits.
+
+- `customer_key` — customer identifier (string in canonical output).
+- `event_ts` — event time; canonical output is UTC ISO text. `cfm_config.as_of_epoch()` is the
+  one day-boundary rule: naive ISO dates mean UTC midnight.
+- `event_type` — event name.
+- `brand`, `entity_type`, `entity_id` — optional content dimensions; in the minimal
+  `rabbit_hole.schema` contract these live inside `event_attributes`, and onboarding promotes
+  them to top-level when detectable.
+- `source_table` — stream/table origin; defaults to the source name during onboarding.
+- `value` — monetary value (float; 0.0 when absent).
+- `event_attributes` — JSON object holding every field not promoted above. Action keys
+  (`freq`, `hour`, `channel`, `offer`, ...) are JSON keys on send-like events.
+
+`rabbit_hole.schema.COLUMN_ALIASES` defines accepted aliases (`customer_id`, `timestamp`,
+`event_name`, `amount`, ...). `canonicalize_row()` folds remaining columns into
+`event_attributes`; no information is dropped.
+
+### Layer B — one frozen CFM per stream
+
+```text
+state_c(t)   = CFM_version(events of customer c with timestamp <= t)
+E(customer,t)= learned shape || learned compression of the full-history measure
+```
+
+Self-supervised (no labels), frozen before any plugin sees it. The full-history measure is
+schema-derived from the whole stream (`layer_b.generic_measure`, DEC-197), not from the queried
+customer subset; its compression is fit on training customers and frozen for serving. `E` is
+produced by `cfm_training.forward_embedding()` and loaded at serve by
+`cfm_state.load_frozen_encoder()`.
+
+```bash
+python3 -m looking_glass.customer_foundation_model train \
+  --db <stream.parquet> --as-of <date> \
+  [--set use_measure=True \
+   --set effect_actions=('freq','hour','channel','offer') \
+   --set action_fields=('freq','hour','channel','offer','discount_pct')]
+```
+
+Flags: `--customers`, `--sample-a`, `--anchors`, `--out-dir`, `--set`. `--as-of` cuts the raw
+stream to events `<= as_of` before keys, split, anchors, and training
+(`cfm_data._cut_as_of`) — point-in-time and leak-free.
+
+**A/B split.** `cfm_data.assign_split()` hashes each customer into population A (default 70%,
+`split_a_frac`) or B. The encoder trains only on sample A; A and B never overlap. `--as-of`
+also rotates the split seed monthly (`cfm_config.monthly_split_seed`), so membership and anchor
+dates refresh on each monthly rebuild. Everything downstream — plugin fitting, anchor
+embeddings, gates, the card — uses held-out population B.
+
+**Anchors.** For sample-B customers, `build_sequences(..., with_anchors=True)` draws `n_anchors`
+(default 6) uniform-random anchor days over the customer's history. At each anchor the model
+encodes history up to that day, then fades the state to the anchor boundary (the same rule used
+at serve). These point-in-time embeddings are written to `anchor_embeddings` by
+`cfm_state.build_products()`; plugins train on them.
+
+**`E` composition (DEC-198).** At serve, `load_frozen_encoder()` sets
+`model.accumulator_on = False`. The consumed embedding is
+
+```text
+E = shape (donor readout; 256 dims in the certified runs) || learned measure (82 dims)   ~338
+```
+
+The **accumulator is the hand-RFM baseline** (token-drive sum/mean/last at multiple timescales),
+not part of the production pipeline; it is switched on only for the card's "hand features"
+comparison row. `measure_dim=0` (default) keeps the measure **full/lossless** (DEC-195); a
+positive value is explicit compression. `scripts/reference_pipeline.py` requests
+`measure_dim=128`; with 82 available measure columns `LayerBEmbedder.fit()` caps components at
+82, so the served `E` remains ~338. `use_measure=True` activates the learned measure;
+`effect_actions` activates the action-conditioned response objective; `action_fields` excludes
+logged action columns from the generic measure so `E` does not carry the treatment itself.
+
+### Layer C — the plugin contract
+
+A plugin reads the frozen `E` for **both** training and inference: it fits on held-out
+B-customer anchors, is then frozen, and serving never retrains it.
+
+`looking_glass/plugin_contract.py` defines one surface, pickle-persisted, dependency-light
+(numpy + scikit-learn):
+
+| member | meaning |
+|---|---|
+| `Plugin.fit(E, targets)` | learn from frozen `E` and family-specific targets |
+| `Plugin.infer(E)` | apply the fitted artifact (no retraining) |
+| `Plugin.save(path)` / `Plugin.load(path)` | pickle persistence |
+| `Plugin.freeze()` | make immutable; later `fit` raises |
+| `fit_and_freeze(plugin, E, targets, out_dir)` | fit, freeze, save, return the frozen plugin |
+
+Families:
+
+- `SupervisedPlugin(estimator, target=...)` — any scikit-learn regressor/classifier on `E`;
+  `infer` returns predictions, `proba`/`predict_proba` where available.
+- `UnsupervisedPlugin(n_clusters=..., scaler=..., kmeans=...)` — KMeans on `E` (optional
+  scaler); `infer` returns cluster labels, `transform` returns distances.
+- `DecisionPlugin(actions=..., estimator=...)` — value model `V(E,a)`; `fit` takes
+  `targets=(A, y)` with numeric actions, `values(E)` returns per-action values, `infer` returns
+  `argmax_a V(E,a)`.
+- `PluginRegistry` — name-keyed collection; `save_all(dir)`, `load_all(dir)`, `from_dir(dir)`.
+
+A plugin is trained against the frozen `E` and is never given a path back into the encoder.
+
+### Certification gates
+
+**`U` — universality (`looking_glass/universality.py`).**
+
+```text
+U        = 1 - max_{informative tau} normalized oracle-gap_tau
+gap_tau  = score([E, exhaustive full-history measure]) - score(E)
+normalized = gap_tau / range_tau
+```
+
+The oracle is the schema-derived exhaustive full-history measure (not hand-RFM), cross-checked
+by an independent sequence model. Evaluation is on held-out population B. `SOLVED` means `E` is
+within the oracle's own noise on every informative member.
+
+```bash
+python3 -m looking_glass.universality --db <stream> --ckpt-dir <dir> --tag <tag> \
+  --as-of <date> [--customers 25000] [--horizons 30,90] [--require-solved]
+```
+
+`--synthetic` runs the known-sufficient-statistic machinery check.
+
+**Use-case gate (`looking_glass/use_case_gate.py`).** `discover_action_keys(cfg)` finds
+randomized discrete action keys (JSON keys on send events, preferring a declared `action_keys`
+receipt). `run_use_case(model, cfg, action_key)` reports the empirical dose-response and a
+per-customer policy from `E`: a joint value model `V(E,a)` is cross-fitted by customer, the
+candidate is chosen on one half of customers, and its value is estimated on the other half by
+**g-computation** (no importance reweighting, no winner's curse). Verdict is `DEPLOY` iff the
+paired bootstrap 95% CI lower bound on the policy gain is `> 0`, else `HOLD`.
+
+```bash
+python3 -m looking_glass.use_case_gate --db <stream> --ckpt-dir <dir> --tag <tag> \
+  --as-of <date> --actions freq,hour
+```
+
+**Null controls.** The card re-runs the same use-case and decision gates on a signal-free
+stream (`snr=0`) trained into a separate null checkpoint. Every real-stream `DEPLOY` must be
+paired with a null `HOLD`; a null that also deploys invalidates the claim.
+
+The card's default B+C arm uses `looking_glass.decision_certify.certify()` (doubly-robust value
+with the logging marginal propensity; `N/A` when there is no per-customer arm structure). The
+real tribunal below is the optional, stronger witness.
+
+**Real white_queen (`looking_glass/white_queen_bridge.py`).** Puts
+`white_queen.tribunal.ope.api.evaluate` directly on the `E`-policy:
+
+- `certify(model, cfg, horizon_days=90)` — candidate policy reads `E`; reward is the logged
+  future monetary outcome (`sum(log1p|value|)` on purchases); no logged propensity is passed
+  (white_queen estimates it).
+- `certify_period(model, cfg, action_key="channel")` — per-period randomized action (channel,
+  offer, freq, ...); context is the customer's frozen `E`.
+- `oracle(...)` — a known-truth policy (e.g. `arm_pref`/`channel_pref`) as a positive control.
+
+DEPLOY/HOLD is white_queen's conservative verdict: never ship worse than logging.
+
+**Supervised gate (`looking_glass/supervised_gate.py`).** `run_supervised()` fits heads on
+held-out `E` for churn, reactivation, next purchase, return, LTV, next value, next
+channel/category/item. Per target it reports skill, a bootstrap 95% CI, and `PASS`/`FAIL`
+(`PASS` iff the CI lower bound is above the model-free baseline: 0 for regression,
+majority/0.5 for classification). With `null=(db, tag, ckpt_dir)`, the same targets run on the
+null encoder and `null_ok` is true only if every null target `FAIL`s.
+
+**Unsupervised gate (`looking_glass/unsupervised_gate.py`).** `run_unsupervised()` certifies
+segmentation and lookalike geometry on held-out `E`: silhouette `> 0`, value-differentiation
+ANOVA `p < 0.05`, and lookalike enrichment `> 1.0` are all required for `PASS`. With a null
+encoder, `null_ok` is true only if the null verdict is `FAIL`.
+
+**Reference card (`looking_glass/foundation_report.py`).** `build_card()` emits the one-pager:
+U verdict, per-target rows, architecture, use cases, B+C decision certification, optional
+white_queen/supervised/unsupervised sections, and null controls. This is the *old* reference
+pipeline's card — the project's steering card is `REPORT_CARD.md` (§4).
+
+```bash
+python3 -m looking_glass.foundation_report --db <stream> --ckpt-dir <dir> --tag <tag> \
+  --as-of <date> --out card.md [--fast] [--white-queen --supervised --unsupervised]
+```
+
+`--fast` skips the bare/accumulator comparison U runs (the dominant cost); `--full` is **not** a
+`foundation_report` flag — it is the `scripts/reference_pipeline.py` flag that adds white_queen,
+supervised, and unsupervised to the card. Without it the reference card runs the fast core
+(B + use-cases + null controls).
+
+### One command
+
+```bash
+python3 scripts/reference_pipeline.py --as-of <date> [--full] [--dry-run]
+```
+
+Stages in `scripts/reference_pipeline.py`:
+
+1. generate the REFERENCE stream (real signal);
+2. generate the REFERENCE null control (`--snr 0`);
+3. train the foundation model on the real stream;
+4. train the foundation model on the null stream;
+5. emit `card_reference.md` from the B & B+C gates, resolving the data-derived tags from the
+   newest registry in each checkpoint directory.
+
+`--full` adds white_queen/supervised/unsupervised and is slow; `--dry-run` prints the commands
+without running them. Outputs live under `rabbit_hole/data/reference_pipeline` by default.
 
 ---
 

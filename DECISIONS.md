@@ -6645,3 +6645,34 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   gain is real but not enough for the supervised rows.
 - **Next.** M9: a mechanical return-ratio ledger part to carry the brain's +0.12 return content
   into delivery; then churn/regime. The card is 3/8, not done.
+
+## DEC-512 — [FIX] documentation consolidation: one card, no side audits, contract merged into FORWARD
+- **Context.** 48 markdown files. Three overlapping steering artifacts (`REPORT_CARD.md`,
+  `JUDGE_CARD.md`, `docs/AUDIT_CARD.md`), and an orphaned `docs/ABC_CONTRACT.md` with **zero**
+  inbound references from code or docs.
+- **Problem.** `JUDGE_CARD.md` was still tracked at the repo root, generated 2026-10-29 at commit
+  `1cd5e3b` against encoder behavior `33c12077e1b70129` — a *second card* that disagreed with
+  `REPORT_CARD.md`. DEC-497 retired `docs/JUDGE_CARD.md` but never deleted the root file. Two
+  cards that disagree is a direct violation of principle 6 (single source of truth) and it makes
+  the project's own state ambiguous.
+- **Alternatives rejected.** (a) Keep all three and mark two "disclosure only" — status quo, the
+  ambiguity survives. (b) Archive both to `docs/archive/` — still two more files, and archives are
+  never read. (c) Keep `AUDIT_CARD.md` as the "full" view and have the card link it — this is what
+  forced the reader to consult two documents to see every open row.
+- **Decision (operator directive).** Delete `JUDGE_CARD.md` and `docs/AUDIT_CARD.md`. Merge the
+  content of `docs/ABC_CONTRACT.md` into `PROMPT_FORWARD.md` as §11, then delete it. The single
+  card carries **every** open row; there is no side audit.
+- **Principle.** 6 (single source of truth) + 13 (prefer deletion over accretion) + 8
+  (diagnosable: one artifact states what is open and what is next).
+- **What changed.** `PROMPT_FORWARD.md` gains §11 (layers, canonical schema, A/B split, anchors,
+  `E` composition, plugin surface, all certification gates, one command). Read orders in
+  `PROMPT_FORWARD` / `PROMPT_BACKWARD` / `AGENTS.md` updated; dangling pointers fixed in `PLAN.md`,
+  `STATUS.md`, `README.md`, `demo/README.md`, `docs/LAYER_A_DATA.md`,
+  `scripts/inherited_report_card.py`. `scripts/run_demo.py` no longer regenerates
+  `docs/AUDIT_CARD.md`.
+- **Trade-off (disclosed).** The separate "full research audit" view is gone; if the card ever
+  needs to hide a row to look green, that is now impossible by construction — which is the point.
+  `scripts/audit_card.py` remains as an importable module because
+  `scripts/inherited_report_card.py` uses its `evaluate()`; it is no longer in any chain and no
+  command writes `docs/AUDIT_CARD.md`.
+- **Not changed.** Gates, thresholds, receipts, renderer, spec, verdicts. No row moved.

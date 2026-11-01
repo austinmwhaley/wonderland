@@ -67,13 +67,11 @@ def main():
         run([py, "scripts/measure_demo_plugins.py", "--data", str(data), "--frozen", str(frozen)])
         run([py, "scripts/measure_causal.py", "--data", str(data)], env=env)
         run([py, "scripts/measure_response.py", "--data", str(data), "--frozen", str(frozen)])
-        run([py, "scripts/audit_card.py", "--out", str(ROOT / "docs/AUDIT_CARD.md")])
 
     run([py, "scripts/report_card.py"])
     card = ROOT / "REPORT_CARD.md"
     print("\n" + card.read_text())
     print(f"\nCARD {card}")
-    print(f"AUDIT {ROOT / 'docs/AUDIT_CARD.md'}")
 
 
 if __name__ == "__main__":
