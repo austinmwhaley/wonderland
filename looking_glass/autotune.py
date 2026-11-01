@@ -518,6 +518,8 @@ class ResolvedCFM:
     rank_target: float = 0.35
     aib_target_rank: float = 0.5
     tau_mp: float = 0.70
+    # GeometryBank buffer size — config parameter, not derived
+    bank_size: int = 8192
     receipt: dict = field(default_factory=dict)
 
 
@@ -562,6 +564,7 @@ def resolve_cfm(base, df, keys, vocab_sizes) -> ResolvedCFM:
         ("rank_target", (rt, r8)),
         ("aib_target_rank", (atr, r9)),
         ("tau_mp", (tmp, r10)),
+        ("bank_size", (int(getattr(base, "bank_size", 8192)), None)),
     ):
         user = getattr(base, name, None)
         default = {
@@ -575,6 +578,7 @@ def resolve_cfm(base, df, keys, vocab_sizes) -> ResolvedCFM:
             "rank_target": 0.35,
             "aib_target_rank": 0.5,
             "tau_mp": 0.70,
+            "bank_size": 8192,
         }[name]
         if user is not None and user != default and user != 0:
             rec["overrides"][name] = user
@@ -606,6 +610,7 @@ def resolve_cfm(base, df, keys, vocab_sizes) -> ResolvedCFM:
         rank_target=out["rank_target"],
         aib_target_rank=out["aib_target_rank"],
         tau_mp=out["tau_mp"],
+        bank_size=out["bank_size"],
         receipt=rec,
     )
 
