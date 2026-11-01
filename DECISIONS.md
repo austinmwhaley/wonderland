@@ -7044,3 +7044,29 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - **Not yet done.** A full v2 certification run (train on the v2 stream -> products -> chain) and
   the promotion of the generator from `scripts/` into `rabbit_hole/generators/` with a stable CLI.
   Both are mechanical; neither changes a gate.
+
+## DEC-524 — [MEASURED + PRE-REGISTERED] the regime is hidden from aggregates; the next bundle is regime extraction
+- **Measured (read-only, demo_v2, n=5000, 5-fold CV).** Can the aggregate measure identify the
+  latent regime at the anchor? Multinomial logistic on the 92 aggregate columns:
+  **accuracy 0.687, balanced accuracy 0.474** (3 classes; chance 0.333; majority baseline 0.642).
+  The raw accuracy is *below* the majority baseline, and balanced accuracy is only ~0.14 above
+  chance. Aggregates carry almost no regime information.
+- **What this establishes.** The testbed is not just "hard" — it contains sequence-level
+  information that aggregate summaries demonstrably discard. Combined with DEC-522 (the Bayes
+  oracle beats aggregates on value/count/return with CI>0), the data has real headroom.
+- **Therefore:** if the v2 legs are red, the binding constraint is the **encoder's regime
+  extraction**, not the data and not the gate. That is the hypothesis the next iteration tests.
+- **Pre-registered bundle (one causal story, coupled changes together).** "Make the state carry
+  regime/path information":
+  1. a self-supervised objective over **path/interval-dependent observables** (next-interval
+     hazard, time-to-next-event, state-conditioned intensity) rather than aggregates only;
+  2. a **readout that preserves** the regime channel (the current readout may low-pass it away);
+  3. a **serving-transform check** — the state reaching the consumer must keep that channel.
+  These move together because any one alone can be neutralised by the other two; that is the
+  coupling the operator flagged.
+- **Per-axis receipts (attribution survives the bundle):** regime recoverability from the *state*
+  (same probe as above), the geometry gate at matched n, and per-task R² on the judge legs.
+- **Falsifier.** If the bundle does not raise regime recoverability from the state **and** does not
+  move a red leg with a CI excluding zero, revert the whole bundle and record it.
+- **Not part of the bundle.** No gate, threshold, comparator, split, or evaluation-contract change.
+  A gate change never rides along with a capability change.
