@@ -500,7 +500,9 @@ def train_cfm(cfg: CFMConfig):
                 # push the rank up. Detaching (previous code) made the bank a pure monitor
                 # with zero gradient flow — the governor fired at max lambda but the rank
                 # never improved.
-                bank.push(model.proj(h).float().cpu())
+                _t_b = _collate(items, vocab, device)
+                _yb, _hb = model.encode(_t_b)
+                bank.push(model.proj(_hb).float().cpu())
                 pen = bank.penalties()
                 if pen["redundancy_bank"] is not None:
                     inv_loss = inv_loss + bank.lam * (
