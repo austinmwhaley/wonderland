@@ -199,13 +199,16 @@ def donor_states(model: CFM, states, counters=None):
     with torch.no_grad():
         dev = next(model.parameters()).device
         t = torch.as_tensor(states, dtype=torch.float32, device=dev)
+        emb = model.donor_batch(t)
         if counters is not None and getattr(model, "counter_on", False):
-            # COMPACT mass (DEC-536): fold the additive half through the counter's trained
-            # linear map into the state width. Appending dimensions diluted the linear head
-            # (DEC-535); folding keeps the served width at `dim`.
-            c = torch.as_tensor(counters, dtype=torch.float32, device=dev)
-            t = t + model.w_counter(c)
-        return model.donor_batch(t).cpu().numpy()
+            # Serve the additive half EXPLICITLY (DEC-538). The stored readout is the true
+            # counter width (39), not the shape (256) that caused DEC-535's dilution; at 39
+            # dims the head can form the log-ratio directions (returns vs purchases) that a
+            # fused fold compresses away.
+            emb = torch.cat(
+                [emb, torch.as_tensor(counters, dtype=torch.float32, device=dev)], dim=1
+            )
+        return emb.cpu().numpy()
 
 
 def load_frozen_encoder(tag: str, cfm_dir):

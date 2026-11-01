@@ -7314,3 +7314,15 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   (`use_measure` stays off). The graded object is unchanged: `state_embeddings` is still the
   frozen donor of the state; the state now carries its mass channel through a learned fold.
 - **Next.** Full-size certification (5000) with `serve_unfaded=true`, `use_counter=true`.
+
+## DEC-538 — [PRE-REGISTERED] serve the true counter width explicitly (39 dims, not 256)
+- **Why retry appending.** DEC-535 falsified appending **256** dims — but those 256 were the
+  *shape*, stored by the build path in place of the counter (DEC-536). After the fix the stored
+  readout is the counter's true width (**39**). Appending 39 dims is a different proposition: it
+  keeps the raw return/purchase counts that a linear head needs to form a ratio, which the fused
+  fold (`h + w_counter(cre)`) compresses away.
+- **Target.** `return_proneness`, the last supervised gap: brain 0.4145 vs PATH A 0.4879
+  (CI [−0.00036, −0.00018]).
+- **Falsifier.** If return_proneness does not improve, or any trait that currently beats PATH A
+  (x0, h0, price, churn, regime, final) regresses, revert to the fold and record it.
+- **Not changed.** Gates, tasks, comparator, split, heads.
