@@ -497,7 +497,8 @@ def train_cfm(cfg: CFMConfig):
                 # no gradient flow — buffer is not part of the computation graph).
                 # Compute penalties from the CURRENT batch's projected state so the
                 # governor's penalties provide gradients back to the model.
-                proj_h = model.proj(h).float()
+                # proj_h has shape (B, T, dim); flatten to (B*T, dim) for the bank.
+                proj_h = model.proj(h).float().reshape(-1, h.shape[-1])
                 bank.push(proj_h.detach().cpu())
                 pen = bank.penalties(proj_h)
                 if pen["redundancy_bank"] is not None:
