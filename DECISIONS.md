@@ -7163,3 +7163,25 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   destroy magnitude. Test `readout_norm=False` (counter still on) as one cycle: if level traits
   do not move, revert and take the serving change (a/b above).
 - **Not changed.** Gates, tasks, comparator, heads.
+
+## DEC-530 — [FALSIFIED] readout_norm is a certified invariant, not a knob; level needs a serving change
+- **Test.** `--set readout_norm=false` (counter still on) to see whether normalisation was
+  destroying magnitude.
+- **Result: refused before training.** `assert_readout_health` raised: per-token RMS 0.199 outside
+  [0.500, 2.0] — "readout is not normalized (RMSNorm missing/inactive)". The invariant is part of
+  the model's own health gate (principle 5: reject, do not clamp), so this is not a lever.
+- **What this settles.** Magnitude cannot be restored by un-normalising the readout. The shape
+  *can* still encode relative level in the direction of a normalised vector, but the measured
+  deficit (h0 −0.135, return_proneness −0.164 vs PATH A) says it does not.
+- **Therefore the level fix is a product-contract change**, exactly as DEC-529 identified:
+  serve the consumed embedding `E = shape ++ additive counters` instead of
+  `boundary(proj(h))`. Implementations:
+  (a) store the counter memory `M` alongside `state` in `customer_state` and concatenate at
+      serve — consistent for the monthly build AND the daily job, no train/serve skew;
+  (b) recompute `forward_embedding` from sequences at products build — rejected: the daily job
+      has only `h`, so (b) would create exactly the train/serve skew the readout rule forbids.
+  Choose (a).
+- **Scope of (a).** `customer_state` gains a counter column; `absorb`/`fade_idle` carry it;
+  `materialize_state_embeddings` concatenates `counter_readout(M)`; tests cover the daily path.
+  It is a schema + serving change, so it must ship as its own behaviour change with a full chain.
+- **Not done in this entry.** No code changed; the failed run wrote no products.
