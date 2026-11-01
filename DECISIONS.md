@@ -6843,3 +6843,34 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - **Not changed.** Gates, thresholds, comparator, splits, the encoder trunk, the measure recipe.
 - **Sequencing.** The S6 chain is mid-run; `looking_glass/` is not edited until it completes. The
   change goes in as one behaviour change under a new version, then the full chain is re-run.
+
+## DEC-518 — [PRE-REGISTERED, SUPERSEDES DEC-517 training clause] rank is MEASURED, never forced
+- **Self-correction, before any run.** DEC-517's training proxy (`L = mean relu(λ+ − λ)`) is
+  itself a whitening objective. For a correlation matrix `trace = D`, so `mean λ = 1`, while
+  `λ+ = (1 + sqrt(D/N))^2 > 1`. The minimiser of the floor loss is a **flat spectrum**: place
+  `k ≤ D/λ+` eigenvalues at `D/k ≥ λ+` and the rest at 0 → loss 0. That is near-isotropic
+  whitening, which DEC-036 banned because it manufactures non-transferable rank. Rejected before
+  running, not after.
+- **Correct stance.** Rank is a **measured property**, not a training pressure:
+  1. **Derive** `k*` by parallel analysis of the exhaustive measure (one definition).
+  2. **Grade** `signal_dims(state) ≥ k_lo(measure)`, measured on the **same split and the same
+     n** as the state (parallel analysis power depends on n; comparing a bound derived at
+     n=1776 against a state measured at n=724 is an n mismatch, not a capability gap).
+  3. **Do not force it.** Delete the whitening-shaped objectives from training: the `rank`
+     objective (`1 − PR/dim`) and the `redundancy` objective are spectrum equalisers; the
+     `GeometryBank` governor (target 0.117, λ pinned at 1e6, `eigfloor` identically zero because
+     `tau_eig = 0.01` on a correlation scale with mean 1) has produced no measured movement and
+     cannot produce a legitimate one. Removed. `eff_rank`, `pr_frac`, `mean_cos`, `redundancy`
+     survive as **diagnostics only**.
+  4. If the gate is red after this, the fix is **by construction** inside the state update
+     (FR v2.0: bilinear `h⊗x`, measured 1.79× transferable rank), never another loss.
+- **Why this is the principled reading of "rank".** A direction is carried if its eigenvalue
+  rises above the noise edge *for the sample size actually observed*. Nothing about that requires
+  equalising variances, and a ridge + `StandardScaler` consumer cannot see variance scale anyway.
+- **Falsifier.** If, after removal, `signal_dims(state)` falls and the consumer legs regress, the
+  whitening objectives were carrying something real and the removal is reverted with that receipt.
+- **Not changed.** Gates, thresholds, comparator, splits, the encoder trunk, the measure recipe,
+  the invariance family (`variance`, `decorr`, `spectrum`, `volume`, `iso`, `commutation` are a
+  separate axis and are untouched here).
+- **Sequencing.** `looking_glass/` is not edited until the S6 chain exits; then the change goes in
+  as one behaviour change, with the matched-n gate measured first.
