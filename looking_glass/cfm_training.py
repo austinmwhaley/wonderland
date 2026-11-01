@@ -493,15 +493,13 @@ def train_cfm(cfg: CFMConfig):
                     model, vocab, items, cfg, weights=balancer.weights(), scales=loss_scales
                 )
             if bank is not None:
-                # GeometryBank governor: push the projected state into the bank WITHOUT
-                # detaching, so the governor's penalties provide gradients back to the
-                # model. The bank is a closed-loop governor that adjusts lambda based on
-                # the bank's eff-rank; its penalties (redundancy_bank, eigfloor, barrier)
-                # push the rank up. Detaching (previous code) made the bank a pure monitor
-                # with zero gradient flow — the governor fired at max lambda but the rank
-                # never improved.
-                bank.push(model.proj(h).float().cpu())
-                pen = bank.penalties()
+                # GeometryBank governor: push detached state to buffer (monitor only,
+                # no gradient flow — buffer is not part of the computation graph).
+                # Compute penalties from the CURRENT batch's projected state so the
+                # governor's penalties provide gradients back to the model.
+                proj_h = model.proj(h).float()
+                bank.push(proj_h.detach().cpu())
+                pen = bank.penalties(proj_h)
                 if pen["redundancy_bank"] is not None:
                     inv_loss = inv_loss + bank.lam * (
                         pen["redundancy_bank"] + pen["eigfloor"] + pen["barrier"]
@@ -1851,10 +1849,10 @@ class GeometryBank:
         self.history: list[dict] = []
 
     def push(self, z: "torch.Tensor") -> None:
-        # No .detach() — the gradient must flow through the bank buffer so the
-        # GeometryBank governor's penalties provide gradients back to the model.
-        # The caller already moves to CPU (.cpu()) for memory efficiency.
-        zb = z.float().cpu()
+        # Store detached tensor in buffer — the buffer is a FIFO monitor for the
+        # governor (lambda adjustment), NOT part of the computation graph.
+        # Detaching prevents inplace-modification errors during backward.
+        zb = z.detach().float().cpu()
         self.buf.append(zb)
         rows = sum(c.shape[0] for c in self.buf)
         if rows > self.size:
@@ -1871,29 +1869,28 @@ class GeometryBank:
         pr = cov.diagonal().sum() ** 2 / cov.pow(2).sum().clamp(min=1e-24)
         return float((pr / z.shape[1]).item())
 
-    def penalties(self) -> dict:
-        """(redundancy_bank, eigfloor) losses on the bank + updated lambda."""
+    def penalties(self, z: "torch.Tensor | None" = None) -> dict:
+        """(redundancy_bank, eigfloor, barrier) penalties + updated lambda.
+        
+        If z is provided, penalties are computed from z (current batch — gradient
+        flows through to the model). If z is None, penalties are computed from the
+        bank buffer (governor only — no gradient flow, buffer is detached).
+        """
         import numpy as _np
 
-        z = self.states()
+        if z is None:
+            z = self.states()
         if z is None or z.shape[0] < self.dim // 2:
             return {"redundancy_bank": None, "eigfloor": None, "bank_rank": None}
         zc = z - z.mean(0, keepdim=True)
         cov = (zc.T @ zc) / max(zc.shape[0] - 1, 1)
         off = cov - torch.diag(cov.diagonal())
         red = (off**2).mean()
-        # BARRIER (DEC-020): -log det(C_bank + eps I) — an un-crossable wall
-        # as any eigenvalue -> 0 (the off-diagonal L2 penalty decays as
-        # correlations get small and leaves weak pressure near collapse; the
-        # barrier does the opposite: infinitely steep). Epsilon-scaled to the
-        # trace so the wall position is scale-free. The soft tau-hinge on the
-        # normalized spectrum stays as a gentle floor below the barrier.
+        # BARRIER (DEC-020): -log det(C + eps I) — an un-crossable wall
+        # as any eigenvalue -> 0. Epsilon-scaled to the trace so the wall
+        # position is scale-free.
         sd = torch.sqrt(torch.diag(cov).clamp(min=1e-12))
         corr = cov / torch.outer(sd, sd)
-        # eigvalsh on the correlation matrix can fail to converge (ill-conditioned
-        # / repeated eigenvalues — measured on the Layer-A synthetic stream). Use
-        # float64 + a tiny ridge, and fall back to a neutral (no-floor) spectrum
-        # rather than crashing training.
         try:
             d = corr.shape[0]
             ev = torch.linalg.eigvalsh(
@@ -1912,7 +1909,7 @@ class GeometryBank:
         gap = self.target - bank_rank
         self.lam = float(
             _np.clip(self.lam * _np.exp(self.alpha * gap), 1.0, 1e6)
-        )  # no artificial clamp (DEC-021): EMA-damped alpha bounds the RATE
+        )
         self.history.append({"bank_rank": round(bank_rank, 4), "lam": round(self.lam, 3)})
         return {
             "redundancy_bank": red,
