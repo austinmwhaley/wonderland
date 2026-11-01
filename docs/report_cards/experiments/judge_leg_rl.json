@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "1b238954570cdc76",
+    "behavior_hash": "94857be6815a96f3",
     "command": "measure_judge_law.py --products /home/austin_whaley/wonderland_work/cfm_m8_counter --demo /home/austin_whaley/wonderland_work/demo --legs supervised,unsupervised,rl,simulator --out-dir /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments",
-    "generated_at": "2026-11-01T07:10:54+00:00",
-    "git_commit": "0db0c91c951ac6758dcaa0c3bf26eca76da7cb71",
+    "generated_at": "2026-11-01T14:20:28+00:00",
+    "git_commit": "83a8c0b5c277a73bd99289d06170a802972fc54b",
     "producer": "measure_judge_law.py"
   },
   "arms": {
@@ -14,73 +14,73 @@
   "checks": {
     "rl": {
       "evidence": "2 live task(s) (+0 degenerate) on n=724 B-rows scored against 1776 A-rows; comparator PATH A (GBM incumbent); table 48 cols / 2500 customers; brain+ledger 2 task(s)",
-      "working": false
+      "working": true
     }
   },
   "columns": {
     "brain": {
       "tasks": [
         {
-          "brain": -0.005979,
-          "ci_hi": 0.004877,
-          "ci_lo": 0.001057,
+          "brain": -0.005464,
+          "ci_hi": 0.004966,
+          "ci_lo": 0.000977,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": -0.003748,
+          "destroyed": -0.016529,
           "metric": "R2 on the identified per-customer uplift (P(buy|offer=opt) - P(buy|offer off by >=2))",
           "n": 233,
           "name": "known_effect_uplift",
           "pathA": -0.172714,
-          "random": -0.004279
+          "random": -0.014525
         },
         {
-          "brain": 0.053855,
-          "ci_hi": 0.0411,
-          "ci_lo": 0.003801,
+          "brain": 0.058347,
+          "ci_hi": 0.047055,
+          "ci_lo": 0.006778,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": 0.037701,
+          "destroyed": 0.040096,
           "metric": "area under the top-k realized-uplift curve on randomized arm-days (bootstrap re-selects inside each replicate)",
           "n": 233,
           "name": "policy_value",
           "pathA": 0.030808,
-          "random": 0.042426
+          "random": 0.037476
         }
       ]
     },
     "brain_ledger": {
       "tasks": [
         {
-          "brain": -0.006681,
-          "ci_hi": 0.004884,
-          "ci_lo": 0.001117,
+          "brain": -0.006934,
+          "ci_hi": 0.004973,
+          "ci_lo": 0.001053,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": -0.021471,
+          "destroyed": -0.017637,
           "metric": "R2 on the identified per-customer uplift (P(buy|offer=opt) - P(buy|offer off by >=2))",
           "n": 233,
           "name": "known_effect_uplift",
           "pathA": -0.172714,
-          "random": -0.038565
+          "random": -0.026805
         },
         {
-          "brain": 0.055401,
-          "ci_hi": 0.045669,
-          "ci_lo": 0.004299,
+          "brain": 0.057192,
+          "ci_hi": 0.047864,
+          "ci_lo": 0.005156,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": 0.04018,
+          "destroyed": 0.043419,
           "metric": "area under the top-k realized-uplift curve on randomized arm-days (bootstrap re-selects inside each replicate)",
           "n": 233,
           "name": "policy_value",
           "pathA": 0.030808,
-          "random": 0.048086
+          "random": 0.052449
         }
       ]
     }
   },
   "diagnostics": {},
-  "evidence": "[rl] FAILED: 2 live task(s) (+0 degenerate) on n=724 B-rows scored against 1776 A-rows; comparator PATH A (GBM incumbent); table 48 cols / 2500 customers; brain+ledger 2 task(s)",
+  "evidence": "[rl] OK: 2 live task(s) (+0 degenerate) on n=724 B-rows scored against 1776 A-rows; comparator PATH A (GBM incumbent); table 48 cols / 2500 customers; brain+ledger 2 task(s)",
   "excluded": [],
   "identified": {
     "population": 2099,
@@ -94,13 +94,13 @@
   },
   "products": {
     "path": "/home/austin_whaley/wonderland_work/cfm_m8_counter",
-    "registry_sha256": "e40d6791e0bfa3cf",
-    "tag": "0.11.0r103116-b20d256e3lr3e-04o317c8905"
+    "registry_sha256": "f74ca5fe3397bd51",
+    "tag": "0.11.0r486262-b8d256e1lr3e-04o9e37655b"
   },
   "splits": {
     "n_fit_A": 1776,
     "n_score_B": 724,
     "source": "encoder_samples"
   },
-  "working": false
+  "working": true
 }

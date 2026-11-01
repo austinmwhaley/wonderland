@@ -63,16 +63,16 @@
   },
   "S3": {
     "_stamp": {
-      "behavior_hash": "1b238954570cdc76",
+      "behavior_hash": "94857be6815a96f3",
       "command": "measure_dynamics_law.py --ckpt-dir /home/austin_whaley/wonderland_work/cfm_m8_counter --db /home/austin_whaley/wonderland_work/demo/customer_event_stream.parquet --train-log /home/austin_whaley/wonderland_work/cfm_m8_counter/train.log --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
-      "generated_at": "2026-11-01T07:09:17+00:00",
-      "git_commit": "0db0c91c951ac6758dcaa0c3bf26eca76da7cb71",
+      "generated_at": "2026-11-01T14:32:49+00:00",
+      "git_commit": "83a8c0b5c277a73bd99289d06170a802972fc54b",
       "producer": "measure_dynamics_law.py"
     },
     "checks": {
       "clock_periodicity": {
-        "evidence": "week-shift (exact cycle multiple): worst state/E drift 2.452e-02 (gate 1e-4); gaps-x10 control (tokens fixed): min state/E drift 3.336e-01 (gate >1e-3) \u2014 the spring responds to elapsed time. DISCLOSED: absolute-clock features used, w_tod norm 8.98; cfm_data stored ts vs model _to_epoch differ 0s (UTC vs local frame) \u2014 reconcile before horizons depend on it",
-        "seconds": 0.3,
+        "evidence": "week-shift (exact cycle multiple): worst state/E drift 2.206e-02 (gate 1e-4); gaps-x10 control (tokens fixed): min state/E drift 3.349e-01 (gate >1e-3) \u2014 the spring responds to elapsed time. DISCLOSED: absolute-clock features used, w_tod norm 8.77; cfm_data stored ts vs model _to_epoch differ 0s (UTC vs local frame) \u2014 reconcile before horizons depend on it",
+        "seconds": 0.4,
         "working": false
       },
       "governed_stability": {
@@ -81,23 +81,23 @@
         "working": true
       },
       "mass_additivity": {
-        "evidence": "mass additivity scan(d, b1+b2) == scan(d,b1)+scan(d,b2) on real drives (disjoint event supports, float64): worst relative error 4.800e-16 (gate 1e-10)",
+        "evidence": "mass additivity scan(d, b1+b2) == scan(d,b1)+scan(d,b2) on real drives (disjoint event supports, float64): worst relative error 4.906e-16 (gate 1e-10)",
         "seconds": 0.2,
         "working": true,
-        "worst_rel_err": 4.800204810705291e-16
+        "worst_rel_err": 4.905664299927686e-16
       },
       "scan_associativity": {
-        "evidence": "merge law F(g\u2218f)=F(g)\u2218F(f) on 6 real sequences x 5 split points (float64, model's own decay/drive, continuous_time=True): worst relative error 4.200e-16 (gate 1e-10)",
-        "seconds": 2.9,
+        "evidence": "merge law F(g\u2218f)=F(g)\u2218F(f) on 6 real sequences x 5 split points (float64, model's own decay/drive, continuous_time=True): worst relative error 7.371e-16 (gate 1e-10)",
+        "seconds": 3.2,
         "working": true,
-        "worst_rel_err": 4.200179209367129e-16
+        "worst_rel_err": 7.371238716050789e-16
       },
       "ssm_merge_exact": {
-        "evidence": "one-shot vs split-at-midpoint continuation WITH all recurrent states carried (scan h + intent-filter f + wrapper g) over 6 real sequences: state rel err 6.695e-08, readout 1.315e-07 (gate 5e-05); DISCLOSED: h-only continuation (today's cfm_state.absorb) drifts 9.805e-03 \u2014 the filter state is not carried by serving, a bought approximation awaiting its O6 receipt",
-        "h_only_drift": 0.00980490877620352,
+        "evidence": "one-shot vs split-at-midpoint continuation WITH all recurrent states carried (scan h + intent-filter f + wrapper g) over 6 real sequences: state rel err 6.855e-08, readout 6.855e-08 (gate 5e-05); DISCLOSED: h-only continuation (today's cfm_state.absorb) drifts 1.153e-02 \u2014 the filter state is not carried by serving, a bought approximation awaiting its O6 receipt",
+        "h_only_drift": 0.011525416524003452,
         "seconds": 0.2,
         "working": true,
-        "worst_state_rel": 6.695365682126533e-08
+        "worst_state_rel": 6.854885837017549e-08
       },
       "step0_finite": {
         "evidence": "randomly re-initialized trunk (step-0 architecture, N(0,0.5) weights), 6 real sequences: 0 non-finite out of 595968 state/output/E values",
@@ -106,11 +106,11 @@
       },
       "tau_from_spectrum": {
         "evidence": "taus are gap quantiles of the stream (no literal): base taus=[0.357, 0.979, 2.48]s days -> cadence x100 taus=[35.736, 97.917, 248.058] (median ratio 100.0x, gate >=10x, non-constant=True)",
-        "seconds": 460.7,
+        "seconds": 460.9,
         "working": true
       }
     },
-    "evidence": "[scan_associativity] OK: merge law F(g\u2218f)=F(g)\u2218F(f) on 6 real sequences x 5 split points (float64, model's own decay/drive, continuous_time=True): worst relative error 4.200e-16 (gate 1e-10) | [ssm_merge_exact] OK: one-shot vs split-at-midpoint continuation WITH all recurrent states carried (scan h + intent-filter f + wrapper g) over 6 real sequences: state rel err 6.695e-08, readout 1.315e-07 (gate 5e-05); DISCLOSED: h-only continuation (today's cfm_state.absorb) drifts 9.805e-03 \u2014 the filter state is not carried by serving, a bought approximation awaiting its O6 receipt | [mass_additivity] OK: mass additivity scan(d, b1+b2) == scan(d,b1)+scan(d,b2) on real drives (disjoint event supports, float64): worst relative error 4.800e-16 (gate 1e-10) | [clock_periodicity] FAILED: week-shift (exact cycle multiple): worst state/E drift 2.452e-02 (gate 1e-4); gaps-x10 control (tokens fixed): min state/E drift 3.336e-01 (gate >1e-3) \u2014 the spring responds to elapsed time. DISCLOSED: absolute-clock features used, w_tod norm 8.98; cfm_data stored ts vs model _to_epoch differ 0s (UTC vs local frame) \u2014 reconcile before horizons depend on it | [step0_finite] OK: randomly re-initialized trunk (step-0 architecture, N(0,0.5) weights), 6 real sequences: 0 non-finite out of 595968 state/output/E values | [tau_from_spectrum] OK: taus are gap quantiles of the stream (no literal): base taus=[0.357, 0.979, 2.48]s days -> cadence x100 taus=[35.736, 97.917, 248.058] (median ratio 100.0x, gate >=10x, non-constant=True) | [governed_stability] OK: governed training: 10 finite epoch values, non-finite tokens=0, diverged=False, worst epoch-to-epoch rise 3.06 vs 6x noise 8.88; registry resolved: half_life_days=2.4428188657407386 seq_len=607",
+    "evidence": "[scan_associativity] OK: merge law F(g\u2218f)=F(g)\u2218F(f) on 6 real sequences x 5 split points (float64, model's own decay/drive, continuous_time=True): worst relative error 7.371e-16 (gate 1e-10) | [ssm_merge_exact] OK: one-shot vs split-at-midpoint continuation WITH all recurrent states carried (scan h + intent-filter f + wrapper g) over 6 real sequences: state rel err 6.855e-08, readout 6.855e-08 (gate 5e-05); DISCLOSED: h-only continuation (today's cfm_state.absorb) drifts 1.153e-02 \u2014 the filter state is not carried by serving, a bought approximation awaiting its O6 receipt | [mass_additivity] OK: mass additivity scan(d, b1+b2) == scan(d,b1)+scan(d,b2) on real drives (disjoint event supports, float64): worst relative error 4.906e-16 (gate 1e-10) | [clock_periodicity] FAILED: week-shift (exact cycle multiple): worst state/E drift 2.206e-02 (gate 1e-4); gaps-x10 control (tokens fixed): min state/E drift 3.349e-01 (gate >1e-3) \u2014 the spring responds to elapsed time. DISCLOSED: absolute-clock features used, w_tod norm 8.77; cfm_data stored ts vs model _to_epoch differ 0s (UTC vs local frame) \u2014 reconcile before horizons depend on it | [step0_finite] OK: randomly re-initialized trunk (step-0 architecture, N(0,0.5) weights), 6 real sequences: 0 non-finite out of 595968 state/output/E values | [tau_from_spectrum] OK: taus are gap quantiles of the stream (no literal): base taus=[0.357, 0.979, 2.48]s days -> cadence x100 taus=[35.736, 97.917, 248.058] (median ratio 100.0x, gate >=10x, non-constant=True) | [governed_stability] OK: governed training: 10 finite epoch values, non-finite tokens=0, diverged=False, worst epoch-to-epoch rise 3.06 vs 6x noise 8.88; registry resolved: half_life_days=2.4428188657407386 seq_len=607",
     "working": false
   },
   "S4": {
@@ -770,39 +770,39 @@
   },
   "S5": {
     "_stamp": {
-      "behavior_hash": "1b238954570cdc76",
+      "behavior_hash": "94857be6815a96f3",
       "command": "measure_battery_law.py --products /home/austin_whaley/wonderland_work/cfm_m8_counter/cfm_products.duckdb --demo /home/austin_whaley/wonderland_work/demo --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
-      "generated_at": "2026-11-01T07:10:13+00:00",
-      "git_commit": "0db0c91c951ac6758dcaa0c3bf26eca76da7cb71",
+      "generated_at": "2026-11-01T14:23:07+00:00",
+      "git_commit": "83a8c0b5c277a73bd99289d06170a802972fc54b",
       "producer": "measure_battery_law.py"
     },
     "checks": {
       "action_conditioned_outcome": {
-        "evidence": "known-effect uplift from the one-factor-daily randomized offer arm (P(buy|offer=opt) - P(buy|off>=2), >= 10 arm-days/side): 233 holdout B customers identified from 724, head fitted on 609 A customers; brain OOS R2=-0.006 vs population-constant naive R2=-0.002; Spearman(brain,truth)=0.073; paired MSE-gain 95%CI [-0.00077,0.00060] (gate lo>0)",
+        "evidence": "known-effect uplift from the one-factor-daily randomized offer arm (P(buy|offer=opt) - P(buy|off>=2), >= 10 arm-days/side): 233 holdout B customers identified from 724, head fitted on 609 A customers; brain OOS R2=-0.005 vs population-constant naive R2=-0.002; Spearman(brain,truth)=0.101; paired MSE-gain 95%CI [-0.00103,0.00086] (gate lo>0)",
         "seconds": 0.2,
         "working": false
       },
       "distance_regression": {
-        "evidence": "lab-truth latent distance (x0/h0/d0/price_sens/return_prone/touch_pref, z-scored) vs distance over 20000 customer pairs from 724 holdout B customers: donor Spearman 0.051 vs naive bag-of-event-types 0.181; paired-over-pairs gain 95%CI [-0.131,-0.130] (gate lo>0); diagnostic raw-state(pre-boundary) Spearman 0.016",
+        "evidence": "lab-truth latent distance (x0/h0/d0/price_sens/return_prone/touch_pref, z-scored) vs distance over 20000 customer pairs from 724 holdout B customers: donor Spearman 0.104 vs naive bag-of-event-types 0.181; paired-over-pairs gain 95%CI [-0.078,-0.077] (gate lo>0); diagnostic raw-state(pre-boundary) Spearman 0.016",
         "seconds": 0.3,
         "working": false
       },
       "ledger_reconstruction": {
-        "evidence": "ledger recomputed from the raw stream by DuckDB (not a table copy); LINEAR head on the learned-shape donor (embedding = model.proj(h), no served measure blocks \u2014 the claim is learned-only), fitted on 1776 split-A customers and scored on the 724 holdout B; naive comparator = same head on the full event-type bag + recency (target-defining type excluded \u2014 no label leakage into the comparator); spend: brain R2=0.803 naive R2=0.935 MSE-gain 95%CI[-0.050,-0.029] | margin: brain R2=0.789 naive R2=0.897 MSE-gain 95%CI[-0.045,-0.022] | n_purch: brain R2=0.818 naive R2=0.894 MSE-gain 95%CI[-0.029,-0.011] | n_ret: brain R2=0.587 naive R2=0.237 MSE-gain 95%CI[0.206,0.303]",
+        "evidence": "ledger recomputed from the raw stream by DuckDB (not a table copy); LINEAR head on the learned-shape donor (embedding = model.proj(h), no served measure blocks \u2014 the claim is learned-only), fitted on 1776 split-A customers and scored on the 724 holdout B; naive comparator = same head on the full event-type bag + recency (target-defining type excluded \u2014 no label leakage into the comparator); spend: brain R2=0.805 naive R2=0.935 MSE-gain 95%CI[-0.050,-0.028] | margin: brain R2=0.789 naive R2=0.897 MSE-gain 95%CI[-0.045,-0.022] | n_purch: brain R2=0.818 naive R2=0.894 MSE-gain 95%CI[-0.029,-0.011] | n_ret: brain R2=0.610 naive R2=0.237 MSE-gain 95%CI[0.223,0.320]",
         "seconds": 0.6,
         "working": false
       },
       "prune_pass": {
-        "evidence": "per-objective weights recorded: 35 objectives, min=0.6134, trajectory snapshots=8, selection rule='heldout_combined_objective (all active objectives)' (frozen held-out-SSL); weights <= 0.01 -> DELETE list: EMPTY \u2014 equal-weight mode never decays a task to zero (disclosed: vacuous today, enforced the day a learned mixture is adopted)",
+        "evidence": "per-objective weights recorded: 36 objectives, min=0.6125, trajectory snapshots=8, selection rule='heldout_combined_objective (all active objectives)' (frozen held-out-SSL); weights <= 0.01 -> DELETE list: EMPTY \u2014 equal-weight mode never decays a task to zero (disclosed: vacuous today, enforced the day a learned mixture is adopted)",
         "seconds": 0.0,
         "working": true
       }
     },
-    "evidence": "[ledger_reconstruction] FAILED: ledger recomputed from the raw stream by DuckDB (not a table copy); LINEAR head on the learned-shape donor (embedding = model.proj(h), no served measure blocks \u2014 the claim is learned-only), fitted on 1776 split-A customers and scored on the 724 holdout B; naive comparator = same head on the full event-type bag + recency (target-defining type excluded \u2014 no label leakage into the comparator); spend: brain R2=0.803 naive R2=0.935 MSE-gain 95%CI[-0.050,-0.029] | margin: brain R2=0.789 naive R2=0.897 MSE-gain 95%CI[-0.045,-0.022] | n_purch: brain R2=0.818 naive R2=0.894 MSE-gain 95%CI[-0.029,-0.011] | n_ret: brain R2=0.587 naive R2=0.237 MSE-gain 95%CI[0.206,0.303] | [distance_regression] FAILED: lab-truth latent distance (x0/h0/d0/price_sens/return_prone/touch_pref, z-scored) vs distance over 20000 customer pairs from 724 holdout B customers: donor Spearman 0.051 vs naive bag-of-event-types 0.181; paired-over-pairs gain 95%CI [-0.131,-0.130] (gate lo>0); diagnostic raw-state(pre-boundary) Spearman 0.016 | [action_conditioned_outcome] FAILED: known-effect uplift from the one-factor-daily randomized offer arm (P(buy|offer=opt) - P(buy|off>=2), >= 10 arm-days/side): 233 holdout B customers identified from 724, head fitted on 609 A customers; brain OOS R2=-0.006 vs population-constant naive R2=-0.002; Spearman(brain,truth)=0.073; paired MSE-gain 95%CI [-0.00077,0.00060] (gate lo>0) | [prune_pass] OK: per-objective weights recorded: 35 objectives, min=0.6134, trajectory snapshots=8, selection rule='heldout_combined_objective (all active objectives)' (frozen held-out-SSL); weights <= 0.01 -> DELETE list: EMPTY \u2014 equal-weight mode never decays a task to zero (disclosed: vacuous today, enforced the day a learned mixture is adopted)",
+    "evidence": "[ledger_reconstruction] FAILED: ledger recomputed from the raw stream by DuckDB (not a table copy); LINEAR head on the learned-shape donor (embedding = model.proj(h), no served measure blocks \u2014 the claim is learned-only), fitted on 1776 split-A customers and scored on the 724 holdout B; naive comparator = same head on the full event-type bag + recency (target-defining type excluded \u2014 no label leakage into the comparator); spend: brain R2=0.805 naive R2=0.935 MSE-gain 95%CI[-0.050,-0.028] | margin: brain R2=0.789 naive R2=0.897 MSE-gain 95%CI[-0.045,-0.022] | n_purch: brain R2=0.818 naive R2=0.894 MSE-gain 95%CI[-0.029,-0.011] | n_ret: brain R2=0.610 naive R2=0.237 MSE-gain 95%CI[0.223,0.320] | [distance_regression] FAILED: lab-truth latent distance (x0/h0/d0/price_sens/return_prone/touch_pref, z-scored) vs distance over 20000 customer pairs from 724 holdout B customers: donor Spearman 0.104 vs naive bag-of-event-types 0.181; paired-over-pairs gain 95%CI [-0.078,-0.077] (gate lo>0); diagnostic raw-state(pre-boundary) Spearman 0.016 | [action_conditioned_outcome] FAILED: known-effect uplift from the one-factor-daily randomized offer arm (P(buy|offer=opt) - P(buy|off>=2), >= 10 arm-days/side): 233 holdout B customers identified from 724, head fitted on 609 A customers; brain OOS R2=-0.005 vs population-constant naive R2=-0.002; Spearman(brain,truth)=0.101; paired MSE-gain 95%CI [-0.00103,0.00086] (gate lo>0) | [prune_pass] OK: per-objective weights recorded: 36 objectives, min=0.6125, trajectory snapshots=8, selection rule='heldout_combined_objective (all active objectives)' (frozen held-out-SSL); weights <= 0.01 -> DELETE list: EMPTY \u2014 equal-weight mode never decays a task to zero (disclosed: vacuous today, enforced the day a learned mixture is adopted)",
     "products": {
       "path": "/home/austin_whaley/wonderland_work/cfm_m8_counter/cfm_products.duckdb",
-      "registry_sha256": "e40d6791e0bfa3cf",
-      "tag": "0.11.0r103116-b20d256e3lr3e-04o317c8905"
+      "registry_sha256": "f74ca5fe3397bd51",
+      "tag": "0.11.0r486262-b8d256e1lr3e-04o9e37655b"
     },
     "working": false
   },
@@ -947,10 +947,10 @@
     "working": true
   },
   "_meta": {
-    "behavior_hash": "1b238954570cdc76",
-    "command": "measure_certification_law.py --products /home/austin_whaley/wonderland_work/cfm_m8_counter --demo /home/austin_whaley/wonderland_work/demo --train-log /home/austin_whaley/wonderland_work/cfm_m8_counter/train.log",
-    "generated_at": "2026-11-01T07:11:04+00:00",
-    "git_commit": "0db0c91c951ac6758dcaa0c3bf26eca76da7cb71",
-    "producer": "measure_certification_law.py"
+    "behavior_hash": "94857be6815a96f3",
+    "command": "measure_dynamics_law.py --ckpt-dir /home/austin_whaley/wonderland_work/cfm_m8_counter --db /home/austin_whaley/wonderland_work/demo/customer_event_stream.parquet --train-log /home/austin_whaley/wonderland_work/cfm_m8_counter/train.log --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
+    "generated_at": "2026-11-01T14:32:49+00:00",
+    "git_commit": "83a8c0b5c277a73bd99289d06170a802972fc54b",
+    "producer": "measure_dynamics_law.py"
   }
 }
