@@ -1,0 +1,60 @@
+{
+  "_meta": {
+    "producer": "measure_testbed_power.py",
+    "generated_at": "2026-11-01T15:36:51+00:00",
+    "command": "measure_testbed_power.py --demo /tmp/opencode/layer_a_v2_5k --horizon-days 14",
+    "read_only": true,
+    "demo": "/tmp/opencode/layer_a_v2_5k",
+    "stream": "/tmp/opencode/layer_a_v2_5k/customer_event_stream.parquet",
+    "stream_sha256": "73efbffae96778d5",
+    "as_of": "2025-01-01",
+    "horizon_days": 14,
+    "n_customers": 5000,
+    "n_fit": 3500,
+    "n_score": 1500,
+    "n_aggregate_columns": 92,
+    "n_latent_columns": 25,
+    "targets": {
+      "fwd_value_90d": "sum(value) on purchase events in (as_of, as_of+90d]",
+      "fwd_count_90d": "count(*) on purchase events in (as_of, as_of+90d]",
+      "fwd_return_90d": "returns / purchases in the forward window"
+    },
+    "oracle_features": "static generator latents only; churn_day/regime_runs excluded (realised future paths would be clairvoyance)"
+  },
+  "tasks": {
+    "fwd_value_90d": {
+      "n": 1500,
+      "r2_aggregate": 0.3878,
+      "r2_oracle": 0.565,
+      "r2_both": 0.5737,
+      "oracle_minus_aggregate_mse": 2380.736328,
+      "ci_lo": 1585.644718,
+      "ci_hi": 3344.855167,
+      "oracle_strictly_better": true
+    },
+    "fwd_count_90d": {
+      "n": 1500,
+      "r2_aggregate": 0.3347,
+      "r2_oracle": 0.4833,
+      "r2_both": 0.4839,
+      "oracle_minus_aggregate_mse": 0.510137,
+      "ci_lo": 0.364883,
+      "ci_hi": 0.655039,
+      "oracle_strictly_better": true
+    },
+    "fwd_return_90d": {
+      "n": 1500,
+      "r2_aggregate": 0.0091,
+      "r2_oracle": 0.0278,
+      "r2_both": 0.0191,
+      "oracle_minus_aggregate_mse": 0.000381,
+      "ci_lo": 6.7e-05,
+      "ci_hi": 0.000747,
+      "oracle_strictly_better": true
+    }
+  },
+  "verdict": {
+    "has_power": true,
+    "rule": "ANY task with oracle-minus-aggregate paired-CI lower bound > 0 -> HAS POWER; EVERY task within noise -> INSUFFICIENT -> rebuild Layer A (DEC-520)"
+  }
+}

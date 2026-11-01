@@ -48,14 +48,18 @@ TARGETS = {
 #: `churn_day` and `regime_runs` are deliberately excluded: they are realised FUTURE paths, so
 #: using them as features would be clairvoyance, not an oracle.
 LATENT_NUM = ("x0", "h0", "d0", "price_sensitivity", "return_proneness", "segment")
+#: when the generator emits its Bayes conditional mean, that IS the sufficient statistic.
+BAYES = ("bayes_fwd_value_90d", "bayes_fwd_count_90d")
 LATENT_CAT = ("offer_opt", "channel_pref", "category_pref", "regime0")
 
 
 def _latent_matrix(cust, truth) -> tuple[np.ndarray, list[str]]:
     """Static latent truth, numeric + one-hot. No future-realised fields."""
     rows = [truth[k] for k in cust]
-    num = np.array([[float(r[c]) for c in LATENT_NUM] for r in rows], dtype=np.float64)
-    names = list(LATENT_NUM)
+    extra = tuple(k for k in BAYES if k in (rows[0] if rows else {}))
+    cols = LATENT_NUM + extra
+    num = np.array([[float(r[c]) for c in cols] for r in rows], dtype=np.float64)
+    names = list(cols)
     cats: list[str] = []
     for c in LATENT_CAT:
         vals = sorted({str(r.get(c)) for r in rows})
