@@ -489,7 +489,7 @@ def train_cfm(cfg: CFMConfig):
             loss0 = _eval_loss(b)
             theta0 = [p.detach().clone() for p in params]
             with torch.autocast(device_type=device.type, dtype=_amp_dtype, enabled=use_amp):
-                task_loss, inv_loss = _loss_split(
+                task_loss, inv_loss, h = _loss_split(
                     model, vocab, items, cfg, weights=balancer.weights(), scales=loss_scales
                 )
             if bank is not None:
@@ -500,9 +500,7 @@ def train_cfm(cfg: CFMConfig):
                 # push the rank up. Detaching (previous code) made the bank a pure monitor
                 # with zero gradient flow — the governor fired at max lambda but the rank
                 # never improved.
-                _t_b = _collate(items, vocab, device)
-                _yb, _hb = model.encode(_t_b)
-                bank.push(model.proj(_hb).float().cpu())
+                bank.push(model.proj(h).float().cpu())
                 pen = bank.penalties()
                 if pen["redundancy_bank"] is not None:
                     inv_loss = inv_loss + bank.lam * (
@@ -566,7 +564,7 @@ def train_cfm(cfg: CFMConfig):
         vi = val_idx[: min(len(val_idx), embed_batch_size(cfg))]
         torch.manual_seed(cfg.seed)
         with torch.no_grad():
-            T_ = _task_losses(model, vocab, [a_seqs[i] for i in vi], cfg)
+            T_, _h = _task_losses(model, vocab, [a_seqs[i] for i in vi], cfg)
         # Adaptive Information Bottleneck controller (v4.0, DEC-029): dual ascent
         # on the multiplier so the batch participation ratio is held near target.
         # rank > target -> compress harder (beta up); rank < target -> ease off.
@@ -657,7 +655,7 @@ def train_cfm(cfg: CFMConfig):
     # (measured: instacart/rabbit_hole best == step 411, ~0.15 of budget).
     torch.manual_seed(cfg.seed)
     with torch.no_grad():
-        _seed_T = _task_losses(
+        _seed_T, _h = _task_losses(
             model, vocab, [a_seqs[i] for i in tr_idx[: embed_batch_size(cfg)]], cfg
         )
     _update_scales({k: float(v) for k, v in _seed_T.items()})
@@ -1071,7 +1069,7 @@ def task_losses_chunked(model, vocab, seqs, cfg, batch: int = 128, aux: dict | N
         chunk = seqs[i : i + batch]
         torch.manual_seed(0)
         with torch.no_grad():
-            T_ = _task_losses(model, vocab, chunk, cfg, aux=aux if i == 0 else None)
+            T_, _h = _task_losses(model, vocab, chunk, cfg, aux=aux if i == 0 else None)
         for k, v in T_.items():
             totals[k] = totals.get(k, 0.0) + float(v)
         n += 1
@@ -1787,7 +1785,7 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
             _tgt = _DISTILL["X"][torch.tensor(_rows, device=dev)]
             T_["distill_measure"] = F.mse_loss(_pred[torch.tensor(_keep, device=dev)], _tgt)
 
-    return T_
+    return T_, h
 
 
 class DWA:
@@ -2096,7 +2094,7 @@ def held_out_objective(
     Seeded so fold/real-vs-destroyed comparisons pair exactly."""
     torch.manual_seed(seed)
     with torch.no_grad():
-        T_ = _task_losses(model, vocab, seqs, cfg)
+        T_, _h = _task_losses(model, vocab, seqs, cfg)
         return float(_combine(model, T_, cfg, weights))
 
 
@@ -2297,13 +2295,13 @@ def _loss_split(model, vocab, items, cfg, weights: dict | None = None, scales: d
     geometry/continuity priors (GEOMETRY_FAMILY + `trajectory`). The invariant
     group is projected orthogonally to the task gradient when they conflict, so
     structural constraints can never pull down predictive learning."""
-    T_ = _task_losses(model, vocab, items, cfg)
+    T_, h = _task_losses(model, vocab, items, cfg)
     inv = set(GEOMETRY_FAMILY) | {"trajectory"}
     task_T = {k: v for k, v in T_.items() if k not in inv}
     inv_T = {k: v for k, v in T_.items() if k in inv}
     return _combine(model, task_T, cfg, weights, scales), _combine(
         model, inv_T, cfg, weights, scales
-    )
+    ), h
 
 
 def _registry(
