@@ -493,10 +493,14 @@ def train_cfm(cfg: CFMConfig):
                     model, vocab, items, cfg, weights=balancer.weights(), scales=loss_scales
                 )
             if bank is not None:
-                with torch.no_grad():
-                    _t_b = _collate(items, vocab, device)
-                    _yb, _hb = model.encode(_t_b)
-                    bank.push(model.proj(_hb))
+                # GeometryBank governor: push the projected state into the bank WITHOUT
+                # detaching, so the governor's penalties provide gradients back to the
+                # model. The bank is a closed-loop governor that adjusts lambda based on
+                # the bank's eff-rank; its penalties (redundancy_bank, eigfloor, barrier)
+                # push the rank up. Detaching (previous code) made the bank a pure monitor
+                # with zero gradient flow — the governor fired at max lambda but the rank
+                # never improved.
+                bank.push(model.proj(h).float().cpu())
                 pen = bank.penalties()
                 if pen["redundancy_bank"] is not None:
                     inv_loss = inv_loss + bank.lam * (
@@ -1847,7 +1851,10 @@ class GeometryBank:
         self.history: list[dict] = []
 
     def push(self, z: "torch.Tensor") -> None:
-        zb = z.detach().float().cpu()
+        # No .detach() — the gradient must flow through the bank buffer so the
+        # GeometryBank governor's penalties provide gradients back to the model.
+        # The caller already moves to CPU (.cpu()) for memory efficiency.
+        zb = z.float().cpu()
         self.buf.append(zb)
         rows = sum(c.shape[0] for c in self.buf)
         if rows > self.size:
