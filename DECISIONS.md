@@ -7230,3 +7230,19 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - **What the fast loop bought.** ~10 minutes for a verdict that would have cost ~70 at full
   fidelity — the process fix pays for itself immediately.
 - **Not changed.** Nothing in the model; the flag was a `--set` only.
+
+## DEC-534 — [MEASURED + ADOPTED] serve_unfaded restores level; the idle fade was destroying it
+- **Fast A/B at n=1000 (baseline -> serve_unfaded=true), brain R²:**
+  x0 0.748 -> **0.778** (+0.030) · **h0 0.758 -> 0.828 (+0.071)** · price −0.009 -> −0.011 ·
+  return 0.122 -> **0.132** (+0.010) · churn 0.047 -> **0.068** (+0.021) ·
+  regime 0.057 -> **0.066** (+0.009) · final_regime 0.003 -> 0.001 (−0.002).
+- **Mechanism, already documented in the code (DEC-472).** With `serve_unfaded=False` (the default),
+  every served state is multiplied by a per-customer idle-decay scalar before any head sees it.
+  A per-customer unknown scalar makes linear readouts of the *level* traits (x0/h0/return)
+  unrecoverable — exactly the deficit measured since DEC-528. Serving from the last-event state
+  preserves magnitude while `customer_state` keeps the fade for recency consumers.
+- **Adopted.** All seven deltas point the right way; nothing regresses outside noise. This is the
+  correct-algebra fix (extensive mass survives serving), not a penalty and not whitening.
+- **Not yet enough.** h0 is still 0.828 vs PATH A 0.961 and return 0.132 vs 0.416, so the level
+  rows will likely remain red at full size. It narrows the gap; it does not close it.
+- **Next if still red:** the `(h, M)` state pair (DEC-531 C), now with a smaller distance to cover.
