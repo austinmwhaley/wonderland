@@ -255,7 +255,16 @@ def build(out_dir: Path, n_customers: int, days: int, as_of_day: int, seed: int)
     df.write_parquet(stream)
 
     truth = {
-        "meta": {"generator": "layer_a_v2_prototype", "seed": seed, "days": days},
+        "meta": {
+            "generator": "layer_a_v2_prototype",
+            "seed": seed,
+            "days": days,
+            # v6 zero-domain-literals: the stream DECLARES its randomized action family here;
+            # the response outlet reads it rather than guessing an event name.
+            "action_keys": ["freq", "hour", "channel", "offer"],
+            "arm_key": "offer",
+            "action": {"action_period_seconds": 7.0 * SECONDS_PER_DAY},
+        },
         "customers": [
             {
                 "customer": f"v2{c:07d}",

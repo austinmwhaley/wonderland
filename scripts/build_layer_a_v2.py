@@ -104,6 +104,11 @@ def main(argv=None) -> int:
     labels.write_parquet(pa / "customer_labels.parquet")
     wide.write_parquet(pa / "path_a_wide_table.parquet")
 
+    rel = out / "relational"
+    rel.mkdir(exist_ok=True)
+    base.write_parquet(rel / "events.parquet")
+    customers.write_parquet(rel / "customers.parquet")
+
     pb = out / "path_b"
     pb.mkdir(exist_ok=True)
     shutil.copy2(stream, pb / "path_b_customer_event_stream.parquet")

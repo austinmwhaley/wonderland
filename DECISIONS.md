@@ -7095,3 +7095,23 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   table), not another encoder change.
 - **Caveat.** The readout is a logistic probe on `state_embeddings`; it establishes *accessibility*
   of regime information to a linear consumer, not that the judge's specific heads exploit it.
+
+## DEC-526 — [FIX] v2 data contracts: declared action family + relational inputs + root-stream training
+- **Three failures from the first v2 chain, all data-contract (not capability):**
+  1. **Response outlet refused** (`LookupError: no action declaration`). It resolves the truth
+     relative to the *stream's* directory, and it requires `meta.action_keys` rather than guessing
+     an event name. The v2 truth now declares `action_keys = [freq, hour, channel, offer]`,
+     `arm_key = offer`, `action.action_period_seconds` — data-declared, no domain literal in source
+     (v6 zero-domain-literals).
+  2. **`path_a_provenance` could not run**: it rebuilds the published table from the demo's own
+     `relational/` inputs. v2 now emits `relational/events.parquet` and
+     `relational/customers.parquet`, and all four provenance sub-checks PASS
+     (`columns_match`, `values_match`, `provenance_complete`, `comparator_clean`).
+  3. **Training must read the ROOT stream** (`demo_v2/customer_event_stream.parquet`), not the
+     `path_b/` copy, because `declare_action_design` looks for the truth beside the stream. The
+     first v2 run trained on the `path_b/` copy, so the response view was not served and S4/legs
+     exited non-zero downstream.
+- **Verified.** `declare_action_design(root stream)` returns
+  `{'action_keys': ('freq','hour','channel','offer'), 'arm_key': 'offer', 'action_period_seconds': 604800.0}`.
+- **Not changed.** No gate, threshold, comparator, task, or encoder change. This is a data-contract
+  repair; the next chain measures the same pre-registered rows.
