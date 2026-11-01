@@ -7205,3 +7205,15 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   (C) does not, and is the chosen path.
 - **Status.** No code changed in this entry; the analysis is recorded so the choice is not
   re-litigated and so (S) is not adopted by accident later.
+
+## DEC-532 — [PRE-REGISTERED] level via the learned readout scale (cheaper than the (h,M) refactor)
+- **Rationale.** DEC-531 chose (C) over (S), but (C) is a multi-file state refactor. Before paying
+  that, test the already-built mechanism that targets the same deficit: `readout_scale`
+  (`readout_norm=True` AND `readout_scale` -> `nn.Linear(3, dim)` applied to the readout's own
+  moments). Normalization removes level; a learned scale driven by the moments can put a
+  data-dependent gain back, on the normalised object, with no change to what `brain` measures.
+- **Hypothesis.** Enabling it lifts the static/level rows (h0, return_proneness, x0) without
+  regressing the dynamic rows (churn_day, regime_switches) beyond noise.
+- **Falsifier.** If h0 and return_proneness do not improve, revert and proceed to the (h, M) state
+  pair (DEC-531 C). If any dynamic row regresses with a CI excluding 0, revert.
+- **Not changed.** Gates, tasks, comparator, split, heads, serving contract.
