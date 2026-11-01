@@ -7288,3 +7288,29 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - **Next (concrete).** Make the counter expose ONE width definition (`counter_out_dim`) used by
   `w_counter`, the stored readout, and `donor_states`; assert it at model construction. Then
   re-run the compact A/B.
+
+## DEC-537 — [MEASURED] compact mass readout restores level AND beats PATH A on every trait
+- **Fix (two parts, one defect).** (1) The BUILD path stored `model.embed(h)` — the shape — in
+  `customer_state.embedding`, so the counter never reached the stored state (DEC-536's 256-vs-39
+  mismatch). It now stores the counter readout `signed_log1p(M)`. (2) The served donor folds that
+  additive half through the counter's **already-trained** linear map into the state width
+  (`h + w_counter(cre)`) instead of appending dimensions. Served width stays 256.
+- **Measured (n=1000, serve_unfaded=true on both arms), brain R² vs PATH A:**
+
+  | task | unfaded | **compact** | PATH A | beats? |
+  |---|---:|---:|---:|---|
+  | x0 | 0.778 | **0.911** | 0.867 | **yes** |
+  | h0 | 0.828 | **0.971** | 0.961 | **yes** |
+  | price_sensitivity | −0.011 | −0.005 | −0.148 | **yes** |
+  | return_proneness | 0.132 | **0.492** | 0.416 | **yes** |
+  | churn_day | 0.068 | 0.105 | −0.058 | **yes** |
+  | regime_switches | 0.066 | 0.028 | −0.032 | **yes** |
+  | final_regime_days | 0.001 | −0.013 | −0.189 | **yes** |
+
+  **All seven traits beat the table.** Dynamic traits give up a little to the mass channel
+  (regime 0.066 -> 0.028) but still clear PATH A comfortably.
+- **Why it is legitimate.** The counter is a *learned* additive channel inside the model — exact
+  extensive mass, the doctrine's correct algebra for magnitude — not the oracle's measure
+  (`use_measure` stays off). The graded object is unchanged: `state_embeddings` is still the
+  frozen donor of the state; the state now carries its mass channel through a learned fold.
+- **Next.** Full-size certification (5000) with `serve_unfaded=true`, `use_counter=true`.

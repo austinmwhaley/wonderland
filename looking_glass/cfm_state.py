@@ -199,16 +199,13 @@ def donor_states(model: CFM, states, counters=None):
     with torch.no_grad():
         dev = next(model.parameters()).device
         t = torch.as_tensor(states, dtype=torch.float32, device=dev)
-        emb = model.donor_batch(t)
-        if counters is not None:
-            # Appended mass channel. DEC-535 measured that this dilutes a linear head at
-            # n~700, so it stays behind `use_counter` and is NOT the adopted path; the
-            # compact route hit a width mismatch (readout 256 vs w_counter.in_features 39)
-            # that must be resolved before it can be used.
-            emb = torch.cat(
-                [emb, torch.as_tensor(counters, dtype=torch.float32, device=dev)], dim=1
-            )
-        return emb.cpu().numpy()
+        if counters is not None and getattr(model, "counter_on", False):
+            # COMPACT mass (DEC-536): fold the additive half through the counter's trained
+            # linear map into the state width. Appending dimensions diluted the linear head
+            # (DEC-535); folding keeps the served width at `dim`.
+            c = torch.as_tensor(counters, dtype=torch.float32, device=dev)
+            t = t + model.w_counter(c)
+        return model.donor_batch(t).cpu().numpy()
 
 
 def load_frozen_encoder(tag: str, cfm_dir):
@@ -1089,6 +1086,15 @@ def build_products(cfg, model, vocab, df, keys, split):
         with torch.no_grad():
             _y, h = model(seq)
             emb = model.embed(h)
+            if getattr(model, "counter_on", False):
+                # The additive half must be stored, not the shape: `materialize` concatenates
+                # shape ++ counter, and the two must agree on width (DEC-536).
+                from looking_glass.cfm_training import _collate
+
+                _t = _collate([seq], model.vocab, model._dev())
+                _tok = model.tokens_batch(_t)
+                _cre, _M = model.counter(_tok, model.raw_fields(_t), mask=_t.get("mask"))
+                emb = signed_log1p(_M[0, -1])
             # `y` is the PER-STEP readout [T, dim]; an outlet is one vector per customer,
             # so the heads read the readout at the customer's LAST event — the same tick
             # `h` is summarized at. Feeding the whole [T, dim] here would (and did) publish
