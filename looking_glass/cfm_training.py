@@ -439,7 +439,7 @@ def train_cfm(cfg: CFMConfig):
             torch.no_grad(),
             torch.autocast(device_type=device.type, dtype=_amp_dtype, enabled=use_amp),
         ):
-            tl, il = _loss_split(
+            tl, il, _h = _loss_split(
                 model,
                 vocab,
                 [a_seqs[i] for i in b],
