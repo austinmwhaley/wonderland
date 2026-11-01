@@ -157,10 +157,21 @@ def _replay_run_cfg(meta, rcfg, out: Path, cfg, anchors=None, sample_b=None):
     # and publishes decayed embeddings — a silent train/serve skew that corrupts
     # the rl leg (the donor magnitude is scaled by an unknown per-customer scalar).
     rcfg.serve_unfaded = run_cfg.get("serve_unfaded", rcfg.serve_unfaded)
+    # state_half_life_days controls how fast idle state decays at the day-1 close
+    # (fade) and during daily state updates. A too-short half-life (e.g. 2.44 days)
+    # makes the state forget customer-level traits (return propensity, regime
+    # structure, churn timing) before they can be read by downstream heads.
+    # Replaying it from the registry keeps the fade consistent with training.
+    rcfg.state_half_life_days = run_cfg.get("state_half_life_days", rcfg.state_half_life_days)
     # ledger_recency controls whether the ledger's recency part is published.
     # Without this, the rebuild defaults to not publishing the recency measure,
     # which changes the ledger content and the delivery column.
     rcfg.ledger_recency = run_cfg.get("ledger_recency", rcfg.ledger_recency)
+    # n_experts determines the number of parallel SSM channels (timescales).
+    # More experts = more capacity for the state to encode diverse customer-level
+    # traits over different time scales. Replaying it keeps the build consistent
+    # with the encoder's architecture.
+    rcfg.n_experts = run_cfg.get("n_experts", rcfg.n_experts)
     rcfg.set_overrides = getattr(cfg, "set_overrides", [])
     apply_set_overrides(rcfg)  # explicit --set wins over registry-derived config
     if rcfg.as_of is None:
