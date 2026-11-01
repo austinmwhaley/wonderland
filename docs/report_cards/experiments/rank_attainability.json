@@ -1,13 +1,13 @@
 {
   "_meta": {
     "producer": "measure_rank_attainability.py",
-    "generated_at": "2026-11-01T15:15:36+00:00",
-    "command": "measure_rank_attainability.py --products /home/austin_whaley/wonderland_work/cfm_m8_counter --db /home/austin_whaley/wonderland_work/demo/customer_event_stream.parquet",
+    "generated_at": "2026-11-01T15:23:38+00:00",
+    "command": "measure_rank_attainability.py --derive --products /home/austin_whaley/wonderland_work/cfm_m8_counter --db /home/austin_whaley/wonderland_work/demo/customer_event_stream.parquet",
     "read_only": true,
     "products": "/home/austin_whaley/wonderland_work/cfm_m8_counter",
-    "registry": "registry_0_11_0r486262-b8d256e1lr3e-04o9e37655b.json",
-    "registry_sha256": "f74ca5fe3397bd51",
-    "encoder_tag": "0.11.0r486262-b8d256e1lr3e-04o9e37655b",
+    "registry": "registry_0_11_0r103115-b26d256e3lr3e-04o39ad8593.json",
+    "registry_sha256": "e79c0f97bc3b87cd",
+    "encoder_tag": "0.11.0r103115-b26d256e3lr3e-04o39ad8593",
     "encoder_versions_served": [
       "0.11.0r103115-b26d256e3lr3e-04o39ad8593"
     ],
@@ -99,6 +99,25 @@
       ],
       "eig_above_edge_sum_frac": 0.8161
     }
+  },
+  "derived_rank_target": {
+    "k_star": 16,
+    "bootstrap": {
+      "n_boot": 100,
+      "k_mean": 16.37,
+      "k_lo": 16,
+      "k_hi": 17
+    },
+    "rank_target": 0.0625,
+    "gate_bound": 0.0625,
+    "gate_bound_dims": 16,
+    "dim": 256,
+    "rule": "parallel analysis (95th pct, column-permuted null) on the exhaustive full-history measure of split A; target = k*/dim, gate = k_lo/dim",
+    "state_signal_dims": 15,
+    "state_clears_gate_bound": false,
+    "state_margin_dims": -1,
+    "state_vs_measure_ratio": 0.9375,
+    "n_derivation_rows": 1776
   },
   "comparison": {
     "card_rank_target": 0.1172,

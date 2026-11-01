@@ -6764,3 +6764,34 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   computation is unchanged, but the honesty rule is mechanical: every receipt is regenerated
   under the new hash by the S6 chain, not re-labelled.
 - **Not changed.** Gates, thresholds, targets, comparator, encoder math.
+
+## DEC-516 — [MEASURED + FIX] A+C: derive rank_target from the stream (parallel analysis); PR is not direction count
+- **Operator ruling.** A+C approved: derive the target from the stream (A) and grade by comparison
+  against the measured ceiling (C). Rule-8 signoff given.
+- **Why the old derivation was invalid, from its own receipt.** `rank_target: "30 signals
+  (10 et + 11 num + **7 gen** + 2 ts) of 256 -> 0.117"` — `7 gen` is the seven **certification
+  traits** (x0, h0, price_sensitivity, return_proneness, churn_day, regime_switches,
+  final_regime_days). The encoder's target was derived from the exam it is graded by: a direct
+  violation of the anti-overfit clause ("known use cases may VETO, never SHAPE"). It also counts
+  schema *fields* as independent signals; event-type and numeric aggregates are heavily redundant.
+- **A — derived on split A (train split, never the graded split B), n=1776:**
+  `k* = 16` directions, bootstrap over customers 95% CI **16–17** (100 resamples),
+  `rank_target = 16/256 = 0.0625`, gate bound = **16 dims**. Rule: order-matched parallel
+  analysis, 95th percentile of a column-permuted null (100 replicates), on the exhaustive
+  full-history measure; correlation space so raw column scale cannot masquerade as rank.
+- **C — comparison on held-out B (n=724):** state `signal_dims = 15` vs gate bound 16 →
+  **BELOW by 1 dimension** (ratio 0.9375). The gap is one direction, not twenty-four: the encoder
+  is at the stream's capacity minus one, not collapsed.
+- **Category error caught before wiring (the important part).** The training objective `rank`
+  grades **participation ratio** `1 - PR/dim`; the derivation measures **direction count**. They
+  are different statistics: the state has 15 directions but PR 5.41, because variance is
+  concentrated in ~5 of them. Setting `cfg.rank_target = 0.0625` would push PR toward 16 — from
+  5.41 — i.e. *stricter*, and incoherent with the quantity being derived. **Not wired.**
+- **Decision (mechanism — mine to make).** Make the geometry objective grade the same statistic
+  the derivation measures and the gate grades: **signal_dims**, not PR. Single source of truth
+  (principle 6). PR stays as a *diagnostic* (it measures concentration/accessibility, and the
+  shipping head is ridge + StandardScaler, which is scale-invariant — PR should not be a training
+  target for linear decodability).
+- **Not done in this entry.** No `looking_glass/` edit: the S6 chain is mid-run, and this is a
+  behaviour change that must go in as one axis and be re-certified end to end.
+- **Receipt.** `docs/report_cards/experiments/rank_attainability.json` (`derived_rank_target`).

@@ -89,6 +89,73 @@ def _block(x: np.ndarray, seed: int) -> dict:
     return out
 
 
+def _parallel_analysis(x: np.ndarray, seed: int, n_null: int = 100, q: float = 95.0):
+    """Signal directions by order-matched parallel analysis, with the null quantiles returned.
+
+    Returns (k, null_q) where `null_q[j]` is the q-th percentile of the null eigenvalue at
+    order j. Reusing `null_q` lets a bootstrap reuse the same null (a disclosed approximation:
+    the null is held fixed across resamples instead of re-estimated per resample).
+    """
+    x = np.asarray(x, dtype=np.float64)
+    n, d = x.shape
+    z = x - x.mean(0, keepdims=True)
+    sd = z.std(0, ddof=1).clip(min=1e-12)
+    zs = z / sd
+    ev = np.linalg.eigvalsh(zs.T @ zs / max(n - 1, 1)).clip(min=0.0)
+
+    rng = np.random.default_rng(seed)
+    nulls = np.empty((n_null, d), dtype=np.float64)
+    for b in range(n_null):
+        perm = np.column_stack([rng.permutation(n) for _ in range(d)])
+        zn = zs[perm, np.arange(d)]
+        sdn = zn.std(0, ddof=1).clip(min=1e-12)
+        nulls[b] = np.linalg.eigvalsh((zn / sdn).T @ (zn / sdn) / max(n - 1, 1)).clip(min=0.0)
+    null_q = np.percentile(nulls, q, axis=0)
+    return int((ev > null_q).sum()), ev, null_q
+
+
+def _bootstrap_k(x: np.ndarray, null_q: np.ndarray, seed: int, n_boot: int = 100) -> dict:
+    """Bootstrap over CUSTOMERS (rows) for a CI on the signal-direction count."""
+    x = np.asarray(x, dtype=np.float64)
+    n, d = x.shape
+    rng = np.random.default_rng(seed + 991)
+    ks = np.empty(n_boot, dtype=np.int64)
+    for b in range(n_boot):
+        idx = rng.integers(0, n, n)
+        z = x[idx] - x[idx].mean(0, keepdims=True)
+        sd = z.std(0, ddof=1).clip(min=1e-12)
+        zs = z / sd
+        ev = np.linalg.eigvalsh(zs.T @ zs / max(n - 1, 1)).clip(min=0.0)
+        ks[b] = int((ev > null_q).sum())
+    return {
+        "n_boot": int(n_boot),
+        "k_mean": round(float(ks.mean()), 3),
+        "k_lo": int(np.percentile(ks, 2.5)),
+        "k_hi": int(np.percentile(ks, 97.5)),
+    }
+
+
+def derive_target(x: np.ndarray, dim: int, seed: int) -> dict:
+    """A+C: the rank target is a measured property of the stream, with a CI.
+
+    Training target = k* / dim (the point estimate of the stream's signal directions).
+    Grading bound   = k_lo / dim (the lower bootstrap bound) — a gate may not use the point
+    estimate, because a PASS needs a comparator with uncertainty.
+    """
+    k, _, null_q = _parallel_analysis(x, seed)
+    boot = _bootstrap_k(x, null_q, seed)
+    return {
+        "k_star": k,
+        "bootstrap": boot,
+        "rank_target": round(k / max(dim, 1), 4),
+        "gate_bound": round(boot["k_lo"] / max(dim, 1), 4),
+        "gate_bound_dims": int(boot["k_lo"]),
+        "dim": int(dim),
+        "rule": "parallel analysis (95th pct, column-permuted null) on the exhaustive "
+        "full-history measure of split A; target = k*/dim, gate = k_lo/dim",
+    }
+
+
 def _load_cfg(reg: dict, db: Path) -> CFMConfig:
     """Rebuild the training config from the registry so the measure matches the run."""
     raw = dict(reg.get("config") or {})
@@ -108,6 +175,11 @@ def main(argv=None) -> int:
     ap.add_argument("--db", required=True, help="the event stream the encoder trained on")
     ap.add_argument("--as-of", default=None, help="override the registry as_of")
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument(
+        "--derive",
+        action="store_true",
+        help="also derive rank_target from split A by parallel analysis (A+C)",
+    )
     ap.add_argument(
         "--out", default=str(ROOT / "docs/report_cards/experiments/rank_attainability.json")
     )
@@ -133,6 +205,12 @@ def main(argv=None) -> int:
             r[0]
             for r in con.execute(
                 "select customer_key from encoder_samples where split='B'"
+            ).fetchall()
+        ]
+        akeys = [
+            r[0]
+            for r in con.execute(
+                "select customer_key from encoder_samples where split='A'"
             ).fetchall()
         ]
         emb = {
@@ -176,6 +254,18 @@ def main(argv=None) -> int:
     }
     target = float(getattr(cfg, "rank_target", 0.0) or 0.0)
     attainable = blocks["full_history_measure"]["parallel_frac"]
+
+    derived = None
+    if a.derive:
+        # A+C: derive the target from split A (the TRAIN split, never the graded split B).
+        meas_a, _ = generic_measure(cfg, akeys)
+        derived = derive_target(np.asarray(meas_a, dtype=np.float64), shape.shape[1], a.seed)
+        state_k = blocks["learned_shape"]["parallel_dims"]
+        derived["state_signal_dims"] = state_k
+        derived["state_clears_gate_bound"] = bool(state_k >= derived["gate_bound_dims"])
+        derived["state_margin_dims"] = int(state_k - derived["gate_bound_dims"])
+        derived["state_vs_measure_ratio"] = round(state_k / max(derived["k_star"], 1e-9), 4)
+        derived["n_derivation_rows"] = int(len(akeys))
     body = {
         "_meta": {
             "producer": Path(__file__).name,
@@ -194,6 +284,7 @@ def main(argv=None) -> int:
             "measure_fields": len(names),
         },
         "geometry": blocks,
+        "derived_rank_target": derived,
         "comparison": {
             "card_rank_target": round(target, 4),
             "card_rank_target_dims": round(target * shape.shape[1], 2),
@@ -230,6 +321,19 @@ def main(argv=None) -> int:
         f"  vs measure parallel_frac {c['measure_parallel_frac']:.4f}"
         f"  ({c['measure_parallel_dims']} dims above its own null)"
     )
+    if derived:
+        b = derived["bootstrap"]
+        print(
+            f"  DERIVED rank_target {derived['rank_target']:.4f} = k* {derived['k_star']}"
+            f" / dim {derived['dim']}   (bootstrap 95% CI {b['k_lo']}-{b['k_hi']},"
+            f" n_boot {b['n_boot']})"
+        )
+        print(
+            f"  gate bound {derived['gate_bound']:.4f} ({derived['gate_bound_dims']} dims);"
+            f" state {derived['state_signal_dims']} dims ->"
+            f" {'CLEARS' if derived['state_clears_gate_bound'] else 'BELOW'}"
+            f" (margin {derived['state_margin_dims']:+d})"
+        )
     print(
         f"  learned_eff_rank / measure_parallel_dims = {c['learned_over_attainable']:.2f}"
         "  (>1: the shape already spans more directions than the measure's signal count)"

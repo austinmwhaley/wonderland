@@ -1,24 +1,24 @@
 {
   "S1": {
     "_stamp": {
-      "behavior_hash": "1b238954570cdc76",
+      "behavior_hash": "cb94deb974fc068b",
       "command": "measure_input_law.py --data /home/austin_whaley/wonderland_work/demo --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
-      "generated_at": "2026-11-01T07:01:29+00:00",
-      "git_commit": "0db0c91c951ac6758dcaa0c3bf26eca76da7cb71",
+      "generated_at": "2026-11-01T15:22:22+00:00",
+      "git_commit": "89a4cea64d4e1f2d2bb5db95bde8a513e8330991",
       "producer": "measure_input_law.py"
     },
     "checks": {
       "new_field_ingested": {
         "evidence": "injected loyalty_tier (novel categories) + session_seconds into every event's attributes: resolved into catspec=['acquisition_channel', 'brand', 'campaign_id', 'category_code', 'channel', 'dow', 'freq', 'hour', 'loyalty_tier', 'offer', 'order_id', 'product_id', 'qty', 'reason', 'region', 'segment', 'touch'] num=['discount', 'margin', 'price', 'session_seconds', 'signup_ts', 'value']; encoder trained on the variant (d=64,L=1,e=1): E finite=True, best=59.5698; zero pipeline-code edits",
         "n_rows": 3328381,
-        "seconds": 62.5,
+        "seconds": 63.1,
         "working": true
       },
       "renamed_end_to_end": {
         "evidence": "renamed client_id/occurred_at/event/attributes/total -> onboard resolved {'customer_key': 'client_id', 'event_ts': 'occurred_at', 'event_type': 'event', 'brand': None, 'entity_type': None, 'entity_id': None, 'source_table': None, 'value': 'total', 'event_attributes': ['attributes']}; 3328381 rows kept (source 3328381); 6000 customers encoded; encoder trained on the resolved stream (d=64,L=1,e=1): E finite=True, best=60.7079; zero pipeline-code edits",
         "n_customers": 6000,
         "n_rows": 3328381,
-        "seconds": 70.6,
+        "seconds": 69.9,
         "working": true
       }
     },
@@ -27,17 +27,17 @@
   },
   "S2": {
     "_stamp": {
-      "behavior_hash": "1b238954570cdc76",
+      "behavior_hash": "cb94deb974fc068b",
       "command": "measure_input_law.py --data /home/austin_whaley/wonderland_work/demo --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
-      "generated_at": "2026-11-01T07:01:29+00:00",
-      "git_commit": "0db0c91c951ac6758dcaa0c3bf26eca76da7cb71",
+      "generated_at": "2026-11-01T15:22:22+00:00",
+      "git_commit": "89a4cea64d4e1f2d2bb5db95bde8a513e8330991",
       "producer": "measure_input_law.py"
     },
     "checks": {
       "field_permutation_invariance": {
         "evidence": "attribute field order ['touch', 'target_key', 'freq', 'hour']... vs permuted ['reason', 'order_id', 'dow', 'region']... over 60000 rows: sequence digests identical (4c44abeb87398213 vs 4c44abeb87398213)",
         "n_rows": 60000,
-        "seconds": 1.1,
+        "seconds": 1.2,
         "working": true
       },
       "numeric_transform_law": {
@@ -48,13 +48,13 @@
       "training_determinism": {
         "evidence": "two seed-0 runs (d=64,L=1,e=1) on identical prepared inputs: E bit-identical=True, best-val equal (55.365457 == 55.365457)",
         "n_customers": 6000,
-        "seconds": 38.1,
+        "seconds": 37.5,
         "working": true
       },
       "unseen_value_path": {
         "evidence": "frozen schema (11 event types, vocab sizes [4, 10, 16, 6, 4, 7, 4, 24, 4, 4, 0, 77, 3, 4, 4, 5, 7]) encoded a batch containing unseen event types/categories/1e12 numerics: rows=2348780, entities=6002, all arrays finite=True, novel rows -> OOV slot 0 = True, vocab unchanged after serving = True (never re-derived)",
         "n_rows": 2348780,
-        "seconds": 14.9,
+        "seconds": 15.2,
         "working": true
       }
     },
@@ -947,10 +947,10 @@
     "working": true
   },
   "_meta": {
-    "behavior_hash": "94857be6815a96f3",
-    "command": "measure_dynamics_law.py --ckpt-dir /home/austin_whaley/wonderland_work/cfm_m8_counter --db /home/austin_whaley/wonderland_work/demo/customer_event_stream.parquet --train-log /home/austin_whaley/wonderland_work/cfm_m8_counter/train.log --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
-    "generated_at": "2026-11-01T14:32:49+00:00",
-    "git_commit": "83a8c0b5c277a73bd99289d06170a802972fc54b",
-    "producer": "measure_dynamics_law.py"
+    "behavior_hash": "cb94deb974fc068b",
+    "command": "measure_input_law.py --data /home/austin_whaley/wonderland_work/demo --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
+    "generated_at": "2026-11-01T15:22:22+00:00",
+    "git_commit": "89a4cea64d4e1f2d2bb5db95bde8a513e8330991",
+    "producer": "measure_input_law.py"
   }
 }
