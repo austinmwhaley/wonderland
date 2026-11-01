@@ -6874,3 +6874,26 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   separate axis and are untouched here).
 - **Sequencing.** `looking_glass/` is not edited until the S6 chain exits; then the change goes in
   as one behaviour change, with the matched-n gate measured first.
+
+## DEC-519 — [IMPLEMENTED] DEC-518 in code: whitening objectives and the geometry governor removed
+- **Code (one axis: the definition of rank).**
+  - `looking_glass/cfm_training.py`: the `rank` and `redundancy` objectives are no longer added
+    to `cfg.objectives`; the `GeometryBank` governor is removed from the train step and from the
+    registry. The class remains (tests exercise it; removing it is a separate cleanup) but nothing
+    in training constructs or drives it.
+  - `looking_glass/autotune.py`: `derive_rank_target` no longer injects `n_generative = 7` (the
+    seven certification traits). It is now marked a **schema fallback for receipts only**; the
+    authoritative rank definition is the parallel-analysis measurement, and nothing in training
+    keys on `rank_target`.
+- **Latent bug found by the audit while touching this file.** `autotune.parse_attrs` used `json`
+  with no module-level import — a `NameError` waiting for its first caller. Fixed (module-level
+  `import json`, 6 unused imports removed). This is the "audit what you RUN" rule paying for
+  itself: the file had been run many times on paths that never reached `parse_attrs`.
+- **Smoke test (500 customers, 1 epoch).** Trains to completion; registry objectives =
+  `next, entity, dt, value, mask, contrast, occur, order, jepa, sf, query, agg, mtp` — no `rank`,
+  no `redundancy`; `final_bank_stats` empty. Products and ledger publish normally.
+- **What is NOT claimed.** This does not make a leg pass. It removes a pressure that could only
+  whiten, and it makes the gate measurable. If `signal_dims` regresses, DEC-518's falsifier fires
+  and the removal is reverted with that receipt.
+- **Cost.** One retrain + one full chain (the receipts must be regenerated under the new
+  behaviour hash).

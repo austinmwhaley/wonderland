@@ -1,7 +1,7 @@
 {
   "_meta": {
     "producer": "measure_rank_attainability.py",
-    "generated_at": "2026-11-01T15:23:38+00:00",
+    "generated_at": "2026-11-01T15:26:40+00:00",
     "command": "measure_rank_attainability.py --derive --products /home/austin_whaley/wonderland_work/cfm_m8_counter --db /home/austin_whaley/wonderland_work/demo/customer_event_stream.parquet",
     "read_only": true,
     "products": "/home/austin_whaley/wonderland_work/cfm_m8_counter",
@@ -112,12 +112,32 @@
     "gate_bound": 0.0625,
     "gate_bound_dims": 16,
     "dim": 256,
+    "n_rows": 1776,
     "rule": "parallel analysis (95th pct, column-permuted null) on the exhaustive full-history measure of split A; target = k*/dim, gate = k_lo/dim",
     "state_signal_dims": 15,
     "state_clears_gate_bound": false,
     "state_margin_dims": -1,
     "state_vs_measure_ratio": 0.9375,
-    "n_derivation_rows": 1776
+    "n_derivation_rows": 1776,
+    "gate_matched_n_B": {
+      "k_star": 15,
+      "bootstrap": {
+        "n_boot": 100,
+        "k_mean": 14.18,
+        "k_lo": 13,
+        "k_hi": 15
+      },
+      "rank_target": 0.0586,
+      "gate_bound": 0.0508,
+      "gate_bound_dims": 13,
+      "dim": 256,
+      "n_rows": 724,
+      "rule": "parallel analysis (95th pct, column-permuted null) on the exhaustive full-history measure of split A; target = k*/dim, gate = k_lo/dim",
+      "split": "B",
+      "state_signal_dims": 15,
+      "passes": true,
+      "margin_dims": 2
+    }
   },
   "comparison": {
     "card_rank_target": 0.1172,

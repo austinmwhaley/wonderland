@@ -173,15 +173,14 @@ def train_cfm(cfg: CFMConfig):
     # B5: enable multi-token prediction when mtp_k > 0 (after --set, same rationale).
     if int(getattr(cfg, "mtp_k", 0) or 0) > 0 and "mtp" not in cfg.objectives:
         cfg.objectives = (*cfg.objectives, "mtp")
-    # DEC-016/019: rank objective — the participation ratio of the projected state
-    # is a training pressure that pushes the state to be diverse. Derived from data
-    # via rank_target (signal count / dim). Always active when rank_target > 0.
-    if cfg.rank_target > 0 and "rank" not in cfg.objectives:
-        cfg.objectives = (*cfg.objectives, "rank")
-    # Redundancy objective — off-diagonal decorrelation of the projected state.
-    # Active when rank_target > 0 to complement the rank pressure.
-    if cfg.rank_target > 0 and "redundancy" not in cfg.objectives:
-        cfg.objectives = (*cfg.objectives, "redundancy")
+    # DEC-518: NO rank/redundancy TRAINING OBJECTIVE.
+    # `rank` graded the participation ratio (1 - PR/dim) and `redundancy` equalised the
+    # off-diagonal spectrum. Both are spectrum equalisers: their minimiser is a flat
+    # correlation spectrum, i.e. whitening, which DEC-036 banned because it manufactures
+    # rank that does not transfer. Rank is now MEASURED (parallel analysis of the
+    # exhaustive measure, `scripts/measure_rank_attainability.py --derive`) and graded by
+    # `signal_dims(state) >= k_lo(measure)` at matched n. If that gate is red the fix is
+    # by CONSTRUCTION inside the state update (FR v2.0 bilinear h(x)x), never a loss.
     a_seqs = build_sequences(df, a_keys, cfg, split, with_anchors=False)
     cfg.primary_numeric = _primary_numeric_field(df, cfg)
     vocab = EventVocab.build(
@@ -411,18 +410,11 @@ def train_cfm(cfg: CFMConfig):
         return lr if lr > _lr_min_floor else 0.0
 
     loss_scales: dict = {}  # EMA per task — the unit system (DEC-018)
-    bank = (
-        GeometryBank(
-            dim=cfg.dim,
-            size=getattr(cfg, "bank_size", 8192),
-            target=getattr(cfg, "rank_target", 0.32),
-            alpha=getattr(cfg, "rank_alpha", 0.25),
-            lam_max=getattr(cfg, "rank_lambda_max", 50.0),
-            tau=getattr(cfg, "tau_eig", 0.05),
-        )
-        if getattr(cfg, "bank_size", 0) > 0
-        else None
-    )
+    # DEC-518: the GeometryBank governor is removed. It drove lambda against a
+    # participation-ratio target (0.117) that the stream cannot support, and its
+    # `eigfloor` used tau_eig=0.01 on a correlation scale whose mean eigenvalue is 1,
+    # so the floor was identically zero — the penalty never existed. It is replaced by
+    # a MEASURED gate (see `measure_rank_attainability.py --derive`), not a pressure.
 
     def _update_scales(losses: dict) -> None:
         for k, v in losses.items():
@@ -492,22 +484,8 @@ def train_cfm(cfg: CFMConfig):
                 task_loss, inv_loss, h = _loss_split(
                     model, vocab, items, cfg, weights=balancer.weights(), scales=loss_scales
                 )
-            if bank is not None:
-                # GeometryBank governor: push detached state to buffer (monitor only,
-                # no gradient flow — buffer is not part of the computation graph).
-                # Compute penalties from the CURRENT batch's projected state so the
-                # governor's penalties provide gradients back to the model.
-                # proj_h has shape (B, T, dim); flatten to (B*T, dim) for the bank.
-                # When B*T < dim//2 the batch covariance is ill-conditioned; the
-                # governor still fires using the bank buffer (accumulated across
-                # steps) but no gradient penalties are returned.
-                proj_h = model.proj(h).float().reshape(-1, h.shape[-1])
-                bank.push(proj_h.detach().cpu())
-                pen = bank.penalties(proj_h)
-                if pen["redundancy_bank"] is not None:
-                    inv_loss = inv_loss + bank.lam * (
-                        pen["redundancy_bank"] + pen["eigfloor"] + pen["barrier"]
-                    )
+            # DEC-518: no geometry governor term. Rank is measured and graded
+            # (parallel analysis at matched n), never forced by a spectrum penalty.
             # The accept/reject comparison happens after the step, at `loss1` (DEC-039).
             if cfg.pcgrad and use_amp:
                 scaler.scale(task_loss + inv_loss).backward()
@@ -840,14 +818,8 @@ def train_cfm(cfg: CFMConfig):
     task_weights = {k: round(w, 4) for k, w in balancer.weights().items()}
     cfg.final_task_weights = dict(task_weights)
     cfg.final_loss_scales = {k: round(v, 6) for k, v in loss_scales.items()}
-    if bank is not None:
-        st = bank.states()
-        cfg.final_bank_stats = {
-            "bank_rank": round(bank.eff_rank(st), 4) if st is not None else None,
-            "lambda_final": round(bank.lam, 3),
-            "lambda_history": bank.history[-10:],
-            "bank_rows": int(st.shape[0]) if st is not None else 0,
-        }
+    # DEC-518: no geometry governor statistics to record — the gate is measured in
+    # `docs/report_cards/experiments/rank_attainability.json`, not driven in-loop.
     _registry(
         cfg,
         vocab,
@@ -1875,7 +1847,7 @@ class GeometryBank:
 
     def penalties(self, z: "torch.Tensor | None" = None) -> dict:
         """(redundancy_bank, eigfloor, barrier) penalties + updated lambda.
-        
+
         The governor (lambda adjustment) ALWAYS fires using the bank buffer
         (detached, no gradient flow). Gradient penalties are computed from the
         current batch `z` only when it is large enough (z.shape[0] >= dim//2)
@@ -1896,9 +1868,7 @@ class GeometryBank:
         # --- Governor: always fires using gov_z (buffer or batch) ---
         bank_rank = self.eff_rank(gov_z)
         gap = self.target - bank_rank
-        self.lam = float(
-            _np.clip(self.lam * _np.exp(self.alpha * gap), 1.0, 1e6)
-        )
+        self.lam = float(_np.clip(self.lam * _np.exp(self.alpha * gap), 1.0, 1e6))
         self.history.append({"bank_rank": round(bank_rank, 4), "lam": round(self.lam, 3)})
 
         # --- Gradient penalties: only from the current batch when large enough ---
@@ -2317,9 +2287,11 @@ def _loss_split(model, vocab, items, cfg, weights: dict | None = None, scales: d
     inv = set(GEOMETRY_FAMILY) | {"trajectory"}
     task_T = {k: v for k, v in T_.items() if k not in inv}
     inv_T = {k: v for k, v in T_.items() if k in inv}
-    return _combine(model, task_T, cfg, weights, scales), _combine(
-        model, inv_T, cfg, weights, scales
-    ), h
+    return (
+        _combine(model, task_T, cfg, weights, scales),
+        _combine(model, inv_T, cfg, weights, scales),
+        h,
+    )
 
 
 def _registry(

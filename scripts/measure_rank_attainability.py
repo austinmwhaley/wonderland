@@ -151,6 +151,7 @@ def derive_target(x: np.ndarray, dim: int, seed: int) -> dict:
         "gate_bound": round(boot["k_lo"] / max(dim, 1), 4),
         "gate_bound_dims": int(boot["k_lo"]),
         "dim": int(dim),
+        "n_rows": int(np.asarray(x).shape[0]),
         "rule": "parallel analysis (95th pct, column-permuted null) on the exhaustive "
         "full-history measure of split A; target = k*/dim, gate = k_lo/dim",
     }
@@ -266,6 +267,15 @@ def main(argv=None) -> int:
         derived["state_margin_dims"] = int(state_k - derived["gate_bound_dims"])
         derived["state_vs_measure_ratio"] = round(state_k / max(derived["k_star"], 1e-9), 4)
         derived["n_derivation_rows"] = int(len(akeys))
+        # C, matched-n: derive the bound on the SAME split and n the state is measured on.
+        # Parallel-analysis power depends on n, so a bound from split A (n=1776) compared
+        # against a state measured on B (n=724) is an n mismatch, not a capability gap.
+        gate_b = derive_target(measure, shape.shape[1], a.seed)
+        gate_b["split"] = "B"
+        gate_b["state_signal_dims"] = state_k
+        gate_b["passes"] = bool(state_k >= gate_b["gate_bound_dims"])
+        gate_b["margin_dims"] = int(state_k - gate_b["gate_bound_dims"])
+        derived["gate_matched_n_B"] = gate_b
     body = {
         "_meta": {
             "producer": Path(__file__).name,
@@ -329,10 +339,16 @@ def main(argv=None) -> int:
             f" n_boot {b['n_boot']})"
         )
         print(
-            f"  gate bound {derived['gate_bound']:.4f} ({derived['gate_bound_dims']} dims);"
-            f" state {derived['state_signal_dims']} dims ->"
+            f"  split-A bound {derived['gate_bound_dims']} dims (training target); state"
+            f" {derived['state_signal_dims']} ->"
             f" {'CLEARS' if derived['state_clears_gate_bound'] else 'BELOW'}"
             f" (margin {derived['state_margin_dims']:+d})"
+        )
+        gb = derived["gate_matched_n_B"]
+        print(
+            f"  MATCHED-n GATE (B, n={gb['n_rows']}):"
+            f" measure k_lo {gb['gate_bound_dims']} vs state {gb['state_signal_dims']} ->"
+            f" {'PASS' if gb['passes'] else 'FAIL'} (margin {gb['margin_dims']:+d})"
         )
     print(
         f"  learned_eff_rank / measure_parallel_dims = {c['learned_over_attainable']:.2f}"

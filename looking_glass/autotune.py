@@ -11,6 +11,7 @@ recorded in the receipt when they fire.
 
 from __future__ import annotations
 
+import json
 import math
 from dataclasses import dataclass, field
 
@@ -206,13 +207,12 @@ def _customer_level_features(df, keys, sample_n: int | None = None):
 
     Returns (feature_matrix, customer_keys, feature_names).
     """
-    import polars as pl
     import numpy as np
-    import json
 
     # Optional sampling for speed on large streams
     if sample_n is not None and len(keys) > sample_n:
         import random
+
         rng = random.Random(42)
         keys = sorted(rng.sample(list(keys), sample_n))
 
@@ -287,6 +287,7 @@ def _customer_level_features(df, keys, sample_n: int | None = None):
         # event_ts is ISO string; convert to epoch for span computation
         try:
             from datetime import datetime
+
             first = datetime.fromisoformat(d["first_ts"])
             last = datetime.fromisoformat(d["last_ts"])
             span_days = (last - first).total_seconds() / 86400.0
@@ -295,7 +296,11 @@ def _customer_level_features(df, keys, sample_n: int | None = None):
         X[i, n_et + n_num + 2] = span_days  # event span in days
         X[i, n_et + n_num + 3] = n_ev / max(1.0, span_days)  # events per day
 
-    return X, customer_keys, et_cols + num_cols + ["n_events", "bias", "event_span_days", "events_per_day"]
+    return (
+        X,
+        customer_keys,
+        et_cols + num_cols + ["n_events", "bias", "event_span_days", "events_per_day"],
+    )
 
 
 def parse_attrs(s):
@@ -388,8 +393,6 @@ def derive_rank_target(df, keys, dim: int) -> tuple[float, dict]:
 
     Falls back to min(7, dim) / dim (7 generative traits) when insufficient data.
     """
-    import polars as pl
-    import numpy as np
     import json
 
     # Count event types
@@ -407,8 +410,14 @@ def derive_rank_target(df, keys, dim: int) -> tuple[float, dict]:
             except Exception:
                 pass
 
-    # Generative traits the state must encode (from the certification targets)
-    n_generative = 7  # x0, h0, price_sensitivity, return_proneness, churn_day, regime_switches, final_regime_days
+    # DEC-518: this was `n_generative = 7` — the seven CERTIFICATION TRAITS. Deriving the
+    # encoder's target from the exam it is graded by violates the anti-overfit clause
+    # ("known use cases may VETO, never SHAPE"). The terms are removed.
+    # This whole function is now a SCHEMA FALLBACK for receipts only: the authoritative
+    # rank definition is a measurement (parallel analysis of the exhaustive full-history
+    # measure) in `scripts/measure_rank_attainability.py --derive`, and nothing in training
+    # keys on `rank_target` any more (DEC-518).
+    n_generative = 0
 
     # Timescale regimes from the gap distribution
     g = within_customer_gaps(df)
@@ -439,7 +448,9 @@ def derive_aib_target_rank(df, keys, dim: int) -> tuple[float, dict]:
     Falls back to the rank_target derivation when insufficient data.
     """
     rt, rt_receipt = derive_rank_target(df, keys, dim)
-    return rt, {"aib_target_rank": f"consistent with rank_target={rt:.3f} ({rt_receipt['rank_target']})"}
+    return rt, {
+        "aib_target_rank": f"consistent with rank_target={rt:.3f} ({rt_receipt['rank_target']})"
+    }
 
 
 def derive_tau_mp(df, keys, dim: int) -> tuple[float, dict]:
@@ -451,8 +462,6 @@ def derive_tau_mp(df, keys, dim: int) -> tuple[float, dict]:
 
     Falls back to 0.05 when insufficient data.
     """
-    import polars as pl
-    import numpy as np
     import json
 
     # Count event types
