@@ -7147,3 +7147,19 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - **Falsifier.** If h0 / return_proneness do not improve, or any dynamic trait regresses with a CI
   excluding 0, revert the counter and record it.
 - **Not changed.** Gates, tasks, comparator, split, heads, ledger recipe.
+
+## DEC-529 — [FALSIFIED + NEXT] the counter was inert by SERVING CONTRACT, not by merit
+- **Falsifier fired.** Enabling the CounterBlock moved nothing: h0 0.8319 -> 0.8361 (+0.004),
+  return_proneness 0.3275 -> 0.3239 (-0.004), x0 +0.0025. All inside noise.
+- **Cause, from the code.** `state_embeddings` is `donor_states(...)` = `boundary(proj(h))` — the
+  contractive state only. The counter totals live in `forward_embedding` (shape ++ counter ++
+  optional measure), which `materialize_state_embeddings` never calls. The judge's brain arm reads
+  `state_embeddings`, so the additive channel could not appear in the rows it was meant to fix.
+  This is a **serving-contract** gap, not evidence about the channel.
+- **Consequence.** The doctrine's `E` (shape ++ counter) is not what Layer C is served. Restoring
+  level requires either (a) serving the consumed embedding, or (b) storing the counter memory with
+  the state and concatenating at serve. Both are product-contract changes, not config flags.
+- **Cheap test first (this entry).** `readout_norm=True` normalises the readout, which can itself
+  destroy magnitude. Test `readout_norm=False` (counter still on) as one cycle: if level traits
+  do not move, revert and take the serving change (a/b above).
+- **Not changed.** Gates, tasks, comparator, heads.
