@@ -44,15 +44,41 @@ import resource
 
 _GB = 1024**3
 _MEMINFO = "/proc/meminfo"
-#: cgroup v2 files. Inside a `docker --memory=20g` container these carry the container's
-#: ceiling; on the bare host `memory.max` is usually absent (root cgroup) and reads as no limit.
-_CGROUP_LIMIT = "/sys/fs/cgroup/memory.max"
-_CGROUP_USED = "/sys/fs/cgroup/memory.current"
 
 # principle-ok: documented conservative fallback, not a tuning knob. Below ~2% of the
 # pool a CUDA context plus a single batch cannot exist, so a smaller budget means
 # "nothing is coming back" — refuse with the reason instead of dying obscurely.
 _MIN_VIABLE_FRACTION = 0.02
+
+_CGROUP_ROOT = "/sys/fs/cgroup"
+
+
+def _own_cgroup_chain() -> list[str]:
+    """Paths from this process's LEAF cgroup up to the root (cgroup v2).
+
+    /proc/self/cgroup's v2 line is `0::/path`. systemd nests scopes under slices and the
+    binding memory ceiling may live on ANY ancestor slice — measured 2026-11-01: a 20 GB
+    limit on `wonderland.slice` while `/sys/fs/cgroup/memory.max` read `max`, so the
+    root-level read reported no ceiling and a B=64 DINO run was OOM-killed by the cgroup
+    instead of refusing at the seatbelt (DEC-550 run-2 post-mortem). Inside a container
+    namespace the leaf is `/` and the root file IS the container limit, so the walk keeps
+    the legacy semantics there."""
+    rel = ""
+    try:
+        with open("/proc/self/cgroup") as fh:
+            for line in fh:
+                if line.startswith("0::"):
+                    rel = line.split("0::", 1)[1].strip()
+                    break
+    except OSError:
+        rel = ""
+    paths = [_CGROUP_ROOT + rel]
+    cur = paths[0]
+    while cur != _CGROUP_ROOT:
+        cur = os.path.dirname(cur)
+        paths.append(cur)
+    return paths
+
 
 _APPLIED: dict = {}  # process-wide: the receipt from the first enforce()
 
@@ -70,9 +96,10 @@ def available_gb(path: str = _MEMINFO) -> float:
 
 
 def cgroup_memory_gb(
-    limit_path: str = _CGROUP_LIMIT, used_path: str = _CGROUP_USED
+    limit_path: str | None = None, used_path: str | None = None
 ) -> tuple[float, float]:
-    """(limit, current) of THIS process's cgroup in GB; (0, 0) when there is no finite cap.
+    """(limit, current) of THIS process's binding cgroup in GB; (0, 0) when there is no
+    finite cap.
 
     A container's `--memory` is a HARD ceiling on host RAM, but on the GB10 the CUDA driver
     allocates from the same pool WITHOUT being charged to that cgroup (measured with vLLM:
@@ -81,6 +108,12 @@ def cgroup_memory_gb(
     (DEC-450). Reading it here is what makes the budget the tighter of two real limits
     rather than the host's optimistic `MemAvailable`, which inside a container still
     reports the whole machine.
+
+    With EXPLICIT paths the legacy single-file semantics apply (containers: the namespace's
+    root file is the limit). Without them the ceiling is walked from this process's leaf
+    cgroup up to the root — the first finite `memory.max` on the way is the binding limit,
+    and `current` is read from THAT cgroup: its usage already includes this process's
+    host-side allocations, which is exactly what the clamp must account for.
     """
 
     def _read(path: str) -> float | None:
@@ -94,7 +127,13 @@ def cgroup_memory_gb(
         gb = int(raw) / _GB
         return gb if gb > 0 else None
 
-    return (_read(limit_path) or 0.0), (_read(used_path) or 0.0)
+    if limit_path is not None:
+        return (_read(limit_path) or 0.0), (_read(used_path or "") or 0.0)
+    for p in _own_cgroup_chain():
+        lim = _read(p + "/memory.max")
+        if lim:
+            return lim, (_read(p + "/memory.current") or 0.0)
+    return 0.0, 0.0
 
 
 def compute_budget(
@@ -118,8 +157,9 @@ def compute_budget(
     `limit_gb > 0` is an operator override — taken verbatim, no deduction, because the
     operator has accepted the risk.
 
-    `container_limit_gb > 0` adds a HARDER ceiling: the container's cgroup (DEC-450). Device
-    allocations are not charged to that cgroup, so the guard must leave the container's
+    `container_limit_gb > 0` adds a HARDER ceiling: the process's binding cgroup — a
+    container's `--memory` or a systemd slice (DEC-450, walk-located 2026-11-01). Device
+    allocations are not charged to that cgroup, so the guard must leave the cgroup's
     current host usage (`container_used_gb`) plus this process's device overhead inside the
     limit — budget + used + reserve <= limit. An explicit `limit_gb` is clamped too: an
     operator may accept the co-tenant risk, but not override a kernel ceiling.
@@ -269,7 +309,7 @@ def enforce(cfg, *, device: str | None = None, rebase: bool = False) -> dict:
             f"({rec['fraction']:.3f} of {rec['mem_total_gb']} GB) source={rec['source']} "
             f"avail={rec['mem_available_gb']} GB driver_free={rec['driver_free_gb']} GB "
             f"floor={rec['system_floor_gb']} GB reserve={rec['reserve_gb']} GB "
-            f"container={rec['container_limit_gb']} GB (used {rec['container_used_gb']}, "
+            f"cgroup={rec['container_limit_gb']} GB (used {rec['container_used_gb']}, "
             f"clamp {rec['container_clamp_gb']}) "
             f"dev={idx} alloc={rec['alloc_conf']}",
             flush=True,

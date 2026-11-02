@@ -106,7 +106,9 @@ def test_fraction_is_a_fraction_of_total_and_never_wild():
 def test_cap_is_installed_and_receipted():
     cfg = CFMConfig()
     rec = gpu_budget.enforce(cfg, device="cuda")
-    assert rec["applied"] is True and rec["source"] == "derived"
+    assert rec["applied"] is True and rec["source"].startswith(
+        "derived"
+    )  # "derived" or "derived+unified" (machine property)
     assert 0.0 < rec["fraction"] <= 1.0
     # the cap must actually be visible to torch, not just recorded by us
     assert torch.cuda.get_per_process_memory_fraction() <= rec["fraction"] + 1e-6
@@ -231,6 +233,10 @@ def test_release_cannot_raise(monkeypatch, capsys):
 def test_rebase_re_derives_from_current_memory_and_keeps_history(monkeypatch):
     """The launch cap is affordable before the dataset exists; the phase cap must not be."""
     cfg = CFMConfig()
+    # mock BOTH sides so the comparison is machine-independent: at launch a co-tenant holds
+    # the pool (available 30), then it leaves (available 40). Real available at test time
+    # varies with the co-tenant and made this assertion flip (2026-11-01: 52 GB free).
+    monkeypatch.setattr(gpu_budget, "available_gb", lambda *a, **k: 30.0)
     first = gpu_budget.enforce(cfg)
     assert first["rebases"] == 0
     monkeypatch.setattr(gpu_budget, "available_gb", lambda *a, **k: 40.0)  # co-tenant left

@@ -7625,3 +7625,43 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   **Final run-2 protocol:** B=64 (128 views/step), budget cap 800 (teacher 0.996^800 ≈ 4% init),
   convergence stop intact (principle 2 — the cap is a ceiling, not a forced count). Estimate
   unchanged: 800 × ~4.3 s/step ≈ 57 min + judge ≈ **~60 min**.
+- **Run-2 ATTEMPT 1 OOM post-mortem (2026-11-01 20:49:56).** The job ran inside
+  `user@1000.service/wonderland.slice/run-*.scope` — the project's DEC-440 containment slice,
+  `MemoryMax=20G` (installed by `scripts/install_memory_slice.sh`). B=64 + DINO's extra passes
+  exceeded 20 GB; the kernel OOM-killed a process inside the scope (journal names the scope),
+  the out-dir stayed empty, and the `| tail -5` pipeline masked the exit. The gpu_budget
+  seatbelt did NOT prevent it: it clamps on `cgroup_memory_gb()`, which read the
+  CONTAINER-ROOT file `/sys/fs/cgroup/memory.max` — on this systemd host that file is `max`
+  (no limit), while the binding ceiling lived on the ancestor slice. Launch receipt showed
+  `container=0.0 GB` (the smoking gun, now readable in history).
+- **Fix A — gpu_budget cgroup walk (this commit).** `cgroup_memory_gb()` now resolves the
+  process's own cgroup from `/proc/self/cgroup` (v2 line `0::`) and walks leaf → root to the
+  NEAREST FINITE `memory.max`, reading `memory.current` from that same cgroup (its usage
+  already includes the process's host-side allocations — what the clamp must account for).
+  Explicit-path calls keep the legacy container semantics (tests untouched on that surface).
+  Verified: walk returns (0,0) from an unconstrained scope and the slice's 48 GB from within it.
+- **Fix B — the slice ceiling itself: 20G → 48G (operator directive 2026-11-01: "you should
+  have like 48GB of memory and GPU+CPU essentially at 100% capacity").** Changed in the
+  GENERATOR (`scripts/install_memory_slice.sh` band top 20→48, derivation comment corrected —
+  it claimed "half of physical RAM" but 20G was a hand-set fallback), re-rendered via the
+  installer, daemon-reloaded. Containment property preserved (kernel kills inside the slice,
+  never outside — LLM server/desktop/OS safe); the seatbelt (≈44.2 GB today) stays the working
+  cap per job.
+- **Fix C — machine-dependent test reds found while auditing (committed baseline, NOT DINO).**
+  `test_gpu_budget`: two assertions encoded launch-time machine state (a "derived" source label
+  that is "derived+unified" on the GB10; a rebase comparison assuming the co-tenant held >12 GB
+  of the pool at test time). Both now mock both sides / assert the property, not the machine
+  constant. Pre-existing reds elsewhere (test_objectives_portfolio profile×4 + mtp,
+  test_schema_suite×1, test_state_advance_batched×2) — triage in progress; DINO is exonerated
+  (same 8 fail with the DINO bundle stashed).
+- **Run-2 ATTEMPT 2 (21:17) died silently, no cgroup limit (vte scope, all ancestors `max`), no
+  OOM, no segfault in the journal, no coredump.** Wall-clock tells the story: 38 governed steps
+  in ~25 min with `torch._dynamo` RECOMPILE warnings ([0/8] graph, "unknown var s16" guard)
+  still firing at 21:17 — the default `LG_SCAN=auto` compiles the affine scan and the inductor
+  recompiles it across the multi-scale × batch-size shape space; two silent deaths bracket
+  recompile activity. **Run-3 protocol (pre-registered now, same bars):** `LG_SCAN=eager`
+  (documented numerically-identical path: same scan, fp32, atol 1e-5 — removes the inductor
+  layer entirely), no output pipe (exit code + full log survive any death), `tee train.log`.
+  B=64, budget_steps=800, DINO objectives — unchanged from attempt 1's intent.
+  Estimate (eager scan ≈ 0.3–0.5 s/step overhead vs compiled; no recompile stalls):
+  800 × ~5–6 s ≈ **70–85 min + judge**.
