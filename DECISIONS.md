@@ -8176,3 +8176,27 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     1650 steps ≈ 68–77 min. **Total to products: ~35–45 min (ceiling case) / ~75–90 min
     (budget case)**, then the S6 re-stamp chain ~40–90 min → grand total ≈ 1.5–2.5 h,
     unchanged from the DEC-556 pre-registration. Re-derive again at the stop receipt.
+  - **DEC-557 addendum 2 (fs_full receipts + two corrections):** the full-size train
+    completed EXIT=0 (~53 min wall, 03:57–04:50 PST): `[govern]` best = eval 1 (val 4.0116),
+    portfolio val drifted up monotonically (4.2106 → 5.2188), patience stop at step 574/1650;
+    `[step-time] 5.51 s/step` (active co-tenancy; idle band ~2 s/step); batch = 64 (memory-
+    derived, DEC-546/547; cfm_v2k ran 16 under the old budget); whiten eff-rank 0.0092 →
+    0.0092 (cfm_v2k: 0.0093); products: customer_state=5000, state_embeddings 5000×256 all
+    finite, encoder_samples A=3515/B=1485, outlets 789-d over 7 views, ledger 595-d (G5=pending
+    matches cfm_v2k's own log — established full-size property). Tag `0.11.0r490759-b64d256e3
+    lr3e-04o4c3b5899` (cfm_v2k: `…b16…o4c3b5899` — same revision/objectives hash, batch is the
+    only tag delta).
+    * **CORRECTION to the DEC-556 pre-registration ("no contrast (DEC-548/549)"):** that was a
+      misstatement of the DEC-549 decision. DEC-549 run 1 tested contrast-REMOVAL and its
+      pre-registered falsify clause ("rows unmoved within noise → keep `contrast`") fired:
+      geometry did not move, supervised guard clean → contrast was KEPT. The current tree's
+      default portfolio (12 named incl. contrast + derived mtp = 13) IS the adopted portfolio,
+      and it is identical to cfm_v2k's — so the fs_full run is like-for-like on the portfolio
+      axis; the deltas vs cfm_v2k are the pipeline (DEC-544…547), the derived batch (16→64),
+      and the dose. No re-run needed; the executed protocol was the correct one.
+    * **Dose-ceiling fact confirmed at scale (sample-rate-invariant):** fs_full realized
+      574 × 64 = 36,736 samples = 10.45 epochs (cadence 82 = 1.49 epochs, stop at eval 7 =
+      3 warmup + 4 patience); cfm_v2k realized 2,310 × 16 = 36,960 samples = 10.51 epochs
+      (cadence 330 = 1.5 epochs, same stop shape). The governor's ceiling is ~10.5 EPOCHS OF
+      DATA at this population, independent of batch size — the DEC-554 baseline-drift fact
+      holds at full size, and any future full-size run's realized dose is predictable from it.
