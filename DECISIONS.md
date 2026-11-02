@@ -8256,3 +8256,66 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     is already closing; (3) unsup geometry trio — structural, front closed at the rung on
     both axes; (4) supervised-ledger `price_sensitivity` random-control gate — a
     negative-control failure to diagnose, not a gap to close.
+
+- **DEC-559 (argmax_optimum row is instrument-blind under the frozen head — pre-registered
+  protocol v2, awaiting operator decision):** the re-stamped simulator leg shows
+  `argmax_optimum` FAIL (brain 0.244444 vs pathA 0.241751, paired CI −0.0269…+0.0310 ⊃ 0),
+  with `random` and `destroyed` controls EXACTLY equal to brain (0.244444). Measured mechanism
+  (CPU, on demo_v2 + the new cfm_v2k products, read-only):
+  * The argmax block fits ONE linear head (`_ridge_head()` = StandardScaler + RidgeCV, the
+    DEC-407 shipping head) on cells [rep_k; onehot(level)], so pred(k,ℓ) = w·rep_k + c_ℓ: the
+    representation contributes a LEVEL-INVARIANT per-customer offset that cancels in the
+    argmax. The brain's optimum is therefore UNIVERSAL across customers = argmax of the
+    population-average rate curve fitted on A.
+  * A per-level mean rates: L0 0.146171 > L2 0.144548 > L1 0.143526 > L3 0.141309 → the fit
+    picks L0 → brain = P_B(offer_opt = L0) = 363/1485 = 0.244444 exactly. The row's value is a
+    function of (A rate curve, tie-break, B truth) and is INDEPENDENT of the donor by
+    construction. The controls swapping the rep half are exactly equal because of this — the
+    receipt itself documents the blindness.
+  * The population optima are near-uniform over 4 levels (A: 25.2/24.9/25.0/25.0; B:
+    24.4/24.0/26.4/25.1; B modal L2 = 392/1485 = 0.2640). A level-invariant head's ceiling on B
+    is at most 0.2640 — the gate (beat pathA 0.2418 with CI excluding 0, n=1485, SE of the
+    paired difference ≈ 0.014) is UNREACHABLE by construction under the current instrument.
+  * The per-customer optimum IS identifiable from the stream: the lab randomizes the offer arm
+    daily (q *= 1 − 0.22·|offer − offer_opt|), so `identified_dose_response` recovers each
+    customer's curve; the ORACLE per-customer curve-argmax scores **0.6404** vs truth
+    (951/1485) — 2.4× the modal share. The information the leg claims to test ("name the
+    customer's optimum"; the docstring's "the difference between a predictor and a simulator")
+    is present in the stream and in principle readable from the donor.
+  - **Dispositions (operator decision):**
+    * **(a) EXCLUDE-and-report** the argmax row as degenerate under the frozen level-invariant
+      head (the control==brain receipt + this mechanism are the disclosure). The simulator leg
+      would then be judged on `dose_response_curve` alone (which passes brain-alone: 0.3164 vs
+      0.3039, CI +0.000075…+0.000482; its controls ARE informative, rand 0.0).
+    * **(b) PROTOCOL v2 (RECOMMENDED):** level-conditional head for the argmax block ONLY —
+      one `_ridge_head()` per identified level, fit on A cells at that level (rep only, same
+      self-selecting alpha grid), predicting B cells at each level with that level's head;
+      same rows/truth/tie-break ("ties → lowest level")/paired bootstrap CI/frozen DEC-428 GBM
+      incumbent (the table side already has customer×level capacity, so it is the fair
+      comparator); controls still swap the rep half (now INFORMATIVE: a donor that carries
+      per-customer response shape must beat random/destroyed). The head stays in the DEC-407
+      "dumb consumer" class (linear, one head per queried action) — the change is that the
+      consumer is allowed to query the donor AT AN ACTION, which is what the simulator leg
+      exists to test. Pre-registered acceptance: brain ≥ B modal share 0.2640 proves the head
+      reads per-customer shape off the donor; oracle ceiling 0.6404; if v2 brain still fails
+      the gate, that is a GENUINE capability finding (the donor does not carry per-customer
+      response shape) and the front moves to the encoder — no further instrument change.
+      Both protocols' numbers are reported (v1 = the current re-stamped receipts, DEC-558;
+      v2 = the new run), per certification rule 1 (new protocol version: stop, operator
+      approval, re-run, report both).
+    * **(c) leave as FAIL** — the card cannot reach all-green while this row is red; recorded
+      only for completeness.
+  - **Not conjoined:** the supervised-ledger `price_sensitivity` control failure (random
+    −0.0614 ≥ delivered −0.0798 on a zero-signal trait; pathA itself is −0.0636) is a SEPARATE
+    instrument question (degeneracy of the control gate on no-variance targets) and will be
+    raised on its own if (b) or (a) is chosen.
+  - **DEC-559 addendum (re-stamp ops — co-tenant windowing rule):** S6 chain v2
+    (13:36–13:56Z) also died at S1+S2 — this time SIGKILL (exit −9) at 135.1 s, again during
+    active-generation turns: this session's LLM server is the GPU co-tenant, and its unified-
+    memory footprint spikes while the agent reasons (chain v1: CUDA allocation failure, 938 MiB
+    vs ~0 free; chain v2: cgroup SIGKILL mid-training). S3/S4/S5/legs/prov re-stamped fresh
+    and working=True both times; S6's commit check failed only on the then-uncommitted DEC-559
+    (now committed). Operational rule for the next chain: run it in a NO-GENERATION window
+    (launch in background, end the turn immediately) so S1+S2 sees a calm co-tenant; if S1+S2
+    dies on co-tenant pressure again, retry once more in a no-generation window — never weaken
+    the check, never touch the slice cap (operator directive, 48 GB).
