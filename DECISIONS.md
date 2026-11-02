@@ -7610,3 +7610,18 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   **~30–60 min + ~2 min judge ≈ 35–65 min total.** The rung remains the smallest sufficient test:
   the acceptance bars and the noise band (0.1295–0.1400) are certified against j_base800 (Layer A
   v2 testbed); full-size (~2,310+ steps) is earned only on a rung win (principle 2 + anti-overfit).
+- **Run 2 MECHANISM AUDIT (pre-launch, two findings).** (1) `--set budget_steps` failed: the
+  `apply_set_overrides` whitelist is `hasattr(cfg, …)` on CFMConfig, and the field was undeclared
+  even though `resolve_cfm`'s override table already anticipated it (`"budget_steps": 0`). Fix:
+  declared `budget_steps: int = 0` on CFMConfig (0 = derived — every existing run unchanged;
+  >0 = explicit governor cap, recorded as a receipt override). Verified post-set application.
+  (2) `--set batch=64` DOES land: apply_set_overrides runs at cfm_training.py:128 (pre-resolve),
+  the resolver's `user != default` test (64 == CFMConfig default 64) clobbers it to the derived
+  16, but the SECOND apply_set_overrides (line 150, post `cfg.batch = res.batch`) restores 64,
+  and the dataloader consumes `cfg.batch` (lines 371/466). Consequence: `res.budget_steps` was
+  derived PRE-override at batch 16 → ceiling 1200, not the 390 I re-derived assuming B=64 at
+  resolve time; the explicit `--set budget_steps=800` pins the pre-registered ceiling regardless
+  (eval_every 60 / patience 4 still derive from the pre-override budget — unchanged).
+  **Final run-2 protocol:** B=64 (128 views/step), budget cap 800 (teacher 0.996^800 ≈ 4% init),
+  convergence stop intact (principle 2 — the cap is a ceiling, not a forced count). Estimate
+  unchanged: 800 × ~4.3 s/step ≈ 57 min + judge ≈ **~60 min**.

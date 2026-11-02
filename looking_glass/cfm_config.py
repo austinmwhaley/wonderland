@@ -233,6 +233,9 @@ class CFMConfig:
     ortho_weight: float = 0.1  # cross-subspace ortho-loss weight
     epochs: int = 3  # legacy (governor ignores); see max_steps
     max_steps: int = 0  # 0 = derived budget; >0 caps the governor (FAST iteration)
+    budget_steps: int = 0  # 0 = derived (derive_budget); >0 = explicit governor cap, e.g. a
+    # pre-registered dose (DEC-550 run 2). Recorded as a receipt override like every
+    # other resolved field; convergence still stops early, this only moves the ceiling.
     # Governor patience in EVAL units. 0 = derived (a fraction of the eval budget).
     # A late-converging capability objective (e.g. `effect`) needs PATIENCE sized to the
     # SLOWEST objective, not the fastest — raise this so the governor does not save a
@@ -245,6 +248,16 @@ class CFMConfig:
     gamma_redundancy: float = 0.1
     mask_frac: float = 0.15
     contrast_tau: float = 0.1
+    # DINO self-distillation recipe (DEC-550). The published reference values (Caron et al.
+    # 2021) as documented, overridable fallbacks — the head widths/out-dim derive from dim at
+    # build, not from literals. The DINO teacher runs on its OWN momentum (dino_ema_tau), kept
+    # separate from the JEPA target's 0.99: the EMA lag is what creates structure.
+    dino_student_temp: float = 0.1
+    dino_teacher_temp: float = 0.04
+    dino_center_momentum: float = 0.9
+    dino_ema_tau: float = 0.996
+    dino_drop_lo: float = 0.2
+    dino_drop_hi: float = 0.5
     state_half_life_days: float = 30.0
     # Multi-objective control. Adaptive (uncertainty) weighting learns each
     # task's weight, so we can enable many objectives without hand-tuning and
