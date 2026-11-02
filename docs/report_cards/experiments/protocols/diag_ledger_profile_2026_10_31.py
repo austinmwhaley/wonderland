@@ -5,6 +5,7 @@ counts/modes (x0's measured sufficient statistic, DEC-464 R2 0.909), and name-bl
 log-ratios + hazard interactions carry return/churn signal the table reads. Measures
 the ceiling on the judge population with judge-identical probes. No GPU, no writes.
 """
+
 import json
 import sys
 import time
@@ -16,9 +17,12 @@ _T0 = time.perf_counter()
 def _tick(label):
     print(f"[t] {label}: {time.perf_counter() - _T0:.1f}s", flush=True)
 
-import duckdb
-import numpy as np
-import polars as pl
+
+# principle-ok: E402 is intentional — this diagnostic times its own import/setup cost;
+# the heavy imports must stay after _T0/_tick or the receipts would measure nothing.
+import duckdb  # noqa: E402
+import numpy as np  # noqa: E402
+import polars as pl  # noqa: E402
 
 repo = Path("/home/austin_whaley/Documents/Repos/wonderland")
 sys.path.insert(0, str(repo))
@@ -36,8 +40,12 @@ manifest = json.loads((demo / "manifest.json").read_text())
 as_of = float(np.datetime64(manifest["as_of"]).astype("datetime64[s]").astype(np.int64))
 
 con = duckdb.connect(str(prod / "cfm_products.duckdb"), read_only=True)
-A = [r[0] for r in con.execute("select customer_key from encoder_samples where split='A'").fetchall()]
-B = [r[0] for r in con.execute("select customer_key from encoder_samples where split='B'").fetchall()]
+A = [
+    r[0] for r in con.execute("select customer_key from encoder_samples where split='A'").fetchall()
+]
+B = [
+    r[0] for r in con.execute("select customer_key from encoder_samples where split='B'").fetchall()
+]
 led = {}
 for k, part, vec in con.execute(
     "select customer_key, part, embedding from view_embeddings where view='measure'"
@@ -56,7 +64,9 @@ tag, meta = _resolve_registry(prod, None)
 model, cfg = load_frozen_encoder(tag, prod)
 from looking_glass.customer_foundation_model import _replay_run_cfg  # noqa: E402
 
-_replay_run_cfg(meta, cfg, prod, cfg)  # exact products-path config replay (2500 customers, split seed)
+_replay_run_cfg(
+    meta, cfg, prod, cfg
+)  # exact products-path config replay (2500 customers, split seed)
 cfg.db = str(demo / "customer_event_stream.parquet")
 cfg.out_dir = str(prod)
 df = _read_stream(cfg)
@@ -86,7 +96,9 @@ def profile(t):
             vi = np.asarray(keep, dtype=np.float64)
             w = cnts[keep]
             feats.append(
-                np.array([float((w * vi).sum() / max(w.sum(), 1.0)), float(w.max() / max(w.sum(), 1.0))])
+                np.array(
+                    [float((w * vi).sum() / max(w.sum(), 1.0)), float(w.max() / max(w.sum(), 1.0))]
+                )
             )
         p = np.bincount(col).astype(np.float64)
         p = p[p > 0] / n
@@ -140,12 +152,16 @@ def profile_raw(t):
 praw = {k: profile_raw(t) for k, t in tup.items()}
 praw = {k: v for k, v in praw.items() if v is not None}
 _tick("feature build (numpy, per-customer)")
-truth = {c["customer"]: c for c in json.loads((demo / "reference_truth.json").read_text())["customers"]}
+truth = {
+    c["customer"]: c for c in json.loads((demo / "reference_truth.json").read_text())["customers"]
+}
 pathA = {"x0": 0.9056, "h0": -0.1213, "return_proneness": 0.6734, "churn_day": 0.7209}
 W = len(next(iter(prof.values())))
 Wr = len(next(iter(praw.values())))
 print(f"profile width={W} raw width={Wr}  fit={len(A)} score={len(B)}")
-print(f"{'trait':18s} {'ledger':>8s} {'+prof':>8s} {'prof':>8s} {'+raw':>8s} {'raw':>8s} {'PATH A':>8s}")
+print(
+    f"{'trait':18s} {'ledger':>8s} {'+prof':>8s} {'prof':>8s} {'+raw':>8s} {'raw':>8s} {'PATH A':>8s}"
+)
 for t in ("x0", "h0", "return_proneness", "churn_day"):
     ya = np.array([float(truth[k][t]) for k in A])
     yb = np.array([float(truth[k][t]) for k in B])
@@ -184,8 +200,10 @@ if not hist:
     print("no numeric freq column in the stream")
 else:
     Wf = len(next(iter(hist.values())))
-    EA = np.vstack([emb[k] for k in A]); EB = np.vstack([emb[k] for k in B])
-    HA = np.vstack([hist[k] for k in A]); HB = np.vstack([hist[k] for k in B])
+    EA = np.vstack([emb[k] for k in A])
+    EB = np.vstack([emb[k] for k in B])
+    HA = np.vstack([hist[k] for k in A])
+    HB = np.vstack([hist[k] for k in B])
     rs = []
     for b in range(Wf):
         _, r = _ridge_oos(EA, HA[:, b], EB, HB[:, b])

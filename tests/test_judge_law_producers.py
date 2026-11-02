@@ -126,7 +126,6 @@ def test_an_under_sampled_contrast_is_unidentified_not_noisy():
     Reporting those days as a noisy estimate would let a handful of observations carry a causal
     claim; the floor is the difference between "we measured it" and "we are guessing".
     """
-    floor = B.MIN_ARM_DAYS
     cells = _cells(
         [
             ("ok", 2, 2, 12, 6),  # identified on both sides of the contrast

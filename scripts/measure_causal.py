@@ -50,7 +50,13 @@ def _load_frozen(path, data):
         return frozen.load(path)
     import auto_encoder as AE
 
-    return AE.train_encoder(data, seed=0, epochs=12, d=128, layers=2)  # principle-ok: frozen-config fallback
+    return AE.train_encoder(
+        data,
+        seed=0,
+        epochs=12,
+        d=128,
+        layers=2,  # principle-ok: frozen-config fallback
+    )
 
 
 def _last_send(data: Path) -> dict:

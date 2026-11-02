@@ -2,6 +2,7 @@
 
 Usage: python3 scripts/build_frozen.py <data> --seed 0 --out /tmp/opencode/frozen_2k
 """
+
 import argparse
 import sys
 from pathlib import Path

@@ -214,8 +214,8 @@ separate audit file.
 from looking_glass.foundation import FrozenFoundation
 
 art = FrozenFoundation.load("/tmp/opencode/artifact_6k")
-keys, state, receipt = art.transform_events(raw_events)   # raw canonical stream
-state["shape"], state["measure"], state["full"]           # named views
+keys, state, receipt = art.transform_events(raw_events)  # raw canonical stream
+state["shape"], state["measure"], state["full"]  # named views
 ```
 
 `transform_events` applies the artifact's **frozen schema** — vocabulary, typing, and

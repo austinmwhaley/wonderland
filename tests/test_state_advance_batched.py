@@ -128,9 +128,7 @@ def test_fade_accepts_a_tensor_delta_without_a_second_definition():
 
     # the shape the outlet actually uses: one delta per (batch, time), broadcast over features
     h = torch.randn(2, 3, 4)
-    dts = torch.tensor(
-        [[0.0, 3600.0, 30 * 86400.0], [7200.0, 0.0, 5 * 86400.0]]
-    ).unsqueeze(-1)
+    dts = torch.tensor([[0.0, 3600.0, 30 * 86400.0], [7200.0, 0.0, 5 * 86400.0]]).unsqueeze(-1)
     got = fade(h, dts, half_life_days=30.0)
     for b in range(2):
         for t_ in range(3):

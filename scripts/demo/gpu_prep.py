@@ -2,6 +2,7 @@
 
 Usage: gpu_prep.py <data-dir> <out.npz>  (env LOAD_ENGINE=gpu|cpu)
 """
+
 import json
 import os
 import sys
@@ -18,7 +19,9 @@ def main():
     data, out = sys.argv[1], sys.argv[2]
     eng = os.environ.get("LOAD_ENGINE", "gpu")
     t0 = time.perf_counter()
-    B, A, keys, seqs, vs, et_v, catspec, num, taus, p_mask, as_of_ts, periods, horizons = load_data(data, engine=eng)
+    B, A, keys, seqs, vs, et_v, catspec, num, taus, p_mask, as_of_ts, periods, horizons = load_data(
+        data, engine=eng
+    )
     dt = time.perf_counter() - t0
     ks = [seqs[k] for k in keys]
     spec = {
@@ -48,7 +51,9 @@ def main():
         lens=np.array([len(x[5]) for x in ks], np.int64),
         spec=np.frombuffer(json.dumps(spec).encode(), dtype=np.uint8),
     )
-    print(f"gpu prep: {dt:.1f}s engine={eng} n={len(keys)} events={len(seqs[keys[0]][5]) if ks else 0}")
+    print(
+        f"gpu prep: {dt:.1f}s engine={eng} n={len(keys)} events={len(seqs[keys[0]][5]) if ks else 0}"
+    )
 
 
 if __name__ == "__main__":

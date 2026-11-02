@@ -1,6 +1,6 @@
 {
   "_note": "Accepted BLOCKING findings (ratchet \u2014 may only shrink). Generated on a whole-surface audit; regenerate only when a finding is genuinely resolved or newly accepted by the operator.",
-  "count": 69,
+  "count": 67,
   "keys": [
     "0608d9a0a6465607",
     "070f9e7cb7cffa95",
@@ -31,7 +31,6 @@
     "499692518758bba9",
     "4c2d01282e592c47",
     "53963239a2e639c1",
-    "5603cd45bff6353d",
     "5c4331c82b9b18f8",
     "5da6c5c9b0a7f105",
     "681fe4091e073156",
@@ -64,7 +63,6 @@
     "d8527773ff8d1047",
     "d992a06f3bd2c654",
     "db8be96f19a19a6b",
-    "dbdbc4946e609fa2",
     "e0a9900f50648591",
     "ea64a2c671e9d843",
     "f2a0e2a4a450dc71",
