@@ -30,6 +30,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
+import b_spec as B  # noqa: E402
 import judge_spec as J  # noqa: E402
 
 EXP = ROOT / "docs" / "report_cards" / "experiments"
@@ -161,6 +162,74 @@ def _block_problem(block, current_hash: str) -> str | None:
                 f"{len(denied)} check(s) did not ({', '.join(sorted(denied)[:3])}) — re-run its producer"
             )
     return None
+
+
+def _get_path(obj, path: str):
+    """Resolve a dotted receipt path; list indices are integers. Missing -> None."""
+    if not path:
+        return obj
+    for part in path.split("."):
+        if isinstance(obj, list):
+            try:
+                obj = obj[int(part)]
+            except (ValueError, IndexError):
+                return None
+        elif isinstance(obj, dict):
+            obj = obj.get(part)
+        else:
+            return None
+    return obj
+
+
+def _eval_b_row(receipts: Path, row: B.BRow, current_hash: str) -> tuple[str, str]:
+    """One B-only row: PASS only on a CURRENT receipt that meets its gate.
+
+    Missing and legacy rows are the honest answer, not a failure to be narrated away. A legacy
+    number can be useful context, but it was measured against an encoder that no longer exists,
+    so it is UNKNOWN and names the producer that must be re-run.
+    """
+    if row.kind == "missing" or row.source is None:
+        return J.UNKNOWN, f"missing producer: {row.producer}"
+    name, path = row.source
+    rc = load(receipts, name)
+    if rc is None:
+        return J.UNKNOWN, f"missing receipt {name}; produce {row.producer}"
+    if row.kind == "stage":
+        if not isinstance(rc, dict):
+            return J.UNKNOWN, f"{name} is malformed (not an object)"
+        block = rc.get(path)
+        if not isinstance(block, dict):
+            return J.UNKNOWN, f"{name}: no {path} block; run {row.producer}"
+        note = _block_problem(block, current_hash)
+        if note:
+            return J.UNKNOWN, note
+        if block.get("working"):
+            return J.PASS, f"{name}:{path} working=True"
+        return J.FAIL, _stage_why(block) or f"{name}:{path} working=False"
+    if row.kind == "legacy":
+        return J.UNKNOWN, f"legacy receipt {name} (no behavior stamp); re-run {row.producer}"
+    note = _meta_problem(rc, current_hash)
+    if note:
+        return J.UNKNOWN, note
+    val = _get_path(rc, path)
+    if val is None:
+        return J.UNKNOWN, f"{name}:{path} missing"
+    if row.kind == "bool":
+        return (J.PASS if bool(val) else J.FAIL), f"{name}:{path}={bool(val)}"
+    if row.kind == "present":
+        return J.PASS, f"{name}:{path} present"
+    if not _finite(val):
+        return J.UNKNOWN, f"{name}:{path} is not a finite number"
+    ok = {
+        "le": float(val) <= row.thresh,
+        "lt": float(val) < row.thresh,
+        "ge": float(val) >= row.thresh,
+        "gt": float(val) > row.thresh,
+        "eq": float(val) == row.thresh,
+    }.get(row.kind)
+    if ok is None:
+        return J.UNKNOWN, f"unknown B gate kind {row.kind!r}"
+    return (J.PASS if ok else J.FAIL), f"{name}:{path}={val:g} (gate {row.kind} {row.thresh:g})"
 
 
 def _stage_why(val: dict) -> str:
@@ -534,6 +603,59 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
         blocked.append(f"backward {r.get('id', '?')} — {r.get('finding', '')}")
     summary["backward_open"] = len(open_blocking)
 
+    # ---- B: the foundational scorecard (DEC-562) --------------------------------
+    # The judge below is B+C: it can only tell us whether a consumer benefits. This section is
+    # B itself. A row PASSes only on a receipt carrying the CURRENT behavior hash and meeting
+    # its gate; a legacy or missing receipt is UNKNOWN and names the producer that must run.
+    b_lines: list[str] = []
+    b_verdicts: dict[str, str] = {}
+    b_summary = {"pass": 0, "fail": 0, "unknown": 0, "missing": 0}
+    b_sections: dict[str, str] = {}
+    for sec in B.SECTIONS:
+        rows = [r for r in B.ROWS if r.section == sec.ident]
+        evals = {r.ident: _eval_b_row(receipts, r, current_hash) for r in rows}
+        vs = [v for v, _ in evals.values()]
+        if any(v == J.FAIL for v in vs):
+            sec_v = J.FAIL
+        elif all(v == J.PASS for v in vs):
+            sec_v = J.PASS
+        else:
+            sec_v = J.UNKNOWN
+        b_sections[sec.ident] = sec_v
+        b_lines += [
+            f"### {sec.ident} — {sec.name} · {_badge(sec_v)}",
+            "",
+            f"*{sec.question}*",
+            "",
+            "| # | Property | Metric | Verdict | Evidence / missing producer |",
+            "|---|---|---|---|---|",
+        ]
+        for row in rows:
+            verdict, why = evals[row.ident]
+            b_verdicts[row.ident] = verdict
+            if verdict == J.PASS:
+                b_summary["pass"] += 1
+            elif verdict == J.FAIL:
+                b_summary["fail"] += 1
+            else:
+                b_summary["unknown"] += 1
+                if row.kind in ("missing", "legacy"):
+                    b_summary["missing"] += 1
+            if verdict in (J.UNKNOWN, J.FAIL):
+                blocked.append(f"B {row.ident} {row.name} — {why}")
+            b_lines.append(
+                f"| {row.ident} | {row.name} | {row.metric} | {_badge(verdict)} | {why} |"
+            )
+        b_lines.append("")
+    b_green = sum(1 for v in b_sections.values() if v == J.PASS)
+    b_line = (
+        f"B foundational: {b_green}/{len(B.SECTIONS)} sections green · "
+        f"{b_summary['pass']} rows PASS · {b_summary['fail']} FAIL · "
+        f"{b_summary['unknown']} UNKNOWN/MISSING (B-only; B+C is the judge)."
+    )
+    assessment = f"{assessment} {b_line}"
+    summary["b"] = dict(b_summary, sections_green=b_green, sections_total=len(B.SECTIONS))
+
     md = "\n".join(
         [
             "# REPORT_CARD — PATH B > PATH A",
@@ -548,6 +670,13 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
             "The verdict is a pure function of the receipts under `docs/report_cards/experiments/`.",
             "Ledger points never count as progress: `brain alone` is the judge, `brain + ledger` is delivery.",
             "",
+            "## B — foundational scorecard (B-only, DEC-562)",
+            "",
+            "The judge below is the **consequence** (B+C). This section is **B itself**: a row is "
+            "PASS only on a current receipt that meets its gate; a missing or legacy receipt is "
+            "UNKNOWN and names the producer that must be run. Legacy numbers are not evidence.",
+            "",
+            *b_lines,
             "## The judge — four legs × two numbers",
             "",
             "Progress (`brain alone`) is a strict win. Delivery (`brain + ledger`) is a "
@@ -576,13 +705,19 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
             "",
             "---",
             "",
-            "*This is the only card. It is a pure function of the frozen gate spec "
-            "(`scripts/card_spec.py`) and the receipts under `docs/report_cards/experiments/`; "
-            "there is no separate audit card, and no row may be parked elsewhere (DEC-512).*",
+            "*This is the only card. B-only rows come from `scripts/b_spec.py`; B+C rows from "
+            "`scripts/judge_spec.py`; both read the receipts under `docs/report_cards/experiments/`. "
+            "There is no separate audit card, and no row may be parked elsewhere (DEC-512).*",
             "",
         ]
     )
-    return md, {"summary": summary, "assessment": assessment, "verdicts": verdicts}
+    return md, {
+        "summary": summary,
+        "assessment": assessment,
+        "verdicts": verdicts,
+        "b_verdicts": b_verdicts,
+        "b_sections": b_sections,
+    }
 
 
 def main() -> int:

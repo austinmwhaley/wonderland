@@ -1,10 +1,14 @@
 # The project's memory boundary (DEC-440). Installed by scripts/install_memory_slice.sh.
 #
 # Every job the wonderland repo runs is launched into this slice, and the slice has ONE hard
-# ceiling: the kernel kills inside it when the ceiling is hit, so no job here can take the LLM
-# server, the desktop or the OS down with it. That is the same cgroup mechanism Docker's --memory
-# uses; a slice rather than a container because the venv, the data and the GPU device live on this
-# host, and a container would duplicate all three.
+# ceiling on CPU/host memory: the kernel kills inside it when the ceiling is hit, so a runaway
+# host allocation cannot take the LLM server, the desktop or the OS down with it. That is the
+# same cgroup mechanism Docker's --memory uses; a slice rather than a container because the venv,
+# the data and the GPU device live on this host, and a container would duplicate all three.
+#
+# GPU/unified allocations are NOT charged to this cgroup (DEC-561: a job inside this slice still
+# triggered system-wide NVRM OOM). Their cap is the per-process seatbelt in
+# looking_glass/gpu_budget.py, derived from the same 32 GB working maximum.
 #
 # __CAP_DOC__
 [Unit]

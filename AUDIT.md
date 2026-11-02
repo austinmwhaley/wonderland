@@ -6,6 +6,8 @@
 > gate is the `BACKWARD_REQUIREMENTS_JSON` block at the end of **this file**, which
 > `REPORT_CARD.md` renders. BACKWARD writes this one `.md` and nothing else. Every finding here
 > carries the same `B-<id>` as its JSON requirement, so the two cannot drift.
+> **This file carries no measurements.** The single measurement surface — every metric, verdict,
+> comparator, CI and N — is `REPORT_CARD.md`; this file only records requirements and findings.
 >
 > **Status:** no all-green card has been reviewed by BACKWARD yet. The scorecard below is
 > unfilled on purpose; a review that has not run may not claim alignment. The first

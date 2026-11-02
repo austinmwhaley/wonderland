@@ -8404,3 +8404,63 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
       after (a).
   **Do not touch the 48 GB slice cap** (operator directive); it remains the CPU containment,
   and the GPU gap is a separate mechanism. The trunk/state front is renumbered **DEC-562**.
+
+- **DEC-561 addendum (operator 32 GB ceiling adopted; producer fix measured green):**
+  - **Operator directive, 2026-11-02:** "This project should understand that its max is 32GB."
+    This supersedes the 2026-11-01 48 GB band top. Measured basis: with the LLM server resident,
+    `torch.cuda.mem_get_info()` reports 121.63 GiB total / **31.84 GiB free** / 89.79 used; the
+    48 GB band assumed memory that is not there. The project's working maximum is now **32 GB**
+    for both the host slice and the GPU path.
+  - **Encoded in one place:** `scripts/install_memory_slice.sh` band top 48→32; the installed
+    user unit `wonderland.slice` now has `MemoryMax=34359738368` (32 GiB), `MemorySwapMax=0`;
+    `scripts/safe_run.py --print-plan` reports `cap=32.0 GB`. `safe_run`/the slice template now
+    state honestly that GPU/unified allocations are NOT charged to the cgroup and are capped by
+    `looking_glass/gpu_budget.py`'s per-process seatbelt (the cgroup clamp now derives from 32).
+  - **Producer fix (option a) implemented and measured:** removed the post-cap `(128/d)^2`
+    multiplier in `scripts/demo/auto_encoder.py` (scripts/ is outside `BEHAVIOR_TREES`, so the
+    behavior hash stays `d0ac576c`). Standalone S1+S2 under the 32 G slice:
+    **all six checks PASS** — renamed_end_to_end 91.2 s, new_field_ingested 67.0 s,
+    unseen_value_path 7.8 s, numeric_transform_law 0.0 s, field_permutation_invariance 1.6 s,
+    training_determinism 81.9 s; **S1 working=True, S2 working=True**, fresh `d0ac576c`.
+    `torch.cuda.mem_get_info()` free went 31.73 → 31.43 GiB (the job peaked well below the
+    32 GB ceiling), so the desktop and the server survived.
+  - **Why this is safe for production:** the full-size fs_full train recorded
+    `phase=train peak_alloc=10.36 GB, peak_reserved=10.52 GB, peak_rss=4.56 GB` (registry log),
+    and the rung dose runs peak 13.94 GiB — all far below 32 GB. The 32 G slice is therefore
+    ample for the production path; it only forbids the over-asking that caused DEC-561.
+  - **Next:** chain v4 under the 32 G slice re-stamps all six producers and S6; acceptance
+    remains S1/S2+S6 fresh/working, card 2/8 · 6/6 · 0 UNKNOWN · 6 FAIL, argmax values equal to
+    the deterministic scratch (0.245791 / 0.259259).
+
+- **DEC-562 (B scorecard becomes a first-class section of the ONE card; B+C stays the consequence):**
+  - **Context.** The project goal is Layer 0: B itself is the foundational object. The card of
+    record renders only the eight B+C judge legs, six stages and hygiene; `scripts/card_spec.py`
+    contains an older B spec (C1-C6, D1-D5, A1-A8, O1-O10) but is not imported by
+    `scripts/report_card.py` and its receipts are legacy (no behavior stamp). So B has been
+    inferred through C, not certified. Operator: "augment the B card to REPORT_CARD.md that gives
+    us the entire story/measure of B."
+  - **Decision.** Add `scripts/b_spec.py` (B1 Lawful, B2 Sufficient, B3 Accessible, B4 Decisive,
+    B5 Minimal & affordable, B6 Transferable, B7 Robust, B8 Reproducible) and render it in
+    `REPORT_CARD.md` before the judge. A B row is PASS only when its receipt carries the current
+    behavior hash AND its gate is met. A missing receipt is UNKNOWN and names the producer that
+    must be run; a legacy receipt (no behavior stamp) is UNKNOWN and says so. No B row may become
+    PASS by narration or by a legacy number. The existing judge/stage gates and the definition of
+    done are unchanged — this is a measurement surface, not a verdict flip.
+  - **Why not wire `card_spec.py` as-is.** Its sources have no `_stamp` (legacy encoder receipts),
+    so every row would be UNKNOWN anyway; it lacks B2 (sufficiency U), B4 (B-only decision),
+    B5 (minimality/cost) and B8 (artifact identity); and its evaluators are not implemented in the
+    current renderer. The new spec keeps the legacy file as history and makes the missing
+    producers explicit.
+  - **Why not a separate B card.** The project has ONE card (DEC-512); a second card is exactly
+    the parking-lot failure the doctrine bans. B goes first because it is the goal; B+C follows
+    as the consequence.
+  - **Acceptance (before commit).** (i) `report_card.py` renders the B section deterministically;
+    (ii) every missing/legacy B row is UNKNOWN with a named producer; (iii) no B row is PASS from
+    a stale or legacy receipt; (iv) the judge summary and its gates are unchanged; (v) targeted
+    tests + ruff + fast tier green. The B top-line is reported separately in the summary
+    (`b_pass`, `b_fail`, `b_unknown`, `sections_green`) and does not weaken the existing
+    `ENCODER DONE` condition.
+  - **Current expected B status (pre-render, honest):** B1 PASS only through S3; B3 PASS only
+    through S4; B6 PASS only through S5; B2/B4/B5/B7/B8 UNKNOWN (missing producers or legacy
+    receipts). This is the first card that will say *why* B is not certified, not just that a
+    consumer leg is red.

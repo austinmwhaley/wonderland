@@ -1,9 +1,9 @@
 # STATUS — wonderland
 
-*Live state only. History lives in `DECISIONS.md` (append-only) and `git log`.
-Rewritten 2026-11-02 (DEC-561: S1+S2 3/3 root cause = producer batch arithmetic, not a random
-co-tenant; GPU memory is outside the 48 GB slice; front = fix the producer, then re-stamp).
-If this file grows past ~150 lines, it is becoming a log again.*
+*Live state only. **Measurement lives ONLY in `REPORT_CARD.md`** — the single card. This file is
+state, blockers and next actions; history is `DECISIONS.md`; BACKWARD requirements are `AUDIT.md`
+(requirements only, never a measurement card). Rewritten 2026-11-02 (DEC-562: the B scorecard is
+now the first section of the one card; project maximum 32 GB).*
 
 ## Macro
 
@@ -12,175 +12,69 @@ whose embeddings are a **universal donor** — supervised, unsupervised, RL and 
 all get signal from it through simple heads.
 
 **Definition of progress:** **PATH B (event stream → frozen encoder → simple head) > PATH A
-(wide table → GBM)**, with paired CIs and controls. Two numbers per leg: `brain alone` =
-**progress**, `brain + ledger` = **delivery** (non-inferiority, 0.01 R² margin). Ledger points
-are never a brain win.
+(wide table → GBM)**, with paired CIs and controls. The card reports two numbers per leg:
+`brain alone` = **progress**, `brain + ledger` = **delivery** (non-inferiority). Ledger points are
+never a brain win.
 
-**Stage:** Layer 0 — encoder not yet mastered. Layer 1 (certification, `U`) is not started.
+**Stage:** Layer 0 — the encoder is not yet mastered. B is now measured directly on the card
+(B1–B8) before the B+C consequences.
 
-**Progress:** **re-stamp blocked by S1+S2 — root cause found (DEC-561).** The full-size
-re-measurement is DONE (fs_full: dose ceiling 10.45 epochs, batch 64, tag `…b64…o4c3b5899`;
-products canonical at `cfm_v2k`; old artifacts at `cfm_v2k_stale_0f881d99`). S3/S4/S5 + 4
-judge legs + provenance are fresh at `d0ac576c` and working. S1+S2 has failed 3/3 because the
-producer's own batch arithmetic asks for ~91 GB at d=64 (a `(128/d)^2` multiplier applied
-*after* the memory-derived token cap) while only **31.84 GiB of GPU memory is free** with the
-LLM server resident; the one success (2026-11-01T23:27:57Z) predates the server container by
-8 minutes. The 48 GB slice bounds CPU memory only — v3's NVRM OOM + desktop `oom-kill` proves
-it does not bound GPU/unified allocations. Operator adopted **protocol v2 for `argmax_optimum`**
-(level-conditional heads; DEC-559/560): brain 0.2458 / delivery 0.2593, controls now
-informative, destroyed ≥ brain → **genuine finding: the served donor does not carry
-per-customer response shape**; the simulator stays red both columns. Verdicts otherwise
-unchanged: legs 2/8.
+## Current state
 
-## Micro — current state (measured)
+- **The one card is `REPORT_CARD.md`.** It contains, in order: the B-foundational scorecard
+  (B1 Lawful, B2 Sufficient, B3 Accessible, B4 Decisive, B5 Minimal & affordable, B6 Transferable,
+  B7 Robust, B8 Reproducible), the four-leg judge, the stage ladder, hygiene, the blocking list and
+  BACKWARD requirements. No other file is a measurement surface.
+- **B is not certified.** B1/B3/B6 have current evidence only through the S3/S4/S5 stage blocks.
+  B2 (sufficiency `U`), B4 (B-only decision), B5 (minimality/cost), B7 (robustness breadth) and
+  B8 (artifact identity) are missing or legacy; each row on the card names the producer that must
+  be run. Legacy encoder receipts are explicitly UNKNOWN, never evidence.
+- **B+C:** RL is green in both columns; supervised (`return_proneness`, `price_sensitivity`),
+  unsupervised (geometry trio) and simulator (`argmax_optimum`) are red. The measured structural
+  diagnosis — coarse per-customer attributes are present, fine structure is not readable — is on
+  the card and in DEC-560/561. The exact counter and the identified oracle show the information
+  exists upstream; the stage decomposition is the missing X-ray.
+- **Certification:** S1/S2 are fixed and fresh (DEC-561: producer batch arithmetic, not a random
+  co-tenant; 32 GB cap). S3/S4/S5 are fresh. S6 still fails until chain v4 runs the whole chain in
+  one invocation.
+- **Products:** the canonical full-size products are at `/home/austin_whaley/wonderland_work/cfm_v2k`
+  (fs_full, tag `…b64…o4c3b5899`, behavior `d0ac576c`); the stale `0f881d99` artifacts are backed
+  up at `cfm_v2k_stale_0f881d99`.
 
-**Card is the NEW full-size re-measurement (DEC-558), receipts stamped at `d0ac576c`.**
-The behavior hash moved (`0f881d99` → `d0ac576c`) with the net `looking_glass/` changes since
-`a32bbee` (DEC-544…547 memory/batch/rl + kept DINO/SwAV governor-exclusion + replay fix
-`e7498b6`), forcing the re-stamp; the full-size retrain (fs_full) + S6 chain v1 re-scored
-everything against the FROZEN PATH A comparators. The table below is the current measured
-state (new checkpoint, same population split_seed 6529885151769, A=3515/B=1485):
+## Closed front (history; see DECISIONS for the record)
 
-| Leg | brain alone | brain + ledger |
-|---|---|---|
-| supervised | ❌ FAIL — `return_proneness` 0.4118 vs 0.4879 (gap 0.076; all other 6 rows pass) | ❌ FAIL — `price_sensitivity` random control ≥ delivered (−0.0614 vs −0.0798) + `return_proneness` 0.4689 vs 0.4879 (gap 0.019, CI hi +0.000004) |
-| unsupervised | ❌ FAIL — `persona_geometry` 0.066 vs 0.387, `future_geometry` 0.091 vs 0.181, `segment_structure` −0.001 vs 0.268 (full-size) | ❌ FAIL — same rows outside the delivery margin |
-| **rl** | ✅ **PASS** — uplift 0.2421 vs 0.1794, policy_value 0.2486 vs 0.2382 | ✅ **PASS** |
-| simulator | ❌ FAIL — `argmax_optimum` v2: 0.2458 vs 0.2418, gap +0.004, CI (−0.0256, +0.0317) ⊃ 0, destroyed control ≥ brain (0.2539) — the donor does not carry per-customer response shape (DEC-560, pre-registered finding) | ❌ FAIL — v2 delivery 0.2593 passes the point floor (0.2318) but ci_lo −0.0128 < −0.01; dose_response 0.3164 vs 0.3039 PASSES |
-
-Stages: S3/S4/S5 **PASS** (S3 re-stamped at 07:08 on the current tree; S4/S5 fresh from chain
-v2); S1/S2 UNKNOWN (stale `0f881d99` — 3/3 failures are the producer's ~91 GB demand vs
-31.84 GiB free, DEC-561; v1 CUDA OOM 249.6 s, v2 SIGKILL 135.1 s, v3 NVRM OOM + desktop
-`oom-kill`); S6 FAIL (`full_chain_in_one_invocation` — no fresh S1/S2). Hygiene H1–H5:
-**5/5 PASS.**
-BACKWARD not yet run — it runs only against an all-green card.
-
-## Closed front: unsupervised geometry at the rung (DEC-548…556)
-
-The rung front is CLOSED on both axes (objective DEC-552/554; construction DEC-555/556 — stage-2
-block serving FALSIFIED at the frozen bar, 3-file bundle reverted), and DEC-558 now answers the
-FULL-SIZE question it left: the geometry rows stay red at full size (persona 0.066 vs 0.387;
-future 0.091 vs 0.181; segment −0.001 vs 0.268) — the rung closure persists at scale.
-Diagnosis record:
-
-- **Temporal drift is not the axis** (DEC-548): `proj(y)`-based contrast falsified.
-- **Attribution probe** (CPU, validates the judge to the 3rd decimal): the served donor decodes
-  persona/future fields **linearly as well as PATH A** (probe R² 0.583 vs 0.587; 0.364 vs 0.307)
-  yet pairwise distance fidelity is 0.14 vs 0.404 and segment ARI 0.001 vs 0.309. The information
-  is PRESENT; the **geometry is entangled** (principle 7). Trunk and counter alone each decode
-  ~0.32; the fold combines to 0.583 — the 256-direction ARRANGEMENT is what scrambles it. The
-  boundary is an isometry, so the fix cannot live in the readout.
-- **Falsified cheaply, in sequence:** contrast-removal (persona 0.1295), VICReg isotropy (0.1400) —
-  both within the rung noise band 0.1295–0.1400. No covariance-shaping objective moves it.
-- **DINO self-distillation FALSIFIED (DEC-550/552):** two dose runs on the served composite.
-  Run 1 (B=16, 266 governed steps, 8,512 views): persona 0.1520 (~2σ above the noise band
-  0.1295–0.1400), bar not met. Run 4 (B=64, `safe_run` slice-conformant, deterministic): the
-  governor stopped at step 266 on patience, but the SAVED state is the best-val step-38 state
-  (4,864 views, teacher 14% progressed) — the composite val, now including the self-referential
-  dino term, drifted monotonically 4.93 → 6.04. Judge: persona **0.1490** (bar ≥ 0.217),
-  segment-ARI **−0.0002** (bar ≥ 0.095), supervised guard clean (worst churn_day −0.0298) →
-  **falsified** per the pre-registered clause. Dose-response across runs 1 and 4 is FLAT
-  (0.1520 vs 0.1490 at 1.75× the view dose): DINO's structure pressure saturates at ~+2σ,
-  ~1/6 of the bar's +0.08. Pre-launch audit (DEC-551): the running code was the pre-registered
-  mechanism; bundle now reverted (`78f8633`), `dino_*` fields remain inert committed defaults.
-- **Decisive attribution fact (run-4 probe, four arms, judge protocol):** persona distance
-  fidelity lives in the **EXACT COUNTER arm — 0.2162, i.e. 99.6% of the frozen bar (0.217)**.
-  Trunk alone 0.0112; served composite 0.149 (the blend dilutes the mass arm); PATH A 0.404.
-  Entanglement persists: served probe-persona R² 0.585 ≈ PATH A 0.587 while ARI ≈ 0.
-- **Harness failures closed (runs 2–3, post-mortem `12a1f54`):** both died to the watchdog's
-  live-fire test sweep (out-of-slice harness placement + my own pytest). The sweep test now skips
-  while a producer is live (verified against run 4); jobs launch through `scripts/safe_run.py`
-  into the 48G slice (run-4 receipts: slice cap 48.0 GB, seatbelt clamp 45.06 GB, peak 13.94 GiB).
-
-**SwAV prototypes FALSIFIED (DEC-553 pre-reg, DEC-554 record):** run 5 (B=64, k=9,
-safe_run, ~15 min, slice peak 13.93 GiB): the governor-exclusion worked as pre-registered
-(receipt fired; swav trained at weight 1.0, scale 8.69; sinkhorn row resid 1.2e-07) but the
-judge found persona **0.1320** (bar ≥ 0.217; Δ −0.0049 vs base — zero movement within noise)
-and segment-ARI **−0.0034** (bar ≥ 0.095); supervised guard clean; probe-persona R² 0.5825
-(collapse guard ≥ 0.40 met — entanglement persists, no collapse). Two distinct structure
-pressures on the served composite (DINO agreement, SwAV clustering) plus the earlier
-covariance shapers have all failed to move it. **Interpretive correction recorded in DEC-554:**
-the baseline's own govern trajectory shows the identical drift + patience stop (best = first
-eval) — the dose ceiling is a BASELINE property of the 11-objective portfolio at this rung, not
-a self-referential-selection artifact; j_base800 was judged at the same effective dose.
-**Decisive attribution (run-5 probe, 4 arms):** the mass arm — the EXACT stored counter
-column, no learned weights — now **CLEARS the bar: 0.2174 ≥ 0.217** (0.2162 on run 4; it is a
-data-side quantity, stable across runs). The served composite dilutes it to 0.1320: the fold
-(`w_counter`) + shared `proj` + boundary is many-to-one and destroys the mass half's pairwise
-structure.
-
-**COMPOSITE CONSTRUCTION (DEC-555/556) — rung front CLOSED, stage 2 FALSIFIED:** stage-1
-decomposition (measured, CPU) put **100% of the mass-metric drop at M0→M1 — the `w_counter`
-fold alone** (0.2174 → 0.1279); h-addition / shared proj / boundary each ~0 (M3 = M4 EXACT,
-isometry confirmed; the M4-vs-stored 0.0031 gap was the serve_unfaded pre-fade materialization,
-not numerics). Stage 2 (pre-fixed lever: native-mass block serving E = [z(256-d shape) |
-z(39-d exact mass)], split-A block scales, sidecar-persisted; in-repo `products` rebuild of
-run-5 artifacts, no retraining): **persona 0.1514 (bar ≥ 0.217), segment −0.0026 (bar ≥
-0.095) → FALSIFIED per the pre-registered clause; supervised guard CLEAN; collapse guard
-passed (probe R² 0.580 ≥ 0.40).** Measured fact: block serving improved EVERY geometry row vs
-the fold (+0.0194 persona) and ships the mass exact and un-entangled, but the bar's
-combined-vector distance is variance-dominated by the 256-d shape block at the 39:256 ratio
-(per-dim z-score equalizes dims, not block norms). Bundle REVERTED; the replay-identity fix
-(`e7498b6` — a latent repo bug stage 2 exposed: `products` rebuilds re-stamped the tag from
-DEFAULTS) is committed and kept. The unsup-geometry front is exhausted at the rung on both
-axes (objective: DEC-552/554; construction: DEC-555/556) — the remaining question is
-FULL-SIZE.
-
-**Tree:** all gates green — ruff check/format, principle audit strict rc=0 (ratchet 67),
-fast tier rc=0. SwAV bundle REVERTED (DEC-554); kept, pre-registered as a training-regime fix:
-the governor-selection exclusion in `cfm_training.py` (inert unless "swav" is in objectives;
-the general rule — self-referential terms train, the predictive portfolio selects — now covers
-any future EMA-teacher objective). `swav_*` config fields reverted with the bundle. The
-DEC-555 stage-2 bundle (3 files) REVERTED after the FALSIFIED verdict (DEC-556: serving-side
-only, falsified at the frozen bar — same protocol as DINO/SwAV).
+The unsupervised-geometry front is closed at the rung on both axes: objective (DEC-552/554) and
+construction (DEC-555/556). DINO, SwAV, contrast removal, VICReg and block-serving were all
+falsified at the frozen bar. The mass metric's drop localizes at M0→M1 (the `w_counter` fold); the
+exact counter column clears the bar but the served composite dilutes it. The full-size question
+remains open and is now a B-measurement question (B2/B3), not a consumer-tuning question.
 
 ## Next 3 actions
 
-1. **Fix S1+S2's batch arithmetic (DEC-561, operator decision pending):** recommended option
-   (a) — remove the `(128/d)^2` multiplier in `scripts/demo/auto_encoder.py` (scripts/ is
-   outside `BEHAVIOR_TREES`, hash stays `d0ac576c`), so the producer uses `derive_batch`'s
-   memory-derived 128 customers. Then run **S1+S2 standalone** (not the full chain) with a GPU
-   memory check before launch, and confirm the desktop and the server survive. Acceptance:
-   `judge_stages.json` S1/S2 fresh `d0ac576c`, working=True, and `torch.cuda.mem_get_info()`
-   free does not collapse during the run. **Never touch the 48 GB slice cap.**
-2. **S6 chain v4** (same command, one invocation) once S1/S2 is green: acceptance S1+S2+S6
-   fresh/working (card → legs 2/8 · stages 6/6 · 0 UNKNOWN · 6 FAIL, substantive reds only);
-   argmax values equal the deterministic scratch (0.245791 / 0.259259). Then commit the
-   completed re-stamp (receipts + card + STATUS tick).
-3. **DEC-562 — pre-register the next one-axis front on the consolidated structural defect
-   (DEC-560):** the served composite carries per-customer coarse attributes (probe R² ≈ PATH A)
-   but not per-customer fine structure (geometry trio + level-conditional response shape +
-   return_proneness gap). First attribution probe, cheapest: does the fine structure exist in
-   the pre-fold state (full-size M0→M1 decomposition, rung-attribution generalized) or is it
-   lost in the trunk's contractive dynamics? One measured axis per run; the rung closures
-   (objective DEC-552/554, construction DEC-555/556) bound what that answer can fix.
-   When the card's gate-of-record is all green → run BACKWARD.
+1. **Finish and commit the one-card B section (DEC-562).** Render `REPORT_CARD.md`, verify every
+   missing/legacy B row is UNKNOWN with a named producer, run the targeted tests + ruff + fast
+   tier, and commit. After this, no measurement is read from STATUS or a second card.
+2. **Run the missing B producers in cheapest-first order, one axis per run, pre-registered:**
+   B3.2 stage decomposition (M0→M1→served), B4.1 B-only decision, B2.1 worst-case sufficiency `U`,
+   B5.1 minimality, B7.2 robustness, B6.3 broad transfer. Each writes a source receipt; the card
+   renders it. Do not create a new card.
+3. **Chain v4** (one invocation, 32 GB cap) to complete S6 and the full re-stamp; then
+   **DEC-563** trunk/state front (the old DEC-562 slot) and BACKWARD only when the card is green.
 
 ## Operating facts
 
 - **Repo:** `/home/austin_whaley/Documents/Repos/wonderland`, branch `foundation-rebuild`, venv `.venv`.
-- **Testbed:** Layer A v2 demo (certified reference) at
-  `/home/austin_whaley/wonderland_work/demo_v2/` (stream, relational/, truth, manifest).
-- **Artifacts:** rung/scratch products under `/tmp/opencode/`; the canonical full-size products
-  at `/home/austin_whaley/wonderland_work/cfm_v2k/` are the CURRENT-tree run (fs_full, tag
-  `…b64…o4c3b5899`, behavior `d0ac576c`); the stale `0f881d99`-era artifacts are backed up at
-  `cfm_v2k_stale_0f881d99/`.
-- **Card:** `python3 scripts/report_card.py` → `REPORT_CARD.md`.
+- **Testbed:** Layer A v2 demo at `/home/austin_whaley/wonderland_work/demo_v2/`.
+- **Card:** `.venv/bin/python scripts/report_card.py` → `REPORT_CARD.md` (the only measurement surface).
 - **Resources:** GB10, 121.63 GiB unified memory, 20 CPU cores, 1.5 TB free disk, CUDA 13.0.
-  **GPU free today: 31.84 GiB** (89.79 used; LLM server 48.86 GiB static, desktop ~0.44 GiB,
-  rest driver/other) — measured by `torch.cuda.mem_get_info()`. `wonderland.slice` = 48 GB
-  **CPU** ceiling (operator directive, 2026-11-01); it does **not** bound GPU/unified
-  allocations (DEC-561). Per-job seatbelt ≈ 41–43.7 GB today. LLM co-tenant (this session's
-  server) shares the GPU: heavy-turn windows measurably slow training (run 3: 21 s/step vs
-  ~5–6 s/step idle). The production CFM train (fs_full) fits comfortably — dose runs peak
-  13.94 GiB — so training capacity is not the blocker; the S1/S2 measurement harness is.
-  **Canonical job launcher is `scripts/safe_run.py`** (slice containment + receipt); raw
-  harness placement lands outside the slice and is a policy breach.
-- **Test tier:** fast tier green on the committed tree. The watchdog sweep test skips while a
-  live producer runs — running pytest alongside training is now safe.
+  **Project maximum: 32 GB** (operator 2026-11-02). `wonderland.slice` = `MemoryMax=34359738368`;
+  `safe_run` reports 32.0 GB. The slice bounds CPU/host memory only; GPU/unified allocations are
+  capped by `looking_glass/gpu_budget.py` and by `derive_batch`'s memory-derived budget.
+- **Canonical launcher:** `scripts/safe_run.py` (slice containment + receipt). Raw harness
+  placement outside the slice is a policy breach.
+- **Test tier:** fast tier green on the committed tree.
 
 ## Open operator decisions
 
-None pending. The queue is pre-registered (DEC-558: S6 chain re-run to finish the re-stamp →
-advance the remaining reds per the measured-gap ranking → BACKWARD at all-green).
-Standing: push requires explicit permission.
+None pending. The queue is pre-registered: B scorecard + missing B producers → chain v4 →
+DEC-563 trunk/state → BACKWARD at all-green. Standing: push requires explicit permission.

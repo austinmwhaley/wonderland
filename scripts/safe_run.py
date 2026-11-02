@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Run a job under a HARD memory cap the kernel enforces — so a bad job cannot take the box down.
+"""Run a job under a HARD CPU/host memory cap the kernel enforces — so a bad host allocation
+cannot take the box down.
+
+GPU/unified allocations are NOT charged to this cgroup (DEC-561). The GPU path is capped by the
+per-process seatbelt in `looking_glass/gpu_budget.py`, derived from the same 32 GB working max;
+`derive_batch` and the training budget must use that ceiling, never the whole device.
 
     python3 scripts/safe_run.py -- <command> [args...]
     python3 scripts/safe_run.py --print-plan

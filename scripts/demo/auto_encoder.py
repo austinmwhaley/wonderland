@@ -778,8 +778,14 @@ def train_encoder(data=None, seed=0, d=None, layers=2, epochs=5, lr=None, batch=
         print(f"derived dim {d} ({_dn['dim']})", flush=True)
     if not batch:
         seq_len = int(np.median([len(seqs[k][5]) for k in keys]))
+        # `derive_batch` is the SINGLE source of the memory-derived token budget: it already
+        # scales the batch by free hardware memory and seq_len. The old `(128/d)**2` multiplier
+        # was applied AFTER that cap and defeated it: at d=64 it asked for 4x the budget
+        # (202,240 tokens = ~91 GB at this module's own 0.45 GB/1k-token constant) while only
+        # ~31.8 GiB was free, which is the S1/S2 3/3 OOM (DEC-561). Do not reintroduce it; if a
+        # smaller d needs a larger batch, put the d scaling INSIDE `derive_batch`'s budget so
+        # the memory cap remains the last word.
         batch = derive_batch(len(keys), seq_len)[0]
-        batch = max(8, int(batch * (128 / d) ** 2))  # capacity-squared token bound (disclosed)
     BATCH = batch
     rng = np.random.default_rng(seed)
     perm = rng.permutation(len(keys))
