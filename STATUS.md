@@ -18,9 +18,12 @@ are never a brain win.
 
 **Stage:** Layer 0 — encoder not yet mastered. Layer 1 (certification, `U`) is not started.
 
-**Progress:** **card receipts mid re-stamp (DEC-557): 0/8 legs · 0/6 stages · 14 UNKNOWN** — all
-5 source receipts went stale when the behavior hash moved at `e7498b6` (pre-stale state: 2/8 ·
-6/6 · 0 UNKNOWN at `0f881d99`, commit `a32bbee`). 0 open backward requirements.
+**Progress:** **re-stamp in flight (DEC-557): the full-size re-measurement is DONE** — current
+tree trained on the card's 5000-customer population (`fs_full`: dose ceiling 10.45 epochs, batch
+64 derived, tag `…b64…o4c3b5899`, products now canonical at `cfm_v2k`; old artifacts backed up
+to `cfm_v2k_stale_0f881d99`). The S6 chain is re-stamping all 5 source receipts (4 judge legs +
+S1–S6) + the card under behavior `d0ac576c`. Pre-stamp state: 2/8 · 6/6 · 0 UNKNOWN at
+`0f881d99`/`a32bbee`; the card meanwhile renders 0/8 · 0/6 · 14 UNKNOWN (all receipts stale).
 
 ## Micro — current state (measured)
 
@@ -42,9 +45,11 @@ DEC-556 full-size re-measurement + stage re-stamps under the current behavior.
 Stages S1–S6: **6/6 PASS** at `a32bbee` (re-stamp pending). Hygiene H1–H5: **5/5 PASS.**
 BACKWARD not yet run — it runs only against an all-green card.
 
-## The one active front: unsupervised geometry (entanglement)
+## Closed front: unsupervised geometry at the rung (DEC-548…556)
 
-Diagnosis chain (DEC-548…552, all rung measurements):
+The rung front is CLOSED on both axes (objective DEC-552/554; construction DEC-555/556 — stage-2
+block serving FALSIFIED at the frozen bar, 3-file bundle reverted). The question it left is
+FULL-SIZE, which is what the DEC-556/557 re-measurement + re-stamp now answers. Diagnosis record:
 
 - **Temporal drift is not the axis** (DEC-548): `proj(y)`-based contrast falsified.
 - **Attribution probe** (CPU, validates the judge to the 3rd decimal): the served donor decodes
@@ -119,22 +124,24 @@ only, falsified at the frozen bar — same protocol as DINO/SwAV).
 
 ## Next 3 actions
 
-1. **FULL-SIZE re-measurement (DEC-556 pre-registered — the rung's falsify clause):** train the
-   CURRENT tree (no swav, no contrast, no mass-block — all reverted) on the full 5000-customer
-   demo_v2 population (`as_of=2025-01-01`, `split_seed=6529885151769`, A=3515/B=1485,
-   `anchors=6`, the 4 adopted flags), so the card's full-size brain-side receipts are re-scored
-   against the FROZEN PATH A comparators (return_proneness 0.4879; persona 0.404 / future 0.14 /
-   segment 0.309) and the stale cfm_v2k values (0.4145 / 0.14 / 0.10 / 0.001) are REPLACED, not
-   relabeled. Estimate from measured numbers: **~1.5–2.5 h total** (cfm_v2k training 2310 steps @
-   1.72 s/step = 66 min old tree B=16; idle co-tenant ~2 s/step; DEC-554 dose ceiling re-derives
-   at the first `[govern]` receipt). One GPU job at a time via `safe_run.py`.
-2. **Judge + probe the full-size products** against the card's frozen full-size comparators
-   (supervised leg + unsup leg + the M0 mass-only power-control arm, instrument acceptance:
-   reproduce the PATH A values to 3 decimals). Record in DEC-557: does the mass arm clear the
-   0.217 bar with headroom at full size, and does the served composite (fold) move off the rung
-   noise band?
-3. After the geometry front: re-measure supervised `return_proneness` (full-size 0.4145 vs
-   0.4879) and simulator `argmax_optimum` (+0.0026, CI⊃0) → card 8/8 → run BACKWARD.
+1. **S6 re-stamp chain (IN FLIGHT):** `measure_certification_law.py --products cfm_v2k
+   --demo demo_v2 --train-log cfm_v2k/train.log` (via `safe_run.py`, `LG_SCAN=eager`), launched
+   after the fs_full products were swapped into the canonical `cfm_v2k` dir (old artifacts backed
+   up to `cfm_v2k_stale_0f881d99`). It regenerates, in sequence, all 5 stale source receipts under
+   the current behavior `d0ac576c`: S1+S2 (measure_input_law), S3 (measure_dynamics_law on the new
+   checkpoint), S4 (measure_views_law), S5 (measure_battery_law), the 4 judge legs
+   (measure_judge_law, CPU), PATH-A provenance (measure_path_a_provenance), then S6's own checks +
+   the card render. Each producer is memory-capped and run one at a time. Est. 40–90 min.
+2. **Read the re-stamped card.** The legs re-score the CURRENT full-size encoder against the
+   frozen PATH A comparators (supervised return_proneness 0.4879; unsup persona 0.404 / future
+   0.14 / segment 0.309; simulator argmax CI; rl). Instrument acceptance: the PATH A values
+   reproduce to 3 decimals (they are computed from the demo_v2 table + truth, not the encoder).
+   Record the new leg verdicts in DEC-558.
+3. **Advance the remaining reds.** Per the re-stamped card: whichever leg/column still FAILs is
+   the next one-axis front (likely supervised return_proneness full-size, and the unsup geometry
+   rows). Stages S1–S6 re-stamp from the same chain; if any stage now FAILs (pipeline code
+   changed since `a32bbee`), that is the next front. When the card's gate-of-record is all green →
+   run BACKWARD.
 
 ## Operating facts
 
