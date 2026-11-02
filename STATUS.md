@@ -18,12 +18,19 @@ are never a brain win.
 
 **Stage:** Layer 0 — encoder not yet mastered. Layer 1 (certification, `U`) is not started.
 
-**Progress:** **2/8 leg-columns, 6/6 stages, 0 UNKNOWN, 0 open backward requirements.**
+**Progress:** **card receipts mid re-stamp (DEC-557): 0/8 legs · 0/6 stages · 14 UNKNOWN** — all
+5 source receipts went stale when the behavior hash moved at `e7498b6` (pre-stale state: 2/8 ·
+6/6 · 0 UNKNOWN at `0f881d99`, commit `a32bbee`). 0 open backward requirements.
 
 ## Micro — current state (measured)
 
-Card generated at commit `a32bbee` · behavior hash `0f881d99d9d8203e` (H2). Judge receipts:
-800-customer rung (`j_base800`) plus full-size `cfm_v2k` where noted.
+**Card is mid re-stamp (DEC-557).** The behavior hash moved (`0f881d99` → `d0ac576c`) when the
+net `looking_glass/` code changes since `a32bbee` (DEC-544…547 memory/batch/rl + kept
+DINO/SwAV governor-exclusion + replay fix `e7498b6`) landed, so all 5 freshness-checked source
+receipts (4 judge legs + judge_stages S1–S6) are now `stale` → the card renders
+**0/8 legs · 0/6 stages · 14 UNKNOWN**. The table below is the LAST MEASURED state (receipts
+stamped at `a32bbee`/`0f881d99`): 2/8 leg-columns, 6/6 stages. It is being re-derived from the
+DEC-556 full-size re-measurement + stage re-stamps under the current behavior.
 
 | Leg | brain alone | brain + ledger |
 |---|---|---|
@@ -32,7 +39,7 @@ Card generated at commit `a32bbee` · behavior hash `0f881d99d9d8203e` (H2). Jud
 | **rl** | ✅ **PASS** (DEC-545 control substitution) | ✅ **PASS** |
 | simulator | ❌ FAIL — `argmax_optimum` brain +0.0026, CI includes 0 | ❌ FAIL — same row, delivery margin |
 
-Stages S1–S6: **6/6 PASS** (receipts stamped at `a32bbee`). Hygiene H1–H5: **5/5 PASS.**
+Stages S1–S6: **6/6 PASS** at `a32bbee` (re-stamp pending). Hygiene H1–H5: **5/5 PASS.**
 BACKWARD not yet run — it runs only against an all-green card.
 
 ## The one active front: unsupervised geometry (entanglement)

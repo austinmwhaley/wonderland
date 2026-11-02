@@ -8125,3 +8125,54 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     * Acceptance: the card's full-size receipts regenerate from this run's products at a
       recorded commit with a new behavior hash; the card's reds are re-scored against the
       FROZEN comparators; no gate/threshold movement in this run.
+
+- **DEC-557 (behavior-hash regression discovery + full re-stamp plan):** after committing the
+  replay-identity fix `e7498b6` (and the net `looking_glass/` changes since the receipts were
+  last stamped at `a32bbee`), `report_card.py` renders **0/8 legs · 0/6 stages · 14 UNKNOWN**:
+  every freshness-checked source receipt is flagged `stale: encoder behavior changed since
+  receipt (0f881d99d9d8203e != d0ac576c3c7aa069)`. The behavior hash is a mechanical sha256 over
+  `BEHAVIOR_TREES = (looking_glass, rabbit_hole)` `.py` (DEC-390 freshness law), so ANY net
+  change to the encoder/data tree moves it. Net `looking_glass/` diff `a32bbee..HEAD` =
+  autotune.py, cfm_config.py, cfm_state.py, cfm_training.py, cfm_validation.py,
+  customer_foundation_model.py, gpu_budget.py (DEC-544…547 memory/batch/rl work + the kept
+  DINO/SwAV governor-exclusion + the replay fix). The current encoder is therefore GENUINELY
+  different from `cfm_v2k`, and the DEC-556 full-size re-measurement is not optional cosmetics
+  — it is required for the card to be honest.
+  - **What goes stale (5 source receipts):** judge_leg_{supervised,unsupervised,rl,simulator}.json
+    + judge_stages.json (S1–S6). All the other ~70 receipts under docs/report_cards/experiments/
+    carry NO behavior_hash and are not freshness-checked (historical / frozen comparator
+    provenance, e.g. path_a_provenance.json) — they are not re-stamped.
+  - **Plan (mechanical consequence of the freshness law, NOT a new gate):**
+    1. DEC-556 full-size train (in flight, `/tmp/opencode/fs_full`) → new products of the
+       CURRENT encoder on the card's full 5000-customer population.
+    2. Regenerate the 4 judge legs: `measure_judge_law.py --products <new> --demo demo_v2
+       --legs supervised,unsupervised,rl,simulator` → re-stamped at the current behavior.
+    3. Regenerate judge_stages.json: re-run the 6 stage producers (measure_input_law.py S1/S2,
+       measure_dynamics_law.py S3, measure_views_law.py S4, measure_battery_law.py S5,
+       measure_certification_law.py S6) against the new products + current pipeline. The
+       pipeline code changed (autotune/cfm_training/gpu_budget/cfm_validation), so the stage
+       results may differ from the old 6/6 — this is a genuine re-measurement, not a rubber
+       stamp.
+    4. `report_card.py` → the card is re-derived from the re-stamped receipts.
+  - **Products location:** the stage producers + S6 reference a STABLE products dir (cfm_v2k),
+    not /tmp (certification rule 6: "a receipt under /tmp that no repo command regenerates is
+    not evidence"; the command must be reproducible at a recorded commit). The fs_full run
+    validates in /tmp first; on success its products are the new canonical full-size products
+    and the stage/judge commands point at that stable dir.
+  - **GPU discipline:** one job at a time. The full-size train holds the GPU now; the GPU
+    stages (S1 trains a d=64 spike encoder; S3–S5 read/train on products) run AFTER it, in
+    sequence. The judge legs are CPU (measure_judge_law.py) and can run as soon as products
+    exist.
+  - **Estimate (from measured numbers):** train ~45–90 min (in flight) + products ~15–25 min
+    (in the same train command) + judge legs ~10–20 min (CPU) + stages S1–S6 ~20–40 min
+    (S1/S2 spikes are small; S3–S6 read products). Total re-stamp after the train ≈ 45–100 min.
+  - **DEC-557 addendum (estimate re-derived at the first govern receipt, as pre-registered):**
+    `[govern] step 82/1650 val 4.0116 eval 1` — the current tree derives cadence 82 (3515 A
+    customers / ~43 memory-derived batch) and budget 1650 (cfm_v2k: cadence 330, budget 6600,
+    B=16). Pace ≈ 2.5 s/step under active co-tenancy (82 steps in ~4 min incl. warmup; idle
+    band ~2 s/step). If the DEC-554 dose ceiling repeats at scale (val drifts up; best = eval 1;
+    stop = 3 warmup + 4 patience evals = eval 8 ≈ step 656): training ≈ 27–31 min; products ≈
+    5–10 min (cfm_v2k measured ~3–4 min at 5000 customers). If the budget runs out instead:
+    1650 steps ≈ 68–77 min. **Total to products: ~35–45 min (ceiling case) / ~75–90 min
+    (budget case)**, then the S6 re-stamp chain ~40–90 min → grand total ≈ 1.5–2.5 h,
+    unchanged from the DEC-556 pre-registration. Re-derive again at the stop receipt.
