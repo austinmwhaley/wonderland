@@ -7480,3 +7480,35 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   the same op succeeds standalone. A broadcast similarity has no BLAS call and works.
 - **Action.** Reverted. `DEC-543`'s hypothesis (identity is the missing capability) is NOT
   disproven by this; the implementation targeted the wrong tensor.
+
+## DEC-549 — [PRE-REGISTERED] unsupervised geometry cluster: two single-axis runs at the 800 rung
+- **Diagnosis (from code, not guess).** The served embedding is `R(proj(h) + W_c·M)·s` — an
+  INVERTIBLE affine map, so its pairwise-distance structure equals that of the trunk projection
+  + counter fold. Of the 13 active objectives, the only one shaping pairwise geometry of
+  `proj(h)` is `contrast`, and its form is UNIFORMITY (CE over `S@Sᵀ` with diagonal labels):
+  it pushes every customer to a uniform simplex, equalising all pairwise distances. The unsupervised
+  rows reward distance FIDELITY to the lab's true distances (persona/future geometry) and cluster
+  structure (segment ARI) — the opposite of uniform spread. Predicted: `contrast` is the destroyer.
+- **Run 1 (objective axis): drop `contrast`.** `--set objectives` without it; everything else
+  identical to the j_base800 baseline (800 cust, 4 anchors, 1 epoch, same flags).
+  - **Accept:** ≥2 of the 3 unsupervised rows move ≥30% of the way from baseline toward PATH A
+    (bars: persona ≥ 0.217 [was 0.137 vs 0.404], future ≥ 0.113 [0.101 vs 0.140],
+    segment ≥ 0.095 [0.003 vs 0.309]) AND no supervised row regresses > 0.03 abs from
+    j_base800 (x0 0.908, h0 0.970, price −0.005, return 0.473, churn 0.206, regime 0.018, final −0.027).
+  - **Falsify:** rows unmoved within noise, or any supervised regression → keep `contrast`, record.
+- **Run 2 (isotropy axis, only if Run 1 fails the geometry bar): Run-1 objectives + `variance` +
+  `redundancy`.** Both terms are ALREADY IMPLEMENTED (VICReg/Barlow-Twins style: per-dim std hinge
+  to a data-scaled anchor; off-diagonal² of the projection's correlation). DEC-444 retired them for
+  landscape stiffness (L~2e6 → lr collapse), but that was pre scale-free units + DWA + loss_scales;
+  at O(1) loss scale the risk is testable in one rung. Hypothesis: persona information is present
+  (predictive objectives demand it) but entangled/anisotropic; isotropy makes it geometrically
+  accessible (principle 7). Same acceptance/falsification bars; plus: instability (UNSTABLE,
+  non-finite) falsifies immediately.
+- **Rejected alternatives.** (a) Temporal InfoNCE on the served tensor: falsified in form at
+  DEC-548, and "pull early→late" compresses structure under a contractive recurrence. (b) DINO
+  self-distillation with sharpening: the clever next step IF runs 1-2 are inconclusive — the EMA
+  target machinery already exists for `jepa`, so the cost is one objective, not an architecture.
+  (c) Tuning `contrast_tau`/weight: threshold-tuning, violates principle 1.
+- **Estimate (measured).** 0.348 s/step × ~266 steps ≈ 93 s train + ~60–90 s pre/post + ~40 s judge
+  per run → **~5 min per run, ~10 min for both** (vs ~8–10 min I estimated yesterday for the
+  double-forward design — this is cheaper because it is config-only).
