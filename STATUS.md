@@ -93,7 +93,11 @@ next question is the learned shape, not another consumer tuning pass.
    GPU under safe_run. Attempt 1 was refused at the config surface (tuple-field type guard on
    `objectives`; the log also exposed the CLI default `sample_customers=500` vs the matched
    control's full population) — recorded in DEC-572; attempt 2 = the documented comma-separated
-   tuple spelling + explicit `--customers 5000`, semantic diff unchanged. Accepted on B rows: eff_rank ≥ 30 in O3's own receipt AND B3.2
+   tuple spelling + explicit `--customers 5000`, semantic diff unchanged. Attempt 2 aborted
+   after eval 1: the memory-driven `derive_batch` had drifted to 32 under the new 32 GB
+   ceiling (cfm_v2k ran 64; batch is protocol identity, DEC-448) — attempt 3 pins
+   `--set batch=64` (budget re-derives to 1650, safe: cfm_v2k measured 10.52 GB reserved at
+   64 vs O3's 26.7 GB seatbelt). Accepted on B rows: eff_rank ≥ 30 in O3's own receipt AND B3.2
    M4_served persona ≥ 0.15 (frozen consumer) AND B3.3 served mean R² ≥ 0.45, stable run.
    Then O4 (decision objective on the stream's own 100%-randomized offer arm; acceptance =
    **B4.1**).

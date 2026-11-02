@@ -9020,5 +9020,27 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     declaring nothing is a rejection, never an empty tuple) — and explicit `--customers 5000`.
     The semantic diff (13 objectives + `rank` + `iso`, every other field byte-identical) is
     UNCHANGED from this pre-registration; the gates, bars and branches are untouched.
-  - **Status.** Pre-registered (attempt 1 recorded above). O3 attempt 2 is in flight; the
+  - **Attempt 2 (launched, aborted after eval 1 — the matched control had drifted on batch;
+    recorded).** The attempt-1 launch protocol was correct in everything else: `[set]` receipt
+    15-tuple, full population A (no `[read]` scale-guard line), `[distill]` 3515 customers,
+    `[health]` init eff_rank 4.828 identical to cfm_v2k, `[scale]` 38 tasks = 36 + rank + iso.
+    But the governor budget derived 3300, not 1650: 3300 = 15 × 110 × √(256/64) with
+    110 = ⌈3515/32⌉ — `derive_batch` (`autotune.py` 129-154) had derived batch=32, not
+    cfm_v2k's 64. `derive_batch` is memory-driven (`torch.cuda.mem_get_info()[0]` → token
+    budget), and under the 32 GB cgroup ceiling now in force (DEC-561) with a heavier
+    co-tenant (driver_free 19.49 GB vs cfm_v2k's 32.25 GB at its launch) it chose 32. Batch
+    is part of protocol identity (the tag encodes it: cfm_v2k's tag `…b64d256…`; DEC-448:
+    "batch changes the gradient noise … must not carry the same name"), so leaving it would
+    confound O3's single-axis attribution with a second, environment-driven axis. Aborted
+    after the first `[govern]` eval (~6 min; no receipt, `/tmp/opencode/o3axis_i` never
+    created — no evidence from attempt 2).
+  - **Attempt 3 (in flight).** Pinned `--set batch=64`, restoring the pre-registered matched
+    control: the budget re-derives to 1650 = 15 × 55 × 2 (eval_every 82), like cfm_v2k.
+    Safe under the new ceiling: cfm_v2k measured batch-64 peak reserved = 10.52 GB on this
+    exact shape (seq_len 1004, counter on), O3's gpu_budget RECAP is 26.69 GB, and
+    `derive_batch`'s own receipt states "batch 64 fits inside 25 GB" for this shape.
+    Everything else byte-identical to this pre-registration; gates, bars and branches
+    unchanged. Launch receipts to verify on start: `[govern]` step 82/1650 (not 165/3300),
+    `[scale]` 38 tasks, `[health]` init eff_rank 4.828.
+  - **Status.** Pre-registered (attempts 1-2 recorded above). O3 attempt 3 is in flight; the
     retrain and its card delta land as their own chunk (DEC-573).
