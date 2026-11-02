@@ -1,7 +1,7 @@
 # STATUS — wonderland
 
 *Live state only. History lives in `DECISIONS.md` (append-only) and `git log`.
-Rewritten 2026-11-01. If this file grows past ~150 lines, it is becoming a log again.*
+Rewritten 2026-11-01 (DINO dose front). If this file grows past ~150 lines, it is becoming a log again.*
 
 ## Macro
 
@@ -16,90 +16,77 @@ are never a brain win.
 
 **Stage:** Layer 0 — encoder not yet mastered. Layer 1 (certification, `U`) is not started.
 
-**Progress:** **2/8 leg-columns, 0/6 stages, 0 open BREAKING/MAJOR backward requirements.**
+**Progress:** **2/8 leg-columns, 6/6 stages, 0 UNKNOWN, 0 open backward requirements.**
 
 ## Micro — current state (measured)
 
-Encoder `0.11.0r103115-b26d256e3lr3e-04o39ad8593` · behavior hash `94857be6815a96f3`.
+Card generated at commit `a32bbee` · behavior hash `0f881d99d9d8203e` (H2). Judge receipts:
+800-customer rung (`j_base800`) plus full-size `cfm_v2k` where noted.
 
 | Leg | brain alone | brain + ledger |
 |---|---|---|
-| supervised | ❌ FAIL (x0, return_proneness, churn_day, regime_switches, final_regime_days) | ❌ FAIL |
-| unsupervised | ❌ FAIL (persona_geometry — random control ≥ brain) | ❌ FAIL |
-| **rl** | ✅ **PASS** | ✅ **PASS** |
-| simulator | ❌ FAIL (dose_response_curve, argmax_optimum) | ❌ FAIL |
+| supervised | ❌ FAIL — `return_proneness` **full-size only** (0.4145 vs PATH A 0.4879; passes at the 800-rung: 0.4726 vs 0.3826) | ❌ FAIL — `price_sensitivity` delivery column (random control ≥ brain) + `return_proneness` |
+| unsupervised | ❌ FAIL — `persona_geometry` 0.14 vs 0.404, `future_geometry` 0.10 vs 0.14, `segment_structure` 0.001 vs 0.309 (rung) | ❌ FAIL — same rows outside the delivery margin |
+| **rl** | ✅ **PASS** (DEC-545 control substitution) | ✅ **PASS** |
+| simulator | ❌ FAIL — `argmax_optimum` brain +0.0026, CI includes 0 | ❌ FAIL — same row, delivery margin |
 
-| Stage | State |
-|---|---|
-| S1 schema resolution | working-state proof passes; **stale stamp** (measured against `1b238954570c`) |
-| S2 vocab & numeric encoding | working-state proof passes; **stale stamp** |
-| **S3 lawful dynamics** | ❌ **FAIL — `clock_periodicity`** (week-shift drift 2.2e-2 vs gate 1e-4) |
-| S4 buckets | working-state proof passes; **stale stamp** |
-| **S5 objective battery** | ❌ **FAIL — `action_conditioned_outcome`, `distance_regression`, `ledger_reconstruction`** |
-| S6 certification | working-state proof passes; **stale stamp** |
+Stages S1–S6: **6/6 PASS** (receipts stamped at `a32bbee`). Hygiene H1–H5: **5/5 PASS.**
+BACKWARD not yet run — it runs only against an all-green card.
 
-Hygiene H1–H5: **5/5 PASS.** Backward requirements: **none recorded** (BACKWARD has not been run —
-it only runs against an all-green card).
+## The one active front: unsupervised geometry (entanglement)
 
-## The one blocker
+Diagnosis chain (DEC-548…550, all rung measurements):
 
-**The geometry gate's target is mis-derived — the encoder is not missing rank.** Measured
-read-only on 724 held-out B customers (`rank_attainability.json`, DEC-514):
+- **Temporal drift is not the axis** (DEC-548): `proj(y)`-based contrast falsified.
+- **Attribution probe** (CPU, validates the judge to the 3rd decimal): the served donor decodes
+  persona/future fields **linearly as well as PATH A** (probe R² 0.583 vs 0.587; 0.364 vs 0.307)
+  yet pairwise distance fidelity is 0.14 vs 0.404 and segment ARI 0.001 vs 0.309. The information
+  is PRESENT; the **geometry is entangled** (principle 7). Trunk and counter alone each decode
+  ~0.32; the fold combines to 0.583 — the 256-direction ARRANGEMENT is what scrambles it. The
+  boundary is an isometry, so the fix cannot live in the readout.
+- **Falsified cheaply, in sequence:** contrast-removal (persona 0.1295), VICReg isotropy (0.1400) —
+  both within the rung noise band 0.1295–0.1400. No covariance-shaping objective moves it.
+- **DINO self-distillation (DEC-550, pre-registered):** label-free EMA-teacher structure pressure
+  on the exact served composite `proj(h + W_c·M)`. Run 1 (B=16, 266 governed steps): directional
+  (persona 0.1520, ~2σ above noise) but under-dosed vs the bar (0.217); mechanical cause —
+  32 views/step and teacher still ~35% initialized.
+- **Run 2 (IN FLIGHT, ~60 min):** `--set batch=64 --set budget_steps=800` (128 views/step;
+  teacher to ~4% init; governor convergence stop intact — the 800 is a ceiling, principle 2).
+  **Frozen bars:** rung segment-ARI ≥ 0.095 OR persona-dist ≥ 0.217; no supervised row regressing
+  > 0.03 abs vs `j_base800`; probe-persona R² ≥ 0.40 (collapse guard).
 
-| quantity | value | meaning |
-|---|---|---|
-| exhaustive measure, parallel analysis | **15 directions** (of 104) | the stream's own signal rank |
-| learned shape, parallel analysis | **15 directions** (of 256) | already at that count |
-| learned shape effective rank | 5.414 / null 110.585 | variance concentrated in ~5 of the 15 |
-| served `E` | 21 directions (of 360) | |
-| **card target** | **30 directions** (0.117 × 256) | **2× what the stream carries** |
-
-So the earlier "6 of 30 directions" reading was comparing the state to a number the stream never
-supported. Pressuring for 0.117 means asking for twice the information that exists — which is
-rank manufacture, banned by the doctrine, and which the λ = 1,000,000 saturation already
-demonstrated is unreachable.
-
-What is still true: the shape's variance is **unevenly weighted** (`pr_score` −2.749, mean pairwise
-cosine 0.148), and the consumer legs are red. Direction *count* is at capacity; direction
-*weighting* and *accessibility* are not.
-
-**Decision needed (certification rule 8 — gate change):** re-derive `rank_target` from parallel
-analysis (≈0.059 for a 256-dim shape) as a new protocol version, disclosed on the card as a
-weaker claim. Rejected: keep 0.117 and raise λ (saturated), raise `geometry_boost` (same
-mechanism), batch whitening (manufactures non-transferable rank).
-
-**Next axis: accessibility, not rank.** A linear head on 15 real but unevenly-weighted
-directions loses to a 48-column GBM — that is the measurement to make now.
-
-**Not the blocker:** receipts (fresh), ledger (8 parts publish, G1–G4 pass), stability (governed,
-no divergence), plumbing (products rebuild, config replay, UTC cut all fixed and committed).
+**Uncommitted DINO bundle:** `cfm_model.py` + `cfm_training.py` (active code) + `dino_*` recipe
+fields in `cfm_config.py` (inert defaults, committed with the `budget_steps` mechanism field).
+Gates (ruff / principle audit / pytest) run on it only after the dose verdict; falsify → revert
+the bundle, keep the recorded result.
 
 ## Next 3 actions
 
-1. **Operator ruling on `rank_target`** — re-derive to ≈0.059 (parallel analysis) as a new
-   protocol version, disclosed on the card as a weaker claim; stop geometry pressure. This is a
-   gate change, so it is the operator's call, not the loop's.
-2. **Measure accessibility** — with direction count at capacity, test whether the red legs come
-   from uneven weighting/scale (`pr_score` −2.749, mean cosine 0.148) rather than missing rank.
-3. **Re-run the four stale stage producers** (`measure_input_law`, `measure_views_law`,
-   `measure_certification_law`) so S1/S2/S4/S6 carry the current behavior hash. S3's
-   `clock_periodicity` and S5's three failures are separate, real defects.
+1. **Judge DINO run 2** vs the frozen DEC-550 bars (judge + bar compare pre-staged at
+   `/tmp/opencode/judge_r4.py`).
+2. **If a bar is met:** attribution probe on the new products, full-size adoption run
+   (~2,310+ steps, re-estimate with DINO's ~3 extra ssm passes), S6 chain, card regeneration;
+   commit the DINO bundle after ruff + `principle_audit --all --strict` + pytest.
+3. **If falsified:** revert the bundle, record the DEC-550 result, next axis = SwAV prototypes
+   (Sinkhorn-balanced clustering, k from stream attribute cardinality).
+
+After the geometry front: re-measure `return_proneness` (full-size) and `argmax_optimum`, then
+the card can go 8/8 → run BACKWARD.
 
 ## Operating facts
 
 - **Repo:** `/home/austin_whaley/Documents/Repos/wonderland`, branch `foundation-rebuild`, venv `.venv`.
-- **Artifacts:** products/registry under `/home/austin_whaley/wonderland_work/cfm_m8_counter/`;
-  demo stream + truth under `/home/austin_whaley/wonderland_work/demo/`.
-- **Card:** `python3 scripts/report_card.py` → `REPORT_CARD.md` (pure function of the receipts under
-  `docs/report_cards/experiments/`).
-- **Resources:** one GPU job at a time; 20 GB training container; system floor 8 GB; commits local
-  until the operator asks to push.
+- **Testbed:** Layer A v2 demo (certified reference) at
+  `/home/austin_whaley/wonderland_work/demo_v2/` (stream, relational/, truth, manifest).
+- **Artifacts:** rung/scratch products under `/tmp/opencode/`; full receipts only via the S6
+  chain into `/home/austin_whaley/wonderland_work/cfm_v2k/` (behavior `4ea9684f506ddbf1` there is
+  stale vs current code — receipts regenerate, never relabel).
+- **Card:** `python3 scripts/report_card.py` → `REPORT_CARD.md`.
+- **Resources:** GB10 unified memory, budget cap ~44.9 GB (DEC-547); compute-bound ~40–46
+  samples/s (DEC-546); GPU time free per operator — one job at a time; commits local until the
+  operator asks to push.
 
 ## Open operator decisions
 
-- **`rank_target`** — re-derive from parallel analysis (DEC-514, ≈0.059) as a new protocol
-  version, or keep 0.117 and accept that the geometry gate is unreachable by construction.
-- **P8 provenance** (`SPINE.md` Appendix B): the reference table contains random columns absent
-  from the stream. Fix the generator and re-certify, or drop them from the fair baseline.
-- **P2 testbed**: the synthetic stream may not be able to test the learned bet at all. A
-  measure-insufficient stream is the decisive experiment and is not built.
+None pending. The queue is pre-registered (DINO dose → SwAV → return_proneness /
+argmax_optimum re-measurement). Standing: push requires explicit permission.
