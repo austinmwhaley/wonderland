@@ -7998,3 +7998,57 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   + re-materialize (~5 min) + judge (~5 min) + probe (~2 min) ≈ ~25–30 min, no GPU training
   unless the decision table forces the retrain branch (it does not, by construction — the
   block serving is serving-side).
+- **Stage 1 result (measured, CPU, run-5 products + best-val checkpoint weights):** the drop
+  table (judge protocol, split A=562 / B=238):
+  | arm | dist-persona | dist-future | probe-persona R² | segment-ARI |
+  |---|---|---|---|---|
+  | M0 c (exact 39-d) | 0.2174 | 0.1312 | 0.5306 | −0.0048 |
+  | M1 w_c·c (fold only) | 0.1279 | 0.0998 | 0.5278 | −0.0035 |
+  | M2 h + w_c·c | 0.1282 | 0.0987 | 0.5837 | −0.0044 |
+  | M3 proj(M2) | 0.1289 | 0.0990 | 0.5844 | −0.0033 |
+  | M4 boundary(M3) = served | 0.1289 | 0.0990 | 0.5844 | −0.0033 |
+  | H0 h (trunk only) | 0.0165 | 0.0018 | 0.3239 | 0.0085 |
+  Instrument acceptance: M0 0.2174 ✓ (known), H0 0.0165 ✓ (known), M4 0.1289 vs stored-served
+  0.1320 (gap RESOLVED, see below), M3 = M4 EXACT (isometry confirmed on the judge protocol:
+  the boundary is a shared orthogonal @ scalar — zero effect on distance fidelity, as pre-
+  registered). **Attribution: 100% of the mass-structure drop lives at M0→M1 — the learned
+  `w_counter` fold alone destroys 41% of the mass metric (0.2174 → 0.1279); the addition of h
+  (+0.0003), the shared proj (+0.0007), and the boundary (+0.0000) each contribute ~0.** The
+  decision table's pre-fixed branch fires: the drop concentrates at M0→M1 → native-mass block
+  serving.
+- **M4-vs-stored gap RESOLVED (mechanism read, not numerics):** with `serve_unfaded=true`
+  (DEC-472, adopted flag), `build_products` materializes `state_embeddings` from the
+  LAST-EVENT state BEFORE `fade_idle` rewrites `customer_state.state` in place to the faded
+  state (cfm_state.py:1239–1245: materialize → fade). The stored `state` column is post-fade;
+  the graded `state_embeddings` is pre-fade. My M4 reconstructed from the post-fade `state`
+  column → the 0.0031 / alignment-0.9919 difference is the per-customer idle fade (global
+  scalar decay e^(−LN2·dt/T) on h), not float-path variance and not a missing transform. The
+  fold attribution is unaffected (M0→M1 does not involve h at all). Stage-2 re-materialization
+  therefore runs the in-repo `products` rebuild (single command, re-encodes the last-event
+  states from the frozen checkpoint + stream), not a numpy pass over the stored post-fade
+  states.
+- **Stage 2 implementation (per the pre-fixed decision table, no protocol change):**
+  (i) `CFMConfig.serve_mass_block: bool = False`; (ii) `CFM.set_serve_mass_block(mean_s,
+  scale_s, mean_m, scale_m)` + `CFM.serve_mass_block(shape_block, mass_block)` — per-block
+  z-scores fit on split-A only (the doctrine's block-aware-scales default), buffers as
+  float32 with the existing clamp(min=1e-6) + non-finite fail-safe (reject, do not clamp);
+  (iii) `donor_states` (DEC-447's single served definition) gains the mass-block branch:
+  `E = [z(shape block = the CURRENT 256-d pipeline, fold intact) | z(mass block = c exact
+  39-d)]` — 295-d; training-side fold/blend unchanged (training/serve asymmetry receipted as
+  pre-registered: the serve is the contract, the training is the channel); (iv) fit happens
+  ONCE in `build_products`' day-1 close (before materialize; A-rows only; receipted: N, both
+  scale vectors' norms), persisted as the per-tag sidecar `serve_massblock_<tag>.npz`
+  (DEC-213's sidecar pattern; `load_frozen_encoder` loads it so the daily-state path and any
+  rebuild serve the identical contract; two serve sidecars for one tag = fail-safe raise);
+  (v) verdict = in-repo `products` rebuild of the run-5 artifacts into a NEW out-dir with
+  `--set serve_mass_block=true` (no retraining; the tag is unchanged — behavior change is
+  receipted via the npz + the dim column, not a tag bump, because the checkpoint's TRAINED
+  behavior is identical and the tag encodes training behavior per the repo's versioning
+  contract; the served-contract change is recorded in the registry-side artifact).
+- **Stage 2 estimate (from measured numbers):** rebuild ≈ run-5's products phase ≈ 5–8 min
+  GPU (measured: 266 steps ≈ 9 min of a 15.8-min wall at ~2 s/step idle co-tenant; products
+  phase the remainder; the rebuild re-runs the per-customer recurrence + outlets); judge
+  ≈ 4–5 min (two legs, ~2 min each measured); probe ≈ 3–4 min (the 4-arm axis probe measured
+  ~2 min; +2 arms). Total ≈ 20–30 min, one GPU job at a time via `safe_run.py` (slice,
+  in-repo command — reproducible from the recorded commit, so the /tmp-receipt rule is met:
+  the card regenerates from `products` + judge + probe at the committed tree).
