@@ -7441,3 +7441,20 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   of the 121 GB unified pool, leaving 28.3 GB. And the measurement says filling more memory would
   not increase throughput for this model shape.
 - **What actually makes runs faster** is fewer steps (convergence), not a bigger batch.
+
+## DEC-547 — [FIX] unified-memory budgeting: use the pool, not the conservative driver number
+- **Defect (found by the operator's arithmetic).** `compute_budget` took
+  `min(available − floor, driver_free)`. On the GB10 the host and the device are ONE pool and the
+  driver reclaims page cache on demand; `mem_get_info` therefore reports a conservative figure.
+  Measured: a **40 GB** CUDA allocation succeeded while `mem_get_info` said **28 GB** free.
+  The budget was computing **9.76 GB** and refusing when it read 1.35 GB, while 46 GB was available.
+- **Fix.** Detect unified memory (`props.is_integrated`, or device pool ≈ host pool) and, only
+  there, budget from `available − system_floor − reserve`. Discrete GPUs keep the `min()`: there
+  the driver number IS the ceiling.
+- **Verified.** `cap 46.18 GB (0.380 of 121.63 GB) source=derived+unified avail=54.68 GB
+  driver_free=41.44 GB`. The registry records **43.58 GB** after the phase rebase — versus 9.76 GB
+  before. That matches the operator's expected ~48 GB.
+- **And the honest part.** The larger budget does NOT speed the run: measured throughput is flat
+  from batch 16 (46 samples/s) through 32 (41) to 64 (40). The model is **compute-bound** on this
+  shape; the card now *may* use 46 GB, but it does not *need* to. Fewer steps, not more VRAM, is
+  what shortens a run.

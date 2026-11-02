@@ -107,6 +107,7 @@ def compute_budget(
     limit_gb: float = 0.0,
     container_limit_gb: float = 0.0,
     container_used_gb: float = 0.0,
+    unified: bool = False,
 ) -> dict:
     """Pure budget arithmetic (no CUDA), so the policy is testable off-device.
 
@@ -126,9 +127,19 @@ def compute_budget(
     if limit_gb and float(limit_gb) > 0:
         budget, source = float(limit_gb), "explicit"
     else:
-        headroom = min(float(mem_available_gb) - float(system_floor_gb), float(driver_free_gb))
+        # UNIFIED memory (GB10): host RAM and device memory are ONE pool and the driver
+        # reclaims page cache on demand — measured: a 40 GB CUDA allocation succeeded while
+        # `mem_get_info` reported 28 GB free. Taking driver_free there undercounts the pool by
+        # ~20 GB and needlessly starves the device. On discrete memory the driver number is the
+        # real ceiling and the min() is correct.
+        if unified:
+            headroom = float(mem_available_gb) - float(system_floor_gb)
+            source = "derived+unified"
+        else:
+            headroom = min(float(mem_available_gb) - float(system_floor_gb), float(driver_free_gb))
+            source = "derived"
         budget = max(0.0, headroom - float(reserve_gb))
-        source = "derived"
+        source = source
     container_clamp = 0.0
     if container_limit_gb and float(container_limit_gb) > 0:
         limit = float(container_limit_gb)
@@ -208,6 +219,14 @@ def enforce(cfg, *, device: str | None = None, rebase: bool = False) -> dict:
             )
         idx = _device_index(torch, device)
         free, total = torch.cuda.mem_get_info(idx)
+        props = torch.cuda.get_device_properties(idx)
+        # unified detection: the device reports integrated, or its pool is the host's pool
+        import os as _os
+
+        host_total = (_os.sysconf("SC_PAGE_SIZE") * _os.sysconf("SC_PHYS_PAGES")) / _GB
+        unified = bool(getattr(props, "is_integrated", False)) or (
+            host_total > 0 and float(total) / _GB > 0.8 * host_total
+        )
         cg_limit, cg_used = cgroup_memory_gb()
         rec = compute_budget(
             mem_available_gb=available_gb(),
@@ -218,6 +237,7 @@ def enforce(cfg, *, device: str | None = None, rebase: bool = False) -> dict:
             limit_gb=float(getattr(cfg, "gpu_mem_limit_gb", 0.0)),
             container_limit_gb=cg_limit,
             container_used_gb=cg_used,
+            unified=unified,
         )
         if rec["fraction"] < _MIN_VIABLE_FRACTION:
             where = (
