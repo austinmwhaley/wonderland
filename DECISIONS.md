@@ -8464,3 +8464,11 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     through S4; B6 PASS only through S5; B2/B4/B5/B7/B8 UNKNOWN (missing producers or legacy
     receipts). This is the first card that will say *why* B is not certified, not just that a
     consumer leg is red.
+
+- **DEC-562 addendum (the card carries the numbers, not just the verdicts):** the renderer now
+  prints a `Measured values — every task on the card` table (leg, column, task, brain, PATH A,
+  delta, paired CI, random, destroyed, N, per-task verdict) from the receipts, so
+  `REPORT_CARD.md` is the complete measurement surface rather than a summary that sends the
+  reader into the JSON. The per-task gate is one function (`_task_passes`) shared by the leg
+  summary and the detail table; a task can PASS while its leg fails on another task, which is
+  exactly the attribution the reader needs. Same gates, same verdicts, no new PASS route.

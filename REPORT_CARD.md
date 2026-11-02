@@ -1,6 +1,6 @@
 # REPORT_CARD — PATH B > PATH A
 
-*Generated `2026-11-02T16:32:03+00:00` · commit `6aeb94f` (`foundation-rebuild` · clean) · encoder behavior `d0ac576c3c7aa069`*
+*Generated `2026-11-02T16:35:19+00:00` · commit `b02b8d2` (`foundation-rebuild` · dirty) · encoder behavior `d0ac576c3c7aa069`*
 
 **Assessment:** NOT DONE. Legs green: 2/8 · stages green: 5/6 · backward open: 0. This is a statement about receipts, not about effort; nothing here is a claim of universality (DEC-410: that word appears only when the coverage rows are green). B foundational: 0/8 sections green · 3 rows PASS · 1 FAIL · 16 UNKNOWN/MISSING (B-only; B+C is the judge).
 
@@ -101,6 +101,41 @@ Progress (`brain alone`) is a strict win. Delivery (`brain + ledger`) is a **non
 | rl | brain + ledger (DELIVERY, non-inferiority) | ✅ PASS | 2 task(s) beat PATH A; paired CI excludes 0; controls below brain |
 | simulator | brain alone (PROGRESS) | ❌ FAIL | argmax_optimum: does not beat PATH A with CI excluding 0; failing: argmax_optimum |
 | simulator | brain + ledger (DELIVERY, non-inferiority) | ❌ FAIL | argmax_optimum: outside the delivery non-inferiority margin (0.01 R2); failing: argmax_optimum |
+
+## Measured values — every task on the card
+
+The leg verdict above is computed from these rows; a task can PASS while its leg fails on another task. Every number below is read from the receipts, never narrated.
+
+| Leg | Column | Task | Brain | PATH A | Delta | CI | Random | Destroyed | N | Verdict |
+|---|---|---|---|---|---|---|---|---|---|---|
+| supervised | brain alone (PROGRESS) | x0 | 0.9463 | 0.8791 | +0.06718 | [0.000118, 0.000215] | -1554 | -1529 | 1485 | ✅ PASS |
+| supervised | brain alone (PROGRESS) | h0 | 0.9741 | 0.9708 | +0.003331 | [0.000501, 0.001914] | -15.53 | -15.18 | 1485 | ✅ PASS |
+| supervised | brain alone (PROGRESS) | price_sensitivity | 0.02063 | -0.06363 | +0.08426 | [0.002668, 0.005767] | -7.036 | -7.378 | 1485 | ✅ PASS |
+| supervised | brain alone (PROGRESS) | return_proneness | 0.4118 | 0.4879 | -0.07612 | [-0.000375, -0.000185] | -42.99 | -38.56 | 1485 | ❌ FAIL |
+| supervised | brain alone (PROGRESS) | churn_day | 0.3793 | -0.01375 | +0.393 | [6018, 8024] | -3588 | -3056 | 1485 | ✅ PASS |
+| supervised | brain alone (PROGRESS) | regime_switches | 0.1501 | -0.008355 | +0.1585 | [1.626, 2.954] | -330.8 | -318.6 | 1485 | ✅ PASS |
+| supervised | brain alone (PROGRESS) | final_regime_days | 0.003228 | -0.07448 | +0.07771 | [197.8, 454.1] | -0.01486 | -0.009254 | 1485 | ✅ PASS |
+| supervised | brain + ledger (DELIVERY, non-inferiority) | x0 | 0.9368 | 0.8791 | +0.05768 | [0.000104, 0.000173] | -1147 | -1239 | 1485 | ✅ PASS |
+| supervised | brain + ledger (DELIVERY, non-inferiority) | h0 | 0.9719 | 0.9708 | +0.00111 | [-0.000407, 0.001382] | -3.212 | -2.962 | 1485 | ✅ PASS |
+| supervised | brain + ledger (DELIVERY, non-inferiority) | price_sensitivity | -0.0798 | -0.06363 | -0.01617 | [-0.002806, 0.001198] | -0.0614 | -0.08624 | 1485 | ❌ FAIL |
+| supervised | brain + ledger (DELIVERY, non-inferiority) | return_proneness | 0.4689 | 0.4879 | -0.01903 | [-0.000146, 4e-06] | -0.1026 | -0.1078 | 1485 | ❌ FAIL |
+| supervised | brain + ledger (DELIVERY, non-inferiority) | churn_day | 0.2578 | -0.01375 | +0.2715 | [3617, 6088] | -2266 | -2273 | 1485 | ✅ PASS |
+| supervised | brain + ledger (DELIVERY, non-inferiority) | regime_switches | 0.0166 | -0.008355 | +0.02496 | [-0.4869, 1.2] | -196.2 | -183.9 | 1485 | ✅ PASS |
+| supervised | brain + ledger (DELIVERY, non-inferiority) | final_regime_days | -0.07093 | -0.07448 | +0.003557 | [-159.2, 188.2] | -0.1289 | -0.09549 | 1485 | ✅ PASS |
+| unsupervised | brain alone (PROGRESS) | persona_geometry | 0.06596 | 0.3867 | -0.3207 | [-0.3275, -0.3069] | 0.000598 | 0.00091 | 1.102e+06 | ❌ FAIL |
+| unsupervised | brain alone (PROGRESS) | future_geometry | 0.09095 | 0.181 | -0.09006 | [-0.09544, -0.08207] | 3.4e-05 | 0.000506 | 1.102e+06 | ❌ FAIL |
+| unsupervised | brain alone (PROGRESS) | segment_structure | -0.001097 | 0.2685 | -0.2696 | [-0.2964, -0.243] | 0.000108 | -0.001076 | 1485 | ❌ FAIL |
+| unsupervised | brain + ledger (DELIVERY, non-inferiority) | persona_geometry | 0.05732 | 0.3867 | -0.3293 | [-0.34, -0.3253] | 0.000501 | 0.000492 | 1.102e+06 | ❌ FAIL |
+| unsupervised | brain + ledger (DELIVERY, non-inferiority) | future_geometry | 0.08352 | 0.181 | -0.09749 | [-0.1024, -0.09381] | 1e-05 | 0.000304 | 1.102e+06 | ❌ FAIL |
+| unsupervised | brain + ledger (DELIVERY, non-inferiority) | segment_structure | -0.000616 | 0.2685 | -0.2691 | [-0.2948, -0.2428] | 0.000561 | 0.000573 | 1485 | ❌ FAIL |
+| rl | brain alone (PROGRESS) | known_effect_uplift | 0.2421 | 0.1794 | +0.06266 | [0.000937, 0.00255] | 0 | 0 | 1149 | ✅ PASS |
+| rl | brain alone (PROGRESS) | policy_value | 0.2486 | 0.2382 | +0.01034 | [0.004621, 0.01619] | 0.1788 | 0.1846 | 1149 | ✅ PASS |
+| rl | brain + ledger (DELIVERY, non-inferiority) | known_effect_uplift | 0.1766 | 0.1794 | -0.002855 | [-0.001061, 0.000996] | -0.09492 | -0.1009 | 1149 | ✅ PASS |
+| rl | brain + ledger (DELIVERY, non-inferiority) | policy_value | 0.24 | 0.2382 | +0.001801 | [-0.004613, 0.008883] | 0.1668 | 0.1677 | 1149 | ✅ PASS |
+| simulator | brain alone (PROGRESS) | dose_response_curve | 0.3164 | 0.3039 | +0.01246 | [7.5e-05, 0.000482] | 0 | 0 | 5000 | ✅ PASS |
+| simulator | brain alone (PROGRESS) | argmax_optimum | 0.2444 | 0.2418 | +0.002693 | [-0.02694, 0.03098] | 0.2444 | 0.2444 | 1485 | ❌ FAIL |
+| simulator | brain + ledger (DELIVERY, non-inferiority) | dose_response_curve | 0.3027 | 0.3039 | -0.001214 | [-0.000236, 0.000184] | -0.04729 | -0.05368 | 5000 | ✅ PASS |
+| simulator | brain + ledger (DELIVERY, non-inferiority) | argmax_optimum | 0.2444 | 0.2418 | +0.002693 | [-0.02694, 0.03098] | 0.2444 | 0.2444 | 1485 | ❌ FAIL |
 
 ## The stage ladder — what is broken when a leg is red
 
