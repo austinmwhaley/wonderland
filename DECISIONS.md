@@ -7759,3 +7759,50 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   pre-DINO checkpoint.
 - **Disposition:** run 4 proceeds exactly as pre-registered; the frozen bars are unchanged. This
   entry records the audit fact — it is not a verdict flip and requires no re-run.
+
+## DEC-552 — [FALSIFIED] DINO run 4: bar not met; dose-response flat; the geometry signal lives in the exact counter arm
+- **Run 4 (the DEC-550 dose run, safe_run/slice-conformant, LG_SCAN=eager, B=64, 800-step ceiling):**
+  EXIT=0, 54 min wall; slice peak 13.94 GiB (48 GiB ceiling — containment held); stable (no divergence,
+  no lr-collapse WARN). The governor stopped at **step 266 on patience (no_improve 4/4)**: the composite
+  val — which now INCLUDES the self-referential dino term — drifted monotonically 4.9286 (eval 1) →
+  5.0101 → 5.2155 → 5.4225 → 5.6301 → 5.8375 → 6.0438 (evals at 38/76/114/152/190/228/266).
+  `AT.govern` returns the LOWEST-LOSS state ever evaluated (strict), and the save path
+  (cfm_training.py:711) loads exactly that: **the judged products are the step-38 state** —
+  4,864 DINO views, teacher EMA at 86% of initialization (14% progress).
+- **Verdict (frozen DEC-550 bars, judge + probe):** persona-dist **0.149031** (bar ≥ 0.217; base
+  j_base800 0.1369; noise band 0.1295–0.1400 — at the band top, ~+2σ, the SAME magnitude as run 1's
+  0.1520); segment-ARI **−0.000158** (bar ≥ 0.095; base 0.0031); supervised guard CLEAN (worst
+  churn_day −0.0298; all other rows |Δ| < 0.01). → **geometry bar NOT MET → FALSIFIED** per the
+  pre-registered clause.
+- **Dose-response fact (the attribution that settles it):** run 1 delivered 8,512 views / 66% teacher
+  progress and scored 0.1520; run 4 delivered 4,864 views / 14% teacher progress and scored 0.1490.
+  The effect is FLAT across a 1.75× dose change and saturates at ~+2σ (≈ +0.012–0.017 vs base), while
+  the bar needs +0.080. More DINO dose at this mechanism is not the lever.
+- **Governor-selection flag (audit fact; pre-registered into the NEXT objective's protocol, not
+  retro-applied):** including a self-referential objective (student–teacher agreement on the val split,
+  teacher = EMA of the student) in the governor's val sum lets it poison best-state selection — here it
+  capped the realized dose at the first eval. Principle 2: "never select weights by the same
+  self-referential metric they optimize." For SwAV the pre-registration fixes the selection: the
+  governor's val sum EXCLUDES the self-referential objective's own term (the 11-objective portfolio
+  sum is the selection criterion; the new term contributes to training only).
+- **Probe attribution (four arms, judge protocol; served reproduces the judge exactly — 0.149/0.0988):**
+  | arm | dist-persona | dist-future | probe-persona R² | segment-ARI |
+  |---|---|---|---|---|
+  | served (composite) | 0.1490 | 0.0988 | 0.5847 | −0.0002 |
+  | trunk (shape h only) | 0.0112 | 0.0009 | 0.3179 | 0.0011 |
+  | mass (exact counter column) | **0.2162** | 0.1329 | 0.5258 | −0.0063 |
+  | PATH A (wide table) | 0.4038 | 0.1400 | 0.5869 | 0.3094 |
+  The DEC-549 entanglement diagnosis HOLDS after DINO: persona information is linearly decodable
+  (0.5847 ≈ PATH A 0.5869) yet the pairwise geometry does not carry it (ARI ≈ 0). New decisive fact:
+  **persona distance fidelity is concentrated in the EXACT counter arm (0.2162 — 99.6% of the frozen
+  DINO bar of 0.217)**; the trained shape side contributes 0.0112, and the served composite's blend
+  (shape + learned counter fold through the boundary) dilutes the mass arm's structure down to 0.149.
+  DINO pressured the composite but could not close the 0.068 gap to the mass arm at any realized dose.
+- **Disposition (pre-registered):** revert the DINO bundle (`cfm_model.py` DINO stack + the DINO hunks
+  in `cfm_training.py`; the `dino_*` config fields stay committed as inert defaults, the
+  `budget_steps` mechanism stays). Card/next axis: **SwAV prototypes** — Sinkhorn-balanced assignment
+  to k learned prototypes on the served composite; k derived from the measured parallel-analysis signal
+  rank (~15), NOT from the judged segment cardinality (teaching the encoder its exam answer would
+  violate the anti-overfit clause); the governor-selection exclusion above is part of the pre-registered
+  protocol; the frozen rung bars are unchanged (segment-ARI ≥ 0.095 OR persona-dist ≥ 0.217; supervised
+  guard > −0.03; probe-persona R² ≥ 0.40 collapse guard).
