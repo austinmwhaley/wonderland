@@ -27,6 +27,34 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 
+#: O0 ledger X-ray branches (DEC-569, pre-registered before the run; the card computes which
+#: fired from the receipt's arm numbers — a receipt may not define its own criterion).
+#: `best_ledger_arm` = argmax persona_geometry over the ledger arms (full, parts, block-PCAs).
+O0_BRANCH_READABLE = 0.30  # >= : the additive family is readable under the frozen consumer; the
+#  gap is B's serving contract (exposure), an L1 fix inside B.
+O0_BRANCH_PARTIAL = 0.15  # in [0.15, 0.30): partial; the non-additive residual matters,
+#  O3/O4 retrain territory.
+#  < 0.15: the additive family is insufficient under the frozen consumer; inspect PATH A's
+#  derived features (ratios/entropy/windows) as the O2 `U` task family.
+O0_BRANCH_LABELS = (
+    ("exposure", O0_BRANCH_READABLE, ">= .30: readable; the fix is inside B's serving contract"),
+    ("partial", O0_BRANCH_PARTIAL, ".15-.30: partial; O3/O4 retrain territory"),
+    (
+        "insufficient",
+        0.0,
+        "< .15: additive family insufficient; PATH A's derived features are the task family",
+    ),
+)
+
+
+def o0_branch(persona: float) -> str:
+    """Which DEC-569 branch a ledger-arm persona score falls into (one definition)."""
+    for label, floor, _why in O0_BRANCH_LABELS:
+        if persona >= floor:
+            return label
+    return O0_BRANCH_LABELS[-1][0]
+
+
 @dataclass(frozen=True)
 class Section:
     ident: str
@@ -45,6 +73,22 @@ class BRow:
     source: tuple[str, str] | None = None
     thresh: float = 0.0
     producer: str = ""
+
+
+#: The B capability top line (O8 sprint; DEC-568/D2): one axis per capability, each derived from
+#: the B rows that own it. The card renders the axis verdict as the WORST of its rows (FAIL if
+#: any row FAILs, PASS only when every row PASSes, else UNKNOWN), so the top line can never say
+#: "done" while a detail row is red, and can never be improved by narration. B+C stays a reported
+#: consequence section, never a top-line axis.
+CAPABILITY_AXES = (
+    ("U · sufficiency", ("B2.1",)),
+    ("shape-only geometry", ("B3.2",)),
+    ("decision-shape", ("B4.1",)),
+    ("minimality rank", ("B5.1",)),
+    ("transfer", ("B6.1", "B6.3")),
+    ("robust", ("B7.1", "B7.2")),
+    ("reproducible", ("B8.1", "B8.2")),
+)
 
 
 SECTIONS = (
@@ -159,6 +203,18 @@ ROWS = (
         "equal_dimension",
         ("encoder_block_serving.json", "equal_dimension.complete"),
         producer="measure_block_serving.py",
+    ),
+    BRow(
+        "B3",
+        "B3.6",
+        "Served-object X-ray (ledger exposure)",
+        "the ledger alone, its named parts, and ledger block-PCA under the frozen B3.2/B3.4 "
+        "consumers, against {exact counter, served shape, PATH A}; the branch is computed here "
+        "from the arm numbers (DEC-569)",
+        "complete + branch decided",
+        "served_object",
+        ("encoder_served_object.json", "complete"),
+        producer="measure_served_object.py",
     ),
     # ---- B4: decisive -----------------------------------------------------------
     BRow(

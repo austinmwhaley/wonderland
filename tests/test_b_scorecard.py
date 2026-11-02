@@ -14,6 +14,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
+import b_spec as B  # noqa: E402
 import judge_spec as J  # noqa: E402
 import report_card as RC  # noqa: E402
 
@@ -173,3 +174,123 @@ def test_equal_dimension_receipt_can_pass_and_carries_the_blocks(tmp_path):
     md, info = RC.render(tmp_path, HASH)
     assert info["b_verdicts"]["B3.5"] == J.PASS
     assert "equal_39 0.1721" in md
+
+
+def _served_object_body(persona_by_arm: dict, h: str = HASH, complete: bool = True) -> dict:
+    arms = {
+        n: {"persona_geometry": p, "future_geometry": None if p is None else p - 0.01}
+        for n, p in persona_by_arm.items()
+    }
+    return {
+        "_meta": _meta(h),
+        "complete": complete,
+        "ledger_arms": [
+            n for n in persona_by_arm if n != "path_a" and "counter" not in n and "shape" not in n
+        ],
+        "reference_arms": ["exact_counter", "shape_served", "path_a"],
+        "arms": arms,
+        "linear_access": {
+            "complete": True,
+            "arms": {n: {"mean_r2": 0.1, "n_fields": 11} for n in persona_by_arm},
+        },
+    }
+
+
+def test_served_object_receipt_passes_and_computes_the_branch(tmp_path):
+    body = _served_object_body(
+        {
+            "ledger_full": 0.0573,
+            "part_category_share": 0.0210,
+            "part_numeric_stats": 0.3120,
+            "ledger_pca_39": 0.1800,
+            "ledger_pca_128": 0.2400,
+            "exact_counter": 0.1893,
+            "shape_served": 0.0660,
+            "path_a": 0.3867,
+        }
+    )
+    _write(tmp_path, "encoder_served_object.json", body)
+    md, info = RC.render(tmp_path, HASH)
+    assert info["b_verdicts"]["B3.6"] == J.PASS
+    # the branch is computed from the arms, not trusted from the receipt: best ledger arm is
+    # part_numeric_stats at 0.312 >= 0.30 -> exposure
+    assert "branch exposure" in md
+    assert "part_numeric_stats" in md
+
+
+def test_served_object_branch_partial_when_best_arm_is_between_the_floors(tmp_path):
+    body = _served_object_body(
+        {
+            "ledger_full": 0.1000,
+            "part_category_share": 0.0500,
+            "ledger_pca_39": 0.1600,
+            "ledger_pca_128": 0.2200,
+            "exact_counter": 0.1893,
+            "shape_served": 0.0660,
+            "path_a": 0.3867,
+        }
+    )
+    _write(tmp_path, "encoder_served_object.json", body)
+    md, info = RC.render(tmp_path, HASH)
+    assert info["b_verdicts"]["B3.6"] == J.PASS
+    assert "branch partial" in md
+    assert "ledger_pca_128" in md
+
+
+def test_served_object_branch_insufficient_when_no_ledger_arm_reaches_0_15(tmp_path):
+    body = _served_object_body(
+        {
+            "ledger_full": 0.0573,
+            "part_numeric_stats": 0.1200,
+            "ledger_pca_128": 0.0900,
+            "exact_counter": 0.1893,
+            "shape_served": 0.0660,
+            "path_a": 0.3867,
+        }
+    )
+    _write(tmp_path, "encoder_served_object.json", body)
+    md, info = RC.render(tmp_path, HASH)
+    assert info["b_verdicts"]["B3.6"] == J.PASS
+    assert "branch insufficient" in md
+
+
+def test_an_incomplete_served_object_is_not_pass(tmp_path):
+    body = _served_object_body({"ledger_full": 0.2, "path_a": 0.3867}, complete=False)
+    _write(tmp_path, "encoder_served_object.json", body)
+    _, info = RC.render(tmp_path, HASH)
+    assert info["b_verdicts"]["B3.6"] == J.FAIL
+
+
+def test_a_stale_served_object_is_unknown(tmp_path):
+    body = _served_object_body(
+        {"ledger_full": 0.4, "exact_counter": 0.1893, "shape_served": 0.0660, "path_a": 0.3867},
+        h="oldhash",
+    )
+    _write(tmp_path, "encoder_served_object.json", body)
+    _, info = RC.render(tmp_path, HASH)
+    assert info["b_verdicts"]["B3.6"] == J.UNKNOWN
+
+
+def test_served_object_without_any_finite_ledger_arm_is_unknown(tmp_path):
+    body = _served_object_body(
+        {"ledger_full": None, "part_numeric_stats": None, "path_a": 0.3867},
+    )
+    body["arms"] = {
+        n: {"persona_geometry": p, "future_geometry": None} for n, p in body["arms"].items()
+    }
+    _write(tmp_path, "encoder_served_object.json", body)
+    _, info = RC.render(tmp_path, HASH)
+    assert info["b_verdicts"]["B3.6"] == J.UNKNOWN
+
+
+def test_capability_top_line_is_derived_from_the_b_rows(tmp_path):
+    # no receipts at all: every axis UNKNOWN, and the table is present with the frozen axes
+    md, info = RC.render(tmp_path, HASH)
+    assert "B capability — top line" in md
+    assert info["cap_verdicts"]["U · sufficiency"] == J.UNKNOWN
+    assert info["cap_verdicts"]["shape-only geometry"] == J.UNKNOWN
+    assert info["cap_all_green"] is False
+    assert "measure_sufficiency_law.py" in md
+    # the top line must list every frozen axis from b_spec
+    for axis, _ in B.CAPABILITY_AXES:
+        assert axis in info["cap_verdicts"]

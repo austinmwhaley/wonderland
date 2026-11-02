@@ -62,6 +62,7 @@ DEFAULT_PATTERNS = (  # principle-ok: process identities, not tuning constants
     "measure_rank_attainability.py",
     "measure_regime_readout.py",
     "measure_response.py",
+    "measure_served_object.py",
     "measure_rl_v2.py",
     "measure_runtime.py",
     "measure_testbed_power.py",

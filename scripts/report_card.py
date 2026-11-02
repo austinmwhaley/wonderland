@@ -312,6 +312,45 @@ def _eval_b_row(receipts: Path, row: B.BRow, current_hash: str) -> tuple[str, st
             f"{em('counter_tile_39', 'future_geometry')} / PATH A "
             f"{em('path_a', 'future_geometry')}",
         )
+    if row.kind == "served_object":
+        note = _meta_problem(rc, current_hash)
+        if note:
+            return J.UNKNOWN, note
+        if not rc.get("complete"):
+            return J.FAIL, f"{name}: served-object X-ray incomplete"
+        arms = rc.get("arms") or {}
+        ledger_names = rc.get("ledger_arms") or []
+        scored = {
+            n: (arms.get(n) or {}).get("persona_geometry")
+            for n in ledger_names
+            if _finite((arms.get(n) or {}).get("persona_geometry"))
+        }
+        if not scored:
+            return J.UNKNOWN, f"{name}: no ledger arm scored a finite persona geometry"
+        best = max(sorted(scored), key=lambda n: scored[n])
+        branch = B.o0_branch(scored[best])
+        la = (rc.get("linear_access") or {}).get("arms") or {}
+
+        def am(arm: str, metric: str) -> str:
+            return _num((arms.get(arm) or {}).get(metric))
+
+        def ra(arm: str) -> str:
+            return _num((la.get(arm) or {}).get("mean_r2"))
+
+        return (
+            J.PASS,
+            "complete · branch "
+            f"{branch} (DEC-569: best ledger arm persona "
+            f"{am(best, 'persona_geometry')} from {best}; "
+            f"full {am('ledger_full', 'persona_geometry')} / "
+            f"pca_39 {am('ledger_pca_39', 'persona_geometry')} / "
+            f"pca_128 {am('ledger_pca_128', 'persona_geometry')}) · "
+            f"references persona counter {am('exact_counter', 'persona_geometry')} / "
+            f"shape {am('shape_served', 'persona_geometry')} / PATH A "
+            f"{am('path_a', 'persona_geometry')} · "
+            f"linear access ledger_full {ra('ledger_full')} / counter {ra('exact_counter')} / "
+            f"shape {ra('shape_served')} / PATH A {ra('path_a')}",
+        )
     if row.kind == "legacy":
         return J.UNKNOWN, f"legacy receipt {name} (no behavior stamp); re-run {row.producer}"
     note = _meta_problem(rc, current_hash)
@@ -737,11 +776,13 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
     # its gate; a legacy or missing receipt is UNKNOWN and names the producer that must run.
     b_lines: list[str] = []
     b_verdicts: dict[str, str] = {}
+    b_evals: dict[str, tuple[str, str]] = {}
     b_summary = {"pass": 0, "fail": 0, "unknown": 0, "missing": 0}
     b_sections: dict[str, str] = {}
     for sec in B.SECTIONS:
         rows = [r for r in B.ROWS if r.section == sec.ident]
         evals = {r.ident: _eval_b_row(receipts, r, current_hash) for r in rows}
+        b_evals.update(evals)
         vs = [v for v, _ in evals.values()]
         if any(v == J.FAIL for v in vs):
             sec_v = J.FAIL
@@ -775,6 +816,29 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
                 f"| {row.ident} | {row.name} | {row.metric} | {_badge(verdict)} | {why} |"
             )
         b_lines.append("")
+    # ---- B capability top line (O8 sprint; DEC-568/D2) -------------------------
+    # The sprint's unit of progress is one capability delta on these axes. Each axis is the
+    # WORST verdict of the B rows that own it, so the top line is a pure function of the rows
+    # below it: it can never say "done" while a detail row is red, and it cannot be narrated
+    # green. B+C stays a consequence section — reported, never gated here.
+    cap_lines = [
+        "| Capability | B rows | Verdict | Headline |",
+        "|---|---|---|---|",
+    ]
+    cap_verdicts: dict[str, str] = {}
+    for axis, idents in B.CAPABILITY_AXES:
+        vs = [b_evals.get(i, (J.UNKNOWN, ""))[0] for i in idents]
+        if J.FAIL in vs:
+            axis_v = J.FAIL
+        elif all(v == J.PASS for v in vs):
+            axis_v = J.PASS
+        else:
+            axis_v = J.UNKNOWN
+        cap_verdicts[axis] = axis_v
+        head = b_evals.get(idents[0], (J.UNKNOWN, "no B row evaluated"))[1]
+        cap_lines.append(f"| {axis} | {', '.join(idents)} | {_badge(axis_v)} | {str(head)[:120]} |")
+    cap_verdicts_all = all(v == J.PASS for v in cap_verdicts.values())
+
     b_green_n = sum(1 for v in b_sections.values() if v == J.PASS)
     b_all_green = b_green_n == len(B.SECTIONS)
     legs_green_n = sum(1 for r in J.LEG_ROWS if verdicts[r.ident] == J.PASS)
@@ -833,6 +897,14 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
             "The verdict is a pure function of the receipts under `docs/report_cards/experiments/`.",
             "Ledger points never count as progress: `brain alone` is the judge, `brain + ledger` is delivery.",
             "",
+            "## B capability — top line (O8 sprint; DEC-568/D2)",
+            "",
+            "The sprint's unit of progress is one capability delta on these axes. Each axis is the "
+            "worst verdict of the B rows that own it, computed from the receipts below — B+C "
+            "remains the reported consequence section, never a top-line axis.",
+            "",
+            *cap_lines,
+            "",
             "## B — foundational scorecard (B-only, DEC-562)",
             "",
             "The judge below is the **consequence** (B+C). This section is **B itself**: a row is "
@@ -889,6 +961,8 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
         "verdicts": verdicts,
         "b_verdicts": b_verdicts,
         "b_sections": b_sections,
+        "cap_verdicts": cap_verdicts,
+        "cap_all_green": cap_verdicts_all,
     }
 
 
