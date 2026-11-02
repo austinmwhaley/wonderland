@@ -106,6 +106,11 @@ def _finite(x) -> bool:
     return isinstance(x, (int, float)) and not isinstance(x, bool) and math.isfinite(x)
 
 
+def _num(x) -> str:
+    """Compact number for the card's detail table; a missing/non-finite value is an em dash."""
+    return f"{float(x):.4g}" if _finite(x) else "—"
+
+
 def _meta_problem(receipt, current_hash: str, bhash_key: str = "behavior_hash") -> str | None:
     """Why this receipt cannot be trusted as fresh/current, or None if it can."""
     if receipt is None:
@@ -249,6 +254,38 @@ def _stage_why(val: dict) -> str:
     return str(val.get("evidence", ""))[:140]
 
 
+def _task_passes(t: dict, delivery: bool) -> bool:
+    """The per-task gate. One definition, shared by the leg summary and the detail table."""
+    if not delivery:
+        return bool(t["ci_lo"] > 0 and t["brain"] > t["pathA"])
+    sst = t.get("sst")
+    margin = (
+        J.DELIVERY_MARGIN_R2 * float(sst)
+        if isinstance(sst, (int, float)) and float(sst) > 0
+        else J.DELIVERY_MARGIN_RAW
+    )
+    point_margin = (
+        J.DELIVERY_MARGIN_R2
+        if isinstance(sst, (int, float)) and float(sst) > 0
+        else J.DELIVERY_MARGIN_RAW
+    )
+    return bool(t["brain"] >= t["pathA"] - point_margin and t["ci_lo"] >= -margin)
+
+
+def _task_verdict(t: dict, delivery: bool) -> str:
+    """Per-task verdict for the detail table; UNKNOWN for a malformed row, never PASS."""
+    if t.get("degenerate"):
+        return J.EXCLUDED
+    if not all(_finite(t.get(f)) for f in ("brain", "pathA", "ci_lo", "ci_hi", "n")):
+        return J.UNKNOWN
+    for ctl in ("random", "destroyed"):
+        if ctl not in t or not _finite(t[ctl]):
+            return J.UNKNOWN
+        if t[ctl] > t["brain"]:
+            return J.FAIL
+    return J.PASS if _task_passes(t, delivery) else J.FAIL
+
+
 def eval_tasks(tasks, bhash_note: str | None, delivery: bool = False) -> tuple[str, str, list]:
     """Return (verdict, reason, per-task notes) for one leg column's task list.
 
@@ -259,22 +296,6 @@ def eval_tasks(tasks, bhash_note: str | None, delivery: bool = False) -> tuple[s
         return J.UNKNOWN, bhash_note, []
     if not isinstance(tasks, list) or not tasks:
         return J.UNKNOWN, "no tasks recorded in this column", []
-
-    def _passes(t: dict) -> bool:
-        if not delivery:
-            return bool(t["ci_lo"] > 0 and t["brain"] > t["pathA"])
-        sst = t.get("sst")
-        margin = (
-            J.DELIVERY_MARGIN_R2 * float(sst)
-            if isinstance(sst, (int, float)) and float(sst) > 0
-            else J.DELIVERY_MARGIN_RAW
-        )
-        point_margin = (
-            J.DELIVERY_MARGIN_R2
-            if isinstance(sst, (int, float)) and float(sst) > 0
-            else J.DELIVERY_MARGIN_RAW
-        )
-        return bool(t["brain"] >= t["pathA"] - point_margin and t["ci_lo"] >= -margin)
 
     notes, live, failures = [], [], []
     for t in tasks:
@@ -321,7 +342,7 @@ def eval_tasks(tasks, bhash_note: str | None, delivery: bool = False) -> tuple[s
                 f"(random {t['random']:.4g}, destroyed {t['destroyed']:.4g}); beating them is "
                 f"not evidence of signal"
             )
-        if not control_fail and not _passes(t):
+        if not control_fail and not _task_passes(t, delivery):
             gate = (
                 f"outside the delivery non-inferiority margin ({J.DELIVERY_MARGIN_R2:g} R2)"
                 if delivery
@@ -478,6 +499,7 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
     stages_rc = load(receipts, "judge_stages.json")
     mix = _artifact_mismatch(receipts, stages_rc)
     judge_lines, verdicts = [], {}
+    detail_lines: list[str] = []
     judge_lines += [
         "| Leg | Column | Verdict | Evidence |",
         "|---|---|---|---|",
@@ -499,6 +521,27 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
         verdicts[row.ident] = verdict
         judge_lines.append(
             f"| {row.leg} | {J.COLUMN_LABEL[row.column]} | {_badge(verdict)} | {why} |"
+        )
+        if isinstance(tasks, list):
+            delivery = row.column == "brain_ledger"
+            for t in tasks:
+                name = str(t.get("name", "?"))
+                brain, path_a = t.get("brain"), t.get("pathA")
+                delta = (
+                    f"{float(brain) - float(path_a):+.4g}"
+                    if _finite(brain) and _finite(path_a)
+                    else "—"
+                )
+                detail_lines.append(
+                    f"| {row.leg} | {J.COLUMN_LABEL[row.column]} | {name} | "
+                    f"{_num(brain)} | {_num(path_a)} | {delta} | "
+                    f"[{_num(t.get('ci_lo'))}, {_num(t.get('ci_hi'))}] | "
+                    f"{_num(t.get('random'))} | {_num(t.get('destroyed'))} | "
+                    f"{_num(t.get('n'))} | {_badge(_task_verdict(t, delivery))} |"
+                )
+    if not detail_lines:
+        detail_lines.append(
+            "| — | — | no task rows (receipts missing or stale) | — | — | — | — | — | — | — | ❔ UNKNOWN |"
         )
 
     # ---- stage ladder -----------------------------------------------------------
@@ -684,6 +727,15 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
             "tie is not a brain win.",
             "",
             *judge_lines,
+            "",
+            "## Measured values — every task on the card",
+            "",
+            "The leg verdict above is computed from these rows; a task can PASS while its leg fails "
+            "on another task. Every number below is read from the receipts, never narrated.",
+            "",
+            "| Leg | Column | Task | Brain | PATH A | Delta | CI | Random | Destroyed | N | Verdict |",
+            "|---|---|---|---|---|---|---|---|---|---|---|",
+            *detail_lines,
             "",
             "## The stage ladder — what is broken when a leg is red",
             "",
