@@ -624,24 +624,8 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
             )
 
     # ---- verdict rollup ---------------------------------------------------------
-    legs_green = all(verdicts[r.ident] == J.PASS for r in J.LEG_ROWS)
-    stages_green = all(verdicts[s.ident] == J.PASS for s in J.STAGE_ROWS)
-    if legs_green and stages_green and not open_blocking:
-        assessment = (
-            "ENCODER DONE (v1): all four legs PASS in both columns, every stage is working by "
-            "receipt, and no BREAKING/MAJOR backward or principle requirement is open. Capacity certification "
-            "(k_min) is reported separately below."
-        )
-    else:
-        assessment = (
-            f"NOT DONE. Legs green: {sum(1 for r in J.LEG_ROWS if verdicts[r.ident] == J.PASS)}"
-            f"/{len(J.LEG_ROWS)} · stages green: "
-            f"{sum(1 for s in J.STAGE_ROWS if verdicts[s.ident] == J.PASS)}/{len(J.STAGE_ROWS)}"
-            f" · backward open: {len(open_blocking)}. "
-            "This is a statement about receipts, not about effort; nothing here is a claim of "
-            "universality (DEC-410: that word appears only when the coverage rows are green)."
-        )
-
+    # B is evaluated below; the three scope lines are built there so the top-line cannot say
+    # "done" while B is uncertified (DEC-563).
     for r in open_blocking:
         blocked.append(f"backward {r.get('id', '?')} — {r.get('finding', '')}")
     summary["backward_open"] = len(open_blocking)
@@ -690,25 +674,60 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
                 f"| {row.ident} | {row.name} | {row.metric} | {_badge(verdict)} | {why} |"
             )
         b_lines.append("")
-    b_green = sum(1 for v in b_sections.values() if v == J.PASS)
-    b_line = (
-        f"B foundational: {b_green}/{len(B.SECTIONS)} sections green · "
-        f"{b_summary['pass']} rows PASS · {b_summary['fail']} FAIL · "
-        f"{b_summary['unknown']} UNKNOWN/MISSING (B-only; B+C is the judge)."
+    b_green_n = sum(1 for v in b_sections.values() if v == J.PASS)
+    b_all_green = b_green_n == len(B.SECTIONS)
+    legs_green_n = sum(1 for r in J.LEG_ROWS if verdicts[r.ident] == J.PASS)
+    stages_green_n = sum(1 for s in J.STAGE_ROWS if verdicts[s.ident] == J.PASS)
+    legs_all = legs_green_n == len(J.LEG_ROWS)
+    stages_all = stages_green_n == len(J.STAGE_ROWS)
+
+    if b_all_green:
+        b_scope = (
+            f"✅ **B foundational:** CERTIFIED — {b_green_n}/{len(B.SECTIONS)} sections green."
+        )
+    else:
+        b_scope = (
+            f"❌ **B foundational:** NOT CERTIFIED — the current gate. "
+            f"{b_green_n}/{len(B.SECTIONS)} sections green · {b_summary['pass']} rows PASS · "
+            f"{b_summary['fail']} FAIL · {b_summary['unknown']} UNKNOWN/MISSING."
+        )
+    if legs_all and stages_all and not open_blocking:
+        c_scope = (
+            f"✅ **B+C consequence:** DONE (ENCODER DONE v1) — {legs_green_n}/{len(J.LEG_ROWS)} "
+            f"legs green · stages {stages_green_n}/{len(J.STAGE_ROWS)} · no BREAKING/MAJOR "
+            "backward requirement."
+        )
+    else:
+        c_scope = (
+            f"❌ **B+C consequence:** NOT DONE — {legs_green_n}/{len(J.LEG_ROWS)} legs green · "
+            f"stages {stages_green_n}/{len(J.STAGE_ROWS)} · backward open: {len(open_blocking)}. "
+            "Reported for diagnosis; downstream of B."
+        )
+    p_scope = "⚪ **Project v1:** not assessed on this card (full stack is a separate scope)."
+    assessment_lines = [b_scope, c_scope, p_scope]
+    assessment = " | ".join(
+        line.replace("**", "").replace("✅ ", "").replace("❌ ", "").replace("⚪ ", "")
+        for line in assessment_lines
     )
-    assessment = f"{assessment} {b_line}"
-    summary["b"] = dict(b_summary, sections_green=b_green, sections_total=len(B.SECTIONS))
+    summary["b"] = dict(
+        b_summary,
+        sections_green=b_green_n,
+        sections_total=len(B.SECTIONS),
+        all_green=b_all_green,
+    )
 
     md = "\n".join(
         [
-            "# REPORT_CARD — PATH B > PATH A",
+            "# REPORT_CARD — B foundational, then PATH B > PATH A",
             "",
             f"*Generated `{generated}` · commit `{git('rev-parse', '--short', 'HEAD')}` "
             f"(`{git('rev-parse', '--abbrev-ref', 'HEAD')}`"
             f"{' · dirty' if _worktree_dirty(git('status', '--porcelain')) else ' · clean'}) "
             f"· encoder behavior `{current_hash}`*",
             "",
-            f"**Assessment:** {assessment}",
+            "**Assessment:**",
+            "",
+            *[f"- {line}" for line in assessment_lines],
             "",
             "The verdict is a pure function of the receipts under `docs/report_cards/experiments/`.",
             "Ledger points never count as progress: `brain alone` is the judge, `brain + ledger` is delivery.",

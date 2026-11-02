@@ -267,15 +267,8 @@ def test_assessment_never_claims_done_without_green_rows(tmp_path):
     assert "universal" not in info["assessment"].lower().replace("universality", "")
 
 
-def test_assessment_claims_done_only_when_everything_is_green(tmp_path):
-    for leg in J.LEGS:
-        _write(tmp_path, f"judge_leg_{leg}.json", _good())
-    _write(
-        tmp_path,
-        "judge_stages.json",
-        dict({"_meta": _meta(), **_stage_blocks()}),
-    )
-    _write(tmp_path, "env_receipt.json", {"torch": {"matmul_smoke": {"ok": True}}})
+def test_assessment_claims_done_only_when_everything_is_green(tmp_path, monkeypatch):
+    _all_green(tmp_path, monkeypatch)
     _, info = RC.render(tmp_path, HASH)
     assert "ENCODER DONE" in info["assessment"]
 
@@ -383,16 +376,38 @@ def test_an_empty_porcelain_means_clean_not_dirty():
     assert RC._worktree_dirty("?? notes.md") is True
 
 
-def _all_green(tmp_path):
+def _b_green(monkeypatch):
+    """A minimal B scorecard that is green, so the top-line can be exercised.
+
+    The real B spec has 20 rows and most are still missing/legacy; the done-path test only needs
+    one current stage row, because the gate logic is "all sections PASS", not a count of 20.
+    """
+    sec = RC.B.Section("B1", "Lawful", "test")
+    row = RC.B.BRow(
+        "B1",
+        "B1.1",
+        "test law",
+        "working=True",
+        "working=True",
+        "stage",
+        ("judge_stages.json", "S3"),
+        producer="measure_dynamics_law.py",
+    )
+    monkeypatch.setattr(RC.B, "SECTIONS", (sec,))
+    monkeypatch.setattr(RC.B, "ROWS", (row,))
+
+
+def _all_green(tmp_path, monkeypatch):
     for leg in J.LEGS:
         _write(tmp_path, f"judge_leg_{leg}.json", _good())
     _write(tmp_path, "judge_stages.json", dict({"_meta": _meta(), **_stage_blocks()}))
     _write(tmp_path, "env_receipt.json", {"torch": {"matmul_smoke": {"ok": True}}})
+    _b_green(monkeypatch)
 
 
 def test_an_open_breaking_backward_requirement_blocks_done(tmp_path, monkeypatch):
     """DEC-497: BACKWARD findings are card requirements, not prose beside the card."""
-    _all_green(tmp_path)
+    _all_green(tmp_path, monkeypatch)
     req = tmp_path / "AUDIT.md"
     req.write_text(
         "<!-- BACKWARD_REQUIREMENTS_JSON\n"
@@ -423,7 +438,7 @@ def test_an_open_breaking_backward_requirement_blocks_done(tmp_path, monkeypatch
 
 
 def test_a_closed_backward_requirement_does_not_block_done(tmp_path, monkeypatch):
-    _all_green(tmp_path)
+    _all_green(tmp_path, monkeypatch)
     req = tmp_path / "AUDIT.md"
     req.write_text(
         "<!-- BACKWARD_REQUIREMENTS_JSON\n"
@@ -449,7 +464,7 @@ def test_a_closed_backward_requirement_does_not_block_done(tmp_path, monkeypatch
 
 
 def test_an_unreadable_backward_file_is_breaking_not_empty(tmp_path, monkeypatch):
-    _all_green(tmp_path)
+    _all_green(tmp_path, monkeypatch)
     req = tmp_path / "AUDIT.md"
     req.write_text("<!-- BACKWARD_REQUIREMENTS_JSON\n{not json\n-->\n")
     monkeypatch.setattr(RC, "AUDIT_MD", req)

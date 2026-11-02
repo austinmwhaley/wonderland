@@ -2,8 +2,8 @@
 
 *Live state only. **Measurement lives ONLY in `REPORT_CARD.md`** — the single card. This file is
 state, blockers and next actions; history is `DECISIONS.md`; BACKWARD requirements are `AUDIT.md`
-(requirements only, never a measurement card). Rewritten 2026-11-02 (DEC-562: the B scorecard is
-now the first section of the one card; project maximum 32 GB).*
+(requirements only, never a measurement card). Rewritten 2026-11-02 (DEC-562/563: B is the first
+section and the first gate; B+C is the consequence; project v1 is a later scope; 32 GB max).*
 
 ## Macro
 
@@ -51,15 +51,17 @@ remains open and is now a B-measurement question (B2/B3), not a consumer-tuning 
 
 ## Next 3 actions
 
-1. **Finish and commit the one-card B section (DEC-562).** Render `REPORT_CARD.md`, verify every
-   missing/legacy B row is UNKNOWN with a named producer, run the targeted tests + ruff + fast
-   tier, and commit. After this, no measurement is read from STATUS or a second card.
-2. **Run the missing B producers in cheapest-first order, one axis per run, pre-registered:**
-   B3.2 stage decomposition (M0→M1→served), B4.1 B-only decision, B2.1 worst-case sufficiency `U`,
-   B5.1 minimality, B7.2 robustness, B6.3 broad transfer. Each writes a source receipt; the card
-   renders it. Do not create a new card.
-3. **Chain v4** (one invocation, 32 GB cap) to complete S6 and the full re-stamp; then
-   **DEC-563** trunk/state front (the old DEC-562 slot) and BACKWARD only when the card is green.
+1. **B FIRST — run the missing B producers, one axis per run, pre-registered:** B3.2 stage
+   decomposition (M0→M1→served), B4.1 B-only decision, B2.1 worst-case sufficiency `U`, B5.1
+   minimality, B7.2 robustness, B6.3 broad transfer, plus the legacy re-runs (B1.2/B3.3/B4.2/
+   B5.2/B6.2/B7.1/B8.1). Each writes a source receipt; the one card renders it. B is the gate;
+   do not start B+C work while B is uncertified.
+2. **B+C SECOND — after B is certified:** run chain v4 (one invocation, 32 GB cap) for S6/B8 and
+   the full re-stamp, then close the remaining B+C reds (supervised, unsupervised, simulator).
+   B+C is the consequence, not the current claim.
+3. **PROJECT v1 THIRD — after B+C:** the full stack (rabbit_hole causal stream, every plugin gate,
+   red_king/red_queen/white_queen, caterpillar, live randomized holdout). The trunk/state modeling
+   axis is **DEC-564**; BACKWARD runs only when the card is all green.
 
 ## Operating facts
 
@@ -76,5 +78,5 @@ remains open and is now a B-measurement question (B2/B3), not a consumer-tuning 
 
 ## Open operator decisions
 
-None pending. The queue is pre-registered: B scorecard + missing B producers → chain v4 →
-DEC-563 trunk/state → BACKWARD at all-green. Standing: push requires explicit permission.
+None pending. The queue is pre-registered: B producers → B+C (chain v4 + remaining reds) →
+project v1 / DEC-564 trunk/state → BACKWARD at all-green. Standing: push requires explicit permission.

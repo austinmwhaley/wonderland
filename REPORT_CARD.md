@@ -1,8 +1,12 @@
-# REPORT_CARD — PATH B > PATH A
+# REPORT_CARD — B foundational, then PATH B > PATH A
 
-*Generated `2026-11-02T16:35:19+00:00` · commit `b02b8d2` (`foundation-rebuild` · dirty) · encoder behavior `d0ac576c3c7aa069`*
+*Generated `2026-11-02T16:43:38+00:00` · commit `496eb52` (`foundation-rebuild` · dirty) · encoder behavior `d0ac576c3c7aa069`*
 
-**Assessment:** NOT DONE. Legs green: 2/8 · stages green: 5/6 · backward open: 0. This is a statement about receipts, not about effort; nothing here is a claim of universality (DEC-410: that word appears only when the coverage rows are green). B foundational: 0/8 sections green · 3 rows PASS · 1 FAIL · 16 UNKNOWN/MISSING (B-only; B+C is the judge).
+**Assessment:**
+
+- ❌ **B foundational:** NOT CERTIFIED — the current gate. 0/8 sections green · 3 rows PASS · 1 FAIL · 16 UNKNOWN/MISSING.
+- ❌ **B+C consequence:** NOT DONE — 2/8 legs green · stages 5/6 · backward open: 0. Reported for diagnosis; downstream of B.
+- ⚪ **Project v1:** not assessed on this card (full stack is a separate scope).
 
 The verdict is a pure function of the receipts under `docs/report_cards/experiments/`.
 Ledger points never count as progress: `brain alone` is the judge, `brain + ledger` is delivery.

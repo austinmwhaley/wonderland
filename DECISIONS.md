@@ -8472,3 +8472,26 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   reader into the JSON. The per-task gate is one function (`_task_passes`) shared by the leg
   summary and the detail table; a task can PASS while its leg fails on another task, which is
   exactly the attribution the reader needs. Same gates, same verdicts, no new PASS route.
+
+- **DEC-563 (three scopes, distinct and ordered: B foundational -> B+C consequence -> project v1):**
+  - **Operator directive, 2026-11-02:** "What I care about right now is B and B+C. Yes the 3
+    scopes should be distinct. and we should care about solving just B first and then B+C and
+    then etc."
+  - **Decision.** The ONE card reports three scopes in this order:
+    1. **B foundational** (B1-B8) - the current gate. `ENCODER DONE` may not be printed while
+       any B section is not green.
+    2. **B+C consequence** (the eight judge legs) - measured and visible, but explicitly
+       downstream of B and not the current claim while B is uncertified.
+    3. **Project v1** - declared out of scope on this card; it requires the full stack
+       (rabbit_hole causal stream, every plugin gate, red_king/red_queen/white_queen,
+       caterpillar, live randomized holdout), which is a separate future scope. No second card.
+  - **Order of work.** B producers first (B3.2 stage decomposition, B4.1 B-only decision,
+    B2.1 sufficiency U, B5.1 minimality, B6.3 broad transfer, B7.2 robustness, B8.1 legacy
+    re-runs), then chain v4 for S6/B8, then B+C. B+C reds are not "next" while B is uncertified;
+    they are the consequence that will be re-read after B moves.
+  - **What does NOT change.** The B rows and their gates (DEC-562), the judge gates, the
+    freshness law, the 32 GB cap, and the definition of a PASS. This is an ordering/visibility
+    change, not a weakening: it makes the top-line stricter (B must be green before "done").
+  - **Acceptance.** The rendered card shows three distinct scope lines; `ENCODER DONE` is
+    unreachable while B is not green; the B+C legs remain visible with their values; project v1
+    is explicitly "not assessed"; tests/ruff/fast tier/audit green.
