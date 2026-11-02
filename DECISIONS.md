@@ -8052,3 +8052,76 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   ~2 min; +2 arms). Total ≈ 20–30 min, one GPU job at a time via `safe_run.py` (slice,
   in-repo command — reproducible from the recorded commit, so the /tmp-receipt rule is met:
   the card regenerates from `products` + judge + probe at the committed tree).
+
+- **DEC-556 (stage-2 verdict + FULL-SIZE re-measurement pre-registration):**
+  - **Stage 2 result (FALSIFIED per the pre-registered DEC-555 clause):** in-repo `products`
+    rebuild of the run-5 artifacts with `serve_mass_block=true` (`/tmp/opencode/r6_block`;
+    served E = [z(256-d shape pipeline) | z(39-d exact mass)] = 295-d; scales fit on
+    split-A N=562; sidecar `serve_massblock_…04o1c2972a4.npz` persisted; products stamped
+    with the recorded tag — the replay-identity fix `e7498b6` verified on the run-5 tag):
+    | row | value (CI vs comparator) | bar | verdict |
+    |---|---|---|---|
+    | persona_geometry | 0.151356 (−0.2671, −0.2378) | ≥ 0.217 | NOT MET |
+    | segment_structure | −0.002571 (−0.3865, −0.2358) | ≥ 0.095 | NOT MET |
+    | future_geometry | 0.112164 (−0.0351, −0.0210) | informational | +0.0112 vs fold |
+    | supervised guard | worst churn_day −0.0148 vs base | no row < −0.03 | CLEAN |
+    | probe-persona R² | 0.5800 | ≥ 0.40 (collapse guard) | PASSED |
+    Bar NOT MET + guard CLEAN → **FALSIFIED per the pre-registered clause.**
+  - **Measured construction fact (5-arm scorecard; instrument acceptance EXACT —
+    served-old 0.1320, M0 c 0.2174, H0 trunk 0.0165, PATH A 0.4038 all reproduced to 3
+    decimals):** block serving improved EVERY geometry row vs the fold (persona +0.0194 →
+    0.1514; future +0.0112 → 0.1122; ARI +0.0008) and ships the mass structure exact and
+    un-entangled inside the same artifact (probe R² unchanged at 0.58) — yet 0.1514 < 0.217.
+    Mechanism: the bar's combined-vector pairwise distance is variance-dominated by the
+    256-d shape block at this 39:256 ratio — the per-dim z-score equalizes per-dim
+    variance, not block norms, so ~217 dims of shape variance swamp the mass block's
+    distance contribution. The construction delivered its pre-registered promise (exact
+    mass, no fold on the serve path); the bar measures the whole vector. Mass-ONLY (M0)
+    clears the bar by 0.0004 (0.2174 vs 0.217) = inside noise; the composite cannot exceed
+    its parts' weighted variance mix at this ratio.
+  - **Disposition (falsify clause):** the 3-file stage-2 bundle (cfm_config/cfm_model/
+    cfm_state — serving-side only, zero trained-behavior change) is REVERTED; the
+    replay-identity fix (`e7498b6`) is a repo bug fix, committed separately, KEPT. The
+    unsupervised-geometry rung front is now CLOSED on both axes: OBJECTIVE (DEC-552/554:
+    DINO, SwAV, VICReg, contrast-removal all flat) and CONSTRUCTION (DEC-555: fold = the
+    destruction element, 100% of the drop at M0→M1; native-mass block serving measured at
+    the bar and falsified). Remaining question is FULL-SIZE only.
+  - **Pre-registration — FULL-SIZE re-measurement (the rung's falsify clause):** one axis:
+    SCALE, 800-customer rung → the card's full population on the CURRENT tree. Protocol:
+    * Command: `LG_SCAN=eager safe_run.py .venv/bin/python -m
+      looking_glass.customer_foundation_model train --db
+      /home/austin_whaley/wonderland_work/demo_v2/customer_event_stream.parquet
+      --as-of 2025-01-01 --anchors 6 --out-dir /tmp/opencode/fs_full --set
+      ledger_recency=true --set serve_unfaded=true --set use_counter=true --set
+      counter_type_values=true`. No `--customers` (full population A, as cfm_v2k ran it);
+      no swav (DEC-554), no contrast (DEC-548/549), no mass-block (DEC-556: flag reverted).
+      batch/budget_steps: the current tree's own derivation (DEC-546/547), receipted — not
+      hand-set.
+    * Population identity: as_of 2025-01-01 → split_seed 6529885151769 → the SAME A=3515 /
+      B=1485 cfm_v2k and the card's frozen comparators used (like-for-like). "Full-size"
+      = the 5000-customer demo_v2 stream that the card's receipts are built on — NOT the
+      25k production stream (different population; the card's comparators were never
+      computed on it).
+    * cfm_v2k's tag carried the old portfolio (13 objectives incl. the deleted `contrast`):
+      its brain-side values (return_proneness 0.4145; unsup persona 0.14 / future 0.10 /
+      segment 0.001; argmax_optimum +0.0026 CI⊃0) are STALE and are REPLACED by this run's
+      receipts (receipts regenerate, never relabel). The PATH A comparators (0.4879 / 0.404
+      / 0.14 / 0.309) and the rl leg's control are frozen, unaffected by the encoder.
+    * Dose-ceiling fact (DEC-554): at the rung the governor caps realized dose at
+      ~best-eval-1/2 on EVERY configuration (portfolio val drifts up; 38-step cadence;
+      patience 4). Its full-size behavior is UNMEASURED — the first `[govern]` receipt
+      re-derives the training estimate.
+    * Judge: `measure_judge_law.py --products /tmp/opencode/fs_full --demo demo_v2 --legs
+      supervised,unsupervised,rl,simulator` first to `/tmp/opencode/j_fs` (instrument
+      acceptance: PATH A values reproduce the card's frozen comparators), then regenerate
+      the card receipts in-repo (`--out-dir docs/report_cards/experiments`) +
+      `report_card.py`.
+    * Estimate (from measured numbers, stated before launch): cfm_v2k training = 2310
+      realized steps @ 1.72 s/step = 66 min (old tree, B=16, active co-tenant); the idle
+      co-tenant band is ~2 s/step (measured, B=64 rung); the dose ceiling stops the current
+      tree at a fraction of its derived budget → training ≈ 45–90 min; products ≈ 6.3× the
+      rung's ~3-min rebuild ≈ 15–25 min; judge + probe ≈ 10–20 min. **TOTAL ≈ 1.5–2.5 h.**
+      One GPU job at a time via `safe_run.py` (in-slice; verify `[gpu-budget] cgroup=48.0 GB`).
+    * Acceptance: the card's full-size receipts regenerate from this run's products at a
+      recorded commit with a new behavior hash; the card's reds are re-scored against the
+      FROZEN comparators; no gate/threshold movement in this run.
