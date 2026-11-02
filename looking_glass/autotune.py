@@ -217,6 +217,14 @@ def _customer_level_features(df, keys, sample_n: int | None = None):
     """
     import numpy as np
 
+    # A frame without the customer-feature columns cannot be aggregated (minimal test
+    # frames, streams missing event_attributes): return the degenerate shape so every
+    # caller's documented "insufficient data" fallback fires, instead of a KeyError
+    # mid-derivation (the resolver must survive unseen shapes — Principle 4).
+    need = {"customer_key", "event_type", "event_ts", "event_attributes"}
+    if not need.issubset(df.columns):
+        return np.zeros((0, 0)), [], []
+
     # Optional sampling for speed on large streams
     if sample_n is not None and len(keys) > sample_n:
         import random
@@ -401,22 +409,8 @@ def derive_rank_target(df, keys, dim: int) -> tuple[float, dict]:
 
     Falls back to min(7, dim) / dim (7 generative traits) when insufficient data.
     """
-    import json
-
-    # Count event types
-    n_et = int(df["event_type"].n_unique()) if "event_type" in df.columns else 0
-
-    # Count numeric fields discovered from event_attributes JSON
-    numeric_fields: set = set()
-    for attrs in df["event_attributes"].unique().to_list():
-        if attrs:
-            try:
-                d = json.loads(attrs)
-                for k, v in d.items():
-                    if isinstance(v, (int, float)):
-                        numeric_fields.add(k)
-            except Exception:
-                pass
+    # Count event types + numeric fields (one guarded scan — _schema_signal_counts)
+    n_et, numeric_fields = _schema_signal_counts(df)
 
     # DEC-518: this was `n_generative = 7` — the seven CERTIFICATION TRAITS. Deriving the
     # encoder's target from the exam it is graded by violates the anti-overfit clause
@@ -446,6 +440,28 @@ def derive_rank_target(df, keys, dim: int) -> tuple[float, dict]:
     }
 
 
+def _schema_signal_counts(df) -> "tuple[int, set]":
+    """(n_event_types, numeric_fields) from the stream's schema — ONE scan, shared by
+    every derivation that counts signals (rank_target, tau_mp). A frame missing either
+    column yields (0, set()) so callers take their documented fallbacks instead of a
+    ColumnNotFoundError mid-derivation (the resolver must survive unseen shapes)."""
+    import json
+
+    n_et = int(df["event_type"].n_unique()) if "event_type" in df.columns else 0
+    numeric_fields: set = set()
+    if "event_attributes" in df.columns:
+        for attrs in df["event_attributes"].unique().to_list():
+            if attrs:
+                try:
+                    d = json.loads(attrs)
+                    for k, v in d.items():
+                        if isinstance(v, (int, float)):
+                            numeric_fields.add(k)
+                except Exception:
+                    pass
+    return n_et, numeric_fields
+
+
 def derive_aib_target_rank(df, keys, dim: int) -> tuple[float, dict]:
     """Derive AIB target rank from the stream's signal count.
 
@@ -470,22 +486,8 @@ def derive_tau_mp(df, keys, dim: int) -> tuple[float, dict]:
 
     Falls back to 0.05 when insufficient data.
     """
-    import json
-
-    # Count event types
-    n_et = int(df["event_type"].n_unique()) if "event_type" in df.columns else 0
-
-    # Count numeric fields discovered from event_attributes JSON
-    numeric_fields: set = set()
-    for attrs in df["event_attributes"].unique().to_list():
-        if attrs:
-            try:
-                d = json.loads(attrs)
-                for k, v in d.items():
-                    if isinstance(v, (int, float)):
-                        numeric_fields.add(k)
-            except Exception:
-                pass
+    # Count event types + numeric fields (one guarded scan — _schema_signal_counts)
+    n_et, numeric_fields = _schema_signal_counts(df)
 
     # Generative traits the state must encode
     n_generative = 7  # x0, h0, price_sensitivity, return_proneness, churn_day, regime_switches, final_regime_days

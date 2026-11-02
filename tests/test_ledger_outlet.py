@@ -88,7 +88,11 @@ def built():
     vocab = _vocab()
     seqs = _seqs()
     train = [s["customer"] for s in seqs if s["group"] == "A"]
-    builder, receipt = L.fit_vocabulary(seqs, vocab, train)
+    # the production call (cfm_state): recency on + the primary numeric field's index —
+    # the faceplate advertises ALL of ledger_state.PARTS, so the builder must too.
+    nf = list(getattr(vocab, "numeric_fields", ()) or ())
+    amount_field = nf.index("margin") if "margin" in nf else None
+    builder, receipt = L.fit_vocabulary(seqs, vocab, train, recency=True, amount_field=amount_field)
     return vocab, seqs, builder, receipt
 
 

@@ -32,7 +32,12 @@ def absorb(model: CFM, seq, h0: torch.Tensor | None = None, as_of_epoch: float |
     """Push new events through the recurrence from an existing state.
 
     Fades h0 from as_of to the first new event, then runs only the new events.
-    Returns (new_h, embedding).
+    Returns (new_h, embedding). The embedding is the SHAPE half exactly as
+    `advance()` stores it in the state column — `donor_batch` (boundary readout,
+    NOT L2-normalized; the normalized S is the similarity-space readout, a
+    different contract). For counter-ON models the persisted column is the
+    ADDITIVE half (signed_log1p(M), DEC-536): `absorb` does not model m0, so
+    incremental counter consumers must use `advance`/`donor_states`.
     """
     with torch.no_grad():
         h = h0
@@ -45,7 +50,7 @@ def absorb(model: CFM, seq, h0: torch.Tensor | None = None, as_of_epoch: float |
                 getattr(model, "half_life_days", 30.0),
             )
         y, h = model(seq, h0=h)
-        return h, model.embed(h)
+        return h, model.donor_batch(h.unsqueeze(0))[0]
 
 
 def new_event_sequences(
@@ -644,7 +649,7 @@ class StateStore:
         import polars as pl
 
         rows = self.con.execute(
-            "SELECT customer_key, as_of_epoch, state FROM customer_state"
+            "SELECT customer_key, as_of_epoch, state, embedding FROM customer_state"
         ).fetchall()
         if not rows:
             return
@@ -659,7 +664,16 @@ class StateStore:
         dev = next(self.model.parameters()).device
         with torch.no_grad():
             H = H * decay
-            E = torch.nn.functional.normalize(self.model.proj(H.to(dev)), dim=1).cpu()
+            if getattr(self.model, "counter_on", False):
+                # The column holds the ADDITIVE half (signed_log1p(M), DEC-536): extensive
+                # mass that never fades — keep the stored value verbatim. Rewriting it with
+                # a shape readout would silently corrupt the monoid: advance's m0 readback
+                # would misparse the shape vector as a counter.
+                E = [list(r[3]) for r in rows]
+            else:
+                # The same definition advance() stores: donor_batch (boundary readout, not
+                # the legacy normalized S).
+                E = self.model.donor_batch(H.to(dev)).cpu().tolist()
         df = pl.DataFrame(
             {
                 "customer_key": keys,
@@ -667,7 +681,7 @@ class StateStore:
                 "version": [self.cfg.tag] * len(keys),
                 "dim": [int(H.shape[1])] * len(keys),
                 "state": H.tolist(),
-                "embedding": E.tolist(),
+                "embedding": E,
                 "last_event_ts": [None] * len(keys),
             }
         )

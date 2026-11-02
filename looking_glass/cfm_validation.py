@@ -149,8 +149,7 @@ def validate(cfg: CFMConfig):
         s = seqs[0]
         with torch.no_grad():
             _, h_full = model(s)
-            model.embed(model(s)[0])
-        h_inc, emb_inc = absorb(model, s, h0=None)
+        h_inc, _ = absorb(model, s, h0=None)
         rows.append(
             r(
                 "absorb == from-scratch",

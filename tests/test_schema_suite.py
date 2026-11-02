@@ -104,7 +104,7 @@ def _run(tmp_path, name, attr_fn, expect):
         y, h = model.encode(t)
     assert torch.isfinite(y).all(), f"{name}: non-finite readout"
     cfg.agg_horizons_days = [1.0]
-    T_ = _task_losses(model, vocab, seqs, cfg)
+    T_, _ = _task_losses(model, vocab, seqs, cfg)
     assert T_, f"{name}: no task losses"
     for k, v in T_.items():
         assert torch.isfinite(v).all(), f"{name}: non-finite loss {k}"

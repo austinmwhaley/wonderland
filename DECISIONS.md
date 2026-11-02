@@ -7665,3 +7665,66 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   B=64, budget_steps=800, DINO objectives — unchanged from attempt 1's intent.
   Estimate (eager scan ≈ 0.3–0.5 s/step overhead vs compiled; no recompile stalls):
   800 × ~5–6 s ≈ **70–85 min + judge**.
+- **Run-3 DEATH post-mortem (2026-11-01 22:46:04, EXIT=143).** One causal story, fully
+  evidenced: run 3 was placed by the harness in a vte-spawn scope (OUTSIDE wonderland.slice —
+  the slice's memory.peak stayed 13.9 GiB, the run never entered it), and my own fast-tier
+  pytest reached `test_gpu_budget.py::test_watchdog_pidfile_is_exact_and_cleaned_up`, which runs
+  a REAL `gpu_watchdog.main(["--once"])` sweep over live /proc. The sweep's default
+  `--outside-slice kill` SIGTERM'd the trainer (age > 30 s grace). **Run-2 attempt 2's "silent
+  death" was the same mechanism** — I had run `pytest tests/test_gpu_budget.py` at ~21:17 to
+  verify the cgroup walk; the inductor recompile warnings were a red herring for the death
+  (they do explain that run's 39 s/step slowness). Attempt 1 was the genuine 20G OOM.
+  Consequences: (1) **pytest is not safe to run against a live GPU job in this repo** — the
+  suite contains a live-fire sweep; (2) a harness-placed job outside the slice is a policy
+  breach the watchdog is designed to stop, not a coincidence.
+- **Fix (this commit): `test_watchdog_pidfile_is_exact_and_cleaned_up` refuses to sweep while a
+  policed producer is live** (`gpu_jobs(DEFAULT_PATTERNS)` non-empty → `pytest.skip` with the
+  reason). The pidfile mechanics the test pins are exercised before the sweep; the hazard the
+  test's own docstring records ("went on SIGTERM'ing an unrelated trainer") is removed.
+- **Fix: launch into the slice via the canonical launcher.** Run 4 relaunches the pre-registered
+  dose unchanged (B=64, budget_steps=800, DINO objectives, same bars) wrapped in
+  `scripts/safe_run.py` (`systemd-run --user --scope --slice=wonderland.slice`, DEC-440
+  containment, gpu_budget's cgroup walk now reads the real 48G ceiling). `LG_SCAN=eager` kept
+  (documented numerically-identical path; removes the inductor layer both silent deaths bracketed).
+  **Time estimate from measured numbers:** run 3 did 190 steps in ~67 min (21.2 s/step) while
+  the LLM co-tenant served this session's ~118k-token context the whole time — co-tenancy, not
+  the eager-scan overhead, dominates. With lighter co-tenant load (CPU-only work, short turns)
+  expect ~12–20 s/step → **800 steps ≈ 3–4 h wall + judge**; the governor's patience (4 evals at
+  38-step cadence) may stop it earlier if val plateaus — that is the protocol, not a failure.
+- **Test-suite triage complete (all pre-existing reds on the committed baseline; DINO exonerated
+  by the earlier stash separation).** Root causes and fixes, one each:
+  * `_task_losses` returns `(T_, h)` — 21 stale call sites across
+    test_objectives_portfolio (20), test_schema_suite (1), test_cfm_generic_fields (1) treated the
+    tuple as the dict; unpacked.
+  * `_loss_split` returns the DEC-031 3-tuple `(task, invariant, h)` — 3 test sites did
+    `sum(_loss_split(...))` (summed the trunk tensor into the "loss"); now unpack + add the two
+    PCGrad groups.
+  * `GeometryBank.penalties(z)` — the DEC-519 contract (gradient penalties from the live batch
+    only; the bank is a detached governor monitor) postdates the 3 bank tests; tests now pass the
+    batch explicitly (governor-only calls keep the no-z form, which the contract supports).
+    `GeometryBank` stays: DEC-519 records it as deliberately kept ("tests exercise it").
+  * `GeometryBank.eff_rank`: a numerically-zero covariance (all-identical rows, float32 noise)
+    made the participation ratio 0/0; the denominator's `clamp(min=1e-24)` then fabricated a
+    spurious 0.011 "rank". The floor is now the guard: `fro2 < 1e-24 → 0.0` (the correct limit),
+    documented in the receipt-style comment.
+  * `absorb()` returned `model.embed(h)` (L2-normalized S) while `advance()` stores
+    `donor_batch(h)` (the served boundary readout, DEC-447's single definition) — a 2.5× per-
+    customer scale mismatch the state_advance_batched tests detected. `absorb` now returns
+    `donor_batch` exactly as `advance` stores it (its embedding had no live consumer:
+    cfm_validation discarded it — a dead `model(s)`+`embed` forward removed with it). For
+    counter-ON models the column is the additive half; `absorb` does not model m0 and says so.
+  * `fade_idle()` wrote `F.normalize(proj(H))` to the column — a THIRD readout definition, and
+    for counter-ON stores it CLOBBERED the counter half (advance's m0 readback would misparse a
+    shape vector as a counter — silent monoid corruption). Now: counter-ON keeps the stored
+    additive half verbatim; counter-OFF writes `donor_batch` (the same definition `advance`
+    stores). No test pinned the old behaviour (the fade_idle test checks state only).
+  * `resolve_cfm` crashed on minimal frames (`_customer_level_features` KeyError on
+    `event_type`; `derive_rank_target`/`derive_tau_mp` ColumnNotFoundError on
+    `event_attributes` — one column guarded, its twin not). Both now share ONE guarded
+    schema-scan helper (`_schema_signal_counts`), and the feature aggregator returns its
+    documented degenerate shape when the columns are absent, so every `derive_*` takes its
+    recorded fallback. (Also deletes the duplicated scan blocks — Principle 6.)
+  * `gpu_watchdog.DEFAULT_PATTERNS` was missing three measure_*.py producers
+    (rank_attainability, regime_readout, testbed_power) — the memory-guard test exists exactly to
+    stop this drift; added.
+  Fast tier: **rc=0** (was 14 reds at session start, 6 after the unpack sweep).

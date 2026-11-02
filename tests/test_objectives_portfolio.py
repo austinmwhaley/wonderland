@@ -79,11 +79,12 @@ def test_query_agg_sf_losses_present_and_train():
     torch.manual_seed(0)
     model = CFM(vocab, dim=16, n_experts=1)  # default sf_mode=event_types
     cfg = _cfg()
-    T_ = _task_losses(model, vocab, seqs, cfg)
+    T_, _ = _task_losses(model, vocab, seqs, cfg)
     for k in ("query", "agg", "sf", "next", "mask", "jepa"):
         assert k in T_, k
         assert torch.isfinite(T_[k]), (k, float(T_[k]))
-    loss = sum(_loss_split(model, vocab, seqs, cfg))
+    task_loss, inv_loss, _ = _loss_split(model, vocab, seqs, cfg)  # DEC-031: (task, invariant, h)
+    loss = task_loss + inv_loss
     assert torch.isfinite(loss)
     loss.backward()
     assert model.head_agg.weight.grad is not None
@@ -96,7 +97,7 @@ def test_query_respects_config_toggle():
     vocab = EventVocab.build(seqs)
     model = CFM(vocab, dim=16, n_experts=1)
     cfg = _cfg(objectives=tuple(o for o in CFMConfig.objectives if o != "query"))
-    T_ = _task_losses(model, vocab, seqs, cfg)
+    T_, _ = _task_losses(model, vocab, seqs, cfg)
     assert "query" not in T_
 
 
@@ -106,7 +107,7 @@ def test_sf_mode_shapes_and_phi():
     m_evt = CFM(vocab, dim=16, n_experts=1, sf_mode="event_types")
     assert m_evt.head_sf[-1].out_features == 1 + vocab.n_et  # value + per-type
     assert CFMConfig().sf_mode == "event_types"  # agnostic only (DEC-009)
-    T_ = _task_losses(m_evt, vocab, seqs, _cfg(sf_mode="event_types"))
+    T_, _ = _task_losses(m_evt, vocab, seqs, _cfg(sf_mode="event_types"))
     assert torch.isfinite(T_["sf"])
 
 
@@ -266,9 +267,10 @@ def test_variance_floor_hinge():
     h2 = _t.randn(64, 16, generator=g)
     assert torch.relu(1.0 - h2.std(dim=0)).mean() < 0.1
     # trains: objective present, finite, gradients flow through proj -> trunk
-    T_ = _task_losses(model, vocab, seqs, cfg)
+    T_, _ = _task_losses(model, vocab, seqs, cfg)
     assert "variance" in T_ and torch.isfinite(T_["variance"])
-    loss = sum(_loss_split(model, vocab, seqs, cfg))
+    task_loss, inv_loss, _ = _loss_split(model, vocab, seqs, cfg)  # DEC-031: (task, invariant, h)
+    loss = task_loss + inv_loss
     loss.backward()
     assert model.proj.weight.grad is not None
 
@@ -306,17 +308,17 @@ def test_geometry_bank_penalties_and_governor():
     g = _t.Generator().manual_seed(0)
     collapsed = _t.randn(1, 16, generator=g).repeat(256, 1)
     b.push(collapsed)
-    pen = b.penalties()
+    pen = b.penalties(collapsed)  # current contract: gradient penalties come from the live batch
     assert (
         pen["redundancy_bank"].item() < 1e-8
-    )  # within-batch: no decorrelation left to do? NO — bank is one state repeated -> corr off-diag = 1
+    )  # within-batch: all rows identical -> covariance 0 -> no off-diagonal decorrelation to penalise
     assert pen["bank_rank"] < 0.01  # perfectly collapsed: PR ~ 0
     assert b.lam > 1.0  # ramped (rank 0.0625 << target 0.32)
     # spread bank: unit-ish variance per dim, low correlation -> lam backs off
     spread = _t.randn(4096, 16, generator=g)
     b2 = GeometryBank(dim=16, size=8192, target=0.32, alpha=0.25, lam_max=50.0, tau=0.05)
     b2.push(spread)
-    pen2 = b2.penalties()
+    pen2 = b2.penalties(spread)
     assert pen2["eigfloor"].item() < pen["eigfloor"].item()  # fewer collapsed eigs
     # closed loop: rank healthy -> lam decays toward 1
     b2.lam = 50.0
@@ -332,8 +334,9 @@ def test_bank_detaches_from_graph():
     b = GeometryBank(dim=8, size=128, target=0.32, alpha=0.25, lam_max=50.0, tau=0.05)
     x = _t.randn(64, 8, requires_grad=True)
     b.push(x)  # must not hold graph references (memory leak)
-    pen = b.penalties()
-    assert pen["redundancy_bank"].requires_grad is False
+    assert b.states().requires_grad is False  # the bank holds a detached monitor copy
+    pen = b.penalties(x)
+    assert pen["redundancy_bank"] is not None and pen["redundancy_bank"].requires_grad
 
 
 def test_barrier_and_bank_joint():
@@ -345,12 +348,13 @@ def test_barrier_and_bank_joint():
     g = _t.Generator().manual_seed(0)
     collapsed = _t.randn(1, 16, generator=g).repeat(512, 1)
     b.push(collapsed)
-    pen = b.penalties()
+    pen = b.penalties(collapsed)
     # collapsed bank: barrier is LARGE (near-wall), spread bank: barrier small
     assert pen["barrier"].item() > 0
     b2 = GeometryBank(dim=16, size=8192, target=0.32, alpha=0.25, lam_max=50.0, tau=0.05)
-    b2.push(_t.randn(4096, 16, generator=g))
-    assert b2.penalties()["barrier"].item() < pen["barrier"].item()
+    spread = _t.randn(4096, 16, generator=g)
+    b2.push(spread)
+    assert b2.penalties(spread)["barrier"].item() < pen["barrier"].item()
 
 
 def test_dual_velocity_config_and_ortho_loss():
@@ -368,9 +372,10 @@ def test_dual_velocity_config_and_ortho_loss():
     model = CFM(vocab, dim=32, n_experts=2)  # dual-velocity
     cfg = _cfg(objectives=(*CFMConfig().objectives, "ortho"))
     assert "ortho" in cfg.objectives
-    T_ = _task_losses(model, vocab, seqs, cfg)
+    T_, _ = _task_losses(model, vocab, seqs, cfg)
     assert "ortho" in T_ and torch.isfinite(T_["ortho"])
-    loss = sum(_loss_split(model, vocab, seqs, cfg))
+    task_loss, inv_loss, _ = _loss_split(model, vocab, seqs, cfg)  # DEC-031: (task, invariant, h)
+    loss = task_loss + inv_loss
     loss.backward()
     assert model.ssm.experts[0].delta_bias.grad is not None
     assert model.ssm.experts[1].delta_bias.grad is not None
@@ -563,7 +568,7 @@ def test_effect_objective_present_finite_and_trains():
     assert model.head_effect is not None
     cfg = _cfg(objectives=(*CFMConfig().objectives, "effect"))
     cfg._effect_levels = [3]
-    T_ = _task_losses(model, vocab, seqs, cfg)
+    T_, _ = _task_losses(model, vocab, seqs, cfg)
     assert "effect" in T_ and torch.isfinite(T_["effect"])
     T_["effect"].backward()
     assert model.head_effect[0].weight.grad is not None
@@ -576,7 +581,7 @@ def test_effect_objective_off_without_target_and_dim():
     model = CFM(vocab, dim=16, n_experts=1)  # effect_dim=0 -> no head
     assert model.head_effect is None
     cfg = _cfg(objectives=(*CFMConfig().objectives, "effect"))
-    T_ = _task_losses(model, vocab, seqs, cfg)
+    T_, _ = _task_losses(model, vocab, seqs, cfg)
     assert "effect" not in T_  # silently absent, never a NaN
 
 
@@ -631,7 +636,7 @@ def test_bilinear_effect_head_trains_through_the_same_loss():
     assert not isinstance(model.head_effect, torch.nn.Sequential)  # not the MLP by default
     cfg = _cfg(objectives=(*CFMConfig().objectives, "effect"), effect_head="bilinear")
     cfg._effect_levels = [3]
-    T_ = _task_losses(model, vocab, seqs, cfg)
+    T_, _ = _task_losses(model, vocab, seqs, cfg)
     assert "effect" in T_ and torch.isfinite(T_["effect"])
     T_["effect"].backward()
     assert model.head_effect.proj.weight.grad is not None
@@ -659,7 +664,7 @@ def test_survival_head_is_linear_and_the_loss_trains_the_trunk():
     assert model.head_survive.out_features == 4
     cfg = _cfg(objectives=(*CFMConfig().objectives, "survive"))
     cfg._survival_horizons_s = [3600.0, 86400.0, 604800.0, 2592000.0]
-    T_ = _task_losses(model, vocab, seqs, cfg)
+    T_, _ = _task_losses(model, vocab, seqs, cfg)
     assert "survive" in T_ and torch.isfinite(T_["survive"])
     T_["survive"].backward()
     assert model.head_survive.weight.grad is not None
@@ -672,7 +677,7 @@ def test_survival_off_by_default_and_never_a_nan():
     model = CFM(vocab, dim=16, n_experts=1)
     assert model.head_survive is None  # pre-E protocols are byte-reproducible
     cfg = _cfg(objectives=(*CFMConfig().objectives, "survive"))  # objective but no horizons
-    T_ = _task_losses(model, vocab, seqs, cfg)
+    T_, _ = _task_losses(model, vocab, seqs, cfg)
     assert "survive" not in T_  # silently absent, never a NaN
 
 
@@ -741,7 +746,7 @@ def test_rate_head_shape_finiteness_and_trunk_gradient():
     assert isinstance(model.head_rate, torch.nn.Linear)
     assert model.head_rate.out_features == 2 + vocab.n_et
     cfg = _cfg(objectives=(*CFMConfig().objectives, "rate"))
-    T_ = _task_losses(model, vocab, seqs, cfg)
+    T_, _ = _task_losses(model, vocab, seqs, cfg)
     assert "rate" in T_ and torch.isfinite(T_["rate"])
     T_["rate"].backward()
     assert model.head_rate.weight.grad is not None
@@ -754,7 +759,7 @@ def test_rate_off_by_default_and_never_a_nan():
     model = CFM(vocab, dim=16, n_experts=1)
     assert model.head_rate is None  # pre-F protocols are byte-reproducible
     cfg = _cfg(objectives=(*CFMConfig().objectives, "rate"))  # objective but no head built
-    T_ = _task_losses(model, vocab, seqs, cfg)
+    T_, _ = _task_losses(model, vocab, seqs, cfg)
     assert "rate" not in T_  # silently absent, never a NaN
 
 
@@ -804,7 +809,7 @@ def test_profile_head_is_linear_finite_and_pressures_the_trunk():
     model = CFM(vocab, dim=16, n_experts=1, profile_dim=4)
     assert isinstance(model.head_action_profile, torch.nn.Linear)
     cfg = _profile_cfg()
-    T_ = _task_losses(model, vocab, seqs, cfg)
+    T_, _ = _task_losses(model, vocab, seqs, cfg)
     assert "profile" in T_ and torch.isfinite(T_["profile"])
     T_["profile"].backward()
     assert model.head_action_profile.weight.grad is not None
@@ -828,7 +833,7 @@ def test_profile_target_is_the_normalized_histogram_of_the_window():
     oh = F.one_hot(idx, 4).to(torch.float32) * w.unsqueeze(-1)
     hist = (oh.sum(1) / w.sum(1, keepdim=True).clamp(min=1))[0]
     assert abs(float(hist.sum()) - 1.0) < 1e-5  # a distribution
-    T_ = _task_losses(model, vocab, seqs, cfg)
+    T_, _ = _task_losses(model, vocab, seqs, cfg)
     assert torch.isfinite(T_["profile"])
 
 
@@ -838,7 +843,7 @@ def test_profile_off_by_default_and_never_a_nan():
     model = CFM(vocab, dim=16, n_experts=1)
     assert model.head_action_profile is None  # pre-H protocols are byte-reproducible
     cfg = _cfg(objectives=(*CFMConfig().objectives, "profile"))  # objective but no levels
-    T_ = _task_losses(model, vocab, seqs, cfg)
+    T_, _ = _task_losses(model, vocab, seqs, cfg)
     assert "profile" not in T_  # silently absent, never a NaN
 
 
@@ -866,7 +871,7 @@ def test_profile_state_is_a_protocol_axis_and_h_path_reaches_the_served_tensor()
     cfg.profile_served = True
     cfg.profile_loss = "ce"
     cfg.profile_state = "h"
-    T_ = _task_losses(model, vocab, seqs, cfg)
+    T_, _ = _task_losses(model, vocab, seqs, cfg)
     assert torch.isfinite(T_["profile"])
     T_["profile"].backward()
     assert model.emb_et.weight.grad is not None
@@ -886,7 +891,7 @@ def test_profile_ce_is_a_protocol_axis_and_finite():
     cfg = _profile_cfg()
     cfg.profile_served = True
     cfg.profile_loss = "ce"
-    T_ = _task_losses(model, vocab, seqs, cfg)
+    T_, _ = _task_losses(model, vocab, seqs, cfg)
     assert torch.isfinite(T_["profile"]) and float(T_["profile"]) > 0
     T_["profile"].backward()
     assert model.head_action_profile.weight.grad is not None
@@ -913,14 +918,14 @@ def test_profile_served_reads_the_normalized_projection_path():
     model = CFM(vocab, dim=16, n_experts=1, profile_dim=4)
     cfg = _profile_cfg()
     cfg.profile_served = True
-    T_ = _task_losses(model, vocab, seqs, cfg)
+    T_, _ = _task_losses(model, vocab, seqs, cfg)
     assert torch.isfinite(T_["profile"])
     T_["profile"].backward()
     assert model.proj.weight.grad is not None
     assert model.proj.weight.grad.abs().sum() > 0  # the served path is under pressure
     model.zero_grad()
     cfg2 = _profile_cfg()  # served OFF -> proj untouched by this loss
-    T2 = _task_losses(model, vocab, seqs, cfg2)
+    T2, _ = _task_losses(model, vocab, seqs, cfg2)
     T2["profile"].backward()
     assert model.proj.weight.grad is None or model.proj.weight.grad.abs().sum() == 0
 
@@ -954,7 +959,7 @@ def test_mtp_objective_present_and_trains():
     model = CFM(vocab, dim=16, n_experts=1, mtp_k=4)
     assert model.head_mtp is not None and len(model.head_mtp) == 4
     cfg = _cfg(objectives=(*CFMConfig().objectives, "mtp"))
-    T_ = _task_losses(model, vocab, seqs, cfg)
+    T_, _ = _task_losses(model, vocab, seqs, cfg)
     assert "mtp" in T_ and torch.isfinite(T_["mtp"])
     T_["mtp"].backward()
     assert model.head_mtp[0].weight.grad is not None

@@ -1842,7 +1842,15 @@ class GeometryBank:
     def eff_rank(self, z: "torch.Tensor") -> float:
         zc = z - z.mean(0, keepdim=True)
         cov = (zc.T @ zc) / max(zc.shape[0] - 1, 1)
-        pr = cov.diagonal().sum() ** 2 / cov.pow(2).sum().clamp(min=1e-24)
+        trace2 = cov.diagonal().sum() ** 2
+        fro2 = cov.pow(2).sum()
+        # A numerically-zero covariance (all rows identical, up to float noise) leaves the
+        # participation ratio 0/0 — undefined. The measurable-floor sentinel is the correct
+        # limit: no variance in any direction means no participation (returns 0.0 instead of
+        # dividing trace^2 by the floor, which fabricates a spurious ~1/16 "rank").
+        if fro2.item() < 1e-24:
+            return 0.0
+        pr = trace2 / fro2
         return float((pr / z.shape[1]).item())
 
     def penalties(self, z: "torch.Tensor | None" = None) -> dict:

@@ -350,6 +350,14 @@ def test_watchdog_pidfile_is_exact_and_cleaned_up(tmp_path):
     pf = tmp_path / "run" / "guard.pid"
     gpu_watchdog._write_pidfile(pf)
     assert pf.read_text().strip() == str(os.getpid())
+    # A live GPU producer turns the --once sweep into live fire: it would SIGTERM a trainer
+    # sitting outside the slice (measured 2026-11-01: this test's sweep killed two DINO runs
+    # mid-training — the harness placed them in a vte scope, not wonderland.slice). The
+    # pidfile mechanics are what this test pins, so refuse to sweep while a producer is up.
+    if gpu_watchdog.gpu_jobs(DEFAULT_PATTERNS):
+        import pytest
+
+        pytest.skip("live GPU producer present — refusing a live-fire watchdog sweep")
     assert gpu_watchdog.main(["--once", "--pidfile", str(pf)], arm=False) in (0, 2)
     assert not pf.exists()  # the guard removes its own pidfile; no stale handles
 

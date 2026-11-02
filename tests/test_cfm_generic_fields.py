@@ -106,7 +106,7 @@ def test_heterogeneous_attributes_all_encoded(tmp_path, suffix):
     assert torch.isfinite(y).all()
 
     cfg.agg_horizons_days = [1.0, 7.0]
-    T_ = _task_losses(model, vocab, seqs, cfg)
+    T_, _ = _task_losses(model, vocab, seqs, cfg)
     for f in vocab.attrs:
         assert f"attr_next:{f}" in T_ and torch.isfinite(T_[f"attr_next:{f}"])
     for f in vocab.numeric_fields:
