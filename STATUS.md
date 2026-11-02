@@ -1,9 +1,9 @@
 # STATUS — wonderland
 
 *Live state only. History lives in `DECISIONS.md` (append-only) and `git log`.
-Rewritten 2026-11-02 (DINO falsified DEC-552; SwAV falsified DEC-554; stage-2 construction
-falsified DEC-556 — front = full-size re-measurement). If this file grows past ~150 lines, it
-is becoming a log again.*
+Rewritten 2026-11-02 (full-size re-measurement DEC-558: re-stamp 5/6, S1+S2 co-tenant OOM;
+front = chain re-run, then argmax_optimum). If this file grows past ~150 lines, it is becoming a
+log again.*
 
 ## Macro
 
@@ -18,38 +18,43 @@ are never a brain win.
 
 **Stage:** Layer 0 — encoder not yet mastered. Layer 1 (certification, `U`) is not started.
 
-**Progress:** **re-stamp in flight (DEC-557): the full-size re-measurement is DONE** — current
-tree trained on the card's 5000-customer population (`fs_full`: dose ceiling 10.45 epochs, batch
-64 derived, tag `…b64…o4c3b5899`, products now canonical at `cfm_v2k`; old artifacts backed up
-to `cfm_v2k_stale_0f881d99`). The S6 chain is re-stamping all 5 source receipts (4 judge legs +
-S1–S6) + the card under behavior `d0ac576c`. Pre-stamp state: 2/8 · 6/6 · 0 UNKNOWN at
-`0f881d99`/`a32bbee`; the card meanwhile renders 0/8 · 0/6 · 14 UNKNOWN (all receipts stale).
+**Progress:** **re-stamp nearly complete (DEC-558): 5 of 6 producers fresh at `d0ac576c`** —
+the full-size re-measurement is DONE (current tree on the card's 5000-customer population;
+dose ceiling 10.45 epochs, batch 64 derived, tag `…b64…o4c3b5899`; products canonical at
+`cfm_v2k`, old artifacts backed up to `cfm_v2k_stale_0f881d99`). Chain v1 re-stamped S3/S4/S5
++ 4 judge legs + PATH-A provenance (all working as measured); **S1+S2 died on a co-tenant CUDA
+OOM spike** → S6's `full_chain_in_one_invocation` correctly FAILed. Card renders legs 2/8 ·
+stages 3/6 · 2 UNKNOWN · 7 FAIL (the 6 substantive reds + S6). Chain re-run (single
+invocation) completes the re-stamp; verdicts did NOT change from the pre-stale card.
 
 ## Micro — current state (measured)
 
-**Card is mid re-stamp (DEC-557).** The behavior hash moved (`0f881d99` → `d0ac576c`) when the
-net `looking_glass/` code changes since `a32bbee` (DEC-544…547 memory/batch/rl + kept
-DINO/SwAV governor-exclusion + replay fix `e7498b6`) landed, so all 5 freshness-checked source
-receipts (4 judge legs + judge_stages S1–S6) are now `stale` → the card renders
-**0/8 legs · 0/6 stages · 14 UNKNOWN**. The table below is the LAST MEASURED state (receipts
-stamped at `a32bbee`/`0f881d99`): 2/8 leg-columns, 6/6 stages. It is being re-derived from the
-DEC-556 full-size re-measurement + stage re-stamps under the current behavior.
+**Card is the NEW full-size re-measurement (DEC-558), receipts stamped at `d0ac576c`.**
+The behavior hash moved (`0f881d99` → `d0ac576c`) with the net `looking_glass/` changes since
+`a32bbee` (DEC-544…547 memory/batch/rl + kept DINO/SwAV governor-exclusion + replay fix
+`e7498b6`), forcing the re-stamp; the full-size retrain (fs_full) + S6 chain v1 re-scored
+everything against the FROZEN PATH A comparators. The table below is the current measured
+state (new checkpoint, same population split_seed 6529885151769, A=3515/B=1485):
 
 | Leg | brain alone | brain + ledger |
 |---|---|---|
-| supervised | ❌ FAIL — `return_proneness` **full-size only** (0.4145 vs PATH A 0.4879; passes at the 800-rung: 0.4726 vs 0.3826) | ❌ FAIL — `price_sensitivity` delivery column (random control ≥ brain) + `return_proneness` |
-| unsupervised | ❌ FAIL — `persona_geometry` 0.14 vs 0.404, `future_geometry` 0.10 vs 0.14, `segment_structure` 0.001 vs 0.309 (rung) | ❌ FAIL — same rows outside the delivery margin |
-| **rl** | ✅ **PASS** (DEC-545 control substitution) | ✅ **PASS** |
-| simulator | ❌ FAIL — `argmax_optimum` brain +0.0026, CI includes 0 | ❌ FAIL — same row, delivery margin |
+| supervised | ❌ FAIL — `return_proneness` 0.4118 vs 0.4879 (gap 0.076; all other 6 rows pass) | ❌ FAIL — `price_sensitivity` random control ≥ delivered (−0.0614 vs −0.0798) + `return_proneness` 0.4689 vs 0.4879 (gap 0.019, CI hi +0.000004) |
+| unsupervised | ❌ FAIL — `persona_geometry` 0.066 vs 0.387, `future_geometry` 0.091 vs 0.181, `segment_structure` −0.001 vs 0.268 (full-size) | ❌ FAIL — same rows outside the delivery margin |
+| **rl** | ✅ **PASS** — uplift 0.2421 vs 0.1794, policy_value 0.2486 vs 0.2382 | ✅ **PASS** |
+| simulator | ❌ FAIL — `argmax_optimum` 0.2444 vs 0.2418, gap +0.0027, CI (−0.0269, +0.0310) ⊃ 0 (dose_response 0.3164 vs 0.3039 PASSES brain-alone) | ❌ FAIL — same row, delivery margin |
 
-Stages S1–S6: **6/6 PASS** at `a32bbee` (re-stamp pending). Hygiene H1–H5: **5/5 PASS.**
+Stages: S3/S4/S5 **PASS** (re-verified on the current pipeline + new products); S1/S2 UNKNOWN
+(stale `0f881d99` — the chain's S1+S2 producer hit a co-tenant CUDA OOM; re-run completes it);
+S6 FAIL (`full_chain_in_one_invocation` — same cause). Hygiene H1–H5: **5/5 PASS.**
 BACKWARD not yet run — it runs only against an all-green card.
 
 ## Closed front: unsupervised geometry at the rung (DEC-548…556)
 
 The rung front is CLOSED on both axes (objective DEC-552/554; construction DEC-555/556 — stage-2
-block serving FALSIFIED at the frozen bar, 3-file bundle reverted). The question it left is
-FULL-SIZE, which is what the DEC-556/557 re-measurement + re-stamp now answers. Diagnosis record:
+block serving FALSIFIED at the frozen bar, 3-file bundle reverted), and DEC-558 now answers the
+FULL-SIZE question it left: the geometry rows stay red at full size (persona 0.066 vs 0.387;
+future 0.091 vs 0.181; segment −0.001 vs 0.268) — the rung closure persists at scale.
+Diagnosis record:
 
 - **Temporal drift is not the axis** (DEC-548): `proj(y)`-based contrast falsified.
 - **Attribution probe** (CPU, validates the judge to the 3rd decimal): the served donor decodes
@@ -124,33 +129,33 @@ only, falsified at the frozen bar — same protocol as DINO/SwAV).
 
 ## Next 3 actions
 
-1. **S6 re-stamp chain (IN FLIGHT):** `measure_certification_law.py --products cfm_v2k
-   --demo demo_v2 --train-log cfm_v2k/train.log` (via `safe_run.py`, `LG_SCAN=eager`), launched
-   after the fs_full products were swapped into the canonical `cfm_v2k` dir (old artifacts backed
-   up to `cfm_v2k_stale_0f881d99`). It regenerates, in sequence, all 5 stale source receipts under
-   the current behavior `d0ac576c`: S1+S2 (measure_input_law), S3 (measure_dynamics_law on the new
-   checkpoint), S4 (measure_views_law), S5 (measure_battery_law), the 4 judge legs
-   (measure_judge_law, CPU), PATH-A provenance (measure_path_a_provenance), then S6's own checks +
-   the card render. Each producer is memory-capped and run one at a time. Est. 40–90 min.
-2. **Read the re-stamped card.** The legs re-score the CURRENT full-size encoder against the
-   frozen PATH A comparators (supervised return_proneness 0.4879; unsup persona 0.404 / future
-   0.14 / segment 0.309; simulator argmax CI; rl). Instrument acceptance: the PATH A values
-   reproduce to 3 decimals (they are computed from the demo_v2 table + truth, not the encoder).
-   Record the new leg verdicts in DEC-558.
-3. **Advance the remaining reds.** Per the re-stamped card: whichever leg/column still FAILs is
-   the next one-axis front (likely supervised return_proneness full-size, and the unsup geometry
-   rows). Stages S1–S6 re-stamp from the same chain; if any stage now FAILs (pipeline code
-   changed since `a32bbee`), that is the next front. When the card's gate-of-record is all green →
-   run BACKWARD.
+1. **S6 chain re-run (launching now):** the SAME command (`measure_certification_law.py
+   --products cfm_v2k --demo demo_v2 --train-log cfm_v2k/train.log` via `safe_run.py`,
+   `LG_SCAN=eager`, one invocation, no protocol/gate change — DEC-558 completion step). Chain v1
+   proved everything else: S3/S4/S5 + legs + provenance exit=0 and fresh; only S1+S2 (a co-tenant
+   CUDA OOM, 938 MiB allocation, ~70 GB free now) and the S6 full-chain check remain. Est. ~20 min
+   (v1 measured 19 min under the same contention). Expected card: legs 2/8 · stages 6/6 · 0
+   UNKNOWN · 6 FAIL (the substantive reds only). If S1+S2 OOMs again: wait for the co-tenant to
+   idle and re-run — never weaken the check.
+2. **Commit the completed re-stamp** (receipts + card + STATUS tick) once the chain exits 0/1
+   with S6 working=True; verify the 5 other S6 checks still pass (commit_recorded_clean on the
+   new HEAD, render determinism, artifact hashes, N on all rows, comparator provenance).
+3. **Advance the next one-axis front** per DEC-558's measured-gap ranking: (1) simulator
+   `argmax_optimum` — gap +0.0027 with CI ±0.028, the closest row on the card; (2) supervised
+   `return_proneness` delivery — gap 0.019 with the ledger already recovering +0.057; (3) unsup
+   geometry trio — structural, front closed at the rung on both axes; (4) the
+   `price_sensitivity` random-control gate — a negative-control failure to diagnose, not a gap
+   to close. When the card's gate-of-record is all green → run BACKWARD.
 
 ## Operating facts
 
 - **Repo:** `/home/austin_whaley/Documents/Repos/wonderland`, branch `foundation-rebuild`, venv `.venv`.
 - **Testbed:** Layer A v2 demo (certified reference) at
   `/home/austin_whaley/wonderland_work/demo_v2/` (stream, relational/, truth, manifest).
-- **Artifacts:** rung/scratch products under `/tmp/opencode/`; full receipts only via the S6
-  chain into `/home/austin_whaley/wonderland_work/cfm_v2k/` (behavior `4ea9684f506ddbf1` there is
-  stale vs current code — receipts regenerate, never relabel).
+- **Artifacts:** rung/scratch products under `/tmp/opencode/`; the canonical full-size products
+  at `/home/austin_whaley/wonderland_work/cfm_v2k/` are the CURRENT-tree run (fs_full, tag
+  `…b64…o4c3b5899`, behavior `d0ac576c`); the stale `0f881d99`-era artifacts are backed up at
+  `cfm_v2k_stale_0f881d99/`.
 - **Card:** `python3 scripts/report_card.py` → `REPORT_CARD.md`.
 - **Resources:** GB10 unified memory; `wonderland.slice` = 48 GB containment ceiling (operator
   directive, 2026-11-01; gpu_budget walks /proc/self/cgroup to it — verified in run 4's receipt);
@@ -163,6 +168,6 @@ only, falsified at the frozen bar — same protocol as DINO/SwAV).
 
 ## Open operator decisions
 
-None pending. The queue is pre-registered (DEC-556 full-size re-measurement → judge/probe vs the
-frozen card comparators → re-measure the remaining reds per the card → BACKWARD at all-green).
+None pending. The queue is pre-registered (DEC-558: S6 chain re-run to finish the re-stamp →
+advance the remaining reds per the measured-gap ranking → BACKWARD at all-green).
 Standing: push requires explicit permission.

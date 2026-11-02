@@ -8200,3 +8200,59 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
       (cadence 330 = 1.5 epochs, same stop shape). The governor's ceiling is ~10.5 EPOCHS OF
       DATA at this population, independent of batch size — the DEC-554 baseline-drift fact
       holds at full size, and any future full-size run's realized dose is predictable from it.
+
+- **DEC-558 (full-size re-measurement record + re-stamp completion):** the S6 chain v1
+  (04:57–05:15Z, commit `4898f7a`, behavior `d0ac576c`) completed 5 of 6 producers: S3/S4/S5
+  exit=0, fresh stamps, working=True (dynamics laws, outlets/buckets, and the objective
+  battery all re-verified on the CURRENT pipeline + the new `cfm_v2k` products); the 4 judge
+  legs exit=0, re-stamped; PATH-A provenance exit=0 (comparator provenance certified: 38
+  columns stamped pre-`as_of`). **S1+S2 exit=1 — CUDA OOM (938 MiB allocation) from a
+  co-tenant GPU spike** — and the S6 check `full_chain_in_one_invocation` therefore FAILed,
+  correctly (missing fresh S1/S2 evidence; the check's contract: exit 1 = a measurement,
+  missing fresh artifact = the chain did not run that producer). S1/S2 are
+  pipeline-invariance measurements (schema resolution, vocabulary/numeric encoding,
+  d=64-spike determinism) and are unaffected by the encoder change; my standalone scratch
+  run at 05:10 died in the same OOM class while contending with S4 — an environment event,
+  not a code event. The other five S6 checks all PASS (commit_recorded_clean `4898f7a`,
+  render determinism, artifact hashes 98.8 MB, N reported on all 28 live leg rows,
+  comparator provenance).
+  - **New full-size numbers (OLD = cfm_v2k @ `0f881d99`; pathA = FROZEN, unchanged by
+    definition; CI = the receipt's held-out interval):**
+    | leg/task | OLD | NEW | pathA | card verdict |
+    |---|---|---|---|---|
+    | sup x0 | 0.946143 | 0.946270 | 0.879091 | PASS row |
+    | sup h0 | 0.974382 | 0.974112 | 0.970781 | PASS row |
+    | sup price_sensitivity | 0.017531 | 0.020632 | −0.063629 | PASS row |
+    | sup return_proneness | 0.414476 | **0.411784** | 0.487907 | FAIL (gap 0.076) |
+    | sup churn_day | 0.371659 | 0.379279 | −0.013748 | PASS row |
+    | sup regime_switches | 0.142389 | 0.150129 | −0.008355 | PASS row |
+    | sup final_regime_days | 0.003484 | 0.003228 | −0.074482 | PASS row |
+    | sup-ledger price_sens | — | **−0.079803** | −0.063629 | FAIL: random control −0.061398 ≥ delivered |
+    | sup-ledger return_pron | — | **0.468881** | 0.487907 | FAIL (gap 0.019; CI hi +0.000004) |
+    | unsup persona_geometry | 0.059179 | **0.065962** | 0.386663 | FAIL |
+    | unsup future_geometry | 0.085278 | **0.090950** | 0.181009 | FAIL |
+    | unsup segment_structure | −0.001137 | **−0.001097** | 0.268486 | FAIL |
+    | sim dose_response_curve | 0.316424 | 0.316397 | 0.303941 | **PASS row** (CI +0.000075…+0.000482) |
+    | sim argmax_optimum | 0.244444 | 0.244444 | 0.241751 | FAIL (gap +0.0027; CI −0.0269…+0.0310 ⊃ 0) |
+    | rl known_effect_uplift | 0.2339 | **0.242065** | 0.179408 | PASS (CI +0.000937…+0.002550) |
+    | rl policy_value | 0.2464 | **0.248587** | 0.238244 | PASS (CI +0.004621…+0.016187) |
+  - **Verdict: identical to the pre-stale card (2/8 legs; rl green both columns)** — the
+    DEC-544…547 pipeline change + the retrain moved most rows UP slightly (sup churn +0.008,
+    regime +0.008, price +0.003, ledger-return +0.054; unsup persona +0.007, future +0.006;
+    rl uplift +0.008) and flipped NO verdict. The unsup-geometry front stays closed at
+    full size as well: the rung closures (DEC-552/554 objective axis; DEC-555/556
+    construction axis) persist at scale — the served composite's pairwise geometry is still
+    far below the frozen bars (gaps 0.09–0.32).
+  - **Completion step (pre-registered, mechanical):** re-run the SAME S6 chain command
+    (one invocation, no protocol/gate change; GPU free ~70 GB as of 13:2xZ vs the co-tenant
+    spike that killed S1+S2) so S1+S2+S6 stamp fresh in one run. Expected card: legs 2/8 ·
+    stages 6/6 · 0 UNKNOWN · 6 FAIL (the substantive reds only). If S1+S2 OOMs again in-chain
+    (co-tenant spike), the response is to wait for the co-tenant to idle and re-run — never to
+    weaken the check.
+  - **Remaining reds, ranked by measured gap (next one-axis front after the re-stamp):**
+    (1) simulator `argmax_optimum` — gap +0.0027, CI ±0.028: the closest row on the card;
+    (2) supervised `return_proneness` DELIVERY — gap 0.019 with the ledger having recovered
+    +0.057 (CI hi +0.000004): the brain gap is 0.076, the delivery gap is the row the ledger
+    is already closing; (3) unsup geometry trio — structural, front closed at the rung on
+    both axes; (4) supervised-ledger `price_sensitivity` random-control gate — a
+    negative-control failure to diagnose, not a gap to close.
