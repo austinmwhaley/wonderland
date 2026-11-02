@@ -185,11 +185,11 @@ def main() -> int:
 
     # Attribution: the largest adjacent drop for each metric (positive = structure lost).
     attribution: dict = {}
-    for metric in METRICS:
+    for metric in METRICS:  # principle-ok: 3 metric names, not rows/time/examples
         vals = [(s, table[s].get(metric)) for s in STAGES if table[s].get(metric) is not None]
         drops = [
             (f"{vals[i][0]}->{vals[i + 1][0]}", float(vals[i][1]) - float(vals[i + 1][1]))
-            for i in range(len(vals) - 1)
+            for i in range(len(vals) - 1)  # principle-ok: adjacent stage pairs, not rows/time
         ]
         attribution[metric] = (
             max(drops, key=lambda kv: kv[1])[0]

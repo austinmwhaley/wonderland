@@ -25,17 +25,21 @@ never a brain win.
   (B1 Lawful, B2 Sufficient, B3 Accessible, B4 Decisive, B5 Minimal & affordable, B6 Transferable,
   B7 Robust, B8 Reproducible), the four-leg judge, the stage ladder, hygiene, the blocking list and
   BACKWARD requirements. No other file is a measurement surface.
-- **B is not certified.** B3.2 is now PASS as a measurement (DEC-564): the exact counter carries
-  the fine structure (persona 0.189 / future 0.173), and the `w_counter` fold destroys it at
-  **M0→M1** (0.066 / 0.093); the trunk adds ~+0.001, the shared projection and boundary remove
-  ~0.001. The next B move is the serving/fold contract, not a trunk retrain. B2 (sufficiency `U`),
-  B4 (B-only decision), B5 (minimality/cost), B7 (robustness breadth) and B8 (artifact identity)
-  are still missing or legacy; each row on the card names the producer that must be run.
+- **B is not certified, but B3 Accessible is green (DEC-564/565/566).** B3.2 measured the fold
+  as the wall: exact counter persona/future 0.189/0.173, M0→M1 fold 0.066/0.093, trunk +0.001,
+  projection/boundary ~0. B3.3 measured linear access: served 0.4677 vs PATH A 0.4126 (+0.0551),
+  so the coarse readout is non-inferior. B3.4/B3.5 tested block-aware serving and the 128/128
+  equal-dimension idea: equal_39 reaches 0.172/0.144, equal_128 0.136/0.117, but **no block
+  combination exceeds the exact counter alone (0.189/0.173)**, and the shape block alone is
+  0.081/0.057. Serving allocation is necessary but not sufficient; the missing signal is the
+  **learned shape**. B2 (sufficiency `U`), B4 (B-only decision), B5 (minimality/cost), B7
+  (robustness breadth) and B8 (artifact identity) remain missing or legacy.
 - **B+C:** RL is green in both columns; supervised (`return_proneness`, `price_sensitivity`),
   unsupervised (geometry trio) and simulator (`argmax_optimum`) are red. The measured structural
   diagnosis — coarse per-customer attributes are present, fine structure is not readable — is on
-  the card and in DEC-560/561. The B3.2 X-ray (DEC-564) now localizes the loss to the fold: the
-  exact counter has the structure; the served vector does not.
+  the card and in DEC-560/561. B3.2 localizes the fine-structure loss to the fold; B3.3 shows the
+  coarse linear readout is non-inferior; B3.4/B3.5 show serving allocation cannot create the
+  missing learned shape. The B+C reds are the capability consequence, not a measurement gap.
 - **Certification:** S1/S2 are fixed and fresh (DEC-561: producer batch arithmetic, not a random
   co-tenant; 32 GB cap). S3/S4/S5 are fresh. S6 still fails until chain v4 runs the whole chain in
   one invocation.
@@ -49,22 +53,23 @@ The unsupervised-geometry front is closed at the rung on both axes: objective (D
 construction (DEC-555/556). DINO, SwAV, contrast removal, VICReg and block-serving were all
 falsified at the frozen bar. The mass metric's drop localizes at M0→M1 (the `w_counter` fold); at
 the rung the exact counter column cleared the bar, but at full size B3.2 measures it at 0.189
-persona vs PATH A 0.387 — necessary, not sufficient. The next question is the serving contract,
-not another consumer tuning pass.
+persona vs PATH A 0.387 — necessary, not sufficient. The serving contract has now been measured
+(B3.4/B3.5): allocation helps but cannot exceed the counter, and the shape block is weaker. The
+next question is the learned shape, not another consumer tuning pass.
 
 ## Next 3 actions
 
-1. **B FIRST — B3.3 serving/fold contract:** expose the exact counter block (39-d, already stored
-   in `customer_state.embedding`) beside the learned shape block in a block-aware served object;
-   measure persona/future geometry and segment ARI at full size. Acceptance: B3.3 is current and
-   the served geometry improves over the folded 0.066; kill criterion: if the block-aware object
-   still loses to PATH A, move to B4.1/B2.1 (action-conditional objective + sufficiency `U`).
-2. **B, continued — B4.1/B2.1 and the remaining rows:** B-only decision probe, worst-case
-   sufficiency `U`, B5.1 minimality, B7.2 robustness, B6.3 broad transfer, plus legacy re-runs
-   (B1.2/B4.2/B5.2/B6.2/B7.1/B8.1). One axis per run; the one card renders each.
+1. **B FIRST — B4.1/B2.1, the learned shape:** B3 is green as accessibility, and B3.4/B3.5 show
+   serving allocation cannot exceed the exact counter. The missing signal is the learned shape, so
+   the next increment is the B-only action-conditional probe (B4.1) and the worst-case sufficiency
+   `U` (B2.1); if the probe shows the information is absent at B, the objective is the next
+   capability change. No more fold/block tuning.
+2. **B, continued — the remaining rows:** B1.2/B5.1/B5.2/B6.2/B6.3/B7.1/B7.2/B8.1, one axis per
+   run; the one card renders each. B3 is the first green section; make the others current before
+   claiming B.
 3. **B+C SECOND — after B is certified:** run chain v4 (one invocation, 32 GB cap) for S6/B8 and
    the full re-stamp, then close the remaining B+C reds (supervised, unsupervised, simulator).
-   **Project v1 THIRD** after B+C; the trunk/state axis is **DEC-565**; BACKWARD only at all-green.
+   **Project v1 THIRD** after B+C; the trunk/state axis is **DEC-567**; BACKWARD only at all-green.
 
 ## Operating facts
 

@@ -236,6 +236,82 @@ def _eval_b_row(receipts: Path, row: B.BRow, current_hash: str) -> tuple[str, st
             f"{att.get('persona_geometry', '?')} · M3/M4 "
             f"{_num(val.get('m3_m4_distance_alignment'))}",
         )
+    if row.kind == "block_serving":
+        note = _meta_problem(rc, current_hash)
+        if note:
+            return J.UNKNOWN, note
+        if not rc.get("complete"):
+            return J.FAIL, f"{name}: block-serving probe incomplete"
+        arms = rc.get("arms") or {}
+        sens = rc.get("sensitivity_counter_weight") or {}
+
+        def am(arm: str, metric: str) -> str:
+            return _num((arms.get(arm) or {}).get(metric))
+
+        vals = [v for v in sens.values() if _finite(v)]
+        flat = len(set(vals)) <= 1
+        return (
+            J.PASS,
+            "complete · persona served "
+            f"{am('served', 'persona_geometry')} / counter "
+            f"{am('exact_counter', 'persona_geometry')} / block "
+            f"{am('block_equal_variance', 'persona_geometry')} / PATH A "
+            f"{am('path_a', 'persona_geometry')} · future served "
+            f"{am('served', 'future_geometry')} / counter "
+            f"{am('exact_counter', 'future_geometry')} / block "
+            f"{am('block_equal_variance', 'future_geometry')} / PATH A "
+            f"{am('path_a', 'future_geometry')} · counter-weight sensitivity "
+            + (
+                "flat (block scale erased by per-dim z-score; dimension count is the lever)"
+                if flat
+                else str(sens)
+            ),
+        )
+    if row.kind == "linear_access":
+        note = _meta_problem(rc, current_hash)
+        if note:
+            return J.UNKNOWN, note
+        la = rc.get("linear_access") or {}
+        if not la.get("complete"):
+            return J.FAIL, f"{name}: linear-access probe incomplete"
+        arms = la.get("arms") or {}
+        served = (arms.get("served") or {}).get("mean_r2")
+        path = (arms.get("path_a") or {}).get("mean_r2")
+        if not _finite(served) or not _finite(path):
+            return J.UNKNOWN, f"{name}: linear-access values missing"
+        delta = float(served) - float(path)
+        verdict = J.PASS if delta >= -0.01 else J.FAIL
+        return (
+            verdict,
+            f"served {_num(served)} vs PATH A {_num(path)} "
+            f"(delta {delta:+.4f}, margin -0.01; "
+            f"n_fields {(arms.get('served') or {}).get('n_fields')})",
+        )
+    if row.kind == "equal_dimension":
+        note = _meta_problem(rc, current_hash)
+        if note:
+            return J.UNKNOWN, note
+        ed = rc.get("equal_dimension") or {}
+        if not ed.get("complete"):
+            return J.FAIL, f"{name}: equal-dimension probe incomplete"
+        arms = ed.get("arms") or {}
+
+        def em(arm: str, metric: str) -> str:
+            return _num((arms.get(arm) or {}).get(metric))
+
+        return (
+            J.PASS,
+            "complete · persona equal_39 "
+            f"{em('equal_39', 'persona_geometry')} / equal_128 "
+            f"{em('equal_128', 'persona_geometry')} / counter "
+            f"{em('counter_tile_39', 'persona_geometry')} / shape_pca_39 "
+            f"{em('shape_pca_39', 'persona_geometry')} / PATH A "
+            f"{em('path_a', 'persona_geometry')} · future equal_39 "
+            f"{em('equal_39', 'future_geometry')} / equal_128 "
+            f"{em('equal_128', 'future_geometry')} / counter "
+            f"{em('counter_tile_39', 'future_geometry')} / PATH A "
+            f"{em('path_a', 'future_geometry')}",
+        )
     if row.kind == "legacy":
         return J.UNKNOWN, f"legacy receipt {name} (no behavior stamp); re-run {row.producer}"
     note = _meta_problem(rc, current_hash)

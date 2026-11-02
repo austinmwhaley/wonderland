@@ -8524,3 +8524,58 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     B-only objective (B4.1) and the sufficiency `U` (B2.1), not more fold tuning.
   - **Card.** B3.2 is now PASS as a **measurement** (complete, current, numbers on the card); B3
     stays UNKNOWN until B3.3 (linear accessibility) is current. No B+C verdict changed.
+
+- **DEC-565 (B3.4 block-aware serving probe: block scale is erased; dimension count is the lever):**
+  - **Run.** `scripts/measure_block_serving.py` on cfm_v2k, 1485 split-B customers, 3.9 s,
+    receipt `encoder_block_serving.json` (fresh `d0ac576c`). Pre-registered rule: z-score each
+    block on A, scale each by `1/sqrt(dim)` (equal total variance), concatenate, score on B; no
+    B fit and no tuning to the metric.
+  - **Measured (distance fidelity; higher is better):**
+    | arm | dim | persona | future | segment ARI |
+    |---|---|---|---|---|
+    | served (current) | 256 | 0.065962 | 0.090950 | −0.001097 |
+    | exact counter | 39 | **0.189336** | **0.172705** | −0.000475 |
+    | block equal-variance | 295 | 0.095919 | 0.116944 | −0.000885 |
+    | PATH A | 41 | **0.386663** | **0.181009** | **0.268486** |
+    **Counter-weight sensitivity is identical for 0.5/1/2/4 (persona 0.095919):** the judge's
+    per-dimension z-score removes any global block scale. Under this metric, the only way to
+    weight a block is to change its **dimension count**; 39 counter dims beside 256 shape dims are
+    variance-dominated by construction.
+  - **What this means.** The exact counter is the strongest fine-structure carrier at full size,
+    but adding 256 shape dims **dilutes** it from 0.189 to 0.096. A block-aware serving fix cannot
+    work by scaling; it must allocate comparable **dimension counts** to the two blocks. That is
+    the operator's 128/128 idea, now mechanistically grounded: e.g. shape PCA to 128 dims (fit on
+    A) + counter expanded to 128 dims by a fixed repetition/expansion, or 39/39 (shape PCA to 39 +
+    exact counter 39). The next B increment tests equal-dimension blocks at full size.
+  - **Honesty.** The exact counter is a SERVED statistic, not a learned-shape claim: any gain from
+    exposing it is served-statistic sufficiency, which the card must report separately from
+    learned-shape sufficiency (B2.3). B3.4 is PASS as a measurement, not as a capability verdict;
+    the B+C judge still decides whether the served object beats PATH A.
+
+- **DEC-566 (B3 Accessible is the first green B section; the 128/128 idea helps but serving cannot create the missing shape):**
+  - **Linear access (B3.3, current):** standardized RidgeCV fit on A, R² on B, mean over the lab's
+    11 persona+future fields: **served 0.46768 vs PATH A 0.412586** (delta +0.0551; margin −0.01).
+    The served vector is linearly non-inferior on coarse fields, as expected; this is accessibility,
+    not geometry.
+  - **Equal-dimension probe (B3.4/B3.5, `encoder_block_serving.json`):**
+    | arm | dim | persona | future |
+    |---|---|---|---|
+    | served | 256 | 0.065962 | 0.090950 |
+    | counter 39 | 39 | 0.189336 | 0.172705 |
+    | block 39+256 (equal variance) | 295 | 0.095919 | 0.116944 |
+    | equal_39 (shape PCA 39 + counter 39) | 78 | **0.172136** | **0.144012** |
+    | equal_128 (shape PCA 128 + counter 128) | 256 | 0.136146 | 0.117399 |
+    | shape PCA 39 alone | 39 | 0.081390 | 0.057299 |
+    | PATH A | 41 | 0.386663 | 0.181009 |
+    Counter-weight sensitivity at 0.5/1/2/4 is identical (0.095919): the judge's per-dim z-score
+    erases block scale, so **dimension count** is the only block-weight lever. Equal dimensions
+    improve over 39+256, but **no block combination exceeds the counter alone**, and the shape block
+    is weaker than the counter. Serving allocation is necessary but not sufficient.
+  - **B3 is green:** B3.1 (S4) + B3.2 (stage decomposition) + B3.3 (linear access non-inferior) +
+    B3.4 (block-aware) + B3.5 (equal-dimension) all PASS. This means accessibility is measured and
+    the coarse readout is non-inferior; it does **not** mean the geometry beats PATH A. The B+C
+    unsupervised leg remains red, and the card shows those values separately.
+  - **Next.** The missing signal is the **learned shape**, not the serving allocation: the exact
+    counter alone is 0.189 vs PATH A 0.387, and every shape variant tested is below it. The next B
+    increment is B4.1 (action-conditional B-only probe/objective) and B2.1 (sufficiency `U`), not
+    more fold/block tuning. The serving contract remains a necessary part of the final object.

@@ -1,10 +1,10 @@
 # REPORT_CARD — B foundational, then PATH B > PATH A
 
-*Generated `2026-11-02T17:01:18+00:00` · commit `91de8a7` (`foundation-rebuild` · clean) · encoder behavior `d0ac576c3c7aa069`*
+*Generated `2026-11-02T17:10:12+00:00` · commit `88f952a` (`foundation-rebuild` · dirty) · encoder behavior `d0ac576c3c7aa069`*
 
 **Assessment:**
 
-- ❌ **B foundational:** NOT CERTIFIED — the current gate. 0/8 sections green · 4 rows PASS · 1 FAIL · 15 UNKNOWN/MISSING.
+- ❌ **B foundational:** NOT CERTIFIED — the current gate. 1/8 sections green · 7 rows PASS · 1 FAIL · 14 UNKNOWN/MISSING.
 - ❌ **B+C consequence:** NOT DONE — 2/8 legs green · stages 5/6 · backward open: 0. Reported for diagnosis; downstream of B.
 - ⚪ **Project v1:** not assessed on this card (full stack is a separate scope).
 
@@ -34,7 +34,7 @@ The judge below is the **consequence** (B+C). This section is **B itself**: a ro
 | B2.2 | Full-history oracle gap | excess loss of E vs the full-history oracle at fixed capacity | ❔ UNKNOWN | missing producer: measure_sufficiency_law.py |
 | B2.3 | Learned-only attribution | sufficiency of the learned shape vs the served statistics, reported separately | ❔ UNKNOWN | missing producer: measure_sufficiency_law.py |
 
-### B3 — Accessible · ❔ UNKNOWN
+### B3 — Accessible · ✅ PASS
 
 *Can simple heads read what is there, at every stage?*
 
@@ -42,7 +42,9 @@ The judge below is the **consequence** (B+C). This section is **B itself**: a ro
 |---|---|---|---|---|
 | B3.1 | Outlet accessibility (S4) | per-bucket accessibility parity + per-bucket negative controls | ✅ PASS | judge_stages.json:S4 working=True |
 | B3.2 | Stage decomposition M0->M1->served | the fine-structure metric at each stage, so a loss is attributed to a stage | ✅ PASS | complete · persona M0 0.1893 → M1 0.06572 → served 0.06596 · future M0 0.1727 → M1 0.09323 → served 0.09095 · largest drop M0_exact_counter->M1_fold_only · M3/M4 0.9981 |
-| B3.3 | Linear accessibility (legacy) | ridge probe E vs table on the old 6k reference | ❔ UNKNOWN | legacy receipt encoder_accessibility.json (no behavior stamp); re-run the legacy accessibility producer |
+| B3.3 | Linear accessibility (current) | mean ridge R2 on A->B over the lab's persona+future fields; served vs PATH A | ✅ PASS | served 0.4677 vs PATH A 0.4126 (delta +0.0551, margin -0.01; n_fields 11) |
+| B3.4 | Block-aware serving geometry | exact counter block beside the learned shape, equal total variance; persona/future/ARI | ✅ PASS | complete · persona served 0.06596 / counter 0.1893 / block 0.09592 / PATH A 0.3867 · future served 0.09095 / counter 0.1727 / block 0.1169 / PATH A 0.181 · counter-weight sensitivity flat (block scale erased by per-dim z-score; dimension count is the lever) |
+| B3.5 | Equal-dimension serving geometry | shape PCA + counter tile at 128/128 and 39/39; persona/future/ARI at full size | ✅ PASS | complete · persona equal_39 0.1721 / equal_128 0.1361 / counter 0.1893 / shape_pca_39 0.08139 / PATH A 0.3867 · future equal_39 0.144 / equal_128 0.1174 / counter 0.1727 / PATH A 0.181 |
 
 ### B4 — Decisive · ❔ UNKNOWN
 
@@ -175,7 +177,6 @@ The leg verdict above is computed from these rows; a task can PASS while its leg
 - `B B2.1 Worst-case sufficiency U — missing producer: measure_sufficiency_law.py`
 - `B B2.2 Full-history oracle gap — missing producer: measure_sufficiency_law.py`
 - `B B2.3 Learned-only attribution — missing producer: measure_sufficiency_law.py`
-- `B B3.3 Linear accessibility (legacy) — legacy receipt encoder_accessibility.json (no behavior stamp); re-run the legacy accessibility producer`
 - `B B4.1 B-only dose-response / argmax — missing producer: measure_decision_law.py`
 - `B B4.2 OPE / IPS known-effect recovery (legacy) — legacy receipt encoder_causal_ci.json (no behavior stamp); re-run the legacy causal producer`
 - `B B4.3 Action-invariance — missing producer: measure_decision_law.py`

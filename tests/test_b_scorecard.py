@@ -45,7 +45,7 @@ def test_missing_b_rows_are_unknown_and_name_the_producer(tmp_path):
     b = info["summary"]["b"]
     assert b["pass"] == 0
     assert b["unknown"] >= 15
-    assert b["missing"] >= 15
+    assert b["missing"] >= 12
     assert b["sections_green"] == 0
     assert info["b_verdicts"]["B2.1"] == J.UNKNOWN
     assert info["b_verdicts"]["B4.1"] == J.UNKNOWN
@@ -134,3 +134,42 @@ def test_a_stale_stage_decomposition_is_unknown(tmp_path):
     _write(tmp_path, "encoder_stage_decomposition.json", body)
     _, info = RC.render(tmp_path, HASH)
     assert info["b_verdicts"]["B3.2"] == J.UNKNOWN
+
+
+def test_linear_access_receipt_can_pass_and_carries_the_delta(tmp_path):
+    body = {
+        "_meta": _meta(),
+        "complete": True,
+        "linear_access": {
+            "complete": True,
+            "arms": {
+                "served": {"mean_r2": 0.4677, "n_fields": 11},
+                "path_a": {"mean_r2": 0.4126, "n_fields": 11},
+            },
+        },
+    }
+    _write(tmp_path, "encoder_block_serving.json", body)
+    md, info = RC.render(tmp_path, HASH)
+    assert info["b_verdicts"]["B3.3"] == J.PASS
+    assert "0.4677" in md and "0.4126" in md
+
+
+def test_equal_dimension_receipt_can_pass_and_carries_the_blocks(tmp_path):
+    body = {
+        "_meta": _meta(),
+        "complete": True,
+        "equal_dimension": {
+            "complete": True,
+            "arms": {
+                "equal_39": {"persona_geometry": 0.1721, "future_geometry": 0.1440},
+                "equal_128": {"persona_geometry": 0.1361, "future_geometry": 0.1174},
+                "counter_tile_39": {"persona_geometry": 0.1893, "future_geometry": 0.1727},
+                "shape_pca_39": {"persona_geometry": 0.0814, "future_geometry": 0.0573},
+                "path_a": {"persona_geometry": 0.3867, "future_geometry": 0.1810},
+            },
+        },
+    }
+    _write(tmp_path, "encoder_block_serving.json", body)
+    md, info = RC.render(tmp_path, HASH)
+    assert info["b_verdicts"]["B3.5"] == J.PASS
+    assert "equal_39 0.1721" in md
