@@ -90,7 +90,10 @@ next question is the learned shape, not another consumer tuning pass.
    family" is a no-op diff; the one-axis retrain RESTATES the axis as the missing floor:
    `--set objectives=<cfm_v2k's 13> + rank + iso` (graded PR objective + self-throttling
    MP-band hinge), everything else byte-identical, fresh out-dir `/tmp/opencode/o3axis_i`,
-   GPU under safe_run. Accepted on B rows: eff_rank ≥ 30 in O3's own receipt AND B3.2
+   GPU under safe_run. Attempt 1 was refused at the config surface (tuple-field type guard on
+   `objectives`; the log also exposed the CLI default `sample_customers=500` vs the matched
+   control's full population) — recorded in DEC-572; attempt 2 = the documented comma-separated
+   tuple spelling + explicit `--customers 5000`, semantic diff unchanged. Accepted on B rows: eff_rank ≥ 30 in O3's own receipt AND B3.2
    M4_served persona ≥ 0.15 (frozen consumer) AND B3.3 served mean R² ≥ 0.45, stable run.
    Then O4 (decision objective on the stream's own 100%-randomized offer arm; acceptance =
    **B4.1**).

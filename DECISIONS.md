@@ -8914,7 +8914,10 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     axis), all 13 predictive objectives, the four canonical `--set` overrides
     (`ledger_recency/serve_unfaded/use_counter/counter_type_values` true), weight_mode
     equal, seed 0, as_of 2025-01-01 → split_seed 6529885151769 → the same A=3515/B=1485,
-    no `--customers` (full population A), `LG_SCAN=eager`, `safe_run.py` launcher,
+    explicit `--customers 5000` (full population A — the CLI default is the 500-customer
+    working base, `cfm_config.py` 168 / `customer_foundation_model.py` 286; cfm_v2k's registry
+    records `sample_customers=5000` and its log has no `[read]` scale-guard line, which fires
+    only when the population exceeds 3× the sample), `LG_SCAN=eager`, `safe_run.py` launcher,
     GPU (operator 2026-11-02: whatever is best for the task; the trainer's own
     gpu_budget seatbelt + safe_run cgroup derive the cap — verify the `[gpu-budget]`
     receipt at launch). Fresh out-dir `/tmp/opencode/o3axis_i` (NEVER cfm_v2k, DEC-571);
@@ -9000,5 +9003,22 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     identity when O3 is the measured object; cfm_v2k receipts stay as the canonical
     baseline until a swap decision); (5) commit. No judge re-aim, no B+C re-score, no
     canonical swap inside DEC-573 (B-only, DEC-568).
-  - **Status.** Pre-registered, committed before the run. The O3 retrain and its card delta
-    land as their own chunk (DEC-573).
+  - **Attempt 1 (refused at the config surface — no training, no artifact, zero GPU-minutes;
+    recorded).** Launched with a JSON-style list, `--set objectives=["next",...]`:
+    `apply_set_overrides`'s own type guard refused it (`cfm_config.py` 92-102: `objectives`
+    is a tuple field, a list is not a tuple) and the run exited before the first `[govern]`
+    step; `/tmp/opencode/o3axis_i` was never created — a clean refusal, which is the guard's
+    job. The same launch log exposed a second latent mismatch the pre-registration's matched
+    control would have been broken by: with no `--customers`, the CLI default is the 500-
+    customer working base (`CFMConfig.sample_customers = 500`, `cfm_config.py` 168), and the
+    `[read]` scale guard then samples ~1500 (3×500, hash threshold 300000/1e6) — attempt 1
+    would have trained on ~350 A-sequences, not the pre-registered A=3515/B=1485. (DEC-556's
+    "no `--customers`" means no sub-sampling BELOW the full population; cfm_v2k's own registry
+    records `sample_customers=5000`, and this DEC's matched-control line is corrected to say
+    so explicitly.) **Attempt 2 fixes both as launch syntax only**: the bare comma-separated
+    declaration — the tuple field's documented spelling (`cfm_config.py` 83-91: a value
+    declaring nothing is a rejection, never an empty tuple) — and explicit `--customers 5000`.
+    The semantic diff (13 objectives + `rank` + `iso`, every other field byte-identical) is
+    UNCHANGED from this pre-registration; the gates, bars and branches are untouched.
+  - **Status.** Pre-registered (attempt 1 recorded above). O3 attempt 2 is in flight; the
+    retrain and its card delta land as their own chunk (DEC-573).
