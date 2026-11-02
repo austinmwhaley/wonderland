@@ -1,7 +1,7 @@
 # STATUS — wonderland
 
 *Live state only. History lives in `DECISIONS.md` (append-only) and `git log`.
-Rewritten 2026-11-01 (DINO dose front). If this file grows past ~150 lines, it is becoming a log again.*
+Rewritten 2026-11-02 (DINO falsified, DEC-552; SwAV front). If this file grows past ~150 lines, it is becoming a log again.*
 
 ## Macro
 
@@ -35,7 +35,7 @@ BACKWARD not yet run — it runs only against an all-green card.
 
 ## The one active front: unsupervised geometry (entanglement)
 
-Diagnosis chain (DEC-548…550, all rung measurements):
+Diagnosis chain (DEC-548…552, all rung measurements):
 
 - **Temporal drift is not the axis** (DEC-548): `proj(y)`-based contrast falsified.
 - **Attribution probe** (CPU, validates the judge to the 3rd decimal): the served donor decodes
@@ -46,49 +46,52 @@ Diagnosis chain (DEC-548…550, all rung measurements):
   boundary is an isometry, so the fix cannot live in the readout.
 - **Falsified cheaply, in sequence:** contrast-removal (persona 0.1295), VICReg isotropy (0.1400) —
   both within the rung noise band 0.1295–0.1400. No covariance-shaping objective moves it.
-- **DINO self-distillation (DEC-550, pre-registered):** label-free EMA-teacher structure pressure
-  on the exact served composite `proj(h + W_c·M)`. Run 1 (B=16, 266 governed steps): directional
-  (persona 0.1520, ~2σ above noise) but under-dosed vs the bar (0.217); mechanical cause —
-  32 views/step and teacher still ~35% initialized.
-- **Runs 2 and 3 both died to the watchdog's live-fire test sweep** (post-mortem in DECISIONS,
-  2026-11-01): the harness placed them in a vte scope outside `wonderland.slice`, and my own
-  pytest (`test_gpu_budget`'s `--once` sweep) SIGTERM'd them — not OOM, not the inductor.
-  Fixed: the sweep test now skips while a producer is live (verified against run 4), and jobs
-  launch through `scripts/safe_run.py` into the 48G slice.
-- **Run-4 protocol verified before launch (DEC-551, committed `82b652a`):** full DINO model-side
-  audit vs the DEC-550 pre-registration — the running code IS the pre-registered mechanism
-  (out-dim 32·dim, head, dedicated `d_` copies, own 0.996 momentum, center 0.9, temps, drop
-  U[0.2,0.5], 3-extra-pass cost); two recorded clarifications, both by design: the counter fold
-  (`w_counter` + `CounterBlock`) is live on the teacher side because it is the served-composite
-  *definition* (DEC-550 grades the exact served composite; the lag engine is the dedicated
-  trunk/proj/head EMA), and teacher tokenization reuses the JEPA EMA copies (documented at
-  implementation). Judge + attribution-probe scripts and the `cfm_products.duckdb` filename
-  contract verified end-to-end.
-- **Run 4 (IN FLIGHT; measured pace ~6–8 s/step — est. ~01:30–02:00 done incl. products build
-  + judge):** the pre-registered dose unchanged —
-  `LG_SCAN=eager`, `--set batch=64 --set budget_steps=800` (128 views/step; teacher to ~4%
-  init; governor convergence stop intact, 800 is a ceiling — principle 2), launched via
-  `safe_run.py` (conformance receipt: slice cap 48.0 GB, seatbelt cgroup-clamp 45.06 GB).
-  **Frozen bars:** rung segment-ARI ≥ 0.095 OR persona-dist ≥ 0.217; no supervised row regressing
-  > 0.03 abs vs `j_base800`; probe-persona R² ≥ 0.40 (collapse guard).
+- **DINO self-distillation FALSIFIED (DEC-550/552):** two dose runs on the served composite.
+  Run 1 (B=16, 266 governed steps, 8,512 views): persona 0.1520 (~2σ above the noise band
+  0.1295–0.1400), bar not met. Run 4 (B=64, `safe_run` slice-conformant, deterministic): the
+  governor stopped at step 266 on patience, but the SAVED state is the best-val step-38 state
+  (4,864 views, teacher 14% progressed) — the composite val, now including the self-referential
+  dino term, drifted monotonically 4.93 → 6.04. Judge: persona **0.1490** (bar ≥ 0.217),
+  segment-ARI **−0.0002** (bar ≥ 0.095), supervised guard clean (worst churn_day −0.0298) →
+  **falsified** per the pre-registered clause. Dose-response across runs 1 and 4 is FLAT
+  (0.1520 vs 0.1490 at 1.75× the view dose): DINO's structure pressure saturates at ~+2σ,
+  ~1/6 of the bar's +0.08. Pre-launch audit (DEC-551): the running code was the pre-registered
+  mechanism; bundle now reverted (`78f8633`), `dino_*` fields remain inert committed defaults.
+- **Decisive attribution fact (run-4 probe, four arms, judge protocol):** persona distance
+  fidelity lives in the **EXACT COUNTER arm — 0.2162, i.e. 99.6% of the frozen bar (0.217)**.
+  Trunk alone 0.0112; served composite 0.149 (the blend dilutes the mass arm); PATH A 0.404.
+  Entanglement persists: served probe-persona R² 0.585 ≈ PATH A 0.587 while ARI ≈ 0.
+- **Harness failures closed (runs 2–3, post-mortem `12a1f54`):** both died to the watchdog's
+  live-fire test sweep (out-of-slice harness placement + my own pytest). The sweep test now skips
+  while a producer is live (verified against run 4); jobs launch through `scripts/safe_run.py`
+  into the 48G slice (run-4 receipts: slice cap 48.0 GB, seatbelt clamp 45.06 GB, peak 13.94 GiB).
 
-**Uncommitted DINO bundle:** `cfm_model.py` + the DINO hunks in `cfm_training.py` (active code).
-The `dino_*` recipe fields are committed with the `budget_steps` mechanism (inert defaults).
-Gates (ruff / principle audit / pytest) run on it only after the dose verdict; falsify → revert
-the bundle, keep the recorded result. **Fast tier is fully green (rc=0) on the committed tree** —
-14 pre-existing reds closed this session (one-serving-readout contract, tuple unpacks, eff_rank,
-minimal-frame resolver, watchdog pattern drift; DECISIONS triage entry).
+**Next axis (pre-registered by DEC-550): SwAV prototypes** — Sinkhorn-balanced assignment to k
+learned prototypes on the served composite; k from the measured parallel-analysis signal rank
+(~15), NOT from judged segment cardinality (teaching the encoder its exam answer violates the
+anti-overfit clause). DEC-552's flag is part of the SwAV protocol: the governor's val sum
+EXCLUDES the self-referential objective's own term (the 11-objective portfolio sum selects; the
+new term trains only). Frozen rung bars unchanged. If SwAV falsifies too, the 4-arm table
+reframes the front: the mass arm already sits at the bar, so the cheapest remaining lever is the
+composite CONSTRUCTION (state/interface axis — keep the mass arm's distance structure in the
+blend), not further objective pressure.
+
+**Tree:** fast tier rc=0, ruff check/format clean, principle audit strict rc=0 — all gates green
+on the committed tree (14 pre-existing test reds + 53 ruff errors + 10 unformatted files closed
+this session; audit ratchet shrank 69→67 with no new logical acceptances).
 
 ## Next 3 actions
 
-1. **Judge DINO run 4** vs the frozen DEC-550 bars (judge + bar compare pre-staged at
-   `/tmp/opencode/judge_r4.py`; products at `/tmp/opencode/r4_dino64/`).
-2. **If a bar is met:** attribution probe on the new products (collapse guard R² ≥ 0.40),
-   full-size adoption run (re-estimate with DINO's ~3 extra ssm passes + co-tenancy), S6 chain,
-   card regeneration; commit the DINO bundle after ruff + `principle_audit --all --strict` + pytest.
-3. **If falsified or the run dies again:** record exit + last log lines, revert the bundle,
-   next axis = SwAV prototypes (Sinkhorn-balanced clustering, k data-derived — NOT from judged
-   segment cardinality, which is teaching).
+1. **SwAV pre-registration (DEC-553):** derive k from the measured parallel-analysis signal rank
+   on the base rung products (`measure_rank_attainability.py --derive`), freeze the protocol
+   (Sinkhorn-balanced assignment, EMA teacher head, governor val sum excludes the swav term,
+   B=64, 800-step ceiling, frozen rung bars), then implement + smoke.
+2. **SwAV dose run** (one axis: the objective; launched via `safe_run.py`), judge against the
+   frozen bars, probe for attribution.
+3. **If met:** full-size adoption run + S6 chain + card regeneration; commit the SwAV bundle
+   after all gates. **If falsified:** record + revert, then the front shifts to composite
+   construction (the mass arm already sits at 0.2162 ≈ the bar; keep its distance structure in
+   the blend — state/interface axis).
 
 After the geometry front: re-measure `return_proneness` (full-size) and `argmax_optimum`, then
 the card can go 8/8 → run BACKWARD.
@@ -113,5 +116,5 @@ the card can go 8/8 → run BACKWARD.
 
 ## Open operator decisions
 
-None pending. The queue is pre-registered (DINO dose → SwAV → return_proneness /
-argmax_optimum re-measurement). Standing: push requires explicit permission.
+None pending. The queue is pre-registered (SwAV dose → [if falsified: composite construction]
+→ return_proneness / argmax_optimum re-measurement). Standing: push requires explicit permission.
