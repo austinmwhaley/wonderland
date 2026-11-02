@@ -892,10 +892,21 @@ def leg_simulator(db: Path, demo: Path) -> dict:
             )
         ]
 
-        # ---- does the recovered surface NAME the optimum? --------------------------
-        # one fit per arm, then every (customer x level) row scored in ONE batch: fitting per
-        # customer is the per-item anti-pattern the doctrine bans, and would let each customer's
-        # fit see a different amount of data.
+        # ---- does the recovered surface NAME the optimum? (protocol v2, DEC-559/560) ----
+        # One level-conditional DEC-407 head per identified level: the dumb consumer querying
+        # the donor AT AN ACTION. v1 fit a single head on [rep; level one-hot]; the rep is then a
+        # level-invariant per-customer offset that cancels in the argmax, so the row measured
+        # the instrument, not the donor (receipt proof: random/destroyed equal brain EXACTLY,
+        # value pinned at the population-average curve's argmax level, gate unreachable by
+        # construction). v2 fits one head per level on A cells at that level and queries it at
+        # each B cell - fitting per customer remains the per-item anti-pattern the doctrine
+        # bans. Same rows, truth, tie-break, paired CI, and the frozen DEC-428 GBM incumbent
+        # (the table side already carries customer x level capacity, so it is the fair
+        # comparator). Controls still swap the rep half - now informative: a donor that carries
+        # per-customer response shape must beat them. Pre-registered acceptance (DEC-559):
+        # brain >= the B modal share 0.2640 proves the head reads per-customer shape off the
+        # donor; oracle curve-argmax ceiling 0.6404. If v2 still fails the gate, that is a
+        # genuine capability finding - no further instrument change.
         def rows_for(keys, source, broken=None):
             X = []
             for i, k in enumerate(keys):
@@ -911,8 +922,41 @@ def leg_simulator(db: Path, demo: Path) -> dict:
             got = np.array([levels[i] for i in curve.argmax(1)], int)
             return (got == want).astype(float)
 
-        brain_head = _ridge_head().fit(Xa, ya)
-        hit_b = hits(brain_head.predict(rows_for(bk, a["columns"][col]["B"])), bk)
+        def reps_for(keys, source, broken=None):
+            return np.vstack(
+                [source[k] if broken is None else broken[i] for i, k in enumerate(keys)]
+            )
+
+        def level_fits(keys, source, broken=None):
+            heads = {}
+            for lvl in levels:
+                idx = [i for i, k in enumerate(keys) if lvl in dr.get(k, {})]
+                heads[lvl] = _ridge_head().fit(
+                    reps_for(keys, source, broken)[idx],
+                    np.asarray([dr[keys[i]][lvl][0] for i in idx], float),
+                )
+            return heads
+
+        def level_preds(keys, source, broken, heads):
+            P = np.empty((len(keys), len(levels)))
+            for j, lvl in enumerate(levels):
+                P[:, j] = heads[lvl].predict(reps_for(keys, source, broken))
+            return P
+
+        thin_levels = [lvl for lvl in levels if len([k for k in ak if lvl in dr.get(k, {})]) < 30]
+        if thin_levels:
+            tasks.append(
+                _degenerate(
+                    "argmax_optimum",
+                    f"level-conditional head underpowered: <30 A cells at level(s) {thin_levels}",
+                )
+            )
+            columns[col] = {"tasks": tasks}
+            continue
+        hit_b = hits(
+            level_preds(bk, a["columns"][col]["B"], None, level_fits(ak, a["columns"][col]["A"])),
+            bk,
+        )
         import xgboost
 
         gbm = xgboost.XGBRegressor(**INCUMBENT).fit(Ta, ya)
@@ -925,15 +969,15 @@ def leg_simulator(db: Path, demo: Path) -> dict:
         )
         ctl_hits = {}
         for cname, brk, brk_a in (("random", rand_b, rand_a), ("destroyed", dest_b, dest_a)):
-            Xa_ctl, _ay, _ak = cells(ak, None, broken=brk_a)
-            head = _ridge_head().fit(Xa_ctl, ya[: Xa_ctl.shape[0]])
-            pred = head.predict(rows_for(bk, None, broken=brk))
+            pred = level_preds(bk, None, brk, level_fits(ak, None, broken=brk_a))
             ctl_hits[cname] = float(hits(pred, bk).mean())
         tasks.append(
             {
                 "name": "argmax_optimum",
                 "metric": "share of customers whose declared offer optimum is the argmax of the "
-                "recovered response surface (ties -> lowest level)",
+                "level-conditional recovered response surface (one DEC-407 ridge head per "
+                "identified level, fit on A cells, querying the donor at each action; "
+                "ties -> lowest level; protocol v2, DEC-559/560)",
                 "brain": round(float(hit_b.mean()), 6),
                 "pathA": round(float(hit_t.mean()), 6),
                 "ci_lo": round(float(lo), 6),
@@ -962,8 +1006,10 @@ def leg_simulator(db: Path, demo: Path) -> dict:
         },
         "path_a": a["path_a"],
         "arms": {
-            "brain": "state_embeddings donor + level one-hot -> linear head on the identified curve",
-            "brain_ledger": "brain + measure view (ledger), same head and cells",
+            "brain": "state_embeddings donor: dose-curve task on a single [donor; level] head; "
+            "argmax task on per-level heads querying the donor at each action (protocol v2, "
+            "DEC-559/560)",
+            "brain_ledger": "brain + measure view (ledger), same heads and cells",
             "pathA": "PATH A wide table + level one-hot -> the DEC-428 GBM incumbent",
         },
     }

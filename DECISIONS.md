@@ -8319,3 +8319,48 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     (launch in background, end the turn immediately) so S1+S2 sees a calm co-tenant; if S1+S2
     dies on co-tenant pressure again, retry once more in a no-generation window — never weaken
     the check, never touch the slice cap (operator directive, 48 GB).
+
+- **DEC-560 (argmax_optimum protocol v2 adopted and measured; fronts consolidated):**
+  operator decision (question 2026-11-02, after the plain-language DEC-559 write-up): adopt
+  option 1 — the level-conditional head for the argmax block. The operator had leaned toward
+  option 3 (leave as FAIL); the deciding facts presented: under v1 the row's value is a
+  data+instrument constant (0.244444 = P_B(opt=L0); unreachable gate even in the best
+  level-invariant case L2=0.2640), so option 3 would park a permanent red that no encoder
+  improvement can clear — the card could never reach all-green and BACKWARD could never run.
+  - **Implementation (scripts/measure_judge_law.py — argmax block of leg_simulator + its arms
+    dict only; scripts/ is outside the behavior trees, so the behavior hash stays d0ac576c):**
+    one DEC-407 ridge head per identified level, fit on A cells at that level (rep only, same
+    self-selecting alpha grid), querying the donor at each B cell; same rows/truth/tie-break
+    (lowest level)/paired bootstrap CI/frozen DEC-428 GBM incumbent (the table side already
+    carries customer×level capacity — the fair comparator); controls still swap the rep half
+    (random = A-scale Gaussian, destroyed = per-column permutation) and are now informative;
+    fail-safe: a level with <30 A cells excludes the task as degenerate; `dose_response_curve`
+    untouched (single [rep; onehot] head, informative controls, passing). Gates: fast tier
+    green (all-dots, RC=0), ruff check + format clean, principle_audit --all --strict rc=0.
+  - **Both-protocol numbers (argmax_optimum, n=1485 B, frozen comparator 0.241751):**
+    | protocol | brain | delivery | controls (brain col) | verdict |
+    |---|---|---|---|---|
+    | v1 single [rep; onehot] head | 0.244444 (P_B(opt=L0) exact — level-invariant) | 0.244444 | rand 0.244444 / dest 0.244444 (= brain) | FAIL both columns; instrument blind (DEC-559) |
+    | v2 level-conditional heads | **0.245791** | **0.259259** | rand 0.244444 / dest **0.253872** | brain: FAIL (gate +0.0040, CI −0.0256…+0.0317 ⊃ 0; destroyed ≥ brain). delivery: FAIL by 0.0028 — point 0.259259 ≥ floor 0.231751 but ci_lo −0.012795 < −0.01 floor |
+    (scratch run /tmp/opencode/j_v2, 22.5 s, deterministic SEED; the S6 chain re-stamps the
+    canonical receipts — acceptance: chain values must equal these.)
+  - **Pre-registered acceptance (DEC-559): NOT MET.** "brain ≥ B modal share 0.2640 proves the
+    head reads per-customer shape off the donor" → 0.245791 < 0.2640. The whole band —
+    random 0.2444 / brain 0.2458 / destroyed 0.2539 = 363/365/377 of 1485 — sits at the
+    population-curve level, far below the oracle identified-curve argmax 0.6404 (951/1485)
+    and even below the naive modal share 0.392/1485. **Genuine capability finding: the
+    served donor does not carry per-customer response shape readable by a level-conditional
+    linear head.** The ledger view DOES help the argmax (+0.0135 vs the brain column,
+    0.2593): per-customer COARSE structure is in the ledger; per-customer SHAPE is not in
+    the served composite at this head capacity.
+  - **Front consolidation (measured):** the simulator argmax (v2), the unsup geometry trio
+    (persona 0.066 vs 0.387; future 0.091 vs 0.181; segment −0.001 vs 0.268), and the
+    supervised return_proneness (0.412 vs 0.488; the delivery ledger recovers +0.057 but not
+    the full gap) all point at ONE structural defect: the served 256-d composite carries
+    per-customer coarse attributes (probe R² 0.58 ≈ PATH A) but not per-customer fine
+    structure (pairwise geometry, level-conditional response shape) in readable form. The
+    rung front closed on the objective and construction axes (DEC-552…556); the remaining
+    axis is the trunk/state itself — whether the contractive selective-SSM state can hold
+    per-customer fine structure at all (the lawful bounded-memory tension: lossy monoid
+    forgets; the M0→M1 fold destroyed 41% of the mass metric at the rung). Next one-axis
+    front after the re-stamp completes, pre-registered as DEC-561 before any run.

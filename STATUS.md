@@ -18,14 +18,15 @@ are never a brain win.
 
 **Stage:** Layer 0 — encoder not yet mastered. Layer 1 (certification, `U`) is not started.
 
-**Progress:** **re-stamp nearly complete (DEC-558): 5 of 6 producers fresh at `d0ac576c`** —
-the full-size re-measurement is DONE (current tree on the card's 5000-customer population;
-dose ceiling 10.45 epochs, batch 64 derived, tag `…b64…o4c3b5899`; products canonical at
-`cfm_v2k`, old artifacts backed up to `cfm_v2k_stale_0f881d99`). Chain v1 re-stamped S3/S4/S5
-+ 4 judge legs + PATH-A provenance (all working as measured); **S1+S2 died on a co-tenant CUDA
-OOM spike** → S6's `full_chain_in_one_invocation` correctly FAILed. Card renders legs 2/8 ·
-stages 3/6 · 2 UNKNOWN · 7 FAIL (the 6 substantive reds + S6). Chain re-run (single
-invocation) completes the re-stamp; verdicts did NOT change from the pre-stale card.
+**Progress:** **re-stamp 5/6 + argmax protocol v2 adopted (DEC-558/560).** The full-size
+re-measurement is DONE (fs_full: dose ceiling 10.45 epochs, batch 64, tag `…b64…o4c3b5899`;
+products canonical at `cfm_v2k`; old artifacts at `cfm_v2k_stale_0f881d99`). S3/S4/S5 + 4
+judge legs + provenance are fresh at `d0ac576c` and working; S1+S2 died twice on co-tenant
+unified-memory spikes (CUDA OOM, then SIGKILL at 135 s) → the S6 chain re-runs in a
+no-generation window. Operator adopted **protocol v2 for `argmax_optimum`** (level-conditional
+heads; DEC-559/560): measured — brain 0.2458 / delivery 0.2593, controls now informative,
+destroyed ≥ brain → **genuine finding: the served donor does not carry per-customer response
+shape**; the simulator stays red both columns. Verdicts otherwise unchanged: legs 2/8.
 
 ## Micro — current state (measured)
 
@@ -41,11 +42,13 @@ state (new checkpoint, same population split_seed 6529885151769, A=3515/B=1485):
 | supervised | ❌ FAIL — `return_proneness` 0.4118 vs 0.4879 (gap 0.076; all other 6 rows pass) | ❌ FAIL — `price_sensitivity` random control ≥ delivered (−0.0614 vs −0.0798) + `return_proneness` 0.4689 vs 0.4879 (gap 0.019, CI hi +0.000004) |
 | unsupervised | ❌ FAIL — `persona_geometry` 0.066 vs 0.387, `future_geometry` 0.091 vs 0.181, `segment_structure` −0.001 vs 0.268 (full-size) | ❌ FAIL — same rows outside the delivery margin |
 | **rl** | ✅ **PASS** — uplift 0.2421 vs 0.1794, policy_value 0.2486 vs 0.2382 | ✅ **PASS** |
-| simulator | ❌ FAIL — `argmax_optimum` 0.2444 vs 0.2418, gap +0.0027, CI (−0.0269, +0.0310) ⊃ 0 (dose_response 0.3164 vs 0.3039 PASSES brain-alone) | ❌ FAIL — same row, delivery margin |
+| simulator | ❌ FAIL — `argmax_optimum` v2: 0.2458 vs 0.2418, gap +0.004, CI (−0.0256, +0.0317) ⊃ 0, destroyed control ≥ brain (0.2539) — the donor does not carry per-customer response shape (DEC-560, pre-registered finding) | ❌ FAIL — v2 delivery 0.2593 passes the point floor (0.2318) but ci_lo −0.0128 < −0.01; dose_response 0.3164 vs 0.3039 PASSES |
 
 Stages: S3/S4/S5 **PASS** (re-verified on the current pipeline + new products); S1/S2 UNKNOWN
-(stale `0f881d99` — the chain's S1+S2 producer hit a co-tenant CUDA OOM; re-run completes it);
-S6 FAIL (`full_chain_in_one_invocation` — same cause). Hygiene H1–H5: **5/5 PASS.**
+(stale `0f881d99` — chain S1+S2 died on co-tenant unified-memory pressure twice: CUDA OOM at
+249 s, then SIGKILL at 135 s, both during active-generation turns; the next chain runs in a
+no-generation window, DEC-559 addendum); S6 FAIL (`full_chain_in_one_invocation` — same
+cause). Hygiene H1–H5: **5/5 PASS.**
 BACKWARD not yet run — it runs only against an all-green card.
 
 ## Closed front: unsupervised geometry at the rung (DEC-548…556)
@@ -129,23 +132,24 @@ only, falsified at the frozen bar — same protocol as DINO/SwAV).
 
 ## Next 3 actions
 
-1. **S6 chain re-run (launching now):** the SAME command (`measure_certification_law.py
+1. **S6 chain v3 (launching, no-generation window):** the SAME command (`measure_certification_law.py
    --products cfm_v2k --demo demo_v2 --train-log cfm_v2k/train.log` via `safe_run.py`,
-   `LG_SCAN=eager`, one invocation, no protocol/gate change — DEC-558 completion step). Chain v1
-   proved everything else: S3/S4/S5 + legs + provenance exit=0 and fresh; only S1+S2 (a co-tenant
-   CUDA OOM, 938 MiB allocation, ~70 GB free now) and the S6 full-chain check remain. Est. ~20 min
-   (v1 measured 19 min under the same contention). Expected card: legs 2/8 · stages 6/6 · 0
-   UNKNOWN · 6 FAIL (the substantive reds only). If S1+S2 OOMs again: wait for the co-tenant to
-   idle and re-run — never weaken the check.
-2. **Commit the completed re-stamp** (receipts + card + STATUS tick) once the chain exits 0/1
-   with S6 working=True; verify the 5 other S6 checks still pass (commit_recorded_clean on the
-   new HEAD, render determinism, artifact hashes, N on all rows, comparator provenance).
-3. **Advance the next one-axis front** per DEC-558's measured-gap ranking: (1) simulator
-   `argmax_optimum` — gap +0.0027 with CI ±0.028, the closest row on the card; (2) supervised
-   `return_proneness` delivery — gap 0.019 with the ledger already recovering +0.057; (3) unsup
-   geometry trio — structural, front closed at the rung on both axes; (4) the
-   `price_sensitivity` random-control gate — a negative-control failure to diagnose, not a gap
-   to close. When the card's gate-of-record is all green → run BACKWARD.
+   `LG_SCAN=eager`), now with protocol-v2 `argmax_optimum` (DEC-560). Acceptance: S1+S2 + S6
+   fresh and working (card → legs 2/8 · stages 6/6 · 0 UNKNOWN · 6 FAIL, the substantive reds
+   only); argmax values equal the deterministic scratch (0.245791 / 0.259259). If S1+S2 dies on
+   co-tenant pressure again: one retry in a no-generation window — never weaken the check,
+   never touch the 48 GB slice cap.
+2. **Commit the completed re-stamp** (receipts + card + STATUS tick) once the chain exits with
+   S6 working=True; verify the five other S6 checks (commit_recorded_clean on the new HEAD,
+   render determinism, artifact hashes, N on all rows, comparator provenance).
+3. **DEC-561 — pre-register the next one-axis front on the consolidated structural defect
+   (DEC-560):** the served composite carries per-customer coarse attributes (probe R² ≈ PATH A)
+   but not per-customer fine structure (geometry trio + level-conditional response shape +
+   return_proneness gap). First attribution probe, cheapest: does the fine structure exist in
+   the pre-fold state (full-size M0→M1 decomposition, rung-attribution generalized) or is it
+   lost in the trunk's contractive dynamics? One measured axis per run; the rung closures
+   (objective DEC-552/554, construction DEC-555/556) bound what that answer can fix.
+   When the card's gate-of-record is all green → run BACKWARD.
 
 ## Operating facts
 
