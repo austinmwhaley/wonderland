@@ -7368,3 +7368,40 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   - Every training run `mkdir -p`s the out-dir and `tee`s to `<out>/train.log` (the earlier `tee`
     failed because the directory did not exist yet — a 20-minute run lost to a missing `mkdir`).
 - **No gate, threshold or model change** beyond recording one more field.
+
+## DEC-543 — [MACRO + PRE-REGISTERED] the missing capability is IDENTITY, not prediction
+- **Macro read.** Four of the seven remaining red rows ask the same question: does the state
+  preserve **who the customer is** (static traits and latent geometry)? `return_proneness`,
+  `persona_geometry`, `future_geometry`, `segment_structure`. Every objective the encoder trains
+  on is *predictive* (next event, dt, value, sf, agg, mtp). Nothing rewards identity stability.
+  The table wins these rows because aggregates *are* identity statistics.
+- **Root cause found in the contrast objective.** It computes
+  `cross_entropy(S @ S.T / tau, arange(B))` over a batch of DIFFERENT customers — every other
+  customer is a negative, so the loss pushes all customers apart. That is uniformity, not shared
+  geometry, and it is why `persona_geometry` measures 0.059 against PATH A's 0.387.
+- **Fix (self-supervised, no graded trait).** Temporal contrastive: positives are the SAME
+  customer at an early and a late valid position in its own sequence; negatives are other
+  customers. InfoNCE over 2B views. This rewards identity stability directly and cannot leak a
+  label: the only supervision is "these two states describe the same customer".
+- **Prediction.** `persona_geometry` / `future_geometry` / `segment_structure` and
+  `return_proneness` move together.
+- **Falsifier.** If the unsupervised geometry rows do not improve at the 800 rung, or any
+  currently-passing trait (x0, h0, price, churn, regime, final) regresses outside noise, revert.
+- **Cost.** Rung 0/1: ~6-8 min (800 customers + leg judge). Adoption: ~70 min.
+
+## DEC-544 — [BLOCKED] temporal contrastive is correct in principle but hits a device-specific CUDA fault
+- **What was attempted.** Replace the uniformity loss (`cross_entropy(S @ S.T, arange(B))`, which
+  treats every different customer as its own class and pushes customers APART) with temporal
+  positives: the same customer at an early and a late position, InfoNCE over 2B views.
+- **Result: blocked by the device, not by the idea.** Three formulations all failed inside the
+  training process while the SAME sequence succeeds standalone:
+  1. `Z @ Z.t()` (non-contiguous) -> `CUBLAS_STATUS_NOT_SUPPORTED` (cublasSdot)
+  2. `F.linear(Z, Z)` on contiguous fp32 -> same error
+  3. `torch.einsum("id,jd->ij", Z, Z)` -> CUDA index assertion
+  A standalone reproduction (B=16, T=996, D=256, same autocast, same gather+cat+normalize+matmul)
+  succeeds for both matmul and einsum. The fault is context-specific (post-co-tenant-restart GPU
+  state / compiled-graph interaction), not a shape or logic error.
+- **Action.** Reverted to the known-good contrast form so the tree stays trainable; the temporal
+  design is recorded here and NOT abandoned. Re-attempt after a clean GPU state (fresh boot or a
+  device reset) as its own change.
+- **Cost so far.** ~25 min across three failed attempts, all inside one 20-minute co-tenant window.
