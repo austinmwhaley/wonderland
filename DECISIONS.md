@@ -7405,3 +7405,15 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   design is recorded here and NOT abandoned. Re-attempt after a clean GPU state (fresh boot or a
   device reset) as its own change.
 - **Cost so far.** ~25 min across three failed attempts, all inside one 20-minute co-tenant window.
+
+## DEC-545 — [FIX, operator-authorized] rl control: substitute the population-constant control
+- **Problem.** `known_effect_uplift`'s negative control scored R² << −1 (a conditioning artifact of
+  the wide design), so "control ≤ brain" was satisfied for an arithmetic reason. The card correctly
+  refused to count it (`H4 vacuous` → UNKNOWN) even though the brain beat PATH A on both rl tasks.
+- **Fix (authorized by the operator).** When a control is ill-conditioned, substitute the
+  **population-constant** control (predict the target mean, R² = 0 exactly) and record the
+  substitution in the receipt. This is a *stronger* control — it sits far closer to the brain than
+  −1e9 — so the row must clear a higher bar. It cannot turn a failing row green.
+- **Result.** rl `brain alone` UNKNOWN → **PASS**; rl `brain + ledger` PASS. Card: **2/8 legs,
+  6/6 stages, 0 UNKNOWN, backward 0.**
+- **Not changed.** No threshold, comparator, task or model change. Only the control's construction.

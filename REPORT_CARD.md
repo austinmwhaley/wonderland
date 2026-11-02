@@ -1,8 +1,8 @@
 # REPORT_CARD — PATH B > PATH A
 
-*Generated `2026-11-01T23:32:21+00:00` · commit `a32bbee` (`foundation-rebuild` · dirty) · encoder behavior `0f881d99d9d8203e`*
+*Generated `2026-11-02T01:58:50+00:00` · commit `d05d697` (`foundation-rebuild` · dirty) · encoder behavior `0f881d99d9d8203e`*
 
-**Assessment:** NOT DONE. Legs green: 1/8 · stages green: 6/6 · backward open: 0. This is a statement about receipts, not about effort; nothing here is a claim of universality (DEC-410: that word appears only when the coverage rows are green).
+**Assessment:** NOT DONE. Legs green: 2/8 · stages green: 6/6 · backward open: 0. This is a statement about receipts, not about effort; nothing here is a claim of universality (DEC-410: that word appears only when the coverage rows are green).
 
 The verdict is a pure function of the receipts under `docs/report_cards/experiments/`.
 Ledger points never count as progress: `brain alone` is the judge, `brain + ledger` is delivery.
@@ -17,7 +17,7 @@ Progress (`brain alone`) is a strict win. Delivery (`brain + ledger`) is a **non
 | supervised | brain + ledger (DELIVERY, non-inferiority) | ❌ FAIL | price_sensitivity: random control >= brain (-0.071848 vs -0.078078); failing: price_sensitivity, return_proneness |
 | unsupervised | brain alone (PROGRESS) | ❌ FAIL | persona_geometry: does not beat PATH A with CI excluding 0; failing: persona_geometry, future_geometry, segment_structure |
 | unsupervised | brain + ledger (DELIVERY, non-inferiority) | ❌ FAIL | persona_geometry: outside the delivery non-inferiority margin (0.01 R2); failing: persona_geometry, future_geometry, segment_structure |
-| rl | brain alone (PROGRESS) | ❔ UNKNOWN | beats PATH A but H4 is vacuous on 1/2 trait(s) (known_effect_uplift): no control readable enough to have failed |
+| rl | brain alone (PROGRESS) | ✅ PASS | 2 task(s) beat PATH A; paired CI excludes 0; controls below brain |
 | rl | brain + ledger (DELIVERY, non-inferiority) | ✅ PASS | 2 task(s) beat PATH A; paired CI excludes 0; controls below brain |
 | simulator | brain alone (PROGRESS) | ❌ FAIL | argmax_optimum: does not beat PATH A with CI excluding 0; failing: argmax_optimum |
 | simulator | brain + ledger (DELIVERY, non-inferiority) | ❌ FAIL | argmax_optimum: outside the delivery non-inferiority margin (0.01 R2); failing: argmax_optimum |

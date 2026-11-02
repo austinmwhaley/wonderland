@@ -166,11 +166,19 @@ def _task(name, metric, yb, p_brain, p_tab, r2_rand, r2_dest, ci=None) -> dict:
         _mean, lo, hi = _paired_ci((np.asarray(yb) - p_tab) ** 2 - (np.asarray(yb) - p_brain) ** 2)
     else:
         lo, hi = ci
+    # An ill-conditioned control (R2 << -1) satisfies "control <= brain" for an arithmetic
+    # reason, so it is not evidence. Substitute the POPULATION-CONSTANT control (predict the
+    # target mean; R2 = 0 exactly) for the unreadable one: that is a STRONGER control — it sits
+    # closer to the brain than -1e9 does — so the row must clear a higher bar, never a lower one.
     unreadable = [
         ctl
         for ctl, r2 in (("random", r2_rand), ("destroyed", r2_dest))
         if r2 is not None and r2 < -1.0
     ]
+    if "random" in unreadable:
+        r2_rand = 0.0
+    if "destroyed" in unreadable:
+        r2_dest = 0.0
     return {
         "name": name,
         "metric": metric,
@@ -183,6 +191,9 @@ def _task(name, metric, yb, p_brain, p_tab, r2_rand, r2_dest, ci=None) -> dict:
         "destroyed": None if r2_dest is None else round(float(r2_dest), 6),
         "comparator": COMPARATOR,
         "controls_unreadable": unreadable,
+        "controls_substituted": "population-constant (R2=0) for ill-conditioned controls"
+        if unreadable
+        else None,
     }
 
 
@@ -381,6 +392,9 @@ def _tasks_for(arm_a, arm_b, table_a, table_b, usable, rng, head: str = "linear"
                 "destroyed": None if r2_dest is None else round(float(r2_dest), 6),
                 "comparator": COMPARATOR,
                 "controls_unreadable": unreadable,
+                "controls_substituted": "population-constant (R2=0) for ill-conditioned controls"
+                if unreadable
+                else None,
             }
         )
     return tasks
