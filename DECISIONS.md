@@ -8660,3 +8660,35 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     hypothesis vs non-negotiable). D5: O2 U spec (family, fixed capacity, declared bar).
   - **Status.** Analysis + documentation only. No retrain, no judge re-aim, no U run, no card
     change until D1–D5 are decided.
+
+- **DEC-568 (scope tightening: B-only for now; B+C deferred as a reported consequence; DEC-567 options re-anchored to B rows):**
+  - **Directive.** Operator (2026-11-02): focus on B only at this point; B+C is not the near-term target.
+  - **Reframing (not "B+C is impossible").** B+C is reachable *only after* B is green — the root cause
+    (2.4-dim shape, no decision shape) is inside B. So B is the correct and only near-term target.
+    B+C stays on the card as a reported consequence (never dropped), so the end goal stays visible.
+  - **What re-anchors.** Every DEC-567 option's acceptance moves from B+C judge legs to B's own rows:
+    - **O0 ledger X-ray** — stays, now a B2/B3 measurement (does B's served object, ledger included,
+      carry fine structure; learned-only vs served-statistic attribution per certification rule 4).
+      The "delivery fixable" branch reads: the exposure fix is *inside B's serving contract*, not in B+C.
+    - **O2 `U` (B2.1/2.2/2.3)** — stays; now the headline B number. Gated on D5 (U spec).
+    - **O3 law-ablation retrain** — stays; acceptance on B rows (eff_rank ≥ 30, shape-only geometry on
+      the frozen B3.2 consumer, movement on B2 `U`), not B+C legs.
+    - **O4 decision-shape retrain** — stays; acceptance on **B4.1** (B-only action-conditional probe),
+      not the B+C simulator leg. Justified purely as B: B must carry decision shape for B4 to be green.
+    - **O5 capacity sweep → B5.1 minimality** — stays; purely B.
+    - **O1 judge delivery-column re-aim** — **deferred**; it is a B+C/judge change, held until B's rows
+      are green. **D1 withdrawn** from the immediate decision list.
+    - **O6 kill/restate** — now a B-level branch: if B's own rows cannot be met, restate B's claim before
+      touching B+C.
+    - **O8 capability sprint** — stays; unit of progress = a B-row capability delta.
+  - **The nuance (flagged).** B's rows must be taken *as a whole* — sufficiency (B2) **and**
+    accessibility (B3) **and** decisiveness (B4) **and** transfer (B6). A B that is sufficient but
+    entangled/inaccessible still will not let B+C win; that is exactly what B3 and B6 exist to catch.
+    "Focus on B" therefore means the full B section, not just U.
+  - **Card top line (once D2 accepted).** "B capability: U · shape-only geometry · decision-shape ·
+    minimality rank · transfer · robust · reproducible," with B+C as a consequence section below
+    (reported, not gated).
+  - **Pending decisions (re-listed).** D2 (O8 sprint, re-anchored + card top line), D3 (O0 ledger
+    X-ray), D4 (O3 law-ablation as labeled diagnostics), D5 (O2 `U` spec: family, fixed capacity,
+    declared bar). D1 deferred with O1.
+  - **Status.** Documentation only. No retrain, no O0 run, no card change until D2–D5 are decided.

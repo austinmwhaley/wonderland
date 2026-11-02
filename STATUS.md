@@ -18,8 +18,10 @@ never a brain win.
 
 **Stage:** Layer 0 — the encoder is not yet mastered. B is now measured directly on the card
 (B1–B8) before the B+C consequences. **Macro reframe DEC-567 (2026-11-02):** the X-ray is far
-enough to locate the gaps (exposure / learning / decision objective); execution of the capability
-sprint is pending operator decisions D1–D5.
+enough to locate the gaps (exposure / learning / decision objective). **Scope tightening DEC-568
+(2026-11-02):** B-only for now — every DEC-567 option re-anchored to B's own rows; B+C kept on the
+card as a reported consequence, not the near-term target. Execution is pending operator decisions
+D2–D5 (D1 deferred with the B+C judge re-aim).
 
 ## Current state
 
@@ -70,20 +72,22 @@ next question is the learned shape, not another consumer tuning pass.
 
 ## Next 3 actions
 
-1. **Operator decisions D1–D5 (DEC-567).** The macro reframe is documented and the capability
-   sprint is queued; execution is gated on the stop-and-ask items: D1 (O1 delivery-column re-aim),
-   D2 (O8 capability sprint as the unit of progress + card top-line re-aim), D3 (O0 ledger X-ray,
-   no retrain), D4 (O3 law-ablation as labeled diagnostics), D5 (O2 `U` spec: family, fixed
-   capacity, declared bar).
+1. **Operator decisions D2–D5 (DEC-567/568, B-only).** The capability sprint is queued on B's own
+   rows; execution is gated on: D2 (O8 sprint as the unit of progress + card top line = B
+   capability), D3 (O0 ledger X-ray, no retrain), D4 (O3 law-ablation as labeled diagnostics),
+   D5 (O2 `U` spec: family, fixed capacity, declared bar). D1 (B+C judge delivery-column re-aim)
+   is deferred with B+C.
 2. **O0 ledger X-ray (no retrain, ~30 min)** once D3 lands: score the 595-d ledger alone, its
    parts, and ledger block-PCA (fit on A) under the frozen B3.2/B3.4 consumers, against
-   {counter 39, shape 256, PATH A}. Pre-registered branches decide whether the delivery gap is
-   serving dilution (fixable without retrain) or an additive-family limit (O3/O4 territory).
-3. **First capability retrains, one axis each:** O3 (law-ablation: the state is a 2.4-dim blob
-   below its own 18.2 target) then O4 (decision objective on the stream's own 100%-randomized
-   offer arm, which the product run left off). Pre-registered acceptance, receipts, card delta.
-   **Then** O2 `U` on the winning object, O5 minimality, B+C re-score under O1, remaining B rows
-   as byproducts, chain v4 for the re-stamp, and **project v1 THIRD**; BACKWARD only at all-green.
+   {counter 39, shape 256, PATH A}. Pre-registered branches decide whether B's served object
+   (ledger included) carries the fine structure — an exposure fix inside B's serving contract —
+   or whether the additive family itself is the limit (O3/O4 territory).
+3. **First capability retrains, one axis each, accepted on B rows:** O3 (law-ablation: the state
+   is a 2.4-dim blob below its own 18.2 target; acceptance = eff_rank ≥ 30 + shape-only geometry
+   movement + B2 `U`) then O4 (decision objective on the stream's own 100%-randomized offer arm,
+   which the product run left off; acceptance = **B4.1** B-only action-conditional probe). Then
+   O2 `U` on the winning object, O5 minimality (B5.1), remaining B rows, chain v4 for the
+   re-stamp. **B+C re-scores only after B is green; project v1 THIRD; BACKWARD only at all-green.**
 
 ## Operating facts
 
@@ -100,14 +104,15 @@ next question is the learned shape, not another consumer tuning pass.
 
 ## Open operator decisions
 
-Pending (DEC-567, stop-and-ask per certification rule 8):
-- **D1:** re-aim the judge's delivery column at the doctrine's served object (block-aware
-  shape + ledger, data-derived per-block dims; learned-only attribution alongside).
-- **D2:** adopt the capability sprint (O8) — unit of progress = a capability delta, card top line
-  = capability-vs-reference.
-- **D3:** pre-register and run O0 (ledger X-ray, no retrain, ~30 min).
+Pending (DEC-567/568, stop-and-ask per certification rule 8, **B-only**):
+- **D2:** adopt the capability sprint (O8) — unit of progress = a B-row capability delta, card
+  top line = B capability (U · shape-only geometry · decision-shape · minimality · transfer ·
+  robust · reproducible); B+C stays a reported consequence.
+- **D3:** pre-register and run O0 (ledger X-ray, no retrain, ~30 min) as a B2/B3 measurement.
 - **D4:** run O3 law-ablation retrains as labeled diagnostics (invariants as hypothesis, not
-  non-negotiable), recording the Lawful↔Sufficient trade both sides.
+  non-negotiable), recording the Lawful↔Sufficient trade both sides; acceptance on B rows.
 - **D5:** declare the O2 `U` spec — probe family, fixed consumer capacity, declared bar.
+- **D1 (deferred with B+C):** re-aim the judge's delivery column at the doctrine's served object.
+  Held until B's rows are green.
 
 Standing: push requires explicit permission.
