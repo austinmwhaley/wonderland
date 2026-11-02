@@ -7806,3 +7806,57 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   violate the anti-overfit clause); the governor-selection exclusion above is part of the pre-registered
   protocol; the frozen rung bars are unchanged (segment-ARI ≥ 0.095 OR persona-dist ≥ 0.217; supervised
   guard > −0.03; probe-persona R² ≥ 0.40 collapse guard).
+
+## DEC-553 — [PRE-REGISTERED] SwAV prototypes on the served composite (the DEC-550 next axis)
+- **Axis (one):** the objective. Everything else (trunk, counter fold, boundary, serving, judge,
+  bars) is held at the committed baseline. Principle 7 (Accessible: a sufficient-but-entangled
+  representation fails) via the DEC-549/552 diagnosis — the information is linearly decodable
+  (probe R² 0.585 ≈ PATH A) but the pairwise geometry does not carry it; DINO's agreement
+  pressure saturated at +2σ (DEC-552). SwAV's clustering pressure is a DIFFERENT mechanism: it
+  forces the batch's assignment distribution to be balanced across k prototypes (Sinkhorn), which
+  DINO's soft-label agreement never does — collapse onto a few directions is exactly what SwAV's
+  column-balancing forbids.
+- **k = 9, data-derived (NOT the DEC-550 "~15" approximation, which delegated k to the
+  measurement):** parallel analysis of the FULL-HISTORY MEASURE (the DEC-518 authoritative rank
+  definition — oracle-side, label-free, judge-independent) on the base rung products
+  (`batch_auto`, tag 0.11.0r474907-b16d256e1lr3e-04o4c3b5899, n=238 split-B): **9 dims above the
+  eigenvalue null, bootstrap 95% CI 9–9 (degenerate CI — reported as a point)**; state-side
+  corroboration 12 dims; matched-n gate: measure k_lo 8 vs state 12 → PASS (+4). Command:
+  `scripts/measure_rank_attainability.py --products /tmp/opencode/batch_auto --db
+  /home/austin_whaley/wonderland_work/demo_v2/customer_event_stream.parquet --derive --out
+  /tmp/opencode/rank_derive.json`. NOT the judged segment cardinality (that would teach the
+  encoder its exam answer — anti-overfit clause).
+- **Mechanism (reference: SwAV v1, Caron et al. 2020):** student = shared trunk + proj + the exact
+  served composite `z = proj(h + W_c·M)` (the graded object, DEC-550's lesson) through a LINEAR
+  assignment head `swav_head: dim → k`; teacher = EMA of that head only (momentum 0.99, SwAV v1's
+  published value — the structural engine, as in DINO, is the lag, kept separate from the JEPA
+  0.99). Per step: student logits `a_s = swav_head(z)/T` (T = 0.1, SwAV v1); teacher logits
+  `a_t = t_swav_head(z)/T` under no_grad; Sinkhorn–Knopp on `exp(a_t)` (3 iterations — the SwAV v1
+  default; residual row/col-sum receipt asserted at the step) yields the balanced pseudo-label P
+  (row sums 1, col sums B/k — soft targets, so B=64 not being divisible by k=9 is a non-issue);
+  loss = mean_i cross-entropy(student softmax, P_i). Cost: +1 counter readout (cre, cheap scan) +
+  2 linear heads + O(B·k·3) Sinkhorn — no extra trunk passes (the student reuses the trunk `h`).
+- **Governor-selection exclusion (DEC-552's flag, now protocol):** the swav term is SELF-REFERENTIAL
+  (student-vs-its-own-EMA-head agreement on the val split) and is EXCLUDED from the governor's
+  val sum — the 11-objective portfolio sum is the selection criterion (principle 2: never select
+  weights by the same self-referential metric they optimize); swav contributes to TRAINING only.
+  Receipt printed at the first eval. This is a new protocol element of THIS objective's
+  pre-registration — the DINO verdict (DEC-552) stands on DINO's own protocol and is untouched.
+- **Dose (unchanged from the adopted rung protocol):** `LG_SCAN=eager`, B=64, budget_steps=800
+  ceiling, objectives = the 11 adopted + `swav`, the 4 adopted flags
+  (ledger_recency, serve_unfaded, use_counter, counter_type_values), `--set swav_k=9`, launched
+  via `scripts/safe_run.py` into wonderland.slice (DEC-440). Governor patience as in the baseline
+  (4 evals at the 38-step cadence); the best-val state is saved and judged — with the exclusion,
+  the selection behaves like the 11-objective baseline (j_base800 ran to its full 800).
+- **Frozen bars (unchanged DEC-550 rung bars):** accept ⇔ rung segment-ARI ≥ 0.095 OR
+  persona-dist ≥ 0.217, AND no supervised row regressing > 0.03 abs vs j_base800, AND
+  probe-persona R² ≥ 0.40 (collapse guard, attribution probe on the new products).
+  Falsify → revert the swav bundle (keep the recorded result + the governor-exclusion mechanism,
+  which is a training-regime fix, not swav-specific), and the front shifts per DEC-552's decision
+  rule to COMPOSITE CONSTRUCTION (state/interface axis: the exact-counter arm already measures
+  0.2162 ≈ the bar; keep its distance structure in the served blend).
+- **Time estimate from measured numbers:** run 4 did 266 steps + 7 evals in ~54 min wall overnight
+  (co-tenant idle: ~2 s/step amortized); with co-tenancy the measured band is ~6–8 s/step
+  (23:12–23:40 window). 800 steps ≈ **~25–40 min overnight, up to ~1.5–2 h in a heavy-turn
+  window**, + products build (~5 min) + judge (~5 min) + probe (~2 min). Governor patience may stop
+  earlier — that is the protocol.
