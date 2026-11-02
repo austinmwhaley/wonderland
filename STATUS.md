@@ -50,25 +50,35 @@ Diagnosis chain (DEC-548…550, all rung measurements):
   on the exact served composite `proj(h + W_c·M)`. Run 1 (B=16, 266 governed steps): directional
   (persona 0.1520, ~2σ above noise) but under-dosed vs the bar (0.217); mechanical cause —
   32 views/step and teacher still ~35% initialized.
-- **Run 2 (IN FLIGHT, ~60 min):** `--set batch=64 --set budget_steps=800` (128 views/step;
-  teacher to ~4% init; governor convergence stop intact — the 800 is a ceiling, principle 2).
+- **Runs 2 and 3 both died to the watchdog's live-fire test sweep** (post-mortem in DECISIONS,
+  2026-11-01): the harness placed them in a vte scope outside `wonderland.slice`, and my own
+  pytest (`test_gpu_budget`'s `--once` sweep) SIGTERM'd them — not OOM, not the inductor.
+  Fixed: the sweep test now skips while a producer is live (verified against run 4), and jobs
+  launch through `scripts/safe_run.py` into the 48G slice.
+- **Run 4 (IN FLIGHT, est. 3–4 h + judge):** the pre-registered dose unchanged —
+  `LG_SCAN=eager`, `--set batch=64 --set budget_steps=800` (128 views/step; teacher to ~4%
+  init; governor convergence stop intact, 800 is a ceiling — principle 2), launched via
+  `safe_run.py` (conformance receipt: slice cap 48.0 GB, seatbelt cgroup-clamp 45.06 GB).
   **Frozen bars:** rung segment-ARI ≥ 0.095 OR persona-dist ≥ 0.217; no supervised row regressing
   > 0.03 abs vs `j_base800`; probe-persona R² ≥ 0.40 (collapse guard).
 
-**Uncommitted DINO bundle:** `cfm_model.py` + `cfm_training.py` (active code) + `dino_*` recipe
-fields in `cfm_config.py` (inert defaults, committed with the `budget_steps` mechanism field).
+**Uncommitted DINO bundle:** `cfm_model.py` + the DINO hunks in `cfm_training.py` (active code).
+The `dino_*` recipe fields are committed with the `budget_steps` mechanism (inert defaults).
 Gates (ruff / principle audit / pytest) run on it only after the dose verdict; falsify → revert
-the bundle, keep the recorded result.
+the bundle, keep the recorded result. **Fast tier is fully green (rc=0) on the committed tree** —
+14 pre-existing reds closed this session (one-serving-readout contract, tuple unpacks, eff_rank,
+minimal-frame resolver, watchdog pattern drift; DECISIONS triage entry).
 
 ## Next 3 actions
 
-1. **Judge DINO run 2** vs the frozen DEC-550 bars (judge + bar compare pre-staged at
-   `/tmp/opencode/judge_r4.py`).
-2. **If a bar is met:** attribution probe on the new products, full-size adoption run
-   (~2,310+ steps, re-estimate with DINO's ~3 extra ssm passes), S6 chain, card regeneration;
-   commit the DINO bundle after ruff + `principle_audit --all --strict` + pytest.
-3. **If falsified:** revert the bundle, record the DEC-550 result, next axis = SwAV prototypes
-   (Sinkhorn-balanced clustering, k from stream attribute cardinality).
+1. **Judge DINO run 4** vs the frozen DEC-550 bars (judge + bar compare pre-staged at
+   `/tmp/opencode/judge_r4.py`; products at `/tmp/opencode/r4_dino64/`).
+2. **If a bar is met:** attribution probe on the new products (collapse guard R² ≥ 0.40),
+   full-size adoption run (re-estimate with DINO's ~3 extra ssm passes + co-tenancy), S6 chain,
+   card regeneration; commit the DINO bundle after ruff + `principle_audit --all --strict` + pytest.
+3. **If falsified or the run dies again:** record exit + last log lines, revert the bundle,
+   next axis = SwAV prototypes (Sinkhorn-balanced clustering, k data-derived — NOT from judged
+   segment cardinality, which is teaching).
 
 After the geometry front: re-measure `return_proneness` (full-size) and `argmax_optimum`, then
 the card can go 8/8 → run BACKWARD.
@@ -82,9 +92,14 @@ the card can go 8/8 → run BACKWARD.
   chain into `/home/austin_whaley/wonderland_work/cfm_v2k/` (behavior `4ea9684f506ddbf1` there is
   stale vs current code — receipts regenerate, never relabel).
 - **Card:** `python3 scripts/report_card.py` → `REPORT_CARD.md`.
-- **Resources:** GB10 unified memory, budget cap ~44.9 GB (DEC-547); compute-bound ~40–46
-  samples/s (DEC-546); GPU time free per operator — one job at a time; commits local until the
-  operator asks to push.
+- **Resources:** GB10 unified memory; `wonderland.slice` = 48 GB containment ceiling (operator
+  directive, 2026-11-01; gpu_budget walks /proc/self/cgroup to it — verified in run 4's receipt);
+  per-job seatbelt ≈ 41–43.7 GB today. LLM co-tenant (this session's server) shares the GPU:
+  heavy-turn windows measurably slow training (run 3: 21 s/step vs ~5–6 s/step idle).
+  **Canonical job launcher is `scripts/safe_run.py`** (slice containment + receipt); raw
+  harness placement lands outside the slice and is a policy breach.
+- **Test tier:** fast tier green on the committed tree. The watchdog sweep test skips while a
+  live producer runs — running pytest alongside training is now safe.
 
 ## Open operator decisions
 
