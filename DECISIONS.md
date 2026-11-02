@@ -7860,3 +7860,70 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   (23:12–23:40 window). 800 steps ≈ **~25–40 min overnight, up to ~1.5–2 h in a heavy-turn
   window**, + products build (~5 min) + judge (~5 min) + probe (~2 min). Governor patience may stop
   earlier — that is the protocol.
+
+## DEC-554 — [FALSIFIED] SwAV run 5: bar not met; the dose ceiling is the baseline's own; the mass arm clears the bar
+- **Run 5 (the DEC-553 dose run, safe_run/slice-conformant, LG_SCAN=eager, B=64, 800-step
+  ceiling, swav_k=9):** EXIT=0, ~15 min wall (01:25→01:40, idle co-tenant); slice peak
+  13.93 GiB (48 GiB ceiling — containment held); stable (no UNSTABLE, no lr-collapse; the only
+  WARNING is the standing sample-A-ladder receipt, present on every run). The governor stopped
+  at **step 266 on patience (no_improve 4/4)**: the 11-objective portfolio val — with the swav
+  term EXCLUDED per DEC-553 (receipt: `[govern-excl] swav val=3.9754, trains only`) — drifted
+  4.0733 (eval 1) → 4.0720 (eval 2) → 4.2784 → 4.4856 → 4.6929 → 4.8992 → 5.1039. `AT.govern`
+  returns the lowest-loss state ever evaluated: **the judged products are the step-76 state** —
+  4,864 swav views, teacher EMA 53% progressed (1−0.99^76).
+- **Verdict (frozen DEC-553 bars, judge + probe):** persona-dist **0.131968** (bar ≥ 0.217;
+  base j_base800 0.1369; Δ **−0.0049 vs base** — at/below base, inside the rung noise band
+  0.1295–0.1400); segment-ARI **−0.003441** (bar ≥ 0.095; base 0.0031); supervised guard
+  CLEAN (worst churn_day −0.0200; all other rows |Δ| < 0.009). → **geometry bar NOT MET →
+  FALSIFIED** per the pre-registered clause.
+- **Collapse guard (probe):** served probe-persona R² **0.5825** ≥ 0.40 — SwAV did NOT collapse
+  linear decodability; the entanglement persists unchanged (0.5825 ≈ PATH A 0.5869, ARI ≈ 0).
+  The clustering pressure neither helped nor harmed the served geometry: it moved it by −0.005,
+  i.e. zero within noise.
+- **Probe attribution (four arms, judge protocol; served reproduces the judge exactly —
+  0.132/0.101/−0.0034):**
+  | arm | dist-persona | dist-future | probe-persona R² | segment-ARI |
+  |---|---|---|---|---|
+  | served (composite) | 0.1320 | 0.1010 | 0.5825 | −0.0034 |
+  | trunk (shape h only) | 0.0165 | 0.0018 | 0.3239 | 0.0085 |
+  | mass (EXACT stored counter column, no learned weights) | **0.2174** | 0.1312 | 0.5306 | −0.0048 |
+  | PATH A (wide table) | 0.4038 | 0.1400 | 0.5869 | 0.3094 |
+  The mass arm **CLEARS the frozen bar (0.2174 ≥ 0.217)**, up from 0.2162 (99.6%) on run 4's
+  products. It is a DATA-SIDE quantity — the exact anchored counter column as stored
+  (`customer_state.embedding`, signed-log1p of the anchored sums; no learned fold, no shared
+  proj, no boundary) — hence its run-to-run stability (0.2162 → 0.2174 across two runs that
+  differ in the 12th objective). The served composite dilutes it 0.2174 → 0.1320: the fold
+  (`w_counter`, counter-dim→256) + the shared `proj` + the boundary is a many-to-one mapping
+  that destroys the mass half's pairwise structure.
+- **Interpretive correction (honesty, recorded now that the evidence is in):** the baseline
+  j_base800's OWN govern trajectory (batch_auto log, 11 objectives, no self-referential term)
+  shows the identical drift-and-stop shape: 4.9074 → 4.9908 → 5.2133 → 5.4355 → 5.6565 →
+  5.8756 → 6.0920 over 7 evals, best = eval 1 (step 38), stopped at step 266/763 on patience.
+  DEC-552 attributed run 4's capped dose to the self-referential dino term poisoning the val
+  sum; run 5 shows the portfolio val drifts up and caps the dose the SAME WAY without any
+  self-referential term (drift: baseline 1.185, run 4-with-dino 1.115, run 5-excluded 1.031 —
+  the dino term added no measurable extra drift). The best-val ≈ first-eval phenomenon is a
+  BASELINE PROPERTY of the 11-objective portfolio at the 800-customer rung (the scale-free unit
+  system + the 38-step eval cadence + patience 4), and j_base800 itself was judged at that
+  step-38 state. Both geometry objectives were therefore judged at the dose the portfolio
+  itself supports — apples-to-apples with the base. (The DEC-553 exclusion remains the correct
+  protocol for self-referential terms: it made run 5's selection behave exactly like the
+  baseline, which is what the correction says was needed.)
+- **SwAV receipts:** sinkhorn (k=9, B=75 seed pass): row-sum max|resid| 1.19e-07 (machine
+  precision — the per-sample marginals are exact by construction), col-sum max|resid| 2.19 vs
+  B/k=8.33 at random-init teacher (the approximate balance after 3 reference iterations —
+  receipted, not asserted); swav final task weight 1.0, loss scale 8.686.
+- **The objective axis on the served composite is now EXHAUSTED at this rung:** three distinct
+  structure pressures — DINO agreement (DEC-552, flat dose-response saturating at +2σ) and
+  SwAV clustering (this record, zero movement) plus the earlier covariance shapers (VICReg,
+  contrast-removal, DEC-549) — none moved the served composite's pairwise geometry beyond the
+  noise band, while the information stays linearly decodable (probe R² ≈ PATH A) and the exact
+  mass column sits at/above the bar.
+- **Disposition (pre-registered):** revert the swav bundle EXCEPT the governor-selection
+  exclusion mechanism, which DEC-553 pre-registered to KEEP ("a training-regime fix, not
+  swav-specific"): the exclusion + its receipt is committed (inert unless a self-referential
+  term named "swav" is in `objectives`), the model head/EMA pair, the loss, the wiring, and the
+  config fields are reverted. **Front shifts per DEC-552's decision rule to COMPOSITE
+  CONSTRUCTION (state/interface axis):** the mass arm already clears the bar; the lever is how
+  the served blend (fold + shared proj + boundary) is built so it stops diluting the mass
+  half's distance structure — pre-registered as DEC-555.

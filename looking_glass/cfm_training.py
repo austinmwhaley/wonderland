@@ -611,8 +611,26 @@ def train_cfm(cfg: CFMConfig):
         # invalid metric (govern flags it UNSTABLE) — never skipped-and-hidden.
         if any(k in T_ and not math.isfinite(float(T_[k])) for k in cfg.objectives):
             return math.inf, None
+        # DEC-553/554 (governor-selection exclusion — a training-regime fix, pre-registered
+        # to be KEPT even though SwAV falsified): a self-referential objective
+        # (student-vs-its-own-EMA-teacher agreement) must not SELECT: principle 2 — never
+        # select weights by the same self-referential metric they optimize. It trains;
+        # the predictive portfolio sum selects. The finiteness check above still covers it:
+        # a non-finite swav is divergence, surfaced, not excluded. Inert unless "swav"
+        # is in the objectives.
+        if "swav" in T_ and not getattr(cfg, "_swav_govern_excl_receipted", False):
+            cfg._swav_govern_excl_receipted = True
+            print(
+                f"[govern-excl] swav term EXCLUDED from the selection sum (DEC-553/554); "
+                f"swav val={float(T_['swav']):.4f} (trains only; predictive portfolio selects)",
+                flush=True,
+            )
         v = float(
-            sum(T_[k] / max(loss_scales.get(k, 1.0), 1e-8) for k in cfg.objectives if k in T_)
+            sum(
+                T_[k] / max(loss_scales.get(k, 1.0), 1e-8)
+                for k in cfg.objectives
+                if k in T_ and k != "swav"
+            )
         )
         balancer.update({k: float(x) for k, x in T_.items()})
         _update_scales({k: float(x) for k, x in T_.items()})

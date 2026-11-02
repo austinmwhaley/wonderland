@@ -1,7 +1,7 @@
 # STATUS — wonderland
 
 *Live state only. History lives in `DECISIONS.md` (append-only) and `git log`.
-Rewritten 2026-11-02 (DINO falsified, DEC-552; SwAV front). If this file grows past ~150 lines, it is becoming a log again.*
+Rewritten 2026-11-02 (DINO falsified DEC-552; SwAV falsified DEC-554; composite-construction front). If this file grows past ~150 lines, it is becoming a log again.*
 
 ## Macro
 
@@ -66,39 +66,47 @@ Diagnosis chain (DEC-548…552, all rung measurements):
   while a producer is live (verified against run 4); jobs launch through `scripts/safe_run.py`
   into the 48G slice (run-4 receipts: slice cap 48.0 GB, seatbelt clamp 45.06 GB, peak 13.94 GiB).
 
-**Next axis (pre-registered, DEC-553, committed `de04e22`): SwAV prototypes** — Sinkhorn-
-balanced assignment to k learned prototypes on the served composite. k = 9, DATA-DERIVED
-(parallel analysis of the full-history measure on the base rung products: 9 dims above the
-eigenvalue null, bootstrap CI 9–9 degenerate — reported as a point; state-side 12; matched-n
-gate PASS +4), NOT the judged segment cardinality (teaching the encoder its exam answer
-violates the anti-overfit clause). DEC-552's flag is protocol: the governor's val sum EXCLUDES
-the swav term (the 11-objective portfolio selects; swav trains only — receipted at first eval).
-Frozen rung bars unchanged. If SwAV falsifies too, the 4-arm table reframes the front: the mass
-arm already sits at the bar, so the cheapest remaining lever is the composite CONSTRUCTION
-(state/interface axis — keep the mass arm's distance structure in the blend), not further
-objective pressure.
+**SwAV prototypes FALSIFIED (DEC-553 pre-reg, DEC-554 record):** run 5 (B=64, k=9,
+safe_run, ~15 min, slice peak 13.93 GiB): the governor-exclusion worked as pre-registered
+(receipt fired; swav trained at weight 1.0, scale 8.69; sinkhorn row resid 1.2e-07) but the
+judge found persona **0.1320** (bar ≥ 0.217; Δ −0.0049 vs base — zero movement within noise)
+and segment-ARI **−0.0034** (bar ≥ 0.095); supervised guard clean; probe-persona R² 0.5825
+(collapse guard ≥ 0.40 met — entanglement persists, no collapse). Two distinct structure
+pressures on the served composite (DINO agreement, SwAV clustering) plus the earlier
+covariance shapers have all failed to move it. **Interpretive correction recorded in DEC-554:**
+the baseline's own govern trajectory shows the identical drift + patience stop (best = first
+eval) — the dose ceiling is a BASELINE property of the 11-objective portfolio at this rung, not
+a self-referential-selection artifact; j_base800 was judged at the same effective dose.
+**Decisive attribution (run-5 probe, 4 arms):** the mass arm — the EXACT stored counter
+column, no learned weights — now **CLEARS the bar: 0.2174 ≥ 0.217** (0.2162 on run 4; it is a
+data-side quantity, stable across runs). The served composite dilutes it to 0.1320: the fold
+(`w_counter`) + shared `proj` + boundary is many-to-one and destroys the mass half's pairwise
+structure.
 
 **Tree:** all gates green — ruff check/format, principle audit strict rc=0 (ratchet 67),
-fast tier rc=0 — on the committed tree AND on the uncommitted SwAV bundle (3 files: the model
-head + dedicated EMA pair + own-momentum `ema()` gain; the `_swav_loss` + `T_["swav"]` wiring +
-governor-selection exclusion with first-eval receipt; the `swav_*` config fields). The bundle
-stays uncommitted until the run-5 verdict (DINO/SwAV protocol practice: falsify → revert).
+fast tier rc=0. SwAV bundle REVERTED (DEC-554); kept, pre-registered as a training-regime fix:
+the governor-selection exclusion in `cfm_training.py` (inert unless "swav" is in objectives;
+the general rule — self-referential terms train, the predictive portfolio selects — now covers
+any future EMA-teacher objective). `swav_*` config fields reverted with the bundle.
 
 ## Next 3 actions
 
-1. **SwAV run 5 (IN FLIGHT via `safe_run.py`, est. ~25–40 min + products + judge):** the
-   pre-registered dose — B=64, 800-step ceiling, 11 adopted objectives + `swav` (k=9), the 4
-   adopted flags. Smoke passed every pre-registered criterion (EXIT=0; Sinkhorn row residual
-   1.2e-07, col residual 5.79 vs B/k at random init — receipted; `[govern-excl]` receipt;
-   swav in the portfolio grade, finite). All gates green on the bundle.
-2. **Judge + probe** against the frozen DEC-553 bars: `/tmp/opencode/judge_r5.py` +
-   `/tmp/opencode/probe_geometry_axis_r5.py` (retargeted to the r5 products): segment ≥ 0.095
-   OR persona ≥ 0.217; no supervised row < −0.03 vs j_base800; probe-persona R² ≥ 0.40.
-3. **If met:** commit the bundle, full-size adoption run (re-estimate with measured s/step +
-   co-tenancy), S6 chain, card regeneration. **If falsified:** record DEC-554, revert the
-   bundle (keep the governor-exclusion mechanism), front shifts to COMPOSITE CONSTRUCTION
-   (the mass arm already sits at 0.2162 ≈ the bar; keep its distance structure in the blend —
-   state/interface axis).
+1. **Pre-register DEC-555: COMPOSITE CONSTRUCTION** (state/interface axis — the DEC-552/554
+   decision rule). The mass arm clears the bar alone (0.2174); the lever is how the served
+   blend is built so it stops diluting the mass half's distance structure (fold + shared proj
+   + boundary is many-to-one). Candidate levers to adjudicate in the pre-registration:
+   block-aware serving (the doctrine's own default — "block-aware scales derived from data,
+   shape vs measure"), the fold's rank/mapping, or the boundary's treatment of the two halves.
+   Frozen rung bars unchanged.
+2. **Implement + run** the DEC-555 experiment via `safe_run.py` (one axis, re-estimate from
+   the measured s/step + co-tenancy), judge with `/tmp/opencode/judge_r5.py`-class bars,
+   probe with the 4-arm table as the scorecard.
+3. **If met:** commit + full-size adoption + S6 chain + card regeneration. **If falsified:**
+   record, revert, and attribute again — the 4-arm table is the scorecard that tells us which
+   construction element is destroying the mass structure.
+
+After the geometry front: re-measure `return_proneness` (full-size) and `argmax_optimum`, then
+the card can go 8/8 → run BACKWARD.
 
 After the geometry front: re-measure `return_proneness` (full-size) and `argmax_optimum`, then
 the card can go 8/8 → run BACKWARD.
@@ -123,5 +131,6 @@ the card can go 8/8 → run BACKWARD.
 
 ## Open operator decisions
 
-None pending. The queue is pre-registered (SwAV dose → [if falsified: composite construction]
-→ return_proneness / argmax_optimum re-measurement). Standing: push requires explicit permission.
+None pending. The queue is pre-registered (composite construction → [if falsified: re-attribute
+via the 4-arm scorecard] → return_proneness / argmax_optimum re-measurement). Standing: push
+requires explicit permission.
