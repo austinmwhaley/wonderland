@@ -8692,3 +8692,111 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     X-ray), D4 (O3 law-ablation as labeled diagnostics), D5 (O2 `U` spec: family, fixed capacity,
     declared bar). D1 deferred with O1.
   - **Status.** Documentation only. No retrain, no O0 run, no card change until D2–D5 are decided.
+
+- **DEC-569 (O0 ledger X-ray — pre-registered before the run; D2/D3 accepted by the operator 2026-11-02):**
+  - **Directive.** Operator: "ok do what needs to be done" — D2 (capability sprint + card top line),
+    D3 (O0 now), D4, D5 all accepted; executing in pre-registered order, O0 first.
+  - **Principle served.** Diagnosable (attribute the fine-structure gap to a named axis before
+    touching the trunk) + Efficient (cheapest test that decides the next axis: no retrain) +
+    Honest (frozen consumers, no B fit, no metric tuning; the arm set is fixed here, before any
+    number is seen).
+  - **The question.** Does B's *served object* — the shape with its companion ledger, the doctrine's
+    L1 exposure layer — carry the fine structure (persona/future geometry, segment, coarse linear
+    access) under the FROZEN B3.2/B3.4 consumers? B3.2's M0 was the in-net 39-d compact counter;
+    the 595-d ledger has never been scored alone.
+  - **Producer / receipt / row.** `scripts/measure_served_object.py` →
+    `docs/report_cards/experiments/encoder_served_object.json` → B3.6 (new row, kind
+    `served_object`; gate = complete + the branch below is computed by the card from the arm
+    numbers, not narrated by the receipt). No retrain; current artifacts `cfm_v2k`
+    (behavior `d0ac576c`).
+  - **Arms (frozen before the run; widths read from the faceplate, never typed):**
+    - `ledger_full`: the whole measure view (595-d as served).
+    - `part_<name>`: each named ledger part, sliced from the published concatenation at the
+      faceplate's own `ledger.slices` (the single source of truth for the parts; the
+      producer re-derives the concat and refuses the run if it disagrees with the stored view —
+      the G1 exact-recount check applied read-only).
+    - `ledger_pca_39`, `ledger_pca_128`: block PCA of the ledger fit on split A only, applied to
+      A and B (the B3.4 equal-dimension mechanism, applied to the ledger).
+    - References: `exact_counter` (39-d M0, `customer_state.embedding`), `shape_served`
+      (256-d M4, `state_embeddings.embedding`), `path_a` (the wide table encoded once over
+      A ∪ B by the judge's own `_table_matrix` — the fair additive reference).
+  - **Consumers (frozen — imported, not redefined).** `_geometry` and `_segment_ari` from
+    `measure_stage_decomposition` (squared corr of pairwise distances vs the lab's true
+    distances, z-scored on A, scored on B; KMeans n_init=4 seed SEED); `_linear_access` from
+    `measure_block_serving` (standardized RidgeCV on A → mean R² on B over the lab's 11
+    persona+future fields); the split, truth, and PATH A encoding come from the judge's `_arms`
+    so O0 scores the same population the judge scores.
+  - **Metrics per arm.** persona_geometry, future_geometry, segment_ari for every arm;
+    linear_access (mean R², n_fields) for ledger_full, every part, both PCAs, and the three
+    references.
+  - **Branches (frozen; thresholds live in `b_spec.py`, computed by the card from the receipt).**
+    `best_ledger_arm` = argmax persona_geometry over the ledger arms (full, parts, PCAs):
+    - persona ≥ **0.30** → **EXPOSURE**: the additive family is readable under the frozen
+      consumer; the gap is in B's serving contract (how the ledger is exposed), not in the
+      ledger's information. Inside B, not B+C (DEC-568 re-anchoring).
+    - 0.15 ≤ persona < 0.30 → **PARTIAL**: the additive family is partially readable; the
+      non-additive residual matters → O3/O4 retrain territory.
+    - persona < 0.15 → **INSUFFICIENT**: the additive family is not readable under the frozen
+      consumer; inspect PATH A's derived features (ratios/entropy/windows) as the task family
+      for O2 `U` (and the O6 branch).
+  - **Honesty (certification rule 4).** The ledger is a SERVED STATISTIC, not a learned-shape
+    claim: a gain from any ledger arm is served-statistic sufficiency. `shape_served` and
+    `exact_counter` are reported alongside in the same receipt, so the learned-only attribution
+    travels with the number.
+  - **Budget.** CPU only, one job at a time inside the 32 GB slice (`safe_run`/`ensure_boundary`),
+    ~30 min ceiling; geometry is pairwise-distance O(n²) on the split-B population, PCA/ridge are
+    sklearn. Memory dominated by the 5000×595 ledger frame (~24 MB) plus the PATH A table.
+  - **Rejected alternatives.** (a) Score the ledger with a new consumer tuned to 595-d dilution —
+    that would grade a different question (can we expose it?) instead of this one (can the FROZEN
+    consumer read it?), and is exactly the post-hoc protocol change rule 1 forbids. (b) Retrain
+    first, X-ray later — inverts the order: the X-ray decides WHICH retrain (O3 vs O4 vs O2-family)
+    is the next axis, and retrains are the expensive resource (32 GB, one at a time). (c) Judge-leg
+    re-aim (O1/D1) as the exposure test — deferred with B+C by DEC-568; it changes what "full E"
+    means for delivery, a stop-and-ask the operator has not given.
+  - **Expected outcome prior (recorded, not a gate).** ~70–80% that some ledger arm reaches near
+    PATH A on persona: PATH A's 40 hist_* columns and the ledger's parts are the same additive
+    family. The PCA arms exist because B3.4 showed per-dim z-score makes dimension COUNT the
+    lever; ledger_full at 595 may dilute exactly as the judge's naive concat did.
+  - **Status.** Pre-registered. The run and the card row land as their own chunk (DEC-571).
+
+- **DEC-570 (O2 `U` spec — pre-registered before any U run; D5 accepted by the operator 2026-11-02, defaults as proposed):**
+  - **Principle served.** Honest (the reference is the full-history oracle, never our task list —
+    anti-overfit clause) + Diagnosable (one named number: sufficiency of B at fixed capacity) +
+    Lawful (worst-case over a published, adversarially grown family, not an average over known
+    use cases).
+  - **Definition (frozen).** Per probe τ: `U_τ = 1 − (loss_τ(E) − loss_τ(full)) / (loss_τ(full) − loss_τ(floor))`,
+    where `loss` is the per-probe held-out loss on split B at FIXED CAPACITY; `full` is the
+    full-history arm and `floor` is the population-constant predictor (zero-information headroom
+    reference, the Bayes floor at fixed capacity). `U = min_τ U_τ` (worst case, per AGENTS.md).
+    A probe whose headroom `loss_τ(full) − loss_τ(floor) ≤ 0` is EXCLUDED and reported (degenerate,
+    never forced to pass or fail). The operator may amend this spec only as a new protocol version
+    before the first U run; the O0/O3/O4 chunks above do not change it.
+  - **Family (pre-registered, self-supervised, no labels).** Five probe types, each a function of
+    the observed stream only:
+    1. `next-type` — the type of the next event for the customer after the boundary.
+    2. `attr-next` — a numeric attribute value of the next event (per numeric field, mean
+       held-out loss across fields is the probe's loss).
+    3. `numeric-next` — the count of the next event's numeric mass (the stream's own numeric
+       fields, standardized per field).
+    4. `dt` — the time to the next event.
+    5. `horizon-count-value` — aggregate event count and numeric mass over a derived horizon
+       (the horizon sampled from the stream's own gap distribution, recorded in the receipt).
+    The family is BROADENED, never narrowed, at later O2 runs (adversarial growth is published in
+    DECISIONS.md before the run that uses it).
+  - **Capacity (fixed, shared by both arms).** THE shipping head `_ridge_head` (standardized
+    RidgeCV, one alpha grid) — the same fixed capacity on E and on the full-history arm, so the
+    gap measures information, not head size. No MLP, no per-arm capacity.
+  - **Arms.** `E` = the served object (shape ⊕ ledger, the block-aware exposure O0 identifies —
+    the arm is chosen by O0's branch, not by this spec); `full` = the full event history per
+    customer as the stream serves it (all logged fields after the boundary excluded — history
+    only); `floor` = the population constant. Learned-only attribution alongside (rule 4):
+    shape-only E is reported next to the served object, so a U that only the ledger carries is
+    labeled served-statistic sufficiency.
+  - **Declared bar.** `U ≥ 0.5` for the served object, on the cfm_v2k stream at full size, split
+    B, before B2.1 is allowed to PASS. The bar is a certification contract (non-negotiable fixed
+    thing per the doctrine), not a tuned threshold; it was the operator-proposed default, accepted
+    as-is.
+  - **Rows.** B2.1 (U), B2.2 (full-history oracle gap per probe), B2.3 (learned-only
+    attribution) — all from one producer `measure_sufficiency_law.py` (not yet written; lands at
+    the O2 step, after O3/O4 decide which object the U is claimed on).
+  - **Status.** Pre-registered. No U run yet; the spec freezes when O2 starts.

@@ -20,8 +20,9 @@ never a brain win.
 (B1–B8) before the B+C consequences. **Macro reframe DEC-567 (2026-11-02):** the X-ray is far
 enough to locate the gaps (exposure / learning / decision objective). **Scope tightening DEC-568
 (2026-11-02):** B-only for now — every DEC-567 option re-anchored to B's own rows; B+C kept on the
-card as a reported consequence, not the near-term target. Execution is pending operator decisions
-D2–D5 (D1 deferred with the B+C judge re-aim).
+card as a reported consequence, not the near-term target. **D2–D5 accepted 2026-11-02**
+("ok do what needs to be done"); DEC-569 (O0) and DEC-570 (`U` spec) pre-registered; the sprint
+runs O0 first. D1 stays deferred with the B+C judge re-aim.
 
 ## Current state
 
@@ -72,17 +73,11 @@ next question is the learned shape, not another consumer tuning pass.
 
 ## Next 3 actions
 
-1. **Operator decisions D2–D5 (DEC-567/568, B-only).** The capability sprint is queued on B's own
-   rows; execution is gated on: D2 (O8 sprint as the unit of progress + card top line = B
-   capability), D3 (O0 ledger X-ray, no retrain), D4 (O3 law-ablation as labeled diagnostics),
-   D5 (O2 `U` spec: family, fixed capacity, declared bar). D1 (B+C judge delivery-column re-aim)
-   is deferred with B+C.
-2. **O0 ledger X-ray (no retrain, ~30 min)** once D3 lands: score the 595-d ledger alone, its
-   parts, and ledger block-PCA (fit on A) under the frozen B3.2/B3.4 consumers, against
-   {counter 39, shape 256, PATH A}. Pre-registered branches decide whether B's served object
-   (ledger included) carries the fine structure — an exposure fix inside B's serving contract —
-   or whether the additive family itself is the limit (O3/O4 territory).
-3. **First capability retrains, one axis each, accepted on B rows:** O3 (law-ablation: the state
+1. **O0 ledger X-ray (no retrain, ~30 min) — DEC-569 pre-registered, running now:** score the
+   595-d ledger alone, its named parts, and ledger block-PCA (fit on A) under the frozen
+   B3.2/B3.4 consumers, against {counter 39, shape 256, PATH A}. The pre-registered branches
+   (≥0.30 exposure / 0.15–0.30 partial / <0.15 insufficient) decide the next axis.
+2. **First capability retrains, one axis each, accepted on B rows:** O3 (law-ablation: the state
    is a 2.4-dim blob below its own 18.2 target; acceptance = eff_rank ≥ 30 + shape-only geometry
    movement + B2 `U`) then O4 (decision objective on the stream's own 100%-randomized offer arm,
    which the product run left off; acceptance = **B4.1** B-only action-conditional probe). Then
@@ -104,15 +99,10 @@ next question is the learned shape, not another consumer tuning pass.
 
 ## Open operator decisions
 
-Pending (DEC-567/568, stop-and-ask per certification rule 8, **B-only**):
-- **D2:** adopt the capability sprint (O8) — unit of progress = a B-row capability delta, card
-  top line = B capability (U · shape-only geometry · decision-shape · minimality · transfer ·
-  robust · reproducible); B+C stays a reported consequence.
-- **D3:** pre-register and run O0 (ledger X-ray, no retrain, ~30 min) as a B2/B3 measurement.
-- **D4:** run O3 law-ablation retrains as labeled diagnostics (invariants as hypothesis, not
-  non-negotiable), recording the Lawful↔Sufficient trade both sides; acceptance on B rows.
-- **D5:** declare the O2 `U` spec — probe family, fixed consumer capacity, declared bar.
-- **D1 (deferred with B+C):** re-aim the judge's delivery column at the doctrine's served object.
-  Held until B's rows are green.
-
-Standing: push requires explicit permission.
+**Decided 2026-11-02 (operator: "ok do what needs to be done"):** D2, D3, D4, D5 are all
+accepted — the capability sprint is the unit of progress, O0 runs now, O3 law-ablation is
+authorized as labeled diagnostics, and the O2 `U` spec is the DEC-570 pre-registration
+(defaults as proposed: five self-supervised probe types, fixed standardized-ridge capacity
+shared by both arms, gap normalized by headroom, bar U ≥ 0.5 on the served object with
+learned-only alongside). Pre-registrations: DEC-569 (O0 arms/consumers/branches), DEC-570
+(U spec). D1 stays deferred with B+C.
