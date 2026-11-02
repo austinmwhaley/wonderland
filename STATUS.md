@@ -1,9 +1,9 @@
 # STATUS — wonderland
 
 *Live state only. History lives in `DECISIONS.md` (append-only) and `git log`.
-Rewritten 2026-11-02 (full-size re-measurement DEC-558: re-stamp 5/6, S1+S2 co-tenant OOM;
-front = chain re-run, then argmax_optimum). If this file grows past ~150 lines, it is becoming a
-log again.*
+Rewritten 2026-11-02 (DEC-561: S1+S2 3/3 root cause = producer batch arithmetic, not a random
+co-tenant; GPU memory is outside the 48 GB slice; front = fix the producer, then re-stamp).
+If this file grows past ~150 lines, it is becoming a log again.*
 
 ## Macro
 
@@ -18,15 +18,19 @@ are never a brain win.
 
 **Stage:** Layer 0 — encoder not yet mastered. Layer 1 (certification, `U`) is not started.
 
-**Progress:** **re-stamp 5/6 + argmax protocol v2 adopted (DEC-558/560).** The full-size
+**Progress:** **re-stamp blocked by S1+S2 — root cause found (DEC-561).** The full-size
 re-measurement is DONE (fs_full: dose ceiling 10.45 epochs, batch 64, tag `…b64…o4c3b5899`;
 products canonical at `cfm_v2k`; old artifacts at `cfm_v2k_stale_0f881d99`). S3/S4/S5 + 4
-judge legs + provenance are fresh at `d0ac576c` and working; S1+S2 died twice on co-tenant
-unified-memory spikes (CUDA OOM, then SIGKILL at 135 s) → the S6 chain re-runs in a
-no-generation window. Operator adopted **protocol v2 for `argmax_optimum`** (level-conditional
-heads; DEC-559/560): measured — brain 0.2458 / delivery 0.2593, controls now informative,
-destroyed ≥ brain → **genuine finding: the served donor does not carry per-customer response
-shape**; the simulator stays red both columns. Verdicts otherwise unchanged: legs 2/8.
+judge legs + provenance are fresh at `d0ac576c` and working. S1+S2 has failed 3/3 because the
+producer's own batch arithmetic asks for ~91 GB at d=64 (a `(128/d)^2` multiplier applied
+*after* the memory-derived token cap) while only **31.84 GiB of GPU memory is free** with the
+LLM server resident; the one success (2026-11-01T23:27:57Z) predates the server container by
+8 minutes. The 48 GB slice bounds CPU memory only — v3's NVRM OOM + desktop `oom-kill` proves
+it does not bound GPU/unified allocations. Operator adopted **protocol v2 for `argmax_optimum`**
+(level-conditional heads; DEC-559/560): brain 0.2458 / delivery 0.2593, controls now
+informative, destroyed ≥ brain → **genuine finding: the served donor does not carry
+per-customer response shape**; the simulator stays red both columns. Verdicts otherwise
+unchanged: legs 2/8.
 
 ## Micro — current state (measured)
 
@@ -44,11 +48,11 @@ state (new checkpoint, same population split_seed 6529885151769, A=3515/B=1485):
 | **rl** | ✅ **PASS** — uplift 0.2421 vs 0.1794, policy_value 0.2486 vs 0.2382 | ✅ **PASS** |
 | simulator | ❌ FAIL — `argmax_optimum` v2: 0.2458 vs 0.2418, gap +0.004, CI (−0.0256, +0.0317) ⊃ 0, destroyed control ≥ brain (0.2539) — the donor does not carry per-customer response shape (DEC-560, pre-registered finding) | ❌ FAIL — v2 delivery 0.2593 passes the point floor (0.2318) but ci_lo −0.0128 < −0.01; dose_response 0.3164 vs 0.3039 PASSES |
 
-Stages: S3/S4/S5 **PASS** (re-verified on the current pipeline + new products); S1/S2 UNKNOWN
-(stale `0f881d99` — chain S1+S2 died on co-tenant unified-memory pressure twice: CUDA OOM at
-249 s, then SIGKILL at 135 s, both during active-generation turns; the next chain runs in a
-no-generation window, DEC-559 addendum); S6 FAIL (`full_chain_in_one_invocation` — same
-cause). Hygiene H1–H5: **5/5 PASS.**
+Stages: S3/S4/S5 **PASS** (S3 re-stamped at 07:08 on the current tree; S4/S5 fresh from chain
+v2); S1/S2 UNKNOWN (stale `0f881d99` — 3/3 failures are the producer's ~91 GB demand vs
+31.84 GiB free, DEC-561; v1 CUDA OOM 249.6 s, v2 SIGKILL 135.1 s, v3 NVRM OOM + desktop
+`oom-kill`); S6 FAIL (`full_chain_in_one_invocation` — no fresh S1/S2). Hygiene H1–H5:
+**5/5 PASS.**
 BACKWARD not yet run — it runs only against an all-green card.
 
 ## Closed front: unsupervised geometry at the rung (DEC-548…556)
@@ -132,17 +136,18 @@ only, falsified at the frozen bar — same protocol as DINO/SwAV).
 
 ## Next 3 actions
 
-1. **S6 chain v3 (launching, no-generation window):** the SAME command (`measure_certification_law.py
-   --products cfm_v2k --demo demo_v2 --train-log cfm_v2k/train.log` via `safe_run.py`,
-   `LG_SCAN=eager`), now with protocol-v2 `argmax_optimum` (DEC-560). Acceptance: S1+S2 + S6
-   fresh and working (card → legs 2/8 · stages 6/6 · 0 UNKNOWN · 6 FAIL, the substantive reds
-   only); argmax values equal the deterministic scratch (0.245791 / 0.259259). If S1+S2 dies on
-   co-tenant pressure again: one retry in a no-generation window — never weaken the check,
-   never touch the 48 GB slice cap.
-2. **Commit the completed re-stamp** (receipts + card + STATUS tick) once the chain exits with
-   S6 working=True; verify the five other S6 checks (commit_recorded_clean on the new HEAD,
-   render determinism, artifact hashes, N on all rows, comparator provenance).
-3. **DEC-561 — pre-register the next one-axis front on the consolidated structural defect
+1. **Fix S1+S2's batch arithmetic (DEC-561, operator decision pending):** recommended option
+   (a) — remove the `(128/d)^2` multiplier in `scripts/demo/auto_encoder.py` (scripts/ is
+   outside `BEHAVIOR_TREES`, hash stays `d0ac576c`), so the producer uses `derive_batch`'s
+   memory-derived 128 customers. Then run **S1+S2 standalone** (not the full chain) with a GPU
+   memory check before launch, and confirm the desktop and the server survive. Acceptance:
+   `judge_stages.json` S1/S2 fresh `d0ac576c`, working=True, and `torch.cuda.mem_get_info()`
+   free does not collapse during the run. **Never touch the 48 GB slice cap.**
+2. **S6 chain v4** (same command, one invocation) once S1/S2 is green: acceptance S1+S2+S6
+   fresh/working (card → legs 2/8 · stages 6/6 · 0 UNKNOWN · 6 FAIL, substantive reds only);
+   argmax values equal the deterministic scratch (0.245791 / 0.259259). Then commit the
+   completed re-stamp (receipts + card + STATUS tick).
+3. **DEC-562 — pre-register the next one-axis front on the consolidated structural defect
    (DEC-560):** the served composite carries per-customer coarse attributes (probe R² ≈ PATH A)
    but not per-customer fine structure (geometry trio + level-conditional response shape +
    return_proneness gap). First attribution probe, cheapest: does the fine structure exist in
@@ -161,10 +166,14 @@ only, falsified at the frozen bar — same protocol as DINO/SwAV).
   `…b64…o4c3b5899`, behavior `d0ac576c`); the stale `0f881d99`-era artifacts are backed up at
   `cfm_v2k_stale_0f881d99/`.
 - **Card:** `python3 scripts/report_card.py` → `REPORT_CARD.md`.
-- **Resources:** GB10 unified memory; `wonderland.slice` = 48 GB containment ceiling (operator
-  directive, 2026-11-01; gpu_budget walks /proc/self/cgroup to it — verified in run 4's receipt);
-  per-job seatbelt ≈ 41–43.7 GB today. LLM co-tenant (this session's server) shares the GPU:
-  heavy-turn windows measurably slow training (run 3: 21 s/step vs ~5–6 s/step idle).
+- **Resources:** GB10, 121.63 GiB unified memory, 20 CPU cores, 1.5 TB free disk, CUDA 13.0.
+  **GPU free today: 31.84 GiB** (89.79 used; LLM server 48.86 GiB static, desktop ~0.44 GiB,
+  rest driver/other) — measured by `torch.cuda.mem_get_info()`. `wonderland.slice` = 48 GB
+  **CPU** ceiling (operator directive, 2026-11-01); it does **not** bound GPU/unified
+  allocations (DEC-561). Per-job seatbelt ≈ 41–43.7 GB today. LLM co-tenant (this session's
+  server) shares the GPU: heavy-turn windows measurably slow training (run 3: 21 s/step vs
+  ~5–6 s/step idle). The production CFM train (fs_full) fits comfortably — dose runs peak
+  13.94 GiB — so training capacity is not the blocker; the S1/S2 measurement harness is.
   **Canonical job launcher is `scripts/safe_run.py`** (slice containment + receipt); raw
   harness placement lands outside the slice and is a policy breach.
 - **Test tier:** fast tier green on the committed tree. The watchdog sweep test skips while a

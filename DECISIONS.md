@@ -8364,3 +8364,43 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     per-customer fine structure at all (the lawful bounded-memory tension: lossy monoid
     forgets; the M0→M1 fold destroyed 41% of the mass metric at the rung). Next one-axis
     front after the re-stamp completes, pre-registered as DEC-561 before any run.
+
+- **DEC-561 (S1+S2 3/3 root cause: the producer's own batch arithmetic, not a random co-tenant; GPU memory is outside the 48 GB slice):**
+  Evidence chain (all measured on the current box):
+  - **Timeline.** The only green S1/S2 stamp (`0f881d99`, working=True) is 2026-11-01T23:27:57Z
+    at `a32bbee`. The LLM container was created at 15:35:55 PST (23:35:55Z) — **eight minutes
+    later**. Every failure is with the server resident; the one success predates it.
+  - **Free GPU memory today.** `torch.cuda.mem_get_info()`: 121.63 GiB total, **31.84 GiB free**,
+    89.79 GiB used (server 48.86 GiB static + desktop + other). The `wonderland.slice` cap is
+    48 GiB of **CPU** memory; it does not bound CUDA/unified allocations. v3 is the proof: the
+    job ran inside the slice and still triggered system-wide NVRM OOM (`NV_ERR_NO_MEMORY`,
+    07:07:53–56) and gnome-shell was `oom-kill`ed at 07:07:57 while the job was inside the cap.
+  - **The arithmetic.** `scripts/demo/auto_encoder.py::train_encoder` calls
+    `derive_batch(...)` → 128 customers (50,560 tokens at median seq_len 395) under today's
+    31.8 GiB free; the next line multiplies by `(128/d)^2`. At d=64 (`S1`/`S2` pass d=64) that
+    is ×4 → **512 customers = 202,240 tokens**. At the module's own measured 0.45 GB/1k-token
+    constant that is **91.0 GB**; even if per-token cost scales with d (0.225 GB/1k) it is
+    45.5 GB — both above 31.8 GiB free. The multiplier is applied **after** the memory-derived
+    token cap, defeating it (principles 1/4/15; single-source-of-truth principle 6).
+  - **Same code, different free memory.** At the success the server did not exist, free
+    ≈120 GiB, and 512 customers fit. With the server resident the demand exceeds free memory
+    every time: v1 CUDA OOM 938 MiB at 249.6 s; v2 SIGKILL −9 at 135.1 s; v3 NVRM OOM +
+    desktop oom-kill at ~135 s, S3 stamped 07:08:10.
+  - **Consequence.** The "no-generation window" rule was the wrong fix: it removes transient
+    generation spikes, not the server's permanent ~49 GiB footprint, and it never addressed the
+    producer's 4× batch inflation. A smaller/no-generation window cannot make 91 GB fit in 32 GB.
+  Fix options (operator decision; pre-registered before any run):
+  (a) **Remove the `(128/d)^2` multiplier in `scripts/demo/auto_encoder.py`** (`scripts/` is
+      outside `BEHAVIOR_TREES` → behavior hash stays `d0ac576c`), so S1/S2 uses `derive_batch`'s
+      memory-derived 128 customers. Minimal; the producer's checks are qualitative and
+      batch-invariant in intent; re-run S1/S2 standalone and verify the desktop survives.
+      **Recommended.**
+  (b) Run S1/S2 with `CUDA_VISIBLE_DEVICES=""` (CPU path). Removes GPU risk; slower, and the
+      production path is GPU — exercise it at least once.
+  (c) Pause the LLM server for the S1/S2 run. Frees ~49 GiB but it is this session's own
+      server; not an autonomous action.
+  (d) Add a GPU-memory guard to `safe_run`/producers (NVML/torch `mem_get_info` → refuse or cap
+      before launch). Aligns with fail-safe principle 7; larger instrument change, follow-up
+      after (a).
+  **Do not touch the 48 GB slice cap** (operator directive); it remains the CPU containment,
+  and the GPU gap is a separate mechanism. The trunk/state front is renumbered **DEC-562**.
