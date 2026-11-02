@@ -17,7 +17,9 @@ all get signal from it through simple heads.
 never a brain win.
 
 **Stage:** Layer 0 — the encoder is not yet mastered. B is now measured directly on the card
-(B1–B8) before the B+C consequences.
+(B1–B8) before the B+C consequences. **Macro reframe DEC-567 (2026-11-02):** the X-ray is far
+enough to locate the gaps (exposure / learning / decision objective); execution of the capability
+sprint is pending operator decisions D1–D5.
 
 ## Current state
 
@@ -34,6 +36,15 @@ never a brain win.
   0.081/0.057. Serving allocation is necessary but not sufficient; the missing signal is the
   **learned shape**. B2 (sufficiency `U`), B4 (B-only decision), B5 (minimality/cost), B7
   (robustness breadth) and B8 (artifact identity) remain missing or legacy.
+- **Macro reframe (DEC-567, pending operator D1–D5).** The product read located the gaps:
+  (1) the judge's delivery column ("brain+ledger") is a naive 851-d concat and has never scored
+  the 595-d ledger alone — unsupervised geometry dilutes 0.066→0.057 while
+  `return_proneness` nearly closes (Δ −0.019, CI straddles 0); (2) the shape state is a
+  2.4-effective-dim blob, below its own law target (18.2), with temporal skill (order +0.88)
+  but no identity skill (next ≈ unigram); (3) the decision objective was off in the product run
+  even though the stream is 100% randomized on the offer arm. Path: O0 ledger X-ray (no
+  retrain) → O3/O4 one-axis retrains → O2 `U` → O5 minimality → B+C re-score. Unit of progress
+  moves from row-flip to capability delta (O8) if approved.
 - **B+C:** RL is green in both columns; supervised (`return_proneness`, `price_sensitivity`),
   unsupervised (geometry trio) and simulator (`argmax_optimum`) are red. The measured structural
   diagnosis — coarse per-customer attributes are present, fine structure is not readable — is on
@@ -59,17 +70,20 @@ next question is the learned shape, not another consumer tuning pass.
 
 ## Next 3 actions
 
-1. **B FIRST — B4.1/B2.1, the learned shape:** B3 is green as accessibility, and B3.4/B3.5 show
-   serving allocation cannot exceed the exact counter. The missing signal is the learned shape, so
-   the next increment is the B-only action-conditional probe (B4.1) and the worst-case sufficiency
-   `U` (B2.1); if the probe shows the information is absent at B, the objective is the next
-   capability change. No more fold/block tuning.
-2. **B, continued — the remaining rows:** B1.2/B5.1/B5.2/B6.2/B6.3/B7.1/B7.2/B8.1, one axis per
-   run; the one card renders each. B3 is the first green section; make the others current before
-   claiming B.
-3. **B+C SECOND — after B is certified:** run chain v4 (one invocation, 32 GB cap) for S6/B8 and
-   the full re-stamp, then close the remaining B+C reds (supervised, unsupervised, simulator).
-   **Project v1 THIRD** after B+C; the trunk/state axis is **DEC-567**; BACKWARD only at all-green.
+1. **Operator decisions D1–D5 (DEC-567).** The macro reframe is documented and the capability
+   sprint is queued; execution is gated on the stop-and-ask items: D1 (O1 delivery-column re-aim),
+   D2 (O8 capability sprint as the unit of progress + card top-line re-aim), D3 (O0 ledger X-ray,
+   no retrain), D4 (O3 law-ablation as labeled diagnostics), D5 (O2 `U` spec: family, fixed
+   capacity, declared bar).
+2. **O0 ledger X-ray (no retrain, ~30 min)** once D3 lands: score the 595-d ledger alone, its
+   parts, and ledger block-PCA (fit on A) under the frozen B3.2/B3.4 consumers, against
+   {counter 39, shape 256, PATH A}. Pre-registered branches decide whether the delivery gap is
+   serving dilution (fixable without retrain) or an additive-family limit (O3/O4 territory).
+3. **First capability retrains, one axis each:** O3 (law-ablation: the state is a 2.4-dim blob
+   below its own 18.2 target) then O4 (decision objective on the stream's own 100%-randomized
+   offer arm, which the product run left off). Pre-registered acceptance, receipts, card delta.
+   **Then** O2 `U` on the winning object, O5 minimality, B+C re-score under O1, remaining B rows
+   as byproducts, chain v4 for the re-stamp, and **project v1 THIRD**; BACKWARD only at all-green.
 
 ## Operating facts
 
@@ -86,5 +100,14 @@ next question is the learned shape, not another consumer tuning pass.
 
 ## Open operator decisions
 
-None pending. The queue is pre-registered: B producers → B+C (chain v4 + remaining reds) →
-project v1 / DEC-564 trunk/state → BACKWARD at all-green. Standing: push requires explicit permission.
+Pending (DEC-567, stop-and-ask per certification rule 8):
+- **D1:** re-aim the judge's delivery column at the doctrine's served object (block-aware
+  shape + ledger, data-derived per-block dims; learned-only attribution alongside).
+- **D2:** adopt the capability sprint (O8) — unit of progress = a capability delta, card top line
+  = capability-vs-reference.
+- **D3:** pre-register and run O0 (ledger X-ray, no retrain, ~30 min).
+- **D4:** run O3 law-ablation retrains as labeled diagnostics (invariants as hypothesis, not
+  non-negotiable), recording the Lawful↔Sufficient trade both sides.
+- **D5:** declare the O2 `U` spec — probe family, fixed consumer capacity, declared bar.
+
+Standing: push requires explicit permission.

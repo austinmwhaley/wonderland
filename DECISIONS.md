@@ -8579,3 +8579,84 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     counter alone is 0.189 vs PATH A 0.387, and every shape variant tested is below it. The next B
     increment is B4.1 (action-conditional B-only probe/objective) and B2.1 (sufficiency `U`), not
     more fold/block tuning. The serving contract remains a necessary part of the final object.
+
+- **DEC-567 (macro reframe — three-layer diagnosis; capability sprint; execution pending operator D1–D5):**
+  - **Trigger.** Operator directive (2026-11-02): the B-row organization is not driving capability
+    progress; step back and do a macro analysis of how the project can succeed.
+  - **New evidence (product read on cfm_v2k, 2026-11-02):**
+    - **The shape state is a ~2-dim object.** train.log geometry `eff_rank 2.419/103.13`,
+      redundancy 0.4435 (null 0.0348). The laws' own rank target was 18.2 (rank_target
+      0.0703×256; AIB the same). The state collapsed ~7× below its own target.
+    - **The learned sequence skill is temporal, not identity.** next-event CE 1.3431 vs unigram
+      1.3409 (beats_unigram=False); order +0.8826, query +4.7845.
+    - **The product already publishes a 595-d ledger (measure view):** category_share 495,
+      numeric_stats 60, event_mass 7, return_ratio 6, recency 4, richness/missing 22,
+      total_events 1; 0.99 coverage; guardrailed G1–G4 (exact recount, history-only at the
+      boundary, target-blind, not a brain input); G5 attribution pending.
+    - **PATH A is the additive family itself:** 5000×50 wide table, 40 hist_* features, all
+      source=hist cut at 2025-01-01 (manifest provenance) — stream-derived, a fair reference.
+    - **Data is not starved:** 2.34M events, mean 468/customer, 3515 training customers.
+    - **The decision objective was off.** The demo is 100% randomized on the weekly offer arm
+      (randomized fraction 1.0), yet the canonical run had effect_actions=[]; response holdout
+      R² 0.0996 vs leaky ceiling 0.0929 (Δ 0.0044), state_effective_rank 1.96. DEC-560's missing
+      response shape is therefore expected, not mysterious.
+    - **The judge's delivery column has never read the ledger alone.** "brain+ledger" is a naive
+      256⊕595=851-d concat; unsupervised geometry goes brain 0.066/0.091/−0.001 → brain+ledger
+      0.057/0.084/−0.0006 (dilution, the B3.4 mechanism). return_proneness: brain Δ −0.076
+      FAIL; brain+ledger Δ −0.019, CI [−0.000146, +4e-06] — the ledger nearly closes it;
+      delivery is blocked on serving dilution, not (only) on information.
+  - **Diagnosis (three layers):**
+    - **L1 exposure.** The fine structure is likely already in the product: the ledger is the same
+      additive family PATH A is made of. It is not read out in a readable form (naive concat; the
+      X-ray scope excluded the ledger by construction — B3.2's M0 was the in-net 39-d compact
+      counter, not the ledger). Cheapest test: ledger-alone + block-PCA under the frozen B3
+      consumers. No retrain.
+    - **L2 learning.** The progress column (brain alone) needs retraining: the invariant family
+      (rank/spectrum/volume/iso/ortho + AIB + MP floor) collapses the state below its own target,
+      and the decision objective was off while the stream is 100% randomized.
+    - **L3 organization.** The unit of progress was a row flip (a measurement), not a capability
+      delta. Principle 8's loop ran its attribution half (B3.2/564, B3.4/565, B3.5/566, DEC-560)
+      and deferred its resolving half (serving/retrain). B3 greened before B2 (U) was measured.
+      The retrain search region was "add heads" (protocols D–M) while the measured pathology
+      pointed at invariants + decision objective.
+  - **Options (pre-registered; execution pending D1–D5):**
+    - **O0 ledger X-ray (no retrain, ~30 min).** The frozen B3.2/B3.4 consumers score ledger-alone,
+      ledger parts (category_share 495 alone, numeric_stats 60 alone), and ledger block-PCA (fit on
+      A) at 39/128, against {counter 39, shape 256, PATH A}. Branches: persona ≥ 0.30 → additive
+      family readable, delivery fixable by serving; 0.15–0.30 → partial, non-additive residual
+      matters; < 0.15 → additive family insufficient under the frozen consumer, inspect PATH A's
+      derived features (ratios/entropy/windows) as the task family.
+    - **O1 judge delivery column = the doctrine's served object** (block-aware shape + ledger,
+      data-derived per-block dim selection, e.g. PCA fit on A; no B fit), learned-only attribution
+      alongside (certification rule 4). Stop-and-ask: changes what "full E" means for delivery.
+    - **O2 U headline (B2.1/2.2/2.3).** Pre-registered family (self-supervised probes at fixed
+      ridge capacity: next/order/agg/attr-next/numeric-next + adversarial growth), reference =
+      full-history oracle; run on shape-only and shape⊕ledger. Needs operator: family, capacity,
+      declared bar.
+    - **O3 law-ablation retrain sweep** (one axis per run, labeled diagnostic, not product):
+      (i) ablate the isometric-band/rank family; (ii) raise the rank target; (iii)
+      event_residual=True. Pre-registered acceptance: eff_rank ≥ 30 AND shape-only geometry ≥ 0.15
+      without degrading coarse R² below 0.45. Records the Lawful↔Sufficient trade both sides
+      (axis contract).
+    - **O4 decision-shape retrain.** effect_actions on the stream's own randomized offer arm
+      (QTE/bilinear head, DEC-453). Lawful: treatment + outcome are logged; the doctrine names the
+      randomized holdout the ground-truth source. Acceptance: response Δ-rank up materially;
+      simulator argmax leg moves.
+    - **O5 capacity sweep.** U vs rank → the B5.1 minimality curve, after O3/O4.
+    - **O6 kill/restate branch (<20% prior).** If O0+O3+O4 still lose fine structure: restate the
+      claim (additive part matches the table; the learned residual adds temporal signal) or grow
+      the task family to PATH A's derived features.
+    - **O7 status-quo row grind.** Rejected — the identified failure mode.
+    - **O8 capability sprint.** Unit of progress = "the gap to PATH A on one declared capability
+      axis narrows by a pre-registered amount." Hypothesis → one-axis change → frozen measurement
+      → DEC + card delta at sprint boundaries. Integrity kept (receipts, hashes, pre-registration,
+      gates frozen before results). The card top line is re-aimed to capability-vs-reference
+      (coarse/fine/decision/U); the B rows remain the certification detail. No second card.
+  - **Recommended order.** O0 → D1–D5 → O3 → O4 → O2 (U on the winning object) → O5 → B+C
+    re-score under O1 → remaining B rows as byproducts → project v1.
+  - **Operator decisions pending (stop-and-ask per certification rule 8).** D1: O1 delivery-column
+    re-aim. D2: O8 sprint as the new unit of progress + card top-line re-aim. D3: O0
+    pre-registration and run. D4: O3 law ablation as labeled diagnostics (invariants as
+    hypothesis vs non-negotiable). D5: O2 U spec (family, fixed capacity, declared bar).
+  - **Status.** Analysis + documentation only. No retrain, no judge re-aim, no U run, no card
+    change until D1–D5 are decided.
