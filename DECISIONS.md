@@ -7458,3 +7458,25 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   from batch 16 (46 samples/s) through 32 (41) to 64 (40). The model is **compute-bound** on this
   shape; the card now *may* use 46 GB, but it does not *need* to. Fewer steps, not more VRAM, is
   what shortens a run.
+
+## DEC-548 — [FALSIFIED] temporal contrastive does not move the SERVED geometry
+- **Ran at the 800 rung (1 epoch), baseline vs temporal contrastive:**
+
+  | task | baseline | temporal | PATH A |
+  |---|---:|---:|---:|
+  | persona_geometry | 0.137 | **0.070** | 0.404 |
+  | future_geometry | 0.101 | **0.068** | 0.140 |
+  | segment_structure | 0.003 | **−0.006** | 0.309 |
+  | x0 / h0 / return | 0.908 / 0.970 / 0.473 | 0.910 / 0.970 / 0.472 | unchanged |
+
+  **FALSIFIED.** Geometry got worse; supervised held.
+- **Likely reason (recorded for the next attempt).** The contrast now shapes `proj(y)` at early/late
+  positions, but the graded object is `state_embeddings = boundary(proj(h))` — the FINAL state. The
+  temporal objective and the served object are not the same tensor, so improving one need not move
+  the other. A correct identity objective must be evaluated on the exact tensor the donor serves.
+- **Debug findings worth keeping.** `h` is `(B, dim)` — the final state only — so any temporal
+  objective must use the per-position readout `y`; and every cuBLAS path (`@`, `F.linear`,
+  `einsum`) raises `CUBLAS_STATUS_NOT_SUPPORTED` on this device inside the training process, while
+  the same op succeeds standalone. A broadcast similarity has no BLAS call and works.
+- **Action.** Reverted. `DEC-543`'s hypothesis (identity is the missing capability) is NOT
+  disproven by this; the implementation targeted the wrong tensor.
