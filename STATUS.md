@@ -55,7 +55,17 @@ Diagnosis chain (DEC-548…550, all rung measurements):
   pytest (`test_gpu_budget`'s `--once` sweep) SIGTERM'd them — not OOM, not the inductor.
   Fixed: the sweep test now skips while a producer is live (verified against run 4), and jobs
   launch through `scripts/safe_run.py` into the 48G slice.
-- **Run 4 (IN FLIGHT, est. 3–4 h + judge):** the pre-registered dose unchanged —
+- **Run-4 protocol verified before launch (DEC-551, committed `82b652a`):** full DINO model-side
+  audit vs the DEC-550 pre-registration — the running code IS the pre-registered mechanism
+  (out-dim 32·dim, head, dedicated `d_` copies, own 0.996 momentum, center 0.9, temps, drop
+  U[0.2,0.5], 3-extra-pass cost); two recorded clarifications, both by design: the counter fold
+  (`w_counter` + `CounterBlock`) is live on the teacher side because it is the served-composite
+  *definition* (DEC-550 grades the exact served composite; the lag engine is the dedicated
+  trunk/proj/head EMA), and teacher tokenization reuses the JEPA EMA copies (documented at
+  implementation). Judge + attribution-probe scripts and the `cfm_products.duckdb` filename
+  contract verified end-to-end.
+- **Run 4 (IN FLIGHT; measured pace ~6–8 s/step — est. ~01:30–02:00 done incl. products build
+  + judge):** the pre-registered dose unchanged —
   `LG_SCAN=eager`, `--set batch=64 --set budget_steps=800` (128 views/step; teacher to ~4%
   init; governor convergence stop intact, 800 is a ceiling — principle 2), launched via
   `safe_run.py` (conformance receipt: slice cap 48.0 GB, seatbelt cgroup-clamp 45.06 GB).
