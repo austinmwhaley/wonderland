@@ -83,33 +83,46 @@ data-side quantity, stable across runs). The served composite dilutes it to 0.13
 (`w_counter`) + shared `proj` + boundary is many-to-one and destroys the mass half's pairwise
 structure.
 
+**COMPOSITE CONSTRUCTION (DEC-555, pre-registered `512af35`):** stage-1 decomposition probe
+(measured, CPU) put **100% of the drop at M0→M1 — the `w_counter` fold alone** (0.2174 →
+0.1279); addition of h, shared proj, and the boundary each contribute ~0 (M3 = M4 EXACT —
+isometry confirmed on the judge protocol). M4-vs-stored 0.0031 gap resolved by mechanism, not
+numerics: with `serve_unfaded` the graded `state_embeddings` are materialized PRE-fade while
+`customer_state.state` is rewritten post-fade in place. Stage 2 (pre-fixed lever: native-mass
+block serving, E = [z(current 256-d pipeline) | z(exact 39-d mass)], split-A block scales) is
+IMPLEMENTED (3 files: config flag, `set_serve_mass_block`/`serve_mass_block` + no-op guard in
+`serve_project`, `donor_states` branch + split-A fit persisted as the per-tag sidecar
+`serve_massblock_<tag>.npz` (DEC-213 pattern) + `load_frozen_encoder` hook + day-1-close fit in
+both serve branches) — smoke passed every pre-registered criterion (exact z-score blocks,
+sidecar reload reproduces the served vectors to 0.0) and caught one real bug (stack across
+mismatched widths in the finiteness check — fixed). The verdict run = in-repo `products`
+rebuild of the run-5 artifacts, no retraining.
+
 **Tree:** all gates green — ruff check/format, principle audit strict rc=0 (ratchet 67),
 fast tier rc=0. SwAV bundle REVERTED (DEC-554); kept, pre-registered as a training-regime fix:
 the governor-selection exclusion in `cfm_training.py` (inert unless "swav" is in objectives;
 the general rule — self-referential terms train, the predictive portfolio selects — now covers
-any future EMA-teacher objective). `swav_*` config fields reverted with the bundle.
+any future EMA-teacher objective). `swav_*` config fields reverted with the bundle. The
+DEC-555 stage-2 bundle (config flag + model serve transform + state fit/sidecar/donor_states
+branch, 3 files) is UNCOMMITTED until the verdict (same protocol as DINO/SwAV: falsify →
+revert).
 
 ## Next 3 actions
 
-1. **Pre-register DEC-555: COMPOSITE CONSTRUCTION** (state/interface axis — the DEC-552/554
-   decision rule). The mass arm clears the bar alone (0.2174); the lever is how the served
-   blend is built so it stops diluting the mass half's distance structure (fold + shared proj
-   + boundary is many-to-one). Candidate levers to adjudicate in the pre-registration:
-   block-aware serving (the doctrine's own default — "block-aware scales derived from data,
-   shape vs measure"), the fold's rank/mapping, or the boundary's treatment of the two halves.
-   Frozen rung bars unchanged.
-2. **Implement + run** the DEC-555 experiment via `safe_run.py` (one axis, re-estimate from
-   the measured s/step + co-tenancy), judge with `/tmp/opencode/judge_r5.py`-class bars,
-   probe with the 4-arm table as the scorecard.
-3. **If met:** commit + full-size adoption + S6 chain + card regeneration. **If falsified:**
-   record, revert, and attribute again — the 4-arm table is the scorecard that tells us which
-   construction element is destroying the mass structure.
-
-After the geometry front: re-measure `return_proneness` (full-size) and `argmax_optimum`, then
-the card can go 8/8 → run BACKWARD.
-
-After the geometry front: re-measure `return_proneness` (full-size) and `argmax_optimum`, then
-the card can go 8/8 → run BACKWARD.
+1. **Stage-2 verdict instruments (IN FLIGHT, CPU):** the in-repo `products` rebuild of the
+   run-5 artifacts with `serve_mass_block=true` is DONE (EXIT=0, ~3 min: `[mass-block] scales
+   fit on split-A N=562 -> 295-d served E`, sidecar persisted, 800 rows, all finite). Judge
+   (`judge_r6.py`, frozen DEC-555 bars vs j_base800) + 5-arm scorecard probe
+   (`probe_stage2.py`: served-old / served-new / M0 c / H0 trunk / PATH A — instrument
+   acceptance: served-old ~0.1320, M0 ~0.2174, PATH A ~0.4038) are running.
+2. **Verdict per the pre-registered decision table:** bar met (persona ≥ 0.217 OR segment-ARI
+   ≥ 0.095; no supervised row < −0.03; probe-persona R² ≥ 0.40) → commit the bundle, full-size
+   adoption run (re-estimate from measured s/step + co-tenancy; the DEC-554 dose-ceiling fact
+   applies to any retrain), S6 chain, card regeneration. Bar missed + guard clean → record
+   DEC-556, revert, front → FULL-SIZE re-measurement. Guard breaks → the coupling is real:
+   record, retain the fold, front → full-size re-measurement.
+3. After the geometry front: re-measure `return_proneness` (full-size 0.4145 vs 0.4879) and
+   simulator `argmax_optimum` (+0.0026, CI⊃0) → card 8/8 → run BACKWARD.
 
 ## Operating facts
 

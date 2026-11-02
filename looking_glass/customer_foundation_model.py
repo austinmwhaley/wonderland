@@ -129,6 +129,18 @@ def _replay_run_cfg(meta, rcfg, out: Path, cfg, anchors=None, sample_b=None):
     """Replay a run's registry config onto a freshly loaded encoder config —
     the ONE place registry -> live config happens (products + portfolio)."""
     run_cfg = meta.get("config", {})
+    # WHOLE-PROTOCOL replay: the registry's config is the recorded protocol (asdict at
+    # write time), so set EVERY live field except the output-side ones. The tag is a
+    # function of the protocol (objectives, lr, epochs, counter flags, ...): a selective
+    # field list silently re-stamps the artifact identity the moment a new protocol axis
+    # lands — measured DEC-555 stage 2, a rebuild stamped the defaults onto a
+    # counter-on 13-objective run and the judge correctly refused the mismatch.
+    # The explicit lines below run AFTER this loop and keep CLI-override precedence.
+    _replay_exclude = {"tag", "out_dir", "set_overrides"}
+    for _k, _v in run_cfg.items():
+        if _k in _replay_exclude or not hasattr(rcfg, _k):
+            continue
+        setattr(rcfg, _k, _v)
     rcfg.out_dir = str(out)  # write artifacts next to the checkpoint
     # The encoder was trained on `run_cfg["db"]`; the rebuild must read the SAME stream
     # (otherwise the ledger is tallied over a different history than the encoder saw).
