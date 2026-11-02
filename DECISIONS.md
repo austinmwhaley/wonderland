@@ -8871,3 +8871,134 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     isometric-band/rank family), then the one-axis retrain, accepted on B rows:
     eff_rank ≥ 30 in the retrain's own receipt AND shape-only geometry (B3.2 M4_served
     persona, frozen consumer) ≥ 0.15 AND coarse linear access (B3.3 served mean R²) ≥ 0.45.
+
+- **DEC-572 (O3 axis-i pre-registered — the isometric-band/rank law, read from the code, is a
+  one-sided ceiling with no floor in cfm_v2k; the one-axis retrain reinstates the floor pair
+  `rank`+`iso` and holds everything else byte-identical):**
+  - **Code reading (the mechanism, frozen before the run).** Every soft-invariant term is
+    gated on membership in `cfg.objectives` (`cfm_training.py`: rank 1570, iso 1647,
+    spectrum 1615, volume 1625, decorr 1584, commutation 1543, variance 1687, trajectory
+    1664; contrast/redundancy are computed unconditionally at 1216/1223 but never combined,
+    since `_combine` (1959) sums only `objectives ∩ T`; ortho at 1530 likewise computed but
+    uncombined). cfm_v2k's resolved protocol carries 13 PREDICTIVE objectives only
+    (`next entity dt value mask contrast occur order jepa sf query agg mtp`); the whole
+    `soft_invariants` ten-term family (`cfm_config.py` 470, "kept as the (deprecated)
+    soft-invariant family for reference / opt-in") is OFF. So DEC-567's "ablate the
+    isometric-band/rank family" is a no-op diff on the canonical run: the family is already
+    ablated. What remains active of the rank/isometry law: (1) AIB — `aib=true`, a
+    compress-KL term (1674) whose multiplier is driven by a dual-ascent controller (551)
+    that raises β only when the participation-ratio fraction EXCEEDS `aib_target_rank`
+    0.0703125 (= 18 of 256 dims, data-derived "18 signals of 256") and drives it to 0 below
+    it — a one-sided ceiling, provably inert in the measured regime (geometry receipt:
+    pr_frac 0.0094, eff_rank 2.419 of 256, n_states 527); (2) the isometric boundary
+    (`isometric_boundary/donor_whiten/zca=true`) — a per-sample Cayley isometry R (κ=1,
+    invertible, rank-preserving; the run's own log records `eff-rank 0.0092 -> 0.0092`
+    through it), i.e. a serving-axis readout, not a trunk pressure. `rank_alpha` /
+    `ortho_weight` / `rank_lambda_max` are defined but referenced nowhere (dormant).
+    The FR v2.0 removal (DEC-044, `cfm_config.py` 450-454: "invariants must be structural,
+    not soft penalties — they stiffened the landscape: L~2e6 -> lr collapse; rank is
+    enforced in the update") took the FLOOR out and left only the inert ceiling; the "2.4-d
+    blob below its own 18.2 target" (DEC-567 L2) is the measured consequence.
+  - **The one-axis diff (frozen).** ONE config line, everything else matched-control:
+    `--set objectives=['next','entity','dt','value','mask','contrast','occur','order',
+    'jepa','sf','query','agg','mtp','rank','iso']` — cfm_v2k's 13 plus the two floor terms
+    of the named family: `rank` (graded `1 − PR/dim` on the trunk's projected final states;
+    closed-form participation ratio, no eigh backward — the v2.5.0 pathology the closed
+    form replaced; fp32-guarded; scale-free; task group, so its gradient flows to the
+    model by design, 1942-1944) and `iso` (per-step large-sample PR hinge below the
+    data-derived MP band floor τ=`tau_mp` 0.0977 with self-throttling sigmoid
+    `iso_gamma` 8.0; in `GEOMETRY_FAMILY`, so PCGrad projects its gradient orthogonal to
+    the task gradient — it can never pull down predictive learning, 1939/2313). NOT
+    touched: `aib` (true, ceiling stays — the reinstated floor + the existing ceiling are
+    the band the axis is named for), the isometric boundary (serving axis, O3 is a trunk
+    axis), all 13 predictive objectives, the four canonical `--set` overrides
+    (`ledger_recency/serve_unfaded/use_counter/counter_type_values` true), weight_mode
+    equal, seed 0, as_of 2025-01-01 → split_seed 6529885151769 → the same A=3515/B=1485,
+    no `--customers` (full population A), `LG_SCAN=eager`, `safe_run.py` launcher,
+    GPU (operator 2026-11-02: whatever is best for the task; the trainer's own
+    gpu_budget seatbelt + safe_run cgroup derive the cap — verify the `[gpu-budget]`
+    receipt at launch). Fresh out-dir `/tmp/opencode/o3axis_i` (NEVER cfm_v2k, DEC-571);
+    scratch warm-start (no prior checkpoint in the out-dir), like cfm_v2k. The tag/revision
+    is derived from the resolved protocol (`cfm_config.py` 517-565: objectives are in the
+    hash), so O3 gets its own artifact identity automatically — no relabeling.
+  - **Labeled diagnostic (DEC-568 D4: invariants as hypothesis, not non-negotiable).**
+    Hypothesis H1: the trunk state's 2.4-dim blob is caused by the MISSING RANK FLOOR —
+    with no active pressure to spread information across directions, the 13 predictive
+    objectives concentrate the state in a few directions (redundancy_offdiag 0.443 vs
+    null 0.035). O3 tests H1 against H2/H3 (the concentration is intrinsic to the
+    predictive objectives / the SSM trunk architecture, which no soft floor can move) on
+    the frozen B rows, one axis, labeled: this receipt is a diagnostic retrain, not a
+    product, until acceptance below.
+  - **Acceptance (pre-registered bars, DEC-567/568/571 — unchanged by this DEC):**
+    1. **eff_rank ≥ 30** in O3's own portfolio receipt geometry row (same yardstick as
+       cfm_v2k's 2.419: participation-ratio eff-rank of the trunk states, null-normalized
+       row reported alongside).
+    2. **B3.2 M4_served shape-only persona ≥ 0.15** on the frozen consumer
+       (`measure_stage_decomposition._geometry`, re-run with `--products` on the O3
+       artifact; cfm_v2k baseline 0.06596).
+    3. **B3.3 served coarse linear-access mean R² ≥ 0.45** on the frozen consumer
+       (`measure_block_serving._linear_access`; cfm_v2k baseline 0.4677 — the bar is
+       "without degrading coarse R² below 0.45").
+    4. **Stability**: the run is not `diverged` and not `lr_collapsed` in its governor
+       receipt; no non-finite (robust outranks everything: a diverged run is UNSTABLE and
+       fails acceptance regardless of eff_rank — FR v2.0 pillar 2, DEC-039).
+  - **Branches (frozen).** All of 1-4 pass → O3 accepted as the labeled-diagnostic result;
+    re-measure the whole B3 section (B3.2/B3.3/B3.4/B3.5/B3.6 producers with `--products`
+    on the O3 artifact) as the card delta; DEC-573 records accept-or-revert and the
+    canonical-swap question (a config-only retrain keeps behavior `d0ac576c`; the swap is a
+    separate recorded decision, never implicit). 1 passes, 2 fails → the floor worked but
+    the expanded directions carry no geometry: the axis is the trunk's CONTENT, not the
+    law's presence (H2) — record the Lawful cost, O3 axis-i closed negative, O4 next.
+    1 fails → the floor pair is insufficient (or stiffened the run, 4 fails → reject as
+    UNSTABLE, no post-hoc bar edits): the trunk/objective axis is confirmed, O4 next;
+    O3(ii) "raise the rank target" and O3(iii) "event_residual=True" stay queued as
+    separate labeled axes, each needing its own DEC first.
+  - **Lawful ↔ Sufficient trade, both sides (axis contract).** Lawful (cost): reinstating
+    soft penalties runs against FR v2.0 pillar 1 ("invariants are algebraic construction
+    inside the state update, never soft penalties") — the removal was measured, not
+    theoretical (stiffened landscape L~2e6 → lr collapse; eigh-backward gradient
+    explosion in the collapsed regime). Mitigations already in the code: closed-form PR,
+    fp32 guards, scale-free forms, iso's self-throttle, iso's PCGrad projection. Residual
+    risk: the governor's val metric is the SAME weighted objective (DEC-008), so it now
+    includes the rank/iso terms — the early-stop decision surface shifts, and the six
+    failing attr_next/num_next structure-skill rows (cfm_v2k portfolio:
+    -0.0028…-0.0643) can only worsen if geometry pressure steals capacity from
+    predictive skill; both are receipted, and the portfolio ok=false of cfm_v2k means the
+    O3 comparison is like-for-like on a failing baseline, not a pass protection.
+    Sufficient (gain): the 2.4-dim blob is the measured ceiling of B3.2 shape-only
+    geometry (persona 0.0660 — below the 39-d exact counter's 0.1893), and DEC-571 showed
+    the additive ledger cannot supply what the shape lacks (segment structure absent
+    from the ledger entirely: ARI ~0 vs PATH A 0.2685). Rank expansion is the only
+    B-internal mechanism by which the learned shape can carry fine structure at all.
+  - **Rejected alternatives.** (R1) Ablate what is active — `aib=false` + boundary off:
+    a no-op on the trunk (AIB provably inert below target; the boundary is
+    rank-preserving) and the boundary-off half would move the SERVING axis (L1) inside a
+    trunk-axis run — confound, reject. (R2) Reinstate all ten `soft_invariants`:
+    multi-axis at once (spectrum/volume/decorr/variance/trajectory/commutation/ortho/
+    redundancy/barrier each pressure a different property), and the FR v2.0 record is the
+    full family's stiffness — maximal risk, zero attribution gain, reject. (R3) Raise
+    `aib_beta_max` / `aib_lr`: the controller only compresses ABOVE target; it cannot
+    create a floor — wrong mechanism, reject. (R4) O3(ii) raise the rank target: a
+    different axis (the target value, not the law's presence) and meaningless while no
+    floor term is active — queue after (i). (R5) O3(iii) `event_residual=true`: axis
+    (iii), queued. (R6) CPU: the operator lifts the CPU-only wording (DEC-569 addendum);
+    the run is GPU-bound by measurement (5.51 s/step, `enqueue_p95 22.6 s`), CPU would be
+    an order of magnitude slower with no correctness gain — GPU under safe_run.
+  - **Budget (from cfm_v2k's measured numbers, stated before launch).** Governor stopped
+    cfm_v2k at 574/1650 steps @ 5.51 s/step ≈ 53 min train; products in the same run
+    ≈ 15-25 min; total ≈ 1.5-2.5 h. One GPU job at a time; the 32 GB project ceiling is
+    enforced by `safe_run` (cgroup MemoryMax, derived) + the trainer's gpu_budget
+    seatbelt (unified pool) — verify both receipts at launch and record them here if they
+    differ from cfm_v2k's.
+  - **Post-measurement plan (frozen).** On O3 completion: (1) read O3's portfolio receipt
+    (geometry row + ok + governor) — bar 1 and 4; (2) re-run the frozen B3 producers with
+    `--products /tmp/opencode/o3axis_i`: `measure_stage_decomposition.py` (B3.2, bar 2),
+    `measure_block_serving.py` (B3.3, bar 3; B3.4/B3.5 as reported), `measure_served_object.py`
+    (B3.6, reported — the ledger exposure does not change with a trunk retrain, but the
+    shape-vs-ledger balance does); (3) record DEC-573 with all numbers, the branch, and
+    accept/revert; (4) regenerate the card (B3 receipts re-stamp under the O3 products
+    identity when O3 is the measured object; cfm_v2k receipts stay as the canonical
+    baseline until a swap decision); (5) commit. No judge re-aim, no B+C re-score, no
+    canonical swap inside DEC-573 (B-only, DEC-568).
+  - **Status.** Pre-registered, committed before the run. The O3 retrain and its card delta
+    land as their own chunk (DEC-573).

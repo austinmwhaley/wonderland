@@ -83,12 +83,17 @@ next question is the learned shape, not another consumer tuning pass.
    persona ≥ 0.30; ledger_full dilutes to 0.0172; block-PCA is not the right exposure). B's
    serving contract must expose the ledger as named blocks; DEC-570's U arm is determined by the
    measurement. The learned shape remains the weak object → the retrain axes are still on.
-2. **O3 law-ablation retrain (DEC-572 pre-registration, one axis):** ablate the
-   isometric-band/rank invariant family on the 2.4-dim blob state, accepted on B rows:
-   eff_rank ≥ 30 in the retrain's own receipt AND shape-only geometry (B3.2 M4_served persona,
-   frozen consumer) ≥ 0.15 AND coarse linear access (B3.3 served mean R²) ≥ 0.45. GPU allowed
-   under the 32 GB ceiling (operator 2026-11-02: use whatever is best for the task). Then O4
-   (decision objective on the stream's own 100%-randomized offer arm; acceptance = **B4.1**).
+2. **O3 law-ablation retrain — DEC-572 pre-registered (committed `pre-O3`):** code reading
+   found the isometric-band/rank soft family is ALREADY off in cfm_v2k (none of the ten
+   `soft_invariants` is in its 13 predictive `objectives`; AIB is a one-sided ceiling, inert
+   at pr_frac 0.0094 < target 0.0703; the boundary is rank-preserving). So "ablate the
+   family" is a no-op diff; the one-axis retrain RESTATES the axis as the missing floor:
+   `--set objectives=<cfm_v2k's 13> + rank + iso` (graded PR objective + self-throttling
+   MP-band hinge), everything else byte-identical, fresh out-dir `/tmp/opencode/o3axis_i`,
+   GPU under safe_run. Accepted on B rows: eff_rank ≥ 30 in O3's own receipt AND B3.2
+   M4_served persona ≥ 0.15 (frozen consumer) AND B3.3 served mean R² ≥ 0.45, stable run.
+   Then O4 (decision objective on the stream's own 100%-randomized offer arm; acceptance =
+   **B4.1**).
 3. **O2 `U` on the winning object (block-aware exposure per DEC-571, spec per DEC-570, bar
    U ≥ 0.5 with learned-only alongside), then O5 minimality (B5.1), remaining B rows, chain v4
    for the re-stamp. B+C re-scores only after B is green; project v1 THIRD; BACKWARD only at
