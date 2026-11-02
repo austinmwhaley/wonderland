@@ -7594,3 +7594,19 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   refinement recorded before the run, not a post-result threshold move.
 - **DINO run 2 (now).** 800 rung, `--set batch=64`, epochs=3, same objectives. Estimate:
   ~200 steps × ~4.5 s/step ≈ 15 min + ~2 min build/judge → **~18 min**.
+- **DINO run 2 PROTOCOL CORRECTION (pre-run, gates frozen).** The pre-registered command used
+  `--epochs 3` to deliver the declared teacher-warmup dose ("0.996^800 ≈ 4% init left").
+  Mechanism audit before the run: the governor's budget is `derive_budget(n_seqs, batch, dim)` =
+  15 × ceil(n_seqs/batch) × sqrt(dim/64), and `--epochs` is legacy (reaches `sample_a` only,
+  never the governor — cfm_config.py line 234 comment + verified call sites). At B=64 the derived
+  ceiling is 390 steps, not ~800. Correction: `--set budget_steps=800` (an explicit override the
+  resolver honors and records in the receipt — the same surface `--set batch=64` uses). No bar,
+  criterion, comparator, or objective changes; this delivers the pre-registered intent (teacher
+  settling to ~4% init; 800 × 128 views/step ≈ 102k views vs run 1's ~8.5k). **Estimate from
+  measured numbers:** DEC-546 B16 no-DINO step 0.348 s (46 samples/s, compute-bound flat
+  B16→B64); DINO adds ~2 extra full SSM passes (student-masked + 2× teacher; student-full reuses
+  h) ≈ 3× SSM work → ~1.05 s/step at B16 (~15 samples/s) → B64 step ≈ 64/15 ≈ 4.3 s. Governor
+  runs 390–800 steps (convergence stop on val plateau, patience 4 @ eval_every 40) →
+  **~30–60 min + ~2 min judge ≈ 35–65 min total.** The rung remains the smallest sufficient test:
+  the acceptance bars and the noise band (0.1295–0.1400) are certified against j_base800 (Layer A
+  v2 testbed); full-size (~2,310+ steps) is earned only on a rung win (principle 2 + anti-overfit).
