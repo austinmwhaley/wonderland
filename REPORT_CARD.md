@@ -1,6 +1,6 @@
 # REPORT_CARD — PATH B > PATH A
 
-*Generated `2026-11-02T16:29:04+00:00` · commit `986da0a` (`foundation-rebuild` · dirty) · encoder behavior `d0ac576c3c7aa069`*
+*Generated `2026-11-02T16:32:03+00:00` · commit `6aeb94f` (`foundation-rebuild` · clean) · encoder behavior `d0ac576c3c7aa069`*
 
 **Assessment:** NOT DONE. Legs green: 2/8 · stages green: 5/6 · backward open: 0. This is a statement about receipts, not about effort; nothing here is a claim of universality (DEC-410: that word appears only when the coverage rows are green). B foundational: 0/8 sections green · 3 rows PASS · 1 FAIL · 16 UNKNOWN/MISSING (B-only; B+C is the judge).
 
