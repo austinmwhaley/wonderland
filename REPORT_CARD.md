@@ -1,15 +1,29 @@
 # REPORT_CARD — B foundational, then PATH B > PATH A
 
-*Generated `2026-11-02T17:12:37+00:00` · commit `868ef7b` (`foundation-rebuild` · clean) · encoder behavior `d0ac576c3c7aa069`*
+*Generated `2026-11-02T20:45:02+00:00` · commit `b3e88a8` (`foundation-rebuild` · dirty) · encoder behavior `d0ac576c3c7aa069`*
 
 **Assessment:**
 
-- ❌ **B foundational:** NOT CERTIFIED — the current gate. 1/8 sections green · 7 rows PASS · 1 FAIL · 14 UNKNOWN/MISSING.
+- ❌ **B foundational:** NOT CERTIFIED — the current gate. 1/8 sections green · 8 rows PASS · 1 FAIL · 14 UNKNOWN/MISSING.
 - ❌ **B+C consequence:** NOT DONE — 2/8 legs green · stages 5/6 · backward open: 0. Reported for diagnosis; downstream of B.
 - ⚪ **Project v1:** not assessed on this card (full stack is a separate scope).
 
 The verdict is a pure function of the receipts under `docs/report_cards/experiments/`.
 Ledger points never count as progress: `brain alone` is the judge, `brain + ledger` is delivery.
+
+## B capability — top line (O8 sprint; DEC-568/D2)
+
+The sprint's unit of progress is one capability delta on these axes. Each axis is the worst verdict of the B rows that own it, computed from the receipts below — B+C remains the reported consequence section, never a top-line axis.
+
+| Capability | B rows | Verdict | Headline |
+|---|---|---|---|
+| U · sufficiency | B2.1 | ❔ UNKNOWN | missing producer: measure_sufficiency_law.py |
+| shape-only geometry | B3.2 | ✅ PASS | complete · persona M0 0.1893 → M1 0.06572 → served 0.06596 · future M0 0.1727 → M1 0.09323 → served 0.09095 · largest … |
+| decision-shape | B4.1 | ❔ UNKNOWN | missing producer: measure_decision_law.py |
+| minimality rank | B5.1 | ❔ UNKNOWN | missing producer: measure_minimality_law.py |
+| transfer | B6.1, B6.3 | ❔ UNKNOWN | judge_stages.json:S5 working=True |
+| robust | B7.1, B7.2 | ❔ UNKNOWN | legacy receipt encoder_b_props.json (no behavior stamp); re-run the legacy calibration producer |
+| reproducible | B8.1, B8.2 | ❌ FAIL | legacy receipt encoder_b_props.json (no behavior stamp); re-run the legacy artifact producer |
 
 ## B — foundational scorecard (B-only, DEC-562)
 
@@ -45,6 +59,7 @@ The judge below is the **consequence** (B+C). This section is **B itself**: a ro
 | B3.3 | Linear accessibility (current) | mean ridge R2 on A->B over the lab's persona+future fields; served vs PATH A | ✅ PASS | served 0.4677 vs PATH A 0.4126 (delta +0.0551, margin -0.01; n_fields 11) |
 | B3.4 | Block-aware serving geometry | exact counter block beside the learned shape, equal total variance; persona/future/ARI | ✅ PASS | complete · persona served 0.06596 / counter 0.1893 / block 0.09592 / PATH A 0.3867 · future served 0.09095 / counter 0.1727 / block 0.1169 / PATH A 0.181 · counter-weight sensitivity flat (block scale erased by per-dim z-score; dimension count is the lever) |
 | B3.5 | Equal-dimension serving geometry | shape PCA + counter tile at 128/128 and 39/39; persona/future/ARI at full size | ✅ PASS | complete · persona equal_39 0.1721 / equal_128 0.1361 / counter 0.1893 / shape_pca_39 0.08139 / PATH A 0.3867 · future equal_39 0.144 / equal_128 0.1174 / counter 0.1727 / PATH A 0.181 |
+| B3.6 | Served-object X-ray (ledger exposure) | the ledger alone, its named parts, and ledger block-PCA under the frozen B3.2/B3.4 consumers, against {exact counter, served shape, PATH A}; the branch is computed here from the arm numbers (DEC-569) | ✅ PASS | complete · branch exposure (DEC-569: best ledger arm persona 0.3196 from part_numeric_stats; full 0.01722 / pca_39 0.2012 / pca_128 0.1036) · references persona counter 0.1893 / shape 0.06596 / PATH A 0.3867 · linear access ledger_full 0.3551 / counter 0.3937 / shape 0.4677 / PATH A 0.4126 |
 
 ### B4 — Decisive · ❔ UNKNOWN
 

@@ -1,0 +1,301 @@
+{
+  "_meta": {
+    "behavior_hash": "d0ac576c3c7aa069",
+    "command": "measure_served_object.py",
+    "generated_at": "2026-11-02T20:42:41+00:00",
+    "git_commit": "b3e88a81ddcd962b686bc6aebc61ed4645c8ee40",
+    "producer": "measure_served_object.py"
+  },
+  "arms": {
+    "exact_counter": {
+      "dim": 39,
+      "future_geometry": 0.172705,
+      "future_geometry_n": 1485,
+      "future_geometry_pairs": 1101870,
+      "n": 1485,
+      "persona_geometry": 0.189336,
+      "persona_geometry_n": 1485,
+      "persona_geometry_pairs": 1101870,
+      "segment_ari": -0.000475
+    },
+    "ledger_full": {
+      "dim": 595,
+      "future_geometry": 0.029227,
+      "future_geometry_n": 1485,
+      "future_geometry_pairs": 1101870,
+      "n": 1485,
+      "persona_geometry": 0.017219,
+      "persona_geometry_n": 1485,
+      "persona_geometry_pairs": 1101870,
+      "segment_ari": 0.000104
+    },
+    "ledger_pca_128": {
+      "dim": 128,
+      "future_geometry": 0.076187,
+      "future_geometry_n": 1485,
+      "future_geometry_pairs": 1101870,
+      "n": 1485,
+      "persona_geometry": 0.103621,
+      "persona_geometry_n": 1485,
+      "persona_geometry_pairs": 1101870,
+      "segment_ari": 0.000223
+    },
+    "ledger_pca_39": {
+      "dim": 39,
+      "future_geometry": 0.135151,
+      "future_geometry_n": 1485,
+      "future_geometry_pairs": 1101870,
+      "n": 1485,
+      "persona_geometry": 0.201223,
+      "persona_geometry_n": 1485,
+      "persona_geometry_pairs": 1101870,
+      "segment_ari": -0.000658
+    },
+    "part_category_share": {
+      "dim": 495,
+      "future_geometry": 0.005053,
+      "future_geometry_n": 1485,
+      "future_geometry_pairs": 1101870,
+      "n": 1485,
+      "persona_geometry": 0.038631,
+      "persona_geometry_n": 1485,
+      "persona_geometry_pairs": 1101870,
+      "segment_ari": -0.000548
+    },
+    "part_event_mass": {
+      "dim": 7,
+      "future_geometry": 0.190072,
+      "future_geometry_n": 1485,
+      "future_geometry_pairs": 1101870,
+      "n": 1485,
+      "persona_geometry": 0.233197,
+      "persona_geometry_n": 1485,
+      "persona_geometry_pairs": 1101870,
+      "segment_ari": -0.000384
+    },
+    "part_missing_rate": {
+      "dim": 11,
+      "future_geometry": 0.072289,
+      "future_geometry_n": 1485,
+      "future_geometry_pairs": 1101870,
+      "n": 1485,
+      "persona_geometry": 0.022855,
+      "persona_geometry_n": 1485,
+      "persona_geometry_pairs": 1101870,
+      "segment_ari": -0.001383
+    },
+    "part_numeric_stats": {
+      "dim": 60,
+      "future_geometry": 0.161516,
+      "future_geometry_n": 1485,
+      "future_geometry_pairs": 1101870,
+      "n": 1485,
+      "persona_geometry": 0.319589,
+      "persona_geometry_n": 1485,
+      "persona_geometry_pairs": 1101870,
+      "segment_ari": 0.001269
+    },
+    "part_recency": {
+      "dim": 4,
+      "future_geometry": 0.086058,
+      "future_geometry_n": 1485,
+      "future_geometry_pairs": 1101870,
+      "n": 1485,
+      "persona_geometry": 0.138916,
+      "persona_geometry_n": 1485,
+      "persona_geometry_pairs": 1101870,
+      "segment_ari": -0.000297
+    },
+    "part_return_ratio": {
+      "dim": 6,
+      "future_geometry": 0.167771,
+      "future_geometry_n": 1485,
+      "future_geometry_pairs": 1101870,
+      "n": 1485,
+      "persona_geometry": 0.195492,
+      "persona_geometry_n": 1485,
+      "persona_geometry_pairs": 1101870,
+      "segment_ari": 0.000708
+    },
+    "part_richness": {
+      "dim": 11,
+      "future_geometry": 0.0791,
+      "future_geometry_n": 1485,
+      "future_geometry_pairs": 1101870,
+      "n": 1485,
+      "persona_geometry": 0.097534,
+      "persona_geometry_n": 1485,
+      "persona_geometry_pairs": 1101870,
+      "segment_ari": 0.00077
+    },
+    "part_total_events": {
+      "dim": 1,
+      "future_geometry": 0.150883,
+      "future_geometry_n": 1485,
+      "future_geometry_pairs": 1101870,
+      "n": 1485,
+      "persona_geometry": 0.196623,
+      "persona_geometry_n": 1485,
+      "persona_geometry_pairs": 1101870,
+      "segment_ari": -0.000688
+    },
+    "path_a": {
+      "dim": 41,
+      "future_geometry": 0.181009,
+      "future_geometry_n": 1485,
+      "future_geometry_pairs": 1101870,
+      "n": 1485,
+      "persona_geometry": 0.386663,
+      "persona_geometry_n": 1485,
+      "persona_geometry_pairs": 1101870,
+      "segment_ari": 0.268486
+    },
+    "shape_served": {
+      "dim": 256,
+      "future_geometry": 0.09095,
+      "future_geometry_n": 1485,
+      "future_geometry_pairs": 1101870,
+      "n": 1485,
+      "persona_geometry": 0.065962,
+      "persona_geometry_n": 1485,
+      "persona_geometry_pairs": 1101870,
+      "segment_ari": -0.001097
+    }
+  },
+  "complete": true,
+  "honesty": "the ledger and its parts are SERVED STATISTICS, not a learned-shape claim (certification rule 4): a gain from any ledger arm is served-statistic sufficiency; shape_served and exact_counter are in this same receipt as the learned-only attribution",
+  "kind": "served_object",
+  "ledger_arms": [
+    "ledger_full",
+    "part_event_mass",
+    "part_total_events",
+    "part_category_share",
+    "part_missing_rate",
+    "part_richness",
+    "part_numeric_stats",
+    "part_recency",
+    "part_return_ratio",
+    "ledger_pca_39",
+    "ledger_pca_128"
+  ],
+  "linear_access": {
+    "arms": {
+      "exact_counter": {
+        "mean_r2": 0.393702,
+        "n_fields": 11
+      },
+      "ledger_full": {
+        "mean_r2": 0.355076,
+        "n_fields": 11
+      },
+      "ledger_pca_128": {
+        "mean_r2": 0.393833,
+        "n_fields": 11
+      },
+      "ledger_pca_39": {
+        "mean_r2": 0.40083,
+        "n_fields": 11
+      },
+      "part_category_share": {
+        "mean_r2": 0.170373,
+        "n_fields": 11
+      },
+      "part_event_mass": {
+        "mean_r2": 0.183637,
+        "n_fields": 11
+      },
+      "part_missing_rate": {
+        "mean_r2": 0.156968,
+        "n_fields": 11
+      },
+      "part_numeric_stats": {
+        "mean_r2": 0.382684,
+        "n_fields": 11
+      },
+      "part_recency": {
+        "mean_r2": 0.154901,
+        "n_fields": 11
+      },
+      "part_return_ratio": {
+        "mean_r2": 0.262541,
+        "n_fields": 11
+      },
+      "part_richness": {
+        "mean_r2": 0.152861,
+        "n_fields": 11
+      },
+      "part_total_events": {
+        "mean_r2": 0.141556,
+        "n_fields": 11
+      },
+      "path_a": {
+        "mean_r2": 0.412586,
+        "n_fields": 11
+      },
+      "shape_served": {
+        "mean_r2": 0.46768,
+        "n_fields": 11
+      }
+    },
+    "complete": true,
+    "protocol": "frozen B3.3 consumer: standardized RidgeCV fit on A, mean R2 on B over the lab's persona+future numeric fields; no B fit, no metric tuning"
+  },
+  "n_fit_A": 3515,
+  "n_score_B": 1485,
+  "products": {
+    "path": "/home/austin_whaley/wonderland_work/cfm_v2k",
+    "registry_sha256": "79f9768d51205252",
+    "tag": "0.11.0r490759-b64d256e3lr3e-04o4c3b5899"
+  },
+  "reference_arms": [
+    "exact_counter",
+    "shape_served",
+    "path_a"
+  ],
+  "seconds": 17.6,
+  "validation": {
+    "future_fields": [
+      "x0",
+      "h0",
+      "price_sensitivity",
+      "return_proneness",
+      "churn_day",
+      "regime_switches",
+      "final_regime_days"
+    ],
+    "ledger_width": 595,
+    "match_note": "part blocks (7 + 1 + 495 + 11 + 11 + 60 + 4 + 6 = 595) byte-identical to the flat ledger arm on every scored A and B row",
+    "native_part_widths": {
+      "category_share": 495,
+      "event_mass": 7,
+      "missing_rate": 11,
+      "numeric_stats": 60,
+      "recency": 4,
+      "return_ratio": 6,
+      "richness": 11,
+      "total_events": 1
+    },
+    "native_slices_tile_published_width": true,
+    "part_blocks_byte_identical_to_flat_ledger": true,
+    "persona_fields": [
+      "bayes_fwd_count_90d",
+      "bayes_fwd_value_90d",
+      "d0",
+      "segment"
+    ],
+    "segment_k": 4,
+    "stored_part_widths": {
+      "category_share": 495,
+      "event_mass": 7,
+      "missing_rate": 11,
+      "numeric_stats": 60,
+      "recency": 4,
+      "return_ratio": 6,
+      "richness": 11,
+      "total_events": 1
+    },
+    "stored_part_widths_match_faceplate": true,
+    "tile_note": "the native slices tile the published ledger width exactly",
+    "widths_note": "every stored part width matches the faceplate"
+  }
+}

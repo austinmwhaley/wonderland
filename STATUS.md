@@ -30,15 +30,21 @@ runs O0 first. D1 stays deferred with the B+C judge re-aim.
   (B1 Lawful, B2 Sufficient, B3 Accessible, B4 Decisive, B5 Minimal & affordable, B6 Transferable,
   B7 Robust, B8 Reproducible), the four-leg judge, the stage ladder, hygiene, the blocking list and
   BACKWARD requirements. No other file is a measurement surface.
-- **B is not certified, but B3 Accessible is green (DEC-564/565/566).** B3.2 measured the fold
+- **B is not certified, but B3 Accessible is green (DEC-564/565/566/571).** B3.2 measured the fold
   as the wall: exact counter persona/future 0.189/0.173, M0→M1 fold 0.066/0.093, trunk +0.001,
   projection/boundary ~0. B3.3 measured linear access: served 0.4677 vs PATH A 0.4126 (+0.0551),
   so the coarse readout is non-inferior. B3.4/B3.5 tested block-aware serving and the 128/128
   equal-dimension idea: equal_39 reaches 0.172/0.144, equal_128 0.136/0.117, but **no block
   combination exceeds the exact counter alone (0.189/0.173)**, and the shape block alone is
   0.081/0.057. Serving allocation is necessary but not sufficient; the missing signal is the
-  **learned shape**. B2 (sufficiency `U`), B4 (B-only decision), B5 (minimality/cost), B7
-  (robustness breadth) and B8 (artifact identity) remain missing or legacy.
+  **learned shape**. **B3.6 X-rayed the ledger (DEC-571): the EXPOSURE branch fired —
+  part_numeric_stats 0.3196 persona ≥ 0.30 while ledger_full dilutes to 0.0172 and block-PCA is
+  not the right exposure (0.2012/0.1036); the fine structure lives in the small named parts
+  (numeric_stats / event_mass / return_ratio / total_events), so B's serving contract must expose
+  the ledger as named blocks. The learned shape remains the weak object (0.0660 persona, below
+  the exact counter's 0.1893), and segment structure is absent from the ledger entirely
+  (ARI ~0 vs PATH A 0.2685).** B2 (sufficiency `U`), B4 (B-only decision), B5 (minimality/cost),
+  B7 (robustness breadth) and B8 (artifact identity) remain missing or legacy.
 - **Macro reframe (DEC-567, pending operator D1–D5).** The product read located the gaps:
   (1) the judge's delivery column ("brain+ledger") is a naive 851-d concat and has never scored
   the 595-d ledger alone — unsupervised geometry dilutes 0.066→0.057 while
@@ -73,16 +79,20 @@ next question is the learned shape, not another consumer tuning pass.
 
 ## Next 3 actions
 
-1. **O0 ledger X-ray (no retrain, ~30 min) — DEC-569 pre-registered, running now:** score the
-   595-d ledger alone, its named parts, and ledger block-PCA (fit on A) under the frozen
-   B3.2/B3.4 consumers, against {counter 39, shape 256, PATH A}. The pre-registered branches
-   (≥0.30 exposure / 0.15–0.30 partial / <0.15 insufficient) decide the next axis.
-2. **First capability retrains, one axis each, accepted on B rows:** O3 (law-ablation: the state
-   is a 2.4-dim blob below its own 18.2 target; acceptance = eff_rank ≥ 30 + shape-only geometry
-   movement + B2 `U`) then O4 (decision objective on the stream's own 100%-randomized offer arm,
-   which the product run left off; acceptance = **B4.1** B-only action-conditional probe). Then
-   O2 `U` on the winning object, O5 minimality (B5.1), remaining B rows, chain v4 for the
-   re-stamp. **B+C re-scores only after B is green; project v1 THIRD; BACKWARD only at all-green.**
+1. **O0 ledger X-ray — DONE (DEC-571):** EXPOSURE branch fired (part_numeric_stats 0.3196
+   persona ≥ 0.30; ledger_full dilutes to 0.0172; block-PCA is not the right exposure). B's
+   serving contract must expose the ledger as named blocks; DEC-570's U arm is determined by the
+   measurement. The learned shape remains the weak object → the retrain axes are still on.
+2. **O3 law-ablation retrain (DEC-572 pre-registration, one axis):** ablate the
+   isometric-band/rank invariant family on the 2.4-dim blob state, accepted on B rows:
+   eff_rank ≥ 30 in the retrain's own receipt AND shape-only geometry (B3.2 M4_served persona,
+   frozen consumer) ≥ 0.15 AND coarse linear access (B3.3 served mean R²) ≥ 0.45. GPU allowed
+   under the 32 GB ceiling (operator 2026-11-02: use whatever is best for the task). Then O4
+   (decision objective on the stream's own 100%-randomized offer arm; acceptance = **B4.1**).
+3. **O2 `U` on the winning object (block-aware exposure per DEC-571, spec per DEC-570, bar
+   U ≥ 0.5 with learned-only alongside), then O5 minimality (B5.1), remaining B rows, chain v4
+   for the re-stamp. B+C re-scores only after B is green; project v1 THIRD; BACKWARD only at
+   all-green.**
 
 ## Operating facts
 

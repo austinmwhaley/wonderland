@@ -7,7 +7,12 @@ FROZEN B3.2/B3.4 consumers (imported, not redefined), the ledger full, each of i
 and the ledger block-PCA (fit on split A only) at the two pre-registered widths, against the three
 references the B rows already carry: the exact counter (39), the served shape (256), and PATH A
 (the wide table encoded once over A union B by the judge's own matrix path — the fair additive
-family). The pre-registered branch (>= 0.30 exposure / .15-.30 partial / < .15 insufficient) is
+family). The parts are read from their PUBLISHED rows (the storage contract: one block per part,
+in view_layout's PART_ORDER) and cross-checked byte-for-byte against the judge's flat ledger arm
+plus the faceplate's declared widths (DEC-571: attempt 1 sliced the flat view at the faceplate's
+NATIVE interleaved offsets — two different layouts — and the pre-registered G1 read-only recount
+refused the run for exactly that; the arm set, consumers and branches are unchanged by the fix).
+The pre-registered branch (>= 0.30 exposure / .15-.30 partial / < .15 insufficient) is
 COMPUTED BY THE CARD from these arm numbers (DEC-569); this receipt reports measurements only and
 carries no criterion of its own (certification rule 3).
 
@@ -33,6 +38,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts"))
 
+from looking_glass import view_layout as V  # noqa: E402
 from measure_block_serving import _linear_access  # noqa: E402
 from measure_input_law import products_identity, stamp_merge_write  # noqa: E402
 from measure_judge_law import TARGETS, _arms  # noqa: E402
@@ -47,11 +53,13 @@ OUT = ROOT / "docs" / "report_cards" / "experiments" / "encoder_served_object.js
 PCA_SIZES = (39, 128)
 
 
-def _faceplate_slices(products: Path) -> dict:
-    """The ledger's published part slices (the single source of truth for the parts).
+def _faceplate_ledger(products: Path) -> tuple[dict, dict, int]:
+    """The ledger's published stamp: (native slices, declared part widths, declared view width).
 
-    Returned as {part: [(lo, hi), ...]} in the faceplate's own order, so the parts are read from
-    the artifact's stamp rather than retyped: a layout change re-slices this probe automatically.
+    Read from the artifact's own stamp, never retyped: a layout change re-slices this probe
+    automatically, and a stored row that disagrees with its declared width is a lying artifact
+    this run refuses. The native slices are the ledger's INTERLEAVED per-field layout — they tile
+    the native width, they do NOT address the stored part blocks (see `_part_rows`).
     """
     import duckdb
 
@@ -62,55 +70,108 @@ def _faceplate_slices(products: Path) -> dict:
         raise SystemExit(
             "served object: no view_faceplate row — the ledger has no published layout"
         )
-    slices = (json.loads(stamp[0]).get("ledger") or {}).get("slices")
+    stamp = json.loads(stamp[0])
+    slices = (stamp.get("ledger") or {}).get("slices")
     if not slices:
         raise SystemExit(
             "served object: faceplate carries no ledger slices — the parts are unaddressable"
         )
-    return {p: [tuple(r) for r in runs] for p, runs in slices.items()}
+    part_widths = ((stamp.get("parts") or {}).get("measure")) or {}
+    view_width = int((stamp.get("views") or {}).get("measure", 0))
+    return (
+        {p: [tuple(r) for r in runs] for p, runs in slices.items()},
+        {p: int(d) for p, d in part_widths.items()},
+        view_width,
+    )
 
 
-def _tile_check(slices: dict, width: int) -> tuple[bool, str, np.ndarray | None]:
-    """The G1 exact-recount property, read-only: the part runs must tile [0, width) with no gaps
-    or overlaps. Returns (ok, note, perm) where perm is the permutation that reassembles the
-    parts in the faceplate's publication order, so the reassembly can be checked numerically
-    against the stored vector instead of trusted from the stamp."""
+def _tile_check(slices: dict, width: int) -> tuple[bool, str]:
+    """Stamp self-consistency, read-only: the native part runs must tile [0, width) with no gaps
+    or overlaps. (This validates the STAMP against itself; the check against the STORED bytes is
+    `_parts_match_flat`, which the stamp's interleaved layout cannot answer.)"""
     seen = np.zeros(width, dtype=bool)
     for runs in slices.values():
         for lo, hi in runs:
             if lo < 0 or hi > width or hi <= lo:
-                return False, f"run [{lo}, {hi}) outside [0, {width})", None
+                return False, f"run [{lo}, {hi}) outside [0, {width})"
             if seen[lo:hi].any():
-                return False, f"overlapping runs at [{lo}, {hi})", None
+                return False, f"overlapping runs at [{lo}, {hi})"
             seen[lo:hi] = True
     if not seen.all():
-        return False, f"{int((~seen).sum())} column(s) not covered by any part", None
-    perm = np.empty(width, dtype=int)
-    idx = 0
-    for runs in slices.values():
-        for lo, hi in runs:
-            perm[idx : idx + (hi - lo)] = np.arange(lo, hi)
-            idx += hi - lo
-    return True, "parts tile the published width exactly", perm
+        return False, f"{int((~seen).sum())} column(s) not covered by any part"
+    return True, "the native slices tile the published ledger width exactly"
 
 
-def _part_maps(ledger: dict, slices: dict, akeys, bkeys) -> dict[str, dict[str, np.ndarray]]:
-    """Each named part as its own {key: vector} map, sliced from the published concatenation.
+def _part_rows(db: Path) -> dict[str, dict[str, np.ndarray]]:
+    """Each named part as its published {key: vector} map, read from its own rows.
 
-    The slice comes from the part's own runs in the full view — never from a global offset — so a
-    reordered faceplate can never silently shift a part."""
+    The storage contract (`view_layout`, DEC-388 O1): a view is the DOCUMENTED concatenation of
+    its parts, in `PART_ORDER` — so the outlet publishes one block per part, and that block IS
+    the part. The faceplate's `ledger.slices` describe the ledger's NATIVE layout (the
+    interleaved per-field object the builder recounts), which is not the storage concatenation
+    order: slicing the flat view at the native offsets yields jumbled columns across parts, and
+    the pre-registered G1 read-only recount (DEC-569) is exactly the check that refuses that.
+    (DEC-571: attempt 1 failed this check for that reason; the parts are therefore read from
+    their published rows and cross-checked byte-for-byte against the judge's flat arm below.)"""
+    import duckdb
+
+    con = duckdb.connect(str(db), read_only=True)
+    rows = con.execute(
+        "select customer_key, part, embedding from view_embeddings where view = 'measure'"
+    ).fetchall()
+    con.close()
     out: dict[str, dict[str, np.ndarray]] = {}
-    for part, runs in slices.items():
-        part_cols: list[int] = []
-        for lo, hi in runs:
-            part_cols.extend(range(lo, hi))
-        out[f"part_{part}"] = {
-            k: np.asarray(ledger[side][k], float)[part_cols]
-            for side in ("A", "B")
-            for k in (akeys if side == "A" else bkeys)
-            if k in ledger[side]
-        }
+    for k, part, vec in rows:
+        out.setdefault(part, {})[k] = np.asarray(vec, float)
     return out
+
+
+def _parts_match_flat(part_rows: dict, order: list[str], ledger: dict) -> tuple[bool, str]:
+    """The published part blocks concatenated in the contract order must be byte-identical to
+    the judge's flat ledger arm on every key it carries: O0 has to score the same object the
+    judge scores, and a drifting reader is exactly the defect this repo has already paid for
+    twice. One comparison per side over the stacked rows (no per-item loop)."""
+    widths = {p: next(iter(rows.values())).shape[0] for p, rows in part_rows.items()}
+    missing = [p for p in order if p not in part_rows]
+    if missing:
+        return False, f"parts not published: {missing}"
+    for side in ("A", "B"):
+        keys = [k for k in ledger[side] if all(p in part_rows and k in part_rows[p] for p in order)]
+        if not keys:
+            return False, f"no {side} key carries all parts"
+        flat = np.vstack([np.asarray(ledger[side][k], float) for k in keys])
+        rebuilt = np.concatenate(
+            [np.vstack([part_rows[p][k] for k in keys]) for p in order], axis=1
+        )
+        if flat.shape[1] != rebuilt.shape[1]:
+            return False, f"{side} width mismatch: flat {flat.shape[1]} vs parts {rebuilt.shape[1]}"
+        if not np.array_equal(flat, rebuilt):
+            bad = int(np.argmax((flat != rebuilt).any(axis=1)))
+            return (
+                False,
+                f"part blocks disagree with the flat ledger on {side} customer {keys[bad]!r}",
+            )
+    return (
+        True,
+        f"part blocks ({' + '.join(str(widths[p]) for p in order)} = {sum(widths.values())}) "
+        "byte-identical to the flat ledger arm on every scored A and B row",
+    )
+
+
+def _widths_match(
+    part_rows: dict, declared: dict, view_width: int, ledger: dict
+) -> tuple[bool, str]:
+    """Stored part widths against the faceplate's declared widths (stamp vs bytes; the
+    outlet_schema dimension guard, applied read-only to every part at once)."""
+    bad = []
+    for p, rows in part_rows.items():
+        w = next(iter(rows.values())).shape[0]
+        if w != declared.get(p, -1):
+            bad.append(f"{p}: stored {w} != declared {declared.get(p)}")
+    flat_w = next(iter(ledger["A"].values())).shape[0]
+    if flat_w != view_width:
+        bad.append(f"flat ledger: stored {flat_w} != declared {view_width}")
+    return (not bad), "; ".join(bad) if bad else "every stored part width matches the faceplate"
 
 
 def _pca_maps(ledger: dict, akeys, bkeys, size: int) -> dict[str, np.ndarray]:
@@ -158,30 +219,28 @@ def main() -> int:
         )
     width = int(next(iter(ledger["A"].values())).shape[0])
 
-    slices = _faceplate_slices(products)
-    tile_ok, tile_note, perm = _tile_check(slices, width)
-    # numeric re-derivation check (G1 applied read-only): reassemble the parts in the faceplate's
-    # publication order and demand equality with the stored vector on every scored row. One
-    # vectorized comparison per side — the allclose-then-localize form keeps it loop-free.
-    recount_ok, recount_note = True, "no check"
-    if tile_ok and perm is not None:
-        for side, keys in (("A", akeys), ("B", bkeys)):
-            common = [k for k in keys if k in ledger[side]]
-            if not common:
-                continue
-            m = np.vstack([np.asarray(ledger[side][k], float) for k in common])
-            if not np.allclose(m[:, perm], m, rtol=1e-9, atol=1e-12):
-                bad = int(np.argmax(~np.isclose(m[:, perm], m, rtol=1e-9, atol=1e-12).all(axis=1)))
-                recount_ok = False
-                recount_note = f"recount mismatch on {side} customer {common[bad]!r}"
-                break
+    slices, declared_widths, view_width = _faceplate_ledger(products)
+    tile_ok, tile_note = _tile_check(slices, view_width or width)
+
+    # The parts, read from their PUBLISHED rows (the storage contract: one block per part, in
+    # PART_ORDER), then two read-only guardrails against the stored bytes: every part width
+    # matches the faceplate, and the part blocks concatenated in the contract order are
+    # byte-identical to the judge's flat ledger arm (O0 must score the same object the judge
+    # scores — DEC-571, attempt 1's perm-recount refused the run for conflating the native and
+    # stored layouts, and the parts were jumbled; this reader is the fix).
+    part_rows = _part_rows(products / "cfm_products.duckdb")
+    order = list(V.PART_ORDER.get("measure", []))
+    widths_ok, widths_note = _widths_match(part_rows, declared_widths, view_width, ledger)
+    match_ok, match_note = _parts_match_flat(part_rows, order, ledger)
 
     stages = _load_stage_arrays(products)
     counter = stages["M0_exact_counter"]
     shape = stages["M4_served"]
 
     mats: dict[str, dict[str, np.ndarray]] = {"ledger_full": {**ledger["A"], **ledger["B"]}}
-    mats.update(_part_maps(ledger, slices, akeys, bkeys))
+    for part in order:
+        if part in part_rows:
+            mats[f"part_{part}"] = part_rows[part]
     for size in PCA_SIZES:
         mats[f"ledger_pca_{size}"] = _pca_maps(ledger, akeys, bkeys, size)
     mats["exact_counter"] = counter
@@ -228,7 +287,8 @@ def main() -> int:
 
     complete = bool(
         tile_ok
-        and recount_ok
+        and widths_ok
+        and match_ok
         and all(
             table[n].get("persona_geometry") is not None
             for n in ledger_arm_names + ["exact_counter", "shape_served", "path_a"]
@@ -255,11 +315,18 @@ def main() -> int:
             "arms": access,
         },
         "validation": {
-            "parts_tiles_published_width": tile_ok,
+            "native_slices_tile_published_width": tile_ok,
             "tile_note": tile_note,
-            "parts_recount_matches_stored_view": recount_ok,
-            "recount_note": recount_note,
-            "part_widths": {p: sum(hi - lo for lo, hi in runs) for p, runs in slices.items()},
+            "stored_part_widths_match_faceplate": widths_ok,
+            "widths_note": widths_note,
+            "part_blocks_byte_identical_to_flat_ledger": match_ok,
+            "match_note": match_note,
+            "native_part_widths": {
+                p: sum(hi - lo for lo, hi in runs) for p, runs in slices.items()
+            },
+            "stored_part_widths": {
+                p: next(iter(r.values())).shape[0] for p, r in part_rows.items()
+            },
             "ledger_width": width,
             "persona_fields": persona_fields,
             "future_fields": future_fields,
@@ -285,7 +352,7 @@ def main() -> int:
             f"future={r['future_geometry']} segment_ari={r['segment_ari']} "
             f"access_r2={access[name]['mean_r2']}"
         )
-    print(f"  validation: tile={tile_ok} recount={recount_ok} ({recount_note})")
+    print(f"  validation: tile={tile_ok} widths={widths_ok} match={match_ok} ({match_note})")
     print(f"  complete={complete}")
     return 0 if complete else 1
 

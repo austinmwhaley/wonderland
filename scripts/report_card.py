@@ -835,8 +835,11 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
         else:
             axis_v = J.UNKNOWN
         cap_verdicts[axis] = axis_v
-        head = b_evals.get(idents[0], (J.UNKNOWN, "no B row evaluated"))[1]
-        cap_lines.append(f"| {axis} | {', '.join(idents)} | {_badge(axis_v)} | {str(head)[:120]} |")
+        head = str(b_evals.get(idents[0], (J.UNKNOWN, "no B row evaluated"))[1])
+        if len(head) > 120:  # the headline is a pointer, not a quote: cut at a word boundary
+            cut = head[:120]
+            head = cut[: cut.rfind(" ")].rstrip(",;:") + " …" if cut.rfind(" ") > 0 else cut
+        cap_lines.append(f"| {axis} | {', '.join(idents)} | {_badge(axis_v)} | {head} |")
     cap_verdicts_all = all(v == J.PASS for v in cap_verdicts.values())
 
     b_green_n = sum(1 for v in b_sections.values() if v == J.PASS)

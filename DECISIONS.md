@@ -8758,6 +8758,12 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     family. The PCA arms exist because B3.4 showed per-dim z-score makes dimension COUNT the
     lever; ledger_full at 595 may dilute exactly as the judge's naive concat did.
   - **Status.** Pre-registered. The run and the card row land as their own chunk (DEC-571).
+  - **Addendum (operator 2026-11-02, mid-sprint).** Resources: "you don't need to do CPU only.
+    This is a unified memory/CPU/GPU system so just use whatever is best for the task." The
+    DEC-569 "CPU only, ~30 min" line was a budget description, not a gate: the arms, consumers,
+    branches and budget are unchanged. O0's actual work (pairwise distances, KMeans, RidgeCV on
+    ~5000×595 frames) was measured at 25 s on CPU, so the CPU path stands as the measured-best
+    tool for THIS task; the O3/O4 retrains that follow may use the GPU under the 32 GB ceiling.
 
 - **DEC-570 (O2 `U` spec — pre-registered before any U run; D5 accepted by the operator 2026-11-02, defaults as proposed):**
   - **Principle served.** Honest (the reference is the full-history oracle, never our task list —
@@ -8800,3 +8806,68 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     attribution) — all from one producer `measure_sufficiency_law.py` (not yet written; lands at
     the O2 step, after O3/O4 decide which object the U is claimed on).
   - **Status.** Pre-registered. No U run yet; the spec freezes when O2 starts.
+
+- **DEC-571 (O0 ledger X-ray measured: the EXPOSURE branch fired — the ledger's fine structure is readable as named parts, not as 595-d, and the exposure fix is inside B's serving contract):**
+  - **Attempt 1 (refused by its own guardrail, recorded for the record).** The producer
+    pre-registered in DEC-569 sliced the parts from the published concatenation at the
+    faceplate's `ledger.slices` offsets. The pre-registered G1 read-only recount
+    (`complete=False`, RC=1) refused the run: the faceplate's slices describe the ledger's
+    NATIVE interleaved per-field layout, while the outlet stores one block per part and
+    `view_layout`'s documented concatenation is part-by-part in `PART_ORDER`. Slicing the flat
+    view at native offsets produced jumbled cross-part columns — exactly the defect the
+    guardrail exists to catch, and the receipt correctly says nothing about the ledger. No
+    numbers from attempt 1 are evidence (complete=False; the card renders B3.6 FAIL, not PASS).
+  - **Attempt 2 (reader fix; arm set, consumers, branches, gates UNCHANGED from DEC-569).**
+    The parts are read from their PUBLISHED rows (one block per part) and cross-checked against
+    the stored bytes two ways: every part width matches the faceplate's declared part widths,
+    and the part blocks concatenated in the contract order are byte-identical to the judge's
+    flat ledger arm on every scored A and B row (validation: `tile=True widths=True match=True`,
+    "7 + 1 + 495 + 11 + 11 + 60 + 4 + 6 = 595"). RC=0, 17.6 s, `complete=True`. The fix is a
+    reader correction caught by a pre-registered guardrail, not a protocol change: DEC-569's
+    arm definitions say "each named ledger part," and a part is its published block.
+  - **Result (frozen B3.2/B3.4 consumers, z-scored on A, scored on B; n_fit_A=3515, n_score_B=1485):**
+    - persona_geometry: ledger_full 0.0172 (dilution, the B3.4 mechanism confirmed on the
+      judge's own delivery arm); part_numeric_stats **0.3196** (best ledger arm; 60-d),
+      part_event_mass 0.2332 (7-d), part_total_events 0.1966 (1-d), part_return_ratio 0.1955,
+      part_richness 0.0975, part_recency 0.1389, part_category_share 0.0386 (495-d: the huge
+      indicator block is noise under per-dim z-scoring), part_missing_rate 0.0229;
+      ledger_pca_39 0.2012, ledger_pca_128 0.1036 (block-PCA is not the right exposure: it
+      compresses away the readable parts instead of rescuing them).
+      References: exact_counter 0.1893, shape_served 0.0660, PATH A 0.3867.
+    - future_geometry: best ledger arm part_event_mass 0.1901 ≈ PATH A 0.1810; the big arms are
+      far behind (ledger_full 0.0292, pca_39 0.1352, counter 0.1727, shape 0.0910).
+    - segment_ari: no ledger arm carries cluster structure (max 0.0013, all ~0) vs PATH A
+      0.2685; the shape carries none either (−0.0011).
+    - linear_access (11 fields): shape_served 0.4677 remains the best coarse read (B3.3);
+      part_numeric_stats 0.3827, ledger_pca_39 0.4008, ledger_full 0.3551, exact_counter
+      0.3937, PATH A 0.4126.
+  - **Branch (computed by the card from the receipt, DEC-569 floors in b_spec.py):** best ledger
+    arm persona 0.3196 ≥ 0.30 → **EXPOSURE**: the additive family is readable under the frozen
+    consumer; the gap is B's serving contract (how the ledger is exposed), an L1 fix inside B —
+    B3.6 is the first green row of the sprint's re-aimed card, and the B3 section stays green.
+  - **What it settles.** (1) The ledger's fine structure is REAL and readable — the operator's
+    prior (~70–80%) held, and it lives in the SMALL named parts (numeric_stats, event_mass,
+    return_ratio, total_events), not in the 595-d blob or in block-PCA. (2) B's serving object
+    must expose the ledger as named blocks ("Serving: block-aware scales derived from data
+    (shape vs measure)," AGENTS.md): the judge's naive 256⊕595 concat is the measured defect
+    (0.066→0.017 dilution on persona). (3) DEC-570's U arm is now determined by measurement, not
+    by the spec's ambiguity: the served object for U = shape ⊕ ledger exposed block-aware
+    (named parts), learned-only alongside per rule 4.
+  - **What it does NOT settle.** The learned shape is still the weak object: shape_served persona
+    0.0660 is below the exact counter (0.1893) and below every readable ledger part except
+    missing_rate; the 2.4-d blob finding (DEC-567 L2) stands, and the future/segment legs show
+    the additive family cannot replace it (segment structure is absent from the ledger
+    entirely). The capability gap on fine structure is still a trunk/objective axis: O3
+    (law-ablation retrain) and O4 (decision objective) remain the next retrains, one axis each,
+    accepted on B rows. B+C (O1 delivery-column re-aim) stays deferred: the exposure fix belongs
+    to B's serving contract, and the judge's column is re-aimed only after B's rows are green.
+  - **Card.** B3.6 PASS (new row; kind `served_object`; branch computed from the receipt); the
+    D2 capability top line is live (U · shape-only geometry · decision-shape · minimality ·
+    transfer · robust · reproducible, each axis the worst verdict of its B rows). Receipt:
+    `docs/report_cards/experiments/encoder_served_object.json` at behavior `d0ac576c`.
+  - **Gates.** Fast tier RC=0, ruff clean, reader fix covered by 7 B3.6 tests + the watchdog
+    pattern; no encoder behavior change (hash still `d0ac576c`).
+  - **Next.** DEC-572: O3 pre-registration (law-ablation retrain, axis i: ablate the
+    isometric-band/rank family), then the one-axis retrain, accepted on B rows:
+    eff_rank ≥ 30 in the retrain's own receipt AND shape-only geometry (B3.2 M4_served
+    persona, frozen consumer) ≥ 0.15 AND coarse linear access (B3.3 served mean R²) ≥ 0.45.
