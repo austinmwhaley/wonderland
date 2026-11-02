@@ -7927,3 +7927,74 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   CONSTRUCTION (state/interface axis):** the mass arm already clears the bar; the lever is how
   the served blend (fold + shared proj + boundary) is built so it stops diluting the mass
   half's distance structure — pre-registered as DEC-555.
+
+## DEC-555 — [PRE-REGISTERED] Composite construction (state/interface axis): stop diluting the mass half
+- **Axis (one):** the SERVED CONSTRUCTION — how the donor blend is built out of the trunk
+  state `h` (256-d) and the exact counter column `c` (39-d, `w_counter: 39->256`). No new
+  objective, no retraining in stage 1. The objective axis on the served composite is
+  exhausted (DEC-552/554: DINO agreement, SwAV clustering, VICReg, contrast-removal — all
+  flat at the noise band), and the 4-arm scorecard localizes the deficit: the EXACT mass
+  column alone CLEARS the persona bar (0.2174 ≥ 0.217; 0.2162 on run-4 products — data-side,
+  stable) while the served composite (fold + add + shared proj + boundary) dilutes it to
+  0.1320.
+- **Facts fixing the search (measured, run-5 products):** the boundary is ISOMETRIC
+  (registry whiten receipt: `applied=false, reason="isometric boundary (no fitted
+  transform)"`; `_boundary` = shared orthogonal @ scalar) — a distance-preserving transform
+  up to global scale, so it CANNOT be the dilution element and needs no intervention.
+  The dilution must live in: (i) the fold `w_c·c` (39-d native metric → 256-d image under a
+  learned map), (ii) the addition `h + w_c·c` (shape directions into the mass subspace), or
+  (iii) the shared `proj` (one 256×256 map mixing all directions).
+- **Stage 1 (CPU attribution — instrument, NOT a verdict):** the construction decomposition
+  probe on the run-5 products + checkpoint, using the probe's own arm protocol (judge's
+  loaders/splits/z-scoring/alignment — one source of truth):
+    M0 = c (39-d, exact)                        [known: dist-persona 0.2174]
+    M1 = w_c·c (256-d, fold only)
+    M2 = h + w_c·c (256-d blend, pre-proj)
+    M3 = proj(h + w_c·c) (256-d, post-proj)
+    M4 = boundary(M3) = served                  [known: 0.1320]
+    H0 = h alone                                [known: 0.0165]
+  Each arm graded dist-persona / dist-future / probe-persona R² / segment-ARI. Instrument
+  acceptance: M0/H0/M4 reproduce the known values to 3 decimals. Output = the drop table;
+  the element with the largest mass-structure drop is the construction defect. (M3 vs M4
+  also FALSIFIES or CONFIRMS the isometry claim on the judge protocol — expected ~equal.)
+- **Stage 2 (the construction change, decision table PRE-FIXED now):**
+  - If the drop concentrates at M0→M1 (fold) and/or M1→M2 (addition): **native-mass block
+    serving** — serve E = [shape block: the current 256-d pipeline | mass block: c in its
+    exact 39-d native coordinates], block scales derived from data on split-A (the
+    doctrine's own default: "Serving: block-aware scales derived from data (shape vs
+    measure)"). The mass half keeps its distance structure BY CONSTRUCTION (lawful: the
+    correct algebra per quantity — extensive mass served additively, never re-mapped).
+  - If the drop concentrates at M2→M3 (shared proj): the SAME native-mass block serving is
+    the minimal fix (it decouples the mass from the shared proj on the served path). The
+    training-side shared proj is unchanged: the fold remains the learned co-evolution
+    channel for the shape heads (training/serve asymmetry is receipted, with the
+    justification: the serve is the contract, the training is the channel).
+  - Implementation: extend `donor_states` (DEC-447's single served definition) to the block
+    form and re-materialize `state_embeddings` from the STORED states/counters — no
+    retraining; the judge then grades the new served arm on the frozen bars, and the
+    supervised guard re-adjudicates the coupling the DEC-536/537 append precedent flagged
+    ("appending did not improve return_proneness and cost a stage") — both sides of that
+    trade are now measured against the frozen guard, not assumed.
+- **Frozen bars (unchanged DEC-550/553 rung bars):** accept ⇔ rung segment-ARI ≥ 0.095 OR
+  persona-dist ≥ 0.217, AND no supervised row regressing > 0.03 abs vs j_base800, AND
+  probe-persona R² ≥ 0.40 (collapse guard).
+- **Falsify clause:** if the native-mass block serving also misses the bar AND the guard
+  is clean, the geometry deficit is not in the served construction at this rung — record,
+  revert the serving change, and the front moves to FULL-SIZE re-measurement (the rung is
+  under-powered relative to the bar: the mass arm's 0.2174 clears the 0.217 bar by 0.0004,
+  inside measurement noise — the dilution ratio may differ at 25k customers). If the guard
+  breaks, the coupling is real: the construction axis is closed at the cost the doctrine
+  prices, and the front is the full-size re-measurement with the fold retained.
+- **Principles:** Diagnosable (8) — stage 1 is the cheapest experiment that isolates the
+  interface axis element-by-element with a matched control (M0); Lawful (3) — extensive mass
+  served in its own algebra, not re-mapped through a shared shape contractive map;
+  Accessible (7) — the mass structure becomes pairwise-recoverable by simple consumers;
+  Honest (6) — bars frozen, decision table pre-fixed, both sides of the append trade
+  measured; Efficient (4) — serving-side change, re-materialized from stored state, no
+  retraining.
+- **Estimate (measured):** stage 1 CPU ~2–5 min (the probe already runs its pdist/ridge
+  protocol on 238 split-B customers in ~2 min; the decomposition adds 4 small arms +
+  checkpoint weight loads). Stage 2: serving code + gates (ruff/audit/fast tier, ~10 min)
+  + re-materialize (~5 min) + judge (~5 min) + probe (~2 min) ≈ ~25–30 min, no GPU training
+  unless the decision table forces the retrain branch (it does not, by construction — the
+  block serving is serving-side).
