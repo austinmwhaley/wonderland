@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "0f881d99d9d8203e",
-    "command": "measure_judge_law.py --products /home/austin_whaley/wonderland_work/cfm_v2k --demo /home/austin_whaley/wonderland_work/demo_v2 --legs rl --out-dir docs/report_cards/experiments",
-    "generated_at": "2026-11-02T01:58:50+00:00",
-    "git_commit": "d05d6978bb00df2035ddad2b10b3514ebde62bff",
+    "behavior_hash": "d0ac576c3c7aa069",
+    "command": "measure_judge_law.py --products /home/austin_whaley/wonderland_work/cfm_v2k --demo /home/austin_whaley/wonderland_work/demo_v2 --legs supervised,unsupervised,rl,simulator --out-dir /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments",
+    "generated_at": "2026-11-02T13:55:54+00:00",
+    "git_commit": "99da0fbd2a3d55e44d846ae072c1fa0d43133761",
     "producer": "measure_judge_law.py"
   },
   "arms": {
@@ -21,9 +21,9 @@
     "brain": {
       "tasks": [
         {
-          "brain": 0.233934,
-          "ci_hi": 0.002392,
-          "ci_lo": 0.000733,
+          "brain": 0.242065,
+          "ci_hi": 0.00255,
+          "ci_lo": 0.000937,
           "comparator": "PATH A (GBM incumbent)",
           "controls_substituted": "population-constant (R2=0) for ill-conditioned controls",
           "controls_unreadable": [
@@ -38,48 +38,48 @@
           "random": 0.0
         },
         {
-          "brain": 0.246447,
-          "ci_hi": 0.013823,
-          "ci_lo": 0.002779,
+          "brain": 0.248587,
+          "ci_hi": 0.016187,
+          "ci_lo": 0.004621,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": 0.183193,
+          "destroyed": 0.184585,
           "metric": "area under the top-k realized-uplift curve on randomized arm-days (bootstrap re-selects inside each replicate)",
           "n": 1149,
           "name": "policy_value",
           "pathA": 0.238244,
-          "random": 0.171273
+          "random": 0.17878
         }
       ]
     },
     "brain_ledger": {
       "tasks": [
         {
-          "brain": 0.17436,
-          "ci_hi": 0.000909,
-          "ci_lo": -0.001121,
+          "brain": 0.176553,
+          "ci_hi": 0.000996,
+          "ci_lo": -0.001061,
           "comparator": "PATH A (GBM incumbent)",
           "controls_substituted": null,
           "controls_unreadable": [],
-          "destroyed": -0.104244,
+          "destroyed": -0.100931,
           "metric": "R2 on the identified per-customer uplift (P(buy|offer=opt) - P(buy|offer off by >=2))",
           "n": 1149,
           "name": "known_effect_uplift",
           "pathA": 0.179408,
-          "random": -0.088091
+          "random": -0.094925
         },
         {
-          "brain": 0.239624,
-          "ci_hi": 0.008383,
-          "ci_lo": -0.004931,
+          "brain": 0.240045,
+          "ci_hi": 0.008883,
+          "ci_lo": -0.004613,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": 0.166764,
+          "destroyed": 0.167715,
           "metric": "area under the top-k realized-uplift curve on randomized arm-days (bootstrap re-selects inside each replicate)",
           "n": 1149,
           "name": "policy_value",
           "pathA": 0.238244,
-          "random": 0.167862
+          "random": 0.16676
         }
       ]
     }
@@ -99,8 +99,8 @@
   },
   "products": {
     "path": "/home/austin_whaley/wonderland_work/cfm_v2k",
-    "registry_sha256": "8b9bd0861a758da1",
-    "tag": "0.11.0r490759-b16d256e3lr3e-04o4c3b5899"
+    "registry_sha256": "79f9768d51205252",
+    "tag": "0.11.0r490759-b64d256e3lr3e-04o4c3b5899"
   },
   "splits": {
     "n_fit_A": 3515,
