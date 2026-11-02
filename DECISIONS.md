@@ -7728,3 +7728,34 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     (rank_attainability, regime_readout, testbed_power) — the memory-guard test exists exactly to
     stop this drift; added.
   Fast tier: **rc=0** (was 14 reds at session start, 6 after the unpack sweep).
+
+## DEC-551 — [AUDIT FACT] DINO model-side audit vs the DEC-550 pre-registration (before run 4)
+- **Verified matches (run-4 is executing exactly the pre-registered mechanism):** `dino_out_dim = 32·dim`
+  (8192 @ dim256, the DINOv1 out/in ratio, derived from dim); head `dim→4·dim→out_dim` with GELU;
+  `d_ssm/d_proj/d_head` are step-0 identical deep-copies with `requires_grad_(False)`; the DINO pair
+  EMA's on its OWN momentum (`dino_ema_tau=0.996`) at a call site separate from the JEPA tau (0.99);
+  `dino_center` zero-init buffer, momentum 0.9 over the batch-mean of both teacher views; student
+  temps 0.1 / teacher temps 0.04; drop U[0.2,0.5] per sample, <30% retained views zero-weighted and
+  excluded from the denominator; cross-view pseudo-labels (teacher-full label ← student-masked, and
+  vice versa); the student's full view reuses the trunk `h` (3 extra ssm passes total, the pre-
+  registered cost model). All six `dino_*` config values equal the pre-registration.
+- **Clarification 1 — `w_counter` + `CounterBlock` (gate `W_g`, routing `W_a`) are LIVE on the
+  teacher side, not EMA'd. Not a violation: they are part of the SERVED-COMPOSITE DEFINITION
+  (`h + W_c·M`), and DEC-550 defines the objective as pressure on "the exact served composite".
+  EMA-ing the fold would make the teacher label a composite that is not the one served. The
+  structure-creating lag (DINO's engine) lives in the dedicated trunk/proj/head EMA. Gradients DO
+  flow through the fold on the STUDENT side — the composite is the graded object, so DINO organizes
+  the whole served space including the counter half (consistent with DEC-536/545: the counter fold
+  carries half the decodable fields). The counter arithmetic itself stays exact (decay ≡ 1, anchored
+  writes) — only the gate/routing modulation is learned.**
+- **Clarification 2 — teacher tokenization reuses the JEPA `t_` embedding copies (EMA at 0.99)
+  rather than dedicated 0.996 copies. Already documented in the model comment at implementation
+  time ("minor documented deviation, DEC-550"). Tokenization is the input-vocabulary definition,
+  not the structure-creating dynamics; both views must tokenize identically for the mask semantics
+  ("unobserved, clock advances") to hold across views.**
+- **Also verified:** `materialize_state_embeddings` reads the stored counter column as `served`
+  (the `fade_idle` clobber fix is the consumer's required contract); old-blob resume loads
+  `strict=False` (cfm_state.py:271), so the new `dino_*` keys do not break resuming from a
+  pre-DINO checkpoint.
+- **Disposition:** run 4 proceeds exactly as pre-registered; the frozen bars are unchanged. This
+  entry records the audit fact — it is not a verdict flip and requires no re-run.
