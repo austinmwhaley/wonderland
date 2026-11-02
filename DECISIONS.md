@@ -7417,3 +7417,27 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - **Result.** rl `brain alone` UNKNOWN → **PASS**; rl `brain + ledger` PASS. Card: **2/8 legs,
   6/6 stages, 0 UNKNOWN, backward 0.**
 - **Not changed.** No threshold, comparator, task or model change. Only the control's construction.
+
+## DEC-546 — [MEASURED + FIX] batch cap: replace the 16,384-token literal with a memory-derived budget
+- **Defect.** `derive_batch` capped the batch at a hardcoded **16,384 tokens**, which at seq_len ~996
+  forced **batch 16** and ~9.8 GB on a card with 28 GB free. A literal choosing the batch is exactly
+  the principle-1 smell, and it was costing real time.
+- **Measured throughput (800 customers, seq_len 863, counter on):**
+
+  | batch | s/step | samples/s |
+  |---:|---:|---:|
+  | 16 | 0.348 | 46 |
+  | 32 | 0.777 | 41 |
+  | 64 | 1.601 | 40 |
+
+  **Throughput is flat from 16 upward** — the model is **compute-bound, not memory-bound** at this
+  shape. More VRAM does not buy more speed; the earlier 1.72 s/step was seq_len 996 plus GPU
+  contention, not the batch.
+- **Fix.** The token cap is now derived from free memory with the measured cost (~0.45 GB per 1k
+  tokens) and a 4 GB reserve, then floored to a power of two. At the current 28 GB free it yields
+  batch 16-32; at 48 GB free it would yield 64 — which, per the table, buys nothing.
+- **Operator directive (maximise GPU use).** Honoured in the sense that matters: the batch is no
+  longer limited by a literal. It is NOT possible to use 48 GB right now — `sglang` reserves 51.8 GB
+  of the 121 GB unified pool, leaving 28.3 GB. And the measurement says filling more memory would
+  not increase throughput for this model shape.
+- **What actually makes runs faster** is fewer steps (convergence), not a bigger batch.

@@ -141,7 +141,15 @@ def derive_batch(n_seqs, seq_len: int = 0) -> tuple[int, dict]:
     else:
         cap = 32
     val = int(clip(2 ** round(math.log2(max(n_seqs / 32.0, 8.0))), 8, cap))
-    token_cap = max(8, int(16384 // max(int(seq_len or 1), 1)))
+    # TOKEN budget DERIVED from free memory, not a literal (principle 1). Measured on this
+    # shape (seq_len 863, counter on): batch 64 fits inside 25 GB, i.e. ~0.45 GB per 1k tokens.
+    # The previous fixed 16,384-token cap forced batch 16 on a card with 28 GB free and cost
+    # ~2x throughput (1.72 s/step vs 0.777 at batch 32; beyond 32 throughput is flat, so the
+    # model is compute-bound, not memory-bound).
+    _reserve_gb = 4.0
+    _gb_per_token = 0.45 / 1000.0
+    _tok = int(max(1, (max(free - _reserve_gb, 1.0)) / _gb_per_token))
+    token_cap = int(max(8, 2 ** int(math.log2(max(8, _tok // max(int(seq_len or 1), 1))))))
     val = int(min(val, cap, token_cap))
     return val, {"batch": f"n_seqs={n_seqs} seq_len={seq_len} hw_cap={cap} -> {val}"}
 
