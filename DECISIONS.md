@@ -7512,3 +7512,69 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
 - **Estimate (measured).** 0.348 s/step × ~266 steps ≈ 93 s train + ~60–90 s pre/post + ~40 s judge
   per run → **~5 min per run, ~10 min for both** (vs ~8–10 min I estimated yesterday for the
   double-forward design — this is cheaper because it is config-only).
+- **Run 1 RESULT (falsified-as-sufficient).** Supervised: unchanged (x0 0.9085, h0 0.9696,
+  return 0.4724, churn 0.2095, regime 0.0194, final −0.0246 — all within noise of j_base800).
+  Unsupervised: persona 0.1295 (bar 0.217), future 0.0998 (bar 0.113), segment 0.0012 (bar 0.095).
+  **Geometry did not move.** `contrast`/uniformity is NOT the destroyer — removing it neither
+  helps nor hurts. The trunk projection simply lacks usable persona/segment geometry whether or
+  not uniformity pressure is present. Proceed to Run 2 as pre-registered.
+- **Run 2 RESULT (falsified-as-sufficient).** VICReg isotropy (variance+redundancy on proj(h)):
+  persona 0.1400, future 0.1023, segment 0.0013 — all within noise of baseline; supervised
+  unchanged. Isotropy does NOT fix the geometry either.
+- **Attribution probe (CPU, validates the judge: served dist-persona 0.140 = judge 0.137,
+  dist-future 0.1023 = judge exact).** The decisive split:
+  served **probe-persona R² = 0.583** (≈ PATH A 0.587) and **probe-future R² = 0.364** (≥ PATH A
+  0.307) — but **dist-persona = 0.14** (PATH A 0.404) and **segment-ARI = 0.001** (PATH A 0.309).
+  The persona/future information is PRESENT and LINEARLY DECODABLE in the served donor, yet the
+  pairwise geometry and cluster structure are scrambled. This is an entanglement/accessibility
+  failure (principle 7: "a sufficient-but-entangled representation is a failure"), NOT a
+  sufficiency failure and NOT anisotropy (VICReg did nothing) — which is why neither
+  contrast-removal nor isotropy moved it. Trunk alone and counter alone each decode ~0.32
+  (probe-persona 0.319 / 0.317); their combined projection decodes 0.583 — the fold is doing its
+  job, the ARRANGEMENT of the 256 directions is what scrambles the geometry. The boundary is an
+  isometry (distance-preserving), so the fix cannot live in the readout: it must be an objective
+  that organizes the projection's directions into customer types.
+- **Conclusion for the next objective.** A loss that only reshapes second-order statistics
+  (uniformity, variance, redundancy, decorr, volume, iso, rank — the whole retired soft-invariant
+  family) cannot re-arrange WHICH directions carry WHICH customer types. The objective must put a
+  STRUCTURAL (cluster/prototype or self-distillation) pressure on the projection so that
+  same-type customers land together and the Euclidean geometry of the served donor reflects the
+  customer-type manifold. That is the DINO/SwAV/prototype family. → DEC-550.
+
+## DEC-550 — [PRE-REGISTERED] DINO self-distillation on the served composite (geometry axis)
+- **Diagnosis (DEC-549 + attribution probe).** The served donor decodes persona/future fields
+  LINEARLY as well as PATH A (probe R² 0.583 vs 0.587; 0.364 vs 0.307) yet pairwise distance
+  fidelity is 0.14 vs 0.40 and segment ARI 0.001 vs 0.309: the information is PRESENT but the
+  geometry is entangled. Falsified in sequence: removing `contrast` uniformity (Run 1), VICReg
+  isotropy (Run 2). The boundary is an isometry, so the fix cannot live in the readout.
+- **Objective.** DINO (Caron et al. 2021; DINOv2 head): label-free teacher-student agreement that
+  organizes the embedding into customer clusters. Two SAME-WINDOW views of the same customer:
+  (F) full sequence, (M) event-masked sequence (drop fraction U[0.2, 0.5] per customer; a mask-0
+  tick is the model's existing "unobserved, clock advances" semantics — a same-as-of partial
+  observation, NOT temporal drift, which is the axis DEC-548 falsified). Pseudo-labels: the EMA
+  teacher's centered + sharpened softmax over the head's out-space (out-dim = 32× trunk dim, the
+  DINOv1 ResNet out/in ratio; derived from dim, not a literal). Features: `proj(h + W_c·M)` — the
+  exact PRE-BOUNDARY served composite (DEC-549's probe showed the counter fold carries half the
+  decodable fields), so the objective shapes the graded object itself.
+- **Teacher.** A dedicated DINO EMA stack (trunk, proj, head) at its own momentum
+  `dino_ema_tau = 0.996` (DINOv1 reference init), separate from JEPA's shared 0.99 targets: with
+  a fast teacher the lag engine that creates structure dies (BYOL/SimSiam analysis — the teacher
+  would just mirror the student). Tokenization reuses the shared EMA embeddings (minor documented
+  deviation). Views retaining <30% of events: both loss terms zero-weighted (fail safe, never
+  substituted).
+- **Recipe constants (documented fallbacks, overridable via --set):** student temp 0.1,
+  teacher temp 0.04, center momentum 0.9, drop range [0.2, 0.5] (DINOv1 reference values).
+- **Run.** 800 rung, 4 anchors, 1 epoch, objectives = Run-1 set + `dino` (contrast stays OUT —
+  Run 1 proved it inert; one causal story: DINO is the only structural geometry pressure).
+- **Accept:** rung segment-ARI ≥ 0.095 OR rung persona-dist ≥ 0.217 (30% of the PATH-A gap), with
+  no supervised row regressing > 0.03 abs vs j_base800 and probe-persona R² ≥ 0.40 (collapse guard).
+- **Falsify:** unmoved within noise / UNSTABLE / non-finite / supervised regression → revert the
+  bundle; next axis in line: SwAV prototypes (direct Sinkhorn-balanced clustering pressure).
+- **Rejected alternatives.** (a) SwAV: equally viable but needs Sinkhorn + k-init; DINO reuses more
+  existing EMA machinery and its emergent clusters are the cleaner first test of "does any
+  structural pressure move the geometry at all". (b) CKA/Procrustes alignment to attribute
+  co-similarity: shapes the encoder toward input-defined structure — "teaching" over "learning";
+  reserved. (c) Readout-side fix: rejected by the DEC-549 isometry argument + doctrine
+  ("a boundary must never fake capacity the trunk lacks").
+- **Estimate.** Implementation ~15 min; smoke (300 cust, max_steps=12) ~2 min; rung ~4–5 min
+  (~2.5× step cost: three extra ssm passes); judge ~1 min. Total ~25 min.
