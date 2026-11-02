@@ -8495,3 +8495,32 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   - **Acceptance.** The rendered card shows three distinct scope lines; `ENCODER DONE` is
     unreachable while B is not green; the B+C legs remain visible with their values; project v1
     is explicitly "not assessed"; tests/ruff/fast tier/audit green.
+
+- **DEC-564 (B3.2 measured: the fine structure is destroyed at M0->M1, the `w_counter` fold — not the trunk):**
+  - **Run.** `scripts/measure_stage_decomposition.py` on cfm_v2k, 1485 split-B customers, 4.4 s,
+    one receipt (`encoder_stage_decomposition.json`, fresh `d0ac576c`). Stages: M0 exact counter
+    (39-d) -> M1 `w_counter` fold (256-d) -> M2 state+fold -> M3 shared `proj` -> M4 served.
+  - **Measured (squared distance fidelity vs the lab's truth; higher is better):**
+    | stage | persona | future | segment ARI |
+    |---|---|---|---|
+    | M0 exact counter (39-d) | **0.189336** | **0.172705** | −0.000475 |
+    | M1 `w_counter` fold | 0.065718 | 0.093234 | −0.001108 |
+    | M2 state + fold | 0.066879 | 0.090656 | −0.001223 |
+    | M3 post-`proj` | 0.065632 | 0.092256 | −0.001155 |
+    | M4 served | 0.065962 | 0.090950 | −0.001097 |
+    **M3 vs M4 distance alignment 0.998063** (isometric boundary confirmed). The largest adjacent
+    drop is **M0->M1 for all three metrics**: the fold destroys the structure; the trunk adds
+    +0.001, the shared projection and boundary remove ~0.001.
+  - **What this means.** The exact counter readout (39-d, already stored in
+    `customer_state.embedding`) carries the fine structure; the learned `w_counter` fold is the
+    wall. This is the same construction element the rung's mass decomposition found (DEC-555/556),
+    now measured for the fine structure at full size. The next capability move is the
+    **serving/fold contract**, not a trunk change: expose the exact counter block beside the
+    learned shape, and make the combination block-aware so 256 shape dims do not variance-dominate
+    39 exact dims.
+  - **Honest limit.** M0 alone is 0.189 persona vs PATH A 0.3867, so exposing the exact block is
+    necessary but not sufficient to beat PATH A; the learned shape must add signal. If the
+    block-aware served object still loses to PATH A, the next increment is the action-conditional
+    B-only objective (B4.1) and the sufficiency `U` (B2.1), not more fold tuning.
+  - **Card.** B3.2 is now PASS as a **measurement** (complete, current, numbers on the card); B3
+    stays UNKNOWN until B3.3 (linear accessibility) is current. No B+C verdict changed.

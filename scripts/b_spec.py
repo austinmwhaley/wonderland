@@ -126,7 +126,8 @@ ROWS = (
         "Stage decomposition M0->M1->served",
         "the fine-structure metric at each stage, so a loss is attributed to a stage",
         "attribution recorded",
-        "missing",
+        "stage_decomposition",
+        ("encoder_stage_decomposition.json", "complete"),
         producer="measure_stage_decomposition.py",
     ),
     BRow(

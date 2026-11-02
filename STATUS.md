@@ -25,15 +25,17 @@ never a brain win.
   (B1 Lawful, B2 Sufficient, B3 Accessible, B4 Decisive, B5 Minimal & affordable, B6 Transferable,
   B7 Robust, B8 Reproducible), the four-leg judge, the stage ladder, hygiene, the blocking list and
   BACKWARD requirements. No other file is a measurement surface.
-- **B is not certified.** B1/B3/B6 have current evidence only through the S3/S4/S5 stage blocks.
-  B2 (sufficiency `U`), B4 (B-only decision), B5 (minimality/cost), B7 (robustness breadth) and
-  B8 (artifact identity) are missing or legacy; each row on the card names the producer that must
-  be run. Legacy encoder receipts are explicitly UNKNOWN, never evidence.
+- **B is not certified.** B3.2 is now PASS as a measurement (DEC-564): the exact counter carries
+  the fine structure (persona 0.189 / future 0.173), and the `w_counter` fold destroys it at
+  **M0→M1** (0.066 / 0.093); the trunk adds ~+0.001, the shared projection and boundary remove
+  ~0.001. The next B move is the serving/fold contract, not a trunk retrain. B2 (sufficiency `U`),
+  B4 (B-only decision), B5 (minimality/cost), B7 (robustness breadth) and B8 (artifact identity)
+  are still missing or legacy; each row on the card names the producer that must be run.
 - **B+C:** RL is green in both columns; supervised (`return_proneness`, `price_sensitivity`),
   unsupervised (geometry trio) and simulator (`argmax_optimum`) are red. The measured structural
   diagnosis — coarse per-customer attributes are present, fine structure is not readable — is on
-  the card and in DEC-560/561. The exact counter and the identified oracle show the information
-  exists upstream; the stage decomposition is the missing X-ray.
+  the card and in DEC-560/561. The B3.2 X-ray (DEC-564) now localizes the loss to the fold: the
+  exact counter has the structure; the served vector does not.
 - **Certification:** S1/S2 are fixed and fresh (DEC-561: producer batch arithmetic, not a random
   co-tenant; 32 GB cap). S3/S4/S5 are fresh. S6 still fails until chain v4 runs the whole chain in
   one invocation.
@@ -45,23 +47,24 @@ never a brain win.
 
 The unsupervised-geometry front is closed at the rung on both axes: objective (DEC-552/554) and
 construction (DEC-555/556). DINO, SwAV, contrast removal, VICReg and block-serving were all
-falsified at the frozen bar. The mass metric's drop localizes at M0→M1 (the `w_counter` fold); the
-exact counter column clears the bar but the served composite dilutes it. The full-size question
-remains open and is now a B-measurement question (B2/B3), not a consumer-tuning question.
+falsified at the frozen bar. The mass metric's drop localizes at M0→M1 (the `w_counter` fold); at
+the rung the exact counter column cleared the bar, but at full size B3.2 measures it at 0.189
+persona vs PATH A 0.387 — necessary, not sufficient. The next question is the serving contract,
+not another consumer tuning pass.
 
 ## Next 3 actions
 
-1. **B FIRST — run the missing B producers, one axis per run, pre-registered:** B3.2 stage
-   decomposition (M0→M1→served), B4.1 B-only decision, B2.1 worst-case sufficiency `U`, B5.1
-   minimality, B7.2 robustness, B6.3 broad transfer, plus the legacy re-runs (B1.2/B3.3/B4.2/
-   B5.2/B6.2/B7.1/B8.1). Each writes a source receipt; the one card renders it. B is the gate;
-   do not start B+C work while B is uncertified.
-2. **B+C SECOND — after B is certified:** run chain v4 (one invocation, 32 GB cap) for S6/B8 and
+1. **B FIRST — B3.3 serving/fold contract:** expose the exact counter block (39-d, already stored
+   in `customer_state.embedding`) beside the learned shape block in a block-aware served object;
+   measure persona/future geometry and segment ARI at full size. Acceptance: B3.3 is current and
+   the served geometry improves over the folded 0.066; kill criterion: if the block-aware object
+   still loses to PATH A, move to B4.1/B2.1 (action-conditional objective + sufficiency `U`).
+2. **B, continued — B4.1/B2.1 and the remaining rows:** B-only decision probe, worst-case
+   sufficiency `U`, B5.1 minimality, B7.2 robustness, B6.3 broad transfer, plus legacy re-runs
+   (B1.2/B4.2/B5.2/B6.2/B7.1/B8.1). One axis per run; the one card renders each.
+3. **B+C SECOND — after B is certified:** run chain v4 (one invocation, 32 GB cap) for S6/B8 and
    the full re-stamp, then close the remaining B+C reds (supervised, unsupervised, simulator).
-   B+C is the consequence, not the current claim.
-3. **PROJECT v1 THIRD — after B+C:** the full stack (rabbit_hole causal stream, every plugin gate,
-   red_king/red_queen/white_queen, caterpillar, live randomized holdout). The trunk/state modeling
-   axis is **DEC-564**; BACKWARD runs only when the card is all green.
+   **Project v1 THIRD** after B+C; the trunk/state axis is **DEC-565**; BACKWARD only at all-green.
 
 ## Operating facts
 

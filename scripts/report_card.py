@@ -211,6 +211,31 @@ def _eval_b_row(receipts: Path, row: B.BRow, current_hash: str) -> tuple[str, st
         if block.get("working"):
             return J.PASS, f"{name}:{path} working=True"
         return J.FAIL, _stage_why(block) or f"{name}:{path} working=False"
+    if row.kind == "stage_decomposition":
+        note = _meta_problem(rc, current_hash)
+        if note:
+            return J.UNKNOWN, note
+        if not rc.get("complete"):
+            return J.FAIL, f"{name}: stage decomposition incomplete"
+        st = rc.get("stages") or {}
+        val = rc.get("validation") or {}
+        att = rc.get("attribution") or {}
+
+        def sm(stage: str, metric: str) -> str:
+            return _num((st.get(stage) or {}).get(metric))
+
+        return (
+            J.PASS,
+            "complete · persona M0 "
+            f"{sm('M0_exact_counter', 'persona_geometry')} → M1 "
+            f"{sm('M1_fold_only', 'persona_geometry')} → served "
+            f"{sm('M4_served', 'persona_geometry')} · future M0 "
+            f"{sm('M0_exact_counter', 'future_geometry')} → M1 "
+            f"{sm('M1_fold_only', 'future_geometry')} → served "
+            f"{sm('M4_served', 'future_geometry')} · largest drop "
+            f"{att.get('persona_geometry', '?')} · M3/M4 "
+            f"{_num(val.get('m3_m4_distance_alignment'))}",
+        )
     if row.kind == "legacy":
         return J.UNKNOWN, f"legacy receipt {name} (no behavior stamp); re-run {row.producer}"
     note = _meta_problem(rc, current_hash)

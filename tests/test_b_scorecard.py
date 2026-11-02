@@ -95,3 +95,42 @@ def test_b_section_does_not_change_the_judge_summary(tmp_path):
     assert all(info["verdicts"][r.ident] == J.UNKNOWN for r in J.LEG_ROWS)
     # the B rollup is separate, so the judge gate keeps its own meaning
     assert info["summary"]["b"]["pass"] == 0
+
+
+def test_stage_decomposition_receipt_can_pass_and_carries_the_numbers(tmp_path):
+    body = {
+        "_meta": _meta(),
+        "complete": True,
+        "stages": {
+            "M0_exact_counter": {"persona_geometry": 0.189336, "future_geometry": 0.172705},
+            "M1_fold_only": {"persona_geometry": 0.065718, "future_geometry": 0.093234},
+            "M4_served": {"persona_geometry": 0.065962, "future_geometry": 0.090950},
+        },
+        "attribution": {"persona_geometry": "M0_exact_counter->M1_fold_only"},
+        "validation": {"m3_m4_distance_alignment": 0.998063},
+    }
+    _write(tmp_path, "encoder_stage_decomposition.json", body)
+    md, info = RC.render(tmp_path, HASH)
+    assert info["b_verdicts"]["B3.2"] == J.PASS
+    assert "M0 0.1893" in md
+    assert "M0_exact_counter->M1_fold_only" in md
+
+
+def test_an_incomplete_stage_decomposition_is_not_pass(tmp_path):
+    body = {"_meta": _meta(), "complete": False, "stages": {}, "attribution": {}}
+    _write(tmp_path, "encoder_stage_decomposition.json", body)
+    _, info = RC.render(tmp_path, HASH)
+    assert info["b_verdicts"]["B3.2"] == J.FAIL
+
+
+def test_a_stale_stage_decomposition_is_unknown(tmp_path):
+    body = {
+        "_meta": _meta("oldhash"),
+        "complete": True,
+        "stages": {},
+        "attribution": {},
+        "validation": {},
+    }
+    _write(tmp_path, "encoder_stage_decomposition.json", body)
+    _, info = RC.render(tmp_path, HASH)
+    assert info["b_verdicts"]["B3.2"] == J.UNKNOWN

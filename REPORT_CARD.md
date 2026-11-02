@@ -1,10 +1,10 @@
 # REPORT_CARD — B foundational, then PATH B > PATH A
 
-*Generated `2026-11-02T16:43:42+00:00` · commit `f143dfd` (`foundation-rebuild` · clean) · encoder behavior `d0ac576c3c7aa069`*
+*Generated `2026-11-02T16:56:03+00:00` · commit `271eecd` (`foundation-rebuild` · dirty) · encoder behavior `d0ac576c3c7aa069`*
 
 **Assessment:**
 
-- ❌ **B foundational:** NOT CERTIFIED — the current gate. 0/8 sections green · 3 rows PASS · 1 FAIL · 16 UNKNOWN/MISSING.
+- ❌ **B foundational:** NOT CERTIFIED — the current gate. 0/8 sections green · 4 rows PASS · 1 FAIL · 15 UNKNOWN/MISSING.
 - ❌ **B+C consequence:** NOT DONE — 2/8 legs green · stages 5/6 · backward open: 0. Reported for diagnosis; downstream of B.
 - ⚪ **Project v1:** not assessed on this card (full stack is a separate scope).
 
@@ -41,7 +41,7 @@ The judge below is the **consequence** (B+C). This section is **B itself**: a ro
 | # | Property | Metric | Verdict | Evidence / missing producer |
 |---|---|---|---|---|
 | B3.1 | Outlet accessibility (S4) | per-bucket accessibility parity + per-bucket negative controls | ✅ PASS | judge_stages.json:S4 working=True |
-| B3.2 | Stage decomposition M0->M1->served | the fine-structure metric at each stage, so a loss is attributed to a stage | ❔ UNKNOWN | missing producer: measure_stage_decomposition.py |
+| B3.2 | Stage decomposition M0->M1->served | the fine-structure metric at each stage, so a loss is attributed to a stage | ✅ PASS | complete · persona M0 0.1893 → M1 0.06572 → served 0.06596 · future M0 0.1727 → M1 0.09323 → served 0.09095 · largest drop M0_exact_counter->M1_fold_only · M3/M4 0.9981 |
 | B3.3 | Linear accessibility (legacy) | ridge probe E vs table on the old 6k reference | ❔ UNKNOWN | legacy receipt encoder_accessibility.json (no behavior stamp); re-run the legacy accessibility producer |
 
 ### B4 — Decisive · ❔ UNKNOWN
@@ -175,7 +175,6 @@ The leg verdict above is computed from these rows; a task can PASS while its leg
 - `B B2.1 Worst-case sufficiency U — missing producer: measure_sufficiency_law.py`
 - `B B2.2 Full-history oracle gap — missing producer: measure_sufficiency_law.py`
 - `B B2.3 Learned-only attribution — missing producer: measure_sufficiency_law.py`
-- `B B3.2 Stage decomposition M0->M1->served — missing producer: measure_stage_decomposition.py`
 - `B B3.3 Linear accessibility (legacy) — legacy receipt encoder_accessibility.json (no behavior stamp); re-run the legacy accessibility producer`
 - `B B4.1 B-only dose-response / argmax — missing producer: measure_decision_law.py`
 - `B B4.2 OPE / IPS known-effect recovery (legacy) — legacy receipt encoder_causal_ci.json (no behavior stamp); re-run the legacy causal producer`
