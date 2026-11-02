@@ -7578,3 +7578,19 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   ("a boundary must never fake capacity the trunk lacks").
 - **Estimate.** Implementation ~15 min; smoke (300 cust, max_steps=12) ~2 min; rung ~4–5 min
   (~2.5× step cost: three extra ssm passes); judge ~1 min. Total ~25 min.
+- **DINO run 1 RESULT (directional, under-dosed).** 800 rung, B=16, 1 epoch (266 steps):
+  persona 0.1369 → **0.1520** (rung noise band from DEC-549 runs: 0.1295/0.1369/0.1400, so +0.015
+  is ~2σ above noise — a real directional move), future 0.1010 → 0.1003, segment 0.0031 → 0.0010
+  (unmoved). Supervised: no regression (x0 0.9061, h0 0.9701, return 0.4725, churn 0.1935,
+  regime 0.0230, final −0.0176 — all within noise or improved). **Acceptance bar NOT met.**
+- **Dose analysis (why under-dosed, measured).** Two mechanical limits, both known before this run:
+  (1) DINO's pseudo-label space saw 2×B = 32 views/step; DINOv1 ran at 256–1024 crops — 8–32× more
+  samples per step defining the cluster structure. (2) The τ=0.996 teacher still carried
+  0.996^266 ≈ 35% of its initialization at rung end: most of the run trained against a weak
+  teacher. DEC-546 measured throughput flat B16→B64 (compute-bound, ~40–46 samples/s), so B=64
+  costs no wall-clock per epoch and 3 epochs let the teacher settle (0.996^800 ≈ 4% init left).
+  Batch/epochs are DOSE of the same pre-registered objective — the acceptance bars and the causal
+  story (DINO structural pressure on the served composite) are unchanged; this is a protocol
+  refinement recorded before the run, not a post-result threshold move.
+- **DINO run 2 (now).** 800 rung, `--set batch=64`, epochs=3, same objectives. Estimate:
+  ~200 steps × ~4.5 s/step ≈ 15 min + ~2 min build/judge → **~18 min**.
