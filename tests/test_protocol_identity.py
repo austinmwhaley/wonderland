@@ -64,6 +64,92 @@ def test_effect_head_form_is_a_protocol_axis_only_when_the_head_exists():
     assert _cfg(batch=27).tag == _cfg(batch=27, effect_head="bilinear").tag
 
 
+def test_trunk_bilinear_recurrence_is_a_protocol_axis():
+    """DEC-577: the bilinear state-input term (the trunk's algebra, DEC-041/043) trains
+    different weights (W_nl + beta), so two protocols differing ONLY in
+    `bilinear_recurrence` must not share a tag — the same defect class as DEC-445 (two
+    protocols shipped under one name), found while pre-registering dev-rig iteration 2."""
+    off = _cfg(batch=20)
+    on = _cfg(batch=20, bilinear_recurrence=True)
+    assert off.tag != on.tag
+    assert _cfg(batch=20, bilinear_recurrence=True).tag == on.tag  # deterministic
+
+
+def test_cfm_v2k_tag_is_stable_under_the_bilinear_axis_fix():
+    """DEC-577 no-op pin: the tag fix must not rename a protocol it did not change. The
+    canonical artifact's tag (bilinear OFF) is byte-identical before and after the fix —
+    the new axis only names itself when ON."""
+    c = CFMConfig()
+    c.revision = 490759
+    c.dim = 256
+    c.lr = 3e-4
+    c.objectives = (
+        "next",
+        "entity",
+        "dt",
+        "value",
+        "mask",
+        "contrast",
+        "occur",
+        "order",
+        "jepa",
+        "sf",
+        "query",
+        "agg",
+        "mtp",
+    )
+    c.serve_unfaded = True
+    c.ledger_recency = True
+    c.use_counter = True
+    c.counter_type_values = True
+    assert c.tag == "0.11.0r490759-b64d256e3lr3e-04o4c3b5899"
+    assert _cfg(batch=20).tag == _cfg(batch=20, bilinear_recurrence=False).tag
+
+
+# ---- warm-start: "same resolved architecture" includes the trunk's algebra (DEC-577) ----
+
+
+def test_warm_start_refuses_a_trunk_algebra_mismatch(tmp_path):
+    """DEC-577: a checkpoint differing only in `bilinear_recurrence` is a different state
+    update, so it must not warm-start — in either direction. A matching algebra must still
+    warm-start: the guard is an algebra check, not a blanket refusal."""
+    from looking_glass.cfm_training import _pick_warm_checkpoint
+
+    cfg = CFMConfig()
+    arch = {
+        "seq_len": cfg.seq_len,
+        "dim": cfg.dim,
+        "state_half_life_days": cfg.state_half_life_days,
+        "sf_mode": cfg.sf_mode,
+        "objectives": list(cfg.objectives),
+    }
+
+    def dir_with(tag, bilinear):
+        d = tmp_path / tag
+        d.mkdir()
+        (d / f"registry_{tag}.json").write_text(
+            json.dumps(
+                {
+                    "as_of": "2025-01-01",
+                    "version": cfg.version,
+                    "tag": tag,
+                    "config": dict(arch, bilinear_recurrence=bilinear),
+                }
+            )
+        )
+        return d
+
+    d_off = dir_with("off", False)
+    d_on = dir_with("on", True)
+    assert _pick_warm_checkpoint(d_off, "2025-02-01", _cfg(bilinear_recurrence=True)) == (
+        None,
+        None,
+    )  # algebra ON refuses an OFF checkpoint
+    assert _pick_warm_checkpoint(d_on, "2025-02-01", _cfg()) == (None, None)  # and vice versa
+    got = _pick_warm_checkpoint(d_on, "2025-02-01", _cfg(bilinear_recurrence=True))
+    assert got[0] == "on"  # matching algebra still warm-starts
+
+
 # ---- --set: the declaration channel accepts a declaration (DEC-449) -----------------------
 
 

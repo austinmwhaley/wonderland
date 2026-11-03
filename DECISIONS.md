@@ -9291,3 +9291,74 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     real-data evidence the dev rig cannot provide. (iv) Running the dev loop on the full 32-use-
     case coverage: earn the right to scale — one use case, mastered, then the next.
   - **Status.** Pre-registered. Iteration 1 (`next_event`, N=500) runs next.
+
+- **DEC-577 (dev-rig iteration 2 pre-registered: DEC-575 candidate 1 on the `next_event` fixture — the trunk/state-update algebra, one axis):**
+  - **Context.** O3 attempt 4 REJECTED under DEC-572's frozen bars (outcome addendum in
+    DEC-573: eff_rank 3.665 < 30 — the soft-penalty floor pair bought no rank structure,
+    refuting H1; M4_served persona 0.046461 < 0.15; R² 0.467521 and stability kept). The
+    frozen "1 fails → trunk/objective axis confirmed" branch triggers DEC-575. Dev-rig
+    iteration 1 (DEC-576) reproduced the blob on known-truth data in minutes (next_event
+    N=500: g 1.147, eff_rank 1.153 at dim=32, controls clean) — the bottleneck axis is the
+    trunk, not the fixture, not the head, not the measurement.
+  - **Principle served.** Lawful (FR v2.0 pillar 1: rank lives in the state update
+    `h_t = f(h_{t-1}, x_t)` as algebraic construction; the §4.3 spike is the evidence of
+    record — bilinear `h⊗x` raised transferable cross-sample rank ×1.79 on this stream; the
+    affine trunk's ceiling is the measured blob) + Efficient (iterate-to-convergence scan,
+    O(log T) per pass, no sequential loop) + Robust (the unit-norm tanh gate bounds the
+    bilinear term's Lipschitz — DEC-043 path 1).
+  - **The mechanism is already in the tree** (v7, DEC-041/043): `CFMConfig.bilinear_recurrence`
+    (default False) → `cfm_training` passes it to the SSM block → `W_nl` (dim×dim) + learned
+    scale `beta` + the vectorized fixed-point solve (iterated affine scans, cap 8,
+    state-change tol 1e-4, converges earlier on tol — "converge, not count"). It has NEVER
+    been enabled in a canonical or lab run: cfm_v2k, O3 attempt 4, and dev-rig iteration 1
+    all ran bilinear-off. So the one-axis diff is a config pin, not new model code.
+  - **Identity defect found while preparing this run (fixed in the same behavior move).**
+    (a) `CFMConfig.tag()` did not include `bilinear_recurrence` in the signature: a bilinear
+    and a non-bilinear protocol with equal batch/dim/epochs/lr/objectives would ship under
+    the SAME name — the DEC-445/448 defect class ("an artifact trained under a different
+    protocol must not carry the same name"). Fixed: the bilinear axis joins the tag
+    signature (`|bl`); regression tests pin both the axis split and the no-op (cfm_v2k's tag
+    `0.11.0r490759-b64d256e3lr3e-04o4c3b5899` is byte-identical with bilinear OFF — the
+    canonical artifact's identity is stable under this fix).
+    (b) `_pick_warm_checkpoint`'s architecture comparison (`seq_len, dim,
+    state_half_life_days, sf_mode` + objectives) did not include `bilinear_recurrence`: a
+    trunk-algebra pair in one out-dir would warm-start across algebras silently. Fixed: the
+    field joins the comparison tuple (refusal tested in both directions; a matching algebra
+    still warm-starts). Both are fail-safe identity/guard fixes; no gate, bar, criterion or
+    frontier definition changes.
+  - **One-axis diff (frozen).** `--set bilinear_recurrence=true` on the iteration-1 command,
+    everything else identical: `next_event` positive/negative/adversarial fixtures, N=500,
+    as-of 2024-09-01 (split seed derived from as-of; fixture seed 17 in the spec), anchors 6,
+    fresh out-dirs `/tmp/opencode/lab/next_event_iter2_{pos,neg,adv}` (iteration 1's products
+    stay at `/tmp/opencode/lab/next_event_{pos,neg,adv}` — its receipt records those paths),
+    autotune-derived dim/batch/budget, `LG_SCAN=eager`, `safe_run`, scratch warm-start (fresh
+    out-dir). The tag moves automatically (the identity fix above); this is a new-protocol
+    run, not a retrain-under-old-name.
+  - **Frozen verdict (DEC-576 speedometer + controls, unchanged).** Mastered ⇔ g ≤ 0.5 AND
+    the encoder beats the 1-gram (paired CI entirely below 0 on enc−base, nats) AND the
+    eff_rank receipt is in hand (from the run's own portfolio receipt; recorded, no bar on
+    the toy — the ≥ 30 bar is DEC-575's real-data gate, not the rig's). NEGATIVE must read
+    NO_SIGNAL; ADVERSARIAL must read as expected (structure claim NO_SIGNAL while the echo
+    lets the head beat the 1-gram — the false-PASS trap). Receipt:
+    `docs/report_cards/experiments/lab/next_event_iter2.json`.
+  - **Attribution a priori (so the read is not improvised).** (i) MASTERED with eff_rank up:
+    candidate 1 works on the toy; iteration 3 is `intent` (curriculum step 2) BEFORE the
+    port — DEC-576's port protocol needs BOTH next_event and intent mastered with clean
+    controls. (ii) g improves but not ≤ 0.5: the trunk carries more of the structure; record
+    the delta, and the next step is the snr knob (1.0 → 0.5) within next_event — still the
+    trunk axis, one step. (iii) No change in eff_rank or g: the fixed-point gate is inert at
+    dim=32 / beta-init 0.3 on this shape — record as candidate-1-negative on the toy, and
+    the escalation is DEC-575 candidate 2 (looped/weight-tied nonlinear block), its own DEC,
+    its own pre-registration. No post-hoc bar edits in any branch.
+  - **Cost of the behavior move.** This chunk moves the hash once (the identity fixes); the
+    full cfm_v2k re-stamp (all 9 recorded producer commands + the B2 producer, no retrain)
+    folds into the same cycle, and S6/B8.2 re-runs on the next clean tree. The lab iteration
+    itself is ~12–15 min (three N=500 trains).
+  - **Rejected.** (i) Enabling bilinear WITHOUT the tag/warm-start fixes: a same-name
+    two-protocol artifact is exactly the identity defect this repo has already paid for
+    (DEC-445). (ii) Raising beta's init or the iteration cap first: those are tuning knobs
+    the §4.3 spike did not need; the frozen candidate is the mechanism as shipped. (iii)
+    Running the real-data DEC-575 gate first: DEC-576's pivot (operator 2026-11-03) — the
+    minutes loop earns the right to the 3.2 h loop.
+  - **Status.** Pre-registered; the identity fixes are implemented and regression-tested;
+    iteration 2 trains next (one axis: the trunk algebra, ON).

@@ -561,6 +561,11 @@ class CFMConfig:
                 sig_extra += "|ce"
             if getattr(self, "counter_type_values", False):
                 sig_extra += "|cv"
+        if getattr(self, "bilinear_recurrence", False):
+            # DEC-577: the trunk's algebra is a protocol axis — the bilinear state-input term
+            # trains different weights (W_nl + beta), so the two algebras must not share a name
+            # (DEC-445/448). OFF leaves the signature byte-identical: cfm_v2k's tag is stable.
+            sig_extra += "|bl"
         sig = hashlib.sha256(f"{obj}|{eff}{prof}{sig_extra}".encode()).hexdigest()[:8]
         return (
             f"{base}-b{int(self.batch)}d{int(self.dim)}e{int(self.epochs)}"

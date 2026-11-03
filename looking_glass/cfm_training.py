@@ -50,7 +50,7 @@ def _pick_warm_checkpoint(out_dir, as_of, cfg=None):
     eligible; checkpoints without point-in-time info are skipped too.
     Behavior guard: checkpoints from a different encoder *version* (a behavior
     change that alters trained weights) or a different resolved architecture
-    (seq_len / dim / half-life) are skipped when that info is present —
+    (seq_len / dim / half-life / trunk algebra) are skipped when that info is present —
     continuing across semantics silently mixes models. Returns (tag, meta) or
     (None, None).
     """
@@ -91,7 +91,13 @@ def _pick_warm_checkpoint(out_dir, as_of, cfg=None):
             rc = meta.get("config") or {}
             mismatched = any(
                 f in rc and rc[f] != getattr(cfg, f, None)
-                for f in ("seq_len", "dim", "state_half_life_days", "sf_mode")
+                for f in (
+                    "seq_len",
+                    "dim",
+                    "state_half_life_days",
+                    "sf_mode",
+                    "bilinear_recurrence",
+                )
             )
             if "objectives" in rc and tuple(rc["objectives"]) != tuple(
                 getattr(cfg, "objectives", ())

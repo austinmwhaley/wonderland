@@ -121,16 +121,20 @@ next question is the learned shape, not another consumer tuning pass.
    `measure_certification_law.py` (the one-command card-regeneration check) at the clean
    commit — S6/B8.2 currently stale at `d0ac576c` — and commit that receipt too.
 2. **DEV-RIG iteration 2 = DEC-575 candidate 1 (the trunk axis): bilinear `h⊗x`
-   iterate-to-convergence scan.** Implement in `looking_glass` (one axis: the state-update
-   algebra; the affine trunk's ceiling is the measured blob — cfm_v2k eff_rank 2.419, lab
-   1.153, O3 3.665; the §4.3 spike measured ×1.79 transferable rank from exactly this term).
-   This is a behavior move: expect the hash to move again, and fold the FULL cfm_v2k
-   re-stamp (all recorded producer commands, no retrain) into the same cycle. Pre-register in
-   DECISIONS.md first (B1 compositionality canary: merge/equivariance/mass-additivity must stay
-   exact on data — a closed-form monoid break is a recorded trade, not a silent cost). Train
-   `next_event` N=500 (positive + negative + adversarial, same as-of/seed), target: MASTERED
-   (g ≤ 0.5 AND beats the 1-gram, paired CI, AND the eff_rank receipt in hand) with the
-   controls still reading as designed.
+   iterate-to-convergence scan (DEC-577 pre-registered).** The mechanism already ships in
+   the tree (v7 DEC-041/043: unit-norm tanh gate, iterated affine scans to convergence,
+   cap 8 / tol 1e-4) and has never been enabled in any run — the one-axis diff is
+   `--set bilinear_recurrence=true`. Prep found one identity defect to fix in the same
+   behavior move: `bilinear_recurrence` was absent from the tag signature (same-name
+   two-protocols, the DEC-445 class — cfm_v2k's tag pinned byte-stable by a no-op test)
+   and from the warm-start architecture comparison (silent trunk-algebra mixing — refusal
+   regression-tested both directions). B1 compositionality canary already anticipates the
+   mechanism (the dynamics law derives its merge tolerance from the bilinear fixed-point's
+   own convergence criterion). Train `next_event` N=500 (positive + negative + adversarial,
+   fresh `iter2` out-dirs; iteration 1's products and receipt stay untouched), target:
+   MASTERED (g ≤ 0.5 AND beats the 1-gram, paired CI, AND the eff_rank receipt in hand)
+   with the controls still reading as designed. The hash move folds the full cfm_v2k
+   re-stamp (all recorded producer commands, no retrain) into the same cycle.
 3. **Iteration 3 = `intent` (curriculum step 2), then the port.** Once iteration 2 masters
    `next_event`, run `intent` sharpening on the same rig; when BOTH are mastered with clean
    controls, DEC-576's port protocol fires: ONE pre-registered real-data run of the trunk
