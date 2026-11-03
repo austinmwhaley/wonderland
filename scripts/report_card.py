@@ -32,6 +32,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 import b_spec as B  # noqa: E402
 import judge_spec as J  # noqa: E402
+import plan_spec as P  # noqa: E402
 
 EXP = ROOT / "docs" / "report_cards" / "experiments"
 AUDIT_MD = ROOT / "AUDIT.md"
@@ -942,6 +943,74 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
         all_green=b_all_green,
     )
 
+    # ---- the plan: the SAME tree, with verdicts attached (PLAN.md -> REPORT_CARD) -----------
+    # The decomposition is defined once in plan_spec; this section is the measurement surface
+    # for it. A node's verdict is the worst of its children; a DEC-frozen leaf renders FRONTIER
+    # (no card row exists) and a v1 leaf renders NOT ASSESSED. The root therefore cannot read
+    # SOLVED while either scope is unmeasured — T0 is not SOLVED (integrity rule 2).
+    plan_verdicts = P.statuses({**verdicts, **b_verdicts})
+    census = P.leaf_census()
+    plan_green = sum(1 for n in P.NODES for leaf in n.leaves if plan_verdicts.get(leaf) == J.PASS)
+    plan_fail = sum(1 for n in P.NODES for leaf in n.leaves if plan_verdicts.get(leaf) == J.FAIL)
+    root_v = plan_verdicts.get("G", J.UNKNOWN)
+    root_word = {
+        J.PASS: "✅ SOLVED",
+        J.FAIL: "❌ FAILED",
+        J.UNKNOWN: "❔ OPEN",
+    }[root_v]
+    plan_lines = [
+        "## The plan — the tree this card measures (PLAN.md)",
+        "",
+        "The goal, cut backwards into the problems that must all be solved. This section is "
+        "generated from `scripts/plan_spec.py` — the single definition of the tree; `PLAN.md` "
+        "is its readable render. The plan defines no gate: every measured leaf is a frozen row "
+        "below, and a node's verdict is the worst of its children.",
+        "",
+        f"**Plan root:** {root_word} — {plan_green}/{census['card_leaves']} measured leaves "
+        f"green · {plan_fail} FAIL · {census['dec_leaves']} DEC-frozen leaf (no card row) · "
+        f"{census['v1_leaves']} v1 leaves not assessed on this card.",
+        "",
+        "| Level | Node | What must be true | Leaves | Verdict |",
+        "|---|---|---|---|---|",
+    ]
+    for n in P.NODES:
+        lvl = P.level(n.ident)
+        if n.leaves and n.kind == "section":
+            leaves_txt = ", ".join(n.leaves)
+        elif n.leaves:
+            leaves_txt = f"{len(n.leaves)} rows"
+        else:
+            under = len(P.leaves_under(n.ident))
+            leaves_txt = f"{under} leaves" if under else "—"
+        q = n.question if len(n.question) <= 96 else n.question[:96].rsplit(" ", 1)[0] + " …"
+        v = plan_verdicts.get(n.ident, J.UNKNOWN)
+        if v == P.FRONTIER:
+            badge = "⚪ FRONTIER"
+        elif v == P.NOT_ASSESSED:
+            badge = "⚪ NOT ASSESSED"
+        else:
+            badge = _badge(v)
+        plan_lines.append(f"| {lvl} | **{n.ident}** {n.title} | {q} | {leaves_txt} | {badge} |")
+    plan_lines += [
+        "",
+        f"*Frontier:* {P.FRONTIER_NOTE}",
+        "",
+        "A green leaf means its frozen gate is met — for several rows that gate certifies "
+        "*measurement and attribution*, not a quality level; the quality bars are DEC-frozen and "
+        "live in the receipts (`PLAN.md` §5 says which rows this applies to). Read the plan "
+        "before reading a green row as 'good'.",
+        "",
+    ]
+    plan_summary = {
+        "root": root_v,
+        "green": plan_green,
+        "fail": plan_fail,
+        "card_leaves": census["card_leaves"],
+        "dec": census["dec_leaves"],
+        "v1": census["v1_leaves"],
+        "nodes": plan_verdicts,
+    }
+
     md = "\n".join(
         [
             "# REPORT_CARD — B foundational, then PATH B > PATH A",
@@ -958,6 +1027,7 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
             "The verdict is a pure function of the receipts under `docs/report_cards/experiments/`.",
             "Ledger points never count as progress: `brain alone` is the judge, `brain + ledger` is delivery.",
             "",
+            *plan_lines,
             "## B capability — top line (O8 sprint; DEC-568/D2)",
             "",
             "The sprint's unit of progress is one capability delta on these axes. Each axis is the "
@@ -1011,8 +1081,10 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
             "---",
             "",
             "*This is the only card. B-only rows come from `scripts/b_spec.py`; B+C rows from "
-            "`scripts/judge_spec.py`; both read the receipts under `docs/report_cards/experiments/`. "
-            "There is no separate audit card, and no row may be parked elsewhere (DEC-512).*",
+            "`scripts/judge_spec.py`; both hang under the tree in `scripts/plan_spec.py` "
+            "(rendered readably in `PLAN.md`); all read the receipts under "
+            "`docs/report_cards/experiments/`. There is no separate audit card, and no row may "
+            "be parked elsewhere (DEC-512).*",
             "",
         ]
     )
@@ -1024,6 +1096,7 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
         "b_sections": b_sections,
         "cap_verdicts": cap_verdicts,
         "cap_all_green": cap_verdicts_all,
+        "plan": plan_summary,
     }
 
 

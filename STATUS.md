@@ -31,10 +31,12 @@ certification stays on the real stream.
 
 ## Current state
 
-- **The one card is `REPORT_CARD.md`.** It contains, in order: the B-foundational scorecard
-  (B1 Lawful, B2 Sufficient, B3 Accessible, B4 Decisive, B5 Minimal & affordable, B6 Transferable,
-  B7 Robust, B8 Reproducible), the four-leg judge, the stage ladder, hygiene, the blocking list and
-  BACKWARD requirements. No other file is a measurement surface.
+- **The one card is `REPORT_CARD.md`.** It contains, in order: **the plan section (the goal cut
+  backwards into problems, rendered from `scripts/plan_spec.py`; `PLAN.md` is its readable
+  render)**, the B-foundational scorecard (B1 Lawful, B2 Sufficient, B3 Accessible, B4 Decisive,
+  B5 Minimal & affordable, B6 Transferable, B7 Robust, B8 Reproducible), the four-leg judge, the
+  stage ladder, hygiene, the blocking list and BACKWARD requirements. No other file is a
+  measurement surface. `PLAN.md` is structure only (no numbers) — DEC-579.
 - **B is not certified, but B3 Accessible is green (DEC-564/565/566/571).** B3.2 measured the fold
   as the wall: exact counter persona/future 0.189/0.173, M0→M1 fold 0.066/0.093, trunk +0.001,
   projection/boundary ~0. B3.3 measured linear access: served 0.4677 vs PATH A 0.4126 (+0.0551),
@@ -123,15 +125,13 @@ next question is the learned shape, not another consumer tuning pass.
 
 ## Next 3 actions
 
-1. **PLAN.md + card alignment (operator request, 2026-11-03).** Write the long-term plan as a
-   backward decomposition: project goal → why → L1 (A/B/C layers) → L2 (B's capability axes,
-   the canonical ladder) → L3 leaves (each = a card row with a frozen gate + receipt + DEC),
-   with "all solved = project solved" spelled out against T0/SOLVED and the v1 definition of
-   done. Align `REPORT_CARD.md` to it: a generated Plan section whose node statuses are DERIVED
-   from the referenced card rows (pure function of spec + receipts, no new gates, no new
-   verdicts). No looking_glass/rabbit_hole touch → no behavior-hash move; the S6 chain
-   re-certifies the new card shape at the clean commit (receipts re-stamp under the same
-   `4053d2f9`).
+1. **PLAN.md + card alignment — DONE (DEC-579); pause point.** The tree
+   (`scripts/plan_spec.py`: goal → P1–P5 → 23 B rows + 8 judge rows + E1 trunk + 5 v1 leaves)
+   renders `PLAN.md` (structure only) and the card's plan section (structure + verdicts);
+   direction is plan → card and enforced by tests. No behavior-hash move. Next on resume:
+   re-run `measure_certification_law.py` at the clean commit so S6/B8.2 records the new card
+   shape at a recorded commit (`PLAN.md` is not touched by the chain; only the card + receipts
+   are exempt).
 2. **DEV-RIG iteration 3 = DEC-575 candidate 2 (pre-register as DEC-578 FIRST).** The looped /
    weight-tied nonlinear state-update block, on `next_event` N=500, one axis, with its own
    frozen verdict + a-priori branches (iteration 2's branch (iii) is the standing escalation;
@@ -181,6 +181,7 @@ understand the long-term plan"):** (a) work review delivered; (b) iteration 2 (D
 candidate 1 as-shipped, bilinear ON) LANDED NOT MASTERED — branch (iii) taken, candidate 1
 negative on the toy for the decisive bars (g 1.154 ≈ iteration 1's 1.147; 1-gram CI
 unchanged; eff_rank 1.153 → 1.473 recorded; controls clean) — escalation to DEC-578 /
-candidate 2 pre-registered next; (c) PLAN.md requested: the long-term plan as a backward
-decomposition from the project goal, with `REPORT_CARD.md` aligned to it — in flight (next-3
-item 1).
+candidate 2 pre-registered next; (c) **PLAN.md reinstated (DEC-579)** as the goal-side
+decomposition, generated from `scripts/plan_spec.py`, with the card rendering the same tree
+(structure + verdicts) — direction is PLAN.md → REPORT_CARD.md, the plan defines no gate, and
+the root cannot read SOLVED while the DEC-frozen trunk leaf and the v1 leaves are unmeasured.

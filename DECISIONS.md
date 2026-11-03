@@ -9426,3 +9426,56 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     rejected in this DEC's pre-registration; (iii) advancing the curriculum to `intent` or
     stepping snr down — barred: `next_event` is not mastered at snr=1.0, so neither the
     next curriculum structure nor a harder snr variant is earned.
+
+- **DEC-579 (PLAN.md reinstated as the goal-side decomposition; the card is aligned TO it — operator
+  directive 2026-11-03):**
+  - **Context.** The operator asked for the long-term plan: "starts from the project goal and
+    works backwards by cutting our big problem into smaller problems ... the culmination of
+    solving all the smaller and smaller problems layers in a hierarchy back to the big problem.
+    All solved = project solved." And explicitly: "PLAN.md -> REPORT_CARD.md (not the other way
+    around)." DEC-513 had retired PLAN.md with the rationale "the card is the plan"; the
+    operator has now superseded that for this one file, with a different mechanism.
+  - **Decision.** `PLAN.md` returns as a **generated** document: `scripts/plan_spec.py` is the
+    single definition of the tree (goal → five necessary problems → B sections / judge legs /
+    one DEC-frozen enabler / five v1 leaves); `scripts/plan.py` renders `PLAN.md` (structure
+    only, no measurements, so it cannot go stale with receipts); `scripts/report_card.py`
+    imports the same spec and renders the card's plan section with verdicts attached. Direction
+    is enforced structurally: the card imports the plan spec, the plan spec imports the frozen
+    row definitions, and nothing imports the card's render — so a card row without a plan leaf
+    fails `tests/test_plan.py`, and a plan node with its own gate fails too.
+  - **The tree (24 nodes, 37 conditions).** G "A certified universal donor, delivered" →
+    P1 The donor exists (B1, B8) · P2 The donor suffices (B2, B4, B5 + E1 trunk capacity) ·
+    P3 The donor is usable (B3, B6, B7) · P4 The consequence is delivered (four judge legs) ·
+    P5 The stack is v1-complete (five v1 gates). **31 measured card leaves** (23 B rows +
+    8 judge rows), **1 DEC-frozen leaf** (E1: the trunk's state-update algebra — bars frozen in
+    DEC-572/573/575/576/577, no card row exists, so the card renders FRONTIER and can never
+    read it green), **5 v1 leaves** (AGENTS definition of done; not assessed on this card).
+    Two v1 requirements are references, not duplicate nodes: V1.2's universal-donor clause is
+    P1–P3 + B6; V1.7's versioned-reproducible clause is B8.
+  - **All solved = project solved, made structural.** Root PASS requires every card leaf PASS,
+    the DEC-frozen leaf closed by its pre-registered run and recorded decision, every v1 leaf
+    PASS, and no open BREAKING/MAJOR BACKWARD requirement. The card passes `closed=()` to the
+    plan resolver, so a fully green encoder battery renders root = OPEN/FAILED, never SOLVED —
+    the doctrine's "T0 is not SOLVED" (integrity rule 2) is now a property of the code, not a
+    promise. The card's header/summary keeps its three scope lines (B / B+C / v1) unchanged; the
+    plan section is added between the assessment and the B capability top line.
+  - **Why the plan carries E1 and a warning about green rows.** The live blocker (the trunk blob)
+    has no frozen card row; without E1 the tree would say P2 is "B2 PASS" while the encoder is
+    not mastered. The plan therefore names the enabler and states plainly that several B gates
+    certify *measurement/attribution* (`attribution recorded`, `complete`, `working=True`), not a
+    quality level; the quality bars are the DEC-frozen numbers and live in the receipts
+    (`PLAN.md` §5). This is the honest reading of today's 12 PASS / 0 FAIL / 11 UNKNOWN.
+  - **Rejected.** (i) A hand-written PLAN.md: it goes stale against receipts and duplicates the
+    card — the exact failure DEC-513 was reacting to. (ii) Reorganising the card by hand into
+    plan-shaped sections: drift between prose and rows. (iii) Making PLAN.md a second
+    measurement card: violates the one-card rule (DEC-512). (iv) Adding a B row for trunk
+    capacity now: that would be a new gate and needs operator approval; instead the frozen DEC
+    bars are referenced and the node renders FRONTIER.
+  - **Cost / identity.** `scripts/` is outside `BEHAVIOR_TREES`, so this chunk does **not** move
+    the behavior hash (stays `4053d2f98a90e6bc`) and needs no cfm_v2k re-stamp. The card's shape
+    changed, so S6/B8.2 should be re-certified at the next clean commit (the last S6 run was at
+    `b40e582`; rule 6's commit record is refreshed by that run, not by this one).
+  - **Status.** Implemented, tested (12 plan tests: leaf coverage/one-source, acyclicity,
+    no-gates-in-plan, worst-child derivation, root-cannot-pass-while-unmeasured, PLAN.md
+    freshness, card renders the same tree), 731 fast-tier tests pass, ruff clean, principle audit
+    0 findings.

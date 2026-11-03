@@ -1,6 +1,6 @@
 # REPORT_CARD — B foundational, then PATH B > PATH A
 
-*Generated `2026-11-03T05:38:53+00:00` · commit `b40e582` (`foundation-rebuild` · dirty) · encoder behavior `4053d2f98a90e6bc`*
+*Generated `2026-11-03T14:46:29+00:00` · commit `a05fbf5` (`foundation-rebuild` · dirty) · encoder behavior `4053d2f98a90e6bc`*
 
 **Assessment:**
 
@@ -10,6 +10,43 @@
 
 The verdict is a pure function of the receipts under `docs/report_cards/experiments/`.
 Ledger points never count as progress: `brain alone` is the judge, `brain + ledger` is delivery.
+
+## The plan — the tree this card measures (PLAN.md)
+
+The goal, cut backwards into the problems that must all be solved. This section is generated from `scripts/plan_spec.py` — the single definition of the tree; `PLAN.md` is its readable render. The plan defines no gate: every measured leaf is a frozen row below, and a node's verdict is the worst of its children.
+
+**Plan root:** ❌ FAILED — 14/31 measured leaves green · 6 FAIL · 1 DEC-frozen leaf (no card row) · 5 v1 leaves not assessed on this card.
+
+| Level | Node | What must be true | Leaves | Verdict |
+|---|---|---|---|---|
+| 0 | **G** A certified universal donor, delivered | What is the whole problem? | 31 leaves | ❌ FAIL |
+| 1 | **P1** The donor exists | Is there a per-stream artifact built from the right algebra, and is it an identity? | 4 leaves | ❔ UNKNOWN |
+| 2 | **B1** Lawful | Is the state built from the right algebra? | B1.1, B1.2 | ❔ UNKNOWN |
+| 2 | **B8** Reproducible | Is the artifact an identity? | B8.1, B8.2 | ❔ UNKNOWN |
+| 1 | **P2** The donor suffices | Does the embedding lose nothing that matters about the future — for prediction and decision — … | 8 leaves | ❔ UNKNOWN |
+| 2 | **B2** Sufficient | Does B lose nothing about the future? | B2.1, B2.2, B2.3 | ✅ PASS |
+| 2 | **E1** Trunk capacity (the state-update algebra) | Can the state carry the stream's structure — not just its mass? | — | ⚪ FRONTIER |
+| 2 | **B4** Decisive | Does B support action/counterfactual decisions? | B4.1, B4.2, B4.3 | ❔ UNKNOWN |
+| 2 | **B5** Minimal & affordable | Is it the smallest sufficient object, and fast enough? | B5.1, B5.2 | ❔ UNKNOWN |
+| 1 | **P3** The donor is usable | Can simple consumers read it, does it transfer beyond our known tasks, and does it stay honest … | 11 leaves | ❔ UNKNOWN |
+| 2 | **B3** Accessible | Can simple heads read what is there, at every stage? | B3.1, B3.2, B3.3, B3.4, B3.5, B3.6 | ✅ PASS |
+| 2 | **B6** Transferable | Does it add signal on held-out consumers? | B6.1, B6.2, B6.3 | ❔ UNKNOWN |
+| 2 | **B7** Robust | Does it stay honest under shift and missingness? | B7.1, B7.2 | ❔ UNKNOWN |
+| 1 | **P4** The consequence is delivered | Does PATH B (frozen encoder -> simple head) beat PATH A (wide table -> GBM incumbent) for the … | 8 leaves | ❌ FAIL |
+| 2 | **JUDGE-supervised** supervised leg | forecast targets beat the incumbent GBM on the same splits | 2 rows | ❌ FAIL |
+| 2 | **JUDGE-unsupervised** unsupervised leg | distance equals shared futures; structure beats table/random/destroyed | 2 rows | ❌ FAIL |
+| 2 | **JUDGE-rl** rl leg | policy value beats table and random on randomized/known-effect data | 2 rows | ✅ PASS |
+| 2 | **JUDGE-simulator** simulator leg | recovers the built-in counterfactual effects (red_king role) | 2 rows | ❌ FAIL |
+| 1 | **P5** The stack is v1-complete | Does the full system deliver a certified decision: identifiable stream -> donor -> plugins -> … | — | ❔ UNKNOWN |
+| 2 | **V1.1** Causally identifiable stream | Does rabbit_hole emit randomized arms with a known effect, recorded as such? | — | ⚪ NOT ASSESSED |
+| 2 | **V1.2** Each plugin passes its independent gate | Do the supervised, unsupervised and white_queen consumers each pass their own gate? | — | ⚪ NOT ASSESSED |
+| 2 | **V1.3** red_king recovers known effects | Does red_king recover the known counterfactual effect and improve the certified decision with … | — | ⚪ NOT ASSESSED |
+| 2 | **V1.4** red_queen composes actions | Does red_queen compose next-best actions across cadences under constraints? | — | ⚪ NOT ASSESSED |
+| 2 | **V1.5** caterpillar explains from artifacts | Does caterpillar answer 'why' from artifacts only? | — | ⚪ NOT ASSESSED |
+
+*Frontier:* The live frontier is P2's enabler E1 (the trunk's state-update algebra). O3 attempt 4 was rejected on its frozen bars and the dev rig reproduced the blob in minutes; DEC-575 candidate 1 as shipped was negative on the toy (DEC-577 outcome). The next move is DEC-578 (candidate 2: looped / weight-tied nonlinear block) on the dev rig, then the curriculum (intent), then ONE pre-registered port run under DEC-572's bars. No lab receipt flips a B-row verdict.
+
+A green leaf means its frozen gate is met — for several rows that gate certifies *measurement and attribution*, not a quality level; the quality bars are DEC-frozen and live in the receipts (`PLAN.md` §5 says which rows this applies to). Read the plan before reading a green row as 'good'.
 
 ## B capability — top line (O8 sprint; DEC-568/D2)
 
@@ -209,4 +246,4 @@ Principle-alignment findings live in `AUDIT.md`; the machine-readable gate is th
 
 ---
 
-*This is the only card. B-only rows come from `scripts/b_spec.py`; B+C rows from `scripts/judge_spec.py`; both read the receipts under `docs/report_cards/experiments/`. There is no separate audit card, and no row may be parked elsewhere (DEC-512).*
+*This is the only card. B-only rows come from `scripts/b_spec.py`; B+C rows from `scripts/judge_spec.py`; both hang under the tree in `scripts/plan_spec.py` (rendered readably in `PLAN.md`); all read the receipts under `docs/report_cards/experiments/`. There is no separate audit card, and no row may be parked elsewhere (DEC-512).*
