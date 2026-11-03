@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "4053d2f98a90e6bc",
+    "behavior_hash": "905b4f88b8dfcd06",
     "command": "measure_sufficiency_law.py",
-    "generated_at": "2026-11-03T05:35:56+00:00",
-    "git_commit": "b40e582a444b80afef8f902438df163ff7725513",
+    "generated_at": "2026-11-03T16:38:19+00:00",
+    "git_commit": "4bb221bde90a859166355e4397651ff09f4fbc26",
     "producer": "measure_sufficiency_law.py"
   },
   "arms": {
@@ -32,7 +32,7 @@
   "excluded_probes": {
     "attr-next": "headroom -0.140938 <= 0 \u2014 probe excluded, reported (degenerate)",
     "dt": "headroom -0.121934 <= 0 \u2014 probe excluded, reported (degenerate)",
-    "horizon-count-value": "headroom -0.020041 <= 0 \u2014 probe excluded, reported (degenerate)",
+    "horizon-count-value": "headroom -0.026347 <= 0 \u2014 probe excluded, reported (degenerate)",
     "numeric-next": "headroom -0.018799 <= 0 \u2014 probe excluded, reported (degenerate)"
   },
   "field_sources": {
@@ -49,7 +49,7 @@
   },
   "honesty": "rule 4: the served object = learned shape \u2295 the ledger's named blocks; learned_only travels in this same receipt, so a U the ledger alone carries is served-statistic sufficiency, not learned-shape sufficiency. The full arm is history-only PATH A (leak-free by the provenance receipt). No criterion, rule or bar of its own: the bar lives in b_spec.SUFFICIENCY_BAR.",
   "horizon": {
-    "H_seconds": 10332.0,
+    "H_seconds": 32877.0,
     "draw": "np.random.default_rng(65537).choice over the pooled positive within-customer gaps (full stream)",
     "gap_p50_s": 47841.0,
     "gap_p95_s": 408548.6,
@@ -208,34 +208,34 @@
       "u": {}
     },
     "horizon-count-value": {
-      "H_seconds": 10332.0,
+      "H_seconds": 32877.0,
       "count_losses": {
-        "floor": 0.997225,
-        "full": 0.961517,
-        "learned_only": 0.960668,
-        "served_object": 1.043533
+        "floor": 1.075418,
+        "full": 0.942549,
+        "learned_only": 0.924734,
+        "served_object": 1.006361
       },
       "gap_p50_s": 47841.0,
       "gap_p95_s": 408548.6,
-      "headroom": -0.020041,
+      "headroom": -0.026347,
       "included": false,
       "loss": {
-        "floor": 1.286216,
-        "full": 1.266175,
-        "learned_only": 1.265566,
-        "served_object": 1.337857
+        "floor": 0.87967,
+        "full": 0.853323,
+        "learned_only": 0.815431,
+        "served_object": 0.89067
       },
       "mass_losses": {
-        "floor": 1.575207,
-        "full": 1.570832,
-        "learned_only": 1.570465,
-        "served_object": 1.632181
+        "floor": 0.683921,
+        "full": 0.764097,
+        "learned_only": 0.706127,
+        "served_object": 0.77498
       },
       "n_gaps": 2336629,
-      "reason": "headroom -0.020041 <= 0 \u2014 probe excluded, reported (degenerate)",
+      "reason": "headroom -0.026347 <= 0 \u2014 probe excluded, reported (degenerate)",
       "u": {},
       "variance_notes": [],
-      "window": "(2025-01-01T00:00:00, 2025-01-01T00:00:00 + 10332s]"
+      "window": "(2025-01-01T00:00:00, 2025-01-01T00:00:00 + 32877s]"
     },
     "next-type": {
       "classes": [
@@ -299,7 +299,7 @@
     "registry_sha256": "79f9768d51205252",
     "tag": "0.11.0r490759-b64d256e3lr3e-04o4c3b5899"
   },
-  "seconds": 21.0,
+  "seconds": 30.0,
   "u": {
     "learned_only": 1.076935,
     "served_object": 0.975703

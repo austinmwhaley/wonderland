@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "4053d2f98a90e6bc",
+    "behavior_hash": "905b4f88b8dfcd06",
     "command": "measure_stage_decomposition.py",
-    "generated_at": "2026-11-03T05:34:18+00:00",
-    "git_commit": "b40e582a444b80afef8f902438df163ff7725513",
+    "generated_at": "2026-11-03T16:38:25+00:00",
+    "git_commit": "4bb221bde90a859166355e4397651ff09f4fbc26",
     "producer": "measure_stage_decomposition.py"
   },
   "attribution": {
@@ -21,7 +21,7 @@
     "registry_sha256": "79f9768d51205252",
     "tag": "0.11.0r490759-b64d256e3lr3e-04o4c3b5899"
   },
-  "seconds": 6.6,
+  "seconds": 4.4,
   "stages": {
     "M0_exact_counter": {
       "dim": 39,
