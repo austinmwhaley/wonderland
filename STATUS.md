@@ -88,14 +88,28 @@ certification stays on the real stream.
   NO_SIGNAL; ADVERSARIAL beats the 1-gram via the echo while its structure claim is NO_SIGNAL —
   the false-PASS trap is caught. The trunk blob reproduces on known-truth data: the bottleneck
   axis is the trunk, confirming the real-stream O3 diagnosis in minutes.
+- **Dev-rig iteration 2 landed (DEC-577 outcome addendum; DEC-575 candidate 1 as-shipped):
+  NOT MASTERED, branch (iii) taken.** Bilinear `h⊗x` fixed-point ON, everything else
+  byte-identical to iteration 1 (launch receipts verified: `bilinear_recurrence: True`, dim=32,
+  tag renamed `…o67b1bcb7` → `…o2obe1b6690` by the new `|bl` tag axis): g 1.154482 (iteration 1
+  1.14727 — no improvement), does not beat the 1-gram (CI [−0.0160, +0.1132], unchanged),
+  eff_rank 1.473 (iteration 1 1.153 — the one axis that moved, +0.32d, recorded as a deviation
+  from branch (iii)'s literal antecedent). Controls read as designed: NEG NO_SIGNAL ✓, ADV
+  echo-beats-1-gram while structure stays NO_SIGNAL ✓. Candidate 1 as-shipped is negative on the
+  toy for the decisive bars; DEC-575's port protocol does not fire; escalation pre-registered as
+  DEC-578 (candidate 2: looped / weight-tied nonlinear block, its own DEC, its own
+  pre-registration; alternatives — capacity confound dim 32 vs 256, gate tuning, curriculum
+  advance — recorded and barred from this verdict).
 - **Products:** the canonical full-size products are at `/home/austin_whaley/wonderland_work/cfm_v2k`
   (fs_full, tag `…b64…o4c3b5899`, trained under behavior `d0ac576c`); the stale `0f881d99`
-  artifacts are backed up at `cfm_v2k_stale_0f881d99`. Code behavior is now `6a8e2663`
-  (DEC-573: the `resolve_cfm` batch-pinning fix → `d2ad6f60`; autotune defect class 9,
-  heterogeneous numeric JSON fields across customers → `6a8e2663` — inert on the real stream,
-  disclosed in the DEC-573 outcome addendum). cfm_v2k's frozen artifacts are unchanged; its
-  receipts are re-stamped by re-running the fast producers (no retrain) — done under `6a8e2663`
-  for S1–S5, the four judge legs and the three B3 producers; S6/B8.2 awaits the clean-tree run.
+  artifacts are backed up at `cfm_v2k_stale_0f881d99`. Code behavior is now `4053d2f9`
+  (DEC-573: the `resolve_cfm` batch-pinning fix → `d2ad6f60`; autotune defect class 9 →
+  `6a8e2663` — inert on the real stream, disclosed; DEC-577 identity fixes: `bilinear_recurrence`
+  joins the tag signature `|bl` axis and the warm-start architecture comparison → `4053d2f9`).
+  cfm_v2k's frozen artifacts are unchanged; every canonical receipt is re-stamped under
+  `4053d2f9` (S1–S5 + 4 judge legs + 4 B-row producers via the S6 chain in one invocation at
+  commit b40e582, clean tree; S6 all six checks OK; card 12 PASS / 0 FAIL / 11 UNKNOWN, B2+B3
+  sections green, B8.2 PASS — commit 308ed40).
 
 ## Closed front (history; see DECISIONS for the record)
 
@@ -109,40 +123,26 @@ next question is the learned shape, not another consumer tuning pass.
 
 ## Next 3 actions
 
-1. **Close the tree: commit the coherent chunk, then S6/B8.2 on the clean tree.** The chunk:
-   autotune defect class 9 + regression test; O3 attempt 4 outcome addendum (REJECT, no
-   canonical swap, hash move disclosed); DEC-576 dev-rig iteration 1 (next_event not mastered,
-   controls clean); B2 `U` producer `measure_sufficiency_law.py` + first cfm_v2k measurement
-   (served U 0.9757 / learned 1.0769, 1/5 probes included, disclosed) + card wiring (B2 3/3
-   PASS) + 9 synthetic-receipt tests; dev-rig speedometer `lab_measure.py` (sign-convention
-   and adversarial bookkeeping corrected) + iteration-1 receipt; `gpu_watchdog` pattern for
-   the new producer; full cfm_v2k re-stamp under `6a8e2663` (S1–S5, 4 legs, 3 B3 producers —
-   recorded commands, no retrain); O3 diagnostic receipts `o3axis_i/`; card regenerated. Then
-   `measure_certification_law.py` (the one-command card-regeneration check) at the clean
-   commit — S6/B8.2 currently stale at `d0ac576c` — and commit that receipt too.
-2. **DEV-RIG iteration 2 = DEC-575 candidate 1 (the trunk axis): bilinear `h⊗x`
-   iterate-to-convergence scan (DEC-577 pre-registered).** The mechanism already ships in
-   the tree (v7 DEC-041/043: unit-norm tanh gate, iterated affine scans to convergence,
-   cap 8 / tol 1e-4) and has never been enabled in any run — the one-axis diff is
-   `--set bilinear_recurrence=true`. Prep found one identity defect to fix in the same
-   behavior move: `bilinear_recurrence` was absent from the tag signature (same-name
-   two-protocols, the DEC-445 class — cfm_v2k's tag pinned byte-stable by a no-op test)
-   and from the warm-start architecture comparison (silent trunk-algebra mixing — refusal
-   regression-tested both directions). B1 compositionality canary already anticipates the
-   mechanism (the dynamics law derives its merge tolerance from the bilinear fixed-point's
-   own convergence criterion). Train `next_event` N=500 (positive + negative + adversarial,
-   fresh `iter2` out-dirs; iteration 1's products and receipt stay untouched), target:
-   MASTERED (g ≤ 0.5 AND beats the 1-gram, paired CI, AND the eff_rank receipt in hand)
-   with the controls still reading as designed. The hash move folds the full cfm_v2k
-   re-stamp (all recorded producer commands, no retrain) into the same cycle.
-3. **Iteration 3 = `intent` (curriculum step 2), then the port.** Once iteration 2 masters
-   `next_event`, run `intent` sharpening on the same rig; when BOTH are mastered with clean
-   controls, DEC-576's port protocol fires: ONE pre-registered real-data run of the trunk
-   candidate under DEC-575's frozen gates (the four O3 bars + the B1 canary, atop cfm_v2k —
-   O3 was rejected, so the base protocol is cfm_v2k's, one axis: the new state-update algebra).
-   Queue behind it, unchanged: O4 decision law (DEC-574), O5 minimality, B6.3, B7.2, dev-rig
-   iterations 4–6; B+C re-scores only after B is green on the real stream; project v1 third;
-   BACKWARD only at all-green.
+1. **PLAN.md + card alignment (operator request, 2026-11-03).** Write the long-term plan as a
+   backward decomposition: project goal → why → L1 (A/B/C layers) → L2 (B's capability axes,
+   the canonical ladder) → L3 leaves (each = a card row with a frozen gate + receipt + DEC),
+   with "all solved = project solved" spelled out against T0/SOLVED and the v1 definition of
+   done. Align `REPORT_CARD.md` to it: a generated Plan section whose node statuses are DERIVED
+   from the referenced card rows (pure function of spec + receipts, no new gates, no new
+   verdicts). No looking_glass/rabbit_hole touch → no behavior-hash move; the S6 chain
+   re-certifies the new card shape at the clean commit (receipts re-stamp under the same
+   `4053d2f9`).
+2. **DEV-RIG iteration 3 = DEC-575 candidate 2 (pre-register as DEC-578 FIRST).** The looped /
+   weight-tied nonlinear state-update block, on `next_event` N=500, one axis, with its own
+   frozen verdict + a-priori branches (iteration 2's branch (iii) is the standing escalation;
+   the recorded alternatives — dim-256 capacity test on the toy, gate tuning, curriculum
+   advance — stay barred from that verdict).
+3. **Then the curriculum resumes: `intent` (iteration 4), then the port.** When BOTH
+   `next_event` and `intent` are mastered with clean controls, DEC-576's port protocol fires:
+   ONE pre-registered real-data run of the winning trunk candidate under DEC-575's frozen
+   gates (the four O3 bars + the B1 canary, atop cfm_v2k). Queue behind it, unchanged: O4
+   decision law (DEC-574), O5 minimality, B6.3, B7.2, dev-rig iterations 5+; B+C re-scores
+   only after B is green on the real stream; project v1 third; BACKWARD only at all-green.
 
 ## Operating facts
 
@@ -175,3 +175,12 @@ discipline: lab receipts are a development instrument and never flip a B-row ver
 the main card. O3 attempt 4 then LANDED and was REJECTED under its frozen bars (eff_rank
 3.665 < 30; persona 0.046461 < 0.15; R² and stability kept) — no canonical swap, DEC-575
 triggered; the trunk candidate is exercised on the dev rig first (iteration 2).
+
+**Decided 2026-11-03 (late; operator: "give me a review of your work" then "I need to
+understand the long-term plan"):** (a) work review delivered; (b) iteration 2 (DEC-575
+candidate 1 as-shipped, bilinear ON) LANDED NOT MASTERED — branch (iii) taken, candidate 1
+negative on the toy for the decisive bars (g 1.154 ≈ iteration 1's 1.147; 1-gram CI
+unchanged; eff_rank 1.153 → 1.473 recorded; controls clean) — escalation to DEC-578 /
+candidate 2 pre-registered next; (c) PLAN.md requested: the long-term plan as a backward
+decomposition from the project goal, with `REPORT_CARD.md` aligned to it — in flight (next-3
+item 1).

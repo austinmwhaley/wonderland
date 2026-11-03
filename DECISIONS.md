@@ -9362,3 +9362,67 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     minutes loop earns the right to the 3.2 h loop.
   - **Status.** Pre-registered; the identity fixes are implemented and regression-tested;
     iteration 2 trains next (one axis: the trunk algebra, ON).
+  - **Addendum (iteration 2 OUTCOME, landed 2026-11-03): NOT MASTERED — branch (iii) taken,
+    candidate 1 as-shipped is negative on the toy for the decisive bars.** Three N=500 trains
+    (positive / negative / adversarial, `--set bilinear_recurrence=true`, fresh out-dirs
+    `/tmp/opencode/lab/next_event_iter2_{pos,neg,adv}`, `LG_SCAN=eager`, `safe_run`): all
+    RC=0; launch receipts verified before any result was read — `[set] explicit overrides
+    applied: {'bilinear_recurrence': True}` on all three, registries carry
+    `bilinear_recurrence: True` at the autotuned dim=32 (identical to iteration 1's resolved
+    capacity), and the tag moved as the identity fix designed: positive
+    `0.11.0r105842-b8d32e3lr1e-02obe1b6690` vs iteration 1's `…o67b1bcb7` (same data revision
+    r105842, new signature from the `|bl` axis). Frozen verdict, measured by
+    `lab_measure.py` (`docs/report_cards/experiments/lab/next_event_iter2.json`, 0.4 s,
+    n_boot 2000, seed 65537, as-of 2024-09-01):
+    1. **g ≤ 0.5: FAIL — g = 1.154482.** nll enc 1.031158 / base 0.979548 / oracle 0.645459
+       nats. Iteration 1 (affine): g = 1.14727, nll_enc 1.028749 — Δg +0.0072, no improvement
+       (within run-to-run noise).
+    2. **Beats the 1-gram: FAIL — paired CI(enc−base) [−0.0160, +0.1132], straddles 0.**
+       Iteration 1's CI [−0.0162, +0.1103] — effectively unchanged.
+    3. **eff_rank recorded: 1.473** (null-normalized 15.01) — iteration 1's 1.153; Δ +0.320
+       (+28% relative). Recorded, no bar on the toy (the ≥ 30 bar is DEC-575's real-data
+       gate).
+    4. **Controls read as designed (both PASS):** NEGATIVE enc 1.099987 vs base 1.097587 —
+       does not beat the 1-gram, reads NO_SIGNAL (iteration 1: 1.097637); ADVERSARIAL enc
+       0.591512 vs base 1.097587 — the echo lets the head beat the 1-gram while the structure
+       claim stays NO_SIGNAL (structure_carried False; leak_has_teeth True; iteration 1:
+       0.592943). The false-PASS trap is still caught.
+    **Branch taken: (iii), with one recorded deviation from its literal antecedent.** The
+    a-priori branches were: (i) mastered → `intent` before port; (ii) g improves but > 0.5 →
+    record delta, snr 0.5 step; (iii) no change in eff_rank or g → candidate-1-negative on
+    the toy, escalate to DEC-575 candidate 2 under its own DEC. The observation is: g did
+    NOT improve (branch ii's antecedent unmet) and eff_rank DID move +0.32d (branch iii's
+    antecedent, read as "neither moved", only met on g). The decisive frozen criteria
+    (g-bar + 1-gram bar) are unmet exactly as in iteration 1, so the observation falls on
+    branch (iii)'s side of the a-priori split: **candidate 1 as-shipped is negative on the
+    toy** — the bilinear fixed-point (dim=32, beta-init 0.3, unit-norm tanh gate, cap 8 /
+    tol 1e-4, N=500, governed budget) added state population without carrying the
+    3-type transition structure into predictive power. The eff_rank delta is recorded here
+    (branch ii's "record the delta" discipline applied to the one axis that moved) rather
+    than treated as grounds for the snr step, which branch (ii) reserved for a g
+    improvement that did not occur. No bar, threshold or branch was edited after seeing
+    results; the verdict used exactly the frozen criteria.
+    **Yardstick note of record (prevents a later reader's false contradiction).** The
+    portfolio receipt's ABS block reads model 1.0094 vs unigram 1.0337 (`beats_unigram=True`)
+    vs gram1 0.9462 (`beats_gram1=False`). That is a different, unpaired yardstick with a
+    different baseline family (unigram vs the fixture's Laplace+1 1-gram). The frozen
+    speedometer for the mastered call is `lab_measure`'s paired CI against the fixture
+    1-gram, which is False. No conflict; both are receipts of their own contracts.
+    **Attribution (recorded, per the DEC-576 loop↔axis contract).** At the autotuned
+    dim=32 the as-shipped candidate 1 lifts trunk eff-rank 1.153 → 1.473 (~10% of the
+    null's 15.01) while next-type predictive performance against the strong toy baseline is
+    unchanged. The trunk axis is confirmed as the bottleneck; candidate 1 as-shipped does
+    not close it on this shape at this capacity. **Consequences.** (a) DEC-575's port
+    protocol does NOT fire (needs next_event + intent both mastered with clean controls).
+    (b) No real-data retrain is warranted; cfm_v2k stays canonical; no B-row verdict moved
+    (lab receipts are a development instrument — DEC-576 discipline). (c) The escalation
+    pre-registered in this DEC: **DEC-575 candidate 2 (looped / weight-tied nonlinear
+    block) gets its own DEC (DEC-578) and its own pre-registration** before dev-rig
+    iteration 3 on `next_event`. Alternatives recorded for DEC-578 to consider, none taken
+    here: (i) capacity confound — the toy autotunes dim=32 while the §4.3 spike that
+    measured ×1.79 transferable rank ran at the real-stream shape (dim 256); testing
+    candidate 1 at dim=256 on the toy is a two-axis change (trunk + capacity), barred by
+    one-axis discipline; (ii) tuning the as-shipped gate (beta init, cap/tol) — explicitly
+    rejected in this DEC's pre-registration; (iii) advancing the curriculum to `intent` or
+    stepping snr down — barred: `next_event` is not mastered at snr=1.0, so neither the
+    next curriculum structure nor a harder snr variant is earned.
