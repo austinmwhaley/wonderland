@@ -28,10 +28,12 @@ import plan_spec as P  # noqa: E402
 LEAF_NAME = {r.ident: r.name for r in B.ROWS}
 LEAF_GATE = {r.ident: r.gate for r in B.ROWS}
 LEAF_PRODUCER = {r.ident: r.producer for r in B.ROWS}
+LEAF_KIND = {r.ident: r.gate_kind for r in B.ROWS}
 for _r in J.LEG_ROWS:
     LEAF_NAME[_r.ident] = _r.name
     LEAF_GATE[_r.ident] = _r.gate
     LEAF_PRODUCER[_r.ident] = _r.source
+    LEAF_KIND[_r.ident] = "quality"  # a paired CI vs PATH A with controls is a level, not a report
 
 
 def _solved_when(n: P.Node) -> str:
@@ -123,14 +125,14 @@ def render_plan() -> str:
         *_tree("G"),
         "## 3. The measured leaves — what evidence closes each one",
         "",
-        "| Leaf | Property | Frozen gate | Producer / source |",
-        "|---|---|---|---|",
+        "| Leaf | Property | Frozen gate | Green means | Producer / source |",
+        "|---|---|---|---|---|",
     ]
     for n in P.NODES:
         for leaf in n.leaves:
             lines.append(
                 f"| `{leaf}` | {LEAF_NAME.get(leaf, '?')} | {LEAF_GATE.get(leaf, '?')} | "
-                f"{LEAF_PRODUCER.get(leaf, '?')} |"
+                f"{LEAF_KIND.get(leaf, '?')} | {LEAF_PRODUCER.get(leaf, '?')} |"
             )
     lines += [
         "",
@@ -169,24 +171,52 @@ def render_plan() -> str:
         "are separate leaves. The card renders `SOLVED` only when its generated root status is",
         "PASS — which cannot happen while a leaf in this tree is unmeasured.",
         "",
-        "## 5. The current frontier",
+        "## 5. The route — the order the evidence is earned",
+        "",
+        "The tree says what must be true; the route says in what order it is earned. It is a",
+        "pointer list, not a second scorecard: no step carries a verdict, and the card never",
+        "computes one. Moving the pointer is a reviewed spec edit like any other.",
+        "",
+        "| Step | What is earned | Advances | Evidence that closes it |",
+        "|---|---|---|---|",
+    ]
+    for s in P.ROUTE:
+        mark = " ← now" if s.ident == P.CURRENT_ROUTE else ""
+        lines.append(f"| **{s.ident}{mark}** | {s.title} | {s.advances} | {s.evidence} |")
+    lines += [
+        "",
+        "The order is forced by dependency and by cost: the dev rig is minutes and earns the",
+        "right to the real-data port; the port closes E1; only then can the remaining B rows be",
+        "read as evidence about a working trunk; only then is a B+C re-score diagnostic rather",
+        "than a measurement of the blob.",
+        "",
+        "## 6. The current frontier",
         "",
         P.FRONTIER_NOTE,
         "",
         "**Why the card can read green while the encoder is not mastered — read this before",
-        "trusting a green row.** Several B gates certify *measurement and attribution*, not a",
-        "quality level: B3.2's gate is `attribution recorded`, B3.4/B3.5/B3.6's is `complete`,",
-        "B1.1/B3.1/B6.1/B8.2 are `working=True`. Those rows prove the pipeline was measured and",
-        "the loss was localized; they do not prove the embedding is good. The quality levels",
-        "for those axes are the DEC-frozen bars (U >= 0.5 in DEC-570; eff_rank >= 30 and",
-        "persona >= 0.15 in DEC-572; on the dev rig g <= 0.5 and beating the 1-gram in",
-        "DEC-576/577), and the measured values are in the receipts, not in this plan.",
+        "trusting a green row.** The plan labels every leaf with what its green PROVES",
+        "(`scripts/b_spec.py: gate_kind`, derived from the frozen gate's kind, never asserted):",
+        "",
+    ]
+    reporting = [leaf for n in P.NODES for leaf in n.leaves if LEAF_KIND.get(leaf) == "reporting"]
+    lines += [
+        "- **reporting** — green certifies that the measurement happened and was attributed: "
+        + ", ".join(f"`{x}`" for x in reporting)
+        + ".",
+        "- **quality** — green certifies a level against a frozen bar or comparator (the remaining"
+        " leaves).",
+        "",
+        "The quality levels for the reporting-gated axes are the DEC-frozen bars (U >= 0.5 in",
+        "DEC-570; eff_rank >= 30 and persona >= 0.15 in DEC-572; on the dev rig g <= 0.5 and",
+        "beating the 1-gram in DEC-576/577), and the measured values are in the receipts, not in",
+        "this plan.",
         "",
         "That is exactly why the trunk is a node (E1) and not a footnote: a blob can satisfy",
         "every reporting gate while failing the quality bars, and the plan must show the",
         "difference instead of letting a green card imply more than it proved.",
         "",
-        "## 6. The method contract — how work is allowed to move the tree",
+        "## 7. The method contract — how work is allowed to move the tree",
         "",
         "1. **One axis per iteration**, pre-registered in `DECISIONS.md` before the run",
         "   (gate, bars, a-priori branches). No post-hoc bar edits in any branch.",
@@ -201,7 +231,7 @@ def render_plan() -> str:
         "5. **The frontier is chosen by the tree, not by convenience**: the open node closest to",
         "   the goal whose blocker is measured — cheapest experiment first.",
         "",
-        "## 7. Provenance and the one-source rule",
+        "## 8. Provenance and the one-source rule",
         "",
         "```text",
         "scripts/plan_spec.py ──> scripts/plan.py ──> PLAN.md            (structure only)",

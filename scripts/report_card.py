@@ -100,6 +100,50 @@ def load(receipts: Path, name: str):
         return {"_load_error": repr(exc)}
 
 
+def _frontier_readings(receipts: Path, current_hash: str) -> list[str]:
+    """E1's measured values, read from committed dev/port receipts.
+
+    Reported, never gated: the bars printed beside them are DEC-frozen, and a reading measured
+    under another behavior says so. This is the trunk's only appearance on the card, because the
+    trunk has no frozen row (plan_spec E1) — and a blob must be visible, not inferred.
+    """
+
+    def stamp(rc) -> str:
+        h = str(((rc or {}).get("_meta") or {}).get("behavior_hash") or "")
+        if not h:
+            return " · unstamped"
+        return "" if h == current_hash else f" · measured under `{h[:8]}`"
+
+    out: list[str] = []
+    for name, label in (
+        ("lab/next_event_iter1.json", "dev rig · next_event iter1"),
+        ("lab/next_event_iter2.json", "dev rig · next_event iter2"),
+    ):
+        rc = load(receipts, name)
+        pos = (rc.get("positive") or {}) if isinstance(rc, dict) else {}
+        g = pos.get("g")
+        if not _finite(g):
+            continue
+        out.append(
+            f"- **{label}** — g {_num(g)} (bar ≤ 0.5, DEC-576/577) · "
+            f"eff_rank {_num(pos.get('eff_rank'))} · beats 1-gram: "
+            f"{'yes' if pos.get('beats_base') else 'no'} — `{name}`{stamp(rc)}"
+        )
+    sd = load(receipts, "o3axis_i/stage_decomposition.json")
+    bs = load(receipts, "o3axis_i/block_serving.json")
+    persona = (((sd or {}).get("stages") or {}).get("M4_served") or {}).get("persona_geometry")
+    r2 = ((((bs or {}).get("linear_access") or {}).get("arms") or {}).get("served") or {}).get(
+        "mean_r2"
+    )
+    if _finite(persona) or _finite(r2):
+        out.append(
+            f"- **real stream · O3 attempt 4 (REJECTED)** — M4 persona {_num(persona)} "
+            f"(bar ≥ 0.15, DEC-572) · served coarse R² {_num(r2)} (bar ≥ 0.45) — "
+            f"`o3axis_i/`{stamp(sd)}"
+        )
+    return out
+
+
 # --------------------------------------------------------------------------- evaluation
 
 
@@ -855,8 +899,8 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
             "",
             f"*{sec.question}*",
             "",
-            "| # | Property | Metric | Verdict | Evidence / missing producer |",
-            "|---|---|---|---|---|",
+            "| # | Property | Metric | Green means | Verdict | Evidence / missing producer |",
+            "|---|---|---|---|---|---|",
         ]
         for row in rows:
             verdict, why = evals[row.ident]
@@ -870,36 +914,18 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
                 if row.kind in ("missing", "legacy") or why.startswith("missing"):
                     b_summary["missing"] += 1
             if verdict in (J.UNKNOWN, J.FAIL):
-                blocked.append(f"B {row.ident} {row.name} — {why}")
+                blocked.append(
+                    f"B {row.ident} [{P.problem_of(row.ident)}·{P.owner(row.ident)}] "
+                    f"{row.name} — {why}"
+                )
             b_lines.append(
-                f"| {row.ident} | {row.name} | {row.metric} | {_badge(verdict)} | {why} |"
+                f"| {row.ident} | {row.name} | {row.metric} | {row.gate_kind} | "
+                f"{_badge(verdict)} | {why} |"
             )
         b_lines.append("")
-    # ---- B capability top line (O8 sprint; DEC-568/D2) -------------------------
-    # The sprint's unit of progress is one capability delta on these axes. Each axis is the
-    # WORST verdict of the B rows that own it, so the top line is a pure function of the rows
-    # below it: it can never say "done" while a detail row is red, and it cannot be narrated
-    # green. B+C stays a consequence section — reported, never gated here.
-    cap_lines = [
-        "| Capability | B rows | Verdict | Headline |",
-        "|---|---|---|---|",
-    ]
-    cap_verdicts: dict[str, str] = {}
-    for axis, idents in B.CAPABILITY_AXES:
-        vs = [b_evals.get(i, (J.UNKNOWN, ""))[0] for i in idents]
-        if J.FAIL in vs:
-            axis_v = J.FAIL
-        elif all(v == J.PASS for v in vs):
-            axis_v = J.PASS
-        else:
-            axis_v = J.UNKNOWN
-        cap_verdicts[axis] = axis_v
-        head = str(b_evals.get(idents[0], (J.UNKNOWN, "no B row evaluated"))[1])
-        if len(head) > 120:  # the headline is a pointer, not a quote: cut at a word boundary
-            cut = head[:120]
-            head = cut[: cut.rfind(" ")].rstrip(",;:") + " …" if cut.rfind(" ") > 0 else cut
-        cap_lines.append(f"| {axis} | {', '.join(idents)} | {_badge(axis_v)} | {head} |")
-    cap_verdicts_all = all(v == J.PASS for v in cap_verdicts.values())
+    # The sprint's capability-axis view (b_spec.CAPABILITY_AXES) was retired by DEC-579: the plan
+    # tree is the one top line and owns the same rows plus E1 and the v1 scope. Keeping a second
+    # axis definition invited the two to disagree, which is the duplication principle 6 forbids.
 
     b_green_n = sum(1 for v in b_sections.values() if v == J.PASS)
     b_all_green = b_green_n == len(B.SECTIONS)
@@ -931,17 +957,6 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
             "Reported for diagnosis; downstream of B."
         )
     p_scope = "⚪ **Project v1:** not assessed on this card (full stack is a separate scope)."
-    assessment_lines = [b_scope, c_scope, p_scope]
-    assessment = " | ".join(
-        line.replace("**", "").replace("✅ ", "").replace("❌ ", "").replace("⚪ ", "")
-        for line in assessment_lines
-    )
-    summary["b"] = dict(
-        b_summary,
-        sections_green=b_green_n,
-        sections_total=len(B.SECTIONS),
-        all_green=b_all_green,
-    )
 
     # ---- the plan: the SAME tree, with verdicts attached (PLAN.md -> REPORT_CARD) -----------
     # The decomposition is defined once in plan_spec; this section is the measurement surface
@@ -953,11 +968,36 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
     plan_green = sum(1 for n in P.NODES for leaf in n.leaves if plan_verdicts.get(leaf) == J.PASS)
     plan_fail = sum(1 for n in P.NODES for leaf in n.leaves if plan_verdicts.get(leaf) == J.FAIL)
     root_v = plan_verdicts.get("G", J.UNKNOWN)
-    root_word = {
-        J.PASS: "✅ SOLVED",
-        J.FAIL: "❌ FAILED",
-        J.UNKNOWN: "❔ OPEN",
-    }[root_v]
+    root_emoji = {J.PASS: "✅", J.FAIL: "❌", J.UNKNOWN: "⚪"}[root_v]
+    root_word = {J.PASS: "SOLVED", J.FAIL: "FAILED", J.UNKNOWN: "OPEN"}[root_v]
+    red_by_problem: dict[str, int] = {}
+    for n in P.NODES:
+        for leaf in n.leaves:
+            if plan_verdicts.get(leaf) == J.FAIL:
+                pr = P.problem_of(leaf)
+                red_by_problem[pr] = red_by_problem.get(pr, 0) + 1
+    reds_txt = (
+        " · reds: " + ", ".join(f"{k} ({v})" for k, v in sorted(red_by_problem.items()))
+        if red_by_problem
+        else ""
+    )
+    plan_scope = (
+        f"{root_emoji} **Plan root:** {root_word} — {plan_green}/{census['card_leaves']} "
+        f"measured leaves green · {plan_fail} FAIL · {census['dec_leaves']} DEC-frozen · "
+        f"{census['v1_leaves']} v1 unassessed{reds_txt}."
+    )
+    assessment_lines = [plan_scope, b_scope, c_scope, p_scope]
+    assessment = " | ".join(
+        line.replace("**", "").replace("✅ ", "").replace("❌ ", "").replace("⚪ ", "")
+        for line in assessment_lines
+    )
+    summary["b"] = dict(
+        b_summary,
+        sections_green=b_green_n,
+        sections_total=len(B.SECTIONS),
+        all_green=b_all_green,
+    )
+
     plan_lines = [
         "## The plan — the tree this card measures (PLAN.md)",
         "",
@@ -966,9 +1006,9 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
         "is its readable render. The plan defines no gate: every measured leaf is a frozen row "
         "below, and a node's verdict is the worst of its children.",
         "",
-        f"**Plan root:** {root_word} — {plan_green}/{census['card_leaves']} measured leaves "
-        f"green · {plan_fail} FAIL · {census['dec_leaves']} DEC-frozen leaf (no card row) · "
-        f"{census['v1_leaves']} v1 leaves not assessed on this card.",
+        f"**Plan root:** {root_emoji} {root_word} — {plan_green}/{census['card_leaves']} "
+        f"measured leaves green · {plan_fail} FAIL · {census['dec_leaves']} DEC-frozen leaf "
+        f"(no card row) · {census['v1_leaves']} v1 leaves not assessed on this card.",
         "",
         "| Level | Node | What must be true | Leaves | Verdict |",
         "|---|---|---|---|---|",
@@ -995,10 +1035,20 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
         "",
         f"*Frontier:* {P.FRONTIER_NOTE}",
         "",
-        "A green leaf means its frozen gate is met — for several rows that gate certifies "
-        "*measurement and attribution*, not a quality level; the quality bars are DEC-frozen and "
-        "live in the receipts (`PLAN.md` §5 says which rows this applies to). Read the plan "
-        "before reading a green row as 'good'.",
+        "**Frontier readings (reported, not gated — the evidence behind E1's FRONTIER badge):**",
+        "",
+    ]
+    readings = _frontier_readings(receipts, current_hash)
+    plan_lines += readings or ["- no frontier receipt present"]
+    reporting_leaves = [r.ident for r in B.ROWS if r.gate_kind == "reporting"]
+    plan_lines += [
+        "",
+        "A green leaf means its frozen gate is met. For these leaves the gate certifies "
+        "*measurement and attribution*, not a quality level (derived in `scripts/b_spec.py: "
+        "gate_kind`, not asserted here): "
+        + ", ".join(f"`{x}`" for x in reporting_leaves)
+        + ". Their quality levels are DEC-frozen and live in the receipts (`PLAN.md` §6). Read "
+        "the plan before reading a green row as 'good'.",
         "",
     ]
     plan_summary = {
@@ -1028,14 +1078,6 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
             "Ledger points never count as progress: `brain alone` is the judge, `brain + ledger` is delivery.",
             "",
             *plan_lines,
-            "## B capability — top line (O8 sprint; DEC-568/D2)",
-            "",
-            "The sprint's unit of progress is one capability delta on these axes. Each axis is the "
-            "worst verdict of the B rows that own it, computed from the receipts below — B+C "
-            "remains the reported consequence section, never a top-line axis.",
-            "",
-            *cap_lines,
-            "",
             "## B — foundational scorecard (B-only, DEC-562)",
             "",
             "The judge below is the **consequence** (B+C). This section is **B itself**: a row is "
@@ -1094,8 +1136,6 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
         "verdicts": verdicts,
         "b_verdicts": b_verdicts,
         "b_sections": b_sections,
-        "cap_verdicts": cap_verdicts,
-        "cap_all_green": cap_verdicts_all,
         "plan": plan_summary,
     }
 

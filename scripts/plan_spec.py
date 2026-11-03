@@ -345,6 +345,87 @@ FRONTIER_NOTE = (
 )
 
 
+@dataclass(frozen=True)
+class RouteStep:
+    """One step of the ROUTE — the ordered walk through the tree, distinct from the tree itself.
+
+    The tree says what must be true; the route says in what order the evidence is earned. A step
+    names the node it advances and the evidence that closes it. Steps are pointers, not verdicts:
+    the card never computes a step's status, and moving the pointer is a spec edit reviewed like
+    any other.
+    """
+
+    ident: str
+    title: str
+    advances: str  # node id(s), comma-separated
+    evidence: str
+
+
+#: The route from today to solved. Ordered by dependency, cheapest-first inside the dev rig.
+ROUTE: tuple[RouteStep, ...] = (
+    RouteStep(
+        "R1",
+        "Dev rig: master next_event (N=500, known truth)",
+        "E1",
+        "lab receipts + the DEC-578 run (candidate 2), controls clean; never a B-row verdict",
+    ),
+    RouteStep(
+        "R2",
+        "Dev rig: master intent (curriculum step 2)",
+        "E1",
+        "lab receipts + the intent iteration's pre-registration; both structures clean",
+    ),
+    RouteStep(
+        "R3",
+        "Port: ONE real-data run of the winning trunk under DEC-572's bars",
+        "E1",
+        "a pre-registered port receipt: eff_rank>=30, persona>=0.15, R2>=0.45, stable + B1 canary",
+    ),
+    RouteStep(
+        "R4",
+        "Real stream: fill the remaining B rows with their producers",
+        "P1, P2, P3",
+        "B1.2, B4.1-B4.3, B5.1-B5.2, B6.2-B6.3, B7.1-B7.2, B8.1 at the current behavior",
+    ),
+    RouteStep(
+        "R5",
+        "Real stream: re-score the four judge legs (brain and brain+ledger)",
+        "P4",
+        "judge_leg_*.json at the current behavior, both columns, controls readable",
+    ),
+    RouteStep(
+        "R6",
+        "Stack: build and certify v1 (identifiable stream, plugins, red_king, red_queen, "
+        "caterpillar)",
+        "P5",
+        "each v1 gate on the stack's own card rows / receipts",
+    ),
+    RouteStep(
+        "R7",
+        "BACKWARD: adversarial review with no BREAKING findings",
+        "G",
+        "AUDIT.md requirements closed",
+    ),
+)
+
+#: Which route step the work is on now (a pointer; keep it honest when the frontier moves).
+CURRENT_ROUTE = "R1"
+
+
+def owner(leaf: str) -> str:
+    """The section/leg node a frozen row hangs under ('' if the row is not in the tree)."""
+    for n in NODES:
+        if leaf in n.leaves:
+            return n.ident
+    return ""
+
+
+def problem_of(leaf: str) -> str:
+    """The level-1 problem a frozen row ultimately serves ('' if unknown)."""
+    o = owner(leaf)
+    return BY_ID[o].parent if o and BY_ID[o].parent else ""
+
+
 # --------------------------------------------------------------------- structure integrity
 
 

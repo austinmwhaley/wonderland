@@ -80,21 +80,48 @@ class BRow:
     thresh: float = 0.0
     producer: str = ""
 
+    @property
+    def gate_kind(self) -> str:
+        """quality | reporting | unmeasured (DEC-579) — what a green on this row proves."""
+        return gate_kind(self.kind)
+
 
 #: The B capability top line (O8 sprint; DEC-568/D2): one axis per capability, each derived from
 #: the B rows that own it. The card renders the axis verdict as the WORST of its rows (FAIL if
 #: any row FAILs, PASS only when every row PASSes, else UNKNOWN), so the top line can never say
 #: "done" while a detail row is red, and can never be improved by narration. B+C stays a reported
 #: consequence section, never a top-line axis.
-CAPABILITY_AXES = (
-    ("U · sufficiency", ("B2.1",)),
-    ("shape-only geometry", ("B3.2",)),
-    ("decision-shape", ("B4.1",)),
-    ("minimality rank", ("B5.1",)),
-    ("transfer", ("B6.1", "B6.3")),
-    ("robust", ("B7.1", "B7.2")),
-    ("reproducible", ("B8.1", "B8.2")),
+#:
+#: RETIRED by DEC-579: the card's top line is now the PLAN tree (plan_spec), which owns the same
+#: rows plus the DEC-frozen trunk node and the v1 scope. One axis definition, not two.
+
+#: What a green row PROVES. Derived from the frozen gate's kind, so the distinction is mechanical
+#: and cannot drift from the rows (DEC-579). "reporting" gates certify that a measurement happened
+#: and was attributed (`working=True`, `complete`, `attribution recorded`, `present`); "quality"
+#: gates certify a level against a frozen bar or comparator. A reader must not mistake the first
+#: for the second — that is exactly how a blob can render PASS.
+REPORTING_GATE_KINDS = frozenset(
+    {
+        "stage",
+        "stage_decomposition",
+        "block_serving",
+        "equal_dimension",
+        "served_object",
+        "sufficiency_attribution",
+        "bool",
+        "present",
+    }
 )
+UNMEASURED_GATE_KINDS = frozenset({"missing", "legacy"})
+
+
+def gate_kind(kind: str) -> str:
+    """quality | reporting | unmeasured — a label on what PASS means, never a new gate."""
+    if kind in UNMEASURED_GATE_KINDS:
+        return "unmeasured"
+    if kind in REPORTING_GATE_KINDS:
+        return "reporting"
+    return "quality"
 
 
 SECTIONS = (

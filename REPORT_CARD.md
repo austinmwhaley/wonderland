@@ -1,9 +1,10 @@
 # REPORT_CARD — B foundational, then PATH B > PATH A
 
-*Generated `2026-11-03T14:51:26+00:00` · commit `118684a` (`foundation-rebuild` · clean) · encoder behavior `4053d2f98a90e6bc`*
+*Generated `2026-11-03T15:10:55+00:00` · commit `dc56d08` (`foundation-rebuild` · dirty) · encoder behavior `4053d2f98a90e6bc`*
 
 **Assessment:**
 
+- ❌ **Plan root:** FAILED — 14/31 measured leaves green · 6 FAIL · 1 DEC-frozen · 5 v1 unassessed · reds: P4 (6).
 - ❌ **B foundational:** NOT CERTIFIED — the current gate. 2/8 sections green · 12 rows PASS · 0 FAIL · 11 UNKNOWN/MISSING.
 - ❌ **B+C consequence:** NOT DONE — 2/8 legs green · stages 6/6 · backward open: 0. Reported for diagnosis; downstream of B.
 - ⚪ **Project v1:** not assessed on this card (full stack is a separate scope).
@@ -46,21 +47,13 @@ The goal, cut backwards into the problems that must all be solved. This section 
 
 *Frontier:* The live frontier is P2's enabler E1 (the trunk's state-update algebra). O3 attempt 4 was rejected on its frozen bars and the dev rig reproduced the blob in minutes; DEC-575 candidate 1 as shipped was negative on the toy (DEC-577 outcome). The next move is DEC-578 (candidate 2: looped / weight-tied nonlinear block) on the dev rig, then the curriculum (intent), then ONE pre-registered port run under DEC-572's bars. No lab receipt flips a B-row verdict.
 
-A green leaf means its frozen gate is met — for several rows that gate certifies *measurement and attribution*, not a quality level; the quality bars are DEC-frozen and live in the receipts (`PLAN.md` §5 says which rows this applies to). Read the plan before reading a green row as 'good'.
+**Frontier readings (reported, not gated — the evidence behind E1's FRONTIER badge):**
 
-## B capability — top line (O8 sprint; DEC-568/D2)
+- **dev rig · next_event iter1** — g 1.147 (bar ≤ 0.5, DEC-576/577) · eff_rank 1.153 · beats 1-gram: no — `lab/next_event_iter1.json` · measured under `6a8e2663`
+- **dev rig · next_event iter2** — g 1.154 (bar ≤ 0.5, DEC-576/577) · eff_rank 1.473 · beats 1-gram: no — `lab/next_event_iter2.json`
+- **real stream · O3 attempt 4 (REJECTED)** — M4 persona 0.04646 (bar ≥ 0.15, DEC-572) · served coarse R² 0.4675 (bar ≥ 0.45) — `o3axis_i/` · measured under `6a8e2663`
 
-The sprint's unit of progress is one capability delta on these axes. Each axis is the worst verdict of the B rows that own it, computed from the receipts below — B+C remains the reported consequence section, never a top-line axis.
-
-| Capability | B rows | Verdict | Headline |
-|---|---|---|---|
-| U · sufficiency | B2.1 | ✅ PASS | served U 0.9757 (bar 0.5, DEC-570) · worst probe next-type · 1/5 probes included · excluded: attr-next, dt … |
-| shape-only geometry | B3.2 | ✅ PASS | complete · persona M0 0.1893 → M1 0.06572 → served 0.06596 · future M0 0.1727 → M1 0.09323 → served 0.09095 · largest … |
-| decision-shape | B4.1 | ❔ UNKNOWN | missing producer: measure_decision_law.py |
-| minimality rank | B5.1 | ❔ UNKNOWN | missing producer: measure_minimality_law.py |
-| transfer | B6.1, B6.3 | ❔ UNKNOWN | judge_stages.json:S5 working=True |
-| robust | B7.1, B7.2 | ❔ UNKNOWN | legacy receipt encoder_b_props.json (no behavior stamp); re-run the legacy calibration producer |
-| reproducible | B8.1, B8.2 | ❔ UNKNOWN | legacy receipt encoder_b_props.json (no behavior stamp); re-run the legacy artifact producer |
+A green leaf means its frozen gate is met. For these leaves the gate certifies *measurement and attribution*, not a quality level (derived in `scripts/b_spec.py: gate_kind`, not asserted here): `B1.1`, `B2.3`, `B3.1`, `B3.2`, `B3.4`, `B3.5`, `B3.6`, `B6.1`, `B8.2`. Their quality levels are DEC-frozen and live in the receipts (`PLAN.md` §6). Read the plan before reading a green row as 'good'.
 
 ## B — foundational scorecard (B-only, DEC-562)
 
@@ -70,80 +63,80 @@ The judge below is the **consequence** (B+C). This section is **B itself**: a ro
 
 *Is the state built from the right algebra?*
 
-| # | Property | Metric | Verdict | Evidence / missing producer |
-|---|---|---|---|---|
-| B1.1 | Lawful dynamics (S3) | merge/equivariance/mass-additivity exact on data; tau receipted; stable from step 0 | ✅ PASS | judge_stages.json:S3 working=True |
-| B1.2 | Construction laws (C1-C6) | scan / field-permutation / mass / determinism / schema variant / frozen hash | ❔ UNKNOWN | legacy receipt encoder_lawfulness.json (no behavior stamp); re-run the legacy encoder-construction producer |
+| # | Property | Metric | Green means | Verdict | Evidence / missing producer |
+|---|---|---|---|---|---|
+| B1.1 | Lawful dynamics (S3) | merge/equivariance/mass-additivity exact on data; tau receipted; stable from step 0 | reporting | ✅ PASS | judge_stages.json:S3 working=True |
+| B1.2 | Construction laws (C1-C6) | scan / field-permutation / mass / determinism / schema variant / frozen hash | unmeasured | ❔ UNKNOWN | legacy receipt encoder_lawfulness.json (no behavior stamp); re-run the legacy encoder-construction producer |
 
 ### B2 — Sufficient · ✅ PASS
 
 *Does B lose nothing about the future?*
 
-| # | Property | Metric | Verdict | Evidence / missing producer |
-|---|---|---|---|---|
-| B2.1 | Worst-case sufficiency U | U = 1 - worst-case oracle gap vs full history, fixed capacity, broad published family | ✅ PASS | served U 0.9757 (bar 0.5, DEC-570) · worst probe next-type · 1/5 probes included · excluded: attr-next, dt, horizon-count-value, numeric-next |
-| B2.2 | Full-history oracle gap | excess loss of E vs the full-history arm at fixed capacity, per included probe | ✅ PASS | every included probe clears the bar · next-type 0.9757 |
-| B2.3 | Learned-only attribution | sufficiency of the learned shape vs the served statistics, reported separately | ✅ PASS | learned-only U 1.0769 · worst probe next-type · learned shape carries (the ledger does not add) |
+| # | Property | Metric | Green means | Verdict | Evidence / missing producer |
+|---|---|---|---|---|---|
+| B2.1 | Worst-case sufficiency U | U = 1 - worst-case oracle gap vs full history, fixed capacity, broad published family | quality | ✅ PASS | served U 0.9757 (bar 0.5, DEC-570) · worst probe next-type · 1/5 probes included · excluded: attr-next, dt, horizon-count-value, numeric-next |
+| B2.2 | Full-history oracle gap | excess loss of E vs the full-history arm at fixed capacity, per included probe | quality | ✅ PASS | every included probe clears the bar · next-type 0.9757 |
+| B2.3 | Learned-only attribution | sufficiency of the learned shape vs the served statistics, reported separately | reporting | ✅ PASS | learned-only U 1.0769 · worst probe next-type · learned shape carries (the ledger does not add) |
 
 ### B3 — Accessible · ✅ PASS
 
 *Can simple heads read what is there, at every stage?*
 
-| # | Property | Metric | Verdict | Evidence / missing producer |
-|---|---|---|---|---|
-| B3.1 | Outlet accessibility (S4) | per-bucket accessibility parity + per-bucket negative controls | ✅ PASS | judge_stages.json:S4 working=True |
-| B3.2 | Stage decomposition M0->M1->served | the fine-structure metric at each stage, so a loss is attributed to a stage | ✅ PASS | complete · persona M0 0.1893 → M1 0.06572 → served 0.06596 · future M0 0.1727 → M1 0.09323 → served 0.09095 · largest drop M0_exact_counter->M1_fold_only · M3/M4 0.9981 |
-| B3.3 | Linear accessibility (current) | mean ridge R2 on A->B over the lab's persona+future fields; served vs PATH A | ✅ PASS | served 0.4677 vs PATH A 0.4126 (delta +0.0551, margin -0.01; n_fields 11) |
-| B3.4 | Block-aware serving geometry | exact counter block beside the learned shape, equal total variance; persona/future/ARI | ✅ PASS | complete · persona served 0.06596 / counter 0.1893 / block 0.09592 / PATH A 0.3867 · future served 0.09095 / counter 0.1727 / block 0.1169 / PATH A 0.181 · counter-weight sensitivity flat (block scale erased by per-dim z-score; dimension count is the lever) |
-| B3.5 | Equal-dimension serving geometry | shape PCA + counter tile at 128/128 and 39/39; persona/future/ARI at full size | ✅ PASS | complete · persona equal_39 0.1721 / equal_128 0.1361 / counter 0.1893 / shape_pca_39 0.08139 / PATH A 0.3867 · future equal_39 0.144 / equal_128 0.1174 / counter 0.1727 / PATH A 0.181 |
-| B3.6 | Served-object X-ray (ledger exposure) | the ledger alone, its named parts, and ledger block-PCA under the frozen B3.2/B3.4 consumers, against {exact counter, served shape, PATH A}; the branch is computed here from the arm numbers (DEC-569) | ✅ PASS | complete · branch exposure (DEC-569: best ledger arm persona 0.3196 from part_numeric_stats; full 0.01722 / pca_39 0.2012 / pca_128 0.1036) · references persona counter 0.1893 / shape 0.06596 / PATH A 0.3867 · linear access ledger_full 0.3551 / counter 0.3937 / shape 0.4677 / PATH A 0.4126 |
+| # | Property | Metric | Green means | Verdict | Evidence / missing producer |
+|---|---|---|---|---|---|
+| B3.1 | Outlet accessibility (S4) | per-bucket accessibility parity + per-bucket negative controls | reporting | ✅ PASS | judge_stages.json:S4 working=True |
+| B3.2 | Stage decomposition M0->M1->served | the fine-structure metric at each stage, so a loss is attributed to a stage | reporting | ✅ PASS | complete · persona M0 0.1893 → M1 0.06572 → served 0.06596 · future M0 0.1727 → M1 0.09323 → served 0.09095 · largest drop M0_exact_counter->M1_fold_only · M3/M4 0.9981 |
+| B3.3 | Linear accessibility (current) | mean ridge R2 on A->B over the lab's persona+future fields; served vs PATH A | quality | ✅ PASS | served 0.4677 vs PATH A 0.4126 (delta +0.0551, margin -0.01; n_fields 11) |
+| B3.4 | Block-aware serving geometry | exact counter block beside the learned shape, equal total variance; persona/future/ARI | reporting | ✅ PASS | complete · persona served 0.06596 / counter 0.1893 / block 0.09592 / PATH A 0.3867 · future served 0.09095 / counter 0.1727 / block 0.1169 / PATH A 0.181 · counter-weight sensitivity flat (block scale erased by per-dim z-score; dimension count is the lever) |
+| B3.5 | Equal-dimension serving geometry | shape PCA + counter tile at 128/128 and 39/39; persona/future/ARI at full size | reporting | ✅ PASS | complete · persona equal_39 0.1721 / equal_128 0.1361 / counter 0.1893 / shape_pca_39 0.08139 / PATH A 0.3867 · future equal_39 0.144 / equal_128 0.1174 / counter 0.1727 / PATH A 0.181 |
+| B3.6 | Served-object X-ray (ledger exposure) | the ledger alone, its named parts, and ledger block-PCA under the frozen B3.2/B3.4 consumers, against {exact counter, served shape, PATH A}; the branch is computed here from the arm numbers (DEC-569) | reporting | ✅ PASS | complete · branch exposure (DEC-569: best ledger arm persona 0.3196 from part_numeric_stats; full 0.01722 / pca_39 0.2012 / pca_128 0.1036) · references persona counter 0.1893 / shape 0.06596 / PATH A 0.3867 · linear access ledger_full 0.3551 / counter 0.3937 / shape 0.4677 / PATH A 0.4126 |
 
 ### B4 — Decisive · ❔ UNKNOWN
 
 *Does B support action/counterfactual decisions?*
 
-| # | Property | Metric | Verdict | Evidence / missing producer |
-|---|---|---|---|---|
-| B4.1 | B-only dose-response / argmax | action-conditional response shape readable from the state (not through a judge leg) | ❔ UNKNOWN | missing producer: measure_decision_law.py |
-| B4.2 | OPE / IPS known-effect recovery (legacy) | E recovers the known effect with a paired CI excluding 0 | ❔ UNKNOWN | legacy receipt encoder_causal_ci.json (no behavior stamp); re-run the legacy causal producer |
-| B4.3 | Action-invariance | representation invariant to assignment, still predictive of the outcome | ❔ UNKNOWN | missing producer: measure_decision_law.py |
+| # | Property | Metric | Green means | Verdict | Evidence / missing producer |
+|---|---|---|---|---|---|
+| B4.1 | B-only dose-response / argmax | action-conditional response shape readable from the state (not through a judge leg) | unmeasured | ❔ UNKNOWN | missing producer: measure_decision_law.py |
+| B4.2 | OPE / IPS known-effect recovery (legacy) | E recovers the known effect with a paired CI excluding 0 | unmeasured | ❔ UNKNOWN | legacy receipt encoder_causal_ci.json (no behavior stamp); re-run the legacy causal producer |
+| B4.3 | Action-invariance | representation invariant to assignment, still predictive of the outcome | unmeasured | ❔ UNKNOWN | missing producer: measure_decision_law.py |
 
 ### B5 — Minimal & affordable · ❔ UNKNOWN
 
 *Is it the smallest sufficient object, and fast enough?*
 
-| # | Property | Metric | Verdict | Evidence / missing producer |
-|---|---|---|---|---|
-| B5.1 | Minimality k_min | served rank = the frozen reconstruction certificate | ❔ UNKNOWN | missing producer: measure_minimality_law.py |
-| B5.2 | Cost / runtime / constant-state (legacy) | runtime, memory and incremental-update receipt | ❔ UNKNOWN | legacy receipt runtime.json (no behavior stamp); re-run the legacy runtime producer |
+| # | Property | Metric | Green means | Verdict | Evidence / missing producer |
+|---|---|---|---|---|---|
+| B5.1 | Minimality k_min | served rank = the frozen reconstruction certificate | unmeasured | ❔ UNKNOWN | missing producer: measure_minimality_law.py |
+| B5.2 | Cost / runtime / constant-state (legacy) | runtime, memory and incremental-update receipt | unmeasured | ❔ UNKNOWN | legacy receipt runtime.json (no behavior stamp); re-run the legacy runtime producer |
 
 ### B6 — Transferable · ❔ UNKNOWN
 
 *Does it add signal on held-out consumers?*
 
-| # | Property | Metric | Verdict | Evidence / missing producer |
-|---|---|---|---|---|
-| B6.1 | Objective battery (S5) | every content pressure beats its naive comparator (or is excluded and reported) | ✅ PASS | judge_stages.json:S5 working=True |
-| B6.2 | Donor does-not-lose / adds / controls (legacy) | E vs raw, fair table, table+seq; random/destroyed negative controls | ❔ UNKNOWN | legacy receipt encoder_donor.json (no behavior stamp); re-run the legacy donor producer |
-| B6.3 | Broad held-out transfer family | adds signal on a family broader than the eight judge legs | ❔ UNKNOWN | missing producer: measure_transfer_law.py |
+| # | Property | Metric | Green means | Verdict | Evidence / missing producer |
+|---|---|---|---|---|---|
+| B6.1 | Objective battery (S5) | every content pressure beats its naive comparator (or is excluded and reported) | reporting | ✅ PASS | judge_stages.json:S5 working=True |
+| B6.2 | Donor does-not-lose / adds / controls (legacy) | E vs raw, fair table, table+seq; random/destroyed negative controls | unmeasured | ❔ UNKNOWN | legacy receipt encoder_donor.json (no behavior stamp); re-run the legacy donor producer |
+| B6.3 | Broad held-out transfer family | adds signal on a family broader than the eight judge legs | unmeasured | ❔ UNKNOWN | missing producer: measure_transfer_law.py |
 
 ### B7 — Robust · ❔ UNKNOWN
 
 *Does it stay honest under shift and missingness?*
 
-| # | Property | Metric | Verdict | Evidence / missing producer |
-|---|---|---|---|---|
-| B7.1 | ECE / OOD retention (legacy) | calibration and OOD retention on the old reference | ❔ UNKNOWN | legacy receipt encoder_b_props.json (no behavior stamp); re-run the legacy calibration producer |
-| B7.2 | Missingness / unlogged confounders | uncertainty carried for unobserved events, never faked | ❔ UNKNOWN | missing producer: measure_robustness_law.py |
+| # | Property | Metric | Green means | Verdict | Evidence / missing producer |
+|---|---|---|---|---|---|
+| B7.1 | ECE / OOD retention (legacy) | calibration and OOD retention on the old reference | unmeasured | ❔ UNKNOWN | legacy receipt encoder_b_props.json (no behavior stamp); re-run the legacy calibration producer |
+| B7.2 | Missingness / unlogged confounders | uncertainty carried for unobserved events, never faked | unmeasured | ❔ UNKNOWN | missing producer: measure_robustness_law.py |
 
 ### B8 — Reproducible · ❔ UNKNOWN
 
 *Is the artifact an identity?*
 
-| # | Property | Metric | Verdict | Evidence / missing producer |
-|---|---|---|---|---|
-| B8.1 | Artifact identity (legacy) | artifact hash + config + data revision recorded | ❔ UNKNOWN | legacy receipt encoder_b_props.json (no behavior stamp); re-run the legacy artifact producer |
-| B8.2 | One-command reproducibility (S6) | the card is regenerated in one invocation at a recorded commit | ✅ PASS | judge_stages.json:S6 working=True |
+| # | Property | Metric | Green means | Verdict | Evidence / missing producer |
+|---|---|---|---|---|---|
+| B8.1 | Artifact identity (legacy) | artifact hash + config + data revision recorded | unmeasured | ❔ UNKNOWN | legacy receipt encoder_b_props.json (no behavior stamp); re-run the legacy artifact producer |
+| B8.2 | One-command reproducibility (S6) | the card is regenerated in one invocation at a recorded commit | reporting | ✅ PASS | judge_stages.json:S6 working=True |
 
 ## The judge — four legs × two numbers
 
@@ -224,17 +217,17 @@ The leg verdict above is computed from these rows; a task can PASS while its leg
 - `judge_leg_unsupervised.json :: brain_ledger — persona_geometry: outside the delivery non-inferiority margin (0.01 R2); failing: persona_geometry, future_geometry, segment_structure`
 - `judge_leg_simulator.json :: brain — argmax_optimum: destroyed control >= brain (0.253872 vs 0.245791); failing: argmax_optimum`
 - `judge_leg_simulator.json :: brain_ledger — argmax_optimum: outside the delivery non-inferiority margin (0.01 R2); failing: argmax_optimum`
-- `B B1.2 Construction laws (C1-C6) — legacy receipt encoder_lawfulness.json (no behavior stamp); re-run the legacy encoder-construction producer`
-- `B B4.1 B-only dose-response / argmax — missing producer: measure_decision_law.py`
-- `B B4.2 OPE / IPS known-effect recovery (legacy) — legacy receipt encoder_causal_ci.json (no behavior stamp); re-run the legacy causal producer`
-- `B B4.3 Action-invariance — missing producer: measure_decision_law.py`
-- `B B5.1 Minimality k_min — missing producer: measure_minimality_law.py`
-- `B B5.2 Cost / runtime / constant-state (legacy) — legacy receipt runtime.json (no behavior stamp); re-run the legacy runtime producer`
-- `B B6.2 Donor does-not-lose / adds / controls (legacy) — legacy receipt encoder_donor.json (no behavior stamp); re-run the legacy donor producer`
-- `B B6.3 Broad held-out transfer family — missing producer: measure_transfer_law.py`
-- `B B7.1 ECE / OOD retention (legacy) — legacy receipt encoder_b_props.json (no behavior stamp); re-run the legacy calibration producer`
-- `B B7.2 Missingness / unlogged confounders — missing producer: measure_robustness_law.py`
-- `B B8.1 Artifact identity (legacy) — legacy receipt encoder_b_props.json (no behavior stamp); re-run the legacy artifact producer`
+- `B B1.2 [P1·B1] Construction laws (C1-C6) — legacy receipt encoder_lawfulness.json (no behavior stamp); re-run the legacy encoder-construction producer`
+- `B B4.1 [P2·B4] B-only dose-response / argmax — missing producer: measure_decision_law.py`
+- `B B4.2 [P2·B4] OPE / IPS known-effect recovery (legacy) — legacy receipt encoder_causal_ci.json (no behavior stamp); re-run the legacy causal producer`
+- `B B4.3 [P2·B4] Action-invariance — missing producer: measure_decision_law.py`
+- `B B5.1 [P2·B5] Minimality k_min — missing producer: measure_minimality_law.py`
+- `B B5.2 [P2·B5] Cost / runtime / constant-state (legacy) — legacy receipt runtime.json (no behavior stamp); re-run the legacy runtime producer`
+- `B B6.2 [P3·B6] Donor does-not-lose / adds / controls (legacy) — legacy receipt encoder_donor.json (no behavior stamp); re-run the legacy donor producer`
+- `B B6.3 [P3·B6] Broad held-out transfer family — missing producer: measure_transfer_law.py`
+- `B B7.1 [P3·B7] ECE / OOD retention (legacy) — legacy receipt encoder_b_props.json (no behavior stamp); re-run the legacy calibration producer`
+- `B B7.2 [P3·B7] Missingness / unlogged confounders — missing producer: measure_robustness_law.py`
+- `B B8.1 [P1·B8] Artifact identity (legacy) — legacy receipt encoder_b_props.json (no behavior stamp); re-run the legacy artifact producer`
 
 ## Backward requirements (from PROMPT_BACKWARD)
 

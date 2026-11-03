@@ -125,13 +125,16 @@ next question is the learned shape, not another consumer tuning pass.
 
 ## Next 3 actions
 
-1. **PLAN.md + card alignment — DONE (DEC-579); pause point.** The tree
+1. **PLAN.md + card alignment — DONE and improved (DEC-579 + addendum); pause point.** The tree
    (`scripts/plan_spec.py`: goal → P1–P5 → 23 B rows + 8 judge rows + E1 trunk + 5 v1 leaves)
-   renders `PLAN.md` (structure only) and the card's plan section (structure + verdicts);
-   direction is plan → card and enforced by tests. No behavior-hash move. Next on resume:
-   re-run `measure_certification_law.py` at the clean commit so S6/B8.2 records the new card
-   shape at a recorded commit (`PLAN.md` is not touched by the chain; only the card + receipts
-   are exempt).
+   renders `PLAN.md` (structure + route R1–R7, no measurements) and the card's plan section
+   (structure + verdicts + frontier readings). The card's B rows now carry **Green means**
+   (`quality` / `reporting` / `unmeasured`, derived from the frozen gate kind), the duplicate
+   capability-axis view is retired, the plan root leads the assessment, and blockers name their
+   plan node. Direction is plan → card and enforced by tests. No behavior-hash move. Next on
+   resume: re-run `measure_certification_law.py` at the clean commit so S6/B8.2 records the new
+   card shape at a recorded commit (`PLAN.md` is not touched by the chain; only the card +
+   receipts are exempt).
 2. **DEV-RIG iteration 3 = DEC-575 candidate 2 (pre-register as DEC-578 FIRST).** The looped /
    weight-tied nonlinear state-update block, on `next_event` N=500, one axis, with its own
    frozen verdict + a-priori branches (iteration 2's branch (iii) is the standing escalation;

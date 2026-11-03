@@ -161,3 +161,100 @@ def test_the_card_renders_the_same_tree_with_verdicts(tmp_path):
     for n in P.NODES:
         assert n.ident in plan["nodes"]
         assert f"**{n.ident}**" in md
+
+
+# ------------------------------------------------------------------ what a green proves
+
+
+def test_every_b_row_declares_what_a_green_proves():
+    """DEC-579: quality vs reporting is derived from the frozen gate's kind, never asserted in
+    prose. The canonical cases are the ones that misled a reader before: B3.2's gate is
+    `attribution recorded`, B2.1's is a frozen U bar."""
+    kinds = {r.ident: r.gate_kind for r in B.ROWS}
+    assert set(kinds.values()) <= {"quality", "reporting", "unmeasured"}
+    assert kinds["B3.2"] == "reporting"
+    assert kinds["B3.4"] == "reporting"
+    assert kinds["B3.5"] == "reporting"
+    assert kinds["B3.6"] == "reporting"
+    assert kinds["B2.1"] == "quality"
+    assert kinds["B2.2"] == "quality"
+    assert kinds["B2.3"] == "reporting"
+    assert kinds["B3.3"] == "quality"
+    assert kinds["B4.1"] == "unmeasured"
+    # the label changes no verdict: the frozen gate is untouched
+    assert B.ROWS[0].gate
+
+
+def test_plan_md_labels_what_a_green_proves():
+    text = PL.render_plan()
+    assert "| Leaf | Property | Frozen gate | Green means |" in text
+    assert "`B3.2`" in text and "reporting" in text
+    assert "quality" in text
+
+
+# ------------------------------------------------------------------ the route
+
+
+def test_the_route_is_ordered_references_real_nodes_and_names_evidence():
+    assert [s.ident for s in P.ROUTE] == [f"R{i}" for i in range(1, len(P.ROUTE) + 1)]
+    assert P.CURRENT_ROUTE in {s.ident for s in P.ROUTE}
+    for s in P.ROUTE:
+        for node in s.advances.split(","):
+            assert node.strip() in P.BY_ID, f"{s.ident} advances unknown node {node}"
+        assert s.evidence, f"{s.ident} names no evidence"
+
+
+def test_every_leaf_maps_to_its_owner_and_problem():
+    for leaf in _all_leaves():
+        o, pr = P.owner(leaf), P.problem_of(leaf)
+        assert o and pr, f"{leaf} has no owner/problem"
+        assert P.BY_ID[o].parent == pr
+
+
+# ------------------------------------------------------------------ the frontier readings
+
+
+def test_the_card_reports_the_frontier_from_receipts_without_gating_it(tmp_path):
+    """E1 has no card row, so the card shows its measured values as REPORTED readings.
+
+    They cannot flip a row (the lab receipts never do), but a blob that is invisible is worse
+    than one that is measured: the reader must see g and eff_rank beside the frozen bars.
+    """
+    import json as _json
+
+    import report_card as RC
+
+    (tmp_path / "lab").mkdir()
+    (tmp_path / "lab" / "next_event_iter2.json").write_text(
+        _json.dumps(
+            {
+                "_meta": {"behavior_hash": "abc123"},
+                "positive": {"g": 1.15, "eff_rank": 1.47, "beats_base": False},
+                "complete": True,
+            }
+        )
+    )
+    md, _info = RC.render(tmp_path, "abc123")
+    assert "Frontier readings" in md
+    assert "g 1.15" in md and "eff_rank 1.47" in md and "bar ≤ 0.5" in md
+    assert "beats 1-gram: no" in md
+    assert "measured under" not in md  # measured at the current hash: not historical
+
+
+def test_a_stale_frontier_reading_says_which_behavior_it_came_from(tmp_path):
+    import json as _json
+
+    import report_card as RC
+
+    (tmp_path / "lab").mkdir()
+    (tmp_path / "lab" / "next_event_iter1.json").write_text(
+        _json.dumps(
+            {
+                "_meta": {"behavior_hash": "deadbeefcafe"},
+                "positive": {"g": 1.147, "eff_rank": 1.153, "beats_base": False},
+                "complete": True,
+            }
+        )
+    )
+    md, _info = RC.render(tmp_path, "abc123")
+    assert "measured under `deadbeef`" in md

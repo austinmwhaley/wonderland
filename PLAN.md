@@ -252,39 +252,39 @@ A decision that cannot be explained from its artifacts is not operable, and an e
 
 ## 3. The measured leaves — what evidence closes each one
 
-| Leaf | Property | Frozen gate | Producer / source |
-|---|---|---|---|
-| `B1.1` | Lawful dynamics (S3) | working=True | measure_dynamics_law.py |
-| `B1.2` | Construction laws (C1-C6) | all construction laws met | the legacy encoder-construction producer |
-| `B8.1` | Artifact identity (legacy) | present | the legacy artifact producer |
-| `B8.2` | One-command reproducibility (S6) | working=True | measure_certification_law.py |
-| `B2.1` | Worst-case sufficiency U | U_served >= 0.5 (frozen in DEC-570) | measure_sufficiency_law.py |
-| `B2.2` | Full-history oracle gap | every included probe's U_served >= 0.5 (zero included = bar unfilled) | measure_sufficiency_law.py |
-| `B2.3` | Learned-only attribution | attribution recorded (learned-only U finite) | measure_sufficiency_law.py |
-| `B4.1` | B-only dose-response / argmax | gate met | measure_decision_law.py |
-| `B4.2` | OPE / IPS known-effect recovery (legacy) | CI excludes 0 on the declared arms | the legacy causal producer |
-| `B4.3` | Action-invariance | gate met | measure_decision_law.py |
-| `B5.1` | Minimality k_min | k_min | measure_minimality_law.py |
-| `B5.2` | Cost / runtime / constant-state (legacy) | present and within budget | the legacy runtime producer |
-| `B3.1` | Outlet accessibility (S4) | working=True | measure_views_law.py |
-| `B3.2` | Stage decomposition M0->M1->served | attribution recorded | measure_stage_decomposition.py |
-| `B3.3` | Linear accessibility (current) | served >= PATH A - 0.01 | measure_block_serving.py |
-| `B3.4` | Block-aware serving geometry | complete | measure_block_serving.py |
-| `B3.5` | Equal-dimension serving geometry | complete | measure_block_serving.py |
-| `B3.6` | Served-object X-ray (ledger exposure) | complete + branch decided | measure_served_object.py |
-| `B6.1` | Objective battery (S5) | working=True | measure_battery_law.py |
-| `B6.2` | Donor does-not-lose / adds / controls (legacy) | all donor gates met | the legacy donor producer |
-| `B6.3` | Broad held-out transfer family | family published and passed | measure_transfer_law.py |
-| `B7.1` | ECE / OOD retention (legacy) | ECE <= 0.1 and OOD retained | the legacy calibration producer |
-| `B7.2` | Missingness / unlogged confounders | coverage reported | measure_robustness_law.py |
-| `JUDGE-supervised-brain` | supervised :: brain alone (PROGRESS) | every non-degenerate task: paired CI excludes 0 vs PATH A; controls below brain | judge_leg_supervised.json |
-| `JUDGE-supervised-brain_ledger` | supervised :: brain + ledger (DELIVERY, non-inferiority) | every non-degenerate task: paired CI excludes 0 vs PATH A; controls below brain | judge_leg_supervised.json |
-| `JUDGE-unsupervised-brain` | unsupervised :: brain alone (PROGRESS) | every non-degenerate task: paired CI excludes 0 vs PATH A; controls below brain | judge_leg_unsupervised.json |
-| `JUDGE-unsupervised-brain_ledger` | unsupervised :: brain + ledger (DELIVERY, non-inferiority) | every non-degenerate task: paired CI excludes 0 vs PATH A; controls below brain | judge_leg_unsupervised.json |
-| `JUDGE-rl-brain` | rl :: brain alone (PROGRESS) | every non-degenerate task: paired CI excludes 0 vs PATH A; controls below brain | judge_leg_rl.json |
-| `JUDGE-rl-brain_ledger` | rl :: brain + ledger (DELIVERY, non-inferiority) | every non-degenerate task: paired CI excludes 0 vs PATH A; controls below brain | judge_leg_rl.json |
-| `JUDGE-simulator-brain` | simulator :: brain alone (PROGRESS) | every non-degenerate task: paired CI excludes 0 vs PATH A; controls below brain | judge_leg_simulator.json |
-| `JUDGE-simulator-brain_ledger` | simulator :: brain + ledger (DELIVERY, non-inferiority) | every non-degenerate task: paired CI excludes 0 vs PATH A; controls below brain | judge_leg_simulator.json |
+| Leaf | Property | Frozen gate | Green means | Producer / source |
+|---|---|---|---|---|
+| `B1.1` | Lawful dynamics (S3) | working=True | reporting | measure_dynamics_law.py |
+| `B1.2` | Construction laws (C1-C6) | all construction laws met | unmeasured | the legacy encoder-construction producer |
+| `B8.1` | Artifact identity (legacy) | present | unmeasured | the legacy artifact producer |
+| `B8.2` | One-command reproducibility (S6) | working=True | reporting | measure_certification_law.py |
+| `B2.1` | Worst-case sufficiency U | U_served >= 0.5 (frozen in DEC-570) | quality | measure_sufficiency_law.py |
+| `B2.2` | Full-history oracle gap | every included probe's U_served >= 0.5 (zero included = bar unfilled) | quality | measure_sufficiency_law.py |
+| `B2.3` | Learned-only attribution | attribution recorded (learned-only U finite) | reporting | measure_sufficiency_law.py |
+| `B4.1` | B-only dose-response / argmax | gate met | unmeasured | measure_decision_law.py |
+| `B4.2` | OPE / IPS known-effect recovery (legacy) | CI excludes 0 on the declared arms | unmeasured | the legacy causal producer |
+| `B4.3` | Action-invariance | gate met | unmeasured | measure_decision_law.py |
+| `B5.1` | Minimality k_min | k_min | unmeasured | measure_minimality_law.py |
+| `B5.2` | Cost / runtime / constant-state (legacy) | present and within budget | unmeasured | the legacy runtime producer |
+| `B3.1` | Outlet accessibility (S4) | working=True | reporting | measure_views_law.py |
+| `B3.2` | Stage decomposition M0->M1->served | attribution recorded | reporting | measure_stage_decomposition.py |
+| `B3.3` | Linear accessibility (current) | served >= PATH A - 0.01 | quality | measure_block_serving.py |
+| `B3.4` | Block-aware serving geometry | complete | reporting | measure_block_serving.py |
+| `B3.5` | Equal-dimension serving geometry | complete | reporting | measure_block_serving.py |
+| `B3.6` | Served-object X-ray (ledger exposure) | complete + branch decided | reporting | measure_served_object.py |
+| `B6.1` | Objective battery (S5) | working=True | reporting | measure_battery_law.py |
+| `B6.2` | Donor does-not-lose / adds / controls (legacy) | all donor gates met | unmeasured | the legacy donor producer |
+| `B6.3` | Broad held-out transfer family | family published and passed | unmeasured | measure_transfer_law.py |
+| `B7.1` | ECE / OOD retention (legacy) | ECE <= 0.1 and OOD retained | unmeasured | the legacy calibration producer |
+| `B7.2` | Missingness / unlogged confounders | coverage reported | unmeasured | measure_robustness_law.py |
+| `JUDGE-supervised-brain` | supervised :: brain alone (PROGRESS) | every non-degenerate task: paired CI excludes 0 vs PATH A; controls below brain | quality | judge_leg_supervised.json |
+| `JUDGE-supervised-brain_ledger` | supervised :: brain + ledger (DELIVERY, non-inferiority) | every non-degenerate task: paired CI excludes 0 vs PATH A; controls below brain | quality | judge_leg_supervised.json |
+| `JUDGE-unsupervised-brain` | unsupervised :: brain alone (PROGRESS) | every non-degenerate task: paired CI excludes 0 vs PATH A; controls below brain | quality | judge_leg_unsupervised.json |
+| `JUDGE-unsupervised-brain_ledger` | unsupervised :: brain + ledger (DELIVERY, non-inferiority) | every non-degenerate task: paired CI excludes 0 vs PATH A; controls below brain | quality | judge_leg_unsupervised.json |
+| `JUDGE-rl-brain` | rl :: brain alone (PROGRESS) | every non-degenerate task: paired CI excludes 0 vs PATH A; controls below brain | quality | judge_leg_rl.json |
+| `JUDGE-rl-brain_ledger` | rl :: brain + ledger (DELIVERY, non-inferiority) | every non-degenerate task: paired CI excludes 0 vs PATH A; controls below brain | quality | judge_leg_rl.json |
+| `JUDGE-simulator-brain` | simulator :: brain alone (PROGRESS) | every non-degenerate task: paired CI excludes 0 vs PATH A; controls below brain | quality | judge_leg_simulator.json |
+| `JUDGE-simulator-brain_ledger` | simulator :: brain + ledger (DELIVERY, non-inferiority) | every non-degenerate task: paired CI excludes 0 vs PATH A; controls below brain | quality | judge_leg_simulator.json |
 
 ### The leaves this card does not measure (v1)
 
@@ -320,24 +320,48 @@ card is `ENCODER DONE`, not `SOLVED`, because the v1 scope and the DEC-frozen po
 are separate leaves. The card renders `SOLVED` only when its generated root status is
 PASS — which cannot happen while a leaf in this tree is unmeasured.
 
-## 5. The current frontier
+## 5. The route — the order the evidence is earned
+
+The tree says what must be true; the route says in what order it is earned. It is a
+pointer list, not a second scorecard: no step carries a verdict, and the card never
+computes one. Moving the pointer is a reviewed spec edit like any other.
+
+| Step | What is earned | Advances | Evidence that closes it |
+|---|---|---|---|
+| **R1 ← now** | Dev rig: master next_event (N=500, known truth) | E1 | lab receipts + the DEC-578 run (candidate 2), controls clean; never a B-row verdict |
+| **R2** | Dev rig: master intent (curriculum step 2) | E1 | lab receipts + the intent iteration's pre-registration; both structures clean |
+| **R3** | Port: ONE real-data run of the winning trunk under DEC-572's bars | E1 | a pre-registered port receipt: eff_rank>=30, persona>=0.15, R2>=0.45, stable + B1 canary |
+| **R4** | Real stream: fill the remaining B rows with their producers | P1, P2, P3 | B1.2, B4.1-B4.3, B5.1-B5.2, B6.2-B6.3, B7.1-B7.2, B8.1 at the current behavior |
+| **R5** | Real stream: re-score the four judge legs (brain and brain+ledger) | P4 | judge_leg_*.json at the current behavior, both columns, controls readable |
+| **R6** | Stack: build and certify v1 (identifiable stream, plugins, red_king, red_queen, caterpillar) | P5 | each v1 gate on the stack's own card rows / receipts |
+| **R7** | BACKWARD: adversarial review with no BREAKING findings | G | AUDIT.md requirements closed |
+
+The order is forced by dependency and by cost: the dev rig is minutes and earns the
+right to the real-data port; the port closes E1; only then can the remaining B rows be
+read as evidence about a working trunk; only then is a B+C re-score diagnostic rather
+than a measurement of the blob.
+
+## 6. The current frontier
 
 The live frontier is P2's enabler E1 (the trunk's state-update algebra). O3 attempt 4 was rejected on its frozen bars and the dev rig reproduced the blob in minutes; DEC-575 candidate 1 as shipped was negative on the toy (DEC-577 outcome). The next move is DEC-578 (candidate 2: looped / weight-tied nonlinear block) on the dev rig, then the curriculum (intent), then ONE pre-registered port run under DEC-572's bars. No lab receipt flips a B-row verdict.
 
 **Why the card can read green while the encoder is not mastered — read this before
-trusting a green row.** Several B gates certify *measurement and attribution*, not a
-quality level: B3.2's gate is `attribution recorded`, B3.4/B3.5/B3.6's is `complete`,
-B1.1/B3.1/B6.1/B8.2 are `working=True`. Those rows prove the pipeline was measured and
-the loss was localized; they do not prove the embedding is good. The quality levels
-for those axes are the DEC-frozen bars (U >= 0.5 in DEC-570; eff_rank >= 30 and
-persona >= 0.15 in DEC-572; on the dev rig g <= 0.5 and beating the 1-gram in
-DEC-576/577), and the measured values are in the receipts, not in this plan.
+trusting a green row.** The plan labels every leaf with what its green PROVES
+(`scripts/b_spec.py: gate_kind`, derived from the frozen gate's kind, never asserted):
+
+- **reporting** — green certifies that the measurement happened and was attributed: `B1.1`, `B8.2`, `B2.3`, `B3.1`, `B3.2`, `B3.4`, `B3.5`, `B3.6`, `B6.1`.
+- **quality** — green certifies a level against a frozen bar or comparator (the remaining leaves).
+
+The quality levels for the reporting-gated axes are the DEC-frozen bars (U >= 0.5 in
+DEC-570; eff_rank >= 30 and persona >= 0.15 in DEC-572; on the dev rig g <= 0.5 and
+beating the 1-gram in DEC-576/577), and the measured values are in the receipts, not in
+this plan.
 
 That is exactly why the trunk is a node (E1) and not a footnote: a blob can satisfy
 every reporting gate while failing the quality bars, and the plan must show the
 difference instead of letting a green card imply more than it proved.
 
-## 6. The method contract — how work is allowed to move the tree
+## 7. The method contract — how work is allowed to move the tree
 
 1. **One axis per iteration**, pre-registered in `DECISIONS.md` before the run
    (gate, bars, a-priori branches). No post-hoc bar edits in any branch.
@@ -352,7 +376,7 @@ difference instead of letting a green card imply more than it proved.
 5. **The frontier is chosen by the tree, not by convenience**: the open node closest to
    the goal whose blocker is measured — cheapest experiment first.
 
-## 7. Provenance and the one-source rule
+## 8. Provenance and the one-source rule
 
 ```text
 scripts/plan_spec.py ──> scripts/plan.py ──> PLAN.md            (structure only)

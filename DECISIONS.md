@@ -9479,3 +9479,41 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     no-gates-in-plan, worst-child derivation, root-cannot-pass-while-unmeasured, PLAN.md
     freshness, card renders the same tree), 731 fast-tier tests pass, ruff clean, principle audit
     0 findings.
+  - **Addendum (plan/card improvement pass, landed 2026-11-03, same day).** Six defects in the
+    first cut, found by reading the rendered pair, are fixed in the same direction
+    (`PLAN.md` -> card, generated not narrated):
+    1. **"What a green proves" is now mechanical.** `b_spec.gate_kind(kind)` classifies every B
+       row as `quality` (a level against a frozen bar/comparator), `reporting` (the measurement
+       happened and was attributed: `working=True`, `complete`, `attribution recorded`,
+       `present`), or `unmeasured` (missing/legacy). The card's B tables gain a **Green means**
+       column, `PLAN.md`'s leaf table gains it, and §6's reporting-gated list is generated from
+       the classification instead of hand-named. This closes the defect where the caveat lived
+       only in prose and could drift from `b_spec`.
+    2. **The duplicate capability-axis view is retired.** `b_spec.CAPABILITY_AXES` and the card's
+       "B capability — top line" table are deleted: the plan tree is the one top line and owns
+       the same rows plus E1 and the v1 scope. Two axis definitions invited disagreement
+       (principle 6); `info["cap_verdicts"]` is gone rather than aliased, and its test is
+       replaced by a plan-based one.
+    3. **The route is now in the plan.** `plan_spec.ROUTE` (R1-R7) states the order the evidence
+       is earned — dev-rig `next_event` -> `intent` -> port -> remaining B rows -> B+C re-score
+       -> v1 -> BACKWARD — each step naming the node it advances and the evidence that closes
+       it. It is a pointer list with no verdicts; `CURRENT_ROUTE = "R1"`, and moving it is a
+       reviewed spec edit.
+    4. **The trunk is now visible on the card.** `E1` has no frozen row, so the card renders
+       **Frontier readings** read from committed receipts: dev-rig iter1 (g 1.147, eff_rank
+       1.153), iter2 (g 1.154, eff_rank 1.473), and O3 attempt 4 (M4 persona 0.04646, served
+       coarse R2 0.4675). Each carries its DEC bar and, when measured under another behavior,
+       the hash it was measured under (`6a8e2663` for iter1 and O3; iter2 is current). These are
+       **reported, not gated** — they cannot flip a row — but a blob that is invisible is worse
+       than one that is measured.
+    5. **The assessment is plan-first.** The plan root is the first assessment line, with the
+       count of green measured leaves and the red leaves grouped by level-1 problem (today:
+       `FAILED - 14/31 green, 6 FAIL, reds: P4 (6)`). The root still cannot read SOLVED while
+       E1/v1 are unmeasured (T0 is not SOLVED, structurally).
+    6. **Blockers name their plan node.** Each blocking entry now carries
+       `[P<problem>·<owner>]`, so the blocking list reads as the plan's open leaves.
+    **Tests.** 737 fast-tier pass (6 new: gate-kind classification, PLAN.md labels, route
+    ordering/references, leaf-owner mapping, frontier readings current + stale-hash labelling;
+    the retired-capability test replaced). Ruff clean; principle audit 0. No behavior-hash move
+    (`scripts/` only), no receipt re-stamp; the S6/B8.2 re-cert at the new clean commit remains
+    the first action on resume.

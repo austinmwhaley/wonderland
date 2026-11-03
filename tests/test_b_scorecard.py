@@ -283,17 +283,21 @@ def test_served_object_without_any_finite_ledger_arm_is_unknown(tmp_path):
     assert info["b_verdicts"]["B3.6"] == J.UNKNOWN
 
 
-def test_capability_top_line_is_derived_from_the_b_rows(tmp_path):
-    # no receipts at all: every axis UNKNOWN, and the table is present with the frozen axes
+def test_the_plan_is_the_top_line_and_is_derived_from_the_b_rows(tmp_path):
+    """DEC-579: the plan tree replaced the sprint's capability-axis table as the top line.
+
+    One axis definition only — the tree — so the card cannot say "done" on one view while the
+    other is red. With no receipts every measured leaf is UNKNOWN and the root is never PASS.
+    """
     md, info = RC.render(tmp_path, HASH)
-    assert "B capability — top line" in md
-    assert info["cap_verdicts"]["U · sufficiency"] == J.UNKNOWN
-    assert info["cap_verdicts"]["shape-only geometry"] == J.UNKNOWN
-    assert info["cap_all_green"] is False
-    assert "measure_sufficiency_law.py" in md
-    # the top line must list every frozen axis from b_spec
-    for axis, _ in B.CAPABILITY_AXES:
-        assert axis in info["cap_verdicts"]
+    assert "The plan — the tree this card measures" in md
+    assert "B capability — top line" not in md
+    assert info["plan"]["root"] == J.UNKNOWN
+    assert info["plan"]["green"] == 0
+    assert "cap_verdicts" not in info  # the retired duplicate view is gone, not aliased
+    # every B row is a leaf exactly once: the plan cannot silently drop a row
+    leaves = [leaf for n in RC.P.NODES for leaf in n.leaves]
+    assert {r.ident for r in B.ROWS} <= set(leaves)
 
 
 # ---------------------------------------------------------------------------
