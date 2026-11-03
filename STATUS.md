@@ -22,7 +22,12 @@ enough to locate the gaps (exposure / learning / decision objective). **Scope ti
 (2026-11-02):** B-only for now — every DEC-567 option re-anchored to B's own rows; B+C kept on the
 card as a reported consequence, not the near-term target. **D2–D5 accepted 2026-11-02**
 ("ok do what needs to be done"); DEC-569 (O0) and DEC-570 (`U` spec) pre-registered; the sprint
-runs O0 first. D1 stays deferred with the B+C judge re-aim.
+runs O0 first. D1 stays deferred with the B+C judge re-aim. **DEV-RIG pivot DEC-576
+(2026-11-03, operator):** the real-data outer loop was dominated by protocol/environment
+defects (4 of O3's 5 attempts died before the science); make ANY foundation model on the lab's
+known-truth streams (fixtures were pre-built, 0/32 ever run) before THE foundation model on the
+real stream. Lab receipts are a development instrument — never B-row evidence on the main card;
+certification stays on the real stream.
 
 ## Current state
 
@@ -81,28 +86,9 @@ next question is the learned shape, not another consumer tuning pass.
 
 ## Next 3 actions
 
-1. **O3 axis-i retrain — DEC-572/573 (attempt 4 in flight).** Attempt 3 recorded and aborted:
-   its own governor receipt said `step 165/3300` against the pre-registered `82/1650` — the
-   `--set batch=64` pin was clobbered by hardware derivation (pin == field default, and the
-   budget derived at the hardware batch; DEC-573). `resolve_cfm` now honors `--set` pins that
-   equal the default and derives the horizon from the effective batch (regression-tested);
-   behavior hash `d0ac576c` → `d2ad6f60`; cfm_v2k receipts re-stamped (fast producers, no
-   retrain). Attempt 4 relaunches under the unchanged DEC-572 protocol (13 objectives + rank +
-   iso, `--customers 5000`, `--set batch=64` effective, fresh out-dir, scratch warm-start).
-   Acceptance: eff_rank ≥ 30 (own receipt) AND B3.2 M4_served persona ≥ 0.15 AND B3.3 mean R²
-   ≥ 0.45 AND stable. The trunk-axis escalation (bilinear iterate-to-convergence scan → looped
-   block, DEC-575) is pre-registered for the reject branch.
-2. **O2 `U` producer (`measure_sufficiency_law.py`, spec frozen in DEC-570):** five
-   self-supervised probes (next-type, attr-next, numeric-next, dt, horizon-count-value),
-   shipping `_ridge_head` at fixed capacity, arms = served object (shape ⊕ ledger blocks per
-   DEC-571) / learned-only / full (PATH A) / floor; bar U ≥ 0.5 on the served object; B2.1/2.2/
-   2.3 + card rows. Architecture-agnostic — runs against whichever object O3/O4 wins.
-3. **After O3 lands:** DEC-573 outcome addendum (accept-or-revert + canonical-swap question),
-   re-measure B3.2–B3.6 with `--products` on the O3 artifact, then O4 decision law (DEC-574,
-   `measure_decision_law.py`, effect_actions on the stream's own 100%-randomized offer arm →
-   B4.1/4.3), O5 minimality (B5.1), remaining B rows (B6.3 transfer, B7.2 robustness), chain v4
-   re-stamp for S6/B8.2. B+C re-scores only after B is green; project v1 THIRD; BACKWARD only
-   at all-green.
+1. **DEV-RIG loop (DEC-576, the pivot) — make ANY foundation model on a known-truth lab stream before THE one.** The real-data outer loop has been dominated by protocol/environment defects (4 of O3's 5 attempts died before the science; every behavior-hash move costs an 8-producer re-stamp). The lab was pre-built and never run (0/32 fixtures): `rabbit_hole.data_spec` (parameterized simulator, truth+oracle from ONE spec, `snr` 0→1 difficulty knob) + `lab_oracles` (per-use-case POSITIVE / NEGATIVE snr=0 / ADVERSARIAL echo-next fixtures, closed-form transition oracle + 1-gram baseline). Loop, one axis per iteration at small N: build fixture → train the real CFM → measure next-type NLL vs the oracle ceiling + eff_rank + NEGATIVE (must read NO_SIGNAL) + ADVERSARIAL (must NOT false-PASS) → curriculum (transition → intent → entities → trend → actions). **Discipline: lab receipts live under `docs/report_cards/experiments/lab/` and are a DEVELOPMENT INSTRUMENT — they never flip a B-row verdict on the main card; certification stays on the real stream (cfm_v2k / O3 / DEC-575).** The U producer (below) is stream-agnostic and becomes the dev rig's speedometer.
+2. **O3 axis-i retrain — DEC-572/573 (attempt 4 in flight, launch VERIFIED).** Attempt 3 recorded and aborted: its own governor receipt said `step 165/3300` against the pre-registered `82/1650` — the `--set batch=64` pin was clobbered by hardware derivation (pin == field default, and the budget derived at the hardware batch; DEC-573). `resolve_cfm` now honors `--set` pins that equal the default and derives the horizon from the effective batch (regression-tested); behavior hash `d0ac576c` → `d2ad6f60`; cfm_v2k receipts re-stamped (fast producers, no retrain) and S2 determinism restored. Attempt 4's launch receipts match the pre-registered line exactly: `[govern] step 82/1650`, `[set] batch 64 honored`, `[scale] 38 tasks`, `[health] init eff_rank 4.828` — a valid run. Let it finish; record the DEC-573 outcome addendum (accept-or-revert + canonical-swap) when it lands. Acceptance: eff_rank ≥ 30 (own receipt) AND B3.2 M4_served persona ≥ 0.15 AND B3.3 mean R² ≥ 0.45 AND stable. Trunk-axis escalation (bilinear scan → looped block, DEC-575) stays pre-registered for the reject branch and is now also testable in minutes on the dev rig.
+3. **O2 `U` producer (`measure_sufficiency_law.py`, spec frozen in DEC-570) — written ONCE, run on BOTH rigs.** Five self-supervised probes (next-type, attr-next, numeric-next, dt, horizon-count-value), shipping `_ridge_head` at fixed capacity, arms = served object (shape ⊕ ledger blocks per DEC-571) / learned-only / full (PATH A) / floor; bar U ≥ 0.5 on the served object; B2.1/2.2/2.3 + card rows. It is `--products`/`--demo`-driven and architecture-agnostic: on the dev rig it is the per-iteration speedometer (does the small encoder retain the stream's future at fixed capacity?), on cfm_v2k it is the B2 certification. After O3 lands: DEC-573 outcome addendum, re-measure B3.2–B3.6 with `--products` on the O3 artifact, then O4 decision law (DEC-574) / O5 minimality / remaining B rows / S6-B8.2 clean-tree re-stamp. B+C re-scores only after B is green; project v1 THIRD; BACKWARD only at all-green.
 
 ## Operating facts
 
@@ -126,3 +112,10 @@ authorized as labeled diagnostics, and the O2 `U` spec is the DEC-570 pre-regist
 shared by both arms, gap normalized by headroom, bar U ≥ 0.5 on the served object with
 learned-only alongside). Pre-registrations: DEC-569 (O0 arms/consumers/branches), DEC-570
 (U spec). D1 stays deferred with B+C.
+
+**Decided 2026-11-03 (operator pivot: "make ANY foundation model before we make THE
+foundation model"):** DEV-RIG loop pre-registered as DEC-576 — A↔B→C iterations on
+known-truth lab fixtures (`rabbit_hole.data_spec` + `lab_oracles` + `lab_gate` +
+`head_battery`), curriculum one structure axis at a time, N=500 dev size, binding
+discipline: lab receipts are a development instrument and never flip a B-row verdict on
+the main card; O3 attempt 4 stays in flight (its result is real-data evidence).

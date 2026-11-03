@@ -1,43 +1,43 @@
 {
   "S1": {
     "_stamp": {
-      "behavior_hash": "d0ac576c3c7aa069",
-      "command": "measure_input_law.py --data /home/austin_whaley/wonderland_work/demo_v2 --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
-      "generated_at": "2026-11-02T16:05:02+00:00",
-      "git_commit": "986da0a6e1287eb6f87d56025944dfca483e5ee1",
+      "behavior_hash": "d2ad6f6058e9607d",
+      "command": "measure_input_law.py --data /home/austin_whaley/wonderland_work/demo_v2 --out docs/report_cards/experiments/judge_stages.json",
+      "generated_at": "2026-11-03T01:40:34+00:00",
+      "git_commit": "8a558374d0ed2f551879ff6e8b9488eb3d8e030f",
       "producer": "measure_input_law.py"
     },
     "checks": {
       "new_field_ingested": {
-        "evidence": "injected loyalty_tier (novel categories) + session_seconds into every event's attributes: resolved into catspec=['acquisition_channel', 'brand', 'category_code', 'channel', 'dow', 'freq', 'hour', 'loyalty_tier', 'offer', 'product_id', 'qty', 'reason', 'region', 'segment', 'touch'] num=['discount', 'margin', 'price', 'session_seconds', 'signup_ts', 'value']; encoder trained on the variant (d=64,L=1,e=1): E finite=True, best=106.7826; zero pipeline-code edits",
+        "evidence": "injected loyalty_tier (novel categories) + session_seconds into every event's attributes: resolved into catspec=['acquisition_channel', 'brand', 'category_code', 'channel', 'dow', 'freq', 'hour', 'loyalty_tier', 'offer', 'product_id', 'qty', 'reason', 'region', 'segment', 'touch'] num=['discount', 'margin', 'price', 'session_seconds', 'signup_ts', 'value']; encoder trained on the variant (d=64,L=1,e=1): E finite=True, best=90.1317; zero pipeline-code edits",
         "n_rows": 2341648,
-        "seconds": 62.1,
+        "seconds": 174.9,
         "working": true
       },
       "renamed_end_to_end": {
-        "evidence": "renamed client_id/occurred_at/event/attributes/total -> onboard resolved {'customer_key': 'client_id', 'event_ts': 'occurred_at', 'event_type': 'event', 'brand': None, 'entity_type': None, 'entity_id': None, 'source_table': 'source_table', 'value': 'value', 'event_attributes': ['attributes', 'total']}; 2341648 rows kept (source 2341648); 5000 customers encoded; encoder trained on the resolved stream (d=64,L=1,e=1): E finite=True, best=50.8919; zero pipeline-code edits",
+        "evidence": "renamed client_id/occurred_at/event/attributes/total -> onboard resolved {'customer_key': 'client_id', 'event_ts': 'occurred_at', 'event_type': 'event', 'brand': None, 'entity_type': None, 'entity_id': None, 'source_table': 'source_table', 'value': 'value', 'event_attributes': ['attributes', 'total']}; 2341648 rows kept (source 2341648); 5000 customers encoded; encoder trained on the resolved stream (d=64,L=1,e=1): E finite=True, best=28.5468; zero pipeline-code edits",
         "n_customers": 5000,
         "n_rows": 2341648,
-        "seconds": 84.9,
+        "seconds": 155.5,
         "working": true
       }
     },
-    "evidence": "[renamed_end_to_end] OK: renamed client_id/occurred_at/event/attributes/total -> onboard resolved {'customer_key': 'client_id', 'event_ts': 'occurred_at', 'event_type': 'event', 'brand': None, 'entity_type': None, 'entity_id': None, 'source_table': 'source_table', 'value': 'value', 'event_attributes': ['attributes', 'total']}; 2341648 rows kept (source 2341648); 5000 customers encoded; encoder trained on the resolved stream (d=64,L=1,e=1): E finite=True, best=50.8919; zero pipeline-code edits | [new_field_ingested] OK: injected loyalty_tier (novel categories) + session_seconds into every event's attributes: resolved into catspec=['acquisition_channel', 'brand', 'category_code', 'channel', 'dow', 'freq', 'hour', 'loyalty_tier', 'offer', 'product_id', 'qty', 'reason', 'region', 'segment', 'touch'] num=['discount', 'margin', 'price', 'session_seconds', 'signup_ts', 'value']; encoder trained on the variant (d=64,L=1,e=1): E finite=True, best=106.7826; zero pipeline-code edits",
+    "evidence": "[renamed_end_to_end] OK: renamed client_id/occurred_at/event/attributes/total -> onboard resolved {'customer_key': 'client_id', 'event_ts': 'occurred_at', 'event_type': 'event', 'brand': None, 'entity_type': None, 'entity_id': None, 'source_table': 'source_table', 'value': 'value', 'event_attributes': ['attributes', 'total']}; 2341648 rows kept (source 2341648); 5000 customers encoded; encoder trained on the resolved stream (d=64,L=1,e=1): E finite=True, best=28.5468; zero pipeline-code edits | [new_field_ingested] OK: injected loyalty_tier (novel categories) + session_seconds into every event's attributes: resolved into catspec=['acquisition_channel', 'brand', 'category_code', 'channel', 'dow', 'freq', 'hour', 'loyalty_tier', 'offer', 'product_id', 'qty', 'reason', 'region', 'segment', 'touch'] num=['discount', 'margin', 'price', 'session_seconds', 'signup_ts', 'value']; encoder trained on the variant (d=64,L=1,e=1): E finite=True, best=90.1317; zero pipeline-code edits",
     "working": true
   },
   "S2": {
     "_stamp": {
-      "behavior_hash": "d0ac576c3c7aa069",
-      "command": "measure_input_law.py --data /home/austin_whaley/wonderland_work/demo_v2 --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
-      "generated_at": "2026-11-02T16:05:02+00:00",
-      "git_commit": "986da0a6e1287eb6f87d56025944dfca483e5ee1",
+      "behavior_hash": "d2ad6f6058e9607d",
+      "command": "measure_input_law.py --data /home/austin_whaley/wonderland_work/demo_v2 --out docs/report_cards/experiments/judge_stages.json",
+      "generated_at": "2026-11-03T01:40:34+00:00",
+      "git_commit": "8a558374d0ed2f551879ff6e8b9488eb3d8e030f",
       "producer": "measure_input_law.py"
     },
     "checks": {
       "field_permutation_invariance": {
         "evidence": "attribute field order ['value', 'margin', 'price', 'qty']... vs permuted ['signup_ts', 'price', 'target_key', 'touch']... over 60000 rows: sequence digests identical (76b044ec00500be3 vs 76b044ec00500be3)",
         "n_rows": 60000,
-        "seconds": 1.5,
+        "seconds": 2.3,
         "working": true
       },
       "numeric_transform_law": {
@@ -46,33 +46,33 @@
         "working": true
       },
       "training_determinism": {
-        "evidence": "two seed-0 runs (d=64,L=1,e=1) on identical prepared inputs: E bit-identical=True, best-val equal (32.092237 == 32.092237)",
+        "evidence": "two seed-0 runs (d=64,L=1,e=1,batch=16 shared: {'batch': 'n_seqs=5000 seq_len=257 hw_cap=64 -> 16'}) on identical prepared inputs: E bit-identical=True, best-val equal (24.522622 == 24.522622)",
         "n_customers": 5000,
-        "seconds": 75.9,
+        "seconds": 152.1,
         "working": true
       },
       "unseen_value_path": {
         "evidence": "frozen schema (7 event types, vocab sizes [1, 10, 4, 3, 7, 3, 1, 4, 4, 396, 1, 1, 1, 4, 4]) encoded a batch containing unseen event types/categories/1e12 numerics: rows=1523894, entities=5002, all arrays finite=True, novel rows -> OOV slot 0 = True, vocab unchanged after serving = True (never re-derived)",
         "n_rows": 1523894,
-        "seconds": 7.7,
+        "seconds": 14.0,
         "working": true
       }
     },
-    "evidence": "[unseen_value_path] OK: frozen schema (7 event types, vocab sizes [1, 10, 4, 3, 7, 3, 1, 4, 4, 396, 1, 1, 1, 4, 4]) encoded a batch containing unseen event types/categories/1e12 numerics: rows=1523894, entities=5002, all arrays finite=True, novel rows -> OOV slot 0 = True, vocab unchanged after serving = True (never re-derived) | [numeric_transform_law] OK: signed log1p law measured: encoded([0.0, 1.0, 10.0, 1000.0, 1000000000000.0, -1.0, -1000000000000.0]) = [0.0, 0.6931, 2.3979, 6.9088, 27.631, -0.6931, -27.631]; matches formula=True, monotone=True, odd-symmetric=True, finite at 1e12=True | [field_permutation_invariance] OK: attribute field order ['value', 'margin', 'price', 'qty']... vs permuted ['signup_ts', 'price', 'target_key', 'touch']... over 60000 rows: sequence digests identical (76b044ec00500be3 vs 76b044ec00500be3) | [training_determinism] OK: two seed-0 runs (d=64,L=1,e=1) on identical prepared inputs: E bit-identical=True, best-val equal (32.092237 == 32.092237)",
+    "evidence": "[unseen_value_path] OK: frozen schema (7 event types, vocab sizes [1, 10, 4, 3, 7, 3, 1, 4, 4, 396, 1, 1, 1, 4, 4]) encoded a batch containing unseen event types/categories/1e12 numerics: rows=1523894, entities=5002, all arrays finite=True, novel rows -> OOV slot 0 = True, vocab unchanged after serving = True (never re-derived) | [numeric_transform_law] OK: signed log1p law measured: encoded([0.0, 1.0, 10.0, 1000.0, 1000000000000.0, -1.0, -1000000000000.0]) = [0.0, 0.6931, 2.3979, 6.9088, 27.631, -0.6931, -27.631]; matches formula=True, monotone=True, odd-symmetric=True, finite at 1e12=True | [field_permutation_invariance] OK: attribute field order ['value', 'margin', 'price', 'qty']... vs permuted ['signup_ts', 'price', 'target_key', 'touch']... over 60000 rows: sequence digests identical (76b044ec00500be3 vs 76b044ec00500be3) | [training_determinism] OK: two seed-0 runs (d=64,L=1,e=1,batch=16 shared: {'batch': 'n_seqs=5000 seq_len=257 hw_cap=64 -> 16'}) on identical prepared inputs: E bit-identical=True, best-val equal (24.522622 == 24.522622)",
     "working": true
   },
   "S3": {
     "_stamp": {
-      "behavior_hash": "d0ac576c3c7aa069",
-      "command": "measure_dynamics_law.py --ckpt-dir /home/austin_whaley/wonderland_work/cfm_v2k --db /home/austin_whaley/wonderland_work/demo_v2/customer_event_stream.parquet --train-log /home/austin_whaley/wonderland_work/cfm_v2k/train.log --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
-      "generated_at": "2026-11-02T15:08:10+00:00",
-      "git_commit": "420957f9da9102fce4152829b88ce88867f52508",
+      "behavior_hash": "d2ad6f6058e9607d",
+      "command": "measure_dynamics_law.py --ckpt-dir /home/austin_whaley/wonderland_work/cfm_v2k --db /home/austin_whaley/wonderland_work/demo_v2/customer_event_stream.parquet --train-log /home/austin_whaley/wonderland_work/cfm_v2k/train.log --out docs/report_cards/experiments/judge_stages.json",
+      "generated_at": "2026-11-03T00:51:35+00:00",
+      "git_commit": "8a558374d0ed2f551879ff6e8b9488eb3d8e030f",
       "producer": "measure_dynamics_law.py"
     },
     "checks": {
       "clock_periodicity": {
         "evidence": "week-shift (exact cycle multiple): worst state/E drift 0.000e+00 (gate 1e-4); gaps-x10 control (tokens fixed): min state/E drift 4.673e-01 (gate >1e-3) \u2014 the spring responds to elapsed time. DISCLOSED: absolute-clock features used, w_tod norm 9.3; cfm_data stored ts vs model _to_epoch differ 0s (UTC vs local frame) \u2014 reconcile before horizons depend on it",
-        "seconds": 0.5,
+        "seconds": 1.3,
         "working": true
       },
       "governed_stability": {
@@ -82,31 +82,31 @@
       },
       "mass_additivity": {
         "evidence": "mass additivity scan(d, b1+b2) == scan(d,b1)+scan(d,b2) on real drives (disjoint event supports, float64): worst relative error 5.015e-16 (gate 1e-10)",
-        "seconds": 0.2,
+        "seconds": 0.3,
         "working": true,
         "worst_rel_err": 5.014716539692048e-16
       },
       "scan_associativity": {
         "evidence": "merge law F(g\u2218f)=F(g)\u2218F(f) on 6 real sequences x 5 split points (float64, model's own decay/drive, continuous_time=True): worst relative error 1.128e-15 (gate 1e-10)",
-        "seconds": 0.3,
+        "seconds": 4.0,
         "working": true,
         "worst_rel_err": 1.1283112214307106e-15
       },
       "ssm_merge_exact": {
         "evidence": "one-shot vs split-at-midpoint continuation WITH all recurrent states carried (scan h + intent-filter f + wrapper g) over 6 real sequences: state rel err 1.572e-07, readout 1.595e-07 (gate 5e-05); DISCLOSED: h-only continuation (today's cfm_state.absorb) drifts 1.280e-02 \u2014 the filter state is not carried by serving, a bought approximation awaiting its O6 receipt",
         "h_only_drift": 0.012795269345036024,
-        "seconds": 0.4,
+        "seconds": 1.4,
         "working": true,
         "worst_state_rel": 1.5720610789746892e-07
       },
       "step0_finite": {
         "evidence": "randomly re-initialized trunk (step-0 architecture, N(0,0.5) weights), 6 real sequences: 0 non-finite out of 496896 state/output/E values",
-        "seconds": 0.2,
+        "seconds": 0.5,
         "working": true
       },
       "tau_from_spectrum": {
         "evidence": "taus are gap quantiles of the stream (no literal): base taus=[0.185, 0.72, 3.347]s days -> cadence x100 taus=[18.52, 72.009, 334.659] (median ratio 100.0x, gate >=10x, non-constant=True)",
-        "seconds": 6.8,
+        "seconds": 7.5,
         "working": true
       }
     },
@@ -115,10 +115,10 @@
   },
   "S4": {
     "_stamp": {
-      "behavior_hash": "d0ac576c3c7aa069",
-      "command": "measure_views_law.py --products /home/austin_whaley/wonderland_work/cfm_v2k --demo /home/austin_whaley/wonderland_work/demo_v2 --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
-      "generated_at": "2026-11-02T13:51:39+00:00",
-      "git_commit": "99da0fbd2a3d55e44d846ae072c1fa0d43133761",
+      "behavior_hash": "d2ad6f6058e9607d",
+      "command": "measure_views_law.py --products /home/austin_whaley/wonderland_work/cfm_v2k --demo /home/austin_whaley/wonderland_work/demo_v2 --out docs/report_cards/experiments/judge_stages.json",
+      "generated_at": "2026-11-03T01:03:06+00:00",
+      "git_commit": "8a558374d0ed2f551879ff6e8b9488eb3d8e030f",
       "producer": "measure_views_law.py"
     },
     "checks": {
@@ -232,7 +232,7 @@
       "outlet_schema": {
         "evidence": "7 views / 35000 rows; declared-not-served [] advertised",
         "missing": [],
-        "seconds": 0.006,
+        "seconds": 0.005,
         "views": [
           "forecast",
           "heads",
@@ -765,16 +765,16 @@
   },
   "S5": {
     "_stamp": {
-      "behavior_hash": "d0ac576c3c7aa069",
-      "command": "measure_battery_law.py --products /home/austin_whaley/wonderland_work/cfm_v2k/cfm_products.duckdb --demo /home/austin_whaley/wonderland_work/demo_v2 --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
-      "generated_at": "2026-11-02T13:51:46+00:00",
-      "git_commit": "99da0fbd2a3d55e44d846ae072c1fa0d43133761",
+      "behavior_hash": "d2ad6f6058e9607d",
+      "command": "measure_battery_law.py --products /home/austin_whaley/wonderland_work/cfm_v2k/cfm_products.duckdb --demo /home/austin_whaley/wonderland_work/demo_v2 --out docs/report_cards/experiments/judge_stages.json",
+      "generated_at": "2026-11-03T01:03:14+00:00",
+      "git_commit": "8a558374d0ed2f551879ff6e8b9488eb3d8e030f",
       "producer": "measure_battery_law.py"
     },
     "checks": {
       "action_conditioned_outcome": {
         "evidence": "known-effect uplift from the one-factor-daily randomized offer arm (P(buy|offer=opt) - P(buy|off>=2), >= 10 arm-days/side): 1149 holdout B customers identified from 1485, head fitted on 2691 A customers; brain OOS R2=0.242 vs population-constant naive R2=-0.001; Spearman(brain,truth)=0.505; paired MSE-gain 95%CI [0.00542,0.00809] (gate lo>0)",
-        "seconds": 0.9,
+        "seconds": 0.7,
         "working": true
       },
       "distance_regression": {
@@ -930,10 +930,10 @@
     "working": false
   },
   "_meta": {
-    "behavior_hash": "d0ac576c3c7aa069",
-    "command": "measure_input_law.py --data /home/austin_whaley/wonderland_work/demo_v2 --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
-    "generated_at": "2026-11-02T16:05:02+00:00",
-    "git_commit": "986da0a6e1287eb6f87d56025944dfca483e5ee1",
+    "behavior_hash": "d2ad6f6058e9607d",
+    "command": "measure_input_law.py --data /home/austin_whaley/wonderland_work/demo_v2 --out docs/report_cards/experiments/judge_stages.json",
+    "generated_at": "2026-11-03T01:40:34+00:00",
+    "git_commit": "8a558374d0ed2f551879ff6e8b9488eb3d8e030f",
     "producer": "measure_input_law.py"
   }
 }

@@ -419,19 +419,41 @@ def check_training_determinism(data: Path) -> dict:
         disc["periods"],
         disc["horizons"],
     )
+    # DEC-573 addendum: the batch is derived ONCE and shared by both runs. train_encoder's
+    # batch=0 default re-derives from live hardware state on every call, so under co-tenant
+    # GPU load the two runs can land on different batches — which violates this check's own
+    # "identical" precondition and confounds determinism with memory state (measured: two
+    # seed-0 runs diverged to best-val 23.64 vs 24.52 while O3 attempt 4 trained alongside).
+    from looking_glass.autotune import derive_batch
+
+    seq_len = int(np.median([len(disc["seqs"][k][5]) for k in disc["keys"]]))
+    batch, batch_receipt = derive_batch(len(disc["keys"]), seq_len)
     E1, _, _, _, _, _, _, _, best1, _ = AE.train_encoder(
-        data=str(WORK / "det_a"), seed=0, d=64, layers=1, epochs=1, prepared=prepared
+        data=str(WORK / "det_a"),
+        seed=0,
+        d=64,
+        layers=1,
+        epochs=1,
+        prepared=prepared,
+        batch=batch,
     )
     E2, _, _, _, _, _, _, _, best2, _ = AE.train_encoder(
-        data=str(WORK / "det_b"), seed=0, d=64, layers=1, epochs=1, prepared=prepared
+        data=str(WORK / "det_b"),
+        seed=0,
+        d=64,
+        layers=1,
+        epochs=1,
+        prepared=prepared,
+        batch=batch,
     )
     identical = np.ascontiguousarray(E1).tobytes() == np.ascontiguousarray(E2).tobytes()
     ok = identical and best1 == best2
     return {
         "working": ok,
         "evidence": (
-            f"two seed-0 runs (d=64,L=1,e=1) on identical prepared inputs: "
-            f"E bit-identical={identical}, best-val equal ({float(best1):.6f} == {float(best2):.6f})"
+            f"two seed-0 runs (d=64,L=1,e=1,batch={batch} shared: {batch_receipt}) on identical "
+            f"prepared inputs: E bit-identical={identical}, "
+            f"best-val equal ({float(best1):.6f} == {float(best2):.6f})"
         ),
         "seconds": round(time.perf_counter() - t0, 1),
         "n_customers": int(len(disc["keys"])),

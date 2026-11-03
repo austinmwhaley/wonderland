@@ -1,10 +1,10 @@
 # REPORT_CARD — B foundational, then PATH B > PATH A
 
-*Generated `2026-11-02T20:45:02+00:00` · commit `b3e88a8` (`foundation-rebuild` · dirty) · encoder behavior `d0ac576c3c7aa069`*
+*Generated `2026-11-03T02:16:46+00:00` · commit `8a55837` (`foundation-rebuild` · dirty) · encoder behavior `d2ad6f6058e9607d`*
 
 **Assessment:**
 
-- ❌ **B foundational:** NOT CERTIFIED — the current gate. 1/8 sections green · 8 rows PASS · 1 FAIL · 14 UNKNOWN/MISSING.
+- ❌ **B foundational:** NOT CERTIFIED — the current gate. 1/8 sections green · 8 rows PASS · 0 FAIL · 15 UNKNOWN/MISSING.
 - ❌ **B+C consequence:** NOT DONE — 2/8 legs green · stages 5/6 · backward open: 0. Reported for diagnosis; downstream of B.
 - ⚪ **Project v1:** not assessed on this card (full stack is a separate scope).
 
@@ -23,7 +23,7 @@ The sprint's unit of progress is one capability delta on these axes. Each axis i
 | minimality rank | B5.1 | ❔ UNKNOWN | missing producer: measure_minimality_law.py |
 | transfer | B6.1, B6.3 | ❔ UNKNOWN | judge_stages.json:S5 working=True |
 | robust | B7.1, B7.2 | ❔ UNKNOWN | legacy receipt encoder_b_props.json (no behavior stamp); re-run the legacy calibration producer |
-| reproducible | B8.1, B8.2 | ❌ FAIL | legacy receipt encoder_b_props.json (no behavior stamp); re-run the legacy artifact producer |
+| reproducible | B8.1, B8.2 | ❔ UNKNOWN | legacy receipt encoder_b_props.json (no behavior stamp); re-run the legacy artifact producer |
 
 ## B — foundational scorecard (B-only, DEC-562)
 
@@ -99,14 +99,14 @@ The judge below is the **consequence** (B+C). This section is **B itself**: a ro
 | B7.1 | ECE / OOD retention (legacy) | calibration and OOD retention on the old reference | ❔ UNKNOWN | legacy receipt encoder_b_props.json (no behavior stamp); re-run the legacy calibration producer |
 | B7.2 | Missingness / unlogged confounders | uncertainty carried for unobserved events, never faked | ❔ UNKNOWN | missing producer: measure_robustness_law.py |
 
-### B8 — Reproducible · ❌ FAIL
+### B8 — Reproducible · ❔ UNKNOWN
 
 *Is the artifact an identity?*
 
 | # | Property | Metric | Verdict | Evidence / missing producer |
 |---|---|---|---|---|
 | B8.1 | Artifact identity (legacy) | artifact hash + config + data revision recorded | ❔ UNKNOWN | legacy receipt encoder_b_props.json (no behavior stamp); re-run the legacy artifact producer |
-| B8.2 | One-command reproducibility (S6) | the card is regenerated in one invocation at a recorded commit | ❌ FAIL | FAILED commit_recorded_clean: commit 99da0fbd2a3d on foundation-rebuild, behavior d0ac576c3c7aa069; tree carries 1 non-generated change(s):  (+1 more) |
+| B8.2 | One-command reproducibility (S6) | the card is regenerated in one invocation at a recorded commit | ❔ UNKNOWN | stale: measured by measure_certification_law.py against behavior d0ac576c3c7a (current d2ad6f6058e9) — re-run that producer |
 
 ## The judge — four legs × two numbers
 
@@ -120,7 +120,7 @@ Progress (`brain alone`) is a strict win. Delivery (`brain + ledger`) is a **non
 | unsupervised | brain + ledger (DELIVERY, non-inferiority) | ❌ FAIL | persona_geometry: outside the delivery non-inferiority margin (0.01 R2); failing: persona_geometry, future_geometry, segment_structure |
 | rl | brain alone (PROGRESS) | ✅ PASS | 2 task(s) beat PATH A; paired CI excludes 0; controls below brain |
 | rl | brain + ledger (DELIVERY, non-inferiority) | ✅ PASS | 2 task(s) beat PATH A; paired CI excludes 0; controls below brain |
-| simulator | brain alone (PROGRESS) | ❌ FAIL | argmax_optimum: does not beat PATH A with CI excluding 0; failing: argmax_optimum |
+| simulator | brain alone (PROGRESS) | ❌ FAIL | argmax_optimum: destroyed control >= brain (0.253872 vs 0.245791); failing: argmax_optimum |
 | simulator | brain + ledger (DELIVERY, non-inferiority) | ❌ FAIL | argmax_optimum: outside the delivery non-inferiority margin (0.01 R2); failing: argmax_optimum |
 
 ## Measured values — every task on the card
@@ -154,27 +154,27 @@ The leg verdict above is computed from these rows; a task can PASS while its leg
 | rl | brain + ledger (DELIVERY, non-inferiority) | known_effect_uplift | 0.1766 | 0.1794 | -0.002855 | [-0.001061, 0.000996] | -0.09492 | -0.1009 | 1149 | ✅ PASS |
 | rl | brain + ledger (DELIVERY, non-inferiority) | policy_value | 0.24 | 0.2382 | +0.001801 | [-0.004613, 0.008883] | 0.1668 | 0.1677 | 1149 | ✅ PASS |
 | simulator | brain alone (PROGRESS) | dose_response_curve | 0.3164 | 0.3039 | +0.01246 | [7.5e-05, 0.000482] | 0 | 0 | 5000 | ✅ PASS |
-| simulator | brain alone (PROGRESS) | argmax_optimum | 0.2444 | 0.2418 | +0.002693 | [-0.02694, 0.03098] | 0.2444 | 0.2444 | 1485 | ❌ FAIL |
+| simulator | brain alone (PROGRESS) | argmax_optimum | 0.2458 | 0.2418 | +0.00404 | [-0.02559, 0.03165] | 0.2444 | 0.2539 | 1485 | ❌ FAIL |
 | simulator | brain + ledger (DELIVERY, non-inferiority) | dose_response_curve | 0.3027 | 0.3039 | -0.001214 | [-0.000236, 0.000184] | -0.04729 | -0.05368 | 5000 | ✅ PASS |
-| simulator | brain + ledger (DELIVERY, non-inferiority) | argmax_optimum | 0.2444 | 0.2418 | +0.002693 | [-0.02694, 0.03098] | 0.2444 | 0.2444 | 1485 | ❌ FAIL |
+| simulator | brain + ledger (DELIVERY, non-inferiority) | argmax_optimum | 0.2593 | 0.2418 | +0.01751 | [-0.0128, 0.04714] | 0.2559 | 0.2431 | 1485 | ❌ FAIL |
 
 ## The stage ladder — what is broken when a leg is red
 
 | Stage | Working-state proof | Verdict | Evidence |
 |---|---|---|---|
-| **S1** Schema resolution (universal input) | renamed-schema + new-field pass, zero code edits | ✅ PASS | [renamed_end_to_end] OK: renamed client_id/occurred_at/event/attributes/total -> onboard resolved {'customer_key': 'client_id', 'event_ts':   ·measure_input_law.py on 986da0a |
-| **S2** Vocabulary & numeric encoding | unseen-value path exercised; transform receipts; permutation invariance <= tol | ✅ PASS | [unseen_value_path] OK: frozen schema (7 event types, vocab sizes [1, 10, 4, 3, 7, 3, 1, 4, 4, 396, 1, 1, 1, 4, 4]) encoded a batch containi  ·measure_input_law.py on 986da0a |
-| **S3** Lawful dynamics (the engine) | merge/equivariance/mass-additivity exact on data; tau receipted from spectra; stable from step 0 | ✅ PASS | [scan_associativity] OK: merge law F(g∘f)=F(g)∘F(f) on 6 real sequences x 5 split points (float64, model's own decay/drive, continuous_time=  ·measure_dynamics_law.py on 420957f |
-| **S4** Buckets (the outlets) | per-bucket accessibility parity + per-bucket negative controls | ✅ PASS | [outlet_schema] OK: 7 views / 35000 rows; declared-not-served [] advertised | [decodability] OK: linear-head decoders beat random+destroyed   ·measure_views_law.py on 99da0fb |
-| **S5** The objective battery | every content pressure beats its naive comparator (or is excluded and reported) | ✅ PASS | [ledger_reconstruction] OK: ledger recomputed from the raw stream by DuckDB (not a table copy); LINEAR head on the learned-shape donor (embe  ·measure_battery_law.py on 99da0fb |
-| **S6** Certification (the card) | one command regenerates the card at a recorded commit + hashes | ❌ FAIL | FAILED commit_recorded_clean: commit 99da0fbd2a3d on foundation-rebuild, behavior d0ac576c3c7aa069; tree carries 1 non-generated change(s):  (+1 more)  ·measure_certification_law.py on 99da0fb |
+| **S1** Schema resolution (universal input) | renamed-schema + new-field pass, zero code edits | ✅ PASS | [renamed_end_to_end] OK: renamed client_id/occurred_at/event/attributes/total -> onboard resolved {'customer_key': 'client_id', 'event_ts':   ·measure_input_law.py on 8a55837 |
+| **S2** Vocabulary & numeric encoding | unseen-value path exercised; transform receipts; permutation invariance <= tol | ✅ PASS | [unseen_value_path] OK: frozen schema (7 event types, vocab sizes [1, 10, 4, 3, 7, 3, 1, 4, 4, 396, 1, 1, 1, 4, 4]) encoded a batch containi  ·measure_input_law.py on 8a55837 |
+| **S3** Lawful dynamics (the engine) | merge/equivariance/mass-additivity exact on data; tau receipted from spectra; stable from step 0 | ✅ PASS | [scan_associativity] OK: merge law F(g∘f)=F(g)∘F(f) on 6 real sequences x 5 split points (float64, model's own decay/drive, continuous_time=  ·measure_dynamics_law.py on 8a55837 |
+| **S4** Buckets (the outlets) | per-bucket accessibility parity + per-bucket negative controls | ✅ PASS | [outlet_schema] OK: 7 views / 35000 rows; declared-not-served [] advertised | [decodability] OK: linear-head decoders beat random+destroyed   ·measure_views_law.py on 8a55837 |
+| **S5** The objective battery | every content pressure beats its naive comparator (or is excluded and reported) | ✅ PASS | [ledger_reconstruction] OK: ledger recomputed from the raw stream by DuckDB (not a table copy); LINEAR head on the learned-shape donor (embe  ·measure_battery_law.py on 8a55837 |
+| **S6** Certification (the card) | one command regenerates the card at a recorded commit + hashes | ❔ UNKNOWN | stale: measured by measure_certification_law.py against behavior d0ac576c3c7a (current d2ad6f6058e9) — re-run that producer |
 
 ## Certification hygiene
 
 | # | Check | Verdict | Evidence |
 |---|---|---|---|
 | H1 | Environment receipted | ✅ PASS | env_receipt.json device matmul ok |
-| H2 | Behavior hash recorded | ✅ PASS | behavior_hash d0ac576c3c7aa069 |
+| H2 | Behavior hash recorded | ✅ PASS | behavior_hash d2ad6f6058e9607d |
 | H3 | N recorded | ✅ PASS | enforced per row (no PASS without N) |
 | H4 | Controls present | ✅ PASS | enforced per row (no PASS without controls) |
 | H5 | Comparator finite and fair | ✅ PASS | enforced per row (comparator must be finite and fair) |
@@ -185,9 +185,9 @@ The leg verdict above is computed from these rows; a task can PASS while its leg
 - `judge_leg_supervised.json :: brain_ledger — price_sensitivity: random control >= brain (-0.061398 vs -0.079803); failing: price_sensitivity, return_proneness`
 - `judge_leg_unsupervised.json :: brain — persona_geometry: does not beat PATH A with CI excluding 0; failing: persona_geometry, future_geometry, segment_structure`
 - `judge_leg_unsupervised.json :: brain_ledger — persona_geometry: outside the delivery non-inferiority margin (0.01 R2); failing: persona_geometry, future_geometry, segment_structure`
-- `judge_leg_simulator.json :: brain — argmax_optimum: does not beat PATH A with CI excluding 0; failing: argmax_optimum`
+- `judge_leg_simulator.json :: brain — argmax_optimum: destroyed control >= brain (0.253872 vs 0.245791); failing: argmax_optimum`
 - `judge_leg_simulator.json :: brain_ledger — argmax_optimum: outside the delivery non-inferiority margin (0.01 R2); failing: argmax_optimum`
-- `judge_stages.json — FAILED commit_recorded_clean: commit 99da0fbd2a3d on foundation-rebuild, behavior d0ac576c3c7aa069; tree carries 1 non-generated change(s):  (+1 more)  ·measure_certification_law.py on 99da0fb`
+- `judge_stages.json — stale: measured by measure_certification_law.py against behavior d0ac576c3c7a (current d2ad6f6058e9) — re-run that producer`
 - `B B1.2 Construction laws (C1-C6) — legacy receipt encoder_lawfulness.json (no behavior stamp); re-run the legacy encoder-construction producer`
 - `B B2.1 Worst-case sufficiency U — missing producer: measure_sufficiency_law.py`
 - `B B2.2 Full-history oracle gap — missing producer: measure_sufficiency_law.py`
@@ -202,7 +202,7 @@ The leg verdict above is computed from these rows; a task can PASS while its leg
 - `B B7.1 ECE / OOD retention (legacy) — legacy receipt encoder_b_props.json (no behavior stamp); re-run the legacy calibration producer`
 - `B B7.2 Missingness / unlogged confounders — missing producer: measure_robustness_law.py`
 - `B B8.1 Artifact identity (legacy) — legacy receipt encoder_b_props.json (no behavior stamp); re-run the legacy artifact producer`
-- `B B8.2 One-command reproducibility (S6) — FAILED commit_recorded_clean: commit 99da0fbd2a3d on foundation-rebuild, behavior d0ac576c3c7aa069; tree carries 1 non-generated change(s):  (+1 more)`
+- `B B8.2 One-command reproducibility (S6) — stale: measured by measure_certification_law.py against behavior d0ac576c3c7a (current d2ad6f6058e9) — re-run that producer`
 
 ## Backward requirements (from PROMPT_BACKWARD)
 

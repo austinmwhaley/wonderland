@@ -9089,7 +9089,20 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     canonical-swap question) records here as the outcome addendum when attempt 4 lands.
   - **DEC numbering.** DEC-574 stays reserved for the O4 decision-law pre-registration (per the
     O8 queue); the trunk-axis candidate pre-registers as DEC-575 (below).
-  - **Addendum (re-stamp).** [lands with the receipts commit]
+  - **Addendum (re-stamp, landed 2026-11-03).** The 8 recorded producer commands were re-run in
+    receipt order (RESTAMP_RC=0): S1/S2, S3, S4, S5, the four judge legs, stage decomposition,
+    block serving, served object — all now stamped `d2ad6f6058e9607d` at commit `8a55837`; S6/B8.2
+    remains on the old hash pending the clean-tree run (queued). One anomaly, disclosed and
+    resolved: S2 `training_determinism` first came back FAIL under O3-attempt-4 co-tenancy (two
+    seed-0 runs diverged, best-val 23.64 vs 24.52). Root cause: the check's own two
+    `train_encoder` calls each re-derived the batch from live hardware state — the DEC-573 defect
+    family inside the measurement harness (`derive_batch` oscillated under the co-tenant,
+    measured 16 at check time), so the two "identical" runs were not identical. Fix: one derived
+    batch shared by both runs (`check_training_determinism`, measure_input_law.py; scripts-only,
+    no behavior-hash move). Re-run PASSED bit-identical at the shared batch=16 WHILE O3 attempt 4
+    trained alongside (152.1s) — the GPU path is co-tenancy-stable when the configuration is
+    pinned, which is the check's own precondition restored. S1–S5 green, B3 back to 6/6 under
+    `d2ad6f60`; B2/B4/B5/B6/B7 remain on their own producers.
 
 - **DEC-575 (trunk-axis candidate pre-registered — nonlinear state-update algebra; conditional on DEC-573's branch; the operator's 2026-11-02 "looped transformer" question is the entry point):**
   - **Principle served.** Lawful (rank as a property of the state update, FR v2.0 pillar 1:
@@ -9127,3 +9140,83 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     O(N); quadratic attention violates Efficient unless linearized, and a linearized attention
     is a different candidate (its own pre-registration). (iii) Batch/LR tricks: not the trunk
     axis (and DEC-573 just made batch a pinned protocol field).
+
+- **DEC-576 (DEV-RIG pre-registration: the A↔B→C loop on known-truth lab streams — operator pivot 2026-11-03):**
+  - **Context.** The operator: "You are simply not making progress ... take a big step back and
+    make ANY foundation model before we make THE foundation model." Diagnosis of record: 4 of
+    O3's 5 attempts died to protocol/environment defects (type guard, batch drift, pin clobber,
+    harness re-derivation) before any science verdict; every real-data iteration costs
+    1.5–2.5 h (retrain) + 10–20 min (measurements) + an 8-producer re-stamp on any behavior move;
+    the outer loop was measuring the apparatus more than the model. Meanwhile the capability
+    blocker (the 2.4-d learned blob) has exactly one run in flight.
+  - **The rig already exists (built, pre-registered, never run — lab coverage 0/32).**
+    `rabbit_hole.data_spec` (ONE parameterized simulator: `DataSpec` → stream + truth + latent
+    per-customer rates; `snr` 0→1 difficulty knob; truth AND oracle derived from the SAME spec),
+    `lab_oracles` (per-use-case POSITIVE spec whose target is carried beyond the strong
+    model-free baseline + NEGATIVE snr=0 + ADVERSARIAL echo-next leakage trap), `lab`
+    (32-use-case ontology + coverage report), `lab_gate` (fixture defensibility:
+    `oracle_carried` / `negative_not_carried` / `adversarial_not_carried` /
+    `adversarial_leak_has_teeth`), `head_battery`/`probes` (frozen simple heads, PASS/FAIL/
+    NO_SIGNAL verdicts with paired CIs vs the named baseline). `stream_adapter.discover`
+    ingests the lab schema unchanged (measured: value-from-JSON discovery, 50-customer probe).
+    The rig runs the REAL looking_glass pipeline — it is not a substitute model.
+  - **The loop (one axis per iteration, minutes per loop).** (1) A: build the fixture at the
+    dev size N=500 (recorded; scale only if the CI is measured too wide) via
+    `lab_oracles.build_positive/negative/adversarial`; run `lab_gate.evaluate()` for the use
+    case — the fixture must be defensible before any B claim. (2) B: train the real CFM on the
+    POSITIVE fixture (autotune-derived config, fresh out-dir under `/tmp/opencode/lab/<uc>`,
+    `--as-of` at ~70% of the window so the next-event future is non-degenerate; one-axis diff
+    vs the previous iteration). (3) Measure, frozen: **speedometer** `g = (nll_enc −
+    nll_oracle) / (nll_base − nll_oracle)` on the SAME held-out B-future rows, nats throughout
+    (oracle.json is bits = log2 → the measured NLLs are the single unit; `nll_base` = 1-gram
+    transition matrix fit on history-only, scored OOS; fallback frozen: if `nll_base ≤
+    nll_oracle` on the finite sample, the closed-form `baseline_ce` (×log2) replaces the
+    denominator and both facts are recorded). **Mastered ⇔ g ≤ 0.5 AND the encoder beats the
+    1-gram (paired CI lo > 0) AND the geometry receipt (eff_rank from the run's own portfolio
+    receipt) is recorded.** (4) Controls, frozen: NEGATIVE fixture trained through the same
+    pipeline must read **NO_SIGNAL** (does not beat 1-gram, paired CI); ADVERSARIAL fixture:
+    the head WILL beat the 1-gram via the echo (leak has teeth, `_leak_score > 0.9` on the A
+    side) but the structure claim reads **NO_SIGNAL** because `oracle_carried`/
+    `transition_carried` is false on the snr=0 types — a naive "beats baseline" verdict on that
+    fixture is the false PASS this control exists to catch, and the receipt records both
+    numbers. (5) Record: `docs/report_cards/experiments/lab/<uc>_iter<k>.json` (fixture spec +
+    N + seed + lab_gate line + train receipt + all measured NLLs/g/eff_rank + control verdicts);
+    re-run `python -m rabbit_hole.lab` for the coverage line. (6) C: when B masters the use
+    case, the corresponding `head_battery` targets run on the frozen toy products (C is TESTED
+    here; it is still only a consequence, per DEC-568).
+  - **Curriculum order (one structure axis each).** iter1 `next_event` (transition=True,
+    intent=0.5, snr=1.0) → iter2 `intent` sharpening (per-customer identity in the types) →
+    iter3 `rate_heterogeneity` (dt/value probes vs the mean baseline; latent rates are known) →
+    iter4 `n_entities`/`entity_affinity` (next_entity; value depends on the product) → iter5
+    `trend` (churn/retention: velocity beyond level) → iter6 `action_peak` (decision:
+    optimal_arm is known per customer — the first C-side decision test, on the stream's own
+    randomized arms). The snr knob (1.0 → 0.5 → 0.3) is applied WITHIN a use case once it is
+    mastered at full structure.
+  - **Discipline (binding — DEC-228/234 failure mode in new clothes).** Lab receipts are a
+    DEVELOPMENT INSTRUMENT: they live under `docs/report_cards/experiments/lab/`, no B-row
+    source in `b_spec.py`/`judge_spec.py` names them, and a toy-green can only SUGGEST the next
+    real-data run — it can never flip a B-row verdict. Certification of B stays on the real
+    stream (cfm_v2k / O3 / DEC-575). The main `REPORT_CARD.md` is untouched by the rig except
+    that STATUS.md describes it.
+  - **Port protocol.** When the trunk-axis candidate (DEC-575 candidate 1: bilinear
+    iterate-to-convergence scan) is GREEN on the dev rig (mastered on `next_event` + `intent`,
+    controls clean, eff_rank receipt in hand), it is ported to the real stream as ONE
+    pre-registered run under DEC-575's frozen gates — the rig reduced that run's risk; it did
+    not replace its gate.
+  - **What this does NOT change.** DEC-570's U spec (its declared bar is explicitly "on the
+    cfm_v2k stream at full size" — U also runs on the toy as the dev loop's sufficiency
+    speedometer, which is additional evidence, not a substitute); DEC-572/573's O3 protocol and
+    the in-flight attempt 4 (launch-verified at `step 82/1650`; let it finish — its
+    accept/reject is real-data evidence; the S2 determinism check just trained on the same GPU
+    alongside it and stayed bit-identical, so co-tenancy is safe for small jobs); the B-row
+    definitions; O4/O5/B6.3/B7.2's queue (after B is green on the real stream).
+  - **Rejected.** (i) A hand-rolled minimal stream: the generator already ships truth +
+    closed-form oracle + negative + adversarial; a new world would duplicate the mechanism and
+    lose the schema realism the Universal principle asks the pipeline to absorb.
+    (ii) Shrinking demo_v2 to fewer customers: demo_v2's reference truth is a lab-trait
+    construction, not a spec-derived closed-form ceiling — the speedometer needs the
+    oracle/baseline pair the fixture builder produces. (iii) Killing O3 attempt 4 to free the
+    GPU: a verified in-flight run costs nothing incremental and its result is exactly the
+    real-data evidence the dev rig cannot provide. (iv) Running the dev loop on the full 32-use-
+    case coverage: earn the right to scale — one use case, mastered, then the next.
+  - **Status.** Pre-registered. Iteration 1 (`next_event`, N=500) runs next.

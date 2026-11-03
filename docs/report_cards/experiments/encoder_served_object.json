@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "d0ac576c3c7aa069",
+    "behavior_hash": "d2ad6f6058e9607d",
     "command": "measure_served_object.py",
-    "generated_at": "2026-11-02T20:42:41+00:00",
-    "git_commit": "b3e88a81ddcd962b686bc6aebc61ed4645c8ee40",
+    "generated_at": "2026-11-03T01:12:00+00:00",
+    "git_commit": "8a558374d0ed2f551879ff6e8b9488eb3d8e030f",
     "producer": "measure_served_object.py"
   },
   "arms": {
@@ -252,7 +252,7 @@
     "shape_served",
     "path_a"
   ],
-  "seconds": 17.6,
+  "seconds": 90.6,
   "validation": {
     "future_fields": [
       "x0",
