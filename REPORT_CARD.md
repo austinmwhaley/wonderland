@@ -1,6 +1,6 @@
 # REPORT_CARD — B foundational, then PATH B > PATH A
 
-*Generated `2026-11-03T15:21:52+00:00` · commit `61c2ff0` (`foundation-rebuild` · dirty) · encoder behavior `4053d2f98a90e6bc`*
+*Generated `2026-11-03T15:22:07+00:00` · commit `ac64892` (`foundation-rebuild` · dirty) · encoder behavior `4053d2f98a90e6bc`*
 
 **Assessment:**
 
@@ -211,12 +211,12 @@ The leg verdict above is computed from these rows; a task can PASS while its leg
 
 ## What is blocking (exact missing receipts)
 
-- `judge_leg_supervised.json :: brain — return_proneness: does not beat PATH A with CI excluding 0; failing: return_proneness`
-- `judge_leg_supervised.json :: brain_ledger — price_sensitivity: random control >= brain (-0.061398 vs -0.079803); failing: price_sensitivity, return_proneness`
-- `judge_leg_unsupervised.json :: brain — persona_geometry: does not beat PATH A with CI excluding 0; failing: persona_geometry, future_geometry, segment_structure`
-- `judge_leg_unsupervised.json :: brain_ledger — persona_geometry: outside the delivery non-inferiority margin (0.01 R2); failing: persona_geometry, future_geometry, segment_structure`
-- `judge_leg_simulator.json :: brain — argmax_optimum: destroyed control >= brain (0.253872 vs 0.245791); failing: argmax_optimum`
-- `judge_leg_simulator.json :: brain_ledger — argmax_optimum: outside the delivery non-inferiority margin (0.01 R2); failing: argmax_optimum`
+- `judge_leg_supervised.json :: brain [P4·JUDGE-supervised] — return_proneness: does not beat PATH A with CI excluding 0; failing: return_proneness`
+- `judge_leg_supervised.json :: brain_ledger [P4·JUDGE-supervised] — price_sensitivity: random control >= brain (-0.061398 vs -0.079803); failing: price_sensitivity, return_proneness`
+- `judge_leg_unsupervised.json :: brain [P4·JUDGE-unsupervised] — persona_geometry: does not beat PATH A with CI excluding 0; failing: persona_geometry, future_geometry, segment_structure`
+- `judge_leg_unsupervised.json :: brain_ledger [P4·JUDGE-unsupervised] — persona_geometry: outside the delivery non-inferiority margin (0.01 R2); failing: persona_geometry, future_geometry, segment_structure`
+- `judge_leg_simulator.json :: brain [P4·JUDGE-simulator] — argmax_optimum: destroyed control >= brain (0.253872 vs 0.245791); failing: argmax_optimum`
+- `judge_leg_simulator.json :: brain_ledger [P4·JUDGE-simulator] — argmax_optimum: outside the delivery non-inferiority margin (0.01 R2); failing: argmax_optimum`
 - `B B1.2 [P1·B1] Construction laws (C1-C6) — legacy receipt encoder_lawfulness.json (no behavior stamp); re-run the legacy encoder-construction producer`
 - `B B4.1 [P2·B4] B-only dose-response / argmax — missing producer: measure_decision_law.py`
 - `B B4.2 [P2·B4] OPE / IPS known-effect recovery (legacy) — legacy receipt encoder_causal_ci.json (no behavior stamp); re-run the legacy causal producer`
