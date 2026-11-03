@@ -246,6 +246,7 @@ def load_frozen_encoder(tag: str, cfm_dir):
         isometric_boundary=bool(blob.get("isometric_boundary", False)),
         bilinear=bool(blob.get("bilinear_recurrence", False)),
         looped=bool(blob.get("looped_recurrence", False)),
+        drive_looped=bool(blob.get("drive_looped_recurrence", False)),
         readout_norm=bool(blob.get("readout_norm", False)),
         input_norm=bool(blob.get("input_norm", False)),
         readout_skip=bool(blob.get("readout_skip", False)),

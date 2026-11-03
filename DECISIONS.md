@@ -9733,3 +9733,222 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
       DEC-581 run.
     - **Status.** Outcome recorded: the iter3 row joins the card's frontier readings
       (scripts-only, no behavior move); the next forward run pre-registers DEC-581.
+
+- **DEC-581 (dev-rig iteration 4 pre-registered: DEC-575 candidate 3 on the `next_event` fixture — the trunk/state-update algebra, drive-side value, one axis):**
+  - **NODE:** P2/E1 — the trunk's state-update algebra is the measured blocker (O3 attempt 4
+    rejected on DEC-572's bars; DEC-577 candidate 1 negative on the toy; DEC-578 candidate 2
+    negative on the toy: g 1.181525 vs 1.14727/1.154482, CI still straddles the 1-gram,
+    eff_rank 1.248, controls clean). DEC-578's outcome addendum fired branch (iii) — "the named
+    escalation is DEC-575 candidate 3 under its own DEC: the looped block on the DRIVE side
+    (`F^T` applied to the token drive, state-side algebra stays affine — a different one-axis
+    value, same discipline)" — and declared this DEC. E1 stays DEC-frozen (FRONTIER) until its
+    pre-registered port run; this run moves only the toy reading the card reports beside it.
+  - **ROUTE:** R1 — dev rig, `next_event` N=500 (known truth, minutes); R1's evidence pointer
+    (moved by the DEC-578 outcome) names this run.
+  - **MOVE:** E1's toy reading, because one axis: trunk algebra → drive-side looped block,
+    `--set drive_looped_recurrence=true` atop iteration 1's configuration (bilinear OFF,
+    state-looped OFF).
+  - **Context.** Candidate 2 (state-side) made the kick depend on the state, which forced a
+    two-loop solve (inner block composition + outer state fixed point); its convergence
+    receipt hit both pre-registered caps at the final forward (depth 4/4, outer 8/8) — the
+    anticipated stability risk, receipted, and g did not improve. Candidate 3 applies the same
+    weight-tied block to the INPUT drive instead: the kick `β₃·F^T(drive_t)` depends only on
+    the drive (and the drive only on `x_t`/decay), so the state-side algebra stays AFFINE —
+    the whole update is one associative scan with a modified drive. The nonlinearity now shapes
+    what enters the state (a per-step, per-token function of the event), not how the state
+    feeds back on itself: a different one-axis value of the same trunk-algebra axis, and the
+    outer fixed point disappears by construction (not by tuning) — the cap-hit stability risk
+    of candidate 2 is structurally absent here.
+  - **Principle served.** Lawful (FR v2.0 pillar 1: rank/structure live in the state update
+    `h_t = f(h_{t-1}, x_t)` as algebraic construction) + Efficient (ONE differentiable
+    associative scan — O(log T), fully vectorized, no Python loop over time; the depth
+    composition is ≤ 4 bounded vectorized passes over B×T) + Robust (unit-norm gate bounds
+    each composition's Lipschitz — DEC-043 path 1; no outer loop to diverge; UNSTABLE is a
+    reject, not a rescue).
+  - **The mechanism (frozen, as shipped).** New `CFMConfig.drive_looped_recurrence` (default
+    False) → `CFM` → `MultiScaleSSM` → `SelectiveSSM` (mirrors `looped_recurrence`'s plumbing
+    exactly):
+    - Update: `h_t = decay_t·h_{t-1} + drive0_t + β₃·F^T(drive0_t)` where
+      `drive0_t = (1−decay_t)·bx_t` (the existing affine drive, mask/pad already folded in
+      upstream) and `F(z) = u(tanh(W₃ z))`, `u` = per-sample unit norm (‖·‖₂ + 1e-6); `F^T`
+      is T-fold weight-tied self-composition of the SAME map on the drive.
+    - `W₃`: dim×dim, init `normal(std=0.1)`, bias zero — identical init discipline to
+      candidates 1/2 (`W_nl`, `W_nl2`). `β₃`: learned scalar, init 0.3 — identical to
+      `β`/`β₂`.
+    - T is data-derived, not counted: compose F on the drive until the batch-max change
+      `‖F^k(drive) − F^{k−1}(drive)‖∞ < 1e-4` (converge, not count), capped at 4
+      compositions (documented fallback; "one or a few blocks" per DEC-575). The composition
+      is fully differentiable (no no_grad phase — there is no state feedback to detach);
+      gradient flows through `W₃` (tanh) and the drive. Memory = 1 scan graph + ≤ 4
+      compositions. The receipt records `depth`/`depth_cap`/`depth_converged`/`depth_tol`
+      (no outer loop exists, so no outer fields — the receipt's shape is itself the
+      disclosure).
+    - Identity plumbing (the DEC-577/578 defect class, applied up front):
+      `drive_looped_recurrence` joins the tag signature as the `|dl` axis (OFF leaves every
+      tag byte-identical — cfm_v2k's pin must stay), joins the warm-start architecture
+      comparison pairwise against BOTH existing trunk algebras (an algebra pair must not
+      warm-start across the boundary, either direction), and is dumped into the registry
+      config; the convergence receipt lands in the registry meta
+      (`drive_looped_convergence`).
+    - Guard (fail-safe, generalized): AT MOST ONE of `bilinear_recurrence`,
+      `looped_recurrence`, `drive_looped_recurrence` may be ON — two trunk algebras in one
+      update is a composite protocol that is not pre-registered anywhere; the construction
+      guard raises for every pairwise combination (DEC-578's bilinear+looped check becomes
+      the general form).
+    - Refactor note: the block composition is factored into one shared `_compose(W, z, cap,
+      tol)` helper used by `_looped_block` (candidate 2, state side) and
+      `_drive_looped_block` (candidate 3, drive side) — same math, one definition
+      (principle 6); candidate 2's behavior and receipt are unchanged.
+  - **One-axis diff (frozen).** `--set drive_looped_recurrence=true` on the iteration-1
+    command, everything else identical: `next_event` positive/negative/adversarial fixtures
+    (seed 17, snr 1.0), N=500, as-of 2024-09-01, anchors 6, fresh out-dirs
+    `/tmp/opencode/lab/next_event_iter4_{pos,neg,adv}`, autotune-derived dim/batch/budget
+    (iterations 1–3 resolved dim=32 — the registry records what resolves; a different
+    resolution is a recorded deviation, not a silent one), `LG_SCAN=eager`, `safe_run`,
+    scratch warm-start (fresh out-dir). Both other trunk algebras stay OFF: the axis value
+    is "trunk algebra = drive-side looped block"; stacking would be a composite,
+    unpre-registered protocol (and the guard makes it impossible). The iteration-4 /tmp
+    launch script also fixes the bash local-expansion log-naming defect disclosed in the
+    DEC-578 outcome (per-run logs collapse into one file): harness-only, no repo effect.
+  - **Frozen verdict (DEC-576 speedometer + controls, unchanged).** Mastered ⇔ g ≤ 0.5 AND
+    the encoder beats the 1-gram (paired CI entirely below 0 on enc−base, nats) AND the
+    eff_rank receipt is in hand (from the run's own portfolio receipt; recorded, no bar on
+    the toy). NEGATIVE must read NO_SIGNAL; ADVERSARIAL must read as expected (structure
+    claim NO_SIGNAL while the echo lets the head beat the 1-gram — the false-PASS trap).
+    Launch receipts (the `[set]` override line, the registries' `drive_looped_recurrence:
+    true` at the resolved dim, the tag move onto the `|dl` axis, and the convergence receipt)
+    are verified before any result is read. Receipt:
+    `docs/report_cards/experiments/lab/next_event_iter4.json`.
+  - **Attribution a priori (so the read is not improvised).**
+    (i) MASTERED with clean controls: candidate 3 works on the toy; iteration 5 is `intent`
+    (curriculum step 2, ROUTE R2) BEFORE the port — DEC-576's port protocol needs BOTH
+    next_event and intent mastered with clean controls; record the eff_rank delta vs
+    iterations 1–3 (1.153 / 1.473 / 1.248).
+    (ii) g improves but stays > 0.5 (and/or the CI moves toward 0 without crossing): the
+    drive-side block carries more of the structure; record the delta, and the next step is
+    the snr knob (1.0 → 0.5) within next_event — still the trunk axis, one step.
+    (iii) No improvement in g: candidate 3 negative on the toy; ALL THREE pre-registered
+    single-axis trunk-algebra candidates (DEC-575's 1–3) are now exhausted on the toy at the
+    resolved dim=32. The pre-registered next move is the CAPACITY read: DEC-582 (baseline
+    trunk algebra at dim=256, this same cycle — operator-approved sequencing 2026-11-03;
+    the §4.3 two-axis COMPOSITE — a candidate algebra at dim=256 — stays barred from
+    verdicts) alongside the recorded attribution: the fixture's true process carries
+    first-order transition structure (`fixture_spec.transition: true`), so the Laplace +1
+    1-gram baseline is a correctly-specified first-order model on this toy; the headroom to
+    the closed-form oracle is then a finite-sample ESTIMATION gap, and trunk candidates
+    compete on estimation efficiency, not expressivity. If DEC-582's dim=256 baseline also
+    shows the blob, the 1-gram floor is binding on the toy at N=500, and the
+    curriculum/snr ladder is re-examined under a named DEC.
+    (iv) UNSTABLE (divergence, non-finite, or lr collapse at any point): reject, not rescue
+    (DEC-575 gate 4); recorded as candidate-3-negative as shipped and the escalation is
+    branch (iii)'s. No post-hoc bar edits in any branch.
+  - **Cost of the behavior move.** This chunk moves the behavior hash once (the drive-looped
+    branch, default-OFF inert); the full cfm_v2k re-stamp (the recorded producers, no
+    retrain) folds into the same cycle and must reproduce the card's current verdicts
+    (12 PASS / 0 FAIL / 11 UNKNOWN — the default-off no-op proof), then S6/B8.2 re-runs at
+    the clean commit. The lab iteration itself is ~12–15 min (three N=500 trains). The card's
+    frontier readings gain the iter4 row at outcome time (scripts-only, no second hash move).
+  - **Rejected.** (i) Stacking any two trunk algebras: a composite protocol, not
+    pre-registered; the generalized construction guard makes it impossible anyway. (ii)
+    Tuning the depth cap / tol / `β₃` init before the as-shipped measurement: the
+    gate-tuning discipline DEC-577/578 rejected for candidates 1–2 applies verbatim. (iii)
+    The §4.3 two-axis composite (a candidate algebra AT dim=256) on THIS verdict:
+    two-axis (trunk-algebra × capacity), barred by DEC-577/578 alternative iii — DEC-582
+    runs the baseline-algebra capacity value instead, which the ban never covered. (iv) Advancing the curriculum to `intent`
+    or stepping snr down: barred — `next_event` is not mastered at snr=1.0. (v) The
+    real-data port run: DEC-576's port protocol needs both structures mastered with clean
+    controls; it does not fire on this toy alone. (vi) Solving candidate 3 with candidate
+    2's two-loop structure (state-implicit form): that would make the axis value "drive-side
+    + state feedback", a composite algebra, not the pre-registered drive-side value.
+  - **Status.** Pre-registered. Candidate 3 is implemented in this run; the cfm_v2k
+    re-stamp lands at the clean commit; iteration 4 trains next (one axis: the trunk
+    algebra, drive-side looped block ON, both other algebras OFF).
+
+- **DEC-582 (dev-rig run 4b pre-registered: the CAPACITY axis on `next_event` — baseline trunk algebra at dim=256, one axis; pulled forward from DEC-581 branch (iii) by the operator's 2026-11-03 sequencing approval):**
+  - **NODE:** P2/E1 — "Trunk capacity (the state-update algebra)": the node's scope is
+    capacity AND algebra; this run values the capacity axis at the pre-registered diagnostic
+    point while the algebra axis stays at its baseline value (affine, all trunk flags OFF).
+  - **ROUTE:** R1 — dev rig, `next_event` N=500 (known truth, minutes).
+  - **MOVE:** E1's toy reading, because one axis: state capacity → `--set dim=256` atop the
+    iteration-1 command (iteration 1's configuration: affine state update, no
+    trunk-algebra flags — the same configuration iteration 1 ran at the autotuned dim=32,
+    with the declared dim instead of the resolved one).
+  - **Context.** Three pre-registered trunk-algebra candidates are exhausted or exhausting at
+    the resolved dim=32 (candidate 1 negative: DEC-577; candidate 2 negative: DEC-578
+    outcome; candidate 3: DEC-581, this cycle). The `next_event` fixture's true process
+    carries first-order transition structure (`fixture_spec.transition: true`), and the
+    Laplace +1 1-gram baseline is a correctly-specified first-order model for it: the
+    headroom to the closed-form oracle (0.979548 → 0.645459 nats) is predominantly a
+    finite-sample ESTIMATION gap, not an expressivity gap. DEC-577/578 barred the dim=256
+    TWO-AXIS test (the §4.3 spike shape: a candidate algebra × capacity) from candidate
+    verdicts — that bar stands. What the bar never covered, and what the operator's
+    2026-11-03 sequencing approval ("Candidate 3 + dim=256 diagnostic now") pulls forward,
+    is the baseline-algebra capacity value: the trunk algebra stays at its baseline (affine)
+    value, so this is a one-axis run on the CAPACITY axis. It answers the single most
+    informative open question on this fixture: is the blob capacity-limited (the algebra
+    ladder was chasing the wrong axis at toy scale), or is the 1-gram floor binding at toy
+    scale for every trunk value?
+  - **Principle served.** Efficient (dim is a declared/derived config value — `--set dim=256`
+    is the existing declaration channel, no new code, NO behavior move atop `905b4f88`) +
+    Diagnosable (the loop must attribute a shortfall to a SPECIFIC axis — capacity vs
+    algebra — and this is the cheapest run that separates them; both readings are
+    pre-registered so the attribution is not improvised) + Honest (registered as a
+    capacity-axis value with the full frozen verdict, not smuggled in as a "labeled
+    diagnostic" without verdict power; the §4.3 composite bar is untouched).
+  - **The mechanism (frozen, as shipped).** No new mechanism: iteration 1's configuration
+    with `--set dim=256` in place of the autotune resolution (iterations 1–4 all resolved
+    dim=32). Autotune/derive_batch re-derives everything else from the declared dim
+    (batch shrinks, budget re-derives — recorded in the registry, no silent deviation).
+  - **One-axis diff (frozen).** `--set dim=256` on the iteration-1 command, everything else
+    identical: `next_event` positive/negative/adversarial fixtures (seed 17, snr 1.0),
+    N=500, as-of 2024-09-01, anchors 6, fresh out-dirs
+    `/tmp/opencode/lab/next_event_cap256_{pos,neg,adv}`, `LG_SCAN=eager`, `safe_run`,
+    scratch warm-start. Receipt: `docs/report_cards/experiments/lab/next_event_cap256.json`
+    (`--iter cap256`).
+  - **Frozen verdict (DEC-576 speedometer + controls, unchanged).** Mastered ⇔ g ≤ 0.5 AND
+    the encoder beats the 1-gram (paired CI entirely below 0 on enc−base, nats) AND the
+    eff_rank receipt is in hand (from the run's own portfolio receipt; recorded, no bar on
+    the toy). NEGATIVE must read NO_SIGNAL; ADVERSARIAL must read as expected (structure
+    claim NO_SIGNAL while the echo lets the head beat the 1-gram). Launch receipts (the
+    `[set]` line, the registries' `dim: 256`, the tag move off the dim=32 signature) are
+    verified before any result is read.
+  - **Attribution a priori (so the read is not improvised).**
+    (i) MASTERED with clean controls: the blob on next_event was CAPACITY-limited at
+    dim=32, not algebra-limited — the DEC-575 trunk-algebra ladder (candidates 1–3) was
+    chasing the wrong axis at toy scale; next_event is mastered on the BASELINE trunk at
+    dim=256, and DEC-576's port protocol (ROUTE R3) ports the mastered toy configuration
+    as-is (including dim=256). If DEC-581's candidate 3 ALSO masters this cycle, the
+    lower-capacity trunk (candidate 3 @ dim=32) is ported and dim=256 is recorded as the
+    capacity fallback (Efficient: the smallest sufficient object — B5); candidates 1–2 are
+    retired as unneeded on this fixture (recorded, not re-run).
+    (ii) g improves but stays > 0.5: partial capacity effect; record the delta; the
+    algebra × capacity INTERACTION is now the open question and is pre-registered as a
+    labeled two-axis diagnostic under its own DEC (the §4.3 spike shape, re-earned), not a
+    verdict run; the curriculum proceeds (snr knob or intent, whichever DEC-581/582's
+    outcomes name).
+    (iii) No improvement in g (≈ iteration 1's 1.14727, within run-to-run noise): capacity
+    is NOT the constraint at toy scale either — the 1-gram floor is binding on this
+    fixture (finite-sample estimation at N=349 train sequences, or the toy structure is
+    too thin at snr=1.0 for any trunk value to beat a correctly-specified baseline); the
+    pre-registered next move is the CURRICULUM re-examination under a named DEC: the snr
+    knob (1.0 → 0.5) within next_event, or `intent` (curriculum step 2) as the first
+    structure the encoder must master — the fixture choice itself is an axis (input/
+    structure), and it gets a DEC.
+    (iv) UNSTABLE or resource failure (OOM-killed at dim=256, non-finite, lr collapse):
+    reject, not rescue; if OOM-killed at the target dim, report the reduced dim/N actually
+    run (never compare across dim/N without stating it) and the escalation is branch
+    (iii)'s.
+  - **Rejected.** (i) A candidate algebra AT dim=256 (the §4.3 composite): two-axis, barred
+    from verdicts by DEC-577/578 — this run is baseline-algebra-only on purpose. (ii)
+    Forcing dim=256 by code change instead of `--set`: the declaration channel exists
+    (`apply_set_overrides` applies after data-derivation); no new literal. (iii) Any other
+    dim value: 256 is the pre-registered diagnostic point (§4.3 spike shape); a different
+    value is a different, unpre-registered capacity point. (iv) The port run or any B-row
+    verdict on this receipt: lab receipts are a development instrument and never flip a
+    B-row verdict; DEC-576's port protocol needs clean-control mastery.
+  - **Cost.** No behavior move (config-only atop `905b4f88`); three N=500 trains at the
+    re-derived batch; the card's frontier readings gain the cap256 row at outcome time
+    (scripts-only).
+  - **Status.** Pre-registered (operator-approved sequencing, 2026-11-03). Trains alongside
+    DEC-581's iteration 4 in this cycle: six trains total, sequential, one GPU job at a
+    time.

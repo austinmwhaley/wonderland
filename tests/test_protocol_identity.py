@@ -232,6 +232,99 @@ def test_looped_forward_is_deterministic_and_receipted():
     assert not any("W_nl2" in n for n, _ in off.named_parameters())
 
 
+def test_trunk_drive_looped_recurrence_is_a_protocol_axis():
+    """DEC-581: the drive-side looped block (the trunk's third algebra, DEC-575 candidate 3)
+    trains different weights (W_nl3 + beta3), so two protocols differing ONLY in
+    `drive_looped_recurrence` must not share a tag — the same defect class as DEC-445/577/578."""
+    off = _cfg(batch=20)
+    on = _cfg(batch=20, drive_looped_recurrence=True)
+    assert off.tag != on.tag
+    assert _cfg(batch=20, drive_looped_recurrence=True).tag == on.tag  # deterministic
+    assert off.tag == _cfg(batch=20, drive_looped_recurrence=False).tag  # OFF is a byte-no-op
+    # the four trunk-algebra values (affine baseline + three) are pairwise unshared:
+    assert on.tag != _cfg(batch=20, bilinear_recurrence=True).tag
+    assert on.tag != _cfg(batch=20, looped_recurrence=True).tag
+
+
+def test_warm_start_refuses_a_drive_looped_algebra_mismatch(tmp_path):
+    """DEC-581: a checkpoint differing only in `drive_looped_recurrence` is a different state
+    update, so it must not warm-start — in either direction, and against the state-looped
+    algebra too. A matching algebra must still warm-start: the guard is an algebra check,
+    not a blanket refusal."""
+    from looking_glass.cfm_training import _pick_warm_checkpoint
+
+    cfg = CFMConfig()
+    arch = {
+        "seq_len": cfg.seq_len,
+        "dim": cfg.dim,
+        "state_half_life_days": cfg.state_half_life_days,
+        "sf_mode": cfg.sf_mode,
+        "objectives": list(cfg.objectives),
+    }
+
+    def dir_with(tag, **flags):
+        d = tmp_path / tag
+        d.mkdir()
+        (d / f"registry_{tag}.json").write_text(
+            json.dumps(
+                {
+                    "as_of": "2025-01-01",
+                    "version": cfg.version,
+                    "tag": tag,
+                    "config": dict(arch, **flags),
+                }
+            )
+        )
+        return d
+
+    d_off = dir_with("off", drive_looped_recurrence=False)
+    d_on = dir_with("on", drive_looped_recurrence=True)
+    d_sl = dir_with("sl", drive_looped_recurrence=False, looped_recurrence=True)
+    assert _pick_warm_checkpoint(d_off, "2025-02-01", _cfg(drive_looped_recurrence=True)) == (
+        None,
+        None,
+    )  # drive-looped ON refuses a baseline checkpoint
+    assert _pick_warm_checkpoint(d_on, "2025-02-01", _cfg()) == (None, None)  # and vice versa
+    assert _pick_warm_checkpoint(d_sl, "2025-02-01", _cfg(drive_looped_recurrence=True)) == (
+        None,
+        None,
+    )  # and the state-looped algebra refuses the drive-looped one
+    got = _pick_warm_checkpoint(d_on, "2025-02-01", _cfg(drive_looped_recurrence=True))
+    assert got[0] == "on"  # matching algebra still warm-starts
+
+
+def test_drive_looped_forward_is_deterministic_and_receipted():
+    """DEC-581 smoke: the drive-side looped block runs, is deterministic, stays finite, and
+    receipts its data-derived depth (T on the convergence tol, capped; NO outer loop — the
+    receipt's shape is the disclosure) — plus the generalized construction guard rejects
+    every pairwise trunk-algebra combination."""
+    from looking_glass.cfm_model import SelectiveSSM
+
+    torch.manual_seed(0)
+    ssm = SelectiveSSM(dim=16, drive_looped=True, readout_norm=True, input_norm=True)
+    x = torch.randn(4, 9, 16)
+    mask = torch.ones(4, 9)
+    with torch.no_grad():
+        y1, h1 = ssm(x, mask=mask)
+        y2, h2 = ssm(x, mask=mask)
+    assert torch.equal(y1, y2) and torch.equal(h1, h2)  # deterministic
+    assert torch.isfinite(y1).all() and torch.isfinite(h1).all()
+    rc = ssm.drive_loop_receipt
+    assert 1 <= rc["depth"] <= rc["depth_cap"]  # T data-derived, never past the cap
+    assert isinstance(rc["depth_converged"], bool)
+    assert "outer_passes" not in rc  # no state feedback: no outer fixed point, by construction
+    for pair in (
+        dict(bilinear=True, drive_looped=True),
+        dict(looped=True, drive_looped=True),
+        dict(bilinear=True, looped=True),
+    ):
+        with pytest.raises(RuntimeError, match="trunk algebra conflict"):
+            SelectiveSSM(dim=16, **pair)
+    # OFF builds without the new parameters (the default protocol is untouched):
+    off = SelectiveSSM(dim=16, drive_looped=False)
+    assert not any("W_nl3" in n for n, _ in off.named_parameters())
+
+
 # ---- --set: the declaration channel accepts a declaration (DEC-449) -----------------------
 
 

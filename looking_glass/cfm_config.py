@@ -286,6 +286,11 @@ class CFMConfig:
     # F(z) = unitnorm(tanh(W z)) composed T times (T data-derived on a convergence tol).
     # A second trunk algebra: never ON together with bilinear_recurrence (guard in the model).
     looped_recurrence: bool = False
+    # v7.1 (DEC-581, candidate 3): looped/weight-tied nonlinear block on the DRIVE —
+    # F(z) = unitnorm(tanh(W z)) composed T times (T data-derived), applied to the affine
+    # drive (1-decay)*bx; the state-side algebra stays affine (one scan, no fixed point).
+    # A third trunk algebra value: at most one of the three may be ON (guard in the model).
+    drive_looped_recurrence: bool = False
     # v6.1 (DEC-047): variance-preserving recurrence. A recurrent readout has no
     # intrinsic scale; over long horizons the drives accumulate and the readout
     # magnitude drifts (measured std ~50, max ~900), which made every linear head
@@ -575,6 +580,11 @@ class CFMConfig:
             # weights (W_nl2 + beta2), so the algebras must not share a name (DEC-445/448).
             # OFF leaves the signature byte-identical: cfm_v2k's tag is stable.
             sig_extra += "|lp"
+        if getattr(self, "drive_looped_recurrence", False):
+            # DEC-581: the drive-side looped block is a third trunk algebra — it trains
+            # different weights (W_nl3 + beta3), so the algebras must not share a name
+            # (DEC-445/448). OFF leaves the signature byte-identical: cfm_v2k's tag is stable.
+            sig_extra += "|dl"
         sig = hashlib.sha256(f"{obj}|{eff}{prof}{sig_extra}".encode()).hexdigest()[:8]
         return (
             f"{base}-b{int(self.batch)}d{int(self.dim)}e{int(self.epochs)}"

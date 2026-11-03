@@ -98,6 +98,7 @@ def _pick_warm_checkpoint(out_dir, as_of, cfg=None):
                     "sf_mode",
                     "bilinear_recurrence",
                     "looped_recurrence",
+                    "drive_looped_recurrence",
                 )
             )
             if "objectives" in rc and tuple(rc["objectives"]) != tuple(
@@ -212,6 +213,7 @@ def train_cfm(cfg: CFMConfig):
         isometric_boundary=getattr(cfg, "isometric_boundary", False),
         bilinear=getattr(cfg, "bilinear_recurrence", False),
         looped=getattr(cfg, "looped_recurrence", False),
+        drive_looped=getattr(cfg, "drive_looped_recurrence", False),
         readout_norm=getattr(cfg, "readout_norm", True),
         input_norm=getattr(cfg, "input_norm", True),
         readout_skip=getattr(cfg, "readout_skip", True),
@@ -765,6 +767,7 @@ def train_cfm(cfg: CFMConfig):
             "isometric_boundary": bool(getattr(cfg, "isometric_boundary", False)),
             "bilinear_recurrence": bool(getattr(cfg, "bilinear_recurrence", False)),
             "looped_recurrence": bool(getattr(cfg, "looped_recurrence", False)),
+            "drive_looped_recurrence": bool(getattr(cfg, "drive_looped_recurrence", False)),
             "readout_norm": bool(getattr(cfg, "readout_norm", True)),
             "input_norm": bool(getattr(cfg, "input_norm", True)),
             "readout_skip": bool(getattr(cfg, "readout_skip", True)),
@@ -850,6 +853,12 @@ def train_cfm(cfg: CFMConfig):
     # converged flags (last forward at the final weights, read from the trunk expert).
     if getattr(cfg, "looped_recurrence", False):
         cfg._looped_convergence = dict(getattr(model.ssm.experts[0], "loop_receipt", {}) or {})
+    # DEC-581: candidate 3's convergence receipt (drive-side T data-derived, capped; no
+    # outer loop exists, so no outer fields — the receipt's shape is the disclosure).
+    if getattr(cfg, "drive_looped_recurrence", False):
+        cfg._drive_looped_convergence = dict(
+            getattr(model.ssm.experts[0], "drive_loop_receipt", {}) or {}
+        )
     # DEC-518: no geometry governor statistics to record — the gate is measured in
     # `docs/report_cards/experiments/rank_attainability.json`, not driven in-loop.
     _registry(
@@ -2412,6 +2421,10 @@ def _registry(
                 "whiten": dict(getattr(cfg, "_whiten_receipt", {}) or {}),
                 # DEC-578: candidate 2's convergence receipt (T data-derived, caps, flags).
                 "looped_convergence": dict(getattr(cfg, "_looped_convergence", {}) or {}),
+                # DEC-581: candidate 3's convergence receipt (drive-side T, cap, flag).
+                "drive_looped_convergence": dict(
+                    getattr(cfg, "_drive_looped_convergence", {}) or {}
+                ),
                 "gpu_budget": dict(getattr(cfg, "_gpu_budget_receipt", {}) or {}),
                 "step_time": dict(getattr(cfg, "_step_time_receipt", {}) or {}),
                 "trained_at": datetime.now(timezone.utc).isoformat(),

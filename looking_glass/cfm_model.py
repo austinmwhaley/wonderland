@@ -330,6 +330,7 @@ class SelectiveSSM(nn.Module):
         band_isolate=False,
         bilinear=False,
         looped=False,
+        drive_looped=False,
         readout_norm=True,
         input_norm=True,
         readout_skip=False,
@@ -423,12 +424,24 @@ class SelectiveSSM(nn.Module):
             self.bilinear_tol = 1e-4  # state-change convergence (converge, not count)
             self.bilinear_normalize = True  # Path 1: unit-norm gate (bounded Lipschitz)
         self.looped = bool(looped)
-        if self.bilinear and self.looped:
-            # DEC-578: two trunk algebras in one update would be a composite protocol
+        self.drive_looped = bool(drive_looped)
+        on = [
+            name
+            for name, flag in (
+                ("bilinear_recurrence", self.bilinear),
+                ("looped_recurrence", self.looped),
+                ("drive_looped_recurrence", self.drive_looped),
+            )
+            if flag
+        ]
+        if len(on) > 1:
+            # DEC-578/581: two trunk algebras in one update would be a composite protocol
             # that is not pre-registered anywhere — reject at construction (fail safe).
+            # At most one of the three algebra values may be ON.
             raise RuntimeError(
-                "trunk algebra conflict: bilinear_recurrence and looped_recurrence are two "
-                "distinct state-update algebras and must not be enabled together (DEC-578)"
+                "trunk algebra conflict: at most one trunk algebra may be enabled, got "
+                + ", ".join(on)
+                + " (DEC-578/581)"
             )
         if self.looped:
             self.W_nl2 = nn.Linear(dim, dim)
@@ -440,6 +453,14 @@ class SelectiveSSM(nn.Module):
             self.looped_iters = 8  # fixed-point passes (cap); converged earlier on tol
             self.looped_tol = 1e-4  # state-change convergence (converge, not count)
             self.loop_receipt = {}  # DEC-575's "T data-derived with a convergence receipt"
+        if self.drive_looped:
+            self.W_nl3 = nn.Linear(dim, dim)
+            nn.init.normal_(self.W_nl3.weight, std=0.1)
+            nn.init.zeros_(self.W_nl3.bias)
+            self.beta3 = nn.Parameter(torch.tensor(0.3))
+            self.drive_looped_depth_cap = 4  # block compositions (cap); converged earlier on tol
+            self.drive_looped_depth_tol = 1e-4  # block-change convergence (converge, not count)
+            self.drive_loop_receipt = {}  # DEC-575's "T data-derived with a convergence receipt"
         self.smooth = None
         if slow_smooth:
             dbv = self.delta_bias.detach().numpy().astype(float)
@@ -456,23 +477,37 @@ class SelectiveSSM(nn.Module):
             g = g / (g.norm(dim=-1, keepdim=True) + 1e-6)
         return g
 
-    def _looped_block(self, Z):
-        """Weight-tied looped nonlinear block (DEC-578, candidate 2): F(z) =
-        unitnorm(tanh(W_nl2 z)) composed T times on the SAME weights — the "looped
-        transformer" form of the trunk nonlinearity. T is data-derived, not counted:
-        iterate until the batch-max block change < depth_tol (converge, not count),
-        capped at depth_cap ("one or a few blocks", DEC-575). Returns
-        (F^T(z), T_used, converged) — the receipt values land on self.loop_receipt."""
-        g = Z
+    def _compose(self, W, z, cap, tol):
+        """Weight-tied looped composition (DEC-578/581): iterate F(z) =
+        unitnorm(tanh(W z)) until the batch-max block change < tol (converge, not
+        count), capped ("one or a few blocks", DEC-575 — documented fallback).
+        Returns (F^T(z), T_used, converged)."""
+        g = z
         depth, conv = 0, False
-        for _ in range(max(int(self.looped_depth_cap), 1)):
-            gn = torch.tanh(self.W_nl2(g))
+        for _ in range(max(int(cap), 1)):
+            gn = torch.tanh(W(g))
             gn = gn / (gn.norm(dim=-1, keepdim=True) + 1e-6)  # DEC-043 path 1: bounded kick
-            conv = float((gn - g).abs().max()) < self.looped_depth_tol
+            conv = float((gn - g).abs().max()) < tol
             g, depth = gn, depth + 1
             if conv:
                 break
         return g, depth, conv
+
+    def _looped_block(self, Z):
+        """DEC-578 candidate 2 (state side): the weight-tied block
+        F(z) = unitnorm(tanh(W_nl2 z)) composed T times on the SAME weights — the
+        "looped transformer" form of the trunk nonlinearity; T is data-derived on the
+        depth tol. The receipt values land on self.loop_receipt (written by the forward)."""
+        return self._compose(self.W_nl2, Z, self.looped_depth_cap, self.looped_depth_tol)
+
+    def _drive_looped_block(self, Z):
+        """DEC-581 candidate 3 (drive side): the same weight-tied block
+        F(z) = unitnorm(tanh(W_nl3 z)) composed T times on the SAME weights, applied
+        to the affine DRIVE — the state-side algebra stays affine. The receipt values
+        land on self.drive_loop_receipt (written by the forward)."""
+        return self._compose(
+            self.W_nl3, Z, self.drive_looped_depth_cap, self.drive_looped_depth_tol
+        )
 
     def _readout(self, y):
         if self.readout_norm is None:
@@ -599,6 +634,41 @@ class SelectiveSSM(nn.Module):
                 "outer_tol": float(self.looped_tol),
             }
             D, Hout = _scan(decay, drive0 + self.beta2 * G)
+            if h0v is not None:
+                Hout = Hout + D * h0v.unsqueeze(1)
+            y = self.W_C(Hout)
+            if self.skip is not None:
+                y = y + self.skip(xs)
+            y = self._readout(y)
+            if self.stats_proj is not None:
+                _dc = torch.sigmoid(self.stats_decay_logit)
+                _S, _ = _scan(torch.full_like(xs, float(_dc)), (1.0 - _dc) * xs)
+                y = y + self.stats_proj(_S)
+            if self.ev_residual:
+                if ev is not None:
+                    y = y + self.ev_norm(self.w_ev(ev))
+                if ev_prev is not None:
+                    y = y + self.ev_norm(self.w_evp(ev_prev))
+            return y, Hout[:, -1]
+        if self.drive_looped:
+            # VECTORIZED drive-side looped recurrence (DEC-581 candidate 3, speed-first):
+            # the kick beta3 * F^T(drive_t) (weight-tied block composed T times on the
+            # DRIVE, T data-derived on the depth tol) depends only on the input drive —
+            # not on the state — so the state-side algebra stays AFFINE: one associative
+            # scan with the modified drive, fully differentiable, no outer fixed point.
+            # Memory = 1 scan graph + <= depth_cap compositions.
+            h0v = None
+            if h0 is not None:
+                h0v = h0 if h0.dim() >= 2 else h0.unsqueeze(0)
+            drive0 = (1.0 - decay) * bx
+            G, depth, dconv = self._drive_looped_block(drive0)
+            self.drive_loop_receipt = {
+                "depth": int(depth),
+                "depth_converged": bool(dconv),
+                "depth_cap": int(self.drive_looped_depth_cap),
+                "depth_tol": float(self.drive_looped_depth_tol),
+            }
+            D, Hout = _scan(decay, drive0 + self.beta3 * G)
             if h0v is not None:
                 Hout = Hout + D * h0v.unsqueeze(1)
             y = self.W_C(Hout)
@@ -784,6 +854,7 @@ class MultiScaleSSM(nn.Module):
         band_isolate=False,
         bilinear=False,
         looped=False,
+        drive_looped=False,
         readout_norm=True,
         input_norm=True,
         readout_skip=False,
@@ -813,6 +884,7 @@ class MultiScaleSSM(nn.Module):
                         band_isolate=band_isolate,
                         bilinear=bilinear,
                         looped=looped,
+                        drive_looped=drive_looped,
                         readout_norm=readout_norm,
                         input_norm=input_norm,
                         readout_skip=readout_skip,
@@ -834,6 +906,7 @@ class MultiScaleSSM(nn.Module):
                     b,
                     bilinear=bilinear,
                     looped=looped,
+                    drive_looped=drive_looped,
                     readout_norm=readout_norm,
                     input_norm=input_norm,
                     readout_skip=readout_skip,
@@ -925,6 +998,7 @@ class CFM(nn.Module):
         isometric_boundary: bool = False,
         bilinear: bool = False,
         looped: bool = False,
+        drive_looped: bool = False,
         readout_norm: bool = True,
         input_norm: bool = True,
         readout_skip: bool = False,
@@ -959,6 +1033,7 @@ class CFM(nn.Module):
         self.zca = bool(zca)
         self.bilinear = bool(bilinear)
         self.looped = bool(looped)
+        self.drive_looped = bool(drive_looped)
         self.isometric_boundary = bool(isometric_boundary)
         self.readout_norm_on = bool(readout_norm)
         self.input_norm_on = bool(input_norm)
@@ -1039,6 +1114,7 @@ class CFM(nn.Module):
             band_isolate=self.unified,
             bilinear=self.bilinear,
             looped=self.looped,
+            drive_looped=self.drive_looped,
             readout_norm=self.readout_norm_on,
             input_norm=self.input_norm_on,
             readout_skip=self.readout_skip_on,
