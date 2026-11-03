@@ -338,10 +338,12 @@ BY_ID = {n.ident: n for n in NODES}
 FRONTIER_NOTE = (
     "The live frontier is P2's enabler E1 (the trunk's state-update algebra). O3 attempt 4 was "
     "rejected on its frozen bars and the dev rig reproduced the blob in minutes; DEC-575 "
-    "candidate 1 as shipped was negative on the toy (DEC-577 outcome). The next move is "
-    "DEC-578 (candidate 2: looped / weight-tied nonlinear block) on the dev rig, then the "
-    "curriculum (intent), then ONE pre-registered port run under DEC-572's bars. No lab "
-    "receipt flips a B-row verdict."
+    "candidate 1 as shipped was negative on the toy (DEC-577 outcome), and candidate 2 as "
+    "shipped — the looped / weight-tied nonlinear block on the state (DEC-578) — is negative on "
+    "the toy too (DEC-578 outcome: no g improvement, CI still straddles the 1-gram, controls "
+    "clean). The next move is candidate 3 — the looped block on the DRIVE side — declared "
+    "DEC-581 and pre-registered under its own DEC, then the curriculum (intent), then ONE "
+    "pre-registered port run under DEC-572's bars. No lab receipt flips a B-row verdict."
 )
 
 
@@ -367,7 +369,8 @@ ROUTE: tuple[RouteStep, ...] = (
         "R1",
         "Dev rig: master next_event (N=500, known truth)",
         "E1",
-        "lab receipts + the DEC-578 run (candidate 2), controls clean; never a B-row verdict",
+        "lab receipts + the DEC-581 run (candidate 3: drive-side looped block), controls "
+        "clean; never a B-row verdict",
     ),
     RouteStep(
         "R2",

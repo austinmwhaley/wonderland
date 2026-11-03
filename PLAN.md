@@ -328,7 +328,7 @@ computes one. Moving the pointer is a reviewed spec edit like any other.
 
 | Step | What is earned | Advances | Evidence that closes it |
 |---|---|---|---|
-| **R1 ← now** | Dev rig: master next_event (N=500, known truth) | E1 | lab receipts + the DEC-578 run (candidate 2), controls clean; never a B-row verdict |
+| **R1 ← now** | Dev rig: master next_event (N=500, known truth) | E1 | lab receipts + the DEC-581 run (candidate 3: drive-side looped block), controls clean; never a B-row verdict |
 | **R2** | Dev rig: master intent (curriculum step 2) | E1 | lab receipts + the intent iteration's pre-registration; both structures clean |
 | **R3** | Port: ONE real-data run of the winning trunk under DEC-572's bars | E1 | a pre-registered port receipt: eff_rank>=30, persona>=0.15, R2>=0.45, stable + B1 canary |
 | **R4** | Real stream: fill the remaining B rows with their producers | P1, P2, P3 | B1.2, B4.1-B4.3, B5.1-B5.2, B6.2-B6.3, B7.1-B7.2, B8.1 at the current behavior |
@@ -343,7 +343,7 @@ than a measurement of the blob.
 
 ## 6. The current frontier
 
-The live frontier is P2's enabler E1 (the trunk's state-update algebra). O3 attempt 4 was rejected on its frozen bars and the dev rig reproduced the blob in minutes; DEC-575 candidate 1 as shipped was negative on the toy (DEC-577 outcome). The next move is DEC-578 (candidate 2: looped / weight-tied nonlinear block) on the dev rig, then the curriculum (intent), then ONE pre-registered port run under DEC-572's bars. No lab receipt flips a B-row verdict.
+The live frontier is P2's enabler E1 (the trunk's state-update algebra). O3 attempt 4 was rejected on its frozen bars and the dev rig reproduced the blob in minutes; DEC-575 candidate 1 as shipped was negative on the toy (DEC-577 outcome), and candidate 2 as shipped — the looped / weight-tied nonlinear block on the state (DEC-578) — is negative on the toy too (DEC-578 outcome: no g improvement, CI still straddles the 1-gram, controls clean). The next move is candidate 3 — the looped block on the DRIVE side — declared DEC-581 and pre-registered under its own DEC, then the curriculum (intent), then ONE pre-registered port run under DEC-572's bars. No lab receipt flips a B-row verdict.
 
 **Why the card can read green while the encoder is not mastered — read this before
 trusting a green row.** The plan labels every leaf with what its green PROVES

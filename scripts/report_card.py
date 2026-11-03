@@ -118,6 +118,7 @@ def _frontier_readings(receipts: Path, current_hash: str) -> list[str]:
     for name, label in (
         ("lab/next_event_iter1.json", "dev rig · next_event iter1"),
         ("lab/next_event_iter2.json", "dev rig · next_event iter2"),
+        ("lab/next_event_iter3.json", "dev rig · next_event iter3 (DEC-578, candidate 2)"),
     ):
         rc = load(receipts, name)
         pos = (rc.get("positive") or {}) if isinstance(rc, dict) else {}

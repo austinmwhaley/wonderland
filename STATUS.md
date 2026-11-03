@@ -102,6 +102,26 @@ certification stays on the real stream.
   DEC-578 (candidate 2: looped / weight-tied nonlinear block, its own DEC, its own
   pre-registration; alternatives — capacity confound dim 32 vs 256, gate tuning, curriculum
   advance — recorded and barred from this verdict).
+- **Dev-rig iteration 3 landed (DEC-578 outcome addendum; DEC-575 candidate 2 as-shipped):
+   NOT MASTERED, branch (iii) taken.** Looped / weight-tied nonlinear block on the state
+   (`F(z) = unitnorm(tanh(W₂ z))` composed T times, T data-derived on a 1e-4 block-change tol
+   capped at 4; the state-implicit fixed point solved by iterated affine scans, capped at 8
+   passes; β₂ learned), `--set looped_recurrence=true` atop iteration 1's configuration
+   (bilinear OFF), everything else identical (launch receipts verified before the read:
+   `[set]` line, registry `looped_recurrence: true` at dim=32, tags moved onto the `|lp`
+   axis): g **1.181525** (iteration 1 1.14727, iteration 2 1.154482 — no improvement,
+   slightly worse), paired CI(enc−base) [−0.0096, +0.1248] still straddles the 1-gram,
+   eff_rank **1.248** (iteration 1 1.153, iteration 2 1.473). Controls read as designed: NEG
+   NO_SIGNAL ✓, ADV echo-beats-1-gram while structure stays NO_SIGNAL ✓. Candidate 2
+   as-shipped is negative on the toy for the decisive bars; the frozen escalation fires:
+   DEC-575 candidate 3 (the looped block on the DRIVE side) is declared **DEC-581** and gets
+   its full pre-registration in the next forward run. Disclosed in the outcome addendum: the
+   convergence receipt hits both pre-registered caps at the final forward (depth 4/4, outer
+   8/8, unconverged on the 1e-4 tol — the anticipated "higher stability risk", receipted,
+   not UNSTABLE: no non-finite/divergence, lr_collapsed false, portfolio `ok: false` 11/15
+   matches the iteration-1/2 toy baseline); and the /tmp launch-script log-naming defect
+   (bash `local` expansion — all three per-run stdout logs collapsed into one file,
+   summaries survived in `iter3_summary.log`).
 - **Operating prompts are two-scale now (DEC-580, operator directive).** `PROMPT_FORWARD` requires
   `NODE` / `ROUTE` / `MOVE` before every run and `MOVEMENT` after it (a run that moves no node is
   a diagnosis, not progress); `PROMPT_BACKWARD` attacks the tree first (necessity, placement,
@@ -115,11 +135,15 @@ certification stays on the real stream.
   artifacts are backed up at `cfm_v2k_stale_0f881d99`. Code behavior is now `4053d2f9`
   (DEC-573: the `resolve_cfm` batch-pinning fix → `d2ad6f60`; autotune defect class 9 →
   `6a8e2663` — inert on the real stream, disclosed; DEC-577 identity fixes: `bilinear_recurrence`
-  joins the tag signature `|bl` axis and the warm-start architecture comparison → `4053d2f9`).
-  cfm_v2k's frozen artifacts are unchanged; every canonical receipt is re-stamped under
-  `4053d2f9` (S1–S5 + 4 judge legs + 4 B-row producers via the S6 chain in one invocation at
-  commit b40e582, clean tree; S6 all six checks OK; card 12 PASS / 0 FAIL / 11 UNKNOWN, B2+B3
-  sections green, B8.2 PASS — commit 308ed40).
+  joins the tag signature `|bl` axis and the warm-start architecture comparison → `4053d2f9`;
+  DEC-578: the looped/weight-tied block (candidate 2) joins the trunk as the `|lp` tag axis +
+  warm-start algebra refusal + construction guard against two trunk algebras at once →
+  `905b4f88`). cfm_v2k's frozen artifacts are unchanged; every canonical receipt is
+  re-stamped under `905b4f88` (S6 chain at clean commit `4bb221b` — all six checks OK,
+  deterministic 251-line render — plus the four B-row producers on cfm_v2k defaults, RC=0;
+  the card diff vs the `4053d2f9` render is header/hash lines only: 12 PASS / 0 FAIL /
+  11 UNKNOWN, plan root unchanged — the default-off no-op proof; commits `8346a1c` +
+  `5963462`).
 
 ## Closed front (history; see DECISIONS for the record)
 
@@ -133,28 +157,28 @@ next question is the learned shape, not another consumer tuning pass.
 
 ## Next 3 actions
 
-1. **PLAN.md + card + operating prompts — DONE (DEC-579, DEC-580); pause point.** The tree
-   (`scripts/plan_spec.py`: goal → P1–P5 → 23 B rows + 8 judge rows + E1 trunk + 5 v1 leaves)
-   renders `PLAN.md` (structure + route R1–R7, no measurements) and the card's plan section
-   (structure + verdicts + frontier readings). The card's B rows carry **Green means**
-   (`quality` / `reporting` / `unmeasured`), the duplicate capability view is retired, the plan
-   root leads the assessment, blockers name their plan node, and S6/B8.2 re-certified the new
-   card at the clean commit (`61c2ff0`, all six checks OK, deterministic 241-line render;
-   receipts `ac64892`). The prompts now drive the loop at both scales (DEC-580): FORWARD writes
-   `NODE`/`ROUTE`/`MOVE` and reads `MOVEMENT`; BACKWARD attacks the tree first and has scoped
-   NODE vs FULL modes. No behavior-hash move (`4053d2f9`). Next: DEC-578 / dev-rig iteration 3.
-2. **DEV-RIG iteration 3 = DEC-575 candidate 2 (pre-register as DEC-578 FIRST).** The looped /
-   weight-tied nonlinear state-update block, on `next_event` N=500, one axis, with its own
-   frozen verdict + a-priori branches (iteration 2's branch (iii) is the standing escalation;
-   the recorded alternatives — dim-256 capacity test on the toy, gate tuning, curriculum
-   advance — stay barred from that verdict). The DEC must carry `NODE: P2/E1`, `ROUTE: R1`,
-   `MOVE:` the toy reading, and the outcome must record `MOVEMENT:`.
-3. **Then the curriculum resumes: `intent` (iteration 4), then the port.** When BOTH
+1. **DEC-578 outcome recorded (this chunk, 2026-11-03).** Dev-rig iteration 3 NOT MASTERED,
+   branch (iii) taken: candidate 2 as-shipped is negative on the toy (g 1.181525 vs iteration
+   1 1.14727 / iteration 2 1.154482 — no improvement; paired CI [−0.0096, +0.1248] still
+   straddles the 1-gram; eff_rank 1.248; NEG/ADV controls read as designed). Convergence
+   receipt hits both pre-registered caps at the final forward (disclosed, not UNSTABLE); the
+   /tmp launch-script log-naming defect is disclosed. The card's frontier readings gain the
+   iter3 row; the plan's R1 evidence pointer moves to the DEC-581 run; no behavior move.
+2. **DEV-RIG iteration 4 = DEC-575 candidate 3 (pre-register as DEC-581 FIRST).** The looped /
+   weight-tied block on the DRIVE side (the block applied to the token drive; the state-side
+   algebra stays affine), on `next_event` N=500, one axis, with its own frozen verdict +
+   a-priori branches (iteration 3's branch (iii) is the standing escalation; the recorded
+   alternatives — dim-256 capacity test on the toy, gate tuning, curriculum advance — stay
+   barred from that verdict). The DEC must carry `NODE: P2/E1`, `ROUTE: R1`, `MOVE:` the toy
+   reading, and the outcome must record `MOVEMENT:`. Also fix the /tmp launch-script
+   log-naming defect (bash `local` expansion).
+3. **Then the curriculum resumes: `intent` (iteration 5), then the port.** When BOTH
    `next_event` and `intent` are mastered with clean controls, DEC-576's port protocol fires
    (`ROUTE` R3): ONE pre-registered real-data run of the winning trunk candidate under DEC-575's
    frozen gates (the four O3 bars + the B1 canary, atop cfm_v2k). Queue behind it, unchanged:
-   O4 decision law (DEC-574), O5 minimality, B6.3, B7.2, dev-rig iterations 5+; B+C re-scores
-   only after B is green on the real stream; project v1 third; BACKWARD only at all-green.
+   O4 decision law (DEC-574), O5 minimality, B6.3, B7.2, dev-rig iterations 6+; B+C re-scores
+   only after B is green on the real stream; project v1 third; BACKWARD at milestones only
+   (DEC-580's FULL mode).
 
 ## Operating facts
 

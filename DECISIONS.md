@@ -9681,3 +9681,55 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   - **Status.** Pre-registered. Candidate 2 is implemented in this run; the cfm_v2k re-stamp
     lands at the clean commit; iteration 3 trains next (one axis: the trunk algebra, looped
     block ON, bilinear OFF).
+  - **Outcome addendum (2026-11-03 — iteration 3 landed; BRANCH (iii) fires; candidate 2 negative on the toy).**
+    - **Read.** `next_event` N=500, as-of 2024-09-01, behavior `905b4f88` at commit `5963462`
+      (receipt `docs/report_cards/experiments/lab/next_event_iter3.json`, `complete: true`,
+      2026-11-03T16:56:41Z). POSITIVE: g **1.181525** (bar 0.5; iteration 1 1.14727, iteration
+      2 1.154482 — no improvement, slightly worse), nll_enc 1.040193 / 1-gram 0.979548 / oracle
+      0.645459 nats, paired CI(enc−base) [−0.0096, +0.1248] straddles 0 → `beats_base: false`;
+      eff_rank **1.248** (iteration 1 1.153, iteration 2 1.473 — receipted, no toy bar);
+      `mastered: false`. NEGATIVE: reads NO_SIGNAL as pre-registered (beats_base false, CI
+      [−0.0061, +0.0095] straddles 0, eff_rank 1.525). ADVERSARIAL: structure claim NO_SIGNAL
+      despite the echo beating the 1-gram (nll_enc 0.589995 vs base 1.097587, CI
+      [−0.5310, −0.4844] entirely below 0, `structure_carried: false`, eff_rank 1.305) — the
+      false-PASS trap is caught. All `lab_gate_a_side` checks pass.
+    - **Branch (iii), exactly as frozen.** g did not improve; it worsened. Candidate 2 as
+      shipped is negative on the toy for the decisive bars. No post-hoc bar edits. The
+      pre-registered escalation fires: DEC-575 candidate 3 — the looped / weight-tied block on
+      the DRIVE side (`F^T` applied to the token drive; the state-side algebra stays affine —
+      a different one-axis value, same discipline) — under its own DEC, **declared DEC-581,
+      pre-registered in full in the next forward run** (mechanism, one-axis diff, frozen
+      verdict, a-priori branches, rejected alternatives). Branches (i)/(ii) did not fire;
+      branch (iv) requires an actual stability failure and none occurred (below).
+    - **Launch receipts (verified before the read).** All three runs RC=0; the `[set]` line
+      records `{'looped_recurrence': True}`; the registries carry `looped_recurrence: true` at
+      the autotuned dim=32 (the same resolution as iterations 1–2 — no recorded deviation);
+      the tags moved onto the `|lp` axis (pos
+      `0.11.0r105842-b8d32e3lr1e-02o89b048e8`, neg
+      `0.11.0r985976-b8d32e3lr1e-02o89b048e8`, adv
+      `0.11.0r985976-b8d32e3lr1e-03o89b048e8`): data signatures unchanged, behavior suffix
+      moved — the one-axis diff, as designed.
+    - **Convergence receipt (disclosed, identical in all three runs).** The final forward ran
+      at depth 4/4 (`depth_converged: false`) and outer passes 8/8 (`outer_converged:
+      false`): both loops hit their pre-registered caps without converging on the 1e-4 tol.
+      This is the "higher stability risk" DEC-578 anticipated for the looped form and
+      receipted — it is not UNSTABLE: no non-finite or divergence anywhere in the logs,
+      `lr_collapsed: false` (lr_final 0.01), and the portfolio grade is `ok: false` at 11/15
+      rows — the same flag and count as the iteration-1 and iteration-2 toy baselines
+      (toy-scale, not a new instability).
+    - **Harness defect (disclosed).** The iteration-3 launch script had a bash
+      local-expansion bug: `local name="$1" … log="/tmp/opencode/lab_iter3_${name}.log"`
+      expanded `${name}` before `name` was assigned, so all three per-run stdout logs
+      collapsed into `/tmp/opencode/lab_iter3_.log` (the pos and neg logs were overwritten;
+      only the adv log survives in that file). The authoritative launch evidence is
+      unaffected: the per-run summaries in `/tmp/opencode/iter3_summary.log` (RC, `[set]`
+      line, registry name + convergence receipt), the full registries in each out-dir, and
+      the portfolio receipts the lab receipt references by path.
+    - **MOVEMENT (DEC-580).** P2/E1: DEC-frozen (FRONTIER) → DEC-frozen (FRONTIER) — the toy
+      readings gain iteration 3 (the card's frontier row), candidate 2 closes as negative, and
+      candidate 3 is declared as DEC-581; the node's verdict does not move, so this run is a
+      diagnosis that narrows the trunk-algebra axis, not node progress. Root: FAILED →
+      FAILED. ROUTE stays R1 (next_event not mastered); R1's evidence pointer moves to the
+      DEC-581 run.
+    - **Status.** Outcome recorded: the iter3 row joins the card's frontier readings
+      (scripts-only, no behavior move); the next forward run pre-registers DEC-581.
