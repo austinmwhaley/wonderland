@@ -1,0 +1,332 @@
+{
+  "_meta": {
+    "behavior_hash": "6a8e2663e11f1393",
+    "command": "measure_sufficiency_law.py",
+    "generated_at": "2026-11-03T03:51:18+00:00",
+    "git_commit": "9a6f4c14e5767301f236555c9452b1c2fa67410c",
+    "producer": "measure_sufficiency_law.py"
+  },
+  "arms": {
+    "floor": {
+      "dim": 1,
+      "n_A": 3515,
+      "n_B": 1485
+    },
+    "full": {
+      "dim": 41,
+      "n_A": 3515,
+      "n_B": 1485
+    },
+    "learned_only": {
+      "dim": 256,
+      "n_A": 3515,
+      "n_B": 1485
+    },
+    "served_object": {
+      "dim": 851,
+      "n_A": 3515,
+      "n_B": 1485
+    }
+  },
+  "complete": true,
+  "excluded_probes": {
+    "attr-next": "headroom -0.140938 <= 0 \u2014 probe excluded, reported (degenerate)",
+    "dt": "headroom -0.121934 <= 0 \u2014 probe excluded, reported (degenerate)",
+    "horizon-count-value": "headroom -0.086461 <= 0 \u2014 probe excluded, reported (degenerate)",
+    "numeric-next": "headroom -0.018799 <= 0 \u2014 probe excluded, reported (degenerate)"
+  },
+  "field_sources": {
+    "discount": "json:$.discount",
+    "dow": "json:$.dow",
+    "freq": "json:$.freq",
+    "hour": "json:$.hour",
+    "margin": "json:$.margin",
+    "offer": "json:$.offer",
+    "price": "json:$.price",
+    "qty": "json:$.qty",
+    "segment": "json:$.segment",
+    "value": "column:value"
+  },
+  "honesty": "rule 4: the served object = learned shape \u2295 the ledger's named blocks; learned_only travels in this same receipt, so a U the ledger alone carries is served-statistic sufficiency, not learned-shape sufficiency. The full arm is history-only PATH A (leak-free by the provenance receipt). No criterion, rule or bar of its own: the bar lives in b_spec.SUFFICIENCY_BAR.",
+  "horizon": {
+    "H_seconds": 61414.0,
+    "draw": "np.random.default_rng(65537).choice over the pooled positive within-customer gaps (full stream)",
+    "gap_p50_s": 47841.0,
+    "gap_p95_s": 408548.6,
+    "n_gaps": 2336629
+  },
+  "kind": "sufficiency",
+  "n_fit_A": 3515,
+  "n_score_B": 1485,
+  "numeric_fields": [
+    "discount",
+    "dow",
+    "freq",
+    "hour",
+    "margin",
+    "offer",
+    "price",
+    "qty",
+    "segment",
+    "value"
+  ],
+  "probes": {
+    "attr-next": {
+      "field_losses": {
+        "dow": {
+          "floor": 1.074405,
+          "full": 1.069797,
+          "learned_only": 0.011001,
+          "served_object": 0.0
+        },
+        "freq": {
+          "floor": 0.958845,
+          "full": 0.973175,
+          "learned_only": 0.959146,
+          "served_object": 1.100847
+        },
+        "margin": {
+          "floor": 0.988821,
+          "full": 0.569955,
+          "learned_only": 0.596179,
+          "served_object": 0.640817
+        },
+        "offer": {
+          "floor": 0.956347,
+          "full": 0.962855,
+          "learned_only": 0.966189,
+          "served_object": 1.098034
+        },
+        "price": {
+          "floor": 0.98879,
+          "full": 0.569966,
+          "learned_only": 0.596183,
+          "served_object": 0.640808
+        },
+        "value": {
+          "floor": 0.997063,
+          "full": 0.972892,
+          "learned_only": 0.974425,
+          "served_object": 1.081121
+        }
+      },
+      "fields": {
+        "discount": {
+          "included": false,
+          "mu": 0.0,
+          "n_A": 410,
+          "reason": "sd=0 < 1e-12 \u2014 field excluded, reported",
+          "sd": 1.0
+        },
+        "dow": {
+          "included": true,
+          "mu": 2.9753492193919473,
+          "n_A": 1217,
+          "reason": "included",
+          "sd": 1.5999333584575148
+        },
+        "freq": {
+          "included": true,
+          "mu": 1.009038619556286,
+          "n_A": 1217,
+          "reason": "included",
+          "sd": 0.8242925181340863
+        },
+        "hour": {
+          "included": false,
+          "mu": 12.0,
+          "n_A": 1217,
+          "reason": "sd=0 < 1e-12 \u2014 field excluded, reported",
+          "sd": 1.0
+        },
+        "margin": {
+          "included": true,
+          "mu": 12.563048780487806,
+          "n_A": 410,
+          "reason": "included",
+          "sd": 10.93763691081133
+        },
+        "offer": {
+          "included": true,
+          "mu": 1.5209531635168447,
+          "n_A": 1217,
+          "reason": "included",
+          "sd": 1.1255294360274517
+        },
+        "price": {
+          "included": true,
+          "mu": 40.525926829268286,
+          "n_A": 410,
+          "reason": "included",
+          "sd": 35.28258751426776
+        },
+        "qty": {
+          "included": false,
+          "mu": 1.0,
+          "n_A": 410,
+          "reason": "sd=0 < 1e-12 \u2014 field excluded, reported",
+          "sd": 1.0
+        },
+        "segment": {
+          "included": false,
+          "mu": 0.0,
+          "n_A": 0,
+          "reason": "n_A=0 < 8 \u2014 field excluded, reported",
+          "sd": 1.0
+        },
+        "value": {
+          "included": true,
+          "mu": 4.6714083863223586,
+          "n_A": 3515,
+          "reason": "included",
+          "sd": 17.78114009175369
+        }
+      },
+      "headroom": -0.140938,
+      "included": false,
+      "loss": {
+        "floor": 0.994045,
+        "full": 0.853107,
+        "learned_only": 0.683854,
+        "served_object": 0.760271
+      },
+      "reason": "headroom -0.140938 <= 0 \u2014 probe excluded, reported (degenerate)",
+      "u": {}
+    },
+    "dt": {
+      "headroom": -0.121934,
+      "included": false,
+      "loss": {
+        "floor": 1.066937,
+        "full": 0.945003,
+        "learned_only": 0.834944,
+        "served_object": 0.934028
+      },
+      "n_A": 3515,
+      "n_B_scored": 1485,
+      "reason": "headroom -0.121934 <= 0 \u2014 probe excluded, reported (degenerate)",
+      "u": {}
+    },
+    "horizon-count-value": {
+      "H_seconds": 61414.0,
+      "count_losses": {
+        "floor": 0.992392,
+        "full": 0.801024,
+        "learned_only": 0.772088,
+        "served_object": 0.839574
+      },
+      "gap_p50_s": 47841.0,
+      "gap_p95_s": 408548.6,
+      "headroom": -0.086461,
+      "included": false,
+      "loss": {
+        "floor": 1.035141,
+        "full": 0.94868,
+        "learned_only": 0.904888,
+        "served_object": 0.969496
+      },
+      "mass_losses": {
+        "floor": 1.07789,
+        "full": 1.096337,
+        "learned_only": 1.037688,
+        "served_object": 1.099417
+      },
+      "n_gaps": 2336629,
+      "reason": "headroom -0.086461 <= 0 \u2014 probe excluded, reported (degenerate)",
+      "u": {},
+      "variance_notes": [],
+      "window": "(2025-01-01T00:00:00, 2025-01-01T00:00:00 + 61414s]"
+    },
+    "next-type": {
+      "classes": [
+        "email_send",
+        "purchase",
+        "return",
+        "search",
+        "view"
+      ],
+      "classes_excluded": [],
+      "classes_included": [
+        "email_send",
+        "purchase",
+        "return",
+        "search",
+        "view"
+      ],
+      "headroom": 0.160994,
+      "included": true,
+      "loss": {
+        "floor": 1.31443,
+        "full": 1.475424,
+        "learned_only": 1.463038,
+        "served_object": 1.479336
+      },
+      "n_A": 3515,
+      "n_B_scored": 1485,
+      "p_floor": 1e-15,
+      "per_class_n_A": {
+        "email_send": 1217,
+        "purchase": 410,
+        "return": 13,
+        "search": 601,
+        "view": 1274
+      },
+      "reason": "included",
+      "u": {
+        "floor": 2.0,
+        "full": 1.0,
+        "learned_only": 1.076935,
+        "served_object": 0.975703
+      }
+    },
+    "numeric-next": {
+      "headroom": -0.018799,
+      "included": false,
+      "loss": {
+        "floor": 1.016928,
+        "full": 0.998129,
+        "learned_only": 0.963538,
+        "served_object": 1.070464
+      },
+      "n_A": 3515,
+      "n_B_scored": 1485,
+      "reason": "headroom -0.018799 <= 0 \u2014 probe excluded, reported (degenerate)",
+      "u": {}
+    }
+  },
+  "products": {
+    "path": "/home/austin_whaley/wonderland_work/cfm_v2k/cfm_products.duckdb",
+    "registry_sha256": "79f9768d51205252",
+    "tag": "0.11.0r490759-b64d256e3lr3e-04o4c3b5899"
+  },
+  "seconds": 50.5,
+  "u": {
+    "learned_only": 1.076935,
+    "served_object": 0.975703
+  },
+  "u_all_arms": {
+    "floor": 2.0,
+    "full": 1.0,
+    "learned_only": 1.076935,
+    "served_object": 0.975703
+  },
+  "validation": {
+    "arm_alignment_note": "every arm is built over the SAME population (shape \u2229 ledger \u2229 table \u2229 every published part, per side): served_object drops nothing after alignment, and each probe's included rows are a subset of that population on every arm",
+    "full_arm_provenance": "docs/report_cards/experiments/path_a_provenance.json \u2014 PATH A's table_features drops all 10 fut-stamped columns by its own rule (leak-free)",
+    "head_protocol": "the shipping _ridge_head (standardized RidgeCV, one alpha grid) at fixed capacity on every arm; fit on A, scored on B; the battery's honest-OOS guards",
+    "ledger_match_note": "part blocks (7 + 1 + 495 + 11 + 11 + 60 + 4 + 6 = 595) byte-identical to the flat ledger arm on every scored A and B row",
+    "ledger_parts_byte_identical_to_flat": true,
+    "ledger_widths_note": "every stored part width matches the faceplate",
+    "ledger_widths_ok": true,
+    "served_dim": 851,
+    "split_counts": {
+      "n_A": 3515,
+      "n_B": 1485,
+      "overlap": 0
+    }
+  },
+  "worst_probe": {
+    "learned_only": "next-type",
+    "served_object": "next-type"
+  }
+}

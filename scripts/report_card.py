@@ -351,6 +351,64 @@ def _eval_b_row(receipts: Path, row: B.BRow, current_hash: str) -> tuple[str, st
             f"linear access ledger_full {ra('ledger_full')} / counter {ra('exact_counter')} / "
             f"shape {ra('shape_served')} / PATH A {ra('path_a')}",
         )
+    if row.kind in ("sufficiency", "sufficiency_gap", "sufficiency_attribution"):
+        note = _meta_problem(rc, current_hash)
+        if note:
+            return J.UNKNOWN, note
+        if not rc.get("complete"):
+            return J.FAIL, f"{name}: sufficiency receipt incomplete"
+        bar = B.SUFFICIENCY_BAR
+        probes = rc.get("probes") or {}
+        included = {p: d for p, d in probes.items() if d.get("included")}
+        excl = rc.get("excluded_probes") or {}
+        if row.kind == "sufficiency":
+            u = (rc.get("u") or {}).get("served_object")
+            if not _finite(u):
+                return (
+                    J.UNKNOWN,
+                    f"{name}: no finite served-object U ({len(included)}/{len(probes)} probes included)",
+                )
+            worst = (rc.get("worst_probe") or {}).get("served_object", "?")
+            why = (
+                f"served U {float(u):.4f} (bar {bar:g}, DEC-570) · worst probe {worst} · "
+                f"{len(included)}/{len(probes)} probes included"
+            )
+            if excl:
+                why += " · excluded: " + ", ".join(sorted(excl))
+            return (J.PASS if float(u) >= bar else J.FAIL), why
+        if row.kind == "sufficiency_gap":
+            if not included:
+                return (
+                    J.FAIL,
+                    f"{name}: no probe with positive headroom — the bar is unfilled, not met",
+                )
+            bad, detail = [], []
+            for p in sorted(included):
+                up = (included[p].get("u") or {}).get("served_object")
+                if not _finite(up):
+                    bad.append(f"{p} (U not finite)")
+                    continue
+                detail.append(f"{p} {float(up):.4f}")
+                if float(up) < bar:
+                    bad.append(f"{p} ({float(up):.4f} < {bar:g})")
+            if bad:
+                return J.FAIL, f"{name}: per-probe bar violated: " + "; ".join(bad)
+            return J.PASS, "every included probe clears the bar · " + " · ".join(detail)
+        u_l = (rc.get("u") or {}).get("learned_only")
+        u_s = (rc.get("u") or {}).get("served_object")
+        if not _finite(u_l):
+            return J.UNKNOWN, f"{name}: learned-only U not recorded — attribution unmeasured"
+        if _finite(u_s) and float(u_l) >= float(u_s):
+            carry = "learned shape carries (the ledger does not add)"
+        elif _finite(u_s):
+            carry = "the ledger carries part of the served U (rule 4: served-statistic, not learned-shape, sufficiency)"
+        else:
+            carry = "served U not recorded"
+        return (
+            J.PASS,
+            f"learned-only U {float(u_l):.4f} · worst probe "
+            f"{(rc.get('worst_probe') or {}).get('learned_only', '?')} · {carry}",
+        )
     if row.kind == "legacy":
         return J.UNKNOWN, f"legacy receipt {name} (no behavior stamp); re-run {row.producer}"
     note = _meta_problem(rc, current_hash)
@@ -808,7 +866,7 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
                 b_summary["fail"] += 1
             else:
                 b_summary["unknown"] += 1
-                if row.kind in ("missing", "legacy"):
+                if row.kind in ("missing", "legacy") or why.startswith("missing"):
                     b_summary["missing"] += 1
             if verdict in (J.UNKNOWN, J.FAIL):
                 blocked.append(f"B {row.ident} {row.name} — {why}")

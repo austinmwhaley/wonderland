@@ -292,10 +292,14 @@ def _customer_level_features(df, keys, sample_n: int | None = None):
         for j, et in enumerate(et_cols):
             X[i, j] = d["event_types"].get(et, 0) / n_ev
 
-        # Numeric field means
+        # Numeric field means. num_cols is the UNION across customers, so a field
+        # present for some customers is absent for others: .get, not [] (Principle 4 —
+        # the resolver must survive unseen shapes, e.g. lab fixtures where value is a
+        # JSON attribute that only some customers ever emit).
         for j, k in enumerate(num_cols):
-            if d["numeric_counts"][k] > 0:
-                X[i, n_et + j] = d["numeric_sums"][k] / d["numeric_counts"][k]
+            cnt = d["numeric_counts"].get(k, 0)
+            if cnt > 0:
+                X[i, n_et + j] = d["numeric_sums"].get(k, 0) / cnt
 
         # Temporal features
         X[i, n_et + n_num] = float(n_ev)  # total events

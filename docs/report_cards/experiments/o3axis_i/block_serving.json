@@ -1,0 +1,262 @@
+{
+  "_meta": {
+    "behavior_hash": "6a8e2663e11f1393",
+    "command": "measure_block_serving.py --products /tmp/opencode/o3axis_i --out docs/report_cards/experiments/o3axis_i/block_serving.json",
+    "generated_at": "2026-11-03T04:28:49+00:00",
+    "git_commit": "9a6f4c14e5767301f236555c9452b1c2fa67410c",
+    "producer": "measure_block_serving.py"
+  },
+  "arms": {
+    "block_equal_variance": {
+      "dim": 295,
+      "future_geometry": 0.104286,
+      "future_geometry_n": 1485,
+      "future_geometry_pairs": 1101870,
+      "n": 1485,
+      "persona_geometry": 0.07554,
+      "persona_geometry_n": 1485,
+      "persona_geometry_pairs": 1101870,
+      "segment_ari": -0.000499
+    },
+    "counter_tile_128": {
+      "dim": 128,
+      "future_geometry": 0.167474,
+      "future_geometry_n": 1485,
+      "future_geometry_pairs": 1101870,
+      "n": 1485,
+      "persona_geometry": 0.187274,
+      "persona_geometry_n": 1485,
+      "persona_geometry_pairs": 1101870,
+      "segment_ari": -0.000873
+    },
+    "counter_tile_39": {
+      "dim": 39,
+      "future_geometry": 0.172894,
+      "future_geometry_n": 1485,
+      "future_geometry_pairs": 1101870,
+      "n": 1485,
+      "persona_geometry": 0.189756,
+      "persona_geometry_n": 1485,
+      "persona_geometry_pairs": 1101870,
+      "segment_ari": -0.000447
+    },
+    "equal_128": {
+      "dim": 256,
+      "future_geometry": 0.117609,
+      "future_geometry_n": 1485,
+      "future_geometry_pairs": 1101870,
+      "n": 1485,
+      "persona_geometry": 0.136504,
+      "persona_geometry_n": 1485,
+      "persona_geometry_pairs": 1101870,
+      "segment_ari": -0.001083
+    },
+    "equal_39": {
+      "dim": 78,
+      "future_geometry": 0.144412,
+      "future_geometry_n": 1485,
+      "future_geometry_pairs": 1101870,
+      "n": 1485,
+      "persona_geometry": 0.171957,
+      "persona_geometry_n": 1485,
+      "persona_geometry_pairs": 1101870,
+      "segment_ari": 0.000965
+    },
+    "exact_counter": {
+      "dim": 39,
+      "future_geometry": 0.172894,
+      "future_geometry_n": 1485,
+      "future_geometry_pairs": 1101870,
+      "n": 1485,
+      "persona_geometry": 0.189756,
+      "persona_geometry_n": 1485,
+      "persona_geometry_pairs": 1101870,
+      "segment_ari": -0.000447
+    },
+    "path_a": {
+      "dim": 41,
+      "future_geometry": 0.181009,
+      "future_geometry_n": 1485,
+      "future_geometry_pairs": 1101870,
+      "n": 1485,
+      "persona_geometry": 0.386663,
+      "persona_geometry_n": 1485,
+      "persona_geometry_pairs": 1101870,
+      "segment_ari": 0.268486
+    },
+    "served": {
+      "dim": 256,
+      "future_geometry": 0.077261,
+      "future_geometry_n": 1485,
+      "future_geometry_pairs": 1101870,
+      "n": 1485,
+      "persona_geometry": 0.046461,
+      "persona_geometry_n": 1485,
+      "persona_geometry_pairs": 1101870,
+      "segment_ari": -0.000233
+    },
+    "shape_pca_128": {
+      "dim": 128,
+      "future_geometry": 0.01633,
+      "future_geometry_n": 1485,
+      "future_geometry_pairs": 1101870,
+      "n": 1485,
+      "persona_geometry": 0.018691,
+      "persona_geometry_n": 1485,
+      "persona_geometry_pairs": 1101870,
+      "segment_ari": 0.001208
+    },
+    "shape_pca_39": {
+      "dim": 39,
+      "future_geometry": 0.056001,
+      "future_geometry_n": 1485,
+      "future_geometry_pairs": 1101870,
+      "n": 1485,
+      "persona_geometry": 0.078382,
+      "persona_geometry_n": 1485,
+      "persona_geometry_pairs": 1101870,
+      "segment_ari": -0.000434
+    }
+  },
+  "comparator": "PATH A wide table",
+  "complete": true,
+  "counter_weight": 1.0,
+  "equal_dimension": {
+    "arms": {
+      "counter_tile_128": {
+        "dim": 128,
+        "future_geometry": 0.167474,
+        "future_geometry_n": 1485,
+        "future_geometry_pairs": 1101870,
+        "n": 1485,
+        "persona_geometry": 0.187274,
+        "persona_geometry_n": 1485,
+        "persona_geometry_pairs": 1101870,
+        "segment_ari": -0.000873
+      },
+      "counter_tile_39": {
+        "dim": 39,
+        "future_geometry": 0.172894,
+        "future_geometry_n": 1485,
+        "future_geometry_pairs": 1101870,
+        "n": 1485,
+        "persona_geometry": 0.189756,
+        "persona_geometry_n": 1485,
+        "persona_geometry_pairs": 1101870,
+        "segment_ari": -0.000447
+      },
+      "equal_128": {
+        "dim": 256,
+        "future_geometry": 0.117609,
+        "future_geometry_n": 1485,
+        "future_geometry_pairs": 1101870,
+        "n": 1485,
+        "persona_geometry": 0.136504,
+        "persona_geometry_n": 1485,
+        "persona_geometry_pairs": 1101870,
+        "segment_ari": -0.001083
+      },
+      "equal_39": {
+        "dim": 78,
+        "future_geometry": 0.144412,
+        "future_geometry_n": 1485,
+        "future_geometry_pairs": 1101870,
+        "n": 1485,
+        "persona_geometry": 0.171957,
+        "persona_geometry_n": 1485,
+        "persona_geometry_pairs": 1101870,
+        "segment_ari": 0.000965
+      },
+      "path_a": {
+        "dim": 41,
+        "future_geometry": 0.181009,
+        "future_geometry_n": 1485,
+        "future_geometry_pairs": 1101870,
+        "n": 1485,
+        "persona_geometry": 0.386663,
+        "persona_geometry_n": 1485,
+        "persona_geometry_pairs": 1101870,
+        "segment_ari": 0.268486
+      },
+      "served": {
+        "dim": 256,
+        "future_geometry": 0.077261,
+        "future_geometry_n": 1485,
+        "future_geometry_pairs": 1101870,
+        "n": 1485,
+        "persona_geometry": 0.046461,
+        "persona_geometry_n": 1485,
+        "persona_geometry_pairs": 1101870,
+        "segment_ari": -0.000233
+      },
+      "shape_pca_128": {
+        "dim": 128,
+        "future_geometry": 0.01633,
+        "future_geometry_n": 1485,
+        "future_geometry_pairs": 1101870,
+        "n": 1485,
+        "persona_geometry": 0.018691,
+        "persona_geometry_n": 1485,
+        "persona_geometry_pairs": 1101870,
+        "segment_ari": 0.001208
+      },
+      "shape_pca_39": {
+        "dim": 39,
+        "future_geometry": 0.056001,
+        "future_geometry_n": 1485,
+        "future_geometry_pairs": 1101870,
+        "n": 1485,
+        "persona_geometry": 0.078382,
+        "persona_geometry_n": 1485,
+        "persona_geometry_pairs": 1101870,
+        "segment_ari": -0.000434
+      }
+    },
+    "complete": true,
+    "protocol": "shape PCA(n) fit on A; counter z-scored on A and tiled to n; concatenated and scored on B; n=128 is the operator's 128/128 idea, n=39 is shape-PCA to the counter's own width"
+  },
+  "honesty": "the exact counter is a SERVED statistic, not a learned-shape claim; a gain from the block arm is served-statistic sufficiency, not brain-only progress",
+  "kind": "block_serving",
+  "linear_access": {
+    "arms": {
+      "equal_128": {
+        "mean_r2": 0.449568,
+        "n_fields": 11
+      },
+      "equal_39": {
+        "mean_r2": 0.433142,
+        "n_fields": 11
+      },
+      "exact_counter": {
+        "mean_r2": 0.393626,
+        "n_fields": 11
+      },
+      "path_a": {
+        "mean_r2": 0.412586,
+        "n_fields": 11
+      },
+      "served": {
+        "mean_r2": 0.467521,
+        "n_fields": 11
+      }
+    },
+    "complete": true,
+    "protocol": "standardized RidgeCV fit on A, R2 scored on B, mean over the lab's persona+future numeric fields; served within 0.01 R2 of PATH A is non-inferiority",
+    "served_minus_path_a": 0.054935
+  },
+  "n_fit_A": 3515,
+  "n_score_B": 1485,
+  "products": {
+    "path": "/tmp/opencode/o3axis_i",
+    "registry_sha256": "d1de9237868fa0e9",
+    "tag": "0.11.0r490759-b64d256e3lr3e-04oc32e5132"
+  },
+  "seconds": 27.9,
+  "sensitivity_counter_weight": {
+    "0.5": 0.07554,
+    "1.0": 0.07554,
+    "2.0": 0.07554,
+    "4.0": 0.07554
+  },
+  "serving_rule": "per-block z-score on A; each block scaled by 1/sqrt(dim) so its TOTAL variance is 1; concatenated; scored on B; no B fit, no metric tuning"
+}

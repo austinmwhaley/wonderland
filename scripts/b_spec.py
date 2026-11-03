@@ -55,6 +55,12 @@ def o0_branch(persona: float) -> str:
     return O0_BRANCH_LABELS[-1][0]
 
 
+#: The B2 sufficiency bar (DEC-570, D5 accepted 2026-11-02: "bar U >= 0.5 on the served
+#: object, learned-only alongside"). U = 1 - worst-case oracle gap vs the full-history arm at
+#: fixed capacity. Frozen before the run; the receipt may not carry its own criterion (rule 3).
+SUFFICIENCY_BAR = 0.5
+
+
 @dataclass(frozen=True)
 class Section:
     ident: str
@@ -131,17 +137,21 @@ ROWS = (
         "B2.1",
         "Worst-case sufficiency U",
         "U = 1 - worst-case oracle gap vs full history, fixed capacity, broad published family",
-        "U >= the declared bar (frozen before the run)",
-        "missing",
+        f"U_served >= {SUFFICIENCY_BAR} (frozen in DEC-570)",
+        "sufficiency",
+        ("encoder_sufficiency_law.json", "u.served_object"),
+        SUFFICIENCY_BAR,
         producer="measure_sufficiency_law.py",
     ),
     BRow(
         "B2",
         "B2.2",
         "Full-history oracle gap",
-        "excess loss of E vs the full-history oracle at fixed capacity",
-        "gap <= the declared bar (frozen before the run)",
-        "missing",
+        "excess loss of E vs the full-history arm at fixed capacity, per included probe",
+        f"every included probe's U_served >= {SUFFICIENCY_BAR} (zero included = bar unfilled)",
+        "sufficiency_gap",
+        ("encoder_sufficiency_law.json", "probes"),
+        SUFFICIENCY_BAR,
         producer="measure_sufficiency_law.py",
     ),
     BRow(
@@ -149,8 +159,10 @@ ROWS = (
         "B2.3",
         "Learned-only attribution",
         "sufficiency of the learned shape vs the served statistics, reported separately",
-        "attribution recorded",
-        "missing",
+        "attribution recorded (learned-only U finite)",
+        "sufficiency_attribution",
+        ("encoder_sufficiency_law.json", "u.learned_only"),
+        SUFFICIENCY_BAR,
         producer="measure_sufficiency_law.py",
     ),
     # ---- B3: accessible ---------------------------------------------------------

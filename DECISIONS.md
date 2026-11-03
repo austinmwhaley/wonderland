@@ -9103,6 +9103,71 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     trained alongside (152.1s) — the GPU path is co-tenancy-stable when the configuration is
     pinned, which is the check's own precondition restored. S1–S5 green, B3 back to 6/6 under
     `d2ad6f60`; B2/B4/B5/B6/B7 remain on their own producers.
+  - **Addendum (O3 attempt 4 OUTCOME, landed 2026-11-03): REJECT — the frozen "1 fails" branch;
+    no canonical swap; DEC-575 triggered, exercised on the dev rig FIRST.** Attempt 4 ran to a
+    governed patience stop (step 574/1650; best val 5.9242; 11499 s wall ≈ 3.2 h;
+    `O3_RC=0`; tag `0.11.0r490759-b64d256e3lr3e-04oc32e5132`; portfolio receipt of record
+    `looking_glass/artifacts/cfm/portfolio/portfolio_0_11_0r490759-b64d256e3lr3e-04oc32e5132_20261103T040305Z.json`).
+    Launch receipts verified as pre-registered (`step 82/1650`, explicit batch=64 honored, 38
+    tasks, init eff_rank 4.828). The four frozen bars (DEC-572), measured on the O3 artifact:
+    1. **eff_rank ≥ 30: FAIL — 3.665** (null-normalized 101.539; cfm_v2k's 2.419 is the same
+       yardstick). The floor pair bought nothing: the run's own `rank` objective skill is
+       −0.0038 ± 0.0004 FAIL, and ABS next-type is model 1.3544 vs unigram 1.3409 vs
+       gram1 1.3359 (beats_unigram=False). The soft-penalty floor is exactly what FR v2.0
+       pillar 1 predicted: rank structure does not arrive via a loss term.
+    2. **M4_served shape-only persona ≥ 0.15: FAIL — 0.046461** (cfm_v2k baseline 0.06596 — the
+       O3 artifact is WORSE than the canonical one on the frozen consumer;
+       `o3axis_i/stage_decomposition.json`, attribution M0_exact_counter→M1_fold_only: the
+       fine structure is the counter block, not the learned shape).
+    3. **served coarse linear-access mean R² ≥ 0.45: PASS — 0.467521**
+       (`o3axis_i/block_serving.json` linear_access served arm, n_fields 11; cfm_v2k 0.4677 —
+       no coarse-access degradation).
+    4. **stable from step 0: PASS** (governed patience stop; not diverged, not lr_collapsed, no
+       non-finite).
+    Frozen branch taken: **"1 fails → the floor pair is insufficient: the trunk/objective axis
+    is confirmed."** H1 (the missing rank floor caused the blob) is refuted on this stream; the
+    2.4→3.7-d state is a property of the state-update algebra (and/or the objective content),
+    not of the floor's presence. DEC-575's trigger ("O3 rejected with the trunk/objective axis
+    confirmed") has therefore landed — DEC-575 is NOT dormant. Per DEC-576's port protocol,
+    DEC-575 **candidate 1 (bilinear `h⊗x` iterate-to-convergence scan)** is exercised on the
+    DEV RIG first (mastered on `next_event` + `intent`, controls clean, eff_rank receipt in
+    hand) before the ONE pre-registered real-data run under DEC-575's frozen gates. O4
+    (decision law, DEC-574) and O3(ii) "raise the rank target" / O3(iii) "event_residual=True"
+    remain queued as separate labeled axes, each needing its own DEC first.
+    **No canonical swap**: O3 is rejected, cfm_v2k stays canonical; O3's artifacts remain under
+    `/tmp/opencode/o3axis_i` with diagnostic re-measurements under
+    `docs/report_cards/experiments/o3axis_i/` (`--products` on the O3 artifact — cfm_v2k's card
+    receipts untouched).
+    **Disclosed behavior-hash move mid-run.** While attempt 4 trained, the on-disk tree moved
+    `d2ad6f6058e9607d` → `6a8e2663e11f1393` by the autotune defect-class-9 fix
+    (`_customer_level_features`: `num_cols` is the UNION of numeric JSON fields across
+    customers, but the per-customer mean loop indexed with `[]` → KeyError 'value' on the lab
+    next_event positive fixture, where purchase-free customers never emit `value`; fixed with
+    `.get`, regression test
+    `test_customer_level_features_survives_heterogeneous_numeric_fields`). The fix is INERT on
+    the real stream: demo_v2's numeric JSON fields are homogeneous across customers (the
+    KeyError can never fire there), O3's in-memory process ran the pre-fix code regardless, and
+    O3's artifacts embed no behavior hash — attempt 4 is self-consistent under either hash.
+    **Re-stamp under 6a8e2663 (no retrain).** The 9 recorded fast producers re-ran with their
+    own recorded commands (all RC=0): judge_stages S1–S5, the four judge legs, stage
+    decomposition, block serving, served object — now stamped `6a8e2663e11f1393`; S6/B8.2
+    remains on `d0ac576c` pending the clean-tree run (queued). Card: B1.1/B3.1/B6.1 back to
+    PASS, B3 6/6, and B2 3/3 PASS — the first U measurement on cfm_v2k is served 0.9757 /
+    learned-only 1.0769 (worst probe next-type; 1/5 probes included, the four regression-style
+    probes excluded-and-reported because PATH A's wide table beats the population-constant
+    floor, headroom ≤ 0 — the B2 evidence base is 1 probe, disclosed on the card;
+    `encoder_sufficiency_law.json`).
+    **Dev-rig iteration 1 landed under DEC-576 (the minutes-scale loop works).** `next_event`
+    (N=500, seed 17, snr=1.0, as-of 2024-09-01; lab_gate a-side: oracle_carried /
+    negative_not_carried / adversarial_not_carried / adversarial_leak_has_teeth all true): NOT
+    mastered — g=1.14727 (bar 0.5), nll enc 1.028749 / base 0.979548 / oracle 0.645459 nats,
+    CI(enc−base) [−0.0162, +0.1103] → does not beat the 1-gram; eff_rank 1.153 at the
+    autotuned dim=32. Controls read as designed: NEGATIVE NO_SIGNAL ✓; ADVERSARIAL structure
+    claim NO_SIGNAL while the echo makes the head beat the 1-gram (0.592943 vs 1.097587,
+    CI [−0.5282, −0.4810]) ✓ — the false-PASS trap is caught. The trunk blob reproduces on
+    known-truth data in minutes (a 1.15-d state on a stream whose truth is a 3-type transition
+    structure): iteration 2 is DEC-575 candidate 1 on the trunk axis, one axis, on the dev rig
+    FIRST. Receipt: `docs/report_cards/experiments/lab/next_event_iter1.json`.
 
 - **DEC-575 (trunk-axis candidate pre-registered — nonlinear state-update algebra; conditional on DEC-573's branch; the operator's 2026-11-02 "looped transformer" question is the entry point):**
   - **Principle served.** Lawful (rank as a property of the state update, FR v2.0 pillar 1:
@@ -9149,7 +9214,8 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     1.5–2.5 h (retrain) + 10–20 min (measurements) + an 8-producer re-stamp on any behavior move;
     the outer loop was measuring the apparatus more than the model. Meanwhile the capability
     blocker (the 2.4-d learned blob) has exactly one run in flight.
-  - **The rig already exists (built, pre-registered, never run — lab coverage 0/32).**
+  - **The rig already exists (built, pre-registered; fixtures were lost — lab coverage 0/32 on
+    disk).**
     `rabbit_hole.data_spec` (ONE parameterized simulator: `DataSpec` → stream + truth + latent
     per-customer rates; `snr` 0→1 difficulty knob; truth AND oracle derived from the SAME spec),
     `lab_oracles` (per-use-case POSITIVE spec whose target is carried beyond the strong
@@ -9159,7 +9225,12 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     `adversarial_leak_has_teeth`), `head_battery`/`probes` (frozen simple heads, PASS/FAIL/
     NO_SIGNAL verdicts with paired CIs vs the named baseline). `stream_adapter.discover`
     ingests the lab schema unchanged (measured: value-from-JSON discovery, 50-customer probe).
-    The rig runs the REAL looking_glass pipeline — it is not a substitute model.
+    Note of record: the committed `rabbit_hole/lab_coverage.json` claims 32/32 from a state in
+    which the fixtures existed — the fixtures live under `rabbit_hole/data/lab/` (gitignored,
+    regenerable) and were deleted since; disk is 0/32. That stale report is exactly the rule-7
+    class (a report contradicting its evidence) and is re-generated, never preserved, when each
+    iteration's fixtures land. The rig runs the REAL looking_glass pipeline — it is not a
+    substitute model.
   - **The loop (one axis per iteration, minutes per loop).** (1) A: build the fixture at the
     dev size N=500 (recorded; scale only if the CI is measured too wide) via
     `lab_oracles.build_positive/negative/adversarial`; run `lab_gate.evaluate()` for the use

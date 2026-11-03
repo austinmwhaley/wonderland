@@ -1,0 +1,103 @@
+{
+  "_meta": {
+    "behavior_hash": "6a8e2663e11f1393",
+    "command": "measure_stage_decomposition.py --products /tmp/opencode/o3axis_i --out docs/report_cards/experiments/o3axis_i/stage_decomposition.json",
+    "generated_at": "2026-11-03T04:26:59+00:00",
+    "git_commit": "9a6f4c14e5767301f236555c9452b1c2fa67410c",
+    "producer": "measure_stage_decomposition.py"
+  },
+  "attribution": {
+    "future_geometry": "M0_exact_counter->M1_fold_only",
+    "persona_geometry": "M0_exact_counter->M1_fold_only",
+    "segment_ari": "M0_exact_counter->M1_fold_only"
+  },
+  "complete": true,
+  "kind": "stage_decomposition",
+  "n_fit_A": 3515,
+  "n_pairs": 1101870,
+  "n_score_B": 1485,
+  "products": {
+    "path": "/tmp/opencode/o3axis_i",
+    "registry_sha256": "d1de9237868fa0e9",
+    "tag": "0.11.0r490759-b64d256e3lr3e-04oc32e5132"
+  },
+  "seconds": 7.1,
+  "stages": {
+    "M0_exact_counter": {
+      "dim": 39,
+      "future_geometry": 0.172894,
+      "future_geometry_n": 1485,
+      "future_geometry_pairs": 1101870,
+      "n": 1485,
+      "persona_geometry": 0.189756,
+      "persona_geometry_n": 1485,
+      "persona_geometry_pairs": 1101870,
+      "segment_ari": -0.000447
+    },
+    "M1_fold_only": {
+      "dim": 256,
+      "future_geometry": 0.093637,
+      "future_geometry_n": 1485,
+      "future_geometry_pairs": 1101870,
+      "n": 1485,
+      "persona_geometry": 0.066224,
+      "persona_geometry_n": 1485,
+      "persona_geometry_pairs": 1101870,
+      "segment_ari": -0.001144
+    },
+    "M2_state_plus_fold": {
+      "dim": 256,
+      "future_geometry": 0.091123,
+      "future_geometry_n": 1485,
+      "future_geometry_pairs": 1101870,
+      "n": 1485,
+      "persona_geometry": 0.067491,
+      "persona_geometry_n": 1485,
+      "persona_geometry_pairs": 1101870,
+      "segment_ari": -0.00121
+    },
+    "M3_post_proj": {
+      "dim": 256,
+      "future_geometry": 0.078447,
+      "future_geometry_n": 1485,
+      "future_geometry_pairs": 1101870,
+      "n": 1485,
+      "persona_geometry": 0.046207,
+      "persona_geometry_n": 1485,
+      "persona_geometry_pairs": 1101870,
+      "segment_ari": 0.000139
+    },
+    "M4_served": {
+      "dim": 256,
+      "future_geometry": 0.077261,
+      "future_geometry_n": 1485,
+      "future_geometry_pairs": 1101870,
+      "n": 1485,
+      "persona_geometry": 0.046461,
+      "persona_geometry_n": 1485,
+      "persona_geometry_pairs": 1101870,
+      "segment_ari": -0.000233
+    }
+  },
+  "validation": {
+    "definition": "M0 exact counter -> M1 w_counter fold -> M2 state+fold -> M3 shared proj -> M4 served; distance fidelity is squared corr vs the lab's true pairwise distances, z-scored on A and scored on B",
+    "future_fields": [
+      "x0",
+      "h0",
+      "price_sensitivity",
+      "return_proneness",
+      "churn_day",
+      "regime_switches",
+      "final_regime_days"
+    ],
+    "m3_m4_distance_alignment": 0.998589,
+    "persona_fields": [
+      "bayes_fwd_count_90d",
+      "bayes_fwd_value_90d",
+      "d0",
+      "segment"
+    ],
+    "segment_k": 4,
+    "served_is_stored_state_embeddings": true
+  }
+}

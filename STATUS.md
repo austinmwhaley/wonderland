@@ -68,11 +68,34 @@ certification stays on the real stream.
 - **Certification:** S1/S2 are fixed and fresh (DEC-561: producer batch arithmetic, not a random
   co-tenant; 32 GB cap). S3/S4/S5 are fresh. S6 still fails until chain v4 runs the whole chain in
   one invocation.
+- **O3 is answered: REJECT (DEC-573 outcome addendum, landed 2026-11-03).** Attempt 4 ran clean
+  to a governed patience stop (574/1650, best val 5.9242, ~3.2 h) and failed the two geometry
+  bars: eff_rank 3.665 (bar ≥ 30; cfm_v2k 2.419) and M4_served persona 0.046461 (bar ≥ 0.15;
+  cfm_v2k 0.06596); it kept the access bar (mean R² 0.467521 ≥ 0.45) and stability. Frozen branch:
+  "1 fails → trunk/objective axis confirmed" — the soft-penalty floor pair bought no rank
+  structure (`rank` skill −0.0038 ± 0.0004), refuting H1. No canonical swap: cfm_v2k stays
+  canonical; O3's artifact lives at `/tmp/opencode/o3axis_i` with diagnostics under
+  `docs/report_cards/experiments/o3axis_i/`.
+- **B2 `U` is measured (DEC-570 spec; `measure_sufficiency_law.py` first run on cfm_v2k).**
+  Served-object U = 0.9757, learned-only U = 1.0769 — the learned shape alone clears the
+  0.5 bar; worst probe next-type. Only 1/5 probes has positive headroom (the four
+  regression-style probes: PATH A's wide table beats the population-constant floor, headroom ≤ 0
+  — excluded-and-reported per the frozen spec, so the B2 evidence base is 1 probe, disclosed on
+  the card). B2.1/B2.2/B2.3 PASS; the U · sufficiency capability axis is green.
+- **Dev-rig iteration 1 landed (DEC-576; the minutes loop works).** `next_event` N=500
+  (seed 17, snr=1.0): NOT mastered — g 1.147 (bar 0.5), does not beat the 1-gram (CI enc−base
+  [−0.016, +0.110]), eff_rank 1.153 at the autotuned dim=32. Controls clean: NEGATIVE reads
+  NO_SIGNAL; ADVERSARIAL beats the 1-gram via the echo while its structure claim is NO_SIGNAL —
+  the false-PASS trap is caught. The trunk blob reproduces on known-truth data: the bottleneck
+  axis is the trunk, confirming the real-stream O3 diagnosis in minutes.
 - **Products:** the canonical full-size products are at `/home/austin_whaley/wonderland_work/cfm_v2k`
   (fs_full, tag `…b64…o4c3b5899`, trained under behavior `d0ac576c`); the stale `0f881d99`
-  artifacts are backed up at `cfm_v2k_stale_0f881d99`. Code behavior is now `d2ad6f60`
-  (DEC-573: the `resolve_cfm` batch-pinning fix); cfm_v2k's frozen artifacts are unchanged and its
-  receipts are re-stamped by re-running the fast producers (no retrain).
+  artifacts are backed up at `cfm_v2k_stale_0f881d99`. Code behavior is now `6a8e2663`
+  (DEC-573: the `resolve_cfm` batch-pinning fix → `d2ad6f60`; autotune defect class 9,
+  heterogeneous numeric JSON fields across customers → `6a8e2663` — inert on the real stream,
+  disclosed in the DEC-573 outcome addendum). cfm_v2k's frozen artifacts are unchanged; its
+  receipts are re-stamped by re-running the fast producers (no retrain) — done under `6a8e2663`
+  for S1–S5, the four judge legs and the three B3 producers; S6/B8.2 awaits the clean-tree run.
 
 ## Closed front (history; see DECISIONS for the record)
 
@@ -86,9 +109,36 @@ next question is the learned shape, not another consumer tuning pass.
 
 ## Next 3 actions
 
-1. **DEV-RIG loop (DEC-576, the pivot) — make ANY foundation model on a known-truth lab stream before THE one.** The real-data outer loop has been dominated by protocol/environment defects (4 of O3's 5 attempts died before the science; every behavior-hash move costs an 8-producer re-stamp). The lab was pre-built and never run (0/32 fixtures): `rabbit_hole.data_spec` (parameterized simulator, truth+oracle from ONE spec, `snr` 0→1 difficulty knob) + `lab_oracles` (per-use-case POSITIVE / NEGATIVE snr=0 / ADVERSARIAL echo-next fixtures, closed-form transition oracle + 1-gram baseline). Loop, one axis per iteration at small N: build fixture → train the real CFM → measure next-type NLL vs the oracle ceiling + eff_rank + NEGATIVE (must read NO_SIGNAL) + ADVERSARIAL (must NOT false-PASS) → curriculum (transition → intent → entities → trend → actions). **Discipline: lab receipts live under `docs/report_cards/experiments/lab/` and are a DEVELOPMENT INSTRUMENT — they never flip a B-row verdict on the main card; certification stays on the real stream (cfm_v2k / O3 / DEC-575).** The U producer (below) is stream-agnostic and becomes the dev rig's speedometer.
-2. **O3 axis-i retrain — DEC-572/573 (attempt 4 in flight, launch VERIFIED).** Attempt 3 recorded and aborted: its own governor receipt said `step 165/3300` against the pre-registered `82/1650` — the `--set batch=64` pin was clobbered by hardware derivation (pin == field default, and the budget derived at the hardware batch; DEC-573). `resolve_cfm` now honors `--set` pins that equal the default and derives the horizon from the effective batch (regression-tested); behavior hash `d0ac576c` → `d2ad6f60`; cfm_v2k receipts re-stamped (fast producers, no retrain) and S2 determinism restored. Attempt 4's launch receipts match the pre-registered line exactly: `[govern] step 82/1650`, `[set] batch 64 honored`, `[scale] 38 tasks`, `[health] init eff_rank 4.828` — a valid run. Let it finish; record the DEC-573 outcome addendum (accept-or-revert + canonical-swap) when it lands. Acceptance: eff_rank ≥ 30 (own receipt) AND B3.2 M4_served persona ≥ 0.15 AND B3.3 mean R² ≥ 0.45 AND stable. Trunk-axis escalation (bilinear scan → looped block, DEC-575) stays pre-registered for the reject branch and is now also testable in minutes on the dev rig.
-3. **O2 `U` producer (`measure_sufficiency_law.py`, spec frozen in DEC-570) — written ONCE, run on BOTH rigs.** Five self-supervised probes (next-type, attr-next, numeric-next, dt, horizon-count-value), shipping `_ridge_head` at fixed capacity, arms = served object (shape ⊕ ledger blocks per DEC-571) / learned-only / full (PATH A) / floor; bar U ≥ 0.5 on the served object; B2.1/2.2/2.3 + card rows. It is `--products`/`--demo`-driven and architecture-agnostic: on the dev rig it is the per-iteration speedometer (does the small encoder retain the stream's future at fixed capacity?), on cfm_v2k it is the B2 certification. After O3 lands: DEC-573 outcome addendum, re-measure B3.2–B3.6 with `--products` on the O3 artifact, then O4 decision law (DEC-574) / O5 minimality / remaining B rows / S6-B8.2 clean-tree re-stamp. B+C re-scores only after B is green; project v1 THIRD; BACKWARD only at all-green.
+1. **Close the tree: commit the coherent chunk, then S6/B8.2 on the clean tree.** The chunk:
+   autotune defect class 9 + regression test; O3 attempt 4 outcome addendum (REJECT, no
+   canonical swap, hash move disclosed); DEC-576 dev-rig iteration 1 (next_event not mastered,
+   controls clean); B2 `U` producer `measure_sufficiency_law.py` + first cfm_v2k measurement
+   (served U 0.9757 / learned 1.0769, 1/5 probes included, disclosed) + card wiring (B2 3/3
+   PASS) + 9 synthetic-receipt tests; dev-rig speedometer `lab_measure.py` (sign-convention
+   and adversarial bookkeeping corrected) + iteration-1 receipt; `gpu_watchdog` pattern for
+   the new producer; full cfm_v2k re-stamp under `6a8e2663` (S1–S5, 4 legs, 3 B3 producers —
+   recorded commands, no retrain); O3 diagnostic receipts `o3axis_i/`; card regenerated. Then
+   `measure_certification_law.py` (the one-command card-regeneration check) at the clean
+   commit — S6/B8.2 currently stale at `d0ac576c` — and commit that receipt too.
+2. **DEV-RIG iteration 2 = DEC-575 candidate 1 (the trunk axis): bilinear `h⊗x`
+   iterate-to-convergence scan.** Implement in `looking_glass` (one axis: the state-update
+   algebra; the affine trunk's ceiling is the measured blob — cfm_v2k eff_rank 2.419, lab
+   1.153, O3 3.665; the §4.3 spike measured ×1.79 transferable rank from exactly this term).
+   This is a behavior move: expect the hash to move again, and fold the FULL cfm_v2k
+   re-stamp (all recorded producer commands, no retrain) into the same cycle. Pre-register in
+   DECISIONS.md first (B1 compositionality canary: merge/equivariance/mass-additivity must stay
+   exact on data — a closed-form monoid break is a recorded trade, not a silent cost). Train
+   `next_event` N=500 (positive + negative + adversarial, same as-of/seed), target: MASTERED
+   (g ≤ 0.5 AND beats the 1-gram, paired CI, AND the eff_rank receipt in hand) with the
+   controls still reading as designed.
+3. **Iteration 3 = `intent` (curriculum step 2), then the port.** Once iteration 2 masters
+   `next_event`, run `intent` sharpening on the same rig; when BOTH are mastered with clean
+   controls, DEC-576's port protocol fires: ONE pre-registered real-data run of the trunk
+   candidate under DEC-575's frozen gates (the four O3 bars + the B1 canary, atop cfm_v2k —
+   O3 was rejected, so the base protocol is cfm_v2k's, one axis: the new state-update algebra).
+   Queue behind it, unchanged: O4 decision law (DEC-574), O5 minimality, B6.3, B7.2, dev-rig
+   iterations 4–6; B+C re-scores only after B is green on the real stream; project v1 third;
+   BACKWARD only at all-green.
 
 ## Operating facts
 
@@ -118,4 +168,6 @@ foundation model"):** DEV-RIG loop pre-registered as DEC-576 — A↔B→C itera
 known-truth lab fixtures (`rabbit_hole.data_spec` + `lab_oracles` + `lab_gate` +
 `head_battery`), curriculum one structure axis at a time, N=500 dev size, binding
 discipline: lab receipts are a development instrument and never flip a B-row verdict on
-the main card; O3 attempt 4 stays in flight (its result is real-data evidence).
+the main card. O3 attempt 4 then LANDED and was REJECTED under its frozen bars (eff_rank
+3.665 < 30; persona 0.046461 < 0.15; R² and stability kept) — no canonical swap, DEC-575
+triggered; the trunk candidate is exercised on the dev rig first (iteration 2).

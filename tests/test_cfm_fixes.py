@@ -14,6 +14,10 @@ streams rabbit_hole produces:
   8. a `--set` pin equal to the field's default (batch=64) was clobbered by the
      hardware-derived value, and the training budget was derived from the
      hardware batch instead of the effective one (O3 attempt 3, DEC-573)
+  9. numeric JSON fields are HETEROGENEOUS across customers (present for some,
+     absent for others — the lab next_event positive fixture): num_cols is the
+     union across customers, so the per-customer mean loop must .get, not []
+     (dev-rig iteration 1, DEC-576: KeyError 'value' in derive_contrast_tau)
 """
 
 from __future__ import annotations
@@ -98,6 +102,44 @@ def test_resolve_cfm_batch_pin_equal_to_default_wins_and_drives_budget(monkeypat
     assert res_def.batch == 32
     assert res_def.budget_steps == AT.derive_budget(2, 32, res_def.dim)[0]
     assert "batch" not in res_def.receipt["overrides"]
+
+
+# ---------------------------------------------------------------------------
+# 9. heterogeneous numeric JSON fields across customers (dev-rig, DEC-576)
+# ---------------------------------------------------------------------------
+def test_customer_level_features_survives_heterogeneous_numeric_fields():
+    # DEC-576 dev-rig iteration 1: the lab positive fixture's `value` is a JSON
+    # attribute that only some customers ever emit (the transition structure
+    # leaves purchase-free customers). num_cols is the union across customers,
+    # so the per-customer mean loop must tolerate a missing key — the old
+    # d["numeric_counts"][k] raised KeyError 'value' inside derive_contrast_tau
+    # and killed the training before a single step.
+    from looking_glass.autotune import _customer_level_features
+
+    df = pl.DataFrame(
+        {
+            "customer_key": ["c1", "c1", "c2", "c2"],
+            "event_ts": [
+                "2025-01-01T00:00:00+00:00",
+                "2025-01-02T00:00:00+00:00",
+                "2025-01-01T00:00:00+00:00",
+                "2025-01-03T00:00:00+00:00",
+            ],
+            "event_type": ["view", "purchase", "view", "view"],
+            "event_attributes": [
+                None,
+                '{"value": 4.0}',
+                None,
+                None,
+            ],
+        }
+    )
+    X, keys, names = _customer_level_features(df, ["c1", "c2"], sample_n=None)
+    assert keys == ["c1", "c2"]
+    assert "value" in names  # the union still names the field
+    j = names.index("value")
+    assert X[0, j] == pytest.approx(4.0)  # c1's purchase mean
+    assert X[1, j] == 0.0  # c2 never emitted value: absent, not crashed
 
 
 def test_set_overrides_applied_after_derivation_and_fail_safe():

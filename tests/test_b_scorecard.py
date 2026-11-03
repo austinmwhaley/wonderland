@@ -294,3 +294,118 @@ def test_capability_top_line_is_derived_from_the_b_rows(tmp_path):
     # the top line must list every frozen axis from b_spec
     for axis, _ in B.CAPABILITY_AXES:
         assert axis in info["cap_verdicts"]
+
+
+# ---------------------------------------------------------------------------
+# B2 sufficiency rows (DEC-570): the bar lives in b_spec.SUFFICIENCY_BAR, never the receipt
+# ---------------------------------------------------------------------------
+def _suff_body(
+    u_served: float | None = 0.9757,
+    u_learned: float | None = 1.0769,
+    probes: dict | None = None,
+    complete: bool = True,
+    h: str = HASH,
+) -> dict:
+    if probes is None:
+        probes = {
+            "next-type": {
+                "included": True,
+                "reason": "included",
+                "loss": {
+                    "served_object": 1.479336,
+                    "learned_only": 1.463038,
+                    "full": 1.475424,
+                    "floor": 1.31443,
+                },
+                "u": {"served_object": u_served, "learned_only": u_learned},
+            },
+            "dt": {"included": False, "reason": "headroom -0.121934 <= 0 — probe excluded"},
+        }
+    return {
+        "_meta": _meta(h),
+        "complete": complete,
+        "probes": probes,
+        "u": {"served_object": u_served, "learned_only": u_learned},
+        "u_all_arms": {"served_object": u_served, "learned_only": u_learned},
+        "worst_probe": {"served_object": "next-type", "learned_only": "next-type"},
+        "excluded_probes": {
+            "dt": "headroom -0.121934 <= 0 — probe excluded, reported (degenerate)"
+        },
+    }
+
+
+def test_sufficiency_u_passes_when_served_clears_the_frozen_bar(tmp_path):
+    _write(tmp_path, "encoder_sufficiency_law.json", _suff_body(u_served=0.9757))
+    md, info = RC.render(tmp_path, HASH)
+    assert info["b_verdicts"]["B2.1"] == J.PASS
+    assert "served U 0.9757" in md
+    assert f"(bar {B.SUFFICIENCY_BAR:g}, DEC-570)" in md
+
+
+def test_sufficiency_u_fails_when_served_is_below_the_bar(tmp_path):
+    _write(tmp_path, "encoder_sufficiency_law.json", _suff_body(u_served=0.31))
+    _, info = RC.render(tmp_path, HASH)
+    assert info["b_verdicts"]["B2.1"] == J.FAIL
+
+
+def test_sufficiency_u_fails_on_an_incomplete_receipt(tmp_path):
+    _write(tmp_path, "encoder_sufficiency_law.json", _suff_body(complete=False))
+    _, info = RC.render(tmp_path, HASH)
+    assert info["b_verdicts"]["B2.1"] == J.FAIL
+
+
+def test_sufficiency_u_is_unknown_when_not_finite_or_stale(tmp_path):
+    _write(tmp_path, "encoder_sufficiency_law.json", _suff_body(u_served=None))
+    _, info = RC.render(tmp_path, HASH)
+    assert info["b_verdicts"]["B2.1"] == J.UNKNOWN
+    _write(tmp_path, "encoder_sufficiency_law.json", _suff_body(h="oldhash"))
+    _, info = RC.render(tmp_path, HASH)
+    assert info["b_verdicts"]["B2.1"] == J.UNKNOWN
+
+
+def test_sufficiency_gap_passes_when_every_included_probe_clears_the_bar(tmp_path):
+    body = _suff_body()
+    body["probes"]["numeric-next"] = {
+        "included": True,
+        "reason": "included",
+        "loss": {"served_object": 0.9, "full": 0.8, "floor": 0.5},
+        "u": {"served_object": 0.6, "learned_only": 0.7},
+    }
+    _write(tmp_path, "encoder_sufficiency_law.json", body)
+    _, info = RC.render(tmp_path, HASH)
+    assert info["b_verdicts"]["B2.2"] == J.PASS
+
+
+def test_sufficiency_gap_fails_when_an_included_probe_dips_below_the_bar(tmp_path):
+    body = _suff_body()
+    body["probes"]["numeric-next"] = {
+        "included": True,
+        "reason": "included",
+        "loss": {"served_object": 1.0, "full": 0.8, "floor": 0.5},
+        "u": {"served_object": 0.4, "learned_only": 0.5},
+    }
+    _write(tmp_path, "encoder_sufficiency_law.json", body)
+    md, info = RC.render(tmp_path, HASH)
+    assert info["b_verdicts"]["B2.2"] == J.FAIL
+    assert "numeric-next" in md
+
+
+def test_sufficiency_gap_fails_when_no_probe_has_headroom(tmp_path):
+    body = _suff_body(probes={"dt": {"included": False, "reason": "headroom <= 0"}})
+    _write(tmp_path, "encoder_sufficiency_law.json", body)
+    md, info = RC.render(tmp_path, HASH)
+    assert info["b_verdicts"]["B2.2"] == J.FAIL
+    assert "unfilled" in md
+
+
+def test_sufficiency_attribution_passes_when_learned_only_is_finite(tmp_path):
+    _write(tmp_path, "encoder_sufficiency_law.json", _suff_body(u_learned=1.0769))
+    md, info = RC.render(tmp_path, HASH)
+    assert info["b_verdicts"]["B2.3"] == J.PASS
+    assert "learned-only U 1.0769" in md
+
+
+def test_sufficiency_attribution_unknown_when_learned_only_missing(tmp_path):
+    _write(tmp_path, "encoder_sufficiency_law.json", _suff_body(u_learned=None))
+    _, info = RC.render(tmp_path, HASH)
+    assert info["b_verdicts"]["B2.3"] == J.UNKNOWN
