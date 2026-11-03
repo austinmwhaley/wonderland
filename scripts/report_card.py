@@ -760,9 +760,7 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
         verdict, why, _ = eval_tasks(tasks, note, delivery=(row.column == "brain_ledger"))
         verdict, why = record(verdict, why, None if note is None else f"{row.source}")
         if verdict in (J.FAIL,):
-            blocked.append(
-                f"{row.source} :: {row.column} [P4·{P.owner(row.ident)}] — {why}"
-            )
+            blocked.append(f"{row.source} :: {row.column} [P4·{P.owner(row.ident)}] — {why}")
         verdicts[row.ident] = verdict
         judge_lines.append(
             f"| {row.leg} | {J.COLUMN_LABEL[row.column]} | {_badge(verdict)} | {why} |"

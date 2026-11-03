@@ -9517,3 +9517,53 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     the retired-capability test replaced). Ruff clean; principle audit 0. No behavior-hash move
     (`scripts/` only), no receipt re-stamp; the S6/B8.2 re-cert at the new clean commit remains
     the first action on resume.
+
+- **DEC-580 (operator directive 2026-11-03: the operating prompts must work at BOTH scales — rewritten around
+  `PLAN.md` -> `REPORT_CARD.md`):**
+  - **Diagnosis of record (operator).** "My biggest issue is I feel like you lack the ability to work at both
+    MACRO and MICRO levels. I feel like you are only able to work at MICRO." The prompts were the
+    mechanism: `PROMPT_FORWARD` selected "the highest-leverage unmet subgoal" from a flat row list
+    (no node, no route — micro drift by construction), `PROMPT_BACKWARD` attacked every row and the
+    business goal but never the decomposition (a green card on the wrong tree passed review), and
+    FORWARD's §4 documented the pre-plan card shape (the plan section was missing from its contract).
+  - **Decision — FORWARD is a two-scale loop.** Every run must write `NODE` / `ROUTE` / `MOVE`
+    before choosing a change: the plan node it serves and why it is the bottleneck, the route step,
+    and the leaf it moves. Selection is forced by the tree and route, not by the easiest red row.
+    After the run, `MOVEMENT: <node> before -> after; root before -> after` is recorded; **a run
+    that moves no node is a diagnosis, not progress** (DEC-577 is the worked example: eff_rank
+    1.153 -> 1.473, node unchanged, branch (iii), recorded as a negative result). A `reporting`
+    green (`attribution recorded`, `complete`, `working=True`) may not be used as quality evidence;
+    the card's `Green means` column is the mechanical label. The map is updated only when it is
+    wrong: frontier moved -> `CURRENT_ROUTE`/`ROUTE` + regenerate `PLAN.md`; tree change -> DEC
+    (operator approval if a gate/leaf changes). Two failure modes are named and forbidden: **micro
+    drift** (row flips/tests/receipts with no node) and **macro drift** (editing the tree, route, or
+    gate kind to make the frontier look nearer). The card shape contract now documents the rendered
+    plan-first card.
+  - **Decision — BACKWARD attacks the map before the territory.** New §4.0 "The tree (MACRO)":
+    necessity of each P node; leaf placement; gate-kind misuse; `E1`/v1 closure evidence; route
+    honesty; **independent recomputation of `plan_spec.statuses`** vs the card (disagreement is
+    BREAKING); coverage/freshness (`plan.py --check`); and tree sufficiency (name any necessary
+    condition with no node — operator-level). The output gains a **Macro verdict** table and every
+    requirement is tagged with its `node`. Two review modes (operator directive): **NODE**, scoped
+    to a changed node, read-only, may file BREAKING/MAJOR requirements but **never yields a
+    completion verdict**; **FULL**, still triggered only by an ENCODER DONE v1 card per AGENTS,
+    the only mode that can stop the tick-tock. The tick-tock runs FULL at milestones (ENCODER DONE,
+    then SOLVED), NODE in between; a BREAKING finding voids the scope, so the next milestone
+    re-runs FULL. **Completion** now requires the card's plan root `SOLVED` (E1 port + v1) and a
+    clean FULL at that scope — ENCODER DONE remains a real milestone, not a completion claim.
+  - **Also updated.** `AGENTS.md`'s operating-prompts paragraph now states the two scales, the two
+    BACKWARD modes, and the SOLVED stop condition (doctrine aligned, not contradicted). New
+    `tests/test_prompts.py` (5 tests) is a drift ratchet: the prompts must keep `NODE/ROUTE/MOVE`,
+    `MOVEMENT`, `Green means`, the plan-first card shape, the tree attack, `plan_spec.statuses`,
+    real node ids, and must not regress to "highest-leverage unmet subgoal" or the retired
+    capability top line.
+  - **Rejected.** (i) A second "macro prompt" file: two loops would drift and violate the one
+    tick-tock / one card rule. (ii) Running the FULL review on every red-card iteration: that is
+    verdict-shopping and contradicts AGENTS' all-green trigger; the scoped NODE mode gives
+    iteration without weakening the completion gate. (iii) Encoding the prompts as a generator:
+    they are prose the operator reads; the test ratchet is enough at this stage.
+  - **Cost / identity.** Docs + one test file; `scripts/` and `looking_glass/` untouched in this
+    chunk -> no behavior-hash move (`4053d2f9`), no receipt re-stamp. The S6/B8.2 re-cert on the
+    plan-aligned card landed first at commit `61c2ff0` (all six checks OK; 24557 chars / 241 lines,
+    deterministic), receipts committed `ac64892`; the judge blockers now carry `[P4·JUDGE-<leg>]`.
+  - **Status.** Implemented; tests + ruff + principle audit run before commit.

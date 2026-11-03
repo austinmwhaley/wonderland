@@ -102,6 +102,14 @@ certification stays on the real stream.
   DEC-578 (candidate 2: looped / weight-tied nonlinear block, its own DEC, its own
   pre-registration; alternatives — capacity confound dim 32 vs 256, gate tuning, curriculum
   advance — recorded and barred from this verdict).
+- **Operating prompts are two-scale now (DEC-580, operator directive).** `PROMPT_FORWARD` requires
+  `NODE` / `ROUTE` / `MOVE` before every run and `MOVEMENT` after it (a run that moves no node is
+  a diagnosis, not progress); `PROMPT_BACKWARD` attacks the tree first (necessity, placement,
+  gate-kind misuse, route honesty, recomputed statuses, tree sufficiency) and has two modes:
+  scoped NODE reviews after a node changes, and the FULL completion review (triggered when the
+  card is ENCODER DONE v1). Completion requires the card's plan root `SOLVED` (E1 port + v1),
+  not merely a green encoder battery. `AGENTS.md` aligned; `tests/test_prompts.py` is the drift
+  ratchet.
 - **Products:** the canonical full-size products are at `/home/austin_whaley/wonderland_work/cfm_v2k`
   (fs_full, tag `…b64…o4c3b5899`, trained under behavior `d0ac576c`); the stale `0f881d99`
   artifacts are backed up at `cfm_v2k_stale_0f881d99`. Code behavior is now `4053d2f9`
@@ -125,26 +133,27 @@ next question is the learned shape, not another consumer tuning pass.
 
 ## Next 3 actions
 
-1. **PLAN.md + card alignment — DONE and improved (DEC-579 + addendum); pause point.** The tree
+1. **PLAN.md + card + operating prompts — DONE (DEC-579, DEC-580); pause point.** The tree
    (`scripts/plan_spec.py`: goal → P1–P5 → 23 B rows + 8 judge rows + E1 trunk + 5 v1 leaves)
    renders `PLAN.md` (structure + route R1–R7, no measurements) and the card's plan section
-   (structure + verdicts + frontier readings). The card's B rows now carry **Green means**
-   (`quality` / `reporting` / `unmeasured`, derived from the frozen gate kind), the duplicate
-   capability-axis view is retired, the plan root leads the assessment, and blockers name their
-   plan node. Direction is plan → card and enforced by tests. No behavior-hash move. Next on
-   resume: re-run `measure_certification_law.py` at the clean commit so S6/B8.2 records the new
-   card shape at a recorded commit (`PLAN.md` is not touched by the chain; only the card +
-   receipts are exempt).
+   (structure + verdicts + frontier readings). The card's B rows carry **Green means**
+   (`quality` / `reporting` / `unmeasured`), the duplicate capability view is retired, the plan
+   root leads the assessment, blockers name their plan node, and S6/B8.2 re-certified the new
+   card at the clean commit (`61c2ff0`, all six checks OK, deterministic 241-line render;
+   receipts `ac64892`). The prompts now drive the loop at both scales (DEC-580): FORWARD writes
+   `NODE`/`ROUTE`/`MOVE` and reads `MOVEMENT`; BACKWARD attacks the tree first and has scoped
+   NODE vs FULL modes. No behavior-hash move (`4053d2f9`). Next: DEC-578 / dev-rig iteration 3.
 2. **DEV-RIG iteration 3 = DEC-575 candidate 2 (pre-register as DEC-578 FIRST).** The looped /
    weight-tied nonlinear state-update block, on `next_event` N=500, one axis, with its own
    frozen verdict + a-priori branches (iteration 2's branch (iii) is the standing escalation;
    the recorded alternatives — dim-256 capacity test on the toy, gate tuning, curriculum
-   advance — stay barred from that verdict).
+   advance — stay barred from that verdict). The DEC must carry `NODE: P2/E1`, `ROUTE: R1`,
+   `MOVE:` the toy reading, and the outcome must record `MOVEMENT:`.
 3. **Then the curriculum resumes: `intent` (iteration 4), then the port.** When BOTH
-   `next_event` and `intent` are mastered with clean controls, DEC-576's port protocol fires:
-   ONE pre-registered real-data run of the winning trunk candidate under DEC-575's frozen
-   gates (the four O3 bars + the B1 canary, atop cfm_v2k). Queue behind it, unchanged: O4
-   decision law (DEC-574), O5 minimality, B6.3, B7.2, dev-rig iterations 5+; B+C re-scores
+   `next_event` and `intent` are mastered with clean controls, DEC-576's port protocol fires
+   (`ROUTE` R3): ONE pre-registered real-data run of the winning trunk candidate under DEC-575's
+   frozen gates (the four O3 bars + the B1 canary, atop cfm_v2k). Queue behind it, unchanged:
+   O4 decision law (DEC-574), O5 minimality, B6.3, B7.2, dev-rig iterations 5+; B+C re-scores
    only after B is green on the real stream; project v1 third; BACKWARD only at all-green.
 
 ## Operating facts

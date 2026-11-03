@@ -1,31 +1,42 @@
-# PROMPT_FORWARD — the forward operating prompt
+# PROMPT_FORWARD — the two-scale forward operating prompt (PLAN.md -> REPORT_CARD.md)
 
-> **State:** run this prompt while the project is **not** all-green, or after
+> **State:** run this prompt while the card is **not** ENCODER DONE v1, or after
 > `PROMPT_BACKWARD.md` returned at least one **BREAKING** finding.
 > **Job:** move the project toward its goal by one measured axis per run, obeying the
 > principles. This is not a coding prompt; code is only the instrument.
-> **Every run ends with results written to `REPORT_CARD.md`.** When its gate-of-record
-> section is all green, stop forward work and run `PROMPT_BACKWARD.md`.
+> **Two scales, every run.**
+> **MACRO** — `PLAN.md` is the map: the goal cut backwards into necessary problems, the
+> route that earns the evidence, and the frontier. A run that cannot name the plan node it
+> serves is maintenance, not progress.
+> **MICRO** — `REPORT_CARD.md` is the instrument: one leaf, one axis, one frozen gate, one
+> receipt. A run that moves no node is a diagnosis, not progress.
+> **Every run ends with both artifacts current:** the card re-rendered, and — if the
+> frontier moved — `PLAN.md` regenerated. When the card is ENCODER DONE v1, stop forward
+> work and run `PROMPT_BACKWARD.md` (FULL).
 
 ---
 
 ## 0. Read order (do not skip)
 
 1. `AGENTS.md` — doctrine, principles, certification integrity, workflow.
-2. `docs/SPINE.md` — the constitution: goal, four consumers, judge, S1–S6, T/A/C-series
+2. `PLAN.md` — the MACRO map: the goal cut backwards into necessary problems (`§2`), the
+   route that earns the evidence (`§5`), the frontier and what a green proves (`§6`). Generated
+   from `scripts/plan_spec.py`; never hand-edited. `python3 scripts/plan.py --check` must pass.
+3. `docs/SPINE.md` — the constitution: goal, four consumers, judge, S1–S6, T/A/C-series
    laws, bucket table, ledger guardrails.
-3. `STATUS.md` — live state (macro + micro). Read first to restore context.
-4. `DECISIONS.md` — append-only decision log. Read the tail; never re-litigate a
+4. `STATUS.md` — live state (macro + micro). Read after the map to restore state.
+5. `DECISIONS.md` — append-only decision log. Read the tail; never re-litigate a
    settled decision without new evidence.
-5. `REPORT_CARD.md` — the ONE card: run report, gate-of-record, and every open row (see §4).
-6. `AUDIT.md` — the principle-alignment audit written by BACKWARD.
-7. `docs/report_cards/experiments/` — the receipts every number must trace to.
-8. `docs/SPINE.md` Appendix A — the Layer-1 `U` contract.
-9. §11 below — the A/B/C pipeline contract (layers, schema, plugin surface, gates).
+6. `REPORT_CARD.md` — the ONE card: the plan section (node verdicts) first, then the
+   B scorecard, the run report, and every open row (see §4).
+7. `AUDIT.md` — the principle-alignment audit written by BACKWARD.
+8. `docs/report_cards/experiments/` — the receipts every number must trace to.
+9. `docs/SPINE.md` Appendix A — the Layer-1 `U` contract.
+10. §11 below — the A/B/C pipeline contract (layers, schema, plugin surface, gates).
 
 If a file contradicts another, the order is: **AGENTS.md doctrine → SPINE laws →
-frozen gate definitions → receipts → STATUS/DECISIONS narrative**. Narrative never
-overrides a receipt.
+frozen gate definitions → receipts → PLAN.md's tree → STATUS/DECISIONS narrative**. Narrative
+never overrides a receipt, and the map never overrides a gate.
 
 ---
 
@@ -62,34 +73,95 @@ brain + ledger = delivery.** Ledger points never count as a brain win.
 
 ---
 
-## 3. The forward loop (binding)
+## 3. The loop: one MACRO statement, one MICRO experiment (binding)
 
-For every run:
+The plan is the map; the card is the instrument. Every run moves **one leaf** and must say
+**which node it is trying to move**. If you cannot say the macro sentence, do not run:
 
-1. **Generate the card** — run the one command that regenerates it (see §6). Read the
-   gate-of-record section and the blocking rows.
-2. **Pick the highest-leverage unmet subgoal** that is achievable now; cheapest first;
-   exactly **one axis**.
-3. **Diagnose before protocol** — if a cheap read-only test can falsify the premise,
-   run it first and record it as a diagnostic (DEC-462/464 rule). A diagnostic may not
-   adopt anything.
-4. **Pre-register the decision in `DECISIONS.md` before the run.** It must name:
-   context; the principle(s) served; ≥2 rejected alternatives; the single axis changed;
-   the named metric; the frozen acceptance threshold; guards; the falsifier; the cost;
-   and what is **not** changed (gates, comparator, probes, E's content, ledger).
-5. **Implement the one change** and run the one command that emits the receipt. The run
-   is the measurement.
-6. **Grade against the frozen acceptance before any verdict.** Adopt only if the named
-   axis moved. Otherwise revert, archive the receipts under
-   `docs/report_cards/experiments/protocols/<name>/`, and restore the live receipts of
-   the recorded artifact.
-7. **Regenerate the card at a clean, recorded commit**; write the run result to
-   `REPORT_CARD.md`; update `STATUS.md`; append the measured outcome to `DECISIONS.md`;
-   commit code + docs (never data/artifacts).
-8. **If the gate-of-record is not all green, repeat.** If it is all green, run
-   `PROMPT_BACKWARD.md`.
+> *To make `G` true, `<node>` must be true because `<why>`; this run moves `<leaf>` from
+> `<current>` toward `<target>` by changing `<one axis>`.*
 
-A run that cannot name its axis, its frozen acceptance, or its receipt is not a run.
+### 3.1 MACRO — read the map before choosing anything
+
+Open, in this order: `PLAN.md` §2 (the tree), §5 (the route), §6 (frontier + what a green
+proves); then `REPORT_CARD.md`'s assessment (the plan root) and plan table (node verdicts).
+Write three lines into the DEC draft **before** choosing the change:
+
+```text
+NODE:  <P#/node> — why it is the bottleneck (which leaf/status keeps it open)
+ROUTE: <R#> — the step this run is on, from PLAN.md §5
+MOVE:  <leaf id> <current verdict/reading> -> <target>, because <one axis>
+```
+
+Selection rules, in order:
+
+1. **The route wins.** The node is the open one the route says is next — not the cheapest
+   row that happens to be failing.
+2. **The measured blocker wins inside a node.** If one leaf is the measured reason the node
+   is open (a red quality row, a missing producer the node names), that leaf is the run.
+3. **A reporting green cannot answer a quality question.** Every leaf carries
+   `Green means: quality | reporting | unmeasured` (derived in `scripts/b_spec.py`,
+   displayed on the card). `attribution recorded` / `complete` / `working=True` prove the
+   measurement happened, not that the embedding is good. If the node's gap is quality (e.g.
+   `eff_rank`, persona, `g`), the run targets the **DEC-frozen bar and its producer**, not a
+   reporting row that is already green.
+4. **Unmeasured beats re-measured.** A missing producer is a closer gap than a green row
+   worth re-running.
+5. **One node at a time.** If the run touches two nodes, split it.
+
+### 3.2 MICRO — the experiment (unchanged rigor)
+
+One axis; pre-register before the run; frozen acceptance; launch receipts verified before
+the result is read; one command emits the receipt. See §5 for the integrity rules.
+
+### 3.3 READ AT BOTH SCALES — the step that has been missing
+
+After the run, regenerate the card (`python3 scripts/report_card.py`) and read:
+
+- **MICRO:** the leaf's verdict and numbers against its frozen gate.
+- **MACRO:** the named node's status before/after, and every other node that moved.
+  Record the sentence explicitly in the DEC outcome and STATUS:
+  `MOVEMENT: <node> <before> -> <after>; root <before> -> <after>.`
+- **No movement = negative result.** If the named node did not move, the run is a diagnosis,
+  not progress — even if a local number improved. Record it as such and take the
+  pre-registered branch (DEC-577's bilinear run is the worked example: eff_rank 1.153 ->
+  1.473, node unchanged, branch (iii), candidate-1-negative).
+- **Unexpected movement = coupling.** If another node moved, record it (principle 8: axes
+  interact; a fix on one may cost another).
+- **A failed run still updates the map** when it falsifies the premise: the next route step
+  or the node's blocker changes, and that is a plan-relevant fact.
+
+### 3.4 UPDATE THE MAP — only when the map is wrong
+
+- **Frontier advances** -> update `plan_spec.CURRENT_ROUTE` (and `ROUTE` if the order
+  changed), regenerate `PLAN.md` (`python3 scripts/plan.py`), then the card. Commit both.
+- **The tree itself is wrong** (a missing necessary condition, a leaf under the wrong node,
+  a gate kind misclassified) -> that is a **plan change**: DEC first; operator approval if it
+  adds/removes a gate, threshold, or leaf. Never edit `plan_spec.py` to make the frontier look
+  nearer.
+- **`plan.py --check` must pass**; a stale `PLAN.md` is a card-integrity failure.
+
+### 3.5 The two failure modes this section exists to prevent
+
+- **MICRO drift** — a run that flips a row, adds tests, or regenerates receipts without
+  naming the node it serves. It looks like work; the root does not move.
+- **MACRO drift** — editing the tree, the route pointer, or a leaf's `Green means` so the
+  frontier looks closer: a reporting gate promoted to quality evidence, `R` moved before the
+  evidence, `E1` marked closed without its port receipt. Forbidden; the tree is tested against
+  the frozen rows precisely so this is visible.
+
+### 3.6 Worked example (DEC-577 — a macro-honest run that ended in "no")
+
+```text
+NODE:  P2/E1 — the trunk blob keeps P2 open; B2's green is a sufficiency claim, not capacity.
+ROUTE: R1 — dev rig, next_event N=500 (minutes), before any real-data run.
+MOVE:  E1's toy reading, because one axis: bilinear_recurrence ON.
+```
+
+MICRO: one axis, frozen verdict (g <= 0.5 AND beats the 1-gram), controls as designed.
+READ: `MOVEMENT: E1 FRONTIER -> FRONTIER; root FAILED -> FAILED.` g 1.147 -> 1.154,
+eff_rank 1.153 -> 1.473. The local geometry moved; the node did not. Verdict: branch (iii),
+candidate-1-negative — a negative result, not progress. Next run: DEC-578 (candidate 2).
 
 ---
 
@@ -105,25 +177,32 @@ appears on the card; nothing may be parked in a side document.
 ### Required `REPORT_CARD.md` shape (generated, never hand-edited)
 
 ```text
-# REPORT_CARD — PATH B > PATH A
+# REPORT_CARD — B foundational, then PATH B > PATH A
   header: generated_at · commit · branch · clean/dirty · encoder behavior hash
 ## Assessment
-  the generated completion condition (NOT DONE / ENCODER DONE)
+  plan root first (SOLVED / FAILED / OPEN + green, FAIL, DEC-frozen, v1 counts, reds by problem)
+  then B foundational · B+C consequence · Project v1
+## The plan — the tree this card measures (PLAN.md)
+  24 nodes with DERIVED verdicts (worst-child), the frontier readings, and the
+  reporting-gate caveat; FRONTIER = DEC-frozen leaf, NOT ASSESSED = v1 leaf
+## B — foundational scorecard
+  B1..B8; every row carries Green means (quality | reporting | unmeasured) + verdict + evidence
 ## The judge — four legs × two numbers
   8 rows: supervised/unsupervised/rl/simulator × brain alone / brain + ledger
-## The stage ladder
-  S1..S6, each with its working-state proof and verdict
-## Certification hygiene
-  H1..H5
-## Backward requirements
-  the structured findings from `AUDIT.md`
+## Measured values · The stage ladder (S1..S6) · Certification hygiene (H1..H5)
 ## What is blocking
-  exact missing receipts and open backward requirements
+  the plan's open leaves: B rows tagged [P#·B#], judge blockers tagged [P4·JUDGE-<leg>]
+## Backward requirements
+  the structured findings from `AUDIT.md`, each tagged with its plan node
 ```
 
-The renderer reads receipts under `docs/report_cards/experiments/` and
-`AUDIT.md`; it never invents a number. A run that edits the card
-by hand is not evidence.
+The renderer reads `scripts/plan_spec.py` (the tree), the frozen row specs
+(`scripts/b_spec.py`, `scripts/judge_spec.py`) and the receipts under
+`docs/report_cards/experiments/`, plus `AUDIT.md`; it never invents a number. A run that edits
+the card by hand is not evidence. A card without the plan section is stale: regenerate it.
+
+`PLAN.md` is the readable render of the same tree (structure + route only, no measurements);
+`python3 scripts/plan.py --check` proves it is current with the spec.
 
 ### Backward requirements are card requirements
 
@@ -137,9 +216,20 @@ renderer reads that block and displays the requirements in `REPORT_CARD.md`; an 
 explicitly `accepted` by the operator; `BREAKING` may never be accepted, only closed by
 evidence.
 
-### "All green" — the only definition that counts
+### "All green" — the three claims, never conflated
 
-All of the following, simultaneously:
+The plan makes the old single word precise:
+
+| Claim | Meaning | Where it is computed |
+|---|---|---|
+| **T0** | every measured B leaf PASSes its frozen gate on a current receipt | the card's B scorecard / plan table |
+| **ENCODER DONE v1** | T0 + the four judge legs' gate-of-record + stages + hygiene (the list below) | the card's generated assessment |
+| **SOLVED** | ENCODER DONE + `E1` closed by its pre-registered port receipt + every v1 leaf PASS + no open BREAKING/MAJOR backward requirement | the card's plan root — it prints `SOLVED` only then |
+
+A green T0 is not ENCODER DONE; ENCODER DONE is not SOLVED. Never use a stronger word than
+the generated artifact says.
+
+**ENCODER DONE v1** — all of the following, simultaneously:
 
 1. `REPORT_CARD.md`: **0 FAIL, 0 UNKNOWN**; every one of the 8 leg-columns is PASS or
    **EXCLUDED-and-reported** under a frozen, operator-approved exclusion rule; all
@@ -191,10 +281,11 @@ Follow AGENTS.md's certification integrity rules 1–8. In practice:
 
 | Artifact | What to keep current |
 |---|---|
-| `STATUS.md` | macro (goal, stage, progress, blockers) + micro (current task, last completed, next 3, environment). Update **before yielding**. |
-| `DECISIONS.md` | append-only. Pre-registration before every run; measured outcome after; context / alternatives / decision+principle / trade-offs. Never edit old entries. |
-| `REPORT_CARD.md` | the run report + gate-of-record section (§4) and **every open row** — it is the only card; no row may be hidden. Regenerated each run; no hand-written numbers. |
-| `AUDIT.md` | the single BACKWARD file: principle audit + findings + `BACKWARD_REQUIREMENTS_JSON` block rendered into `REPORT_CARD.md` (§4). |
+| `PLAN.md` | the MACRO map (tree + route), generated from `scripts/plan_spec.py`; `python3 scripts/plan.py --check` must pass. Update `CURRENT_ROUTE`/`ROUTE` when the frontier moves — never to make progress look nearer. |
+| `STATUS.md` | macro (goal, stage, progress, blockers, **which plan node is the frontier**) + micro (current task, last completed, next 3, environment). Update **before yielding**. |
+| `DECISIONS.md` | append-only. Pre-registration before every run (**with `NODE` / `ROUTE` / `MOVE`**); measured outcome after (**with `MOVEMENT`**); context / alternatives / decision+principle / trade-offs. Never edit old entries. |
+| `REPORT_CARD.md` | the run report + plan section + gate-of-record + **every open row** — it is the only card; no row may be hidden. Regenerated each run; no hand-written numbers. |
+| `AUDIT.md` | the single BACKWARD file: principle audit + macro verdict + findings + `BACKWARD_REQUIREMENTS_JSON` block (each requirement tagged `node`) rendered into `REPORT_CARD.md` (§4). |
 | `docs/report_cards/experiments/` | receipts; `protocols/<name>/` archives for non-adopted runs. |
 
 **Commit discipline:** every coherent verified chunk is committed; code + docs only;
@@ -206,11 +297,15 @@ commit; a receipt that no repo command regenerates is not evidence.
 
 - One-command chain + card:
   `python3 scripts/measure_certification_law.py --products <recorded artifact> --demo <demo> --train-log <artifact>/train.log`
-- Report card render (the single card): `python3 scripts/report_card.py`
+- Plan render / freshness check (MACRO): `python3 scripts/plan.py` ·
+  `python3 scripts/plan.py --check`
+- Report card render (the single card, plan section included): `python3 scripts/report_card.py`
 - Principle audit (ALL code we run, not just changed files):
   `python3 scripts/principle_audit.py --all --strict` · summary: `--all --summary`
 
-The chain command is the only S6-certifying path. A hand-rendered card is not evidence.
+The chain command is the only S6-certifying path. A hand-rendered card is not evidence. The
+order is always **plan -> card**: if a run changed the tree or the route, regenerate `PLAN.md`
+first, then the card, and commit both.
 
 **Evidence scripts:** any script committed as evidence must pass
 `python3 scripts/principle_audit.py --strict` with **0 findings**, be vectorized (no
@@ -240,19 +335,33 @@ per-row Python loops in hot paths), and emit a runtime receipt.
 
 ## 8. End-of-run checklist (print it, then commit)
 
-1. The one command ran; every producer exited 0; the receipt exists.
-2. Frozen acceptance was graded **before** the verdict; the named axis is stated.
-3. Adopted → keep; not adopted → revert + archive receipt + restore live receipts.
-4. `STATUS.md` updated; `DECISIONS.md` outcome appended; open `AUDIT.md` findings are
+**MACRO — did the map move?**
+
+1. The DEC names `NODE`, `ROUTE`, `MOVE` **before** the run and `MOVEMENT` after it.
+2. The named node's status was read before and after; if it did not move, the run is recorded
+   as a negative result/diagnosis, not progress.
+3. Any other node that moved unexpectedly is recorded as a coupling finding.
+4. If the frontier advanced, `plan_spec.CURRENT_ROUTE` (and `ROUTE` if needed) is updated and
+   `PLAN.md` regenerated; `python3 scripts/plan.py --check` passes. If the tree changed, a DEC
+   records why (and operator approval if a gate/leaf changed).
+5. No reporting-gated leaf is presented as quality evidence anywhere in the DEC/STATUS/prose.
+
+**MICRO — is the evidence valid?**
+
+6. The one command ran; every producer exited 0; the receipt exists.
+7. Frozen acceptance was graded **before** the verdict; the named axis is stated.
+8. Adopted → keep; not adopted → revert + archive receipt + restore live receipts.
+9. `STATUS.md` updated; `DECISIONS.md` outcome appended; open `AUDIT.md` findings are
    either closed with their receipt or explicitly carried as the next subgoal.
-5. `REPORT_CARD.md` run sections written from generated cards; gate-of-record section
-   agrees with the renderer's own generated bytes; no contradiction.
-6. Clean-tree commit recorded; hashes/N/controls present; no `/tmp`-only evidence.
-7. `python3 scripts/principle_audit.py --all --strict` clean: **0 new blocking findings on the
-   whole surface**, not merely on the files touched. The baseline may only shrink. ruff/tests per
-   the repo's gates (or the known-failure baseline disclosed).
-8. Print the rendered `REPORT_CARD.md` (never fenced) as the run's source of truth.
-9. If all green → stop and run `PROMPT_BACKWARD.md`. Else → next FORWARD run.
+10. `REPORT_CARD.md` is the generated render; the plan table and the gate-of-record agree
+    with the renderer's own bytes; no contradiction.
+11. Clean-tree commit recorded; hashes/N/controls present; no `/tmp`-only evidence.
+12. `python3 scripts/principle_audit.py --all --strict` clean: **0 new blocking findings on the
+    whole surface**, not merely on the files touched. The baseline may only shrink. ruff/tests per
+    the repo's gates (or the known-failure baseline disclosed).
+13. Print the rendered `REPORT_CARD.md` (never fenced) as the run's source of truth.
+14. If ENCODER DONE v1 (the §4 list) → stop and run `PROMPT_BACKWARD.md` (FULL). Else → the
+    next FORWARD run, starting again at §3.1 (MACRO), not at the row that looks easiest.
 
 ---
 
@@ -262,6 +371,9 @@ Stop **before** running if a proposed change:
 
 - changes a gate, threshold, criterion, frontier definition, or exclusion rule;
 - changes what "shape" contains, what "full-E" means, or what the comparator is;
+- **changes the plan tree itself** — adds/removes/re-parents a node, adds/removes a leaf,
+  changes a leaf's `Green means`, or moves a DEC-frozen node to closed without its receipt
+  (operator-only when it touches a gate; a documented DEC otherwise);
 - would move a verdict from FAIL to PASS by anything other than a real capability
   improvement;
 - introduces a new consumer, artifact contract, bucket, or architecture;
@@ -281,6 +393,12 @@ a gate-touching or authorization item.
 - Adding an unadopted receipt to the card; leaving a stale behavior hash; hiding a row.
 - Weakening a gate, redefining a target, or excluding a row to turn a verdict green.
 - Narrating a number instead of generating it; editing the card to improve a verdict.
+- **Micro drift:** a run with no `NODE` line, or one that counts tests/receipts/row flips as
+  progress while the named node and the root do not move.
+- **Macro drift:** editing `plan_spec`/`ROUTE`/`CURRENT_ROUTE`, reclassifying a leaf's
+  `Green means`, or closing `E1`/a v1 leaf to make the frontier or the root look better.
+- **Promoting a reporting green to quality evidence** (e.g. "B3.2 is PASS, so the shape is
+  good" when its gate is `attribution recorded`).
 - Hope-driven reruns of a falsified ladder rung ("512-d next") without a new mechanism.
 - Per-row Python loops in hot paths; batch-coupled serving statistics; silent clamps.
 - Running a second LLM container, exceeding the caps, or training while the co-tenant
@@ -523,5 +641,7 @@ without running them. Outputs live under `rabbit_hole/data/reference_pipeline` b
 
 ---
 
-*The forward run ends when the card is all green. The project is not done until
-`PROMPT_BACKWARD.md` returns no BREAKING findings against that green card.*
+*The forward run ends when the card is ENCODER DONE v1. The project is not done until the plan
+root reads SOLVED — `E1` closed by its port receipt and every v1 leaf green — and
+`PROMPT_BACKWARD.md` returns no BREAKING findings against that card. Start every run from the
+map (`PLAN.md` §3.1), not from the row that happens to be red.*

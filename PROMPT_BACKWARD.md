@@ -1,11 +1,20 @@
-# PROMPT_BACKWARD — the adversarial review prompt
+# PROMPT_BACKWARD — the two-scale adversarial review prompt
 
-> **State:** run this prompt **only** when `PROMPT_FORWARD.md` has produced an
-> all-green `REPORT_CARD.md` gate-of-record section (the definition in
-> `PROMPT_FORWARD.md` §4).
-> **Job:** try to falsify the completion claim. Explain **why the project may not
-> achieve its goal**, even if every row is green. Document every finding for the next
-> forward run.
+> **State — two modes (operator directive 2026-11-03, DEC-580):**
+>
+> - **FULL** — run **only** when `PROMPT_FORWARD.md` has produced an ENCODER DONE v1 card
+>   (the definition in `PROMPT_FORWARD.md` §4). Tries to falsify the completion claim at both
+>   scales and is the only mode that can yield a completion verdict.
+> - **NODE** — run after any plan node changes status (closes/opens) or the route pointer
+>   moves. Read-only and scoped to that node + its leaves. It may file BREAKING/MAJOR
+>   requirements (a fake node closure is breaking) but it can **never** produce a completion
+>   verdict or satisfy the tick-tock's stop condition.
+>
+> **Job:** try to falsify the claim at **both scales**. MACRO: is the tree the right
+> decomposition, are its statuses honestly derived, and is the route pointer the true frontier?
+> MICRO: is every green leaf green under its frozen gate, and does a green mean what the plan
+> says it means? Explain **why the project may not achieve its goal**, even if every row is
+> green. Document every finding for the next forward run.
 > **Read-only.** Do not fix, edit, regenerate, or weaken anything. You are the adversary,
 > not the mechanic.
 
@@ -13,16 +22,21 @@
 
 ## 0. Read order
 
-1. `REPORT_CARD.md` — the run report, the all-green gate-of-record section, and **every
-   open row** (it is the only card; there is no separate audit card).
-2. `DECISIONS.md` — the pre-registrations and measured outcomes.
-3. `STATUS.md` — the claimed state and blockers.
-4. `docs/report_cards/experiments/` — every receipt the card cites.
-5. `AUDIT.md` — the single BACKWARD file: principle audit, findings, and the
+1. `PLAN.md` — the MACRO map: the tree (§2), the route (§5), the frontier and the
+   quality/reporting distinction (§6). Generated from `scripts/plan_spec.py`; check
+   `python3 scripts/plan.py --check`.
+2. `REPORT_CARD.md` — the plan section (node verdicts, root, frontier readings) first, then
+   the B scorecard, the gate-of-record section, and **every open row** (it is the only card;
+   there is no separate audit card).
+3. `DECISIONS.md` — the pre-registrations and measured outcomes (`NODE`/`ROUTE`/`MOVE` and
+   `MOVEMENT` lines).
+4. `STATUS.md` — the claimed state and blockers.
+5. `docs/report_cards/experiments/` — every receipt the card cites.
+6. `AUDIT.md` — the single BACKWARD file: principle audit, macro verdict, findings, and the
    `BACKWARD_REQUIREMENTS_JSON` block already on the card.
-6. `docs/SPINE.md`, `AGENTS.md` — the goal, laws, and certification integrity rules.
-7. The code and tests at the recorded commit.
-8. The findings already in `AUDIT.md` — their disposition.
+7. `docs/SPINE.md`, `AGENTS.md` — the goal, laws, and certification integrity rules.
+8. The code and tests at the recorded commit.
+9. The findings already in `AUDIT.md` — their disposition.
 
 Record the exact **commit, behavior hash, artifact tag/hash, and card hash** at the top
 of the review. A review of an unrecorded tree is not evidence.
@@ -31,19 +45,24 @@ of the review. A review of an unrecorded tree is not evidence.
 
 ## 1. The claim under attack
 
-> "Under the frozen contract, the card is all green and the evidence supports the
-> project's completion claim."
+> "Under the frozen contract, the card is ENCODER DONE v1 and the evidence supports the
+> project's completion claim; the plan tree is the right decomposition and the route is the
+> true frontier."
 
-Attack two things separately:
+Attack three things separately:
 
-- **Measurement validity** — is each green row actually green under the frozen rules?
+- **Tree validity (MACRO)** — is the decomposition the right one, is each node necessary, is
+  every leaf under the node where its failure actually lands, and are the statuses derived
+  honestly?
+- **Measurement validity (MICRO)** — is each green row actually green under the frozen rules?
 - **Construct validity** — if every row is green, does that mean the project's real goal
   is achieved? Or is the card measuring a proxy that can be green while the goal is not?
 
 A finding that a green row is a tie, a leak, a stale receipt, a self-defined criterion,
 a selected hyperparameter, or an excluded failure is **BREAKING**: it invalidates the
-all-green claim. A finding about the goal's construct validity is **BREAKING** if the
-completion claim depends on it.
+all-green claim. A finding that a node's status is misderived, that a reporting green is
+being used as quality evidence, that the route skips the real frontier, or that the tree is
+missing a necessary condition is **BREAKING** when the completion claim depends on it.
 
 ---
 
@@ -72,7 +91,7 @@ completion claim depends on it.
 
 | Severity | Meaning | Effect |
 |---|---|---|
-| **BREAKING** | Invalidates the all-green claim or the completion condition (tie, leak, stale hash, self-defined criterion, post-hoc gate, selected-on-test parameter, hidden row, unadopted receipt, wrong comparator, non-reproducible claim, construct-validity failure the claim depends on). | The tick-tock returns to FORWARD. Completion is blocked. |
+| **BREAKING** | Invalidates the green claim, the tree/macro verdict, or the completion condition (tie, leak, stale hash, self-defined criterion, post-hoc gate, selected-on-test parameter, hidden row, unadopted receipt, wrong comparator, non-reproducible claim, construct-validity failure the claim depends on). | The tick-tock returns to FORWARD. Completion is blocked. |
 | **MAJOR** | Material weakness or missing evidence that does not, by itself, invalidate the green claim. | Convert to a FORWARD subgoal or get explicit operator acceptance. |
 | **MINOR** | Documentation, clarity, hygiene, or a small robustness gap. | Fix opportunistically; does not block. |
 | **INFO** | Disclosure or a question for the operator. | No action required. |
@@ -80,6 +99,39 @@ completion claim depends on it.
 ---
 
 ## 4. Attack dimensions (go through all of them)
+
+### 0. The tree (MACRO) — attack the map before the territory
+
+This dimension exists because a green card can be built on the wrong decomposition. Run it
+first, and do not let row-level detail substitute for it.
+
+- **Necessity.** For each level-1 problem (`P1`–`P5`), remove it in thought: does the goal
+  still follow without it? If yes, the tree has a redundant node (finding); if the goal
+  obviously needs something not present, the tree has a **gap** — name it as a proposed node
+  (operator-level plan change, never an edit here).
+- **Placement.** Is every leaf under the node where its failure actually lands? A trunk-capacity
+  condition filed under "reproducible", or a decision failure filed under "accessible", would
+  hide the bottleneck the frontier should point at.
+- **Gate kind.** For every green leaf, read its `Green means` on the card. Is any `reporting`
+  green used as *quality* evidence anywhere — in the DEC outcome, STATUS, the plan, or the
+  card's prose? (E.g. "B3.2 PASS" cited as proof the shape is good when its gate is
+  `attribution recorded`.) The classification is derived in `scripts/b_spec.py`; the **misuse**
+  is the finding.
+- **Closure.** Is `E1` (the DEC-frozen leaf) closed only by its pre-registered port receipt and
+  a recorded decision — not by a lab receipt, a local eff_rank, or narration? Is any v1 leaf
+  claimed without its stack gate?
+- **Route honesty.** Is `CURRENT_ROUTE` the cheapest open blocker on the dependency path? Is a
+  step skipped (e.g. the port run before both dev-rig structures are mastered)? Is the pointer
+  moved without the evidence its own row names?
+- **Derivation.** Recompute `scripts/plan_spec.statuses` from the receipts/card verdicts and
+  compare with the card's plan table and root. Any disagreement — a node PASS the rows do not
+  support, a root stronger than its leaves — is **BREAKING**.
+- **Coverage and freshness.** Every frozen B/judge row is a leaf exactly once; `PLAN.md` is
+  current with the spec (`plan.py --check`); the card is current with the tree; `PLAN.md`
+  contains no measurement.
+- **Sufficiency of the tree.** Name any necessary condition of the goal that has no node at all
+  (today: anything the goal needs that is neither a B row, `E1`, nor a v1 gate). That is the
+  deepest macro finding and it is operator-level.
 
 ### A. Goal and construct validity
 
@@ -261,11 +313,15 @@ Write exactly this shape:
 ```text
 # AUDIT — adversarial review <date>
 ## Header
-  commit, behavior hash, artifact tag/hash, card hash, reviewer, date
+  commit, behavior hash, artifact tag/hash, card hash, reviewer, date, mode (FULL | NODE:<node>)
 ## Verdict
-  BREAKING / NO BREAKING FINDINGS
+  BREAKING / NO BREAKING FINDINGS (FULL only; NODE mode has no completion verdict)
+## Macro verdict (the tree)
+  | Node | Claimed (card) | Recomputed (plan_spec.statuses) | Honest? | Finding |
+  every node status recomputed; route pointer checked; `Green means` misuse checked;
+  tree sufficiency (any necessary condition with no node)
 ## Findings
-  | ID | Severity | Claim attacked | Why it may be false | Evidence (file:line / receipt key / number) |
+  | ID | Node | Severity | Claim attacked | Why it may be false | Evidence (file:line / receipt key / number) |
   | Reproduction command | Proposed FORWARD subgoal | Gate touched? | What would change my mind |
 ## Per-row attack
   | Row (leg-column / stage / hygiene) | Attacked? | Finding ID(s) | Notes |
@@ -293,10 +349,11 @@ For **every** finding, append a requirement to the `BACKWARD_REQUIREMENTS_JSON` 
 {
   "id": "B-<n>",
   "severity": "BREAKING|MAJOR|MINOR|INFO",
+  "node": "P2/E1 or P4/JUDGE-supervised or G — the plan node the finding attacks",
   "principle": "P4/E16 (SPEED) or 'none' for a measurement finding",
   "status": "open",
   "finding": "one sentence, with the receipt/number",
-  "forward_subgoal": "the named-axis subgoal that would close it",
+  "forward_subgoal": "the named-axis subgoal (with NODE/ROUTE/MOVE) that would close it",
   "gate_touched": false,
   "evidence": "file:line or receipt key",
   "audit_ref": "A-<n>",
@@ -320,42 +377,70 @@ is never accepted, only closed.
 
 ```text
 state = FORWARD
+reviewed = set()                             # scopes already FULL-reviewed at this tree
 loop:
-    run PROMPT_FORWARD  ->  REPORT_CARD.md (gate of record)
-    if not all_green:                 # PROMPT_FORWARD §4
-        state = FORWARD
-        continue
-    run PROMPT_BACKWARD ->  AUDIT.md
-    if verdict == BREAKING:
-        append a DECISIONS entry (review + findings)
-        update STATUS.md (blockers)
-        convert each BREAKING finding to a FORWARD subgoal
-        state = FORWARD
-        continue
-    else:                             # NO BREAKING FINDINGS
-        record completion in STATUS.md/DECISIONS.md
+    run PROMPT_FORWARD                       # MACRO statement + one MICRO run -> card
+    if a plan node changed status or CURRENT_ROUTE moved:
+        run PROMPT_BACKWARD (NODE:<node>)    # scoped, read-only, requirements tagged
+
+    scope = SOLVED        if card.plan.root == SOLVED
+            ENCODER_DONE  if encoder_done_v1(card)
+            None          otherwise
+    if scope is None:
+        continue                             # not at a reviewable milestone
+
+    if scope not in reviewed:
+        run PROMPT_BACKWARD (FULL) -> AUDIT.md
+        if verdict == BREAKING:              # includes a dishonest macro verdict
+            append a DECISIONS entry (review + findings)
+            update STATUS.md (blockers, frontier)
+            convert each BREAKING finding to a FORWARD subgoal with NODE/ROUTE/MOVE
+            reviewed.clear()
+            continue
+        reviewed.add(scope)
+
+    if scope == SOLVED:
         print REPORT_CARD.md
-        stop
+        stop                                 # project SOLVED
+    # ENCODER DONE v1 certified: keep going at the next route step (port, B rows, B+C, v1)
 ```
 
 Rules for the transition:
 
-- **BACKWARD never fixes.** It reports; FORWARD implements.
-- A BREAKING finding becomes a **pre-registered FORWARD subgoal** with its own named
-  axis and frozen acceptance. Do not fold several breaking findings into one
-  uncontrolled run.
-- If a finding's only fix is a gate/threshold/criterion/exclusion change, it is
-  **operator-only**; completion is blocked until ruled.
-- The next BACKWARD runs only after the next **all-green** card. Do not re-run BACKWARD
-  on a red card to shop for a better verdict.
-- **No completion claim** without both: (a) the card's generated assessment says the
-  completion condition, and (b) BACKWARD returns NO BREAKING FINDINGS. A hand-written
-  "SOLVED" is a bug even if both hold; the card's generated assessment is the only
-  completion statement.
+- **Two review modes, one standard.** NODE is scoped: it attacks the changed node and its
+  leaves, may file BREAKING/MAJOR requirements, and never produces a completion verdict.
+  FULL attacks the tree, every row, and the goal, and is the only mode that can stop the
+  tick-tock.
+- **FULL runs at milestones, not every loop.** It runs once per scope (`ENCODER DONE`, then
+  `SOLVED`) at a given tree; a NODE review covers the iterations in between. A BREAKING
+  finding voids the scope, so the next milestone re-runs FULL.
+- **BACKWARD never fixes.** It reports; FORWARD implements. A BREAKING finding becomes a
+  pre-registered FORWARD subgoal with its own `NODE`/`ROUTE`/`MOVE` and frozen acceptance.
+- Do not fold several breaking findings into one uncontrolled run.
+- If a finding's only fix is a gate/threshold/criterion/exclusion change, or a tree change,
+  it is **operator-only**; completion is blocked until ruled.
+- Do not re-run FULL on a red card to shop for a better verdict.
+- **No completion claim** without all three: (a) the card's generated root says `SOLVED`,
+  (b) the FULL review at that scope returns NO BREAKING FINDINGS, and (c) its macro verdict is
+  honest. A hand-written "SOLVED" is a bug even if all three hold.
 
 ---
 
 ## 7. Specific attack checklist (run it)
+
+### The tree (MACRO) — do this before the rows
+
+- [ ] Every `P1`–`P5` is necessary: removing it breaks the goal's derivation.
+- [ ] Every leaf hangs under the node where its failure actually lands.
+- [ ] Every green leaf's `Green means` is respected: no `reporting` green promoted to quality
+      evidence in the DEC/STATUS/plan/card prose.
+- [ ] `E1` is open unless the port receipt meets DEC-572's bars; v1 leaves are open unless the
+      stack gate passed.
+- [ ] `CURRENT_ROUTE` is the cheapest open blocker on the dependency path; no step skipped.
+- [ ] `plan_spec.statuses` recomputed from receipts equals the card's node verdicts and root.
+- [ ] Every frozen row is a leaf exactly once; `plan.py --check` passes; the card matches the
+      tree; `PLAN.md` carries no measurements.
+- [ ] No necessary condition of the goal is missing from the tree (name it if so — operator).
 
 ### Card rows
 
@@ -406,13 +491,19 @@ Rules for the transition:
 
 A clean review is not "everything is fine." It is:
 
+- **MACRO clean:** every node recomputed and honest; the route pointer is the true frontier;
+  no reporting green used as quality; `E1`/v1 closures backed by their receipts; the tree is
+  sufficient for the goal (no missing necessary condition);
 - every green row attacked with a concrete check and a stated result;
 - every attack either falsified (with a receipt/number) or recorded as a finding;
 - no BREAKING finding;
 - every MAJOR finding either converted to a forward subgoal or explicitly accepted by
   the operator;
 - the review committed at the recorded commit/hash;
-- the generated card's assessment still says the completion condition.
+- the generated card's plan root is **honest for the scope claimed**: ENCODER DONE may sit
+  under an OPEN root (v1 and/or `E1` unmeasured) — the review must say so; `SOLVED` is
+  claimed only when the root itself says `SOLVED`.
 
-Only then does the tick-tock stop. Until then, the project is not done — no matter how
+Only then does the encoder tick-tock stop. The project is not done until the route reaches
+the v1 step and a FULL review at a `SOLVED` root returns no BREAKING findings — no matter how
 green the card looks.

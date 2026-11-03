@@ -363,16 +363,22 @@ prefer doing over asking, stop only for genuine decisions/blockers. The
 sections below are the execution framework; where they disagree with the
 engineering doctrine above, the doctrine above wins.
 
-**Operating prompts (tick-tock).** `PROMPT_FORWARD.md` is the forward loop prompt:
-one measured axis per run, pre-register before running, end every run by writing the
-results to `REPORT_CARD.md`. `PROMPT_BACKWARD.md` is the read-only adversarial review:
-run it only when the card's gate-of-record section is all green; it must try to falsify
-the completion claim, audit principle alignment (including vectorization/SPEED) into `AUDIT.md`,
-and document every finding as a structured requirement for the next forward run. If BACKWARD
-returns a BREAKING finding, the tick-tock returns to FORWARD; it stops only when the
-card is all green **and** BACKWARD has no BREAKING findings. These prompts elaborate
-this file's working loop and certification integrity; where they conflict, this file's
-doctrine wins.
+**Operating prompts (tick-tock, two scales).** `PLAN.md` is the MACRO map — the goal cut
+backwards into necessary problems and the route that earns the evidence — generated from
+`scripts/plan_spec.py`; `REPORT_CARD.md` is its measurement surface (the card renders the same
+tree with verdicts). `PROMPT_FORWARD.md` is the forward loop prompt: every run states the plan
+node it serves (`NODE` / `ROUTE` / `MOVE`), pre-registers, changes one measured axis, and ends
+by re-rendering the card and recording `MOVEMENT` — a run that moves no node is a diagnosis,
+not progress. `PROMPT_BACKWARD.md` is the read-only adversarial review in two modes (DEC-580):
+a scoped **NODE** review after a plan node changes, and the **FULL** completion review when
+the card's gate-of-record is all green; only FULL can yield a completion verdict. It must try
+to falsify both the tree (macro: necessity, placement, gate kind, route honesty, derived
+statuses) and the rows (micro), audit principle alignment (including vectorization/SPEED) into
+`AUDIT.md`, and document every finding as a structured requirement tagged with its plan node.
+If BACKWARD returns a BREAKING finding, the tick-tock returns to FORWARD; it stops only when
+the card's plan root is `SOLVED` **and** BACKWARD's FULL review has no BREAKING findings.
+These prompts elaborate this file's working loop and certification integrity; where they
+conflict, this file's doctrine wins.
 
 ### The working loop (binding)
 
