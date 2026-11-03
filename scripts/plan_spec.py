@@ -203,7 +203,9 @@ TRUNK = Node(
     evidence="dec",
     dec="DEC-572/573 (real data: eff_rank>=30, persona>=0.15, R2>=0.45, stable) · "
     "DEC-575/576/577 (dev rig: g<=0.5 and beats the 1-gram, controls clean)",
-    frontier="live: O3 REJECTED; dev-rig iter1/iter2 NOT MASTERED; next = DEC-578 candidate 2",
+    frontier="live: O3 REJECTED; next_event CLOSED on the toy (DEC-581/582 outcomes: 4 algebra "
+    "values + capacity @256 all negative, 1-gram floor binding at N=500); remainder = intent "
+    "under DEC-583 (on hold)",
 )
 
 #: v1 leaves (AGENTS.md definition of done). V1.2 (universal donor) = P1-P3; V1.7 (versioned,
@@ -337,13 +339,17 @@ BY_ID = {n.ident: n for n in NODES}
 #: Rendered anywhere the plan needs to say what is being worked on now. A pointer, not a status.
 FRONTIER_NOTE = (
     "The live frontier is P2's enabler E1 (the trunk's state-update algebra). O3 attempt 4 was "
-    "rejected on its frozen bars and the dev rig reproduced the blob in minutes; DEC-575 "
-    "candidate 1 as shipped was negative on the toy (DEC-577 outcome), and candidate 2 as "
-    "shipped — the looped / weight-tied nonlinear block on the state (DEC-578) — is negative on "
-    "the toy too (DEC-578 outcome: no g improvement, CI still straddles the 1-gram, controls "
-    "clean). The next move is candidate 3 — the looped block on the DRIVE side — declared "
-    "DEC-581 and pre-registered under its own DEC, then the curriculum (intent), then ONE "
-    "pre-registered port run under DEC-572's bars. No lab receipt flips a B-row verdict."
+    "rejected on its frozen bars and the dev rig reproduced the blob in minutes; all three "
+    "single-axis trunk-algebra candidates are now negative on the toy (DEC-577 outcome: "
+    "candidate 1; DEC-578 outcome: candidate 2; DEC-581 outcome: candidate 3), and the "
+    "capacity axis is negative too (DEC-582 outcome: baseline algebra at dim=256, g 1.149121 "
+    "≈ iteration 1's 1.14727, no usable rank gained) — the 1-gram floor is binding on "
+    "next_event at N=500, a finite-sample estimation gap, not a trunk deficiency. The next "
+    "dev-rig structure is `intent` (DEC-583, on hold) and then ONE pre-registered port run "
+    "under DEC-572's bars; no lab receipt flips a B-row verdict. The PRIMARY progress track "
+    "until then is R4: the 11 remaining B sub-problems (6 legacy re-stamps at the current "
+    "behavior + 5 new O-series producers), certification-first per the operator's 2026-11-03 "
+    "directive."
 )
 
 
@@ -369,8 +375,9 @@ ROUTE: tuple[RouteStep, ...] = (
         "R1",
         "Dev rig: master next_event (N=500, known truth)",
         "E1",
-        "lab receipts + the DEC-581 run (candidate 3: drive-side looped block), controls "
-        "clean; never a B-row verdict",
+        "CLOSED negative at the toy (DEC-581/582 outcomes: 4 algebra values + capacity @256, "
+        "g 1.147–1.182 vs bar 0.5, 1-gram floor binding at N=500); remainder = intent under "
+        "DEC-583 (on hold); never a B-row verdict",
     ),
     RouteStep(
         "R2",
@@ -412,7 +419,7 @@ ROUTE: tuple[RouteStep, ...] = (
 )
 
 #: Which route step the work is on now (a pointer; keep it honest when the frontier moves).
-CURRENT_ROUTE = "R1"
+CURRENT_ROUTE = "R4"
 
 
 def owner(leaf: str) -> str:

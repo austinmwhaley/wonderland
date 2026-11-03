@@ -1,6 +1,6 @@
 # REPORT_CARD — B foundational, then PATH B > PATH A
 
-*Generated `2026-11-03T18:54:57+00:00` · commit `b5566ca` (`foundation-rebuild` · clean) · encoder behavior `d5df3a2c1211c402`*
+*Generated `2026-11-03T20:46:45+00:00` · commit `a195fef` (`foundation-rebuild` · dirty) · encoder behavior `d5df3a2c1211c402`*
 
 **Assessment:**
 
@@ -45,13 +45,15 @@ The goal, cut backwards into the problems that must all be solved. This section 
 | 2 | **V1.4** red_queen composes actions | Does red_queen compose next-best actions across cadences under constraints? | — | ⚪ NOT ASSESSED |
 | 2 | **V1.5** caterpillar explains from artifacts | Does caterpillar answer 'why' from artifacts only? | — | ⚪ NOT ASSESSED |
 
-*Frontier:* The live frontier is P2's enabler E1 (the trunk's state-update algebra). O3 attempt 4 was rejected on its frozen bars and the dev rig reproduced the blob in minutes; DEC-575 candidate 1 as shipped was negative on the toy (DEC-577 outcome), and candidate 2 as shipped — the looped / weight-tied nonlinear block on the state (DEC-578) — is negative on the toy too (DEC-578 outcome: no g improvement, CI still straddles the 1-gram, controls clean). The next move is candidate 3 — the looped block on the DRIVE side — declared DEC-581 and pre-registered under its own DEC, then the curriculum (intent), then ONE pre-registered port run under DEC-572's bars. No lab receipt flips a B-row verdict.
+*Frontier:* The live frontier is P2's enabler E1 (the trunk's state-update algebra). O3 attempt 4 was rejected on its frozen bars and the dev rig reproduced the blob in minutes; all three single-axis trunk-algebra candidates are now negative on the toy (DEC-577 outcome: candidate 1; DEC-578 outcome: candidate 2; DEC-581 outcome: candidate 3), and the capacity axis is negative too (DEC-582 outcome: baseline algebra at dim=256, g 1.149121 ≈ iteration 1's 1.14727, no usable rank gained) — the 1-gram floor is binding on next_event at N=500, a finite-sample estimation gap, not a trunk deficiency. The next dev-rig structure is `intent` (DEC-583, on hold) and then ONE pre-registered port run under DEC-572's bars; no lab receipt flips a B-row verdict. The PRIMARY progress track until then is R4: the 11 remaining B sub-problems (6 legacy re-stamps at the current behavior + 5 new O-series producers), certification-first per the operator's 2026-11-03 directive.
 
 **Frontier readings (reported, not gated — the evidence behind E1's FRONTIER badge):**
 
 - **dev rig · next_event iter1** — g 1.147 (bar ≤ 0.5, DEC-576/577) · eff_rank 1.153 · beats 1-gram: no — `lab/next_event_iter1.json` · measured under `6a8e2663`
 - **dev rig · next_event iter2** — g 1.154 (bar ≤ 0.5, DEC-576/577) · eff_rank 1.473 · beats 1-gram: no — `lab/next_event_iter2.json` · measured under `4053d2f9`
 - **dev rig · next_event iter3 (DEC-578, candidate 2)** — g 1.182 (bar ≤ 0.5, DEC-576/577) · eff_rank 1.248 · beats 1-gram: no — `lab/next_event_iter3.json` · measured under `905b4f88`
+- **dev rig · next_event iter4 (DEC-581, candidate 3)** — g 1.17 (bar ≤ 0.5, DEC-576/577) · eff_rank 1.836 · beats 1-gram: no — `lab/next_event_iter4.json`
+- **dev rig · next_event cap256 (DEC-582, capacity @ baseline algebra)** — g 1.149 (bar ≤ 0.5, DEC-576/577) · eff_rank 1.209 · beats 1-gram: no — `lab/next_event_cap256.json`
 - **real stream · O3 attempt 4 (REJECTED)** — M4 persona 0.04646 (bar ≥ 0.15, DEC-572) · served coarse R² 0.4675 (bar ≥ 0.45) — `o3axis_i/` · measured under `6a8e2663`
 
 A green leaf means its frozen gate is met. For these leaves the gate certifies *measurement and attribution*, not a quality level (derived in `scripts/b_spec.py: gate_kind`, not asserted here): `B1.1`, `B2.3`, `B3.1`, `B3.2`, `B3.4`, `B3.5`, `B3.6`, `B6.1`, `B8.2`. Their quality levels are DEC-frozen and live in the receipts (`PLAN.md` §6). Read the plan before reading a green row as 'good'.

@@ -9863,6 +9863,70 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   - **Status.** Pre-registered. Candidate 3 is implemented in this run; the cfm_v2k
     re-stamp lands at the clean commit; iteration 4 trains next (one axis: the trunk
     algebra, drive-side looped block ON, both other algebras OFF).
+  - **Outcome addendum (2026-11-03 — iteration 4 landed; BRANCH (iii) fires; candidate 3
+    negative on the toy; ALL THREE single-axis trunk-algebra candidates exhausted at
+    dim=32).**
+    - **Read.** `next_event` N=500, as-of 2024-09-01, behavior `d5df3a2c` at commit
+      `b5566ca` (receipt `docs/report_cards/experiments/lab/next_event_iter4.json`,
+      `complete: true`, generated 2026-11-03T19:23:32Z). POSITIVE: g **1.169947** (bar 0.5;
+      the axis baseline — iteration 1's configuration — is 1.14727; the single-axis ladder
+      now reads 1.14727 → 1.154482 → 1.181525 → **1.169947**; no improvement), nll_enc
+      1.036325 / 1-gram 0.979548 / oracle 0.645459 nats, paired CI(enc−base)
+      [−0.010445, +0.119769] straddles 0 → `beats_base: false`; eff_rank **1.836** (the
+      ladder high — iteration 1 1.153, iteration 2 1.473, iteration 3 1.248 — receipted,
+      no toy bar; the highest rank in the ladder did not convert into an NLL gain);
+      `mastered: false`. NEGATIVE: reads NO_SIGNAL as pre-registered (nll_enc 1.100732 vs
+      1-gram 1.097587, CI [−0.004707, +0.010318] straddles 0, beats_base false, eff_rank
+      1.515). ADVERSARIAL: structure claim NO_SIGNAL despite the echo beating the 1-gram
+      (nll_enc 0.588145 vs base 1.097587, CI [−0.532362, −0.485879] entirely below 0,
+      `structure_carried: false`, eff_rank 2.648) — the false-PASS trap is caught. All
+      `lab_gate_a_side` checks pass.
+    - **Branch (iii), exactly as frozen.** g did not improve on the axis baseline.
+      Candidate 3 as shipped is negative on the toy for the decisive bars. No post-hoc bar
+      edits. All three pre-registered single-axis trunk-algebra candidates (DEC-575's
+      1–3) are now exhausted on the toy at the resolved dim=32: the pre-registered
+      escalation fires — the CAPACITY read (DEC-582, this same cycle; outcome below) and
+      the recorded attribution: the fixture's true process carries first-order transition
+      structure, so the Laplace +1 1-gram baseline is a correctly-specified first-order
+      model on this toy; the headroom to the closed-form oracle is a finite-sample
+      ESTIMATION gap, and trunk candidates compete on estimation efficiency, not
+      expressivity.
+    - **Attribution refinement (compatible with the pre-registered "finite-sample
+      estimation gap").** `next_event` carries per-customer intent heterogeneity
+      (`fixture_spec.intent: 0.5`: latent `b_c ~ N(0, snr·intent)`, `P_c =
+      softmax(log P · exp b_c)`) that a pooled 1-gram cannot capture — but at n_A = 350
+      (~29 events/customer) per-customer inference is underdetermined at N=500 for ANY
+      model. This is why no algebra value beats the correctly-specified-in-order pooled
+      baseline: the structure exists, the sample does not.
+    - **Launch receipts (verified before the read).** All three runs RC=0; the `[set]`
+      line records `{'drive_looped_recurrence': True}`; the resolved configuration is
+      dim=32 (the autotune resolution — no recorded deviation), batch 8, budget_steps 330;
+      the registries carry the flag with bilinear=False looped=False drive_looped=True;
+      the tags moved onto the `|dl` axis (pos `0.11.0r105842-b8d32e3lr7e-03o54834092`,
+      neg/adv `0.11.0r985976-b8d32e3lr1e-02o54834092`): data signatures unchanged,
+      behavior suffix moved — the one-axis diff, as designed. `lr_collapsed: false` in all
+      three (lr_final 0.0075 / 0.01 / 0.0010546875).
+    - **Convergence receipt (disclosed, identical in all three runs).** The drive-loop
+      composition ran at depth 4/4 with `depth_converged: false` on the final forward: the
+      pre-registered cap was hit, but the loop is a BOUNDED contraction (unit-norm × tanh
+      composition), so the cap-hit is structural, not a failure to converge to a fixed
+      point — there is no outer loop to run to convergence, and no non-finite or
+      divergence anywhere in the logs. This is structurally distinct from candidate 2's
+      receipt (DEC-578: depth 4/4 AND outer passes 8/8 — a double cap-hit with an outer
+      fixed-point loop) and matches DEC-581's pre-registered shape for the drive-side
+      form. Not UNSTABLE: branch (iv) requires an actual stability failure and none
+      occurred.
+    - **MOVEMENT (DEC-580).** P2/E1: FRONTIER → FRONTIER — the toy readings gain iteration
+      4 and the cap256 row (the card's frontier readings), candidate 3 closes as negative,
+      and all three single-axis trunk-algebra candidates are exhausted at dim=32; the
+      node's verdict does not move, so this run is a diagnosis that closes the algebra
+      axis, not node progress. Root: FAILED → FAILED. ROUTE: R1 → R4 (the operator's
+      2026-11-03 certification-first directive: the 11 remaining B sub-problems are the
+      PRIMARY progress track; the dev-rig remainder — curriculum step 2 under DEC-583 and
+      the DEC-576 port — is ON HOLD).
+    - **Status.** Outcome recorded: the iter4 row joins the card's frontier readings
+      (scripts-only, no behavior move); DEC-582's outcome and DEC-583 (the curriculum
+      re-examination) follow below.
 
 - **DEC-582 (dev-rig run 4b pre-registered: the CAPACITY axis on `next_event` — baseline trunk algebra at dim=256, one axis; pulled forward from DEC-581 branch (iii) by the operator's 2026-11-03 sequencing approval):**
   - **NODE:** P2/E1 — "Trunk capacity (the state-update algebra)": the node's scope is
@@ -9952,3 +10016,101 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   - **Status.** Pre-registered (operator-approved sequencing, 2026-11-03). Trains alongside
     DEC-581's iteration 4 in this cycle: six trains total, sequential, one GPU job at a
     time.
+  - **Outcome addendum (2026-11-03 — the cap256 run landed; BRANCH (iii) fires; capacity is
+    NOT the constraint; the 1-gram floor is binding on the toy at N=500).**
+    - **Read.** `next_event` N=500, as-of 2024-09-01, behavior `d5df3a2c` at commit
+      `b5566ca` (receipt `docs/report_cards/experiments/lab/next_event_cap256.json`,
+      `complete: true`, generated 2026-11-03T19:23:38Z; measured in 4.8 s). POSITIVE: g
+      **1.149121** (bar 0.5; iteration 1 1.14727 — Δ +0.0019, within run-to-run noise; NO
+      improvement), nll_enc 1.029367 / 1-gram 0.979548 / oracle 0.645459 nats, paired
+      CI(enc−base) [−0.016061, +0.112186] straddles 0 → `beats_base: false`; eff_rank
+      **1.209** (vs 1.153 at dim=32 — 8× the capacity adds no usable rank); `mastered:
+      false`. NEGATIVE: reads NO_SIGNAL as pre-registered (nll_enc 1.09919 vs 1.097587, CI
+      [−0.006078, +0.008694] straddles 0, beats_base false, eff_rank 1.718). ADVERSARIAL:
+      structure claim NO_SIGNAL despite the echo beating the 1-gram (nll_enc 0.588248 vs
+      base 1.097587, CI [−0.530427, −0.486985] entirely below 0, `structure_carried:
+      false`, eff_rank 3.074) — the false-PASS trap is caught. All `lab_gate_a_side` checks
+      pass.
+    - **Branch (iii), exactly as frozen.** g did not improve (≈ iteration 1's 1.14727,
+      within run-to-run noise). Capacity is NOT the constraint at toy scale either: the
+      1-gram floor is binding on this fixture at N=500 for every trunk value — four single
+      algebra values (iter1–4: 1.14727 / 1.154482 / 1.181525 / 1.169947) plus this capacity
+      point (1.149121) all sit in the noise band around the baseline, every CI straddling
+      the 1-gram. No post-hoc bar edits. The pre-registered escalation fires: the
+      CURRICULUM re-examination under a named DEC — **DEC-583, decided this cycle: the
+      next dev-rig structure is `intent`; the snr knob is rejected** (below).
+    - **Behavior-stamp disclosure.** DEC-582 pre-registered the run as config-only "atop
+      `905b4f88`"; it launched after the drive-looped code chunk landed in the tree, so the
+      receipt stamps the current behavior `d5df3a2c`. The executed path is identical to
+      iteration 1's configuration (all trunk flags OFF; the chunk is default-off inert),
+      and the one-axis diff vs iteration 1 is the config `dim: 32 → 256` — the stamp moves,
+      the axis does not.
+    - **Launch receipts (verified before the read).** All three runs RC=0; the `[set]` line
+      records `{'dim': 256}`; the registries record `overrides: {'dim': 256}`,
+      `resolved.dim: 256`, and the would-be derived receipts (autotune's own dim 16 / 32 /
+      32 across pos/neg/adv, preserved next to the declared value — derive_batch and the
+      budget re-derive from the declared dim, recorded, no silent deviation); all trunk
+      flags False; the tags moved off the dim=32 signature (pos
+      `0.11.0r105842-b8d256e3lr3e-04o67b1bcb7`, neg/adv
+      `0.11.0r985976-b8d256e3lr…`); `lr_collapsed: false` in all three.
+    - **Attribution refinement (same as DEC-581's).** The 0.334-nat headroom to the
+      closed-form oracle (0.979548 → 0.645459) is a finite-sample estimation gap:
+      `next_event`'s per-customer intent heterogeneity (intent 0.5) is real structure a
+      pooled 1-gram cannot capture, but at n_A = 350 (~29 events/customer) per-customer
+      inference is underdetermined at N=500 for any model — capacity or algebra cannot
+      recover what the sample does not contain.
+    - **MOVEMENT (DEC-580).** P2/E1: FRONTIER → FRONTIER — the capacity axis closes
+      negative on the toy; the node's verdict does not move. Root: FAILED → FAILED. ROUTE
+      R1 → R4 (jointly with DEC-581's outcome; the dev-rig remainder is on hold under
+      DEC-583).
+    - **Status.** Outcome recorded: the cap256 row joins the card's frontier readings
+      (scripts-only, no behavior move). The `next_event` fixture is CLOSED for the
+      dev-rig: four single-axis algebra values (iter1–4) plus one capacity value (dim=256)
+      all negative at N=500; the next structure is `intent` under DEC-583.
+
+- **DEC-583 (curriculum re-examination, decided 2026-11-03: the next dev-rig structure is
+  `intent` (curriculum step 2); the snr knob is rejected; ON HOLD under the operator's
+  certification-first directive).**
+  - **NODE:** P2/E1 — the dev-rig curriculum after `next_event` closes (DEC-581/582
+    outcomes; branch (iii) on both).
+  - **ROUTE:** R2 (dev rig, next structure) — ON HOLD; the active route is R4 (the 11
+    remaining B sub-problems, certification-first, operator 2026-11-03).
+  - **Context.** DEC-582 branch (iii) pre-registered the escalation: "the snr knob
+    (1.0 → 0.5) within next_event, or `intent` (curriculum step 2) as the first structure
+    the encoder must master — the fixture choice itself is an axis (input/structure), and
+    it gets a DEC." Both frozen runs fired branch (iii); the 1-gram floor is binding at
+    N=500 because the SAMPLE, not the model, is underdetermined on the per-customer intent
+    structure that exists in `next_event`.
+  - **Decision.** The next dev-rig structure is `intent`: a fixture where the
+    per-customer intent layer (`b_c ~ N(0, snr·intent)`, `P_c = softmax(log P · exp b_c)`)
+    is the DOMINANT structure the encoder must recover, at a scale where the sample can
+    determine it (e.g. fewer customers / longer sequences, so per-customer inference is no
+    longer underdetermined). The full one-axis pre-registration (fixture spec, N, seed,
+    verdict, branches) lands at resume under a follow-up DEC.
+  - **Rejected: the snr knob (1.0 → 0.5).** In the simulator, `snr` scales ALL structure
+    toward the null (DataSpec: snr=0 → uniform/no structure, snr=1 → full; the documented
+    "high→low difficulty sweep" knob). Halving it shrinks the oracle-vs-1-gram gap — the
+    DENOMINATOR of g — which ill-conditions the speedometer: a trunk that reads the
+    structure shows a smaller g, one that does not shows a larger g, with the bar 0.5 now
+    measuring the fixture's difficulty rather than the trunk's competence. `snr` is a
+    difficulty dial, not a structure axis; curriculum step 2 must move the STRUCTURE axis
+    (intent), one axis, at the frozen difficulty (snr=1.0). DEC-581 branch (ii)'s snr step
+    was conditioned on "g improves," which did not fire; this rejection stands
+    independently.
+  - **First implementation check at resume (before any train).** Can the intent fixture
+    be generated CONFIG-ONLY from the existing simulator (a new DataSpec via the `intent`
+    knob at the chosen N/seed), or does it need a new `POSITIVE` entry in
+    `rabbit_hole/lab_oracles.py`? A `rabbit_hole` edit is a BEHAVIOR MOVE: it moves the
+    hash and folds the full cfm_v2k re-stamp (S6 chain + four B producers; no-op proof =
+    card diff header/hash/commit lines only) into the resume cycle. The check is read-only
+    and lands at resume; it is pre-registered here so the move (if needed) is not
+    improvised.
+  - **Standing caveat (unchanged from DEC-576).** Lab receipts are a development
+    instrument: they never flip a B-row verdict, and the certification of B stays on the
+    real stream. The dev-rig output constrains what the trunk can be when E1's port (route
+    R3) fires — which is after B is certified green under R4.
+  - **Status.** Decided; ON HOLD per the operator's certification-first directive
+    (2026-11-03): the 11 remaining B sub-problems (6 legacy re-stamps + 5 new O-series
+    producers) are the primary progress track. Resume order at R4 completion: the
+    implementation check, then the full one-axis pre-registration under a follow-up DEC,
+    then the train.
