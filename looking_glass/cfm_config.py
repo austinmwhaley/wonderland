@@ -282,6 +282,10 @@ class CFMConfig:
     donor_whiten: bool = True  # whitened readout at the donor boundary (legacy)
     isometric_boundary: bool = True  # v6 Stage1: per-sample orthogonal readout (kappa=1)
     bilinear_recurrence: bool = False  # v7: multiplicative state-input term (rank-preserving fix)
+    # v7.1 (DEC-578, candidate 2): looped/weight-tied nonlinear block on the state —
+    # F(z) = unitnorm(tanh(W z)) composed T times (T data-derived on a convergence tol).
+    # A second trunk algebra: never ON together with bilinear_recurrence (guard in the model).
+    looped_recurrence: bool = False
     # v6.1 (DEC-047): variance-preserving recurrence. A recurrent readout has no
     # intrinsic scale; over long horizons the drives accumulate and the readout
     # magnitude drifts (measured std ~50, max ~900), which made every linear head
@@ -566,6 +570,11 @@ class CFMConfig:
             # trains different weights (W_nl + beta), so the two algebras must not share a name
             # (DEC-445/448). OFF leaves the signature byte-identical: cfm_v2k's tag is stable.
             sig_extra += "|bl"
+        if getattr(self, "looped_recurrence", False):
+            # DEC-578: the looped block is a second trunk algebra — it trains different
+            # weights (W_nl2 + beta2), so the algebras must not share a name (DEC-445/448).
+            # OFF leaves the signature byte-identical: cfm_v2k's tag is stable.
+            sig_extra += "|lp"
         sig = hashlib.sha256(f"{obj}|{eff}{prof}{sig_extra}".encode()).hexdigest()[:8]
         return (
             f"{base}-b{int(self.batch)}d{int(self.dim)}e{int(self.epochs)}"

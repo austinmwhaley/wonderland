@@ -9567,3 +9567,117 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     plan-aligned card landed first at commit `61c2ff0` (all six checks OK; 24557 chars / 241 lines,
     deterministic), receipts committed `ac64892`; the judge blockers now carry `[P4·JUDGE-<leg>]`.
   - **Status.** Implemented; tests + ruff + principle audit run before commit.
+
+- **DEC-578 (dev-rig iteration 3 pre-registered: DEC-575 candidate 2 on the `next_event` fixture — the trunk/state-update algebra, one axis):**
+  - **NODE:** P2/E1 — the trunk's state-update algebra is the measured blocker: O3 attempt 4
+    rejected on DEC-572's bars (eff_rank 3.665 < 30, M4_served persona 0.046461 < 0.15), and
+    DEC-577's outcome addendum records candidate 1 (bilinear `h⊗x` fixed-point, as shipped)
+    negative on the toy: g 1.154482 (iteration 1 1.14727 — no improvement), paired CI(enc−base)
+    [−0.0160, +0.1132] straddles 0 (does not beat the 1-gram), eff_rank 1.473 (recorded, no toy
+    bar), controls clean — branch (iii) taken, the escalation pre-registered there is this DEC.
+    E1 stays DEC-frozen (FRONTIER) until its pre-registered port run; this run moves only the
+    toy reading the card reports beside it.
+  - **ROUTE:** R1 — dev rig, `next_event` N=500 (known truth, minutes), before any real-data
+    run; PLAN.md §5 R1's closing evidence is "lab receipts + the DEC-578 run (candidate 2),
+    controls clean".
+  - **MOVE:** E1's toy reading, because one axis: trunk algebra → looped/weight-tied nonlinear
+    block (DEC-575 candidate 2), base = iteration 1's configuration (bilinear OFF),
+    `--set looped_recurrence=true`.
+  - **Context.** DEC-575 pre-registered candidate 2 as the escalation: "a looped/weight-tied
+    nonlinear block (one or a few blocks applied T times per step, T data-derived with a
+    convergence receipt; the 'looped transformer' is the standard form of this). Same axis,
+    higher cost, higher stability risk — separate retrain, separate receipt." Candidate 1
+    (state-INPUT coupling, `β·tanh(W_nl h)·bx / ‖·‖`) measured +0.32d of state population at
+    dim=32 without moving g: the kick added state mass the head could not read as structure.
+    Candidate 2 is the deeper form of the same mechanism: the block's own output is fed back
+    through itself (weight-tied, T compositions) so the state-direction map is a genuinely
+    nonlinear dynamical map, not one tanh application.
+  - **Principle served.** Lawful (FR v2.0 pillar 1: rank lives in the state update `h_t =
+    f(h_{t-1}, x_t)` as algebraic construction) + Efficient (iterated affine scans — O(log T)
+    per pass, no sequential time loop; the convergence loops are over a bounded derived depth,
+    each pass fully vectorized over B×T) + Robust (unit-norm gate bounds each block's Lipschitz
+    — DEC-043 path 1; UNSTABLE is a reject, not a rescue; divergence/non-finite fails the run
+    by construction).
+  - **The mechanism (frozen, as shipped).** New `CFMConfig.looped_recurrence` (default
+    False) → `CFM` → `MultiScaleSSM` → `SelectiveSSM` (mirrors `bilinear_recurrence`'s
+    plumbing exactly):
+    - Update (implicit form, state side): `h_t = decay_t·h_{t-1} + drive0_t + β₂·F^T(h_t)`
+      where `drive0_t = (1−decay_t)·bx_t` (the existing affine drive, mask/pad already folded
+      in upstream) and `F(z) = u(tanh(W₂ z))`, `u` = per-sample unit norm (‖·‖₂ + 1e-6) —
+      the block maps states to the unit sphere, so every composition is the same weight-tied
+      map F and `F^T` is T-fold self-composition (the looped form).
+    - `W₂`: dim×dim, init `normal(std=0.1)`, bias zero — identical init discipline to
+      candidate 1's `W_nl` (DEC-041). `β₂`: learned scalar, init 0.3 — identical to `β`.
+    - T is data-derived, not counted: compose F until the batch-max change
+      `‖F^k(z) − F^{k−1}(z)‖∞ < 1e-4` (converge, not count), capped at 4 compositions
+      (documented fallback; "one or a few blocks" per DEC-575). The convergence receipt
+      records `depth T_used` + `depth_converged` per the DEC-575 mandate.
+    - The state-implicit fixed point is solved exactly as candidate 1's: (1) iterate full
+      affine scans under no_grad until batch-max `‖H^{k+1} − H^k‖∞ < 1e-4` (cap 8 passes —
+      candidate 1's shipped convergence discipline), (2) one differentiable scan with the
+      converged detached state; gradient flows through `W₂` (tanh) and the drive. Memory =
+      one scan graph. The receipt records `outer_passes` + `outer_converged`.
+    - Identity plumbing (the DEC-577 defect class, applied up front): `looped_recurrence`
+      joins the tag signature as the `|lp` axis (OFF leaves every tag byte-identical —
+      cfm_v2k's pin `0.11.0r490759-b64d256e3lr3e-04o4c3b5899` must stay), joins the
+      warm-start architecture comparison (an algebra pair must not warm-start across the
+      boundary, either direction), and is dumped into the registry config; the convergence
+      receipt lands in the registry meta (`looped_convergence`).
+    - Guard (fail-safe): `bilinear_recurrence` and `looped_recurrence` ON together raise at
+      construction — two trunk algebras in one update is a composite protocol that is not
+      pre-registered anywhere; the config is composable, the run is not.
+  - **One-axis diff (frozen).** `--set looped_recurrence=true` on the iteration-1 command,
+    everything else identical: `next_event` positive/negative/adversarial fixtures (seed 17,
+    snr 1.0), N=500, as-of 2024-09-01, anchors 6, fresh out-dirs
+    `/tmp/opencode/lab/next_event_iter3_{pos,neg,adv}` (iteration 1's products stay at
+    `/tmp/opencode/lab/next_event_{pos,neg,adv}`, iteration 2's at `…_iter2_{pos,neg,adv}`),
+    autotune-derived dim/batch/budget (iteration 1/2 resolved dim=32 — the registry records
+    what resolves; if autotune picks a different dim that is a recorded deviation, not a
+    silent one), `LG_SCAN=eager`, `safe_run`, scratch warm-start (fresh out-dir). Bilinear
+    stays OFF: the axis value is "trunk algebra = looped block"; stacking candidate 1 under
+    it would be a composite, unpre-registered algebra.
+  - **Frozen verdict (DEC-576 speedometer + controls, unchanged).** Mastered ⇔ g ≤ 0.5 AND
+    the encoder beats the 1-gram (paired CI entirely below 0 on enc−base, nats) AND the
+    eff_rank receipt is in hand (from the run's own portfolio receipt; recorded, no bar on
+    the toy — the ≥ 30 bar is DEC-575's real-data gate, not the rig's). NEGATIVE must read
+    NO_SIGNAL; ADVERSARIAL must read as expected (structure claim NO_SIGNAL while the echo
+    lets the head beat the 1-gram — the false-PASS trap). Launch receipts (the `[set]`
+    override line, the registries' `looped_recurrence: True` at the resolved dim, the tag
+    move onto the `|lp` axis, and the convergence receipt) are verified before any result is
+    read. Receipt: `docs/report_cards/experiments/lab/next_event_iter3.json`.
+  - **Attribution a priori (so the read is not improvised).**
+    (i) MASTERED with clean controls: candidate 2 works on the toy; iteration 4 is `intent`
+    (curriculum step 2, ROUTE R2) BEFORE the port — DEC-576's port protocol needs BOTH
+    next_event and intent mastered with clean controls; record the eff_rank delta vs
+    iteration 1's 1.153 and iteration 2's 1.473.
+    (ii) g improves but stays > 0.5 (and/or the CI moves toward 0 without crossing): the
+    looped block carries more of the structure; record the delta, and the next step is the
+    snr knob (1.0 → 0.5) within next_event — still the trunk axis, one step (mirrors
+    DEC-577's branch ii).
+    (iii) No improvement in g (≈ iteration 1's 1.147 / iteration 2's 1.154, within
+    run-to-run noise): candidate 2 negative on the toy; the named escalation is DEC-575
+    candidate 3 under its own DEC: the looped block on the DRIVE side (`F^T` applied to the
+    token drive, state-side algebra stays affine — a different one-axis value, same
+    discipline). The two-axis capacity diagnostic (the §4.3 spike shape, dim=256) stays
+    recorded and barred from single-axis verdicts (DEC-577 alternative i).
+    (iv) UNSTABLE (divergence, non-finite, or lr collapse at any point): reject, not rescue
+    (DEC-575 gate 4); recorded as candidate-2-negative as shipped and the escalation is
+    branch (iii)'s. No post-hoc bar edits in any branch.
+  - **Cost of the behavior move.** This chunk moves the behavior hash once (the looped
+    branch, default-OFF inert); the full cfm_v2k re-stamp (the recorded producers, no
+    retrain) folds into the same cycle and must reproduce the card's current verdicts
+    (12 PASS / 0 FAIL / 11 UNKNOWN — the default-off no-op proof), then S6/B8.2 re-runs at
+    the clean commit. The lab iteration itself is ~12–15 min (three N=500 trains). The card's
+    frontier readings gain the iter3 row at outcome time (scripts-only, no second hash move).
+  - **Rejected.** (i) Stacking looped ON bilinear ON: a composite algebra, not pre-registered;
+    one-axis discipline. (ii) Tuning depth cap / tolerances / `β₂` init before the as-shipped
+    measurement: the gate-tuning discipline DEC-577 rejected for candidate 1 applies verbatim.
+    (iii) The dim=256 capacity test on the toy: two-axis (trunk × capacity), barred from this
+    verdict (DEC-577 alternative i). (iv) Advancing the curriculum to `intent` or stepping
+    snr down: barred — `next_event` is not mastered at snr=1.0, so neither the next
+    curriculum structure nor a harder snr variant is earned (DEC-577 alternative iii).
+    (v) The real-data port run: DEC-576's port protocol needs both structures mastered with
+    clean controls; it does not fire on this toy alone.
+  - **Status.** Pre-registered. Candidate 2 is implemented in this run; the cfm_v2k re-stamp
+    lands at the clean commit; iteration 3 trains next (one axis: the trunk algebra, looped
+    block ON, bilinear OFF).

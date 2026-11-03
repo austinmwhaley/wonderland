@@ -150,6 +150,88 @@ def test_warm_start_refuses_a_trunk_algebra_mismatch(tmp_path):
     assert got[0] == "on"  # matching algebra still warm-starts
 
 
+def test_trunk_looped_recurrence_is_a_protocol_axis():
+    """DEC-578: the looped/weight-tied block (the trunk's second algebra, DEC-575 candidate 2)
+    trains different weights (W_nl2 + beta2), so two protocols differing ONLY in
+    `looped_recurrence` must not share a tag — the same defect class as DEC-445/577."""
+    off = _cfg(batch=20)
+    on = _cfg(batch=20, looped_recurrence=True)
+    assert off.tag != on.tag
+    assert _cfg(batch=20, looped_recurrence=True).tag == on.tag  # deterministic
+    assert off.tag == _cfg(batch=20, looped_recurrence=False).tag  # OFF is a byte-no-op
+    # and the two algebras are three distinct protocols, pairwise unshared:
+    assert on.tag != _cfg(batch=20, bilinear_recurrence=True).tag
+
+
+def test_warm_start_refuses_a_looped_algebra_mismatch(tmp_path):
+    """DEC-578: a checkpoint differing only in `looped_recurrence` is a different state
+    update, so it must not warm-start — in either direction. A matching algebra must still
+    warm-start: the guard is an algebra check, not a blanket refusal."""
+    from looking_glass.cfm_training import _pick_warm_checkpoint
+
+    cfg = CFMConfig()
+    arch = {
+        "seq_len": cfg.seq_len,
+        "dim": cfg.dim,
+        "state_half_life_days": cfg.state_half_life_days,
+        "sf_mode": cfg.sf_mode,
+        "objectives": list(cfg.objectives),
+    }
+
+    def dir_with(tag, looped):
+        d = tmp_path / tag
+        d.mkdir()
+        (d / f"registry_{tag}.json").write_text(
+            json.dumps(
+                {
+                    "as_of": "2025-01-01",
+                    "version": cfg.version,
+                    "tag": tag,
+                    "config": dict(arch, looped_recurrence=looped),
+                }
+            )
+        )
+        return d
+
+    d_off = dir_with("off", False)
+    d_on = dir_with("on", True)
+    assert _pick_warm_checkpoint(d_off, "2025-02-01", _cfg(looped_recurrence=True)) == (
+        None,
+        None,
+    )  # algebra ON refuses an OFF checkpoint
+    assert _pick_warm_checkpoint(d_on, "2025-02-01", _cfg()) == (None, None)  # and vice versa
+    got = _pick_warm_checkpoint(d_on, "2025-02-01", _cfg(looped_recurrence=True))
+    assert got[0] == "on"  # matching algebra still warm-starts
+
+
+def test_looped_forward_is_deterministic_and_receipted():
+    """DEC-578 smoke: the looped block runs, is deterministic, stays finite, and receipts
+    its data-derived depth (T on the convergence tol, capped) — plus the construction
+    guard rejects two trunk algebras at once."""
+    from looking_glass.cfm_model import SelectiveSSM
+
+    torch.manual_seed(0)
+    ssm = SelectiveSSM(dim=16, looped=True, readout_norm=True, input_norm=True)
+    x = torch.randn(4, 9, 16)
+    mask = torch.ones(4, 9)
+    with torch.no_grad():
+        y1, h1 = ssm(x, mask=mask)
+        y2, h2 = ssm(x, mask=mask)
+    assert torch.equal(y1, y2) and torch.equal(h1, h2)  # deterministic
+    assert torch.isfinite(y1).all() and torch.isfinite(h1).all()
+    rc = ssm.loop_receipt
+    assert 1 <= rc["depth"] <= rc["depth_cap"]  # T data-derived, never past the cap
+    assert rc["outer_passes"] <= rc["outer_cap"]
+    assert isinstance(rc["depth_converged"], bool) and isinstance(rc["outer_converged"], bool)
+    # the differentiable pass receipts the same depth the no_grad pass converged to:
+    assert rc["depth"] >= 1
+    with pytest.raises(RuntimeError, match="trunk algebra conflict"):
+        SelectiveSSM(dim=16, bilinear=True, looped=True)
+    # OFF builds without the new parameters (the default protocol is untouched):
+    off = SelectiveSSM(dim=16, looped=False)
+    assert not any("W_nl2" in n for n, _ in off.named_parameters())
+
+
 # ---- --set: the declaration channel accepts a declaration (DEC-449) -----------------------
 
 

@@ -329,6 +329,7 @@ class SelectiveSSM(nn.Module):
         slow_smooth=False,
         band_isolate=False,
         bilinear=False,
+        looped=False,
         readout_norm=True,
         input_norm=True,
         readout_skip=False,
@@ -421,6 +422,24 @@ class SelectiveSSM(nn.Module):
             self.bilinear_iters = 8  # fixed-point passes (cap); converged earlier on tol
             self.bilinear_tol = 1e-4  # state-change convergence (converge, not count)
             self.bilinear_normalize = True  # Path 1: unit-norm gate (bounded Lipschitz)
+        self.looped = bool(looped)
+        if self.bilinear and self.looped:
+            # DEC-578: two trunk algebras in one update would be a composite protocol
+            # that is not pre-registered anywhere — reject at construction (fail safe).
+            raise RuntimeError(
+                "trunk algebra conflict: bilinear_recurrence and looped_recurrence are two "
+                "distinct state-update algebras and must not be enabled together (DEC-578)"
+            )
+        if self.looped:
+            self.W_nl2 = nn.Linear(dim, dim)
+            nn.init.normal_(self.W_nl2.weight, std=0.1)
+            nn.init.zeros_(self.W_nl2.bias)
+            self.beta2 = nn.Parameter(torch.tensor(0.3))
+            self.looped_depth_cap = 4  # block compositions (cap); converged earlier on tol
+            self.looped_depth_tol = 1e-4  # block-change convergence (converge, not count)
+            self.looped_iters = 8  # fixed-point passes (cap); converged earlier on tol
+            self.looped_tol = 1e-4  # state-change convergence (converge, not count)
+            self.loop_receipt = {}  # DEC-575's "T data-derived with a convergence receipt"
         self.smooth = None
         if slow_smooth:
             dbv = self.delta_bias.detach().numpy().astype(float)
@@ -436,6 +455,24 @@ class SelectiveSSM(nn.Module):
         if getattr(self, "bilinear_normalize", True):
             g = g / (g.norm(dim=-1, keepdim=True) + 1e-6)
         return g
+
+    def _looped_block(self, Z):
+        """Weight-tied looped nonlinear block (DEC-578, candidate 2): F(z) =
+        unitnorm(tanh(W_nl2 z)) composed T times on the SAME weights — the "looped
+        transformer" form of the trunk nonlinearity. T is data-derived, not counted:
+        iterate until the batch-max block change < depth_tol (converge, not count),
+        capped at depth_cap ("one or a few blocks", DEC-575). Returns
+        (F^T(z), T_used, converged) — the receipt values land on self.loop_receipt."""
+        g = Z
+        depth, conv = 0, False
+        for _ in range(max(int(self.looped_depth_cap), 1)):
+            gn = torch.tanh(self.W_nl2(g))
+            gn = gn / (gn.norm(dim=-1, keepdim=True) + 1e-6)  # DEC-043 path 1: bounded kick
+            conv = float((gn - g).abs().max()) < self.looped_depth_tol
+            g, depth = gn, depth + 1
+            if conv:
+                break
+        return g, depth, conv
 
     def _readout(self, y):
         if self.readout_norm is None:
@@ -504,6 +541,64 @@ class SelectiveSSM(nn.Module):
             # grad flows through W_nl (tanh) and the drive. Memory = 1 scan graph.
             g = self._nl_gate(Hstar)
             D, Hout = _scan(decay, drive0 + self.beta * (g * bx))
+            if h0v is not None:
+                Hout = Hout + D * h0v.unsqueeze(1)
+            y = self.W_C(Hout)
+            if self.skip is not None:
+                y = y + self.skip(xs)
+            y = self._readout(y)
+            if self.stats_proj is not None:
+                _dc = torch.sigmoid(self.stats_decay_logit)
+                _S, _ = _scan(torch.full_like(xs, float(_dc)), (1.0 - _dc) * xs)
+                y = y + self.stats_proj(_S)
+            if self.ev_residual:
+                if ev is not None:
+                    y = y + self.ev_norm(self.w_ev(ev))
+                if ev_prev is not None:
+                    y = y + self.ev_norm(self.w_evp(ev_prev))
+            return y, Hout[:, -1]
+        if self.looped:
+            # VECTORIZED looped recurrence (DEC-578 candidate 2, speed-first): the
+            # state-dependent kick beta2 * F^T(h_t) (weight-tied block composed T times,
+            # T data-derived on the depth tol) is non-affine (no exact parallel scan).
+            # Solve the fixed point by ITERATED affine scans (each O(log T), fully
+            # parallel, no Python loop over time), converged on the state-change tol,
+            # capped. One differentiable pass with the converged (detached) block;
+            # grad flows through W_nl2 (tanh) and the drive. Memory = 1 scan graph.
+            h0v = None
+            if h0 is not None:
+                h0v = h0 if h0.dim() >= 2 else h0.unsqueeze(0)
+            drive0 = (1.0 - decay) * bx
+            # (1) converge the non-linear fixed point under no_grad (cheap memory)
+            with torch.no_grad():
+                D, H = _scan(decay, drive0)
+                if h0v is not None:
+                    H = H + D * h0v.unsqueeze(1)
+                passes, conv = 0, False
+                for _ in range(max(int(self.looped_iters), 1)):
+                    G, _depth, _dconv = self._looped_block(H)
+                    Dn, Hn = _scan(decay, drive0 + self.beta2 * G)
+                    if h0v is not None:
+                        Hn = Hn + Dn * h0v.unsqueeze(1)
+                    conv = float((Hn - H).abs().max()) < self.looped_tol
+                    H, passes = Hn, passes + 1
+                    if conv:
+                        break
+                Hstar = H
+            # (2) ONE differentiable pass with the converged (detached) block;
+            # grad flows through W_nl2 (tanh) and the drive. Memory = 1 scan graph.
+            G, depth, dconv = self._looped_block(Hstar)
+            self.loop_receipt = {
+                "depth": int(depth),
+                "depth_converged": bool(dconv),
+                "depth_cap": int(self.looped_depth_cap),
+                "depth_tol": float(self.looped_depth_tol),
+                "outer_passes": int(passes),
+                "outer_converged": bool(conv),
+                "outer_cap": int(self.looped_iters),
+                "outer_tol": float(self.looped_tol),
+            }
+            D, Hout = _scan(decay, drive0 + self.beta2 * G)
             if h0v is not None:
                 Hout = Hout + D * h0v.unsqueeze(1)
             y = self.W_C(Hout)
@@ -688,6 +783,7 @@ class MultiScaleSSM(nn.Module):
         delta_spectrum=False,
         band_isolate=False,
         bilinear=False,
+        looped=False,
         readout_norm=True,
         input_norm=True,
         readout_skip=False,
@@ -716,6 +812,7 @@ class MultiScaleSSM(nn.Module):
                         slow_smooth=True,
                         band_isolate=band_isolate,
                         bilinear=bilinear,
+                        looped=looped,
                         readout_norm=readout_norm,
                         input_norm=input_norm,
                         readout_skip=readout_skip,
@@ -735,6 +832,8 @@ class MultiScaleSSM(nn.Module):
                 SelectiveSSM(
                     chan,
                     b,
+                    bilinear=bilinear,
+                    looped=looped,
                     readout_norm=readout_norm,
                     input_norm=input_norm,
                     readout_skip=readout_skip,
@@ -825,6 +924,7 @@ class CFM(nn.Module):
         zca: bool = False,
         isometric_boundary: bool = False,
         bilinear: bool = False,
+        looped: bool = False,
         readout_norm: bool = True,
         input_norm: bool = True,
         readout_skip: bool = False,
@@ -858,6 +958,7 @@ class CFM(nn.Module):
         self.unified = bool(unified)
         self.zca = bool(zca)
         self.bilinear = bool(bilinear)
+        self.looped = bool(looped)
         self.isometric_boundary = bool(isometric_boundary)
         self.readout_norm_on = bool(readout_norm)
         self.input_norm_on = bool(input_norm)
@@ -937,6 +1038,7 @@ class CFM(nn.Module):
             delta_spectrum=self.unified,
             band_isolate=self.unified,
             bilinear=self.bilinear,
+            looped=self.looped,
             readout_norm=self.readout_norm_on,
             input_norm=self.input_norm_on,
             readout_skip=self.readout_skip_on,
