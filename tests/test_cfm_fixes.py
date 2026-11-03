@@ -11,6 +11,9 @@ streams rabbit_hole produces:
   5. training-anchor readouts skipped the fade serving applies (train/serve skew)
   6. warm-start ignored behavior-version / architecture mismatches
   7. ladder tolerance (unpaired 2*max SE) too wide; unconverged rungs selectable
+  8. a `--set` pin equal to the field's default (batch=64) was clobbered by the
+     hardware-derived value, and the training budget was derived from the
+     hardware batch instead of the effective one (O3 attempt 3, DEC-573)
 """
 
 from __future__ import annotations
@@ -62,6 +65,39 @@ def test_resolve_cfm_applies_explicit_overrides():
     assert res.receipt["overrides"]["seq_len"] == 96
     res_def = resolve_cfm(CFMConfig(), df, ["c1", "c2"], (2, 1, 1))
     assert "seq_len" not in res_def.receipt["overrides"]
+
+
+def test_resolve_cfm_batch_pin_equal_to_default_wins_and_drives_budget(monkeypatch):
+    # DEC-573 (O3 attempt 3): `--set batch=64` equals the field default, so the old
+    # `user != default` test dropped the pin — the hardware batch clobbered it, and the
+    # governor's horizon (budget, eval cadence) was derived at the hardware batch while
+    # the step sampler ran at the pinned one (cfm_training re-applies --set after
+    # resolve). The pin must win, and the budget must be a function of the EFFECTIVE
+    # batch. Hardware is mocked to derive 32 so a silent clobber cannot hide.
+    import looking_glass.autotune as AT
+
+    df = pl.DataFrame(
+        {
+            "customer_key": ["c1", "c1", "c2"],
+            "event_ts": ["2025-01-01T00:00:00+00:00"] * 3,
+        }
+    )
+    monkeypatch.setattr(AT, "derive_batch", lambda n, seq_len=0: (32, {"batch": "mock hw 32"}))
+    base = CFMConfig()
+    base.set_overrides = ["batch=64"]
+    apply_set_overrides(base)
+    res = resolve_cfm(base, df, ["c1", "c2"], (2, 1, 1))
+    assert res.batch == 64  # pin beats the hardware-derived 32
+    assert res.receipt["overrides"]["batch"] == 64
+    assert (
+        res.budget_steps == AT.derive_budget(2, 64, res.dim)[0]
+    )  # horizon from the effective batch
+
+    # un-pinned: the hardware batch stands, behavior unchanged
+    res_def = resolve_cfm(CFMConfig(), df, ["c1", "c2"], (2, 1, 1))
+    assert res_def.batch == 32
+    assert res_def.budget_steps == AT.derive_budget(2, 32, res_def.dim)[0]
+    assert "batch" not in res_def.receipt["overrides"]
 
 
 def test_set_overrides_applied_after_derivation_and_fail_safe():

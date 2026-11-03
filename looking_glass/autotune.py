@@ -542,16 +542,39 @@ class ResolvedCFM:
     receipt: dict = field(default_factory=dict)
 
 
+def _explicit_fields(base) -> set:
+    """The field names the operator pinned via `--set`, from the config's own raw spellings.
+
+    Single source of explicitness: `set_overrides`. A pin that EQUALS the field's default is
+    still a pin (DEC-573: `--set batch=64` was read as "never set" and the hardware derivation
+    clobbered it, because `user != default` cannot tell the two apart)."""
+    return {
+        str(raw).partition("=")[0].strip() for raw in (getattr(base, "set_overrides", None) or [])
+    }
+
+
 def resolve_cfm(base, df, keys, vocab_sizes) -> ResolvedCFM:
     """Resolve all config from data + hardware. `base` is the raw config; any
     explicit override wins and is recorded (recording alone never applied it —
-    the derived value overwrote the override downstream)."""
+    the derived value overwrote the override downstream).
+
+    DEC-573 (O3 attempt 3, 2026-11-02): a `--set` pin wins even when it equals the field's
+    default, and everything derived FROM a pinned field (the training budget, the eval
+    cadence) is computed from the EFFECTIVE value — attempt 3 sampled at the pinned batch
+    but governed a 2x horizon derived at the hardware batch, which the pre-registered
+    matched control did not allow. 0 remains the "derive" sentinel for every resolved field."""
     lengths = sequence_lengths(df, keys)
     seq_len, r1 = derive_seq_len(lengths)
     total = int(sum(lengths)) if lengths else 0
     et_H = event_type_entropy(df)
     dim, r2 = derive_dim(len(keys), total, vocab_sizes, et_entropy=et_H)
-    batch, r3 = derive_batch(len(keys), seq_len=seq_len)
+    batch_hw, r3_hw = derive_batch(len(keys), seq_len=seq_len)
+    explicit = _explicit_fields(base)
+    if "batch" in explicit:
+        batch = int(getattr(base, "batch", 0) or 0) or batch_hw
+        r3 = {"batch": f"explicit pin {batch} honored (hardware would derive {batch_hw})"}
+    else:
+        batch, r3 = batch_hw, r3_hw
     hl, r4 = derive_half_life(df)
     budget, r5 = derive_budget(len(keys), batch, dim)
     # Derived rank-geometry parameters (DEC-016/019): no magic numbers
@@ -599,7 +622,7 @@ def resolve_cfm(base, df, keys, vocab_sizes) -> ResolvedCFM:
             "tau_mp": 0.70,
             "bank_size": 8192,
         }[name]
-        if user is not None and user != default and user != 0:
+        if user is not None and user != 0 and (name in explicit or user != default):
             rec["overrides"][name] = user
             out[name] = user
         else:

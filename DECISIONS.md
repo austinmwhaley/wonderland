@@ -9044,3 +9044,86 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     `[scale]` 38 tasks, `[health]` init eff_rank 4.828.
   - **Status.** Pre-registered (attempts 1-2 recorded above). O3 attempt 3 is in flight; the
     retrain and its card delta land as their own chunk (DEC-573).
+
+- **DEC-573 (O3 attempt 3 recorded + the batch-pinning defect fixed + behavior hash moved; attempt 4 in flight):**
+  - **Attempt 3 outcome.** Launched per DEC-572 with `--set batch=64`; startup receipts verified
+    (`[set]` batch 64 + 15-tuple + four canonical overrides; `[health]` init eff_rank 4.828;
+    `[gpu-budget]` RECAP 26.56 GB). The first governor line's own receipt then exposed
+    `[govern] step 165/3300` — DEC-572's launch-verification line pre-registered `[govern] step
+    82/1650` (cfm_v2k's horizon at batch 64). Aborted at ~step 330/3300 (~40 GPU-min), no
+    portfolio receipt, no products, no artifact — recorded, not relabeled, like attempts 1-2.
+  - **Root cause (code reading, two-part, `resolve_cfm`, autotune.py).** (1) Explicitness is
+    detected by `user != default`: `--set batch=64` is byte-identical to the field's default
+    (`cfm_config.py` `batch: int = 64`), so the pin read as "never set" and the hardware-derived
+    batch clobbered it. (2) `budget_steps`/`eval_every`/`patience` derive from the hardware batch,
+    not the effective one. Runtime: `driver_free` 18.56 GB under the DEC-561 32 GB slice with a
+    heavier co-tenant → `derive_batch`'s token-cap → 32 (cfm_v2k had 32.25 GB free → 64).
+    Aggravating, not exonerating: `cfm_training.py` re-applies `--set` AFTER resolve
+    (lines 150-151), restoring `cfg.batch=64` for the per-step sampler — so attempt 3 SAMPLED at
+    batch 64 (per-step dynamics matched cfm_v2k) while GOVERNING a 3300/165 horizon derived at
+    batch 32. The `[set]` receipt recorded the pin; only the governor receipt recorded the
+    violation.
+  - **Judgment.** The pre-registered launch check said 82/1650; the run's own receipt said
+    165/3300 → protocol violation. Per-step batch parity does not rescue it: the governor horizon
+    and selection granularity are protocol identity (frozen gates are applied, not rationalized
+    after the fact; receipts regenerate, never relabel).
+  - **Fix (this chunk, one axis of the defect, not of O3).** `resolve_cfm` now honors a `--set`
+    pin even when it equals the field's default (0 remains the "derive" sentinel for every
+    resolved field), and the budget/cadence/patience are computed from the EFFECTIVE batch; the
+    receipt records both the pin and the hardware derivation. Unpinned fields resolve exactly as
+    before. Regression test: `tests/test_cfm_fixes.py` defect class 8
+    (`test_resolve_cfm_batch_pin_equal_to_default_wins_and_drives_budget`, hardware mocked to
+    derive 32 so a silent clobber cannot hide). This is the fail-safe class "a silent default
+    converts a bug into false confidence" applied to the config surface; it changes no gate, bar,
+    criterion or frontier definition.
+  - **Behavior hash.** `d0ac576c3c7aa069` → `d2ad6f6058e9607d` (`looking_glass/autotune.py` +
+    test). cfm_v2k's artifacts are unchanged (frozen checkpoint/products, trained under the old
+    behavior); every receipt measured against cfm_v2k is re-stamped by RE-RUNNING the fast
+    producers — no retrain. Re-stamp result recorded in the addendum.
+  - **Attempt 4.** Same command as attempt 3 (DEC-572's one-axis diff: cfm_v2k's 13 objectives +
+    `rank` + `iso`; explicit `--customers 5000`; `--set batch=64` now effective; the four
+    canonical `--set` overrides; fresh out-dir `/tmp/opencode/o3axis_i`; scratch warm-start;
+    `LG_SCAN=eager`; `safe_run`). Launch receipts to verify: `[govern] step 82/1650`, batch
+    receipt `explicit pin 64 honored`, `[scale]` 38 tasks, `[health]` init eff_rank 4.828. Gates,
+    bars and branches unchanged (DEC-572). The O3 outcome (accept-or-revert + the
+    canonical-swap question) records here as the outcome addendum when attempt 4 lands.
+  - **DEC numbering.** DEC-574 stays reserved for the O4 decision-law pre-registration (per the
+    O8 queue); the trunk-axis candidate pre-registers as DEC-575 (below).
+  - **Addendum (re-stamp).** [lands with the receipts commit]
+
+- **DEC-575 (trunk-axis candidate pre-registered — nonlinear state-update algebra; conditional on DEC-573's branch; the operator's 2026-11-02 "looped transformer" question is the entry point):**
+  - **Principle served.** Lawful (rank as a property of the state update, FR v2.0 pillar 1:
+    invariants by construction, not soft penalties) + Sufficient (attacks the measured 2.4-d
+    blob directly) + Efficient (iterate-to-convergence scan, not a sequential loop).
+  - **Trigger.** DEC-573's outcome addendum records an O3 rejection: H2 (floor worked, directions
+    carry no geometry) or trunk/objective axis confirmed or UNSTABLE. O3(ii) (raise rank target)
+    and O3(iii) (event_residual) remain the queued OBJECTIVE-axis labels; this DEC pre-registers
+    the TRUNK-axis candidate so the escalation is not improvised. If O3 is accepted, DEC-575 is
+    DORMANT (the geometry floor works at the objective level; the trunk algebra is not touched).
+  - **Axis (one).** The state-update algebra. **Candidate 1 (cheapest, pre-registered first):**
+    a bilinear `h⊗x` term in the update, computed as an iterate-to-convergence scan (the doctrine
+    already names the mechanism: "Non-linearity needed for rank is solved by
+    iterate-to-convergence scans, not sequential loops"). Evidence of record: the §4.3 spike
+    measured transferable cross-sample rank ×1.79 on this stream; the affine trunk's ceiling is
+    the measured `pr_frac` 0.0094 / eff_rank 2.419. **Candidate 2 (escalation if 1 plateaus):**
+    a looped/weight-tied nonlinear block (one or a few blocks applied T times per step, T
+    data-derived with a convergence receipt; the "looped transformer" is the standard form of
+    this). Same axis, higher cost, higher stability risk — separate retrain, separate receipt.
+  - **Gates (freeze before the run).** O3's own four bars, unchanged: (1) eff_rank ≥ 30 in the
+    run's own portfolio receipt; (2) B3.2 M4_served persona ≥ 0.15 on the frozen consumer;
+    (3) B3.3 served mean R² ≥ 0.45; (4) stable from step 0 (not diverged, not lr_collapsed, no
+    non-finite — UNSTABLE is a reject, not a rescue). PLUS the B1 compositionality canary: the
+    new update must keep merge/equivariance/mass-additivity exact-on-data (B1.1 `working=True`
+    on the new trunk). If the closed-form monoid breaks, both sides of the Lawful↔Sufficient
+    trade are recorded before acceptance (exactness bought rank; or rank bought exactness) — the
+    trade is measured, not assumed.
+  - **Base protocol.** Atop the accepted O3 protocol if DEC-573 accepts, else atop cfm_v2k; one
+    axis; fresh out-dir; scratch warm-start; explicit `--customers 5000` + `--set batch=64`
+    (now effective, DEC-573); `LG_SCAN=eager`; `safe_run` + DEC-561 boundary; tag/revision
+    auto-derive.
+  - **Rejected.** (i) Plain capacity scaling (more experts/layers): a cost increase with no
+    geometry receipt; the blob is an objective/algebra defect, not a width defect.
+    (ii) Full-sequence attention: the event sequences reach 863 tokens/customer and the scan is
+    O(N); quadratic attention violates Efficient unless linearized, and a linearized attention
+    is a different candidate (its own pre-registration). (iii) Batch/LR tricks: not the trunk
+    axis (and DEC-573 just made batch a pinned protocol field).

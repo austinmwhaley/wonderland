@@ -64,8 +64,10 @@ runs O0 first. D1 stays deferred with the B+C judge re-aim.
   co-tenant; 32 GB cap). S3/S4/S5 are fresh. S6 still fails until chain v4 runs the whole chain in
   one invocation.
 - **Products:** the canonical full-size products are at `/home/austin_whaley/wonderland_work/cfm_v2k`
-  (fs_full, tag `…b64…o4c3b5899`, behavior `d0ac576c`); the stale `0f881d99` artifacts are backed
-  up at `cfm_v2k_stale_0f881d99`.
+  (fs_full, tag `…b64…o4c3b5899`, trained under behavior `d0ac576c`); the stale `0f881d99`
+  artifacts are backed up at `cfm_v2k_stale_0f881d99`. Code behavior is now `d2ad6f60`
+  (DEC-573: the `resolve_cfm` batch-pinning fix); cfm_v2k's frozen artifacts are unchanged and its
+  receipts are re-stamped by re-running the fast producers (no retrain).
 
 ## Closed front (history; see DECISIONS for the record)
 
@@ -79,32 +81,28 @@ next question is the learned shape, not another consumer tuning pass.
 
 ## Next 3 actions
 
-1. **O0 ledger X-ray — DONE (DEC-571):** EXPOSURE branch fired (part_numeric_stats 0.3196
-   persona ≥ 0.30; ledger_full dilutes to 0.0172; block-PCA is not the right exposure). B's
-   serving contract must expose the ledger as named blocks; DEC-570's U arm is determined by the
-   measurement. The learned shape remains the weak object → the retrain axes are still on.
-2. **O3 law-ablation retrain — DEC-572 pre-registered (committed `pre-O3`):** code reading
-   found the isometric-band/rank soft family is ALREADY off in cfm_v2k (none of the ten
-   `soft_invariants` is in its 13 predictive `objectives`; AIB is a one-sided ceiling, inert
-   at pr_frac 0.0094 < target 0.0703; the boundary is rank-preserving). So "ablate the
-   family" is a no-op diff; the one-axis retrain RESTATES the axis as the missing floor:
-   `--set objectives=<cfm_v2k's 13> + rank + iso` (graded PR objective + self-throttling
-   MP-band hinge), everything else byte-identical, fresh out-dir `/tmp/opencode/o3axis_i`,
-   GPU under safe_run. Attempt 1 was refused at the config surface (tuple-field type guard on
-   `objectives`; the log also exposed the CLI default `sample_customers=500` vs the matched
-   control's full population) — recorded in DEC-572; attempt 2 = the documented comma-separated
-   tuple spelling + explicit `--customers 5000`, semantic diff unchanged. Attempt 2 aborted
-   after eval 1: the memory-driven `derive_batch` had drifted to 32 under the new 32 GB
-   ceiling (cfm_v2k ran 64; batch is protocol identity, DEC-448) — attempt 3 pins
-   `--set batch=64` (budget re-derives to 1650, safe: cfm_v2k measured 10.52 GB reserved at
-   64 vs O3's 26.7 GB seatbelt). Accepted on B rows: eff_rank ≥ 30 in O3's own receipt AND B3.2
-   M4_served persona ≥ 0.15 (frozen consumer) AND B3.3 served mean R² ≥ 0.45, stable run.
-   Then O4 (decision objective on the stream's own 100%-randomized offer arm; acceptance =
-   **B4.1**).
-3. **O2 `U` on the winning object (block-aware exposure per DEC-571, spec per DEC-570, bar
-   U ≥ 0.5 with learned-only alongside), then O5 minimality (B5.1), remaining B rows, chain v4
-   for the re-stamp. B+C re-scores only after B is green; project v1 THIRD; BACKWARD only at
-   all-green.**
+1. **O3 axis-i retrain — DEC-572/573 (attempt 4 in flight).** Attempt 3 recorded and aborted:
+   its own governor receipt said `step 165/3300` against the pre-registered `82/1650` — the
+   `--set batch=64` pin was clobbered by hardware derivation (pin == field default, and the
+   budget derived at the hardware batch; DEC-573). `resolve_cfm` now honors `--set` pins that
+   equal the default and derives the horizon from the effective batch (regression-tested);
+   behavior hash `d0ac576c` → `d2ad6f60`; cfm_v2k receipts re-stamped (fast producers, no
+   retrain). Attempt 4 relaunches under the unchanged DEC-572 protocol (13 objectives + rank +
+   iso, `--customers 5000`, `--set batch=64` effective, fresh out-dir, scratch warm-start).
+   Acceptance: eff_rank ≥ 30 (own receipt) AND B3.2 M4_served persona ≥ 0.15 AND B3.3 mean R²
+   ≥ 0.45 AND stable. The trunk-axis escalation (bilinear iterate-to-convergence scan → looped
+   block, DEC-575) is pre-registered for the reject branch.
+2. **O2 `U` producer (`measure_sufficiency_law.py`, spec frozen in DEC-570):** five
+   self-supervised probes (next-type, attr-next, numeric-next, dt, horizon-count-value),
+   shipping `_ridge_head` at fixed capacity, arms = served object (shape ⊕ ledger blocks per
+   DEC-571) / learned-only / full (PATH A) / floor; bar U ≥ 0.5 on the served object; B2.1/2.2/
+   2.3 + card rows. Architecture-agnostic — runs against whichever object O3/O4 wins.
+3. **After O3 lands:** DEC-573 outcome addendum (accept-or-revert + canonical-swap question),
+   re-measure B3.2–B3.6 with `--products` on the O3 artifact, then O4 decision law (DEC-574,
+   `measure_decision_law.py`, effect_actions on the stream's own 100%-randomized offer arm →
+   B4.1/4.3), O5 minimality (B5.1), remaining B rows (B6.3 transfer, B7.2 robustness), chain v4
+   re-stamp for S6/B8.2. B+C re-scores only after B is green; project v1 THIRD; BACKWARD only
+   at all-green.
 
 ## Operating facts
 
