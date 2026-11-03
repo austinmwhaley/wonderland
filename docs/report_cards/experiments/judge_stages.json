@@ -1,24 +1,24 @@
 {
   "S1": {
     "_stamp": {
-      "behavior_hash": "905b4f88b8dfcd06",
+      "behavior_hash": "d5df3a2c1211c402",
       "command": "measure_input_law.py --data /home/austin_whaley/wonderland_work/demo_v2 --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
-      "generated_at": "2026-11-03T16:32:53+00:00",
-      "git_commit": "4bb221bde90a859166355e4397651ff09f4fbc26",
+      "generated_at": "2026-11-03T18:20:53+00:00",
+      "git_commit": "cb7c0d91423e481b52b27b199516f8ffe91cc0a4",
       "producer": "measure_input_law.py"
     },
     "checks": {
       "new_field_ingested": {
         "evidence": "injected loyalty_tier (novel categories) + session_seconds into every event's attributes: resolved into catspec=['acquisition_channel', 'brand', 'category_code', 'channel', 'dow', 'freq', 'hour', 'loyalty_tier', 'offer', 'product_id', 'qty', 'reason', 'region', 'segment', 'touch'] num=['discount', 'margin', 'price', 'session_seconds', 'signup_ts', 'value']; encoder trained on the variant (d=64,L=1,e=1): E finite=True, best=96.0132; zero pipeline-code edits",
         "n_rows": 2341648,
-        "seconds": 85.7,
+        "seconds": 89.0,
         "working": true
       },
       "renamed_end_to_end": {
         "evidence": "renamed client_id/occurred_at/event/attributes/total -> onboard resolved {'customer_key': 'client_id', 'event_ts': 'occurred_at', 'event_type': 'event', 'brand': None, 'entity_type': None, 'entity_id': None, 'source_table': 'source_table', 'value': 'value', 'event_attributes': ['attributes', 'total']}; 2341648 rows kept (source 2341648); 5000 customers encoded; encoder trained on the resolved stream (d=64,L=1,e=1): E finite=True, best=33.9141; zero pipeline-code edits",
         "n_customers": 5000,
         "n_rows": 2341648,
-        "seconds": 125.6,
+        "seconds": 122.8,
         "working": true
       }
     },
@@ -27,17 +27,17 @@
   },
   "S2": {
     "_stamp": {
-      "behavior_hash": "905b4f88b8dfcd06",
+      "behavior_hash": "d5df3a2c1211c402",
       "command": "measure_input_law.py --data /home/austin_whaley/wonderland_work/demo_v2 --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
-      "generated_at": "2026-11-03T16:32:53+00:00",
-      "git_commit": "4bb221bde90a859166355e4397651ff09f4fbc26",
+      "generated_at": "2026-11-03T18:20:53+00:00",
+      "git_commit": "cb7c0d91423e481b52b27b199516f8ffe91cc0a4",
       "producer": "measure_input_law.py"
     },
     "checks": {
       "field_permutation_invariance": {
         "evidence": "attribute field order ['value', 'margin', 'price', 'qty']... vs permuted ['signup_ts', 'price', 'target_key', 'touch']... over 60000 rows: sequence digests identical (76b044ec00500be3 vs 76b044ec00500be3)",
         "n_rows": 60000,
-        "seconds": 1.6,
+        "seconds": 2.3,
         "working": true
       },
       "numeric_transform_law": {
@@ -48,13 +48,13 @@
       "training_determinism": {
         "evidence": "two seed-0 runs (d=64,L=1,e=1,batch=64 shared: {'batch': 'n_seqs=5000 seq_len=257 hw_cap=128 -> 64'}) on identical prepared inputs: E bit-identical=True, best-val equal (27.680532 == 27.680532)",
         "n_customers": 5000,
-        "seconds": 33.0,
+        "seconds": 85.9,
         "working": true
       },
       "unseen_value_path": {
         "evidence": "frozen schema (7 event types, vocab sizes [1, 10, 4, 3, 7, 3, 1, 4, 4, 396, 1, 1, 1, 4, 4]) encoded a batch containing unseen event types/categories/1e12 numerics: rows=1523894, entities=5002, all arrays finite=True, novel rows -> OOV slot 0 = True, vocab unchanged after serving = True (never re-derived)",
         "n_rows": 1523894,
-        "seconds": 7.9,
+        "seconds": 13.9,
         "working": true
       }
     },
@@ -63,16 +63,16 @@
   },
   "S3": {
     "_stamp": {
-      "behavior_hash": "905b4f88b8dfcd06",
+      "behavior_hash": "d5df3a2c1211c402",
       "command": "measure_dynamics_law.py --ckpt-dir /home/austin_whaley/wonderland_work/cfm_v2k --db /home/austin_whaley/wonderland_work/demo_v2/customer_event_stream.parquet --train-log /home/austin_whaley/wonderland_work/cfm_v2k/train.log --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
-      "generated_at": "2026-11-03T16:33:06+00:00",
-      "git_commit": "4bb221bde90a859166355e4397651ff09f4fbc26",
+      "generated_at": "2026-11-03T18:21:16+00:00",
+      "git_commit": "cb7c0d91423e481b52b27b199516f8ffe91cc0a4",
       "producer": "measure_dynamics_law.py"
     },
     "checks": {
       "clock_periodicity": {
         "evidence": "week-shift (exact cycle multiple): worst state/E drift 0.000e+00 (gate 1e-4); gaps-x10 control (tokens fixed): min state/E drift 4.673e-01 (gate >1e-3) \u2014 the spring responds to elapsed time. DISCLOSED: absolute-clock features used, w_tod norm 9.3; cfm_data stored ts vs model _to_epoch differ 0s (UTC vs local frame) \u2014 reconcile before horizons depend on it",
-        "seconds": 0.2,
+        "seconds": 1.0,
         "working": true
       },
       "governed_stability": {
@@ -82,31 +82,31 @@
       },
       "mass_additivity": {
         "evidence": "mass additivity scan(d, b1+b2) == scan(d,b1)+scan(d,b2) on real drives (disjoint event supports, float64): worst relative error 5.015e-16 (gate 1e-10)",
-        "seconds": 0.1,
+        "seconds": 0.3,
         "working": true,
         "worst_rel_err": 5.014716539692048e-16
       },
       "scan_associativity": {
         "evidence": "merge law F(g\u2218f)=F(g)\u2218F(f) on 6 real sequences x 5 split points (float64, model's own decay/drive, continuous_time=True): worst relative error 1.128e-15 (gate 1e-10)",
-        "seconds": 2.7,
+        "seconds": 4.6,
         "working": true,
         "worst_rel_err": 1.1283112214307106e-15
       },
       "ssm_merge_exact": {
         "evidence": "one-shot vs split-at-midpoint continuation WITH all recurrent states carried (scan h + intent-filter f + wrapper g) over 6 real sequences: state rel err 1.572e-07, readout 1.595e-07 (gate 5e-05); DISCLOSED: h-only continuation (today's cfm_state.absorb) drifts 1.280e-02 \u2014 the filter state is not carried by serving, a bought approximation awaiting its O6 receipt",
         "h_only_drift": 0.012795269345036024,
-        "seconds": 0.5,
+        "seconds": 1.4,
         "working": true,
         "worst_state_rel": 1.5720610789746892e-07
       },
       "step0_finite": {
         "evidence": "randomly re-initialized trunk (step-0 architecture, N(0,0.5) weights), 6 real sequences: 0 non-finite out of 496896 state/output/E values",
-        "seconds": 0.1,
+        "seconds": 0.5,
         "working": true
       },
       "tau_from_spectrum": {
         "evidence": "taus are gap quantiles of the stream (no literal): base taus=[0.185, 0.72, 3.347]s days -> cadence x100 taus=[18.52, 72.009, 334.659] (median ratio 100.0x, gate >=10x, non-constant=True)",
-        "seconds": 6.6,
+        "seconds": 7.6,
         "working": true
       }
     },
@@ -115,10 +115,10 @@
   },
   "S4": {
     "_stamp": {
-      "behavior_hash": "905b4f88b8dfcd06",
+      "behavior_hash": "d5df3a2c1211c402",
       "command": "measure_views_law.py --products /home/austin_whaley/wonderland_work/cfm_v2k --demo /home/austin_whaley/wonderland_work/demo_v2 --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
-      "generated_at": "2026-11-03T16:34:04+00:00",
-      "git_commit": "4bb221bde90a859166355e4397651ff09f4fbc26",
+      "generated_at": "2026-11-03T18:30:45+00:00",
+      "git_commit": "cb7c0d91423e481b52b27b199516f8ffe91cc0a4",
       "producer": "measure_views_law.py"
     },
     "checks": {
@@ -232,7 +232,7 @@
       "outlet_schema": {
         "evidence": "7 views / 35000 rows; declared-not-served [] advertised",
         "missing": [],
-        "seconds": 0.003,
+        "seconds": 0.006,
         "views": [
           "forecast",
           "heads",
@@ -765,26 +765,26 @@
   },
   "S5": {
     "_stamp": {
-      "behavior_hash": "905b4f88b8dfcd06",
+      "behavior_hash": "d5df3a2c1211c402",
       "command": "measure_battery_law.py --products /home/austin_whaley/wonderland_work/cfm_v2k/cfm_products.duckdb --demo /home/austin_whaley/wonderland_work/demo_v2 --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
-      "generated_at": "2026-11-03T16:34:06+00:00",
-      "git_commit": "4bb221bde90a859166355e4397651ff09f4fbc26",
+      "generated_at": "2026-11-03T18:30:51+00:00",
+      "git_commit": "cb7c0d91423e481b52b27b199516f8ffe91cc0a4",
       "producer": "measure_battery_law.py"
     },
     "checks": {
       "action_conditioned_outcome": {
         "evidence": "known-effect uplift from the one-factor-daily randomized offer arm (P(buy|offer=opt) - P(buy|off>=2), >= 10 arm-days/side): 1149 holdout B customers identified from 1485, head fitted on 2691 A customers; brain OOS R2=0.242 vs population-constant naive R2=-0.001; Spearman(brain,truth)=0.505; paired MSE-gain 95%CI [0.00542,0.00809] (gate lo>0)",
-        "seconds": 0.2,
+        "seconds": 0.7,
         "working": true
       },
       "distance_regression": {
         "evidence": "lab-truth latent distance (x0/h0/d0/price_sens/return_prone/touch_pref, z-scored) vs distance over 20000 customer pairs from 1485 holdout B customers: donor Spearman 0.264 vs naive bag-of-event-types 0.227; paired-over-pairs gain 95%CI [0.036,0.037] (gate lo>0); diagnostic raw-state(pre-boundary) Spearman 0.013",
-        "seconds": 0.3,
+        "seconds": 0.4,
         "working": true
       },
       "ledger_reconstruction": {
         "evidence": "ledger recomputed from the raw stream by DuckDB (not a table copy); LINEAR head on the learned-shape donor (embedding = model.proj(h), no served measure blocks \u2014 the claim is learned-only), fitted on 3515 split-A customers and scored on the 1485 holdout B; naive comparator = same head on the full event-type bag + recency (target-defining type excluded \u2014 no label leakage into the comparator); spend: brain R2=1.000 naive R2=0.613 MSE-gain 95%CI[0.336,0.387] | margin: brain R2=1.000 naive R2=0.613 MSE-gain 95%CI[0.335,0.385] | n_purch: brain R2=0.999 naive R2=0.910 MSE-gain 95%CI[0.034,0.042] | n_ret: brain R2=0.934 naive R2=0.281 MSE-gain 95%CI[0.344,0.393]",
-        "seconds": 0.8,
+        "seconds": 3.6,
         "working": true
       },
       "prune_pass": {
@@ -803,10 +803,10 @@
   },
   "S6": {
     "_stamp": {
-      "behavior_hash": "905b4f88b8dfcd06",
+      "behavior_hash": "d5df3a2c1211c402",
       "command": "measure_certification_law.py --products /home/austin_whaley/wonderland_work/cfm_v2k --demo /home/austin_whaley/wonderland_work/demo_v2 --train-log /home/austin_whaley/wonderland_work/cfm_v2k/train.log",
-      "generated_at": "2026-11-03T16:35:16+00:00",
-      "git_commit": "4bb221bde90a859166355e4397651ff09f4fbc26",
+      "generated_at": "2026-11-03T18:34:37+00:00",
+      "git_commit": "cb7c0d91423e481b52b27b199516f8ffe91cc0a4",
       "producer": "measure_certification_law.py"
     },
     "artifacts": {
@@ -846,7 +846,7 @@
         "command": "measure_input_law.py --data /home/austin_whaley/wonderland_work/demo_v2 --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
         "exit": 0,
         "last_line": "S1 working=True  S2 working=True",
-        "seconds": 255.4
+        "seconds": 318.3
       },
       "S3": {
         "cap_gb": 32.0,
@@ -854,7 +854,7 @@
         "command": "measure_dynamics_law.py --ckpt-dir /home/austin_whaley/wonderland_work/cfm_v2k --db /home/austin_whaley/wonderland_work/demo_v2/customer_event_stream.parquet --train-log /home/austin_whaley/wonderland_work/cfm_v2k/train.log --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
         "exit": 0,
         "last_line": "S3 working=True",
-        "seconds": 12.4
+        "seconds": 20.5
       },
       "S4": {
         "cap_gb": 32.0,
@@ -862,7 +862,7 @@
         "command": "measure_views_law.py --products /home/austin_whaley/wonderland_work/cfm_v2k --demo /home/austin_whaley/wonderland_work/demo_v2 --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
         "exit": 0,
         "last_line": "S4 -> /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
-        "seconds": 57.6
+        "seconds": 567.2
       },
       "S5": {
         "cap_gb": 32.0,
@@ -870,15 +870,15 @@
         "command": "measure_battery_law.py --products /home/austin_whaley/wonderland_work/cfm_v2k/cfm_products.duckdb --demo /home/austin_whaley/wonderland_work/demo_v2 --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
         "exit": 0,
         "last_line": "S5 working=True",
-        "seconds": 2.3
+        "seconds": 6.7
       },
       "legs": {
         "cap_gb": 32.0,
         "cap_mechanism": "slice wonderland.slice MemoryMax",
         "command": "measure_judge_law.py --products /home/austin_whaley/wonderland_work/cfm_v2k --demo /home/austin_whaley/wonderland_work/demo_v2 --legs supervised,unsupervised,rl,simulator --out-dir /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments",
         "exit": 0,
-        "last_line": "judge_leg_simulator -> /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_leg_simulator.json (15.7s): 2 live task(s) (+0 degener",
-        "seconds": 67.2
+        "last_line": "judge_leg_simulator -> /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_leg_simulator.json (18.3s): 2 live task(s) (+0 degener",
+        "seconds": 222.5
       },
       "prov": {
         "cap_gb": 32.0,
@@ -886,7 +886,7 @@
         "command": "measure_path_a_provenance.py --demo /home/austin_whaley/wonderland_work/demo_v2 --products-dir /home/austin_whaley/wonderland_work/cfm_v2k --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/path_a_provenance.json",
         "exit": 0,
         "last_line": "path_a_provenance working=True",
-        "seconds": 2.1
+        "seconds": 2.2
       }
     },
     "checks": {
@@ -895,7 +895,7 @@
         "working": true
       },
       "commit_recorded_clean": {
-        "evidence": "commit 4bb221bde90a on foundation-rebuild, behavior 905b4f88b8dfcd06; tree clean apart from the generated artifacts this command rewrites",
+        "evidence": "commit cb7c0d91423e on foundation-rebuild, behavior d5df3a2c1211c402; tree clean apart from the generated artifacts this command rewrites",
         "working": true
       },
       "comparator_provenance_certified": {
@@ -907,15 +907,15 @@
         "working": true
       },
       "full_chain_in_one_invocation": {
-        "evidence": "6 producer(s) run by this one command (S1+S2 255.4s, S3 12.4s, S4 57.6s, S5 2.3s, legs 67.2s, prov 2.1s); fresh receipts: stages ['S1', 'S2', 'S3', 'S4', 'S5'], legs ['rl', 'simulator', 'supervised', 'unsupervised']",
+        "evidence": "6 producer(s) run by this one command (S1+S2 318.3s, S3 20.5s, S4 567.2s, S5 6.7s, legs 222.5s, prov 2.2s); fresh receipts: stages ['S1', 'S2', 'S3', 'S4', 'S5'], legs ['rl', 'simulator', 'supervised', 'unsupervised']",
         "working": true
       },
       "render_is_deterministic": {
-        "evidence": "rendered the card twice from the same receipts: identical apart from the timestamp line (25613 chars, 251 lines)",
+        "evidence": "rendered the card twice from the same receipts: identical apart from the timestamp line (26034 chars, 252 lines)",
         "working": true
       }
     },
-    "evidence": "[full_chain_in_one_invocation] OK: 6 producer(s) run by this one command (S1+S2 255.4s, S3 12.4s, S4 57.6s, S5 2.3s, legs 67.2s, prov 2.1s); fresh receipts: stages ['S1', 'S2', 'S3', 'S4', 'S5'], legs ['rl', 'simulator', 'supervised', 'unsupervised'] | [render_is_deterministic] OK: rendered the card twice from the same receipts: identical apart from the timestamp line (25613 chars, 251 lines) | [commit_recorded_clean] OK: commit 4bb221bde90a on foundation-rebuild, behavior 905b4f88b8dfcd06; tree clean apart from the generated artifacts this command rewrites | [artifact_hashes_recorded] OK: 7 input artifact(s) hashed (98.8 MB) \u2014 the bytes the receipts were measured against | [every_row_reports_n] OK: 28 live leg-row(s) in the regenerated receipts, all report N | [comparator_provenance_certified] OK: 38 comparator column(s), each stamped pre-`as_of` by the builder and confirmed against a rebuild from the lab's own relational inputs (as_of 2025-01-01); sub-checks ['columns_match', 'comparator_clean', 'provenance_complete', 'values_match']",
+    "evidence": "[full_chain_in_one_invocation] OK: 6 producer(s) run by this one command (S1+S2 318.3s, S3 20.5s, S4 567.2s, S5 6.7s, legs 222.5s, prov 2.2s); fresh receipts: stages ['S1', 'S2', 'S3', 'S4', 'S5'], legs ['rl', 'simulator', 'supervised', 'unsupervised'] | [render_is_deterministic] OK: rendered the card twice from the same receipts: identical apart from the timestamp line (26034 chars, 252 lines) | [commit_recorded_clean] OK: commit cb7c0d91423e on foundation-rebuild, behavior d5df3a2c1211c402; tree clean apart from the generated artifacts this command rewrites | [artifact_hashes_recorded] OK: 7 input artifact(s) hashed (98.8 MB) \u2014 the bytes the receipts were measured against | [every_row_reports_n] OK: 28 live leg-row(s) in the regenerated receipts, all report N | [comparator_provenance_certified] OK: 38 comparator column(s), each stamped pre-`as_of` by the builder and confirmed against a rebuild from the lab's own relational inputs (as_of 2025-01-01); sub-checks ['columns_match', 'comparator_clean', 'provenance_complete', 'values_match']",
     "inputs": {
       "demo": "/home/austin_whaley/wonderland_work/demo_v2",
       "legs": "supervised,unsupervised,rl,simulator",
@@ -930,10 +930,10 @@
     "working": true
   },
   "_meta": {
-    "behavior_hash": "905b4f88b8dfcd06",
+    "behavior_hash": "d5df3a2c1211c402",
     "command": "measure_certification_law.py --products /home/austin_whaley/wonderland_work/cfm_v2k --demo /home/austin_whaley/wonderland_work/demo_v2 --train-log /home/austin_whaley/wonderland_work/cfm_v2k/train.log",
-    "generated_at": "2026-11-03T16:35:16+00:00",
-    "git_commit": "4bb221bde90a859166355e4397651ff09f4fbc26",
+    "generated_at": "2026-11-03T18:34:37+00:00",
+    "git_commit": "cb7c0d91423e481b52b27b199516f8ffe91cc0a4",
     "producer": "measure_certification_law.py"
   }
 }

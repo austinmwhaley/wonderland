@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "905b4f88b8dfcd06",
+    "behavior_hash": "d5df3a2c1211c402",
     "command": "measure_stage_decomposition.py",
-    "generated_at": "2026-11-03T16:38:25+00:00",
-    "git_commit": "4bb221bde90a859166355e4397651ff09f4fbc26",
+    "generated_at": "2026-11-03T18:34:57+00:00",
+    "git_commit": "cb7c0d91423e481b52b27b199516f8ffe91cc0a4",
     "producer": "measure_stage_decomposition.py"
   },
   "attribution": {

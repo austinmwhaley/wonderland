@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "905b4f88b8dfcd06",
+    "behavior_hash": "d5df3a2c1211c402",
     "command": "measure_block_serving.py",
-    "generated_at": "2026-11-03T16:38:35+00:00",
-    "git_commit": "4bb221bde90a859166355e4397651ff09f4fbc26",
+    "generated_at": "2026-11-03T18:35:07+00:00",
+    "git_commit": "cb7c0d91423e481b52b27b199516f8ffe91cc0a4",
     "producer": "measure_block_serving.py"
   },
   "arms": {
@@ -251,7 +251,7 @@
     "registry_sha256": "79f9768d51205252",
     "tag": "0.11.0r490759-b64d256e3lr3e-04o4c3b5899"
   },
-  "seconds": 7.8,
+  "seconds": 8.3,
   "sensitivity_counter_weight": {
     "0.5": 0.095919,
     "1.0": 0.095919,
