@@ -1,10 +1,10 @@
 # REPORT_CARD — B foundational, then PATH B > PATH A
 
-*Generated `2026-11-03T20:55:07+00:00` · commit `6998817` (`foundation-rebuild` · clean) · encoder behavior `d5df3a2c1211c402`*
+*Generated `2026-11-03T21:38:28+00:00` · commit `e5ee7d1` (`foundation-rebuild` · dirty) · encoder behavior `d5df3a2c1211c402`*
 
 **Assessment:**
 
-- ❌ **Plan root:** FAILED — 14/31 measured leaves green · 6 FAIL · 1 DEC-frozen · 5 v1 unassessed · reds: P4 (6).
+- ❌ **Plan root:** FAILED — 14/39 atomic problems green · 6 FAIL · 3 DEC-frozen · 5 v1 unassessed · 19 interior · reds: P4 (6).
 - ❌ **B foundational:** NOT CERTIFIED — the current gate. 2/8 sections green · 12 rows PASS · 0 FAIL · 11 UNKNOWN/MISSING.
 - ❌ **B+C consequence:** NOT DONE — 2/8 legs green · stages 6/6 · backward open: 0. Reported for diagnosis; downstream of B.
 - ⚪ **Project v1:** not assessed on this card (full stack is a separate scope).
@@ -14,38 +14,41 @@ Ledger points never count as progress: `brain alone` is the judge, `brain + ledg
 
 ## The plan — the tree this card measures (PLAN.md)
 
-The goal, cut backwards into the problems that must all be solved. This section is generated from `scripts/plan_spec.py` — the single definition of the tree; `PLAN.md` is its readable render. The plan defines no gate: every measured leaf is a frozen row below, and a node's verdict is the worst of its children.
+The goal, cut backwards into the problems that must all be solved, recursively to the atomic problems. This section is generated from `scripts/plan_spec.py` — the single definition of the tree; `PLAN.md` is its readable render. The plan defines no gate: every measured atomic problem is a frozen row in its B/judge section below, and an interior verdict is the worst of its children.
 
-**Plan root:** ❌ FAILED — 14/31 measured leaves green · 6 FAIL · 1 DEC-frozen leaf (no card row) · 5 v1 leaves not assessed on this card.
+**Plan root:** ❌ FAILED — 14/39 atomic problems green · 6 FAIL · 3 DEC-frozen (no card rows) · 5 v1 not assessed on this card · 19 interior problems.
 
-| Level | Node | What must be true | Leaves | Verdict |
+| Level | Node | What must be true | Atomic problems | Verdict |
 |---|---|---|---|---|
-| 0 | **G** A certified universal donor, delivered | What is the whole problem? | 31 leaves | ❌ FAIL |
-| 1 | **P1** The donor exists | Is there a per-stream artifact built from the right algebra, and is it an identity? | 4 leaves | ❔ UNKNOWN |
-| 2 | **B1** Lawful | Is the state built from the right algebra? | B1.1, B1.2 | ❔ UNKNOWN |
-| 2 | **B8** Reproducible | Is the artifact an identity? | B8.1, B8.2 | ❔ UNKNOWN |
-| 1 | **P2** The donor suffices | Does the embedding lose nothing that matters about the future — for prediction and decision — … | 8 leaves | ❔ UNKNOWN |
-| 2 | **B2** Sufficient | Does B lose nothing about the future? | B2.1, B2.2, B2.3 | ✅ PASS |
-| 2 | **E1** Trunk capacity (the state-update algebra) | Can the state carry the stream's structure — not just its mass? | — | ⚪ FRONTIER |
-| 2 | **B4** Decisive | Does B support action/counterfactual decisions? | B4.1, B4.2, B4.3 | ❔ UNKNOWN |
-| 2 | **B5** Minimal & affordable | Is it the smallest sufficient object, and fast enough? | B5.1, B5.2 | ❔ UNKNOWN |
-| 1 | **P3** The donor is usable | Can simple consumers read it, does it transfer beyond our known tasks, and does it stay honest … | 11 leaves | ❔ UNKNOWN |
-| 2 | **B3** Accessible | Can simple heads read what is there, at every stage? | B3.1, B3.2, B3.3, B3.4, B3.5, B3.6 | ✅ PASS |
-| 2 | **B6** Transferable | Does it add signal on held-out consumers? | B6.1, B6.2, B6.3 | ❔ UNKNOWN |
-| 2 | **B7** Robust | Does it stay honest under shift and missingness? | B7.1, B7.2 | ❔ UNKNOWN |
-| 1 | **P4** The consequence is delivered | Does PATH B (frozen encoder -> simple head) beat PATH A (wide table -> GBM incumbent) for the … | 8 leaves | ❌ FAIL |
-| 2 | **JUDGE-supervised** supervised leg | forecast targets beat the incumbent GBM on the same splits | 2 rows | ❌ FAIL |
-| 2 | **JUDGE-unsupervised** unsupervised leg | distance equals shared futures; structure beats table/random/destroyed | 2 rows | ❌ FAIL |
-| 2 | **JUDGE-rl** rl leg | policy value beats table and random on randomized/known-effect data | 2 rows | ✅ PASS |
-| 2 | **JUDGE-simulator** simulator leg | recovers the built-in counterfactual effects (red_king role) | 2 rows | ❌ FAIL |
-| 1 | **P5** The stack is v1-complete | Does the full system deliver a certified decision: identifiable stream -> donor -> plugins -> … | — | ❔ UNKNOWN |
+| 0 | **G** A certified universal donor, delivered | What is the whole problem? | 39 atomic problems | ❌ FAIL |
+| 1 | **P1** The donor exists | Is there a per-stream artifact built from the right algebra, and is it an identity? | 4 atomic problems | ❔ UNKNOWN |
+| 2 | **B1** Lawful | Is the state built from the right algebra? | 2 atomic problems | ❔ UNKNOWN |
+| 2 | **B8** Reproducible | Is the artifact an identity? | 2 atomic problems | ❔ UNKNOWN |
+| 1 | **P2** The donor suffices | Does the embedding lose nothing that matters about the future — for prediction and decision — … | 11 atomic problems | ❔ UNKNOWN |
+| 2 | **B2** Sufficient | Does B lose nothing about the future? | 3 atomic problems | ✅ PASS |
+| 2 | **E1** Trunk capacity (the state-update algebra) | Can the state carry the stream's structure — not just its mass? | 3 atomic problems | ⚪ FRONTIER |
+| 3 | **E1.a** next_event mastered on the toy (curriculum step 1) | Does the frozen trunk beat the 1-gram on the known-truth next_event structure at the dev-rig … | — | ⚪ FRONTIER |
+| 3 | **E1.b** intent mastered on the toy (curriculum step 2) | Does the frozen trunk beat the 1-gram on the per-customer intent structure, at a scale where … | — | ⚪ FRONTIER |
+| 3 | **E1.c** port: ONE real-data run under DEC-572's bars | Does the winning trunk master the real stream — eff_rank>=30, persona>=0.15, R2>=0.45, stable, … | — | ⚪ FRONTIER |
+| 2 | **B4** Decisive | Does B support action/counterfactual decisions? | 3 atomic problems | ❔ UNKNOWN |
+| 2 | **B5** Minimal & affordable | Is it the smallest sufficient object, and fast enough? | 2 atomic problems | ❔ UNKNOWN |
+| 1 | **P3** The donor is usable | Can simple consumers read it, does it transfer beyond our known tasks, and does it stay honest … | 11 atomic problems | ❔ UNKNOWN |
+| 2 | **B3** Accessible | Can simple heads read what is there, at every stage? | 6 atomic problems | ✅ PASS |
+| 2 | **B6** Transferable | Does it add signal on held-out consumers? | 3 atomic problems | ❔ UNKNOWN |
+| 2 | **B7** Robust | Does it stay honest under shift and missingness? | 2 atomic problems | ❔ UNKNOWN |
+| 1 | **P4** The consequence is delivered | Does PATH B (frozen encoder -> simple head) beat PATH A (wide table -> GBM incumbent) for the … | 8 atomic problems | ❌ FAIL |
+| 2 | **JUDGE-supervised** supervised leg | forecast targets beat the incumbent GBM on the same splits | 2 atomic problems | ❌ FAIL |
+| 2 | **JUDGE-unsupervised** unsupervised leg | distance equals shared futures; structure beats table/random/destroyed | 2 atomic problems | ❌ FAIL |
+| 2 | **JUDGE-rl** rl leg | policy value beats table and random on randomized/known-effect data | 2 atomic problems | ✅ PASS |
+| 2 | **JUDGE-simulator** simulator leg | recovers the built-in counterfactual effects (red_king role) | 2 atomic problems | ❌ FAIL |
+| 1 | **P5** The stack is v1-complete | Does the full system deliver a certified decision: identifiable stream -> donor -> plugins -> … | 5 atomic problems | ❔ UNKNOWN |
 | 2 | **V1.1** Causally identifiable stream | Does rabbit_hole emit randomized arms with a known effect, recorded as such? | — | ⚪ NOT ASSESSED |
 | 2 | **V1.2** Each plugin passes its independent gate | Do the supervised, unsupervised and white_queen consumers each pass their own gate? | — | ⚪ NOT ASSESSED |
 | 2 | **V1.3** red_king recovers known effects | Does red_king recover the known counterfactual effect and improve the certified decision with … | — | ⚪ NOT ASSESSED |
 | 2 | **V1.4** red_queen composes actions | Does red_queen compose next-best actions across cadences under constraints? | — | ⚪ NOT ASSESSED |
 | 2 | **V1.5** caterpillar explains from artifacts | Does caterpillar answer 'why' from artifacts only? | — | ⚪ NOT ASSESSED |
 
-*Frontier:* The live frontier is P2's enabler E1 (the trunk's state-update algebra). O3 attempt 4 was rejected on its frozen bars and the dev rig reproduced the blob in minutes; all three single-axis trunk-algebra candidates are now negative on the toy (DEC-577 outcome: candidate 1; DEC-578 outcome: candidate 2; DEC-581 outcome: candidate 3), and the capacity axis is negative too (DEC-582 outcome: baseline algebra at dim=256, g 1.149121 ≈ iteration 1's 1.14727, no usable rank gained) — the 1-gram floor is binding on next_event at N=500, a finite-sample estimation gap, not a trunk deficiency. The next dev-rig structure is `intent` (DEC-583, on hold) and then ONE pre-registered port run under DEC-572's bars; no lab receipt flips a B-row verdict. The PRIMARY progress track until then is R4: the 11 remaining B sub-problems (6 legacy re-stamps at the current behavior + 5 new O-series producers), certification-first per the operator's 2026-11-03 directive.
+*Frontier:* The live frontier is P2's enabler E1 (the trunk's state-update algebra), now cut to three DEC-frozen atomic problems. E1.a (next_event mastered on the toy) is exhausted negative at N=500: all three single-axis trunk-algebra candidates are negative on the toy (DEC-577, DEC-578 and DEC-581 outcomes) and the capacity axis is negative too (DEC-582 outcome, g 1.149121 ≈ iteration 1's 1.14727, no usable rank gained) — the 1-gram floor is binding, a finite-sample estimation gap, not a trunk deficiency. E1.b (intent, curriculum step 2) is the next structure (DEC-583; the snr difficulty dial is rejected as an axis) and is on hold; E1.c (the port under DEC-572's bars) waits on both. No lab receipt flips a B-row verdict. The PRIMARY progress track meanwhile is R4: the 11 remaining B atomic problems (6 legacy re-stamps at the current behavior + 5 new O-series producers), certification-first per the operator's 2026-11-03 directive.
 
 **Frontier readings (reported, not gated — the evidence behind E1's FRONTIER badge):**
 
@@ -56,7 +59,7 @@ The goal, cut backwards into the problems that must all be solved. This section 
 - **dev rig · next_event cap256 (DEC-582, capacity @ baseline algebra)** — g 1.149 (bar ≤ 0.5, DEC-576/577) · eff_rank 1.209 · beats 1-gram: no — `lab/next_event_cap256.json`
 - **real stream · O3 attempt 4 (REJECTED)** — M4 persona 0.04646 (bar ≥ 0.15, DEC-572) · served coarse R² 0.4675 (bar ≥ 0.45) — `o3axis_i/` · measured under `6a8e2663`
 
-A green leaf means its frozen gate is met. For these leaves the gate certifies *measurement and attribution*, not a quality level (derived in `scripts/b_spec.py: gate_kind`, not asserted here): `B1.1`, `B2.3`, `B3.1`, `B3.2`, `B3.4`, `B3.5`, `B3.6`, `B6.1`, `B8.2`. Their quality levels are DEC-frozen and live in the receipts (`PLAN.md` §6). Read the plan before reading a green row as 'good'.
+A green atom means its frozen gate is met. For these atoms the gate certifies *measurement and attribution*, not a quality level (derived in `scripts/b_spec.py: gate_kind`, not asserted here): `B1.1`, `B2.3`, `B3.1`, `B3.2`, `B3.4`, `B3.5`, `B3.6`, `B6.1`, `B8.2`. Their quality levels are DEC-frozen and live in the receipts (`PLAN.md` §6). Read the plan before reading a green row as 'good'.
 
 ## B — foundational scorecard (B-only, DEC-562)
 

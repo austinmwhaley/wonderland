@@ -1,14 +1,15 @@
-"""PLAN.md -> REPORT_CARD.md (DEC-579): the tree is one definition, and it cannot lie.
+"""PLAN.md -> REPORT_CARD.md (DEC-579; DEC-584 atomic reframe): the tree is one definition,
+and it cannot lie.
 
-The plan is the goal-side decomposition; the card is its measurement surface. These tests are
-the falsifiable form of "the card cannot grow rows the plan does not contain, and the plan cannot
-claim a state the card did not measure":
+The plan is the goal-side decomposition, cut to atomic problems; the card is its measurement
+surface. These tests are the falsifiable form of "the card cannot grow rows the plan does not
+contain, and the plan cannot claim a state the card did not measure":
 
-* every frozen B/judge row is a leaf exactly once (no orphan row, no duplicate leaf);
+* every frozen B/judge row is an atomic problem exactly once (no orphan row, no duplicate atom);
 * the tree is acyclic, has one root, and every parent exists;
 * the plan carries no gate/threshold of its own (gates live in the frozen specs);
 * interior verdicts are DERIVED (worst-child), and the root cannot read PASS while a DEC-frozen
-  or v1 leaf is unmeasured — T0 is not SOLVED;
+  or v1 atom is unmeasured — T0 is not SOLVED;
 * PLAN.md is current with the spec, so editing one without the other fails.
 """
 
@@ -26,21 +27,22 @@ import plan as PL  # noqa: E402
 import plan_spec as P  # noqa: E402
 
 
-def _all_leaves() -> list[str]:
-    return [leaf for n in P.NODES for leaf in n.leaves]
+def _card_atoms() -> list[str]:
+    """The atomic problems the card measures: one per frozen B/judge row."""
+    return [n.ident for n in P.NODES if n.kind == "atomic" and n.evidence == "card"]
 
 
 # ------------------------------------------------------------------ structure integrity
 
 
-def test_every_frozen_row_is_a_leaf_exactly_once():
+def test_every_frozen_row_is_an_atomic_problem_exactly_once():
     """The plan is the card's decomposition: no row may sit outside it, none may be counted twice."""
-    leaves = _all_leaves()
-    assert len(leaves) == len(set(leaves)), "a card row appears under two plan nodes"
+    atoms = _card_atoms()
+    assert len(atoms) == len(set(atoms)), "a card row appears under two plan nodes"
     frozen = {r.ident for r in B.ROWS} | {r.ident for r in J.LEG_ROWS}
-    assert set(leaves) == frozen, (
-        f"plan/card mismatch: missing from plan {sorted(frozen - set(leaves))}, "
-        f"unknown to the card {sorted(set(leaves) - frozen)}"
+    assert set(atoms) == frozen, (
+        f"plan/card mismatch: missing from plan {sorted(frozen - set(atoms))}, "
+        f"unknown to the card {sorted(set(atoms) - frozen)}"
     )
 
 
@@ -72,14 +74,16 @@ def test_the_plan_defines_no_gate_of_its_own():
     for n in P.NODES:
         for forbidden in ("gate", "thresh", "threshold", "criterion"):
             assert not hasattr(n, forbidden), f"{n.ident} carries its own {forbidden}"
-    # every measured leaf resolves to a frozen row — asserted above; and every v1/dec leaf says
+    # every measured atom resolves to a frozen row — asserted above; and every v1/dec atom says
     # where its evidence comes from instead of pretending to be a card row
     for n in P.NODES:
         if n.evidence == "dec":
             assert n.dec, f"{n.ident} is DEC-frozen but names no DEC"
-            assert not n.leaves
-        if n.evidence == "v1":
-            assert not n.leaves
+    # an interior node is judged ONLY by its children: its evidence kind stays "card" so the
+    # derived verdict can never be short-circuited to a fixed badge
+    for n in P.NODES:
+        if n.kind != "atomic":
+            assert n.evidence == "card", f"interior {n.ident} carries its own evidence kind"
 
 
 def test_interior_nodes_are_derived_from_their_children():
@@ -156,11 +160,15 @@ def test_the_card_renders_the_same_tree_with_verdicts(tmp_path):
     assert "The plan — the tree this card measures" in md
     plan = info["plan"]
     assert plan["root"] == J.UNKNOWN  # no receipts, nothing measured -> never green
-    assert plan["card_leaves"] == len(_all_leaves())
-    assert plan["v1"] == 5 and plan["dec"] == 1
+    assert plan["card"] == 31 and plan["dec"] == 3 and plan["v1"] == 5
+    assert plan["atomic_total"] == plan["card"] + plan["dec"] + plan["v1"]
     for n in P.NODES:
         assert n.ident in plan["nodes"]
-        assert f"**{n.ident}**" in md
+        # card atoms render in their B/judge section, not in the plan table; every other node
+        # carries its own bolded row there
+        if n.kind == "atomic" and n.evidence == "card":
+            continue
+        assert f"**{n.ident}**" in md, f"{n.ident} missing from the card's plan table"
 
 
 # ------------------------------------------------------------------ what a green proves
@@ -187,9 +195,12 @@ def test_every_b_row_declares_what_a_green_proves():
 
 def test_plan_md_labels_what_a_green_proves():
     text = PL.render_plan()
-    assert "| Leaf | Property | Frozen gate | Green means |" in text
+    assert "| Atomic problem | Property | Frozen gate | Green means |" in text
     assert "`B3.2`" in text and "reporting" in text
     assert "quality" in text
+    # the DEC-frozen trunk atoms are named, with their bars, in the plan itself
+    assert "`E1.a`" in text and "`E1.b`" in text and "`E1.c`" in text
+    assert "The census" in text and "atomic problems" in text
 
 
 # ------------------------------------------------------------------ the route
@@ -204,10 +215,13 @@ def test_the_route_is_ordered_references_real_nodes_and_names_evidence():
         assert s.evidence, f"{s.ident} names no evidence"
 
 
-def test_every_leaf_maps_to_its_owner_and_problem():
-    for leaf in _all_leaves():
-        o, pr = P.owner(leaf), P.problem_of(leaf)
-        assert o and pr, f"{leaf} has no owner/problem"
+def test_every_atom_maps_to_its_owner_and_problem():
+    """Each atomic problem hangs under its interior owner, which in turn serves a named problem."""
+    for n in P.NODES:
+        if n.kind != "atomic":
+            continue
+        o, pr = P.owner(n.ident), P.problem_of(n.ident)
+        assert o and pr, f"{n.ident} has no owner/problem"
         assert P.BY_ID[o].parent == pr
 
 

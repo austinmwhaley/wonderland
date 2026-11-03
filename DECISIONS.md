@@ -10114,3 +10114,74 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     producers) are the primary progress track. Resume order at R4 completion: the
     implementation check, then the full one-axis pre-registration under a follow-up DEC,
     then the train.
+
+- **DEC-584 (plan tree reframe, 2026-11-03: a recursive decomposition to ATOMIC problems at
+  whatever depth that takes — no forced layer count, no "section"/"leaf" vocabulary; verdicts
+  a no-op).**
+  - **NODE:** G — the plan tree itself. Operator directive (2026-11-03): progress lives in the
+    plan hierarchy, read as the solved-problem count at every level (no separate PROGRESS
+    block, no milestone ladder); "section and leaf don't really mean anything" — a problem is
+    broken into sub-problems until each is atomic, however many levels that takes.
+  - **ROUTE:** parallel to R4 — scripts-only (`scripts/plan_spec.py`, `scripts/plan.py`,
+    `scripts/report_card.py`) plus the prompt/test ratchets. No behavior move (scripts are
+    outside BEHAVIOR_TREES), no gate change.
+  - **MOVE.** Reframe the tree from `goal → problem → section → leaf` to a uniform
+    `goal → problem → … → atomic problem`:
+    - **Atomic problems as first-class nodes.** All 31 frozen card rows (23 B rows + 8 judge
+      leg×column rows) are now nodes of kind `atomic` (evidence `card`), each with its own
+      question (the frozen metric), its own why (a new one-line backward argument per row),
+      and a solved-when pointing at its frozen gate. The gate text itself stays in
+      `b_spec.py` / `judge_spec.py` — the plan references it, never duplicates it.
+    - **E1 cut to three dec atoms.** E1.a "next_event mastered on the toy (curriculum step 1)"
+      (bars DEC-576/577; exhausted negative at N=500 per DEC-581/582 outcomes), E1.b "intent
+      mastered on the toy (curriculum step 2)" (DEC-583; on hold), E1.c "port: ONE real-data
+      run under DEC-572's bars" (DEC-572/573). E1 itself is now an interior problem derived
+      from its three atoms.
+    - **Vocabulary.** Kinds are `goal | problem | atomic` (the section/leg/enabler/v1 kind
+      names retire; V1.x are `atomic` with evidence `v1`). The `Node.leaves` field is
+      deleted (an atom is a node, not a payload); `leaves_under` → `atomics_under`;
+      `leaf_census` → `census` with keys `card 31 · dec 3 · v1 5 · atomic_total 39 ·
+      interior 19`; `owner` = the parent interior problem, `problem_of` = the parent's
+      parent.
+    - **Worst-child refinement.** FAIL > UNKNOWN (a missing row) > NOT_ASSESSED-as-UNKNOWN
+      (an unmeasured scope keeps its ancestors out of green) > FRONTIER-only (an entirely
+      DEC-frozen scope stays FRONTIER) > PASS; a mix of measured PASS and open FRONTIER
+      children is UNKNOWN. Test invariants preserved: E1 stays FRONTIER, P5/G stay UNKNOWN
+      under an all-green card scope, G PASSes only when every dec/v1 atom is closed.
+    - **Route honesty.** R1/R2/R3 now advance E1.a/E1.b/E1.c respectively (not E1 wholesale);
+      CURRENT_ROUTE = R4 (the operator's certification-first).
+    - **Card plan section.** plan_green/plan_fail count card atoms; the root line reads
+      "14/39 atomic problems green · 6 FAIL · 3 DEC-frozen · 5 v1 unassessed · 19 interior";
+      the plan table skips the 31 card atoms (they render in their B/judge sections) and
+      carries an "Atomic problems" count column; `info["plan"]` keys are now
+      `card/dec/v1/atomic_total/interior`.
+    - **Ratchets.** `tests/test_plan.py` (the card-atom helper; the census assertions; the
+      plan-table assertion split so card atoms are checked via `plan["nodes"]` only; the
+      owner/problem mapping over ALL atoms; the §3 header), `tests/test_prompts.py` line 60
+      (the worked example's node is now E1.a), `PROMPT_BACKWARD.md` closure + coverage
+      bullets (E1's three DEC-frozen atoms; "every frozen row is an atomic problem exactly
+      once").
+  - **Principle served.** Diagnosable (the tree now localizes every open problem to atom
+    level, so the solved count is readable at every level and a run can be said to have moved
+    an atom) · Honest (the dec/v1 atoms make the unmeasured scopes visible in the tree, not
+    in prose) · Efficient (the frozen card atoms are built from the frozen specs at import —
+    one source, zero duplication of gate text).
+  - **Rejected.** (i) A separate PROGRESS block or milestone ladder: a second representation
+    of the tree's solved counts (single source of truth — the tree IS the progress). (ii)
+    Keeping the rows as "leaves" payloads on section nodes: the operator's reading — the atom
+    is the node; its why and solved-when belong in the tree. (iii) Restating the frozen gate
+    text in plan_spec: gate duplication; the gate lives in b_spec/judge_spec. (iv) Marking
+    E1.a "closed negative" after DEC-581/582: a dec atom closes only by its own pre-registered
+    bars being met and the decision recorded — next_event at N=500 is NOT mastered; what is
+    exhausted is the run axis (4 algebra values + capacity @256), not the atom. (v)
+    Subdividing the frozen card atoms further: the gate identity — a frozen measured row is
+    not subdivided (standing operator caveat); interior problems MAY be re-decomposed, and
+    that is exactly what this DEC does to E1.
+  - **No-op proof (verdicts).** Plan root 14/31 → 14/39: the denominator changes because the
+    dec/v1 scopes became atoms (31 measured + 3 DEC-frozen + 5 v1); the measured green count
+    (14) and the FAIL count (6) are unchanged; B 12 PASS / 0 FAIL / 11 UNKNOWN unchanged; P4's
+    six reds are the same six judge rows; E1 stays FRONTIER (now derived from three dec
+    atoms); P5/G stay UNKNOWN under an all-green card scope; S6 unaffected (scripts are
+    outside the behavior surface — no hash move).
+  - **Status.** Implemented; the fast-tier suite, ruff and the card render verify at this
+    commit.

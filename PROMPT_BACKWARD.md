@@ -117,17 +117,17 @@ first, and do not let row-level detail substitute for it.
   card's prose? (E.g. "B3.2 PASS" cited as proof the shape is good when its gate is
   `attribution recorded`.) The classification is derived in `scripts/b_spec.py`; the **misuse**
   is the finding.
-- **Closure.** Is `E1` (the DEC-frozen leaf) closed only by its pre-registered port receipt and
-  a recorded decision — not by a lab receipt, a local eff_rank, or narration? Is any v1 leaf
-  claimed without its stack gate?
+- **Closure.** Are `E1`'s three DEC-frozen atoms (E1.a next_event toy, E1.b intent toy,
+  E1.c port) each closed only by their pre-registered receipts and recorded decisions — not by
+  a lab receipt, a local eff_rank, or narration? Is any v1 atom claimed without its stack gate?
 - **Route honesty.** Is `CURRENT_ROUTE` the cheapest open blocker on the dependency path? Is a
   step skipped (e.g. the port run before both dev-rig structures are mastered)? Is the pointer
   moved without the evidence its own row names?
 - **Derivation.** Recompute `scripts/plan_spec.statuses` from the receipts/card verdicts and
   compare with the card's plan table and root. Any disagreement — a node PASS the rows do not
   support, a root stronger than its leaves — is **BREAKING**.
-- **Coverage and freshness.** Every frozen B/judge row is a leaf exactly once; `PLAN.md` is
-  current with the spec (`plan.py --check`); the card is current with the tree; `PLAN.md`
+- **Coverage and freshness.** Every frozen B/judge row is an atomic problem exactly once;
+  `PLAN.md` is current with the spec (`plan.py --check`); the card is current with the tree; `PLAN.md`
   contains no measurement.
 - **Sufficiency of the tree.** Name any necessary condition of the goal that has no node at all
   (today: anything the goal needs that is neither a B row, `E1`, nor a v1 gate). That is the

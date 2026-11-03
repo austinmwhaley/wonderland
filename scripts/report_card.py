@@ -966,31 +966,31 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
 
     # ---- the plan: the SAME tree, with verdicts attached (PLAN.md -> REPORT_CARD) -----------
     # The decomposition is defined once in plan_spec; this section is the measurement surface
-    # for it. A node's verdict is the worst of its children; a DEC-frozen leaf renders FRONTIER
-    # (no card row exists) and a v1 leaf renders NOT ASSESSED. The root therefore cannot read
-    # SOLVED while either scope is unmeasured — T0 is not SOLVED (integrity rule 2).
+    # for it. An interior verdict is the worst of its children; a DEC-frozen atom renders
+    # FRONTIER (no card row exists) and a v1 atom renders NOT ASSESSED. The root therefore
+    # cannot read SOLVED while either scope is unmeasured — T0 is not SOLVED (integrity rule 2).
     plan_verdicts = P.statuses({**verdicts, **b_verdicts})
-    census = P.leaf_census()
-    plan_green = sum(1 for n in P.NODES for leaf in n.leaves if plan_verdicts.get(leaf) == J.PASS)
-    plan_fail = sum(1 for n in P.NODES for leaf in n.leaves if plan_verdicts.get(leaf) == J.FAIL)
+    census = P.census()
+    card_atoms = [n for n in P.NODES if n.kind == "atomic" and n.evidence == "card"]
+    plan_green = sum(1 for n in card_atoms if plan_verdicts.get(n.ident) == J.PASS)
+    plan_fail = sum(1 for n in card_atoms if plan_verdicts.get(n.ident) == J.FAIL)
     root_v = plan_verdicts.get("G", J.UNKNOWN)
     root_emoji = {J.PASS: "✅", J.FAIL: "❌", J.UNKNOWN: "⚪"}[root_v]
     root_word = {J.PASS: "SOLVED", J.FAIL: "FAILED", J.UNKNOWN: "OPEN"}[root_v]
     red_by_problem: dict[str, int] = {}
-    for n in P.NODES:
-        for leaf in n.leaves:
-            if plan_verdicts.get(leaf) == J.FAIL:
-                pr = P.problem_of(leaf)
-                red_by_problem[pr] = red_by_problem.get(pr, 0) + 1
+    for n in card_atoms:
+        if plan_verdicts.get(n.ident) == J.FAIL:
+            pr = P.problem_of(n.ident)
+            red_by_problem[pr] = red_by_problem.get(pr, 0) + 1
     reds_txt = (
         " · reds: " + ", ".join(f"{k} ({v})" for k, v in sorted(red_by_problem.items()))
         if red_by_problem
         else ""
     )
     plan_scope = (
-        f"{root_emoji} **Plan root:** {root_word} — {plan_green}/{census['card_leaves']} "
-        f"measured leaves green · {plan_fail} FAIL · {census['dec_leaves']} DEC-frozen · "
-        f"{census['v1_leaves']} v1 unassessed{reds_txt}."
+        f"{root_emoji} **Plan root:** {root_word} — {plan_green}/{census['atomic_total']} "
+        f"atomic problems green · {plan_fail} FAIL · {census['dec']} DEC-frozen · "
+        f"{census['v1']} v1 unassessed · {census['interior']} interior{reds_txt}."
     )
     assessment_lines = [plan_scope, b_scope, c_scope, p_scope]
     assessment = " | ".join(
@@ -1007,27 +1007,29 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
     plan_lines = [
         "## The plan — the tree this card measures (PLAN.md)",
         "",
-        "The goal, cut backwards into the problems that must all be solved. This section is "
-        "generated from `scripts/plan_spec.py` — the single definition of the tree; `PLAN.md` "
-        "is its readable render. The plan defines no gate: every measured leaf is a frozen row "
-        "below, and a node's verdict is the worst of its children.",
+        "The goal, cut backwards into the problems that must all be solved, recursively to the "
+        "atomic problems. This section is generated from `scripts/plan_spec.py` — the single "
+        "definition of the tree; `PLAN.md` is its readable render. The plan defines no gate: "
+        "every measured atomic problem is a frozen row in its B/judge section below, and an "
+        "interior verdict is the worst of its children.",
         "",
-        f"**Plan root:** {root_emoji} {root_word} — {plan_green}/{census['card_leaves']} "
-        f"measured leaves green · {plan_fail} FAIL · {census['dec_leaves']} DEC-frozen leaf "
-        f"(no card row) · {census['v1_leaves']} v1 leaves not assessed on this card.",
+        f"**Plan root:** {root_emoji} {root_word} — {plan_green}/{census['atomic_total']} "
+        f"atomic problems green · {plan_fail} FAIL · {census['dec']} DEC-frozen (no card rows) "
+        f"· {census['v1']} v1 not assessed on this card · {census['interior']} interior "
+        f"problems.",
         "",
-        "| Level | Node | What must be true | Leaves | Verdict |",
+        "| Level | Node | What must be true | Atomic problems | Verdict |",
         "|---|---|---|---|---|",
     ]
     for n in P.NODES:
+        if n.kind == "atomic" and n.evidence == "card":
+            continue  # a card atom is a frozen row: it renders in its B/judge section below
         lvl = P.level(n.ident)
-        if n.leaves and n.kind == "section":
-            leaves_txt = ", ".join(n.leaves)
-        elif n.leaves:
-            leaves_txt = f"{len(n.leaves)} rows"
+        if n.kind == "atomic":
+            atoms_txt = "—"
         else:
-            under = len(P.leaves_under(n.ident))
-            leaves_txt = f"{under} leaves" if under else "—"
+            under = len(P.atomics_under(n.ident))
+            atoms_txt = f"{under} atomic problem{'s' if under != 1 else ''}"
         q = n.question if len(n.question) <= 96 else n.question[:96].rsplit(" ", 1)[0] + " …"
         v = plan_verdicts.get(n.ident, J.UNKNOWN)
         if v == P.FRONTIER:
@@ -1036,7 +1038,7 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
             badge = "⚪ NOT ASSESSED"
         else:
             badge = _badge(v)
-        plan_lines.append(f"| {lvl} | **{n.ident}** {n.title} | {q} | {leaves_txt} | {badge} |")
+        plan_lines.append(f"| {lvl} | **{n.ident}** {n.title} | {q} | {atoms_txt} | {badge} |")
     plan_lines += [
         "",
         f"*Frontier:* {P.FRONTIER_NOTE}",
@@ -1049,7 +1051,7 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
     reporting_leaves = [r.ident for r in B.ROWS if r.gate_kind == "reporting"]
     plan_lines += [
         "",
-        "A green leaf means its frozen gate is met. For these leaves the gate certifies "
+        "A green atom means its frozen gate is met. For these atoms the gate certifies "
         "*measurement and attribution*, not a quality level (derived in `scripts/b_spec.py: "
         "gate_kind`, not asserted here): "
         + ", ".join(f"`{x}`" for x in reporting_leaves)
@@ -1061,9 +1063,11 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
         "root": root_v,
         "green": plan_green,
         "fail": plan_fail,
-        "card_leaves": census["card_leaves"],
-        "dec": census["dec_leaves"],
-        "v1": census["v1_leaves"],
+        "card": census["card"],
+        "dec": census["dec"],
+        "v1": census["v1"],
+        "atomic_total": census["atomic_total"],
+        "interior": census["interior"],
         "nodes": plan_verdicts,
     }
 

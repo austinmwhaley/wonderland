@@ -56,8 +56,8 @@ def test_prompts_reference_real_plan_nodes_and_route_steps():
     fwd, bwd = _read("PROMPT_FORWARD.md"), _read("PROMPT_BACKWARD.md")
     for token in ("P1", "P2", "P5", "E1", "R1", "G"):
         assert token in fwd or token in bwd, f"prompts reference no {token}"
-    # the worked example's node is the DEC-frozen trunk leaf
-    assert P.BY_ID["E1"].evidence == "dec"
+    # the worked example's node is the DEC-frozen trunk atom (E1 cut to E1.a–c, DEC-584)
+    assert P.BY_ID["E1.a"].evidence == "dec"
     assert P.CURRENT_ROUTE in {s.ident for s in P.ROUTE}
 
 

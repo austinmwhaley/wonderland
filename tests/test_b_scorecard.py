@@ -287,7 +287,7 @@ def test_the_plan_is_the_top_line_and_is_derived_from_the_b_rows(tmp_path):
     """DEC-579: the plan tree replaced the sprint's capability-axis table as the top line.
 
     One axis definition only — the tree — so the card cannot say "done" on one view while the
-    other is red. With no receipts every measured leaf is UNKNOWN and the root is never PASS.
+    other is red. With no receipts every measured atom is UNKNOWN and the root is never PASS.
     """
     md, info = RC.render(tmp_path, HASH)
     assert "The plan — the tree this card measures" in md
@@ -295,9 +295,9 @@ def test_the_plan_is_the_top_line_and_is_derived_from_the_b_rows(tmp_path):
     assert info["plan"]["root"] == J.UNKNOWN
     assert info["plan"]["green"] == 0
     assert "cap_verdicts" not in info  # the retired duplicate view is gone, not aliased
-    # every B row is a leaf exactly once: the plan cannot silently drop a row
-    leaves = [leaf for n in RC.P.NODES for leaf in n.leaves]
-    assert {r.ident for r in B.ROWS} <= set(leaves)
+    # every B row is an atomic problem exactly once: the plan cannot silently drop a row
+    atoms = [n.ident for n in RC.P.NODES if n.kind == "atomic" and n.evidence == "card"]
+    assert {r.ident for r in B.ROWS} <= set(atoms)
 
 
 # ---------------------------------------------------------------------------

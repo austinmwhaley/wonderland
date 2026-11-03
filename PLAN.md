@@ -18,27 +18,31 @@ A per-use-case wide table (PATH A) must be rebuilt for every new task and stream
 ## 1. How to read this plan — the backward cut
 
 The tree starts at the goal and asks, at every node, *what must be true for this to be
-true?* Each answer is a smaller, independently measurable problem, until the leaves are
-conditions a receipt can settle. Solving the leaves bottom-up is solving the goal — but
-only if every leaf is solved, which is why the tree names the ones the card does not
-measure yet instead of pretending they do not exist.
+true?* Each answer is a smaller, independently measurable problem, broken down until
+the atoms are conditions a receipt — or a single recorded decision — can settle. How
+many levels that takes is what it takes: there is no forced depth, and the tree no
+longer speaks of sections or leaves. Solving the atoms bottom-up is solving the goal
+— but only if every atom is solved, which is why the tree names the ones the card does
+not measure yet instead of pretending they do not exist.
 
 - **Every node is a necessary condition of its parent.** Nothing here is an
   implementation preference; each node answers *why the parent cannot hold without it*.
-- **The plan defines no gate.** Every measured leaf is a frozen row whose gate lives in
-  `scripts/b_spec.py` or `scripts/judge_spec.py`, frozen before its result. An interior
-  verdict is the worst of its children — the card's existing rule, not a new one.
-- **Three leaf kinds, deliberately distinguished.** `card` leaves are computed from
-  receipts; `dec` leaves have bars frozen in a DEC and close only through a
-  pre-registered run; `v1` leaves belong to the stack's own gates and are not assessed
+- **The plan defines no gate.** Every measured atomic problem is a frozen row whose gate
+  lives in `scripts/b_spec.py` or `scripts/judge_spec.py`, frozen before its result. An
+  interior verdict is the worst of its children — the card's existing rule, not a new one.
+- **Progress is the tree.** How many problems and atomic problems are solved, read off
+  the hierarchy at every level, IS the progress measure: there is no separate progress
+  block, and no milestone ladder beside the tree.
+- **Three kinds of atomic problem, deliberately distinguished.** `card` atoms are
+  computed from receipts; `dec` atoms have bars frozen in a DEC and close only through
+  a pre-registered run; `v1` atoms belong to the stack's own gates and are not assessed
   on this card. A green card alone therefore proves T0 — never SOLVED.
-- **No relabelling.** A node moves from open to solved by evidence, never by editing this
-  file. Changing what a leaf measures is a new protocol version, not a plan edit.
+- **No relabelling.** A problem moves from open to solved by evidence, never by editing
+  this file. Changing what an atom measures is a new protocol version, not a plan edit.
 
 ## 2. The tree
 
-The census: **31 card leaves**, **1 DEC-frozen
-leaf**, **5 v1 leaves** — 37 conditions in all.
+The census: **39 atomic problems** (31 measured · 3 DEC-frozen · 5 v1) under **19 interior problems** — progress is the solved count, read off the tree at every level.
 
 ### G — A certified universal donor, delivered
 
@@ -62,8 +66,23 @@ Nothing downstream is meaningful about an object that is not lawful or not repro
 
 A state update that breaks compositionality or equivariance is not a homomorphism over events; no sufficiency claim survives it.
 
-**Leaves:** `B1.1`, `B1.2`
-**Solved when:** every leaf below passes its frozen gate (2 rows)
+**Solved when:** every child below is solved (worst-child rule)
+
+###### B1.1 — Lawful dynamics (S3)
+
+*merge/equivariance/mass-additivity exact on data; tau receipted; stable from step 0*
+
+The merge / equivariance / mass laws are the homomorphism floor: a state update that does not compose exactly over event sequences is not a lawful merge, and no sufficiency claim survives it.
+
+**Solved when:** its frozen gate passes on a current receipt (the gate lives in the frozen spec — see the atomic-problems table and the card's row)
+
+###### B1.2 — Construction laws (C1-C6)
+
+*scan / field-permutation / mass / determinism / schema variant / frozen hash*
+
+The construction laws (C1–C6) are the v6 algebraic-law pillar in testable form — scan associativity, field permutation, determinism, schema variants, the frozen hash: a construction that breaks one is a transcript, not a certificate.
+
+**Solved when:** its frozen gate passes on a current receipt (the gate lives in the frozen spec — see the atomic-problems table and the card's row)
 
 ##### B8 — Reproducible
 
@@ -71,8 +90,23 @@ A state update that breaks compositionality or equivariance is not a homomorphis
 
 An artifact that cannot be rebuilt at a recorded commit is a transcript, not a certificate.
 
-**Leaves:** `B8.1`, `B8.2`
-**Solved when:** every leaf below passes its frozen gate (2 rows)
+**Solved when:** every child below is solved (worst-child rule)
+
+###### B8.1 — Artifact identity (legacy)
+
+*artifact hash + config + data revision recorded*
+
+An artifact whose hash, config and data revision are not recorded is a transcript, not a certificate: identity is the floor on which reproducibility stands.
+
+**Solved when:** its frozen gate passes on a current receipt (the gate lives in the frozen spec — see the atomic-problems table and the card's row)
+
+###### B8.2 — One-command reproducibility (S6)
+
+*the card is regenerated in one invocation at a recorded commit*
+
+If the card cannot be regenerated by one command at a recorded commit, the certification cannot be re-derived: S6 is the reproducibility claim itself.
+
+**Solved when:** its frozen gate passes on a current receipt (the gate lives in the frozen spec — see the atomic-problems table and the card's row)
 
 #### P2 — The donor suffices
 
@@ -88,17 +122,66 @@ A donor that is lawful but lossy is a summary, not a foundation: any consumer wo
 
 Sufficiency is the donor contract itself: without U the embedding is an unmeasured summary, and every consumer inherits whatever it dropped.
 
-**Leaves:** `B2.1`, `B2.2`, `B2.3`
-**Solved when:** every leaf below passes its frozen gate (3 rows)
+**Solved when:** every child below is solved (worst-child rule)
+
+###### B2.1 — Worst-case sufficiency U
+
+*U = 1 - worst-case oracle gap vs full history, fixed capacity, broad published family*
+
+U is the donor contract itself: without a worst-case bound on the oracle gap at fixed capacity, the embedding is an unmeasured summary and every consumer inherits whatever it dropped.
+
+**Solved when:** its frozen gate passes on a current receipt (the gate lives in the frozen spec — see the atomic-problems table and the card's row)
+
+###### B2.2 — Full-history oracle gap
+
+*excess loss of E vs the full-history arm at fixed capacity, per included probe*
+
+The per-probe excess loss vs the full-history arm is the content of the U bound: without it, U is a number with no referent, and 'sufficient' is a word, not a measurement.
+
+**Solved when:** its frozen gate passes on a current receipt (the gate lives in the frozen spec — see the atomic-problems table and the card's row)
+
+###### B2.3 — Learned-only attribution
+
+*sufficiency of the learned shape vs the served statistics, reported separately*
+
+The sufficiency claim must belong to the learned shape, not the served statistics: without the learned-only attribution, a green U could be the ledger's, not the encoder's (the circular-evaluation guard).
+
+**Solved when:** its frozen gate passes on a current receipt (the gate lives in the frozen spec — see the atomic-problems table and the card's row)
 
 ##### E1 — Trunk capacity (the state-update algebra)
 
 *Can the state carry the stream's structure — not just its mass?*
 
-A sufficient statistic must have somewhere to live. When the trunk's effective rank collapses, the embedding is a blob and every downstream row measures the blob, not the stream. This is the measured blocker (O3 attempt 4 rejected; the dev rig reproduces it in minutes), and it is the one condition whose bars are frozen outside the card.
+A sufficient statistic must have somewhere to live. When the trunk's effective rank collapses, the embedding is a blob and every downstream row measures the blob, not the stream. This is the measured blocker (O3 attempt 4 rejected; the dev rig reproduces it in minutes), and it is the one problem whose bars are frozen outside the card — which is why it is cut into atoms, each with its own DEC-frozen close.
 
-**Bars frozen in:** DEC-572/573 (real data: eff_rank>=30, persona>=0.15, R2>=0.45, stable) · DEC-575/576/577 (dev rig: g<=0.5 and beats the 1-gram, controls clean)
-**Solved when:** its pre-registered run meets the frozen bars and the decision is recorded — DEC-572/573 (real data: eff_rank>=30, persona>=0.15, R2>=0.45, stable) · DEC-575/576/577 (dev rig: g<=0.5 and beats the 1-gram, controls clean)
+**Solved when:** every child below is solved (worst-child rule)
+
+###### E1.a — next_event mastered on the toy (curriculum step 1)
+
+*Does the frozen trunk beat the 1-gram on the known-truth next_event structure at the dev-rig scale, with clean controls?*
+
+The dev rig is the minutes-scale instrument that localizes the blob; next_event is curriculum step 1, and DEC-576's port protocol needs this structure mastered before any real-data claim.
+
+**Bars frozen in:** DEC-576/577 (dev rig: g<=0.5 and beats the 1-gram, controls clean) — exhausted negative at N=500 across all four single-axis trunk-algebra values plus the dim=256 capacity read (DEC-581/582 outcomes: the 1-gram floor is binding, a finite-sample estimation gap, not a trunk deficiency)
+**Solved when:** its pre-registered run meets the frozen bars and the decision is recorded — DEC-576/577 (dev rig: g<=0.5 and beats the 1-gram, controls clean) — exhausted negative at N=500 across all four single-axis trunk-algebra values plus the dim=256 capacity read (DEC-581/582 outcomes: the 1-gram floor is binding, a finite-sample estimation gap, not a trunk deficiency)
+
+###### E1.b — intent mastered on the toy (curriculum step 2)
+
+*Does the frozen trunk beat the 1-gram on the per-customer intent structure, at a scale where the sample can determine it, with clean controls?*
+
+The next_event outcome located the shortfall in the sample, not the trunk: intent at a determinable scale is the structure the trunk must next master (DEC-583; the snr difficulty dial is rejected as an axis).
+
+**Bars frozen in:** DEC-583 (curriculum step 2: the intent structure, one axis, at the frozen difficulty; the full one-axis pre-registration under a follow-up DEC at resume)
+**Solved when:** its pre-registered run meets the frozen bars and the decision is recorded — DEC-583 (curriculum step 2: the intent structure, one axis, at the frozen difficulty; the full one-axis pre-registration under a follow-up DEC at resume)
+
+###### E1.c — port: ONE real-data run under DEC-572's bars
+
+*Does the winning trunk master the real stream — eff_rank>=30, persona>=0.15, R2>=0.45, stable, plus the B1 canary — in ONE pre-registered run?*
+
+Toy mastery earns the right to exactly one real-data run; the port receipt is what makes B's green a statement about a working trunk, not about a blob (DEC-576's port protocol).
+
+**Bars frozen in:** DEC-572/573 (real data: eff_rank>=30, persona>=0.15, R2>=0.45, stable)
+**Solved when:** its pre-registered run meets the frozen bars and the decision is recorded — DEC-572/573 (real data: eff_rank>=30, persona>=0.15, R2>=0.45, stable)
 
 ##### B4 — Decisive
 
@@ -106,8 +189,31 @@ A sufficient statistic must have somewhere to live. When the trunk's effective r
 
 Prediction sufficiency does not imply decision sufficiency — the action family is part of the goal, not a downstream detail.
 
-**Leaves:** `B4.1`, `B4.2`, `B4.3`
-**Solved when:** every leaf below passes its frozen gate (3 rows)
+**Solved when:** every child below is solved (worst-child rule)
+
+###### B4.1 — B-only dose-response / argmax
+
+*action-conditional response shape readable from the state (not through a judge leg)*
+
+Prediction sufficiency does not imply decision sufficiency: the action-conditional response shape must be readable from the state itself, or the action family is not covered by construction.
+
+**Solved when:** its frozen gate passes on a current receipt (the gate lives in the frozen spec — see the atomic-problems table and the card's row)
+
+###### B4.2 — OPE / IPS known-effect recovery (legacy)
+
+*E recovers the known effect with a paired CI excluding 0*
+
+Known-effect recovery with a paired CI excluding 0 is the causal grounding of the decision claim: without it, 'the state carries the effect' is correlation wearing a coat.
+
+**Solved when:** its frozen gate passes on a current receipt (the gate lives in the frozen spec — see the atomic-problems table and the card's row)
+
+###### B4.3 — Action-invariance
+
+*representation invariant to assignment, still predictive of the outcome*
+
+A representation that moves with the assignment encodes the intervention, not the state: action-invariance is the test that the decision-grade state is separable from the action.
+
+**Solved when:** its frozen gate passes on a current receipt (the gate lives in the frozen spec — see the atomic-problems table and the card's row)
 
 ##### B5 — Minimal & affordable
 
@@ -115,8 +221,23 @@ Prediction sufficiency does not imply decision sufficiency — the action family
 
 Without minimality, 'sufficient' is trivially satisfied by shipping the history; minimality is what makes the object bounded and affordable.
 
-**Leaves:** `B5.1`, `B5.2`
-**Solved when:** every leaf below passes its frozen gate (2 rows)
+**Solved when:** every child below is solved (worst-child rule)
+
+###### B5.1 — Minimality k_min
+
+*served rank = the frozen reconstruction certificate*
+
+Without minimality, 'sufficient' is trivially satisfied by shipping the history: k_min (the reconstruction certificate) is what makes the object bounded, fixed and affordable.
+
+**Solved when:** its frozen gate passes on a current receipt (the gate lives in the frozen spec — see the atomic-problems table and the card's row)
+
+###### B5.2 — Cost / runtime / constant-state (legacy)
+
+*runtime, memory and incremental-update receipt*
+
+A capability that is correct but unacceptably slow or state-unbounded is not done: the runtime / constant-state receipt is the cost side of the minimality bar.
+
+**Solved when:** its frozen gate passes on a current receipt (the gate lives in the frozen spec — see the atomic-problems table and the card's row)
 
 #### P3 — The donor is usable
 
@@ -132,8 +253,55 @@ Sufficiency proves information is present; it does not prove it is recoverable. 
 
 Information that a simple head cannot read does not reach a consumer; present is not usable.
 
-**Leaves:** `B3.1`, `B3.2`, `B3.3`, `B3.4`, `B3.5`, `B3.6`
-**Solved when:** every leaf below passes its frozen gate (6 rows)
+**Solved when:** every child below is solved (worst-child rule)
+
+###### B3.1 — Outlet accessibility (S4)
+
+*per-bucket accessibility parity + per-bucket negative controls*
+
+An outlet that cannot read its own bucket means the information is present but unusable: per-bucket accessibility parity, with negative controls, is the floor of recoverability.
+
+**Solved when:** its frozen gate passes on a current receipt (the gate lives in the frozen spec — see the atomic-problems table and the card's row)
+
+###### B3.2 — Stage decomposition M0->M1->served
+
+*the fine-structure metric at each stage, so a loss is attributed to a stage*
+
+A loss must be attributable to a stage: the M0->M1->served decomposition is what turns 'the embedding lost it' into 'the fold lost it' — a diagnosis, not a verdict.
+
+**Solved when:** its frozen gate passes on a current receipt (the gate lives in the frozen spec — see the atomic-problems table and the card's row)
+
+###### B3.3 — Linear accessibility (current)
+
+*mean ridge R2 on A->B over the lab's persona+future fields; served vs PATH A*
+
+A simple linear head that cannot beat PATH A at readout means no downstream consumer can: linear access is the floor of the Accessibility principle.
+
+**Solved when:** its frozen gate passes on a current receipt (the gate lives in the frozen spec — see the atomic-problems table and the card's row)
+
+###### B3.4 — Block-aware serving geometry
+
+*exact counter block beside the learned shape, equal total variance; persona/future/ARI*
+
+Serving allocation must be measured against the exact counter at equal variance: without it, a geometry gain could be an allocation artifact, and the shape block's share would be unattributed.
+
+**Solved when:** its frozen gate passes on a current receipt (the gate lives in the frozen spec — see the atomic-problems table and the card's row)
+
+###### B3.5 — Equal-dimension serving geometry
+
+*shape PCA + counter tile at 128/128 and 39/39; persona/future/ARI at full size*
+
+Dimension-matched shape + counter tiles separate a real serving gain from a raw dimension-count gain: without the equal-dimension control, 'serving helps' is confounded.
+
+**Solved when:** its frozen gate passes on a current receipt (the gate lives in the frozen spec — see the atomic-problems table and the card's row)
+
+###### B3.6 — Served-object X-ray (ledger exposure)
+
+*the ledger alone, its named parts, and ledger block-PCA under the frozen B3.2/B3.4 consumers, against {exact counter, served shape, PATH A}; the branch is computed here from the arm numbers (DEC-569)*
+
+The ledger's named parts must be exposed under the frozen consumers: the X-ray localizes where the fine structure lives (the exposure branch) so serving is designed, not tuned.
+
+**Solved when:** its frozen gate passes on a current receipt (the gate lives in the frozen spec — see the atomic-problems table and the card's row)
 
 ##### B6 — Transferable
 
@@ -141,8 +309,31 @@ Information that a simple head cannot read does not reach a consumer; present is
 
 Transfer beyond our known legs is the only evidence against designing for the tasks we already have.
 
-**Leaves:** `B6.1`, `B6.2`, `B6.3`
-**Solved when:** every leaf below passes its frozen gate (3 rows)
+**Solved when:** every child below is solved (worst-child rule)
+
+###### B6.1 — Objective battery (S5)
+
+*every content pressure beats its naive comparator (or is excluded and reported)*
+
+Content pressures that do not beat their naive comparators leave the breadth of the embedding unproven: the objective battery is the anti-overfit clause made measurable.
+
+**Solved when:** its frozen gate passes on a current receipt (the gate lives in the frozen spec — see the atomic-problems table and the card's row)
+
+###### B6.2 — Donor does-not-lose / adds / controls (legacy)
+
+*E vs raw, fair table, table+seq; random/destroyed negative controls*
+
+Does-not-lose / adds / destroyed-vs-random controls against raw and the fair table: without them, 'adds unique signal' is a point estimate, not a certification.
+
+**Solved when:** its frozen gate passes on a current receipt (the gate lives in the frozen spec — see the atomic-problems table and the card's row)
+
+###### B6.3 — Broad held-out transfer family
+
+*adds signal on a family broader than the eight judge legs*
+
+Signal that appears only on the eight known legs means the donor was designed for our tasks: a broad held-out transfer family is the only evidence against that.
+
+**Solved when:** its frozen gate passes on a current receipt (the gate lives in the frozen spec — see the atomic-problems table and the card's row)
 
 ##### B7 — Robust
 
@@ -150,8 +341,23 @@ Transfer beyond our known legs is the only evidence against designing for the ta
 
 Uncertainty and missingness are where a learned state lies most easily — unlogged events must be carried, never faked.
 
-**Leaves:** `B7.1`, `B7.2`
-**Solved when:** every leaf below passes its frozen gate (2 rows)
+**Solved when:** every child below is solved (worst-child rule)
+
+###### B7.1 — ECE / OOD retention (legacy)
+
+*calibration and OOD retention on the old reference*
+
+Calibrated uncertainty under shift is where a learned state lies most easily: ECE / OOD retention on the reference stream is the honesty half of the robustness claim.
+
+**Solved when:** its frozen gate passes on a current receipt (the gate lives in the frozen spec — see the atomic-problems table and the card's row)
+
+###### B7.2 — Missingness / unlogged confounders
+
+*uncertainty carried for unobserved events, never faked*
+
+Unlogged events must be carried as uncertainty, never faked: missingness handling is what makes 'coverage over functions of the observed stream' true instead of aspirational.
+
+**Solved when:** its frozen gate passes on a current receipt (the gate lives in the frozen spec — see the atomic-problems table and the card's row)
 
 #### P4 — The consequence is delivered
 
@@ -167,8 +373,23 @@ This is the project's definition of progress. It is downstream of P1-P3 by const
 
 Forecast targets are the most direct consumer of a predictive embedding; if the frozen state cannot be read for them, the donor claim is empty.
 
-**Leaves:** `JUDGE-supervised-brain`, `JUDGE-supervised-brain_ledger`
-**Solved when:** every leaf below passes its frozen gate (2 rows)
+**Solved when:** every child below is solved (worst-child rule)
+
+###### JUDGE-supervised-brain — supervised :: brain alone (PROGRESS)
+
+*every non-degenerate task: paired CI excludes 0 vs PATH A; controls below brain*
+
+The PROGRESS column of the most direct consumer: without a strict win over PATH A (paired CI excluding 0, controls below brain) on every non-degenerate task, the donor claim is empty here.
+
+**Solved when:** its frozen gate passes on a current receipt (the gate lives in the frozen spec — see the atomic-problems table and the card's row)
+
+###### JUDGE-supervised-brain_ledger — supervised :: brain + ledger (DELIVERY, non-inferiority)
+
+*every non-degenerate task: paired CI excludes 0 vs PATH A; controls below brain*
+
+The DELIVERY column: brain + ledger must be non-inferior within the frozen margin — the shipping claim; ledger points are never a brain win, so this row measures what the customer actually gets.
+
+**Solved when:** its frozen gate passes on a current receipt (the gate lives in the frozen spec — see the atomic-problems table and the card's row)
 
 ##### JUDGE-unsupervised — unsupervised leg
 
@@ -176,8 +397,23 @@ Forecast targets are the most direct consumer of a predictive embedding; if the 
 
 Geometry is the structure-revealing half of the contract: distance must mean shared futures, not shared summary.
 
-**Leaves:** `JUDGE-unsupervised-brain`, `JUDGE-unsupervised-brain_ledger`
-**Solved when:** every leaf below passes its frozen gate (2 rows)
+**Solved when:** every child below is solved (worst-child rule)
+
+###### JUDGE-unsupervised-brain — unsupervised :: brain alone (PROGRESS)
+
+*every non-degenerate task: paired CI excludes 0 vs PATH A; controls below brain*
+
+The PROGRESS column of the structure-revealing half: distance must mean shared futures, not shared summary — a strict win over PATH A with controls, or the geometry claim is empty.
+
+**Solved when:** its frozen gate passes on a current receipt (the gate lives in the frozen spec — see the atomic-problems table and the card's row)
+
+###### JUDGE-unsupervised-brain_ledger — unsupervised :: brain + ledger (DELIVERY, non-inferiority)
+
+*every non-degenerate task: paired CI excludes 0 vs PATH A; controls below brain*
+
+The DELIVERY column: brain + ledger must keep the geometry non-inferior within the frozen margin — what the customer actually gets when the ledger is attached.
+
+**Solved when:** its frozen gate passes on a current receipt (the gate lives in the frozen spec — see the atomic-problems table and the card's row)
 
 ##### JUDGE-rl — rl leg
 
@@ -185,8 +421,23 @@ Geometry is the structure-revealing half of the contract: distance must mean sha
 
 This is the decision use case: policy value from a frozen pre-action state on randomized data, with controls.
 
-**Leaves:** `JUDGE-rl-brain`, `JUDGE-rl-brain_ledger`
-**Solved when:** every leaf below passes its frozen gate (2 rows)
+**Solved when:** every child below is solved (worst-child rule)
+
+###### JUDGE-rl-brain — rl :: brain alone (PROGRESS)
+
+*every non-degenerate task: paired CI excludes 0 vs PATH A; controls below brain*
+
+The PROGRESS column of the decision use case: policy value from a frozen pre-action state on randomized data must beat table and random with controls, or the decision layer has nothing to stand on.
+
+**Solved when:** its frozen gate passes on a current receipt (the gate lives in the frozen spec — see the atomic-problems table and the card's row)
+
+###### JUDGE-rl-brain_ledger — rl :: brain + ledger (DELIVERY, non-inferiority)
+
+*every non-degenerate task: paired CI excludes 0 vs PATH A; controls below brain*
+
+The DELIVERY column: brain + ledger must keep the decision value non-inferior within the frozen margin.
+
+**Solved when:** its frozen gate passes on a current receipt (the gate lives in the frozen spec — see the atomic-problems table and the card's row)
 
 ##### JUDGE-simulator — simulator leg
 
@@ -194,14 +445,29 @@ This is the decision use case: policy value from a frozen pre-action state on ra
 
 Known-effect recovery: the state must carry action-conditional response, not correlation, or the decision layer has nothing to stand on.
 
-**Leaves:** `JUDGE-simulator-brain`, `JUDGE-simulator-brain_ledger`
-**Solved when:** every leaf below passes its frozen gate (2 rows)
+**Solved when:** every child below is solved (worst-child rule)
+
+###### JUDGE-simulator-brain — simulator :: brain alone (PROGRESS)
+
+*every non-degenerate task: paired CI excludes 0 vs PATH A; controls below brain*
+
+The PROGRESS column of known-effect recovery: the state must carry action-conditional response, not correlation — a strict win over PATH A with the destroyed control below, or the counterfactual claim is empty.
+
+**Solved when:** its frozen gate passes on a current receipt (the gate lives in the frozen spec — see the atomic-problems table and the card's row)
+
+###### JUDGE-simulator-brain_ledger — simulator :: brain + ledger (DELIVERY, non-inferiority)
+
+*every non-degenerate task: paired CI excludes 0 vs PATH A; controls below brain*
+
+The DELIVERY column: brain + ledger must keep the known-effect recovery non-inferior within the frozen margin.
+
+**Solved when:** its frozen gate passes on a current receipt (the gate lives in the frozen spec — see the atomic-problems table and the card's row)
 
 #### P5 — The stack is v1-complete
 
 *Does the full system deliver a certified decision: identifiable stream -> donor -> plugins -> red_king -> red_queen, with caterpillar explaining from artifacts?*
 
-The foundation exists to serve decisions. v1 completeness is a separate scope from the encoder, and this card does not assess it; the leaves are named so the tree spans the whole goal and so that 'all solved' cannot be claimed on the encoder alone.
+The foundation exists to serve decisions. v1 completeness is a separate scope from the encoder, and this card does not assess it; the atoms are named so the tree spans the whole goal and so that 'all solved' cannot be claimed on the encoder alone.
 
 **Solved when:** every child below is solved (worst-child rule)
 
@@ -250,9 +516,11 @@ A decision that cannot be explained from its artifacts is not operable, and an e
 **Evidence:** the v1 stack's own gate — this card does not measure it.
 **Solved when:** its v1 gate passes (not measured on this card; AGENTS.md definition of done)
 
-## 3. The measured leaves — what evidence closes each one
+## 3. The atomic problems — what evidence closes each one
 
-| Leaf | Property | Frozen gate | Green means | Producer / source |
+### The measured atomic problems (frozen rows)
+
+| Atomic problem | Property | Frozen gate | Green means | Producer / source |
 |---|---|---|---|---|
 | `B1.1` | Lawful dynamics (S3) | working=True | reporting | measure_dynamics_law.py |
 | `B1.2` | Construction laws (C1-C6) | all construction laws met | unmeasured | the legacy encoder-construction producer |
@@ -286,9 +554,17 @@ A decision that cannot be explained from its artifacts is not operable, and an e
 | `JUDGE-simulator-brain` | simulator :: brain alone (PROGRESS) | every non-degenerate task: paired CI excludes 0 vs PATH A; controls below brain | quality | judge_leg_simulator.json |
 | `JUDGE-simulator-brain_ledger` | simulator :: brain + ledger (DELIVERY, non-inferiority) | every non-degenerate task: paired CI excludes 0 vs PATH A; controls below brain | quality | judge_leg_simulator.json |
 
-### The leaves this card does not measure (v1)
+### The DEC-frozen atomic problems (no card row; each closes only by its recorded evidence)
 
-| Leaf | Requirement | Evidence |
+| Atomic problem | What must be true | Bars frozen in |
+|---|---|---|
+| `E1.a` | Does the frozen trunk beat the 1-gram on the known-truth next_event structure at the dev-rig scale, with clean controls? | DEC-576/577 (dev rig: g<=0.5 and beats the 1-gram, controls clean) — exhausted negative at N=500 across all four single-axis trunk-algebra values plus the dim=256 capacity read (DEC-581/582 outcomes: the 1-gram floor is binding, a finite-sample estimation gap, not a trunk deficiency) |
+| `E1.b` | Does the frozen trunk beat the 1-gram on the per-customer intent structure, at a scale where the sample can determine it, with clean controls? | DEC-583 (curriculum step 2: the intent structure, one axis, at the frozen difficulty; the full one-axis pre-registration under a follow-up DEC at resume) |
+| `E1.c` | Does the winning trunk master the real stream — eff_rank>=30, persona>=0.15, R2>=0.45, stable, plus the B1 canary — in ONE pre-registered run? | DEC-572/573 (real data: eff_rank>=30, persona>=0.15, R2>=0.45, stable) |
+
+### The v1 atomic problems this card does not measure
+
+| Atomic problem | Requirement | Evidence |
 |---|---|---|
 | `V1.1` | Causally identifiable stream | the v1 stack's own gate |
 | `V1.2` | Each plugin passes its independent gate | the v1 stack's own gate |
@@ -297,28 +573,30 @@ A decision that cannot be explained from its artifacts is not operable, and an e
 | `V1.5` | caterpillar explains from artifacts | the v1 stack's own gate |
 
 Two v1 requirements are already owned elsewhere in the tree, so they are references,
-not duplicate nodes:
+not duplicate atoms:
 
 - **V1.2 (AGENTS: universal donor usable by every plugin)** -> P1-P3 + B6
 - **V1.7 (AGENTS: every artifact versioned + reproducible, receipts)** -> B8
 
 ## 4. What "all solved" means — exactly
 
-- Every **card leaf** (31) passes its frozen gate on a current
+- Every **measured atom** (31) passes its frozen gate on a current
   receipt: that is `T0`, the encoder battery.
-- The **DEC-frozen leaf** (1) closes only by its pre-registered run
+- Every **DEC-frozen atom** (3) closes only by its pre-registered run
   meeting the recorded bars and the decision being logged — never by a lab receipt and
   never by narration.
-- Every **v1 leaf** (5) passes the stack's own gate.
+- Every **v1 atom** (5) passes the stack's own gate.
+- Every **interior problem** (19) is solved when all the atoms under
+  it are solved: the worst-child rule, nothing else.
 - **No open BREAKING/MAJOR BACKWARD requirement** (AUDIT.md).
 
 All of the above = **project solved**. Anything less is a named, located gap: the tree
-says which node is open and the card says which leaf is missing.
+says which problem is open and the card says which atom is missing.
 
 This is the doctrine's T0/SOLVED distinction made structural: a fully green encoder
-card is `ENCODER DONE`, not `SOLVED`, because the v1 scope and the DEC-frozen port run
-are separate leaves. The card renders `SOLVED` only when its generated root status is
-PASS — which cannot happen while a leaf in this tree is unmeasured.
+card is `ENCODER DONE`, not `SOLVED`, because the v1 scope and the DEC-frozen trunk
+atoms are separate atoms. The card renders `SOLVED` only when its generated root status
+is PASS — which cannot happen while an atom in this tree is unmeasured.
 
 ## 5. The route — the order the evidence is earned
 
@@ -328,38 +606,39 @@ computes one. Moving the pointer is a reviewed spec edit like any other.
 
 | Step | What is earned | Advances | Evidence that closes it |
 |---|---|---|---|
-| **R1** | Dev rig: master next_event (N=500, known truth) | E1 | CLOSED negative at the toy (DEC-581/582 outcomes: 4 algebra values + capacity @256, g 1.147–1.182 vs bar 0.5, 1-gram floor binding at N=500); remainder = intent under DEC-583 (on hold); never a B-row verdict |
-| **R2** | Dev rig: master intent (curriculum step 2) | E1 | lab receipts + the intent iteration's pre-registration; both structures clean |
-| **R3** | Port: ONE real-data run of the winning trunk under DEC-572's bars | E1 | a pre-registered port receipt: eff_rank>=30, persona>=0.15, R2>=0.45, stable + B1 canary |
+| **R1** | Dev rig: master next_event (N=500, known truth) | E1.a | CLOSED negative at the toy (DEC-581/582 outcomes: 4 algebra values + capacity @256, g 1.147–1.182 vs bar 0.5, 1-gram floor binding at N=500); remainder = intent under DEC-583 (on hold); never a B-row verdict |
+| **R2** | Dev rig: master intent (curriculum step 2) | E1.b | lab receipts + the intent iteration's pre-registration (DEC-583 decides the structure; the full one-axis pre-registration under a follow-up DEC); both structures clean |
+| **R3** | Port: ONE real-data run of the winning trunk under DEC-572's bars | E1.c | a pre-registered port receipt: eff_rank>=30, persona>=0.15, R2>=0.45, stable + B1 canary |
 | **R4 ← now** | Real stream: fill the remaining B rows with their producers | P1, P2, P3 | B1.2, B4.1-B4.3, B5.1-B5.2, B6.2-B6.3, B7.1-B7.2, B8.1 at the current behavior |
 | **R5** | Real stream: re-score the four judge legs (brain and brain+ledger) | P4 | judge_leg_*.json at the current behavior, both columns, controls readable |
 | **R6** | Stack: build and certify v1 (identifiable stream, plugins, red_king, red_queen, caterpillar) | P5 | each v1 gate on the stack's own card rows / receipts |
 | **R7** | BACKWARD: adversarial review with no BREAKING findings | G | AUDIT.md requirements closed |
 
 The order is forced by dependency and by cost: the dev rig is minutes and earns the
-right to the real-data port; the port closes E1; only then can the remaining B rows be
-read as evidence about a working trunk; only then is a B+C re-score diagnostic rather
+right to the real-data port; the port closes E1.c; only then can the remaining B atoms
+be read as evidence about a working trunk; only then is a B+C re-score diagnostic rather
 than a measurement of the blob.
 
 ## 6. The current frontier
 
-The live frontier is P2's enabler E1 (the trunk's state-update algebra). O3 attempt 4 was rejected on its frozen bars and the dev rig reproduced the blob in minutes; all three single-axis trunk-algebra candidates are now negative on the toy (DEC-577 outcome: candidate 1; DEC-578 outcome: candidate 2; DEC-581 outcome: candidate 3), and the capacity axis is negative too (DEC-582 outcome: baseline algebra at dim=256, g 1.149121 ≈ iteration 1's 1.14727, no usable rank gained) — the 1-gram floor is binding on next_event at N=500, a finite-sample estimation gap, not a trunk deficiency. The next dev-rig structure is `intent` (DEC-583, on hold) and then ONE pre-registered port run under DEC-572's bars; no lab receipt flips a B-row verdict. The PRIMARY progress track until then is R4: the 11 remaining B sub-problems (6 legacy re-stamps at the current behavior + 5 new O-series producers), certification-first per the operator's 2026-11-03 directive.
+The live frontier is P2's enabler E1 (the trunk's state-update algebra), now cut to three DEC-frozen atomic problems. E1.a (next_event mastered on the toy) is exhausted negative at N=500: all three single-axis trunk-algebra candidates are negative on the toy (DEC-577, DEC-578 and DEC-581 outcomes) and the capacity axis is negative too (DEC-582 outcome, g 1.149121 ≈ iteration 1's 1.14727, no usable rank gained) — the 1-gram floor is binding, a finite-sample estimation gap, not a trunk deficiency. E1.b (intent, curriculum step 2) is the next structure (DEC-583; the snr difficulty dial is rejected as an axis) and is on hold; E1.c (the port under DEC-572's bars) waits on both. No lab receipt flips a B-row verdict. The PRIMARY progress track meanwhile is R4: the 11 remaining B atomic problems (6 legacy re-stamps at the current behavior + 5 new O-series producers), certification-first per the operator's 2026-11-03 directive.
 
 **Why the card can read green while the encoder is not mastered — read this before
-trusting a green row.** The plan labels every leaf with what its green PROVES
+trusting a green row.** The plan labels every measured atom with what its green PROVES
 (`scripts/b_spec.py: gate_kind`, derived from the frozen gate's kind, never asserted):
 
 - **reporting** — green certifies that the measurement happened and was attributed: `B1.1`, `B8.2`, `B2.3`, `B3.1`, `B3.2`, `B3.4`, `B3.5`, `B3.6`, `B6.1`.
-- **quality** — green certifies a level against a frozen bar or comparator (the remaining leaves).
+- **quality** — green certifies a level against a frozen bar or comparator (the remaining atoms).
 
 The quality levels for the reporting-gated axes are the DEC-frozen bars (U >= 0.5 in
 DEC-570; eff_rank >= 30 and persona >= 0.15 in DEC-572; on the dev rig g <= 0.5 and
 beating the 1-gram in DEC-576/577), and the measured values are in the receipts, not in
 this plan.
 
-That is exactly why the trunk is a node (E1) and not a footnote: a blob can satisfy
-every reporting gate while failing the quality bars, and the plan must show the
-difference instead of letting a green card imply more than it proved.
+That is exactly why the trunk is a problem (E1) cut to three DEC-frozen atoms (E1.a–c)
+and not a footnote: a blob can satisfy every reporting gate while failing the quality
+bars, and the plan must show the difference instead of letting a green card imply more
+than it proved.
 
 ## 7. The method contract — how work is allowed to move the tree
 
@@ -384,11 +663,14 @@ scripts/plan_spec.py ──> scripts/plan.py ──> PLAN.md            (structu
 ```
 
 The card imports the spec; the spec imports the frozen row definitions (`b_spec`,
-`judge_spec`); neither imports the other's render. A test asserts every frozen row is a
-leaf exactly once, the tree is acyclic, and `PLAN.md` is current with the spec.
+`judge_spec`); neither imports the other's render. A test asserts every frozen row is an
+atomic problem exactly once, the tree is acyclic, and `PLAN.md` is current with the spec.
 
-This file was reinstated by operator request on 2026-11-03 (DEC-579). DEC-513 once
-retired PLAN.md because "the card is the plan"; the difference now is direction and
+This file was reinstated by operator request on 2026-11-03 (DEC-579), and reframed the
+same day (DEC-584) at the operator's directive: the tree is a recursive decomposition
+to ATOMIC problems at whatever depth that takes — "section" and "leaf" retired as
+vocabulary, progress read off the solved count at every level. DEC-513 once retired
+PLAN.md because "the card is the plan"; the difference now is direction and
 single-source: the plan is the goal-side decomposition, the card is its measurement
 surface, and both render from one spec — so the card cannot grow rows the plan does not
 contain, and the plan cannot claim a state the card did not measure.

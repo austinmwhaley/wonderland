@@ -154,6 +154,16 @@ certification stays on the real stream.
    `d5df3a2c` (B1.2, B4.2, B5.2, B6.2, B7.1, B8.1) + 5 new O-series producers (B4.1/B4.3
    decision law, B5.1 minimality, B6.3 transfer, B7.2 missingness). The dev-rig remainder
    (R2 intent, R3 port) is on hold; B+C re-scores only after B is green.
+- **Plan tree reframe (DEC-584, 2026-11-03).** At the operator's directive the plan is a
+   uniform recursive decomposition to ATOMIC problems — no "section"/"leaf" vocabulary, no
+   forced layer count, no separate PROGRESS block (progress = the solved-problem count read
+   off the tree at every level). All 31 frozen card rows are first-class atomic problem
+   nodes; E1 is cut to three dec atoms (E1.a next_event toy — exhausted negative per
+   DEC-581/582; E1.b intent toy — DEC-583, on hold; E1.c port under DEC-572's bars). Census:
+   **39 atomic problems** (31 measured · 3 DEC-frozen · 5 v1) under **19 interior problems**.
+   Verdicts a no-op: root FAILED, 14/39 green (the denominator now includes the dec/v1
+   atoms), B 12 PASS / 0 FAIL / 11 UNKNOWN, E1 stays FRONTIER, P5/G stay UNKNOWN under an
+   all-green card scope.
 - **Operating prompts are two-scale now (DEC-580, operator directive).** `PROMPT_FORWARD` requires
   `NODE` / `ROUTE` / `MOVE` before every run and `MOVEMENT` after it (a run that moves no node is
   a diagnosis, not progress); `PROMPT_BACKWARD` attacks the tree first (necessity, placement,
@@ -202,20 +212,21 @@ next question is the learned shape, not another consumer tuning pass.
    rejected: it is the difficulty dial, it shrinks g's denominator); ON HOLD. ROUTE R1 →
    R4 (certification-first). Card's frontier readings gain iter4 + cap256; no behavior
    move.
-2. **Tree reframe (DEC-584, next chunk).** Per the operator's 2026-11-03 directive: the
-   plan is a recursive decomposition into ATOMIC problems at whatever depth it takes — no
-   forced layers, no "section"/"leaf" vocabulary, no separate PROGRESS block (progress is
-   the solved-problem count read off the tree at every level). Reframe `plan_spec.py` /
-   `plan.py` / the card's plan section accordingly (the frozen B/judge rows become
-   first-class atomic problem nodes; E1 splits into E1.a/E1.b/E1.c dec atoms), keeping the
-   verdicts a no-op (14/31, B 12/0/11, root FAILED, E1 FRONTIER).
-3. **R4: the 11 open B sub-problems, certification-first.** Six legacy re-stamps at the
-   current behavior `d5df3a2c` (B1.2, B4.2, B5.2, B6.2, B7.1, B8.1 — identify the existing
-   producer scripts, re-run, verify receipts), then the five new O-series producers (B4.1/
-   B4.3 decision law, B5.1 minimality, B6.3 transfer, B7.2 missingness), card re-rendered
-   after each. GPU free; one job at a time. Dev-rig remainder (R2 intent, R3 port) resumes
-   after B is green; B+C re-scores only then; project v1 third; BACKWARD at milestones
-   only (DEC-580's FULL mode).
+2. **R4: the six legacy re-stamps at behavior `d5df3a2c`, first.** B1.2
+   (`encoder_lawfulness.json`), B4.2 (`encoder_causal_ci.json`), B5.2 (`runtime.json`),
+   B6.2 (`encoder_donor.json`), B7.1 + B8.1 (`encoder_b_props.json` — one producer, two
+   rows): identify each existing producer script, re-run it on the canonical cfm_v2k
+   products, verify each receipt (behavior stamp `d5df3a2c`, N recorded, controls present)
+   before reading the verdict; the card flips UNKNOWN→PASS where the gate is met. GPU free,
+   one job at a time; card re-rendered after each.
+3. **Then R4's five new O-series producers (each pre-registered under its own DEC
+   BEFORE the run).** `measure_decision_law.py` (B4.1 dose-response/argmax + B4.3
+   action-invariance), `measure_minimality_law.py` (B5.1 k_min reconstruction
+   certificate), `measure_transfer_law.py` (B6.3 broad held-out transfer family),
+   `measure_robustness_law.py` (B7.2 missingness/unlogged-confounder uncertainty). Then the
+   dev-rig resumes (DEC-583 implementation check → E1.b intent pre-registration → R3
+   port) only after B is green; B+C re-scores only then; project v1 third; BACKWARD at
+   milestones only (DEC-580's FULL mode).
 
 ## Operating facts
 
