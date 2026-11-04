@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "d5df3a2c1211c402",
-    "command": "measure_stage_decomposition.py",
-    "generated_at": "2026-11-03T18:34:57+00:00",
-    "git_commit": "cb7c0d91423e481b52b27b199516f8ffe91cc0a4",
+    "behavior_hash": "c9f26925b418b284",
+    "command": "measure_stage_decomposition.py --products /home/austin_whaley/wonderland_work/cfm_v2k_vf2",
+    "generated_at": "2026-11-04T18:55:14+00:00",
+    "git_commit": "4406c1ccb6bca20d39017225acc6cf4bfeaf2458",
     "producer": "measure_stage_decomposition.py"
   },
   "attribution": {
@@ -17,66 +17,66 @@
   "n_pairs": 1101870,
   "n_score_B": 1485,
   "products": {
-    "path": "/home/austin_whaley/wonderland_work/cfm_v2k",
-    "registry_sha256": "79f9768d51205252",
-    "tag": "0.11.0r490759-b64d256e3lr3e-04o4c3b5899"
+    "path": "/home/austin_whaley/wonderland_work/cfm_v2k_vf2",
+    "registry_sha256": "6fe25b2b9bcfbad5",
+    "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
   },
-  "seconds": 4.4,
+  "seconds": 4.5,
   "stages": {
     "M0_exact_counter": {
       "dim": 39,
-      "future_geometry": 0.172705,
+      "future_geometry": 0.175516,
       "future_geometry_n": 1485,
       "future_geometry_pairs": 1101870,
       "n": 1485,
-      "persona_geometry": 0.189336,
+      "persona_geometry": 0.196481,
       "persona_geometry_n": 1485,
       "persona_geometry_pairs": 1101870,
-      "segment_ari": -0.000475
+      "segment_ari": -0.000134
     },
     "M1_fold_only": {
       "dim": 256,
-      "future_geometry": 0.093234,
+      "future_geometry": 0.092088,
       "future_geometry_n": 1485,
       "future_geometry_pairs": 1101870,
       "n": 1485,
-      "persona_geometry": 0.065718,
+      "persona_geometry": 0.059793,
       "persona_geometry_n": 1485,
       "persona_geometry_pairs": 1101870,
-      "segment_ari": -0.001108
+      "segment_ari": -0.00112
     },
     "M2_state_plus_fold": {
       "dim": 256,
-      "future_geometry": 0.090656,
+      "future_geometry": 0.089831,
       "future_geometry_n": 1485,
       "future_geometry_pairs": 1101870,
       "n": 1485,
-      "persona_geometry": 0.066879,
+      "persona_geometry": 0.05903,
       "persona_geometry_n": 1485,
       "persona_geometry_pairs": 1101870,
-      "segment_ari": -0.001223
+      "segment_ari": -0.001027
     },
     "M3_post_proj": {
       "dim": 256,
-      "future_geometry": 0.092256,
+      "future_geometry": 0.091112,
       "future_geometry_n": 1485,
       "future_geometry_pairs": 1101870,
       "n": 1485,
-      "persona_geometry": 0.065632,
+      "persona_geometry": 0.060313,
       "persona_geometry_n": 1485,
       "persona_geometry_pairs": 1101870,
-      "segment_ari": -0.001155
+      "segment_ari": -0.001114
     },
     "M4_served": {
-      "dim": 256,
-      "future_geometry": 0.09095,
+      "dim": 272,
+      "future_geometry": 0.110826,
       "future_geometry_n": 1485,
       "future_geometry_pairs": 1101870,
       "n": 1485,
-      "persona_geometry": 0.065962,
+      "persona_geometry": 0.092774,
       "persona_geometry_n": 1485,
       "persona_geometry_pairs": 1101870,
-      "segment_ari": -0.001097
+      "segment_ari": -0.001128
     }
   },
   "validation": {
@@ -90,7 +90,7 @@
       "regime_switches",
       "final_regime_days"
     ],
-    "m3_m4_distance_alignment": 0.998063,
+    "m3_m4_distance_alignment": 0.204339,
     "persona_fields": [
       "bayes_fwd_count_90d",
       "bayes_fwd_value_90d",

@@ -1,22 +1,22 @@
 {
   "_meta": {
-    "behavior_hash": "d5df3a2c1211c402",
-    "command": "measure_served_object.py",
-    "generated_at": "2026-11-03T18:36:35+00:00",
-    "git_commit": "cb7c0d91423e481b52b27b199516f8ffe91cc0a4",
+    "behavior_hash": "c9f26925b418b284",
+    "command": "measure_served_object.py --products /home/austin_whaley/wonderland_work/cfm_v2k_vf2",
+    "generated_at": "2026-11-04T18:55:49+00:00",
+    "git_commit": "4406c1ccb6bca20d39017225acc6cf4bfeaf2458",
     "producer": "measure_served_object.py"
   },
   "arms": {
     "exact_counter": {
       "dim": 39,
-      "future_geometry": 0.172705,
+      "future_geometry": 0.175516,
       "future_geometry_n": 1485,
       "future_geometry_pairs": 1101870,
       "n": 1485,
-      "persona_geometry": 0.189336,
+      "persona_geometry": 0.196481,
       "persona_geometry_n": 1485,
       "persona_geometry_pairs": 1101870,
-      "segment_ari": -0.000475
+      "segment_ari": -0.000134
     },
     "ledger_full": {
       "dim": 595,
@@ -151,15 +151,15 @@
       "segment_ari": 0.268486
     },
     "shape_served": {
-      "dim": 256,
-      "future_geometry": 0.09095,
+      "dim": 272,
+      "future_geometry": 0.110826,
       "future_geometry_n": 1485,
       "future_geometry_pairs": 1101870,
       "n": 1485,
-      "persona_geometry": 0.065962,
+      "persona_geometry": 0.092774,
       "persona_geometry_n": 1485,
       "persona_geometry_pairs": 1101870,
-      "segment_ari": -0.001097
+      "segment_ari": -0.001128
     }
   },
   "complete": true,
@@ -181,7 +181,7 @@
   "linear_access": {
     "arms": {
       "exact_counter": {
-        "mean_r2": 0.393702,
+        "mean_r2": 0.40579,
         "n_fields": 11
       },
       "ledger_full": {
@@ -233,7 +233,7 @@
         "n_fields": 11
       },
       "shape_served": {
-        "mean_r2": 0.46768,
+        "mean_r2": 0.486529,
         "n_fields": 11
       }
     },
@@ -243,16 +243,16 @@
   "n_fit_A": 3515,
   "n_score_B": 1485,
   "products": {
-    "path": "/home/austin_whaley/wonderland_work/cfm_v2k",
-    "registry_sha256": "79f9768d51205252",
-    "tag": "0.11.0r490759-b64d256e3lr3e-04o4c3b5899"
+    "path": "/home/austin_whaley/wonderland_work/cfm_v2k_vf2",
+    "registry_sha256": "6fe25b2b9bcfbad5",
+    "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
   },
   "reference_arms": [
     "exact_counter",
     "shape_served",
     "path_a"
   ],
-  "seconds": 86.8,
+  "seconds": 18.5,
   "validation": {
     "future_fields": [
       "x0",

@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "d5df3a2c1211c402",
-    "command": "measure_judge_law.py --products /home/austin_whaley/wonderland_work/cfm_v2k --demo /home/austin_whaley/wonderland_work/demo_v2 --legs supervised,unsupervised,rl,simulator --out-dir /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments",
-    "generated_at": "2026-11-03T18:34:34+00:00",
-    "git_commit": "cb7c0d91423e481b52b27b199516f8ffe91cc0a4",
+    "behavior_hash": "c9f26925b418b284",
+    "command": "measure_judge_law.py --products /home/austin_whaley/wonderland_work/cfm_v2k_vf2 --demo /home/austin_whaley/wonderland_work/demo_v2 --legs supervised,unsupervised,rl,simulator --out-dir /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments",
+    "generated_at": "2026-11-04T19:02:17+00:00",
+    "git_commit": "4406c1ccb6bca20d39017225acc6cf4bfeaf2458",
     "producer": "measure_judge_law.py"
   },
   "arms": {
@@ -13,79 +13,76 @@
   },
   "checks": {
     "simulator": {
-      "evidence": "2 live task(s) (+0 degenerate) on n=1485 B-rows scored against 3515 A-rows; comparator PATH A (GBM incumbent); table 41 cols / 5000 customers; brain+ledger 2 task(s); WARNING: negative control uninformative on 1/2 trait(s) (dose_response_curve) \u2014 R2 < -1 is a conditioning artifact of the wide design, so 'control below brain' proves nothing there",
-      "working": false
+      "evidence": "2 live task(s) (+0 degenerate) on n=1485 B-rows scored against 3515 A-rows; comparator PATH A (GBM incumbent); table 41 cols / 5000 customers; brain+ledger 2 task(s)",
+      "working": true
     }
   },
   "columns": {
     "brain": {
       "tasks": [
         {
-          "brain": 0.316397,
-          "ci_hi": 0.000482,
-          "ci_lo": 7.5e-05,
+          "brain": 0.315912,
+          "ci_hi": 0.000452,
+          "ci_lo": 8.2e-05,
           "comparator": "PATH A (GBM incumbent)",
-          "controls_substituted": "population-constant (R2=0) for ill-conditioned controls",
-          "controls_unreadable": [
-            "random",
-            "destroyed"
-          ],
-          "destroyed": 0.0,
+          "controls_substituted": null,
+          "controls_unreadable": [],
+          "destroyed": -0.189288,
           "metric": "R2 on the identified (customer x offer level) purchase rate (4 levels: [0, 1, 2, 3])",
           "n": 5000,
           "name": "dose_response_curve",
           "pathA": 0.303941,
-          "random": 0.0
+          "random": -0.172423
         },
         {
-          "brain": 0.245791,
-          "ci_hi": 0.03165,
-          "ci_lo": -0.025589,
+          "brain": 0.298316,
+          "ci_hi": 0.087559,
+          "ci_lo": 0.025589,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": 0.253872,
+          "destroyed": 0.238384,
           "metric": "share of customers whose declared offer optimum is the argmax of the level-conditional recovered response surface (one DEC-407 ridge head per identified level, fit on A cells, querying the donor at each action; ties -> lowest level; protocol v2, DEC-559/560)",
           "n": 1485,
           "name": "argmax_optimum",
           "pathA": 0.241751,
-          "random": 0.244444
+          "random": 0.258586
         }
       ]
     },
     "brain_ledger": {
       "tasks": [
         {
-          "brain": 0.302727,
-          "ci_hi": 0.000184,
-          "ci_lo": -0.000236,
+          "brain": 0.301712,
+          "ci_hi": 0.000165,
+          "ci_lo": -0.000259,
           "comparator": "PATH A (GBM incumbent)",
           "controls_substituted": null,
           "controls_unreadable": [],
-          "destroyed": -0.05368,
+          "destroyed": -0.024973,
           "metric": "R2 on the identified (customer x offer level) purchase rate (4 levels: [0, 1, 2, 3])",
           "n": 5000,
           "name": "dose_response_curve",
           "pathA": 0.303941,
-          "random": -0.047286
+          "random": -0.041824
         },
         {
-          "brain": 0.259259,
-          "ci_hi": 0.047138,
-          "ci_lo": -0.012795,
+          "brain": 0.30101,
+          "ci_hi": 0.089562,
+          "ci_lo": 0.026936,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": 0.243098,
+          "destroyed": 0.239057,
           "metric": "share of customers whose declared offer optimum is the argmax of the level-conditional recovered response surface (one DEC-407 ridge head per identified level, fit on A cells, querying the donor at each action; ties -> lowest level; protocol v2, DEC-559/560)",
           "n": 1485,
           "name": "argmax_optimum",
           "pathA": 0.241751,
-          "random": 0.255892
+          "random": 0.241077
         }
       ]
     }
   },
   "diagnostics": {},
-  "evidence": "[simulator] FAILED: 2 live task(s) (+0 degenerate) on n=1485 B-rows scored against 3515 A-rows; comparator PATH A (GBM incumbent); table 41 cols / 5000 customers; brain+ledger 2 task(s); WARNING: negative control uninformative on 1/2 trait(s) (dose_response_curve) \u2014 R2 < -1 is a conditioning artifact of the wide design, so 'control below brain' proves nothing there",
+  "evidence": "[simulator] OK: 2 live task(s) (+0 degenerate) on n=1485 B-rows scored against 3515 A-rows; comparator PATH A (GBM incumbent); table 41 cols / 5000 customers; brain+ledger 2 task(s)",
   "excluded": [],
   "identified": {
     "customers": 5000,
@@ -104,14 +101,14 @@
     "source": "/home/austin_whaley/wonderland_work/demo_v2/path_a/path_a_wide_table.parquet"
   },
   "products": {
-    "path": "/home/austin_whaley/wonderland_work/cfm_v2k",
-    "registry_sha256": "79f9768d51205252",
-    "tag": "0.11.0r490759-b64d256e3lr3e-04o4c3b5899"
+    "path": "/home/austin_whaley/wonderland_work/cfm_v2k_vf2",
+    "registry_sha256": "6fe25b2b9bcfbad5",
+    "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
   },
   "splits": {
     "n_fit_A": 3515,
     "n_score_B": 1485,
     "source": "encoder_samples"
   },
-  "working": false
+  "working": true
 }

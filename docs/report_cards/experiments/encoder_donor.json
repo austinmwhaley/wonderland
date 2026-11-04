@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "d5df3a2c1211c402",
-    "command": "scripts/measure_donor.py",
-    "generated_at": "2026-11-04T03:59:06+00:00",
-    "git_commit": "8b7ac49e651d2009b65cdde8ba46b6984c8ecf8a",
+    "behavior_hash": "c9f26925b418b284",
+    "command": "scripts/measure_donor.py --products /home/austin_whaley/wonderland_work/cfm_v2k_vf2",
+    "generated_at": "2026-11-04T18:47:17+00:00",
+    "git_commit": "4406c1ccb6bca20d39017225acc6cf4bfeaf2458",
     "producer": "measure_donor.py"
   },
   "complete": true,
@@ -18,9 +18,9 @@
   "n_B": 1485,
   "note": "raw and fair 38-column matrices are value-identical on this stream (recorded, not assumed); controls broken on fit+score sides (controls_matched, SEED); head = the shipping standardized ridge, one encoding over A+B, fit on A scored on B; E = stored state_embeddings (read, not re-encoded)",
   "products": {
-    "path": "/home/austin_whaley/wonderland_work/cfm_v2k",
-    "registry_sha256": "79f9768d51205252",
-    "tag": "0.11.0r490759-b64d256e3lr3e-04o4c3b5899"
+    "path": "/home/austin_whaley/wonderland_work/cfm_v2k_vf2",
+    "registry_sha256": "6fe25b2b9bcfbad5",
+    "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
   },
   "raw_equals_fair": true,
   "results": {
@@ -100,47 +100,47 @@
       "table_seq_E": 0.4449639975661983
     }
   },
-  "seconds": 3.9,
-  "tag": "0.11.0r490759-b64d256e3lr3e-04o4c3b5899",
+  "seconds": 5.2,
+  "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899",
   "targets": {
     "y_churn_90": {
-      "E": 0.7449259731346211,
-      "ci_hi": 0.11241628617990135,
-      "ci_lo": 0.002356557468001972,
+      "E": 0.7565447592901264,
+      "ci_hi": 0.11427639135708685,
+      "ci_lo": 0.0034769113424806906,
       "degenerate": false,
-      "destroyed": 0.4634768114521032,
+      "destroyed": 0.536351603098343,
       "fair": 0.6799686243749388,
       "metric": "auc",
-      "random": 0.5035787822335523,
+      "random": 0.5501029512697323,
       "raw": 0.6799686243749388,
       "table": 0.6799686243749388,
-      "table_E": 0.738846945778998
+      "table_E": 0.7407588979311697
     },
     "y_orders_90": {
-      "E": 0.6117904585792844,
-      "ci_hi": 0.023559212285281766,
-      "ci_lo": -0.023040713891398397,
+      "E": 0.619375347180017,
+      "ci_hi": 0.024424604176074692,
+      "ci_lo": -0.06488511188003124,
       "degenerate": false,
-      "destroyed": -0.037840808204780974,
+      "destroyed": -0.024396648774543506,
       "fair": 0.6046734029409124,
       "metric": "r2",
-      "random": -0.02388188528744717,
+      "random": -0.04532454216583992,
       "raw": 0.6046734029409124,
       "table": 0.6046734029409124,
-      "table_E": 0.6029028891836583
+      "table_E": 0.5821880475654799
     },
     "y_value_90": {
-      "E": 0.5807031643028926,
-      "ci_hi": 0.01210418462809476,
-      "ci_lo": -0.022297856508525664,
+      "E": 0.6095327288000871,
+      "ci_hi": 0.010804241215143964,
+      "ci_lo": -0.05494529795739912,
       "degenerate": false,
-      "destroyed": -0.02015819197049007,
+      "destroyed": -0.04498782862607764,
       "fair": 0.5951598499222386,
       "metric": "r2",
-      "random": -0.04034076678706877,
+      "random": -0.0622013191374875,
       "raw": 0.5951598499222386,
       "table": 0.5951598499222386,
-      "table_E": 0.5897682171884446
+      "table_E": 0.5733830151171257
     }
   }
 }

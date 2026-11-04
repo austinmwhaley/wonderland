@@ -1,15 +1,15 @@
 {
   "_meta": {
-    "behavior_hash": "d5df3a2c1211c402",
-    "command": "scripts/measure_runtime.py",
-    "generated_at": "2026-11-04T04:04:08+00:00",
-    "git_commit": "8b7ac49e651d2009b65cdde8ba46b6984c8ecf8a",
+    "behavior_hash": "c9f26925b418b284",
+    "command": "scripts/measure_runtime.py --products /home/austin_whaley/wonderland_work/cfm_v2k_vf2",
+    "generated_at": "2026-11-04T18:54:25+00:00",
+    "git_commit": "4406c1ccb6bca20d39017225acc6cf4bfeaf2458",
     "producer": "measure_runtime.py"
   },
   "artifact_load_s": 0.02,
   "artifact_save_s": 0.02,
   "close_seconds": 0.01,
-  "cold_seconds": 14.13,
+  "cold_seconds": 17.75,
   "complete": true,
   "data": "/tmp/opencode/t0_loop/ref_v3b_6k",
   "device": "cpu",
@@ -24,7 +24,7 @@
     "n_absorbed": 0,
     "n_embeddings": 5000,
     "n_idle": 5000,
-    "wall_seconds": 0.66
+    "wall_seconds": 3.45
   },
   "load_artifact_s": 0.17,
   "load_data_s": 0.26,
@@ -34,15 +34,15 @@
   "n": 5000,
   "n_entities": 600,
   "n_expected": 5000,
-  "peak_rss_mb": 3381.9,
+  "peak_rss_mb": 3355.8,
   "products": {
-    "path": "/home/austin_whaley/wonderland_work/cfm_v2k",
-    "registry_sha256": "79f9768d51205252",
-    "tag": "0.11.0r490759-b64d256e3lr3e-04o4c3b5899"
+    "path": "/home/austin_whaley/wonderland_work/cfm_v2k_vf2",
+    "registry_sha256": "6fe25b2b9bcfbad5",
+    "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
   },
-  "rows_per_s": 53.0,
+  "rows_per_s": 34.8,
   "rss_mb_at_load": 556.9,
-  "seconds": 111.9,
+  "seconds": 159.7,
   "slice_cap_gb": 32.0,
   "state_dims": {
     "forecast": 835,
@@ -54,6 +54,6 @@
   "state_forward_cold_s": 5.36,
   "state_forward_warm_s": 0.316,
   "state_rows_per_s": 1896.6,
-  "tag": "0.11.0r490759-b64d256e3lr3e-04o4c3b5899",
-  "warm_seconds": 84.96
+  "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899",
+  "warm_seconds": 129.21
 }

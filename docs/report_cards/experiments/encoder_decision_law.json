@@ -1,15 +1,15 @@
 {
   "_meta": {
-    "behavior_hash": "d5df3a2c1211c402",
-    "command": "scripts/measure_decision_law.py",
-    "generated_at": "2026-11-04T04:23:30+00:00",
-    "git_commit": "5f4365bdefd5979ad2cfc9b4ae34d1cbbc42c5e2",
+    "behavior_hash": "c9f26925b418b284",
+    "command": "scripts/measure_decision_law.py --products /home/austin_whaley/wonderland_work/cfm_v2k_vf2",
+    "generated_at": "2026-11-04T18:49:44+00:00",
+    "git_commit": "4406c1ccb6bca20d39017225acc6cf4bfeaf2458",
     "producer": "measure_decision_law.py"
   },
   "complete": true,
   "decision_dose": {
-    "ci_hi": 0.028956228956228958,
-    "ci_lo": -0.026936026936026935,
+    "ci_hi": 0.08552188552188553,
+    "ci_lo": 0.024915824915824916,
     "complete": true,
     "levels": [
       0,
@@ -20,49 +20,49 @@
     "n": 1485,
     "n_levels": 4,
     "oracle_ceiling": 0.6404,
-    "seconds": 9.5,
-    "share_E": 0.24579124579124578,
-    "share_destroyed": 0.25387205387205386,
-    "share_random": 0.24444444444444444,
+    "seconds": 2.4,
+    "share_E": 0.2983164983164983,
+    "share_destroyed": 0.2383838383838384,
+    "share_random": 0.2585858585858586,
     "share_table": 0.24377104377104378,
     "table_columns": 41,
     "thin_levels": []
   },
   "decision_invariance": {
     "check1_cutoff_band": {
-      "band_E": 0.00029722013277933,
-      "band_S": 7.415168852276111e-07,
+      "band_E": 0.015569581650197506,
+      "band_S": 6.199199447110004e-07,
       "close_at": 1735689600.0,
       "device": "cuda:0",
-      "max_delta_E": 9.1552734375e-05,
-      "max_delta_S": 3.5762786865234375e-07,
+      "max_delta_E": 0.0009585114639776293,
+      "max_delta_S": 2.384185791015625e-07,
       "n": 5000,
       "n_customers_gapped": 5000,
       "ok": true,
       "p1_p2_bit_identical": true,
-      "p3_allow_E": 0.00118888053111732,
-      "p3_allow_S": 2.9660675409104442e-06,
-      "p3_max_delta_E": 0.0,
-      "p3_max_delta_S": 0.0,
-      "teeth_faded": 3.5762786865234375e-07,
+      "p3_allow_E": 0.062278326600790024,
+      "p3_allow_S": 2.4796797788440017e-06,
+      "p3_max_delta_E": 0.0009585114639776293,
+      "p3_max_delta_S": 2.980232238769531e-07,
+      "teeth_faded": 2.384185791015625e-07,
       "teeth_ok": true,
-      "teeth_raw": 1.0154677629470825,
+      "teeth_raw": 0.8501542806625366,
       "ulp": 1.1920928955078125e-07,
       "ulp_cover": 4,
-      "why": "P1/P2 bit-identical=True; P1 vs stored S 3.576e-07 (band 7.415e-07) / E 9.155e-05 (band 2.972e-04); P3 (eager) S 0.000e+00 / E 0.000e+00 (<= 4x band); teeth faded 3.576e-07 < raw 1.015e+00 over 5000 gapped customers; close_at 1735689600.0"
+      "why": "P1/P2 bit-identical=True; P1 vs stored S 2.384e-07 (band 6.199e-07) / E 9.585e-04 (band 1.557e-02); P3 (eager) S 2.980e-07 / E 9.585e-04 (<= 4x band); teeth faded 2.384e-07 < raw 8.502e-01 over 5000 gapped customers; close_at 1735689600.0"
     },
     "check2_marker_invariance": {
       "complete": true,
       "n": 1485,
       "none_bucket_idx": 0,
       "note": "target_key is a lab marker (which arm randomized this event); the pre-registered risk is that the trunk learned it \u2014 recorded, not gated",
-      "ok": false,
-      "seconds": 120.0,
-      "share_E_prime": 0.23636363636363636,
-      "share_E_stored": 0.24579124579124578
+      "ok": true,
+      "seconds": 34.7,
+      "share_E_prime": 0.30033670033670035,
+      "share_E_stored": 0.2983164983164983
     },
     "check3_level_teeth": {
-      "abs_delta_inf": 0.29137298632135944,
+      "abs_delta_inf": 313.1736521923858,
       "complete": true,
       "ok": true,
       "permutation": [
@@ -71,7 +71,7 @@
         3,
         0
       ],
-      "share_permuted": 0.25925925925925924,
+      "share_permuted": 0.24511784511784512,
       "share_table": 0.24377104377104378
     },
     "complete": true
@@ -105,17 +105,17 @@
     "n_train": 1039,
     "protocol": "v1 port (DEC-585): last-logged email_send offer; as-of state; uniform IPS p0=1/K; standardized-ridge head (replaces legacy XGB \u2014 B-only simple-head doctrine); legacy channel arm RETIRED (demo_v2 randomizes offer only)",
     "random": 181.31,
-    "seconds": 1.0
+    "seconds": 0.4
   },
   "device": "cuda:0",
   "n_A": 3515,
   "n_B": 1485,
   "n_customers": 5000,
   "products": {
-    "path": "/home/austin_whaley/wonderland_work/cfm_v2k",
-    "registry_sha256": "79f9768d51205252",
-    "tag": "0.11.0r490759-b64d256e3lr3e-04o4c3b5899"
+    "path": "/home/austin_whaley/wonderland_work/cfm_v2k_vf2",
+    "registry_sha256": "6fe25b2b9bcfbad5",
+    "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
   },
-  "seconds": 844.5,
-  "tag": "0.11.0r490759-b64d256e3lr3e-04o4c3b5899"
+  "seconds": 145.3,
+  "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
 }
