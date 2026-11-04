@@ -10989,3 +10989,69 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     but **not executed**; the next forward run pre-registers its one-axis implementation
     and its falsifier, then runs the move + re-stamp (S6 chain + B-row producers, no-op
     proof). No behavior change has been made by this DEC.
+  - **Status (final, 2026-11-04).** The order channel was implemented and tested (row
+    readout; lab win 0.8185 vs pooled bigram 0.83574 on the heterogeneous fixture; the
+    real-stream B4.1/B4.2/B6.2 rows unchanged). The canonical encoder stays at
+    `d5df3a2c`; the decision/value axis is the active program (DEC-589 head protocol;
+    Step 2 = the statistic bank below).
+
+- **DEC-590 (the statistic-bank architecture — the macro answer to the repeated failures;
+  decided 2026-11-04 at the operator's directive: understand the repeated macro problems
+  and build an architecture that adapts to all of them).**
+  - **NODE:** G (the architecture) + B4.1/B4.2/B6.2 + E1.
+  - **The repeated macro problems (all measured this cycle).** (1) *Representation*: the
+    state is a mean; it carries first-order histograms (0.98–0.99) but not order (0.502),
+    not the action-response (dose at chance), not the level/value (raw table wins).
+    (2) *Head*: the same E underreports under a ridge vs a calibrated head (order 0.9523 vs
+    0.8591; OPE 152.93 constant vs 230.70 non-degenerate; the collapse was additive).
+    (3) *Instrument*: the measurement can be blind (next_event headroom 0.0483 nats; the
+    ridge; the missing cut target; the unit bug). (4) *Target*: the served state is not
+    trained on the deployed after-cut target (`y[:, :-1]` excludes the final tick).
+    (5) *Identity/config*: a retrain with a different config confounds (the counter/batch/lr
+    mismatch). (6) *Contract*: a linear consumer of a fixed mean cannot form a conditional
+    without the conditional row being computed inside the encoder.
+  - **Common cause.** The encoder is a single statistic plus ad-hoc readouts, heads and
+    measurements. Every new requirement is a new functional (marginal, order, response,
+    value, uncertainty), and each is discovered separately, measured with a different head
+    and patched with a one-off. The architecture never represents the *family of
+    functionals* the donor must support.
+  - **Decision — the sufficient-statistic bank.** The encoder exposes **named linear
+    blocks**, each a learned monoid over the stream, with the correct algebra per quantity:
+    (1) **mass** — additive, no `(1−a)` normalization, monotone; (2) **shape** — bounded,
+    contractive, normalized at read; (3) **order** — pair/co-occurrence + Lévy area, the
+    row readout template; (4) **response** — per-action outcome curve from the randomized
+    cells, shrunk to the population; (5) **value** — future level/quantiles from the mass
+    history; (6) **uncertainty** — coverage/missingness. Each block: `O(1)` state, exactly
+    mergeable, learned projections, linear readout, named on the served object. The
+    consumer reads the blocks it needs; the contract is `E = [mass | shape | order |
+    response | value | uncertainty]`.
+  - **The learning rule.** The objective is on the **served E** (not a head-side readout):
+    predict the future block values from the cut (the label tail; no future as input). One
+    block per run; randomized/holdout controls for the response block; the frozen bars
+    unchanged.
+  - **The measurement rule.** Per-block known-truth fixtures; **both** a ridge and a
+    calibrated (logistic/count) head reported; the per-block decodability contract; the
+    marker/null controls. A block that only moves under one head is recorded as
+    head-conditional, not adopted.
+  - **Why it adapts.** A new requirement becomes a new block, not a new architecture: the
+    same additive monoid, the same served-object objective, the same measurement contract.
+    The row readout is the worked template; the counter/measure are the hand-built
+    prototypes; the blocks generalize them and make them first-class.
+  - **Rejected.** (i) More capacity or another elementwise recurrence — falsified and
+    blind-instrument-tested. (ii) Another one-off head — the head protocol showed it can
+    fix a collapse but not create information. (iii) A table/ledger — the operator's
+    constraint and the PATH-A circularity. (iv) More objectives without the block contract
+    — the served object is the contract.
+  - **Sequence.** (1) Formalize the block contract (this DEC). (2) **Response block**
+    (B4.1/B4.2) — the missing action statistic; test on a randomized action fixture and the
+    real stream; the OPE T-learner is the consumer. (3) **Value block** (B6.2) — the
+    level/quantile statistic; test against the raw/fair table. (4) Order/mass/shape blocks
+    already exist (row readout, counter, measure); name them. (5) Uncertainty block. (6) The
+    served-object objective and the head-robust measurement per block.
+  - **Principles.** Universal/Adaptive (schema-derived blocks, learned projections) ·
+    Lawful (correct algebra per quantity; monoid) · Efficient (constant state, linear time,
+    mergeable) · Robust (bounded/contractive; fail-safe) · Honest (served-object objective,
+    both heads, controls) · Accessible (linear named blocks) · Diagnosable (per-block
+    isolation).
+  - **Status.** Decided; no behavior change in this entry. The response block is the first
+    implementation (Step 2 of DEC-589's recommendation), then the value block.

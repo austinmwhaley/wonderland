@@ -242,6 +242,14 @@ histogram half; it is not the missing piece.
   (level-2 signature / covariance + Lévy area; delta-rule only if recall is binding) with a
   transition-matrix objective — not the mass/shape split, which is already largely effective
   at the interface.**
+- **Architecture: the sufficient-statistic bank (DEC-590, 2026-11-04).** The repeated
+  failures are one class: a single mean state plus ad-hoc readouts/heads/measurements. The
+  encoder now exposes **named linear blocks** — mass · shape · order · response · value ·
+  uncertainty — each a learned monoid with the correct algebra, `O(1)` state, exactly
+  mergeable, and a linear readout. The objective is on the **served E** (the after-cut
+  label tail, no future as input); the measurement reports both ridge and calibrated heads
+  per block. The row readout is the worked template; the response block (B4.1/B4.2) and the
+  value block (B6.2) are the first implementations.
 - **Route: R4 (certification-first, operator 2026-11-03).** The 11 open B sub-problems
    are the PRIMARY progress track. DEC-585 pre-registered the 8 rows it covers (B1.2,
    B4.1, B4.2, B4.3, B5.2, B6.2, B7.1, B8.1) as 5 cfm_v2k producers with frozen gate
@@ -299,24 +307,20 @@ next question is the learned shape, not another consumer tuning pass.
 
 ## Next 3 actions
 
-1. **Decision/value axis (B4.1/B4.2/B6.2 — the active program).** DEC-589 head protocol
-   (diagnostic, receipt `decision_head_protocol.json`): OPE additive ridge = constant level-1
-   policy (IPS 152.93); per-action T-learner = non-degenerate (0.20/0.30/0.20/0.30) IPS
-   **230.70**, table T-learner 216.69, E−table diff +14.01 CI **[−36.19, +55.0]** (not
-   significant) — the collapse was an additive-head artifact, not an encoder property.
-   Dose logistic 0.2572 vs chance 0.25; donor ridge best (value 0.5807 / orders 0.6118),
-   Tweedie ≈0, log1p worse — B4.1/B6.2 are representation gaps, not head gaps. Next: Step 2
-   of the recommendation — the action-response readout (B4.1/B4.2) and the level/value
-   readout (B6.2), one axis each, on the served path; gates untouched.
-2. **Re-run the shape battery after the change** (same protocol, same split): the target is
-   history-transition decode above the measured **0.502** and future transition at or above
-   the exact counter, with the first-order rows not regressing. This is the Phase-1
-   acceptance; a failure is recorded and reverted, not narrated.
-3. **Then the real-stream rows.** Only after the battery and the order fixture move: the
-   B3.2-lineage shape probes, B6.2's 90-day value/orders, and B4.1/B4.2 if the order channel
-   is what the level-conditional response needs. The 3 remaining B UNKNOWNs (B5.1, B6.3,
-   B7.2) keep their own DECs; lab receipts never flip a B row (DEC-576). DEC-586 (intent
-   fixture) stays pending operator approval and is not on this path.
+1. **Statistic bank, response block first (DEC-590; B4.1/B4.2).** Implement the
+   per-customer action-response block (per-arm outcome from the randomized cells, shrunk to
+   the population; served as a K-vector; the OPE T-learner is the consumer). Pre-register
+   the one-axis run, test on a randomized action fixture, then cfm_v2k. The head protocol
+   already showed the OPE collapse is an additive-head artifact (152.93 -> 230.70, E-table
+   +14.01 CI [-36.19, +55.0]); the response block must make the E-table difference
+   significant, not just non-degenerate.
+2. **Value block (B6.2).** Per-customer future value/order level and quantiles from the
+   mass history, served as a named block, with a count/two-part head; the raw/fair table is
+   the comparator. The head protocol showed ridge is best (0.5807/0.6118), Tweedie/log1p
+   worse — the gap is the missing level statistic.
+3. **Name the existing blocks** (mass = counter/measure, shape = donor, order = row
+   readout) and the uncertainty block; then the served-object objective and the head-robust
+   measurement per block. No gate/bar/exclusion edits.
 
 ## Operating facts
 
