@@ -2,8 +2,8 @@
   "_meta": {
     "behavior_hash": "d5df3a2c1211c402",
     "command": "measure_decision_head_protocol.py",
-    "generated_at": "2026-11-04T17:32:28+00:00",
-    "git_commit": "161fcd3619f01ca3cb074d957139f4509ee388ab",
+    "generated_at": "2026-11-04T17:37:34+00:00",
+    "git_commit": "a0409e191d666fdeef59bb754511a16bbf6003c4",
     "producer": "measure_decision_head_protocol.py"
   },
   "complete": true,
@@ -24,6 +24,16 @@
       },
       "ips": 221.28,
       "n_unique_actions": 1
+    },
+    "E_resp_t_learner": {
+      "action_share": {
+        "0": 0.2422,
+        "1": 0.3184,
+        "2": 0.1233,
+        "3": 0.3161
+      },
+      "ips": 190.63,
+      "n_unique_actions": 4
     },
     "E_t_learner": {
       "action_share": {
@@ -59,8 +69,16 @@
       ],
       "n_A": 3515,
       "n_B": 1485,
-      "share_E_logistic": 0.257239
+      "share_E_logistic": 0.257912
     },
+    "resp_diff_E_minus_table": {
+      "ci95": [
+        -75.03,
+        19.2
+      ],
+      "point": -26.06
+    },
+    "response_block_argmax_share": 0.2956,
     "t_learner_diff_E_minus_table": {
       "ci95": [
         -36.19,
@@ -89,5 +107,5 @@
       "n_unique_actions": 4
     }
   },
-  "seconds": 7.5
+  "seconds": 8.3
 }

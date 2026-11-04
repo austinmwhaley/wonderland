@@ -313,7 +313,11 @@ next question is the learned shape, not another consumer tuning pass.
    the one-axis run, test on a randomized action fixture, then cfm_v2k. The head protocol
    already showed the OPE collapse is an additive-head artifact (152.93 -> 230.70, E-table
    +14.01 CI [-36.19, +55.0]); the response block must make the E-table difference
-   significant, not just non-degenerate.
+   significant, not just non-degenerate. **Response block v1 (hand-computed
+   next-purchase, shrunk) was NEGATIVE:** E_resp 190.63 vs E 230.70; E_resp−table
+   −26.06 CI [−75.03,+19.2]; block argmax 0.2956. The proxy is noisy and is not the
+   90-day margin. Next: the **learned** response block (effect objective on the randomized
+   action×outcome pairs) or the **value block** (B6.2).
 2. **Value block (B6.2).** Per-customer future value/order level and quantiles from the
    mass history, served as a named block, with a count/two-part head; the raw/fair table is
    the comparator. The head protocol showed ridge is best (0.5807/0.6118), Tweedie/log1p

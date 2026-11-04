@@ -57,7 +57,7 @@ brain + ledger = delivery.** Ledger points never count as a brain win.
 
 ## 2. Principles that bind every run
 
-- **Conflict order:** Robust → Universal → Adaptive → Lawful → Efficient → Honest.
+- **Conflict order:** Robust → Adaptive → Universal → Lawful → Efficient → Honest.
   Lawful and Robust outrank convenience.
 - **The one rule:** never encode an answer the system could learn or derive.
 - **Anti-overfit clause:** Layer B is self-supervised only; known use cases may VETO

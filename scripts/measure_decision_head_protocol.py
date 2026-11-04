@@ -128,6 +128,68 @@ def _boot_diff(pol_E, pol_T, actions, reward, te, p0, n=400, seed=1):
     return float(np.percentile(d, 2.5)), float(np.percentile(d, 97.5))
 
 
+def _response_block(stream, keys, levels):
+    """Per-customer response curve: mean next-purchase outcome per offer level in the
+    randomized history, shrunk to the population mean. A served statistic (no table)."""
+    from looking_glass.stream_adapter import to_ts_expr
+
+    df = stream.with_columns(to_ts_expr(pl.col("event_ts")).alias("ts"))
+    send = (
+        df.filter(pl.col("event_type") == "email_send")
+        .with_columns(
+            pl.col("event_attributes").str.json_path_match("$.offer").cast(pl.Int64).alias("offer")
+        )
+        .select(["customer_key", "ts", "offer"])
+        .sort(["customer_key", "ts"])
+    )
+    send = send.with_columns(pl.col("ts").shift(-1).over("customer_key").alias("nsend"))
+    purch = (
+        df.filter(pl.col("event_type") == "purchase")
+        .select(["customer_key", "ts", "value"])
+        .sort(["customer_key", "ts"])
+    )
+    j = send.join_asof(
+        purch.rename({"ts": "pts", "value": "pvalue"}),
+        left_on="ts",
+        right_on="pts",
+        by="customer_key",
+        strategy="forward",
+    )
+    j = j.with_columns(
+        pl.when(
+            pl.col("pts").is_not_null()
+            & pl.col("nsend").is_not_null()
+            & (pl.col("pts") <= pl.col("nsend"))
+        )
+        .then(pl.col("pvalue"))
+        .otherwise(0.0)
+        .alias("outcome")
+    )
+    per = j.group_by(["customer_key", "offer"]).agg(
+        pl.col("outcome").mean().alias("resp"), pl.len().alias("n")
+    )
+    pop_mean = (
+        per.group_by("offer")
+        .agg((pl.col("resp") * pl.col("n")).sum() / pl.col("n").sum())
+        .rename({"resp": "pop"})
+    )
+    k = float(per["n"].median() or 1.0)
+    per = per.join(pop_mean, on="offer").with_columns(
+        ((pl.col("resp") * pl.col("n") + k * pl.col("pop")) / (pl.col("n") + k)).alias("shrunk")
+    )
+    piv = per.pivot(index="customer_key", columns="offer", values="shrunk")
+    pm = dict(zip(pop_mean["offer"].to_list(), pop_mean["pop"].to_list()))
+    key_df = pl.DataFrame({"customer_key": keys})
+    m = key_df.join(piv, on="customer_key", how="left")
+    for lvl in levels:
+        col = str(lvl)
+        if col not in m.columns:
+            m = m.with_columns(pl.lit(pm.get(lvl, 0.0)).alias(col))
+        else:
+            m = m.with_columns(pl.col(col).fill_null(pm.get(lvl, 0.0)))
+    return m.select([str(lvl) for lvl in levels]).to_numpy().astype(float)
+
+
 def main(argv=None) -> int:
     ensure_boundary()
     ap = argparse.ArgumentParser(description=__doc__)
@@ -162,7 +224,17 @@ def main(argv=None) -> int:
                 "n_unique_actions": int(len(np.unique(pol))),
                 "action_share": {str(lvl): round(float(np.mean(pol == lvl)), 4) for lvl in levels},
             }
-    lo, hi = _boot_diff(
+    resp = _response_block(stream, pop, levels)
+    E_resp = np.hstack([X_E, resp])
+    for head, fn in (("t_learner", _policy_tlearner),):
+        pol = fn(E_resp, actions, reward, levels, tr, te)
+        res[f"E_resp_{head}"] = {
+            "ips": round(_ips(pol, actions, reward, te, p0), 2),
+            "n_unique_actions": int(len(np.unique(pol))),
+            "action_share": {str(lvl): round(float(np.mean(pol == lvl)), 4) for lvl in levels},
+        }
+    res["response_block_argmax_share"] = round(float(np.mean(resp.argmax(1) == want)), 4)
+    lo_e, hi_e = _boot_diff(
         _policy_tlearner(X_E, actions, reward, levels, tr, te),
         _policy_tlearner(X_T, actions, reward, levels, tr, te),
         actions,
@@ -172,7 +244,19 @@ def main(argv=None) -> int:
     )
     res["t_learner_diff_E_minus_table"] = {
         "point": round(res["E_t_learner"]["ips"] - res["table_t_learner"]["ips"], 2),
-        "ci95": [round(lo, 2), round(hi, 2)],
+        "ci95": [round(lo_e, 2), round(hi_e, 2)],
+    }
+    lo_r, hi_r = _boot_diff(
+        _policy_tlearner(E_resp, actions, reward, levels, tr, te),
+        _policy_tlearner(X_T, actions, reward, levels, tr, te),
+        actions,
+        reward,
+        te,
+        p0,
+    )
+    res["resp_diff_E_minus_table"] = {
+        "point": round(res["E_resp_t_learner"]["ips"] - res["table_t_learner"]["ips"], 2),
+        "ci95": [round(lo_r, 2), round(hi_r, 2)],
     }
 
     # ---- Dose: per-level ridge (gate) vs multinomial logistic (diagnostic) ----

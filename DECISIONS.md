@@ -10696,7 +10696,7 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     E efficient, R robust, H honest, X accessible, D diagnosable) + the One Rule (1R);
     max 27. Scores are **alignment**, not expected effect: a mechanism can align perfectly
     and still be capability-irrelevant (e.g. "do nothing"), so the *shape role* gates entry
-    to the program. Conflict order (Robust → Universal → Adaptive → Lawful → Efficient →
+    to the program. Conflict order (Robust → Adaptive → Universal → Lawful → Efficient →
     Honest) breaks near-ties; it does not let a low-capability mechanism outrank a
     high-capability one.
 
@@ -10787,6 +10787,15 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     (the action-response and level/value statistics are not in E). The next work is Step 2
     of the recommendation: the action-response readout (B4.1/B4.2) and the level/value
     readout (B6.2), one axis each, on the served path; the frozen gates stay untouched.
+  - **Response block v1 (2026-11-04, same receipt) — NEGATIVE, and it sharpens the design.**
+    The hand-computed block (per-customer mean next-purchase outcome per offer in the
+    randomized history, shrunk to the population) appended to E: the OPE T-learner gives
+    **IPS 190.63** vs E-alone **230.70** and table **216.69**; the E_resp−table diff is
+    **−26.06, CI [−75.03, +19.2]**; the block's argmax share is 0.2956 vs chance 0.25.
+    The next-purchase proxy is noisy and is not the 90-day margin reward; the block hurts
+    the policy. The **learned** response block (effect objective on the randomized
+    action×outcome pairs, not a hand-computed proxy) and the **value block** (B6.2) are the
+    next implementations. The architecture stands; the first statistic was the wrong one.
 
 - **DEC-588 (the shape problem is the central problem; the mass/shape split was tried at the
   interface, not in the state; the combination program; operator authorization to iterate.
@@ -11055,3 +11064,23 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     isolation).
   - **Status.** Decided; no behavior change in this entry. The response block is the first
     implementation (Step 2 of DEC-589's recommendation), then the value block.
+
+
+- **DEC-591 (adaptability elevated in the principles — operator directive 2026-11-04).**
+  - **Directive.** "We need to prioritize adaptability higher in our principles." The
+    conflict order is now **Robust → Adaptive → Universal → Lawful → Efficient → Honest**
+    (was Robust → Universal → Adaptive → …). `AGENTS.md`, `PROMPT_FORWARD.md` and the
+    DEC-590 scoring note are updated consistently.
+  - **The adaptive-architecture rule (binding).** A new requirement becomes a **first-class
+    extension** — a block, a statistic, a contract, a measurement — never a one-off readout,
+    head, or measurement patch. The design is judged by **how many new functionals it can
+    absorb without re-architecture**. The statistic bank (DEC-590) is the first instance;
+    the row readout is its worked template.
+  - **Why.** The cycle's repeated failures were the same class: a fixed mean plus ad-hoc
+    extensions, each discovered separately. Elevating Adaptive above Universal makes the
+    architecture's extensibility a first-order acceptance criterion, while Robust stays
+    first (fail-safe) and Lawful remains the algebra constraint.
+  - **Rejected.** Keeping the old order and treating adaptability as a post-hoc design
+    review; making Adaptive first (Robust must stay first — a capability that can diverge
+    or silently clamp is not a capability).
+  - **Principle.** Adaptive · Robust · Diagnosable. No behavior move (docs only).

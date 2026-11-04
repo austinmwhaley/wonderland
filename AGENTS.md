@@ -100,8 +100,12 @@ must not contradict them.
    design space is inert: it is how we turn "the embedding isn't good enough" into "axis X is
    the bottleneck, here is the fix, and here is what it costs axis Y."
 
-**Conflict order:** Robust → Universal → Adaptive → Lawful → Efficient → Honest, with
-**Lawful (compositionality/equivariance) and Robust outranking convenience**.
+**Conflict order:** Robust → Adaptive → Universal → Lawful → Efficient → Honest, with
+**Adaptive and Robust outranking convenience, and Lawful (compositionality/equivariance)
+second only to them**. Adaptive is second because the system must absorb new functionals by
+construction, not by re-architecture (operator directive, DEC-591): a new requirement is a
+first-class extension (a block/statistic/contract), never a one-off readout, head or
+measurement.
 
 ### The loop ↔ axis contract (Diagnosable, in practice)
 
@@ -404,7 +408,7 @@ obeying the principles*. Operate as an explicit loop, every iteration:
 
 **Every decision must cite a principle**, and a change that improves a metric but violates a
 principle is *wrong*. When principles conflict, apply the conflict order
-(**Robust → Universal → Adaptive → Lawful → Efficient → Honest**; Lawful and Robust outrank
+(**Robust → Adaptive → Universal → Lawful → Efficient → Honest**; Lawful and Robust outrank
 convenience).
 
 ### Decomposition (binding)
