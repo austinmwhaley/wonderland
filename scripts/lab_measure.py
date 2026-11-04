@@ -8,7 +8,7 @@ measures, on the SAME held-out B-future rows:
   * the encoder's next-type NLL (one-vs-rest shipping `_ridge_head` per class, fit on the A
     customers only, softmax with a 1e-15 p-floor),
   * the 1-gram baseline NLL (Laplace +1 MLE over the full history, model-free),
-  * the closed-form oracle ceiling (oracle.json, bits -> nats),
+  * the closed-form oracle ceiling (oracle.json, nats),
   * the speedometer g = (nll_enc - nll_oracle) / (nll_base - nll_oracle)  (g=0 ceiling, g=1
     baseline; frozen fallback: if nll_base <= nll_oracle on the finite sample, the
     closed-form baseline_ce replaces the denominator and both facts are recorded),
@@ -198,10 +198,10 @@ def _measure_pair(fixture_dir: Path, products: Path, as_of) -> dict:
 
     orc_path = fixture_dir / "oracle.json"
     orc = json.loads(orc_path.read_text()) if orc_path.exists() else {}
+    # transition_oracle writes NATS (np.log); the receipt and every NLL here are nats.
+    # The old x ln2 read was a unit error (DEC-583/586): it deflated the oracle by 30%.
     nll_oracle = orc.get("oracle_ce")
-    nll_oracle = nll_oracle * math.log(2.0) if nll_oracle is not None else None
     baseline_ce = orc.get("baseline_ce")
-    baseline_ce = baseline_ce * math.log(2.0) if baseline_ce is not None else None
 
     m = ~np.isnan(nll_base) & ~np.isnan(nll_enc)
     nll_base, nll_enc = nll_base[m], nll_enc[m]

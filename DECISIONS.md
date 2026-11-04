@@ -10776,7 +10776,7 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     and were judged on an instrument with no headroom.
     The gap is therefore **not** "we never tried the split"; it is "the law lives at the
     interface, the trunk still blends, and no objective pressures general shape."
-  - **Decision — the combination (full statement in `docs/SHAPE_PROBLEM.md`).**
+  - **Decision — the combination (recorded here; this DEC is the problem statement).**
     (1) **State algebra:** two channels, two algebras — `m_t` mass (additive, no `(1−a)`
     normalization, monotone compression) and `s_t` shape (bounded/contractive, per-customer
     normalized), published separately (polar interface law);
@@ -10823,6 +10823,30 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     mean cannot carry. Geometry is separate: eff_rank 2.4 coexists with 0.99 histogram
     decode, so low rank ≠ low information; the geometry gate is not a shape-sufficiency
     measure.
+  - **Order-only fixture + before measurement (2026-11-04).** The battery says order is the
+    gap, so the fixture was built to isolate exactly that: the `persistence` knob makes
+    `P_i = (1−p)e_i + p·π`, which keeps the **marginal π exactly** while changing what
+    follows what. `order_shape` (`persistence=0.5`, snr=1.0, N=500) has a 1-gram marginal of
+    1.0618 nats and oracle H(P) 0.8366 → **0.2252 nats of order-only headroom** (vs 0.048
+    on the old next_event), and the lab gate passes 6/6 (oracle carried; negative and
+    adversarial not carried; leak has teeth). The current encoder was trained on the
+    positive fixture (defaults, all trunk flags off) and measured with `lab_measure`:
+    **g 8.022, nll_enc 0.9632 vs the pooled bigram baseline 0.8524 vs oracle 0.8366,
+    beats_base false (CI [0.0303, 0.1858] entirely above 0), eff_rank 1.094.** The
+    encoder is worse than a plain last-type→next-type table on a fixture whose only signal
+    is order — the state does not carry it. (Note: `lab_measure`'s "1-gram" baseline is a
+    pooled **bigram** — it uses the last type — which is exactly the right baseline for an
+    order fixture; g is ill-conditioned when that baseline is near the oracle, so
+    `beats_base` is the decisive test here.)
+  - **Staged Layer A change (not committed).** The `persistence` knob + `order_shape` use
+    case + the two gate dispatch entries are a 139-line diff at
+    `/tmp/opencode/order_shape_layerA.patch`; the tree was restored to behavior
+    `d5df3a2c` so the B receipts stay fresh until the change ships with its mandatory full
+    re-stamp (S6 chain + B producers). The fixture data and the `order_shape_before.json`
+    receipt remain (a development diagnostic, never B evidence). Two mechanism fixes landed
+    scripts-side: `transition_oracle` now reports the **1-gram marginal H(π)** as its
+    baseline (it had reported H(P), the transition-aware CE, contradicting its own
+    docstring), and `lab_measure` no longer multiplies the nats oracle by `ln 2`.
   - **Revised priority (recorded, not re-litigated).** The first carrier is the **order
     channel** (level-2 signature / covariance + Lévy area; delta-rule only if recall is
     binding), with an order objective (transition-matrix prediction). The mass/shape

@@ -29,6 +29,18 @@ known-truth streams (fixtures were pre-built, 0/32 ever run) before THE foundati
 real stream. Lab receipts are a development instrument — never B-row evidence on the main card;
 certification stays on the real stream.
 
+## The problem in plain terms (DEC-588)
+
+The encoder turns each customer's history into one vector. That vector is effectively a
+weighted average, so it holds **what** the customer does — how often they view/search/buy,
+their value profile — but not **what follows what** (the order/transition structure).
+Measured on cfm_v2k: 98–99% of the history's histogram/quantiles is recoverable from the
+vector, but only ~50% of the transition matrix. Decisions and the 90-day value/orders rows
+need the missing half. The fix is a small **order memory** in the state: pair statistics
+(what followed what) updated as events arrive, plus a training objective that predicts the
+next window's transition matrix. The mass/shape split was already tried and works for the
+histogram half; it is not the missing piece.
+
 ## Current state
 
 - **The one card is `REPORT_CARD.md`.** It contains, in order: **the plan section (the goal cut
@@ -192,6 +204,18 @@ certification stays on the real stream.
   window 22, Titans 20 — with **Phase 0 = the shape battery before any new architecture**
   (histogram/transition/quantile/persona decode from E vs the exact counter, plus a
   mixture-transition toy where pair statistics are necessary).
+- **Order-only fixture + before measurement (DEC-588, 2026-11-04).** The `persistence` knob
+  makes `P_i = (1−p)e_i + p·π`: the marginal π is identical for every customer, only the
+  transition structure differs. `order_shape` (p=0.5, N=500) has 0.2252 nats of order-only
+  headroom (vs 0.048 on next_event) and passes the lab gate 6/6. The current encoder on it:
+  **g 8.022, nll 0.9632 vs the pooled bigram 0.8524 vs oracle 0.8366, beats_base false,
+  eff_rank 1.094** — it is worse than a last-type→next-type table on a fixture whose only
+  signal is order. The Layer A diff is **staged** (`/tmp/opencode/order_shape_layerA.patch`,
+  139 lines); the tree is restored to behavior `d5df3a2c` so the B receipts stay fresh until
+  the change ships with its mandatory re-stamp. The fixture and the
+  `order_shape_before.json` diagnostic remain; two scripts-side fixes landed
+  (`transition_oracle` now reports the 1-gram marginal H(π); `lab_measure` no longer
+  multiplies nats by ln 2).
 - **Shape problem Phase 0 LANDED (DEC-588, 2026-11-04): the strong diagnosis is falsified and
   the problem is narrowed to ORDER.** `shape_battery.json` (cfm_v2k, n_B 1485, paired
   bootstrap): E decodes the **history's** type histogram 0.9943, gap quantiles 0.9766, value
@@ -263,22 +287,22 @@ next question is the learned shape, not another consumer tuning pass.
 
 ## Next 3 actions
 
-1. **AWAITING OPERATOR APPROVAL — DEC-586 package** (move + re-stamp, instrument unit
-   correction, fixture point). Nothing runs until then. The tree is clean at `aec6d3f`,
-   behavior `d5df3a2c`, B 17 PASS / 3 FAIL / 3 UNKNOWN.
-2. **On approval — the DEC-586 chunk, in order:** (a) the 4 behavior edits + the
-   `lab_measure` unit correction; (b) gates (principle-audit `--all --strict` rc=0, ruff,
-   fast-tier pytest, `plan.py --check`); (c) generate the intent fixture
-   (positive/negative/adversarial, `rabbit_hole/data/lab/intent/`); (d) the full cfm_v2k
-   re-stamp (S6 chain + 13 B-row producers, GPU-serialized, one job at a time) with the
-   no-op proof (receipts numerically identical, card diff header/hash/commit only, B
-   17/3/3 unchanged); (e) commit the move chunk (two-commit card pattern).
-3. **Then the fast training iteration (operator pacing):** intent dev-rig iteration 1
-   (train pos/neg/adv, measure g in corrected units, controls), outcome + MOVEMENT, then
-   iterate one axis per run. The 3 remaining B UNKNOWNs (B5.1 minimality, B6.3 transfer,
-   B7.2 robustness/missingness) each get their own DEC; the 3 FAILs (B4.1, B4.2, B6.2)
-   are the axis this dev-rig targets — a toy-green only SUGGESTS the port, it never flips
-   a B row (DEC-576 caveat).
+1. **Order-channel chunk (DEC-588 Phase 1, the active program).** Apply the staged Layer A
+   diff (`/tmp/opencode/order_shape_layerA.patch`) + implement the order carrier in the
+   state (pair/co-occurrence memory: `S_t = a S_{t-1} + k_{t-1} v_tᵀ`, projected into the
+   readout) + an order objective (predict the next window's transition matrix from the
+   served state). Pre-register the one-axis change and its falsifier in a DEC, run the
+   order fixture (before: g 8.02, beats_base false), then the full cfm_v2k re-stamp
+   (S6 chain + 13 B-row producers, GPU-serialized, no-op proof for the B rows).
+2. **Re-run the shape battery after the change** (same protocol, same split): the target is
+   history-transition decode above the measured **0.502** and future transition at or above
+   the exact counter, with the first-order rows not regressing. This is the Phase-1
+   acceptance; a failure is recorded and reverted, not narrated.
+3. **Then the real-stream rows.** Only after the battery and the order fixture move: the
+   B3.2-lineage shape probes, B6.2's 90-day value/orders, and B4.1/B4.2 if the order channel
+   is what the level-conditional response needs. The 3 remaining B UNKNOWNs (B5.1, B6.3,
+   B7.2) keep their own DECs; lab receipts never flip a B row (DEC-576). DEC-586 (intent
+   fixture) stays pending operator approval and is not on this path.
 
 ## Operating facts
 
