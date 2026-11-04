@@ -35,6 +35,19 @@ def test_forward_prompt_declares_the_macro_contract():
     assert "scripts/plan_spec.py" in t
 
 
+def test_forward_prompt_requires_the_macro_reflection():
+    """DEC-587 (operator directive): every forward run first answers 'why isn't the project
+    successful yet?', names the layer the gap lives in, and re-answers the outcome."""
+    t = _read("PROMPT_FORWARD.md")
+    for token in ("WHY-NOT:", "EVIDENCE:", "GAP:", "LAYER:", "THIS RUN:"):
+        assert token in t, f"PROMPT_FORWARD lost its {token} line"
+    assert "WHY-NOT-CHANGED:" in t
+    # the reflection precedes node selection and names the four layers
+    assert t.index("WHY-NOT:") < t.index("NODE:")
+    for layer in ("capability", "objective", "instrument", "identity"):
+        assert layer in t
+
+
 def test_forward_prompt_documents_the_plan_first_card_shape():
     t = _read("PROMPT_FORWARD.md")
     assert "The plan — the tree this card measures" in t

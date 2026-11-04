@@ -10666,3 +10666,78 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     re-stamp, the instrument unit correction as a new g-protocol version, and the
     fixture point). Nothing executed: the tree is at clean `aec6d3f`, behavior
     `d5df3a2c`, B 17 PASS / 3 FAIL / 3 UNKNOWN.
+
+- **DEC-587 (the macro-reflection law + the shape program's ranked candidates; decided
+  2026-11-04 at the operator's directive: "ask why the project isn't successful yet, every
+  forward pass" — recorded, NOT executed).**
+  - **NODE:** G (the operating loop) + P2/E1 (the trunk/shape frontier). This DEC changes
+    the *forward protocol* and records the candidate menu; it executes nothing.
+  - **ROUTE:** R2 (dev rig) / R4 (certification) context; the shape program starts at the
+    next forward run after the operator's go-ahead on DEC-586.
+  - **WHY-NOT (the block §3.0 now requires).** The goal is false today because **the state
+    is a first moment**: `h_t = a_t h_{t-1} + (1-a_t) B x_t` is a convex combination, so
+    `h_t ∈ conv{B x_s}` — a decayed mean of projected tokens. A mean cannot carry a
+    distribution, a transition matrix, an order relation, a tail, or a segment mixture. The
+    exact counter beats the learned state on persona (0.189 vs 0.066) because a counter is a
+    histogram (a distributional statistic) and the learned state is a mean. The training
+    objectives (next event, mask, value) are satisfiable by that mean, so nothing pressures
+    the state to keep shape; the readout skip/event residuals *relieve* the pressure. The
+    instrument could not see the loss: `next_event` at N=500 has **0.048 nats** of true
+    headroom versus ~0.1 nats of B-pair noise (after the DEC-583/586 unit correction), and
+    4/5 `U` probes are excluded for zero headroom. `LAYER: capability + objective +
+    instrument` — all three, which is why single-layer fixes kept missing.
+  - **Decision 1 — the macro-reflection law is binding.** `PROMPT_FORWARD.md` gains §3.0:
+    every run writes `WHY-NOT / EVIDENCE / GAP / LAYER / THIS RUN` **before** choosing a
+    node, and re-answers the outcome as `WHY-NOT-CHANGED: yes|no`. `tests/test_prompts.py`
+    is the drift ratchet (the block, the four layers, the ordering before `NODE:`). A run
+    that does not attack `GAP` is recorded as maintenance, never as progress.
+  - **Decision 2 — the shape program, ranked by principle alignment.** Rubric: 0–3 against
+    each of AGENTS.md's eight top-level principles (U universal, A adaptive, L lawful,
+    E efficient, R robust, H honest, X accessible, D diagnosable) + the One Rule (1R);
+    max 27. Scores are **alignment**, not expected effect: a mechanism can align perfectly
+    and still be capability-irrelevant (e.g. "do nothing"), so the *shape role* gates entry
+    to the program. Conflict order (Robust → Universal → Adaptive → Lawful → Efficient →
+    Honest) breaks near-ties; it does not let a low-capability mechanism outrank a
+    high-capability one.
+
+    | # | Mechanism (axis) | U | A | L | E | R | H | X | D | 1R | Total | Shape role | Main principle tension |
+    |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+    | 1 | **Mass/shape algebra split** — additive counts over learned/coverage-derived buckets + read-time normalization (state/readout) | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 2 | **26** | carrier (distributional) | 1R: buckets must be learned/derived, never hand-listed |
+    | 2 | **Centered / high-pass drive** — `h ← a h + (1−a)(Bx − m_t)`, `m_t` per-customer EMA (state) | 3 | 3 | 2 | 3 | 3 | 3 | 2 | 3 | 3 | **25** | **diagnostic** (DC confound) | L: a reparameterization, not a new statistic; cannot add shape by itself |
+    | 3 | **Window-distribution objective** — predict the next window's histogram/quantiles from the state only (objective) | 3 | 3 | 2 | 3 | 2 | 3 | 3 | 3 | 3 | **25** | enabler (pressure) | L: a loss cannot guarantee the algebra; scoring rule must be stable |
+    | 4 | **Delta-rule low-rank associative memory** — `S ← S(I−βkkᵀ)+βvkᵀ` (state) | 3 | 3 | 3 | 2 | 1 | 3 | 3 | 3 | 3 | **24** | carrier (recall/association) | R: matrix state + write strength = divergence risk; E: O(r·d) |
+    | 5 | **Characteristic KME** — `z=[cos(ΩBx), sin(ΩBx)]`, state = decayed mean of `z` (state) | 3 | 2 | 3 | 2 | 3 | 3 | 3 | 2 | 2 | **23** | carrier (distributional) | A/1R: kernel bandwidth and feature map are priors, not learned |
+    | 6 | **Level-2 signature** — mean + covariance + Lévy area in a projected `r` (state) | 3 | 2 | 3 | 2 | 2 | 3 | 3 | 3 | 2 | **23** | carrier (order/co-occurrence) | E: O(r²); R: area growth needs decay/normalization |
+    | 7 | **HiPPO/Legendre projection** — orthogonal polynomial basis instead of exponential bands (state) | 3 | 2 | 3 | 3 | 3 | 3 | 2 | 2 | 2 | **23** | carrier (temporal profile) | A: fixed basis is a law/prior; narrower shape kind |
+    | 8 | **Bounded exact window + SSM** — ring buffer of W events, W from measured dependence length (architecture) | 2 | 2 | 2 | 2 | 3 | 3 | 3 | 3 | 2 | **22** | carrier (exact recall) | L: truncation breaks exact associativity; E: O(T·W) |
+    | 9 | **Titans/TTT neural memory** — inner-loop gradient memory (state) | 3 | 3 | 2 | 1 | 1 | 3 | 2 | 2 | 3 | **20** | carrier (recall/association) | E/R: inner-loop optimization, divergence risk, highest complexity |
+
+  - **Selection rule (pre-registered).** Phase 0 is the *instrument*: a shape battery
+    (type histogram, transition-matrix rows, inter-arrival quantiles, value quantiles,
+    persona/segment fields — decoded from `E` vs the exact counter vs PATH A, paired CIs)
+    plus a mixture-transition toy where the Bayes predictor requires pair statistics.
+    Without it, the next candidates repeat the blind-instrument mistake. Then, in order:
+    **#1 mass/shape split** (cheapest carrier; compares directly with the exact counter),
+    **#3 distributional objective** (the pressure that makes any carrier stick),
+    **#6 signature** (order/co-occurrence; the most lawful object), then **#5 KME** or
+    **#7 HiPPO** depending on which shape kind Phase 0 says is missing. **#4 delta-rule**
+    only if the gap is associative recall; **#8 hybrid** only if the bit-capacity limit is
+    demonstrated. **#2 centered drive** is a diagnostic probe, not a solution: run it only
+    to test whether the blob is a DC-offset artifact before paying for a carrier.
+    **#9 Titans** is deferred.
+  - **Rejected.** (i) Jumping straight to delta-rule/Titans: highest capability, but they
+    trade Robust (the top conflict-order principle) and Efficient for a gain not yet
+    localized — measure the gap first. (ii) More capacity or another elementwise nonlinear
+    recurrence: falsified at 8× capacity and on four algebra candidates, and now known to
+    have been measured on an instrument whose headroom was below its noise. (iii) Any
+    gate/bar/exclusion edit to make room for a new statistic: forbidden. (iv) Treating the
+    ranked table as a mandate: it is a menu; each mechanism still gets its own
+    pre-registered one-axis run and its own falsifier. (v) Re-running the four falsified
+    algebras on the *old* instrument: they get re-tested on the Phase-0 battery, not on the
+    blind one.
+  - **Cost.** Documentation + prompt ratchet + test: minutes, no behavior move (the prompts
+    and tests are outside `BEHAVIOR_TREES`). The shape program itself is not costed here;
+    each candidate gets its own DEC with its own cost.
+  - **Status.** Recorded; NOT executed. The tree is clean at `aec6d3f` (behavior
+    `d5df3a2c`), DEC-586 awaits operator approval, and the shape program starts at the next
+    forward run after that go-ahead.

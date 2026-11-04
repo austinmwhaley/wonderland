@@ -181,6 +181,17 @@ certification stays on the real stream.
   units (g ≤ 0.5 + beats_base + complete + control reads); branches (i)–(v) frozen; move +
   full cfm_v2k re-stamp (13 producers) with no-op proof. Nothing executed; tree clean at
   `aec6d3f`, behavior `d5df3a2c`.
+- **Macro reflection is binding now (DEC-587, operator directive 2026-11-04).** Every forward
+  run writes `WHY-NOT / EVIDENCE / GAP / LAYER / THIS RUN` **before** choosing a node and
+  re-answers it as `WHY-NOT-CHANGED` at the outcome; `PROMPT_FORWARD.md` §3.0 + the
+  `tests/test_prompts.py` ratchet enforce it. The recorded WHY-NOT: the state is a first
+  moment (convex combination), the objectives only ask for a mean, and the toy instrument
+  could not see shape (0.048 nats headroom vs ~0.1 noise). The shape program is ranked by
+  principle alignment — mass/shape algebra split 26/27, centered drive 25 (diagnostic),
+  window-distribution objective 25, delta-rule memory 24, KME/signature/HiPPO 23, bounded
+  window 22, Titans 20 — with **Phase 0 = the shape battery before any new architecture**
+  (histogram/transition/quantile/persona decode from E vs the exact counter, plus a
+  mixture-transition toy where pair statistics are necessary).
 - **Route: R4 (certification-first, operator 2026-11-03).** The 11 open B sub-problems
    are the PRIMARY progress track. DEC-585 pre-registered the 8 rows it covers (B1.2,
    B4.1, B4.2, B4.3, B5.2, B6.2, B7.1, B8.1) as 5 cfm_v2k producers with frozen gate

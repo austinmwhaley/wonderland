@@ -81,6 +81,36 @@ The plan is the map; the card is the instrument. Every run moves **one leaf** an
 > *To make `G` true, `<node>` must be true because `<why>`; this run moves `<leaf>` from
 > `<current>` toward `<target>` by changing `<one axis>`.*
 
+### 3.0 MACRO REFLECTION — "why isn't the project successful yet?" (binding, every run)
+
+Before choosing a node, answer this from the card and the receipts — never from memory or
+from the last run's narrative. Write the block into the DEC **before** `NODE/ROUTE/MOVE`:
+
+```text
+WHY-NOT:  <the ONE largest reason the goal is false today, one sentence>
+EVIDENCE: <the rows/receipts that prove it — numbers, not narrative>
+GAP:      <what must become true that is not true: a capability, not a missing receipt>
+LAYER:    <capability | objective | instrument | identity> — where the gap actually lives
+THIS RUN: <which gap this run attacks, and why it is the cheapest next probe>
+```
+
+Rules:
+
+1. **The block precedes node selection.** A run that picks the node first and writes the
+   reflection afterwards has not reflected; it has rationalised.
+2. **Name the layer.** The four layers are the recurring failure modes: *capability* (the
+   state cannot carry the statistic), *objective* (nothing asks it to carry it), *instrument*
+   (the measurement cannot see it), *identity* (the claim/definition is wrong). Past cycles
+   failed by fixing one layer while a different one was binding — the `next_event` ladder
+   was a capability search judged by an instrument whose headroom was below its own noise.
+3. **If `THIS RUN` does not attack `GAP`, say so.** The run is then maintenance, and the DEC
+   must record that word; maintenance is allowed, but never counted as progress.
+4. **Re-answer at the outcome.** Append `WHY-NOT-CHANGED: yes|no — <why>` beside `MOVEMENT`.
+   A run that flips a row while the WHY-NOT sentence is unchanged is a row flip, not a step
+   toward the goal.
+5. **A gap may be closed only by a measured improvement on its own layer** — never by a green
+   row in another layer, and never by a lab receipt (DEC-576).
+
 ### 3.1 MACRO — read the map before choosing anything
 
 Open, in this order: `PLAN.md` §2 (the tree), §5 (the route), §6 (frontier + what a green
@@ -149,6 +179,9 @@ After the run, regenerate the card (`python3 scripts/report_card.py`) and read:
   frontier looks closer: a reporting gate promoted to quality evidence, `R` moved before the
   evidence, `E1` marked closed without its port receipt. Forbidden; the tree is tested against
   the frozen rows precisely so this is visible.
+- **WHY-NOT drift** — re-running the same axis without re-answering §3.0, or recording a row
+  flip while the WHY-NOT sentence is unchanged. The reflection is the point; the row is the
+  instrument.
 
 ### 3.6 Worked example (DEC-577 — a macro-honest run that ended in "no")
 
@@ -337,6 +370,8 @@ per-row Python loops in hot paths), and emit a runtime receipt.
 
 **MACRO — did the map move?**
 
+0. The §3.0 block was written **before** the node was chosen, names its layer, and is
+   re-answered in the outcome as `WHY-NOT-CHANGED: yes|no`.
 1. The DEC names `NODE`, `ROUTE`, `MOVE` **before** the run and `MOVEMENT` after it.
 2. The named node's status was read before and after; if it did not move, the run is recorded
    as a negative result/diagnosis, not progress.
