@@ -390,10 +390,7 @@ def _effect_targets(d, cfg):
     `per_cust[c] = (act (p,K) f32, rew (p,) f32)`, or `(None, None)` when off.
     """
     acts = [k for k in (getattr(cfg, "effect_actions", ()) or ()) if k in d.columns]
-    # the internal time column must never be the primary numeric field (it was: the
-    # seq's `value` became epochs, so the value head/level block saw timestamps).
-    _d_no_ts = d.drop("_ts") if "_ts" in d.columns else d
-    value_col = getattr(cfg, "primary_numeric", None) or _primary_numeric_field(_d_no_ts, cfg)
+    value_col = _primary_numeric_field(d, cfg)
     if not acts or d.height == 0 or value_col is None:
         return None, None
     _ts = pl.col("event_ts").str.to_datetime(time_zone="UTC", strict=False).dt.epoch("s")
@@ -485,10 +482,7 @@ def build_sequences(df, keys, cfg: CFMConfig, split, with_anchors: bool, min_eve
     data_end = float(d["_ts"].max()) if d.height else 0.0
     company = set(map(str, getattr(cfg, "exogenous_events", ())))
     min_events = max(1, int(min_events))
-    # the internal time column must never be the primary numeric field (it was: the
-    # seq's `value` became epochs, so the value head/level block saw timestamps).
-    _d_no_ts = d.drop("_ts") if "_ts" in d.columns else d
-    value_col = getattr(cfg, "primary_numeric", None) or _primary_numeric_field(_d_no_ts, cfg)
+    value_col = _primary_numeric_field(d, cfg)
     # per-customer counterfactual period data (cached: cheap if off, computed once)
     if getattr(cfg, "_effect_cache", None) is None:
         _per, _levels = _effect_targets(df, cfg)
@@ -586,9 +580,6 @@ def build_sequences(df, keys, cfg: CFMConfig, split, with_anchors: bool, min_eve
                         "customer": k,
                         "group": split.get(k, "A"),
                         "anchor_epoch": anchor_epoch,
-                        "ref_epoch": (
-                            float(anchor_epoch) if anchor_epoch is not None else float(data_end)
-                        ),
                         "event_type": et_arr[start:end],
                         "attrs": {c: v[start:end] for c, v in attrs.items()},
                         "numeric": {c: v[start:end] for c, v in numeric.items()},

@@ -138,9 +138,9 @@ def _replica_worker(kind: str, products: str, out_npz: Path) -> None:
     # E with the STORED counters, in the build op order (materialize FIRST, then fade)
     ctr = np.vstack([np.asarray(stored["customer_state"][k][1], dtype=np.float32) for k in keys])
     E = donor_states(model, H, ctr)
-    from looking_glass.stat_bank import level_block
+    from looking_glass.stat_bank import level_blocks_from_seqs
 
-    E = np.hstack([E, level_block(_df, keys, close_at(products))])
+    E = np.hstack([E, level_blocks_from_seqs(seqs)])
     # the exact day-1 close fade, mirrored op-for-op (CPU float32, as fade_idle computes it)
     ca = close_at(products)
     hl = float(cfg.state_half_life_days)

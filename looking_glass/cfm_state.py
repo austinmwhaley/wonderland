@@ -713,16 +713,6 @@ class StateStore:
         if getattr(model, "counter_on", False) and all(c is not None for c in counters):
             served = counters
         E = donor_states(model, [r[1] for r in rows], served)
-        # DEC-590/592 ONE COMPOSITION: the level block from the FULL STREAM (not the
-        # model's truncated sequence) with the state's reference cut; the same function
-        # is used by the decision replica.
-        import numpy as np
-
-        from looking_glass.cfm_data import _read_stream
-        from looking_glass.stat_bank import level_block
-
-        _keys = [r[0] for r in rows]
-        E = np.hstack([E, level_block(_read_stream(self.cfg), _keys, float(as_of_epoch))])
         self.con.execute("DELETE FROM state_embeddings WHERE as_of_epoch = ?", [float(as_of_epoch)])
         df = pl.DataFrame(
             {
@@ -1081,9 +1071,6 @@ def _publish_ledger_outlet(cfg, model, vocab, df, keys, split, store) -> dict | 
 
 
 def build_products(cfg, model, vocab, df, keys, split):
-    from looking_glass.stat_bank import median_gap_stream
-
-    cfg._stat_bank_med = median_gap_stream(df)
     # The `products` command runs this WITHOUT train_cfm, so the co-tenant cap must be
     # applied here too (idempotent when train_cfm already did it). DEC-423.
     from looking_glass import gpu_budget
