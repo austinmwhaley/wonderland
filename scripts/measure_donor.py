@@ -1,154 +1,177 @@
-"""Iteration-5 measurement: donor battery (raw / fair table / E / table+seq / table+seq+E).
+"""B6.2 donor battery on the cfm_v2k products (DEC-585).
 
-One learner (HistGB, 5-fold OOF) for all arms so comparisons are self-consistent.
-Writes docs/report_cards/experiments/encoder_donor.json
+Targets: y_value_90 / y_orders_90 (R2) + y_churn_90 (AUC from the ridge score).
+Split: the judge's A/B populations via the battery's _load_all (same seed the build used).
+Arms: raw = customer_features.parquet (40 -> 38 via table_features), fair =
+path_a_wide_table.parquet (50 -> 38; on cfm_v2k the two 38-column matrices are
+value-IDENTICAL — recorded, not assumed), E = stored state_embeddings (read, not
+re-encoded), table_E = hstack(fair, E), random/destroyed E = controls_matched,
+broken on BOTH fit and score sides. ONE encoding over A + B per table arm; head =
+the shipping standardized ridge, fit on A, scored on B.
+
+BAR (card, per non-degenerate target): E >= raw and E >= fair (point);
+CI (table_E - fair) lower bound > 0 (paired, statistic recomputed in each replicate,
+N_BOOT=2000); random < E and destroyed < E (point). Degenerate targets are excluded
+and reported.
+
+CPU producer (no forward): re-stamps docs/report_cards/experiments/encoder_donor.json;
+the legacy numbers are quarantined in DEC-585.
 """
 
-import sys
+from __future__ import annotations
+
+import argparse
 import json
+import sys
+import time
 from pathlib import Path
 
 import numpy as np
 import polars as pl
+from sklearn.metrics import roc_auc_score
 
-sys.path.insert(0, "/home/austin-whaley/Documents/wonderland")
-sys.path.insert(0, "/home/austin-whaley/Documents/wonderland/scripts/demo")
-import torch  # noqa: E402
-import auto_encoder as AE  # noqa: E402
-from sklearn.model_selection import KFold  # noqa: E402
-import xgboost as xgb  # noqa: E402
-from sklearn.metrics import r2_score, roc_auc_score  # noqa: E402
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "scripts"))
 
-import frozen as _fzmod  # noqa: E402
+from cfm_products import _db_path, resolve_served_tag  # noqa: E402
+from measure_battery_law import SEED, _load_all, _ridge_head, controls_matched  # noqa: E402
+from measure_input_law import products_identity, stamp_merge_write  # noqa: E402
+from measure_judge_law import _paired_stat_ci  # noqa: E402
 
-DATA = sys.argv[1] if len(sys.argv) > 1 else "/tmp/opencode/t0_loop/relational_6k_v3"
-OUT = Path(
-    "/home/austin-whaley/Documents/wonderland/docs/report_cards/experiments/encoder_donor.json"
-)
-FIXED = {"value_30d", "value_90d", "recency_days", "days_since_last_purchase"}
+OUT = ROOT / "docs" / "report_cards" / "experiments" / "encoder_donor.json"
 
-import os as _os
+TARGETS = ("y_value_90", "y_orders_90", "y_churn_90")
 
-_fz = _os.environ.get("FROZEN")
-if _fz:
-    from frozen import load as _fload
 
-    E, _Xtab_f, labels, hold, seg, model, vs, B, best, BLK = _fload(_fz)
-else:
-    E, _, labels, hold, seg, model, vs, B, best, BLK = AE.train_encoder(
-        DATA, seed=0, epochs=12, d=128, layers=2
+def _metric(y, p, metric: str) -> float:
+    if metric == "r2":
+        ss = float(np.sum((y - y.mean()) ** 2))
+        return float(1.0 - np.sum((y - p) ** 2) / ss) if ss > 0 else float("nan")
+    if len(np.unique(y)) < 2:
+        return float("nan")
+    return float(roc_auc_score(y, p))
+
+
+def _score(Xa, ya, Xb, yb, metric: str):
+    m = _ridge_head()
+    m.fit(Xa, ya)
+    return m, m.predict(Xb)
+
+
+def main() -> int:
+    from safe_run import ensure_boundary
+
+    ensure_boundary()
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--products", default="/home/austin_whaley/wonderland_work/cfm_v2k")
+    ap.add_argument("--demo", default="/home/austin_whaley/wonderland_work/demo_v2")
+    ap.add_argument("--out", default=str(OUT))
+    a = ap.parse_args()
+
+    from demo.auto_encoder import table_features
+
+    t0 = time.perf_counter()
+    demo = Path(a.demo)
+    tag, _reg = resolve_served_tag(a.products)
+    _r, _truth, emb, _raw, _stream, bkeys, akeys, _as_of = _load_all(
+        str(_db_path(a.products)), demo
     )
-torch.cuda.empty_cache()
-E = _fzmod.require_finite(E, "E")
-BLK = _fzmod.require_finite(BLK, "BLK")
-Xe = np.hstack([E, BLK])  # the demo's frozen-E arm (E + blocks)
+    all_keys = list(akeys) + list(bkeys)
+    n_a, n_b = len(akeys), len(bkeys)
 
-_, A, keys, seqs, vs2, et_v, catspec, num, taus, p_mask, as_of_ts, periods, horizons = AE.load_data(
-    DATA
-)
-AE.AS_OF_TS = as_of_ts
-feat = [c for c in A.columns if not c.startswith("y_") and c not in ("customer_key", "signup_ts")]
-amap = {r["customer_key"]: r for r in A.to_dicts()}
-rows = [amap[k] for k in hold]
-dummy = [c for c in ("segment", "region", "acquisition_channel", "loyalty_tier") if c in feat]
+    labels = pl.read_parquet(demo / "path_a" / "customer_labels.parquet")
+    lab = {r["customer_key"]: r for r in labels.iter_rows(named=True)}
+    y_all = {c: np.asarray([lab[k][c] for k in all_keys], dtype=float) for c in TARGETS}
+    ya_all = {c: y_all[c][:n_a] for c in TARGETS}
+    yb_all = {c: y_all[c][n_a:] for c in TARGETS}
 
+    # one encoding over A + B per table arm (splitting the encoding is the trap)
+    raw_df = pl.read_parquet(demo / "path_a" / "customer_features.parquet")
+    wide_df = pl.read_parquet(demo / "path_a" / "path_a_wide_table.parquet")
+    Xr_all, _lr, _sr = table_features(raw_df, all_keys)
+    Xf_all, _lf, _sf = table_features(wide_df, all_keys)
+    raw_equals_fair = bool(np.array_equal(Xr_all, Xf_all))
+    Xr_a, Xr_b = Xr_all[:n_a], Xr_all[n_a:]
+    Xf_a, Xf_b = Xf_all[:n_a], Xf_all[n_a:]
 
-def build(cols):
-    X = pl.DataFrame([{c: r[c] for c in cols} for r in rows]).to_dummies(
-        columns=dummy, drop_first=True
-    )
-    return np.nan_to_num(X.to_numpy().astype(float))
+    Ea = np.vstack([emb[k] for k in akeys])
+    Eb = np.vstack([emb[k] for k in bkeys])
+    rng = np.random.default_rng(SEED)
+    rand_b, dest_b = controls_matched(rng, Ea, Eb)
+    rand_a, dest_a = controls_matched(rng, Ea, Ea)
 
+    targets: dict[str, dict] = {}
+    for c in TARGETS:
+        metric = "auc" if c == "y_churn_90" else "r2"
+        ya, yb = ya_all[c], yb_all[c]
+        deg_reason = None
+        if metric == "r2" and (float(np.std(ya)) < 1e-12 or float(np.std(yb)) < 1e-12):
+            deg_reason = "target has no variance on A or B"
+        elif metric == "auc" and (len(np.unique(ya)) < 2 or len(np.unique(yb)) < 2):
+            deg_reason = "target has <2 classes on A or B"
+        if deg_reason:
+            targets[c] = {"metric": metric, "degenerate": True, "reason": deg_reason}
+            continue
+        arms = {
+            "E": (Ea, Eb),
+            "raw": (Xr_a, Xr_b),
+            "fair": (Xf_a, Xf_b),
+            "table_E": (np.hstack([Xf_a, Ea]), np.hstack([Xf_b, Eb])),
+            "random": (rand_a, rand_b),
+            "destroyed": (dest_a, dest_b),
+        }
+        scores, preds_b = {}, {}
+        for name, (Xa, Xb) in arms.items():
+            _m, p = _score(Xa, ya, Xb, yb, metric)
+            scores[name] = _metric(yb, p, metric)
+            preds_b[name] = p
+        # paired CI of (table_E - fair), the statistic recomputed in each replicate
+        P_te, P_f, y2 = preds_b["table_E"], preds_b["fair"], yb
 
-Xraw = build(feat)
-Xfair = build([c for c in feat if c not in FIXED])
-fc = [len(seqs[k][5]) for k in hold]
-fq = [(as_of_ts - seqs[k][5][-1]) / 86400.0 for k in hold]
-_, P, _, _, _ = AE.collate(seqs, hold, fc, fq, vs2, True, None, None)
-Xseq = np.nan_to_num(P.cpu().numpy())
-Xts = np.hstack([Xraw, Xseq])
-Xtse = np.hstack([Xraw, Xseq, Xe])
+        def stat_fn(idx):
+            return _metric(y2[idx], P_te[idx], metric), _metric(y2[idx], P_f[idx], metric)
 
+        lo, hi = _paired_stat_ci(stat_fn, len(bkeys))
+        targets[c] = {
+            "metric": metric,
+            "degenerate": False,
+            "E": scores["E"],
+            "raw": scores["raw"],
+            "fair": scores["fair"],
+            "table": scores["fair"],
+            "table_E": scores["table_E"],
+            "random": scores["random"],
+            "destroyed": scores["destroyed"],
+            "ci_lo": lo,
+            "ci_hi": hi,
+        }
 
-def oof(X, y, kind):
-    o = np.zeros(len(y))
-    for tr, te in KFold(5, shuffle=True, random_state=0).split(X):
-        m = (
-            xgb.XGBRegressor(
-                device="cuda", tree_method="hist", n_estimators=300, max_depth=6, learning_rate=0.06
-            )
-            if kind == "reg"
-            else xgb.XGBClassifier(
-                device="cuda",
-                tree_method="hist",
-                n_estimators=300,
-                max_depth=6,
-                learning_rate=0.06,
-                eval_metric="logloss",
-            )
-        )
-        m.fit(X[tr], y[tr])
-        o[te] = m.predict(X[te]) if kind == "reg" else m.predict_proba(X[te])[:, 1]
-    return o
-
-
-def metric(y, p, kind):
-    return float(r2_score(y, p) if kind == "reg" else roc_auc_score(y, p))
-
-
-def sc(X, y, kind):
-    return metric(y, oof(X, y, kind), kind)
-
-
-def boot_se(y, pA, pB, kind, n=400, seed=0):
-    rng = np.random.default_rng(seed)
-    m = len(y)
-    d = []
-    for _ in range(n):
-        ix = rng.integers(0, m, m)
-        d.append(metric(y[ix], pA[ix], kind) - metric(y[ix], pB[ix], kind))
-    d = np.array(d)
-    return (
-        float(d.mean()),
-        float(d.std()),
-        float(np.quantile(d, 0.025)),
-        float(np.quantile(d, 0.975)),
-    )
-
-
-res = {}
-for t, kind in (("value90", "reg"), ("orders90", "reg"), ("churn90", "clf")):
-    y = labels["y_" + t.replace("90", "_90")]
-    p_raw, p_fair, p_e, p_ts, p_tse = (
-        oof(Xraw, y, kind),
-        oof(Xfair, y, kind),
-        oof(Xe, y, kind),
-        oof(Xts, y, kind),
-        oof(Xtse, y, kind),
-    )
-    m_raw = boot_se(y, p_e, p_raw, kind)
-    m_fair = boot_se(y, p_e, p_fair, kind)
-    m_add = boot_se(y, p_tse, p_ts, kind)
-    res[t] = {
-        "raw": metric(y, p_raw, kind),
-        "fair": metric(y, p_fair, kind),
-        "E": metric(y, p_e, kind),
-        "table_seq": metric(y, p_ts, kind),
-        "table_seq_E": metric(y, p_tse, kind),
-        "E_minus_raw": {"mean": m_raw[0], "se": m_raw[1], "lo": m_raw[2], "hi": m_raw[3]},
-        "E_minus_fair": {"mean": m_fair[0], "se": m_fair[1], "lo": m_fair[2], "hi": m_fair[3]},
-        "add_over_tseq": {"mean": m_add[0], "se": m_add[1], "lo": m_add[2], "hi": m_add[3]},
+    deg = [c for c in TARGETS if targets.get(c, {}).get("degenerate")]
+    body = {
+        "complete": True,
+        "targets": targets,
+        "n_A": int(n_a),
+        "n_B": int(n_b),
+        "raw_equals_fair": raw_equals_fair,
+        "note": (
+            "raw and fair 38-column matrices "
+            f"{'are value-identical on this stream (recorded, not assumed)' if raw_equals_fair else 'DIFFER on this stream'}; "
+            "controls broken on fit+score sides (controls_matched, SEED); head = the shipping "
+            "standardized ridge, one encoding over A+B, fit on A scored on B; E = stored "
+            "state_embeddings (read, not re-encoded)"
+        ),
+        "excluded": deg,
+        "products": products_identity(a.products),
+        "device": "cpu",
+        "tag": tag,
+        "seconds": round(time.perf_counter() - t0, 1),
     }
-    r = res[t]
-    print(
-        f"[donor] {t:9s} raw {r['raw']:.4f} fair {r['fair']:.4f} E {r['E']:.4f} "
-        f"tseq {r['table_seq']:.4f} tseqE {r['table_seq_E']:.4f} | "
-        f"E-raw {r['E_minus_raw']['mean']:+.4f}±{r['E_minus_raw']['se']:.4f} "
-        f"E-fair {r['E_minus_fair']['mean']:+.4f} add {r['add_over_tseq']['mean']:+.4f}±{r['add_over_tseq']['se']:.4f}",
-        flush=True,
-    )
+    stamp_merge_write(Path(a.out), body, " ".join(sys.argv), stamp_blocks=False)
+    print(json.dumps({k: v for k, v in body.items() if k != "note"}, indent=1, default=str))
+    print("WROTE", a.out)
+    return 0 if body["complete"] else 1
 
-OUT.write_text(
-    json.dumps({"config": {"data": DATA, "seed": 0, "epochs": 12}, "results": res}, indent=1)
-)
-print("WROTE", OUT)
+
+if __name__ == "__main__":
+    sys.exit(main())

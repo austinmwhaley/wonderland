@@ -58,14 +58,12 @@ def main():
         run([py, "scripts/measure_data.py", "--data", str(data)])
         if args.research:
             run([py, "scripts/measure_construction.py"], env=env)
-        run([py, "scripts/measure_donor.py", str(data)], env=env)
         run([py, "scripts/measure_controls.py", str(data)], env=env)
         run([py, "scripts/measure_identity.py", str(data)], env=env)
         run([py, "scripts/measure_ceiling.py", str(data)], env=env)
         if not args.skip_objectives:
             run([py, "scripts/measure_objectives.py", str(data)], env=env)
         run([py, "scripts/measure_demo_plugins.py", "--data", str(data), "--frozen", str(frozen)])
-        run([py, "scripts/measure_causal.py", "--data", str(data)], env=env)
         run([py, "scripts/measure_response.py", "--data", str(data), "--frozen", str(frozen)])
 
     run([py, "scripts/report_card.py"])

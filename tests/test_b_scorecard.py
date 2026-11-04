@@ -54,12 +54,378 @@ def test_missing_b_rows_are_unknown_and_name_the_producer(tmp_path):
     assert "measure_sufficiency_law.py" in md
 
 
-def test_legacy_b_receipt_is_unknown_not_pass(tmp_path):
-    _write(tmp_path, "encoder_lawfulness.json", {"scan_merge_delta": 1e-13})
+def test_unstamped_b_receipt_is_unknown_not_pass(tmp_path):
+    """DEC-585: the 8 legacy/missing rows are re-stamped kinds now. A receipt with the
+    passing NUMBERS but no _meta stamp (i.e. measured by a dead producer) is UNKNOWN,
+    and names the producer that must (re)run it."""
+    body = _construction_body()
+    body.pop("_meta")  # the point of the test: numbers without a fresh stamp
+    _write(tmp_path, "encoder_lawfulness.json", body)
     _, info = RC.render(tmp_path, HASH)
     assert info["b_verdicts"]["B1.2"] == J.UNKNOWN
     md, _ = RC.render(tmp_path, HASH)
-    assert "legacy receipt" in md
+    assert "measure_construction_law.py" in md
+
+
+# ---------------------------------------------------------------------------
+# DEC-585 kinds: cfm_v2k re-stamp gates (frozen bars in b_spec; verdicts in the card)
+# ---------------------------------------------------------------------------
+def _construction_body(h: str = HASH, field_perm: float = 1e-09) -> dict:
+    return {
+        "_meta": _meta(h),
+        "complete": True,
+        "n_sequences": 20,
+        "device": "cpu",
+        "checks": {
+            "field_permutation": {"max_rel_err": field_perm, "working": True},
+            "scan_associativity": {"worst_rel_err": 1.1e-15, "working": True},
+            "mass_additivity": {"worst_rel_err": 5e-16, "working": True},
+            "determinism": {"bit_identical": True},
+            "schema_variant": {"working": True},
+            "frozen_identity": {"present": True},
+        },
+    }
+
+
+def test_construction_law_passes_when_all_six_checks_meet_the_bars(tmp_path):
+    _write(tmp_path, "encoder_lawfulness.json", _construction_body())
+    md, info = RC.render(tmp_path, HASH)
+    assert info["b_verdicts"]["B1.2"] == J.PASS
+    assert "field-perm" in md
+
+
+def test_construction_law_fails_when_the_field_perm_exceeds_the_bar(tmp_path):
+    _write(tmp_path, "encoder_lawfulness.json", _construction_body(field_perm=1e-03))
+    md, info = RC.render(tmp_path, HASH)
+    assert info["b_verdicts"]["B1.2"] == J.FAIL
+    assert "C1 field-perm" in md
+
+
+def test_decision_dose_passes_with_controls_below_the_brain(tmp_path):
+    _write(
+        tmp_path,
+        "encoder_decision_law.json",
+        {
+            "_meta": _meta(),
+            "decision_dose": {
+                "complete": True,
+                "n": 1485,
+                "n_levels": 4,
+                "levels": [0, 1, 2, 3],
+                "share_E": 0.55,
+                "share_table": 0.40,
+                "ci_lo": 0.05,
+                "ci_hi": 0.25,
+                "share_random": 0.25,
+                "share_destroyed": 0.26,
+                "thin_levels": [],
+                "oracle_ceiling": 0.6404,
+            },
+        },
+    )
+    md, info = RC.render(tmp_path, HASH)
+    assert info["b_verdicts"]["B4.1"] == J.PASS
+    assert "oracle ceiling 0.6404" in md
+
+
+def test_decision_dose_fails_when_E_loses_to_the_table(tmp_path):
+    body = {
+        "_meta": _meta(),
+        "decision_dose": {
+            "complete": True,
+            "n": 1485,
+            "share_E": 0.30,
+            "share_table": 0.40,
+            "ci_lo": -0.10,
+            "ci_hi": 0.05,
+            "share_random": 0.25,
+            "share_destroyed": 0.26,
+        },
+    }
+    _write(tmp_path, "encoder_decision_law.json", body)
+    _, info = RC.render(tmp_path, HASH)
+    assert info["b_verdicts"]["B4.1"] == J.FAIL
+
+
+def test_decision_dose_fails_when_a_control_reaches_the_brain(tmp_path):
+    body = {
+        "_meta": _meta(),
+        "decision_dose": {
+            "complete": True,
+            "n": 1485,
+            "share_E": 0.40,
+            "share_table": 0.30,
+            "ci_lo": 0.05,
+            "ci_hi": 0.25,
+            "share_random": 0.40,
+            "share_destroyed": 0.26,
+        },
+    }
+    _write(tmp_path, "encoder_decision_law.json", body)
+    _, info = RC.render(tmp_path, HASH)
+    assert info["b_verdicts"]["B4.1"] == J.FAIL
+
+
+def test_decision_ope_passes_when_the_diff_and_ci_exclude_zero(tmp_path):
+    _write(
+        tmp_path,
+        "encoder_decision_law.json",
+        {
+            "_meta": _meta(),
+            "decision_ope": {
+                "complete": True,
+                "arm": "offer",
+                "E_ips": 500.0,
+                "T_ips": 487.5,
+                "random": 500.0,
+                "diff": 12.5,
+                "lo": 3.2,
+                "hi": 21.4,
+                "accE": 0.31,
+                "accT": 0.30,
+                "n_train": 1038,
+                "n_test": 445,
+                "n_pop": 1483,
+                "n_excluded": 17,
+                "level_frequencies": {"0": 0.25, "1": 0.25, "2": 0.25, "3": 0.25},
+            },
+        },
+    )
+    md, info = RC.render(tmp_path, HASH)
+    assert info["b_verdicts"]["B4.2"] == J.PASS
+    assert "12.5" in md
+
+
+def test_decision_ope_fails_when_the_ci_straddles_zero(tmp_path):
+    body = {
+        "_meta": _meta(),
+        "decision_ope": {
+            "complete": True,
+            "E_ips": 480.0,
+            "T_ips": 492.5,
+            "random": 500.0,
+            "diff": -12.5,
+            "lo": -21.4,
+            "hi": -3.2,
+            "accE": 0.30,
+            "accT": 0.31,
+            "n_test": 445,
+        },
+    }
+    _write(tmp_path, "encoder_decision_law.json", body)
+    _, info = RC.render(tmp_path, HASH)
+    assert info["b_verdicts"]["B4.2"] == J.FAIL
+
+
+def _decision_invariance_body(ok: bool = True, s2=0.53, s3=0.41, h: str = HASH) -> dict:
+    return {
+        "_meta": _meta(h),
+        "decision_invariance": {
+            "complete": True,
+            "check1_cutoff_band": {
+                "ok": ok,
+                "why": "band ok",
+                "max_delta_S": 3.6e-07,
+                "max_delta_E": 9.2e-05,
+                "band_S": 7.1e-07,
+                "band_E": 2.6e-04,
+                "teeth_ok": True,
+            },
+            "check2_marker_invariance": {
+                "complete": True,
+                "share_E_prime": s2,
+                "share_E_stored": 0.55,
+                "ok": s2 >= 0.55 if s2 is not None else None,
+            },
+            "check3_level_teeth": {
+                "complete": True,
+                "share_permuted": s3,
+                "share_table": 0.40,
+                "abs_delta_inf": 0.07,
+                "ok": True,
+            },
+        },
+    }
+
+
+def test_decision_invariance_passes_on_the_band_cert_with_finite_teeth(tmp_path):
+    _write(tmp_path, "encoder_decision_law.json", _decision_invariance_body())
+    md, info = RC.render(tmp_path, HASH)
+    assert info["b_verdicts"]["B4.3"] == J.PASS
+    assert "band cert ok" in md
+
+
+def test_decision_invariance_fails_when_the_band_cert_is_not_ok(tmp_path):
+    _write(tmp_path, "encoder_decision_law.json", _decision_invariance_body(ok=False))
+    _, info = RC.render(tmp_path, HASH)
+    assert info["b_verdicts"]["B4.3"] == J.FAIL
+
+
+def test_decision_invariance_is_unknown_when_the_teeth_values_are_missing(tmp_path):
+    _write(tmp_path, "encoder_decision_law.json", _decision_invariance_body(s2=None, s3=None))
+    _, info = RC.render(tmp_path, HASH)
+    assert info["b_verdicts"]["B4.3"] == J.UNKNOWN
+
+
+def _runtime_body(n=5000, rss=31000.0, cap=32.0, complete=True, h: str = HASH) -> dict:
+    return {
+        "_meta": _meta(h),
+        "complete": complete,
+        "n": n,
+        "n_expected": 5000,
+        "cold_seconds": 40.0,
+        "warm_seconds": 620.0,
+        "rows_per_s": 7.4,
+        "close_seconds": 2.1,
+        "dims_state": 256,
+        "dims_served": 256,
+        "peak_rss_mb": rss,
+        "slice_cap_gb": cap,
+        "incremental": {
+            "as_of_epoch": 1735689600.0,
+            "n_absorbed": 0,
+            "n_idle": 5000,
+            "n_embeddings": 5000,
+            "device": "encoder",
+            "wall_seconds": 0.66,
+        },
+    }
+
+
+def test_runtime_law_passes_within_the_slice(tmp_path):
+    _write(tmp_path, "runtime.json", _runtime_body())
+    md, info = RC.render(tmp_path, HASH)
+    assert info["b_verdicts"]["B5.2"] == J.PASS
+    assert "rows/s" in md
+
+
+def test_runtime_law_fails_when_n_does_not_match_the_registry(tmp_path):
+    _write(tmp_path, "runtime.json", _runtime_body(n=4000))
+    _, info = RC.render(tmp_path, HASH)
+    assert info["b_verdicts"]["B5.2"] == J.FAIL
+
+
+def test_runtime_law_fails_when_the_peak_rss_exceeds_the_slice(tmp_path):
+    _write(tmp_path, "runtime.json", _runtime_body(rss=40000.0))
+    _, info = RC.render(tmp_path, HASH)
+    assert info["b_verdicts"]["B5.2"] == J.FAIL
+
+
+def test_runtime_law_is_ci_no_op_when_the_slice_cap_is_absent(tmp_path):
+    _write(tmp_path, "runtime.json", _runtime_body(rss=40000.0, cap=None))
+    _, info = RC.render(tmp_path, HASH)
+    assert info["b_verdicts"]["B5.2"] == J.PASS
+
+
+def _donor_body(
+    E=0.52, raw=0.40, fair=0.40, ci_lo=0.02, random=0.05, destroyed=0.06, h: str = HASH
+) -> dict:
+    t = {
+        "metric": "r2",
+        "degenerate": False,
+        "E": E,
+        "raw": raw,
+        "fair": fair,
+        "table": fair,
+        "table_E": E + 0.05,
+        "random": random,
+        "destroyed": destroyed,
+        "ci_lo": ci_lo,
+        "ci_hi": ci_lo + 0.1,
+    }
+    return {
+        "_meta": _meta(h),
+        "complete": True,
+        "targets": {
+            "y_value_90": dict(t),
+            "y_orders_90": dict(t),
+            "y_churn_90": {"metric": "auc", "degenerate": True, "reason": "target has <2 classes"},
+        },
+        "n_A": 3515,
+        "n_B": 1485,
+        "raw_equals_fair": True,
+    }
+
+
+def test_donor_battery_passes_with_controls_below_the_brain(tmp_path):
+    _write(tmp_path, "encoder_donor.json", _donor_body())
+    md, info = RC.render(tmp_path, HASH)
+    assert info["b_verdicts"]["B6.2"] == J.PASS
+    assert "excluded (degenerate)" in md
+
+
+def test_donor_battery_fails_when_E_loses_to_raw(tmp_path):
+    _write(tmp_path, "encoder_donor.json", _donor_body(E=0.30, raw=0.40))
+    _, info = RC.render(tmp_path, HASH)
+    assert info["b_verdicts"]["B6.2"] == J.FAIL
+
+
+def test_donor_battery_fails_when_the_add_ci_straddles_zero(tmp_path):
+    _write(tmp_path, "encoder_donor.json", _donor_body(ci_lo=-0.01))
+    _, info = RC.render(tmp_path, HASH)
+    assert info["b_verdicts"]["B6.2"] == J.FAIL
+
+
+def _b_props_body(ece=0.05, present=True, h: str = HASH) -> dict:
+    return {
+        "_meta": _meta(h),
+        "complete": True,
+        "calibration": {
+            "complete": True,
+            "ece_next_event": ece,
+            "acc": 0.32,
+            "n_next": 1400,
+            "n_pop": 1485,
+            "n_oov": 0,
+            "ood": {"ece": 0.07, "acc": 0.30, "n": 85, "horizon_days": 30},
+            "device": "cuda:0",
+            "why": "multiclass ECE of the shipped head_next",
+        },
+        "identity": {
+            "complete": True,
+            "present": present,
+            "tag": "0.11.0r490759-test",
+            "registry_sha256": "abcdef0123456789",
+            "data_signature": "3543c711bc98",
+            "as_of": "2025-01-01",
+            "n_customers": 5000,
+            "config_sha256": "9876543210fedcba",
+            "checkpoint_sha256": "1234567890abcdef",
+            "why": "registry resolved",
+        },
+    }
+
+
+def test_calibration_law_passes_under_the_ece_bar(tmp_path):
+    _write(tmp_path, "encoder_b_props.json", _b_props_body(ece=0.05))
+    md, info = RC.render(tmp_path, HASH)
+    assert info["b_verdicts"]["B7.1"] == J.PASS
+    assert "next-type ECE 0.0500" in md
+
+
+def test_calibration_law_fails_above_the_ece_bar(tmp_path):
+    _write(tmp_path, "encoder_b_props.json", _b_props_body(ece=0.15))
+    _, info = RC.render(tmp_path, HASH)
+    assert info["b_verdicts"]["B7.1"] == J.FAIL
+
+
+def test_calibration_law_fails_when_the_ece_was_not_measured(tmp_path):
+    _write(tmp_path, "encoder_b_props.json", _b_props_body(ece=None))
+    _, info = RC.render(tmp_path, HASH)
+    assert info["b_verdicts"]["B7.1"] == J.FAIL
+
+
+def test_identity_law_passes_when_the_registry_identity_is_present(tmp_path):
+    _write(tmp_path, "encoder_b_props.json", _b_props_body())
+    md, info = RC.render(tmp_path, HASH)
+    assert info["b_verdicts"]["B8.1"] == J.PASS
+    assert "registry abcdef0123456789" in md
+
+
+def test_identity_law_fails_when_the_checkpoint_is_missing(tmp_path):
+    _write(tmp_path, "encoder_b_props.json", _b_props_body(present=False))
+    _, info = RC.render(tmp_path, HASH)
+    assert info["b_verdicts"]["B8.1"] == J.FAIL
 
 
 def test_fresh_stage_blocks_can_pass_b_stage_rows(tmp_path):

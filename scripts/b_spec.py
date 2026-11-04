@@ -60,6 +60,15 @@ def o0_branch(persona: float) -> str:
 #: fixed capacity. Frozen before the run; the receipt may not carry its own criterion (rule 3).
 SUFFICIENCY_BAR = 0.5
 
+# DEC-585 bars — the cfm_v2k re-stamp of the 8 legacy/missing B rows. Frozen here (gate
+# identity lives in code, rule 3); the receipts report values, never criteria.
+CONSTRUCTION_FIELD_PERM_BAR = 1e-6  # C1: trunk h delta under reversed field order (rel L2)
+CONSTRUCTION_SCAN_BAR = 1e-12  # C2: scan associativity worst_rel_err (S3 committed 1.128e-15)
+CONSTRUCTION_MASS_BAR = 1e-9  # C3: mass additivity worst_rel_err (S3 committed 5.015e-16)
+CALIBRATION_ECE_BAR = 0.1  # B7.1: multiclass ECE of the shipped next-type head (legacy A5)
+OOD_HORIZON_DAYS = 30  # B7.1: the OOD-retention split (evaluation-contract literal)
+CUTOFF_ULP_COVER = 4  # B4.3 check 1: stored vs replica band = cover · 2^-23 · max|stored|
+
 
 @dataclass(frozen=True)
 class Section:
@@ -75,7 +84,7 @@ class BRow:
     name: str
     metric: str
     gate: str
-    kind: str  # stage | missing | legacy | bool | le | ge | gt | present
+    kind: str  # stage | missing | legacy | bool | le | ge | gt | present | DEC-585 kinds
     source: tuple[str, str] | None = None
     thresh: float = 0.0
     producer: str = ""
@@ -110,6 +119,12 @@ REPORTING_GATE_KINDS = frozenset(
         "sufficiency_attribution",
         "bool",
         "present",
+        # DEC-585: the cfm_v2k re-stamp kinds. "reporting" certifies that a measurement
+        # happened and was attributed (band cert ok, receipt present, identity consistent);
+        # the quality kinds certify a level against a frozen bar or comparator.
+        "decision_invariance",
+        "runtime_law",
+        "identity_law",
     }
 )
 UNMEASURED_GATE_KINDS = frozenset({"missing", "legacy"})
@@ -152,11 +167,11 @@ ROWS = (
         "B1",
         "B1.2",
         "Construction laws (C1-C6)",
-        "scan / field-permutation / mass / determinism / schema variant / frozen hash",
-        "all construction laws met",
-        "legacy",
-        ("encoder_lawfulness.json", "scan_merge_delta"),
-        producer="the legacy encoder-construction producer",
+        "scan / field-permutation / mass / determinism / schema variant / frozen identity",
+        "C1-C6 all meet the frozen bars (DEC-585)",
+        "construction_law",
+        ("encoder_lawfulness.json", ""),
+        producer="measure_construction_law.py",
     ),
     # ---- B2: sufficient ---------------------------------------------------------
     BRow(
@@ -261,27 +276,29 @@ ROWS = (
         "B4.1",
         "B-only dose-response / argmax",
         "action-conditional response shape readable from the state (not through a judge leg)",
-        "gate met",
-        "missing",
+        "E argmax share >= table, paired CI > 0, above random/destroyed controls (DEC-585)",
+        "decision_dose",
+        ("encoder_decision_law.json", "decision_dose"),
         producer="measure_decision_law.py",
     ),
     BRow(
         "B4",
         "B4.2",
-        "OPE / IPS known-effect recovery (legacy)",
+        "OPE / IPS known-effect recovery",
         "E recovers the known effect with a paired CI excluding 0",
-        "CI excludes 0 on the declared arms",
-        "legacy",
-        ("encoder_causal_ci.json", "0"),
-        producer="the legacy causal producer",
+        "IPS policy diff > 0 and CI lower bound > 0 (DEC-585)",
+        "decision_ope",
+        ("encoder_decision_law.json", "decision_ope"),
+        producer="measure_decision_law.py",
     ),
     BRow(
         "B4",
         "B4.3",
         "Action-invariance",
         "representation invariant to assignment, still predictive of the outcome",
-        "gate met",
-        "missing",
+        "cutoff band cert ok; marker/level teeth recorded (DEC-585)",
+        "decision_invariance",
+        ("encoder_decision_law.json", "decision_invariance"),
         producer="measure_decision_law.py",
     ),
     # ---- B5: minimal & affordable ----------------------------------------------
@@ -297,12 +314,12 @@ ROWS = (
     BRow(
         "B5",
         "B5.2",
-        "Cost / runtime / constant-state (legacy)",
+        "Cost / runtime / constant-state",
         "runtime, memory and incremental-update receipt",
-        "present and within budget",
-        "legacy",
+        "complete, N == registry, RSS within slice, finite rows/s, incremental recorded (DEC-585)",
+        "runtime_law",
         ("runtime.json", ""),
-        producer="the legacy runtime producer",
+        producer="measure_runtime.py",
     ),
     # ---- B6: transferable -------------------------------------------------------
     BRow(
@@ -318,12 +335,12 @@ ROWS = (
     BRow(
         "B6",
         "B6.2",
-        "Donor does-not-lose / adds / controls (legacy)",
-        "E vs raw, fair table, table+seq; random/destroyed negative controls",
-        "all donor gates met",
-        "legacy",
+        "Donor does-not-lose / adds / controls",
+        "E vs raw, fair table, table+E; random/destroyed negative controls",
+        "E >= raw and fair (point); table+E CI > 0; controls below E (DEC-585)",
+        "donor_battery",
         ("encoder_donor.json", ""),
-        producer="the legacy donor producer",
+        producer="measure_donor.py",
     ),
     BRow(
         "B6",
@@ -338,12 +355,12 @@ ROWS = (
     BRow(
         "B7",
         "B7.1",
-        "ECE / OOD retention (legacy)",
-        "calibration and OOD retention on the old reference",
-        "ECE <= 0.1 and OOD retained",
-        "legacy",
-        ("encoder_b_props.json", "ece_next_event"),
-        producer="the legacy calibration producer",
+        "ECE / OOD retention",
+        "calibration of the shipped next-type head + OOD retention",
+        "ECE(next event) <= 0.1; OOD retention recorded (DEC-585)",
+        "calibration_law",
+        ("encoder_b_props.json", "calibration"),
+        producer="measure_b_props.py",
     ),
     BRow(
         "B7",
@@ -358,12 +375,12 @@ ROWS = (
     BRow(
         "B8",
         "B8.1",
-        "Artifact identity (legacy)",
-        "artifact hash + config + data revision recorded",
-        "present",
-        "legacy",
-        ("encoder_b_props.json", "artifact_hash"),
-        producer="the legacy artifact producer",
+        "Artifact identity",
+        "registry tag + config + data revision recorded and consistent",
+        "present and consistent (DEC-585)",
+        "identity_law",
+        ("encoder_b_props.json", "identity"),
+        producer="measure_b_props.py",
     ),
     BRow(
         "B8",

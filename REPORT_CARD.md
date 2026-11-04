@@ -1,6 +1,6 @@
 # REPORT_CARD — B foundational, then PATH B > PATH A
 
-*Generated `2026-11-03T21:38:48+00:00` · commit `b41afab` (`foundation-rebuild` · clean) · encoder behavior `d5df3a2c1211c402`*
+*Generated `2026-11-04T03:31:20+00:00` · commit `ec42403` (`foundation-rebuild` · dirty) · encoder behavior `d5df3a2c1211c402`*
 
 **Assessment:**
 
@@ -48,7 +48,7 @@ The goal, cut backwards into the problems that must all be solved, recursively t
 | 2 | **V1.4** red_queen composes actions | Does red_queen compose next-best actions across cadences under constraints? | — | ⚪ NOT ASSESSED |
 | 2 | **V1.5** caterpillar explains from artifacts | Does caterpillar answer 'why' from artifacts only? | — | ⚪ NOT ASSESSED |
 
-*Frontier:* The live frontier is P2's enabler E1 (the trunk's state-update algebra), now cut to three DEC-frozen atomic problems. E1.a (next_event mastered on the toy) is exhausted negative at N=500: all three single-axis trunk-algebra candidates are negative on the toy (DEC-577, DEC-578 and DEC-581 outcomes) and the capacity axis is negative too (DEC-582 outcome, g 1.149121 ≈ iteration 1's 1.14727, no usable rank gained) — the 1-gram floor is binding, a finite-sample estimation gap, not a trunk deficiency. E1.b (intent, curriculum step 2) is the next structure (DEC-583; the snr difficulty dial is rejected as an axis) and is on hold; E1.c (the port under DEC-572's bars) waits on both. No lab receipt flips a B-row verdict. The PRIMARY progress track meanwhile is R4: the 11 remaining B atomic problems (6 legacy re-stamps at the current behavior + 5 new O-series producers), certification-first per the operator's 2026-11-03 directive.
+*Frontier:* The live frontier is P2's enabler E1 (the trunk's state-update algebra), now cut to three DEC-frozen atomic problems. E1.a (next_event mastered on the toy) is exhausted negative at N=500: all three single-axis trunk-algebra candidates are negative on the toy (DEC-577, DEC-578 and DEC-581 outcomes) and the capacity axis is negative too (DEC-582 outcome, g 1.149121 ≈ iteration 1's 1.14727, no usable rank gained) — the 1-gram floor is binding, a finite-sample estimation gap, not a trunk deficiency. E1.b (intent, curriculum step 2) is the next structure (DEC-583; the snr difficulty dial is rejected as an axis) and is on hold; E1.c (the port under DEC-572's bars) waits on both. No lab receipt flips a B-row verdict. The PRIMARY progress track meanwhile is R4: the 11 remaining B atomic problems, certification-first per the operator's 2026-11-03 directive. DEC-585 pre-registered the 8 rows it covers (B1.2, B4.1-B4.3, B5.2, B6.2, B7.1, B8.1) as 5 cfm_v2k producers with frozen gate kinds and bars in b_spec (chunk 1 = gates + producers + card branches, no measurement; chunk 2 = the sequential measurement, receipts verified before verdicts); the remaining 3 (B5.1, B6.3, B7.2) each get their own DEC.
 
 **Frontier readings (reported, not gated — the evidence behind E1's FRONTIER badge):**
 
@@ -59,7 +59,7 @@ The goal, cut backwards into the problems that must all be solved, recursively t
 - **dev rig · next_event cap256 (DEC-582, capacity @ baseline algebra)** — g 1.149 (bar ≤ 0.5, DEC-576/577) · eff_rank 1.209 · beats 1-gram: no — `lab/next_event_cap256.json`
 - **real stream · O3 attempt 4 (REJECTED)** — M4 persona 0.04646 (bar ≥ 0.15, DEC-572) · served coarse R² 0.4675 (bar ≥ 0.45) — `o3axis_i/` · measured under `6a8e2663`
 
-A green atom means its frozen gate is met. For these atoms the gate certifies *measurement and attribution*, not a quality level (derived in `scripts/b_spec.py: gate_kind`, not asserted here): `B1.1`, `B2.3`, `B3.1`, `B3.2`, `B3.4`, `B3.5`, `B3.6`, `B6.1`, `B8.2`. Their quality levels are DEC-frozen and live in the receipts (`PLAN.md` §6). Read the plan before reading a green row as 'good'.
+A green atom means its frozen gate is met. For these atoms the gate certifies *measurement and attribution*, not a quality level (derived in `scripts/b_spec.py: gate_kind`, not asserted here): `B1.1`, `B2.3`, `B3.1`, `B3.2`, `B3.4`, `B3.5`, `B3.6`, `B4.3`, `B5.2`, `B6.1`, `B8.1`, `B8.2`. Their quality levels are DEC-frozen and live in the receipts (`PLAN.md` §6). Read the plan before reading a green row as 'good'.
 
 ## B — foundational scorecard (B-only, DEC-562)
 
@@ -72,7 +72,7 @@ The judge below is the **consequence** (B+C). This section is **B itself**: a ro
 | # | Property | Metric | Green means | Verdict | Evidence / missing producer |
 |---|---|---|---|---|---|
 | B1.1 | Lawful dynamics (S3) | merge/equivariance/mass-additivity exact on data; tau receipted; stable from step 0 | reporting | ✅ PASS | judge_stages.json:S3 working=True |
-| B1.2 | Construction laws (C1-C6) | scan / field-permutation / mass / determinism / schema variant / frozen hash | unmeasured | ❔ UNKNOWN | legacy receipt encoder_lawfulness.json (no behavior stamp); re-run the legacy encoder-construction producer |
+| B1.2 | Construction laws (C1-C6) | scan / field-permutation / mass / determinism / schema variant / frozen identity | quality | ❔ UNKNOWN | receipt has no generated_at — re-run measure_construction_law.py |
 
 ### B2 — Sufficient · ✅ PASS
 
@@ -103,9 +103,9 @@ The judge below is the **consequence** (B+C). This section is **B itself**: a ro
 
 | # | Property | Metric | Green means | Verdict | Evidence / missing producer |
 |---|---|---|---|---|---|
-| B4.1 | B-only dose-response / argmax | action-conditional response shape readable from the state (not through a judge leg) | unmeasured | ❔ UNKNOWN | missing producer: measure_decision_law.py |
-| B4.2 | OPE / IPS known-effect recovery (legacy) | E recovers the known effect with a paired CI excluding 0 | unmeasured | ❔ UNKNOWN | legacy receipt encoder_causal_ci.json (no behavior stamp); re-run the legacy causal producer |
-| B4.3 | Action-invariance | representation invariant to assignment, still predictive of the outcome | unmeasured | ❔ UNKNOWN | missing producer: measure_decision_law.py |
+| B4.1 | B-only dose-response / argmax | action-conditional response shape readable from the state (not through a judge leg) | quality | ❔ UNKNOWN | missing receipt encoder_decision_law.json; produce measure_decision_law.py |
+| B4.2 | OPE / IPS known-effect recovery | E recovers the known effect with a paired CI excluding 0 | quality | ❔ UNKNOWN | missing receipt encoder_decision_law.json; produce measure_decision_law.py |
+| B4.3 | Action-invariance | representation invariant to assignment, still predictive of the outcome | reporting | ❔ UNKNOWN | missing receipt encoder_decision_law.json; produce measure_decision_law.py |
 
 ### B5 — Minimal & affordable · ❔ UNKNOWN
 
@@ -114,7 +114,7 @@ The judge below is the **consequence** (B+C). This section is **B itself**: a ro
 | # | Property | Metric | Green means | Verdict | Evidence / missing producer |
 |---|---|---|---|---|---|
 | B5.1 | Minimality k_min | served rank = the frozen reconstruction certificate | unmeasured | ❔ UNKNOWN | missing producer: measure_minimality_law.py |
-| B5.2 | Cost / runtime / constant-state (legacy) | runtime, memory and incremental-update receipt | unmeasured | ❔ UNKNOWN | legacy receipt runtime.json (no behavior stamp); re-run the legacy runtime producer |
+| B5.2 | Cost / runtime / constant-state | runtime, memory and incremental-update receipt | reporting | ❔ UNKNOWN | receipt has no generated_at — re-run measure_runtime.py |
 
 ### B6 — Transferable · ❔ UNKNOWN
 
@@ -123,7 +123,7 @@ The judge below is the **consequence** (B+C). This section is **B itself**: a ro
 | # | Property | Metric | Green means | Verdict | Evidence / missing producer |
 |---|---|---|---|---|---|
 | B6.1 | Objective battery (S5) | every content pressure beats its naive comparator (or is excluded and reported) | reporting | ✅ PASS | judge_stages.json:S5 working=True |
-| B6.2 | Donor does-not-lose / adds / controls (legacy) | E vs raw, fair table, table+seq; random/destroyed negative controls | unmeasured | ❔ UNKNOWN | legacy receipt encoder_donor.json (no behavior stamp); re-run the legacy donor producer |
+| B6.2 | Donor does-not-lose / adds / controls | E vs raw, fair table, table+E; random/destroyed negative controls | quality | ❔ UNKNOWN | receipt has no generated_at — re-run measure_donor.py |
 | B6.3 | Broad held-out transfer family | adds signal on a family broader than the eight judge legs | unmeasured | ❔ UNKNOWN | missing producer: measure_transfer_law.py |
 
 ### B7 — Robust · ❔ UNKNOWN
@@ -132,7 +132,7 @@ The judge below is the **consequence** (B+C). This section is **B itself**: a ro
 
 | # | Property | Metric | Green means | Verdict | Evidence / missing producer |
 |---|---|---|---|---|---|
-| B7.1 | ECE / OOD retention (legacy) | calibration and OOD retention on the old reference | unmeasured | ❔ UNKNOWN | legacy receipt encoder_b_props.json (no behavior stamp); re-run the legacy calibration producer |
+| B7.1 | ECE / OOD retention | calibration of the shipped next-type head + OOD retention | quality | ❔ UNKNOWN | receipt has no generated_at — re-run measure_b_props.py |
 | B7.2 | Missingness / unlogged confounders | uncertainty carried for unobserved events, never faked | unmeasured | ❔ UNKNOWN | missing producer: measure_robustness_law.py |
 
 ### B8 — Reproducible · ❔ UNKNOWN
@@ -141,7 +141,7 @@ The judge below is the **consequence** (B+C). This section is **B itself**: a ro
 
 | # | Property | Metric | Green means | Verdict | Evidence / missing producer |
 |---|---|---|---|---|---|
-| B8.1 | Artifact identity (legacy) | artifact hash + config + data revision recorded | unmeasured | ❔ UNKNOWN | legacy receipt encoder_b_props.json (no behavior stamp); re-run the legacy artifact producer |
+| B8.1 | Artifact identity | registry tag + config + data revision recorded and consistent | reporting | ❔ UNKNOWN | receipt has no generated_at — re-run measure_b_props.py |
 | B8.2 | One-command reproducibility (S6) | the card is regenerated in one invocation at a recorded commit | reporting | ✅ PASS | judge_stages.json:S6 working=True |
 
 ## The judge — four legs × two numbers
@@ -223,17 +223,17 @@ The leg verdict above is computed from these rows; a task can PASS while its leg
 - `judge_leg_unsupervised.json :: brain_ledger [P4·JUDGE-unsupervised] — persona_geometry: outside the delivery non-inferiority margin (0.01 R2); failing: persona_geometry, future_geometry, segment_structure`
 - `judge_leg_simulator.json :: brain [P4·JUDGE-simulator] — argmax_optimum: destroyed control >= brain (0.253872 vs 0.245791); failing: argmax_optimum`
 - `judge_leg_simulator.json :: brain_ledger [P4·JUDGE-simulator] — argmax_optimum: outside the delivery non-inferiority margin (0.01 R2); failing: argmax_optimum`
-- `B B1.2 [P1·B1] Construction laws (C1-C6) — legacy receipt encoder_lawfulness.json (no behavior stamp); re-run the legacy encoder-construction producer`
-- `B B4.1 [P2·B4] B-only dose-response / argmax — missing producer: measure_decision_law.py`
-- `B B4.2 [P2·B4] OPE / IPS known-effect recovery (legacy) — legacy receipt encoder_causal_ci.json (no behavior stamp); re-run the legacy causal producer`
-- `B B4.3 [P2·B4] Action-invariance — missing producer: measure_decision_law.py`
+- `B B1.2 [P1·B1] Construction laws (C1-C6) — receipt has no generated_at — re-run measure_construction_law.py`
+- `B B4.1 [P2·B4] B-only dose-response / argmax — missing receipt encoder_decision_law.json; produce measure_decision_law.py`
+- `B B4.2 [P2·B4] OPE / IPS known-effect recovery — missing receipt encoder_decision_law.json; produce measure_decision_law.py`
+- `B B4.3 [P2·B4] Action-invariance — missing receipt encoder_decision_law.json; produce measure_decision_law.py`
 - `B B5.1 [P2·B5] Minimality k_min — missing producer: measure_minimality_law.py`
-- `B B5.2 [P2·B5] Cost / runtime / constant-state (legacy) — legacy receipt runtime.json (no behavior stamp); re-run the legacy runtime producer`
-- `B B6.2 [P3·B6] Donor does-not-lose / adds / controls (legacy) — legacy receipt encoder_donor.json (no behavior stamp); re-run the legacy donor producer`
+- `B B5.2 [P2·B5] Cost / runtime / constant-state — receipt has no generated_at — re-run measure_runtime.py`
+- `B B6.2 [P3·B6] Donor does-not-lose / adds / controls — receipt has no generated_at — re-run measure_donor.py`
 - `B B6.3 [P3·B6] Broad held-out transfer family — missing producer: measure_transfer_law.py`
-- `B B7.1 [P3·B7] ECE / OOD retention (legacy) — legacy receipt encoder_b_props.json (no behavior stamp); re-run the legacy calibration producer`
+- `B B7.1 [P3·B7] ECE / OOD retention — receipt has no generated_at — re-run measure_b_props.py`
 - `B B7.2 [P3·B7] Missingness / unlogged confounders — missing producer: measure_robustness_law.py`
-- `B B8.1 [P1·B8] Artifact identity (legacy) — legacy receipt encoder_b_props.json (no behavior stamp); re-run the legacy artifact producer`
+- `B B8.1 [P1·B8] Artifact identity — receipt has no generated_at — re-run measure_b_props.py`
 
 ## Backward requirements (from PROMPT_BACKWARD)
 

@@ -150,10 +150,15 @@ certification stays on the real stream.
    `rabbit_hole/lab_oracles.py` (a rabbit_hole edit = behavior move = hash move +
    re-stamp)? The full one-axis pre-registration lands at resume under a follow-up DEC.
 - **Route: R4 (certification-first, operator 2026-11-03).** The 11 open B sub-problems
-   are the PRIMARY progress track: 6 legacy re-stamps at the current behavior
-   `d5df3a2c` (B1.2, B4.2, B5.2, B6.2, B7.1, B8.1) + 5 new O-series producers (B4.1/B4.3
-   decision law, B5.1 minimality, B6.3 transfer, B7.2 missingness). The dev-rig remainder
-   (R2 intent, R3 port) is on hold; B+C re-scores only after B is green.
+   are the PRIMARY progress track. DEC-585 pre-registered the 8 rows it covers (B1.2,
+   B4.1, B4.2, B4.3, B5.2, B6.2, B7.1, B8.1) as 5 cfm_v2k producers with frozen gate
+   kinds/bars in `b_spec`; chunk 1 (gates + producers + card branches, no measurement)
+   lands first, chunk 2 runs them sequentially (CPU donor/runtime, then GPU
+   construction/decision/b_props, one GPU job at a time) and appends the outcome. The
+   remaining 3 B rows (B5.1 minimality, B6.3 transfer, B7.2 missingness) each get their
+   own DEC after B is green. The dev-rig remainder (R2 intent, R3 port) stays on hold;
+   B+C re-scores only after B is green; the operator's pacing target is fast training
+   iteration right after B is measured.
 - **Plan tree reframe (DEC-584, 2026-11-03).** At the operator's directive the plan is a
    uniform recursive decomposition to ATOMIC problems — no "section"/"leaf" vocabulary, no
    forced layer count, no separate PROGRESS block (progress = the solved-problem count read
@@ -201,32 +206,29 @@ next question is the learned shape, not another consumer tuning pass.
 
 ## Next 3 actions
 
-1. **DEC-581/582 outcomes + DEC-583 recorded (this chunk, 2026-11-03).** Dev-rig iteration 4
-   (candidate 3, drive-side looped block) NOT MASTERED, branch (iii): g 1.169947 vs axis
-   baseline 1.14727 (no improvement; CI straddles the 1-gram; eff_rank 1.836 the ladder
-   high, not converted); cap-hit disclosed (depth 4/4, bounded contraction, no outer loop,
-   not UNSTABLE). Capacity axis (baseline algebra @ dim=256) NOT MASTERED, branch (iii):
-   g 1.149121 ≈ 1.14727 within noise, eff_rank 1.209 — capacity not the constraint. The
-   `next_event` toy is CLOSED: 4 algebra values + capacity @256 all negative, 1-gram floor
-   binding at N=500. DEC-583 decides the next dev-rig structure = `intent` (snr knob
-   rejected: it is the difficulty dial, it shrinks g's denominator); ON HOLD. ROUTE R1 →
-   R4 (certification-first). Card's frontier readings gain iter4 + cap256; no behavior
-   move.
-2. **R4: the six legacy re-stamps at behavior `d5df3a2c`, first.** B1.2
-   (`encoder_lawfulness.json`), B4.2 (`encoder_causal_ci.json`), B5.2 (`runtime.json`),
-   B6.2 (`encoder_donor.json`), B7.1 + B8.1 (`encoder_b_props.json` — one producer, two
-   rows): identify each existing producer script, re-run it on the canonical cfm_v2k
-   products, verify each receipt (behavior stamp `d5df3a2c`, N recorded, controls present)
-   before reading the verdict; the card flips UNKNOWN→PASS where the gate is met. GPU free,
-   one job at a time; card re-rendered after each.
-3. **Then R4's five new O-series producers (each pre-registered under its own DEC
-   BEFORE the run).** `measure_decision_law.py` (B4.1 dose-response/argmax + B4.3
-   action-invariance), `measure_minimality_law.py` (B5.1 k_min reconstruction
-   certificate), `measure_transfer_law.py` (B6.3 broad held-out transfer family),
-   `measure_robustness_law.py` (B7.2 missingness/unlogged-confounder uncertainty). Then the
-   dev-rig resumes (DEC-583 implementation check → E1.b intent pre-registration → R3
-   port) only after B is green; B+C re-scores only then; project v1 third; BACKWARD at
-   milestones only (DEC-580's FULL mode).
+1. **DEC-585 chunk 1 (this commit): the 8 B gates frozen in code, no measurement runs.**
+   `b_spec`: 8 new gate kinds + 6 bar constants (construction field-perm/scan/mass,
+   calibration ECE, OOD horizon, cutoff ULP cover). `report_card`: the 8 verdict branches
+   (one axis per verdict; reporting kinds carry ok-flags in the why, not the gate).
+   Producers: `measure_construction_law.py` (B1.2, CPU), `measure_decision_law.py`
+   (B4.1/B4.2/B4.3, GPU + 3 replica subprocesses), `measure_b_props.py` (B7.1 GPU +
+   B8.1), `measure_runtime.py` (B5.2, CPU rewrite), `measure_donor.py` (B6.2, CPU
+   rewrite), on the shared `cfm_products.py` loader. Housekeeping: `measure_causal.py` +
+   its legacy receipt deleted; `run_demo.py` drops the causal/donor demo steps; the
+   watchdog list follows (the memory-guard test enforces it). Card state until chunk 2:
+   the 4 legacy receipts on disk have no `_meta`, so the 8 rows render UNKNOWN ("receipt
+   has no generated_at — re-run …"); B stays 12 PASS / 0 FAIL / 11 UNKNOWN;
+   `plan.py --check` green.
+2. **DEC-585 chunk 2: measure on cfm_v2k, then read the verdicts.** Run the 5 producers
+   sequentially — CPU: donor, runtime; GPU serialized: construction_law, decision_law
+   (~3 × 11-min replica forwards + marker re-encode), b_props. For EACH receipt verify
+   the stamp (behavior `d5df3a2c`), N, and the controls BEFORE reading the verdict;
+   re-render the card after each producer; append the DEC-585 outcome + MOVEMENT;
+   two-commit card pattern. A FAIL is a measurement, not a rescue target.
+3. **Then the remaining 3 new-law rows under their own DECs** (B5.1
+   `measure_minimality_law.py`, B6.3 `measure_transfer_law.py`, B7.2
+   `measure_robustness_law.py`) — and, once B is green, return to fast training
+   iteration (the DEC-583 `intent` dev rig resumes; steering surface = REPORT_CARD.md).
 
 ## Operating facts
 

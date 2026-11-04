@@ -10185,3 +10185,200 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     outside the behavior surface — no hash move).
   - **Status.** Implemented; the fast-tier suite, ruff and the card render verify at this
     commit.
+
+- **DEC-585 (B certification, decided 2026-11-03: upgrade the 8 legacy/missing B rows to 5
+  producers with pre-registered gates and stamped receipts on cfm_v2k. Chunk 1 =
+  pre-registration (code + gates, no measurement runs); chunk 2 = the measurement run,
+  outcome + MOVEMENT appended here.)**
+  - **NODE:** the 8 B atoms — B1.2 construction laws · B4.1 decision dose · B4.2 decision OPE ·
+    B4.3 decision invariance · B5.2 runtime law · B6.2 donor battery · B7.1 calibration law ·
+    B8.1 identity law.
+  - **ROUTE:** R4 (the operator's certification-first: the UNKNOWN B sub-problems are the
+    primary progress track, read off the plan tree; the operator 2026-11-03 additionally asked
+    for pace — this DEC is the lean pre-registration, not a ceremony: gates frozen compactly
+    here + in `b_spec` constants, then measure on cfm_v2k and move on to training iteration).
+  - **MOVE:** legacy/missing receipts → measured receipts: 8 rows gain new gate kinds and
+    producers that (re)stamp their receipt files on the real artifact cfm_v2k. No behavior
+    surface change (scripts only) → no hash move, S6 chain untouched.
+  - **Context.** B is the current gate: 12 PASS / 0 FAIL / 11 UNKNOWN. Six of the 11 are
+    legacy receipts produced against the dead demo stack (`demo/auto_encoder.py` +
+    `frozen_6k` + `ref_v3b_6k` — an encoder that no longer exists); five have no producer.
+    Lab receipts never flip a B-row verdict (DEC-576 standing caveat): B certifies on the real
+    stream — cfm_v2k is the known-truth lab artifact. This DEC covers 8 of the 11 (all six
+    legacy rows + B4.1/B4.3 of the missing); B5.1/B6.3/B7.2 (minimality/transfer/robustness)
+    come under their own DECs after B is green.
+  - **Decision — 5 producers, 8 new gate kinds, bars as `b_spec` constants.**
+    - Kinds: `construction_law` (B1.2, quality) · `decision_dose` (B4.1, quality) ·
+      `decision_ope` (B4.2, quality) · `decision_invariance` (B4.3, reporting) ·
+      `runtime_law` (B5.2, reporting) · `donor_battery` (B6.2, quality) ·
+      `calibration_law` (B7.1, quality) · `identity_law` (B8.1, reporting).
+      `REPORTING_GATE_KINDS` += {decision_invariance, runtime_law, identity_law}.
+    - Bar constants: `CONSTRUCTION_FIELD_PERM_BAR=1e-6` · `CONSTRUCTION_SCAN_BAR=1e-12` ·
+      `CONSTRUCTION_MASS_BAR=1e-9` · `CALIBRATION_ECE_BAR=0.1` · `OOD_HORIZON_DAYS=30` ·
+      `CUTOFF_ULP_COVER=4`.
+    - All producers: `ensure_boundary()` first; `--products` default
+      `/home/austin_whaley/wonderland_work/cfm_v2k`, `--demo` default
+      `/home/austin_whaley/wonderland_work/demo_v2`; `stamp_merge_write(out, body, command,
+      stamp_blocks=False)` (one producer writes the whole file); bodies carry
+      `products: products_identity(db)`, `complete`, Ns, `device`; receipts never carry
+      CRITERION_KEYS; main returns 0 iff complete.
+    - **B1.2 `measure_construction_law.py` (CPU) → re-stamps `encoder_lawfulness.json`** over
+      the first 20 `build_sequences` customers (partition order; keys recorded):
+      C1 trunk h delta under reversed field order — `copy.deepcopy(model)` with
+      `vocab.attrs` dict + `attr_fields` + `numeric_fields` reversed and `_attr_index`/
+      `_num_index` remapped; worst per-customer relative L2 of h; bar 1e-6 (the counter raw
+      layout is recorded, not compared — h is SSM-only). C2 scan associativity / C3 mass
+      additivity reuse `measure_dynamics_law.check_scan_associativity/check_mass_additivity`
+      (worst_rel_err; S3 committed 1.128e-15 / 5.015e-16 → margin against 1e-12 / 1e-9).
+      C4 two forwards → sha256 bit-identical. C5 `measure_input_law.check_renamed_end_to_end`
+      on demo_v2 (WORK=/tmp/opencode/input_law; trains its own d=64 1-epoch demo).
+      C6 `products_identity` + checkpoint present + checkpoint sha256.
+    - **B4.1/B4.2/B4.3 `measure_decision_law.py` (GPU producer; ridge fits CPU) → NEW
+      `encoder_decision_law.json`, three blocks.**
+      - `decision_dose` — B-only judge-simulator-v2 geometry: `identified_dose_response`
+        over `arm_cells(stream, truth)` (MIN_ARM_DAYS=10); population = judge akeys/bkeys ∩
+        identified ∩ stored E; ONE `_ridge_head()` per identified level fit on split-A reps,
+        queried on split-B reps; argmax vs `offer_opt` (ties → lowest level, the judge's
+        `hits()` semantics); E arm = stored 256-d `state_embeddings` (no re-encode); table
+        arm = `measure_judge_law._table_matrix` with the SAME head (pre-registered: the
+        judge's XGB incumbent is a C-side instrument, not a B gate); random/destroyed E =
+        `controls_matched(default_rng(SEED), E_A, E_B)` with broken reps on BOTH fit and
+        score sides; paired CI = battery `_paired_ci` (N_BOOT=2000) on per-customer
+        (hit_E − hit_table); thin levels (<30 A cells) recorded as degeneracy; the judge's
+        oracle-argmax ceiling 0.6404 recorded as context. **BAR: share_E ≥ share_table AND
+        ci_lo > 0 AND share_random < share_E AND share_destroyed < share_E.**
+      - `decision_ope` — legacy protocol v1 port, B-only: action = the customer's last-
+        logged `email_send` offer level over the FULL stream (`customer_event_stream.
+        parquet` root; attrs JSON; customers with no send excluded + recorded); demo_v2
+        randomizes ONLY the offer arm (one_factor_weekly, uniform 1/K) → the legacy channel
+        arm is RETIRED (pre-registered protocol delta); reward = `y_margin_90`
+        (`demo_v2/path_a/customer_labels.parquet`, 5000 rows); population = B customers ∩
+        labels ∩ action ∩ E ∩ table; split 70/30 by `default_rng(0).permutation`,
+        `ntr=int(0.7*n)` (legacy seeds); learner = `_ridge_head()` on [reps; onehot(action)]
+        — the pre-registered ridge replaces the legacy XGB (B-only simple-head doctrine,
+        same head both arms); policy = argmax over K = |set(truth) ∪ set(actions)|; IPS
+        uniform p0=1/K; paired bootstrap 400 `default_rng(1)` (legacy seeds); recorded
+        audit: observed test-population level frequencies, random-policy IPS value, and the
+        last-send/as-of overlap limitation. **BAR: diff = E_ips − T_ips > 0 AND ci_lo > 0.**
+      - `decision_invariance` (REPORTING; **PASS ⟺ block complete + check1.ok + check2/
+        check3 values finite**; the ok flags of checks 2/3 are recorded in the why, not
+        gated): check 1 = the as-of-cutoff band cert below; check 2 = marker invariance —
+        re-encode ALL 5000 pre-as_of sequences with `attrs["target_key"] → None` (the
+        "none" bucket of `tokens()`; `none_bucket_idx` recorded), FRESH counter via the
+        build loop's `_collate`/`tokens_batch`/`model.counter`/`signed_log1p(_M[0,-1])`,
+        E′ = `donor_states(model, pre-fade h′, ctr′)`, refit the decision_dose per-level
+        heads on E′, record share(E′) vs share(E-stored) + ok flag — pre-registered FAIL
+        risk: `target_key` is a lab marker the encoder may have learned; check 3 = teeth —
+        a seeded (SEED) permutation of the level axis applied to the B4.1 E-arm recovered
+        surface; record share_permuted vs share_table and |Δ|∞ between the permuted and
+        original curves + ok flag (the surface must respond to the level axis).
+    - **B5.2 `measure_runtime.py` REWRITE (CPU) → re-stamps `runtime.json`:** N=5000 forward
+      benchmark doing exactly the `build_products` state-loop work per customer (`model(seq)`
+      → h + per-customer counter readout), then the batched E replica + exact fade replica
+      (day-1 close work); cold/warm wall split (cold = first 500); rows/s on the warm part;
+      dims (state 256 / served 256); peak RSS vs `safe_run.slice_cap_gb` (recorded, not
+      typed — cap None renders as a CI no-op); the incremental path = the recorded
+      `state_job_receipts` row (cfm_v2k: n_absorbed 0, n_idle 5000, n_embeddings 5000,
+      device 'encoder', wall 0.66). **BAR: complete + n == registry N + peak RSS within the
+      slice + finite rows/s + incremental row recorded.**
+    - **B6.2 `measure_donor.py` REWRITE (CPU) → re-stamps `encoder_donor.json`:** targets
+      `y_value_90`/`y_orders_90` (R2) + `y_churn_90` (AUC from the ridge score); split =
+      judge akeys/bkeys via battery `_load_all`; arms: raw = `customer_features.parquet`
+      (40→38 via `table_features`), fair = `path_a_wide_table.parquet` (50→38; on cfm_v2k
+      the two matrices are identical — the provenance receipt `path_a_provenance.json`
+      stamps all 38 comparator columns hist/customers and the 10 fut columns are dropped by
+      the comparator's own rule — the equality is recorded, not assumed), E = stored
+      `state_embeddings`, table_E = hstack(fair, E), random/destroyed E =
+      `controls_matched`; head = `_ridge_head` fit on A, scored on B (one encoding over
+      A ∪ B). **BAR (all per non-degenerate target): D1 E ≥ raw point · D2 E ≥ fair point ·
+      D3 CI (table_E − table) lo > 0 via judge `_paired_stat_ci` (statistic recomputed in
+      each replicate, N_BOOT=2000, SEED) · D4 random < E point · D5 destroyed < E point;
+      degenerate targets excluded and reported; N recorded.**
+    - **B7.1/B8.1 `measure_b_props.py` (new; GPU for the calibration block) → NEW
+      `encoder_b_props.json`, two blocks.**
+      - `calibration` (B7.1): multiclass ECE (10 equal-width max-confidence bins,
+        Σ(n_b/N)·|acc_b − conf_b|) of the SHIPPED next-type head:
+        `model.head_next(y_last)` softmax, y_last = the per-step readout at the customer's
+        last pre-as_of tick (the head was trained on y, not h:
+        `mce(model.head_next(y[:, :-1]), et[:, 1:])` — verified shape-only `embed(h)`);
+        population = split-B customers with a next event (first FULL-stream event with ts >
+        the last pre-as_of tick; truth = vocab et index, OOV → the n_et bucket; OOVs
+        recorded). **BAR: `ece_next_event` (in-window) ≤ `CALIBRATION_ECE_BAR=0.1`**
+        (transcribed from legacy A5; legacy value 0.0482 on the old 128-d reference).
+        OOD retention: next events split at `as_of + OOD_HORIZON_DAYS=30d` (the evaluation
+        contract literal — principle-ok); both in-window and OOD ECE/accuracy recorded, no
+        OOD bar. GPU cuda:0 or refuse + record (CPU vs GPU forward maxdiff 2.03e-06 ≫ any
+        bar).
+      - `identity` (B8.1): served-version registry resolution rule (the tag the products'
+        `state_embeddings` actually carry must match exactly one registry next to the
+        products) + `registry_sha256` + `data_signature` + `as_of` + `n_customers` +
+        config sha256 (canonical JSON of resolved + overrides) + checkpoint present +
+        filename tag == registry tag. **BAR: "present"** (transcribed; the legacy
+        `artifact_hash` row is replaced by registry identity, DEC-448).
+    - Housekeeping: DELETE `scripts/measure_causal.py` + `docs/report_cards/experiments/
+      encoder_causal_ci.json` (the only legacy causal receipt; B4.2 replaces it and its
+      legacy numbers live below). `run_demo.py` drops the `measure_causal` step AND the
+      positional-CLI `measure_donor` step (B6.2's role moves to cfm_v2k; grep-verified that
+      only causal/donor/runtime write B-row files). `gpu_watchdog.DEFAULT_PATTERNS` gains
+      `measure_construction_law.py`, `measure_decision_law.py`, `measure_b_props.py` and
+      loses `measure_causal.py` (`tests/test_memory_guard.py` enforces the exact list).
+  - **Check-1 amendment (B4.3 as-of-cutoff band cert) — a MEASURED floor, never a chosen
+    tolerance.** Pre-registered fallback, smoke-falsified against cfm_v2k:
+    - Byte-identity across independent loads is unachievable and that is the root cause, not
+      a bug: cfm_v2k built its products inside the POST-TRAINING process context; cross-
+      context cuBLAS/allocator noise is 1–3 ULP state / ~2 ULP E, while two independent
+      same-op-sequence processes are BIT-IDENTICAL to each other (0 diff on H/S/E) and torch
+      2.14.1+cu130 is unchanged since the build (venv mtime 2026-10-28 < build 2026-11-02).
+      Not per-run nondeterminism, not torch drift.
+    - Frozen band cert, run on the build device cuda:0 (refuse + record if unavailable):
+      P1 and P2 = two independent fresh loads (hidden `--replica` subprocess entry: fresh
+      load → forward all 5000 → E with the STORED counters in the build op order → exact
+      `fade_idle` replica with the build half-life) must be BIT-IDENTICAL to each other
+      (reproducibility bar; observed 0 diff) · P1 vs stored `customer_state.state` /
+      `state_embeddings.embedding` max-abs delta ≤ `CUTOFF_ULP_COVER(4)·2^−23·max|stored|`
+      (observed 3.576e-07 @ 4817/5000 vs band ≈ 7.1e-07 on S; 9.155e-05 @ 4694/5000 vs band
+      ≈ 2.6e-04 on E, at |h|max ≈ 1.48–1.60, |E|max ≈ 415–546) · P3 = `LG_SCAN=eager`
+      witness (subprocess, env set BEFORE the `cfm_model` import — LG_SCAN is read at import)
+      within 4× band (sanity) · per-customer TEETH for gap > 0:
+      `max|S_P1 − S_stored| < max|H_P1(raw, pre-fade) − S_stored|` (the cutoff-sensitive
+      control; aggregate observed 1.015) · stored state = day-1-close faded state
+      (float32, `H·exp(−LN2·(close_at − last_event_ts)/(hl·86400)).clamp(max=1)`,
+      close_at = 1735689600.0 from `state_job_receipts`); stored E =
+      `donor_states(pre-fade h, stored 39-d counter)` (serve_unfaded order: materialize
+      FIRST, fade after).
+  - **Legacy numbers recorded here (the receipts are regenerated; legacy numbers are not
+    evidence, DEC-562):** `encoder_lawfulness`: field_perm 1.19e-07, scan_merge 8.88e-16 ·
+    `encoder_donor`: per-target raw/fair/E/table_seq R2 + mean/se/lo/hi CIs, no controls ·
+    `encoder_b_props`: ece_next_event 0.0482, mass_additivity_error 0.0, artifact_hash,
+    E_dim 128 (cfm_v2k serves 256-d) · `runtime`: demo 600 entities, cold 5.36 s / warm
+    0.316 s / 1896 rows/s, peak_rss_mb 2226.4 · `encoder_causal_ci` (ref_v3b_6k): channel
+    18.83 [−45.06, 78.75], offer 54.75 [−97.75, 191.34], random 475.46.
+  - **Rejected alternatives.** (i) Re-run the legacy demo producers: they target the dead
+    demo stack and would measure an encoder that no longer exists. (ii) Keep `kind=legacy`
+    and narrate: the tombstone keeps 8 rows UNKNOWN forever — zero progress against the
+    certification-first directive. (iii) Check-1 on CPU with allclose: a device confound —
+    the CPU vs GPU forward maxdiff 2.03e-06 exceeds every bar, so a CPU replica would fail
+    the cert for the wrong reason. (iv) Relax check-1 to a hand-picked tolerance: the floor
+    must be measured and falsifiable, never chosen — the ULP evidence above is that
+    measurement. (v) Byte-identical check-1 across independent loads: falsified this session
+    (the build ran products inside the post-training cuBLAS/allocator context; cross-context
+    noise 1–3 ULP state / ~2 ULP E while same-context repeats are bit-identical).
+  - **Principles served.** Honest (gates frozen before results; legacy numbers quarantined
+    in this log; receipts regenerated, never re-labeled) · Robust (fail-safe device refusal,
+    the cutoff teeth control, negative controls in every battery block) · Diagnosable (one
+    axis per verdict; reporting kinds carry ok flags in the why, not in the gate) ·
+    Efficient (reuse of the dynamics/input/judge/battery primitives; one ridge-head
+    doctrine; the stored E is read, not re-encoded, except where the block is about the
+    re-encode).
+  - **No-op proof (verdicts).** While the receipts are stale, B stays 12 PASS / 0 FAIL /
+    11 UNKNOWN: the 8 rows' why-strings change (legacy rows read "receipt has no generated_at"
+    or "missing receipt …; produce …" and now name the NEW producers), every other verdict is
+    untouched, `plan.py --check` is green, and scripts are outside the behavior surface — no
+    hash move, S6 chain intact.
+  - **Status.** Chunk 1 in progress: this entry + `b_spec` rows/constants + `report_card`
+    branches + the 5 producers + housekeeping + tests; fast tier + ruff + `plan.py --check`
+    + card render verify at the chunk-1 commit. No measurement runs. Chunk 2: run the 5
+    producers sequentially on cfm_v2k (CPU first: donor, runtime; then GPU serialized:
+    construction_law, decision_law, b_props), verify each receipt (stamp, N, controls)
+    BEFORE reading verdicts, re-render the card after each, and append outcome + MOVEMENT
+    here; two-commit card pattern.

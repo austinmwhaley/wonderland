@@ -78,7 +78,7 @@ The merge / equivariance / mass laws are the homomorphism floor: a state update 
 
 ###### B1.2 — Construction laws (C1-C6)
 
-*scan / field-permutation / mass / determinism / schema variant / frozen hash*
+*scan / field-permutation / mass / determinism / schema variant / frozen identity*
 
 The construction laws (C1–C6) are the v6 algebraic-law pillar in testable form — scan associativity, field permutation, determinism, schema variants, the frozen hash: a construction that breaks one is a transcript, not a certificate.
 
@@ -92,9 +92,9 @@ An artifact that cannot be rebuilt at a recorded commit is a transcript, not a c
 
 **Solved when:** every child below is solved (worst-child rule)
 
-###### B8.1 — Artifact identity (legacy)
+###### B8.1 — Artifact identity
 
-*artifact hash + config + data revision recorded*
+*registry tag + config + data revision recorded and consistent*
 
 An artifact whose hash, config and data revision are not recorded is a transcript, not a certificate: identity is the floor on which reproducibility stands.
 
@@ -199,7 +199,7 @@ Prediction sufficiency does not imply decision sufficiency: the action-condition
 
 **Solved when:** its frozen gate passes on a current receipt (the gate lives in the frozen spec — see the atomic-problems table and the card's row)
 
-###### B4.2 — OPE / IPS known-effect recovery (legacy)
+###### B4.2 — OPE / IPS known-effect recovery
 
 *E recovers the known effect with a paired CI excluding 0*
 
@@ -231,7 +231,7 @@ Without minimality, 'sufficient' is trivially satisfied by shipping the history:
 
 **Solved when:** its frozen gate passes on a current receipt (the gate lives in the frozen spec — see the atomic-problems table and the card's row)
 
-###### B5.2 — Cost / runtime / constant-state (legacy)
+###### B5.2 — Cost / runtime / constant-state
 
 *runtime, memory and incremental-update receipt*
 
@@ -319,9 +319,9 @@ Content pressures that do not beat their naive comparators leave the breadth of 
 
 **Solved when:** its frozen gate passes on a current receipt (the gate lives in the frozen spec — see the atomic-problems table and the card's row)
 
-###### B6.2 — Donor does-not-lose / adds / controls (legacy)
+###### B6.2 — Donor does-not-lose / adds / controls
 
-*E vs raw, fair table, table+seq; random/destroyed negative controls*
+*E vs raw, fair table, table+E; random/destroyed negative controls*
 
 Does-not-lose / adds / destroyed-vs-random controls against raw and the fair table: without them, 'adds unique signal' is a point estimate, not a certification.
 
@@ -343,9 +343,9 @@ Uncertainty and missingness are where a learned state lies most easily — unlog
 
 **Solved when:** every child below is solved (worst-child rule)
 
-###### B7.1 — ECE / OOD retention (legacy)
+###### B7.1 — ECE / OOD retention
 
-*calibration and OOD retention on the old reference*
+*calibration of the shipped next-type head + OOD retention*
 
 Calibrated uncertainty under shift is where a learned state lies most easily: ECE / OOD retention on the reference stream is the honesty half of the robustness claim.
 
@@ -523,17 +523,17 @@ A decision that cannot be explained from its artifacts is not operable, and an e
 | Atomic problem | Property | Frozen gate | Green means | Producer / source |
 |---|---|---|---|---|
 | `B1.1` | Lawful dynamics (S3) | working=True | reporting | measure_dynamics_law.py |
-| `B1.2` | Construction laws (C1-C6) | all construction laws met | unmeasured | the legacy encoder-construction producer |
-| `B8.1` | Artifact identity (legacy) | present | unmeasured | the legacy artifact producer |
+| `B1.2` | Construction laws (C1-C6) | C1-C6 all meet the frozen bars (DEC-585) | quality | measure_construction_law.py |
+| `B8.1` | Artifact identity | present and consistent (DEC-585) | reporting | measure_b_props.py |
 | `B8.2` | One-command reproducibility (S6) | working=True | reporting | measure_certification_law.py |
 | `B2.1` | Worst-case sufficiency U | U_served >= 0.5 (frozen in DEC-570) | quality | measure_sufficiency_law.py |
 | `B2.2` | Full-history oracle gap | every included probe's U_served >= 0.5 (zero included = bar unfilled) | quality | measure_sufficiency_law.py |
 | `B2.3` | Learned-only attribution | attribution recorded (learned-only U finite) | reporting | measure_sufficiency_law.py |
-| `B4.1` | B-only dose-response / argmax | gate met | unmeasured | measure_decision_law.py |
-| `B4.2` | OPE / IPS known-effect recovery (legacy) | CI excludes 0 on the declared arms | unmeasured | the legacy causal producer |
-| `B4.3` | Action-invariance | gate met | unmeasured | measure_decision_law.py |
+| `B4.1` | B-only dose-response / argmax | E argmax share >= table, paired CI > 0, above random/destroyed controls (DEC-585) | quality | measure_decision_law.py |
+| `B4.2` | OPE / IPS known-effect recovery | IPS policy diff > 0 and CI lower bound > 0 (DEC-585) | quality | measure_decision_law.py |
+| `B4.3` | Action-invariance | cutoff band cert ok; marker/level teeth recorded (DEC-585) | reporting | measure_decision_law.py |
 | `B5.1` | Minimality k_min | k_min | unmeasured | measure_minimality_law.py |
-| `B5.2` | Cost / runtime / constant-state (legacy) | present and within budget | unmeasured | the legacy runtime producer |
+| `B5.2` | Cost / runtime / constant-state | complete, N == registry, RSS within slice, finite rows/s, incremental recorded (DEC-585) | reporting | measure_runtime.py |
 | `B3.1` | Outlet accessibility (S4) | working=True | reporting | measure_views_law.py |
 | `B3.2` | Stage decomposition M0->M1->served | attribution recorded | reporting | measure_stage_decomposition.py |
 | `B3.3` | Linear accessibility (current) | served >= PATH A - 0.01 | quality | measure_block_serving.py |
@@ -541,9 +541,9 @@ A decision that cannot be explained from its artifacts is not operable, and an e
 | `B3.5` | Equal-dimension serving geometry | complete | reporting | measure_block_serving.py |
 | `B3.6` | Served-object X-ray (ledger exposure) | complete + branch decided | reporting | measure_served_object.py |
 | `B6.1` | Objective battery (S5) | working=True | reporting | measure_battery_law.py |
-| `B6.2` | Donor does-not-lose / adds / controls (legacy) | all donor gates met | unmeasured | the legacy donor producer |
+| `B6.2` | Donor does-not-lose / adds / controls | E >= raw and fair (point); table+E CI > 0; controls below E (DEC-585) | quality | measure_donor.py |
 | `B6.3` | Broad held-out transfer family | family published and passed | unmeasured | measure_transfer_law.py |
-| `B7.1` | ECE / OOD retention (legacy) | ECE <= 0.1 and OOD retained | unmeasured | the legacy calibration producer |
+| `B7.1` | ECE / OOD retention | ECE(next event) <= 0.1; OOD retention recorded (DEC-585) | quality | measure_b_props.py |
 | `B7.2` | Missingness / unlogged confounders | coverage reported | unmeasured | measure_robustness_law.py |
 | `JUDGE-supervised-brain` | supervised :: brain alone (PROGRESS) | every non-degenerate task: paired CI excludes 0 vs PATH A; controls below brain | quality | judge_leg_supervised.json |
 | `JUDGE-supervised-brain_ledger` | supervised :: brain + ledger (DELIVERY, non-inferiority) | every non-degenerate task: paired CI excludes 0 vs PATH A; controls below brain | quality | judge_leg_supervised.json |
@@ -621,13 +621,13 @@ than a measurement of the blob.
 
 ## 6. The current frontier
 
-The live frontier is P2's enabler E1 (the trunk's state-update algebra), now cut to three DEC-frozen atomic problems. E1.a (next_event mastered on the toy) is exhausted negative at N=500: all three single-axis trunk-algebra candidates are negative on the toy (DEC-577, DEC-578 and DEC-581 outcomes) and the capacity axis is negative too (DEC-582 outcome, g 1.149121 ≈ iteration 1's 1.14727, no usable rank gained) — the 1-gram floor is binding, a finite-sample estimation gap, not a trunk deficiency. E1.b (intent, curriculum step 2) is the next structure (DEC-583; the snr difficulty dial is rejected as an axis) and is on hold; E1.c (the port under DEC-572's bars) waits on both. No lab receipt flips a B-row verdict. The PRIMARY progress track meanwhile is R4: the 11 remaining B atomic problems (6 legacy re-stamps at the current behavior + 5 new O-series producers), certification-first per the operator's 2026-11-03 directive.
+The live frontier is P2's enabler E1 (the trunk's state-update algebra), now cut to three DEC-frozen atomic problems. E1.a (next_event mastered on the toy) is exhausted negative at N=500: all three single-axis trunk-algebra candidates are negative on the toy (DEC-577, DEC-578 and DEC-581 outcomes) and the capacity axis is negative too (DEC-582 outcome, g 1.149121 ≈ iteration 1's 1.14727, no usable rank gained) — the 1-gram floor is binding, a finite-sample estimation gap, not a trunk deficiency. E1.b (intent, curriculum step 2) is the next structure (DEC-583; the snr difficulty dial is rejected as an axis) and is on hold; E1.c (the port under DEC-572's bars) waits on both. No lab receipt flips a B-row verdict. The PRIMARY progress track meanwhile is R4: the 11 remaining B atomic problems, certification-first per the operator's 2026-11-03 directive. DEC-585 pre-registered the 8 rows it covers (B1.2, B4.1-B4.3, B5.2, B6.2, B7.1, B8.1) as 5 cfm_v2k producers with frozen gate kinds and bars in b_spec (chunk 1 = gates + producers + card branches, no measurement; chunk 2 = the sequential measurement, receipts verified before verdicts); the remaining 3 (B5.1, B6.3, B7.2) each get their own DEC.
 
 **Why the card can read green while the encoder is not mastered — read this before
 trusting a green row.** The plan labels every measured atom with what its green PROVES
 (`scripts/b_spec.py: gate_kind`, derived from the frozen gate's kind, never asserted):
 
-- **reporting** — green certifies that the measurement happened and was attributed: `B1.1`, `B8.2`, `B2.3`, `B3.1`, `B3.2`, `B3.4`, `B3.5`, `B3.6`, `B6.1`.
+- **reporting** — green certifies that the measurement happened and was attributed: `B1.1`, `B8.1`, `B8.2`, `B2.3`, `B4.3`, `B5.2`, `B3.1`, `B3.2`, `B3.4`, `B3.5`, `B3.6`, `B6.1`.
 - **quality** — green certifies a level against a frozen bar or comparator (the remaining atoms).
 
 The quality levels for the reporting-gated axes are the DEC-frozen bars (U >= 0.5 in

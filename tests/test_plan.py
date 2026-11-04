@@ -188,7 +188,14 @@ def test_every_b_row_declares_what_a_green_proves():
     assert kinds["B2.2"] == "quality"
     assert kinds["B2.3"] == "reporting"
     assert kinds["B3.3"] == "quality"
-    assert kinds["B4.1"] == "unmeasured"
+    # DEC-585: the 8 rows with pre-registered producers left "unmeasured" — the 3 without
+    # one stay unmeasured until their own DEC lands
+    assert kinds["B4.1"] == "quality"
+    assert kinds["B4.2"] == "quality"
+    assert kinds["B4.3"] == "reporting"
+    assert kinds["B5.1"] == "unmeasured"
+    assert kinds["B6.3"] == "unmeasured"
+    assert kinds["B7.2"] == "unmeasured"
     # the label changes no verdict: the frozen gate is untouched
     assert B.ROWS[0].gate
 

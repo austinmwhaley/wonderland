@@ -460,6 +460,227 @@ def _eval_b_row(receipts: Path, row: B.BRow, current_hash: str) -> tuple[str, st
             f"learned-only U {float(u_l):.4f} · worst probe "
             f"{(rc.get('worst_probe') or {}).get('learned_only', '?')} · {carry}",
         )
+    if row.kind == "construction_law":
+        note = _meta_problem(rc, current_hash)
+        if note:
+            return J.UNKNOWN, f"{note} — re-run {row.producer}"
+        if not rc.get("complete"):
+            return J.FAIL, f"{name}: construction battery incomplete"
+        ch = rc.get("checks") or {}
+        fp = _get_path(ch, "field_permutation.max_rel_err")
+        sc = _get_path(ch, "scan_associativity.worst_rel_err")
+        ma = _get_path(ch, "mass_additivity.worst_rel_err")
+        det = _get_path(ch, "determinism.bit_identical")
+        sv = _get_path(ch, "schema_variant.working")
+        fid = _get_path(ch, "frozen_identity.present")
+        bad = []
+        if not _finite(fp) or fp > B.CONSTRUCTION_FIELD_PERM_BAR:
+            bad.append(f"C1 field-perm {_num(fp)} (bar {B.CONSTRUCTION_FIELD_PERM_BAR:g})")
+        if not _finite(sc) or sc > B.CONSTRUCTION_SCAN_BAR:
+            bad.append(f"C2 scan {_num(sc)} (bar {B.CONSTRUCTION_SCAN_BAR:g})")
+        if not _finite(ma) or ma > B.CONSTRUCTION_MASS_BAR:
+            bad.append(f"C3 mass {_num(ma)} (bar {B.CONSTRUCTION_MASS_BAR:g})")
+        if det is not True:
+            bad.append("C4 determinism not bit-identical")
+        if sv is not True:
+            bad.append("C5 schema variant not working")
+        if fid is not True:
+            bad.append("C6 frozen identity incomplete")
+        if bad:
+            return J.FAIL, f"{name}: " + "; ".join(bad)
+        return (
+            J.PASS,
+            f"C1-C6 all met: field-perm {_num(fp)} · scan {_num(sc)} · mass {_num(ma)} · "
+            f"determinism bit-identical · schema variant ok · identity present "
+            f"(N={rc.get('n_sequences')}, {rc.get('device', '?')})",
+        )
+    if row.kind == "decision_dose":
+        note = _meta_problem(rc, current_hash)
+        if note:
+            return J.UNKNOWN, f"{note} — re-run {row.producer}"
+        blk = rc.get("decision_dose")
+        if not isinstance(blk, dict) or not blk.get("complete"):
+            return J.FAIL, f"{name}: decision_dose block incomplete"
+        se, st = blk.get("share_E"), blk.get("share_table")
+        lo, sr, sd = blk.get("ci_lo"), blk.get("share_random"), blk.get("share_destroyed")
+        if not all(_finite(v) for v in (se, st, lo, sr, sd)):
+            return J.UNKNOWN, f"{name}: decision_dose values missing"
+        bad = []
+        if se < st:
+            bad.append(f"E share {se:.4f} < table {st:.4f}")
+        if lo <= 0:
+            bad.append(f"paired CI lo {lo:+.4f} <= 0")
+        if sr >= se:
+            bad.append(f"random {sr:.4f} >= E")
+        if sd >= se:
+            bad.append(f"destroyed {sd:.4f} >= E")
+        if bad:
+            return J.FAIL, f"{name}: " + "; ".join(bad)
+        thin = blk.get("thin_levels") or []
+        why = (
+            f"E share {se:.4f} vs table {st:.4f} (CI [{lo:+.4f}, {blk.get('ci_hi', float('nan')):+.4f}]) "
+            f"· random {sr:.4f} · destroyed {sd:.4f} · n={blk.get('n', '?')} "
+            f"· oracle ceiling {blk.get('oracle_ceiling', '?')}"
+        )
+        if thin:
+            why += f" · thin levels (degeneracy): {thin}"
+        return J.PASS, why
+    if row.kind == "decision_ope":
+        note = _meta_problem(rc, current_hash)
+        if note:
+            return J.UNKNOWN, f"{note} — re-run {row.producer}"
+        blk = rc.get("decision_ope")
+        if not isinstance(blk, dict) or not blk.get("complete"):
+            return J.FAIL, f"{name}: decision_ope block incomplete"
+        diff, lo = blk.get("diff"), blk.get("lo")
+        if not _finite(diff) or not _finite(lo):
+            return J.UNKNOWN, f"{name}: decision_ope values missing"
+        if diff <= 0 or lo <= 0:
+            return (
+                J.FAIL,
+                f"{name}: E_ips {blk.get('E_ips')} vs T_ips {blk.get('T_ips')} "
+                f"(diff {diff:+.2f} [{lo:+.2f}, {blk.get('hi')}])",
+            )
+        freqs = blk.get("level_frequencies") or {}
+        return (
+            J.PASS,
+            f"E policy IPS {blk.get('E_ips')} vs table {blk.get('T_ips')} "
+            f"(diff {diff:+.2f} [{lo:+.2f}, {blk.get('hi')}] > 0) · "
+            f"accE {blk.get('accE')} vs accT {blk.get('accT')} · random IPS {blk.get('random')} · "
+            f"n_test={blk.get('n_test')} · levels {freqs}",
+        )
+    if row.kind == "decision_invariance":
+        note = _meta_problem(rc, current_hash)
+        if note:
+            return J.UNKNOWN, f"{note} — re-run {row.producer}"
+        blk = rc.get("decision_invariance")
+        if not isinstance(blk, dict) or not blk.get("complete"):
+            return J.FAIL, f"{name}: decision_invariance block incomplete"
+        c1 = blk.get("check1_cutoff_band") or {}
+        c2 = blk.get("check2_marker_invariance") or {}
+        c3 = blk.get("check3_level_teeth") or {}
+        s2, s3 = c2.get("share_E_prime"), c3.get("share_permuted")
+        if c1.get("ok") is not True:
+            return J.FAIL, f"{name}: cutoff band cert not ok — {c1.get('why', 'refused')}"
+        if not _finite(s2) or not _finite(s3):
+            return J.UNKNOWN, f"{name}: check2/3 values missing"
+        return (
+            J.PASS,
+            f"band cert ok (P1==P2 bit-identical; P1 vs stored S {c1.get('max_delta_S', '?')}"
+            f" / E {c1.get('max_delta_E', '?')} vs bands {c1.get('band_S', '?')}"
+            f" / {c1.get('band_E', '?')}; teeth {c1.get('teeth_ok', '?')}) · "
+            f"marker null: share {s2} vs stored {c2.get('share_E_stored')} (ok={c2.get('ok')}) · "
+            f"level permutation: share {s3} vs table {c3.get('share_table', '?')} "
+            f"(|Δ|∞ {c3.get('abs_delta_inf', '?')}, ok={c3.get('ok')})",
+        )
+    if row.kind == "runtime_law":
+        note = _meta_problem(rc, current_hash)
+        if note:
+            return J.UNKNOWN, f"{note} — re-run {row.producer}"
+        if not rc.get("complete"):
+            return J.FAIL, f"{name}: runtime benchmark incomplete"
+        n, n_exp = rc.get("n"), rc.get("n_expected")
+        rows_s, rss = rc.get("rows_per_s"), rc.get("peak_rss_mb")
+        cap = rc.get("slice_cap_gb")
+        incr = rc.get("incremental") or {}
+        bad = []
+        if not (isinstance(n, int) and n == n_exp):
+            bad.append(f"n {n} != registry N {n_exp}")
+        if cap is not None and not (isinstance(rss, (int, float)) and rss <= float(cap) * 1024.0):
+            bad.append(f"peak RSS {rss} MB exceeds slice {cap} GB")
+        if not _finite(rows_s):
+            bad.append("rows/s not finite")
+        if not incr or not _finite((incr or {}).get("n_embeddings")):
+            bad.append("incremental receipt row not recorded")
+        if bad:
+            return J.FAIL, f"{name}: " + "; ".join(bad)
+        cap_txt = (
+            f"peak RSS {rss} MB (slice {cap} GB)"
+            if cap
+            else f"peak RSS {rss} MB (no slice cap — CI no-op)"
+        )
+        return (
+            J.PASS,
+            f"{n}/{n_exp} customers · cold {rc.get('cold_seconds')}s / warm "
+            f"{rc.get('warm_seconds')}s · {rows_s} rows/s · dims "
+            f"{rc.get('dims_state')}/{rc.get('dims_served')} · {cap_txt} · incremental "
+            f"(absorbed {incr.get('n_absorbed')}, idle {incr.get('n_idle')}, wall "
+            f"{incr.get('wall_seconds')}s)",
+        )
+    if row.kind == "donor_battery":
+        note = _meta_problem(rc, current_hash)
+        if note:
+            return J.UNKNOWN, f"{note} — re-run {row.producer}"
+        if not rc.get("complete"):
+            return J.FAIL, f"{name}: donor battery incomplete"
+        targets = rc.get("targets") or {}
+        deg = [t for t, d in targets.items() if d.get("degenerate")]
+        bad = []
+        for t in sorted(set(targets) - set(deg)):
+            d = targets[t]
+            if not all(
+                _finite(d.get(k)) for k in ("E", "raw", "fair", "random", "destroyed", "ci_lo")
+            ):
+                bad.append(f"{t}: values missing")
+                continue
+            if d["E"] < d["raw"]:
+                bad.append(f"{t}: E {d['E']:.4f} < raw {d['raw']:.4f}")
+            if d["E"] < d["fair"]:
+                bad.append(f"{t}: E {d['E']:.4f} < fair {d['fair']:.4f}")
+            if d["ci_lo"] <= 0:
+                bad.append(f"{t}: table+E CI lo {d['ci_lo']:+.4f} <= 0")
+            if d["random"] >= d["E"]:
+                bad.append(f"{t}: random {d['random']:.4f} >= E")
+            if d["destroyed"] >= d["E"]:
+                bad.append(f"{t}: destroyed {d['destroyed']:.4f} >= E")
+        if bad:
+            return J.FAIL, f"{name}: " + "; ".join(bad[:4]) + (" …" if len(bad) > 4 else "")
+        detail = " · ".join(
+            f"{t}: E {targets[t]['E']:.4f} vs raw {targets[t]['raw']:.4f} / fair {targets[t]['fair']:.4f} "
+            f"/ table {targets[t].get('table')} (add CI lo {targets[t]['ci_lo']:+.4f}) "
+            f"/ rand {targets[t]['random']:.4f} / dest {targets[t]['destroyed']:.4f}"
+            for t in sorted(set(targets) - set(deg))
+        )
+        why = f"n_A {rc.get('n_A')} / n_B {rc.get('n_B')} · {detail}"
+        if deg:
+            why += f" · excluded (degenerate): {deg}"
+        return J.PASS, why
+    if row.kind == "calibration_law":
+        note = _meta_problem(rc, current_hash)
+        if note:
+            return J.UNKNOWN, f"{note} — re-run {row.producer}"
+        blk = rc.get("calibration")
+        if not isinstance(blk, dict) or not blk.get("complete"):
+            return J.FAIL, f"{name}: calibration block incomplete"
+        ece = blk.get("ece_next_event")
+        if not _finite(ece):
+            return J.FAIL, f"{name}: {blk.get('why', 'ECE not measured')}"
+        if ece > B.CALIBRATION_ECE_BAR:
+            return J.FAIL, f"{name}: ECE {ece:.4f} > bar {B.CALIBRATION_ECE_BAR:g}"
+        ood = blk.get("ood") or {}
+        return (
+            J.PASS,
+            f"next-type ECE {ece:.4f} (bar {B.CALIBRATION_ECE_BAR:g}) · acc {blk.get('acc')} "
+            f"· n {blk.get('n_next')}/{blk.get('n_pop')} (OOV {blk.get('n_oov')}) · OOD "
+            f"(as_of+{B.OOD_HORIZON_DAYS}d): ece {ood.get('ece')} acc {ood.get('acc')} "
+            f"n {ood.get('n')}",
+        )
+    if row.kind == "identity_law":
+        note = _meta_problem(rc, current_hash)
+        if note:
+            return J.UNKNOWN, f"{note} — re-run {row.producer}"
+        blk = rc.get("identity")
+        if not isinstance(blk, dict) or not blk.get("complete"):
+            return J.FAIL, f"{name}: identity block incomplete"
+        if blk.get("present") is not True:
+            return J.FAIL, f"{name}: identity fields incomplete — {blk.get('why')}"
+        return (
+            J.PASS,
+            f"tag {blk.get('tag')} · registry {blk.get('registry_sha256')} · data "
+            f"{blk.get('data_signature')} · as_of {blk.get('as_of')} · n "
+            f"{blk.get('n_customers')} · config {blk.get('config_sha256')} · "
+            f"checkpoint {blk.get('checkpoint_sha256')}",
+        )
     if row.kind == "legacy":
         return J.UNKNOWN, f"legacy receipt {name} (no behavior stamp); re-run {row.producer}"
     note = _meta_problem(rc, current_hash)

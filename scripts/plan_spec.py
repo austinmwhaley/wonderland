@@ -521,9 +521,12 @@ FRONTIER_NOTE = (
     "finite-sample estimation gap, not a trunk deficiency. E1.b (intent, curriculum step 2) is "
     "the next structure (DEC-583; the snr difficulty dial is rejected as an axis) and is on "
     "hold; E1.c (the port under DEC-572's bars) waits on both. No lab receipt flips a B-row "
-    "verdict. The PRIMARY progress track meanwhile is R4: the 11 remaining B atomic problems "
-    "(6 legacy re-stamps at the current behavior + 5 new O-series producers), "
-    "certification-first per the operator's 2026-11-03 directive."
+    "verdict. The PRIMARY progress track meanwhile is R4: the 11 remaining B atomic problems, "
+    "certification-first per the operator's 2026-11-03 directive. DEC-585 pre-registered the 8 "
+    "rows it covers (B1.2, B4.1-B4.3, B5.2, B6.2, B7.1, B8.1) as 5 cfm_v2k producers with frozen "
+    "gate kinds and bars in b_spec (chunk 1 = gates + producers + card branches, no measurement; "
+    "chunk 2 = the sequential measurement, receipts verified before verdicts); the remaining 3 "
+    "(B5.1, B6.3, B7.2) each get their own DEC."
 )
 
 
