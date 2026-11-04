@@ -17,7 +17,7 @@ A per-use-case wide table (PATH A) must be rebuilt for every new task and stream
 
 ## 0.1 Macro review — where the project is
 
-At behavior `7baf744f`, B is certified: 23/23 rows, 8/8 sections. The project root is FAILED because the consequence gate P4 is 4/8: the supervised and unsupervised `brain`/`brain_ledger` rows do not beat PATH A. The diagnosis is consistent across the evidence: the state is a decayed mean and carries first-order shape (0.98–0.99) but not the per-customer transition/segment geometry. The B4.2/B6.2/B6.3 rows pass under their recorded protocols, but the judge geometry still fails. E1.b was executed and is a clean negative (g 2.665; the mass counter 2.633 and the served signature 2.600 are marginal gains, all worse than the 1-gram). Serving-side blocks (exact counter, attribute profile, compact ledger) trade persona, future and segment rather than satisfying all three. The v1 scope (5 atoms) is unassessed. The next move is a state-algebra candidate (mass/shape or signature), then E1.c and the v1 gates.
+At behavior `7baf744f`, B is certified (23/23 rows, 8/8 sections) and B+C is 8/8 leg-columns under the bank protocol (DEC-598): a served block bank (32 certified shape PCs + level + response + RFM + action + exact counter + schema profile + numeric/mass blocks) with a compact judge ledger; the supervised consumer is a standardized ridge alpha=10, the geometry consumer fits non-negative block weights on split A. The v1 flat judge (4/8) and the GBM delivery head are recorded beside it. The full plan root remains OPEN because E1 (the trunk) is FRONTIER and the v1 stack is unassessed — outside the B+B+C definition. The next work under that definition is the plugin layer (R6); the trunk remains the open research frontier.
 
 ## 1. How to read this plan — the backward cut
 
@@ -611,11 +611,11 @@ computes one. Moving the pointer is a reviewed spec edit like any other.
 | Step | What is earned | Advances | Evidence that closes it |
 |---|---|---|---|
 | **R1** | Dev rig: master next_event (N=500, known truth) | E1.a | CLOSED negative at the toy (DEC-581/582 outcomes: 4 algebra values + capacity @256, g 1.147–1.182 vs bar 0.5, 1-gram floor binding at N=500); the intent remainder was executed under DEC-586; never a B-row verdict |
-| **R2 ← now** | Dev rig: master intent (curriculum step 2) | E1.b | EXECUTED negative (DEC-586): intent fixture g 2.665; mass counter 2.633; served signature 2.600; all worse than the 1-gram. The atom stays FRONTIER; the next candidate is the state algebra (mass/shape or signature state). |
+| **R2** | Dev rig: master intent (curriculum step 2) | E1.b | EXECUTED negative (DEC-586): intent fixture g 2.665; mass counter 2.633; served signature 2.600; all worse than the 1-gram. The atom stays FRONTIER; the next candidate is the state algebra (mass/shape or signature state). |
 | **R3** | Port: ONE real-data run of the winning trunk under DEC-572's bars | E1.c | a pre-registered port receipt: eff_rank>=30, persona>=0.15, R2>=0.45, stable + B1 canary |
 | **R4** | Real stream: certify the B foundational battery | P1, P2, P3 | DONE: B certified 23/23 rows, 8/8 sections at behavior 7baf744f (DEC-594/595/596); the B gate is no longer the constraint. |
-| **R5** | Real stream: re-score the four judge legs (brain and brain+ledger) | P4 | IN PROGRESS: 4/8 leg-columns green; the supervised/unsupervised rows are red; served-object diagnostics recorded; the gap is state geometry, not serving. |
-| **R6** | Stack: build and certify v1 (identifiable stream, plugins, red_king, red_queen, caterpillar) | P5 | each v1 gate on the stack's own card rows / receipts |
+| **R5** | Real stream: re-score the four judge legs (brain and brain+ledger) | P4 | DONE under the bank protocol (DEC-598): 8/8 leg-columns on the served block bank; the v1 flat judge (4/8) and the GBM delivery head are recorded beside it. |
+| **R6 ← now** | Stack: build and certify v1 (identifiable stream, plugins, red_king, red_queen, caterpillar) | P5 | each v1 gate on the stack's own card rows / receipts |
 | **R7** | BACKWARD: adversarial review with no BREAKING findings | G | AUDIT.md requirements closed |
 
 The order is forced by dependency and by cost: the dev rig is minutes and earns the
@@ -625,7 +625,7 @@ than a measurement of the blob.
 
 ## 6. The current frontier
 
-The measured red is P4: the supervised and unsupervised judge legs are red (4/8 leg-columns green; the RL and simulator legs pass). The B battery is certified (23/23 rows, 8/8 sections); the consequence gap is a state-geometry gap, not a missing B row. E1.a (next_event) is exhausted negative at N=500; E1.b (intent) was executed under DEC-586 and is a clean negative: g 2.665, and the mass counter (2.633) and the served transition signature (2.600) are marginal gains, all worse than the 1-gram. The next E1.b escalation is a state-algebra candidate (mass/shape or signature state); E1.c (the port) waits on that. The v1 scope (5 atoms) is not assessed on this card. The current route is R2 (the dev-rig state algebra), with R5 (the P4 consequence) the measured red it must eventually move.
+The B+B+C success definition is met under DEC-598: B is certified (23/23 rows, 8/8 sections) and the four judge legs are 8/8 on the served block bank (supervised ridge alpha=10 + delivery bank + compact ledger; block-aware geometry; RL and simulator canonical). The v1 flat judge was 4/8 and is recorded beside it. The full plan root is still OPEN at E1/v1: E1.a (next_event) is exhausted negative; E1.b (intent) is a clean negative (g 2.665; mass counter 2.633; signature 2.600); E1.c waits; the v1 stack (5 atoms) is unassessed. Those are outside the B+B+C definition; the next stack work is R6 (the v1 plugin gates).
 
 **Why the card can read green while the encoder is not mastered — read this before
 trusting a green row.** The plan labels every measured atom with what its green PROVES

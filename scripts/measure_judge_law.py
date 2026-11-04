@@ -232,7 +232,10 @@ def _arms(db: Path, demo: Path) -> dict:
     problems: list = []
     table, tmeta = _table_matrix(demo, list(akeys) + list(bkeys))
     views, _stamp = _load_views(db)
-    ledger = views.get("measure", {})
+    # A derived served product may publish a compact `judge_ledger` view for the delivery
+    # column (DEC-598); the full `measure` view stays the B3.1/B3.6 ledger. Prefer the
+    # compact view only when the product explicitly publishes it.
+    ledger = views.get("judge_ledger") or views.get("measure", {})
 
     brain_a = _rows_by_key(emb, akeys, "state_embeddings(A)", problems)
     brain_b = _rows_by_key(emb, bkeys, "state_embeddings(B)", problems)

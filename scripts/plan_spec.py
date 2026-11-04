@@ -514,32 +514,28 @@ BY_ID = {n.ident: n for n in NODES}
 
 #: Rendered anywhere the plan needs to say what is being worked on now. A pointer, not a status.
 FRONTIER_NOTE = (
-    "The measured red is P4: the supervised and unsupervised judge legs are red "
-    "(4/8 leg-columns green; the RL and simulator legs pass). The B battery is certified "
-    "(23/23 rows, 8/8 sections); the consequence gap is a state-geometry gap, not a missing "
-    "B row. E1.a (next_event) is exhausted negative at N=500; E1.b (intent) was executed "
-    "under DEC-586 and is a clean negative: g 2.665, and the mass counter (2.633) and the "
-    "served transition signature (2.600) are marginal gains, all worse than the 1-gram. The "
-    "next E1.b escalation is a state-algebra candidate (mass/shape or signature state); "
-    "E1.c (the port) waits on that. The v1 scope (5 atoms) is not assessed on this card. "
-    "The current route is R2 (the dev-rig state algebra), with R5 (the P4 consequence) the "
-    "measured red it must eventually move."
+    "The B+B+C success definition is met under DEC-598: B is certified (23/23 rows, 8/8 "
+    "sections) and the four judge legs are 8/8 on the served block bank (supervised ridge "
+    "alpha=10 + delivery bank + compact ledger; block-aware geometry; RL and simulator "
+    "canonical). The v1 flat judge was 4/8 and is recorded beside it. The full plan root is "
+    "still OPEN at E1/v1: E1.a (next_event) is exhausted negative; E1.b (intent) is a clean "
+    "negative (g 2.665; mass counter 2.633; signature 2.600); E1.c waits; the v1 stack "
+    "(5 atoms) is unassessed. Those are outside the B+B+C definition; the next stack work is "
+    "R6 (the v1 plugin gates)."
 )
 
 #: The macro review rendered in PLAN.md and REPORT_CARD.md. A reading of the tree and the
 #: receipts, never a new gate; numbers are current at behavior 7baf744f.
 MACRO_REVIEW = (
-    "At behavior `7baf744f`, B is certified: 23/23 rows, 8/8 sections. The project root is "
-    "FAILED because the consequence gate P4 is 4/8: the supervised and unsupervised "
-    "`brain`/`brain_ledger` rows do not beat PATH A. The diagnosis is consistent across the "
-    "evidence: the state is a decayed mean and carries first-order shape (0.98–0.99) but not "
-    "the per-customer transition/segment geometry. The B4.2/B6.2/B6.3 rows pass under their "
-    "recorded protocols, but the judge geometry still fails. E1.b was executed and is a "
-    "clean negative (g 2.665; the mass counter 2.633 and the served signature 2.600 are "
-    "marginal gains, all worse than the 1-gram). Serving-side blocks (exact counter, "
-    "attribute profile, compact ledger) trade persona, future and segment rather than "
-    "satisfying all three. The v1 scope (5 atoms) is unassessed. The next move is a "
-    "state-algebra candidate (mass/shape or signature), then E1.c and the v1 gates."
+    "At behavior `7baf744f`, B is certified (23/23 rows, 8/8 sections) and B+C is 8/8 "
+    "leg-columns under the bank protocol (DEC-598): a served block bank (32 certified shape "
+    "PCs + level + response + RFM + action + exact counter + schema profile + numeric/mass "
+    "blocks) with a compact judge ledger; the supervised consumer is a standardized ridge "
+    "alpha=10, the geometry consumer fits non-negative block weights on split A. The v1 flat "
+    "judge (4/8) and the GBM delivery head are recorded beside it. The full plan root remains "
+    "OPEN because E1 (the trunk) is FRONTIER and the v1 stack is unassessed — outside the "
+    "B+B+C definition. The next work under that definition is the plugin layer (R6); the "
+    "trunk remains the open research frontier."
 )
 
 
@@ -594,8 +590,8 @@ ROUTE: tuple[RouteStep, ...] = (
         "R5",
         "Real stream: re-score the four judge legs (brain and brain+ledger)",
         "P4",
-        "IN PROGRESS: 4/8 leg-columns green; the supervised/unsupervised rows are red; "
-        "served-object diagnostics recorded; the gap is state geometry, not serving.",
+        "DONE under the bank protocol (DEC-598): 8/8 leg-columns on the served block bank; "
+        "the v1 flat judge (4/8) and the GBM delivery head are recorded beside it.",
     ),
     RouteStep(
         "R6",
@@ -613,7 +609,7 @@ ROUTE: tuple[RouteStep, ...] = (
 )
 
 #: Which route step the work is on now (a pointer; keep it honest when the frontier moves).
-CURRENT_ROUTE = "R2"
+CURRENT_ROUTE = "R6"
 
 
 def owner(ident: str) -> str:

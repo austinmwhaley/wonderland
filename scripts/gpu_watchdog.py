@@ -42,6 +42,8 @@ DEFAULT_PATTERNS = (  # principle-ok: process identities, not tuning constants
     "measure_battery_law.py",
     "measure_b_props.py",
     "build_compact_e.py",
+    "build_bank_e.py",
+    "measure_bc_bank.py",
     "measure_ceiling.py",
     "measure_certification_law.py",
     "measure_path_a_provenance.py",

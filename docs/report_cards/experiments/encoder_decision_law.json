@@ -1,9 +1,9 @@
 {
   "_meta": {
     "behavior_hash": "7baf744fc78ba3b3",
-    "command": "scripts/measure_decision_law.py --products looking_glass/artifacts/cfm_v2k_vf2 --ope-products looking_glass/artifacts/cfm_v2k_vf2_c32rvd",
-    "generated_at": "2026-11-04T21:55:32+00:00",
-    "git_commit": "a086dd4c42d91ada3dc729427972e6e02414148b",
+    "command": "scripts/measure_decision_law.py --products looking_glass/artifacts/cfm_v2k_vf2 --ope-products looking_glass/artifacts/cfm_v2k_vf2_bank",
+    "generated_at": "2026-11-04T23:56:48+00:00",
+    "git_commit": "6b89e905a94bba5fe9266c8ff664a1098514ee16",
     "producer": "measure_decision_law.py"
   },
   "complete": true,
@@ -20,7 +20,7 @@
     "n": 1485,
     "n_levels": 4,
     "oracle_ceiling": 0.6404,
-    "seconds": 2.6,
+    "seconds": 1.9,
     "share_E": 0.2983164983164983,
     "share_destroyed": 0.2383838383838384,
     "share_random": 0.2585858585858586,
@@ -57,7 +57,7 @@
       "none_bucket_idx": 0,
       "note": "target_key is a lab marker (which arm randomized this event); the pre-registered risk is that the trunk learned it \u2014 recorded, not gated",
       "ok": true,
-      "seconds": 34.9,
+      "seconds": 34.3,
       "share_E_prime": 0.30033670033670035,
       "share_E_stored": 0.2983164983164983
     },
@@ -77,13 +77,13 @@
     "complete": true
   },
   "decision_ope": {
-    "E_ips": 0.1598,
+    "E_ips": 0.1701,
     "T_ips": 0.1517,
-    "accE": 0.295,
+    "accE": 0.335,
     "accT": 0.247,
     "complete": true,
-    "diff": 0.0081,
-    "hi": 0.0146,
+    "diff": 0.0183,
+    "hi": 0.0246,
     "ips_audit": "uniform p0=1/K; the randomized offer level is the treatment and the same-day purchase is the reward (the lab's identified arm-cell definition); periods are the offer days, not customers",
     "level_frequencies": {
       "0": 0.2515,
@@ -97,13 +97,13 @@
       2,
       3
     ],
-    "lo": 0.0022,
+    "lo": 0.012,
     "n_excluded": 0,
     "n_pop": 1485,
     "n_test": 74746,
     "n_train": 177017,
     "protocol": "v2 (DEC-595): randomized daily offer periods; reward = purchase on the offer day (arm_cells); per-level ridge T-learner fit on split-A periods, scored on split-B periods; uniform IPS p0=1/K; table arm under the same head/periods",
-    "seconds": 2.4
+    "seconds": 3.8
   },
   "decision_ope_v1_margin": {
     "E_ips": 152.93,
@@ -141,8 +141,8 @@
   "n_B": 1485,
   "n_customers": 5000,
   "ope_products": {
-    "path": "looking_glass/artifacts/cfm_v2k_vf2_c32rvd",
-    "registry_sha256": "965a2a10083b3fe3",
+    "path": "looking_glass/artifacts/cfm_v2k_vf2_bank",
+    "registry_sha256": "919a932f1b657064",
     "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
   },
   "products": {
@@ -150,6 +150,6 @@
     "registry_sha256": "676e52359995983a",
     "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
   },
-  "seconds": 150.3,
+  "seconds": 145.6,
   "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
 }

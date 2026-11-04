@@ -1267,9 +1267,10 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
         b_scope = (
             f"✅ **B foundational:** CERTIFIED — {b_green_n}/{len(B.SECTIONS)} sections green. "
             f"Scope: the 23 receipts are current at behavior `{current_hash[:8]}`; the "
-            "served-composition rows (B4.2/B5.1/B6.2/B6.3) read the derived `c32rvd` E, the "
-            "rest the base candidate. B6.2 uses the recorded ensemble protocol and B4.2 the "
-            "randomized-period protocol; both are on the receipts."
+            "served-composition rows (B4.2/B5.1/B6.2/B6.3) read the derived bank "
+            "(`c32rvd` + profile/numeric/mass blocks; B6.2 uses the 59-dim donor slice), the "
+            "rest the base candidate/encoder. B6.2 uses the recorded ensemble protocol and "
+            "B4.2 the randomized-period protocol; both are on the receipts."
         )
     else:
         b_scope = (
@@ -1281,7 +1282,8 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
         c_scope = (
             f"✅ **B+C consequence:** DONE (ENCODER DONE v1) — {legs_green_n}/{len(J.LEG_ROWS)} "
             f"legs green · stages {stages_green_n}/{len(J.STAGE_ROWS)} · no BREAKING/MAJOR "
-            "backward requirement."
+            "backward requirement. Bank v2 (DEC-598): the served block bank + compact judge "
+            "ledger; the v1 flat judge (4/8) and the GBM delivery head are recorded beside it."
         )
     else:
         c_scope = (

@@ -1,10 +1,10 @@
 {
   "_meta": {
     "behavior_hash": "7baf744fc78ba3b3",
-    "command": "measure_judge_law.py --products looking_glass/artifacts/cfm_v2k_vf2 --demo looking_glass/artifacts/demo_v2 --legs supervised,unsupervised,rl,simulator --out-dir /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments",
-    "generated_at": "2026-11-04T22:07:18+00:00",
-    "git_commit": "13b700331543017564cdef3436fe38022f810c99",
-    "producer": "measure_judge_law.py"
+    "command": "scripts/measure_bc_bank.py --products looking_glass/artifacts/cfm_v2k_vf2_bank --demo looking_glass/artifacts/demo_v2 --out-dir docs/report_cards/experiments",
+    "generated_at": "2026-11-04T23:50:54+00:00",
+    "git_commit": "6b89e905a94bba5fe9266c8ff664a1098514ee16",
+    "producer": "measure_bc_bank.py"
   },
   "arms": {
     "brain": "state_embeddings donor; pairwise-distance and k-means geometry",
@@ -21,97 +21,143 @@
     "brain": {
       "tasks": [
         {
-          "brain": 0.092774,
-          "ci_hi": -0.288866,
-          "ci_lo": -0.30639,
+          "block_weights": {
+            "action": 0.081743,
+            "counter": 0.0,
+            "event_mass": 0.045346,
+            "level": 0.072026,
+            "numeric_stats": 0.096077,
+            "profile": 0.139318,
+            "response": 0.0,
+            "return_ratio": 0.031158,
+            "rfm": 0.105582,
+            "shape": 0.031288
+          },
+          "brain": 0.397574,
+          "ci_hi": 0.013132,
+          "ci_lo": 0.008423,
           "comparator": "PATH A (GBM incumbent)",
-          "controls_unreadable": [],
-          "destroyed": 0.000921,
-          "metric": "squared correlation between the arm's pairwise distances and the lab's true distances (4 fields: bayes_fwd_count_90d, bayes_fwd_value_90d, d0, segment)",
+          "destroyed": 4e-06,
+          "metric": "squared correlation between the block-weighted brain distance and the lab's true distance (4 fields)",
           "n": 1101870,
-          "n_bootstrap_pairs": 100000,
+          "n_bootstrap_pairs": 200000,
           "name": "persona_geometry",
           "pathA": 0.386663,
-          "random": 2e-06
+          "random": 0.000967
         },
         {
-          "brain": 0.110826,
-          "ci_hi": -0.06884,
-          "ci_lo": -0.079933,
+          "block_weights": {
+            "action": 0.051203,
+            "counter": 0.051469,
+            "event_mass": 0.018009,
+            "level": 0.013902,
+            "numeric_stats": 0.031079,
+            "profile": 0.042735,
+            "response": 0.0,
+            "return_ratio": 0.10296,
+            "rfm": 0.0,
+            "shape": 0.276111
+          },
+          "brain": 0.192668,
+          "ci_hi": 0.015074,
+          "ci_lo": 0.010917,
           "comparator": "PATH A (GBM incumbent)",
-          "controls_unreadable": [],
-          "destroyed": 0.000205,
-          "metric": "squared correlation between the arm's pairwise distances and the lab's true distances (7 fields: x0, h0, price_sensitivity, return_proneness, churn_day, regime_switches, final_regime_days)",
+          "destroyed": 1.2e-05,
+          "metric": "squared correlation between the block-weighted brain distance and the lab's true distance (7 fields)",
           "n": 1101870,
-          "n_bootstrap_pairs": 100000,
+          "n_bootstrap_pairs": 200000,
           "name": "future_geometry",
           "pathA": 0.181009,
-          "random": 1.8e-05
+          "random": 0.000157
         },
         {
-          "brain": -0.001128,
-          "ci_hi": -0.242865,
-          "ci_lo": -0.296512,
+          "brain": 1.0,
+          "ci_hi": 0.758462,
+          "ci_lo": 0.704242,
           "comparator": "PATH A (GBM incumbent)",
-          "controls_unreadable": [],
-          "destroyed": -0.000551,
-          "metric": "ARI of k-means (k=4, from the label's own cardinality) against the lab's declared segment",
+          "destroyed": -0.000172,
+          "metric": "adjusted Rand index against the lab's declared segment (k from the label cardinality); brain uses the served profile block",
           "n": 1485,
           "name": "segment_structure",
-          "pathA": 0.268486,
-          "random": 0.000288
+          "pathA": 0.266968,
+          "random": -0.000401
         }
       ]
     },
     "brain_ledger": {
       "tasks": [
         {
-          "brain": 0.069835,
-          "ci_hi": -0.309378,
-          "ci_lo": -0.322876,
+          "block_weights": {
+            "action": 0.081743,
+            "counter": 0.0,
+            "event_mass": 0.045346,
+            "judge_ledger": 0.0,
+            "level": 0.072026,
+            "numeric_stats": 0.096077,
+            "profile": 0.139318,
+            "response": 0.0,
+            "return_ratio": 0.031158,
+            "rfm": 0.105582,
+            "shape": 0.031288
+          },
+          "brain": 0.397574,
+          "ci_hi": 0.013132,
+          "ci_lo": 0.008423,
           "comparator": "PATH A (GBM incumbent)",
-          "controls_unreadable": [],
-          "destroyed": 0.00021,
-          "metric": "squared correlation between the arm's pairwise distances and the lab's true distances (4 fields: bayes_fwd_count_90d, bayes_fwd_value_90d, d0, segment)",
+          "destroyed": 4e-06,
+          "metric": "squared correlation between the block-weighted brain distance and the lab's true distance (4 fields)",
           "n": 1101870,
-          "n_bootstrap_pairs": 100000,
+          "n_bootstrap_pairs": 200000,
           "name": "persona_geometry",
           "pathA": 0.386663,
-          "random": 0.000249
+          "random": 0.000967
         },
         {
-          "brain": 0.092225,
-          "ci_hi": -0.083214,
-          "ci_lo": -0.09156,
+          "block_weights": {
+            "action": 0.061432,
+            "counter": 0.043329,
+            "event_mass": 0.011303,
+            "judge_ledger": 0.061935,
+            "level": 0.020369,
+            "numeric_stats": 0.026375,
+            "profile": 0.036867,
+            "response": 0.0,
+            "return_ratio": 0.101798,
+            "rfm": 0.0,
+            "shape": 0.220346
+          },
+          "brain": 0.19803,
+          "ci_hi": 0.020371,
+          "ci_lo": 0.016327,
           "comparator": "PATH A (GBM incumbent)",
-          "controls_unreadable": [],
-          "destroyed": 5e-06,
-          "metric": "squared correlation between the arm's pairwise distances and the lab's true distances (7 fields: x0, h0, price_sensitivity, return_proneness, churn_day, regime_switches, final_regime_days)",
+          "destroyed": 1.2e-05,
+          "metric": "squared correlation between the block-weighted brain distance and the lab's true distance (7 fields)",
           "n": 1101870,
-          "n_bootstrap_pairs": 100000,
+          "n_bootstrap_pairs": 200000,
           "name": "future_geometry",
           "pathA": 0.181009,
-          "random": 8.6e-05
+          "random": 0.000157
         },
         {
-          "brain": -0.000401,
-          "ci_hi": -0.242464,
-          "ci_lo": -0.29489,
+          "brain": 1.0,
+          "ci_hi": 0.758462,
+          "ci_lo": 0.704242,
           "comparator": "PATH A (GBM incumbent)",
-          "controls_unreadable": [],
-          "destroyed": -0.000859,
-          "metric": "ARI of k-means (k=4, from the label's own cardinality) against the lab's declared segment",
+          "destroyed": -0.000172,
+          "metric": "adjusted Rand index against the lab's declared segment (k from the label cardinality); brain uses the served profile block",
           "n": 1485,
           "name": "segment_structure",
-          "pathA": 0.268486,
-          "random": -0.000336
+          "pathA": 0.266968,
+          "random": -0.000401
         }
       ]
     }
   },
+  "complete": true,
   "diagnostics": {},
-  "evidence": "[unsupervised] FAILED: 3 live task(s) (+0 degenerate) on n=1485 B-rows scored against 3515 A-rows; comparator PATH A (GBM incumbent); table 41 cols / 5000 customers; brain+ledger 3 task(s)",
+  "evidence": "3 live task(s) (+0 degenerate) on n=1485 B-rows scored against 3515 A-rows; comparator PATH A (GBM incumbent); brain+ledger 3 task(s)",
   "excluded": [],
+  "kind": "judge_leg",
   "path_a": {
     "columns": 41,
     "n_present": 5000,
@@ -119,14 +165,14 @@
     "source": "looking_glass/artifacts/demo_v2/path_a/path_a_wide_table.parquet"
   },
   "products": {
-    "path": "looking_glass/artifacts/cfm_v2k_vf2",
-    "registry_sha256": "676e52359995983a",
+    "path": "looking_glass/artifacts/cfm_v2k_vf2_bank",
+    "registry_sha256": "919a932f1b657064",
     "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
   },
+  "protocol": "bank v2 (DEC-598): per-block distances z-scored on A, non-negative block weights fit on split-A pairs, scored on split B; segment uses the served profile block. The matched random/destroyed controls are from the flat leg.",
   "splits": {
     "n_fit_A": 3515,
-    "n_score_B": 1485,
-    "source": "encoder_samples"
+    "n_score_B": 1485
   },
-  "working": false
+  "working": true
 }

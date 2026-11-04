@@ -75,6 +75,12 @@ def main() -> int:
         default="/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/demo_v2",
     )
     ap.add_argument("--out", default=str(OUT))
+    ap.add_argument(
+        "--donor-dim",
+        type=int,
+        default=None,
+        help="use the leading donor dims of the stored E (default: bank base_dim if present)",
+    )
     a = ap.parse_args()
 
     from demo.auto_encoder import table_features
@@ -105,6 +111,15 @@ def main() -> int:
 
     Ea = np.vstack([emb[k] for k in akeys])
     Eb = np.vstack([emb[k] for k in bkeys])
+    donor_dim = a.donor_dim
+    if donor_dim is None:
+        _bank = Path(a.products) / "bank_receipt.json"
+        if _bank.exists():
+            donor_dim = int(json.loads(_bank.read_text()).get("base_dim") or 0) or None
+    if donor_dim:
+        if donor_dim > Ea.shape[1]:
+            raise SystemExit(f"--donor-dim {donor_dim} > stored E {Ea.shape[1]}")
+        Ea, Eb = Ea[:, :donor_dim], Eb[:, :donor_dim]
     rng = np.random.default_rng(SEED)
     rand_b, dest_b = controls_matched(rng, Ea, Eb)
     rand_a, dest_a = controls_matched(rng, Ea, Ea)
@@ -171,6 +186,7 @@ def main() -> int:
     body = {
         "complete": True,
         "targets": targets,
+        "donor_dim": int(donor_dim) if donor_dim else int(Ea.shape[1]),
         "n_A": int(n_a),
         "n_B": int(n_b),
         "raw_equals_fair": raw_equals_fair,

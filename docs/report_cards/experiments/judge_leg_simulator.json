@@ -1,10 +1,10 @@
 {
   "_meta": {
     "behavior_hash": "7baf744fc78ba3b3",
-    "command": "measure_judge_law.py --products looking_glass/artifacts/cfm_v2k_vf2 --demo looking_glass/artifacts/demo_v2 --legs supervised,unsupervised,rl,simulator --out-dir /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments",
-    "generated_at": "2026-11-04T22:07:40+00:00",
-    "git_commit": "13b700331543017564cdef3436fe38022f810c99",
-    "producer": "measure_judge_law.py"
+    "command": "scripts/measure_bc_bank.py --products looking_glass/artifacts/cfm_v2k_vf2_bank --demo looking_glass/artifacts/demo_v2 --out-dir docs/report_cards/experiments",
+    "generated_at": "2026-11-04T23:51:02+00:00",
+    "git_commit": "6b89e905a94bba5fe9266c8ff664a1098514ee16",
+    "producer": "measure_bc_bank.py"
   },
   "arms": {
     "brain": "state_embeddings donor: dose-curve task on a single [donor; level] head; argmax task on per-level heads querying the donor at each action (protocol v2, DEC-559/560)",
@@ -21,68 +21,69 @@
     "brain": {
       "tasks": [
         {
-          "brain": 0.315912,
-          "ci_hi": 0.000452,
-          "ci_lo": 8.2e-05,
+          "brain": 0.317904,
+          "ci_hi": 0.000503,
+          "ci_lo": 0.000117,
           "comparator": "PATH A (GBM incumbent)",
           "controls_substituted": null,
           "controls_unreadable": [],
-          "destroyed": -0.189288,
+          "destroyed": -0.053985,
           "metric": "R2 on the identified (customer x offer level) purchase rate (4 levels: [0, 1, 2, 3])",
           "n": 5000,
           "name": "dose_response_curve",
           "pathA": 0.303941,
-          "random": -0.172423
+          "random": -0.060618
         },
         {
-          "brain": 0.298316,
-          "ci_hi": 0.087559,
-          "ci_lo": 0.025589,
+          "brain": 0.329966,
+          "ci_hi": 0.118519,
+          "ci_lo": 0.057912,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": 0.238384,
+          "destroyed": 0.276094,
           "metric": "share of customers whose declared offer optimum is the argmax of the level-conditional recovered response surface (one DEC-407 ridge head per identified level, fit on A cells, querying the donor at each action; ties -> lowest level; protocol v2, DEC-559/560)",
           "n": 1485,
           "name": "argmax_optimum",
           "pathA": 0.241751,
-          "random": 0.258586
+          "random": 0.239731
         }
       ]
     },
     "brain_ledger": {
       "tasks": [
         {
-          "brain": 0.301712,
-          "ci_hi": 0.000165,
-          "ci_lo": -0.000259,
+          "brain": 0.317699,
+          "ci_hi": 0.000501,
+          "ci_lo": 0.000112,
           "comparator": "PATH A (GBM incumbent)",
           "controls_substituted": null,
           "controls_unreadable": [],
-          "destroyed": -0.024973,
+          "destroyed": -0.057007,
           "metric": "R2 on the identified (customer x offer level) purchase rate (4 levels: [0, 1, 2, 3])",
           "n": 5000,
           "name": "dose_response_curve",
           "pathA": 0.303941,
-          "random": -0.041824
+          "random": -0.038729
         },
         {
-          "brain": 0.30101,
-          "ci_hi": 0.089562,
-          "ci_lo": 0.026936,
+          "brain": 0.322559,
+          "ci_hi": 0.112458,
+          "ci_lo": 0.049832,
           "comparator": "PATH A (GBM incumbent)",
           "controls_unreadable": [],
-          "destroyed": 0.239057,
+          "destroyed": 0.245791,
           "metric": "share of customers whose declared offer optimum is the argmax of the level-conditional recovered response surface (one DEC-407 ridge head per identified level, fit on A cells, querying the donor at each action; ties -> lowest level; protocol v2, DEC-559/560)",
           "n": 1485,
           "name": "argmax_optimum",
           "pathA": 0.241751,
-          "random": 0.241077
+          "random": 0.253199
         }
       ]
     }
   },
+  "complete": true,
   "diagnostics": {},
-  "evidence": "[simulator] OK: 2 live task(s) (+0 degenerate) on n=1485 B-rows scored against 3515 A-rows; comparator PATH A (GBM incumbent); table 41 cols / 5000 customers; brain+ledger 2 task(s)",
+  "evidence": "2 live task(s) (+0 degenerate) on n=1485 B-rows scored against 3515 A-rows; comparator PATH A (GBM incumbent); table 41 cols / 5000 customers; brain+ledger 2 task(s)",
   "excluded": [],
   "identified": {
     "customers": 5000,
@@ -94,6 +95,7 @@
     ],
     "rule": "an offer level is identified for a customer at >= 10 arm-days"
   },
+  "kind": "judge_leg",
   "path_a": {
     "columns": 41,
     "n_present": 5000,
@@ -101,14 +103,14 @@
     "source": "looking_glass/artifacts/demo_v2/path_a/path_a_wide_table.parquet"
   },
   "products": {
-    "path": "looking_glass/artifacts/cfm_v2k_vf2",
-    "registry_sha256": "676e52359995983a",
+    "path": "looking_glass/artifacts/cfm_v2k_vf2_bank",
+    "registry_sha256": "919a932f1b657064",
     "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
   },
+  "protocol": "bank v2 (DEC-598): canonical leg on the served block bank",
   "splits": {
     "n_fit_A": 3515,
-    "n_score_B": 1485,
-    "source": "encoder_samples"
+    "n_score_B": 1485
   },
   "working": true
 }

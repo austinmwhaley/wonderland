@@ -10,7 +10,7 @@
     "values_match": {
       "working": true,
       "evidence": "5000 rows joined on customer_key, 49 columns compared exactly (CPU-built artifact, CPU rebuild): identical",
-      "seconds": 0.0
+      "seconds": 0.01
     },
     "provenance_complete": {
       "working": true,
@@ -290,7 +290,7 @@
   },
   "inputs": {
     "demo": "looking_glass/artifacts/demo_v2",
-    "products_dir": "looking_glass/artifacts/cfm_v2k_vf2"
+    "products_dir": "looking_glass/artifacts/cfm_v2k_vf2_bank"
   },
-  "generated_at": "2026-11-04T22:07:43+00:00"
+  "generated_at": "2026-11-04T23:48:19+00:00"
 }
