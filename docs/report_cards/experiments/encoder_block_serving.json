@@ -1,9 +1,9 @@
 {
   "_meta": {
     "behavior_hash": "c9f26925b418b284",
-    "command": "measure_block_serving.py --products /home/austin_whaley/wonderland_work/cfm_v2k_vf2",
-    "generated_at": "2026-11-04T18:55:28+00:00",
-    "git_commit": "4406c1ccb6bca20d39017225acc6cf4bfeaf2458",
+    "command": "measure_block_serving.py --products /home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k_vf2",
+    "generated_at": "2026-11-04T19:23:17+00:00",
+    "git_commit": "63e13dabb1396bdf387f367cc2f49e4f284fed8e",
     "producer": "measure_block_serving.py"
   },
   "arms": {
@@ -247,11 +247,11 @@
   "n_fit_A": 3515,
   "n_score_B": 1485,
   "products": {
-    "path": "/home/austin_whaley/wonderland_work/cfm_v2k_vf2",
-    "registry_sha256": "6fe25b2b9bcfbad5",
+    "path": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k_vf2",
+    "registry_sha256": "676e52359995983a",
     "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
   },
-  "seconds": 10.3,
+  "seconds": 8.1,
   "sensitivity_counter_weight": {
     "0.5": 0.116576,
     "1.0": 0.116576,

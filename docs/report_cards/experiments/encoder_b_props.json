@@ -2,9 +2,9 @@
   "E_dim": 128,
   "_meta": {
     "behavior_hash": "c9f26925b418b284",
-    "command": "scripts/measure_b_props.py --products /home/austin_whaley/wonderland_work/cfm_v2k_vf2",
-    "generated_at": "2026-11-04T18:54:46+00:00",
-    "git_commit": "4406c1ccb6bca20d39017225acc6cf4bfeaf2458",
+    "command": "scripts/measure_b_props.py --products /home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k_vf2",
+    "generated_at": "2026-11-04T19:20:01+00:00",
+    "git_commit": "63e13dabb1396bdf387f367cc2f49e4f284fed8e",
     "producer": "measure_b_props.py"
   },
   "access_ridge_E": -1.1936,
@@ -25,7 +25,7 @@
       "horizon_days": 30,
       "n": 0
     },
-    "seconds": 18.6,
+    "seconds": 19.3,
     "why": "multiclass ECE (10 equal-width max-confidence bins) of the shipped head_next softmax on the per-step readout y_last at the last pre-as_of tick; population = 1485 split-B customers, 1485 with a next full-stream event; in-window = next event within as_of+30d, OOD beyond (recorded, no OOD bar); OOV event types -> the n_et bucket"
   },
   "complete": true,
@@ -39,18 +39,18 @@
     "data_signature": "3543c711bc98",
     "n_customers": 5000,
     "present": true,
-    "registry_sha256": "6fe25b2b9bcfbad5",
+    "registry_sha256": "676e52359995983a",
     "seconds": 0.0,
     "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899",
     "why": "served tag 0.11.1r490760-b64d256e3lr4e-05o4c3b5899 resolves to exactly one registry next to the products; config sha over canonical JSON (resolved + overrides); checkpoint present (filename tag == registry tag)"
   },
   "mass_additivity_error": 0.0,
   "products": {
-    "path": "/home/austin_whaley/wonderland_work/cfm_v2k_vf2",
-    "registry_sha256": "6fe25b2b9bcfbad5",
+    "path": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k_vf2",
+    "registry_sha256": "676e52359995983a",
     "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
   },
   "runtime_seed0_val": 29.234517574310303,
-  "seconds": 20.0,
+  "seconds": 20.6,
   "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
 }

@@ -1,9 +1,9 @@
 {
   "_meta": {
     "behavior_hash": "c9f26925b418b284",
-    "command": "scripts/measure_decision_law.py --products /home/austin_whaley/wonderland_work/cfm_v2k_vf2",
-    "generated_at": "2026-11-04T18:49:44+00:00",
-    "git_commit": "4406c1ccb6bca20d39017225acc6cf4bfeaf2458",
+    "command": "scripts/measure_decision_law.py --products /home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k_vf2",
+    "generated_at": "2026-11-04T19:22:24+00:00",
+    "git_commit": "63e13dabb1396bdf387f367cc2f49e4f284fed8e",
     "producer": "measure_decision_law.py"
   },
   "complete": true,
@@ -20,7 +20,7 @@
     "n": 1485,
     "n_levels": 4,
     "oracle_ceiling": 0.6404,
-    "seconds": 2.4,
+    "seconds": 1.9,
     "share_E": 0.2983164983164983,
     "share_destroyed": 0.2383838383838384,
     "share_random": 0.2585858585858586,
@@ -57,7 +57,7 @@
       "none_bucket_idx": 0,
       "note": "target_key is a lab marker (which arm randomized this event); the pre-registered risk is that the trunk learned it \u2014 recorded, not gated",
       "ok": true,
-      "seconds": 34.7,
+      "seconds": 31.3,
       "share_E_prime": 0.30033670033670035,
       "share_E_stored": 0.2983164983164983
     },
@@ -105,17 +105,17 @@
     "n_train": 1039,
     "protocol": "v1 port (DEC-585): last-logged email_send offer; as-of state; uniform IPS p0=1/K; standardized-ridge head (replaces legacy XGB \u2014 B-only simple-head doctrine); legacy channel arm RETIRED (demo_v2 randomizes offer only)",
     "random": 181.31,
-    "seconds": 0.4
+    "seconds": 0.3
   },
   "device": "cuda:0",
   "n_A": 3515,
   "n_B": 1485,
   "n_customers": 5000,
   "products": {
-    "path": "/home/austin_whaley/wonderland_work/cfm_v2k_vf2",
-    "registry_sha256": "6fe25b2b9bcfbad5",
+    "path": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k_vf2",
+    "registry_sha256": "676e52359995983a",
     "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
   },
-  "seconds": 145.3,
+  "seconds": 141.1,
   "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
 }
