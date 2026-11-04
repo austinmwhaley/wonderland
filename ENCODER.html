@@ -165,7 +165,7 @@
 <rect x="1170" y="910" width="460" height="132" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.4"/><text x="1400.0" y="959.9" font-size="14" font-weight="600" text-anchor="middle" fill="#0f172a">laws the encoder is built on</text><text x="1400.0" y="974.9" font-size="11" font-weight="400" text-anchor="middle" fill="#64748b">continuous-time fade + tick · exact affine scan · constant state</text><text x="1400.0" y="989.9" font-size="11" font-weight="400" text-anchor="middle" fill="#64748b">per-sample only (no batch statistics) · schema-agnostic resolution</text><text x="1400.0" y="1004.9" font-size="11" font-weight="400" text-anchor="middle" fill="#64748b">equivariance: time translation, field permutation, entity permutation</text>
 <text x="1170" y="1066" font-size="11" font-weight="400" text-anchor="middle" fill="#0f172a"></text>
 <rect x="30" y="1200" width="1620" height="44" rx="12" fill="#0f172a"/>
-<text x="48" y="1228" font-size="13" font-weight="600" text-anchor="start" fill="#e2e8f0">map, not a measurement card  ·  all verdicts and numbers live on REPORT_CARD.md  ·  behavior d5df3a2c  ·  architecture as of 2026-11-04</text>
+<text x="48" y="1228" font-size="13" font-weight="600" text-anchor="start" fill="#e2e8f0">map, not a measurement card  ·  all verdicts and numbers live on REPORT_CARD.md  ·  behavior c9f26925  ·  architecture as of 2026-11-04</text>
 </svg>
   </div>
 
@@ -187,16 +187,18 @@
     The expert bank is the same memory idea in parallel; the readout stays a concatenation.</p></div>
     <div class="note"><h3>The served object</h3><p><code>E = boundary(proj(h)) + counter</code>, with a
     per-sample orthogonal boundary (Cayley, κ=1) and an anchored additive counter folded into the
-    same width. Candidate statistic blocks append; they never replace the one composition.</p></div>
+    same width. The certified compact served form is <b>55 dims</b> (32 shape PCs + 16 level + 4
+    response + 3 RFM reconstruction); candidate statistic blocks append; they never replace the
+    one composition.</p></div>
     <div class="note"><h3>The block bank</h3><p>Mass (additive), shape (contractive), order
     (pair/signature), response (randomized action curve), value (level/quantiles), uncertainty
     (coverage). A block that exists in one path and not another is a bug — the one-composition law.</p></div>
   </div>
 
   <footer>
-    Architecture map for the CFM encoder. Behavior <code>c9f26925</code> (candidate <code>0.11.1r490760</code>) · canonical <code>d5df3a2c</code> · 2026-11-04.
+    Architecture map for the CFM encoder. Behavior <code>c9f26925</code> (candidate <code>0.11.1r490760</code>; served E <code>c32rv</code> 55 dims) · 2026-11-04.
     The source of truth for every verdict and number is <code>REPORT_CARD.md</code>; the block bank is
-    recorded in <code>DECISIONS.md</code> DEC-590/591/592. Candidate chips are not certified capabilities.
+    recorded in <code>DECISIONS.md</code> DEC-590/591/592/594. Candidate chips are not certified capabilities.
   </footer>
 </div>
 </body>

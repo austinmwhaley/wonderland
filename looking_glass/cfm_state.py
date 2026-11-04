@@ -694,10 +694,13 @@ class StateStore:
         finally:
             self.con.unregister("_idle")
 
-    def materialize_state_embeddings(self, model, as_of_epoch):
+    def materialize_state_embeddings(self, model, as_of_epoch, stream=None):
         """Project every live state to its inference embedding for this day.
 
         Idempotent per day (delete + rewrite), so the daily job is re-runnable.
+        `stream` is the exact event frame the build was given; when absent, the loader
+        reads `cfg.db` (the live-store path). Re-reading cfg.db during a build was a
+        composition bug: the build's own frame is the single source of truth (DEC-592).
         Returns the number of rows written.
         """
         import polars as pl
@@ -721,8 +724,9 @@ class StateStore:
         from looking_glass.cfm_data import _read_stream
         from looking_glass.stat_bank import level_block
 
+        _stream = stream if stream is not None else _read_stream(self.cfg)
         _keys = [r[0] for r in rows]
-        E = np.hstack([E, level_block(_read_stream(self.cfg), _keys, float(as_of_epoch))])
+        E = np.hstack([E, level_block(_stream, _keys, float(as_of_epoch))])
         self.con.execute("DELETE FROM state_embeddings WHERE as_of_epoch = ?", [float(as_of_epoch)])
         df = pl.DataFrame(
             {
@@ -1256,11 +1260,11 @@ def build_products(cfg, model, vocab, df, keys, split):
             # still applied to customer_state below (recency consumers keep it), but the
             # donor's magnitude traits survive: a per-customer unknown scalar multiplying the
             # state makes linear readouts of x0/h0/return unrecoverable (measured).
-            n_emb = store.materialize_state_embeddings(model, close_at)
+            n_emb = store.materialize_state_embeddings(model, close_at, stream=df)
             store.fade_idle(close_at)
         else:
             store.fade_idle(close_at)
-            n_emb = store.materialize_state_embeddings(model, close_at)
+            n_emb = store.materialize_state_embeddings(model, close_at, stream=df)
         # no absorbs (states were just built from full history); every customer
         # was faded idly to the boundary, so idle == embeddings
         store.record_receipt(close_at, 0, n_emb, n_emb, "encoder", _time.perf_counter() - t_close)

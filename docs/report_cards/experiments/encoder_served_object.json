@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "c9f26925b418b284",
-    "command": "measure_served_object.py --products /home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k_vf2",
-    "generated_at": "2026-11-04T19:23:36+00:00",
-    "git_commit": "63e13dabb1396bdf387f367cc2f49e4f284fed8e",
+    "behavior_hash": "6c0b8f4c2c7b925c",
+    "command": "measure_served_object.py --products looking_glass/artifacts/cfm_v2k_vf2",
+    "generated_at": "2026-11-04T20:54:46+00:00",
+    "git_commit": "b91e8a15fa274af7e84c0663fc0e85f3a6b5132f",
     "producer": "measure_served_object.py"
   },
   "arms": {
@@ -243,7 +243,7 @@
   "n_fit_A": 3515,
   "n_score_B": 1485,
   "products": {
-    "path": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k_vf2",
+    "path": "looking_glass/artifacts/cfm_v2k_vf2",
     "registry_sha256": "676e52359995983a",
     "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
   },
@@ -252,7 +252,7 @@
     "shape_served",
     "path_a"
   ],
-  "seconds": 16.1,
+  "seconds": 15.7,
   "validation": {
     "future_fields": [
       "x0",

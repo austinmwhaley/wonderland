@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "c9f26925b418b284",
-    "command": "scripts/measure_construction_law.py --products /home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k_vf2",
-    "generated_at": "2026-11-04T19:17:47+00:00",
-    "git_commit": "63e13dabb1396bdf387f367cc2f49e4f284fed8e",
+    "behavior_hash": "6c0b8f4c2c7b925c",
+    "command": "scripts/measure_construction_law.py --products looking_glass/artifacts/cfm_v2k_vf2",
+    "generated_at": "2026-11-04T20:53:53+00:00",
+    "git_commit": "b91e8a15fa274af7e84c0663fc0e85f3a6b5132f",
     "producer": "measure_construction_law.py"
   },
   "checks": {
@@ -20,7 +20,7 @@
     },
     "frozen_identity": {
       "checkpoint_sha256": "33f9b8034c677a8e",
-      "evidence": "products identity {'path': '/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k_vf2', 'tag': '0.11.1r490760-b64d256e3lr4e-05o4c3b5899', 'registry_sha256': '676e52359995983a'} + checkpoint cfm_0_11_1r490760-b64d256e3lr4e-05o4c3b5899.pt present",
+      "evidence": "products identity {'path': 'looking_glass/artifacts/cfm_v2k_vf2', 'tag': '0.11.1r490760-b64d256e3lr4e-05o4c3b5899', 'registry_sha256': '676e52359995983a'} + checkpoint cfm_0_11_1r490760-b64d256e3lr4e-05o4c3b5899.pt present",
       "present": true,
       "registry_sha256": "676e52359995983a",
       "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
@@ -33,7 +33,7 @@
     },
     "scan_associativity": {
       "evidence": "merge law F(g\u2218f)=F(g)\u2218F(f) on 20 real sequences x 5 split points (float64, model's own decay/drive, continuous_time=True): worst relative error 1.105e-15 (gate 1e-10)",
-      "seconds": 0.6,
+      "seconds": 0.5,
       "working": true,
       "worst_rel_err": 1.105497335394747e-15
     },
@@ -41,7 +41,7 @@
       "evidence": "renamed client_id/occurred_at/event/attributes/total -> onboard resolved {'customer_key': 'client_id', 'event_ts': 'occurred_at', 'event_type': 'event', 'brand': None, 'entity_type': None, 'entity_id': None, 'source_table': 'source_table', 'value': 'value', 'event_attributes': ['attributes', 'total']}; 2341648 rows kept (source 2341648); 5000 customers encoded; encoder trained on the resolved stream (d=64,L=1,e=1): E finite=True, best=33.9141; zero pipeline-code edits",
       "n_customers": 5000,
       "n_rows": 2341648,
-      "seconds": 76.2,
+      "seconds": 76.1,
       "working": true
     }
   },
@@ -73,11 +73,11 @@
   "n_sequences": 20,
   "note": "retention requires collate want_past/future with train mu/sd",
   "products": {
-    "path": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k_vf2",
+    "path": "looking_glass/artifacts/cfm_v2k_vf2",
     "registry_sha256": "676e52359995983a",
     "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
   },
   "scan_merge_delta": 8.881784197001252e-16,
-  "seconds": 92.2,
+  "seconds": 92.9,
   "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
 }

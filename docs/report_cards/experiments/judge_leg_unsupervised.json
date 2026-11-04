@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "c9f26925b418b284",
-    "command": "measure_judge_law.py --products /home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k_vf2 --demo /home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/demo_v2 --legs supervised,unsupervised,rl,simulator --out-dir /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments",
-    "generated_at": "2026-11-04T20:11:35+00:00",
-    "git_commit": "e95e978b5e1c80ebe7063209e2c6191cc6ff07f6",
+    "behavior_hash": "6c0b8f4c2c7b925c",
+    "command": "measure_judge_law.py --products looking_glass/artifacts/cfm_v2k_vf2 --demo looking_glass/artifacts/demo_v2 --legs supervised,unsupervised,rl,simulator --out-dir /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments",
+    "generated_at": "2026-11-04T21:04:45+00:00",
+    "git_commit": "b91e8a15fa274af7e84c0663fc0e85f3a6b5132f",
     "producer": "measure_judge_law.py"
   },
   "arms": {
@@ -116,10 +116,10 @@
     "columns": 41,
     "n_present": 5000,
     "n_requested": 5000,
-    "source": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/demo_v2/path_a/path_a_wide_table.parquet"
+    "source": "looking_glass/artifacts/demo_v2/path_a/path_a_wide_table.parquet"
   },
   "products": {
-    "path": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k_vf2",
+    "path": "looking_glass/artifacts/cfm_v2k_vf2",
     "registry_sha256": "676e52359995983a",
     "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
   },

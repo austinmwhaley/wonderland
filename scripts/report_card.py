@@ -637,7 +637,9 @@ def _eval_b_row(receipts: Path, row: B.BRow, current_hash: str) -> tuple[str, st
             return J.FAIL, f"{name}: " + "; ".join(bad[:4]) + (" …" if len(bad) > 4 else "")
         detail = " · ".join(
             f"{t}: E {targets[t]['E']:.4f} vs raw {targets[t]['raw']:.4f} / fair {targets[t]['fair']:.4f} "
-            f"/ table {targets[t].get('table')} (add CI lo {targets[t]['ci_lo']:+.4f}) "
+            f"/ table+E {targets[t]['table_E']:.4f} (CI lo {targets[t]['ci_lo']:+.4f}) "
+            f"/ hstack {_num(targets[t].get('table_E_hstack'))} "
+            f"(CI lo {_num(targets[t].get('hstack_ci_lo'))}) "
             f"/ rand {targets[t]['random']:.4f} / dest {targets[t]['destroyed']:.4f}"
             for t in sorted(set(targets) - set(deg))
         )
@@ -664,6 +666,46 @@ def _eval_b_row(receipts: Path, row: B.BRow, current_hash: str) -> tuple[str, st
             f"· n {blk.get('n_next')}/{blk.get('n_pop')} (OOV {blk.get('n_oov')}) · OOD "
             f"(as_of+{B.OOD_HORIZON_DAYS}d): ece {ood.get('ece')} acc {ood.get('acc')} "
             f"n {ood.get('n')}",
+        )
+    if row.kind == "minimality_law":
+        note = _meta_problem(rc, current_hash)
+        if note:
+            return J.UNKNOWN, f"{note} — re-run {row.producer}"
+        if not rc.get("complete"):
+            return J.FAIL, f"{name}: minimality receipt incomplete"
+        k_min = rc.get("k_min")
+        full_dim = rc.get("full_dim")
+        served = rc.get("served_shape_dim")
+        served_dim = rc.get("served_dim")
+        block_dim = rc.get("block_dim")
+        if not all(_finite(v) for v in (k_min, full_dim, served, served_dim, block_dim)):
+            return J.FAIL, f"{name}: minimality dims missing"
+        if int(served) + int(block_dim) != int(served_dim):
+            return J.FAIL, (
+                f"{name}: served dims inconsistent — {served} shape + {block_dim} block "
+                f"!= {served_dim}"
+            )
+        if int(served) != int(k_min):
+            return J.FAIL, (
+                f"{name}: served shape rank {int(served)} != certificate k_min {int(k_min)} "
+                f"(shape full dim {int(full_dim)})"
+            )
+        if int(k_min) != int(full_dim):
+            return J.FAIL, (
+                f"{name}: shape certificate is not minimal at the served rank — k_min "
+                f"{int(k_min)} != full_dim {int(full_dim)}"
+            )
+        if int(block_dim) < 1:
+            return J.FAIL, f"{name}: no explicit measure block (block_dim {int(block_dim)})"
+        if not (0 < int(k_min) <= int(full_dim)):
+            return J.FAIL, f"{name}: k_min {int(k_min)} outside 1..{int(full_dim)}"
+        cert = rc.get("shape_certificate") or {}
+        return (
+            J.PASS,
+            f"served shape rank {int(served)} == k_min {int(k_min)} (shape full "
+            f"{int(full_dim)}) · explicit block {int(block_dim)} · joint floor "
+            f"{rc.get('joint_min')} (unconstrained) · n_train {cert.get('n_train')} / "
+            f"n_test {cert.get('n_test')} · noise {cert.get('noise')}",
         )
     if row.kind == "identity_law":
         note = _meta_problem(rc, current_hash)

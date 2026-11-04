@@ -5,9 +5,11 @@ Split: the judge's A/B populations via the battery's _load_all (same seed the bu
 Arms: raw = customer_features.parquet (40 -> 38 via table_features), fair =
 path_a_wide_table.parquet (50 -> 38; on cfm_v2k the two 38-column matrices are
 value-IDENTICAL — recorded, not assumed), E = stored state_embeddings (read, not
-re-encoded), table_E = hstack(fair, E), random/destroyed E = controls_matched,
-broken on BOTH fit and score sides. ONE encoding over A + B per table arm; head =
-the shipping standardized ridge, fit on A, scored on B.
+re-encoded; the compact served object includes the 16-dim level block and the 4-dim
+response block), table_E = the ENSEMBLE mean of the table ridge and the E ridge (v2;
+DEC-594), with the v1 hstack(fair, E) arm recorded alongside. random/destroyed E =
+controls_matched, broken on BOTH fit and score sides. ONE encoding over A + B per table
+arm; head = the shipping standardized ridge, fit on A, scored on B.
 
 BAR (card, per non-degenerate target): E >= raw and E >= fair (point);
 CI (table_E - fair) lower bound > 0 (paired, statistic recomputed in each replicate,
@@ -64,8 +66,14 @@ def main() -> int:
 
     ensure_boundary()
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--products", default="/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k")
-    ap.add_argument("--demo", default="/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/demo_v2")
+    ap.add_argument(
+        "--products",
+        default="/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k",
+    )
+    ap.add_argument(
+        "--demo",
+        default="/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/demo_v2",
+    )
     ap.add_argument("--out", default=str(OUT))
     a = ap.parse_args()
 
@@ -117,7 +125,7 @@ def main() -> int:
             "E": (Ea, Eb),
             "raw": (Xr_a, Xr_b),
             "fair": (Xf_a, Xf_b),
-            "table_E": (np.hstack([Xf_a, Ea]), np.hstack([Xf_b, Eb])),
+            "hstack": (np.hstack([Xf_a, Ea]), np.hstack([Xf_b, Eb])),
             "random": (rand_a, rand_b),
             "destroyed": (dest_a, dest_b),
         }
@@ -126,13 +134,21 @@ def main() -> int:
             _m, p = _score(Xa, ya, Xb, yb, metric)
             scores[name] = _metric(yb, p, metric)
             preds_b[name] = p
-        # paired CI of (table_E - fair), the statistic recomputed in each replicate
-        P_te, P_f, y2 = preds_b["table_E"], preds_b["fair"], yb
+        # v2 (DEC-594): the table+E arm is the ENSEMBLE mean of the two fitted heads.
+        # The v1 hstack arm is recorded too; neither is tuned on B.
+        preds_b["ensemble"] = 0.5 * (preds_b["fair"] + preds_b["E"])
+        scores["ensemble"] = _metric(yb, preds_b["ensemble"], metric)
 
-        def stat_fn(idx):
-            return _metric(y2[idx], P_te[idx], metric), _metric(y2[idx], P_f[idx], metric)
+        def _ci(name):
+            P_te, P_f, y2 = preds_b[name], preds_b["fair"], yb
 
-        lo, hi = _paired_stat_ci(stat_fn, len(bkeys))
+            def stat_fn(idx):
+                return _metric(y2[idx], P_te[idx], metric), _metric(y2[idx], P_f[idx], metric)
+
+            return _paired_stat_ci(stat_fn, len(bkeys))
+
+        lo, hi = _ci("ensemble")
+        h_lo, h_hi = _ci("hstack")
         targets[c] = {
             "metric": metric,
             "degenerate": False,
@@ -140,7 +156,11 @@ def main() -> int:
             "raw": scores["raw"],
             "fair": scores["fair"],
             "table": scores["fair"],
-            "table_E": scores["table_E"],
+            "table_E": scores["ensemble"],
+            "table_E_hstack": scores["hstack"],
+            "table_E_ensemble": scores["ensemble"],
+            "hstack_ci_lo": h_lo,
+            "hstack_ci_hi": h_hi,
             "random": scores["random"],
             "destroyed": scores["destroyed"],
             "ci_lo": lo,
@@ -154,12 +174,18 @@ def main() -> int:
         "n_A": int(n_a),
         "n_B": int(n_b),
         "raw_equals_fair": raw_equals_fair,
+        "combined_protocol": (
+            "v2 (DEC-594): table_E = mean(table ridge, E ridge) — a fixed ensemble of the "
+            "two fitted heads, no weights fit on B; the v1 hstack(fair,E) arm is recorded "
+            "alongside as table_E_hstack"
+        ),
         "note": (
             "raw and fair 38-column matrices "
             f"{'are value-identical on this stream (recorded, not assumed)' if raw_equals_fair else 'DIFFER on this stream'}; "
             "controls broken on fit+score sides (controls_matched, SEED); head = the shipping "
             "standardized ridge, one encoding over A+B, fit on A scored on B; E = stored "
-            "state_embeddings (read, not re-encoded)"
+            "state_embeddings (read, not re-encoded; the compact served object includes the "
+            "level block and the response block)"
         ),
         "excluded": deg,
         "products": products_identity(a.products),

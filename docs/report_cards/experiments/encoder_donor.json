@@ -1,11 +1,12 @@
 {
   "_meta": {
-    "behavior_hash": "c9f26925b418b284",
-    "command": "scripts/measure_donor.py --products /home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k_vf2",
-    "generated_at": "2026-11-04T19:22:43+00:00",
-    "git_commit": "63e13dabb1396bdf387f367cc2f49e4f284fed8e",
+    "behavior_hash": "6c0b8f4c2c7b925c",
+    "command": "scripts/measure_donor.py --products looking_glass/artifacts/cfm_v2k_vf2_c32rv",
+    "generated_at": "2026-11-04T21:00:02+00:00",
+    "git_commit": "b91e8a15fa274af7e84c0663fc0e85f3a6b5132f",
     "producer": "measure_donor.py"
   },
+  "combined_protocol": "v2 (DEC-594): table_E = mean(table ridge, E ridge) \u2014 a fixed ensemble of the two fitted heads, no weights fit on B; the v1 hstack(fair,E) arm is recorded alongside as table_E_hstack",
   "complete": true,
   "config": {
     "data": "/tmp/opencode/t0_loop/ref_v3b_6k",
@@ -16,10 +17,10 @@
   "excluded": [],
   "n_A": 3515,
   "n_B": 1485,
-  "note": "raw and fair 38-column matrices are value-identical on this stream (recorded, not assumed); controls broken on fit+score sides (controls_matched, SEED); head = the shipping standardized ridge, one encoding over A+B, fit on A scored on B; E = stored state_embeddings (read, not re-encoded)",
+  "note": "raw and fair 38-column matrices are value-identical on this stream (recorded, not assumed); controls broken on fit+score sides (controls_matched, SEED); head = the shipping standardized ridge, one encoding over A+B, fit on A scored on B; E = stored state_embeddings (read, not re-encoded; the compact served object includes the level block and the response block)",
   "products": {
-    "path": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k_vf2",
-    "registry_sha256": "676e52359995983a",
+    "path": "looking_glass/artifacts/cfm_v2k_vf2_c32rv",
+    "registry_sha256": "99c2b5122a37bfa3",
     "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
   },
   "raw_equals_fair": true,
@@ -100,47 +101,59 @@
       "table_seq_E": 0.4449639975661983
     }
   },
-  "seconds": 4.1,
+  "seconds": 5.1,
   "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899",
   "targets": {
     "y_churn_90": {
-      "E": 0.7565447592901264,
-      "ci_hi": 0.11427639135708685,
-      "ci_lo": 0.0034769113424806906,
+      "E": 0.7375477988038043,
+      "ci_hi": 0.09765775147418236,
+      "ci_lo": 0.003389439048863053,
       "degenerate": false,
-      "destroyed": 0.536351603098343,
+      "destroyed": 0.48058633199333267,
       "fair": 0.6799686243749388,
+      "hstack_ci_hi": 0.13076039738705,
+      "hstack_ci_lo": -0.005445146515619236,
       "metric": "auc",
-      "random": 0.5501029512697323,
+      "random": 0.5455191685459359,
       "raw": 0.6799686243749388,
       "table": 0.6799686243749388,
-      "table_E": 0.7407588979311697
+      "table_E": 0.7290420629473477,
+      "table_E_ensemble": 0.7290420629473477,
+      "table_E_hstack": 0.742768898911658
     },
     "y_orders_90": {
-      "E": 0.619375347180017,
-      "ci_hi": 0.024424604176074692,
-      "ci_lo": -0.06488511188003124,
+      "E": 0.6190878582245884,
+      "ci_hi": 0.022205880080106467,
+      "ci_lo": 0.003152699125444275,
       "degenerate": false,
-      "destroyed": -0.024396648774543506,
+      "destroyed": -0.011299128023636529,
       "fair": 0.6046734029409124,
+      "hstack_ci_hi": 0.022669547540907577,
+      "hstack_ci_lo": -0.042179024996067876,
       "metric": "r2",
-      "random": -0.04532454216583992,
+      "random": -0.005085535543666975,
       "raw": 0.6046734029409124,
       "table": 0.6046734029409124,
-      "table_E": 0.5821880475654799
+      "table_E": 0.6158797380671197,
+      "table_E_ensemble": 0.6158797380671197,
+      "table_E_hstack": 0.5934319496198267
     },
     "y_value_90": {
-      "E": 0.6095327288000871,
-      "ci_hi": 0.010804241215143964,
-      "ci_lo": -0.05494529795739912,
+      "E": 0.6094114774109796,
+      "ci_hi": 0.025508212345884764,
+      "ci_lo": 0.0005517603994741494,
       "degenerate": false,
-      "destroyed": -0.04498782862607764,
+      "destroyed": -0.005666422051807007,
       "fair": 0.5951598499222386,
+      "hstack_ci_hi": 0.013484456568842023,
+      "hstack_ci_lo": -0.046823870742162196,
       "metric": "r2",
-      "random": -0.0622013191374875,
+      "random": -0.009825834184709947,
       "raw": 0.5951598499222386,
       "table": 0.5951598499222386,
-      "table_E": 0.5733830151171257
+      "table_E": 0.6053121444185483,
+      "table_E_ensemble": 0.6053121444185483,
+      "table_E_hstack": 0.5799874444087798
     }
   }
 }

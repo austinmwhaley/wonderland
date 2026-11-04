@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "c9f26925b418b284",
-    "command": "measure_sufficiency_law.py --products /home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k_vf2",
-    "generated_at": "2026-11-04T19:22:59+00:00",
-    "git_commit": "63e13dabb1396bdf387f367cc2f49e4f284fed8e",
+    "behavior_hash": "6c0b8f4c2c7b925c",
+    "command": "measure_sufficiency_law.py --products looking_glass/artifacts/cfm_v2k_vf2",
+    "generated_at": "2026-11-04T20:54:09+00:00",
+    "git_commit": "b91e8a15fa274af7e84c0663fc0e85f3a6b5132f",
     "producer": "measure_sufficiency_law.py"
   },
   "arms": {
@@ -32,7 +32,7 @@
   "excluded_probes": {
     "attr-next": "headroom -0.140938 <= 0 \u2014 probe excluded, reported (degenerate)",
     "dt": "headroom -0.121934 <= 0 \u2014 probe excluded, reported (degenerate)",
-    "horizon-count-value": "headroom -0.246312 <= 0 \u2014 probe excluded, reported (degenerate)",
+    "horizon-count-value": "headroom -0.108796 <= 0 \u2014 probe excluded, reported (degenerate)",
     "numeric-next": "headroom -0.018799 <= 0 \u2014 probe excluded, reported (degenerate)"
   },
   "field_sources": {
@@ -49,7 +49,7 @@
   },
   "honesty": "rule 4: the served object = learned shape \u2295 the ledger's named blocks; learned_only travels in this same receipt, so a U the ledger alone carries is served-statistic sufficiency, not learned-shape sufficiency. The full arm is history-only PATH A (leak-free by the provenance receipt). No criterion, rule or bar of its own: the bar lives in b_spec.SUFFICIENCY_BAR.",
   "horizon": {
-    "H_seconds": 267961.0,
+    "H_seconds": 65817.0,
     "draw": "np.random.default_rng(65537).choice over the pooled positive within-customer gaps (full stream)",
     "gap_p50_s": 47841.0,
     "gap_p95_s": 408548.6,
@@ -208,34 +208,34 @@
       "u": {}
     },
     "horizon-count-value": {
-      "H_seconds": 267961.0,
+      "H_seconds": 65817.0,
       "count_losses": {
-        "floor": 1.080715,
-        "full": 0.686259,
-        "learned_only": 0.592282,
-        "served_object": 0.665037
+        "floor": 1.038056,
+        "full": 0.816317,
+        "learned_only": 0.761905,
+        "served_object": 0.823739
       },
       "gap_p50_s": 47841.0,
       "gap_p95_s": 408548.6,
-      "headroom": -0.246312,
+      "headroom": -0.108796,
       "included": false,
       "loss": {
-        "floor": 0.919152,
-        "full": 0.67284,
-        "learned_only": 0.609542,
-        "served_object": 0.662687
+        "floor": 1.012859,
+        "full": 0.904063,
+        "learned_only": 0.867856,
+        "served_object": 0.925208
       },
       "mass_losses": {
-        "floor": 0.75759,
-        "full": 0.659421,
-        "learned_only": 0.626803,
-        "served_object": 0.660337
+        "floor": 0.987662,
+        "full": 0.991809,
+        "learned_only": 0.973807,
+        "served_object": 1.026676
       },
       "n_gaps": 2336629,
-      "reason": "headroom -0.246312 <= 0 \u2014 probe excluded, reported (degenerate)",
+      "reason": "headroom -0.108796 <= 0 \u2014 probe excluded, reported (degenerate)",
       "u": {},
       "variance_notes": [],
-      "window": "(2025-01-01T00:00:00, 2025-01-01T00:00:00 + 267961s]"
+      "window": "(2025-01-01T00:00:00, 2025-01-01T00:00:00 + 65817s]"
     },
     "next-type": {
       "classes": [
@@ -295,11 +295,11 @@
     }
   },
   "products": {
-    "path": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k_vf2/cfm_products.duckdb",
+    "path": "looking_glass/artifacts/cfm_v2k_vf2/cfm_products.duckdb",
     "registry_sha256": "676e52359995983a",
     "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
   },
-  "seconds": 12.6,
+  "seconds": 12.3,
   "u": {
     "learned_only": 1.076433,
     "served_object": 0.980162

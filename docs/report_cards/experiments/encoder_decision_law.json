@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "c9f26925b418b284",
-    "command": "scripts/measure_decision_law.py --products /home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k_vf2",
-    "generated_at": "2026-11-04T19:22:24+00:00",
-    "git_commit": "63e13dabb1396bdf387f367cc2f49e4f284fed8e",
+    "behavior_hash": "6c0b8f4c2c7b925c",
+    "command": "scripts/measure_decision_law.py --products looking_glass/artifacts/cfm_v2k_vf2",
+    "generated_at": "2026-11-04T20:59:37+00:00",
+    "git_commit": "b91e8a15fa274af7e84c0663fc0e85f3a6b5132f",
     "producer": "measure_decision_law.py"
   },
   "complete": true,
@@ -57,7 +57,7 @@
       "none_bucket_idx": 0,
       "note": "target_key is a lab marker (which arm randomized this event); the pre-registered risk is that the trunk learned it \u2014 recorded, not gated",
       "ok": true,
-      "seconds": 31.3,
+      "seconds": 30.3,
       "share_E_prime": 0.30033670033670035,
       "share_E_stored": 0.2983164983164983
     },
@@ -112,10 +112,10 @@
   "n_B": 1485,
   "n_customers": 5000,
   "products": {
-    "path": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k_vf2",
+    "path": "looking_glass/artifacts/cfm_v2k_vf2",
     "registry_sha256": "676e52359995983a",
     "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
   },
-  "seconds": 141.1,
+  "seconds": 140.5,
   "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
 }

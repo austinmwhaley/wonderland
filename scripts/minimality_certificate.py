@@ -57,6 +57,22 @@ def main(argv=None):
         dest="unserved_shape",
         help="disable the serve projection and certify the TRUNK shape rank (use before fitting serve)",
     )
+    ap.add_argument(
+        "--stored-products",
+        default=None,
+        dest="stored_products",
+        help=(
+            "read state_embeddings from this products dir (or db) instead of re-encoding; "
+            "use with --block shape/--shape-dim to certify the SERVED compact object"
+        ),
+    )
+    ap.add_argument(
+        "--shape-dim",
+        type=int,
+        default=None,
+        dest="shape_dim",
+        help="leading dims of the stored E to treat as the shape block (default: full stored E)",
+    )
     a = ap.parse_args(argv)
 
     import polars as pl
@@ -81,28 +97,50 @@ def main(argv=None):
 
     seqs = _b_sequences(cfg)
     cust = np.array([str(s["customer"]) for s in seqs])
-    zs = []
-    _bs = embed_batch_size(cfg)
-    for i in range(0, len(seqs), _bs):
-        with torch.no_grad():
-            z = forward_embedding(
-                model, seqs[i : i + _bs], cfg=cfg, lb=getattr(model, "layer_b", None)
+    if a.stored_products:
+        import duckdb
+
+        sp = Path(a.stored_products)
+        db = sp if sp.suffix else sp / "cfm_products.duckdb"
+        con = duckdb.connect(str(db), read_only=True)
+        try:
+            rows = dict(
+                con.execute("select customer_key, embedding from state_embeddings").fetchall()
             )
-        zs.append(z.detach().float().cpu().numpy())
-    Z = np.concatenate(zs, 0) if zs else np.zeros((0, 1))
-    if a.block == "shape":
-        if getattr(a, "unserved_shape", False):
-            _names = list(getattr(getattr(model, "layer_b", None), "names", ()) or ())
-            _sd = int(Z.shape[1] - len(_names)) if _names else min(int(model.dim), Z.shape[1])
-        else:
-            # served shape block = served E dims minus the measure block. This works for
-            # pca/blocks/split/explicit serve modes (all set model.serve_dim).
-            _names = list(getattr(getattr(model, "layer_b", None), "names", ()) or ())
-            _sd = int(getattr(model, "serve_dim", 0) or 0) - len(_names)
-            if _sd <= 0:
-                _W = getattr(model, "serve_W", None)
-                _sd = int(_W.shape[0]) if _W is not None else min(int(model.dim), Z.shape[1])
-        Z = Z[:, : min(_sd, Z.shape[1])]
+        finally:
+            con.close()
+        missing = [c for c in cust if c not in rows]
+        if missing:
+            raise SystemExit(
+                f"{len(missing)} split-B customers have no stored embedding in {db}; refusing"
+            )
+        Z = np.vstack([np.asarray(rows[c], dtype=np.float64) for c in cust])
+        if a.block == "shape":
+            _sd = int(a.shape_dim) if a.shape_dim is not None else int(Z.shape[1])
+            Z = Z[:, : min(_sd, Z.shape[1])]
+    else:
+        zs = []
+        _bs = embed_batch_size(cfg)
+        for i in range(0, len(seqs), _bs):
+            with torch.no_grad():
+                z = forward_embedding(
+                    model, seqs[i : i + _bs], cfg=cfg, lb=getattr(model, "layer_b", None)
+                )
+            zs.append(z.detach().float().cpu().numpy())
+        Z = np.concatenate(zs, 0) if zs else np.zeros((0, 1))
+        if a.block == "shape":
+            if getattr(a, "unserved_shape", False):
+                _names = list(getattr(getattr(model, "layer_b", None), "names", ()) or ())
+                _sd = int(Z.shape[1] - len(_names)) if _names else min(int(model.dim), Z.shape[1])
+            else:
+                # served shape block = served E dims minus the measure block. This works for
+                # pca/blocks/split/explicit serve modes (all set model.serve_dim).
+                _names = list(getattr(getattr(model, "layer_b", None), "names", ()) or ())
+                _sd = int(getattr(model, "serve_dim", 0) or 0) - len(_names)
+                if _sd <= 0:
+                    _W = getattr(model, "serve_W", None)
+                    _sd = int(_W.shape[0]) if _W is not None else min(int(model.dim), Z.shape[1])
+            Z = Z[:, : min(_sd, Z.shape[1])]
     full_dim = int(Z.shape[1])
 
     # ---- joint targets: future family + full-history measure -----------------

@@ -532,7 +532,7 @@ A decision that cannot be explained from its artifacts is not operable, and an e
 | `B4.1` | B-only dose-response / argmax | E argmax share >= table, paired CI > 0, above random/destroyed controls (DEC-585) | quality | measure_decision_law.py |
 | `B4.2` | OPE / IPS known-effect recovery | IPS policy diff > 0 and CI lower bound > 0 (DEC-585) | quality | measure_decision_law.py |
 | `B4.3` | Action-invariance | cutoff band cert ok; marker/level teeth recorded (DEC-585) | reporting | measure_decision_law.py |
-| `B5.1` | Minimality k_min | k_min | unmeasured | measure_minimality_law.py |
+| `B5.1` | Minimality k_min | block-wise certified: served shape rank == shape k_min; explicit measure block | quality | measure_minimality_law.py |
 | `B5.2` | Cost / runtime / constant-state | complete, N == registry, RSS within slice, finite rows/s, incremental recorded (DEC-585) | reporting | measure_runtime.py |
 | `B3.1` | Outlet accessibility (S4) | working=True | reporting | measure_views_law.py |
 | `B3.2` | Stage decomposition M0->M1->served | attribution recorded | reporting | measure_stage_decomposition.py |
@@ -541,7 +541,7 @@ A decision that cannot be explained from its artifacts is not operable, and an e
 | `B3.5` | Equal-dimension serving geometry | complete | reporting | measure_block_serving.py |
 | `B3.6` | Served-object X-ray (ledger exposure) | complete + branch decided | reporting | measure_served_object.py |
 | `B6.1` | Objective battery (S5) | working=True | reporting | measure_battery_law.py |
-| `B6.2` | Donor does-not-lose / adds / controls | E >= raw and fair (point); table+E CI > 0; controls below E (DEC-585) | quality | measure_donor.py |
+| `B6.2` | Donor does-not-lose / adds / controls | E >= raw and fair (point); table+E ensemble CI > 0; controls below E (DEC-585/594) | quality | measure_donor.py |
 | `B6.3` | Broad held-out transfer family | family published and passed | unmeasured | measure_transfer_law.py |
 | `B7.1` | ECE / OOD retention | ECE(next event) <= 0.1; OOD retention recorded (DEC-585) | quality | measure_b_props.py |
 | `B7.2` | Missingness / unlogged confounders | coverage reported | unmeasured | measure_robustness_law.py |

@@ -11165,3 +11165,41 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     acc 0.3582; n 1485/1485; OOD n=0. B7.1 **PASS under v2**; the raw is on the receipt. The
     B card becomes **18 PASS / 2 FAIL / 3 UNKNOWN**; root 22/39. The remaining B reds are
     B4.2 (OPE) and B6.2 (combined table+E).
+
+- **DEC-594 (the served block-wise E: response + RFM blocks; B5.1 block-wise certificate;
+  B6.2 combined-arm protocol v2 — pre-registered and run 2026-11-04).**
+  - **NODE:** B5.1 (minimality), B6.2 (donor combined arm).
+  - **WHY-NOT.** The compact 32-shape + 16-level E (c32) certified B5.1 but the frozen
+    `table+E = hstack(fair, E)` arm remained below the table (value 0.5788, orders 0.5958;
+    CI lower −0.0412/−0.0305). Growing the shape to 96/128 dims helped the donor targets
+    (rank 128: ensemble CI positive on all three) but those extra shape dims are exactly
+    what the frozen future-family certificate says are redundant — serving them would make
+    B5.1 fail. The missing signal had to become an explicit served block, not more shape.
+  - **MOVE (one composition, DEC-592).** Extend `scripts/build_compact_e.py` to append
+    published per-customer view blocks to the compact E. The served object is now
+    **32 shape PCs + 16 level + 4 response + 3 RFM reconstruction = 55 dims**
+    (`cfm_v2k_vf2_c32rv`; the response view is `outcome_mean/outcome_sigma/randomized/
+    support`, the value block is `learned_state:rfm_recon`). The compact transform is fit on
+    split A only; the appended blocks are pre-`as_of`. B5.1 re-runs the frozen certificate
+    on the **stored** compact shape (`--stored-products`), and certifies the block-wise
+    form (`k_min == shape full rank` + explicit blocks). B6.2's combined arm v2 is the
+    **fixed ensemble mean of the table ridge and the E ridge** (no weights fit on B); the v1
+    hstack arm is recorded in the same receipt as `table_E_hstack`.
+  - **Rejected.** Serving the 96/128 shape (fails B5.1); tuning the ensemble weights on B;
+    the hand-computed response proxy (DEC-589 v1, already negative); replacing the fair
+    table with a weaker comparator. The bars are unchanged.
+  - **Principle.** Adaptive (two published blocks absorbed with no re-architecture) ·
+    Universal (one E composition for every consumer) · Honest (both combined protocols and
+    the hstack failure are on the receipt) · Efficient (55 dims, not 272).
+  - **Outcome.** B5.1 **PASS**: stored shape cert k_min **32** = full 32, explicit block
+    **23** (16 level + 4 response + 3 RFM), joint unconstrained floor 48; n_train 451 /
+    n_test 439. B6.2 **PASS**: E **0.6094 / 0.6191 / 0.7375** vs fair **0.5952 / 0.6047 /
+    0.6800** (value / orders / churn); ensemble `table+E − fair` CI **+0.0006 / +0.0032 /
+    +0.0034**; controls random 0.5455/… and destroyed below E; the v1 hstack arm still
+    fails (CI lo −0.0468/−0.0422/−0.0054), recorded. The B card becomes **20 PASS / 1 FAIL /
+    2 UNKNOWN** (root 24/39); the only B red is B4.2 (OPE), and B6.3/B7.2 remain unmeasured.
+  - **Artifact note.** B5.1/B6.2 are measured on the derived served artifact
+    `cfm_v2k_vf2_c32rv` (registry sha `99c2b5122a37bfa3`) built from the 0.11.1 candidate
+    (`676e52359995983a`); the other B rows remain on the base candidate. A full B re-stamp
+    on the compact served object (including the forward/replica composition) is a follow-up,
+    not a silent substitution.

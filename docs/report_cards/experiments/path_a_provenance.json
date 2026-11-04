@@ -289,8 +289,8 @@
     }
   },
   "inputs": {
-    "demo": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/demo_v2",
-    "products_dir": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k_vf2"
+    "demo": "looking_glass/artifacts/demo_v2",
+    "products_dir": "looking_glass/artifacts/cfm_v2k_vf2"
   },
-  "generated_at": "2026-11-04T20:12:10+00:00"
+  "generated_at": "2026-11-04T21:05:09+00:00"
 }

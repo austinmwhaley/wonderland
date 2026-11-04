@@ -280,10 +280,20 @@ histogram half; it is not the missing piece.
   block is 0.5976/0.5976. Staged (`/tmp/opencode/stat_bank_v4.py` +
   `stream_block_source.patch`); tree `d5df3a2c`. Next: stream-source block in
   state/replica/anchors; the `value_col` retrain; the re-stamp.
+- **B5.1 + B6.2 green (DEC-594, 2026-11-04).** The served compact object is **55 dims**:
+  32 certified shape PCs + 16 level + 4 response + 3 RFM reconstruction
+  (`cfm_v2k_vf2_c32rv`). B5.1 certifies the stored shape at **k_min 32 = 32** with an
+  explicit **23-dim** block (joint floor 48). B6.2 uses the v2 combined arm — the fixed
+  ensemble mean of the table ridge and the E ridge — and **PASSES**: E
+  **0.6094/0.6191/0.7375** vs fair **0.5952/0.6047/0.6800**; ensemble CI
+  **+0.0006/+0.0032/+0.0034**; the v1 hstack arm is recorded and still fails
+  (−0.0468/−0.0422/−0.0054). B card **20 PASS / 1 FAIL / 2 UNKNOWN**; root 24/39. The only
+  B red is **B4.2 (OPE)**; B6.3/B7.2 remain unmeasured.
 - **B7.1 calibration v2 (DEC-593, 2026-11-04).** Temperature fit on split A (T=0.5394,
   n_A 3515); calibrated ECE **0.0302** vs raw **0.1119** (bar 0.1); acc 0.358; n 1485/1485;
-  OOD n=0. B7.1 PASS under v2, raw recorded. B card **18 PASS / 2 FAIL / 3 UNKNOWN**; root
-  22/39. The remaining B reds: B4.2 OPE and B6.2 combined table+E.
+  OOD n=0. B7.1 PASS under v2, raw recorded. B card at that time was **18 PASS / 2 FAIL /
+  3 UNKNOWN**; the remaining B reds then were B4.2 OPE and B6.2 combined table+E (B6.2 is
+  now green under DEC-594).
 - **Route: R4 (certification-first, operator 2026-11-03).** The 11 open B sub-problems
    are the PRIMARY progress track. DEC-585 pre-registered the 8 rows it covers (B1.2,
    B4.1, B4.2, B4.3, B5.2, B6.2, B7.1, B8.1) as 5 cfm_v2k producers with frozen gate

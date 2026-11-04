@@ -292,7 +292,17 @@ def test_state_store_materializes_inference_embeddings(tmp_path):
     store.upsert("c1", torch.zeros(4), torch.zeros(4), 100.0, None)
     store.upsert("c2", torch.ones(4), torch.ones(4), 200.0, None)
 
-    n = store.materialize_state_embeddings(model, 300.0)
+    import polars as pl
+
+    stream = pl.DataFrame(
+        {
+            "customer_key": ["c1", "c2"],
+            "event_ts": ["1970-01-01T00:00:00+00:00", "1970-01-01T00:00:00+00:00"],
+            "event_type": ["e", "e"],
+            "value": [1.0, 2.0],
+        }
+    )
+    n = store.materialize_state_embeddings(model, 300.0, stream=stream)
     assert n == 2
     rows = store.con.execute(
         "SELECT customer_key, version FROM state_embeddings WHERE as_of_epoch = 300.0 "
@@ -301,7 +311,7 @@ def test_state_store_materializes_inference_embeddings(tmp_path):
     assert [r[0] for r in rows] == ["c1", "c2"]
     assert rows[0][1] == cfg.tag
     # idempotent per day: re-running the daily job rewrites, never duplicates
-    store.materialize_state_embeddings(model, 300.0)
+    store.materialize_state_embeddings(model, 300.0, stream=stream)
     assert (
         store.con.execute(
             "SELECT count(*) FROM state_embeddings WHERE as_of_epoch = 300.0"

@@ -1,0 +1,279 @@
+{
+  "_meta": {
+    "behavior_hash": "6c0b8f4c2c7b925c",
+    "command": "scripts/measure_minimality_law.py --products looking_glass/artifacts/cfm_v2k_vf2_c32rv",
+    "generated_at": "2026-11-04T20:59:54+00:00",
+    "git_commit": "b91e8a15fa274af7e84c0663fc0e85f3a6b5132f",
+    "producer": "measure_minimality_law.py"
+  },
+  "block_dim": 23,
+  "block_wise_certified": true,
+  "certificate": {
+    "block": "shape",
+    "curve": [
+      {
+        "k": 1,
+        "mean_r2": 0.1258,
+        "worst_r2": 0.01483
+      },
+      {
+        "k": 2,
+        "mean_r2": 0.12591,
+        "worst_r2": 0.01154
+      },
+      {
+        "k": 4,
+        "mean_r2": 0.12487,
+        "worst_r2": 0.01491
+      },
+      {
+        "k": 8,
+        "mean_r2": 0.16299,
+        "worst_r2": 0.00085
+      },
+      {
+        "k": 16,
+        "mean_r2": 0.18404,
+        "worst_r2": 0.07224
+      },
+      {
+        "k": 32,
+        "mean_r2": 0.2332,
+        "worst_r2": 0.06127
+      },
+      {
+        "k": 48,
+        "mean_r2": 0.2466,
+        "worst_r2": 0.06108
+      },
+      {
+        "k": 64,
+        "mean_r2": 0.2514,
+        "worst_r2": 0.0628
+      },
+      {
+        "k": 96,
+        "mean_r2": 0.24983,
+        "worst_r2": 0.02992
+      },
+      {
+        "k": 128,
+        "mean_r2": 0.2498,
+        "worst_r2": 0.03181
+      },
+      {
+        "k": 160,
+        "mean_r2": 0.25026,
+        "worst_r2": 0.03286
+      },
+      {
+        "k": 192,
+        "mean_r2": 0.25034,
+        "worst_r2": 0.03249
+      },
+      {
+        "k": 224,
+        "mean_r2": 0.2504,
+        "worst_r2": 0.03264
+      },
+      {
+        "k": 256,
+        "mean_r2": 0.25041,
+        "worst_r2": 0.03264
+      }
+    ],
+    "full_mean_r2": 0.25041,
+    "full_worst_r2": 0.03264,
+    "n_targets": 12,
+    "n_test": 439,
+    "n_train": 451,
+    "noise": 0.04773,
+    "path": "looking_glass/artifacts/cfm_v2k_vf2_c32/minimality_shape.json",
+    "retained_mean_r2": 0.2332,
+    "retained_worst_r2": 0.06127,
+    "rule": "k_min = smallest PCA rank whose worst-case held-out R^2 is within 1/sqrt(n_test) of the full-E R^2; certified iff k_min == full_dim",
+    "targets": "future",
+    "worst_target": "next-order value@90d"
+  },
+  "certificate_joint_certified": false,
+  "certified": true,
+  "compact_receipt": {
+    "complete": true,
+    "dest": {
+      "path": "looking_glass/artifacts/cfm_v2k_vf2_c32rv",
+      "registry_sha256": "99c2b5122a37bfa3",
+      "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
+    },
+    "seconds": 36.3,
+    "source": {
+      "path": "looking_glass/artifacts/cfm_v2k_vf2",
+      "registry_sha256": "676e52359995983a",
+      "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
+    },
+    "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899",
+    "transform": {
+      "append_blocks": [
+        {
+          "dim": 4,
+          "parts": [
+            "outcome_mean",
+            "outcome_sigma",
+            "randomized",
+            "support"
+          ],
+          "view": "response"
+        },
+        {
+          "dim": 3,
+          "parts": [
+            "rfm_recon"
+          ],
+          "view": "learned_state"
+        }
+      ],
+      "append_dim": 7,
+      "block_dim": 23,
+      "explained_variance_ratio_sum": 0.99696835,
+      "level_block_dim": 16,
+      "method": "shape block (leading dim-level_block_dim columns) standardized and PCA-projected to rank k on split A; level block (trailing level_block_dim columns) unchanged; published view appended unchanged",
+      "n_fit_A": 3515,
+      "pca_components_sha256": "508145fc9bbd8bd1",
+      "rank": 32,
+      "scaler_mean_sha256": "9ee439181c6559b7",
+      "served_dim": 55,
+      "shape_dim": 256,
+      "source_dim": 272,
+      "source_registry_sha256": "676e52359995983a",
+      "source_tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
+    },
+    "why": "the compact served object is a deterministic rank-k reconstruction of the shape block (fit on split A only), with the level block and any appended published view carried unchanged; the derived registry records the source registry sha and the transform so the compact artifact has its own identity"
+  },
+  "complete": true,
+  "device": "cpu",
+  "full_dim": 32,
+  "joint_certificate": {
+    "block": "full",
+    "curve": [
+      {
+        "k": 1,
+        "mean_r2": 0.25037,
+        "worst_r2": -0.00306
+      },
+      {
+        "k": 2,
+        "mean_r2": 0.39045,
+        "worst_r2": -0.01881
+      },
+      {
+        "k": 4,
+        "mean_r2": 0.46402,
+        "worst_r2": -0.00217
+      },
+      {
+        "k": 8,
+        "mean_r2": 0.52868,
+        "worst_r2": 0.01935
+      },
+      {
+        "k": 16,
+        "mean_r2": 0.60924,
+        "worst_r2": 0.09715
+      },
+      {
+        "k": 32,
+        "mean_r2": 0.73762,
+        "worst_r2": 0.23152
+      },
+      {
+        "k": 48,
+        "mean_r2": 0.80899,
+        "worst_r2": 0.24658
+      },
+      {
+        "k": 55,
+        "mean_r2": 0.80987,
+        "worst_r2": 0.24661
+      }
+    ],
+    "full_mean_r2": 0.80987,
+    "full_worst_r2": 0.24661,
+    "joint_certified": false,
+    "n_targets": 64,
+    "n_targets_dropped_uninformative": 8,
+    "n_test": 439,
+    "n_train": 451,
+    "noise": 0.04773,
+    "path": "looking_glass/artifacts/cfm_v2k_vf2_c32rv/minimality_joint.json",
+    "retained_mean_r2": 0.80899,
+    "retained_worst_r2": 0.24658,
+    "rule": "k_min = smallest PCA rank whose worst-case held-out R^2 is within 1/sqrt(n_test) of the full-E R^2; certified iff k_min == full_dim",
+    "targets": "joint",
+    "worst_target": "measure:n_etype"
+  },
+  "joint_certified": false,
+  "joint_min": 48,
+  "k_min": 32,
+  "products": {
+    "path": "looking_glass/artifacts/cfm_v2k_vf2_c32rv",
+    "registry_sha256": "99c2b5122a37bfa3",
+    "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
+  },
+  "seconds": 13.0,
+  "served_dim": 55,
+  "served_shape_dim": 32,
+  "shape_certificate": {
+    "block": "shape",
+    "curve": [
+      {
+        "k": 1,
+        "mean_r2": 0.00293,
+        "worst_r2": -0.00107
+      },
+      {
+        "k": 2,
+        "mean_r2": 0.02228,
+        "worst_r2": -0.00074
+      },
+      {
+        "k": 4,
+        "mean_r2": 0.03163,
+        "worst_r2": 0.00258
+      },
+      {
+        "k": 8,
+        "mean_r2": 0.1173,
+        "worst_r2": 0.02689
+      },
+      {
+        "k": 16,
+        "mean_r2": 0.17476,
+        "worst_r2": 0.03968
+      },
+      {
+        "k": 32,
+        "mean_r2": 0.28835,
+        "worst_r2": 0.03388
+      }
+    ],
+    "full_mean_r2": 0.28835,
+    "full_worst_r2": 0.03388,
+    "joint_certified": true,
+    "n_targets": 12,
+    "n_targets_dropped_uninformative": 2,
+    "n_test": 439,
+    "n_train": 451,
+    "noise": 0.04773,
+    "path": "looking_glass/artifacts/cfm_v2k_vf2_c32rv/minimality_shape.json",
+    "retained_mean_r2": 0.28835,
+    "retained_worst_r2": 0.03388,
+    "rule": "k_min = smallest PCA rank whose worst-case held-out R^2 is within 1/sqrt(n_test) of the full-E R^2; certified iff k_min == full_dim",
+    "targets": "future",
+    "worst_target": "next-order value@90d"
+  },
+  "source_products": {
+    "path": "looking_glass/artifacts/cfm_v2k_vf2",
+    "registry_sha256": "676e52359995983a",
+    "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
+  },
+  "why": "Block-wise minimality on the SERVED object (DEC-215): the shape certificate sweeps the stored 32-dim shape block of the compact E and returns k_min=32 with full_dim=32; the joint certificate on the full 55-dim stored E returns the unconstrained joint floor joint_min=48. The served form keeps the shape at its certified full rank (32 == 32) plus the explicit 23-dim level block, so block_wise_certified=True. The compact transform is fit on split A; the certificates are fit/held out inside split B (n_train 451 / n_test 439). The joint floor being below the served dim is the accessibility cost of the explicit measure block, not a B5.1 failure."
+}
