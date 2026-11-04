@@ -103,7 +103,12 @@ def simulate(spec: DataSpec):
             Pc = P
             if eff["intent"] > 0:
                 b = rng.normal(0.0, eff["intent"])
-                L = np.exp(np.log(np.clip(P, 1e-6, 1)) * np.exp(b))
+                # log-space stable softmax (DEC-586): subtract the row max before exp;
+                # algebraically identical where the raw math is finite, defined where it
+                # row-underflows to 0/0 at b >= ~5.8.
+                logits = np.log(np.clip(P, 1e-6, 1)) * np.exp(b)
+                logits = logits - logits.max(axis=1, keepdims=True)
+                L = np.exp(logits)
                 Pc = L / L.sum(1, keepdims=True)
             idx = np.empty(n, int)
             idx[0] = rng.integers(0, len(TYPES))
@@ -189,7 +194,10 @@ def transition_oracle(spec: DataSpec) -> dict:
         b = np.random.default_rng(spec.seed).normal(0.0, eff["intent"], 2000)
         ces = []
         for bi in b:
-            L = np.exp(np.log(np.clip(P, 1e-6, 1)) * np.exp(bi))
+            # log-space stable softmax (DEC-586), as in simulate()
+            logits = np.log(np.clip(P, 1e-6, 1)) * np.exp(bi)
+            logits = logits - logits.max(axis=1, keepdims=True)
+            L = np.exp(logits)
             Pc = L / L.sum(1, keepdims=True)
             ces.append(H(Pc))
         oracle_ce = float(np.mean(ces))

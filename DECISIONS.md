@@ -10667,6 +10667,30 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     fixture point). Nothing executed: the tree is at clean `aec6d3f`, behavior
     `d5df3a2c`, B 17 PASS / 3 FAIL / 3 UNKNOWN.
 
+  - **Outcome (2026-11-04; operator approved execution, then run).** The four behavior
+    edits landed (`rabbit_hole/lab.py`, `rabbit_hole/lab_oracles.py`,
+    `looking_glass/lab_gate.py`, `rabbit_hole/data_spec.py`); the `lab_measure` unit
+    correction was already present in the tree (the `× ln 2` read is gone). The intent
+    fixture generated at N=500 / seed 17 / as-of 2024-09-01 (spec `intent=5.0, snr=1.0,
+    base_rate=0.3`; oracle baseline CE 0.9685, oracle 0.6359 nats). Three trains
+    (positive/negative/adversarial; all trunk flags OFF, autotuned dim 64, `LG_SCAN=eager`,
+    scratch) completed RC=0. The B-side measurement
+    (`docs/report_cards/experiments/lab/intent_dec586.json`):
+    **g = 2.665** (bar 0.5), nll_enc **0.8675** vs 1-gram **0.7228** vs oracle **0.6359**
+    nats; paired CI(enc−base) **[+0.0639, +0.2195]** (entirely positive); **beats_base
+    false**; eff_rank **1.177**; **mastered false**. Controls read as expected: negative
+    NO_SIGNAL (1.0991 vs 1.0997), adversarial structure claim NO_SIGNAL while the echo
+    beats the 1-gram (0.6791 vs 1.0997). This is **branch (iii): floor-bound / no
+    improvement** — even dominant per-customer intent is not mastered by the current
+    trunk at the determined sample scale; the trunk is significantly worse than the
+    1-gram, not merely at the floor. E1.b stays FRONTIER; a third escalation DEC is
+    required (candidates named, not frozen: the state-update algebra / shape program, the
+    head form, N↓/events↑, H within the stable-math domain). No bar or fixture edit.
+  - **Status addendum.** The move is behavior-bearing (hash moves), so the cfm_v2k B
+    re-stamp is mandatory; the no-op proof must show the B receipts numerically identical
+    (the new intent path is inert on the real stream). The B card remains certified only
+    after that re-stamp.
+
 - **DEC-587 (the macro-reflection law + the shape program's ranked candidates; decided
   2026-11-04 at the operator's directive: "ask why the project isn't successful yet, every
   forward pass" — recorded, NOT executed).**

@@ -19,6 +19,8 @@ from rabbit_hole.data_spec import DataSpec, simulate, transition_oracle
 # use case -> positive spec (the structure the target needs, beyond the baseline)
 POSITIVE: dict[str, DataSpec] = {
     "next_event": DataSpec("next_event", transition=True, intent=0.5, snr=1.0),
+    # curriculum step 2 (DEC-586): dominant per-customer intent, sample-determined
+    "intent": DataSpec("intent", transition=True, intent=5.0, snr=1.0, base_rate=0.3),
     "mask": DataSpec("mask", transition=True, intent=0.5, snr=1.0),
     "order": DataSpec("order", transition=True, intent=0.4, snr=1.0),
     "next_entity": DataSpec("next_entity", transition=True, n_entities=64, entity_affinity=0.7),
@@ -65,6 +67,7 @@ POSITIVE: dict[str, DataSpec] = {
 # oracle kind per family
 _TRANS = {
     "next_event",
+    "intent",
     "mask",
     "order",
     "next",

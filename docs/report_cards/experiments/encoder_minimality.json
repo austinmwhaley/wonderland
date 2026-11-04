@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "6c0b8f4c2c7b925c",
+    "behavior_hash": "7baf744fc78ba3b3",
     "command": "scripts/measure_minimality_law.py --products looking_glass/artifacts/cfm_v2k_vf2_c32rvd",
-    "generated_at": "2026-11-04T21:13:33+00:00",
-    "git_commit": "32d872bb3a698d5f4455b46ce38221e1937f2725",
+    "generated_at": "2026-11-04T21:55:48+00:00",
+    "git_commit": "a086dd4c42d91ada3dc729427972e6e02414148b",
     "producer": "measure_minimality_law.py"
   },
   "block_dim": 27,
@@ -241,7 +241,7 @@
     "registry_sha256": "965a2a10083b3fe3",
     "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
   },
-  "seconds": 12.7,
+  "seconds": 13.6,
   "served_dim": 59,
   "served_shape_dim": 32,
   "shape_certificate": {

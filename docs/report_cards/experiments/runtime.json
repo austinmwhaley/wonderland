@@ -1,15 +1,15 @@
 {
   "_meta": {
-    "behavior_hash": "6c0b8f4c2c7b925c",
+    "behavior_hash": "7baf744fc78ba3b3",
     "command": "scripts/measure_runtime.py --products looking_glass/artifacts/cfm_v2k_vf2",
-    "generated_at": "2026-11-04T20:56:38+00:00",
-    "git_commit": "b91e8a15fa274af7e84c0663fc0e85f3a6b5132f",
+    "generated_at": "2026-11-04T21:52:24+00:00",
+    "git_commit": "a086dd4c42d91ada3dc729427972e6e02414148b",
     "producer": "measure_runtime.py"
   },
   "artifact_load_s": 0.02,
   "artifact_save_s": 0.02,
-  "close_seconds": 0.01,
-  "cold_seconds": 12.94,
+  "close_seconds": 0.02,
+  "cold_seconds": 19.67,
   "complete": true,
   "data": "/tmp/opencode/t0_loop/ref_v3b_6k",
   "device": "cpu",
@@ -34,15 +34,15 @@
   "n": 5000,
   "n_entities": 600,
   "n_expected": 5000,
-  "peak_rss_mb": 3387.9,
+  "peak_rss_mb": 3384.8,
   "products": {
     "path": "looking_glass/artifacts/cfm_v2k_vf2",
     "registry_sha256": "676e52359995983a",
     "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
   },
-  "rows_per_s": 53.1,
+  "rows_per_s": 29.9,
   "rss_mb_at_load": 556.8,
-  "seconds": 110.3,
+  "seconds": 182.3,
   "slice_cap_gb": 32.0,
   "state_dims": {
     "forecast": 835,
@@ -55,5 +55,5 @@
   "state_forward_warm_s": 0.316,
   "state_rows_per_s": 1896.6,
   "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899",
-  "warm_seconds": 84.71
+  "warm_seconds": 150.63
 }

@@ -52,6 +52,7 @@ USE_CASES: tuple[UseCase, ...] = (
     UseCase("time_to_purchase", "regression", "reg", ("C",), "mean", "true-rate"),
     UseCase("price_sensitivity", "regression", "reg", ("C",), "mean", "true-response"),
     UseCase("next_event", "multiclass", "multi", ("B", "C"), "1-gram", "true-transition"),
+    UseCase("intent", "multiclass", "multi", ("B",), "1-gram", "true-transition"),
     UseCase("next_entity", "multiclass", "multi", ("B", "C"), "1-gram", "true-affinity"),
     UseCase("funnel_step", "multiclass", "multi", ("C",), "margin-rate", "true-transition"),
     UseCase("brand_affinity", "multiclass", "multi", ("C",), "popularity", "true-affinity"),

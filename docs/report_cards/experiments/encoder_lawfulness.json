@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "6c0b8f4c2c7b925c",
+    "behavior_hash": "7baf744fc78ba3b3",
     "command": "scripts/measure_construction_law.py --products looking_glass/artifacts/cfm_v2k_vf2",
-    "generated_at": "2026-11-04T20:53:53+00:00",
-    "git_commit": "b91e8a15fa274af7e84c0663fc0e85f3a6b5132f",
+    "generated_at": "2026-11-04T21:48:14+00:00",
+    "git_commit": "a086dd4c42d91ada3dc729427972e6e02414148b",
     "producer": "measure_construction_law.py"
   },
   "checks": {
@@ -33,15 +33,15 @@
     },
     "scan_associativity": {
       "evidence": "merge law F(g\u2218f)=F(g)\u2218F(f) on 20 real sequences x 5 split points (float64, model's own decay/drive, continuous_time=True): worst relative error 1.105e-15 (gate 1e-10)",
-      "seconds": 0.5,
+      "seconds": 1.3,
       "working": true,
       "worst_rel_err": 1.105497335394747e-15
     },
     "schema_variant": {
-      "evidence": "renamed client_id/occurred_at/event/attributes/total -> onboard resolved {'customer_key': 'client_id', 'event_ts': 'occurred_at', 'event_type': 'event', 'brand': None, 'entity_type': None, 'entity_id': None, 'source_table': 'source_table', 'value': 'value', 'event_attributes': ['attributes', 'total']}; 2341648 rows kept (source 2341648); 5000 customers encoded; encoder trained on the resolved stream (d=64,L=1,e=1): E finite=True, best=33.9141; zero pipeline-code edits",
+      "evidence": "renamed client_id/occurred_at/event/attributes/total -> onboard resolved {'customer_key': 'client_id', 'event_ts': 'occurred_at', 'event_type': 'event', 'brand': None, 'entity_type': None, 'entity_id': None, 'source_table': 'source_table', 'value': 'value', 'event_attributes': ['attributes', 'total']}; 2341648 rows kept (source 2341648); 5000 customers encoded; encoder trained on the resolved stream (d=64,L=1,e=1): E finite=True, best=30.9304; zero pipeline-code edits",
       "n_customers": 5000,
       "n_rows": 2341648,
-      "seconds": 76.1,
+      "seconds": 72.5,
       "working": true
     }
   },
@@ -78,6 +78,6 @@
     "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
   },
   "scan_merge_delta": 8.881784197001252e-16,
-  "seconds": 92.9,
+  "seconds": 88.5,
   "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
 }
