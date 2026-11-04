@@ -1,10 +1,56 @@
 {
- "eff_rank_participation": 2.4,
- "access_ridge_E": -1.1936,
- "access_ridge_table": 0.3855,
- "ece_next_event": 0.0482,
- "mass_additivity_error": 0.0,
- "artifact_hash": "d7d190e10924",
- "E_dim": 128,
- "runtime_seed0_val": 29.234517574310303
+  "E_dim": 128,
+  "_meta": {
+    "behavior_hash": "d5df3a2c1211c402",
+    "command": "scripts/measure_b_props.py",
+    "generated_at": "2026-11-04T04:25:41+00:00",
+    "git_commit": "5f4365bdefd5979ad2cfc9b4ae34d1cbbc42c5e2",
+    "producer": "measure_b_props.py"
+  },
+  "access_ridge_E": -1.1936,
+  "access_ridge_table": 0.3855,
+  "artifact_hash": "d7d190e10924",
+  "calibration": {
+    "acc": 0.1750841750841751,
+    "as_of_epoch": 1735689600.0,
+    "complete": true,
+    "device": "cuda:0",
+    "ece_next_event": 0.061118974820130595,
+    "n_next": 1485,
+    "n_oov": 0,
+    "n_pop": 1485,
+    "ood": {
+      "acc": NaN,
+      "ece": NaN,
+      "horizon_days": 30,
+      "n": 0
+    },
+    "seconds": 21.5,
+    "why": "multiclass ECE (10 equal-width max-confidence bins) of the shipped head_next softmax on the per-step readout y_last at the last pre-as_of tick; population = 1485 split-B customers, 1485 with a next full-stream event; in-window = next event within as_of+30d, OOD beyond (recorded, no OOD bar); OOV event types -> the n_et bucket"
+  },
+  "complete": true,
+  "ece_next_event": 0.0482,
+  "eff_rank_participation": 2.4,
+  "identity": {
+    "as_of": "2025-01-01",
+    "checkpoint_sha256": "1417b0c5226c02b6",
+    "complete": true,
+    "config_sha256": "426f2472c17bdbee",
+    "data_signature": "3543c711bc98",
+    "n_customers": 5000,
+    "present": true,
+    "registry_sha256": "79f9768d51205252",
+    "seconds": 0.0,
+    "tag": "0.11.0r490759-b64d256e3lr3e-04o4c3b5899",
+    "why": "served tag 0.11.0r490759-b64d256e3lr3e-04o4c3b5899 resolves to exactly one registry next to the products; config sha over canonical JSON (resolved + overrides); checkpoint present (filename tag == registry tag)"
+  },
+  "mass_additivity_error": 0.0,
+  "products": {
+    "path": "/home/austin_whaley/wonderland_work/cfm_v2k",
+    "registry_sha256": "79f9768d51205252",
+    "tag": "0.11.0r490759-b64d256e3lr3e-04o4c3b5899"
+  },
+  "runtime_seed0_val": 29.234517574310303,
+  "seconds": 22.8,
+  "tag": "0.11.0r490759-b64d256e3lr3e-04o4c3b5899"
 }

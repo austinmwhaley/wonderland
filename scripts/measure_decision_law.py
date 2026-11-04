@@ -450,11 +450,15 @@ def check3_level_teeth(refs) -> dict:
     the surface must respond to the axis (teeth). Recorded, not gated."""
     levels, heads_E, reps_B, P_E = refs["levels"], refs["heads_E"], refs["reps_B"], refs["P_E"]
     perm = np.random.default_rng(SEED).permutation(len(levels))
-    P_perm = np.empty_like(P_E)
-    for j in range(len(levels)):
-        lvl = levels[perm[j]]
-        P_perm[:, j] = heads_E[lvl].predict(reps_B) if lvl in heads_E else 0.0
-    got = np.array([levels[i] for i in P_perm.argmax(1)], dtype=int)
+    # one-shot surface: stack the per-level ridge coefficients and do a single
+    # (n, K) matmul — algebraically the per-level .predict() (Ridge: X @ coef_ +
+    # intercept_) with zero rows for un-fitted levels, no level-axis loop
+    coefs = np.array(
+        [heads_E[lvl].coef_ if lvl in heads_E else np.zeros(reps_B.shape[1]) for lvl in levels]
+    )
+    consts = np.array([float(heads_E[lvl].intercept_) if lvl in heads_E else 0.0 for lvl in levels])
+    P_perm = reps_B @ coefs[perm].T + consts[perm]
+    got = np.asarray(levels, dtype=int)[P_perm.argmax(1)]
     want = np.asarray([refs["OPT"][k] for k in refs["bk"]])
     d_inf = float(np.abs(P_perm - P_E).max())
     return {

@@ -215,15 +215,27 @@ next question is the learned shape, not another consumer tuning pass.
    frozen E carries certified unique signal for churn, not yet for the regression
    value-family; raw==fair value-identical recorded). The C4 no_grad mechanism fix is
    logged in DEC-585 (no gate change). Card: B 14 PASS / 1 FAIL / 8 UNKNOWN.
-2. **DEC-585 chunk 2b (in progress):** `measure_decision_law.py` on the GPU (3 replica
-   subprocesses for the check-1 band cert + the check-2 marker re-encode), then
-   `measure_b_props.py` (B7.1 calibration + B8.1 identity). Verify each receipt
-   (stamp d5df3a2c, N, controls) BEFORE reading the verdict; append the DEC-585 outcome
-   + MOVEMENT; two-commit card pattern. A FAIL is data, not a rescue target.
-3. **Then the remaining 3 new-law rows under their own DECs** (B5.1
-   `measure_minimality_law.py`, B6.3 `measure_transfer_law.py`, B7.2
-   `measure_robustness_law.py`) — and, once B is green, return to fast training
-   iteration (the DEC-583 `intent` dev rig resumes; steering surface = REPORT_CARD.md).
+2. **DEC-585 chunk 2b (this commit): all 8 rows measured on cfm_v2k; receipts verified
+   before verdicts.** B4.3 invariance PASS (check-1 band cert: P1/P2 bit-identical,
+   P1 vs stored S 3.576e-07 / E 9.155e-05 within the 4-ULP bands, P3 eager lands EXACTLY
+   on the stored bytes, teeth over all 5000 gapped customers; check-2 marker null recorded
+   ok=False — the trunk reads target_key, −0.009 dose points; check-3 level teeth
+   ok=True) · B4.1 dose FAIL (all five arms at 0.244–0.254 ≈ uniform chance; CI lo
+   −0.0269; destroyed 0.2539 ≥ E) · B4.2 OPE FAIL (E_ips = T_ips = 152.93 exactly;
+   diagnosis: both ridge policies collapsed to constant level 1, 446/446 agreement — the
+   flat level surface defeats either representation) · B7.1 calibration PASS (ECE 0.0611
+   ≤ 0.1, n 1485/1485, 0 OOV; OOD n=0 recorded) · B8.1 identity PASS (registry/data/as_of/
+   N/checkpoint consistent, shas match the other receipts). Three mechanism fixes logged
+   in DEC-585 (C4 no_grad; b_props `y[-1]` per-step readout row per the training contract;
+   columnar B-key filter) — no gate/bar/criterion touched. Card: B 17 PASS / 3 FAIL /
+   3 UNKNOWN; 4/8 sections green; root FAILED 19/39.
+3. **Remaining B work, then fast training iteration.** The 3 UNKNOWNs are exactly the 3
+   rows without pre-registered producers (B5.1 minimality, B6.3 transfer, B7.2
+   robustness/missingness) — each under its own DEC. The 3 FAILs (B4.1, B4.2, B6.2) name
+   one shared axis: the frozen E's decision value on the offer-level family and its
+   regression value on the 90-day value/order targets are not yet certified — the
+   operator's next directive (fast training iteration; DEC-583 `intent` dev rig resumes)
+   targets exactly that, steering surface = REPORT_CARD.md.
 
 ## Operating facts
 

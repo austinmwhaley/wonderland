@@ -10409,11 +10409,77 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
       the chunk-1 C4 digest missed `torch.no_grad()` (a grad-enabled forward raised on
       `.numpy()`); fixed before the first measurement run — no gate change, the chunk-1
       commit's B1.2 was UNKNOWN anyway.
-    - **B4.1/B4.2/B4.3 decision law — in progress** (GPU: 3 replica subprocesses for the
-      check-1 band cert, then the check-2 marker re-encode); outcome appended on completion.
-    - **MOVEMENT.** Card at the chunk-2 commit: B 14 PASS / 1 FAIL / 8 UNKNOWN (was 12/0/11);
-      construction section now green (3/8 sections); root still FAILED, P3 red (the B6.2
-      axis); E1 FRONTIER unchanged. No gate, bar, or criterion edited after seeing any
-      number; the B6.2 FAIL is recorded as data (DEC-576 caveat: lab receipts never flip a
-      B-row verdict the other way — a FAIL stays a FAIL until the axis is fixed and
-      re-measured).
+    - **B4.3 action-invariance — PASS (reporting).** Check-1 band cert ok: P1/P2 independent
+      fresh loads BIT-IDENTICAL; P1 vs stored state 3.576e-07 (band 7.415e-07 = 4 ULP cover
+      · max|stored|) and stored E 9.155e-05 (band 2.972e-04); the P3 LG_SCAN=eager witness
+      lands EXACTLY on the stored bytes (0.0 delta — the eager path is what the build used,
+      the compiled path carries the 1–3 ULP noise recorded in the pre-registration); the
+      cutoff teeth hold over all 5000 gapped customers (faded 3.576e-07 ≪ raw 1.015).
+      Check-2 recorded, not gated: target_key→None re-encode + dose refit gives
+      share_E_prime 0.2364 vs stored 0.2458 (ok=False) — the pre-registered risk
+      materialized: the trunk reads the lab marker (which arm randomized the event), and
+      nulling it costs ~1 dose-hit point. Check-3 recorded: seeded level-axis permutation
+      moves the surface (|Δ|∞ 0.291) — teeth present, the surface responds to the axis.
+    - **B4.1 B-only dose — FAIL (two pre-registered axes).** share_E 0.2458 vs
+      share_table 0.2438 (point ≥, but paired CI lo −0.0269 ≤ 0 — not significant) and
+      the destroyed control 0.2539 ≥ E 0.2458 (random 0.2444 < E). All five arms sit at
+      0.244–0.254 ≈ uniform chance over the 4 offer levels: the identified dose surface
+      (per-level ridge heads fit on split-A reps, queried on split-B reps, argmax vs
+      offer_opt, no thin levels at MIN_ARM_DAYS=10) does not expose a learnable level
+      ordering through the 256-d state at this head. This is not an E-specific defect —
+      the table arm is at chance too (oracle-ceiling context: 0.6404, judge simulator
+      with full context). Named axis: decision-sufficiency of the frozen E for the
+      offer-level decision family, probed at pre-registered head capacity on cfm_v2k.
+    - **B4.2 OPE known-effect recovery — FAIL.** E_ips 152.93 = T_ips 152.93 exactly
+      (diff +0.00, paired bootstrap CI [0.00, 0.0]), n_pop 1485, 0 excluded, accE =
+      accT = 0.206. Independent diagnosis (same protocol, same seeds, CPU re-derivation):
+      BOTH arms' ridge policies collapsed to the constant level 1 for all 446 test
+      customers (per-customer agreement 1.0000; per-level predicted-margin ranges
+      overlap near-identically — the level-conditional coefficient is small next to
+      customer heterogeneity, so argmax picks the same level everywhere; level-1 constant
+      policy scores 0.206 < the 0.25 uniform prior). Named axis: the protocol-v1
+      ridge/argmax policy cannot resolve the known offer effect on cfm_v2k for EITHER
+      representation — the pre-registered "E vs leaky-raw" risk is subsumed by a
+      flat-policy-collapse that affects both arms equally (uniform IPS p0=1/K recorded;
+      observed test level mix 108/92/118/128 confirms the randomization).
+    - **B7.1 calibration — PASS.** Shipped next-type head (head_next over the per-step
+      readout at the last pre-as_of tick, 7-way softmax = 6 event types + OOV bucket) on
+      all 1485 split-B customers: multiclass ECE 0.0611 ≤ 0.1 bar (10 equal-width
+      max-confidence bins), acc 0.1751, 0 OOV. OOD retention: 0 next events beyond
+      as_of+30d on this stream (recorded, no OOD bar). GPU cuda:0 per the pre-registration
+      (CPU-vs-GPU forward maxdiff 2.03e-06 exceeds the bars).
+    - **B8.1 artifact identity — PASS.** Served tag 0.11.0r490759-b64d256e3lr3e-04o4c3b5899
+      resolves to exactly one registry next to the products; registry sha 79f9768d51205252
+      (matches the other five receipts' products block); data signature 3543c711bc98;
+      as_of 2025-01-01; n_customers 5000; config sha 426f2472c17bdbee over canonical
+      JSON (resolved + overrides); checkpoint 1417b0c5226c02b6 present, filename tag ==
+      registry tag.
+    - **Mechanism fixes during chunk 2 (no gate/bar/criterion touched):** (i) the
+      construction C4 digest gained `torch.no_grad()` (grad-enabled forward raised on
+      `.numpy()`); (ii) the b_props calibration input is the per-step readout row at the
+      last tick (`y[-1]`), matching the training contract `head_next(y[:, :-1]) ->
+      et[:, 1:]` verified against cfm_training — the drafted `y[:, -1]` (last COLUMN) was
+      caught by a pre-GPU static check and fixed before the measurement run; (iii) the
+      b_props next-event pass filters the full stream to the B keys columnar-side before
+      the per-customer bisect; (iv) the decision-law check-3 level-axis surface moved from
+      a per-level `.predict()` loop to one stacked-coefficient matmul
+      (`reps @ coefs[perm].T + consts[perm]`) when the principle-audit ratchet flagged the
+      loop — algebraically identical to the surface the receipt measured (verified to
+      4.4e-15, argmax agreement 1.0 on synthetic heads; the un-fitted-level zero-row path
+      verified separately), seed and permutation unchanged. All four are
+      measurement-mechanism corrections recorded here; the frozen bars and receipt
+      schemas are unchanged.
+    - **MOVEMENT (final, card at the chunk-2b commit).** B: 17 PASS / 3 FAIL / 3 UNKNOWN
+      (was 12 PASS / 0 FAIL / 11 UNKNOWN at the start of chunk 2); 4/8 sections green
+      (construction, decisions-reporting via B4.3, runtime, calibration+identity); root
+      still FAILED at 19/39 atomic green (P2 red: B4.1 + B4.2; P3 red: B6.2); the 3
+      remaining UNKNOWNs are exactly the 3 rows without pre-registered producers (B5.1
+      minimality, B6.3 transfer, B7.2 robustness/missingness). No gate, bar, or criterion
+      edited after seeing any number; every FAIL is recorded as data with its named axis
+      (DEC-576 caveat: lab receipts never flip a B-row verdict the other way — a FAIL
+      stays a FAIL until the axis is fixed and re-measured). The B6.2/B4.1/B4.2 failures
+      share one diagnosis surface: the frozen E is certified for churn (classification,
+      B6.2 y_churn_90 + B3.2 lineage) and for construction/invariance/runtime/calibration
+      law, but its DECISION value on the offer-level family and its regression value on
+      the 90-day value/order targets are not yet certified on cfm_v2k — the next axis
+      work (training iteration, DEC-583 intent dev rig) targets exactly that.

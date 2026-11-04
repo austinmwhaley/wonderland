@@ -1,0 +1,121 @@
+{
+  "_meta": {
+    "behavior_hash": "d5df3a2c1211c402",
+    "command": "scripts/measure_decision_law.py",
+    "generated_at": "2026-11-04T04:23:30+00:00",
+    "git_commit": "5f4365bdefd5979ad2cfc9b4ae34d1cbbc42c5e2",
+    "producer": "measure_decision_law.py"
+  },
+  "complete": true,
+  "decision_dose": {
+    "ci_hi": 0.028956228956228958,
+    "ci_lo": -0.026936026936026935,
+    "complete": true,
+    "levels": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "n": 1485,
+    "n_levels": 4,
+    "oracle_ceiling": 0.6404,
+    "seconds": 9.5,
+    "share_E": 0.24579124579124578,
+    "share_destroyed": 0.25387205387205386,
+    "share_random": 0.24444444444444444,
+    "share_table": 0.24377104377104378,
+    "table_columns": 41,
+    "thin_levels": []
+  },
+  "decision_invariance": {
+    "check1_cutoff_band": {
+      "band_E": 0.00029722013277933,
+      "band_S": 7.415168852276111e-07,
+      "close_at": 1735689600.0,
+      "device": "cuda:0",
+      "max_delta_E": 9.1552734375e-05,
+      "max_delta_S": 3.5762786865234375e-07,
+      "n": 5000,
+      "n_customers_gapped": 5000,
+      "ok": true,
+      "p1_p2_bit_identical": true,
+      "p3_allow_E": 0.00118888053111732,
+      "p3_allow_S": 2.9660675409104442e-06,
+      "p3_max_delta_E": 0.0,
+      "p3_max_delta_S": 0.0,
+      "teeth_faded": 3.5762786865234375e-07,
+      "teeth_ok": true,
+      "teeth_raw": 1.0154677629470825,
+      "ulp": 1.1920928955078125e-07,
+      "ulp_cover": 4,
+      "why": "P1/P2 bit-identical=True; P1 vs stored S 3.576e-07 (band 7.415e-07) / E 9.155e-05 (band 2.972e-04); P3 (eager) S 0.000e+00 / E 0.000e+00 (<= 4x band); teeth faded 3.576e-07 < raw 1.015e+00 over 5000 gapped customers; close_at 1735689600.0"
+    },
+    "check2_marker_invariance": {
+      "complete": true,
+      "n": 1485,
+      "none_bucket_idx": 0,
+      "note": "target_key is a lab marker (which arm randomized this event); the pre-registered risk is that the trunk learned it \u2014 recorded, not gated",
+      "ok": false,
+      "seconds": 120.0,
+      "share_E_prime": 0.23636363636363636,
+      "share_E_stored": 0.24579124579124578
+    },
+    "check3_level_teeth": {
+      "abs_delta_inf": 0.29137298632135944,
+      "complete": true,
+      "ok": true,
+      "permutation": [
+        1,
+        2,
+        3,
+        0
+      ],
+      "share_permuted": 0.25925925925925924,
+      "share_table": 0.24377104377104378
+    },
+    "complete": true
+  },
+  "decision_ope": {
+    "E_ips": 152.93,
+    "T_ips": 152.93,
+    "accE": 0.206,
+    "accT": 0.206,
+    "arm": "offer",
+    "complete": true,
+    "diff": 0.0,
+    "hi": 0.0,
+    "ips_audit": "uniform p0=1/K pre-registered; observed test-population level frequencies recorded above; last-logged send and as-of state overlap in time (reported, not hidden)",
+    "level_frequencies": {
+      "0": 0.2422,
+      "1": 0.2063,
+      "2": 0.2646,
+      "3": 0.287
+    },
+    "levels": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "lo": 0.0,
+    "n_excluded": 0,
+    "n_pop": 1485,
+    "n_test": 446,
+    "n_train": 1039,
+    "protocol": "v1 port (DEC-585): last-logged email_send offer; as-of state; uniform IPS p0=1/K; standardized-ridge head (replaces legacy XGB \u2014 B-only simple-head doctrine); legacy channel arm RETIRED (demo_v2 randomizes offer only)",
+    "random": 181.31,
+    "seconds": 1.0
+  },
+  "device": "cuda:0",
+  "n_A": 3515,
+  "n_B": 1485,
+  "n_customers": 5000,
+  "products": {
+    "path": "/home/austin_whaley/wonderland_work/cfm_v2k",
+    "registry_sha256": "79f9768d51205252",
+    "tag": "0.11.0r490759-b64d256e3lr3e-04o4c3b5899"
+  },
+  "seconds": 844.5,
+  "tag": "0.11.0r490759-b64d256e3lr3e-04o4c3b5899"
+}

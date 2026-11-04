@@ -1,11 +1,11 @@
 # REPORT_CARD — B foundational, then PATH B > PATH A
 
-*Generated `2026-11-04T04:13:07+00:00` · commit `401eda2` (`foundation-rebuild` · clean) · encoder behavior `d5df3a2c1211c402`*
+*Generated `2026-11-04T04:49:54+00:00` · commit `5f4365b` (`foundation-rebuild` · dirty) · encoder behavior `d5df3a2c1211c402`*
 
 **Assessment:**
 
-- ❌ **Plan root:** FAILED — 16/39 atomic problems green · 7 FAIL · 3 DEC-frozen · 5 v1 unassessed · 19 interior · reds: P3 (1), P4 (6).
-- ❌ **B foundational:** NOT CERTIFIED — the current gate. 3/8 sections green · 14 rows PASS · 1 FAIL · 8 UNKNOWN/MISSING.
+- ❌ **Plan root:** FAILED — 19/39 atomic problems green · 9 FAIL · 3 DEC-frozen · 5 v1 unassessed · 19 interior · reds: P2 (2), P3 (1), P4 (6).
+- ❌ **B foundational:** NOT CERTIFIED — the current gate. 4/8 sections green · 17 rows PASS · 3 FAIL · 3 UNKNOWN/MISSING.
 - ❌ **B+C consequence:** NOT DONE — 2/8 legs green · stages 6/6 · backward open: 0. Reported for diagnosis; downstream of B.
 - ⚪ **Project v1:** not assessed on this card (full stack is a separate scope).
 
@@ -16,21 +16,21 @@ Ledger points never count as progress: `brain alone` is the judge, `brain + ledg
 
 The goal, cut backwards into the problems that must all be solved, recursively to the atomic problems. This section is generated from `scripts/plan_spec.py` — the single definition of the tree; `PLAN.md` is its readable render. The plan defines no gate: every measured atomic problem is a frozen row in its B/judge section below, and an interior verdict is the worst of its children.
 
-**Plan root:** ❌ FAILED — 16/39 atomic problems green · 7 FAIL · 3 DEC-frozen (no card rows) · 5 v1 not assessed on this card · 19 interior problems.
+**Plan root:** ❌ FAILED — 19/39 atomic problems green · 9 FAIL · 3 DEC-frozen (no card rows) · 5 v1 not assessed on this card · 19 interior problems.
 
 | Level | Node | What must be true | Atomic problems | Verdict |
 |---|---|---|---|---|
 | 0 | **G** A certified universal donor, delivered | What is the whole problem? | 39 atomic problems | ❌ FAIL |
-| 1 | **P1** The donor exists | Is there a per-stream artifact built from the right algebra, and is it an identity? | 4 atomic problems | ❔ UNKNOWN |
+| 1 | **P1** The donor exists | Is there a per-stream artifact built from the right algebra, and is it an identity? | 4 atomic problems | ✅ PASS |
 | 2 | **B1** Lawful | Is the state built from the right algebra? | 2 atomic problems | ✅ PASS |
-| 2 | **B8** Reproducible | Is the artifact an identity? | 2 atomic problems | ❔ UNKNOWN |
-| 1 | **P2** The donor suffices | Does the embedding lose nothing that matters about the future — for prediction and decision — … | 11 atomic problems | ❔ UNKNOWN |
+| 2 | **B8** Reproducible | Is the artifact an identity? | 2 atomic problems | ✅ PASS |
+| 1 | **P2** The donor suffices | Does the embedding lose nothing that matters about the future — for prediction and decision — … | 11 atomic problems | ❌ FAIL |
 | 2 | **B2** Sufficient | Does B lose nothing about the future? | 3 atomic problems | ✅ PASS |
 | 2 | **E1** Trunk capacity (the state-update algebra) | Can the state carry the stream's structure — not just its mass? | 3 atomic problems | ⚪ FRONTIER |
 | 3 | **E1.a** next_event mastered on the toy (curriculum step 1) | Does the frozen trunk beat the 1-gram on the known-truth next_event structure at the dev-rig … | — | ⚪ FRONTIER |
 | 3 | **E1.b** intent mastered on the toy (curriculum step 2) | Does the frozen trunk beat the 1-gram on the per-customer intent structure, at a scale where … | — | ⚪ FRONTIER |
 | 3 | **E1.c** port: ONE real-data run under DEC-572's bars | Does the winning trunk master the real stream — eff_rank>=30, persona>=0.15, R2>=0.45, stable, … | — | ⚪ FRONTIER |
-| 2 | **B4** Decisive | Does B support action/counterfactual decisions? | 3 atomic problems | ❔ UNKNOWN |
+| 2 | **B4** Decisive | Does B support action/counterfactual decisions? | 3 atomic problems | ❌ FAIL |
 | 2 | **B5** Minimal & affordable | Is it the smallest sufficient object, and fast enough? | 2 atomic problems | ❔ UNKNOWN |
 | 1 | **P3** The donor is usable | Can simple consumers read it, does it transfer beyond our known tasks, and does it stay honest … | 11 atomic problems | ❌ FAIL |
 | 2 | **B3** Accessible | Can simple heads read what is there, at every stage? | 6 atomic problems | ✅ PASS |
@@ -97,15 +97,15 @@ The judge below is the **consequence** (B+C). This section is **B itself**: a ro
 | B3.5 | Equal-dimension serving geometry | shape PCA + counter tile at 128/128 and 39/39; persona/future/ARI at full size | reporting | ✅ PASS | complete · persona equal_39 0.1721 / equal_128 0.1361 / counter 0.1893 / shape_pca_39 0.08139 / PATH A 0.3867 · future equal_39 0.144 / equal_128 0.1174 / counter 0.1727 / PATH A 0.181 |
 | B3.6 | Served-object X-ray (ledger exposure) | the ledger alone, its named parts, and ledger block-PCA under the frozen B3.2/B3.4 consumers, against {exact counter, served shape, PATH A}; the branch is computed here from the arm numbers (DEC-569) | reporting | ✅ PASS | complete · branch exposure (DEC-569: best ledger arm persona 0.3196 from part_numeric_stats; full 0.01722 / pca_39 0.2012 / pca_128 0.1036) · references persona counter 0.1893 / shape 0.06596 / PATH A 0.3867 · linear access ledger_full 0.3551 / counter 0.3937 / shape 0.4677 / PATH A 0.4126 |
 
-### B4 — Decisive · ❔ UNKNOWN
+### B4 — Decisive · ❌ FAIL
 
 *Does B support action/counterfactual decisions?*
 
 | # | Property | Metric | Green means | Verdict | Evidence / missing producer |
 |---|---|---|---|---|---|
-| B4.1 | B-only dose-response / argmax | action-conditional response shape readable from the state (not through a judge leg) | quality | ❔ UNKNOWN | missing receipt encoder_decision_law.json; produce measure_decision_law.py |
-| B4.2 | OPE / IPS known-effect recovery | E recovers the known effect with a paired CI excluding 0 | quality | ❔ UNKNOWN | missing receipt encoder_decision_law.json; produce measure_decision_law.py |
-| B4.3 | Action-invariance | representation invariant to assignment, still predictive of the outcome | reporting | ❔ UNKNOWN | missing receipt encoder_decision_law.json; produce measure_decision_law.py |
+| B4.1 | B-only dose-response / argmax | action-conditional response shape readable from the state (not through a judge leg) | quality | ❌ FAIL | encoder_decision_law.json: paired CI lo -0.0269 <= 0; destroyed 0.2539 >= E |
+| B4.2 | OPE / IPS known-effect recovery | E recovers the known effect with a paired CI excluding 0 | quality | ❌ FAIL | encoder_decision_law.json: E_ips 152.93 vs T_ips 152.93 (diff +0.00 [+0.00, 0.0]) |
+| B4.3 | Action-invariance | representation invariant to assignment, still predictive of the outcome | reporting | ✅ PASS | band cert ok (P1==P2 bit-identical; P1 vs stored S 3.5762786865234375e-07 / E 9.1552734375e-05 vs bands 7.415168852276111e-07 / 0.00029722013277933; teeth True) · marker null: share 0.23636363636363636 vs stored 0.24579124579124578 (ok=False) · level permutation: share 0.25925925925925924 vs table 0.24377104377104378 (|Δ|∞ 0.29137298632135944, ok=True) |
 
 ### B5 — Minimal & affordable · ❔ UNKNOWN
 
@@ -132,16 +132,16 @@ The judge below is the **consequence** (B+C). This section is **B itself**: a ro
 
 | # | Property | Metric | Green means | Verdict | Evidence / missing producer |
 |---|---|---|---|---|---|
-| B7.1 | ECE / OOD retention | calibration of the shipped next-type head + OOD retention | quality | ❔ UNKNOWN | receipt has no generated_at — re-run measure_b_props.py |
+| B7.1 | ECE / OOD retention | calibration of the shipped next-type head + OOD retention | quality | ✅ PASS | next-type ECE 0.0611 (bar 0.1) · acc 0.1750841750841751 · n 1485/1485 (OOV 0) · OOD (as_of+30d): ece nan acc nan n 0 |
 | B7.2 | Missingness / unlogged confounders | uncertainty carried for unobserved events, never faked | unmeasured | ❔ UNKNOWN | missing producer: measure_robustness_law.py |
 
-### B8 — Reproducible · ❔ UNKNOWN
+### B8 — Reproducible · ✅ PASS
 
 *Is the artifact an identity?*
 
 | # | Property | Metric | Green means | Verdict | Evidence / missing producer |
 |---|---|---|---|---|---|
-| B8.1 | Artifact identity | registry tag + config + data revision recorded and consistent | reporting | ❔ UNKNOWN | receipt has no generated_at — re-run measure_b_props.py |
+| B8.1 | Artifact identity | registry tag + config + data revision recorded and consistent | reporting | ✅ PASS | tag 0.11.0r490759-b64d256e3lr3e-04o4c3b5899 · registry 79f9768d51205252 · data 3543c711bc98 · as_of 2025-01-01 · n 5000 · config 426f2472c17bdbee · checkpoint 1417b0c5226c02b6 |
 | B8.2 | One-command reproducibility (S6) | the card is regenerated in one invocation at a recorded commit | reporting | ✅ PASS | judge_stages.json:S6 working=True |
 
 ## The judge — four legs × two numbers
@@ -223,15 +223,12 @@ The leg verdict above is computed from these rows; a task can PASS while its leg
 - `judge_leg_unsupervised.json :: brain_ledger [P4·JUDGE-unsupervised] — persona_geometry: outside the delivery non-inferiority margin (0.01 R2); failing: persona_geometry, future_geometry, segment_structure`
 - `judge_leg_simulator.json :: brain [P4·JUDGE-simulator] — argmax_optimum: destroyed control >= brain (0.253872 vs 0.245791); failing: argmax_optimum`
 - `judge_leg_simulator.json :: brain_ledger [P4·JUDGE-simulator] — argmax_optimum: outside the delivery non-inferiority margin (0.01 R2); failing: argmax_optimum`
-- `B B4.1 [P2·B4] B-only dose-response / argmax — missing receipt encoder_decision_law.json; produce measure_decision_law.py`
-- `B B4.2 [P2·B4] OPE / IPS known-effect recovery — missing receipt encoder_decision_law.json; produce measure_decision_law.py`
-- `B B4.3 [P2·B4] Action-invariance — missing receipt encoder_decision_law.json; produce measure_decision_law.py`
+- `B B4.1 [P2·B4] B-only dose-response / argmax — encoder_decision_law.json: paired CI lo -0.0269 <= 0; destroyed 0.2539 >= E`
+- `B B4.2 [P2·B4] OPE / IPS known-effect recovery — encoder_decision_law.json: E_ips 152.93 vs T_ips 152.93 (diff +0.00 [+0.00, 0.0])`
 - `B B5.1 [P2·B5] Minimality k_min — missing producer: measure_minimality_law.py`
 - `B B6.2 [P3·B6] Donor does-not-lose / adds / controls — encoder_donor.json: y_orders_90: table+E CI lo -0.0230 <= 0; y_value_90: E 0.5807 < raw 0.5952; y_value_90: E 0.5807 < fair 0.5952; y_value_90: table+E CI lo -0.0223 <= 0`
 - `B B6.3 [P3·B6] Broad held-out transfer family — missing producer: measure_transfer_law.py`
-- `B B7.1 [P3·B7] ECE / OOD retention — receipt has no generated_at — re-run measure_b_props.py`
 - `B B7.2 [P3·B7] Missingness / unlogged confounders — missing producer: measure_robustness_law.py`
-- `B B8.1 [P1·B8] Artifact identity — receipt has no generated_at — re-run measure_b_props.py`
 
 ## Backward requirements (from PROMPT_BACKWARD)
 

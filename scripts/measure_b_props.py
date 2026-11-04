@@ -122,6 +122,7 @@ def calibration_block(model, cfg, demo: Path, products: str) -> dict:
     # next events: first FULL-stream event strictly after the last pre-as_of tick
     full = pl.read_parquet(demo / "customer_event_stream.parquet")
     wanted = set(bkeys)
+    full = full.filter(pl.col("customer_key").is_in(sorted(wanted)))
     grouped: dict[str, list[tuple[float, str]]] = defaultdict(list)
     for c, t, e in zip(
         full["customer_key"].to_list(), full["event_ts"].to_list(), full["event_type"].to_list()
@@ -149,7 +150,7 @@ def calibration_block(model, cfg, demo: Path, products: str) -> dict:
         for k, (t_next, e_next) in next_ev.items():
             seq = seqs_by_key[k]
             y, _h = model(seq)
-            probs = torch.softmax(model.head_next(y[:, -1]), dim=-1)
+            probs = torch.softmax(model.head_next(y[-1]), dim=-1)
             conf = float(probs.max())
             pred = int(probs.argmax())
             truth = vocab.et.get(e_next, n_et)
