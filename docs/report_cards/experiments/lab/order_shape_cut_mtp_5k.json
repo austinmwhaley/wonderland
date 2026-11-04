@@ -1,0 +1,81 @@
+{
+  "_meta": {
+    "behavior_hash": "276db68fe0aa4319",
+    "command": "lab_measure.py --fixture rabbit_hole/data/lab/order_shape --products /tmp/opencode/lab/order_shape_pos_cm5k --as-of 2024-09-01 --iter cut_mtp_5k",
+    "generated_at": "2026-11-04T16:13:00+00:00",
+    "git_commit": "469d304a24c77849fb5c048857a754de6d764ab2",
+    "producer": "lab_measure.py"
+  },
+  "a_frac": 0.7,
+  "as_of": "2024-09-01",
+  "bar_g": 0.5,
+  "complete": true,
+  "discipline": "toy-green can only SUGGEST the next real-data run (DEC-576); certification of B stays on the real stream (cfm_v2k / O3 / DEC-575); no B-row source names this receipt",
+  "fixture_spec": {
+    "action_peak": 0.0,
+    "base_rate": 0.08,
+    "entity_affinity": 0.0,
+    "intent": 0.0,
+    "n_customers": 5000,
+    "n_entities": 0,
+    "name": "order_shape",
+    "persistence": 0.5,
+    "rate_heterogeneity": 0.0,
+    "seed": 17,
+    "snr": 1.0,
+    "transition": true,
+    "trend": 0.0,
+    "value_log_sigma": 0.5,
+    "window_days": 365
+  },
+  "iteration": "cut_mtp_5k",
+  "kind": "lab_dev_instrument",
+  "lab_gate_a_side": {
+    "adversarial_leak_has_teeth": true,
+    "adversarial_not_carried": true,
+    "complete": true,
+    "negative_not_carried": true,
+    "oracle_carried": true
+  },
+  "n_boot": 2000,
+  "p_floor": 1e-15,
+  "positive": {
+    "beats_base": false,
+    "classes": [
+      "cart",
+      "purchase",
+      "view"
+    ],
+    "classes_excluded": [],
+    "eff_rank": 1.467,
+    "eff_rank_source": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm/portfolio/portfolio_0_11_0r849897-b128d128e3lr3e-04o70d05b8f_20261104T161221Z.json",
+    "g": 0.516423,
+    "g_fallback_to_closed_form_denominator": true,
+    "mastered": false,
+    "n_A": 3498,
+    "n_B_rows": 1500,
+    "n_customers": 5000,
+    "nll_base": 0.81915,
+    "nll_baseline_ce_nats": 1.0618,
+    "nll_enc": 0.952898,
+    "nll_oracle_nats": 0.8366,
+    "paired_ci_enc_minus_base": [
+      0.1096989984917155,
+      0.15746058217109343
+    ],
+    "per_class_n_A": {
+      "cart": 967,
+      "purchase": 932,
+      "view": 1599
+    }
+  },
+  "products_identity": {
+    "path": "/tmp/opencode/lab/order_shape_pos_cm5k",
+    "registry_sha256": "396527a06565fab5",
+    "tag": "0.11.0r849897-b128d128e3lr3e-04o70d05b8f"
+  },
+  "protocol": "DEC-576 dev-rig speedometer + controls (development instrument; never B-row evidence)",
+  "seconds": 2.4,
+  "seed": 65537,
+  "use_case": "order_shape"
+}

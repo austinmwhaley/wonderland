@@ -10881,6 +10881,20 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     after the cut, row-distributions of what followed what, predicted from the served E
     with row-wise CE, on a stable weight. That is the next pre-registered axis; the
     single-event cut target is retired.
+  - **Row-readout outcome (2026-11-04) — the first capability win on the order fixture.**
+    A learned query readout computes the conditional row `P(next | last)` **inside the
+    encoder** from the history's pair counts and the last event (`row_w[last]`), and places
+    it in the first K state dims (polar interface; no state table, no external artifact).
+    On `order_shape` N=5000: `row_next` validation skill **+0.3266 ± 0.0305 (PASS)**; on
+    split B the row's own NLL is **0.8586** (pooled bigram 0.81915, previous encoder 0.953),
+    and E decodes the row at **R² 0.9662**. The lab's frozen ridge head reads E at 0.9523;
+    a **multinomial logistic** on the same E reads it at **0.8591** — i.e. the encoder now
+    carries the calibrated conditional, and the **ridge one-vs-rest + softmax** is the
+    remaining measurement bottleneck, not the representation. The row readout is staged
+    (405-line patch at `/tmp/opencode/row_readout.patch`; tree restored to behavior
+    `d5df3a2c`). Next chunk: adopt it, retrain cfm_v2k, re-stamp, and pre-register the
+    multiclass-head protocol (ridge vs multinomial logistic — a head/gate change, both
+    reported, operator sign-off).
   - **Staged Layer A change (not committed).** The `persistence` knob + `order_shape` use
     case + the two gate dispatch entries are a 139-line diff at
     `/tmp/opencode/order_shape_layerA.patch`; the tree was restored to behavior

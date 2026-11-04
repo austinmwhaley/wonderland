@@ -223,8 +223,11 @@ histogram half; it is not the missing piece.
   linearly readable**. Code reverted (patch `/tmp/opencode/pair_input.patch`). The cut-target
   follow-up was also negative: v1/v2 trained the readout only (E unchanged at 0.9661), v3
   on the served path was +0.545 ± 0.6904 (FAIL) and destabilized training — a single
-  next-event label per customer is too sparse. Next axis: the **future-transition
-  objective** on the served E (a label tail of W future events per customer, row-wise CE).
+  next-event label per customer is too sparse. Next axis was the future-transition objective; it **worked**: a learned query readout
+  (`row_w[last]` over the history's pair counts, placed in the first K state dims) gives the
+  conditional row at NLL **0.8586** (bigram 0.81915; previous encoder 0.953), E decodes it at
+  R² **0.9662**, and a multinomial logistic on E reads **0.8591** vs the ridge's 0.9523 —
+  the encoder now carries the calibrated conditional; the ridge head is the bottleneck.
 - **Shape problem Phase 0 LANDED (DEC-588, 2026-11-04): the strong diagnosis is falsified and
   the problem is narrowed to ORDER.** `shape_battery.json` (cfm_v2k, n_B 1485, paired
   bootstrap): E decodes the **history's** type histogram 0.9943, gap quantiles 0.9766, value
@@ -296,15 +299,14 @@ next question is the learned shape, not another consumer tuning pass.
 
 ## Next 3 actions
 
-1. **Future-transition objective chunk (DEC-588 Phase 1, the active program).** Apply the
-   staged Layer A diff; build the after-cut **label tail** (the first W future events per
-   customer, W derived from the stream) and train the **served E** with row-wise
-   cross-entropy on the future transition matrix — not a single next event. The single-event
-   cut target is retired: v2 trained only the readout (skill +0.199, E unchanged), v3 on the
-   served path was +0.545 ± 0.6904 (FAIL) and destabilized training. Acceptance: the order
-   fixture beats the bigram 0.8524 and the ridge on E falls below 0.954; then the battery's
-   history-transition decode above 0.502; then the full cfm_v2k re-stamp (S6 chain + 13
-   B-row producers, GPU-serialized, no-op proof for the B rows).
+1. **Row-readout adoption + head protocol (DEC-588 Phase 1, the active program).** Apply
+   `/tmp/opencode/row_readout.patch` + `/tmp/opencode/order_shape_layerA.patch`; retrain
+   cfm_v2k with `row_readout=true`; re-stamp (S6 chain + 13 B-row producers, no-op proof for
+   the default path). Pre-register the multiclass-head protocol (ridge vs multinomial
+   logistic; a head/gate change — both reported, operator sign-off). Measured on the order
+   fixture: row NLL 0.8586, multinomial logistic on E 0.8591, ridge 0.9523, bigram 0.81915.
+   Acceptance: the adopted encoder's order-fixture logistic NLL ≤ 0.86 and the B rows move
+   on the real stream; no gate/bar/exclusion edits.
 2. **Re-run the shape battery after the change** (same protocol, same split): the target is
    history-transition decode above the measured **0.502** and future transition at or above
    the exact counter, with the first-order rows not regressing. This is the Phase-1
