@@ -220,9 +220,11 @@ histogram half; it is not the missing piece.
   history-transition decode from E moved only 0.354 → 0.383; the last-event decode is
   0.993. E carries the last event and part of the joint, but a **linear** head cannot
   multiply them into `P(next|last)` — the missing piece is the **conditional row made
-  linearly readable**. Code reverted (patch `/tmp/opencode/pair_input.patch`); next axis is
-  serving the model's own last-tick readout `y_last` (compact, no table) and/or the
-  future-transition objective.
+  linearly readable**. Code reverted (patch `/tmp/opencode/pair_input.patch`). The cut-target
+  follow-up was also negative: v1/v2 trained the readout only (E unchanged at 0.9661), v3
+  on the served path was +0.545 ± 0.6904 (FAIL) and destabilized training — a single
+  next-event label per customer is too sparse. Next axis: the **future-transition
+  objective** on the served E (a label tail of W future events per customer, row-wise CE).
 - **Shape problem Phase 0 LANDED (DEC-588, 2026-11-04): the strong diagnosis is falsified and
   the problem is narrowed to ORDER.** `shape_battery.json` (cfm_v2k, n_B 1485, paired
   bootstrap): E decodes the **history's** type histogram 0.9943, gap quantiles 0.9766, value
@@ -294,14 +296,15 @@ next question is the learned shape, not another consumer tuning pass.
 
 ## Next 3 actions
 
-1. **Cut-target chunk (DEC-588 Phase 1, the active program).** Apply the staged Layer A
-   diff (`/tmp/opencode/order_shape_layerA.patch`); attach the **first event after the cut**
-   as a label (no future as input) and train the final-tick state with the existing
-   `head_next` (cut-target loss). The probe says the machinery already exists inside the
-   history (0.840 NLL vs the bigram 0.800) but the served final tick is untrained (0.966).
-   Acceptance: the order fixture beats the bigram 0.8524 and the ridge on E falls below
-   0.954. Only if that fails, add the pair/order carrier; then the full cfm_v2k re-stamp
-   (S6 chain + 13 B-row producers, GPU-serialized, no-op proof for the B rows).
+1. **Future-transition objective chunk (DEC-588 Phase 1, the active program).** Apply the
+   staged Layer A diff; build the after-cut **label tail** (the first W future events per
+   customer, W derived from the stream) and train the **served E** with row-wise
+   cross-entropy on the future transition matrix — not a single next event. The single-event
+   cut target is retired: v2 trained only the readout (skill +0.199, E unchanged), v3 on the
+   served path was +0.545 ± 0.6904 (FAIL) and destabilized training. Acceptance: the order
+   fixture beats the bigram 0.8524 and the ridge on E falls below 0.954; then the battery's
+   history-transition decode above 0.502; then the full cfm_v2k re-stamp (S6 chain + 13
+   B-row producers, GPU-serialized, no-op proof for the B rows).
 2. **Re-run the shape battery after the change** (same protocol, same split): the target is
    history-transition decode above the measured **0.502** and future transition at or above
    the exact counter, with the first-order rows not regressing. This is the Phase-1

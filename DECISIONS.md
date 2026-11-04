@@ -10865,6 +10865,22 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     train the final-tick state with the existing `head_next`; the in-sequence 0.840 shows
     the transition machinery already exists. This is a training-target fix, not another
     algebra, and it is cheaper than any new carrier.
+  - **Cut-target attempt (2026-11-04) — NEGATIVE, with the final diagnosis.** Three
+    versions, each one axis:
+    (v1) the cut CE added to `T_["next"]` at the readout `y`: nll 0.9661, unchanged — one
+    label per sequence is diluted by the ~T in-sequence next-event terms;
+    (v2) `cut_next` as its own objective, still on `y`: the in-sequence head improved
+    (0.840 → 0.635) and the cut skill reached +0.199, but the lab ridge on the served E was
+    unchanged (0.9661) — **the loss trains the readout, not the served object** (the same
+    y-vs-E bypass DEC-466/467 found);
+    (v3) on the served path `E = donor(h)`: the cut skill was +0.545 ± 0.6904 (FAIL, not
+    significant) and training destabilized (val 7.76 at step 16, lr 5e-3; in-sequence head
+    0.934), lab 0.9641. **A single next-event label per customer is too sparse and too
+    noisy to train the served state.** The correct target is the one that aggregates many
+    future events per customer — the **future-transition objective**: the first W events
+    after the cut, row-distributions of what followed what, predicted from the served E
+    with row-wise CE, on a stable weight. That is the next pre-registered axis; the
+    single-event cut target is retired.
   - **Staged Layer A change (not committed).** The `persistence` knob + `order_shape` use
     case + the two gate dispatch entries are a 139-line diff at
     `/tmp/opencode/order_shape_layerA.patch`; the tree was restored to behavior
