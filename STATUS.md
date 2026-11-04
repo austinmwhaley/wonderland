@@ -215,7 +215,14 @@ histogram half; it is not the missing piece.
   the change ships with its mandatory re-stamp. The fixture and the
   `order_shape_before.json` diagnostic remain; two scripts-side fixes landed
   (`transition_oracle` now reports the 1-gram marginal H(π); `lab_measure` no longer
-  multiplies nats by ln 2).
+  multiplies nats by ln 2). The pair-input attempt (option 1: `x_t = token_t +
+  MLP([token_t, token_{t-1}])`) was **negative**: nll 0.9675 vs 0.9632 before; the
+  history-transition decode from E moved only 0.354 → 0.383; the last-event decode is
+  0.993. E carries the last event and part of the joint, but a **linear** head cannot
+  multiply them into `P(next|last)` — the missing piece is the **conditional row made
+  linearly readable**. Code reverted (patch `/tmp/opencode/pair_input.patch`); next axis is
+  serving the model's own last-tick readout `y_last` (compact, no table) and/or the
+  future-transition objective.
 - **Shape problem Phase 0 LANDED (DEC-588, 2026-11-04): the strong diagnosis is falsified and
   the problem is narrowed to ORDER.** `shape_battery.json` (cfm_v2k, n_B 1485, paired
   bootstrap): E decodes the **history's** type histogram 0.9943, gap quantiles 0.9766, value
@@ -288,12 +295,13 @@ next question is the learned shape, not another consumer tuning pass.
 ## Next 3 actions
 
 1. **Order-channel chunk (DEC-588 Phase 1, the active program).** Apply the staged Layer A
-   diff (`/tmp/opencode/order_shape_layerA.patch`) + implement the order carrier in the
-   state (pair/co-occurrence memory: `S_t = a S_{t-1} + k_{t-1} v_tᵀ`, projected into the
-   readout) + an order objective (predict the next window's transition matrix from the
-   served state). Pre-register the one-axis change and its falsifier in a DEC, run the
-   order fixture (before: g 8.02, beats_base false), then the full cfm_v2k re-stamp
-   (S6 chain + 13 B-row producers, GPU-serialized, no-op proof for the B rows).
+   diff (`/tmp/opencode/order_shape_layerA.patch`); then the cheap axis first: serve the
+   model's own last-tick readout `y_last` as a compact block (the per-step conditional, no
+   table, still a linear consumer) and/or add the future-transition objective to raise the
+   joint. Run the order fixture (must beat the 0.8524 bigram; the pair input alone was
+   0.9675) and the history-transition decode (must rise above the measured 0.383 on the
+   fixture / 0.502 on cfm_v2k). Then the full cfm_v2k re-stamp (S6 chain + 13 B-row
+   producers, GPU-serialized, no-op proof for the B rows).
 2. **Re-run the shape battery after the change** (same protocol, same split): the target is
    history-transition decode above the measured **0.502** and future transition at or above
    the exact counter, with the first-order rows not regressing. This is the Phase-1

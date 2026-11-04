@@ -10838,6 +10838,19 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     pooled **bigram** — it uses the last type — which is exactly the right baseline for an
     order fixture; g is ill-conditioned when that baseline is near the oracle, so
     `beats_base` is the decisive test here.)
+  - **Pair-input attempt (option 1: learned pair feature at the input) — NEGATIVE, and it
+    locates the real blocker.** Implemented `x_t = token_t + MLP([token_t, token_{t-1}])`
+    (`pair_input`, tag axis `|pi`) and trained the order fixture. Result: nll_enc 0.9675 vs
+    the before 0.9632, g 8.29, beats_base false; the history-transition decode from E moved
+    only 0.354 → 0.383; the last-event decode from E is 0.993. So E **does** carry the last
+    event and part of the joint transition, but a **linear** head cannot multiply them into
+    `P(next | last)` — the bigram baseline is conditional, the ridge is linear. The missing
+    piece is not merely "order in the state"; it is **the conditional row made linearly
+    readable**. Code reverted; the 99-line patch is at `/tmp/opencode/pair_input.patch` and
+    the receipt is `order_shape_pair_input.json`. Next axis (recorded, not executed): serve
+    the model's own last-tick readout `y_last` as a compact block (the per-step conditional,
+    no table, still a linear consumer), and/or add the future-transition objective to raise
+    the joint. Both are one-axis tests on the same fixture; the `y_last` block is cheaper.
   - **Staged Layer A change (not committed).** The `persistence` knob + `order_shape` use
     case + the two gate dispatch entries are a 139-line diff at
     `/tmp/opencode/order_shape_layerA.patch`; the tree was restored to behavior
