@@ -1,5 +1,83 @@
 {
- "field_perm_delta": 1.1888096196344122e-07,
- "scan_merge_delta": 8.881784197001252e-16,
- "note": "retention requires collate want_past/future with train mu/sd"
+  "_meta": {
+    "behavior_hash": "d5df3a2c1211c402",
+    "command": "scripts/measure_construction_law.py",
+    "generated_at": "2026-11-04T04:07:59+00:00",
+    "git_commit": "8b7ac49e651d2009b65cdde8ba46b6984c8ecf8a",
+    "producer": "measure_construction_law.py"
+  },
+  "checks": {
+    "determinism": {
+      "bit_identical": true,
+      "evidence": "two full forwards over 20 sequences: sha256 b5b3049fee9c\u2026 bit-identical",
+      "sha256": "b5b3049fee9cff8afb6e83f4b11fb223e2ac0163b4e43249204826da1624e96f"
+    },
+    "field_permutation": {
+      "evidence": "deepcopy trunk with vocab.attrs + attr_fields + numeric_fields reversed (index caches remapped): worst per-customer relative L2 of h over 20 sequences 1.428e-07; counter raw width 39 (recorded, not compared \u2014 h is SSM-only)",
+      "max_rel_err": 1.4275323721015644e-07,
+      "raw_layout_m1": 39,
+      "raw_layout_m2": 39
+    },
+    "frozen_identity": {
+      "checkpoint_sha256": "1417b0c5226c02b6",
+      "evidence": "products identity {'path': '/home/austin_whaley/wonderland_work/cfm_v2k', 'tag': '0.11.0r490759-b64d256e3lr3e-04o4c3b5899', 'registry_sha256': '79f9768d51205252'} + checkpoint cfm_0_11_0r490759-b64d256e3lr3e-04o4c3b5899.pt present",
+      "present": true,
+      "registry_sha256": "79f9768d51205252",
+      "tag": "0.11.0r490759-b64d256e3lr3e-04o4c3b5899"
+    },
+    "mass_additivity": {
+      "evidence": "mass additivity scan(d, b1+b2) == scan(d,b1)+scan(d,b2) on real drives (disjoint event supports, float64): worst relative error 5.044e-16 (gate 1e-10)",
+      "seconds": 0.2,
+      "working": true,
+      "worst_rel_err": 5.044262742248167e-16
+    },
+    "scan_associativity": {
+      "evidence": "merge law F(g\u2218f)=F(g)\u2218F(f) on 20 real sequences x 5 split points (float64, model's own decay/drive, continuous_time=True): worst relative error 1.261e-15 (gate 1e-10)",
+      "seconds": 0.6,
+      "working": true,
+      "worst_rel_err": 1.2610656855620419e-15
+    },
+    "schema_variant": {
+      "evidence": "renamed client_id/occurred_at/event/attributes/total -> onboard resolved {'customer_key': 'client_id', 'event_ts': 'occurred_at', 'event_type': 'event', 'brand': None, 'entity_type': None, 'entity_id': None, 'source_table': 'source_table', 'value': 'value', 'event_attributes': ['attributes', 'total']}; 2341648 rows kept (source 2341648); 5000 customers encoded; encoder trained on the resolved stream (d=64,L=1,e=1): E finite=True, best=33.9141; zero pipeline-code edits",
+      "n_customers": 5000,
+      "n_rows": 2341648,
+      "seconds": 77.3,
+      "working": true
+    }
+  },
+  "complete": true,
+  "customer_keys": [
+    "v20000000",
+    "v20000001",
+    "v20000002",
+    "v20000003",
+    "v20000004",
+    "v20000005",
+    "v20000006",
+    "v20000007",
+    "v20000008",
+    "v20000009",
+    "v20000010",
+    "v20000011",
+    "v20000012",
+    "v20000013",
+    "v20000014",
+    "v20000015",
+    "v20000016",
+    "v20000017",
+    "v20000018",
+    "v20000019"
+  ],
+  "device": "cpu",
+  "field_perm_delta": 1.1888096196344122e-07,
+  "n_sequences": 20,
+  "note": "retention requires collate want_past/future with train mu/sd",
+  "products": {
+    "path": "/home/austin_whaley/wonderland_work/cfm_v2k",
+    "registry_sha256": "79f9768d51205252",
+    "tag": "0.11.0r490759-b64d256e3lr3e-04o4c3b5899"
+  },
+  "scan_merge_delta": 8.881784197001252e-16,
+  "seconds": 94.2,
+  "tag": "0.11.0r490759-b64d256e3lr3e-04o4c3b5899"
 }

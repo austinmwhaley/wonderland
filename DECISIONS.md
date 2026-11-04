@@ -10382,3 +10382,38 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     construction_law, decision_law, b_props), verify each receipt (stamp, N, controls)
     BEFORE reading verdicts, re-render the card after each, and append outcome + MOVEMENT
     here; two-commit card pattern.
+  - **Outcome, chunk 2 (measurement on cfm_v2k, all receipts stamped at d5df3a2c1211c402;
+    verified before reading verdicts — behavior hash, N, controls, device):**
+    - **B6.2 donor battery — FAIL (pre-registered bar, axis-attributed).** y_churn_90 PASSES
+      every axis (E 0.7449 AUC > raw/fair 0.6800; table_E−fair paired CI lo +0.0024 > 0;
+      random 0.5036 / destroyed 0.4635 both < E). y_orders_90: E 0.6118 > table 0.6047 point,
+      but table_E (0.6029) − fair CI lo −0.0230 ≤ 0 — the table+E increment is not
+      significant. y_value_90: E 0.5807 < raw/fair 0.5952 point AND table_E CI lo −0.0223 ≤ 0.
+      raw_equals_fair=true recorded (the two 38-column matrices are value-identical on this
+      stream — the "fair" comparator collapses to one table). Reading: the frozen E carries
+      unique signal for churn (a classification target) but not, certified, for the two
+      90-day value/order regression targets on cfm_v2k; table+E adds nothing significant over
+      the table there. This is the axis the FAIL names — the donor's value-add on the
+      regression family, not a producer defect.
+    - **B5.2 runtime law — PASS.** 5000/5000 customers; cold 14.13 s (compile+loader) /
+      warm 84.96 s; 53.0 rows/s warm; dims 256/256; peak RSS 3381.9 MB within the 32.0 GB
+      slice; the incremental close is the RECORDED state_job_receipts row (idle 5000, wall
+      0.66 s) per the pre-registration (the close ran incrementally on the live store at
+      build time — re-measurement would not be the same claim).
+    - **B1.2 construction law — PASS.** C1 field-perm worst rel-L2 1.428e-07 (bar 1e-6);
+      C2 scan associativity 1.261e-15 (bar 1e-12); C3 mass additivity 5.044e-16 (bar 1e-9),
+      both on CPU float64 with ~six orders of margin over the S3-committed GPU evidence;
+      C4 two forwards bit-identical (sha256); C5 renamed-schema end-to-end working
+      (onboard→discover→train, zero code edits); C6 products identity + checkpoint present.
+      N=20 sequences (pre-registered: first 20 build_sequences customers). Mechanism note:
+      the chunk-1 C4 digest missed `torch.no_grad()` (a grad-enabled forward raised on
+      `.numpy()`); fixed before the first measurement run — no gate change, the chunk-1
+      commit's B1.2 was UNKNOWN anyway.
+    - **B4.1/B4.2/B4.3 decision law — in progress** (GPU: 3 replica subprocesses for the
+      check-1 band cert, then the check-2 marker re-encode); outcome appended on completion.
+    - **MOVEMENT.** Card at the chunk-2 commit: B 14 PASS / 1 FAIL / 8 UNKNOWN (was 12/0/11);
+      construction section now green (3/8 sections); root still FAILED, P3 red (the B6.2
+      axis); E1 FRONTIER unchanged. No gate, bar, or criterion edited after seeing any
+      number; the B6.2 FAIL is recorded as data (DEC-576 caveat: lab receipts never flip a
+      B-row verdict the other way — a FAIL stays a FAIL until the axis is fixed and
+      re-measured).

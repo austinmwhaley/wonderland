@@ -206,25 +206,20 @@ next question is the learned shape, not another consumer tuning pass.
 
 ## Next 3 actions
 
-1. **DEC-585 chunk 1 (this commit): the 8 B gates frozen in code, no measurement runs.**
-   `b_spec`: 8 new gate kinds + 6 bar constants (construction field-perm/scan/mass,
-   calibration ECE, OOD horizon, cutoff ULP cover). `report_card`: the 8 verdict branches
-   (one axis per verdict; reporting kinds carry ok-flags in the why, not the gate).
-   Producers: `measure_construction_law.py` (B1.2, CPU), `measure_decision_law.py`
-   (B4.1/B4.2/B4.3, GPU + 3 replica subprocesses), `measure_b_props.py` (B7.1 GPU +
-   B8.1), `measure_runtime.py` (B5.2, CPU rewrite), `measure_donor.py` (B6.2, CPU
-   rewrite), on the shared `cfm_products.py` loader. Housekeeping: `measure_causal.py` +
-   its legacy receipt deleted; `run_demo.py` drops the causal/donor demo steps; the
-   watchdog list follows (the memory-guard test enforces it). Card state until chunk 2:
-   the 4 legacy receipts on disk have no `_meta`, so the 8 rows render UNKNOWN ("receipt
-   has no generated_at — re-run …"); B stays 12 PASS / 0 FAIL / 11 UNKNOWN;
-   `plan.py --check` green.
-2. **DEC-585 chunk 2: measure on cfm_v2k, then read the verdicts.** Run the 5 producers
-   sequentially — CPU: donor, runtime; GPU serialized: construction_law, decision_law
-   (~3 × 11-min replica forwards + marker re-encode), b_props. For EACH receipt verify
-   the stamp (behavior `d5df3a2c`), N, and the controls BEFORE reading the verdict;
-   re-render the card after each producer; append the DEC-585 outcome + MOVEMENT;
-   two-commit card pattern. A FAIL is a measurement, not a rescue target.
+1. **DEC-585 chunk 2a (this commit): three B rows measured on cfm_v2k.** B1.2
+   construction law PASS (C1-C6 all under the frozen bars; N=20) · B5.2 runtime PASS
+   (53.0 rows/s warm, peak RSS 3.4 GB in the 32 GB slice, incremental recorded) ·
+   B6.2 donor battery **FAIL on the pre-registered axis** (y_churn_90 passes every bar:
+   E 0.7449 > table 0.6800, table_E−fair CI lo +0.0024; the two 90-day R2 targets fail:
+   y_orders_90 table_E−fair CI lo −0.0230, y_value_90 E 0.5807 < table 0.5952 — the
+   frozen E carries certified unique signal for churn, not yet for the regression
+   value-family; raw==fair value-identical recorded). The C4 no_grad mechanism fix is
+   logged in DEC-585 (no gate change). Card: B 14 PASS / 1 FAIL / 8 UNKNOWN.
+2. **DEC-585 chunk 2b (in progress):** `measure_decision_law.py` on the GPU (3 replica
+   subprocesses for the check-1 band cert + the check-2 marker re-encode), then
+   `measure_b_props.py` (B7.1 calibration + B8.1 identity). Verify each receipt
+   (stamp d5df3a2c, N, controls) BEFORE reading the verdict; append the DEC-585 outcome
+   + MOVEMENT; two-commit card pattern. A FAIL is data, not a rescue target.
 3. **Then the remaining 3 new-law rows under their own DECs** (B5.1
    `measure_minimality_law.py`, B6.3 `measure_transfer_law.py`, B7.2
    `measure_robustness_law.py`) — and, once B is green, return to fast training

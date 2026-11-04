@@ -79,8 +79,9 @@ def c1_field_permutation(model, seqs) -> dict:
 def c4_determinism(model, seqs) -> dict:
     def digest():
         h = hashlib.sha256()
-        for seq in seqs:
-            h.update(model(seq)[1].cpu().numpy().astype(np.float32).tobytes())
+        with torch.no_grad():
+            for seq in seqs:
+                h.update(model(seq)[1].cpu().numpy().astype(np.float32).tobytes())
         return h.hexdigest()
 
     d1, d2 = digest(), digest()
