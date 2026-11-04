@@ -268,6 +268,10 @@ histogram half; it is not the missing piece.
   lost the point win (value 0.5971 vs 0.5952, was 0.6135; orders 0.5965 vs 0.6047, was
   0.6205). Staged (`/tmp/opencode/stat_bank_v2.py` + `one_composition.patch`); tree restored
   to `d5df3a2c`. Next: one block function with one shared reference, then the re-stamp.
+  **v2 (global med + cut ref) still loses the point win:** value 0.5976 / orders 0.5976 vs
+  raw 0.5952/0.6047 (working stream block 0.6135/0.6205). The remaining gap is the block
+  **formula** (Polars vs numpy quantiles, all-valued vs positive median, global vs cut ref).
+  Next: the stream formula as the one function, then the re-stamp.
 - **Route: R4 (certification-first, operator 2026-11-03).** The 11 open B sub-problems
    are the PRIMARY progress track. DEC-585 pre-registered the 8 rows it covers (B1.2,
    B4.1, B4.2, B4.3, B5.2, B6.2, B7.1, B8.1) as 5 cfm_v2k producers with frozen gate
