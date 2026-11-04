@@ -76,6 +76,12 @@ must not contradict them.
    stream it did not train on** — "1 stream in → 1 foundation model out." Universality is a property
    of the *pipeline*, not of shared weights across streams. (subsumes *adaptability-of-architecture*,
    *scale-invariance*.)
+   **Generalized application (binding, DEC-592).** A mechanism added for one statistic, block or
+   quantity must be applied to **every** statistic/block/quantity it can serve, through the **one
+   composition**. No single-block special case, no per-path block: if the level block is served,
+   every served `E` carries it; if the order readout is trained, every path uses it. A mechanism
+   that exists in one path and not the others is a **bug**, not a feature. "Well-rounded" means
+   the block contract is universal, not that one row was patched.
 2. **Adaptive & Dynamic** — everything resolves or learns from the input; behavior lives in
    learned state / config, never in source; input-conditioned dynamics. (subsumes
    *adaptability*, *dynamism*, *self-supervision*.)

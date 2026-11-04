@@ -60,6 +60,9 @@ brain + ledger = delivery.** Ledger points never count as a brain win.
 - **Conflict order:** Robust → Adaptive → Universal → Lawful → Efficient → Honest.
   Lawful and Robust outrank convenience.
 - **The one rule:** never encode an answer the system could learn or derive.
+- **Generalized application (DEC-592):** a mechanism added for one block/statistic must be
+  applied to every block/statistic it can serve, through the one composition; no
+  per-block or per-path special case. A block in one path and not another is a bug.
 - **Anti-overfit clause:** Layer B is self-supervised only; known use cases may VETO
   (gates), never SHAPE the encoder; never train on the graded metric.
 - **Accessibility:** information must be recoverable by simple consumers (linear for

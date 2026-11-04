@@ -259,6 +259,15 @@ histogram half; it is not the missing piece.
   (`/tmp/opencode/stat_bank.py` + `stat_bank_cfm_state.patch`); the tree is restored to
   `d5df3a2c`. Next: one E-composition definition across state_embeddings, forward_embedding,
   replicas and anchors; then the B6.2 table_E head and the learned block.
+- **Generalized application + one composition (DEC-592, 2026-11-04).** The principle is
+  binding: a mechanism added for one block/statistic applies to every block/statistic
+  through the one composition — definition and reference included, not just the append. The
+  block was threaded through materialize/forward/replica/anchors: the decision producer runs
+  (no 256 vs 272) and check-1 is clean (P1 vs S 2.384e-07 / E 9.585e-04). But the sequence
+  block (per-customer med/ref) is not the working stream block (global med/cut ref): B6.2
+  lost the point win (value 0.5971 vs 0.5952, was 0.6135; orders 0.5965 vs 0.6047, was
+  0.6205). Staged (`/tmp/opencode/stat_bank_v2.py` + `one_composition.patch`); tree restored
+  to `d5df3a2c`. Next: one block function with one shared reference, then the re-stamp.
 - **Route: R4 (certification-first, operator 2026-11-03).** The 11 open B sub-problems
    are the PRIMARY progress track. DEC-585 pre-registered the 8 rows it covers (B1.2,
    B4.1, B4.2, B4.3, B5.2, B6.2, B7.1, B8.1) as 5 cfm_v2k producers with frozen gate

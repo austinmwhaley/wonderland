@@ -11109,3 +11109,39 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     review; making Adaptive first (Robust must stay first — a capability that can diverge
     or silently clamp is not a capability).
   - **Principle.** Adaptive · Robust · Diagnosable. No behavior move (docs only).
+
+- **DEC-592 (generalized application — the well-rounded block contract; operator directive
+  2026-11-04).**
+  - **Directive.** "If we do something for one thing we should do it for all — well rounded,
+    generalized, dynamic." The principle is binding: a mechanism added for one statistic,
+    block or quantity must be applied to **every** statistic/block/quantity it can serve,
+    through the **one composition**. No single-block special case; no per-path block. The
+    level block must be in every served `E` (state embeddings, forward embeddings, replicas,
+    anchors); the order readout in every path; the response/value blocks likewise. A
+    mechanism that exists in one path and not the others is a bug.
+  - **Why.** The value block rollout proved the point: the block improved `E` alone
+    (0.6135/0.6205 vs raw 0.5952/0.6047) but the decision producer failed 256 vs 272
+    because the block was only in `state_embeddings`. The statistic was right; the
+    composition was partial. A partial block is not a capability.
+  - **The one composition.** `served_embedding(model, states, counters, blocks)` is the only
+    place that assembles `E`; every path calls it; every block is computed by the same
+    `stat_bank` function from the same sequence/stream at the same cut. The block list is
+    explicit and complete.
+  - **Rejected.** Per-block/per-path patches ("just fix B6.2"); a block that exists only in
+    the diagnostic; a head that reads a path-specific object.
+  - **Principle.** Universal · Adaptive · Lawful · Honest. Binding from this DEC; the one
+    composition is the next implementation (the block in `forward_embedding`, the replica
+    and the anchors as well as `state_embeddings`).
+  - **One-composition test (2026-11-04) — structural success, and the definition lesson.**
+    The block was threaded through `materialize_state_embeddings`, `forward_embedding`, the
+    decision replica and the anchors. The decision producer now runs (no 256 vs 272), and
+    check-1 is clean: P1/P2 bit-identical; P1 vs stored S 2.384e-07 (band 7.415e-07) / E
+    9.585e-04 (band 1.291e-02); P3 eager 3.576e-07 / E 9.585e-04. But the donor **lost** the
+    B6.2 point win: y_value_90 0.5971 vs raw 0.5952 (was 0.6135), y_orders_90 0.5965 vs raw
+    0.6047 (was 0.6205), because the **sequence block** (per-customer median gap / last-event
+    reference) is not the same statistic as the **working stream block** (global median gap /
+    global cut reference). The structural composition is right; the **block definition and
+    reference** must also be one across paths — the principle applies to the definition, not
+    just the append. Staged (`/tmp/opencode/stat_bank_v2.py` + `one_composition.patch`); tree
+    restored to `d5df3a2c` (B 17/3/3). Next: one block function with one shared reference
+    (global med + cut/anchor ref), then the re-stamp.
