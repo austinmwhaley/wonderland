@@ -10690,6 +10690,26 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     re-stamp is mandatory; the no-op proof must show the B receipts numerically identical
     (the new intent path is inert on the real stream). The B card remains certified only
     after that re-stamp.
+  - **Follow-up diagnostics (same day, after the negative E1.b outcome).**
+    - **Mass counter:** re-ran the three intent trains with the candidate's
+      `use_counter=True, counter_type_values=True`. g **2.6326**, nll_enc **0.8647** vs
+      1-gram 0.7228, eff_rank **1.309** — a marginal 0.003-nat gain, still nowhere near
+      the 1-gram. The mass half alone is not the intent fix
+      (`lab/intent_dec586_counter.json`).
+    - **Transition signature:** appended the exact per-customer transition matrix
+      (Laplace-smoothed K=4 rows, 16 dims) to the lab E. g **2.5998**, nll_enc **0.8618**,
+      eff_rank 1.177 — another marginal gain, still worse than the 1-gram
+      (`lab/intent_dec586_sig.json`). Serving the order statistic does not recover
+      dominant intent at ~18 transitions per start row; the remaining gap is estimation
+      (state/head at this sample scale), not the absence of the pair statistic.
+    - **P4 serving diagnostics.** The exact 39-dim counter on the served E improved
+      `future_geometry` past the table (0.1913 vs 0.1810) but not persona (0.273 vs
+      0.387) or segment (~0). An 8-dim attribute profile (segment + loyalty one-hot)
+      closes segment in a small block-balanced E (ARI 0.625–1.0) but the full donor
+      composition dilutes it (0.25) and persona stays below the table (0.31 vs 0.39).
+      Conclusion: the P4 brain gap is a state-geometry gap; appending ledger-like blocks
+      does not make it a brain win. The next escalation must move the shape/state
+      algebra (mass/shape split or signature state), not the serving list.
 
 - **DEC-587 (the macro-reflection law + the shape program's ranked candidates; decided
   2026-11-04 at the operator's directive: "ask why the project isn't successful yet, every
