@@ -10114,6 +10114,58 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     producers) are the primary progress track. Resume order at R4 completion: the
     implementation check, then the full one-axis pre-registration under a follow-up DEC,
     then the train.
+  - **Implementation-check outcome addendum (2026-11-04 — the pre-registered read-only
+    check ran at resume; RESULT: NOT config-only, a 4-file behavior move is required;
+    pre-registered in DEC-586, which is DRAFTED and AWAITING OPERATOR APPROVAL — nothing
+    executed).**
+    - The frozen `lab_measure` protocol requires the fixture's A-side defensibility row
+      from `looking_glass.lab_gate.evaluate()`, which iterates `USE_CASES`
+      (`rabbit_hole/lab.py`) ONLY. `intent` is not in `USE_CASES` → the row is absent →
+      `complete=False`, and the adversarial control is forced to `structure_carried=True`
+      (`not bool(lab_gate.get("adversarial_not_carried", False))`) — uninterpretable.
+      `build_positive` also looks up the use-case card for N-sizing. The move therefore
+      (behavior surface = the `.py` of `looking_glass` + `rabbit_hole`, per
+      `BEHAVIOR_TREES`) touches four files: (1) `rabbit_hole/lab.py` — `USE_CASES` gains
+      `UseCase("intent", "multiclass", "multi", ("B",), "1-gram", "true-transition")`;
+      (2) `rabbit_hole/lab_oracles.py` — `POSITIVE["intent"]` entry + `"intent"` in `_TRANS`
+      (→ `transition_oracle` dispatch); (3) `looking_glass/lab_gate.py` — `"intent"` in
+      `_TRANSITION` (→ the negative/adversarial `transition_carried` + leak-teeth checks);
+      (4) `rabbit_hole/data_spec.py` — log-space stable softmax in the `simulate()` and
+      `transition_oracle()` intent blocks: the raw `exp(log P · exp b)` math
+      row-underflows to 0/0 → NaN at `b ≳ 5.8` — the closed-form oracle is NaN for
+      H ≥ 2.0 on the seed-17 2000-draw sample, and the simulator has ~31% chance of a NaN
+      row at H=2.0/N=200; the shift is algebraically identical where the raw math is
+      finite and extends the domain (no new loop). `tests/test_lab_coverage.py` stays
+      green: `set(POSITIVE) == USE_CASES ids` (both gain `intent`), otherwise fully
+      dynamic.
+    - **New finding 1 (fixture conditioning, read-only probes).** The numerically-safe
+      range of the pre-existing math is H ≲ 1.5, but the closed-form headroom there
+      (mixture floor − per-customer oracle, true nats) is 0.05–0.14 nats — at the
+      B-pair noise level (SE ≈ 0.15–0.2 for n_B 45–75; the sample-headroom sign FLIPPED
+      across N in the probe), so g is ill-conditioned. The headroom ladder: H=0.5 →
+      0.048 · H=1.0 → 0.083 · H=1.5 → 0.136 · H=2.0 → 0.172 · H=3.0 → 0.217 · H=5.0 →
+      0.256 · H=10.0 → 0.287 nats (saturating; H=10 shifts the structure toward
+      per-customer one-hot/identity memorization, a different axis).
+    - **New finding 2 (the frozen g instrument has a unit bug → protocol-level, stop-and-ask).**
+      `transition_oracle` writes oracle CEs in NATS (`np.log`); `scripts/lab_measure.py`
+      multiplies the oracle.json values by `ln 2` on read (documented "bits -> nats").
+      Net: the oracle is deflated 30%, the frozen `g ≤ 0.5` "mastered" bar sits BELOW the
+      Bayes floor on every fixture (next_event: the bar requires `nll_enc ≤ 0.8125`
+      against the true per-customer floor 0.9312 nats — unattainable by construction for
+      any trunk), and DEC-582's "0.334-nat headroom to the oracle" was mostly this
+      artifact (true headroom 0.0483 nats; next_event's true-unit g ≈ 2.0, not 1.15). All
+      five closed next_event receipts share the deflated oracle 0.645459 (= 0.9312 ×
+      ln2). The closed next_event verdicts (branch iii: floor binding, curriculum
+      re-examination → intent) STAND and are quantitatively reinforced. The correction
+      (drop the ×ln2; scripts-only, no hash move, fixtures byte-stable, generator stays
+      the single source of units, nats end-to-end) is a NEW INSTRUMENT PROTOCOL VERSION:
+      it applies from the intent measurement forward; closed next_event receipts stand as
+      recorded (never relabeled, never re-measured by this DEC). Pre-registered in
+      DEC-586 with the operator sign-off.
+    - **Status of the DEC.** The check is done and lands as above; the full one-axis
+      pre-registration (fixture point, bar, branches, move + re-stamp protocol, rejected
+      alternatives, cost) is **DEC-586** — drafted 2026-11-04, AWAITING OPERATOR
+      APPROVAL; nothing executed (tree still at clean `aec6d3f`, behavior `d5df3a2c`).
 
 - **DEC-584 (plan tree reframe, 2026-11-03: a recursive decomposition to ATOMIC problems at
   whatever depth that takes — no forced layer count, no "section"/"leaf" vocabulary; verdicts
@@ -10483,3 +10535,134 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
       law, but its DECISION value on the offer-level family and its regression value on
       the 90-day value/order targets are not yet certified on cfm_v2k — the next axis
       work (training iteration, DEC-583 intent dev rig) targets exactly that.
+
+- **DEC-586 (curriculum step 2 — the `intent` dev-rig fixture, full one-axis
+  pre-registration under DEC-583; carries the DEC-583 implementation-check outcome
+  (4-file behavior move) and the `lab_measure` g-instrument unit correction. DRAFTED
+  2026-11-04; AWAITING OPERATOR APPROVAL — NOTHING EXECUTED; ON HOLD until then).**
+  - **NODE:** P2/E1.b — "intent mastered on the toy (curriculum step 2)" (DEC-583; plan
+    tree DEC-584). E1.a (`next_event`) is exhausted negative at N=500 (DEC-581/582:
+    four algebra values + one capacity value all floor-bound).
+  - **ROUTE:** R2 (dev rig, next structure) — resumed from DEC-583's hold after B was
+    MEASURED on cfm_v2k (DEC-585 complete: 17 PASS / 3 FAIL / 3 UNKNOWN; the 3 FAILs
+    B4.1/B4.2/B6.2 name the decision/value axis this structure targets).
+  - **WHY.** The trunk must be mastered on known-truth data where the per-customer intent
+    layer (`b_c ~ N(0, snr·intent)`, `P_c = softmax(log P · exp b_c)`) is the DOMINANT
+    structure, at a scale where the sample determines it (DEC-583). `next_event` proved
+    the floor is sample-bound at intent=0.5 / N=500 / ~29 pre-as-of events per customer;
+    the dominant-intent fixture moves the structure axis exactly one, at the frozen
+    difficulty (snr=1.0 — DEC-583 rejected the snr knob as a difficulty dial).
+  - **The move (pre-registered at DEC-583; check outcome: 4 behavior files + 1 scripts
+    file).** Behavior surface = the `.py` of `looking_glass` + `rabbit_hole`
+    (`BEHAVIOR_TREES`); the hash moves `d5df3a2c` → H2:
+    (1) `rabbit_hole/lab.py` — `USE_CASES += UseCase("intent", "multiclass", "multi",
+    ("B",), "1-gram", "true-transition")` (a B-only dev-rig structure study; the
+    multiclass next-event target, like `next_event`);
+    (2) `rabbit_hole/lab_oracles.py` — `POSITIVE["intent"] = DataSpec("intent",
+    transition=True, intent=5.0, snr=1.0, base_rate=0.3)` + `"intent"` in `_TRANS`
+    (→ `transition_oracle` dispatch);
+    (3) `looking_glass/lab_gate.py` — `"intent"` in `_TRANSITION` (→ the
+    negative/adversarial `transition_carried` + leak-teeth A-side checks);
+    (4) `rabbit_hole/data_spec.py` — log-space stable softmax (row-max shift before the
+    exp) in the `simulate()` and `transition_oracle()` intent blocks: the raw
+    `exp(log P · exp b)` math row-underflows to 0/0 → NaN at `b ≳ 5.8` (closed-form
+    oracle NaN for H ≥ 2.0 on the seed-17 sample; ~31% NaN-row chance in the simulator
+    at H=2.0/N=200) — algebraically identical where the raw math is finite (softmax
+    shift invariance), extends the domain, adds no loop;
+    (5) `scripts/lab_measure.py` — UNIT CORRECTION (scripts-only, no hash move): drop
+    the `× ln 2` on the oracle.json read and the "bits -> nats" docstring claim —
+    `transition_oracle` writes nats (`np.log`) and every receipt NLL is nats, so the
+    current read deflates the oracle 30% and puts the frozen `g ≤ 0.5` bar below the
+    Bayes floor on every fixture (DEC-583 addendum, new finding 2). This is a NEW
+    INSTRUMENT PROTOCOL VERSION: it applies from the intent measurement forward; the
+    closed next_event receipts stand as recorded (never relabeled, never re-measured by
+    this DEC); sign-off is the operator's, per the stop-and-ask trigger.
+  - **Fixture point (pre-registered; generator commands recorded, data regenerable).**
+    `DataSpec("intent", transition=True, intent=5.0, snr=1.0, base_rate=0.3,
+    n_customers=500, window_days=365, seed=17)`; as-of 2024-09-01 (the frozen protocol
+    boundary, as on every next_event run); derived-default dim (DEC-582: capacity is not
+    the constraint — 8× capacity added no usable rank); N set by
+    `build_positive("intent", n_b=500)` (B-only card → the n_b channel);
+    `build_negative` / `build_adversarial` at the same N. Derivation (read-only
+    closed-form probes, seed 17, true units):
+    - **H=5.0** — dominant: 34% of per-customer transition rows near-deterministic
+      (p_max > 0.99; 24% at H=3, 42% at H=10), per-customer entropy well below the
+      shared matrix; closed-form headroom 0.256 nats on the saturating ladder
+      (H=0.5 → 0.048 · 1.0 → 0.083 · 1.5 → 0.136 · 2.0 → 0.172 · 3.0 → 0.217 ·
+      5.0 → 0.256 · 10.0 → 0.287).
+    - **br=0.3** — ≈109 events/customer over the window, ≈72 pre-as-of ≈ 24 per
+      transition start row → per-customer inference DETERMINED (the DEC-582/583
+      underdetermination diagnosis, fixed); the pooled 1-gram sees ≈36K transitions
+      (all customers, pre-as-of) → the floor MLE is sharp.
+    - **N=500 / seed=17 / as-of 2024-09-01** — keeps n_A=350 / n_B=150 exactly as the
+      closed next_event fixture (the frozen 70/30 split at battery seed 65537;
+      comparable B-pair noise, SE ≈ 0.1 nats — same order as the headroom, disclosed:
+      branch (iii) covers the headroom-within-noise case).
+    - **snr=1.0** — frozen difficulty (DEC-583).
+  - **Verdict (frozen DEC-576 protocol, corrected-unit g).** `mastered` = `g ≤ 0.5`
+    (BAR_G, unedited) AND `beats_base` (the whole paired-bootstrap CI of enc−base below
+    0) AND `complete` (A/B rows exist + all `lab_gate_a_side` checks: complete,
+    oracle_carried, negative_not_carried, adversarial_not_carried) AND the negative
+    control reads NO_SIGNAL AND the adversarial control reads as expected (echo beats
+    the 1-gram while the structure claim stays NO_SIGNAL; the leak has teeth A-side).
+    `eff_rank` is recorded in the receipt. The unit correction makes the bar MEANINGFUL
+    (a trunk recovering half the true headroom passes); it does not move the bar.
+  - **Branches (frozen):**
+    (i) **mastered** — the trunk reads dominant per-customer intent at the sample scale
+    → E1.b green; the port (E1.c, route R3, under DEC-572's bars) becomes a separate
+    DEC.
+    (ii) **partial recovery** (`0.5 < g ≤ 1.0` AND `beats_base`) — the structure is
+    partially readable → ONE single-axis iteration pre-registered in the outcome
+    addendum (the axis chosen by diagnosis from the receipt; no bar or fixture edit).
+    (iii) **floor-bound / no improvement** (g ≈ 1–2, `beats_base` false, or the headroom
+    within B-pair noise) — even dominant intent is not mastered at this point → a THIRD
+    escalation DEC (candidates named but not frozen: the head form, N↓/events↑, H
+    within the stable-math domain); no post-hoc bar edits.
+    (iv) **unstable or resource failure** (OOM-killed at target N/dim, non-finite,
+    lr-collapse) — reject, not rescue; report the reduced N/dim actually run (never
+    compare across N/dim without stating it); escalation is branch (iii)'s.
+    (v) **control failure** (negative reads CARRIED, or adversarial does not read as
+    expected) — an instrument/fixture defect is named: the run is VOID for the trunk
+    verdict; re-measure after the control is fixed (a gate failure, not a trunk
+    verdict).
+  - **Move + re-stamp protocol (pre-registered).** One chunk: the four behavior edits +
+    the lab_measure correction, with the gates (principle-audit `--all --strict` rc=0 —
+    the ratchet may only shrink; the stable softmax adds no loop; ruff check/format;
+    fast-tier pytest; `plan.py --check`); the intent fixture generated
+    (positive/negative/adversarial under `rabbit_hole/data/lab/intent/` — gitignored
+    data, regenerable, the generator command recorded); then the cfm_v2k RE-STAMP: the
+    S6 chain + every B-row producer (measure_input_law, measure_battery_law,
+    measure_dynamics_law, measure_views_law, measure_construction_law,
+    measure_sufficiency_law, measure_stage_decomposition, measure_block_serving,
+    measure_served_object, measure_decision_law, measure_runtime, measure_donor,
+    measure_b_props — the 13 producers behind the 10 B-row receipt files), GPU-serialized
+    one job at a time in the 32 GB slice. **No-op proof: the re-stamped receipts are
+    numerically identical to the d5df3a2c set; the card diff is header/hash/commit lines
+    only; B verdicts stay 17/3/3.** (The move is code-only on cfm_v2k's measured
+    quantities: the real stream carries no `DataSpec`; the new files are inert on the
+    cfm_v2k path, and the stable softmax is identical where the raw math was finite.)
+  - **Rejected.** (1) Config-only fixture generation — impossible per the check
+    (the missing `USE_CASES` row → `complete=False` + uninterpretable adversarial
+    control). (2) Generation under an EXISTING use-case name (overwriting the
+    `next_event` dir with a new spec) — clobbers the closed fixture; its receipts embed
+    the old spec; reproducibility violation. (3) H ≥ 2.0 without the stable-softmax fix
+    — the NaN domain (oracle uncomputable; the simulator can emit NaN rows). (4) H=10.0
+    — buys +0.03 nats of headroom over H=5.0 and shifts the structure toward
+    per-customer one-hot/identity memorization (42% near-deterministic rows — a
+    different axis). (5) N=150–250 — B-pair SE 0.15–0.2 nats vs the 0.256 headroom: g
+    ill-conditioned (the sample-headroom sign flipped across N in the probe). (6)
+    br=0.2 — ≈51 pre-as-of events/customer ≈ 17 per start row: per-customer inference on
+    the determined/underdetermined boundary. (7) Editing the g bar (0.5) either way —
+    a post-result criterion edit, forbidden; the unit correction changes what g
+    measures (consistent units), not the bar. (8) Re-measuring next_event under the
+    corrected instrument now — the closed fixture's receipts stand as recorded; a
+    re-measurement would be a new protocol on a closed fixture, not owed by this DEC
+    (available later as its own DEC).
+  - **Cost.** 4-file behavior move + the scripts-only instrument fix; the re-stamp
+    campaign (13 producers, serialized) ≈ 1.5–3 h GPU; the three fixture generations
+    (CPU, seconds); three trains (pos/neg/adv, GPU-serialized, derived budgets).
+  - **Status.** DRAFTED 2026-11-04 at the operator's pause ("pause everything and give
+    me a progress report"); AWAITING OPERATOR APPROVAL of the package (the move +
+    re-stamp, the instrument unit correction as a new g-protocol version, and the
+    fixture point). Nothing executed: the tree is at clean `aec6d3f`, behavior
+    `d5df3a2c`, B 17 PASS / 3 FAIL / 3 UNKNOWN.

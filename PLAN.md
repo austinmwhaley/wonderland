@@ -171,8 +171,8 @@ The dev rig is the minutes-scale instrument that localizes the blob; next_event 
 
 The next_event outcome located the shortfall in the sample, not the trunk: intent at a determinable scale is the structure the trunk must next master (DEC-583; the snr difficulty dial is rejected as an axis).
 
-**Bars frozen in:** DEC-583 (curriculum step 2: the intent structure, one axis, at the frozen difficulty; the full one-axis pre-registration under a follow-up DEC at resume)
-**Solved when:** its pre-registered run meets the frozen bars and the decision is recorded — DEC-583 (curriculum step 2: the intent structure, one axis, at the frozen difficulty; the full one-axis pre-registration under a follow-up DEC at resume)
+**Bars frozen in:** DEC-586 (curriculum step 2: the intent structure, one axis, at the frozen difficulty; fixture intent=5.0/br=0.3/N=500/seed=17, frozen DEC-576 bars in corrected units, branches (i)-(v), 4-file behavior move + full cfm_v2k re-stamp)
+**Solved when:** its pre-registered run meets the frozen bars and the decision is recorded — DEC-586 (curriculum step 2: the intent structure, one axis, at the frozen difficulty; fixture intent=5.0/br=0.3/N=500/seed=17, frozen DEC-576 bars in corrected units, branches (i)-(v), 4-file behavior move + full cfm_v2k re-stamp)
 
 ###### E1.c — port: ONE real-data run under DEC-572's bars
 
@@ -559,7 +559,7 @@ A decision that cannot be explained from its artifacts is not operable, and an e
 | Atomic problem | What must be true | Bars frozen in |
 |---|---|---|
 | `E1.a` | Does the frozen trunk beat the 1-gram on the known-truth next_event structure at the dev-rig scale, with clean controls? | DEC-576/577 (dev rig: g<=0.5 and beats the 1-gram, controls clean) — exhausted negative at N=500 across all four single-axis trunk-algebra values plus the dim=256 capacity read (DEC-581/582 outcomes: the 1-gram floor is binding, a finite-sample estimation gap, not a trunk deficiency) |
-| `E1.b` | Does the frozen trunk beat the 1-gram on the per-customer intent structure, at a scale where the sample can determine it, with clean controls? | DEC-583 (curriculum step 2: the intent structure, one axis, at the frozen difficulty; the full one-axis pre-registration under a follow-up DEC at resume) |
+| `E1.b` | Does the frozen trunk beat the 1-gram on the per-customer intent structure, at a scale where the sample can determine it, with clean controls? | DEC-586 (curriculum step 2: the intent structure, one axis, at the frozen difficulty; fixture intent=5.0/br=0.3/N=500/seed=17, frozen DEC-576 bars in corrected units, branches (i)-(v), 4-file behavior move + full cfm_v2k re-stamp) |
 | `E1.c` | Does the winning trunk master the real stream — eff_rank>=30, persona>=0.15, R2>=0.45, stable, plus the B1 canary — in ONE pre-registered run? | DEC-572/573 (real data: eff_rank>=30, persona>=0.15, R2>=0.45, stable) |
 
 ### The v1 atomic problems this card does not measure
@@ -606,8 +606,8 @@ computes one. Moving the pointer is a reviewed spec edit like any other.
 
 | Step | What is earned | Advances | Evidence that closes it |
 |---|---|---|---|
-| **R1** | Dev rig: master next_event (N=500, known truth) | E1.a | CLOSED negative at the toy (DEC-581/582 outcomes: 4 algebra values + capacity @256, g 1.147–1.182 vs bar 0.5, 1-gram floor binding at N=500); remainder = intent under DEC-583 (on hold); never a B-row verdict |
-| **R2** | Dev rig: master intent (curriculum step 2) | E1.b | lab receipts + the intent iteration's pre-registration (DEC-583 decides the structure; the full one-axis pre-registration under a follow-up DEC); both structures clean |
+| **R1** | Dev rig: master next_event (N=500, known truth) | E1.a | CLOSED negative at the toy (DEC-581/582 outcomes: 4 algebra values + capacity @256, g 1.147–1.182 vs bar 0.5, 1-gram floor binding at N=500); remainder = intent under DEC-583, pre-registered as DEC-586 (awaiting approval); never a B-row verdict |
+| **R2** | Dev rig: master intent (curriculum step 2) | E1.b | lab receipts + the intent iteration's pre-registration (DEC-583 decides the structure; DEC-586 freezes the fixture point, bars, branches and re-stamp); both structures clean |
 | **R3** | Port: ONE real-data run of the winning trunk under DEC-572's bars | E1.c | a pre-registered port receipt: eff_rank>=30, persona>=0.15, R2>=0.45, stable + B1 canary |
 | **R4 ← now** | Real stream: fill the remaining B rows with their producers | P1, P2, P3 | B1.2, B4.1-B4.3, B5.1-B5.2, B6.2-B6.3, B7.1-B7.2, B8.1 at the current behavior |
 | **R5** | Real stream: re-score the four judge legs (brain and brain+ledger) | P4 | judge_leg_*.json at the current behavior, both columns, controls readable |
@@ -621,7 +621,7 @@ than a measurement of the blob.
 
 ## 6. The current frontier
 
-The live frontier is P2's enabler E1 (the trunk's state-update algebra), now cut to three DEC-frozen atomic problems. E1.a (next_event mastered on the toy) is exhausted negative at N=500: all three single-axis trunk-algebra candidates are negative on the toy (DEC-577, DEC-578 and DEC-581 outcomes) and the capacity axis is negative too (DEC-582 outcome, g 1.149121 ≈ iteration 1's 1.14727, no usable rank gained) — the 1-gram floor is binding, a finite-sample estimation gap, not a trunk deficiency. E1.b (intent, curriculum step 2) is the next structure (DEC-583; the snr difficulty dial is rejected as an axis) and is on hold; E1.c (the port under DEC-572's bars) waits on both. No lab receipt flips a B-row verdict. The PRIMARY progress track meanwhile is R4: the 11 remaining B atomic problems, certification-first per the operator's 2026-11-03 directive. DEC-585 pre-registered the 8 rows it covers (B1.2, B4.1-B4.3, B5.2, B6.2, B7.1, B8.1) as 5 cfm_v2k producers with frozen gate kinds and bars in b_spec (chunk 1 = gates + producers + card branches, no measurement; chunk 2 = the sequential measurement, receipts verified before verdicts); the remaining 3 (B5.1, B6.3, B7.2) each get their own DEC.
+The live frontier is P2's enabler E1 (the trunk's state-update algebra), now cut to three DEC-frozen atomic problems. E1.a (next_event mastered on the toy) is exhausted negative at N=500: all three single-axis trunk-algebra candidates are negative on the toy (DEC-577, DEC-578 and DEC-581 outcomes) and the capacity axis is negative too (DEC-582 outcome, g 1.149121 ≈ iteration 1's 1.14727, no usable rank gained) — the 1-gram floor is binding, a finite-sample estimation gap, not a trunk deficiency. E1.b (intent, curriculum step 2) is the next structure (DEC-583; the snr difficulty dial is rejected as an axis); its full one-axis pre-registration is DEC-586 (fixture point, frozen bars in corrected units, branches, the 4-file behavior move + cfm_v2k re-stamp), drafted 2026-11-04 and awaiting operator approval; E1.c (the port under DEC-572's bars) waits on both. No lab receipt flips a B-row verdict. The PRIMARY progress track meanwhile is R4: the 11 remaining B atomic problems, certification-first per the operator's 2026-11-03 directive. DEC-585 pre-registered the 8 rows it covers (B1.2, B4.1-B4.3, B5.2, B6.2, B7.1, B8.1) as 5 cfm_v2k producers with frozen gate kinds and bars in b_spec (chunk 1 = gates + producers + card branches, no measurement; chunk 2 = the sequential measurement, receipts verified before verdicts); the remaining 3 (B5.1, B6.3, B7.2) each get their own DEC.
 
 **Why the card can read green while the encoder is not mastered — read this before
 trusting a green row.** The plan labels every measured atom with what its green PROVES

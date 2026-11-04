@@ -297,7 +297,7 @@ TRUNK = Node(
     "it is cut into atoms, each with its own DEC-frozen close.",
     "Lawful (FR v2.0 pillar 1: rank lives in the state update) · Efficient",
     frontier="live: O3 REJECTED; next_event exhausted negative at the toy (DEC-581/582); "
-    "intent on hold (DEC-583); port pending E1.a+E1.b",
+    "intent pre-registered (DEC-586, awaiting operator approval); port pending E1.a+E1.b",
 )
 
 E1_ATOMS = (
@@ -330,8 +330,9 @@ E1_ATOMS = (
         "difficulty dial is rejected as an axis).",
         "Honest · Diagnosable",
         evidence="dec",
-        dec="DEC-583 (curriculum step 2: the intent structure, one axis, at the frozen "
-        "difficulty; the full one-axis pre-registration under a follow-up DEC at resume)",
+        dec="DEC-586 (curriculum step 2: the intent structure, one axis, at the frozen "
+        "difficulty; fixture intent=5.0/br=0.3/N=500/seed=17, frozen DEC-576 bars in corrected "
+        "units, branches (i)-(v), 4-file behavior move + full cfm_v2k re-stamp)",
     ),
     Node(
         "E1.c",
@@ -519,8 +520,11 @@ FRONTIER_NOTE = (
     "DEC-578 and DEC-581 outcomes) and the capacity axis is negative too (DEC-582 outcome, g "
     "1.149121 ≈ iteration 1's 1.14727, no usable rank gained) — the 1-gram floor is binding, a "
     "finite-sample estimation gap, not a trunk deficiency. E1.b (intent, curriculum step 2) is "
-    "the next structure (DEC-583; the snr difficulty dial is rejected as an axis) and is on "
-    "hold; E1.c (the port under DEC-572's bars) waits on both. No lab receipt flips a B-row "
+    "the next structure (DEC-583; the snr difficulty dial is rejected as an axis); its full "
+    "one-axis pre-registration is DEC-586 (fixture point, frozen bars in corrected units, "
+    "branches, the 4-file behavior move + cfm_v2k re-stamp), drafted 2026-11-04 and awaiting "
+    "operator approval; E1.c (the port under DEC-572's bars) waits on both. No lab receipt "
+    "flips a B-row "
     "verdict. The PRIMARY progress track meanwhile is R4: the 11 remaining B atomic problems, "
     "certification-first per the operator's 2026-11-03 directive. DEC-585 pre-registered the 8 "
     "rows it covers (B1.2, B4.1-B4.3, B5.2, B6.2, B7.1, B8.1) as 5 cfm_v2k producers with frozen "
@@ -554,14 +558,14 @@ ROUTE: tuple[RouteStep, ...] = (
         "E1.a",
         "CLOSED negative at the toy (DEC-581/582 outcomes: 4 algebra values + capacity @256, "
         "g 1.147–1.182 vs bar 0.5, 1-gram floor binding at N=500); remainder = intent under "
-        "DEC-583 (on hold); never a B-row verdict",
+        "DEC-583, pre-registered as DEC-586 (awaiting approval); never a B-row verdict",
     ),
     RouteStep(
         "R2",
         "Dev rig: master intent (curriculum step 2)",
         "E1.b",
         "lab receipts + the intent iteration's pre-registration (DEC-583 decides the "
-        "structure; the full one-axis pre-registration under a follow-up DEC); both "
+        "structure; DEC-586 freezes the fixture point, bars, branches and re-stamp); both "
         "structures clean",
     ),
     RouteStep(

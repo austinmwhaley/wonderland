@@ -50,8 +50,10 @@ certification stays on the real stream.
   (numeric_stats / event_mass / return_ratio / total_events), so B's serving contract must expose
   the ledger as named blocks. The learned shape remains the weak object (0.0660 persona, below
   the exact counter's 0.1893), and segment structure is absent from the ledger entirely
-  (ARI ~0 vs PATH A 0.2685).** B2 (sufficiency `U`), B4 (B-only decision), B5 (minimality/cost),
-  B7 (robustness breadth) and B8 (artifact identity) remain missing or legacy.
+  (ARI ~0 vs PATH A 0.2685).** B2 sufficiency is green (U 0.9757 served / 1.0769 learned-only,
+  DEC-570; 1/5 probes carries headroom, disclosed); DEC-585 closed the 8 remaining B rows on
+  cfm_v2k to **17 PASS / 3 FAIL / 3 UNKNOWN** — the 3 reds are B4.1/B4.2 (decisions) and B6.2
+  (transfer), the 3 opens are B5.1 (minimality), B6.3 (transfer), B7.2 (robustness/missingness).
 - **Macro reframe (DEC-567, pending operator D1–D5).** The product read located the gaps:
   (1) the judge's delivery column ("brain+ledger") is a naive 851-d concat and has never scored
   the 595-d ledger alone — unsupervised geometry dilutes 0.066→0.057 while
@@ -68,8 +70,9 @@ certification stays on the real stream.
   coarse linear readout is non-inferior; B3.4/B3.5 show serving allocation cannot create the
   missing learned shape. The B+C reds are the capability consequence, not a measurement gap.
 - **Certification:** S1/S2 are fixed and fresh (DEC-561: producer batch arithmetic, not a random
-  co-tenant; 32 GB cap). S3/S4/S5 are fresh. S6 still fails until chain v4 runs the whole chain in
-  one invocation.
+  co-tenant; 32 GB cap). S3/S4/S5 are fresh. **S6 is PASS** (chain v4: six producers in one
+  invocation; re-certified at clean commit `cb7c0d9` under `d5df3a2c` and re-run on every
+  behavior move).
 - **O3 is answered: REJECT (DEC-573 outcome addendum, landed 2026-11-03).** Attempt 4 ran clean
   to a governed patience stop (574/1650, best val 5.9242, ~3.2 h) and failed the two geometry
   bars: eff_rank 3.665 (bar ≥ 30; cfm_v2k 2.419) and M4_served persona 0.046461 (bar ≥ 0.15;
@@ -149,6 +152,35 @@ certification stays on the real stream.
    config-only from the existing simulator, or does it need a new `POSITIVE` entry in
    `rabbit_hole/lab_oracles.py` (a rabbit_hole edit = behavior move = hash move +
    re-stamp)? The full one-axis pre-registration lands at resume under a follow-up DEC.
+- **DEC-585 COMPLETE (2026-11-03): all 8 cfm_v2k B rows measured.** Final card: **B 17 PASS /
+  3 FAIL / 3 UNKNOWN; 4/8 sections green** (construction, decisions-reporting B4.3, runtime,
+  calibration+identity); root FAILED 19/39 (P2 red: B4.1+B4.2; P3 red: B6.2; P4 red: 6 judge
+  rows). PASS: B1.2 construction, B4.3 invariance (reporting), B5.2 runtime, B7.1 calibration,
+  B8.1 identity. **FAIL: B4.1 dose** (all five arms 0.244–0.254 ≈ uniform chance over 4 levels),
+  **B4.2 OPE** (E_ips = T_ips = 152.93 exactly; both ridge policies collapsed to constant level
+  1, 446/446 agreement), **B6.2 donor** (y_churn_90 passes every bar, 0.7449 AUC; y_orders_90
+  fails its CI; y_value_90 fails E≥raw/fair and CI). One shared diagnosis: the frozen E is
+  certified for construction/invariance/runtime/calibration law and churn, but its DECISION
+  value on the offer-level family and its regression value on the 90-day value/order targets
+  are not yet certified. Commits `20e6b8f`+`8b7ac49`, `401eda2`+`5f4365b`, `5c17758`+`aec6d3f`.
+- **DEC-583 implementation check DONE (2026-11-04, read-only).** The `intent` fixture is NOT
+  config-only: it requires a 4-file behavior move (`rabbit_hole/lab.py` USE_CASES,
+  `rabbit_hole/lab_oracles.py` POSITIVE + `_TRANS`, `looking_glass/lab_gate.py` `_TRANSITION`,
+  `rabbit_hole/data_spec.py` log-space stable softmax — the raw intent math underflows to NaN
+  at b ≳ 5.8, oracle NaN for H ≥ 2.0). Two findings: (a) within the old math's safe range
+  (H ≤ 1.5) the speedometer headroom is 0.05–0.14 nats ≈ B-pair noise → fixture must be
+  dominant (H=5.0, headroom 0.256); (b) **the frozen g instrument has a unit bug** —
+  `transition_oracle` writes nats but `lab_measure` multiplies by ln2, deflating the oracle
+  30% and putting the `g ≤ 0.5` bar BELOW the Bayes floor on every fixture (next_event: bar
+  needs 0.8125 vs floor 0.9312; true headroom 0.0483, not DEC-582's 0.334). Correction is a
+  new instrument protocol version, applies from intent forward; closed next_event receipts
+  stand as recorded.
+- **DEC-586 DRAFTED, AWAITING OPERATOR APPROVAL (2026-11-04).** Full one-axis pre-registration:
+  fixture `DataSpec("intent", transition=True, intent=5.0, snr=1.0, base_rate=0.3,
+  n_customers=500, seed=17)` as-of 2024-09-01; verdict = frozen DEC-576 protocol in corrected
+  units (g ≤ 0.5 + beats_base + complete + control reads); branches (i)–(v) frozen; move +
+  full cfm_v2k re-stamp (13 producers) with no-op proof. Nothing executed; tree clean at
+  `aec6d3f`, behavior `d5df3a2c`.
 - **Route: R4 (certification-first, operator 2026-11-03).** The 11 open B sub-problems
    are the PRIMARY progress track. DEC-585 pre-registered the 8 rows it covers (B1.2,
    B4.1, B4.2, B4.3, B5.2, B6.2, B7.1, B8.1) as 5 cfm_v2k producers with frozen gate
@@ -206,36 +238,22 @@ next question is the learned shape, not another consumer tuning pass.
 
 ## Next 3 actions
 
-1. **DEC-585 chunk 2a (this commit): three B rows measured on cfm_v2k.** B1.2
-   construction law PASS (C1-C6 all under the frozen bars; N=20) · B5.2 runtime PASS
-   (53.0 rows/s warm, peak RSS 3.4 GB in the 32 GB slice, incremental recorded) ·
-   B6.2 donor battery **FAIL on the pre-registered axis** (y_churn_90 passes every bar:
-   E 0.7449 > table 0.6800, table_E−fair CI lo +0.0024; the two 90-day R2 targets fail:
-   y_orders_90 table_E−fair CI lo −0.0230, y_value_90 E 0.5807 < table 0.5952 — the
-   frozen E carries certified unique signal for churn, not yet for the regression
-   value-family; raw==fair value-identical recorded). The C4 no_grad mechanism fix is
-   logged in DEC-585 (no gate change). Card: B 14 PASS / 1 FAIL / 8 UNKNOWN.
-2. **DEC-585 chunk 2b (this commit): all 8 rows measured on cfm_v2k; receipts verified
-   before verdicts.** B4.3 invariance PASS (check-1 band cert: P1/P2 bit-identical,
-   P1 vs stored S 3.576e-07 / E 9.155e-05 within the 4-ULP bands, P3 eager lands EXACTLY
-   on the stored bytes, teeth over all 5000 gapped customers; check-2 marker null recorded
-   ok=False — the trunk reads target_key, −0.009 dose points; check-3 level teeth
-   ok=True) · B4.1 dose FAIL (all five arms at 0.244–0.254 ≈ uniform chance; CI lo
-   −0.0269; destroyed 0.2539 ≥ E) · B4.2 OPE FAIL (E_ips = T_ips = 152.93 exactly;
-   diagnosis: both ridge policies collapsed to constant level 1, 446/446 agreement — the
-   flat level surface defeats either representation) · B7.1 calibration PASS (ECE 0.0611
-   ≤ 0.1, n 1485/1485, 0 OOV; OOD n=0 recorded) · B8.1 identity PASS (registry/data/as_of/
-   N/checkpoint consistent, shas match the other receipts). Three mechanism fixes logged
-   in DEC-585 (C4 no_grad; b_props `y[-1]` per-step readout row per the training contract;
-   columnar B-key filter) — no gate/bar/criterion touched. Card: B 17 PASS / 3 FAIL /
-   3 UNKNOWN; 4/8 sections green; root FAILED 19/39.
-3. **Remaining B work, then fast training iteration.** The 3 UNKNOWNs are exactly the 3
-   rows without pre-registered producers (B5.1 minimality, B6.3 transfer, B7.2
-   robustness/missingness) — each under its own DEC. The 3 FAILs (B4.1, B4.2, B6.2) name
-   one shared axis: the frozen E's decision value on the offer-level family and its
-   regression value on the 90-day value/order targets are not yet certified — the
-   operator's next directive (fast training iteration; DEC-583 `intent` dev rig resumes)
-   targets exactly that, steering surface = REPORT_CARD.md.
+1. **AWAITING OPERATOR APPROVAL — DEC-586 package** (move + re-stamp, instrument unit
+   correction, fixture point). Nothing runs until then. The tree is clean at `aec6d3f`,
+   behavior `d5df3a2c`, B 17 PASS / 3 FAIL / 3 UNKNOWN.
+2. **On approval — the DEC-586 chunk, in order:** (a) the 4 behavior edits + the
+   `lab_measure` unit correction; (b) gates (principle-audit `--all --strict` rc=0, ruff,
+   fast-tier pytest, `plan.py --check`); (c) generate the intent fixture
+   (positive/negative/adversarial, `rabbit_hole/data/lab/intent/`); (d) the full cfm_v2k
+   re-stamp (S6 chain + 13 B-row producers, GPU-serialized, one job at a time) with the
+   no-op proof (receipts numerically identical, card diff header/hash/commit only, B
+   17/3/3 unchanged); (e) commit the move chunk (two-commit card pattern).
+3. **Then the fast training iteration (operator pacing):** intent dev-rig iteration 1
+   (train pos/neg/adv, measure g in corrected units, controls), outcome + MOVEMENT, then
+   iterate one axis per run. The 3 remaining B UNKNOWNs (B5.1 minimality, B6.3 transfer,
+   B7.2 robustness/missingness) each get their own DEC; the 3 FAILs (B4.1, B4.2, B6.2)
+   are the axis this dev-rig targets — a toy-green only SUGGESTS the port, it never flips
+   a B row (DEC-576 caveat).
 
 ## Operating facts
 
