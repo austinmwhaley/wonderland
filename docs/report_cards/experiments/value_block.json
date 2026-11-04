@@ -1,0 +1,46 @@
+{
+  "_meta": {
+    "behavior_hash": "d5df3a2c1211c402",
+    "command": "measure_value_block.py",
+    "generated_at": "2026-11-04T17:39:18+00:00",
+    "git_commit": "3aa12cda935dab4dfdbcfae7f16c3d7b5673a074",
+    "producer": "measure_value_block.py"
+  },
+  "complete": true,
+  "kind": "value_block_diagnostic",
+  "products_identity": {
+    "path": "/home/austin_whaley/wonderland_work/cfm_v2k",
+    "registry_sha256": "79f9768d51205252",
+    "tag": "0.11.0r490759-b64d256e3lr3e-04o4c3b5899"
+  },
+  "protocol": "DEC-590 value block: per-customer history level/quantile block appended to E; A->B ridge on y_value_90 / y_orders_90; E vs E+block vs block vs PATH-A table. DIAGNOSTIC \u2014 no gate edit.",
+  "results": {
+    "y_orders_90": {
+      "E+block_r2": 0.614291,
+      "E_r2": 0.61179,
+      "Eplusblock_minus_table_ci": [
+        -0.01237,
+        0.037247
+      ],
+      "block_r2": 0.598368,
+      "dims": 16,
+      "n_A": 3515,
+      "n_B": 1485,
+      "table_r2": 0.60467
+    },
+    "y_value_90": {
+      "E+block_r2": 0.605069,
+      "E_r2": 0.580703,
+      "Eplusblock_minus_table_ci": [
+        -0.006788,
+        0.034501
+      ],
+      "block_r2": 0.597609,
+      "dims": 16,
+      "n_A": 3515,
+      "n_B": 1485,
+      "table_r2": 0.595161
+    }
+  },
+  "seconds": 2.9
+}

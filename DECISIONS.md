@@ -11064,6 +11064,18 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     isolation).
   - **Status.** Decided; no behavior change in this entry. The response block is the first
     implementation (Step 2 of DEC-589's recommendation), then the value block.
+  - **Value block outcome (2026-11-04; receipt `value_block.json`, diagnostic).** A 16-dim
+    history level/quantile block (purchase counts/value/quantiles, 30/90-day windows,
+    recency/tenure/return rate) appended to E, A→B ridge on the frozen B6.2 targets:
+    **y_value_90 E 0.5807 → E+block 0.6051 vs table 0.5952** (block alone 0.5976);
+    **y_orders_90 E 0.6118 → E+block 0.6143 vs table 0.6047** (block alone 0.5984). The
+    paired bootstrap of E+block − table **straddles 0** (value [−0.0068, +0.0345];
+    orders [−0.0124, +0.0372]): a **point improvement, not a certified win**. The level
+    statistic is the right direction (it closes the value point gap and lifts orders above
+    the table), but the B6.2 bar needs a CI excluding 0. Next: serve the block (behavior
+    move) and run the official donor CI/controls; the learned/quantile version is the
+    strengthening step. The response block v1 remains negative; the value block is
+    point-positive/CI-neutral.
 
 
 - **DEC-591 (adaptability elevated in the principles — operator directive 2026-11-04).**
