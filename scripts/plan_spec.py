@@ -514,23 +514,32 @@ BY_ID = {n.ident: n for n in NODES}
 
 #: Rendered anywhere the plan needs to say what is being worked on now. A pointer, not a status.
 FRONTIER_NOTE = (
-    "The live frontier is P2's enabler E1 (the trunk's state-update algebra), now cut to three "
-    "DEC-frozen atomic problems. E1.a (next_event mastered on the toy) is exhausted negative at "
-    "N=500: all three single-axis trunk-algebra candidates are negative on the toy (DEC-577, "
-    "DEC-578 and DEC-581 outcomes) and the capacity axis is negative too (DEC-582 outcome, g "
-    "1.149121 ≈ iteration 1's 1.14727, no usable rank gained) — the 1-gram floor is binding, a "
-    "finite-sample estimation gap, not a trunk deficiency. E1.b (intent, curriculum step 2) is "
-    "the next structure (DEC-583; the snr difficulty dial is rejected as an axis); its full "
-    "one-axis pre-registration is DEC-586 (fixture point, frozen bars in corrected units, "
-    "branches, the 4-file behavior move + cfm_v2k re-stamp), drafted 2026-11-04 and awaiting "
-    "operator approval; E1.c (the port under DEC-572's bars) waits on both. No lab receipt "
-    "flips a B-row "
-    "verdict. The PRIMARY progress track meanwhile is R4: the 11 remaining B atomic problems, "
-    "certification-first per the operator's 2026-11-03 directive. DEC-585 pre-registered the 8 "
-    "rows it covers (B1.2, B4.1-B4.3, B5.2, B6.2, B7.1, B8.1) as 5 cfm_v2k producers with frozen "
-    "gate kinds and bars in b_spec (chunk 1 = gates + producers + card branches, no measurement; "
-    "chunk 2 = the sequential measurement, receipts verified before verdicts); the remaining 3 "
-    "(B5.1, B6.3, B7.2) each get their own DEC."
+    "The measured red is P4: the supervised and unsupervised judge legs are red "
+    "(4/8 leg-columns green; the RL and simulator legs pass). The B battery is certified "
+    "(23/23 rows, 8/8 sections); the consequence gap is a state-geometry gap, not a missing "
+    "B row. E1.a (next_event) is exhausted negative at N=500; E1.b (intent) was executed "
+    "under DEC-586 and is a clean negative: g 2.665, and the mass counter (2.633) and the "
+    "served transition signature (2.600) are marginal gains, all worse than the 1-gram. The "
+    "next E1.b escalation is a state-algebra candidate (mass/shape or signature state); "
+    "E1.c (the port) waits on that. The v1 scope (5 atoms) is not assessed on this card. "
+    "The current route is R2 (the dev-rig state algebra), with R5 (the P4 consequence) the "
+    "measured red it must eventually move."
+)
+
+#: The macro review rendered in PLAN.md and REPORT_CARD.md. A reading of the tree and the
+#: receipts, never a new gate; numbers are current at behavior 7baf744f.
+MACRO_REVIEW = (
+    "At behavior `7baf744f`, B is certified: 23/23 rows, 8/8 sections. The project root is "
+    "FAILED because the consequence gate P4 is 4/8: the supervised and unsupervised "
+    "`brain`/`brain_ledger` rows do not beat PATH A. The diagnosis is consistent across the "
+    "evidence: the state is a decayed mean and carries first-order shape (0.98–0.99) but not "
+    "the per-customer transition/segment geometry. The B4.2/B6.2/B6.3 rows pass under their "
+    "recorded protocols, but the judge geometry still fails. E1.b was executed and is a "
+    "clean negative (g 2.665; the mass counter 2.633 and the served signature 2.600 are "
+    "marginal gains, all worse than the 1-gram). Serving-side blocks (exact counter, "
+    "attribute profile, compact ledger) trade persona, future and segment rather than "
+    "satisfying all three. The v1 scope (5 atoms) is unassessed. The next move is a "
+    "state-algebra candidate (mass/shape or signature), then E1.c and the v1 gates."
 )
 
 
@@ -557,16 +566,16 @@ ROUTE: tuple[RouteStep, ...] = (
         "Dev rig: master next_event (N=500, known truth)",
         "E1.a",
         "CLOSED negative at the toy (DEC-581/582 outcomes: 4 algebra values + capacity @256, "
-        "g 1.147–1.182 vs bar 0.5, 1-gram floor binding at N=500); remainder = intent under "
-        "DEC-583, pre-registered as DEC-586 (awaiting approval); never a B-row verdict",
+        "g 1.147–1.182 vs bar 0.5, 1-gram floor binding at N=500); the intent remainder was "
+        "executed under DEC-586; never a B-row verdict",
     ),
     RouteStep(
         "R2",
         "Dev rig: master intent (curriculum step 2)",
         "E1.b",
-        "lab receipts + the intent iteration's pre-registration (DEC-583 decides the "
-        "structure; DEC-586 freezes the fixture point, bars, branches and re-stamp); both "
-        "structures clean",
+        "EXECUTED negative (DEC-586): intent fixture g 2.665; mass counter 2.633; served "
+        "signature 2.600; all worse than the 1-gram. The atom stays FRONTIER; the next "
+        "candidate is the state algebra (mass/shape or signature state).",
     ),
     RouteStep(
         "R3",
@@ -576,15 +585,17 @@ ROUTE: tuple[RouteStep, ...] = (
     ),
     RouteStep(
         "R4",
-        "Real stream: fill the remaining B rows with their producers",
+        "Real stream: certify the B foundational battery",
         "P1, P2, P3",
-        "B1.2, B4.1-B4.3, B5.1-B5.2, B6.2-B6.3, B7.1-B7.2, B8.1 at the current behavior",
+        "DONE: B certified 23/23 rows, 8/8 sections at behavior 7baf744f (DEC-594/595/596); "
+        "the B gate is no longer the constraint.",
     ),
     RouteStep(
         "R5",
         "Real stream: re-score the four judge legs (brain and brain+ledger)",
         "P4",
-        "judge_leg_*.json at the current behavior, both columns, controls readable",
+        "IN PROGRESS: 4/8 leg-columns green; the supervised/unsupervised rows are red; "
+        "served-object diagnostics recorded; the gap is state geometry, not serving.",
     ),
     RouteStep(
         "R6",
@@ -602,7 +613,7 @@ ROUTE: tuple[RouteStep, ...] = (
 )
 
 #: Which route step the work is on now (a pointer; keep it honest when the frontier moves).
-CURRENT_ROUTE = "R4"
+CURRENT_ROUTE = "R2"
 
 
 def owner(ident: str) -> str:

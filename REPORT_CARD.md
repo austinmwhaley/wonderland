@@ -1,12 +1,12 @@
 # REPORT_CARD — B foundational, then PATH B > PATH A
 
-*Generated `2026-11-04T22:39:43+00:00` · commit `ff48730` (`foundation-rebuild` · dirty) · encoder behavior `7baf744fc78ba3b3`*
+*Generated `2026-11-04T22:55:03+00:00` · commit `497436b` (`foundation-rebuild` · dirty) · encoder behavior `7baf744fc78ba3b3`*
 
 **Assessment:**
 
 - ❌ **Plan root:** FAILED — 27/39 atomic problems green · 4 FAIL · 3 DEC-frozen · 5 v1 unassessed · 19 interior · reds: P4 (4).
-- ✅ **B foundational:** CERTIFIED — 8/8 sections green.
-- ❌ **B+C consequence:** NOT DONE — 4/8 legs green · stages 6/6 · backward open: 0. Reported for diagnosis; downstream of B.
+- ✅ **B foundational:** CERTIFIED — 8/8 sections green. Scope: the 23 receipts are current at behavior `7baf744f`; the served-composition rows (B4.2/B5.1/B6.2/B6.3) read the derived `c32rvd` E, the rest the base candidate. B6.2 uses the recorded ensemble protocol and B4.2 the randomized-period protocol; both are on the receipts.
+- ❌ **B+C consequence:** NOT DONE — 4/8 legs green · stages 6/6 · backward open: 0. B is certified; this is the consequence gap (P4), not a missing B row.
 - ⚪ **Project v1:** not assessed on this card (full stack is a separate scope).
 
 The verdict is a pure function of the receipts under `docs/report_cards/experiments/`.
@@ -48,7 +48,9 @@ The goal, cut backwards into the problems that must all be solved, recursively t
 | 2 | **V1.4** red_queen composes actions | Does red_queen compose next-best actions across cadences under constraints? | — | ⚪ NOT ASSESSED |
 | 2 | **V1.5** caterpillar explains from artifacts | Does caterpillar answer 'why' from artifacts only? | — | ⚪ NOT ASSESSED |
 
-*Frontier:* The live frontier is P2's enabler E1 (the trunk's state-update algebra), now cut to three DEC-frozen atomic problems. E1.a (next_event mastered on the toy) is exhausted negative at N=500: all three single-axis trunk-algebra candidates are negative on the toy (DEC-577, DEC-578 and DEC-581 outcomes) and the capacity axis is negative too (DEC-582 outcome, g 1.149121 ≈ iteration 1's 1.14727, no usable rank gained) — the 1-gram floor is binding, a finite-sample estimation gap, not a trunk deficiency. E1.b (intent, curriculum step 2) is the next structure (DEC-583; the snr difficulty dial is rejected as an axis); its full one-axis pre-registration is DEC-586 (fixture point, frozen bars in corrected units, branches, the 4-file behavior move + cfm_v2k re-stamp), drafted 2026-11-04 and awaiting operator approval; E1.c (the port under DEC-572's bars) waits on both. No lab receipt flips a B-row verdict. The PRIMARY progress track meanwhile is R4: the 11 remaining B atomic problems, certification-first per the operator's 2026-11-03 directive. DEC-585 pre-registered the 8 rows it covers (B1.2, B4.1-B4.3, B5.2, B6.2, B7.1, B8.1) as 5 cfm_v2k producers with frozen gate kinds and bars in b_spec (chunk 1 = gates + producers + card branches, no measurement; chunk 2 = the sequential measurement, receipts verified before verdicts); the remaining 3 (B5.1, B6.3, B7.2) each get their own DEC.
+*Macro review:* At behavior `7baf744f`, B is certified: 23/23 rows, 8/8 sections. The project root is FAILED because the consequence gate P4 is 4/8: the supervised and unsupervised `brain`/`brain_ledger` rows do not beat PATH A. The diagnosis is consistent across the evidence: the state is a decayed mean and carries first-order shape (0.98–0.99) but not the per-customer transition/segment geometry. The B4.2/B6.2/B6.3 rows pass under their recorded protocols, but the judge geometry still fails. E1.b was executed and is a clean negative (g 2.665; the mass counter 2.633 and the served signature 2.600 are marginal gains, all worse than the 1-gram). Serving-side blocks (exact counter, attribute profile, compact ledger) trade persona, future and segment rather than satisfying all three. The v1 scope (5 atoms) is unassessed. The next move is a state-algebra candidate (mass/shape or signature), then E1.c and the v1 gates.
+
+*Frontier:* The measured red is P4: the supervised and unsupervised judge legs are red (4/8 leg-columns green; the RL and simulator legs pass). The B battery is certified (23/23 rows, 8/8 sections); the consequence gap is a state-geometry gap, not a missing B row. E1.a (next_event) is exhausted negative at N=500; E1.b (intent) was executed under DEC-586 and is a clean negative: g 2.665, and the mass counter (2.633) and the served transition signature (2.600) are marginal gains, all worse than the 1-gram. The next E1.b escalation is a state-algebra candidate (mass/shape or signature state); E1.c (the port) waits on that. The v1 scope (5 atoms) is not assessed on this card. The current route is R2 (the dev-rig state algebra), with R5 (the P4 consequence) the measured red it must eventually move.
 
 **Frontier readings (reported, not gated — the evidence behind E1's FRONTIER badge):**
 
@@ -57,6 +59,9 @@ The goal, cut backwards into the problems that must all be solved, recursively t
 - **dev rig · next_event iter3 (DEC-578, candidate 2)** — g 1.182 (bar ≤ 0.5, DEC-576/577) · eff_rank 1.248 · beats 1-gram: no — `lab/next_event_iter3.json` · measured under `905b4f88`
 - **dev rig · next_event iter4 (DEC-581, candidate 3)** — g 1.17 (bar ≤ 0.5, DEC-576/577) · eff_rank 1.836 · beats 1-gram: no — `lab/next_event_iter4.json` · measured under `d5df3a2c`
 - **dev rig · next_event cap256 (DEC-582, capacity @ baseline algebra)** — g 1.149 (bar ≤ 0.5, DEC-576/577) · eff_rank 1.209 · beats 1-gram: no — `lab/next_event_cap256.json` · measured under `d5df3a2c`
+- **dev rig · intent (DEC-586, E1.b)** — g 2.665 (bar ≤ 0.5, DEC-576/577) · eff_rank 1.177 · beats 1-gram: no — `lab/intent_dec586.json`
+- **dev rig · intent + mass counter** — g 2.633 (bar ≤ 0.5, DEC-576/577) · eff_rank 1.309 · beats 1-gram: no — `lab/intent_dec586_counter.json`
+- **dev rig · intent + transition signature** — g 2.6 (bar ≤ 0.5, DEC-576/577) · eff_rank 1.177 · beats 1-gram: no — `lab/intent_dec586_sig.json`
 - **real stream · O3 attempt 4 (REJECTED)** — M4 persona 0.04646 (bar ≥ 0.15, DEC-572) · served coarse R² 0.4675 (bar ≥ 0.45) — `o3axis_i/` · measured under `6a8e2663`
 
 A green atom means its frozen gate is met. For these atoms the gate certifies *measurement and attribution*, not a quality level (derived in `scripts/b_spec.py: gate_kind`, not asserted here): `B1.1`, `B2.3`, `B3.1`, `B3.2`, `B3.4`, `B3.5`, `B3.6`, `B4.3`, `B5.2`, `B6.1`, `B7.2`, `B8.1`, `B8.2`. Their quality levels are DEC-frozen and live in the receipts (`PLAN.md` §6). Read the plan before reading a green row as 'good'.

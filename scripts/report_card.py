@@ -124,6 +124,9 @@ def _frontier_readings(receipts: Path, current_hash: str) -> list[str]:
             "lab/next_event_cap256.json",
             "dev rig · next_event cap256 (DEC-582, capacity @ baseline algebra)",
         ),
+        ("lab/intent_dec586.json", "dev rig · intent (DEC-586, E1.b)"),
+        ("lab/intent_dec586_counter.json", "dev rig · intent + mass counter"),
+        ("lab/intent_dec586_sig.json", "dev rig · intent + transition signature"),
     ):
         rc = load(receipts, name)
         pos = (rc.get("positive") or {}) if isinstance(rc, dict) else {}
@@ -1262,7 +1265,11 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
 
     if b_all_green:
         b_scope = (
-            f"✅ **B foundational:** CERTIFIED — {b_green_n}/{len(B.SECTIONS)} sections green."
+            f"✅ **B foundational:** CERTIFIED — {b_green_n}/{len(B.SECTIONS)} sections green. "
+            f"Scope: the 23 receipts are current at behavior `{current_hash[:8]}`; the "
+            "served-composition rows (B4.2/B5.1/B6.2/B6.3) read the derived `c32rvd` E, the "
+            "rest the base candidate. B6.2 uses the recorded ensemble protocol and B4.2 the "
+            "randomized-period protocol; both are on the receipts."
         )
     else:
         b_scope = (
@@ -1280,7 +1287,7 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
         c_scope = (
             f"❌ **B+C consequence:** NOT DONE — {legs_green_n}/{len(J.LEG_ROWS)} legs green · "
             f"stages {stages_green_n}/{len(J.STAGE_ROWS)} · backward open: {len(open_blocking)}. "
-            "Reported for diagnosis; downstream of B."
+            "B is certified; this is the consequence gap (P4), not a missing B row."
         )
     p_scope = "⚪ **Project v1:** not assessed on this card (full stack is a separate scope)."
 
@@ -1360,6 +1367,8 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
             badge = _badge(v)
         plan_lines.append(f"| {lvl} | **{n.ident}** {n.title} | {q} | {atoms_txt} | {badge} |")
     plan_lines += [
+        "",
+        f"*Macro review:* {P.MACRO_REVIEW}",
         "",
         f"*Frontier:* {P.FRONTIER_NOTE}",
         "",

@@ -16,8 +16,12 @@ all get signal from it through simple heads.
 `brain alone` = **progress**, `brain + ledger` = **delivery** (non-inferiority). Ledger points are
 never a brain win.
 
-**Stage:** Layer 0 — the encoder is not yet mastered. B is now measured directly on the card
-(B1–B8) before the B+C consequences. **Macro reframe DEC-567 (2026-11-02):** the X-ray is far
+**Stage:** Layer 0 — **B is CERTIFIED** (23/23 rows, 8/8 sections at behavior `7baf744f`).
+The current gate is the **P4 consequence** (4/8 judge leg-columns); **E1** is FRONTIER
+(E1.b executed negative); the **v1 scope** (5 atoms) is unassessed. **Macro review
+2026-11-04:** the remaining gap is state geometry — the mean state carries first-order shape
+but not per-customer transition/segment geometry; serving-side blocks trade persona, future
+and segment rather than satisfying all three. **Macro reframe DEC-567 (2026-11-02):** the X-ray is far
 enough to locate the gaps (exposure / learning / decision objective). **Scope tightening DEC-568
 (2026-11-02):** B-only for now — every DEC-567 option re-anchored to B's own rows; B+C kept on the
 card as a reported consequence, not the near-term target. **D2–D5 accepted 2026-11-02**
