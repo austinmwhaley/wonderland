@@ -272,6 +272,14 @@ histogram half; it is not the missing piece.
   raw 0.5952/0.6047 (working stream block 0.6135/0.6205). The remaining gap is the block
   **formula** (Polars vs numpy quantiles, all-valued vs positive median, global vs cut ref).
   Next: the stream formula as the one function, then the re-stamp.
+  **v3 found two root causes:** (1) `build_sequences` picked the internal `_ts` as the
+  primary numeric, so the seq `value` (and the model's value head/block) was the **epoch
+  timestamp**, not dollars — fix: drop `_ts`/use `cfg.primary_numeric`, retrain; (2) the
+  block source must be the **full stream with a reference cut**, not the model's truncated
+  `seq_len=996` sequence — the full-stream block is the working 0.6135/0.6205; the seq
+  block is 0.5976/0.5976. Staged (`/tmp/opencode/stat_bank_v4.py` +
+  `stream_block_source.patch`); tree `d5df3a2c`. Next: stream-source block in
+  state/replica/anchors; the `value_col` retrain; the re-stamp.
 - **Route: R4 (certification-first, operator 2026-11-03).** The 11 open B sub-problems
    are the PRIMARY progress track. DEC-585 pre-registered the 8 rows it covers (B1.2,
    B4.1, B4.2, B4.3, B5.2, B6.2, B7.1, B8.1) as 5 cfm_v2k producers with frozen gate
