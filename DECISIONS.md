@@ -10742,6 +10742,52 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     `d5df3a2c`), DEC-586 awaits operator approval, and the shape program starts at the next
     forward run after that go-ahead.
 
+- **DEC-589 (decision/value head protocol v2 — diagnostic; pre-registered 2026-11-04, then
+  run).**
+  - **NODE:** B4.1 (dose), B4.2 (OPE), B6.2 (donor value/orders).
+  - **WHY-NOT.** The three real-stream decision/value rows fail while construction,
+    calibration and identity pass. The OPE head is **additive** in `[E, onehot(action)]`, so
+    its action effect is a constant: `V(E,a) = w_E·E + w_a` has the same argmax for every
+    customer — the measured constant-level policy collapse (E_ips = T_ips = 152.93; both
+    arms constant level 1). The dose uses per-level ridge heads; the donor uses ridge on
+    heavy-tailed 90-day targets. The order lab showed the ridge family underreports a
+    calibrated conditional by ~0.09 NLL. The head, not necessarily the encoder, may be the
+    bottleneck.
+  - **MOVE (one protocol, no retrain, no behavior move).** On the existing cfm_v2k `E`, with
+    the same splits, targets and frozen bars: (a) OPE — replace the additive ridge with a
+    **per-action T-learner** (`V(E,a) = E·w_a`), which lets the action effect vary by
+    customer; (b) dose — fit a **multinomial logistic on the optimal offer level** as a
+    diagnostic of E's optimal-level content (the per-level ridge stays the gate's head);
+    (c) donor — fit a **Tweedie/log-link** (and log1p+ridge) head for `y_value_90` /
+    `y_orders_90` alongside the ridge. Report both versions side by side; the frozen
+    receipts and gates are untouched, and the new receipt is diagnostic.
+  - **Rejected.** Editing a bar/gate/exclusion to adopt the new head; retraining the encoder
+    in this chunk; the row readout for these rows (already tested: no movement).
+  - **Principle.** Honest (both reported, no gate edit) · Accessible (the per-action
+    T-learner is still linear in E per action) · Diagnosable (separates head from
+    representation) · Robust (the T-learner is a per-action ridge, no new failure mode).
+  - **Status.** Pre-registered; the diagnostic run follows.
+  - **Outcome (2026-11-04; receipt `decision_head_protocol.json`, diagnostic).** On the
+    existing cfm_v2k E, same splits/targets:
+    **OPE** — the frozen additive ridge gives a constant level-1 policy (IPS 152.93); the
+    per-action T-learner gives a **non-degenerate policy** (action shares 0.1996/0.2960/
+    0.2018/0.3027) with **IPS 230.70**; the table arm also improves (additive 174.78,
+    constant level 3 → T-learner 216.69); the E−table T-learner diff is **+14.01 with CI
+    [−36.19, +55.0]** — not significant. The constant-policy collapse was an **additive-head
+    artifact**, not an encoder property; the B4.2 row still fails the significance bar, but
+    the diagnosis changes.
+    **Dose** — multinomial logistic on the optimal level: **share 0.2572 vs chance 0.25**
+    (n_A 3515 / n_B 1485); the per-level ridge gate is at chance too. The optimal level is
+    not linearly in E; a head change does not move it.
+    **Donor** — ridge remains the best head: y_value_90 **0.5807**, y_orders_90 **0.6118**;
+    Tweedie ≈ 0 (−2.6e-05 / −3.0e-04); log1p+ridge 0.5769 / 0.5979. The 90-day value/order
+    gap is a **representation** gap, not a head gap.
+    **Read.** The head protocol isolated the causes: B4.2 = additive head (fixable by a
+    T-learner; still not a significant brain-vs-table win); B4.1 and B6.2 = representation
+    (the action-response and level/value statistics are not in E). The next work is Step 2
+    of the recommendation: the action-response readout (B4.1/B4.2) and the level/value
+    readout (B6.2), one axis each, on the served path; the frozen gates stay untouched.
+
 - **DEC-588 (the shape problem is the central problem; the mass/shape split was tried at the
   interface, not in the state; the combination program; operator authorization to iterate.
   Started 2026-11-04).**

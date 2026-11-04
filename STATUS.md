@@ -299,13 +299,15 @@ next question is the learned shape, not another consumer tuning pass.
 
 ## Next 3 actions
 
-1. **Decision/value axis (B4.1/B4.2/B6.2 — the active program).** The row readout did not
-   move these rows on the real stream: B4.1 dose share_E 0.269 (CI lo -0.002, destroyed
-   0.244), B4.2 E_ips = T_ips = 152.93 (policy collapse), B6.2 orders_90 E 0.565 < raw
-   0.605, value_90 E 0.545 < raw 0.595. Pre-register one axis (the offer-level response /
-   level-conditional policy, and the value/orders regression) and measure it with the
-   frozen gates; no gate/bar/exclusion edits. The row readout stays staged for the lab/order
-   program, not the certified base.
+1. **Decision/value axis (B4.1/B4.2/B6.2 — the active program).** DEC-589 head protocol
+   (diagnostic, receipt `decision_head_protocol.json`): OPE additive ridge = constant level-1
+   policy (IPS 152.93); per-action T-learner = non-degenerate (0.20/0.30/0.20/0.30) IPS
+   **230.70**, table T-learner 216.69, E−table diff +14.01 CI **[−36.19, +55.0]** (not
+   significant) — the collapse was an additive-head artifact, not an encoder property.
+   Dose logistic 0.2572 vs chance 0.25; donor ridge best (value 0.5807 / orders 0.6118),
+   Tweedie ≈0, log1p worse — B4.1/B6.2 are representation gaps, not head gaps. Next: Step 2
+   of the recommendation — the action-response readout (B4.1/B4.2) and the level/value
+   readout (B6.2), one axis each, on the served path; gates untouched.
 2. **Re-run the shape battery after the change** (same protocol, same split): the target is
    history-transition decode above the measured **0.502** and future transition at or above
    the exact counter, with the first-order rows not regressing. This is the Phase-1

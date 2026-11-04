@@ -49,6 +49,7 @@ DEFAULT_PATTERNS = (  # principle-ok: process identities, not tuning constants
     "measure_controls.py",
     "measure_data.py",
     "measure_decision_law.py",
+    "measure_decision_head_protocol.py",
     "measure_demo_plugins.py",
     "measure_donor.py",
     "measure_dynamics_law.py",

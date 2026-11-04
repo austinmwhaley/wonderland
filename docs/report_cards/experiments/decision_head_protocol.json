@@ -1,0 +1,93 @@
+{
+  "_meta": {
+    "behavior_hash": "d5df3a2c1211c402",
+    "command": "measure_decision_head_protocol.py",
+    "generated_at": "2026-11-04T17:32:28+00:00",
+    "git_commit": "161fcd3619f01ca3cb074d957139f4509ee388ab",
+    "producer": "measure_decision_head_protocol.py"
+  },
+  "complete": true,
+  "kind": "decision_head_protocol_diagnostic",
+  "products_identity": {
+    "path": "/home/austin_whaley/wonderland_work/cfm_v2k",
+    "registry_sha256": "79f9768d51205252",
+    "tag": "0.11.0r490759-b64d256e3lr3e-04o4c3b5899"
+  },
+  "protocol": "DEC-589 v2: same cfm_v2k E, splits, targets and frozen bars; OPE additive vs per-action T-learner; dose multinomial logistic diagnostic; donor ridge vs Tweedie/log1p. DIAGNOSTIC \u2014 the frozen receipts/gates are untouched.",
+  "results": {
+    "E_additive": {
+      "action_share": {
+        "0": 0.0,
+        "1": 1.0,
+        "2": 0.0,
+        "3": 0.0
+      },
+      "ips": 221.28,
+      "n_unique_actions": 1
+    },
+    "E_t_learner": {
+      "action_share": {
+        "0": 0.1996,
+        "1": 0.296,
+        "2": 0.2018,
+        "3": 0.3027
+      },
+      "ips": 230.7,
+      "n_unique_actions": 4
+    },
+    "donor_heads": {
+      "y_orders_90": {
+        "log1p_ridge_r2": 0.597906,
+        "n_B": 1485,
+        "ridge_r2": 0.61179,
+        "tweedie_r2": -0.000299
+      },
+      "y_value_90": {
+        "log1p_ridge_r2": 0.576895,
+        "n_B": 1485,
+        "ridge_r2": 0.580703,
+        "tweedie_r2": -2.6e-05
+      }
+    },
+    "dose_logistic": {
+      "chance": 0.25,
+      "levels": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "n_A": 3515,
+      "n_B": 1485,
+      "share_E_logistic": 0.257239
+    },
+    "t_learner_diff_E_minus_table": {
+      "ci95": [
+        -36.19,
+        55.0
+      ],
+      "point": 14.01
+    },
+    "table_additive": {
+      "action_share": {
+        "0": 0.0,
+        "1": 0.0,
+        "2": 0.0,
+        "3": 1.0
+      },
+      "ips": 174.78,
+      "n_unique_actions": 1
+    },
+    "table_t_learner": {
+      "action_share": {
+        "0": 0.2758,
+        "1": 0.2556,
+        "2": 0.1413,
+        "3": 0.3274
+      },
+      "ips": 216.69,
+      "n_unique_actions": 4
+    }
+  },
+  "seconds": 7.5
+}
