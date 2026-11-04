@@ -294,14 +294,14 @@ next question is the learned shape, not another consumer tuning pass.
 
 ## Next 3 actions
 
-1. **Order-channel chunk (DEC-588 Phase 1, the active program).** Apply the staged Layer A
-   diff (`/tmp/opencode/order_shape_layerA.patch`); then the cheap axis first: serve the
-   model's own last-tick readout `y_last` as a compact block (the per-step conditional, no
-   table, still a linear consumer) and/or add the future-transition objective to raise the
-   joint. Run the order fixture (must beat the 0.8524 bigram; the pair input alone was
-   0.9675) and the history-transition decode (must rise above the measured 0.383 on the
-   fixture / 0.502 on cfm_v2k). Then the full cfm_v2k re-stamp (S6 chain + 13 B-row
-   producers, GPU-serialized, no-op proof for the B rows).
+1. **Cut-target chunk (DEC-588 Phase 1, the active program).** Apply the staged Layer A
+   diff (`/tmp/opencode/order_shape_layerA.patch`); attach the **first event after the cut**
+   as a label (no future as input) and train the final-tick state with the existing
+   `head_next` (cut-target loss). The probe says the machinery already exists inside the
+   history (0.840 NLL vs the bigram 0.800) but the served final tick is untrained (0.966).
+   Acceptance: the order fixture beats the bigram 0.8524 and the ridge on E falls below
+   0.954. Only if that fails, add the pair/order carrier; then the full cfm_v2k re-stamp
+   (S6 chain + 13 B-row producers, GPU-serialized, no-op proof for the B rows).
 2. **Re-run the shape battery after the change** (same protocol, same split): the target is
    history-transition decode above the measured **0.502** and future transition at or above
    the exact counter, with the first-order rows not regressing. This is the Phase-1

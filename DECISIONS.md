@@ -10851,6 +10851,20 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     the model's own last-tick readout `y_last` as a compact block (the per-step conditional,
     no table, still a linear consumer), and/or add the future-transition objective to raise
     the joint. Both are one-axis tests on the same fixture; the `y_last` block is cheaper.
+  - **Cut-target gap (2026-11-04, probe on the order fixture) — the deployment target is
+    out of the training distribution.** The shipped next-event head predicts the LAST event
+    from the previous tick at **0.840 NLL** (near the pooled bigram's 0.800), but the first
+    event AFTER the cut at **0.966**; the ridge on the served E gives 0.954, and adding the
+    last-tick readout `y_last` does not help (0.954). The reason is mechanical: the
+    next-event loss is trained on `y[:, :-1] -> et[:, 1:]`, so **the final tick — the served
+    state — is never a training input**. The model learns the transition inside the history
+    and then applies it at a state it was never trained on. This also weakens the four
+    negative trunk-candidate verdicts (DEC-577/578/581/582): they were judged on a state
+    that was never trained for the after-cut target. The next fix is a **cut-target
+    objective**: attach the first event after the cut as a LABEL (no future as input) and
+    train the final-tick state with the existing `head_next`; the in-sequence 0.840 shows
+    the transition machinery already exists. This is a training-target fix, not another
+    algebra, and it is cheaper than any new carrier.
   - **Staged Layer A change (not committed).** The `persistence` knob + `order_shape` use
     case + the two gate dispatch entries are a 139-line diff at
     `/tmp/opencode/order_shape_layerA.patch`; the tree was restored to behavior
