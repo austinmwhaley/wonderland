@@ -2299,6 +2299,19 @@ def forward_embedding(model, seqs, h0s=None, chunk: int = 2048, cfg=None, lb=Non
         gm = model.generic_measure(t) if hasattr(model, "generic_measure") else None
         if gm is not None:
             out = torch.cat([out, gm], dim=-1)
+        # DEC-590/592 one composition: the level block on every served path.
+        from looking_glass.stat_bank import level_blocks_from_seqs, median_gap_seqs
+
+        _med = getattr(cfg, "_stat_bank_med", None) if cfg is not None else None
+        if _med is None:
+            _med = median_gap_seqs(seqs)
+        out = torch.cat(
+            [
+                out,
+                torch.as_tensor(level_blocks_from_seqs(seqs), dtype=out.dtype, device=out.device),
+            ],
+            dim=-1,
+        )
         if lb is not None and cfg is not None:
             # Layer-B pipeline: append a LEARNED compression of the generic full-history
             # measure (the ~0.9 object; DEC-142/153/158). Fit on train, frozen at serve.

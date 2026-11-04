@@ -361,6 +361,7 @@ next question is the learned shape, not another consumer tuning pass.
 - **Repo:** `/home/austin_whaley/Documents/Repos/wonderland`, branch `foundation-rebuild`, venv `.venv`.
 - **Testbed:** Layer A v2 demo at `/home/austin_whaley/wonderland_work/demo_v2/`.
 - **Card:** `.venv/bin/python scripts/report_card.py` → `REPORT_CARD.md` (the only measurement surface).
+- **Architecture visual:** `ENCODER.html` — the at-a-glance CFM map (the cell, the timescales, the served object, the statistic bank). A map, not a card; every verdict/number stays on `REPORT_CARD.md`.
 - **Resources:** GB10, 121.63 GiB unified memory, 20 CPU cores, 1.5 TB free disk, CUDA 13.0.
   **Project maximum: 32 GB** (operator 2026-11-02). `wonderland.slice` = `MemoryMax=34359738368`;
   `safe_run` reports 32.0 GB. The slice bounds CPU/host memory only; GPU/unified allocations are
