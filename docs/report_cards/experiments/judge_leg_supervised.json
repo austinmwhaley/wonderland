@@ -2,8 +2,8 @@
   "_meta": {
     "behavior_hash": "c9f26925b418b284",
     "command": "measure_judge_law.py --products /home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k_vf2 --demo /home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/demo_v2 --legs supervised,unsupervised,rl,simulator --out-dir /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments",
-    "generated_at": "2026-11-04T19:27:57+00:00",
-    "git_commit": "63e13dabb1396bdf387f367cc2f49e4f284fed8e",
+    "generated_at": "2026-11-04T20:11:18+00:00",
+    "git_commit": "e95e978b5e1c80ebe7063209e2c6191cc6ff07f6",
     "producer": "measure_judge_law.py"
   },
   "arms": {
