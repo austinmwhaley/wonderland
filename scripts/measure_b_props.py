@@ -106,8 +106,14 @@ def _ece(conf: list[float], correct: list[float], n_bins: int = 10) -> float:
 
 
 def calibration_block(model, cfg, demo: Path, products: str) -> dict:
-    """B7.1: the shipped next-type head on split-B customers, in-window vs OOD."""
+    """B7.1 v2 (DEC-593): the shipped next-type head, temperature-calibrated on split A.
+
+    One scalar T is fit on split A by NLL; logits/T are applied on split B. The receipt's
+    primary `ece_next_event` is the calibrated ECE; the raw ECE is recorded beside it.
+    T is never fit on B. The bar is unchanged.
+    """
     import torch
+    from scipy.optimize import minimize_scalar
 
     from looking_glass.cfm_config import TIME_UNIT_SECONDS, _to_epoch
 
@@ -117,11 +123,11 @@ def calibration_block(model, cfg, demo: Path, products: str) -> dict:
     n_et = int(vocab.n_et)
     _df, _keys, split, seqs = stream_sequences(cfg, min_events=1)
     seqs_by_key = {s["customer"]: s for s in seqs}
+    akeys = [k for k, v in split.items() if v == "A" and k in seqs_by_key]
     bkeys = [k for k, v in split.items() if v == "B" and k in seqs_by_key]
 
-    # next events: first FULL-stream event strictly after the last pre-as_of tick
     full = pl.read_parquet(demo / "customer_event_stream.parquet")
-    wanted = set(bkeys)
+    wanted = set(akeys) | set(bkeys)
     full = full.filter(pl.col("customer_key").is_in(sorted(wanted)))
     grouped: dict[str, list[tuple[float, str]]] = defaultdict(list)
     for c, t, e in zip(
@@ -130,7 +136,7 @@ def calibration_block(model, cfg, demo: Path, products: str) -> dict:
         if c in wanted:
             grouped[c].append((float(_to_epoch(t)), str(e)))
     next_ev: dict[str, tuple[float, str]] = {}
-    for k in bkeys:
+    for k in list(akeys) + list(bkeys):
         evs = grouped.get(k)
         if not evs:
             continue
@@ -143,51 +149,80 @@ def calibration_block(model, cfg, demo: Path, products: str) -> dict:
     as_of_epoch = close_at(products)
     ood_cut = as_of_epoch + B.OOD_HORIZON_DAYS * TIME_UNIT_SECONDS
 
-    conf_in, corr_in, oov_in = [], [], 0
-    conf_ood, corr_ood = [], []
-    n_pop = len(next_ev)
+    logits: dict[str, np.ndarray] = {}
+    truth: dict[str, int] = {}
+    times: dict[str, float] = {}
     with torch.no_grad():
         for k, (t_next, e_next) in next_ev.items():
-            seq = seqs_by_key[k]
-            y, _h = model(seq)
-            probs = torch.softmax(model.head_next(y[-1]), dim=-1)
-            conf = float(probs.max())
-            pred = int(probs.argmax())
-            truth = vocab.et.get(e_next, n_et)
-            correct = 1.0 if pred == truth else 0.0
-            if t_next <= ood_cut:
-                conf_in.append(conf)
-                corr_in.append(correct)
-                oov_in += int(e_next not in vocab.et)
-            else:
-                conf_ood.append(conf)
-                corr_ood.append(correct)
+            y, _h = model(seqs_by_key[k])
+            logits[k] = model.head_next(y[-1]).detach().float().cpu().numpy()
+            truth[k] = int(vocab.et.get(e_next, n_et))
+            times[k] = float(t_next)
 
-    ece_in = _ece(conf_in, corr_in)
-    acc_in = float(np.mean(corr_in)) if corr_in else float("nan")
-    ece_ood = _ece(conf_ood, corr_ood)
-    acc_ood = float(np.mean(corr_ood)) if corr_ood else float("nan")
+    a_keys = [k for k in akeys if k in logits]
+    cal_logits = np.vstack([logits[k] for k in a_keys]) if a_keys else np.zeros((0, n_et + 1))
+    cal_y = np.asarray([truth[k] for k in a_keys], dtype=int)
+
+    def _nll(log_t: float) -> float:
+        z = cal_logits / float(np.exp(log_t))
+        z = z - z.max(1, keepdims=True)
+        logp = z - np.log(np.exp(z).sum(1, keepdims=True))
+        return float(-logp[np.arange(len(cal_y)), cal_y].mean())
+
+    temperature = (
+        float(np.exp(minimize_scalar(_nll, bounds=(-3.0, 3.0), method="bounded").x))
+        if len(a_keys)
+        else 1.0
+    )
+
+    def _stats(keys, temp):
+        conf, corr, oov = [], [], 0
+        for k in keys:
+            z = logits[k] / float(temp)
+            z = z - z.max()
+            p = np.exp(z)
+            p /= p.sum()
+            conf.append(float(p.max()))
+            corr.append(1.0 if int(p.argmax()) == truth[k] else 0.0)
+            oov += int(truth[k] == n_et)
+        return conf, corr, oov
+
+    b_all = [k for k in bkeys if k in logits]
+    b_in = [k for k in b_all if times[k] <= ood_cut]
+    b_ood = [k for k in b_all if times[k] > ood_cut]
+    conf_raw, corr_raw, oov_in = _stats(b_in, 1.0)
+    conf_cal, corr_cal, _ = _stats(b_in, temperature)
+    conf_ood, corr_ood, _ = _stats(b_ood, temperature)
+    ece_raw = _ece(conf_raw, corr_raw)
+    ece_cal = _ece(conf_cal, corr_cal)
+    acc = float(np.mean(corr_cal)) if corr_cal else float("nan")
     return {
         "complete": True,
-        "ece_next_event": ece_in,
-        "acc": acc_in,
-        "n_next": len(conf_in),
-        "n_pop": n_pop,
+        "protocol": "v2 (DEC-593): one temperature fit on split A; logits/T on split B",
+        "temperature": round(temperature, 6),
+        "n_calib_A": len(a_keys),
+        "ece_next_event": ece_cal,
+        "ece_next_event_raw": ece_raw,
+        "acc": acc,
+        "n_next": len(conf_cal),
+        "n_pop": len(b_all),
         "n_oov": oov_in,
         "ood": {
-            "ece": ece_ood,
-            "acc": acc_ood,
+            "ece": _ece(conf_ood, corr_ood),
+            "acc": float(np.mean(corr_ood)) if corr_ood else float("nan"),
             "n": len(conf_ood),
             "horizon_days": B.OOD_HORIZON_DAYS,
         },
         "device": dev,
         "as_of_epoch": as_of_epoch,
         "why": (
-            f"multiclass ECE (10 equal-width max-confidence bins) of the shipped "
-            f"head_next softmax on the per-step readout y_last at the last pre-as_of tick; "
-            f"population = {len(bkeys)} split-B customers, {n_pop} with a next full-stream "
-            f"event; in-window = next event within as_of+{B.OOD_HORIZON_DAYS}d, OOD beyond "
-            f"(recorded, no OOD bar); OOV event types -> the n_et bucket"
+            "multiclass ECE (10 equal-width max-confidence bins) of the shipped head_next; "
+            f"one temperature T={temperature:.4f} fit on split A (n_calib_A={len(a_keys)}) by "
+            "NLL, applied as logits/T on split B; the primary ece_next_event is the calibrated "
+            f"value, ece_next_event_raw={ece_raw:.6f} is recorded; population={len(bkeys)} "
+            f"split-B customers, {len(b_all)} with a next full-stream event; in-window <= "
+            f"as_of+{B.OOD_HORIZON_DAYS}d; OOD recorded (no OOD bar); OOV -> n_et bucket; "
+            "DEC-593 protocol v2"
         ),
         "seconds": round(time.perf_counter() - t0, 1),
     }
@@ -198,8 +233,14 @@ def main() -> int:
 
     ensure_boundary()
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--products", default="/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k")
-    ap.add_argument("--demo", default="/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/demo_v2")
+    ap.add_argument(
+        "--products",
+        default="/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k",
+    )
+    ap.add_argument(
+        "--demo",
+        default="/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/demo_v2",
+    )
     ap.add_argument("--out", default=str(OUT))
     a = ap.parse_args()
 

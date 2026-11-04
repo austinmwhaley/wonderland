@@ -280,6 +280,10 @@ histogram half; it is not the missing piece.
   block is 0.5976/0.5976. Staged (`/tmp/opencode/stat_bank_v4.py` +
   `stream_block_source.patch`); tree `d5df3a2c`. Next: stream-source block in
   state/replica/anchors; the `value_col` retrain; the re-stamp.
+- **B7.1 calibration v2 (DEC-593, 2026-11-04).** Temperature fit on split A (T=0.5394,
+  n_A 3515); calibrated ECE **0.0302** vs raw **0.1119** (bar 0.1); acc 0.358; n 1485/1485;
+  OOD n=0. B7.1 PASS under v2, raw recorded. B card **18 PASS / 2 FAIL / 3 UNKNOWN**; root
+  22/39. The remaining B reds: B4.2 OPE and B6.2 combined table+E.
 - **Route: R4 (certification-first, operator 2026-11-03).** The 11 open B sub-problems
    are the PRIMARY progress track. DEC-585 pre-registered the 8 rows it covers (B1.2,
    B4.1, B4.2, B4.3, B5.2, B6.2, B7.1, B8.1) as 5 cfm_v2k producers with frozen gate

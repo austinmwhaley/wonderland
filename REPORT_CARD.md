@@ -1,11 +1,11 @@
 # REPORT_CARD — B foundational, then PATH B > PATH A
 
-*Generated `2026-11-04T19:28:49+00:00` · commit `f724068` (`foundation-rebuild` · clean) · encoder behavior `c9f26925b418b284`*
+*Generated `2026-11-04T20:05:39+00:00` · commit `5225778` (`foundation-rebuild` · dirty) · encoder behavior `c9f26925b418b284`*
 
 **Assessment:**
 
-- ❌ **Plan root:** FAILED — 21/39 atomic problems green · 7 FAIL · 3 DEC-frozen · 5 v1 unassessed · 19 interior · reds: P2 (1), P3 (2), P4 (4).
-- ❌ **B foundational:** NOT CERTIFIED — the current gate. 4/8 sections green · 17 rows PASS · 3 FAIL · 3 UNKNOWN/MISSING.
+- ❌ **Plan root:** FAILED — 22/39 atomic problems green · 6 FAIL · 3 DEC-frozen · 5 v1 unassessed · 19 interior · reds: P2 (1), P3 (1), P4 (4).
+- ❌ **B foundational:** NOT CERTIFIED — the current gate. 4/8 sections green · 18 rows PASS · 2 FAIL · 3 UNKNOWN/MISSING.
 - ❌ **B+C consequence:** NOT DONE — 4/8 legs green · stages 6/6 · backward open: 0. Reported for diagnosis; downstream of B.
 - ⚪ **Project v1:** not assessed on this card (full stack is a separate scope).
 
@@ -16,7 +16,7 @@ Ledger points never count as progress: `brain alone` is the judge, `brain + ledg
 
 The goal, cut backwards into the problems that must all be solved, recursively to the atomic problems. This section is generated from `scripts/plan_spec.py` — the single definition of the tree; `PLAN.md` is its readable render. The plan defines no gate: every measured atomic problem is a frozen row in its B/judge section below, and an interior verdict is the worst of its children.
 
-**Plan root:** ❌ FAILED — 21/39 atomic problems green · 7 FAIL · 3 DEC-frozen (no card rows) · 5 v1 not assessed on this card · 19 interior problems.
+**Plan root:** ❌ FAILED — 22/39 atomic problems green · 6 FAIL · 3 DEC-frozen (no card rows) · 5 v1 not assessed on this card · 19 interior problems.
 
 | Level | Node | What must be true | Atomic problems | Verdict |
 |---|---|---|---|---|
@@ -35,7 +35,7 @@ The goal, cut backwards into the problems that must all be solved, recursively t
 | 1 | **P3** The donor is usable | Can simple consumers read it, does it transfer beyond our known tasks, and does it stay honest … | 11 atomic problems | ❌ FAIL |
 | 2 | **B3** Accessible | Can simple heads read what is there, at every stage? | 6 atomic problems | ✅ PASS |
 | 2 | **B6** Transferable | Does it add signal on held-out consumers? | 3 atomic problems | ❌ FAIL |
-| 2 | **B7** Robust | Does it stay honest under shift and missingness? | 2 atomic problems | ❌ FAIL |
+| 2 | **B7** Robust | Does it stay honest under shift and missingness? | 2 atomic problems | ❔ UNKNOWN |
 | 1 | **P4** The consequence is delivered | Does PATH B (frozen encoder -> simple head) beat PATH A (wide table -> GBM incumbent) for the … | 8 atomic problems | ❌ FAIL |
 | 2 | **JUDGE-supervised** supervised leg | forecast targets beat the incumbent GBM on the same splits | 2 atomic problems | ❌ FAIL |
 | 2 | **JUDGE-unsupervised** unsupervised leg | distance equals shared futures; structure beats table/random/destroyed | 2 atomic problems | ❌ FAIL |
@@ -126,13 +126,13 @@ The judge below is the **consequence** (B+C). This section is **B itself**: a ro
 | B6.2 | Donor does-not-lose / adds / controls | E vs raw, fair table, table+E; random/destroyed negative controls | quality | ❌ FAIL | encoder_donor.json: y_orders_90: table+E CI lo -0.0649 <= 0; y_value_90: table+E CI lo -0.0549 <= 0 |
 | B6.3 | Broad held-out transfer family | adds signal on a family broader than the eight judge legs | unmeasured | ❔ UNKNOWN | missing producer: measure_transfer_law.py |
 
-### B7 — Robust · ❌ FAIL
+### B7 — Robust · ❔ UNKNOWN
 
 *Does it stay honest under shift and missingness?*
 
 | # | Property | Metric | Green means | Verdict | Evidence / missing producer |
 |---|---|---|---|---|---|
-| B7.1 | ECE / OOD retention | calibration of the shipped next-type head + OOD retention | quality | ❌ FAIL | encoder_b_props.json: ECE 0.1119 > bar 0.1 |
+| B7.1 | ECE / OOD retention | calibration of the shipped next-type head + OOD retention | quality | ✅ PASS | next-type ECE 0.0302 (bar 0.1) · acc 0.35824915824915826 · n 1485/1485 (OOV 0) · OOD (as_of+30d): ece nan acc nan n 0 |
 | B7.2 | Missingness / unlogged confounders | uncertainty carried for unobserved events, never faked | unmeasured | ❔ UNKNOWN | missing producer: measure_robustness_law.py |
 
 ### B8 — Reproducible · ✅ PASS
@@ -225,7 +225,6 @@ The leg verdict above is computed from these rows; a task can PASS while its leg
 - `B B5.1 [P2·B5] Minimality k_min — missing producer: measure_minimality_law.py`
 - `B B6.2 [P3·B6] Donor does-not-lose / adds / controls — encoder_donor.json: y_orders_90: table+E CI lo -0.0649 <= 0; y_value_90: table+E CI lo -0.0549 <= 0`
 - `B B6.3 [P3·B6] Broad held-out transfer family — missing producer: measure_transfer_law.py`
-- `B B7.1 [P3·B7] ECE / OOD retention — encoder_b_props.json: ECE 0.1119 > bar 0.1`
 - `B B7.2 [P3·B7] Missingness / unlogged confounders — missing producer: measure_robustness_law.py`
 
 ## Backward requirements (from PROMPT_BACKWARD)

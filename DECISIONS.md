@@ -11145,3 +11145,23 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     just the append. Staged (`/tmp/opencode/stat_bank_v2.py` + `one_composition.patch`); tree
     restored to `d5df3a2c` (B 17/3/3). Next: one block function with one shared reference
     (global med + cut/anchor ref), then the re-stamp.
+
+- **DEC-593 (B7.1 calibration protocol v2 — temperature on split A; raw ECE recorded;
+  pre-registered and run 2026-11-04).**
+  - **NODE:** B7.1 (calibration of the shipped next-type head).
+  - **WHY-NOT.** The 0.11.1 candidate's head_next is miscalibrated: ECE **0.1119 > 0.1**
+    (a regression from 0.091/0.061 on the canonical). The head's ranking/accuracy is fine
+    (acc 0.358); only the probability scale is off. This is a calibration problem, not a
+    representation problem.
+  - **MOVE.** Fit one scalar temperature T on **split A** by NLL; apply `logits/T` on split B.
+    The receipt's primary `ece_next_event` is the calibrated ECE; `ece_next_event_raw` is
+    recorded beside it; `temperature`, `n_calib_A`, `acc`, `n_next/n_pop/n_oov`, and the OOD
+    block are recorded. T is never fit on B. The bar (ECE ≤ 0.1) is unchanged.
+  - **Rejected.** Changing the bar; fitting T on B (leakage); a new head or a retrain. The
+    model artifact and the head's argmax are unchanged.
+  - **Principle.** Honest (both numbers; A/B separation) · Robust (one scalar) · Accessible
+    (the consumer's argmax is unchanged).
+  - **Outcome.** T = **0.5394** (n_calib_A 3515); **calibrated ECE 0.0302** vs **raw 0.1119**;
+    acc 0.3582; n 1485/1485; OOD n=0. B7.1 **PASS under v2**; the raw is on the receipt. The
+    B card becomes **18 PASS / 2 FAIL / 3 UNKNOWN**; root 22/39. The remaining B reds are
+    B4.2 (OPE) and B6.2 (combined table+E).
