@@ -250,6 +250,15 @@ histogram half; it is not the missing piece.
   label tail, no future as input); the measurement reports both ridge and calibrated heads
   per block. The row readout is the worked template; the response block (B4.1/B4.2) and the
   value block (B6.2) are the first implementations.
+- **Value block rollout (DEC-590, 2026-11-04).** The level block appended to every served
+  `state_embeddings` row (5000 customers): E alone **y_value_90 0.6135 vs raw 0.5952**,
+  **y_orders_90 0.6205 vs raw 0.6047** — the first B6.2 point win on the E-vs-raw axis
+  (churn 0.7611, CI [0.0081,0.1144]). The frozen `table_E−fair` CI still fails and the
+  decision producer hits a 256 vs 272 dim mismatch (the block is not in the replica/forward
+  E): **the E composition is not universal yet.** The rollout is staged
+  (`/tmp/opencode/stat_bank.py` + `stat_bank_cfm_state.patch`); the tree is restored to
+  `d5df3a2c`. Next: one E-composition definition across state_embeddings, forward_embedding,
+  replicas and anchors; then the B6.2 table_E head and the learned block.
 - **Route: R4 (certification-first, operator 2026-11-03).** The 11 open B sub-problems
    are the PRIMARY progress track. DEC-585 pre-registered the 8 rows it covers (B1.2,
    B4.1, B4.2, B4.3, B5.2, B6.2, B7.1, B8.1) as 5 cfm_v2k producers with frozen gate

@@ -11076,6 +11076,19 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     move) and run the official donor CI/controls; the learned/quantile version is the
     strengthening step. The response block v1 remains negative; the value block is
     point-positive/CI-neutral.
+  - **Broad rollout test (2026-11-04) — a real B6.2 point win, and a composition gap.**
+    The level block appended to **every** served `state_embeddings` row (all 5000
+    customers): E alone **y_value_90 0.6135 vs raw 0.5952** and **y_orders_90 0.6205 vs
+    raw 0.6047** — the first B6.2 point win on the E-vs-raw axis (churn 0.7611, CI
+    [0.0081, 0.1144]). But the frozen `table_E−fair` CI still fails (value
+    [−0.0228, +0.0093], orders [−0.025, +0.0225]) — the combined table+E arm is below the
+    table — and the decision producer fails with a **256 vs 272 dim mismatch**: the block
+    is in `state_embeddings` but not in the replica/forward E. **The E composition is not
+    universal yet.** The rollout code is staged (`/tmp/opencode/stat_bank.py` +
+    `stat_bank_cfm_state.patch`); the tree is restored to behavior `d5df3a2c` (B 17/3/3).
+    Next: one E-composition definition (block in `state_embeddings`, `forward_embedding`,
+    the replicas and the anchors) before any re-stamp/certification; then the B6.2
+    `table_E` head and the learned block.
 
 
 - **DEC-591 (adaptability elevated in the principles — operator directive 2026-11-04).**
