@@ -10905,6 +10905,23 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     bottleneck. Code staged (437-line patch `/tmp/opencode/row_readout_het.patch`; includes
     the `persistence_spread` data knob and the row readout); tree restored to behavior
     `d5df3a2c`.
+  - **Real-stream adoption test (2026-11-04) — the row readout is a lab win, not a real-stream
+    win.** The `cfm_v2k_rr2` encoder (canonical overrides + `row_readout`) re-measured the
+    five key B rows: **B1.2 PASS, B4.3 PASS** (check-1 P1 vs stored S 3.576e-07 / E
+    6.104e-05; P3 eager 0.0), **B5.2 PASS, B7.1 PASS** (ECE 0.091 ≤ 0.1), **B8.1 PASS**;
+    **B4.1 FAIL** (dose share_E 0.269, CI lo −0.0020, destroyed 0.2444), **B4.2 FAIL**
+    (E_ips = T_ips = 152.93), **B6.2 FAIL** (orders_90 E 0.5654 < raw 0.6053; value_90 E
+    0.5450 < 0.5952). The row readout fixes lab order but does **not** move the real
+    decision/value rows. The canonical encoder stays at behavior `d5df3a2c` (B 17 PASS /
+    3 FAIL / 3 UNKNOWN); the row readout remains a staged candidate for the lab/order
+    program, not the certified base. The next axis is **decision/value** (B4.1/B4.2/B6.2),
+    not order.
+  - **GPU / vectorization check (2026-11-04, operator directive).** The row-readout/tail
+    code is vectorized (`principle_audit --all --strict` rc=0, no new blocking findings);
+    the encoder train and the decision-law replicas run on `cuda:0`; the 1.74 s/step is
+    **enqueue-bound on the existing CPU target/optimizer pipeline** (the canonical run was
+    1.72 s/step), not the new code — `_collate` measures 0.09 s/batch at B=64. A future
+    speed lever is the target construction, not the row readout.
   - **Staged Layer A change (not committed).** The `persistence` knob + `order_shape` use
     case + the two gate dispatch entries are a 139-line diff at
     `/tmp/opencode/order_shape_layerA.patch`; the tree was restored to behavior

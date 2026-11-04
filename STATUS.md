@@ -299,17 +299,13 @@ next question is the learned shape, not another consumer tuning pass.
 
 ## Next 3 actions
 
-1. **Row-readout adoption + head protocol (DEC-588 Phase 1, the active program).** Apply
-   `/tmp/opencode/row_readout.patch` + `/tmp/opencode/order_shape_layerA.patch`; retrain
-   cfm_v2k with `row_readout=true`; re-stamp (S6 chain + 13 B-row producers, no-op proof for
-   the default path). Pre-register the multiclass-head protocol (ridge vs multinomial
-   logistic; a head/gate change — both reported, operator sign-off). Measured on the order
-   fixture: row NLL 0.8586, multinomial logistic on E 0.8591, ridge 0.9523, bigram 0.81915.
-   On the **heterogeneous** fixture (persistence_spread 0.35): logistic on E **0.8185 beats
-   the pooled bigram 0.83574** (ridge 0.9443; oracle 0.7344) — the first real per-customer
-   order win.
-   Acceptance: the adopted encoder's order-fixture logistic NLL ≤ 0.86 and the B rows move
-   on the real stream; no gate/bar/exclusion edits.
+1. **Decision/value axis (B4.1/B4.2/B6.2 — the active program).** The row readout did not
+   move these rows on the real stream: B4.1 dose share_E 0.269 (CI lo -0.002, destroyed
+   0.244), B4.2 E_ips = T_ips = 152.93 (policy collapse), B6.2 orders_90 E 0.565 < raw
+   0.605, value_90 E 0.545 < raw 0.595. Pre-register one axis (the offer-level response /
+   level-conditional policy, and the value/orders regression) and measure it with the
+   frozen gates; no gate/bar/exclusion edits. The row readout stays staged for the lab/order
+   program, not the certified base.
 2. **Re-run the shape battery after the change** (same protocol, same split): the target is
    history-transition decode above the measured **0.502** and future transition at or above
    the exact counter, with the first-order rows not regressing. This is the Phase-1

@@ -124,7 +124,14 @@ def _replica_worker(kind: str, products: str, out_npz: Path) -> None:
     H = []
     with torch.no_grad():
         for seq in seqs:
-            _y, h = model(seq)
+            if getattr(model, "row_readout_on", False):
+                from looking_glass.cfm_training import _collate
+
+                _t = _collate([seq], model.vocab, model._dev())
+                _yb, hb = model.encode(_t)
+                _y, h = _yb[0], hb[0]
+            else:
+                _y, h = model(seq)
             H.append(h.cpu().numpy().astype(np.float32))
             last_epochs.append(float(seq["ts"][-1]))
     H = np.vstack(H)
@@ -450,13 +457,20 @@ def check3_level_teeth(refs) -> dict:
     the surface must respond to the axis (teeth). Recorded, not gated."""
     levels, heads_E, reps_B, P_E = refs["levels"], refs["heads_E"], refs["reps_B"], refs["P_E"]
     perm = np.random.default_rng(SEED).permutation(len(levels))
+
     # one-shot surface: stack the per-level ridge coefficients and do a single
     # (n, K) matmul — algebraically the per-level .predict() (Ridge: X @ coef_ +
     # intercept_) with zero rows for un-fitted levels, no level-axis loop
+    def _coef(h):
+        return h.coef_ if hasattr(h, "coef_") else h[-1].coef_
+
+    def _icpt(h):
+        return h.intercept_ if hasattr(h, "intercept_") else h[-1].intercept_
+
     coefs = np.array(
-        [heads_E[lvl].coef_ if lvl in heads_E else np.zeros(reps_B.shape[1]) for lvl in levels]
+        [_coef(heads_E[lvl]) if lvl in heads_E else np.zeros(reps_B.shape[1]) for lvl in levels]
     )
-    consts = np.array([float(heads_E[lvl].intercept_) if lvl in heads_E else 0.0 for lvl in levels])
+    consts = np.array([float(_icpt(heads_E[lvl])) if lvl in heads_E else 0.0 for lvl in levels])
     P_perm = reps_B @ coefs[perm].T + consts[perm]
     got = np.asarray(levels, dtype=int)[P_perm.argmax(1)]
     want = np.asarray([refs["OPT"][k] for k in refs["bk"]])
