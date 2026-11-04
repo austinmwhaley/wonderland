@@ -1,0 +1,87 @@
+{
+  "_meta": {
+    "behavior_hash": "6c0b8f4c2c7b925c",
+    "command": "scripts/measure_robustness_law.py --products looking_glass/artifacts/cfm_v2k_vf2",
+    "generated_at": "2026-11-04T21:19:14+00:00",
+    "git_commit": "32d872bb3a698d5f4455b46ce38221e1937f2725",
+    "producer": "measure_robustness_law.py"
+  },
+  "as_of": "2025-01-01",
+  "complete": true,
+  "coverage_reported": true,
+  "device": "cpu",
+  "missingness": {
+    "complete": true,
+    "fractions": [
+      {
+        "dropped": 0.1,
+        "finite_share": 1.0,
+        "mean_rel_l2": 0.093805,
+        "median_rel_l2": 0.089857,
+        "n_events_after": 1375140,
+        "n_events_before": 1527948
+      },
+      {
+        "dropped": 0.25,
+        "finite_share": 1.0,
+        "mean_rel_l2": 0.233425,
+        "median_rel_l2": 0.232131,
+        "n_events_after": 1145937,
+        "n_events_before": 1527948
+      }
+    ],
+    "n": 1485,
+    "seed": 0
+  },
+  "n_A": 3515,
+  "n_B": 1485,
+  "next_time": {
+    "calibration": "10/90% residual quantiles fit on split A, applied to split B",
+    "coverage": 0.8,
+    "finite": true,
+    "mae": 1.149739,
+    "n": 1485,
+    "n_A": 3515,
+    "n_B": 1485,
+    "nominal": 0.8,
+    "part": "uncertainty:next_time",
+    "q_hi": 3.056146,
+    "q_lo": -0.839635,
+    "units": "days"
+  },
+  "occurrence": {
+    "auc": 0.633854,
+    "brier": 0.279406,
+    "calibration_bins": [
+      {
+        "bin": 1,
+        "n": 1485,
+        "obs": 0.502357,
+        "pred": 0.320019
+      }
+    ],
+    "complete": true,
+    "horizon_days": 1.338484,
+    "horizon_rule": "median next-event gap on split A",
+    "n": 1485,
+    "part": "uncertainty:occurrence"
+  },
+  "products": {
+    "path": "looking_glass/artifacts/cfm_v2k_vf2",
+    "registry_sha256": "676e52359995983a",
+    "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
+  },
+  "response_head": {
+    "complete": true,
+    "coverage_empirical": 0.8,
+    "coverage_nominal": 0.8,
+    "n_calibrate": 74389,
+    "n_fit": 176184,
+    "sigma_randomized": 1.799396,
+    "sigma_unrandomized": 1.799396,
+    "source": "view_faceplate.response_calibration"
+  },
+  "seconds": 0.4,
+  "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899",
+  "why": "B7.2 reports the served uncertainty's measured coverage and its sensitivity to unlogged events: next-time 80% interval calibrated on A and scored on B; occurrence calibration on B; the response head's own calibration quoted; the level block recomputed under seeded 10%/25% event dropping. No missing event is treated as observed."
+}

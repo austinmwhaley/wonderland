@@ -1,12 +1,12 @@
 {
   "_meta": {
     "behavior_hash": "6c0b8f4c2c7b925c",
-    "command": "scripts/measure_minimality_law.py --products looking_glass/artifacts/cfm_v2k_vf2_c32rv",
-    "generated_at": "2026-11-04T20:59:54+00:00",
-    "git_commit": "b91e8a15fa274af7e84c0663fc0e85f3a6b5132f",
+    "command": "scripts/measure_minimality_law.py --products looking_glass/artifacts/cfm_v2k_vf2_c32rvd",
+    "generated_at": "2026-11-04T21:13:33+00:00",
+    "git_commit": "32d872bb3a698d5f4455b46ce38221e1937f2725",
     "producer": "measure_minimality_law.py"
   },
-  "block_dim": 23,
+  "block_dim": 27,
   "block_wise_certified": true,
   "certificate": {
     "block": "shape",
@@ -100,11 +100,11 @@
   "compact_receipt": {
     "complete": true,
     "dest": {
-      "path": "looking_glass/artifacts/cfm_v2k_vf2_c32rv",
-      "registry_sha256": "99c2b5122a37bfa3",
+      "path": "looking_glass/artifacts/cfm_v2k_vf2_c32rvd",
+      "registry_sha256": "965a2a10083b3fe3",
       "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
     },
-    "seconds": 36.3,
+    "seconds": 43.4,
     "source": {
       "path": "looking_glass/artifacts/cfm_v2k_vf2",
       "registry_sha256": "676e52359995983a",
@@ -129,10 +129,33 @@
             "rfm_recon"
           ],
           "view": "learned_state"
+        },
+        {
+          "action_share": 0.144225,
+          "block": "action_response",
+          "dim": 4,
+          "fit": "split-A randomized offer periods only",
+          "head": "shipping standardized RidgeCV, one per level, on the full frozen E",
+          "levels": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "n_customers": 5000,
+          "n_fit_by_level": {
+            "0": 44235,
+            "1": 44241,
+            "2": 43886,
+            "3": 44186
+          },
+          "n_fit_periods": 176548,
+          "reward": "purchase on the randomized offer day (arm_cells definition)",
+          "seconds": 4.4
         }
       ],
-      "append_dim": 7,
-      "block_dim": 23,
+      "append_dim": 11,
+      "block_dim": 27,
       "explained_variance_ratio_sum": 0.99696835,
       "level_block_dim": 16,
       "method": "shape block (leading dim-level_block_dim columns) standardized and PCA-projected to rank k on split A; level block (trailing level_block_dim columns) unchanged; published view appended unchanged",
@@ -140,7 +163,7 @@
       "pca_components_sha256": "508145fc9bbd8bd1",
       "rank": 32,
       "scaler_mean_sha256": "9ee439181c6559b7",
-      "served_dim": 55,
+      "served_dim": 59,
       "shape_dim": 256,
       "source_dim": 272,
       "source_registry_sha256": "676e52359995983a",
@@ -156,70 +179,70 @@
     "curve": [
       {
         "k": 1,
-        "mean_r2": 0.25037,
-        "worst_r2": -0.00306
+        "mean_r2": 0.28564,
+        "worst_r2": -0.00085
       },
       {
         "k": 2,
-        "mean_r2": 0.39045,
-        "worst_r2": -0.01881
+        "mean_r2": 0.44032,
+        "worst_r2": -0.0148
       },
       {
         "k": 4,
-        "mean_r2": 0.46402,
-        "worst_r2": -0.00217
+        "mean_r2": 0.49038,
+        "worst_r2": -0.00266
       },
       {
         "k": 8,
-        "mean_r2": 0.52868,
-        "worst_r2": 0.01935
+        "mean_r2": 0.54762,
+        "worst_r2": 0.00091
       },
       {
         "k": 16,
-        "mean_r2": 0.60924,
-        "worst_r2": 0.09715
+        "mean_r2": 0.5976,
+        "worst_r2": -0.00435
       },
       {
         "k": 32,
-        "mean_r2": 0.73762,
-        "worst_r2": 0.23152
+        "mean_r2": 0.73474,
+        "worst_r2": 0.0179
       },
       {
         "k": 48,
-        "mean_r2": 0.80899,
-        "worst_r2": 0.24658
+        "mean_r2": 0.80063,
+        "worst_r2": 0.24825
       },
       {
-        "k": 55,
-        "mean_r2": 0.80987,
-        "worst_r2": 0.24661
+        "k": 59,
+        "mean_r2": 0.80581,
+        "worst_r2": 0.24793
       }
     ],
-    "full_mean_r2": 0.80987,
-    "full_worst_r2": 0.24661,
+    "full_mean_r2": 0.80581,
+    "full_worst_r2": 0.24793,
     "joint_certified": false,
-    "n_targets": 64,
-    "n_targets_dropped_uninformative": 8,
+    "n_targets": 65,
+    "n_targets_dropped_uninformative": 7,
     "n_test": 439,
     "n_train": 451,
     "noise": 0.04773,
-    "path": "looking_glass/artifacts/cfm_v2k_vf2_c32rv/minimality_joint.json",
-    "retained_mean_r2": 0.80899,
-    "retained_worst_r2": 0.24658,
+    "path": "looking_glass/artifacts/cfm_v2k_vf2_c32rvd/minimality_joint.json",
+    "retained_mean_r2": 0.80063,
+    "retained_worst_r2": 0.24825,
     "rule": "k_min = smallest PCA rank whose worst-case held-out R^2 is within 1/sqrt(n_test) of the full-E R^2; certified iff k_min == full_dim",
     "targets": "joint",
-    "worst_target": "measure:n_etype"
+    "worst_target": "measure:tspan"
   },
   "joint_certified": false,
   "joint_min": 48,
   "k_min": 32,
   "products": {
-    "path": "looking_glass/artifacts/cfm_v2k_vf2_c32rv",
-    "registry_sha256": "99c2b5122a37bfa3",
+    "path": "looking_glass/artifacts/cfm_v2k_vf2_c32rvd",
+    "registry_sha256": "965a2a10083b3fe3",
     "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
   },
-  "seconds": 13.0,
-  "served_dim": 55,
+  "seconds": 12.7,
+  "served_dim": 59,
   "served_shape_dim": 32,
   "shape_certificate": {
     "block": "shape",
@@ -263,7 +286,7 @@
     "n_test": 439,
     "n_train": 451,
     "noise": 0.04773,
-    "path": "looking_glass/artifacts/cfm_v2k_vf2_c32rv/minimality_shape.json",
+    "path": "looking_glass/artifacts/cfm_v2k_vf2_c32rvd/minimality_shape.json",
     "retained_mean_r2": 0.28835,
     "retained_worst_r2": 0.03388,
     "rule": "k_min = smallest PCA rank whose worst-case held-out R^2 is within 1/sqrt(n_test) of the full-E R^2; certified iff k_min == full_dim",
@@ -275,5 +298,5 @@
     "registry_sha256": "676e52359995983a",
     "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
   },
-  "why": "Block-wise minimality on the SERVED object (DEC-215): the shape certificate sweeps the stored 32-dim shape block of the compact E and returns k_min=32 with full_dim=32; the joint certificate on the full 55-dim stored E returns the unconstrained joint floor joint_min=48. The served form keeps the shape at its certified full rank (32 == 32) plus the explicit 23-dim level block, so block_wise_certified=True. The compact transform is fit on split A; the certificates are fit/held out inside split B (n_train 451 / n_test 439). The joint floor being below the served dim is the accessibility cost of the explicit measure block, not a B5.1 failure."
+  "why": "Block-wise minimality on the SERVED object (DEC-215): the shape certificate sweeps the stored 32-dim shape block of the compact E and returns k_min=32 with full_dim=32; the joint certificate on the full 59-dim stored E returns the unconstrained joint floor joint_min=48. The served form keeps the shape at its certified full rank (32 == 32) plus the explicit 27-dim level block, so block_wise_certified=True. The compact transform is fit on split A; the certificates are fit/held out inside split B (n_train 451 / n_test 439). The joint floor being below the served dim is the accessibility cost of the explicit measure block, not a B5.1 failure."
 }

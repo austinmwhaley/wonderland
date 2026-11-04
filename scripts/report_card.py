@@ -667,6 +667,63 @@ def _eval_b_row(receipts: Path, row: B.BRow, current_hash: str) -> tuple[str, st
             f"(as_of+{B.OOD_HORIZON_DAYS}d): ece {ood.get('ece')} acc {ood.get('acc')} "
             f"n {ood.get('n')}",
         )
+    if row.kind == "transfer_law":
+        note = _meta_problem(rc, current_hash)
+        if note:
+            return J.UNKNOWN, f"{note} — re-run {row.producer}"
+        if not rc.get("complete"):
+            return J.FAIL, f"{name}: transfer family incomplete"
+        n, wins = rc.get("n_targets"), rc.get("wins")
+        mean_e, mean_t = rc.get("mean_E"), rc.get("mean_table")
+        mean_r, mean_d = rc.get("mean_random"), rc.get("mean_destroyed")
+        if not all(_finite(v) for v in (n, wins, mean_e, mean_t, mean_r, mean_d)):
+            return J.FAIL, f"{name}: transfer family values missing"
+        if int(n) < 1 or float(wins) / float(n) < B.TRANSFER_WIN_SHARE_BAR:
+            return J.FAIL, (
+                f"{name}: E wins {int(wins)}/{int(n)} < bar "
+                f"{B.TRANSFER_WIN_SHARE_BAR:.3f} of the published family"
+            )
+        if float(mean_e) <= float(mean_t):
+            return J.FAIL, f"{name}: family mean E {mean_e:.4f} <= table {mean_t:.4f}"
+        if float(mean_e) <= float(mean_r) or float(mean_e) <= float(mean_d):
+            return J.FAIL, (
+                f"{name}: family mean E {mean_e:.4f} does not beat controls "
+                f"(random {mean_r:.4f}, destroyed {mean_d:.4f})"
+            )
+        return (
+            J.PASS,
+            f"published family {int(n)} targets · E wins {int(wins)}/{int(n)} "
+            f"({float(wins) / float(n):.3f}) · family mean E {mean_e:.4f} vs table "
+            f"{mean_t:.4f} (diff {float(mean_e) - float(mean_t):+.4f}) · random "
+            f"{mean_r:.4f} / destroyed {mean_d:.4f}",
+        )
+    if row.kind == "robustness_law":
+        note = _meta_problem(rc, current_hash)
+        if note:
+            return J.UNKNOWN, f"{note} — re-run {row.producer}"
+        if not rc.get("complete") or not rc.get("coverage_reported"):
+            return J.FAIL, f"{name}: coverage receipt incomplete"
+        nt = rc.get("next_time") or {}
+        cov = nt.get("coverage")
+        if not _finite(cov):
+            return J.FAIL, f"{name}: next-time coverage not reported"
+        miss = rc.get("missingness") or {}
+        if not miss.get("complete") or not (miss.get("fractions") or []):
+            return J.FAIL, f"{name}: missingness sensitivity not reported"
+        occ = rc.get("occurrence") or {}
+        resp = rc.get("response_head") or {}
+        fracs = ", ".join(
+            f"{float(f.get('dropped', 0)):.0%}:{float(f.get('mean_rel_l2', 0)):.3f}"
+            for f in miss.get("fractions") or []
+        )
+        return (
+            J.PASS,
+            f"next-time {nt.get('nominal')} coverage {cov:.3f} (n {nt.get('n')}, MAE "
+            f"{_num(nt.get('mae'))}d) · occurrence AUC {_num(occ.get('auc'))} / Brier "
+            f"{_num(occ.get('brier'))} (h {occ.get('horizon_days')}d) · response coverage "
+            f"{resp.get('coverage_empirical')}/{resp.get('coverage_nominal')} · missingness "
+            f"mean rel L2 {fracs}",
+        )
     if row.kind == "minimality_law":
         note = _meta_problem(rc, current_hash)
         if note:

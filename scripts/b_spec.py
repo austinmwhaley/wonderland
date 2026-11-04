@@ -68,6 +68,7 @@ CONSTRUCTION_MASS_BAR = 1e-9  # C3: mass additivity worst_rel_err (S3 committed 
 CALIBRATION_ECE_BAR = 0.1  # B7.1: multiclass ECE of the shipped next-type head (legacy A5)
 OOD_HORIZON_DAYS = 30  # B7.1: the OOD-retention split (evaluation-contract literal)
 CUTOFF_ULP_COVER = 4  # B4.3 check 1: stored vs replica band = cover · 2^-23 · max|stored|
+TRANSFER_WIN_SHARE_BAR = 2.0 / 3.0  # B6.3: share of the published family where E >= table
 
 
 @dataclass(frozen=True)
@@ -125,6 +126,7 @@ REPORTING_GATE_KINDS = frozenset(
         "decision_invariance",
         "runtime_law",
         "identity_law",
+        "robustness_law",
     }
 )
 UNMEASURED_GATE_KINDS = frozenset({"missing", "legacy"})
@@ -348,8 +350,9 @@ ROWS = (
         "B6.3",
         "Broad held-out transfer family",
         "adds signal on a family broader than the eight judge legs",
-        "family published and passed",
-        "missing",
+        "E >= table on >= 2/3 of the published family; family mean > 0; controls below E",
+        "transfer_law",
+        ("encoder_transfer_law.json", ""),
         producer="measure_transfer_law.py",
     ),
     # ---- B7: robust -------------------------------------------------------------
@@ -368,8 +371,9 @@ ROWS = (
         "B7.2",
         "Missingness / unlogged confounders",
         "uncertainty carried for unobserved events, never faked",
-        "coverage reported",
-        "missing",
+        "coverage reported (next-time, occurrence, response, missingness sensitivity)",
+        "robustness_law",
+        ("encoder_robustness_law.json", ""),
         producer="measure_robustness_law.py",
     ),
     # ---- B8: reproducible -------------------------------------------------------

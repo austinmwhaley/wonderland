@@ -1,9 +1,9 @@
 {
   "_meta": {
     "behavior_hash": "6c0b8f4c2c7b925c",
-    "command": "scripts/measure_donor.py --products looking_glass/artifacts/cfm_v2k_vf2_c32rv",
-    "generated_at": "2026-11-04T21:00:02+00:00",
-    "git_commit": "b91e8a15fa274af7e84c0663fc0e85f3a6b5132f",
+    "command": "scripts/measure_donor.py --products looking_glass/artifacts/cfm_v2k_vf2_c32rvd",
+    "generated_at": "2026-11-04T21:13:41+00:00",
+    "git_commit": "32d872bb3a698d5f4455b46ce38221e1937f2725",
     "producer": "measure_donor.py"
   },
   "combined_protocol": "v2 (DEC-594): table_E = mean(table ridge, E ridge) \u2014 a fixed ensemble of the two fitted heads, no weights fit on B; the v1 hstack(fair,E) arm is recorded alongside as table_E_hstack",
@@ -19,8 +19,8 @@
   "n_B": 1485,
   "note": "raw and fair 38-column matrices are value-identical on this stream (recorded, not assumed); controls broken on fit+score sides (controls_matched, SEED); head = the shipping standardized ridge, one encoding over A+B, fit on A scored on B; E = stored state_embeddings (read, not re-encoded; the compact served object includes the level block and the response block)",
   "products": {
-    "path": "looking_glass/artifacts/cfm_v2k_vf2_c32rv",
-    "registry_sha256": "99c2b5122a37bfa3",
+    "path": "looking_glass/artifacts/cfm_v2k_vf2_c32rvd",
+    "registry_sha256": "965a2a10083b3fe3",
     "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
   },
   "raw_equals_fair": true,
@@ -101,59 +101,59 @@
       "table_seq_E": 0.4449639975661983
     }
   },
-  "seconds": 5.1,
+  "seconds": 5.4,
   "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899",
   "targets": {
     "y_churn_90": {
-      "E": 0.7375477988038043,
-      "ci_hi": 0.09765775147418236,
-      "ci_lo": 0.003389439048863053,
+      "E": 0.7387979213648397,
+      "ci_hi": 0.09846687568337557,
+      "ci_lo": 0.0037318509638692384,
       "degenerate": false,
-      "destroyed": 0.48058633199333267,
+      "destroyed": 0.5046082949308756,
       "fair": 0.6799686243749388,
-      "hstack_ci_hi": 0.13076039738705,
-      "hstack_ci_lo": -0.005445146515619236,
+      "hstack_ci_hi": 0.1396248487009989,
+      "hstack_ci_lo": 0.007397909362517943,
       "metric": "auc",
-      "random": 0.5455191685459359,
+      "random": 0.40761349151877635,
       "raw": 0.6799686243749388,
       "table": 0.6799686243749388,
-      "table_E": 0.7290420629473477,
-      "table_E_ensemble": 0.7290420629473477,
-      "table_E_hstack": 0.742768898911658
+      "table_E": 0.7296548681243259,
+      "table_E_ensemble": 0.7296548681243259,
+      "table_E_hstack": 0.7534317089910775
     },
     "y_orders_90": {
-      "E": 0.6190878582245884,
-      "ci_hi": 0.022205880080106467,
-      "ci_lo": 0.003152699125444275,
+      "E": 0.6215572983843491,
+      "ci_hi": 0.022923281550929472,
+      "ci_lo": 0.0051547897390851775,
       "degenerate": false,
-      "destroyed": -0.011299128023636529,
+      "destroyed": -0.01921892468901021,
       "fair": 0.6046734029409124,
-      "hstack_ci_hi": 0.022669547540907577,
-      "hstack_ci_lo": -0.042179024996067876,
+      "hstack_ci_hi": 0.024033255779937805,
+      "hstack_ci_lo": -0.04206120279676184,
       "metric": "r2",
-      "random": -0.005085535543666975,
+      "random": -0.01627829456394503,
       "raw": 0.6046734029409124,
       "table": 0.6046734029409124,
-      "table_E": 0.6158797380671197,
-      "table_E_ensemble": 0.6158797380671197,
-      "table_E_hstack": 0.5934319496198267
+      "table_E": 0.6171730702487876,
+      "table_E_ensemble": 0.6171730702487876,
+      "table_E_hstack": 0.5943222870852911
     },
     "y_value_90": {
-      "E": 0.6094114774109796,
-      "ci_hi": 0.025508212345884764,
-      "ci_lo": 0.0005517603994741494,
+      "E": 0.6095545349527391,
+      "ci_hi": 0.025374728774571486,
+      "ci_lo": 0.0007760160556672141,
       "degenerate": false,
-      "destroyed": -0.005666422051807007,
+      "destroyed": -0.011858009657787605,
       "fair": 0.5951598499222386,
-      "hstack_ci_hi": 0.013484456568842023,
-      "hstack_ci_lo": -0.046823870742162196,
+      "hstack_ci_hi": 0.013444159824380526,
+      "hstack_ci_lo": -0.04907729583860513,
       "metric": "r2",
-      "random": -0.009825834184709947,
+      "random": -0.025938922203531334,
       "raw": 0.5951598499222386,
       "table": 0.5951598499222386,
-      "table_E": 0.6053121444185483,
-      "table_E_ensemble": 0.6053121444185483,
-      "table_E_hstack": 0.5799874444087798
+      "table_E": 0.6054274735436682,
+      "table_E_ensemble": 0.6054274735436682,
+      "table_E_hstack": 0.5791102125217833
     }
   }
 }

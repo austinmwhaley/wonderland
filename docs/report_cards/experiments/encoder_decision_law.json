@@ -1,9 +1,9 @@
 {
   "_meta": {
     "behavior_hash": "6c0b8f4c2c7b925c",
-    "command": "scripts/measure_decision_law.py --products looking_glass/artifacts/cfm_v2k_vf2",
-    "generated_at": "2026-11-04T20:59:37+00:00",
-    "git_commit": "b91e8a15fa274af7e84c0663fc0e85f3a6b5132f",
+    "command": "scripts/measure_decision_law.py --products looking_glass/artifacts/cfm_v2k_vf2 --ope-products looking_glass/artifacts/cfm_v2k_vf2_c32rvd",
+    "generated_at": "2026-11-04T21:16:48+00:00",
+    "git_commit": "32d872bb3a698d5f4455b46ce38221e1937f2725",
     "producer": "measure_decision_law.py"
   },
   "complete": true,
@@ -20,7 +20,7 @@
     "n": 1485,
     "n_levels": 4,
     "oracle_ceiling": 0.6404,
-    "seconds": 1.9,
+    "seconds": 1.7,
     "share_E": 0.2983164983164983,
     "share_destroyed": 0.2383838383838384,
     "share_random": 0.2585858585858586,
@@ -57,7 +57,7 @@
       "none_bucket_idx": 0,
       "note": "target_key is a lab marker (which arm randomized this event); the pre-registered risk is that the trunk learned it \u2014 recorded, not gated",
       "ok": true,
-      "seconds": 30.3,
+      "seconds": 31.9,
       "share_E_prime": 0.30033670033670035,
       "share_E_stored": 0.2983164983164983
     },
@@ -77,6 +77,35 @@
     "complete": true
   },
   "decision_ope": {
+    "E_ips": 0.1598,
+    "T_ips": 0.1517,
+    "accE": 0.295,
+    "accT": 0.247,
+    "complete": true,
+    "diff": 0.0081,
+    "hi": 0.0146,
+    "ips_audit": "uniform p0=1/K; the randomized offer level is the treatment and the same-day purchase is the reward (the lab's identified arm-cell definition); periods are the offer days, not customers",
+    "level_frequencies": {
+      "0": 0.2515,
+      "1": 0.2482,
+      "2": 0.252,
+      "3": 0.2482
+    },
+    "levels": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "lo": 0.0022,
+    "n_excluded": 0,
+    "n_pop": 1485,
+    "n_test": 74746,
+    "n_train": 177017,
+    "protocol": "v2 (DEC-595): randomized daily offer periods; reward = purchase on the offer day (arm_cells); per-level ridge T-learner fit on split-A periods, scored on split-B periods; uniform IPS p0=1/K; table arm under the same head/periods",
+    "seconds": 1.8
+  },
+  "decision_ope_v1_margin": {
     "E_ips": 152.93,
     "T_ips": 152.93,
     "accE": 0.206,
@@ -111,11 +140,16 @@
   "n_A": 3515,
   "n_B": 1485,
   "n_customers": 5000,
+  "ope_products": {
+    "path": "looking_glass/artifacts/cfm_v2k_vf2_c32rvd",
+    "registry_sha256": "965a2a10083b3fe3",
+    "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
+  },
   "products": {
     "path": "looking_glass/artifacts/cfm_v2k_vf2",
     "registry_sha256": "676e52359995983a",
     "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
   },
-  "seconds": 140.5,
+  "seconds": 142.0,
   "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
 }

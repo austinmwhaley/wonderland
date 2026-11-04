@@ -7,13 +7,13 @@ decision_dose        B-only, judge-simulator-v2 geometry: one ridge head per ide
                      table arm = PATH A's wide table under the SAME head; random/destroyed
                      controls broken on BOTH fit and score sides; paired CI on
                      per-customer (hit_E - hit_table).
-decision_ope         legacy protocol v1 port, B-only: last-logged email_send offer level
-                     over the FULL stream, reward y_margin_90, 70/30 split seed 0, ridge
-                     head on [reps; onehot(action)] (the pre-registered ridge replaces the
-                     legacy XGB — B-only simple-head doctrine, same head both arms),
-                     policy argmax over K levels, IPS uniform p0 = 1/K, paired bootstrap
-                     400 seed 1. demo_v2 randomizes ONLY the offer arm (one_factor_weekly),
-                     so the legacy channel arm is RETIRED (pre-registered protocol delta).
+decision_ope         v2 (DEC-595): randomized daily offer periods; reward = purchase on
+                     the offer day (the lab's `arm_cells` definition); one ridge head per
+                     level fit on split-A periods, scored on split-B periods; policy argmax
+                     over K levels, IPS uniform p0 = 1/K, paired bootstrap over periods.
+                     The OPE arm reads the SERVED compact E (`--ope-products`, the 59-dim
+                     c32rvd object with the action-response block); the v1 90-day-margin
+                     protocol is recorded beside it (`decision_ope_v1_margin`).
 decision_invariance  check 1: as-of-cutoff band cert — two independent fresh loads (P1/P2)
                      must be bit-identical and sit within CUTOFF_ULP_COVER ULP of the
                      stored state/E; an LG_SCAN=eager witness (P3) within 4x band;
@@ -610,14 +610,166 @@ def decision_ope(bkeys, emb, truth, demo: Path) -> dict:
     }
 
 
+# --------------------------------------------------------------------------- B4.2 v2
+
+
+def decision_ope_periods(bkeys, akeys, emb, truth, demo: Path) -> dict:
+    """B4.2 v2 (DEC-595): OPE on the randomized daily offer periods.
+
+    The lab identifies the effect by randomizing the offer level; the outcome is a purchase
+    on the offer day (the `arm_cells` definition), not the 90-day margin. One shipping ridge
+    head per level is fit on split-A periods only and scored on split-B periods; the policy
+    chooses the level with the highest predicted purchase rate; IPS uses uniform p0=1/K.
+    The table arm uses the same periods and head. Paired bootstrap over B periods.
+    """
+    from looking_glass.cfm_config import _to_epoch
+
+    t0 = time.perf_counter()
+    raw = pl.read_parquet(demo / "customer_event_stream.parquet").with_columns(
+        pl.col("event_ts").cast(pl.Datetime).alias("ts")
+    )
+    # the products' as_of is the registry's; the stream is already the full history
+    reg = json.loads((demo / "manifest.json").read_text())
+    cut = float(_to_epoch(reg["as_of"])) + 86399.0
+    raw = raw.filter(pl.col("ts").dt.epoch("s") <= cut)
+    sends = (
+        raw.filter(
+            (pl.col("event_type") == "email_send")
+            & (pl.col("event_attributes").str.json_path_match("$.target_key") == "offer")
+        )
+        .with_columns(
+            pl.col("ts").dt.date().alias("d"),
+            pl.col("event_attributes").str.json_path_match("$.offer").cast(pl.Int32).alias("offer"),
+        )
+        .select(["customer_key", "d", "offer"])
+    )
+    buys = (
+        raw.filter(pl.col("event_type") == "purchase")
+        .with_columns(pl.col("ts").dt.date().alias("d"))
+        .select(["customer_key", "d"])
+        .unique()
+        .with_columns(pl.lit(1.0).alias("reward"))
+    )
+    periods = sends.join(buys, on=["customer_key", "d"], how="left").fill_null(0.0)
+    levels = sorted(int(x) for x in periods["offer"].unique().to_list())
+    K = len(levels)
+    p0 = 1.0 / K
+    aP = periods.filter(pl.col("customer_key").is_in(sorted(akeys)))
+    bP = periods.filter(pl.col("customer_key").is_in(sorted(bkeys)))
+    if aP.height < 100 or bP.height < 100:
+        return {
+            "complete": False,
+            "error": f"too few periods: A {aP.height}, B {bP.height}",
+            "seconds": round(time.perf_counter() - t0, 1),
+        }
+
+    table, tinfo = _table_matrix(Path(demo), list(akeys) + list(bkeys))
+    if table is None:
+        return {
+            "complete": False,
+            "error": f"table arm unavailable: {tinfo}",
+            "seconds": round(time.perf_counter() - t0, 1),
+        }
+
+    def _arm(Xmap):
+        XA = np.vstack([Xmap[k] for k in aP["customer_key"]])
+        XB = np.vstack([Xmap[k] for k in bP["customer_key"]])
+        acts_a = aP["offer"].to_numpy().astype(int)
+        rew_a = aP["reward"].to_numpy().astype(float)
+        acts_b = bP["offer"].to_numpy().astype(int)
+        rew_b = bP["reward"].to_numpy().astype(float)
+        pred = np.zeros((len(acts_b), K), dtype=float)
+        for j, level in enumerate(levels):
+            m = acts_a == level
+            pred[:, j] = _ridge_head().fit(XA[m], rew_a[m]).predict(XB)
+        pol = pred.argmax(1)
+        # per-customer choice (E is fixed; the per-level head is customer-level)
+        by_key = {}
+        for i, k in enumerate(bP["customer_key"]):
+            by_key.setdefault(k, np.zeros(K))
+            by_key[k] += pred[i]
+        customer_pol = {k: int(np.argmax(v)) for k, v in by_key.items()}
+        return pol, acts_b, rew_b, customer_pol
+
+    pol_e, acts_b, rew_b, cust_e = _arm(emb)
+    pol_t, _, _, cust_t = _arm(table)
+
+    def _ips(pol):
+        return float(np.mean((pol == acts_b) * rew_b / p0))
+
+    e_ips, t_ips = _ips(pol_e), _ips(pol_t)
+    rng = np.random.default_rng(1)
+    diffs = []
+    for _ in range(400):
+        bi = rng.integers(0, len(acts_b), len(acts_b))
+        diffs.append(
+            float(
+                np.mean((pol_e[bi] == acts_b[bi]) * rew_b[bi] / p0)
+                - np.mean((pol_t[bi] == acts_b[bi]) * rew_b[bi] / p0)
+            )
+        )
+    diffs = np.asarray(diffs)
+    want = {k: int(truth[k]["offer_opt"]) for k in bkeys}
+    bkeys_common = [k for k in bkeys if k in cust_e and k in want]
+    acc_e = (
+        float(np.mean([cust_e[k] == want[k] for k in bkeys_common]))
+        if bkeys_common
+        else float("nan")
+    )
+    acc_t = (
+        float(np.mean([cust_t[k] == want[k] for k in bkeys_common]))
+        if bkeys_common
+        else float("nan")
+    )
+    return {
+        "complete": True,
+        "protocol": (
+            "v2 (DEC-595): randomized daily offer periods; reward = purchase on the offer "
+            "day (arm_cells); per-level ridge T-learner fit on split-A periods, scored on "
+            "split-B periods; uniform IPS p0=1/K; table arm under the same head/periods"
+        ),
+        "levels": [int(x) for x in levels],
+        "E_ips": round(e_ips, 4),
+        "T_ips": round(t_ips, 4),
+        "diff": round(float(diffs.mean()), 4),
+        "lo": round(float(np.quantile(diffs, 0.025)), 4),
+        "hi": round(float(np.quantile(diffs, 0.975)), 4),
+        "accE": round(acc_e, 3),
+        "accT": round(acc_t, 3),
+        "n_train": int(aP.height),
+        "n_test": int(bP.height),
+        "n_pop": int(len(bkeys)),
+        "n_excluded": 0,
+        "level_frequencies": {str(lvl): round(float(np.mean(acts_b == lvl)), 4) for lvl in levels},
+        "ips_audit": (
+            "uniform p0=1/K; the randomized offer level is the treatment and the same-day "
+            "purchase is the reward (the lab's identified arm-cell definition); periods are "
+            "the offer days, not customers"
+        ),
+        "seconds": round(time.perf_counter() - t0, 1),
+    }
+
+
 # --------------------------------------------------------------------------- main
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--products", default="/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k")
-    ap.add_argument("--demo", default="/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/demo_v2")
+    ap.add_argument(
+        "--products",
+        default="/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k",
+    )
+    ap.add_argument(
+        "--demo",
+        default="/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/demo_v2",
+    )
     ap.add_argument("--out", default=str(OUT))
+    ap.add_argument(
+        "--ope-products",
+        default=None,
+        dest="ope_products",
+        help="products whose stored E the B4.2 OPE reads (default: --products)",
+    )
     ap.add_argument("--replica", choices=["canonical", "eager"], default=None)
     ap.add_argument("--replica-out", default=None)
     a = ap.parse_args()
@@ -661,6 +813,15 @@ def main() -> int:
     _reg, truth, emb, _raw_state, stream, bkeys, akeys, _as_of = _load_all(
         str(_db_path(a.products)), demo
     )
+    ope_products = a.ope_products or a.products
+    if str(Path(ope_products)) != str(Path(a.products)):
+        _r_o, _t_o, emb_ope, _raw_o, _stream_o, b_o, a_o, _as_o = _load_all(
+            str(_db_path(ope_products)), demo
+        )
+        if set(b_o) != set(bkeys) or set(a_o) != set(akeys):
+            raise SystemExit("OPE products carry a different A/B split; refusing to mix")
+    else:
+        emb_ope = emb
     print(
         f"[decision_law] {tag} on {dev}: A={len(akeys)} B={len(bkeys)} — dose, ope, "
         "then invariance (3 replica subprocesses + marker re-encode)",
@@ -679,11 +840,12 @@ def main() -> int:
         flush=True,
     )
 
-    ope = decision_ope(bkeys, emb, truth, demo)
+    ope_v1 = decision_ope(bkeys, emb, truth, demo)
+    ope = decision_ope_periods(bkeys, akeys, emb_ope, truth, demo)
     print(
-        f"[decision_law] ope: complete={ope.get('complete')} "
+        f"[decision_law] ope v2: complete={ope.get('complete')} "
         f"E_ips={ope.get('E_ips')} T_ips={ope.get('T_ips')} diff={ope.get('diff')} "
-        f"lo={ope.get('lo')}",
+        f"lo={ope.get('lo')} (v1 margin: E {ope_v1.get('E_ips')} / T {ope_v1.get('T_ips')})",
         flush=True,
     )
 
@@ -731,8 +893,10 @@ def main() -> int:
         "n_A": int(len(akeys)),
         "n_B": int(len(bkeys)),
         "products": products_identity(a.products),
+        "ope_products": products_identity(ope_products),
         "decision_dose": dose,
         "decision_ope": ope,
+        "decision_ope_v1_margin": ope_v1,
         "decision_invariance": {
             "complete": bool(
                 c1.get("ok") is not None and c2.get("complete") and c3.get("complete")

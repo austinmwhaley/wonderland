@@ -542,9 +542,9 @@ A decision that cannot be explained from its artifacts is not operable, and an e
 | `B3.6` | Served-object X-ray (ledger exposure) | complete + branch decided | reporting | measure_served_object.py |
 | `B6.1` | Objective battery (S5) | working=True | reporting | measure_battery_law.py |
 | `B6.2` | Donor does-not-lose / adds / controls | E >= raw and fair (point); table+E ensemble CI > 0; controls below E (DEC-585/594) | quality | measure_donor.py |
-| `B6.3` | Broad held-out transfer family | family published and passed | unmeasured | measure_transfer_law.py |
+| `B6.3` | Broad held-out transfer family | E >= table on >= 2/3 of the published family; family mean > 0; controls below E | quality | measure_transfer_law.py |
 | `B7.1` | ECE / OOD retention | ECE(next event) <= 0.1; OOD retention recorded (DEC-585) | quality | measure_b_props.py |
-| `B7.2` | Missingness / unlogged confounders | coverage reported | unmeasured | measure_robustness_law.py |
+| `B7.2` | Missingness / unlogged confounders | coverage reported (next-time, occurrence, response, missingness sensitivity) | reporting | measure_robustness_law.py |
 | `JUDGE-supervised-brain` | supervised :: brain alone (PROGRESS) | every non-degenerate task: paired CI excludes 0 vs PATH A; controls below brain | quality | judge_leg_supervised.json |
 | `JUDGE-supervised-brain_ledger` | supervised :: brain + ledger (DELIVERY, non-inferiority) | every non-degenerate task: paired CI excludes 0 vs PATH A; controls below brain | quality | judge_leg_supervised.json |
 | `JUDGE-unsupervised-brain` | unsupervised :: brain alone (PROGRESS) | every non-degenerate task: paired CI excludes 0 vs PATH A; controls below brain | quality | judge_leg_unsupervised.json |
@@ -627,7 +627,7 @@ The live frontier is P2's enabler E1 (the trunk's state-update algebra), now cut
 trusting a green row.** The plan labels every measured atom with what its green PROVES
 (`scripts/b_spec.py: gate_kind`, derived from the frozen gate's kind, never asserted):
 
-- **reporting** — green certifies that the measurement happened and was attributed: `B1.1`, `B8.1`, `B8.2`, `B2.3`, `B4.3`, `B5.2`, `B3.1`, `B3.2`, `B3.4`, `B3.5`, `B3.6`, `B6.1`.
+- **reporting** — green certifies that the measurement happened and was attributed: `B1.1`, `B8.1`, `B8.2`, `B2.3`, `B4.3`, `B5.2`, `B3.1`, `B3.2`, `B3.4`, `B3.5`, `B3.6`, `B6.1`, `B7.2`.
 - **quality** — green certifies a level against a frozen bar or comparator (the remaining atoms).
 
 The quality levels for the reporting-gated axes are the DEC-frozen bars (U >= 0.5 in

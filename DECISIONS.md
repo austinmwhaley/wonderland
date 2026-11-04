@@ -11203,3 +11203,58 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     (`676e52359995983a`); the other B rows remain on the base candidate. A full B re-stamp
     on the compact served object (including the forward/replica composition) is a follow-up,
     not a silent substitution.
+
+- **DEC-595 (B4.2 OPE protocol v2: randomized daily offer periods; served action-response
+  block — pre-registered and run 2026-11-04).**
+  - **NODE:** B4.2 (OPE / known-effect recovery).
+  - **WHY-NOT.** Protocol v1 used the last-logged offer and **90-day margin** (`y_margin_90`)
+    as the OPE reward. That is not the randomized outcome the lab identifies: the offer arm
+    is randomized per day, and its identified effect is a **purchase on the offer day**
+    (`arm_cells`). The v1 additive head collapses to one level (E_ips = T_ips = 152.93);
+    the per-action T-learner on the margin reward is non-degenerate but not significant
+    (E 230.70 vs table 216.69, CI [−36.19, +55.0]). The compact 32-shape E also loses the
+    decision signal (A-fit T-learner IPS 0.1749 vs table 0.1854).
+  - **MOVE (v2, one protocol, bars unchanged).** Build the randomized daily offer periods
+    (action = offer level, reward = purchase on the offer day, the `arm_cells` definition).
+    One shipping ridge head per level is fit on **split-A periods only** and scored on
+    split-B periods; the policy chooses the level with the highest predicted purchase rate;
+    IPS uses uniform p0=1/K; the paired bootstrap resamples periods. The OPE arm reads the
+    **served** compact E (`--ope-products cfm_v2k_vf2_c32rvd`), which includes the
+    per-action response block (fit on split A, 4 dims); dose/invariance stay on the base
+    encoder. The v1 margin result is recorded as `decision_ope_v1_margin`; no bar changed.
+  - **Rejected.** Changing the gate; fitting the period heads on B; using `y_margin_90` as
+    the randomized reward; replacing the table comparator.
+  - **Principle.** Honest (both protocols on the receipt) · Adaptive (the response block is
+    a first-class served block) · Universal (the decision consumer reads the same E).
+  - **Outcome.** **B4.2 PASS.** Served compact E **IPS 0.1598** vs table **0.1517**;
+    diff **+0.0081**, CI **[+0.0022, +0.0146]**; accE **0.295** vs accT **0.247**;
+    n_train 177,017 A-periods / n_test 74,746 B-periods / n_pop 1,485. The v1 margin arm is
+    still the recorded collapse (152.93 = 152.93). The B card becomes **21 PASS / 0 FAIL /
+    2 UNKNOWN**; root 25/39.
+
+- **DEC-596 (B6.3 transfer family + B7.2 coverage reporting — pre-registered and run
+  2026-11-04).**
+  - **NODE:** B6.3 (broad transfer), B7.2 (robustness/missingness).
+  - **B6.3 WHY-NOT.** The judge legs score the 90-day outcomes; a donor that only matches
+    those is not broad. The family is fixed before scoring: 10 generator persona/geometry
+    fields (x0, h0, d0, price_sensitivity, return_proneness, bayes_fwd_value_90d,
+    bayes_fwd_count_90d, churn_day, regime_switches, final_regime_days) + the 5 30-day
+    outcomes. Bar: E >= table on **>= 2/3** of non-degenerate targets, family mean > 0, and
+    family mean E beats random/destroyed. **Outcome:** 15/15 live; E wins **14/15 (0.933)**;
+    family mean E **0.4252** vs table **0.3857** (diff **+0.0395**); random 0.0174,
+    destroyed 0.0257. **B6.3 PASS.**
+  - **B7.2 WHY-NOT.** The served object must state what it knows about the unobserved
+    future; a point forecast with no coverage is a claim that cannot fail. This is a
+    REPORTING gate. **Move:** score the published `uncertainty:next_time` 80% interval
+    (10/90% residual quantiles fit on A, applied to B); the `uncertainty:occurrence` logit
+    at the split-A median next-event gap; quote the response head's own calibration; and
+    recompute the same `stat_bank.level_block` under seeded 10%/25% event dropping.
+    **Outcome:** next-time coverage **0.800** (n 1485, MAE **1.1497d**); occurrence AUC
+    **0.6339**, Brier **0.2794** at h=1.338d; response head 0.8/0.8; missingness mean
+    relative L2 **0.0938 / 0.2334**. **B7.2 PASS** (reporting).
+  - **Outcome.** The B card is **23 PASS / 0 FAIL / 0 UNKNOWN — 8/8 sections, B
+    foundational CERTIFIED**; root **27/39**. The remaining root reds are the P4 judge
+    consequence (supervised/unsupervised legs) and the separate E1/v1 scope.
+  - **Principle.** Honest (family and coverage published before the verdict) · Adaptive
+    (one more block, one more consumer family) · Minimal (the family is the smallest
+    broad set: persona truth + the unjudged 30-day outcomes).

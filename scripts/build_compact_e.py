@@ -85,6 +85,84 @@ def _load_view(db: Path, view: str) -> tuple[dict[str, dict[str, np.ndarray]], l
     return by_key, sorted(parts)
 
 
+def _action_response_block(
+    E: np.ndarray, keys: list[str], fit: np.ndarray, demo: Path, as_of: str
+) -> tuple[np.ndarray, dict]:
+    """Per-customer per-action response: P(purchase on the offer day | action).
+
+    The randomized offer periods are the lab's identified design (`arm_cells`: one action
+    per offer day, reward = a purchase that day). One shipping ridge head per level is fit
+    on split-A periods ONLY, using the FULL frozen E as the state; the K predictions for
+    every customer are the served response block. Split B periods are never used to fit.
+    """
+    import polars as pl
+
+    from measure_battery_law import _ridge_head
+
+    from looking_glass.cfm_config import _to_epoch
+
+    t0 = time.perf_counter()
+    cut = float(_to_epoch(as_of))
+    raw = pl.read_parquet(demo / "customer_event_stream.parquet").with_columns(
+        pl.col("event_ts").cast(pl.Datetime).alias("ts")
+    )
+    raw = raw.filter(pl.col("ts").dt.epoch("s") <= cut)
+    sends = (
+        raw.filter(
+            (pl.col("event_type") == "email_send")
+            & (pl.col("event_attributes").str.json_path_match("$.target_key") == "offer")
+        )
+        .with_columns(
+            pl.col("ts").dt.date().alias("d"),
+            pl.col("event_attributes").str.json_path_match("$.offer").cast(pl.Int32).alias("offer"),
+        )
+        .select(["customer_key", "d", "offer"])
+    )
+    buys = (
+        raw.filter(pl.col("event_type") == "purchase")
+        .with_columns(pl.col("ts").dt.date().alias("d"))
+        .select(["customer_key", "d"])
+        .unique()
+        .with_columns(pl.lit(1.0).alias("reward"))
+    )
+    periods = sends.join(buys, on=["customer_key", "d"], how="left").fill_null(0.0)
+    if periods.height == 0:
+        raise SystemExit("no randomized offer periods before as_of; cannot fit the response block")
+    levels = sorted(int(x) for x in periods["offer"].unique().to_list())
+    K = len(levels)
+    row = {k: i for i, k in enumerate(keys)}
+    fit_keys = {k for k, f in zip(keys, fit) if f}
+    a_periods = periods.filter(pl.col("customer_key").is_in(sorted(fit_keys)))
+    if a_periods.height < max(20, K * 5):
+        raise SystemExit(f"too few split-A periods to fit the response block: {a_periods.height}")
+    acts = a_periods["offer"].to_numpy().astype(int)
+    rew = a_periods["reward"].to_numpy().astype(float)
+    XA = np.vstack([E[row[k]] for k in a_periods["customer_key"]])
+    block = np.zeros((len(keys), K), dtype=np.float64)
+    fit_counts = {}
+    for j, level in enumerate(levels):
+        m = acts == level
+        if int(m.sum()) < 20:
+            raise SystemExit(f"too few split-A periods at offer level {level}: {int(m.sum())}")
+        head = _ridge_head().fit(XA[m], rew[m])
+        block[:, j] = head.predict(E)
+        fit_counts[str(level)] = int(m.sum())
+    meta = {
+        "block": "action_response",
+        "dim": K,
+        "levels": levels,
+        "reward": "purchase on the randomized offer day (arm_cells definition)",
+        "fit": "split-A randomized offer periods only",
+        "head": "shipping standardized RidgeCV, one per level, on the full frozen E",
+        "n_fit_periods": int(a_periods.height),
+        "n_fit_by_level": fit_counts,
+        "n_customers": len(keys),
+        "action_share": round(float(periods["reward"].mean()), 6),
+        "seconds": round(time.perf_counter() - t0, 1),
+    }
+    return block, meta
+
+
 def main() -> int:
     from safe_run import ensure_boundary
 
@@ -109,6 +187,16 @@ def main() -> int:
             "learned_state:rfm_recon); repeatable, order preserved"
         ),
     )
+    ap.add_argument(
+        "--append-action-response",
+        action="store_true",
+        dest="append_action_response",
+        help=(
+            "fit the served per-action response block on split A randomized offer periods "
+            "(head on the full frozen E) and append its K predictions"
+        ),
+    )
+    ap.add_argument("--demo", default=str(ROOT / "looking_glass/artifacts/demo_v2"))
     ap.add_argument("--overwrite", action="store_true")
     a = ap.parse_args()
 
@@ -183,6 +271,13 @@ def main() -> int:
         extra_mats.append(mat)
         append_blocks.append({"view": view_name, "parts": want, "dim": int(mat.shape[1])})
     extra = np.hstack(extra_mats) if extra_mats else np.zeros((len(keys), 0), dtype=np.float64)
+    if a.append_action_response:
+        _as_of = source_meta.get("as_of")
+        if not _as_of:
+            raise SystemExit("the source registry has no as_of; cannot fit the response block")
+        _resp, _meta = _action_response_block(E, keys, fit, Path(a.demo), str(_as_of))
+        extra = np.hstack([extra, _resp]) if extra.shape[1] else _resp
+        append_blocks.append(_meta)
 
     shape, block = E[:, :shape_dim], E[:, shape_dim:]
     scaler = StandardScaler().fit(shape[fit])

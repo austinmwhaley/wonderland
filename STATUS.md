@@ -280,6 +280,19 @@ histogram half; it is not the missing piece.
   block is 0.5976/0.5976. Staged (`/tmp/opencode/stat_bank_v4.py` +
   `stream_block_source.patch`); tree `d5df3a2c`. Next: stream-source block in
   state/replica/anchors; the `value_col` retrain; the re-stamp.
+- **B foundational CERTIFIED (DEC-595/596, 2026-11-04).** All 23 B atomic problems
+  green: 23 PASS / 0 FAIL / 0 UNKNOWN, 8/8 sections; root 27/39. B4.2 PASS on the served
+  59-dim E (`c32rvd`): randomized daily offer periods, same-day purchase reward, per-level
+  T-learner fit on A / scored on B; E IPS **0.1598** vs table **0.1517**, diff **+0.0081**,
+  CI **[+0.0022,+0.0146]**, acc 0.295 vs 0.247; the v1 90-day-margin arm is still the
+  recorded collapse (152.93 = 152.93). B6.3 PASS: published 15-target family (10
+  persona/geometry + 5 30-day outcomes), E wins **14/15**, family mean **0.4252** vs table
+  **0.3857** (diff **+0.0395**), controls 0.0174/0.0257. B7.2 PASS (reporting): next-time
+  80% coverage **0.800** (n 1485, MAE 1.1497d); occurrence AUC **0.6339** / Brier
+  **0.2794**; response head 0.8/0.8; missingness mean rel L2 0.0938/0.2334 at 10%/25%.
+  The remaining root reds are the P4 judge consequence (supervised/unsupervised legs) and
+  the E1/v1 scope. The served object is `cfm_v2k_vf2_c32rvd` (55 + 4 action-response = 59
+  dims; registry sha `965a2a10083b3fe3`).
 - **B5.1 + B6.2 green (DEC-594, 2026-11-04).** The served compact object is **55 dims**:
   32 certified shape PCs + 16 level + 4 response + 3 RFM reconstruction
   (`cfm_v2k_vf2_c32rv`). B5.1 certifies the stored shape at **k_min 32 = 32** with an
