@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ENCODER — the CFM at a glance</title>
+<style>
+  :root { --ink:#0f172a; --muted:#475569; --line:#e2e8f0; --bg:#f8fafc; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+         font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
+  .wrap { max-width:1720px; margin:0 auto; padding:0 28px; }
+  header { padding:34px 0 10px; display:flex; align-items:flex-end; justify-content:space-between; gap:24px; flex-wrap:wrap; }
+  h1 { margin:0; font-size:30px; letter-spacing:-.02em; }
+  .sub { margin:8px 0 0; color:var(--muted); font-size:15px; max-width:880px; line-height:1.45; }
+  .badges { display:flex; gap:8px; flex-wrap:wrap; }
+  .badge { font-size:12px; font-weight:700; padding:6px 10px; border-radius:999px;
+            background:#e2e8f0; color:#334155; }
+  .badge.dark { background:#0f172a; color:#e2e8f0; }
+  .diagram { margin:18px 0 8px; background:white; border:1px solid var(--line); border-radius:18px;
+              padding:10px; box-shadow:0 18px 40px -28px rgba(15,23,42,.4); }
+  .diagram svg { display:block; width:100%; height:auto; }
+  .legend { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin:10px 0 0; color:var(--muted); font-size:13px; }
+  .chip { display:inline-flex; align-items:center; gap:7px; padding:5px 10px; border-radius:999px;
+           background:white; border:1px solid var(--line); font-weight:600; }
+  .dot { width:9px; height:9px; border-radius:50%; display:inline-block; }
+  .notes { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:16px; margin:22px 0 34px; }
+  .note { background:white; border:1px solid var(--line); border-radius:14px; padding:16px 18px; }
+  .note h3 { margin:0 0 7px; font-size:14px; letter-spacing:.01em; }
+  .note p { margin:0; color:var(--muted); font-size:13px; line-height:1.5; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:12.5px;
+          background:#f1f5f9; padding:1px 5px; border-radius:5px; }
+  footer { padding:0 0 40px; color:#94a3b8; font-size:12.5px; }
+  @media (max-width:1100px) { .notes { grid-template-columns:repeat(2,1fr); } }
+  @media (max-width:640px) { .notes { grid-template-columns:1fr; } h1 { font-size:24px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>ENCODER — the CFM at a glance</h1>
+      <p class="sub">One event stream in, one frozen self-supervised encoder out. The state is a continuous-time
+      fade + tick, solved by an exact affine scan; the served object is a small set of named blocks that simple
+      consumers read. This is a map of the architecture — not a measurement card.</p>
+    </div>
+    <div class="badges">
+      <span class="badge dark">one stream → one model</span>
+      <span class="badge">frozen donor</span>
+      <span class="badge">schema-agnostic</span>
+    </div>
+  </header>
+
+  <div class="diagram">
+    <svg viewBox="0 0 1680 1270" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="CFM encoder architecture">
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+<path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8"/></marker>
+<filter id="shadow" x="-5%" y="-5%" width="110%" height="110%">
+<feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0f172a" flood-opacity="0.08"/></filter>
+</defs>
+<rect x="0" y="0" width="1680" height="1270" fill="#f8fafc"/>
+<rect x="30" y="1120" width="430" height="60" rx="10" fill="#ede9fe" stroke="#c4b5fd" stroke-width="1.4"/><text x="245.0" y="1148.45" font-size="17" font-weight="600" text-anchor="middle" fill="#0f172a">Input tokens  ·  event stream</text><text x="245.0" y="1164.45" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">customer events, attributes, value, time</text>
+<path d="M 245 1120 L 245 1100" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arrow)"/>
+<rect x="30" y="1030" width="430" height="70" rx="10" fill="#e9d5ff" stroke="#c084fc" stroke-width="1.4"/><text x="245.0" y="1055.6" font-size="16" font-weight="600" text-anchor="middle" fill="#0f172a">Schema resolution + tokenizer</text><text x="245.0" y="1071.6" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">event vocab · attrs · numerics · Δt · clock</text><text x="245.0" y="1087.6" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">no domain field names</text>
+<path d="M 245 1030 L 245 1000" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arrow)"/>
+<rect x="30" y="940" width="430" height="60" rx="10" fill="#e9d5ff" stroke="#c084fc" stroke-width="1.4"/><text x="245.0" y="968.1" font-size="16" font-weight="600" text-anchor="middle" fill="#0f172a">token  xₜ  (d = 256)</text><text x="245.0" y="984.1" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">event + attributes + value + time</text>
+<path d="M 245 940 L 245 910" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arrow)"/>
+<rect x="30" y="830" width="430" height="60" rx="10" fill="#dcfce7" stroke="#86efac" stroke-width="1.4"/><text x="245.0" y="857.75" font-size="15" font-weight="600" text-anchor="middle" fill="#0f172a">Selective SSM  ·  layer 1</text><text x="245.0" y="873.75" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">continuous-time fade + tick  ·  affine scan</text>
+<path d="M 245 830 L 245 810" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arrow)"/>
+<rect x="30" y="750" width="430" height="60" rx="10" fill="#dcfce7" stroke="#86efac" stroke-width="1.4"/><text x="245.0" y="777.75" font-size="15" font-weight="600" text-anchor="middle" fill="#0f172a">Selective SSM  ·  layer 2</text><text x="245.0" y="793.75" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">continuous-time fade + tick  ·  affine scan</text>
+<path d="M 245 750 L 245 730" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arrow)"/>
+<rect x="30" y="670" width="430" height="60" rx="10" fill="#dcfce7" stroke="#86efac" stroke-width="1.4"/><text x="245.0" y="697.75" font-size="15" font-weight="600" text-anchor="middle" fill="#0f172a">Selective SSM  ·  layer 3</text><text x="245.0" y="713.75" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">continuous-time fade + tick  ·  affine scan</text>
+<path d="M 245 670 L 245 650" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arrow)"/>
+<rect x="30" y="590" width="430" height="60" rx="10" fill="#dcfce7" stroke="#86efac" stroke-width="1.4"/><text x="245.0" y="617.75" font-size="15" font-weight="600" text-anchor="middle" fill="#0f172a">Selective SSM  ·  layer 4</text><text x="245.0" y="633.75" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">continuous-time fade + tick  ·  affine scan</text>
+<path d="M 478 900 L 505 900 L 505 580 L 478 580" fill="none" stroke="#94a3b8" stroke-width="1.6" stroke-dasharray="6 5"/>
+<text x="514" y="742" font-size="17" font-weight="800" text-anchor="start" fill="#475569">× L</text>
+<path d="M 245 590 L 245 560" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arrow)"/>
+<rect x="30" y="490" width="430" height="70" rx="10" fill="#fef9c3" stroke="#fde047" stroke-width="1.4"/><text x="245.0" y="515.6" font-size="16" font-weight="600" text-anchor="middle" fill="#0f172a">state  hₜ  (constant, 256)</text><text x="245.0" y="531.6" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">fade + tick · per-channel timescales τ</text><text x="245.0" y="547.6" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">mergeable: h(A⊕B) = h(B)∘h(A)</text>
+<path d="M 245 490 L 245 460" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arrow)"/>
+<rect x="30" y="370" width="430" height="90" rx="10" fill="#fef3c7" stroke="#fbbf24" stroke-width="1.4"/><text x="245.0" y="405.95" font-size="17" font-weight="600" text-anchor="middle" fill="#0f172a">Served E  (frozen)</text><text x="245.0" y="421.95" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">shape 256  +  counter (folded into the same width)</text><text x="245.0" y="437.95" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">candidate: + stat blocks (level/value/order/response)</text>
+<path d="M 245 370 L 245 338" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arrow)"/>
+<rect x="30" y="238" width="430" height="98" rx="10" fill="#dbeafe" stroke="#93c5fd" stroke-width="1.4"/>
+<text x="245" y="264" font-size="16" font-weight="600" text-anchor="middle" fill="#0f172a">Consumers  ·  simple heads</text>
+<rect x="44" y="284" width="124" height="22" rx="11" fill="#dcfce7"/><text x="106.0" y="299" font-size="11" font-weight="700" text-anchor="middle" fill="#166534">supervised</text>
+<rect x="181" y="284" width="124" height="22" rx="11" fill="#dcfce7"/><text x="243.0" y="299" font-size="11" font-weight="700" text-anchor="middle" fill="#166534">unsupervised</text>
+<rect x="318" y="284" width="124" height="22" rx="11" fill="#dcfce7"/><text x="380.0" y="299" font-size="11" font-weight="700" text-anchor="middle" fill="#166534">RL / decision</text>
+<path d="M 245 238 L 245 210" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arrow)"/>
+<rect x="30" y="140" width="430" height="70" rx="10" fill="#fef3c7" stroke="#fbbf24" stroke-width="1.4"/><text x="245.0" y="173.45" font-size="17" font-weight="600" text-anchor="middle" fill="#0f172a">ONE STREAM  →  ONE ENCODER</text><text x="245.0" y="189.45" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">trained per stream · frozen · never cross-applied</text>
+<rect x="540" y="40" width="580" height="380" rx="16" fill="#f0fdf4" stroke="#86efac" stroke-width="2"/>
+<text x="560" y="70" font-size="18" font-weight="800" text-anchor="start" fill="#0f172a">One event, one cell  ·  continuous-time selective scan</text>
+<text x="560" y="92" font-size="12" font-weight="400" text-anchor="start" fill="#64748b">the only recurrence: a learned decay + an additive tick, solved by an affine prefix scan</text>
+<rect x="558" y="120" width="86" height="52" rx="10" fill="#ecfdf5" stroke="#6ee7b7" stroke-width="1.4"/><text x="601.0" y="151.25" font-size="15" font-weight="600" text-anchor="middle" fill="#0f172a">xₜ</text>
+<path d="M 644 146 L 662 146" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arrow)"/>
+<rect x="662" y="120" width="84" height="52" rx="10" fill="#ecfdf5" stroke="#6ee7b7" stroke-width="1.4"/><text x="704.0" y="150.2" font-size="12" font-weight="600" text-anchor="middle" fill="#0f172a">RMSNorm</text>
+<path d="M 746 146 L 764 146" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arrow)"/>
+<rect x="764" y="120" width="104" height="52" rx="10" fill="#ecfdf5" stroke="#6ee7b7" stroke-width="1.4"/><text x="816.0" y="150.55" font-size="13" font-weight="600" text-anchor="middle" fill="#0f172a">W_d · W_B</text>
+<path d="M 868 146 L 886 146" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arrow)"/>
+<rect x="886" y="120" width="104" height="52" rx="10" fill="#ecfdf5" stroke="#6ee7b7" stroke-width="1.4"/><text x="938.0" y="150.55" font-size="13" font-weight="600" text-anchor="middle" fill="#0f172a">δ = softplus</text>
+<path d="M 990 146 L 1008 146" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arrow)"/>
+<rect x="1008" y="120" width="100" height="52" rx="10" fill="#ecfdf5" stroke="#6ee7b7" stroke-width="1.4"/><text x="1058.0" y="150.2" font-size="12" font-weight="600" text-anchor="middle" fill="#0f172a">a = e^(−δΔt)</text>
+<rect x="662" y="204" width="130" height="50" rx="10" fill="#ffedd5" stroke="#fdba74" stroke-width="1.4"/><text x="727.0" y="233.2" font-size="12" font-weight="600" text-anchor="middle" fill="#0f172a">drive  (1−a)·Bx</text>
+<rect x="812" y="198" width="210" height="62" rx="10" fill="#dcfce7" stroke="#86efac" stroke-width="1.4"/><text x="917.0" y="219.9" font-size="14" font-weight="600" text-anchor="middle" fill="#0f172a">affine prefix scan</text><text x="917.0" y="234.9" font-size="11" font-weight="400" text-anchor="middle" fill="#64748b">hₜ = aₜ hₜ₋₁ + (1−aₜ) Bxₜ</text><text x="917.0" y="249.9" font-size="11" font-weight="400" text-anchor="middle" fill="#64748b">O(log T) parallel · exact merge</text>
+<rect x="1042" y="204" width="66" height="50" rx="10" fill="#fef9c3" stroke="#fde047" stroke-width="1.4"/><text x="1075.0" y="234.25" font-size="15" font-weight="600" text-anchor="middle" fill="#0f172a">hₜ</text>
+<path d="M 1008 172 L 1008 198" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arrow)"/>
+<path d="M 1086 172 L 1086 198" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arrow)"/>
+<path d="M 792 229 L 812 229" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arrow)"/>
+<path d="M 1022 229 L 1042 229" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arrow)"/>
+<rect x="662" y="300" width="220" height="54" rx="10" fill="#ffedd5" stroke="#fdba74" stroke-width="1.4"/><text x="772.0" y="324.05" font-size="13" font-weight="600" text-anchor="middle" fill="#0f172a">W_C hₜ  +  skip</text><text x="772.0" y="340.05" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">stats path · event residual (opt-in)</text>
+<path d="M 878 262 L 878 300" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arrow)"/>
+<rect x="906" y="300" width="96" height="54" rx="10" fill="#ffedd5" stroke="#fdba74" stroke-width="1.4"/><text x="954.0" y="331.55" font-size="13" font-weight="600" text-anchor="middle" fill="#0f172a">readout yₜ</text>
+<path d="M 882 327 L 906 327" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arrow)"/>
+<rect x="1026" y="300" width="82" height="54" rx="10" fill="#dbeafe" stroke="#93c5fd" stroke-width="1.4"/><text x="1067.0" y="331.55" font-size="13" font-weight="600" text-anchor="middle" fill="#0f172a">heads</text>
+<path d="M 1002 327 L 1026 327" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arrow)"/>
+<text x="558" y="392" font-size="12" font-weight="400" text-anchor="start" fill="#64748b">the state is a fade + tick: no attention over raw history, no growing cache</text>
+<rect x="540" y="450" width="580" height="230" rx="16" fill="#f0fdf4" stroke="#86efac" stroke-width="2"/>
+<text x="560" y="480" font-size="18" font-weight="800" text-anchor="start" fill="#0f172a">Multi-scale memory  ·  timescales from the stream</text>
+<text x="560" y="502" font-size="11.5" font-weight="400" text-anchor="start" fill="#64748b">canonical: one wide SSM with 256 per-channel τ; the expert bank is the parallel variant</text>
+<rect x="560" y="520" width="126" height="54" rx="10" fill="#dcfce7" stroke="#86efac" stroke-width="1.4"/><text x="623.0" y="544.55" font-size="13" font-weight="600" text-anchor="middle" fill="#0f172a">τ₁ fast</text><text x="623.0" y="559.55" font-size="11" font-weight="400" text-anchor="middle" fill="#64748b">scan</text>
+<path d="M 623 574 L 623 604" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arrow)"/>
+<rect x="698" y="520" width="126" height="54" rx="10" fill="#dcfce7" stroke="#86efac" stroke-width="1.4"/><text x="761.0" y="544.55" font-size="13" font-weight="600" text-anchor="middle" fill="#0f172a">τ₂</text><text x="761.0" y="559.55" font-size="11" font-weight="400" text-anchor="middle" fill="#64748b">scan</text>
+<path d="M 761 574 L 761 604" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arrow)"/>
+<rect x="836" y="520" width="126" height="54" rx="10" fill="#dcfce7" stroke="#86efac" stroke-width="1.4"/><text x="899.0" y="544.55" font-size="13" font-weight="600" text-anchor="middle" fill="#0f172a">τ₃</text><text x="899.0" y="559.55" font-size="11" font-weight="400" text-anchor="middle" fill="#64748b">scan</text>
+<path d="M 899 574 L 899 604" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arrow)"/>
+<rect x="974" y="520" width="126" height="54" rx="10" fill="#dcfce7" stroke="#86efac" stroke-width="1.4"/><text x="1037.0" y="544.55" font-size="13" font-weight="600" text-anchor="middle" fill="#0f172a">τ₄ slow</text><text x="1037.0" y="559.55" font-size="11" font-weight="400" text-anchor="middle" fill="#64748b">scan</text>
+<path d="M 1037 574 L 1037 604" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arrow)"/>
+<rect x="560" y="604" width="546" height="48" rx="10" fill="#fef9c3" stroke="#fde047" stroke-width="1.4"/><text x="833.0" y="625.9" font-size="14" font-weight="600" text-anchor="middle" fill="#0f172a">concat readouts  →  public state</text><text x="833.0" y="640.9" font-size="11" font-weight="400" text-anchor="middle" fill="#64748b">per-channel / per-expert horizons; band isolation and slow intent are opt-in</text>
+<text x="560" y="672" font-size="11.5" font-weight="400" text-anchor="start" fill="#64748b">τ from the stream&#x27;s measured gap / autocorrelation spectrum</text>
+<rect x="540" y="710" width="580" height="360" rx="16" fill="#fffbeb" stroke="#fbbf24" stroke-width="2"/>
+<text x="560" y="740" font-size="18" font-weight="800" text-anchor="start" fill="#0f172a">The served object  E  ·  what a consumer reads</text>
+<text x="560" y="762" font-size="12" font-weight="400" text-anchor="start" fill="#64748b">one frozen vector per customer at the cut; the consumer is a simple head</text>
+<rect x="558" y="786" width="170" height="64" rx="10" fill="#fef9c3" stroke="#fde047" stroke-width="1.4"/><text x="643.0" y="808.9" font-size="14" font-weight="600" text-anchor="middle" fill="#0f172a">shape</text><text x="643.0" y="823.9" font-size="11" font-weight="400" text-anchor="middle" fill="#64748b">boundary(proj(h))</text><text x="643.0" y="838.9" font-size="11" font-weight="400" text-anchor="middle" fill="#64748b">per-sample orthogonal R</text>
+<rect x="740" y="786" width="170" height="64" rx="10" fill="#fef3c7" stroke="#fbbf24" stroke-width="1.4"/><text x="825.0" y="808.9" font-size="14" font-weight="600" text-anchor="middle" fill="#0f172a">mass</text><text x="825.0" y="823.9" font-size="11" font-weight="400" text-anchor="middle" fill="#64748b">counter signed_log1p(M)</text><text x="825.0" y="838.9" font-size="11" font-weight="400" text-anchor="middle" fill="#64748b">anchored additive totals</text>
+<rect x="922" y="786" width="180" height="64" rx="10" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.4"/><text x="1012.0" y="808.9" font-size="14" font-weight="600" text-anchor="middle" fill="#0f172a">measure / ledger</text><text x="1012.0" y="823.9" font-size="11" font-weight="400" text-anchor="middle" fill="#64748b">schema-derived 595-d</text><text x="1012.0" y="838.9" font-size="11" font-weight="400" text-anchor="middle" fill="#64748b">served as a block</text>
+<rect x="558" y="878" width="250" height="64" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.4" stroke-dasharray="6 5"/><text x="683.0" y="907.55" font-size="13" font-weight="600" text-anchor="middle" fill="#0f172a">stat blocks  (candidate)</text><text x="683.0" y="922.55" font-size="11" font-weight="400" text-anchor="middle" fill="#64748b">level · order · response · value · uncertainty</text>
+<rect x="840" y="878" width="262" height="64" rx="10" fill="#fef3c7" stroke="#fbbf24" stroke-width="1.4"/><text x="971.0" y="908.25" font-size="15" font-weight="600" text-anchor="middle" fill="#0f172a">concat  E</text><text x="971.0" y="923.25" font-size="11" font-weight="400" text-anchor="middle" fill="#64748b">then FROZEN for every consumer</text>
+<path d="M 643 850 L 643 878" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arrow)"/>
+<path d="M 825 850 L 825 878" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arrow)"/>
+<path d="M 1012 850 L 1012 878" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arrow)"/>
+<path d="M 808 910 L 840 910" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arrow)"/>
+<rect x="558" y="972" width="544" height="52" rx="10" fill="#dbeafe" stroke="#93c5fd" stroke-width="1.4"/><text x="830.0" y="995.9" font-size="14" font-weight="600" text-anchor="middle" fill="#0f172a">consumer head  →  prediction / policy / geometry</text><text x="830.0" y="1010.9" font-size="11" font-weight="400" text-anchor="middle" fill="#64748b">linear or calibrated, fit on held-out B; never retrains the encoder</text>
+<path d="M 970 942 L 970 972" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arrow)"/>
+<text x="560" y="1046" font-size="11.5" font-weight="400" text-anchor="start" fill="#64748b">E = 256 (shape + folded counter); candidate blocks append, never replace</text>
+<rect x="1150" y="40" width="500" height="580" rx="16" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+<text x="1170" y="70" font-size="18" font-weight="800" text-anchor="start" fill="#0f172a">The statistic bank  (DEC-590)</text>
+<text x="1170" y="92" font-size="12" font-weight="400" text-anchor="start" fill="#64748b">named blocks, one algebra per quantity, one composition</text>
+<rect x="1170" y="112" width="220" height="150" rx="10" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.4"/><text x="1280.0" y="177.95" font-size="17" font-weight="600" text-anchor="middle" fill="#0f172a">mass</text><text x="1280.0" y="193.95" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">additive counts</text><text x="1280.0" y="209.95" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">extensive · no decay</text>
+<rect x="1186" y="224" width="88" height="22" rx="11" fill="#dcfce7"/><text x="1230.0" y="239" font-size="11" font-weight="700" text-anchor="middle" fill="#166534">shipped</text>
+<rect x="1405" y="112" width="220" height="150" rx="10" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.4"/><text x="1515.0" y="177.95" font-size="17" font-weight="600" text-anchor="middle" fill="#0f172a">shape</text><text x="1515.0" y="193.95" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">contractive state</text><text x="1515.0" y="209.95" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">bounded · per-sample R</text>
+<rect x="1421" y="224" width="88" height="22" rx="11" fill="#dcfce7"/><text x="1465.0" y="239" font-size="11" font-weight="700" text-anchor="middle" fill="#166534">shipped</text>
+<rect x="1170" y="280" width="220" height="150" rx="10" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.4" stroke-dasharray="6 5"/><text x="1280.0" y="345.95" font-size="17" font-weight="600" text-anchor="middle" fill="#0f172a">order</text><text x="1280.0" y="361.95" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">pair / co-occurrence</text><text x="1280.0" y="377.95" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">Σ kₜ₋₁vₜᵀ · signature</text>
+<rect x="1186" y="392" width="96" height="22" rx="11" fill="#fef3c7"/><text x="1234.0" y="407" font-size="11" font-weight="700" text-anchor="middle" fill="#92400e">candidate</text>
+<rect x="1405" y="280" width="220" height="150" rx="10" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.4" stroke-dasharray="6 5"/><text x="1515.0" y="345.95" font-size="17" font-weight="600" text-anchor="middle" fill="#0f172a">response</text><text x="1515.0" y="361.95" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">P(outcome | action)</text><text x="1515.0" y="377.95" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">randomized cells · shrink</text>
+<rect x="1421" y="392" width="88" height="22" rx="11" fill="#fee2e2"/><text x="1465.0" y="407" font-size="11" font-weight="700" text-anchor="middle" fill="#991b1b">negative</text>
+<rect x="1170" y="448" width="220" height="150" rx="10" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.4" stroke-dasharray="6 5"/><text x="1280.0" y="513.95" font-size="17" font-weight="600" text-anchor="middle" fill="#0f172a">value</text><text x="1280.0" y="529.95" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">level / quantiles</text><text x="1280.0" y="545.95" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">future level · full stream</text>
+<rect x="1186" y="560" width="96" height="22" rx="11" fill="#fef3c7"/><text x="1234.0" y="575" font-size="11" font-weight="700" text-anchor="middle" fill="#92400e">candidate</text>
+<rect x="1405" y="448" width="220" height="150" rx="10" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.4" stroke-dasharray="6 5"/><text x="1515.0" y="513.95" font-size="17" font-weight="600" text-anchor="middle" fill="#0f172a">uncertainty</text><text x="1515.0" y="529.95" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">coverage / missingness</text><text x="1515.0" y="545.95" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">never fake unobserved</text>
+<rect x="1421" y="560" width="88" height="22" rx="11" fill="#e2e8f0"/><text x="1465.0" y="575" font-size="11" font-weight="700" text-anchor="middle" fill="#475569">open</text>
+<text x="1170" y="606" font-size="11.5" font-weight="400" text-anchor="start" fill="#64748b">a block that exists in one path and not another is a bug</text>
+<rect x="1150" y="650" width="500" height="420" rx="16" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+<text x="1170" y="680" font-size="18" font-weight="800" text-anchor="start" fill="#0f172a">Training  ·  laws  ·  governor</text>
+<rect x="1170" y="700" width="460" height="82" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.4"/><text x="1400.0" y="731.9" font-size="14" font-weight="600" text-anchor="middle" fill="#0f172a">self-supervised objectives</text><text x="1400.0" y="746.9" font-size="11" font-weight="400" text-anchor="middle" fill="#64748b">next · mask · value · Δt · survive · rate · profile · agg</text><text x="1400.0" y="761.9" font-size="11" font-weight="400" text-anchor="middle" fill="#64748b">sf · query · occur · order · multi-token (opt-in)</text>
+<rect x="1170" y="800" width="220" height="92" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.4"/><text x="1280.0" y="829.9" font-size="14" font-weight="600" text-anchor="middle" fill="#0f172a">governor</text><text x="1280.0" y="844.9" font-size="11" font-weight="400" text-anchor="middle" fill="#64748b">held-out convergence</text><text x="1280.0" y="859.9" font-size="11" font-weight="400" text-anchor="middle" fill="#64748b">LR from curvature</text><text x="1280.0" y="874.9" font-size="11" font-weight="400" text-anchor="middle" fill="#64748b">finite · stable · no clamps</text>
+<rect x="1408" y="800" width="222" height="92" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.4"/><text x="1519.0" y="829.9" font-size="14" font-weight="600" text-anchor="middle" fill="#0f172a">frozen donor</text><text x="1519.0" y="844.9" font-size="11" font-weight="400" text-anchor="middle" fill="#64748b">frozen after training</text><text x="1519.0" y="859.9" font-size="11" font-weight="400" text-anchor="middle" fill="#64748b">consumers never mutate it</text><text x="1519.0" y="874.9" font-size="11" font-weight="400" text-anchor="middle" fill="#64748b">one stream → one model</text>
+<rect x="1170" y="910" width="460" height="132" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.4"/><text x="1400.0" y="959.9" font-size="14" font-weight="600" text-anchor="middle" fill="#0f172a">laws the encoder is built on</text><text x="1400.0" y="974.9" font-size="11" font-weight="400" text-anchor="middle" fill="#64748b">continuous-time fade + tick · exact affine scan · constant state</text><text x="1400.0" y="989.9" font-size="11" font-weight="400" text-anchor="middle" fill="#64748b">per-sample only (no batch statistics) · schema-agnostic resolution</text><text x="1400.0" y="1004.9" font-size="11" font-weight="400" text-anchor="middle" fill="#64748b">equivariance: time translation, field permutation, entity permutation</text>
+<text x="1170" y="1066" font-size="11" font-weight="400" text-anchor="middle" fill="#0f172a"></text>
+<rect x="30" y="1200" width="1620" height="44" rx="12" fill="#0f172a"/>
+<text x="48" y="1228" font-size="13" font-weight="600" text-anchor="start" fill="#e2e8f0">map, not a measurement card  ·  all verdicts and numbers live on REPORT_CARD.md  ·  behavior d5df3a2c  ·  architecture as of 2026-11-04</text>
+</svg>
+  </div>
+
+  <div class="legend">
+    <span class="chip"><span class="dot" style="background:#16a34a"></span> shipped / certified path</span>
+    <span class="chip"><span class="dot" style="background:#d97706"></span> candidate / staged</span>
+    <span class="chip"><span class="dot" style="background:#dc2626"></span> measured negative</span>
+    <span class="chip"><span class="dot" style="background:#64748b"></span> not implemented</span>
+    <span class="chip">measurements: <code>REPORT_CARD.md</code></span>
+  </div>
+
+  <div class="notes">
+    <div class="note"><h3>The cell</h3><p>Every event updates one state:
+    <code>hₜ = aₜhₜ₋₁ + (1−aₜ)Bxₜ</code>, with <code>aₜ = exp(−δₜΔt)</code> and a learned
+    per-channel <code>δ</code>. The scan is exact, mergeable and linear-time; there is no attention
+    over raw history.</p></div>
+    <div class="note"><h3>The timescales</h3><p>The canonical model carries a 256-channel spectrum
+    of learned timescales, initialized from the stream's measured gap/autocorrelation spectrum.
+    The expert bank is the same memory idea in parallel; the readout stays a concatenation.</p></div>
+    <div class="note"><h3>The served object</h3><p><code>E = boundary(proj(h)) + counter</code>, with a
+    per-sample orthogonal boundary (Cayley, κ=1) and an anchored additive counter folded into the
+    same width. Candidate statistic blocks append; they never replace the one composition.</p></div>
+    <div class="note"><h3>The block bank</h3><p>Mass (additive), shape (contractive), order
+    (pair/signature), response (randomized action curve), value (level/quantiles), uncertainty
+    (coverage). A block that exists in one path and not another is a bug — the one-composition law.</p></div>
+  </div>
+
+  <footer>
+    Architecture map for the CFM encoder. Behavior <code>c9f26925</code> (candidate <code>0.11.1r490760</code>) · canonical <code>d5df3a2c</code> · 2026-11-04.
+    The source of truth for every verdict and number is <code>REPORT_CARD.md</code>; the block bank is
+    recorded in <code>DECISIONS.md</code> DEC-590/591/592. Candidate chips are not certified capabilities.
+  </footer>
+</div>
+</body>
+</html>

@@ -33,6 +33,7 @@ verdicts/
 
 # generated docs / scratch results
 *.html
+!ENCODER.html
 !looking_glass/specs/objectives_catalog.html
 !spec_looking_glass.html
 *.bak

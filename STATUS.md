@@ -308,7 +308,7 @@ histogram half; it is not the missing piece.
   card is ENCODER DONE v1). Completion requires the card's plan root `SOLVED` (E1 port + v1),
   not merely a green encoder battery. `AGENTS.md` aligned; `tests/test_prompts.py` is the drift
   ratchet.
-- **Products:** the canonical full-size products are at `/home/austin_whaley/wonderland_work/cfm_v2k`
+- **Products:** the canonical full-size products are at `/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k`
   (fs_full, tag `…b64…o4c3b5899`, trained under behavior `d0ac576c`); the stale `0f881d99`
   artifacts are backed up at `cfm_v2k_stale_0f881d99`. Code behavior is now `d5df3a2c`
   (DEC-573: the `resolve_cfm` batch-pinning fix → `d2ad6f60`; autotune defect class 9 →
@@ -359,7 +359,7 @@ next question is the learned shape, not another consumer tuning pass.
 ## Operating facts
 
 - **Repo:** `/home/austin_whaley/Documents/Repos/wonderland`, branch `foundation-rebuild`, venv `.venv`.
-- **Testbed:** Layer A v2 demo at `/home/austin_whaley/wonderland_work/demo_v2/`.
+- **Testbed:** Layer A v2 demo at `/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/demo_v2/`.
 - **Card:** `.venv/bin/python scripts/report_card.py` → `REPORT_CARD.md` (the only measurement surface).
 - **Architecture visual:** `ENCODER.html` — the at-a-glance CFM map (the cell, the timescales, the served object, the statistic bank). A map, not a card; every verdict/number stays on `REPORT_CARD.md`.
 - **Candidate 0.11.1 B rows:** `cfm_v2k_vf2` (tag `0.11.1r490760-b64d256e3lr4e-05o4c3b5899`; value_col + full-stream block). **B4.1 dose PASS** (E 0.2983 vs table 0.2438, CI positive — first decision flip); B6.2 E-alone value 0.6095 / orders 0.6194 vs raw 0.5952/0.6047 (combined table+E CI still fails); B7.1 calibration FAIL (ECE 0.1119); B4.2 OPE FAIL; B1.1 dynamics FAIL. B 16/4/3, root 20/39. S6 dirty-tree only; commit + re-run the chain.

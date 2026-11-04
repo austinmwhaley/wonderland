@@ -11,8 +11,8 @@ Same probe, same folds, three representations:
     aggregates (generic_measure) | state (state_embeddings) | both
 
     python3 scripts/measure_regime_readout.py \
-        --products /home/austin_whaley/wonderland_work/cfm_v2 \
-        --demo /home/austin_whaley/wonderland_work/demo_v2
+        --products /home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2 \
+        --demo /home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/demo_v2
 """
 
 from __future__ import annotations

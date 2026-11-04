@@ -13,7 +13,7 @@ Pre-registered decision rule (DEC-520):
   * ANY pre-registered task with (oracle - aggregate) paired-CI lower bound > 0 -> HAS POWER.
   * EVERY task within noise -> INSUFFICIENT -> rebuild Layer A.
 
-    python3 scripts/measure_testbed_power.py --demo /home/austin_whaley/wonderland_work/demo
+    python3 scripts/measure_testbed_power.py --demo /home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/demo
 """
 
 from __future__ import annotations

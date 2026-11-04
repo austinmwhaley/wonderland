@@ -52,7 +52,7 @@ def main() -> int:
     ensure_boundary()
 
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--products", default="/home/austin_whaley/wonderland_work/cfm_v2k")
+    ap.add_argument("--products", default="/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k")
     ap.add_argument("--out", default=str(OUT))
     a = ap.parse_args()
 

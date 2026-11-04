@@ -2,8 +2,8 @@
 """PATH A provenance audit: the comparator behind every top-line FAIL, certified at the column level.
 
     .venv/bin/python scripts/measure_path_a_provenance.py \
-        --products-dir /home/austin_whaley/wonderland_work/cfm_b20 \
-        --demo /home/austin_whaley/wonderland_work/demo
+        --products-dir /home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_b20 \
+        --demo /home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/demo
 
 Why (DEC-437/DEC-446). The card's top line is `brain > PATH A`, and PATH A is `table_features`
 over the lab's wide table. If the table had been computed with the future included, every

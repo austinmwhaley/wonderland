@@ -9,8 +9,8 @@ This script MEASURES and never adopts anything. It writes a receipt and prints. 
 touch a gate, a threshold, or the encoder.
 
     python3 scripts/measure_rank_attainability.py \
-        --products /home/austin_whaley/wonderland_work/cfm_m8_counter \
-        --db /home/austin_whaley/wonderland_work/demo/customer_event_stream.parquet
+        --products /home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_m8_counter \
+        --db /home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/demo/customer_event_stream.parquet
 
 What it reports, per representation (learned shape / exhaustive measure / served E):
 

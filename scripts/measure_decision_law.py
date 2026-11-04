@@ -615,8 +615,8 @@ def decision_ope(bkeys, emb, truth, demo: Path) -> dict:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--products", default="/home/austin_whaley/wonderland_work/cfm_v2k")
-    ap.add_argument("--demo", default="/home/austin_whaley/wonderland_work/demo_v2")
+    ap.add_argument("--products", default="/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k")
+    ap.add_argument("--demo", default="/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/demo_v2")
     ap.add_argument("--out", default=str(OUT))
     ap.add_argument("--replica", choices=["canonical", "eager"], default=None)
     ap.add_argument("--replica-out", default=None)

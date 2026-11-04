@@ -222,18 +222,18 @@ def _fit_score(Xa, ya, Xb, yb, rng, classification: bool):
 def main(argv=None) -> int:
     ensure_boundary()
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--products", default="/home/austin_whaley/wonderland_work/cfm_v2k")
+    ap.add_argument("--products", default="/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k")
     ap.add_argument(
         "--stream",
-        default="/home/austin_whaley/wonderland_work/demo_v2/customer_event_stream.parquet",
+        default="/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/demo_v2/customer_event_stream.parquet",
     )
     ap.add_argument(
         "--path-a",
-        default="/home/austin_whaley/wonderland_work/demo_v2/path_a/path_a_wide_table.parquet",
+        default="/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/demo_v2/path_a/path_a_wide_table.parquet",
     )
     ap.add_argument(
         "--features",
-        default="/home/austin_whaley/wonderland_work/demo_v2/path_a/customer_features.parquet",
+        default="/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/demo_v2/path_a/customer_features.parquet",
     )
     ap.add_argument("--out", default=str(OUT))
     a = ap.parse_args(argv)

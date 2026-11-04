@@ -47,7 +47,7 @@ from measure_input_law import products_identity, stamp_merge_write  # noqa: E402
 from safe_run import ensure_boundary  # noqa: E402
 
 OUT = ROOT / "docs" / "report_cards" / "experiments" / "decision_head_protocol.json"
-DEMO = Path("/home/austin_whaley/wonderland_work/demo_v2")
+DEMO = Path("/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/demo_v2")
 
 
 def _round(x):
@@ -193,7 +193,7 @@ def _response_block(stream, keys, levels):
 def main(argv=None) -> int:
     ensure_boundary()
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--products", default="/home/austin_whaley/wonderland_work/cfm_v2k")
+    ap.add_argument("--products", default="/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k")
     ap.add_argument("--demo", default=str(DEMO))
     ap.add_argument("--out", default=str(OUT))
     a = ap.parse_args(argv)
