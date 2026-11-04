@@ -10895,6 +10895,16 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     `d5df3a2c`). Next chunk: adopt it, retrain cfm_v2k, re-stamp, and pre-register the
     multiclass-head protocol (ridge vs multinomial logistic — a head/gate change, both
     reported, operator sign-off).
+  - **Heterogeneous fixture (2026-11-04) — the true capability win.** `persistence_spread=0.35`
+    gives each customer a different transition: oracle **0.7344** vs the 1-gram 1.0618;
+    the pooled bigram **0.83574**. With the row readout trained at N=5000, the frozen ridge on
+    E is 0.9443 (fails `beats_base`), but a **multinomial logistic on the same E is 0.8185 —
+    it beats the pooled bigram by 0.017 nats** (the row's own softmax is 0.9926). The
+    encoder's E carries **per-customer order**, and a calibrated linear consumer reads it
+    better than the population's transition table. The head, not the representation, was the
+    bottleneck. Code staged (437-line patch `/tmp/opencode/row_readout_het.patch`; includes
+    the `persistence_spread` data knob and the row readout); tree restored to behavior
+    `d5df3a2c`.
   - **Staged Layer A change (not committed).** The `persistence` knob + `order_shape` use
     case + the two gate dispatch entries are a 139-line diff at
     `/tmp/opencode/order_shape_layerA.patch`; the tree was restored to behavior

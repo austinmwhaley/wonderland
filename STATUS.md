@@ -305,6 +305,9 @@ next question is the learned shape, not another consumer tuning pass.
    the default path). Pre-register the multiclass-head protocol (ridge vs multinomial
    logistic; a head/gate change — both reported, operator sign-off). Measured on the order
    fixture: row NLL 0.8586, multinomial logistic on E 0.8591, ridge 0.9523, bigram 0.81915.
+   On the **heterogeneous** fixture (persistence_spread 0.35): logistic on E **0.8185 beats
+   the pooled bigram 0.83574** (ridge 0.9443; oracle 0.7344) — the first real per-customer
+   order win.
    Acceptance: the adopted encoder's order-fixture logistic NLL ≤ 0.86 and the B rows move
    on the real stream; no gate/bar/exclusion edits.
 2. **Re-run the shape battery after the change** (same protocol, same split): the target is
