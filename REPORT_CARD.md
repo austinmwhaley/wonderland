@@ -1,6 +1,6 @@
 # REPORT_CARD — B foundational, then PATH B > PATH A
 
-*Generated `2026-11-04T15:45:09+00:00` · commit `82f4788` (`foundation-rebuild` · dirty) · encoder behavior `d5df3a2c1211c402`*
+*Generated `2026-11-04T15:45:18+00:00` · commit `e328dbc` (`foundation-rebuild` · clean) · encoder behavior `d5df3a2c1211c402`*
 
 **Assessment:**
 
