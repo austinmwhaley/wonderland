@@ -1,0 +1,372 @@
+{
+  "_meta": {
+    "behavior_hash": "d5df3a2c1211c402",
+    "command": "measure_shape_battery.py",
+    "generated_at": "2026-11-04T15:36:40+00:00",
+    "git_commit": "6f43f89ed4bf4e0e7c1a5abd6267059bbc4c464d",
+    "producer": "measure_shape_battery.py"
+  },
+  "as_of": "2025-01-01",
+  "caveats": {
+    "future_targets": "aligned with the training objectives (rate/value/survival heads), so E's absolute R^2 is inflated; the comparator (counter) is the claim, not the absolute value.",
+    "history_targets": "the counter arm is target-defining (R^2=1 by construction) and omitted; the E row tests whether the state encodes the history's own statistics.",
+    "persona": "CONTAMINATED on cfm_v2k: segment/loyalty_tier/region are carried in every event's event_attributes, so E reads them directly. This is identity leakage (cf. B4.3 check-2), NOT a shape measure; the counter arm has no persona fields. Do not read the persona rows as learned shape."
+  },
+  "complete": true,
+  "discipline": "a development diagnostic; no B-row source names this receipt; a movement here can only SUGGEST the next real-data run (DEC-576/588)",
+  "excluded": {
+    "persona_region": "degenerate: constant 'north' (no variance)"
+  },
+  "future_days": 90,
+  "kind": "shape_battery_diagnostic",
+  "n_A": 3515,
+  "n_B": 1485,
+  "n_boot": 2000,
+  "n_customers": 5000,
+  "products_identity": {
+    "path": "/home/austin_whaley/wonderland_work/cfm_v2k",
+    "registry_sha256": "79f9768d51205252",
+    "tag": "0.11.0r490759-b64d256e3lr3e-04o4c3b5899"
+  },
+  "protocol": "DEC-588 Phase 0: linear decodability of future shape and persona from E vs the exact counter vs PATH A, on cfm_v2k; fit on split A, score on B, paired bootstrap; a development instrument, never B-row evidence (DEC-576)",
+  "quantiles": [
+    0.25,
+    0.5,
+    0.75,
+    0.9
+  ],
+  "seconds": 4.4,
+  "seed": 65537,
+  "targets": {
+    "future_gap_q": {
+      "arms": {
+        "E": {
+          "ci95": [
+            0.462681,
+            0.546225
+          ],
+          "point": 0.50746
+        },
+        "counter": {
+          "ci95": [
+            0.47274,
+            0.553408
+          ],
+          "point": 0.515893
+        },
+        "path_a": {
+          "ci95": [
+            0.347313,
+            0.464282
+          ],
+          "point": 0.411387
+        }
+      },
+      "delta_E_minus_counter": {
+        "ci95": [
+          -0.016322,
+          -0.00095
+        ],
+        "point": -0.008433
+      },
+      "delta_E_minus_path_a": {
+        "ci95": [
+          0.060419,
+          0.156597
+        ],
+        "point": 0.096072
+      },
+      "dims": 4,
+      "n_A": 3515,
+      "n_B": 1485,
+      "shuffle_control_E": -0.045135
+    },
+    "future_transition": {
+      "arms": {
+        "E": {
+          "ci95": [
+            0.17906,
+            0.214709
+          ],
+          "point": 0.196061
+        },
+        "counter": {
+          "ci95": [
+            0.186504,
+            0.22151
+          ],
+          "point": 0.203736
+        },
+        "path_a": {
+          "ci95": [
+            0.129788,
+            0.184774
+          ],
+          "point": 0.160595
+        }
+      },
+      "delta_E_minus_counter": {
+        "ci95": [
+          -0.011778,
+          -0.003651
+        ],
+        "point": -0.007675
+      },
+      "delta_E_minus_path_a": {
+        "ci95": [
+          0.019454,
+          0.06236
+        ],
+        "point": 0.035466
+      },
+      "dims": 36,
+      "n_A": 3515,
+      "n_B": 1485,
+      "shuffle_control_E": -0.005861
+    },
+    "future_type_hist": {
+      "arms": {
+        "E": {
+          "ci95": [
+            0.320836,
+            0.394175
+          ],
+          "point": 0.358099
+        },
+        "counter": {
+          "ci95": [
+            0.33272,
+            0.403445
+          ],
+          "point": 0.368371
+        },
+        "path_a": {
+          "ci95": [
+            0.200643,
+            0.316135
+          ],
+          "point": 0.266258
+        }
+      },
+      "delta_E_minus_counter": {
+        "ci95": [
+          -0.01866,
+          -0.002203
+        ],
+        "point": -0.010272
+      },
+      "delta_E_minus_path_a": {
+        "ci95": [
+          0.053528,
+          0.151955
+        ],
+        "point": 0.091841
+      },
+      "dims": 6,
+      "n_A": 3515,
+      "n_B": 1485,
+      "shuffle_control_E": 0.028777
+    },
+    "future_value_q": {
+      "arms": {
+        "E": {
+          "ci95": [
+            0.745993,
+            0.794963
+          ],
+          "point": 0.771249
+        },
+        "counter": {
+          "ci95": [
+            0.745632,
+            0.794963
+          ],
+          "point": 0.771152
+        },
+        "path_a": {
+          "ci95": [
+            0.641301,
+            0.685521
+          ],
+          "point": 0.663726
+        }
+      },
+      "delta_E_minus_counter": {
+        "ci95": [
+          -0.004071,
+          0.003955
+        ],
+        "point": 9.7e-05
+      },
+      "delta_E_minus_path_a": {
+        "ci95": [
+          0.090915,
+          0.123824
+        ],
+        "point": 0.107523
+      },
+      "dims": 4,
+      "n_A": 3462,
+      "n_B": 1457,
+      "shuffle_control_E": 0.010867
+    },
+    "history_gap_q": {
+      "arms": {
+        "E": {
+          "ci95": [
+            0.974786,
+            0.978205
+          ],
+          "point": 0.976608
+        }
+      },
+      "dims": 4,
+      "n_A": 3515,
+      "n_B": 1485,
+      "shuffle_control_E": -0.018276,
+      "target_defining": true
+    },
+    "history_transition": {
+      "arms": {
+        "E": {
+          "ci95": [
+            0.48739,
+            0.516355
+          ],
+          "point": 0.501977
+        }
+      },
+      "dims": 36,
+      "n_A": 3515,
+      "n_B": 1485,
+      "shuffle_control_E": 0.004308,
+      "target_defining": true
+    },
+    "history_type_hist": {
+      "arms": {
+        "E": {
+          "ci95": [
+            0.993464,
+            0.994926
+          ],
+          "point": 0.994309
+        }
+      },
+      "dims": 6,
+      "n_A": 3515,
+      "n_B": 1485,
+      "shuffle_control_E": -0.007379,
+      "target_defining": true
+    },
+    "history_value_q": {
+      "arms": {
+        "E": {
+          "ci95": [
+            0.982868,
+            0.985752
+          ],
+          "point": 0.984419
+        }
+      },
+      "dims": 4,
+      "n_A": 3515,
+      "n_B": 1485,
+      "shuffle_control_E": -0.011547,
+      "target_defining": true
+    },
+    "persona_segment": {
+      "arms": {
+        "E": {
+          "ci95": [
+            0.525909,
+            0.577104
+          ],
+          "point": 0.552189
+        },
+        "counter": {
+          "ci95": [
+            0.215488,
+            0.259933
+          ],
+          "point": 0.23771
+        },
+        "path_a": {
+          "ci95": [
+            0.226263,
+            0.270707
+          ],
+          "point": 0.247811
+        }
+      },
+      "delta_E_minus_counter": {
+        "ci95": [
+          0.281481,
+          0.348148
+        ],
+        "point": 0.314478
+      },
+      "delta_E_minus_path_a": {
+        "ci95": [
+          0.272727,
+          0.335354
+        ],
+        "point": 0.304377
+      },
+      "dims": 4,
+      "n_A": 3515,
+      "n_B": 1485,
+      "shuffle_control_E": 0.281481
+    },
+    "persona_tier": {
+      "arms": {
+        "E": {
+          "ci95": [
+            0.527273,
+            0.577104
+          ],
+          "point": 0.552189
+        },
+        "counter": {
+          "ci95": [
+            0.216818,
+            0.258586
+          ],
+          "point": 0.23771
+        },
+        "path_a": {
+          "ci95": [
+            0.225589,
+            0.270051
+          ],
+          "point": 0.247811
+        }
+      },
+      "delta_E_minus_counter": {
+        "ci95": [
+          0.282155,
+          0.346801
+        ],
+        "point": 0.314478
+      },
+      "delta_E_minus_path_a": {
+        "ci95": [
+          0.272054,
+          0.335354
+        ],
+        "point": 0.304377
+      },
+      "dims": 4,
+      "n_A": 3515,
+      "n_B": 1485,
+      "shuffle_control_E": 0.272727
+    }
+  },
+  "types": [
+    "view",
+    "search",
+    "email_send",
+    "purchase",
+    "return",
+    "other"
+  ]
+}

@@ -10741,3 +10741,97 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   - **Status.** Recorded; NOT executed. The tree is clean at `aec6d3f` (behavior
     `d5df3a2c`), DEC-586 awaits operator approval, and the shape program starts at the next
     forward run after that go-ahead.
+
+- **DEC-588 (the shape problem is the central problem; the mass/shape split was tried at the
+  interface, not in the state; the combination program; operator authorization to iterate.
+  Started 2026-11-04).**
+  - **NODE:** P2/E1 + the B rows that depend on shape (B3.2 lineage, B6.2, B4.1/B4.2).
+  - **ROUTE:** R2 (dev rig) with the Phase-0 instrument first; no B-row verdict is claimed
+    from lab receipts (DEC-576).
+  - **WHY-NOT.** The state is a first moment: `h_t = a_t h_{t-1} + (1−a_t) B x_t` with
+    `a_t ∈ (0,1)` is a convex combination, so `h_t ∈ conv{B x_s}`. A mean cannot carry a
+    distribution, a transition matrix, an order relation, a tail, or a segment mixture. The
+    exact counter beats the learned state on persona/future (0.189/0.173 vs 0.066/0.093)
+    because the counter is a histogram and the learned state is a mean. The objectives are
+    satisfiable by that mean, and the toy instrument could not see the difference (0.0483
+    nats of true headroom vs ~0.1 noise). `LAYER: capability + objective + instrument`.
+  - **Historical finding (the user's question).** The mass/shape split **was** tried — and
+    the record shows it was tried at the **interface and objective** levels, not in the
+    production **state algebra**:
+    (i) **DEC-385** ratified it as law ("no single blended recurrence"; mass purely
+    additive, shape bounded/contractive; "exposure-only variants fail the data-processing
+    inequality");
+    (ii) the early `GatedSSM`/`Enc` design sketch carried an additive mass state `M` beside
+    the shape state `H`, concatenated into the readout;
+    (iii) the production `SelectiveSSM` shipped **one blended recurrence**; mass was
+    relegated to the hand-built measured ledger (`E = shape ‖ learned measure`, DEC-198),
+    an optional `stats_pathway` EMA, and an opt-in in-net counter (S1);
+    (iv) **B3.4/B3.5** showed serving allocation of a mean-based shape cannot exceed the
+    exact counter; **B3.6** showed the ledger's named distributional parts carry persona
+    (0.3196) while the blended full ledger dilutes (0.0172);
+    (v) **DEC-465/466/467** showed a histogram objective works for the declared action
+    fields (`freq hist → x0` R² 0.909) but was not generalized to the stream;
+    (vi) **DEC-016** rank/variance pressure can only spread within the mean's subspace;
+    (vii) **DEC-577/578/581/582** changed how the mean is computed, not what it computes —
+    and were judged on an instrument with no headroom.
+    The gap is therefore **not** "we never tried the split"; it is "the law lives at the
+    interface, the trunk still blends, and no objective pressures general shape."
+  - **Decision — the combination (full statement in `docs/SHAPE_PROBLEM.md`).**
+    (1) **State algebra:** two channels, two algebras — `m_t` mass (additive, no `(1−a)`
+    normalization, monotone compression) and `s_t` shape (bounded/contractive, per-customer
+    normalized), published separately (polar interface law);
+    (2) **shape statistic:** learned/coverage-derived buckets accumulated as counts and
+    normalized at read (distributional), plus a level-2 path signature in a projected
+    `r ≈ 32–64` — covariance + Lévy area (order/co-occurrence), Chen's identity for exact
+    composition;
+    (3) **objective:** next-window histogram/quantiles and transition-matrix prediction
+    from the served state only (distributional scoring rule), generalizing DEC-465 beyond
+    declared action fields;
+    (4) **instrument:** the shape battery (E vs exact counter vs PATH A; paired CIs) plus a
+    mixture-transition toy where pair statistics are necessary and a mean provably fails;
+    (5) **geometry:** per-customer intensiveness, no batch statistics; centering/high-pass
+    as a diagnostic only;
+    (6) **escalation:** delta-rule associative memory only if the battery shows recall is
+    binding; bounded exact window only if the bit-capacity limit is demonstrated.
+  - **Authorization and loop (operator 2026-11-04: "just start trying things from this list
+    until it is solved").** "Solved" here means the shape problem's own §5 acceptance —
+    `E ≥ exact counter` on the battery at equal width, geometry up, and the shape-dependent
+    real-stream rows moving — **not** the plan root `SOLVED` (which still requires E1's port
+    and the v1 leaves). The loop: Phase 0 battery → Phase 1 mass/shape state + objective →
+    Phase 2 signature/KME → Phase 3 delta-rule/hybrid. One axis per run; pre-register in a
+    DEC; freeze the falsifier; revert on no movement; re-stamp on every behavior move
+    (S6 chain + B-row producers, no-op proof); record `WHY-NOT-CHANGED` every run.
+  - **Rejected.** (i) Another capacity/nonlinearity change to the blended mean — falsified
+    and measured blind. (ii) A hand-built histogram smuggled into `E` as if learned —
+    "served-statistic sufficiency", AGENTS §4; the counter stays the baseline to beat.
+    (iii) Batch whitening/ZCA/contrastive tricks — banned and falsified. (iv) Editing a B
+    gate to make room for the new statistic — forbidden. (v) Declaring the toy verdicts
+    (DEC-577/578/581/582) dead without re-testing on the Phase-0 battery — they were
+    measured on an instrument that could not move.
+  - **Phase 0 outcome (measured 2026-11-04; receipt `shape_battery.json`, 4.4 s, CPU).**
+    E encodes the **history's** own shape at R² 0.9943 type histogram / 0.9766 gap quantiles /
+    0.9844 value quantiles — but only **0.5020** on the transition matrix (n_B 1485; shuffled
+    controls ≤ 0.004). On the **future** 90-day shape E is within ~0.01 R² of the exact counter:
+    type histogram 0.3581 vs 0.3684 (Δ −0.0103 [−0.0187, −0.0022]), transition 0.1961 vs
+    0.2037 (Δ −0.0077 [−0.0118, −0.0037]), gap quantiles 0.5075 vs 0.5159 (Δ −0.0084
+    [−0.0163, −0.0010]), value quantiles 0.7712 vs 0.7712 (Δ +0.0001 [−0.0041, +0.0040]).
+    Persona rows are **contaminated** by attribute leakage (segment/tier/region are in every
+    event's `event_attributes`; cf. B4.3 check-2) and are not a shape measure. **The strong
+    "a mean cannot carry a distribution" diagnosis is falsified on cfm_v2k**: a mean of
+    one-hot/embedding features *is* a histogram; first-order shape is carried. The missing
+    statistic is the **second moment / order** (transition 0.502), which is exactly what a
+    mean cannot carry. Geometry is separate: eff_rank 2.4 coexists with 0.99 histogram
+    decode, so low rank ≠ low information; the geometry gate is not a shape-sufficiency
+    measure.
+  - **Revised priority (recorded, not re-litigated).** The first carrier is the **order
+    channel** (level-2 signature / covariance + Lévy area; delta-rule only if recall is
+    binding), with an order objective (transition-matrix prediction). The mass/shape
+    algebra split remains correct law (DEC-385) and is already largely effective at the
+    interface for first-order shape; it is **not** the first fix for the measured gap.
+    The shape battery becomes the standing Phase-0 instrument, with a sharper order target
+    (longer future window or per-customer next-type log-loss vs the 1-gram) before the
+    Phase-1 architecture run.
+  - **Status.** Phase 0 landed. Phase 1 (the order channel) is pre-registered in principle
+    but **not executed**; the next forward run pre-registers its one-axis implementation
+    and its falsifier, then runs the move + re-stamp (S6 chain + B-row producers, no-op
+    proof). No behavior change has been made by this DEC.

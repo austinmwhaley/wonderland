@@ -192,6 +192,20 @@ certification stays on the real stream.
   window 22, Titans 20 — with **Phase 0 = the shape battery before any new architecture**
   (histogram/transition/quantile/persona decode from E vs the exact counter, plus a
   mixture-transition toy where pair statistics are necessary).
+- **Shape problem Phase 0 LANDED (DEC-588, 2026-11-04): the strong diagnosis is falsified and
+  the problem is narrowed to ORDER.** `shape_battery.json` (cfm_v2k, n_B 1485, paired
+  bootstrap): E decodes the **history's** type histogram 0.9943, gap quantiles 0.9766, value
+  quantiles 0.9844 — but the **transition matrix only 0.5020** (shuffles ≤ 0.004). On the
+  **future** 90-day shape E is within ~0.01 R² of the exact counter (type hist 0.358 vs 0.368;
+  transition 0.196 vs 0.204; gap 0.508 vs 0.516; value 0.771 = 0.771). Persona rows are
+  contaminated by attribute leakage (segment/tier/region in `event_attributes`; cf. B4.3
+  check-2) and are not shape evidence. Read: a mean of one-hot/embedding features *is* a
+  histogram, so first-order shape is carried; the missing statistic is the **second moment /
+  order**, which is what a mean cannot carry. Geometry is separate: eff_rank 2.4 coexists with
+  0.99 histogram decode, so low rank ≠ low information. **Revised priority: the order channel
+  (level-2 signature / covariance + Lévy area; delta-rule only if recall is binding) with a
+  transition-matrix objective — not the mass/shape split, which is already largely effective
+  at the interface.**
 - **Route: R4 (certification-first, operator 2026-11-03).** The 11 open B sub-problems
    are the PRIMARY progress track. DEC-585 pre-registered the 8 rows it covers (B1.2,
    B4.1, B4.2, B4.3, B5.2, B6.2, B7.1, B8.1) as 5 cfm_v2k producers with frozen gate
