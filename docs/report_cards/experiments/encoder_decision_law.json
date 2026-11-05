@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "f1617f4e2a2990ce",
+    "behavior_hash": "df73c2aa1427b471",
     "command": "scripts/measure_decision_law.py --products looking_glass/artifacts/cfm_v2k_vf2 --ope-products looking_glass/artifacts/cfm_v2k_vf2_bank",
-    "generated_at": "2026-11-05T01:17:54+00:00",
-    "git_commit": "580b62c63b5ae3fcb7dd3f8b0fa34833b84d8eb0",
+    "generated_at": "2026-11-05T04:06:01+00:00",
+    "git_commit": "f13d7b66eb7163fd1068c0706a20703c0324c7a3",
     "producer": "measure_decision_law.py"
   },
   "complete": true,
@@ -57,7 +57,7 @@
       "none_bucket_idx": 0,
       "note": "target_key is a lab marker (which arm randomized this event); the pre-registered risk is that the trunk learned it \u2014 recorded, not gated",
       "ok": true,
-      "seconds": 31.2,
+      "seconds": 30.5,
       "share_E_prime": 0.30033670033670035,
       "share_E_stored": 0.2983164983164983
     },
@@ -103,7 +103,7 @@
     "n_test": 74746,
     "n_train": 177017,
     "protocol": "v2 (DEC-595): randomized daily offer periods; reward = purchase on the offer day (arm_cells); per-level ridge T-learner fit on split-A periods, scored on split-B periods; uniform IPS p0=1/K; table arm under the same head/periods",
-    "seconds": 4.0
+    "seconds": 3.5
   },
   "decision_ope_v1_margin": {
     "E_ips": 152.93,
@@ -150,6 +150,6 @@
     "registry_sha256": "676e52359995983a",
     "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
   },
-  "seconds": 143.4,
+  "seconds": 143.3,
   "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
 }

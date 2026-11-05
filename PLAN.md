@@ -611,8 +611,8 @@ computes one. Moving the pointer is a reviewed spec edit like any other.
 | Step | What is earned | Advances | Evidence that closes it |
 |---|---|---|---|
 | **R1** | Dev rig: master next_event (N=500, known truth) | E1.a | CLOSED negative at the toy (DEC-581/582 outcomes: 4 algebra values + capacity @256, g 1.147–1.182 vs bar 0.5, 1-gram floor binding at N=500); the intent remainder was executed under DEC-586; never a B-row verdict |
-| **R2** | Dev rig: master intent (curriculum step 2) | E1.b | EXECUTED negative (DEC-586): intent fixture g 2.665; mass counter 2.633; served signature 2.600; all worse than the 1-gram. The atom stays FRONTIER; the next candidate is the state algebra (mass/shape or signature state). |
-| **R3** | Port: ONE real-data run of the winning trunk under DEC-572's bars | E1.c | a pre-registered port receipt: eff_rank>=30, persona>=0.15, R2>=0.45, stable + B1 canary |
+| **R2** | Dev rig: master intent (curriculum step 2) | E1.b | DONE: intent g -0.721 (365d) and 0.181 (730d) with the hierarchical Dirichlet signature head; beats_base true both; E1.b green (DEC-600/601). |
+| **R3** | Port: ONE real-data run of the winning trunk under DEC-572's bars | E1.c | DONE: served bank + measure PCA-128; eff_rank 30.9, persona 0.267, served R2 0.460; B1 canary from the B rows (lab/port_dec572.json). |
 | **R4** | Real stream: certify the B foundational battery | P1, P2, P3 | DONE: B certified 23/23 rows, 8/8 sections at behavior 7baf744f (DEC-594/595/596); the B gate is no longer the constraint. |
 | **R5** | Real stream: re-score the four judge legs (brain and brain+ledger) | P4 | DONE under the bank protocol (DEC-598): 8/8 leg-columns on the served block bank; the v1 flat judge (4/8) and the GBM delivery head are recorded beside it. |
 | **R6 ← now** | Stack: build and certify v1 (identifiable stream, plugins, red_king, red_queen, caterpillar) | P5 | plugin acceptance 9/9 (supervised/unsupervised/white_queen) on the bank + demo stream; red_king/red_queen/caterpillar and the identifiable-stream metadata remain |

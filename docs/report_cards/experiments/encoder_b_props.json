@@ -1,10 +1,10 @@
 {
   "E_dim": 128,
   "_meta": {
-    "behavior_hash": "f1617f4e2a2990ce",
+    "behavior_hash": "df73c2aa1427b471",
     "command": "scripts/measure_b_props.py --products looking_glass/artifacts/cfm_v2k_vf2_bank",
-    "generated_at": "2026-11-05T01:15:29+00:00",
-    "git_commit": "580b62c63b5ae3fcb7dd3f8b0fa34833b84d8eb0",
+    "generated_at": "2026-11-05T04:02:06+00:00",
+    "git_commit": "f13d7b66eb7163fd1068c0706a20703c0324c7a3",
     "producer": "measure_b_props.py"
   },
   "access_ridge_E": -1.1936,
@@ -28,7 +28,7 @@
       "n": 0
     },
     "protocol": "v2 (DEC-593): one temperature fit on split A; logits/T on split B",
-    "seconds": 29.5,
+    "seconds": 30.8,
     "temperature": 0.5394,
     "why": "multiclass ECE (10 equal-width max-confidence bins) of the shipped head_next; one temperature T=0.5394 fit on split A (n_calib_A=3515) by NLL, applied as logits/T on split B; the primary ece_next_event is the calibrated value, ece_next_event_raw=0.111943 is recorded; population=1485 split-B customers, 1485 with a next full-stream event; in-window <= as_of+30d; OOD recorded (no OOD bar); OOV -> n_et bucket; DEC-593 protocol v2"
   },
@@ -55,6 +55,6 @@
     "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
   },
   "runtime_seed0_val": 29.234517574310303,
-  "seconds": 31.2,
+  "seconds": 32.6,
   "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
 }

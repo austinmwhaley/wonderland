@@ -28,6 +28,12 @@ POSITIVE: dict[str, DataSpec] = {
     "intent_long": DataSpec(
         "intent_long", transition=True, intent=5.0, snr=1.0, base_rate=0.3, window_days=730
     ),
+    "next_event_x4": DataSpec(
+        "next_event_x4", "next_event_x4k", transition=True, intent=0.5, snr=1.0, window_days=1460
+    ),
+    "next_event_x4k": DataSpec(
+        "next_event_x4k", transition=True, intent=0.5, snr=1.0, window_days=1460
+    ),
     "mask": DataSpec("mask", transition=True, intent=0.5, snr=1.0),
     "order": DataSpec("order", transition=True, intent=0.4, snr=1.0),
     "next_entity": DataSpec("next_entity", transition=True, n_entities=64, entity_affinity=0.7),
@@ -77,6 +83,8 @@ _TRANS = {
     "intent",
     "next_event_long",
     "intent_long",
+    "next_event_x4",
+    "next_event_x4k",
     "mask",
     "order",
     "next",

@@ -1,0 +1,150 @@
+{
+  "_meta": {
+    "behavior_hash": "c6f56a2ecacb203a",
+    "command": "lab_measure.py --fixture rabbit_hole/data/lab/intent_long --products /tmp/opencode/lab/intent_long_pos --as-of 2024-09-01 --neg-products /tmp/opencode/lab/intent_long_neg --adv-products /tmp/opencode/lab/intent_long_adv --iter dec600 --head hier --out docs/report_cards/experiments/lab/intent_long_dec600.json",
+    "generated_at": "2026-11-05T03:55:58+00:00",
+    "git_commit": "f13d7b66eb7163fd1068c0706a20703c0324c7a3",
+    "producer": "lab_measure.py"
+  },
+  "a_frac": 0.7,
+  "adversarial_control": {
+    "alpha": 1778.27941,
+    "beats_base": false,
+    "classes": [
+      "cart",
+      "purchase",
+      "view"
+    ],
+    "classes_excluded": [],
+    "eff_rank": 2.677,
+    "eff_rank_source": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm/portfolio/portfolio_0_11_0r940922-b8d64e3lr5e-04o67b1bcb7_20261105T010941Z.json",
+    "expected": "structure claim NO_SIGNAL despite beats_base via the echo",
+    "g": null,
+    "head_form": "hierarchical_dirichlet",
+    "head_ignores_echo": true,
+    "leak_has_teeth_a_side": true,
+    "n_A": 350,
+    "n_B_rows": 150,
+    "n_customers": 500,
+    "nll_base": 1.098106,
+    "nll_baseline_ce_nats": null,
+    "nll_enc": 1.098134,
+    "nll_oracle_nats": null,
+    "paired_ci_enc_minus_base": [
+      -0.0006716478309142509,
+      0.0006756385573700987
+    ],
+    "per_class_n_A": {
+      "cart": 112,
+      "purchase": 120,
+      "view": 118
+    },
+    "reads_as_expected": true,
+    "reads_no_signal_structure": true,
+    "structure_carried": false
+  },
+  "as_of": "2024-09-01",
+  "bar_g": 0.5,
+  "complete": true,
+  "discipline": "toy-green can only SUGGEST the next real-data run (DEC-576); certification of B stays on the real stream (cfm_v2k / O3 / DEC-575); no B-row source names this receipt",
+  "fixture_spec": {
+    "action_peak": 0.0,
+    "base_rate": 0.3,
+    "entity_affinity": 0.0,
+    "intent": 5.0,
+    "n_customers": 500,
+    "n_entities": 0,
+    "name": "intent_long",
+    "rate_heterogeneity": 0.0,
+    "seed": 17,
+    "snr": 1.0,
+    "transition": true,
+    "trend": 0.0,
+    "value_log_sigma": 0.5,
+    "window_days": 730
+  },
+  "head_form": "hier",
+  "iteration": "dec600",
+  "kind": "lab_dev_instrument",
+  "lab_gate_a_side": {
+    "adversarial_leak_has_teeth": true,
+    "adversarial_not_carried": true,
+    "complete": true,
+    "negative_not_carried": true,
+    "oracle_carried": true
+  },
+  "n_boot": 2000,
+  "negative_control": {
+    "alpha": 1778.27941,
+    "beats_base": false,
+    "classes": [
+      "cart",
+      "purchase",
+      "view"
+    ],
+    "classes_excluded": [],
+    "eff_rank": 2.677,
+    "eff_rank_source": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm/portfolio/portfolio_0_11_0r940922-b8d64e3lr5e-04o67b1bcb7_20261105T010941Z.json",
+    "expected": "NO_SIGNAL",
+    "g": null,
+    "head_form": "hierarchical_dirichlet",
+    "n_A": 350,
+    "n_B_rows": 150,
+    "n_customers": 500,
+    "nll_base": 1.098106,
+    "nll_baseline_ce_nats": null,
+    "nll_enc": 1.098134,
+    "nll_oracle_nats": null,
+    "paired_ci_enc_minus_base": [
+      -0.0006716478309142509,
+      0.0006756385573700987
+    ],
+    "per_class_n_A": {
+      "cart": 112,
+      "purchase": 120,
+      "view": 118
+    },
+    "reads_no_signal": true
+  },
+  "p_floor": 1e-15,
+  "positive": {
+    "alpha": 0.01,
+    "beats_base": true,
+    "classes": [
+      "cart",
+      "purchase",
+      "view"
+    ],
+    "classes_excluded": [],
+    "eff_rank": 1.288,
+    "eff_rank_source": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm/portfolio/portfolio_0_11_0r758379-b8d64e3lr3e-03o67b1bcb7_20261105T010908Z.json",
+    "g": 0.181074,
+    "head_form": "hierarchical_dirichlet",
+    "mastered": true,
+    "n_A": 350,
+    "n_B_rows": 150,
+    "n_customers": 500,
+    "nll_base": 0.804194,
+    "nll_baseline_ce_nats": 0.9685,
+    "nll_enc": 0.666374,
+    "nll_oracle_nats": 0.6359,
+    "paired_ci_enc_minus_base": [
+      -0.22053516969389883,
+      -0.0515700870006889
+    ],
+    "per_class_n_A": {
+      "cart": 62,
+      "purchase": 74,
+      "view": 214
+    }
+  },
+  "products_identity": {
+    "path": "/tmp/opencode/lab/intent_long_pos",
+    "registry_sha256": "87502c9ef4585c69",
+    "tag": "0.11.0r758379-b8d64e3lr3e-03o67b1bcb7"
+  },
+  "protocol": "DEC-576 dev-rig speedometer + controls (development instrument; never B-row evidence)",
+  "seconds": 4.1,
+  "seed": 65537,
+  "use_case": "intent_long"
+}

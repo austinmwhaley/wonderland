@@ -54,6 +54,8 @@ _TRANSITION = {
     "intent",
     "next_event_long",
     "intent_long",
+    "next_event_x4",
+    "next_event_x4k",
     "mask",
     "order",
     "next",

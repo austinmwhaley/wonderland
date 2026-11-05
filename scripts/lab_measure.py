@@ -243,6 +243,111 @@ def _measure_pair(fixture_dir: Path, products: Path, as_of) -> dict:
     }
 
 
+def _measure_pair_hier(fixture_dir: Path, products: Path, as_of) -> dict:
+    """E1 head-form v2: per-customer transition counts shrunk to the pooled 1-gram.
+
+    The served signature block is the exact per-customer pair counter. The head predicts the
+    next type from the last pre-as_of type with `p = (N_c[last] + alpha * P0[last]) /
+    (sum N_c[last] + alpha)`; alpha is chosen on split A only. This is the order statistic
+    the mean state cannot carry, read by a simple consumer.
+    """
+    stream = pl.read_parquet(fixture_dir / "customer_event_stream.parquet")
+    keys = sorted(stream["customer_key"].unique().to_list())
+    akeys, bkeys = _split_customers(keys)
+    fut = stream.filter(to_ts_expr(pl.col("event_ts")) > as_of).sort(
+        ["customer_key", "event_ts", "event_type"]
+    )
+    nxt = fut.unique("customer_key", keep="first")
+    next_of = dict(zip(nxt["customer_key"].to_list(), nxt["event_type"].to_list(), strict=False))
+    classes = sorted(set(next_of.values()))
+    idx = {c: i for i, c in enumerate(classes)}
+    K = len(classes)
+    hist = (
+        stream.filter(to_ts_expr(pl.col("event_ts")) <= as_of)
+        .filter(pl.col("event_type").is_in(classes))
+        .sort(["customer_key", "event_ts", "event_type"])
+    )
+    T, last_hist = _bigram_counts(hist, classes)
+    P0 = T / T.sum(1, keepdims=True)
+    per: dict[str, tuple[np.ndarray, int]] = {}
+    for g in hist.partition_by("customer_key", maintain_order=True):
+        k = str(g["customer_key"][0])
+        types = np.array([idx[t] for t in g["event_type"]])
+        C = np.zeros((K, K), dtype=np.float64)
+        for a, b in zip(types[:-1], types[1:]):
+            C[a, b] += 1.0
+        per[k] = (C, int(types[-1]))
+    if not per:
+        return {"fatal": "no history for the signature head", "n_B_rows": 0}
+
+    def nll(ks, alpha):
+        vals = []
+        for k in ks:
+            if k not in next_of or k not in per:
+                continue
+            C, last = per[k]
+            p = (C[last] + alpha * P0[last]) / (C[last].sum() + alpha)
+            vals.append(-math.log(max(float(p[idx[next_of[k]]]), P_FLOOR)))
+        return np.asarray(vals)
+
+    grid = np.logspace(-2, 4, 25)
+    best = None
+    for al in grid:
+        v = nll(akeys, al)
+        if len(v):
+            score = float(v.mean())
+            if best is None or score < best[0]:
+                best = (score, float(al))
+    if best is None:
+        return {"fatal": "no A rows for the signature head", "n_B_rows": 0}
+    alpha = best[1]
+    nll_enc = nll(bkeys, alpha)
+    nll_base = np.asarray(
+        [-math.log(P0[per[k][1], idx[next_of[k]]]) for k in bkeys if k in next_of and k in per]
+    )
+    m = np.isfinite(nll_enc) & np.isfinite(nll_base)
+    nll_enc, nll_base = nll_enc[m], nll_base[m]
+    delta = nll_enc - nll_base
+    ci_lo, ci_hi = _paired_ci(delta) if len(delta) else (None, None)
+    beats_base = bool(ci_hi is not None and ci_hi < 0)
+    orc = (
+        json.loads((fixture_dir / "oracle.json").read_text())
+        if (fixture_dir / "oracle.json").exists()
+        else {}
+    )
+    nll_oracle = orc.get("oracle_ce")
+    baseline_ce = orc.get("baseline_ce")
+    g = None
+    if nll_oracle is not None and len(delta):
+        denom = float(nll_base.mean()) - nll_oracle
+        if denom <= 0:
+            denom = (baseline_ce - nll_oracle) if baseline_ce is not None else None
+        if denom:
+            g = (float(nll_enc.mean()) - nll_oracle) / denom
+    eff_rank, eff_rank_src = _eff_rank(products)
+    a_rows = [k for k in akeys if k in next_of and k in per]
+    n_A = {c: int(sum(1 for k in a_rows if next_of[k] == c)) for c in classes}
+    return {
+        "head_form": "hierarchical_dirichlet",
+        "alpha": round(alpha, 6),
+        "n_customers": len(keys),
+        "n_A": len(a_rows),
+        "n_B_rows": int(len(m)),
+        "classes": classes,
+        "classes_excluded": [],
+        "per_class_n_A": n_A,
+        "nll_enc": _round(nll_enc.mean()) if len(m) else None,
+        "nll_base": _round(nll_base.mean()) if len(m) else None,
+        "nll_oracle_nats": _round(nll_oracle),
+        "nll_baseline_ce_nats": _round(baseline_ce),
+        "g": _round(g),
+        "paired_ci_enc_minus_base": [ci_lo, ci_hi],
+        "beats_base": beats_base,
+        "eff_rank": eff_rank,
+        "eff_rank_source": eff_rank_src,
+    }
+
+
 def _ridge_oos(Ea, ya, Eb, yb):
     """(predictions, R2) with the battery's honest-OOS guards (fixed capacity, A-fit/B-score)."""
     if len(Ea) < 8 or float(np.std(ya)) < 1e-12 or float(np.std(yb)) < 1e-12:
@@ -278,6 +383,12 @@ def main() -> int:
         "--adv-products", default=None, help="products trained on the adversarial fixture"
     )
     ap.add_argument("--iter", default="iter1", help="iteration label recorded in the receipt")
+    ap.add_argument(
+        "--head",
+        choices=("ridge", "hier"),
+        default="ridge",
+        help="consumer head: the shipping ridge, or the hierarchical Dirichlet signature head",
+    )
     ap.add_argument("--out", default=None)
     a = ap.parse_args()
 
@@ -288,7 +399,8 @@ def main() -> int:
     out_path = Path(a.out) if a.out else LAB_RECEIPTS / f"{use_case}_{a.iter}.json"
 
     lab_gate = LG.evaluate()["rows"].get(use_case, {})
-    pos = _measure_pair(fixture, Path(a.products), as_of)
+    measure = _measure_pair_hier if a.head == "hier" else _measure_pair
+    pos = measure(fixture, Path(a.products), as_of)
     pos["mastered"] = bool(
         "g" in pos
         and pos["g"] is not None
@@ -302,6 +414,7 @@ def main() -> int:
         "use_case": use_case,
         "iteration": a.iter,
         "protocol": "DEC-576 dev-rig speedometer + controls (development instrument; never B-row evidence)",
+        "head_form": a.head,
         "as_of": a.as_of,
         "fixture_spec": json.loads((fixture / f"{use_case}_truth.json").read_text())["spec"],
         "lab_gate_a_side": lab_gate,
@@ -321,7 +434,7 @@ def main() -> int:
     }
 
     if a.neg_products:
-        neg = _measure_pair(fixture / "negative", Path(a.neg_products), as_of)
+        neg = measure(fixture / "negative", Path(a.neg_products), as_of)
         neg["expected"] = "NO_SIGNAL"
         ci = neg.get("paired_ci_enc_minus_base")
         # NO_SIGNAL = the snr=0 null is NOT significantly beaten by the head (the CI of
@@ -329,7 +442,7 @@ def main() -> int:
         neg["reads_no_signal"] = bool(ci and ci[1] is not None and not neg["beats_base"])
         body["negative_control"] = neg
     if a.adv_products:
-        adv = _measure_pair(fixture / "adversarial", Path(a.adv_products), as_of)
+        adv = measure(fixture / "adversarial", Path(a.adv_products), as_of)
         adv["expected"] = "structure claim NO_SIGNAL despite beats_base via the echo"
         # A side: adversarial_not_carried=True means the TYPES carry no structure (snr=0).
         # So structure_carried is the NEGATION — this is the claim the B head must NOT make.
@@ -339,11 +452,22 @@ def main() -> int:
         # The control reads as expected only when BOTH: the structure claim is NO_SIGNAL
         # (types carry nothing) AND the head still beats the 1-gram via the echoed attribute
         # (leak has teeth — a naive "beats baseline" gate would false-PASS here).
-        adv["reads_as_expected"] = bool(
-            adv["reads_no_signal_structure"]
-            and adv.get("beats_base")
-            and adv["leak_has_teeth_a_side"]
-        )
+        if a.head == "hier":
+            # A type-only head cannot see the echoed attribute. The control is: the structure
+            # claim stays NO_SIGNAL, the echo still has teeth A-side, and the head does NOT beat
+            # the 1-gram on the null types (a non-leaky read).
+            adv["reads_as_expected"] = bool(
+                adv["reads_no_signal_structure"]
+                and not adv.get("beats_base")
+                and adv["leak_has_teeth_a_side"]
+            )
+            adv["head_ignores_echo"] = True
+        else:
+            adv["reads_as_expected"] = bool(
+                adv["reads_no_signal_structure"]
+                and adv.get("beats_base")
+                and adv["leak_has_teeth_a_side"]
+            )
         body["adversarial_control"] = adv
 
     body["complete"] = bool(

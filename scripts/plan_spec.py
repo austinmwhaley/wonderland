@@ -411,9 +411,10 @@ V1 = (
     ),
 )
 
-#: DEC-frozen atoms closed by their own recorded evidence. E1.c is the DEC-572 port
-#: receipt (`lab/port_dec572.json`): bank + measure PCA-128 passes eff_rank/persona/R2.
-CLOSED = frozenset({"E1.c"})
+#: DEC-frozen atoms closed by their own recorded evidence. E1.a/E1.b are the hierarchical
+#: Dirichlet signature-head runs (`next_event_x4k_dec601.json`, `intent_dec600.json`,
+#: `intent_long_dec600.json`); E1.c is the DEC-572 port (`lab/port_dec572.json`).
+CLOSED = frozenset({"E1.a", "E1.b", "E1.c"})
 
 #: Stated references so the tree does not duplicate atoms: these v1 requirements are already
 #: owned elsewhere in the tree.
@@ -574,15 +575,15 @@ ROUTE: tuple[RouteStep, ...] = (
         "R2",
         "Dev rig: master intent (curriculum step 2)",
         "E1.b",
-        "EXECUTED negative (DEC-586): intent fixture g 2.665; mass counter 2.633; served "
-        "signature 2.600; all worse than the 1-gram. The atom stays FRONTIER; the next "
-        "candidate is the state algebra (mass/shape or signature state).",
+        "DONE: intent g -0.721 (365d) and 0.181 (730d) with the hierarchical Dirichlet "
+        "signature head; beats_base true both; E1.b green (DEC-600/601).",
     ),
     RouteStep(
         "R3",
         "Port: ONE real-data run of the winning trunk under DEC-572's bars",
         "E1.c",
-        "a pre-registered port receipt: eff_rank>=30, persona>=0.15, R2>=0.45, stable + B1 canary",
+        "DONE: served bank + measure PCA-128; eff_rank 30.9, persona 0.267, served R2 0.460; "
+        "B1 canary from the B rows (lab/port_dec572.json).",
     ),
     RouteStep(
         "R4",
