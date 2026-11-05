@@ -1289,7 +1289,7 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
         c_scope = (
             f"❌ **B+C consequence:** NOT DONE — {legs_green_n}/{len(J.LEG_ROWS)} legs green · "
             f"stages {stages_green_n}/{len(J.STAGE_ROWS)} · backward open: {len(open_blocking)}. "
-            "B is certified; this is the consequence gap (P4), not a missing B row."
+            "The B/C/E1/v1 rows are green but the open BACKWARD requirements block completion."
         )
     p_scope = (
         "✅ **Project v1:** V1.1-V1.5 green — identifiable stream, plugin acceptance 9/9, "
