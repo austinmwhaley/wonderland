@@ -11631,3 +11631,82 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     generated text states an outcome, not a count) · Reproducibility (PLAN.md is a
     pure function of the spec — the repair lands in the spec, not the render) · no
     gate/bar change.
+
+- **DEC-611 (multi-domain dev-rig campaign — three new known-truth event streams;
+  pre-registered 2026-11-05).**
+  - **NODE:** E1/dev-rig (diagnostic campaign; DEC-576 discipline: lab receipts are a
+    development instrument and never B-row evidence on the main card).
+  - **WHY-NOT / operator request.** "Make several more 'real' event streams and test the
+    project on them to better understand strengths/weaknesses — sensor data, or other
+    things we can test on." The certified artifact is the synthetic `demo_v2` prototype
+    (B-001); the dev rig exists precisely to localize which AXIS fails on which structure
+    before the real stream. Three new domain fixtures stress three different axes the
+    customer stream never exercised: continuous value levels + regime change, bursty
+    session timing + rare target class, extreme rate asymmetry + change-point structure.
+  - **Fixture design (one simulator — `rabbit_hole.data_spec.DOMAINS`, the single source
+    of truth; a domain is a point in the parameter space, not a second simulator).**
+    1. `sensor_fleet` — N=500 devices, 90 d, types (telemetry, alarm, maintenance);
+       per-device character `b ~ N(0, σ)` applied by the frozen intent mechanism
+       (`logits = log(P_base)·exp(b)`); P_base rows moderately dominant (no near-deterministic
+       rows, so the character ensemble lowers entropy and the oracle is CARRIED);
+       attributes: telemetry `reading ~ N(20 + 8·w_c, 0.3)` (state-dependent level — the
+       value-transform axis), alarm `severity`, maintenance `crew`. Axis under test:
+       continuous-value structure + regime (alarm→maintenance→telemetry) ordering.
+    2. `clickstream_sessions` — N=500 users, 180 d, types (page_view, search,
+       add_to_cart, checkout, bounce); bursty session timing (new `session_burst` rate
+       knob, off by default → ecommerce byte-identical); per-user buyer/browser character
+       (same mechanism); checkout is the RARE target class (n_A≥8 instrument guard will
+       disclose exclusions, never force). Axis under test: time-gap (continuous-time SSM)
+       + rare-class handling.
+    3. `server_logs` — N=500 servers, 365 d, types (request, error, deploy, restart);
+       request-dominated with diurnal rate modulation (new `diurnal` rate knob, off by
+       default — a rate-only distractor: the g target is next-TYPE NLL, so the encoder
+       must not confuse load variation with type structure); per-server flaky character;
+       deploy→(regressed error burst)→restart change-point ordering. Axis under test:
+       rare-event clustering + change-point attribution.
+    Each fixture ships the standard three-piece set (positive / negative snr=0 /
+    adversarial echo_next trap) via the generic builders; no standalone null_stream
+    use case (the negative control IS the no-signal stream — prefer deletion).
+  - **Protocol (frozen — DEC-576 instrument, no gate change).** `lab_measure.py` ridge
+    head (the shipping encoder) on all three pieces, plus the `hier` signature head on
+    the positive only (diagnostic: what a simple consumer reads from order statistics).
+    g = (nll_enc − nll_oracle)/(nll_base − nll_oracle); bar_g 0.5; 70/30 seeded A/B
+    partition; paired bootstrap CI (SEED/N_BOOT from the battery); negative must read
+    NO_SIGNAL; adversarial must have leak teeth A-side and read NO_SIGNAL on the
+    structure claim. Lab gate must be defensible on all three before measurement
+    (oracle_carried, negative_not_carried, adversarial_not_carried, leak_has_teeth).
+    Acceptance: receipts `complete: true` (A-side defensible + measured); the g values
+    are REPORTED AS-IS — mastery is a result, not a target to tune toward.
+  - **Scale rule.** N=500 entities per fixture; event budget sized so each entity has
+    ≳500 events and each rare class keeps ≥8 A-side entities with that class as next
+    event (branch: if the oracle is NOT carried at the chosen N, the structure is
+    sample-undetermined (DEC-583 lesson) — one-axis fixture-budget change, record both;
+    if a class falls under the guard, report the exclusion, no re-weighting).
+  - **Behavior move + re-stamp (mandatory).** The fixtures live in `rabbit_hole`
+    (behavior tree) → the behavior hash moves → every stamped receipt goes stale (the
+    freshness law). No-op proof: `DataSpec.simulate` is not in the cfm_v2k data path
+    (the demo_v2 stream is built by its dedicated generator; verified the only
+    `data_spec` consumers are `lab_oracles.py`/`lab_measure.py`), and the default domain
+    must regenerate the existing `next_event`/`intent` fixtures byte-identically
+    (snapshot before, diff after). Then: full cfm_v2k re-stamp (13 B producers + 4 judge
+    legs + E1/v1 lab receipts) at the new behavior; measured content byte-identical,
+    stamps moved; the card must remain SOLVED 39/39 at the new behavior.
+  - **Card scope.** No new plan atoms (the tree is frozen at 39; dev-rig results are
+    development instruments per DEC-576). Results land as: lab receipts under
+    `docs/report_cards/experiments/lab/`, the outcome addendum here, and a STATUS
+    current-state note. A permanent curriculum extension (E1.d/… atoms) is a separate
+    DEC if the operator wants the tree to grow.
+  - **Rejected.** (a) Scraping real sensor/web data: no known oracle → strengths/
+    weaknesses would be unattributable (P8); the dev-rig doctrine is known-truth first,
+    real data without attribution is a follow-up run. (b) Building the new streams in
+    `scripts/` (behavior-neutral, no re-stamp): a second simulator duplicates the data
+    layer (P6 single source of truth) and would hide the universality test — the point
+    is that the SAME pipeline, unchanged, consumes each domain. (c) New card atoms:
+    out of scope for a diagnostic request; changes the frozen tree. (d) One combined
+    "mixed-domain" stream: confounds the axis attribution (P8: one measured axis per
+    run).
+  - **Principle.** Honest (known truth + frozen instrument + controls; failures
+    reported as-is) · Universal (zero model code change — domains are data) ·
+    Diagnosable (3 structure families × dynamics/capacity/honesty/geometry axes → an
+    attribution table) · P6 (one DOMAINS table, one simulator) · P13 (no redundant
+    null fixture).

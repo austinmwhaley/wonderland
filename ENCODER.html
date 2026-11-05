@@ -60,7 +60,7 @@
 <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0f172a" flood-opacity="0.08"/></filter>
 </defs>
 <rect x="0" y="0" width="1680" height="1270" fill="#f8fafc"/>
-<rect x="30" y="1120" width="430" height="60" rx="10" fill="#ede9fe" stroke="#c4b5fd" stroke-width="1.4"/><text x="245.0" y="1148.45" font-size="17" font-weight="600" text-anchor="middle" fill="#0f172a">Input tokens  ·  event stream</text><text x="245.0" y="1164.45" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">customer events, attributes, value, time</text>
+<rect x="30" y="1120" width="430" height="60" rx="10" fill="#ede9fe" stroke="#c4b5fd" stroke-width="1.4"/><text x="245.0" y="1148.45" font-size="17" font-weight="600" text-anchor="middle" fill="#0f172a">Input tokens  ·  event stream</text><text x="245.0" y="1164.45" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">any domain: event types, attributes, value, time</text>
 <path d="M 245 1120 L 245 1100" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arrow)"/>
 <rect x="30" y="1030" width="430" height="70" rx="10" fill="#e9d5ff" stroke="#c084fc" stroke-width="1.4"/><text x="245.0" y="1055.6" font-size="16" font-weight="600" text-anchor="middle" fill="#0f172a">Schema resolution + tokenizer</text><text x="245.0" y="1071.6" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">event vocab · attrs · numerics · Δt · clock</text><text x="245.0" y="1087.6" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">no domain field names</text>
 <path d="M 245 1030 L 245 1000" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arrow)"/>
@@ -78,7 +78,7 @@
 <path d="M 245 590 L 245 560" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arrow)"/>
 <rect x="30" y="490" width="430" height="70" rx="10" fill="#fef9c3" stroke="#fde047" stroke-width="1.4"/><text x="245.0" y="515.6" font-size="16" font-weight="600" text-anchor="middle" fill="#0f172a">state  hₜ  (constant, 256)</text><text x="245.0" y="531.6" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">fade + tick · per-channel timescales τ</text><text x="245.0" y="547.6" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">mergeable: h(A⊕B) = h(B)∘h(A)</text>
 <path d="M 245 490 L 245 460" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arrow)"/>
-<rect x="30" y="370" width="430" height="90" rx="10" fill="#fef3c7" stroke="#fbbf24" stroke-width="1.4"/><text x="245.0" y="405.95" font-size="17" font-weight="600" text-anchor="middle" fill="#0f172a">Served E  (frozen)</text><text x="245.0" y="421.95" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">shape 256  +  counter (folded into the same width)</text><text x="245.0" y="437.95" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">candidate: + stat blocks (level/value/order/response)</text>
+<rect x="30" y="370" width="430" height="90" rx="10" fill="#fef3c7" stroke="#fbbf24" stroke-width="1.4"/><text x="245.0" y="405.95" font-size="17" font-weight="600" text-anchor="middle" fill="#0f172a">Served E  (frozen)</text><text x="245.0" y="421.95" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">trunk 256 (shape + counter) → certified compact E, 59 dims</text><text x="245.0" y="437.95" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">179-d block bank (B+C judge) · served signature block (order)</text>
 <path d="M 245 370 L 245 338" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arrow)"/>
 <rect x="30" y="238" width="430" height="98" rx="10" fill="#dbeafe" stroke="#93c5fd" stroke-width="1.4"/>
 <text x="245" y="264" font-size="16" font-weight="600" text-anchor="middle" fill="#0f172a">Consumers  ·  simple heads</text>
@@ -131,8 +131,8 @@
 <text x="560" y="762" font-size="12" font-weight="400" text-anchor="start" fill="#64748b">one frozen vector per customer at the cut; the consumer is a simple head</text>
 <rect x="558" y="786" width="170" height="64" rx="10" fill="#fef9c3" stroke="#fde047" stroke-width="1.4"/><text x="643.0" y="808.9" font-size="14" font-weight="600" text-anchor="middle" fill="#0f172a">shape</text><text x="643.0" y="823.9" font-size="11" font-weight="400" text-anchor="middle" fill="#64748b">boundary(proj(h))</text><text x="643.0" y="838.9" font-size="11" font-weight="400" text-anchor="middle" fill="#64748b">per-sample orthogonal R</text>
 <rect x="740" y="786" width="170" height="64" rx="10" fill="#fef3c7" stroke="#fbbf24" stroke-width="1.4"/><text x="825.0" y="808.9" font-size="14" font-weight="600" text-anchor="middle" fill="#0f172a">mass</text><text x="825.0" y="823.9" font-size="11" font-weight="400" text-anchor="middle" fill="#64748b">counter signed_log1p(M)</text><text x="825.0" y="838.9" font-size="11" font-weight="400" text-anchor="middle" fill="#64748b">anchored additive totals</text>
-<rect x="922" y="786" width="180" height="64" rx="10" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.4"/><text x="1012.0" y="808.9" font-size="14" font-weight="600" text-anchor="middle" fill="#0f172a">measure / ledger</text><text x="1012.0" y="823.9" font-size="11" font-weight="400" text-anchor="middle" fill="#64748b">schema-derived 595-d</text><text x="1012.0" y="838.9" font-size="11" font-weight="400" text-anchor="middle" fill="#64748b">served as a block</text>
-<rect x="558" y="878" width="250" height="64" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.4" stroke-dasharray="6 5"/><text x="683.0" y="907.55" font-size="13" font-weight="600" text-anchor="middle" fill="#0f172a">stat blocks  (candidate)</text><text x="683.0" y="922.55" font-size="11" font-weight="400" text-anchor="middle" fill="#64748b">level · order · response · value · uncertainty</text>
+<rect x="922" y="786" width="180" height="64" rx="10" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.4"/><text x="1012.0" y="808.9" font-size="14" font-weight="600" text-anchor="middle" fill="#0f172a">measure / ledger</text><text x="1012.0" y="823.9" font-size="11" font-weight="400" text-anchor="middle" fill="#64748b">compact PCA-39 judge ledger</text><text x="1012.0" y="838.9" font-size="11" font-weight="400" text-anchor="middle" fill="#64748b">fit on split A · served as a block</text>
+<rect x="558" y="878" width="250" height="64" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.4"/><text x="683.0" y="907.55" font-size="13" font-weight="600" text-anchor="middle" fill="#0f172a">stat blocks  (shipped)</text><text x="683.0" y="922.55" font-size="11" font-weight="400" text-anchor="middle" fill="#64748b">level · order signature · response · value · uncertainty (open)</text>
 <rect x="840" y="878" width="262" height="64" rx="10" fill="#fef3c7" stroke="#fbbf24" stroke-width="1.4"/><text x="971.0" y="908.25" font-size="15" font-weight="600" text-anchor="middle" fill="#0f172a">concat  E</text><text x="971.0" y="923.25" font-size="11" font-weight="400" text-anchor="middle" fill="#64748b">then FROZEN for every consumer</text>
 <path d="M 643 850 L 643 878" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arrow)"/>
 <path d="M 825 850 L 825 878" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arrow)"/>
@@ -140,7 +140,7 @@
 <path d="M 808 910 L 840 910" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arrow)"/>
 <rect x="558" y="972" width="544" height="52" rx="10" fill="#dbeafe" stroke="#93c5fd" stroke-width="1.4"/><text x="830.0" y="995.9" font-size="14" font-weight="600" text-anchor="middle" fill="#0f172a">consumer head  →  prediction / policy / geometry</text><text x="830.0" y="1010.9" font-size="11" font-weight="400" text-anchor="middle" fill="#64748b">linear or calibrated, fit on held-out B; never retrains the encoder</text>
 <path d="M 970 942 L 970 972" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#arrow)"/>
-<text x="560" y="1046" font-size="11.5" font-weight="400" text-anchor="start" fill="#64748b">E = 256 (shape + folded counter); candidate blocks append, never replace</text>
+<text x="560" y="1046" font-size="11.5" font-weight="400" text-anchor="start" fill="#64748b">trunk E = 256 (shape + folded counter); certified compact E = 59, bank = 179; blocks append, never replace</text>
 <rect x="1150" y="40" width="500" height="580" rx="16" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
 <text x="1170" y="70" font-size="18" font-weight="800" text-anchor="start" fill="#0f172a">The statistic bank  (DEC-590)</text>
 <text x="1170" y="92" font-size="12" font-weight="400" text-anchor="start" fill="#64748b">named blocks, one algebra per quantity, one composition</text>
@@ -148,12 +148,12 @@
 <rect x="1186" y="224" width="88" height="22" rx="11" fill="#dcfce7"/><text x="1230.0" y="239" font-size="11" font-weight="700" text-anchor="middle" fill="#166534">shipped</text>
 <rect x="1405" y="112" width="220" height="150" rx="10" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.4"/><text x="1515.0" y="177.95" font-size="17" font-weight="600" text-anchor="middle" fill="#0f172a">shape</text><text x="1515.0" y="193.95" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">contractive state</text><text x="1515.0" y="209.95" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">bounded · per-sample R</text>
 <rect x="1421" y="224" width="88" height="22" rx="11" fill="#dcfce7"/><text x="1465.0" y="239" font-size="11" font-weight="700" text-anchor="middle" fill="#166534">shipped</text>
-<rect x="1170" y="280" width="220" height="150" rx="10" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.4" stroke-dasharray="6 5"/><text x="1280.0" y="345.95" font-size="17" font-weight="600" text-anchor="middle" fill="#0f172a">order</text><text x="1280.0" y="361.95" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">pair / co-occurrence</text><text x="1280.0" y="377.95" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">Σ kₜ₋₁vₜᵀ · signature</text>
-<rect x="1186" y="392" width="96" height="22" rx="11" fill="#fef3c7"/><text x="1234.0" y="407" font-size="11" font-weight="700" text-anchor="middle" fill="#92400e">candidate</text>
-<rect x="1405" y="280" width="220" height="150" rx="10" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.4" stroke-dasharray="6 5"/><text x="1515.0" y="345.95" font-size="17" font-weight="600" text-anchor="middle" fill="#0f172a">response</text><text x="1515.0" y="361.95" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">P(outcome | action)</text><text x="1515.0" y="377.95" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">randomized cells · shrink</text>
-<rect x="1421" y="392" width="88" height="22" rx="11" fill="#fee2e2"/><text x="1465.0" y="407" font-size="11" font-weight="700" text-anchor="middle" fill="#991b1b">negative</text>
-<rect x="1170" y="448" width="220" height="150" rx="10" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.4" stroke-dasharray="6 5"/><text x="1280.0" y="513.95" font-size="17" font-weight="600" text-anchor="middle" fill="#0f172a">value</text><text x="1280.0" y="529.95" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">level / quantiles</text><text x="1280.0" y="545.95" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">future level · full stream</text>
-<rect x="1186" y="560" width="96" height="22" rx="11" fill="#fef3c7"/><text x="1234.0" y="575" font-size="11" font-weight="700" text-anchor="middle" fill="#92400e">candidate</text>
+<rect x="1170" y="280" width="220" height="150" rx="10" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.4"/><text x="1280.0" y="345.95" font-size="17" font-weight="600" text-anchor="middle" fill="#0f172a">order</text><text x="1280.0" y="361.95" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">pair / co-occurrence</text><text x="1280.0" y="377.95" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">served signature block (K×K + last type)</text>
+<rect x="1186" y="392" width="96" height="22" rx="11" fill="#dcfce7"/><text x="1234.0" y="407" font-size="11" font-weight="700" text-anchor="middle" fill="#166534">shipped</text>
+<rect x="1405" y="280" width="220" height="150" rx="10" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.4"/><text x="1515.0" y="345.95" font-size="17" font-weight="600" text-anchor="middle" fill="#0f172a">response</text><text x="1515.0" y="361.95" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">P(outcome | action)</text><text x="1515.0" y="377.95" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">randomized cells · shrink · decision head green</text>
+<rect x="1421" y="392" width="88" height="22" rx="11" fill="#dcfce7"/><text x="1465.0" y="407" font-size="11" font-weight="700" text-anchor="middle" fill="#166534">shipped</text>
+<rect x="1170" y="448" width="220" height="150" rx="10" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.4"/><text x="1280.0" y="513.95" font-size="17" font-weight="600" text-anchor="middle" fill="#0f172a">value</text><text x="1280.0" y="529.95" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">level / quantiles</text><text x="1280.0" y="545.95" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">future level · full stream</text>
+<rect x="1186" y="560" width="96" height="22" rx="11" fill="#dcfce7"/><text x="1234.0" y="575" font-size="11" font-weight="700" text-anchor="middle" fill="#166534">shipped</text>
 <rect x="1405" y="448" width="220" height="150" rx="10" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.4" stroke-dasharray="6 5"/><text x="1515.0" y="513.95" font-size="17" font-weight="600" text-anchor="middle" fill="#0f172a">uncertainty</text><text x="1515.0" y="529.95" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">coverage / missingness</text><text x="1515.0" y="545.95" font-size="12" font-weight="400" text-anchor="middle" fill="#64748b">never fake unobserved</text>
 <rect x="1421" y="560" width="88" height="22" rx="11" fill="#e2e8f0"/><text x="1465.0" y="575" font-size="11" font-weight="700" text-anchor="middle" fill="#475569">open</text>
 <text x="1170" y="606" font-size="11.5" font-weight="400" text-anchor="start" fill="#64748b">a block that exists in one path and not another is a bug</text>
@@ -165,15 +165,13 @@
 <rect x="1170" y="910" width="460" height="132" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.4"/><text x="1400.0" y="959.9" font-size="14" font-weight="600" text-anchor="middle" fill="#0f172a">laws the encoder is built on</text><text x="1400.0" y="974.9" font-size="11" font-weight="400" text-anchor="middle" fill="#64748b">continuous-time fade + tick · exact affine scan · constant state</text><text x="1400.0" y="989.9" font-size="11" font-weight="400" text-anchor="middle" fill="#64748b">per-sample only (no batch statistics) · schema-agnostic resolution</text><text x="1400.0" y="1004.9" font-size="11" font-weight="400" text-anchor="middle" fill="#64748b">equivariance: time translation, field permutation, entity permutation</text>
 <text x="1170" y="1066" font-size="11" font-weight="400" text-anchor="middle" fill="#0f172a"></text>
 <rect x="30" y="1200" width="1620" height="44" rx="12" fill="#0f172a"/>
-<text x="48" y="1228" font-size="13" font-weight="600" text-anchor="start" fill="#e2e8f0">map, not a measurement card  ·  all verdicts and numbers live on REPORT_CARD.md  ·  behavior c9f26925  ·  architecture as of 2026-11-04</text>
+<text x="48" y="1228" font-size="13" font-weight="600" text-anchor="start" fill="#e2e8f0">map, not a measurement card  ·  all verdicts and numbers live on REPORT_CARD.md  ·  behavior df73c2aa  ·  architecture as of 2026-11-05</text>
 </svg>
   </div>
 
   <div class="legend">
-    <span class="chip"><span class="dot" style="background:#16a34a"></span> shipped / certified path</span>
-    <span class="chip"><span class="dot" style="background:#d97706"></span> candidate / staged</span>
-    <span class="chip"><span class="dot" style="background:#dc2626"></span> measured negative</span>
-    <span class="chip"><span class="dot" style="background:#64748b"></span> not implemented</span>
+    <span class="chip"><span class="dot" style="background:#16a34a"></span> shipped / certified</span>
+    <span class="chip"><span class="dot" style="background:#64748b"></span> open (not yet a served block)</span>
     <span class="chip">measurements: <code>REPORT_CARD.md</code></span>
   </div>
 
@@ -190,17 +188,18 @@
     same width. The certified compact served form is <b>59 dims</b> (32 shape PCs + 16 level + 4
     response + 3 RFM reconstruction + 4 action response); the B+C judge serves the <b>179-dim
     block bank</b> (the 59 donor blocks + exact counter + schema profile + numeric/mass blocks)
-    with a compact 39-dim judge ledger. Candidate statistic blocks append; they never replace
-    the one composition.</p></div>
+    with a compact 39-dim judge ledger. The served <b>signature block</b> (per-customer K×K
+    transition counts + last type) is the order statistic the mean state cannot carry — the
+    E1 head of record. Statistic blocks append; they never replace the one composition.</p></div>
     <div class="note"><h3>The block bank</h3><p>Mass (additive), shape (contractive), order
     (pair/signature), response (randomized action curve), value (level/quantiles), uncertainty
     (coverage). A block that exists in one path and not another is a bug — the one-composition law.</p></div>
   </div>
 
   <footer>
-    Architecture map for the CFM encoder. Behavior <code>df73c2aa</code> (candidate <code>0.11.1r490760</code>; served bank 179 dims; synthetic <code>demo_v2</code> scope) · 2026-11-04.
+    Architecture map for the CFM encoder. Behavior <code>df73c2aa</code> (candidate <code>0.11.1r490760</code>; served bank 179 dims; synthetic <code>demo_v2</code> scope) · 2026-11-05.
     The source of truth for every verdict and number is <code>REPORT_CARD.md</code>; the block bank is
-    recorded in <code>DECISIONS.md</code> DEC-590/591/592/594/595/596/598/603/604/605. Candidate chips are not certified capabilities. B foundational is CERTIFIED (23/23 rows, 8/8 sections) on the single <code>cfm_v2k_vf2_cert</code> bundle; B+C is 8/8 on the served bank with the measure-free donor-only boundary recorded; E1 is PASS as served-object capacity (signature head + delivery/ledger port, not trunk-only capacity); and V1.1-V1.5 are green: the plan root is SOLVED 39/39 on the synthetic <code>demo_v2</code> prototype. No production-stream or trunk-only capacity claim is made.
+    recorded in <code>DECISIONS.md</code> DEC-590/591/592/594/595/596/598/603/604/605. The "open" uncertainty chip is not a certified capability. B foundational is CERTIFIED (23/23 rows, 8/8 sections) on the single <code>cfm_v2k_vf2_cert</code> bundle; B+C is 8/8 on the served bank with the measure-free donor-only boundary recorded; E1 is PASS as served-object capacity (signature head + delivery/ledger port, not trunk-only capacity); and V1.1-V1.5 are green: the plan root is SOLVED 39/39 on the synthetic <code>demo_v2</code> prototype. No production-stream or trunk-only capacity claim is made. The same pipeline — zero model code change — is under multi-domain stress test (DEC-611: sensor, clickstream, server-log dev-rig fixtures); results land on lab receipts, not this map.
   </footer>
 </div>
 </body>
