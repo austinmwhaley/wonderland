@@ -39,7 +39,7 @@ STEERING = (
 # A real entry line: a heading, or a bullet whose first word is the DEC id
 # (bold or not). Wrapped prose that merely begins with "DEC-NNN …" is NOT an entry.
 ENTRY = re.compile(r"^\s*(?:#{1,4}\s+|[-*]\s+\*{0,2})DEC-(\d+)\b")
-DEC_CITE = re.compile(r"DEC-(\d{2,4})(?:\s*/\s*(\d{2,4}))*")
+DEC_CITE = re.compile(r"DEC-(\d{2,4}(?:\s*/\s*\d{2,4})*)")
 RESERVED = re.compile(r"reserved", re.I)
 
 #: The log's ordering-discipline region (DEC-607): the repair region and everything
@@ -57,12 +57,17 @@ def _entries() -> list[tuple[int, int]]:
     return out
 
 
+def _members(m: re.Match) -> list[int]:
+    """Every id named by one citation: "DEC-598" or the elided "DEC-586/600/601"."""
+    return [int(x) for x in m.group(1).replace(" ", "").split("/")]
+
+
 def _resolved() -> set[int]:
     """Dec ids that resolve: entry lines + documented reserved/sealed lines."""
     ids = {i for i, _ in _entries()}
     for line in LOG.read_text().splitlines():
         if RESERVED.search(line):
-            ids |= {int(m.group(1)) for m in DEC_CITE.finditer(line)}
+            ids |= {c for m in DEC_CITE.finditer(line) for c in _members(m)}
     return ids
 
 
@@ -76,9 +81,8 @@ def test_citations_resolve_to_entries_or_seals() -> None:
         assert path.exists(), f"steering document missing: {path}"
         for i, line in enumerate(path.read_text().splitlines(), 1):
             for m in DEC_CITE.finditer(line):
-                cands = [int(m.group(1))] + [int(g) for g in m.groups()[1:] if g]
-                for c in cands:
-                    # in-log-range citation; must resolve (elided form expands)
+                for c in _members(m):
+                    # in-log-range citation; must resolve (elided form expands fully)
                     if c >= floor and c not in resolved:
                         bad.setdefault(c, []).append(f"{path.name}:{i}")
     assert not bad, (
