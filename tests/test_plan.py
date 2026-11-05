@@ -153,9 +153,13 @@ def test_plan_md_contains_every_node_and_no_measurements():
         assert word not in text, f"PLAN.md carries a measurement ({word})"
 
 
-def test_the_card_renders_the_same_tree_with_verdicts(tmp_path):
+def test_the_card_renders_the_same_tree_with_verdicts(tmp_path, monkeypatch):
     import report_card as RC
 
+    # isolate the backward input: no review recorded -> 0 open requirements, so the root
+    # verdict under test is the receipts-only derivation (the live AUDIT.md is the current
+    # project record, not a fixture).
+    monkeypatch.setattr(RC, "AUDIT_MD", tmp_path / "AUDIT.md")
     md, info = RC.render(tmp_path, "abc123")
     assert "The plan — the tree this card measures" in md
     plan = info["plan"]

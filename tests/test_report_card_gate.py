@@ -269,6 +269,11 @@ def test_assessment_never_claims_done_without_green_rows(tmp_path):
 
 def test_assessment_claims_done_only_when_everything_is_green(tmp_path, monkeypatch):
     _all_green(tmp_path, monkeypatch)
+    # isolate the backward input: "DONE" under test is the all-green-receipts claim with no
+    # open BACKWARD requirement; the live AUDIT.md is the current project record, not a
+    # fixture. The open-requirement case is pinned by
+    # test_an_open_breaking_backward_requirement_blocks_done.
+    monkeypatch.setattr(RC, "AUDIT_MD", tmp_path / "AUDIT.md")
     _, info = RC.render(tmp_path, HASH)
     assert "ENCODER DONE" in info["assessment"]
 

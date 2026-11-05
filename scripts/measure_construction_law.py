@@ -115,8 +115,14 @@ def main() -> int:
     ensure_boundary()
 
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--products", default="/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k")
-    ap.add_argument("--demo", default="/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/demo_v2")
+    ap.add_argument(
+        "--products",
+        default="/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k",
+    )
+    ap.add_argument(
+        "--demo",
+        default="/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/demo_v2",
+    )
     ap.add_argument("--out", default=str(OUT))
     ap.add_argument("--n-sequences", type=int, default=20)
     a = ap.parse_args()

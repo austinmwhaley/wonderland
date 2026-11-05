@@ -193,7 +193,10 @@ def _response_block(stream, keys, levels):
 def main(argv=None) -> int:
     ensure_boundary()
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--products", default="/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k")
+    ap.add_argument(
+        "--products",
+        default="/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k",
+    )
     ap.add_argument("--demo", default=str(DEMO))
     ap.add_argument("--out", default=str(OUT))
     a = ap.parse_args(argv)

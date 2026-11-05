@@ -649,12 +649,15 @@ def test_served_object_without_any_finite_ledger_arm_is_unknown(tmp_path):
     assert info["b_verdicts"]["B3.6"] == J.UNKNOWN
 
 
-def test_the_plan_is_the_top_line_and_is_derived_from_the_b_rows(tmp_path):
+def test_the_plan_is_the_top_line_and_is_derived_from_the_b_rows(tmp_path, monkeypatch):
     """DEC-579: the plan tree replaced the sprint's capability-axis table as the top line.
 
     One axis definition only — the tree — so the card cannot say "done" on one view while the
     other is red. With no receipts every measured atom is UNKNOWN and the root is never PASS.
+    The backward input is isolated (no review recorded -> 0 open requirements); the live
+    AUDIT.md is the current project record, not a fixture.
     """
+    monkeypatch.setattr(RC, "AUDIT_MD", tmp_path / "AUDIT.md")
     md, info = RC.render(tmp_path, HASH)
     assert "The plan — the tree this card measures" in md
     assert "B capability — top line" not in md

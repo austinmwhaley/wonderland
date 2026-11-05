@@ -11367,3 +11367,32 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     DONE for the served bank with the donor-only boundary recorded; the card/PLAN
     state the synthetic-demo scope. BACKWARD B-001/B-008/B-009 close by the scope and
     container the requirements allow.
+
+- **DEC-606 (repo commit gates green — B-014 record repair, pre-registered 2026-11-05).**
+  - **NODE:** process (no measurement node; the AGENTS.md commit gates).
+  - **WHY-NOT.** BACKWARD B-014 (FULL at `38740c8`): at the SOLVED commit,
+    `ruff format --check .` fails on 9 `scripts/measure_*.py` files (long
+    absolute-path argparse defaults introduced by the `63e13da` workspace
+    consolidation; none in the behavior trees) and the fast pytest tier fails
+    `test_every_producer_that_can_allocate_is_policed` — `measure_port_demo.py`
+    and `measure_red_king_known.py` (added at `75df2b0`) are absent from
+    `gpu_watchdog.DEFAULT_PATTERNS`, so the memory guard cannot stop two
+    producers that can allocate large frames (the 2026-10-29 crash was a
+    producer not on the list).
+  - **MOVE (gates only, no measurement change).** (1) `ruff format` the 9 files
+    — formatting is authoritative, no semantic change. (2) Add the two
+    producers to `DEFAULT_PATTERNS` (the single source of truth the guard test
+    derives against). Frozen acceptance: `ruff check .`, `ruff format --check .`,
+    `pytest -m "not slow"` all RC=0; `principle_audit --all --strict` still
+    0-new beyond baseline; behavior hash `df73c2aa` unchanged (`scripts/` is not
+    in `BEHAVIOR_TREES`); card content unchanged on re-render.
+  - **Rejected.** Excluding `scripts/` from ruff format or adding `# noqa` —
+    weakens the repo's own gate to pass (Honest violation; "never weaken a gate
+    to pass"). Shortening the argparse defaults to dodge the wrap — churns
+    source for no information; formatting, not naming, is the defect.
+    Deleting/loosening the guard test — the test is repo-derived from the crash
+    history; the fix is to police the producers, not to stop testing.
+  - **Principle.** Honest (the recorded SOLVED span was committed through red
+    commit gates; the record must be repaired) · Robust (a producer the guard
+    cannot see is a producer it cannot stop) · No gate/bar change to any
+    measurement.

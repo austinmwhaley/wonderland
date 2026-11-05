@@ -68,6 +68,8 @@ DEFAULT_PATTERNS = (  # principle-ok: process identities, not tuning constants
     "measure_transfer_law.py",
     "measure_robustness_law.py",
     "measure_v1_stack.py",
+    "measure_port_demo.py",
+    "measure_red_king_known.py",
     "measure_stage_decomposition.py",
     "measure_block_serving.py",
     "measure_shape_battery.py",
