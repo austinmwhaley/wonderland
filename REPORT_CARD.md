@@ -1,11 +1,11 @@
 # REPORT_CARD — B foundational, then PATH B > PATH A
 
-*Generated `2026-11-05T01:26:46+00:00` · commit `0bc0d1f` (`foundation-rebuild` · dirty) · encoder behavior `f1617f4e2a2990ce`*
+*Generated `2026-11-05T04:12:29+00:00` · commit `7a3ae15` (`foundation-rebuild` · dirty) · encoder behavior `df73c2aa1427b471`*
 
 **Assessment:**
 
-- ⚪ **Plan root:** OPEN — 31/39 atomic problems green · 0 FAIL · 2 DEC-frozen · 5 v1 unassessed · 19 interior.
-- ✅ **B foundational:** CERTIFIED — 8/8 sections green. Scope: the 23 receipts are current at behavior `f1617f4e`; the served-composition rows (B4.2/B5.1/B6.2/B6.3) read the derived bank (`c32rvd` + profile/numeric/mass blocks; B6.2 uses the 59-dim donor slice), the rest the base candidate/encoder. B6.2 uses the recorded ensemble protocol and B4.2 the randomized-period protocol; both are on the receipts.
+- ⚪ **Plan root:** OPEN — 31/39 atomic problems green · 0 FAIL · 0 DEC-frozen · 5 v1 unassessed · 19 interior.
+- ✅ **B foundational:** CERTIFIED — 8/8 sections green. Scope: the 23 receipts are current at behavior `df73c2aa`; the served-composition rows (B4.2/B5.1/B6.2/B6.3) read the derived bank (`c32rvd` + profile/numeric/mass blocks; B6.2 uses the 59-dim donor slice), the rest the base candidate/encoder. B6.2 uses the recorded ensemble protocol and B4.2 the randomized-period protocol; both are on the receipts.
 - ✅ **B+C consequence:** DONE (ENCODER DONE v1) — 8/8 legs green · stages 6/6 · no BREAKING/MAJOR backward requirement. Bank v2 (DEC-598): the served block bank + compact judge ledger; the v1 flat judge (4/8) and the GBM delivery head are recorded beside it.
 - ⚪ **Project v1:** plugin acceptance 9/9 on the bank + demo stream (supervised 6/6, unsupervised 4/4, white_queen 5/5, Layer C 9/9); red_king/red_queen/caterpillar and the identifiable-stream metadata remain unassessed.
 
@@ -16,7 +16,7 @@ Ledger points never count as progress: `brain alone` is the judge, `brain + ledg
 
 The goal, cut backwards into the problems that must all be solved, recursively to the atomic problems. This section is generated from `scripts/plan_spec.py` — the single definition of the tree; `PLAN.md` is its readable render. The plan defines no gate: every measured atomic problem is a frozen row in its B/judge section below, and an interior verdict is the worst of its children.
 
-**Plan root:** ⚪ OPEN — 31/39 atomic problems green · 0 FAIL · 2 DEC-frozen (no card rows) · 5 v1 not assessed on this card · 19 interior problems.
+**Plan root:** ⚪ OPEN — 31/39 atomic problems green · 0 FAIL · 0 DEC-frozen (no card rows) · 5 v1 not assessed on this card · 19 interior problems.
 
 | Level | Node | What must be true | Atomic problems | Verdict |
 |---|---|---|---|---|
@@ -24,11 +24,11 @@ The goal, cut backwards into the problems that must all be solved, recursively t
 | 1 | **P1** The donor exists | Is there a per-stream artifact built from the right algebra, and is it an identity? | 4 atomic problems | ✅ PASS |
 | 2 | **B1** Lawful | Is the state built from the right algebra? | 2 atomic problems | ✅ PASS |
 | 2 | **B8** Reproducible | Is the artifact an identity? | 2 atomic problems | ✅ PASS |
-| 1 | **P2** The donor suffices | Does the embedding lose nothing that matters about the future — for prediction and decision — … | 11 atomic problems | ❔ UNKNOWN |
+| 1 | **P2** The donor suffices | Does the embedding lose nothing that matters about the future — for prediction and decision — … | 11 atomic problems | ✅ PASS |
 | 2 | **B2** Sufficient | Does B lose nothing about the future? | 3 atomic problems | ✅ PASS |
-| 2 | **E1** Trunk capacity (the state-update algebra) | Can the state carry the stream's structure — not just its mass? | 3 atomic problems | ❔ UNKNOWN |
-| 3 | **E1.a** next_event mastered on the toy (curriculum step 1) | Does the frozen trunk beat the 1-gram on the known-truth next_event structure at the dev-rig … | — | ⚪ FRONTIER |
-| 3 | **E1.b** intent mastered on the toy (curriculum step 2) | Does the frozen trunk beat the 1-gram on the per-customer intent structure, at a scale where … | — | ⚪ FRONTIER |
+| 2 | **E1** Trunk capacity (the state-update algebra) | Can the state carry the stream's structure — not just its mass? | 3 atomic problems | ✅ PASS |
+| 3 | **E1.a** next_event mastered on the toy (curriculum step 1) | Does the frozen trunk beat the 1-gram on the known-truth next_event structure at the dev-rig … | — | ✅ PASS |
+| 3 | **E1.b** intent mastered on the toy (curriculum step 2) | Does the frozen trunk beat the 1-gram on the per-customer intent structure, at a scale where … | — | ✅ PASS |
 | 3 | **E1.c** port: ONE real-data run under DEC-572's bars | Does the winning trunk master the real stream — eff_rank>=30, persona>=0.15, R2>=0.45, stable, … | — | ✅ PASS |
 | 2 | **B4** Decisive | Does B support action/counterfactual decisions? | 3 atomic problems | ✅ PASS |
 | 2 | **B5** Minimal & affordable | Is it the smallest sufficient object, and fast enough? | 2 atomic problems | ✅ PASS |
@@ -119,7 +119,7 @@ The judge below is the **consequence** (B+C). This section is **B itself**: a ro
 | # | Property | Metric | Green means | Verdict | Evidence / missing producer |
 |---|---|---|---|---|---|
 | B5.1 | Minimality k_min | served rank = the frozen reconstruction certificate | quality | ✅ PASS | served shape rank 32 == k_min 32 (shape full 32) · explicit block 147 · joint floor 48 (unconstrained) · n_train 451 / n_test 439 · noise 0.04773 |
-| B5.2 | Cost / runtime / constant-state | runtime, memory and incremental-update receipt | reporting | ✅ PASS | 5000/5000 customers · cold 25.93s / warm 101.93s · 44.1 rows/s · dims 256/256 · peak RSS 3386.4 MB (slice 32.0 GB) · incremental (absorbed 0, idle 5000, wall 3.45s) |
+| B5.2 | Cost / runtime / constant-state | runtime, memory and incremental-update receipt | reporting | ✅ PASS | 5000/5000 customers · cold 11.8s / warm 84.74s · 53.1 rows/s · dims 256/256 · peak RSS 3360.3 MB (slice 32.0 GB) · incremental (absorbed 0, idle 5000, wall 3.45s) |
 
 ### B6 — Transferable · ✅ PASS
 
@@ -203,19 +203,19 @@ The leg verdict above is computed from these rows; a task can PASS while its leg
 
 | Stage | Working-state proof | Verdict | Evidence |
 |---|---|---|---|
-| **S1** Schema resolution (universal input) | renamed-schema + new-field pass, zero code edits | ✅ PASS | [renamed_end_to_end] OK: renamed client_id/occurred_at/event/attributes/total -> onboard resolved {'customer_key': 'client_id', 'event_ts':   ·measure_input_law.py on 0bc0d1f |
-| **S2** Vocabulary & numeric encoding | unseen-value path exercised; transform receipts; permutation invariance <= tol | ✅ PASS | [unseen_value_path] OK: frozen schema (7 event types, vocab sizes [1, 10, 4, 3, 7, 3, 1, 4, 4, 396, 1, 1, 1, 4, 4]) encoded a batch containi  ·measure_input_law.py on 0bc0d1f |
-| **S3** Lawful dynamics (the engine) | merge/equivariance/mass-additivity exact on data; tau receipted from spectra; stable from step 0 | ✅ PASS | [scan_associativity] OK: merge law F(g∘f)=F(g)∘F(f) on 6 real sequences x 5 split points (float64, model's own decay/drive, continuous_time=  ·measure_dynamics_law.py on 0bc0d1f |
-| **S4** Buckets (the outlets) | per-bucket accessibility parity + per-bucket negative controls | ✅ PASS | [outlet_schema] OK: 8 views / 40000 rows; declared-not-served [] advertised | [decodability] OK: linear-head decoders beat random+destroyed   ·measure_views_law.py on 0bc0d1f |
-| **S5** The objective battery | every content pressure beats its naive comparator (or is excluded and reported) | ✅ PASS | [ledger_reconstruction] OK: ledger recomputed from the raw stream by DuckDB (not a table copy); LINEAR head on the learned-shape donor (embe  ·measure_battery_law.py on 0bc0d1f |
-| **S6** Certification (the card) | one command regenerates the card at a recorded commit + hashes | ✅ PASS | [full_chain_in_one_invocation] OK: 6 producer(s) run by this one command (S1+S2 165.0s, S3 12.6s, S4 64.0s, S5 2.1s, legs 37.0s, prov 2.2s);  ·measure_certification_law.py on 0bc0d1f |
+| **S1** Schema resolution (universal input) | renamed-schema + new-field pass, zero code edits | ✅ PASS | [renamed_end_to_end] OK: renamed client_id/occurred_at/event/attributes/total -> onboard resolved {'customer_key': 'client_id', 'event_ts':   ·measure_input_law.py on 7a3ae15 |
+| **S2** Vocabulary & numeric encoding | unseen-value path exercised; transform receipts; permutation invariance <= tol | ✅ PASS | [unseen_value_path] OK: frozen schema (7 event types, vocab sizes [1, 10, 4, 3, 7, 3, 1, 4, 4, 396, 1, 1, 1, 4, 4]) encoded a batch containi  ·measure_input_law.py on 7a3ae15 |
+| **S3** Lawful dynamics (the engine) | merge/equivariance/mass-additivity exact on data; tau receipted from spectra; stable from step 0 | ✅ PASS | [scan_associativity] OK: merge law F(g∘f)=F(g)∘F(f) on 6 real sequences x 5 split points (float64, model's own decay/drive, continuous_time=  ·measure_dynamics_law.py on 7a3ae15 |
+| **S4** Buckets (the outlets) | per-bucket accessibility parity + per-bucket negative controls | ✅ PASS | [outlet_schema] OK: 8 views / 40000 rows; declared-not-served [] advertised | [decodability] OK: linear-head decoders beat random+destroyed   ·measure_views_law.py on 7a3ae15 |
+| **S5** The objective battery | every content pressure beats its naive comparator (or is excluded and reported) | ✅ PASS | [ledger_reconstruction] OK: ledger recomputed from the raw stream by DuckDB (not a table copy); LINEAR head on the learned-shape donor (embe  ·measure_battery_law.py on 7a3ae15 |
+| **S6** Certification (the card) | one command regenerates the card at a recorded commit + hashes | ✅ PASS | [full_chain_in_one_invocation] OK: 6 producer(s) run by this one command (S1+S2 174.1s, S3 13.2s, S4 68.5s, S5 2.2s, legs 44.2s, prov 2.3s);  ·measure_certification_law.py on 7a3ae15 |
 
 ## Certification hygiene
 
 | # | Check | Verdict | Evidence |
 |---|---|---|---|
 | H1 | Environment receipted | ✅ PASS | env_receipt.json device matmul ok |
-| H2 | Behavior hash recorded | ✅ PASS | behavior_hash f1617f4e2a2990ce |
+| H2 | Behavior hash recorded | ✅ PASS | behavior_hash df73c2aa1427b471 |
 | H3 | N recorded | ✅ PASS | enforced per row (no PASS without N) |
 | H4 | Controls present | ✅ PASS | enforced per row (no PASS without controls) |
 | H5 | Comparator finite and fair | ✅ PASS | enforced per row (comparator must be finite and fair) |
