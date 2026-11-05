@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "7baf744fc78ba3b3",
+    "behavior_hash": "f1617f4e2a2990ce",
     "command": "scripts/measure_bc_bank.py --products looking_glass/artifacts/cfm_v2k_vf2_bank --demo looking_glass/artifacts/demo_v2 --out-dir docs/report_cards/experiments",
-    "generated_at": "2026-11-05T00:02:48+00:00",
-    "git_commit": "e9dfd6b9a623a39a5ffb1596fc66a73e214e9553",
+    "generated_at": "2026-11-05T01:25:50+00:00",
+    "git_commit": "0bc0d1f5a905004ecabc637d3584f7fbc6de8d23",
     "producer": "measure_bc_bank.py"
   },
   "arms": {
