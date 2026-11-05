@@ -11,6 +11,7 @@ from __future__ import annotations
 import numpy as np
 import polars as pl
 
+from looking_glass.cfm_data import _primary_numeric_field
 from looking_glass.stream_adapter import to_ts_expr
 
 LEVEL_COLS = (
@@ -39,9 +40,14 @@ def level_block(stream: pl.DataFrame, keys: list[str], as_of_epoch: float) -> np
     df = stream
     if "ts" not in df.columns:
         df = df.with_columns(to_ts_expr(pl.col("event_ts")).alias("ts"))
-    if "value" not in df.columns:
+    # DEC-611: the level block is over the stream's OWN dominant numeric field (derived,
+    # never named) — the `value` literal broke every domain whose quantity is called
+    # something else. No numeric field -> the block is degenerate (zeros, disclosed),
+    # never a crash.
+    value_col = _primary_numeric_field(df, None)
+    if value_col is None:
         return np.zeros((len(keys), len(LEVEL_COLS)), dtype=np.float64)
-    valued = df.filter(pl.col("value").abs() > 0).sort(["customer_key", "ts"])
+    valued = df.filter(pl.col(value_col).abs() > 0).sort(["customer_key", "ts"])
     if valued.height == 0:
         return np.zeros((len(keys), len(LEVEL_COLS)), dtype=np.float64)
     gaps = valued.with_columns(
@@ -50,16 +56,16 @@ def level_block(stream: pl.DataFrame, keys: list[str], as_of_epoch: float) -> np
     med = float(gaps["gap"].median() or 1.0)
     w1, w2 = 4.0 * med, 12.0 * med
     tmax = df["ts"].max()  # the stream is already cut at as_of
-    pos = valued.filter(pl.col("value") > 0)
+    pos = valued.filter(pl.col(value_col) > 0)
     g = pos.group_by("customer_key").agg(
         pl.len().alias("n_valued"),
-        pl.col("value").sum().alias("v_sum"),
-        pl.col("value").mean().alias("v_mean"),
-        pl.col("value").std().fill_null(0.0).alias("v_std"),
-        pl.col("value").quantile(0.25).alias("q25"),
-        pl.col("value").quantile(0.5).alias("q50"),
-        pl.col("value").quantile(0.75).alias("q75"),
-        pl.col("value").quantile(0.9).alias("q90"),
+        pl.col(value_col).sum().alias("v_sum"),
+        pl.col(value_col).mean().alias("v_mean"),
+        pl.col(value_col).std().fill_null(0.0).alias("v_std"),
+        pl.col(value_col).quantile(0.25).alias("q25"),
+        pl.col(value_col).quantile(0.5).alias("q50"),
+        pl.col(value_col).quantile(0.75).alias("q75"),
+        pl.col(value_col).quantile(0.9).alias("q90"),
         pl.col("ts").min().alias("first_ts"),
         pl.col("ts").max().alias("last_ts"),
     )
@@ -67,10 +73,10 @@ def level_block(stream: pl.DataFrame, keys: list[str], as_of_epoch: float) -> np
         sub = (
             pos.filter(((pl.lit(tmax) - pl.col("ts")).dt.total_seconds().truediv(86400)) <= w)
             .group_by("customer_key")
-            .agg(pl.len().alias(f"n_{tag}"), pl.col("value").sum().alias(f"v_{tag}"))
+            .agg(pl.len().alias(f"n_{tag}"), pl.col(value_col).sum().alias(f"v_{tag}"))
         )
         g = g.join(sub, on="customer_key", how="left")
-    neg = valued.filter(pl.col("value") < 0).group_by("customer_key").agg(pl.len().alias("n_neg"))
+    neg = valued.filter(pl.col(value_col) < 0).group_by("customer_key").agg(pl.len().alias("n_neg"))
     g = g.join(neg, on="customer_key", how="left")
     g = g.with_columns(
         (pl.lit(tmax) - pl.col("first_ts")).dt.total_seconds().truediv(86400).alias("tenure_d"),
@@ -159,7 +165,12 @@ def median_gap_stream(stream) -> float:
         if "ts" in stream.columns
         else stream.with_columns(to_ts_expr(pl.col("event_ts")).alias("ts"))
     )
-    valued = df.filter(pl.col("value").abs() > 0).sort(["customer_key", "ts"])
+    # DEC-611: derived primary numeric field (same as level_block); a stream with no
+    # numeric field has no valued-event gap scale — the documented 1-day fallback.
+    value_col = _primary_numeric_field(df, None)
+    if value_col is None:
+        return 1.0
+    valued = df.filter(pl.col(value_col).abs() > 0).sort(["customer_key", "ts"])
     g = valued.with_columns(
         pl.col("ts").diff().over("customer_key").dt.total_seconds().truediv(86400).alias("gap")
     ).filter(pl.col("gap") > 0)
