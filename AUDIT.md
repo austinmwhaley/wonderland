@@ -16,15 +16,15 @@
 > re-render at the same tree is `46eedddfeaa74f2d`). Mode: **FULL** — the first FULL review at
 > the SOLVED tree (the previous FULL, `dcad1bd`, ran at the pre-SOLVED tree `560a6c4`).
 > **Verdict: NO BREAKING FINDINGS.** Every one of the card's 39 atoms was re-derived from its
-> receipt and frozen gate (§6.2–§6.4); no measurement is falsified. The open findings are
+> receipt and frozen gate (§6.2–§6.4); no measurement is falsified. The findings were
 > record-and-consistency findings: **3 MAJOR** — B-012 (the decision log is missing the entries
 > the card/plan/status cite as load-bearing), B-013 (the unsupervised leg receipt contradicts
 > itself and all four leg receipts carry flat-era `arms`), B-014 (two of the three AGENTS.md
 > commit gates are red at the SOLVED commit) — **and 1 MINOR** (B-015, the bundle manifest is
-> unstamped). B-016 (defects in this file itself) is closed by this rewrite. B-017/B-018 are
-> disclosed INFO. While the three MAJORs are open, `plan_spec.statuses` gates the plan root to
-> FAILED (`backward_open=3`) and the card's B+C line cannot claim DONE — the card must gate
-> honestly while the findings are open (§6.8 states the stop condition).
+> unstamped). **All four are closed 2026-11-05 by evidence** (closures: §4; code at
+> `08e37e4`/`470bb5e`/`4cf477b`/`672c164`; closing FULL at the closure tree: §6.9). B-016
+> (defects in this file itself) is closed by this rewrite. B-017/B-018 are disclosed INFO
+> (non-blocking; the operator ruling on B-017 remains queued).
 
 ---
 
@@ -62,7 +62,7 @@ open) · **violated** (principle broken, requirement open) · **not yet audited*
 | P3 | **Lawful** — compositionality, equivariance, correct algebra per quantity | merge/equivariance/mass-additivity receipts; per-sample contract; no batch-coupled serving statistics; additive mass scored in raw units | not yet audited | — |
 | P4 | **Efficient** — linear time, constant state, incremental, minimal capacity | no per-row Python loops in hot paths; scans/gathers/einsum; O(1) serve; derived budgets; caps enforced | not yet audited | — |
 | P5 | **Robust** — fail safe, reject not clamp, calibrated uncertainty | determinism; divergence = hard failure; no silent clamps/NaNs; widened uncertainty on OOD; caps/co-tenancy | not yet audited | — |
-| P6 | **Honest** — grounded, falsifiable, label-free upstream | pre-registration before the run; frozen acceptance; paired CIs; controls; no training on the graded metric; no post-hoc gate edits | **gap** | B-002–B-005, B-008–B-010 closed; B-012, B-014 closed 2026-11-05 by evidence (`470bb5e`/`08e37e4`); **B-013 open**; B-016 closed by this review; B-017 open (INFO) |
+| P6 | **Honest** — grounded, falsifiable, label-free upstream | pre-registration before the run; frozen acceptance; paired CIs; controls; no training on the graded metric; no post-hoc gate edits | **aligned** | B-002–B-005, B-008–B-010 closed; B-012, B-013, B-014 closed 2026-11-05 by evidence (`470bb5e`/`4cf477b`/`08e37e4`); B-016 closed by this review; B-017 open (INFO) |
 | P7 | **Accessible** — recoverable by simple consumers | linear shipping head; kNN unsupervised; MLP diagnostic only; decodability/parity receipts; no bucket dilution hidden | **aligned (boundary recorded)** | B-008 closed |
 | P8 | **Diagnosable** — attribute a shortfall to an axis and propose the fix | every red row names its axis; protocol names one axis; rejected alternatives recorded; coupling disclosed | **gap** | B-002, B-003, B-007 closed; B-017 open (INFO) |
 
@@ -79,7 +79,7 @@ open) · **violated** (principle broken, requirement open) · **not yet audited*
 | E7 | Fail safe; reject, do not clamp | Any silent default/clamp/NaN rescue? | not yet audited | — |
 | E8 | Uncertainty first | Every estimate has a calibrated interval/coverage; point estimates do not drive gates | not yet audited | — |
 | E9 | Measure everything; gate on ground truth | Is every capability independently validated with known truth? | **aligned** | B-005, B-006 closed |
-| E10 | Reproducibility and versioning | Deterministic, seeded, hash/version/commit recorded; one command regenerates | **gap** | B-004, B-009, B-010 closed; B-014 closed 2026-11-05 (`08e37e4`); **B-013, B-015 open**; B-018 open (INFO) |
+| E10 | Reproducibility and versioning | Deterministic, seeded, hash/version/commit recorded; one command regenerates | **aligned** | B-004, B-009, B-010 closed; B-013, B-014, B-015 closed 2026-11-05 (`4cf477b`/`08e37e4`/`672c164`); B-018 open (INFO) |
 | E11 | Observability | Receipts say what was derived/measured/assumed/fallback-fired | not yet audited | — |
 | E12 | Implement intent, not the example | Is the mechanism adaptive rather than a copied literal? | not yet audited | — |
 | E13 | Prefer deletion over accretion | Dead code/superseded paths/one-off special cases removed? | not yet audited | — |
@@ -93,8 +93,6 @@ open) · **violated** (principle broken, requirement open) · **not yet audited*
 
 | ID | Severity | Principle | Finding | Evidence | Requirement |
 |---|---|---|---|---|---|
-| B-013 | **MAJOR** | P6/E10 | `judge_leg_unsupervised.json` is self-contradictory: top-level `working: true` with current bank-v2 `columns` (all three tasks ci_lo > 0), yet `checks.unsupervised.working: false` and `arms`/`diagnostics`/`path_a`/`excluded` are byte-identical to the flat-era receipt at `379f189` (which had `working: false`). The rl and simulator legs carry flat-era `arms` text too. Cause: `stamp_merge_write` (`measure_input_law.py:487`) merges into the existing file and `measure_bc_bank.py` writes neither `checks` nor `arms`. The card verdict is computed from the current `columns`, so no green is false — but the receipt contradicts itself and the renderer's self-contradiction guard (`report_card.py:_block_problem`) covers stage blocks only, not leg receipts. | key diff vs `git show 379f189:…/judge_leg_unsupervised.json` (5 keys identical); `grep -n '"checks"' scripts/measure_bc_bank.py` → none; receipt `protocol: "bank v2 (DEC-598)"` vs `arms: "state_embeddings donor; pairwise-distance and k-means geometry"` | `measure_bc_bank.py` writes a current `checks` rollup and bank-v2 `arms` for every leg it scores (and does not carry stale keys it redefines); re-run the producer; verify columns byte-identical; re-stamp. No gate/criterion change. |
-| B-015 | **MINOR** | E10 | `cfm_v2k_vf2_cert/bundle_receipt.json` — the single-artifact manifest the B-009 closure and the card's B scope line rest on — has no `_meta` stamp (behavior/commit/producer/command), while every one of the 23 row receipts it maps is stamped. | `bundle_receipt.json` keys: `b_row_components, b_rows, brain_boundary, complete, components, donor_only_diagnostic*, kind, one_artifact, products, scope, seconds, tag` — no `_meta`; `build_b_cert_bundle.py:266` writes it unstamped | `build_b_cert_bundle.py` stamps `_meta` on the bundle receipt; re-run the builder; verify the bundle registry sha stays `116087fb206c2d81` (the registry covers `registry_{tag}.json`, not the receipt). |
 | B-017 | **INFO** | P6/P8 | The supervised leg's evidence discloses two open, non-gating questions: (i) negative controls are vacuous (R² < −1, a wide-design conditioning artifact) on 5/7 traits — the frozen `VACUOUS_CONTROL_R2` doctrine (`judge_spec.py:179–183`) says such controls prove nothing, and the gate does not count them; (ii) the ledger-only diagnostic beats the table on 4/7 traits (best R² 0.8659 on x0 vs the table's 0.8791), which falsifies SPINE §5's "the ledger is what the table already is" corollary and is recorded as "needs an operator ruling". | `judge_leg_supervised.json` `checks.supervised.evidence` (both WARNINGs); leg verdicts derive from `columns` via the frozen `_task_passes` (`report_card.py:829`), not from `checks` | None required (disclosure); the SPINE §5 ruling is queued to the operator. If the ruling revises the corollary, B3.6's branch text and the delivery framing update in a forward run. |
 | B-018 | **INFO** | E10 | `plugin_acceptance.json` (the V1.2 reference receipt, n_rows 9) has no `_meta`; the gate receipt `v1_plugins.json` that V1.2's atom actually reads is stamped (behavior `df73c2aa`, `passed: true`, `n_rows: 9`). | key lists of the two receipts; `measure_v1_stack.py` stamps the gate receipt, not the reference | None required (disclosure); stamp the reference in a future producer pass if V1.2 is re-run. |
 
@@ -118,6 +116,8 @@ open) · **violated** (principle broken, requirement open) · **not yet audited*
 | B-016 | **AUDIT document defect, closed by this rewrite (permitted for defects in BACKWARD's own file):** the previous §4 carried an orphaned `---|---|---|---|---|` separator with B-004/B-010 rows duplicated outside the closed table, and §5 disclosed fast-tier failures (ledger recency, gpu-budget direction, tolerance drift) that no longer exist while omitting the current red gates (now B-014). The repaired table and the refreshed baseline in this file are the evidence. | this file §4/§5 (rewritten 2026-11-05) | 2026-11-05 | `df73c2aa` |
 | B-012 | **Decision-log record repair (evidence):** post-hoc-labeled entries DEC-598 (bank v2 judge protocol), DEC-599 (E1.c port PASS + branch-(iii) long fixtures + B re-stamp), DEC-600 (hierarchical Dirichlet signature head), DEC-601 (E1.a/E1.b green) inserted between DEC-596 and DEC-603, reconstructed only from the pre-registration surfaces (the `measure_bc_bank.py` docstring, the `lab_measure.py` protocol, the commit bodies of `e9dfd6b`/`e7918a4`/`580b62c`/`0bc0d1f`/`7a3ae15`, and STATUS) plus the receipts. DEC-597/602 sealed as reserved/unallocated (no trace in history; nothing fabricated). `tests/test_decision_log_citations.py` now fails the suite if any in-log-range DEC citation (elided forms expanded) has no entry or seal, and keeps the disciplined region (≥ DEC-590) monotone. Log diff purely additive: 155 insertions, 0 deletions. | DEC-607; `470bb5e`; test green (773 passed) | 2026-11-05 | `df73c2aa` |
 | B-014 | **Repo commit gates green (evidence):** `ruff format` applied to the 9 `scripts/measure_*.py` files (argparse-default wrapping only; none in the behavior trees); `measure_port_demo.py` + `measure_red_king_known.py` added to `gpu_watchdog.DEFAULT_PATTERNS`; the three card-mechanics tests that read the live AUDIT.md as a fixture now isolate it (`monkeypatch RC.AUDIT_MD`), while the dedicated backward-gate tests keep pinning the open-requirement behavior. At the closure commit: `ruff check .` / `ruff format --check .` / `pytest -m "not slow"` all RC=0; `principle_audit --all --strict` 0-new; behavior hash `df73c2aa` unchanged. | DEC-606; `08e37e4` | 2026-11-05 | `df73c2aa` |
+| B-013 | **Leg receipts self-consistent on the bank (evidence):** `measure_bc_bank.py` writes, for every leg it scores, a current `checks` rollup from its own `_evidence`, bank-v2 `arms` (one definition per leg, `BANK_ARMS`), and `path_a` from its own frozen-comparator metadata; `stamp_merge_write` gained `drop=` so the producer sheds the flat-era blocks it does not own (`diagnostics`, `incumbent`). All four legs re-run: `columns` byte-identical to the committed receipts (determinism proof — no verdict moves), `checks.<leg>.working == working` on all four (the unsupervised self-contradiction is gone), `arms` name the served block bank, no flat-era block survives, receipts re-stamped at the new commit. | DEC-608; `4cf477b` | 2026-11-05 | `df73c2aa` |
+| B-015 | **Bundle manifest stamped (evidence):** `build_b_cert_bundle.py` writes `bundle_receipt.json` through the shared `stamp_merge_write` — the manifest now carries `_meta` (behavior `df73c2aa`, commit, producer, command) like every row receipt it maps. Builder re-run idempotently: bundle registry sha unchanged (`116087fb206c2d81` — the registry hashes `registry_{tag}.json`, not the receipt), 23-row map and scope string intact, card B scope line content-identical. | DEC-609; `672c164` | 2026-11-05 | `df73c2aa` |
 
 ---
 
@@ -602,13 +602,15 @@ remain open without blocking completion.
       "id": "B-013",
       "severity": "MAJOR",
       "principle": "P6/E10",
-      "status": "open",
+      "status": "closed",
+      "closure": "evidence",
       "finding": "judge_leg_unsupervised.json is self-contradictory (working:true vs checks.unsupervised.working:false) with arms/diagnostics/path_a/excluded/checks byte-identical to the flat-era receipt at 379f189; rl/simulator legs carry flat-era arms; cause is stamp_merge_write merging keys measure_bc_bank.py never rewrites.",
       "forward_subgoal": "measure_bc_bank.py writes a current checks rollup + bank-v2 arms for every leg it scores and drops the stale keys it redefines on merge; re-run all four legs; columns must be byte-identical to the committed receipts; receipts re-stamped.",
       "gate_touched": "none (verdict derives from columns under frozen _task_passes)",
-      "evidence": "key diff vs git show 379f189:...judge_leg_unsupervised.json; grep '\"checks\"' scripts/measure_bc_bank.py -> none; measure_input_law.py:487",
+      "evidence": "DEC-608; commit 4cf477b: measure_bc_bank.py writes current checks rollup + BANK_ARMS + path_a, stamp_merge_write drop=('diagnostics','incumbent'); all four legs re-run - columns byte-identical to the committed receipts (determinism proof, no verdict moves), checks.<leg>.working == working on all four, arms name the served block bank, no flat-era block survives, receipts re-stamped; original finding: key diff vs git show 379f189:...",
       "audit_ref": "A-013",
-      "date": "2026-11-05"
+      "date": "2026-11-05",
+      "closed": "2026-11-05"
     },
     {
       "id": "B-014",
@@ -628,13 +630,15 @@ remain open without blocking completion.
       "id": "B-015",
       "severity": "MINOR",
       "principle": "E10",
-      "status": "open",
+      "status": "closed",
+      "closure": "evidence",
       "finding": "cfm_v2k_vf2_cert/bundle_receipt.json (the B-009 single-artifact manifest, registry 116087fb206c2d81) has no _meta stamp while all 23 row receipts it maps do.",
       "forward_subgoal": "build_b_cert_bundle.py stamps _meta on the bundle receipt; re-run the builder; bundle registry sha must remain 116087fb206c2d81 and the card B scope line unchanged.",
       "gate_touched": "none",
-      "evidence": "bundle_receipt.json keys lack _meta; build_b_cert_bundle.py:266",
+      "evidence": "DEC-609; commit 672c164: build_b_cert_bundle.py writes the receipt through shared stamp_merge_write; builder re-run idempotently - _meta present (behavior df73c2aa, commit, producer, command), registry sha 116087fb206c2d81 unchanged, 23-row map + scope intact, card B scope line content-identical; original finding: bundle_receipt.json keys lack _meta; build_b_cert_bundle.py:266",
       "audit_ref": "A-015",
-      "date": "2026-11-05"
+      "date": "2026-11-05",
+      "closed": "2026-11-05"
     },
     {
       "id": "B-016",
