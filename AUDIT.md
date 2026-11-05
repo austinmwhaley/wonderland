@@ -15,6 +15,8 @@
 > `116087fb206c2d81`, card sha256 `3d025fbe3269fb2a` (committed at `38740c8`; the header-only
 > re-render at the same tree is `46eedddfeaa74f2d`). Mode: **FULL** — the first FULL review at
 > the SOLVED tree (the previous FULL, `dcad1bd`, ran at the pre-SOLVED tree `560a6c4`).
+> **Closing FULL 2026-11-05 at the closure tree `eb9381b`** (§6.9): NO BREAKING, all MAJORs
+> closed by evidence; the tick-tock stop condition (§6.8) is met at that tree.
 > **Verdict: NO BREAKING FINDINGS.** Every one of the card's 39 atoms was re-derived from its
 > receipt and frozen gate (§6.2–§6.4); no measurement is falsified. The findings were
 > record-and-consistency findings: **3 MAJOR** — B-012 (the decision log is missing the entries
@@ -123,7 +125,8 @@ open) · **violated** (principle broken, requirement open) · **not yet audited*
 
 ## 5. Mechanical baseline (disclosure, not a verdict)
 
-Measured 2026-11-05 at `38740c8` (`.venv` toolchain, ruff 0.17.3, pytest 9.2.0):
+Measured 2026-11-05 at `38740c8` (`.venv` toolchain, ruff 0.17.3, pytest 9.2.0); re-verified
+at the closure tree `eb9381b` — every row RC=0, fast suite 773 passed (closing FULL: §6.9).
 
 | Check | Command | State at `38740c8` | Note |
 |---|---|---|---|
@@ -401,6 +404,57 @@ fast pytest tier are all RC=0 at that commit; (4) `bundle_receipt.json` is stamp
 registry sha unchanged; (5) the re-rendered card derives root SOLVED with `backward_open=0`
 and a FULL review at that tree returns NO BREAKING with all MAJORs closed. Until then the card
 gates FAILED — correctly.
+
+### 6.9 Closing FULL review at the closure tree `eb9381b` (2026-11-05)
+
+Mode: **FULL** — the completion review §6.8 names: the card's root is `SOLVED` and every
+MAJOR from the opening FULL is closed. Tied to the closure tree's stamps (B-016's precedent:
+a review is current when its stamps are).
+
+**Per-finding verification (every check run at `eb9381b`):**
+
+1. **B-012 (record).** `tests/test_decision_log_citations.py` green. `DECISIONS.md` carries
+   336 entries (oldest DEC-275): DEC-598/599/600/601 are present, post-hoc-labeled, between
+   DEC-596 and DEC-603; DEC-597/602 sealed reserved/unallocated (`DECISIONS.md:11306`,
+   `:11418`); entry ids monotone from DEC-590 on (590–596, 598–601, 603–609). Every
+   in-log-range `DEC-NNN` cited by the seven steering documents, elided citations expanded to
+   all members, resolves to an entry or a seal.
+2. **B-013 (measurement consistency).** All four `judge_leg_*.json` re-stamped by
+   `measure_bc_bank.py` at behavior `df73c2aa`: `columns` byte-identical to the `38740c8`
+   receipts (determinism — no verdict moved), `checks.<leg>.working == working` on all four
+   (the unsupervised self-contradiction is gone), `arms` name the served block bank, and no
+   flat-era `diagnostics`/`incumbent` block survives.
+3. **B-014 (repo gates).** `ruff check .` RC=0; `ruff format --check .` RC=0 (487 files);
+   `pytest -m "not slow"` RC=0 — 773 passed, 14 deselected;
+   `principle_audit --all --strict` RC=0 — 74 blocking / 0 new beyond the 67-entry baseline;
+   `plan.py --check` PASS; behavior hash `df73c2aa1427b471` unchanged.
+4. **B-015 (provenance).** `cfm_v2k_vf2_cert/bundle_receipt.json` carries `_meta` (producer
+   `build_b_cert_bundle.py`, behavior `df73c2aa`, commit, command); the bundle registry sha
+   is still `116087fb206c2d81` (the registry hashes `registry_{tag}.json`, not the receipt);
+   the 23-row B map and the scope string are intact.
+5. **Macro (goal level).** No receipt outside the four leg files changed across the whole
+   closure round (`38740c8` → `eb9381b`); the card at the clean closure tree derives
+   root **SOLVED 39/39** · 0 FAIL · B **CERTIFIED 8/8** · B+C **DONE (ENCODER DONE v1)** ·
+   V1.1–V1.5 green · `backward_open=0` (card sha256 `c2ca1fc60ccbfae5`), and the
+   `FRONTIER_NOTE` claim ("no open BACKWARD requirement", `plan_spec.py:530`) is true again.
+
+**Stop condition (§6.8, items 1–5): met.** Item 5 is this review.
+
+**Verdict: NO BREAKING FINDINGS, all MAJORs closed.** The opening FULL's
+record-and-consistency defects (B-012, B-013, B-014 + B-015) are closed by evidence (§4;
+DEC-606/607/608/609); nothing new was found at goal level at the closure tree. The recorded
+residuals stand unchanged: B-001 — the certified artifact is the synthetic `demo_v2`
+prototype; B-003 — E1.c is a delivery/ledger port (trunk-only rank 4.11 base / 10.33 bank);
+B-008 — the B+C brain is the served bank, and the measure-free donor-only diagnostic does not
+clear all legs; B-017 (open INFO) — the flat-era vacuous negative controls + the ledger-only
+diagnostic falsifying SPINE §5's corollary, operator ruling queued (recomputing them would be
+a new measurement, out of scope for this record repair); B-018 (open INFO) — the
+`plugin_acceptance.json` reference receipt is unstamped; the gate receipt `v1_plugins.json`
+is stamped. Per §8 the two INFOs do not block completion.
+
+**Completion.** The tick-tock stop condition (AGENTS.md operating mode) is met: the card's
+plan root is `SOLVED` and a FULL BACKWARD at that tree returns NO BREAKING with all MAJORs
+closed. The only remaining git action is the push, pending explicit operator permission.
 
 ---
 

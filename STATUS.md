@@ -25,7 +25,9 @@ delivery/ledger port: eff_rank 30.9 / persona 0.267 / R2 0.460, with the trunk-o
 4.11/10.33 recorded); **V1.1-V1.5 are green** (identifiable stream, plugins 9/9, red_king
 known-effect 73.3% vs 25% chance + held-out policy 0.371 vs 0.208 random, red_queen DEPLOY/HOLD
 offer composition, caterpillar on red_queen's plan). **No BACKWARD BREAKING/MAJOR requirement is
-open** (AUDIT.md re-review, all 11 closed). **Scope:** the certified artifact is the synthetic
+open** (AUDIT.md: 16 of 18 requirements closed; B-017/B-018 open as disclosed INFO, the B-017
+SPINE §5 ruling queued to the operator; closing FULL review at `eb9381b`, §6.9). **Scope:** the
+certified artifact is the synthetic
 demo prototype; no production-stream claim, and no trunk-only capacity claim. **Macro reframe
 DEC-567 (2026-11-02):** the X-ray is far
 enough to locate the gaps (exposure / learning / decision objective). **Scope tightening DEC-568
@@ -393,24 +395,18 @@ next question is the learned shape, not another consumer tuning pass.
 
 ## Next 3 actions
 
-1. **Statistic bank, response block first (DEC-590; B4.1/B4.2).** Implement the
-   per-customer action-response block (per-arm outcome from the randomized cells, shrunk to
-   the population; served as a K-vector; the OPE T-learner is the consumer). Pre-register
-   the one-axis run, test on a randomized action fixture, then cfm_v2k. The head protocol
-   already showed the OPE collapse is an additive-head artifact (152.93 -> 230.70, E-table
-   +14.01 CI [-36.19, +55.0]); the response block must make the E-table difference
-   significant, not just non-degenerate. **Response block v1 (hand-computed
-   next-purchase, shrunk) was NEGATIVE:** E_resp 190.63 vs E 230.70; E_resp−table
-   −26.06 CI [−75.03,+19.2]; block argmax 0.2956. The proxy is noisy and is not the
-   90-day margin. Next: the **learned** response block (effect objective on the randomized
-   action×outcome pairs) or the **value block** (B6.2).
-2. **Value block (B6.2).** Per-customer future value/order level and quantiles from the
-   mass history, served as a named block, with a count/two-part head; the raw/fair table is
-   the comparator. The head protocol showed ridge is best (0.5807/0.6118), Tweedie/log1p
-   worse — the gap is the missing level statistic.
-3. **Name the existing blocks** (mass = counter/measure, shape = donor, order = row
-   readout) and the uncertainty block; then the served-object objective and the head-robust
-   measurement per block. No gate/bar/exclusion edits.
+1. **Stop condition met (2026-11-05).** The card's plan root is `SOLVED` 39/39 at behavior
+   `df73c2aa`; the closing FULL BACKWARD review at the closure tree `eb9381b` (AUDIT.md §6.9)
+   returns NO BREAKING with all MAJORs closed — B-012/B-013/B-014/B-015 by evidence
+   (DEC-607/608/606/609; `470bb5e`/`4cf477b`/`08e37e4`/`672c164`), B-016 by the rewrite.
+   No forward measurement work remains on the plan tree.
+2. **Push — pending operator permission.** All round commits are local
+   (`85289b3` → the closing review); AGENTS.md: pushing is the only git action that needs
+   permission.
+3. **B-017 operator ruling (queued).** The flat-era vacuous negative controls + the
+   ledger-only diagnostic falsifying SPINE §5's corollary are disclosed INFO; if the ruling
+   revises the corollary, B3.6's branch text and the delivery framing update in a forward
+   run.
 
 ## Operating facts
 
