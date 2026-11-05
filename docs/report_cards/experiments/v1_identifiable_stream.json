@@ -1,35 +1,47 @@
 {
-  "kind": "v1_gate",
-  "complete": true,
-  "atom": "V1.1",
-  "name": "Causally identifiable stream",
-  "stream": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/demo_v2/customer_event_stream.parquet",
-  "reference_truth": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/demo_v2/reference_truth.json",
+  "_meta": {
+    "behavior_hash": "df73c2aa1427b471",
+    "command": "scripts/measure_v1_stack.py",
+    "generated_at": "2026-11-05T04:25:48+00:00",
+    "git_commit": "dcad1bde51909aa3b2176b053627b9ac1c040695",
+    "producer": "measure_v1_stack.py"
+  },
+  "action_design": "one_factor_weekly",
   "action_keys": [
     "freq",
     "hour",
     "channel",
     "offer"
   ],
-  "arm_key": "offer",
-  "action_design": "one_factor_weekly",
   "action_period_seconds": 604800.0,
+  "arm_key": "offer",
+  "atom": "V1.1",
+  "complete": true,
+  "kind": "v1_gate",
   "known_effect": "one-factor randomized weekly offer; other keys at the customer optimum; purchase intensity rises only when the drawn offer is the customer's optimum, scaled by latent price sensitivity.",
   "n_customers": 5000,
   "n_email_sends": 375456,
-  "offer_levels": [
-    0,
-    1,
-    2,
-    3
-  ],
+  "n_known_optima": 5000,
+  "name": "Causally identifiable stream",
   "offer_frequencies": {
     "0": 0.2502,
     "1": 0.2499,
     "2": 0.2499,
     "3": 0.25
   },
-  "n_known_optima": 5000,
+  "offer_levels": [
+    0,
+    1,
+    2,
+    3
+  ],
   "passed": true,
+  "products": {
+    "path": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k_vf2_bank",
+    "registry_sha256": "919a932f1b657064",
+    "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
+  },
+  "reference_truth": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/demo_v2/reference_truth.json",
+  "stream": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/demo_v2/customer_event_stream.parquet",
   "why": "rabbit_hole declares the weekly randomized offer arm, its action keys and the per-customer known optimum; the stream carries the randomized levels. This is the stream the B4.2 OPE and the judge RL/simulator legs consume."
 }

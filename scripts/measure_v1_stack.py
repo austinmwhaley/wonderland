@@ -35,7 +35,13 @@ V1_PLAN = DEMO / "v1_nba_plan.json"
 
 def _write(name: str, body: dict) -> None:
     body = {"kind": "v1_gate", "complete": True, **body}
-    (OUT / name).write_text(json.dumps(body, indent=2, default=str) + "\n")
+    if "products" not in body:
+        from measure_input_law import products_identity
+
+        body["products"] = products_identity(str(BANK))
+    from measure_input_law import stamp_merge_write
+
+    stamp_merge_write(OUT / name, body, " ".join(sys.argv), stamp_blocks=False)
     print("WROTE", OUT / name)
 
 

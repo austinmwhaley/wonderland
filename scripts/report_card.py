@@ -1302,7 +1302,9 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
     # for it. An interior verdict is the worst of its children; a DEC-frozen atom renders
     # FRONTIER (no card row exists) and a v1 atom renders NOT ASSESSED. The root therefore
     # cannot read SOLVED while either scope is unmeasured — T0 is not SOLVED (integrity rule 2).
-    plan_verdicts = P.statuses({**verdicts, **b_verdicts}, closed=P.CLOSED)
+    plan_verdicts = P.statuses(
+        {**verdicts, **b_verdicts}, closed=P.CLOSED, backward_open=len(open_blocking)
+    )
     census = P.census()
     card_atoms = [n for n in P.NODES if n.kind == "atomic" and n.evidence == "card"]
     plan_green = sum(1 for n in card_atoms if plan_verdicts.get(n.ident) == J.PASS)
@@ -1325,10 +1327,11 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
     _dec_open = census["dec"] - len(P.CLOSED & _dec_ids)
     _v1_open = census["v1"] - len(P.CLOSED & _v1_ids)
     _solved = plan_green + len(P.CLOSED & (_dec_ids | _v1_ids))
+    _back = f" · {len(open_blocking)} BACKWARD open" if open_blocking else ""
     plan_scope = (
         f"{root_emoji} **Plan root:** {root_word} — {_solved}/{census['atomic_total']} "
         f"atomic problems green · {plan_fail} FAIL · {_dec_open} DEC-frozen · "
-        f"{_v1_open} v1 unassessed · {census['interior']} interior{reds_txt}."
+        f"{_v1_open} v1 unassessed · {census['interior']} interior{_back}{reds_txt}."
     )
     assessment_lines = [plan_scope, b_scope, c_scope, p_scope]
     assessment = " | ".join(
@@ -1354,7 +1357,7 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
         f"**Plan root:** {root_emoji} {root_word} — {_solved}/{census['atomic_total']} "
         f"atomic problems green · {plan_fail} FAIL · {_dec_open} DEC-frozen (no card rows) "
         f"· {_v1_open} v1 not assessed on this card · {census['interior']} interior "
-        f"problems.",
+        f"problems{(' · ' + str(len(open_blocking)) + ' BACKWARD open') if open_blocking else ''}.",
         "",
         "| Level | Node | What must be true | Atomic problems | Verdict |",
         "|---|---|---|---|---|",

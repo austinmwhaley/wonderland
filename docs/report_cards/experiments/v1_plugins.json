@@ -1,57 +1,69 @@
 {
-  "kind": "v1_gate",
-  "complete": true,
+  "_meta": {
+    "behavior_hash": "df73c2aa1427b471",
+    "command": "scripts/measure_v1_stack.py",
+    "generated_at": "2026-11-05T04:25:48+00:00",
+    "git_commit": "dcad1bde51909aa3b2176b053627b9ac1c040695",
+    "producer": "measure_v1_stack.py"
+  },
   "atom": "V1.2",
+  "complete": true,
+  "kind": "v1_gate",
+  "n_rows": 9,
   "name": "Each plugin passes its independent gate",
+  "passed": true,
   "plugin_acceptance": "/home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/plugin_acceptance.json",
+  "products": {
+    "path": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k_vf2_bank",
+    "registry_sha256": "919a932f1b657064",
+    "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
+  },
   "rows": [
     {
+      "achieved": true,
       "check": "CFM registry present for embedding version",
-      "achieved": true,
       "ok": true
     },
     {
-      "check": "static embedding table non-empty",
       "achieved": 8835,
+      "check": "static embedding table non-empty",
       "ok": true
     },
     {
-      "check": "embedding table single version",
       "achieved": 1,
+      "check": "embedding table single version",
       "ok": true
     },
     {
-      "check": "embedding version has a CFM registry",
       "achieved": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899",
+      "check": "embedding version has a CFM registry",
       "ok": true
     },
     {
+      "achieved": true,
       "check": "supervised plugin independent gate",
-      "achieved": true,
       "ok": true
     },
     {
+      "achieved": true,
       "check": "unsupervised plugin independent gate",
-      "achieved": true,
       "ok": true
     },
     {
+      "achieved": true,
       "check": "white_queen plugin independent gate",
-      "achieved": true,
       "ok": true
     },
     {
-      "check": "all plugin artifacts written",
       "achieved": 4,
+      "check": "all plugin artifacts written",
       "ok": true
     },
     {
-      "check": "end-to-end: all plugin kinds share one frozen table",
       "achieved": true,
+      "check": "end-to-end: all plugin kinds share one frozen table",
       "ok": true
     }
   ],
-  "n_rows": 9,
-  "passed": true,
   "why": "Layer C acceptance: supervised, unsupervised, white_queen and the shared-table end-to-end checks all pass on the bank + demo stream."
 }

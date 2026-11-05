@@ -1,47 +1,59 @@
 {
-  "kind": "v1_gate",
-  "complete": true,
-  "atom": "V1.3",
-  "name": "red_king recovers known effects",
-  "scorecard": {
-    "n": 6000,
-    "nA": 4,
-    "S1_ordering": 1.0,
-    "S2_calibration_ratio": 1.099,
-    "S3_rank_acc": 0.922,
-    "S4_value_rel_err": 0.05,
-    "S5_low_overlap_acc": 0.927,
-    "S6_beat_modelfree": 0.601,
-    "SCORE": 0.885
+  "_meta": {
+    "behavior_hash": "df73c2aa1427b471",
+    "command": "scripts/measure_v1_stack.py",
+    "generated_at": "2026-11-05T04:26:10+00:00",
+    "git_commit": "dcad1bde51909aa3b2176b053627b9ac1c040695",
+    "producer": "measure_v1_stack.py"
   },
+  "atom": "V1.3",
   "bank_judge_rl": {
     "known_effect_uplift": {
       "brain": 0.243297,
-      "pathA": 0.179408,
+      "ci_hi": 0.002559,
       "ci_lo": 0.001032,
-      "ci_hi": 0.002559
+      "pathA": 0.179408
     },
     "policy_value": {
       "brain": 0.249345,
-      "pathA": 0.238244,
+      "ci_hi": 0.016501,
       "ci_lo": 0.005931,
-      "ci_hi": 0.016501
+      "pathA": 0.238244
     }
   },
   "bank_judge_simulator": {
-    "dose_response_curve": {
-      "brain": 0.317904,
-      "pathA": 0.303941,
-      "ci_lo": 0.000117,
-      "ci_hi": 0.000503
-    },
     "argmax_optimum": {
       "brain": 0.329966,
-      "pathA": 0.241751,
+      "ci_hi": 0.118519,
       "ci_lo": 0.057912,
-      "ci_hi": 0.118519
+      "pathA": 0.241751
+    },
+    "dose_response_curve": {
+      "brain": 0.317904,
+      "ci_hi": 0.000503,
+      "ci_lo": 0.000117,
+      "pathA": 0.303941
     }
   },
+  "complete": true,
+  "kind": "v1_gate",
+  "name": "red_king recovers known effects",
   "passed": true,
-  "why": "the known-truth counterfactual scorecard recovers the effect ordering (S1 1.0), ranks the per-context best action (S3 0.922) and beats the model-free ranking (S6 0.601); the bank judge RL/simulator legs are the real-stream known-effect evidence."
+  "products": {
+    "path": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k_vf2_bank",
+    "registry_sha256": "919a932f1b657064",
+    "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
+  },
+  "scorecard": {
+    "S1_ordering": 1.0,
+    "S2_calibration_ratio": 1.037,
+    "S3_rank_acc": 0.921,
+    "S4_value_rel_err": 0.04,
+    "S5_low_overlap_acc": 0.925,
+    "S6_beat_modelfree": 0.6,
+    "SCORE": 0.895,
+    "n": 6000,
+    "nA": 4
+  },
+  "why": "the known-truth counterfactual scorecard recovers the effect ordering (S1 1.0), ranks the per-context best action (S3 0.921) and beats the model-free ranking (S6 0.6); the bank judge RL/simulator legs are the real-stream known-effect evidence."
 }

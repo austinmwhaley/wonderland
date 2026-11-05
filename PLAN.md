@@ -616,7 +616,7 @@ computes one. Moving the pointer is a reviewed spec edit like any other.
 | **R4** | Real stream: certify the B foundational battery | P1, P2, P3 | DONE: B certified 23/23 rows, 8/8 sections at behavior 7baf744f (DEC-594/595/596); the B gate is no longer the constraint. |
 | **R5** | Real stream: re-score the four judge legs (brain and brain+ledger) | P4 | DONE under the bank protocol (DEC-598): 8/8 leg-columns on the served block bank; the v1 flat judge (4/8) and the GBM delivery head are recorded beside it. |
 | **R6** | Stack: build and certify v1 (identifiable stream, plugins, red_king, red_queen, caterpillar) | P5 | DONE: V1.1 identifiable stream; V1.2 plugin acceptance 9/9; V1.3 red_king SCORE 0.889; V1.4 red_queen channel certification; V1.5 caterpillar artifact-only explanation (v1_*.json). |
-| **R7 ← now** | BACKWARD: adversarial review with no BREAKING findings | G | DONE: AUDIT.md has no open BREAKING/MAJOR requirements (empty BACKWARD block). |
+| **R7 ← now** | BACKWARD: adversarial review with no BREAKING findings | G | BLOCKED: FULL BACKWARD found 6 BREAKING + 4 MAJOR open requirements (B-001..B-010); the forward subgoals M-001..M-010 are the next work. |
 
 The order is forced by dependency and by cost: the dev rig is minutes and earns the
 right to the real-data port; the port closes E1.c; only then can the remaining B atoms

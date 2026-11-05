@@ -1,12 +1,12 @@
 # REPORT_CARD — B foundational, then PATH B > PATH A
 
-*Generated `2026-11-05T04:23:11+00:00` · commit `560a6c4` (`foundation-rebuild` · dirty) · encoder behavior `df73c2aa1427b471`*
+*Generated `2026-11-05T04:26:41+00:00` · commit `dcad1bd` (`foundation-rebuild` · dirty) · encoder behavior `df73c2aa1427b471`*
 
 **Assessment:**
 
-- ✅ **Plan root:** SOLVED — 39/39 atomic problems green · 0 FAIL · 0 DEC-frozen · 0 v1 unassessed · 19 interior.
+- ❌ **Plan root:** FAILED — 39/39 atomic problems green · 0 FAIL · 0 DEC-frozen · 0 v1 unassessed · 19 interior · 8 BACKWARD open.
 - ✅ **B foundational:** CERTIFIED — 8/8 sections green. Scope: the 23 receipts are current at behavior `df73c2aa`; the served-composition rows (B4.2/B5.1/B6.2/B6.3) read the derived bank (`c32rvd` + profile/numeric/mass blocks; B6.2 uses the 59-dim donor slice), the rest the base candidate/encoder. B6.2 uses the recorded ensemble protocol and B4.2 the randomized-period protocol; both are on the receipts.
-- ❌ **B+C consequence:** NOT DONE — 8/8 legs green · stages 6/6 · backward open: 10. The B/C/E1/v1 rows are green but the open BACKWARD requirements block completion.
+- ❌ **B+C consequence:** NOT DONE — 8/8 legs green · stages 6/6 · backward open: 8. The B/C/E1/v1 rows are green but the open BACKWARD requirements block completion.
 - ✅ **Project v1:** V1.1-V1.5 green — identifiable stream, plugin acceptance 9/9, red_king known-effect SCORE 0.889, red_queen channel certification, caterpillar artifact-only explanation.
 
 The verdict is a pure function of the receipts under `docs/report_cards/experiments/`.
@@ -16,11 +16,11 @@ Ledger points never count as progress: `brain alone` is the judge, `brain + ledg
 
 The goal, cut backwards into the problems that must all be solved, recursively to the atomic problems. This section is generated from `scripts/plan_spec.py` — the single definition of the tree; `PLAN.md` is its readable render. The plan defines no gate: every measured atomic problem is a frozen row in its B/judge section below, and an interior verdict is the worst of its children.
 
-**Plan root:** ✅ SOLVED — 39/39 atomic problems green · 0 FAIL · 0 DEC-frozen (no card rows) · 0 v1 not assessed on this card · 19 interior problems.
+**Plan root:** ❌ FAILED — 39/39 atomic problems green · 0 FAIL · 0 DEC-frozen (no card rows) · 0 v1 not assessed on this card · 19 interior problems · 8 BACKWARD open.
 
 | Level | Node | What must be true | Atomic problems | Verdict |
 |---|---|---|---|---|
-| 0 | **G** A certified universal donor, delivered | What is the whole problem? | 39 atomic problems | ✅ PASS |
+| 0 | **G** A certified universal donor, delivered | What is the whole problem? | 39 atomic problems | ❌ FAIL |
 | 1 | **P1** The donor exists | Is there a per-stream artifact built from the right algebra, and is it an identity? | 4 atomic problems | ✅ PASS |
 | 2 | **B1** Lawful | Is the state built from the right algebra? | 2 atomic problems | ✅ PASS |
 | 2 | **B8** Reproducible | Is the artifact an identity? | 2 atomic problems | ✅ PASS |
@@ -225,13 +225,11 @@ The leg verdict above is computed from these rows; a task can PASS while its leg
 - `backward B-001 — The certified artifact is the synthetic demo, not a real production stream.`
 - `backward B-002 — E1.a/E1.b read the fixture pair counts, not the frozen served encoder.`
 - `backward B-003 — E1.c is a ledger-backed port; receipt unstamped.`
-- `backward B-004 — The five v1 receipts are unstamped and lack products identity.`
 - `backward B-005 — V1.3 red_king is synthetic; the real known-effect path is not run.`
 - `backward B-006 — V1.4 red_queen reads a stored old certificate with behavior 2.69 vs bar 5.64 and deploy true.`
 - `backward B-007 — V1.5's plan is synthetic (offer_opt + outcome_mean), not a red_queen decision plan.`
 - `backward B-008 — The B+C brain column includes measure-ledger parts (numeric_stats/event_mass/return_ratio).`
 - `backward B-009 — The B gate is a mixed-artifact certification (base, port, bank).`
-- `backward B-010 — E1.b positive receipts are stale (behavior c6f56a2e vs df73c2aa).`
 
 ## Backward requirements (from PROMPT_BACKWARD)
 
@@ -242,13 +240,13 @@ Principle-alignment findings live in `AUDIT.md`; the machine-readable gate is th
 | B-001 | BREAKING | P1/P6 | open | The certified artifact is the synthetic demo, not a real production stream. | Run the B/C/E1/v1 gates on the real production stream, or scope every claim to the demo. | A-001 |
 | B-002 | BREAKING | P6/P8 | open | E1.a/E1.b read the fixture pair counts, not the frozen served encoder. | Serve the signature as a lab-E block and evaluate the frozen E, or reclassify E1.a/E1.b. | A-002 |
 | B-003 | BREAKING | P6/P8 | open | E1.c is a ledger-backed port; receipt unstamped. | Port the trunk's own state without the measure ledger, or record E1.c as a delivery port. | A-003 |
-| B-004 | BREAKING | P6/E10 | open | The five v1 receipts are unstamped and lack products identity. | Stamp/re-run the v1 gates at the recorded behavior/commit/products. | A-004 |
+| B-004 | BREAKING | P6/E10 | closed | The five v1 receipts are unstamped and lack products identity. | Stamp/re-run the v1 gates at the recorded behavior/commit/products. | A-004 |
 | B-005 | BREAKING | P6/E9 | open | V1.3 red_king is synthetic; the real known-effect path is not run. | Run red_king's known-effect gate on the bank/demo randomized stream. | A-005 |
 | B-006 | MAJOR | P6/E9 | open | V1.4 red_queen reads a stored old certificate with behavior 2.69 vs bar 5.64 and deploy true. | Regenerate the channel/discount composition certification on the current bank/demo. | A-006 |
 | B-007 | MAJOR | P6/P8 | open | V1.5's plan is synthetic (offer_opt + outcome_mean), not a red_queen decision plan. | Run caterpillar on a real red_queen NBA plan. | A-007 |
 | B-008 | BREAKING | P6/P7 | open | The B+C brain column includes measure-ledger parts (numeric_stats/event_mass/return_ratio). | Separate the donor block bank from the measure ledger and re-score; or pre-register the bank as the donor and update B3.6. | A-008 |
 | B-009 | MAJOR | P6/E10 | open | The B gate is a mixed-artifact certification (base, port, bank). | Certify B on one served artifact. | A-009 |
-| B-010 | MAJOR | P6/E10 | open | E1.b positive receipts are stale (behavior c6f56a2e vs df73c2aa). | Re-run intent/intent_long hier at the current behavior. | A-010 |
+| B-010 | MAJOR | P6/E10 | closed | E1.b positive receipts are stale (behavior c6f56a2e vs df73c2aa). | Re-run intent/intent_long hier at the current behavior. | A-010 |
 | B-011 | MINOR | P6 | open | The earlier audit status claimed no findings while the v1 receipts were unstamped and E1.b stale. | Tie the review verdict to receipt stamps. | A-011 |
 
 ---

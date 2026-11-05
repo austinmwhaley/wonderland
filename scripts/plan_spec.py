@@ -612,7 +612,8 @@ ROUTE: tuple[RouteStep, ...] = (
         "R7",
         "BACKWARD: adversarial review with no BREAKING findings",
         "G",
-        "DONE: AUDIT.md has no open BREAKING/MAJOR requirements (empty BACKWARD block).",
+        "BLOCKED: FULL BACKWARD found 6 BREAKING + 4 MAJOR open requirements (B-001..B-010); "
+        "the forward subgoals M-001..M-010 are the next work.",
     ),
 )
 
@@ -689,14 +690,20 @@ def _worst(values) -> str:
     return PASS
 
 
-def statuses(row_verdicts: dict[str, str], closed: set[str] | None = None) -> dict[str, str]:
+def statuses(
+    row_verdicts: dict[str, str],
+    closed: set[str] | None = None,
+    backward_open: int = 0,
+) -> dict[str, str]:
     """Verdict per node, DERIVED: atoms from their frozen rows (or their recorded closes),
     interiors from their children.
 
     ``closed`` names dec/v1 atoms that have been closed by their own recorded evidence (a
-    pre-registered port receipt for E1.c; a v1 gate for the stack). The card passes the empty
-    set, so a green card root is unreachable until those scopes are actually measured — that
-    is the point (certification integrity rule 2: T0 is not SOLVED).
+    pre-registered port receipt for E1.c; a v1 gate for the stack). ``backward_open`` is the
+    number of open BREAKING/MAJOR BACKWARD requirements; any such requirement blocks the
+    completion condition, so the root is FAILED even when every row is green. A green card
+    root is unreachable until both scopes are actually measured (certification integrity
+    rule 2).
     """
     closed = set(closed or ())
     out: dict[str, str] = {}
@@ -726,6 +733,8 @@ def statuses(row_verdicts: dict[str, str], closed: set[str] | None = None) -> di
 
     for n in NODES:
         resolve(n.ident)
+    if backward_open > 0:
+        out["G"] = FAIL
     return out
 
 
