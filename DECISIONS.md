@@ -11303,6 +11303,124 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     (one more block, one more consumer family) · Minimal (the family is the smallest
     broad set: persona truth + the unjudged 30-day outcomes).
 
+- **Seal (record repair B-012, 2026-11-05).** **DEC-597 reserved: unallocated.** No
+  entry for DEC-597 exists in this log and no trace of it in the git history
+  (`git log --all -S "DEC-597"` is empty); the number was skipped when DEC-598 was
+  allocated (2026-11-04). Sealed here so citations resolve without the id being
+  backfilled with an invented decision.
+
+- **DEC-598 (B+C judge protocol v2 on the served block bank — "bank v2"; recorded
+  post-hoc 2026-11-05 as a record repair (B-012): pre-registered in the
+  `scripts/measure_bc_bank.py` docstring and in commit `e9dfd6b` + STATUS before the
+  run, but the log entry was lost).**
+  - **NODE:** P4 (B+C consequence) + P3 (B battery re-scored on the bank).
+  - **WHY-NOT.** The flat judge asks one question of one vector; the B battery showed
+    the donor is a block bank. B+C needs a simple consumer of that bank (and the
+    delivery object must name its components), with the bars / table comparator /
+    task list frozen.
+  - **MOVE (one bank, one consumer family; no gate change).** New served object
+    `cfm_v2k_vf2_bank`: 179 dims = c32rvd donor blocks (32 shape + 16 level + 4
+    response + 3 RFM + 4 action) + exact counter 39 + schema profile 8 +
+    numeric_stats 60 + event_mass 7 + return_ratio 6; the full measure view is kept
+    and a compact `judge_ledger` (PCA-39, fit on split A) is added for delivery.
+    Judge v2 legs: supervised standardized ridge alpha=10 on the bank (progress arm)
+    and on bank + judge_ledger (delivery arm); unsupervised block-aware geometry
+    (per-block pairwise distances z-scored on A; non-negative block weights fit on
+    split-A pairs; scored on B; segment uses the served profile block); rl/simulator
+    canonical legs on the bank. Weights/alpha fit on split A only; the v1 flat judge
+    (4/8) and the GBM delivery head are recorded beside it, not replaced.
+  - **Outcome.** B+C **8/8**: supervised 7/7 tasks CI-positive on both arms; persona
+    0.398, future 0.193 (ledger 0.198) vs table 0.387/0.181; segment ARI 1.0 vs
+    0.267; rl/simulator pass. Plugins on the bank + demo stream: acceptance **9/9**
+    (supervised 6/6, unsupervised 4/4, white_queen 5/5, Layer C 9/9). B re-scored on
+    the bank: B5.1 32/147, B6.2 donor slice 59 (0.6096/0.6216/0.7388, CIs
+    +0.0008/+0.0052/+0.0037), B6.3 13/15 (+0.0475), B4.2 OPE 0.1701 vs 0.1517 (CI lo
+    +0.012); B4.1/B4.3 stay on the base encoder. B **23/23**; root OPEN 31/39 at
+    E1/v1 (commits `e9dfd6b`, `e7918a4`; receipts `judge_leg_*.json`, protocol
+    "bank v2 (DEC-598)").
+  - **Principle.** Universal (the bank is the served composition; one consumer
+    family across legs) · Honest (the v1 flat result is recorded beside it; the
+    served-bank boundary is explicit) · Efficient (compact ledger for delivery
+    instead of the full measure).
+
+- **DEC-599 (E1.c delivery-port PASS + branch-(iii) long fixtures + B re-stamp;
+  recorded post-hoc 2026-11-05 as a record repair (B-012): pre-registered in commits
+  `580b62c`/`0bc0d1f` and STATUS before the result, but the log entry was lost).**
+  - **NODE:** E1.c (delivery port under DEC-572's bars); E1.a/E1.b branch (iii)
+    (the sample axis).
+  - **WHY-NOT.** E1.c must clear DEC-572's bars (eff_rank ≥ 30, persona ≥ 0.15, R2 ≥
+    0.45) on the object the judge and red_queen actually serve — bank + measure
+    PCA-128 (307 dims) — and the sample-size gap found on next_event must be
+    re-tested at 2× events/customer before it is attributed to the sample.
+  - **MOVE (no bar/fixture edit).** (1) Port receipt on the 307-dim delivery port +
+    B1 canary from the B rows. (2) Branch-(iii) long fixtures: `next_event_long` and
+    `intent_long` at 2× density, window 730d. (3) B re-stamp: B2/B3.6 on base,
+    B3.2–B3.5 on the port, served-composition rows on the bank.
+  - **Outcome.** Port: eff_rank **30.9**, persona **0.267**, served R2 **0.460** —
+    all clear DEC-572's bars; **E1.c PASS**. The trunk-only portfolio eff_rank is
+    still 2.649 short of the bar: the rank is a property of the served composition,
+    not the trunk (DEC-604/B-003 later classifies the port as a delivery/ledger
+    port, not a trunk-only win; the PASS stands as the bar result on the delivery
+    object). Long fixtures: next_event_long g **3.26** (1-gram 0.962, oracle 0.931);
+    intent_long g **1.586** (improved from 2.665; 1-gram 0.804, oracle 0.636) —
+    still not mastered; the mean state is the gap. B re-stamped at f1617 (19/4 until
+    the clean chain). Commits `580b62c`, `0bc0d1f`; receipts
+    `lab/next_event_long_dec599.json`, `lab/intent_long_dec599.json` + the
+    re-stamped B rows.
+  - **Principle.** Honest (no bar/fixture edit; the trunk-only shortfall recorded
+    beside the port PASS) · Diagnosable (branch (iii) isolates the sample axis).
+
+- **DEC-600 (hierarchical Dirichlet signature head as the E1.a/E1.b head; recorded
+  post-hoc 2026-11-05 as a record repair (B-012): pre-registered in the
+  `scripts/lab_measure.py` head protocol and in commit `7a3ae15`, but the log entry
+  was lost).**
+  - **NODE:** E1.a/E1.b (served-object capacity, curriculum steps 1–2).
+  - **WHY-NOT.** E1.a/E1.b are negative on the frozen trunk E (ridge g 2.30 on
+    next_event; intent g 2.665): the trunk alone does not beat the 1-gram. The
+    structure to master is the per-customer transition signature; the honest head
+    for it is a hierarchical Dirichlet (class prior + per-customer transition
+    counts), fit on A, scored against 1-gram and oracle on B — a named object with
+    named controls, not a fixture-side shortcut.
+  - **MOVE (one head form, two fixtures; bars unchanged).** `lab_measure --head
+    hier` on `next_event_x4k` (N=1000, 1460d; DEC-576/577 bars) and `intent` (365d)
+    + `intent_long` (730d; DEC-586 bars); negative (type-only head) and adversarial
+    (echo, teeth on the A side) controls frozen per DEC-576.
+  - **Outcome.** Head adopted; dev iterations at behavior c6f56a2e recorded (`lab/
+    next_event_x4_dec600.json`, `lab/next_event_long_dec600.json`, `lab/intent_
+    dec600.json`, `lab/intent_long_dec600.json`); the green outcomes under this head
+    are DEC-601. Commit `7a3ae15` ("DEC-600/601").
+  - **Principle.** Honest (known-truth fixtures; controls frozen before scoring) ·
+    Diagnosable (the head form is a named axis: signature vs trunk vs measure).
+
+- **DEC-601 (E1.a + E1.b green under the hierarchical Dirichlet signature head;
+  recorded post-hoc 2026-11-05 as a record repair (B-012): pre-registered in commit
+  `7a3ae15` and STATUS before the result, but the log entry was lost).**
+  - **NODE:** E1.a/E1.b.
+  - **WHY-NOT.** DEC-600's head must produce results on both fixtures at the current
+    behavior, with clean controls, before E1 can be booked.
+  - **Outcome.** E1.a `next_event_x4k`: g **−0.581**, nll 0.9095 vs 1-gram 0.9215 vs
+    oracle 0.9312; paired CI [−0.0240, −0.00066] entirely below 0;
+    beats_base/mastered true. E1.b: intent g **−0.721** (365d), intent_long g
+    **+0.181** (730d); both beats_base/mastered true. Controls read as expected:
+    type-only head NO_SIGNAL; negative-control CI straddles 0; adversarial control
+    NO_SIGNAL with echo-teeth on the A side. Receipts at behavior df73c2aa:
+    `lab/next_event_x4k_dec601.json`, `lab/intent_dec601.json`,
+    `lab/intent_long_dec601.json` (B re-stamped at the same commit).
+  - **Postscript (B-002, 2026-11-04/05).** BACKWARD found the head read the
+    fixture-side transition counts, not the frozen served encoder. DEC-603 re-ran
+    both fixtures on the served signature block (`lab/next_event_x4k_dec603.json`,
+    `lab/intent_dec603.json`, `lab/intent_long_dec603.json`; identical g, products
+    identity + block hash pinned). This entry's protocol and outcome stand; the
+    gate receipts are now the dec603 ones.
+  - **Principle.** Honest (re-run rather than re-label when the audit found the
+    readout was fixture-side) · No gate/bar change.
+
+- **Seal (record repair B-012, 2026-11-05).** **DEC-602 reserved: unallocated.** No
+  entry for DEC-602 exists in this log and no trace of it in the git history
+  (`git log --all -S "DEC-602"` is empty); the number was skipped between DEC-601
+  (`7a3ae15`) and DEC-603. Sealed here so citations resolve without the id being
+  backfilled with an invented decision.
+
 - **DEC-603 (served lab signature block — B-002, 2026-11-04).**
   - **NODE:** E1.a/E1.b (served-object capacity, signature head).
   - **WHY-NOT.** The E1.a/E1.b receipts read the fixture's per-customer transition
@@ -11396,3 +11514,40 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     commit gates; the record must be repaired) · Robust (a producer the guard
     cannot see is a producer it cannot stop) · No gate/bar change to any
     measurement.
+
+- **DEC-607 (decision-log citation integrity — B-012 record repair;
+  pre-registered 2026-11-05).**
+  - **NODE:** P6/P8 record (no measurement node).
+  - **WHY-NOT.** BACKWARD B-012 (FULL at `38740c8`): DEC-598/599/600/601 are cited
+    as load-bearing protocol references by PLAN/STATUS/card/plan_spec/report_card
+    and by the commit titles of `e9dfd6b`/`0bc0d1f`/`7a3ae15`, but no entry exists
+    in this log (it jumps DEC-596 → DEC-603); DEC-597/602 have no trace anywhere in
+    the git history (unallocated). Certification-integrity rule 1 requires the gate
+    definitions to be recorded in `DECISIONS.md`; the record must be repaired
+    without weakening the log's discipline.
+  - **MOVE (record repair; no gate change).** (1) Insert post-hoc-labeled entries
+    DEC-598/599/600/601 between DEC-596 and DEC-603, reconstructed ONLY from the
+    pre-registration surfaces (the `measure_bc_bank.py` docstring, the
+    `lab_measure.py` protocol, the commit bodies of `e9dfd6b`/`e7918a4`/
+    `580b62c`/`0bc0d1f`/`7a3ae15`, and STATUS) and the receipts; each carries an
+    explicit "recorded post-hoc 2026-11-05 as a record repair (B-012)" label.
+    (2) Seal DEC-597/602 as reserved/unallocated — no trace exists, so nothing is
+    fabricated for them. (3) Add `tests/test_decision_log_citations.py`: every
+    `DEC-NNN` cited in PLAN.md, REPORT_CARD.md, STATUS.md, AUDIT.md, DECISIONS.md,
+    `scripts/plan_spec.py`, `scripts/report_card.py` with NNN ≥ the log's oldest
+    entry id (275) must resolve to an entry or a documented reserved line; elided
+    citations (`DEC-a/b/c`) expand; the entry-id sequence from DEC-590 on (the
+    log's disciplined region, which contains the repair region) stays
+    non-decreasing. Legacy artifacts (pre-275 citations; <590 ordering) are out of
+    scope, like the pre-log era they belong to.
+  - **Rejected.** Fabricating plausible protocols for 597/602 (no trace exists —
+    sealing them unallocated is the only honest move). A global ordering assertion
+    (the legacy log has out-of-order entries below 590; asserting that would
+    rewrite history). Leaving the hole with a prose note (a note does not resolve
+    the citations).
+  - **Frozen acceptance.** Test green at the repair commit; the four entries are
+    post-hoc-labeled; both seals present; zero existing entries edited (git diff
+    shows the inserted block, the appended DEC-607 and the new test only).
+  - **Principle.** Honest (the record is repaired with the repair labeled, not
+    laundered) · Diagnosable (the mechanism: a future citation hole fails the
+    test, instead of a reader's memory).
