@@ -2,10 +2,11 @@
   "_meta": {
     "behavior_hash": "df73c2aa1427b471",
     "command": "scripts/measure_v1_stack.py",
-    "generated_at": "2026-11-05T04:26:10+00:00",
-    "git_commit": "dcad1bde51909aa3b2176b053627b9ac1c040695",
+    "generated_at": "2026-11-05T05:05:56+00:00",
+    "git_commit": "e72c795ba1c37bd71376ee7d3b9b71a256fc8f30",
     "producer": "measure_v1_stack.py"
   },
+  "as_of": "2025-01-01",
   "atom": "V1.3",
   "bank_judge_rl": {
     "known_effect_uplift": {
@@ -37,23 +38,67 @@
   },
   "complete": true,
   "kind": "v1_gate",
+  "known_effect": {
+    "accuracy": 0.7334,
+    "binom_p": 0.0,
+    "chance": 0.25,
+    "hits": 3667,
+    "majority_accuracy": 0.2538,
+    "majority_arm": 2,
+    "n_customers": 5000,
+    "predicted_distribution": {
+      "0": 1272,
+      "1": 1222,
+      "2": 1269,
+      "3": 1237
+    }
+  },
+  "known_effect_receipt": "/home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/red_king_known.json",
   "name": "red_king recovers known effects",
   "passed": true,
+  "policy": {
+    "best_constant": 0.212306,
+    "best_constant_arm": 3,
+    "estimated_value": 0.366038,
+    "n_boot": 2000,
+    "paired_ci_policy_minus_best_constant": [
+      0.14623465283520581,
+      0.17245669522542378
+    ],
+    "paired_ci_policy_minus_random": [
+      0.155060772952345,
+      0.17282344337109468
+    ],
+    "policy": 0.370839,
+    "pooled_eval": {
+      "0": 0.206805,
+      "1": 0.206784,
+      "2": 0.207009,
+      "3": 0.212306
+    },
+    "pooled_fit": {
+      "0": 0.178689,
+      "1": 0.178015,
+      "2": 0.181332,
+      "3": 0.176812
+    },
+    "random_all": 0.20823,
+    "random_customer_mean": 0.207146,
+    "seed": 0,
+    "value_rel_err": 0.012946
+  },
   "products": {
     "path": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k_vf2_bank",
     "registry_sha256": "919a932f1b657064",
     "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
   },
   "scorecard": {
-    "S1_ordering": 1.0,
-    "S2_calibration_ratio": 1.037,
-    "S3_rank_acc": 0.921,
-    "S4_value_rel_err": 0.04,
-    "S5_low_overlap_acc": 0.925,
-    "S6_beat_modelfree": 0.6,
-    "SCORE": 0.895,
-    "n": 6000,
-    "nA": 4
+    "S1_ordering": 0.25512,
+    "S3_rank_acc": 0.7334,
+    "S4_value_rel_err": 0.012946,
+    "S6_beat_modelfree": 0.162609,
+    "SCORE": 1.0
   },
-  "why": "the known-truth counterfactual scorecard recovers the effect ordering (S1 1.0), ranks the per-context best action (S3 0.921) and beats the model-free ranking (S6 0.6); the bank judge RL/simulator legs are the real-stream known-effect evidence."
+  "stream_sha256": "2e27b88724e818066bed5234323e33fbbc1e23233aa2eb0872a319e25e2a4bd5",
+  "why": "red_king's per-customer randomized send-day value model recovers the generator's declared offer optimum at 0.7334 vs 0.25 chance (majority 0.2538); on the post-as-of randomized holdout the argmax policy is 0.370839 vs 0.20823 random (paired CI [0.155060772952345, 0.17282344337109468]) and 0.212306 best constant. The bank judge RL/simulator legs are supplementary served-bank evidence."
 }

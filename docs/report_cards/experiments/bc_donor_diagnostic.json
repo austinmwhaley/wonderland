@@ -1,0 +1,124 @@
+{
+ "kind": "bc_donor_only_diagnostic",
+ "legs": {
+  "rl": {
+   "available": true,
+   "failing_tasks": [],
+   "tasks": {
+    "known_effect_uplift": {
+     "brain": 0.245182,
+     "ci_hi": 0.00268,
+     "ci_lo": 0.00102,
+     "pathA": 0.179408
+    },
+    "policy_value": {
+     "brain": 0.250041,
+     "ci_hi": 0.017643,
+     "ci_lo": 0.006066,
+     "pathA": 0.238244
+    }
+   },
+   "working": true
+  },
+  "simulator": {
+   "available": true,
+   "failing_tasks": [],
+   "tasks": {
+    "argmax_optimum": {
+     "brain": 0.29697,
+     "ci_hi": 0.086869,
+     "ci_lo": 0.023552,
+     "pathA": 0.241751
+    },
+    "dose_response_curve": {
+     "brain": 0.317732,
+     "ci_hi": 0.000503,
+     "ci_lo": 0.000101,
+     "pathA": 0.303941
+    }
+   },
+   "working": true
+  },
+  "supervised": {
+   "available": true,
+   "failing_tasks": [
+    "h0",
+    "return_proneness"
+   ],
+   "tasks": {
+    "churn_day": {
+     "brain": 0.140987,
+     "ci_hi": 3563.513762,
+     "ci_lo": 1925.108937,
+     "pathA": -0.013748
+    },
+    "final_regime_days": {
+     "brain": -0.010385,
+     "ci_hi": 413.032341,
+     "ci_lo": 133.296987,
+     "pathA": -0.074482
+    },
+    "h0": {
+     "brain": 0.972416,
+     "ci_hi": 0.001316,
+     "ci_lo": -5.6e-05,
+     "pathA": 0.970781
+    },
+    "price_sensitivity": {
+     "brain": 0.023276,
+     "ci_hi": 0.005974,
+     "ci_lo": 0.002716,
+     "pathA": -0.063629
+    },
+    "regime_switches": {
+     "brain": 0.095616,
+     "ci_hi": 2.083532,
+     "ci_lo": 0.916117,
+     "pathA": -0.008355
+    },
+    "return_proneness": {
+     "brain": 0.498071,
+     "ci_hi": 0.000135,
+     "ci_lo": -0.000102,
+     "pathA": 0.487907
+    },
+    "x0": {
+     "brain": 0.915505,
+     "ci_hi": 0.000135,
+     "ci_lo": 5.2e-05,
+     "pathA": 0.879091
+    }
+   },
+   "working": true
+  },
+  "unsupervised": {
+   "available": true,
+   "failing_tasks": [
+    "persona_geometry",
+    "future_geometry"
+   ],
+   "tasks": {
+    "future_geometry": {
+     "brain": 0.173483,
+     "ci_hi": -0.003999,
+     "ci_lo": -0.008367,
+     "pathA": 0.181009
+    },
+    "persona_geometry": {
+     "brain": 0.374676,
+     "ci_hi": -0.008426,
+     "ci_lo": -0.01424,
+     "pathA": 0.386663
+    },
+    "segment_structure": {
+     "brain": 1.0,
+     "ci_hi": 0.758462,
+     "ci_lo": 0.704242,
+     "pathA": 0.266968
+    }
+   },
+   "working": true
+  }
+ },
+ "passed": false
+}

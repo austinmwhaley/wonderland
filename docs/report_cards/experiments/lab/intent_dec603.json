@@ -1,0 +1,204 @@
+{
+  "_meta": {
+    "behavior_hash": "df73c2aa1427b471",
+    "command": "lab_measure.py --fixture rabbit_hole/data/lab/intent --products /tmp/opencode/lab/intent_pos --as-of 2024-09-01 --neg-products /tmp/opencode/lab/intent_neg --adv-products /tmp/opencode/lab/intent_adv --iter dec603 --head hier --out docs/report_cards/experiments/lab/intent_dec603.json",
+    "generated_at": "2026-11-05T04:35:43+00:00",
+    "git_commit": "e72c795ba1c37bd71376ee7d3b9b71a256fc8f30",
+    "producer": "lab_measure.py"
+  },
+  "a_frac": 0.7,
+  "adversarial_control": {
+    "alpha": 10000.0,
+    "beats_base": false,
+    "classes": [
+      "cart",
+      "purchase",
+      "view"
+    ],
+    "classes_excluded": [],
+    "eff_rank": 1.956,
+    "eff_rank_source": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm/portfolio/portfolio_0_11_0r529517-b8d64e3lr1e-03o67b1bcb7_20261104T214613Z.json",
+    "expected": "structure claim NO_SIGNAL despite beats_base via the echo",
+    "g": null,
+    "head_form": "hierarchical_dirichlet",
+    "head_ignores_echo": true,
+    "leak_has_teeth_a_side": true,
+    "n_A": 350,
+    "n_B_rows": 150,
+    "n_customers": 500,
+    "nll_base": 1.09973,
+    "nll_baseline_ce_nats": null,
+    "nll_enc": 1.099789,
+    "nll_oracle_nats": null,
+    "paired_ci_enc_minus_base": [
+      -5.893945162610514e-05,
+      0.00018231857755041952
+    ],
+    "per_class_n_A": {
+      "cart": 133,
+      "purchase": 112,
+      "view": 105
+    },
+    "products": {
+      "path": "/tmp/opencode/lab/intent_adv",
+      "registry_sha256": "10147efe94a3474f",
+      "tag": "0.11.0r529517-b8d64e3lr1e-03o67b1bcb7"
+    },
+    "reads_as_expected": true,
+    "reads_no_signal_structure": true,
+    "signature_block": {
+      "block_sha256": "b5269187a228da09b411a1dc58c58bfc1dd052126c9fdc481c8b31cc92118727",
+      "classes": [
+        "cart",
+        "purchase",
+        "view"
+      ],
+      "dim": 9,
+      "fixture_sha256": "f33259ad9d76f4c417a65b088fc34d48f7eb7e2a02978f97ba5afbdfb5ab6d5b",
+      "n_served": 500,
+      "receipt": "/tmp/opencode/lab/intent_adv/signature_receipt.json",
+      "table": "signature_blocks"
+    },
+    "structure_carried": false
+  },
+  "as_of": "2024-09-01",
+  "bar_g": 0.5,
+  "complete": true,
+  "discipline": "toy-green can only SUGGEST the next real-data run (DEC-576); certification of B stays on the real stream (cfm_v2k / O3 / DEC-575); no B-row source names this receipt",
+  "fixture_spec": {
+    "action_peak": 0.0,
+    "base_rate": 0.3,
+    "entity_affinity": 0.0,
+    "intent": 5.0,
+    "n_customers": 500,
+    "n_entities": 0,
+    "name": "intent",
+    "rate_heterogeneity": 0.0,
+    "seed": 17,
+    "snr": 1.0,
+    "transition": true,
+    "trend": 0.0,
+    "value_log_sigma": 0.5,
+    "window_days": 365
+  },
+  "head_form": "hier",
+  "iteration": "dec603",
+  "kind": "lab_dev_instrument",
+  "lab_gate_a_side": {
+    "adversarial_leak_has_teeth": true,
+    "adversarial_not_carried": true,
+    "complete": true,
+    "negative_not_carried": true,
+    "oracle_carried": true
+  },
+  "n_boot": 2000,
+  "negative_control": {
+    "alpha": 10000.0,
+    "beats_base": false,
+    "classes": [
+      "cart",
+      "purchase",
+      "view"
+    ],
+    "classes_excluded": [],
+    "eff_rank": 1.956,
+    "eff_rank_source": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm/portfolio/portfolio_0_11_0r529517-b8d64e3lr1e-03o67b1bcb7_20261104T214613Z.json",
+    "expected": "NO_SIGNAL",
+    "g": null,
+    "head_form": "hierarchical_dirichlet",
+    "n_A": 350,
+    "n_B_rows": 150,
+    "n_customers": 500,
+    "nll_base": 1.09973,
+    "nll_baseline_ce_nats": null,
+    "nll_enc": 1.099789,
+    "nll_oracle_nats": null,
+    "paired_ci_enc_minus_base": [
+      -5.893945162610514e-05,
+      0.00018231857755041952
+    ],
+    "per_class_n_A": {
+      "cart": 133,
+      "purchase": 112,
+      "view": 105
+    },
+    "products": {
+      "path": "/tmp/opencode/lab/intent_neg",
+      "registry_sha256": "f2f49a505130de47",
+      "tag": "0.11.0r529517-b8d64e3lr1e-03o67b1bcb7"
+    },
+    "reads_no_signal": true,
+    "signature_block": {
+      "block_sha256": "b5269187a228da09b411a1dc58c58bfc1dd052126c9fdc481c8b31cc92118727",
+      "classes": [
+        "cart",
+        "purchase",
+        "view"
+      ],
+      "dim": 9,
+      "fixture_sha256": "3ca70bfd98b52e537abf3f9755493f7d7d302df7a40d433d638b5c1f0b914007",
+      "n_served": 500,
+      "receipt": "/tmp/opencode/lab/intent_neg/signature_receipt.json",
+      "table": "signature_blocks"
+    }
+  },
+  "p_floor": 1e-15,
+  "positive": {
+    "alpha": 3.162278,
+    "beats_base": true,
+    "classes": [
+      "cart",
+      "purchase",
+      "view"
+    ],
+    "classes_excluded": [],
+    "eff_rank": 1.177,
+    "eff_rank_source": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm/portfolio/portfolio_0_11_0r118183-b8d64e3lr1e-03o67b1bcb7_20261104T214534Z.json",
+    "g": -0.721396,
+    "head_form": "hierarchical_dirichlet",
+    "mastered": true,
+    "n_A": 350,
+    "n_B_rows": 150,
+    "n_customers": 500,
+    "nll_base": 0.722799,
+    "nll_baseline_ce_nats": 0.9685,
+    "nll_enc": 0.573212,
+    "nll_oracle_nats": 0.6359,
+    "paired_ci_enc_minus_base": [
+      -0.210652121544977,
+      -0.08841711495867602
+    ],
+    "per_class_n_A": {
+      "cart": 73,
+      "purchase": 63,
+      "view": 214
+    },
+    "products": {
+      "path": "/tmp/opencode/lab/intent_pos",
+      "registry_sha256": "1565a62f61c47898",
+      "tag": "0.11.0r118183-b8d64e3lr1e-03o67b1bcb7"
+    },
+    "signature_block": {
+      "block_sha256": "f81b50a6babf82359fcb4104ea10f0d9e93d2b2c066fa118770deac11c82a7d3",
+      "classes": [
+        "cart",
+        "purchase",
+        "view"
+      ],
+      "dim": 9,
+      "fixture_sha256": "5f7e10020c525a1c6ded3eec11eb091f377a675cf7cf9fd7f3eed9bfb94cfba1",
+      "n_served": 500,
+      "receipt": "/tmp/opencode/lab/intent_pos/signature_receipt.json",
+      "table": "signature_blocks"
+    }
+  },
+  "products_identity": {
+    "path": "/tmp/opencode/lab/intent_pos",
+    "registry_sha256": "1565a62f61c47898",
+    "tag": "0.11.0r118183-b8d64e3lr1e-03o67b1bcb7"
+  },
+  "protocol": "DEC-576 dev-rig speedometer + controls (development instrument; never B-row evidence)",
+  "seconds": 4.9,
+  "seed": 65537,
+  "use_case": "intent"
+}

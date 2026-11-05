@@ -1,42 +1,100 @@
 [
  {
   "channel": "email",
-  "action": "arm",
-  "rows": 800,
+  "action": "offer",
+  "levels": [
+   0,
+   1,
+   2,
+   3
+  ],
+  "rows": 40364,
+  "n_customers": 1623,
   "nA": 4,
   "deploy": true,
-  "behavior": 2.69,
-  "bar": 5.64,
-  "provenance": "estimated"
+  "behavior": 5.229294,
+  "bar": 3.052336,
+  "metric": "held-out margin on the randomized offer day",
+  "ci95_policy_minus_behavior": [
+   1.919094,
+   2.490368
+  ],
+  "provenance": "ipw_policy_pre_post",
+  "fit_cells": 81440,
+  "eval_cells": 40364
  },
  {
   "channel": "sms",
-  "action": "arm",
-  "rows": 800,
+  "action": "offer",
+  "levels": [
+   0,
+   1,
+   2,
+   3
+  ],
+  "rows": 43363,
+  "n_customers": 1744,
   "nA": 4,
   "deploy": true,
-  "behavior": 2.13,
-  "bar": 4.87,
-  "provenance": "estimated"
+  "behavior": 5.391807,
+  "bar": 3.098777,
+  "metric": "held-out margin on the randomized offer day",
+  "ci95_policy_minus_behavior": [
+   2.011018,
+   2.583696
+  ],
+  "provenance": "ipw_policy_pre_post",
+  "fit_cells": 87629,
+  "eval_cells": 43363
+ },
+ {
+  "channel": "push",
+  "action": "offer",
+  "levels": [
+   0,
+   1,
+   2,
+   3
+  ],
+  "rows": 40621,
+  "n_customers": 1633,
+  "nA": 4,
+  "deploy": true,
+  "behavior": 4.9928,
+  "bar": 2.874345,
+  "metric": "held-out margin on the randomized offer day",
+  "ci95_policy_minus_behavior": [
+   1.820444,
+   2.470047
+  ],
+  "provenance": "ipw_policy_pre_post",
+  "fit_cells": 82039,
+  "eval_cells": 40621
  },
  {
   "channel": "email",
   "action": "discount",
-  "rows": 800,
-  "nA": 4,
-  "deploy": true,
-  "behavior": 3.02,
-  "bar": 7.01,
-  "provenance": "estimated"
+  "levels": [],
+  "rows": 0,
+  "n_customers": 0,
+  "nA": 0,
+  "deploy": false,
+  "behavior": null,
+  "bar": null,
+  "provenance": "not_identified",
+  "reason": "the demo randomizes offer only; no randomized discount bucket exists"
  },
  {
-  "channel": "push",
-  "action": "arm",
-  "rows": 800,
-  "nA": 4,
+  "channel": "email",
+  "action": "frequency",
+  "levels": [],
+  "rows": 0,
+  "n_customers": 0,
+  "nA": 0,
   "deploy": false,
-  "behavior": 0.02,
-  "bar": 0.16,
-  "provenance": "estimated"
+  "behavior": null,
+  "bar": null,
+  "provenance": "not_identified",
+  "reason": "frequency is at the customer optimum; it is not randomized in the demo"
  }
 ]

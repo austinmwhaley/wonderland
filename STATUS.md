@@ -16,12 +16,18 @@ all get signal from it through simple heads.
 `brain alone` = **progress**, `brain + ledger` = **delivery** (non-inferiority). Ledger points are
 never a brain win.
 
-**Stage:** Layer 0 — **PLAN ROOT SOLVED 39/39.** **B is CERTIFIED** (23/23, 8/8 at
-behavior `df73c2aa`); **B+C is DONE** (8/8, bank v2, DEC-598); the three plugin gates pass
-**9/9**; **E1 is PASS** (E1.a g -0.581, E1.b g -0.721/0.181, E1.c eff_rank 30.9 / persona
-0.267 / R2 0.460); **V1.1-V1.5 are green** (identifiable stream, plugins 9/9, red_king
-SCORE 0.889, red_queen channel certification, caterpillar artifact-only explanation).
-**Macro reframe DEC-567 (2026-11-02):** the X-ray is far
+**Stage:** Layer 0 — **PLAN ROOT SOLVED 39/39 on the synthetic `demo_v2` prototype.** **B is
+CERTIFIED** (23/23, 8/8 at behavior `df73c2aa`, on the single `cfm_v2k_vf2_cert` bundle);
+**B+C is DONE** (8/8, bank v2, DEC-598) for the served bank, with the measure-free donor-only
+boundary recorded (B-008); the three plugin gates pass **9/9**; **E1 is PASS as served-object
+capacity** (E1.a g -0.581, E1.b g -0.721/0.181 via the served signature block; E1.c is a
+delivery/ledger port: eff_rank 30.9 / persona 0.267 / R2 0.460, with the trunk-only rank
+4.11/10.33 recorded); **V1.1-V1.5 are green** (identifiable stream, plugins 9/9, red_king
+known-effect 73.3% vs 25% chance + held-out policy 0.371 vs 0.208 random, red_queen DEPLOY/HOLD
+offer composition, caterpillar on red_queen's plan). **No BACKWARD BREAKING/MAJOR requirement is
+open** (AUDIT.md re-review, all 11 closed). **Scope:** the certified artifact is the synthetic
+demo prototype; no production-stream claim, and no trunk-only capacity claim. **Macro reframe
+DEC-567 (2026-11-02):** the X-ray is far
 enough to locate the gaps (exposure / learning / decision objective). **Scope tightening DEC-568
 (2026-11-02):** B-only for now — every DEC-567 option re-anchored to B's own rows; B+C kept on the
 card as a reported consequence, not the near-term target. **D2–D5 accepted 2026-11-02**
@@ -31,7 +37,7 @@ runs O0 first. D1 stays deferred with the B+C judge re-aim. **DEV-RIG pivot DEC-
 defects (4 of O3's 5 attempts died before the science); make ANY foundation model on the lab's
 known-truth streams (fixtures were pre-built, 0/32 ever run) before THE foundation model on the
 real stream. Lab receipts are a development instrument — never B-row evidence on the main card;
-certification stays on the real stream.
+the current certification is on the demo prototype, and that scope is explicit in the card.
 
 ## The problem in plain terms (DEC-588)
 
@@ -284,6 +290,14 @@ histogram half; it is not the missing piece.
   block is 0.5976/0.5976. Staged (`/tmp/opencode/stat_bank_v4.py` +
   `stream_block_source.patch`); tree `d5df3a2c`. Next: stream-source block in
   state/replica/anchors; the `value_col` retrain; the re-stamp.
+- **FINAL BACKWARD re-review + single bundle (DEC-603/604/605, 2026-11-04).** B-002
+  (served signature block), B-005 (red_king known-effect), B-006 (regenerated offer
+  certificate), B-007 (red_queen plan + caterpillar), B-009 (one `cfm_v2k_vf2_cert` bundle)
+  and B-011 (review tied to stamps) closed by evidence; B-001 (synthetic-demo scope), B-003
+  (E1.c delivery/ledger port) and B-008 (served-bank brain boundary) closed by the explicit
+  scope/reclassification their requirements allow. The bundle holds base 272 + bank 179 +
+  donor-only 106 + delivery port 307 + the measure view; registry `116087fb206c2d81`; the
+  donor-only B+C diagnostic is in `docs/report_cards/experiments/bc_donor_diagnostic.json`.
 - **B+C DONE + plugins 9/9 (DEC-598, 2026-11-04).** The served block bank
   `cfm_v2k_vf2_bank` is 179 dims (32 certified shape PCs + level/response/RFM/action +
   exact counter 39 + schema profile 8 + numeric_stats 60 + event_mass 7 + return_ratio 6)

@@ -146,7 +146,7 @@ def _frontier_readings(receipts: Path, current_hash: str) -> list[str]:
     )
     if _finite(persona) or _finite(r2):
         out.append(
-            f"- **real stream · O3 attempt 4 (REJECTED)** — M4 persona {_num(persona)} "
+            f"- **demo stream · O3 attempt 4 (REJECTED)** — M4 persona {_num(persona)} "
             f"(bar ≥ 0.15, DEC-572) · served coarse R² {_num(r2)} (bar ≥ 0.45) — "
             f"`o3axis_i/`{stamp(sd)}"
         )
@@ -1266,11 +1266,14 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
     if b_all_green:
         b_scope = (
             f"✅ **B foundational:** CERTIFIED — {b_green_n}/{len(B.SECTIONS)} sections green. "
-            f"Scope: the 23 receipts are current at behavior `{current_hash[:8]}`; the "
-            "served-composition rows (B4.2/B5.1/B6.2/B6.3) read the derived bank "
-            "(`c32rvd` + profile/numeric/mass blocks; B6.2 uses the 59-dim donor slice), the "
-            "rest the base candidate/encoder. B6.2 uses the recorded ensemble protocol and "
-            "B4.2 the randomized-period protocol; both are on the receipts."
+            f"Scope: the 23 receipts are current at behavior `{current_hash[:8]}` and are "
+            "certified on the single `cfm_v2k_vf2_cert` bundle (base 272 · bank 179 · donor-only "
+            "106 · delivery port 307 · measure view), with a manifest mapping every row to its "
+            "component. The artifact is the synthetic `demo_v2` prototype, not a production "
+            "stream (B-001). The trunk-only rank is 4.11 (base) / 10.33 (bank); the delivery "
+            "port reaches 30.9 only with the measure PCA-128, so E1.c is a delivery/ledger port "
+            "(B-003). The B+C brain is the served bank; the measure-free donor-only diagnostic "
+            "is recorded and does not clear all legs (B-008)."
         )
     else:
         b_scope = (
@@ -1283,7 +1286,9 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
             f"✅ **B+C consequence:** DONE (ENCODER DONE v1) — {legs_green_n}/{len(J.LEG_ROWS)} "
             f"legs green · stages {stages_green_n}/{len(J.STAGE_ROWS)} · no BREAKING/MAJOR "
             "backward requirement. Bank v2 (DEC-598): the served block bank + compact judge "
-            "ledger; the v1 flat judge (4/8) and the GBM delivery head are recorded beside it."
+            "ledger. The brain column is the served bank (donor blocks + served statistics); "
+            "the measure-free donor-only rerun is in `bc_donor_diagnostic.json` and does not "
+            "clear all legs (B-008)."
         )
     else:
         c_scope = (
@@ -1292,9 +1297,9 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
             "The B/C/E1/v1 rows are green but the open BACKWARD requirements block completion."
         )
     p_scope = (
-        "✅ **Project v1:** V1.1-V1.5 green — identifiable stream, plugin acceptance 9/9, "
-        "red_king known-effect SCORE 0.889, red_queen channel certification, caterpillar "
-        "artifact-only explanation."
+        "✅ **Project v1:** V1.1-V1.5 green — identifiable stream; plugin acceptance 9/9; "
+        "red_king known-effect 73.3% vs 25% chance, held-out policy 0.371 vs 0.208 random "
+        "(CI > 0); red_queen offer composition DEPLOY/HOLD; caterpillar on red_queen's plan."
     )
 
     # ---- the plan: the SAME tree, with verdicts attached (PLAN.md -> REPORT_CARD) -----------

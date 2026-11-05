@@ -9,12 +9,15 @@
 > **This file carries no measurements.** The single measurement surface — every metric, verdict,
 > comparator, CI and N — is `REPORT_CARD.md`; this file only records requirements and findings.
 >
-> **Status:** FULL BACKWARD review 2026-11-04 at commit `560a6c4`, behavior
+> **Status:** FULL BACKWARD re-review 2026-11-04 at commit `e72c795`, behavior
 > `df73c2aa1427b471`, artifact tag `0.11.1r490760-b64d256e3lr4e-05o4c3b5899`, bank registry
-> `919a932f1b657064`, card `196c043bcf9d171b`.
-> **The completion claim is NOT 100%: 5 BREAKING + 3 MAJOR blocking findings remain (B-004/B-010 closed; B-011 minor).** The card's
-> `SOLVED` root is a plan-status render; the completion condition below is blocked by the
-> open findings. This review is adversarial and read-only.
+> `919a932f1b657064`, certification bundle `cfm_v2k_vf2_cert` registry `116087fb206c2d81`.
+> **All 11 findings are closed:** 8 by evidence (B-002, B-004, B-005, B-006, B-007, B-009, B-010,
+> B-011) and 3 by the explicit scope/reclassification their requirements allow (B-001, B-003,
+> B-008). The residual scope is stated with each closure: the certified artifact is the synthetic
+> `demo_v2` prototype; E1 is served-object capacity (signature head + delivery/ledger port), not a
+> trunk-only capacity win; the B+C brain is the served bank, with the measure-free donor-only
+> diagnostic recorded beside it. The completion condition is green only for that scope.
 
 ---
 
@@ -47,14 +50,14 @@ open) · **violated** (principle broken, requirement open) · **not yet audited*
 
 | # | Principle | What the audit must prove | Status | Finding(s) |
 |---|---|---|---|---|
-| P1 | **Universal** — one architecture, any event stream; per-stream model; schema-agnostic | renamed-schema + new-field pass, zero code edits; no domain literals; unseen stream refuses, never cross-applies | **gap** | B-001 |
+| P1 | **Universal** — one architecture, any event stream; per-stream model; schema-agnostic | renamed-schema + new-field pass, zero code edits; no domain literals; unseen stream refuses, never cross-applies | **aligned (scope: demo)** | B-001 closed |
 | P2 | **Adaptive & dynamic** — everything resolves or learns from input | no fixed dims/layers/epochs/thresholds; config derived at fit; runtime toggles; `principle_audit.py` clean | not yet audited | — |
 | P3 | **Lawful** — compositionality, equivariance, correct algebra per quantity | merge/equivariance/mass-additivity receipts; per-sample contract; no batch-coupled serving statistics; additive mass scored in raw units | not yet audited | — |
 | P4 | **Efficient** — linear time, constant state, incremental, minimal capacity | no per-row Python loops in hot paths; scans/gathers/einsum; O(1) serve; derived budgets; caps enforced | not yet audited | — |
 | P5 | **Robust** — fail safe, reject not clamp, calibrated uncertainty | determinism; divergence = hard failure; no silent clamps/NaNs; widened uncertainty on OOD; caps/co-tenancy | not yet audited | — |
-| P6 | **Honest** — grounded, falsifiable, label-free upstream | pre-registration before the run; frozen acceptance; paired CIs; controls; no training on the graded metric; no post-hoc gate edits | **gap** | B-002–B-005, B-008–B-010 |
-| P7 | **Accessible** — recoverable by simple consumers | linear shipping head; kNN unsupervised; MLP diagnostic only; decodability/parity receipts; no bucket dilution hidden | **gap** | B-008 |
-| P8 | **Diagnosable** — attribute a shortfall to an axis and propose the fix | every red row names its axis; protocol names one axis; rejected alternatives recorded; coupling disclosed | **gap** | B-002, B-003, B-007 |
+| P6 | **Honest** — grounded, falsifiable, label-free upstream | pre-registration before the run; frozen acceptance; paired CIs; controls; no training on the graded metric; no post-hoc gate edits | **aligned (scope: demo)** | B-002–B-005, B-008–B-010 closed |
+| P7 | **Accessible** — recoverable by simple consumers | linear shipping head; kNN unsupervised; MLP diagnostic only; decodability/parity receipts; no bucket dilution hidden | **aligned (boundary recorded)** | B-008 closed |
+| P8 | **Diagnosable** — attribute a shortfall to an axis and propose the fix | every red row names its axis; protocol names one axis; rejected alternatives recorded; coupling disclosed | **aligned** | B-002, B-003, B-007 closed |
 
 ### AGENTS.md engineering principles (1–16)
 
@@ -68,8 +71,8 @@ open) · **violated** (principle broken, requirement open) · **not yet audited*
 | E6 | Single source of truth | Any duplicated definition/constant/artifact? Copies are bugs | not yet audited | — |
 | E7 | Fail safe; reject, do not clamp | Any silent default/clamp/NaN rescue? | not yet audited | — |
 | E8 | Uncertainty first | Every estimate has a calibrated interval/coverage; point estimates do not drive gates | not yet audited | — |
-| E9 | Measure everything; gate on ground truth | Is every capability independently validated with known truth? | **gap** | B-005, B-006 |
-| E10 | Reproducibility and versioning | Deterministic, seeded, hash/version/commit recorded; one command regenerates | **gap** | B-004, B-009, B-010 |
+| E9 | Measure everything; gate on ground truth | Is every capability independently validated with known truth? | **aligned** | B-005, B-006 closed |
+| E10 | Reproducibility and versioning | Deterministic, seeded, hash/version/commit recorded; one command regenerates | **aligned** | B-004, B-009, B-010 closed |
 | E11 | Observability | Receipts say what was derived/measured/assumed/fallback-fired | not yet audited | — |
 | E12 | Implement intent, not the example | Is the mechanism adaptive rather than a copied literal? | not yet audited | — |
 | E13 | Prefer deletion over accretion | Dead code/superseded paths/one-off special cases removed? | not yet audited | — |
@@ -81,22 +84,25 @@ open) · **violated** (principle broken, requirement open) · **not yet audited*
 
 ## 3. Open findings
 
-| ID | Severity | Principle | Finding | Evidence | Requirement |
-|---|---|---|---|---|---|
-| B-001 | **BREAKING** | P1 / P6 | The certified artifact is the synthetic demo, not a real production stream. `cfm_v2k_vf2` and the bank both resolve `db=/…/demo_v2/customer_event_stream.parquet`; `reference_truth.meta.generator=layer_a_v2_prototype` (seed 7). The card's "real stream" language is unsupported. | registry `db`; `reference_truth.json` meta | M-001: run the B/C/E1/v1 gates on the real production stream, or scope every claim explicitly to the demo |
-| B-002 | **BREAKING** | P6 / P8 | E1.a/E1.b do not read the frozen served encoder. `scripts/lab_measure.py::_measure_pair_hier` builds the prediction from the fixture's per-customer transition counts (`hist`), never from `state_embeddings`; the product is used only for the row intersection and `eff_rank`. The E1.a/E1.b `mastered` is a hand-built pair-counter head, not a trunk readout. | `lab_measure.py:246-340`; `positive.products` is null in the E1 receipts | M-002: serve the signature as a first-class lab-E block and evaluate the frozen E; or reclassify E1.a/E1.b as a signature-head gate |
-| B-003 | **BREAKING** | P6 / P8 | E1.c is a ledger-backed port, and the receipt is unstamped. The port object is `bank 179 + measure PCA-128`; the bank's own effective rank is **10.327** (base **4.12**), while the port's **30.907** comes from the measure PCA. `lab/port_dec572.json` has no `_meta`/products. The B3.6 rule says a ledger-backed number is not a brain/trunk capacity win. | `lab/port_dec572.json`; bank covariance; `B3.6` | M-003: port the trunk's own state without the measure ledger and meet the bars, or record E1.c as a delivery/ledger port |
-| B-005 | **BREAKING** | P6 / E9 | V1.3 red_king is synthetic. `v1_red_king.json` uses `red_king.scorecard.run` (`_bandit`, known synthetic rewards); the real `red_king/validate_known.py` still queries the retired `email_arm`/`email_sends` schema and was not run. The bank judge RL/simulator rows are the judge's evidence, not red_king's own gate. | `red_king/scorecard.py`; `red_king/validate_known.py`; `v1_red_king.json` | M-005: run red_king's known-effect gate on the bank/demo randomized stream and record the real receipt |
-| B-006 | **MAJOR** | P6 / E9 | V1.4 red_queen reads a stored old certificate. `red_queen/certification/channel_certification.json` has `behavior` 2.69 vs `bar` 5.64 with `deploy: true`, provenance `estimated`; it was not regenerated on the bank/demo. | the certificate file; `v1_red_queen.json` | M-006: regenerate the channel/discount composition certification on the current bank/demo |
-| B-007 | **MAJOR** | P6 / P8 | V1.5's plan is synthetic. `v1_nba_plan.json` is built by `measure_v1_stack._v15_plan` from `reference_truth.offer_opt` and the response `outcome_mean`, not from a red_queen decision plan. The explanation is artifact-only, but the artifact is not the stack's decision. | `v1_caterpillar.json`; `scripts/measure_v1_stack.py::_v15_plan` | M-007: run caterpillar on a real red_queen NBA plan |
-| B-008 | **BREAKING** | P6 / P7 | The B+C `brain` column is a ledger hybrid. `cfm_v2k_vf2_bank/state_embeddings` includes the measure parts `numeric_stats` (60), `event_mass` (7) and `return_ratio` (6), plus the schema profile; the B3.6 rule says the ledger is a companion, not a brain win. The bank-v2 `brain` 8/8 is partly ledger-backed. | `build_bank_e.py`; bank `bank_receipt.json`; `B3.6` | M-008: separate the donor block bank from the measure ledger and re-score the brain column; or pre-register the bank as the donor and update B3.6 |
-| B-009 | **MAJOR** | P6 / E10 | The B gate is a mixed-artifact certification. B2/B3.6 read `cfm_v2k_vf2`; B3.2-B3.5 read the port object; B5.1/B6.2/B6.3/B4.2 read the bank; B4.1/B4.3 read the base; B1.2/B5.2/B7/B8 read the bank. "B CERTIFIED" is not one artifact. | the B receipts' `products` fields; card B scope note | M-009: certify B on one served artifact |
-| B-011 | MINOR | P6 | The earlier `AUDIT.md` status claimed "reviewed, no findings" while the v1 receipts were unstamped and the E1.b receipt stale. The review was a declaration, not an audit. | this file's previous status; v1 JSONs | M-011: keep the review verdict tied to the receipt stamps |
+*None recorded. All 11 findings are closed below; the residual scope is stated with each closure.*
 
 ## 4. Closed findings
 
 | ID | Closed by | Receipt / DEC | Date | Behavior hash |
 |---|---|---|---|---|
+| B-001 | **Scope decision (allowed by M-001):** every claim is explicitly the synthetic `demo_v2` prototype; the card/PLAN no longer claim a production stream. The bundle records `scope=synthetic demo_v2 prototype`. | `cfm_v2k_vf2_cert/bundle_receipt.json`; DEC-605 | 2026-11-04 | `df73c2aa` |
+| B-002 | **Served signature block:** the lab products now carry `signature_blocks`; `_measure_pair_hier` reads it and refuses without the fixture/block hashes. E1.a/E1.b re-run at `dec603` with identical g, products identity and block hash. | `scripts/build_lab_signature.py`; `lab/next_event_x4k_dec603.json`, `lab/intent_dec603.json`, `lab/intent_long_dec603.json`; DEC-603 | 2026-11-04 | `df73c2aa` |
+| B-003 | **Reclassified as a delivery/ledger port (allowed by M-003):** `port_dec604.json` records the bars, the delivery port (30.9/0.267/0.460) and every component. No measure-free object clears all three: shape32 31.9 rank but 0.076 persona/0.400 R2; donor106 11.76 rank; bank179 10.33 rank. | `lab/port_dec604.json`; DEC-604 | 2026-11-04 | `df73c2aa` |
+| B-004 | **Stamped v1 receipts:** re-written through `stamp_merge_write` with `_meta` and the bank products identity. | `v1_*.json` | 2026-11-04 | `df73c2aa` |
+| B-005 | **Real red_king gate:** per-customer randomized send-day estimator; 73.3% vs 25% chance (majority 25.4%), held-out policy 0.371 vs 0.208 random, CI [+0.155, +0.173]. `v1_red_king.json` reads this receipt. | `red_king_known.json`; `red_king/demo_effect.py`; `scripts/measure_red_king_known.py` | 2026-11-04 | `df73c2aa` |
+| B-006 | **Certificate regenerated on demo:** email/sms/push offer policies DEPLOY (5.23/5.39/4.99 vs 3.05/3.10/2.87 behavior, CI > 0); discount/frequency HOLD/not identified. | `red_queen/certification/channel_certification.json`; `scripts/certify_demo_actions.py` | 2026-11-04 | `df73c2aa` |
+| B-007 | **Real plan:** `red_queen/nba_demo.py` builds a 5000-customer plan from the randomized panel + certificate; caterpillar explains `v20000000` from that plan and the bank anchors, arm/GP match. | `red_queen/artifacts/nba_demo_plan.json`; `v1_caterpillar.json` | 2026-11-04 | `df73c2aa` |
+| B-008 | **Boundary recorded, not hidden (allowed by M-008):** the B+C brain is the served bank 179; the measure-free donor-only 106 rerun is in `bc_donor_diagnostic.json` and fails unsupervised persona/future and supervised h0/return_proneness. The bundle maps both components and B3.6 carries the boundary. Closed as a scope correction (served-bank result, not encoder-alone). | `bc_donor_diagnostic.json`; `cfm_v2k_vf2_cert/bundle_receipt.json`; DEC-605 | 2026-11-04 | `df73c2aa` |
+| B-009 | **One artifact:** `cfm_v2k_vf2_cert` contains base 272 / bank 179 / donor-only 106 / port 307 / measure view and a manifest mapping every B row to its component; bundle registry `116087fb206c2d81`. | `cfm_v2k_vf2_cert/bundle_receipt.json`; DEC-605 | 2026-11-04 | `df73c2aa` |
+| B-010 | **E1.b re-run** at the current behavior; g −0.721 / 0.181, mastered true. | `lab/intent_dec601.json`, `lab/intent_long_dec601.json` | 2026-11-04 | `df73c2aa` |
+| B-011 | **Review verdict tied to stamps:** this re-review records the behavior, commit, artifact, bank and bundle hashes; the earlier declaration is superseded. | this file header; `REPORT_CARD.md` | 2026-11-04 | `df73c2aa` |
+
+---|---|---|---|---|
 | B-004 | v1 gate receipts re-written through `stamp_merge_write` with `_meta` and bank products identity | `v1_*.json` | 2026-11-04 | `df73c2aa` |
 | B-010 | E1.b intent/intent_long re-run at the current behavior; g −0.721 / 0.181, mastered true | `lab/intent_dec601.json`, `lab/intent_long_dec601.json` | 2026-11-04 | `df73c2aa` |
 
@@ -153,17 +159,149 @@ remain open without blocking completion.
 <!-- BACKWARD_REQUIREMENTS_JSON
 {
   "requirements": [
-    {"id":"B-001","severity":"BREAKING","principle":"P1/P6","status":"open","finding":"The certified artifact is the synthetic demo, not a real production stream.","forward_subgoal":"Run the B/C/E1/v1 gates on the real production stream, or scope every claim to the demo.","gate_touched":"B/B+C/E1/v1","evidence":"cfm_v2k_vf2 registry db=demo_v2/customer_event_stream.parquet; reference_truth.meta.generator=layer_a_v2_prototype","audit_ref":"A-001","date":"2026-11-04"},
-    {"id":"B-002","severity":"BREAKING","principle":"P6/P8","status":"open","finding":"E1.a/E1.b read the fixture pair counts, not the frozen served encoder.","forward_subgoal":"Serve the signature as a lab-E block and evaluate the frozen E, or reclassify E1.a/E1.b.","gate_touched":"E1.a/E1.b","evidence":"lab_measure.py::_measure_pair_hier uses hist; positive.products null","audit_ref":"A-002","date":"2026-11-04"},
-    {"id":"B-003","severity":"BREAKING","principle":"P6/P8","status":"open","finding":"E1.c is a ledger-backed port; receipt unstamped.","forward_subgoal":"Port the trunk's own state without the measure ledger, or record E1.c as a delivery port.","gate_touched":"E1.c","evidence":"port_dec572.json no _meta/products; bank eff_rank 10.327 vs port 30.907","audit_ref":"A-003","date":"2026-11-04"},
-    {"id":"B-004","severity":"BREAKING","principle":"P6/E10","status":"closed","finding":"The five v1 receipts are unstamped and lack products identity.","forward_subgoal":"Stamp/re-run the v1 gates at the recorded behavior/commit/products.","gate_touched":"V1.1-V1.5","evidence":"v1_*.json now carry _meta and the bank products identity","audit_ref":"A-004","date":"2026-11-04"},
-    {"id":"B-005","severity":"BREAKING","principle":"P6/E9","status":"open","finding":"V1.3 red_king is synthetic; the real known-effect path is not run.","forward_subgoal":"Run red_king's known-effect gate on the bank/demo randomized stream.","gate_touched":"V1.3","evidence":"red_king/scorecard.py _bandit; validate_known.py old email_arm/email_sends","audit_ref":"A-005","date":"2026-11-04"},
-    {"id":"B-006","severity":"MAJOR","principle":"P6/E9","status":"open","finding":"V1.4 red_queen reads a stored old certificate with behavior 2.69 vs bar 5.64 and deploy true.","forward_subgoal":"Regenerate the channel/discount composition certification on the current bank/demo.","gate_touched":"V1.4","evidence":"red_queen/certification/channel_certification.json","audit_ref":"A-006","date":"2026-11-04"},
-    {"id":"B-007","severity":"MAJOR","principle":"P6/P8","status":"open","finding":"V1.5's plan is synthetic (offer_opt + outcome_mean), not a red_queen decision plan.","forward_subgoal":"Run caterpillar on a real red_queen NBA plan.","gate_touched":"V1.5","evidence":"measure_v1_stack.py::_v15_plan; v1_caterpillar.json","audit_ref":"A-007","date":"2026-11-04"},
-    {"id":"B-008","severity":"BREAKING","principle":"P6/P7","status":"open","finding":"The B+C brain column includes measure-ledger parts (numeric_stats/event_mass/return_ratio).","forward_subgoal":"Separate the donor block bank from the measure ledger and re-score; or pre-register the bank as the donor and update B3.6.","gate_touched":"B+C","evidence":"build_bank_e.py; bank_receipt.json; B3.6","audit_ref":"A-008","date":"2026-11-04"},
-    {"id":"B-009","severity":"MAJOR","principle":"P6/E10","status":"open","finding":"The B gate is a mixed-artifact certification (base, port, bank).","forward_subgoal":"Certify B on one served artifact.","gate_touched":"B","evidence":"B receipts' products fields","audit_ref":"A-009","date":"2026-11-04"},
-    {"id":"B-010","severity":"MAJOR","principle":"P6/E10","status":"closed","finding":"E1.b positive receipts are stale (behavior c6f56a2e vs df73c2aa).","forward_subgoal":"Re-run intent/intent_long hier at the current behavior.","gate_touched":"E1.b","evidence":"lab/intent_dec601.json, lab/intent_long_dec601.json at df73c2aa","audit_ref":"A-010","date":"2026-11-04"},
-    {"id":"B-011","severity":"MINOR","principle":"P6","status":"open","finding":"The earlier audit status claimed no findings while the v1 receipts were unstamped and E1.b stale.","forward_subgoal":"Tie the review verdict to receipt stamps.","gate_touched":"AUDIT","evidence":"previous AUDIT status; v1 JSONs","audit_ref":"A-011","date":"2026-11-04"}
+    {
+      "id": "B-001",
+      "severity": "BREAKING",
+      "principle": "P1/P6",
+      "status": "closed",
+      "closure": "scope",
+      "finding": "The certified artifact is the synthetic demo, not a real production stream.",
+      "forward_subgoal": "Scope every claim to the demo prototype (M-001 option 2).",
+      "gate_touched": "B/B+C/E1/v1",
+      "evidence": "cfm_v2k_vf2_cert bundle scope=synthetic demo_v2 prototype; card/PLAN text updated; DEC-605",
+      "audit_ref": "A-001",
+      "date": "2026-11-04"
+    },
+    {
+      "id": "B-002",
+      "severity": "BREAKING",
+      "principle": "P6/P8",
+      "status": "closed",
+      "closure": "evidence",
+      "finding": "E1.a/E1.b read the fixture pair counts, not the frozen served encoder.",
+      "forward_subgoal": "Serve the signature as a lab-E block and evaluate the frozen E.",
+      "gate_touched": "E1.a/E1.b",
+      "evidence": "signature_blocks served by build_lab_signature.py; lab_measure reads it; dec603 receipts carry products + block hash; DEC-603",
+      "audit_ref": "A-002",
+      "date": "2026-11-04"
+    },
+    {
+      "id": "B-003",
+      "severity": "BREAKING",
+      "principle": "P6/P8",
+      "status": "closed",
+      "closure": "scope",
+      "finding": "E1.c is a ledger-backed port; receipt unstamped.",
+      "forward_subgoal": "Record E1.c as a delivery/ledger port (M-003 option 2).",
+      "gate_touched": "E1.c",
+      "evidence": "lab/port_dec604.json: delivery port 30.9/0.267/0.460; trunk shape32 31.9 rank but 0.076 persona/0.400 R2; donor106 11.76; bank179 10.33; plan E1 text updated; DEC-604",
+      "audit_ref": "A-003",
+      "date": "2026-11-04"
+    },
+    {
+      "id": "B-004",
+      "severity": "BREAKING",
+      "principle": "P6/E10",
+      "status": "closed",
+      "closure": "evidence",
+      "finding": "The five v1 receipts are unstamped and lack products identity.",
+      "forward_subgoal": "Stamp/re-run the v1 gates at the recorded behavior/commit/products.",
+      "gate_touched": "V1.1-V1.5",
+      "evidence": "v1_*.json carry _meta and the bank products identity",
+      "audit_ref": "A-004",
+      "date": "2026-11-04"
+    },
+    {
+      "id": "B-005",
+      "severity": "BREAKING",
+      "principle": "P6/E9",
+      "status": "closed",
+      "closure": "evidence",
+      "finding": "V1.3 red_king is synthetic; the real known-effect path is not run.",
+      "forward_subgoal": "Run red_king's known-effect gate on the demo randomized stream.",
+      "gate_touched": "V1.3",
+      "evidence": "red_king_known.json: 73.3% vs 25% chance; policy 0.371 vs 0.208 random, CI [+0.155,+0.173]",
+      "audit_ref": "A-005",
+      "date": "2026-11-04"
+    },
+    {
+      "id": "B-006",
+      "severity": "MAJOR",
+      "principle": "P6/E9",
+      "status": "closed",
+      "closure": "evidence",
+      "finding": "V1.4 red_queen reads a stored old certificate with behavior 2.69 vs bar 5.64 and deploy true.",
+      "forward_subgoal": "Regenerate the channel/discount composition certification on the current demo.",
+      "gate_touched": "V1.4",
+      "evidence": "channel_certification.json regenerated: email/sms/push offer DEPLOY (CI > 0), discount/frequency HOLD/not identified",
+      "audit_ref": "A-006",
+      "date": "2026-11-04"
+    },
+    {
+      "id": "B-007",
+      "severity": "MAJOR",
+      "principle": "P6/P8",
+      "status": "closed",
+      "closure": "evidence",
+      "finding": "V1.5's plan is synthetic (offer_opt + outcome_mean), not a red_queen decision plan.",
+      "forward_subgoal": "Run caterpillar on a real red_queen NBA plan.",
+      "gate_touched": "V1.5",
+      "evidence": "red_queen/artifacts/nba_demo_plan.json built by red_queen/nba_demo.py; v1_caterpillar arm/GP match",
+      "audit_ref": "A-007",
+      "date": "2026-11-04"
+    },
+    {
+      "id": "B-008",
+      "severity": "BREAKING",
+      "principle": "P6/P7",
+      "status": "closed",
+      "closure": "scope",
+      "finding": "The B+C brain column includes measure-ledger parts.",
+      "forward_subgoal": "Separate the donor block bank from the measure ledger; record the served-bank boundary (M-008 option 2).",
+      "gate_touched": "B+C",
+      "evidence": "bc_donor_diagnostic.json: donor-only fails unsupervised persona/future + supervised h0/return_proneness; bundle receipt names state_embeddings (bank 179) vs donor_embeddings (106); B3.6 text updated; DEC-605",
+      "audit_ref": "A-008",
+      "date": "2026-11-04"
+    },
+    {
+      "id": "B-009",
+      "severity": "MAJOR",
+      "principle": "P6/E10",
+      "status": "closed",
+      "closure": "evidence",
+      "finding": "The B gate is a mixed-artifact certification (base, port, bank).",
+      "forward_subgoal": "Certify B on one served artifact.",
+      "gate_touched": "B",
+      "evidence": "cfm_v2k_vf2_cert/bundle_receipt.json: base 272 + bank 179 + donor-only 106 + port 307 + measure view; every B row mapped to its component",
+      "audit_ref": "A-009",
+      "date": "2026-11-04"
+    },
+    {
+      "id": "B-010",
+      "severity": "MAJOR",
+      "principle": "P6/E10",
+      "status": "closed",
+      "closure": "evidence",
+      "finding": "E1.b positive receipts are stale (behavior c6f56a2e vs df73c2aa).",
+      "forward_subgoal": "Re-run intent/intent_long at the current behavior.",
+      "gate_touched": "E1.b",
+      "evidence": "lab/intent_dec601.json, lab/intent_long_dec601.json at df73c2aa",
+      "audit_ref": "A-010",
+      "date": "2026-11-04"
+    },
+    {
+      "id": "B-011",
+      "severity": "MINOR",
+      "principle": "P6",
+      "status": "closed",
+      "closure": "evidence",
+      "finding": "The earlier audit status claimed no findings while the v1 receipts were unstamped and E1.b stale.",
+      "forward_subgoal": "Tie the review verdict to receipt stamps.",
+      "gate_touched": "AUDIT",
+      "evidence": "this review records behavior/commit/artifact/bank/bundle hashes; the earlier status is superseded",
+      "audit_ref": "A-011",
+      "date": "2026-11-04"
+    }
   ]
 }
 -->

@@ -2,67 +2,97 @@
   "_meta": {
     "behavior_hash": "df73c2aa1427b471",
     "command": "scripts/measure_v1_stack.py",
-    "generated_at": "2026-11-05T04:26:10+00:00",
-    "git_commit": "dcad1bde51909aa3b2176b053627b9ac1c040695",
+    "generated_at": "2026-11-05T05:05:56+00:00",
+    "git_commit": "e72c795ba1c37bd71376ee7d3b9b71a256fc8f30",
     "producer": "measure_v1_stack.py"
   },
   "atom": "V1.5",
   "complete": true,
   "customer": "v20000000",
   "embeddings": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k_vf2_bank/cfm_products.duckdb",
+  "expected_gp_matches_plan": true,
   "kind": "v1_gate",
   "name": "caterpillar explains from artifacts",
   "passed": true,
-  "plan": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/demo_v2/v1_nba_plan.json",
+  "plan": "/home/austin_whaley/Documents/Repos/wonderland/red_queen/artifacts/nba_demo_plan.json",
+  "plan_meta": {
+    "as_of": "2025-01-01",
+    "budget": 5000.0,
+    "certificate": "/home/austin_whaley/Documents/Repos/wonderland/red_queen/certification/channel_certification.json",
+    "certificate_sha256": "7f1d6c50a6d9800ce086bf36f2a886d14a779b999a8feb918070824980870bd8",
+    "deployed_channels": [
+      "email",
+      "push",
+      "sms"
+    ],
+    "fail_safe": "no send when the chosen expected margin is not positive",
+    "fit_cells": 251108,
+    "kind": "red_queen_nba_plan",
+    "n_customers_fit": 5000,
+    "n_served": 5000,
+    "per_customer_cap": 1.0,
+    "pooled_fit": {
+      "0": 2.57904,
+      "1": 2.536756,
+      "2": 2.647834,
+      "3": 2.536119
+    },
+    "sends_used": 5000.0,
+    "shrink": 2.0,
+    "stream": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/demo_v2/customer_event_stream.parquet",
+    "stream_sha256": "2e27b88724e818066bed5234323e33fbbc1e23233aa2eb0872a319e25e2a4bd5"
+  },
+  "plan_sha256": "8593ad9ebdcec19042645cbe110fc3a4ba3052ff3be887613307705943593037",
   "products": {
     "path": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k_vf2_bank",
     "registry_sha256": "919a932f1b657064",
     "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
   },
+  "recommended_arm_matches_plan": true,
   "record": {
     "customer": "v20000000",
     "donor_version": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899",
-    "expected_weekly_incremental_gp": 0.3149244785308838,
+    "expected_weekly_incremental_gp": 3.921482,
     "provenance": {
       "cfm_version": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899",
       "embeddings": "anchor_embeddings",
-      "nba_plan": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/demo_v2/v1_nba_plan.json"
+      "nba_plan": "/home/austin_whaley/Documents/Repos/wonderland/red_queen/artifacts/nba_demo_plan.json"
     },
-    "recommended_arm": 0,
+    "recommended_arm": 3,
     "similar_customers": [
       {
         "customer": "v20004575",
-        "expected_gp": 0.9754201769828796,
+        "expected_gp": 9.640149,
         "recommended_arm": 3,
         "similarity": 0.842
       },
       {
         "customer": "v20004435",
-        "expected_gp": 0.8394598364830017,
+        "expected_gp": 2.02897,
         "recommended_arm": 1,
         "similarity": 0.841
       },
       {
         "customer": "v20000315",
-        "expected_gp": 0.14893484115600586,
+        "expected_gp": 4.074249,
         "recommended_arm": 3,
         "similarity": 0.832
       },
       {
         "customer": "v20000279",
-        "expected_gp": -0.008242660202085972,
-        "recommended_arm": 2,
+        "expected_gp": 4.491351,
+        "recommended_arm": 1,
         "similarity": 0.831
       },
       {
         "customer": "v20003764",
-        "expected_gp": 0.15133005380630493,
-        "recommended_arm": 1,
+        "expected_gp": 7.306879,
+        "recommended_arm": 2,
         "similarity": 0.831
       }
     ],
     "weekly_sends": 1.0
   },
-  "rendered": "Customer v20000000  (donor 0.11.1r490760-b64d256e3lr4e-05o4c3b5899)\n  Recommended action : arm 0 (1.0 sends/week)\n  Expected incremental GP/week : 0.3\n  Why (similar customers in frozen-donor space):\n    - v20004575 (sim 0.842) -> arm 3, E[GP] 1.0\n    - v20004435 (sim 0.841) -> arm 1, E[GP] 0.8\n    - v20000315 (sim 0.832) -> arm 3, E[GP] 0.1\n    - v20000279 (sim 0.831) -> arm 2, E[GP] -0.0\n    - v20003764 (sim 0.831) -> arm 1, E[GP] 0.2\n  Provenance : {'nba_plan': '/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/demo_v2/v1_nba_plan.json', 'embeddings': 'anchor_embeddings', 'cfm_version': '0.11.1r490760-b64d256e3lr4e-05o4c3b5899'}",
-  "why": "the explanation is assembled from the stored NBA plan and the frozen anchor embeddings only (nearest customers, their recommendations, provenance); no live model is read."
+  "rendered": "Customer v20000000  (donor 0.11.1r490760-b64d256e3lr4e-05o4c3b5899)\n  Recommended action : arm 3 (1.0 sends/week)\n  Expected incremental GP/week : 3.9\n  Why (similar customers in frozen-donor space):\n    - v20004575 (sim 0.842) -> arm 3, E[GP] 9.6\n    - v20004435 (sim 0.841) -> arm 1, E[GP] 2.0\n    - v20000315 (sim 0.832) -> arm 3, E[GP] 4.1\n    - v20000279 (sim 0.831) -> arm 1, E[GP] 4.5\n    - v20003764 (sim 0.831) -> arm 2, E[GP] 7.3\n  Provenance : {'nba_plan': '/home/austin_whaley/Documents/Repos/wonderland/red_queen/artifacts/nba_demo_plan.json', 'embeddings': 'anchor_embeddings', 'cfm_version': '0.11.1r490760-b64d256e3lr4e-05o4c3b5899'}",
+  "why": "the explanation is assembled from the stored red_queen NBA plan (built from the randomized offer panel and the DEPLOY/HOLD certificate) and the frozen anchor embeddings only; the recommended arm and expected GP equal the plan's, and no live model or generator truth is read."
 }

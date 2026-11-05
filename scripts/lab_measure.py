@@ -243,42 +243,95 @@ def _measure_pair(fixture_dir: Path, products: Path, as_of) -> dict:
     }
 
 
-def _measure_pair_hier(fixture_dir: Path, products: Path, as_of) -> dict:
-    """E1 head-form v2: per-customer transition counts shrunk to the pooled 1-gram.
+def _load_served_signature(fixture_dir: Path, products: Path):
+    """The served signature block (B-002): read it from the frozen products, never rebuild it.
 
-    The served signature block is the exact per-customer pair counter. The head predicts the
-    next type from the last pre-as_of type with `p = (N_c[last] + alpha * P0[last]) /
+    The block is written by `scripts/build_lab_signature.py` and identified by the fixture
+    hash + block hash in `signature_receipt.json`. A missing/mismatched block is fatal: the
+    E1.a/E1.b receipt may not silently fall back to a fixture-side recomputation.
+    """
+    import hashlib
+
+    import duckdb
+
+    stream_path = fixture_dir / "customer_event_stream.parquet"
+    db = products / "cfm_products.duckdb"
+    receipt_path = products / "signature_receipt.json"
+    if not receipt_path.exists():
+        return None, None, f"no served signature block at {receipt_path}"
+    receipt = json.loads(receipt_path.read_text())
+    h = hashlib.sha256()
+    with stream_path.open("rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    if receipt.get("fixture_sha256") != h.hexdigest():
+        return None, None, "signature block fixture hash does not match the measured fixture"
+    con = duckdb.connect(str(db), read_only=True)
+    try:
+        rows = con.execute(
+            "select customer_key, classes, dim, counts, last_type from signature_blocks"
+        ).fetchall()
+        version = con.execute("select distinct version from state_embeddings").fetchall()
+    finally:
+        con.close()
+    if not rows:
+        return None, None, "signature_blocks is empty"
+    if len(version) != 1 or str(version[0][0]) != receipt.get("version"):
+        return None, None, "signature block version does not match the served products version"
+    classes = [str(c) for c in rows[0][1]]
+    K = len(classes)
+    if int(rows[0][2]) != K * K:
+        return None, None, "signature block dim is not K*K"
+    per: dict[str, tuple[np.ndarray, int]] = {}
+    order: list[str] = []
+    hb = hashlib.sha256()
+    for key, cls, _dim, counts, last in sorted(rows, key=lambda r: str(r[0])):
+        if [str(c) for c in cls] != classes:
+            return None, None, "signature block class vocabularies differ across customers"
+        k = str(key)
+        C = np.asarray(counts, dtype=np.float64).reshape(K, K)
+        per[k] = (C, int(last))
+        order.append(k)
+        hb.update(k.encode())
+        hb.update(C.astype(np.float64).tobytes())
+        hb.update(int(last).to_bytes(4, "little", signed=True))
+    if hb.hexdigest() != receipt.get("block_sha256"):
+        return None, None, "signature block hash does not match its receipt"
+    return (classes, per), receipt, None
+
+
+def _measure_pair_hier(fixture_dir: Path, products: Path, as_of) -> dict:
+    """E1 head-form v2: the served per-customer transition counts shrunk to the pooled 1-gram.
+
+    The signature block is a first-class served block (B-002). The head predicts the next
+    type from the last pre-as_of type with `p = (N_c[last] + alpha * P0[last]) /
     (sum N_c[last] + alpha)`; alpha is chosen on split A only. This is the order statistic
-    the mean state cannot carry, read by a simple consumer.
+    the mean state cannot carry, read by a simple consumer from the frozen products object.
     """
     stream = pl.read_parquet(fixture_dir / "customer_event_stream.parquet")
-    keys = sorted(stream["customer_key"].unique().to_list())
+    keys = sorted(str(k) for k in stream["customer_key"].unique().to_list())
     akeys, bkeys = _split_customers(keys)
     fut = stream.filter(to_ts_expr(pl.col("event_ts")) > as_of).sort(
         ["customer_key", "event_ts", "event_type"]
     )
     nxt = fut.unique("customer_key", keep="first")
     next_of = dict(zip(nxt["customer_key"].to_list(), nxt["event_type"].to_list(), strict=False))
-    classes = sorted(set(next_of.values()))
+    served, sig_receipt, fatal = _load_served_signature(fixture_dir, products)
+    if fatal:
+        return {"fatal": fatal, "n_B_rows": 0, "products": products_identity(products)}
+    classes, per = served
     idx = {c: i for i, c in enumerate(classes)}
     K = len(classes)
-    hist = (
-        stream.filter(to_ts_expr(pl.col("event_ts")) <= as_of)
-        .filter(pl.col("event_type").is_in(classes))
-        .sort(["customer_key", "event_ts", "event_type"])
-    )
-    T, last_hist = _bigram_counts(hist, classes)
+    T = np.ones((K, K), dtype=np.float64)
+    for C, _last in per.values():
+        T += C
     P0 = T / T.sum(1, keepdims=True)
-    per: dict[str, tuple[np.ndarray, int]] = {}
-    for g in hist.partition_by("customer_key", maintain_order=True):
-        k = str(g["customer_key"][0])
-        types = np.array([idx[t] for t in g["event_type"]])
-        C = np.zeros((K, K), dtype=np.float64)
-        for a, b in zip(types[:-1], types[1:]):
-            C[a, b] += 1.0
-        per[k] = (C, int(types[-1]))
     if not per:
-        return {"fatal": "no history for the signature head", "n_B_rows": 0}
+        return {
+            "fatal": "no history for the signature head",
+            "n_B_rows": 0,
+            "products": products_identity(products),
+        }
 
     def nll(ks, alpha):
         vals = []
@@ -299,7 +352,11 @@ def _measure_pair_hier(fixture_dir: Path, products: Path, as_of) -> dict:
             if best is None or score < best[0]:
                 best = (score, float(al))
     if best is None:
-        return {"fatal": "no A rows for the signature head", "n_B_rows": 0}
+        return {
+            "fatal": "no A rows for the signature head",
+            "n_B_rows": 0,
+            "products": products_identity(products),
+        }
     alpha = best[1]
     nll_enc = nll(bkeys, alpha)
     nll_base = np.asarray(
@@ -345,6 +402,16 @@ def _measure_pair_hier(fixture_dir: Path, products: Path, as_of) -> dict:
         "beats_base": beats_base,
         "eff_rank": eff_rank,
         "eff_rank_source": eff_rank_src,
+        "products": products_identity(products),
+        "signature_block": {
+            "table": "signature_blocks",
+            "dim": K * K,
+            "classes": classes,
+            "n_served": len(per),
+            "block_sha256": sig_receipt.get("block_sha256"),
+            "fixture_sha256": sig_receipt.get("fixture_sha256"),
+            "receipt": str(products / "signature_receipt.json"),
+        },
     }
 
 

@@ -11302,3 +11302,68 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   - **Principle.** Honest (family and coverage published before the verdict) · Adaptive
     (one more block, one more consumer family) · Minimal (the family is the smallest
     broad set: persona truth + the unjudged 30-day outcomes).
+
+- **DEC-603 (served lab signature block — B-002, 2026-11-04).**
+  - **NODE:** E1.a/E1.b (served-object capacity, signature head).
+  - **WHY-NOT.** The E1.a/E1.b receipts read the fixture's per-customer transition
+    counts (`hist`) inside the measurement process. The products object supplied only
+    the row intersection and the portfolio `eff_rank`, so the receipts were not
+    readouts of the frozen artifact (BACKWARD B-002). The frozen trunk E alone does
+    not beat the 1-gram on either fixture (ridge g 2.30 / 2.67 / 1.59, CI above 0), so
+    a trunk-only reclassification would not be honest either.
+  - **MOVE (one block, no gate change).** `scripts/build_lab_signature.py` writes a
+    `signature_blocks` table (classes, flattened K×K per-customer transition counts,
+    last type) into each lab products object, with a `signature_receipt.json`
+    carrying the fixture hash and block hash. `lab_measure._measure_pair_hier` reads
+    that table and refuses without the receipt/hash match; it never recomputes the
+    signature from the fixture. The block is the served transition statistic, not the
+    measure ledger.
+  - **Outcome.** E1.a `next_event_x4k_dec603` g **-0.581**, CI **[-0.0240, -0.0007]**;
+    E1.b `intent_dec603` g **-0.721** / `intent_long_dec603` g **0.181**, beats_base
+    true both; controls clean; products identity + block hash on every receipt.
+  - **Principle.** Honest (the artifact is the evidence) · Diagnosable (the signature
+    is a named block) · No gate/bar change.
+
+- **DEC-604 (E1.c is a delivery/ledger port, not a trunk-only capacity win — B-003,
+  2026-11-04).**
+  - **NODE:** E1.c (served-object capacity).
+  - **WHY-NOT.** The DEC-572 port is `bank 179 + measure PCA-128`. Its eff_rank 30.9
+    comes from the measure PCA; the bank's own rank is 10.33 (base 4.11). BACKWARD
+    B-003 correctly refused to call that a trunk-capacity win.
+  - **MOVE (measure every component, then classify).** `scripts/measure_port_demo.py`
+    scores the delivery port and every component under the frozen geometry + linear
+    access consumers: shape32 **31.88** rank but persona **0.076** / R2 **0.400**;
+    donor106 rank **11.76** / persona 0.290 / R2 0.466; bank179 rank **10.33** /
+    persona 0.339 / R2 0.469; delivery port **30.88** / 0.267 / 0.460. No measure-free
+    object clears all three bars. The receipt `lab/port_dec604.json` is stamped and
+    records the classification; the plan's E1 text now says "served-object capacity",
+    and E1.c is "delivery port", not "trunk capacity".
+  - **Rejected.** Adding the measure PCA and calling it the trunk; weakening the rank
+    bar; deleting the component evidence.
+  - **Outcome.** E1.c closes as a delivery/ledger port. The residual is explicit: the
+    trunk's own rank is 4.11/10.33, so a trunk-only capacity claim is not made.
+
+- **DEC-605 (single certification bundle + synthetic-demo scope + served-bank boundary —
+  B-001/B-008/B-009, 2026-11-04).**
+  - **NODE:** B/B+C certification identity and scope.
+  - **WHY-NOT.** The B rows were measured on the base candidate (B2/B3.6/B4.x), the
+    delivery port (B3.2-B3.5), the bank (B5.1/B5.2/B6.2/B6.3/B7/B8) and the stage
+    receipts; "B CERTIFIED" was not one artifact (B-009). The artifact resolves the
+    synthetic demo stream, not a production stream (B-001). The B+C brain column is
+    the bank, whose `state_embeddings` includes the measure parts
+    `numeric_stats/event_mass/return_ratio`; the donor-only rerun is not 8/8 (B-008).
+  - **MOVE (one container, explicit boundaries).** `scripts/build_b_cert_bundle.py`
+    writes `looking_glass/artifacts/cfm_v2k_vf2_cert` with base 272, bank 179,
+    donor-only 106, delivery port 307, the measure view, a bundle registry and
+    `bundle_receipt.json`; the receipt maps every B row to its component and records
+    `scope=synthetic demo_v2 prototype`. The B+C donor-only rerun is copied to
+    `bc_donor_diagnostic.json`: it fails unsupervised persona/future and supervised
+    h0/return_proneness, so the served-bank result is labeled as such, not as an
+    encoder-alone win. B3.6's text carries the boundary.
+  - **Rejected.** Re-running every B producer on one vector (the B questions are
+    different objects); hiding the donor-only failure; calling the demo a production
+    stream; calling the bank a pure encoder.
+  - **Outcome.** B is certified on one bundle (registry `116087fb206c2d81`); B+C is
+    DONE for the served bank with the donor-only boundary recorded; the card/PLAN
+    state the synthetic-demo scope. BACKWARD B-001/B-008/B-009 close by the scope and
+    container the requirements allow.

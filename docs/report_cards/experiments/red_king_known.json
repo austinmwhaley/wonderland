@@ -1,0 +1,84 @@
+{
+  "_meta": {
+    "behavior_hash": "df73c2aa1427b471",
+    "command": "measure_red_king_known.py",
+    "generated_at": "2026-11-05T05:05:56+00:00",
+    "git_commit": "e72c795ba1c37bd71376ee7d3b9b71a256fc8f30",
+    "producer": "measure_red_king_known.py"
+  },
+  "as_of": "2025-01-01",
+  "atom": "V1.3",
+  "bars": {
+    "best_constant": "policy >= best constant",
+    "binom_p": 1e-06,
+    "policy_ci_lo": 0.0,
+    "rank_accuracy": 0.5,
+    "value_rel_err": 0.5
+  },
+  "kind": "red_king_known_effect",
+  "known_effect": {
+    "accuracy": 0.7334,
+    "binom_p": 0.0,
+    "chance": 0.25,
+    "hits": 3667,
+    "majority_accuracy": 0.2538,
+    "majority_arm": 2,
+    "n_customers": 5000,
+    "predicted_distribution": {
+      "0": 1272,
+      "1": 1222,
+      "2": 1269,
+      "3": 1237
+    }
+  },
+  "n_eval_cells": 124348,
+  "n_eval_customers": 5000,
+  "n_fit_cells": 251108,
+  "n_fit_customers": 5000,
+  "outcome": "purchase count on the randomized offer day",
+  "passed": true,
+  "policy": {
+    "best_constant": 0.212306,
+    "best_constant_arm": 3,
+    "estimated_value": 0.366038,
+    "n_boot": 2000,
+    "paired_ci_policy_minus_best_constant": [
+      0.14623465283520581,
+      0.17245669522542378
+    ],
+    "paired_ci_policy_minus_random": [
+      0.155060772952345,
+      0.17282344337109468
+    ],
+    "policy": 0.370839,
+    "pooled_eval": {
+      "0": 0.206805,
+      "1": 0.206784,
+      "2": 0.207009,
+      "3": 0.212306
+    },
+    "pooled_fit": {
+      "0": 0.178689,
+      "1": 0.178015,
+      "2": 0.181332,
+      "3": 0.176812
+    },
+    "random_all": 0.20823,
+    "random_customer_mean": 0.207146,
+    "seed": 0,
+    "value_rel_err": 0.012946
+  },
+  "protocol": "per-customer randomized send-day value model (red_king.demo_effect); fit on pre-as-of cells, score the policy on post-as-of cells; truth is validation only",
+  "scorecard": {
+    "S1_ordering": 0.25512,
+    "S3_rank_acc": 0.7334,
+    "S4_value_rel_err": 0.012946,
+    "S6_beat_modelfree": 0.162609,
+    "SCORE": 1.0
+  },
+  "shrink": 2.0,
+  "stream": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/demo_v2/customer_event_stream.parquet",
+  "stream_sha256": "2e27b88724e818066bed5234323e33fbbc1e23233aa2eb0872a319e25e2a4bd5",
+  "truth_sha256": "69cba9c5e0af9c1ba2dae5be8a85bd1e54e9b1cc2d23051f509fe6300173019d",
+  "why": "the per-customer estimator recovers the generator's declared offer optimum at 0.733 vs 0.250 chance (majority 0.254); on the post-as-of randomized holdout the argmax policy is 0.371 vs 0.208 random (paired CI +0.155, +0.173) and 0.212 best constant."
+}

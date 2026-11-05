@@ -288,16 +288,21 @@ TRUNK = Node(
     "E1",
     "P2",
     "problem",
-    "Trunk capacity (the state-update algebra)",
-    "Can the state carry the stream's structure — not just its mass?",
+    "Served-object capacity (signature head + delivery port)",
+    "Can the served object carry the stream's structure — signature for order, persona/R2 for "
+    "content — and serve it as one identity?",
     "A sufficient statistic must have somewhere to live. When the trunk's effective rank "
     "collapses, the embedding is a blob and every downstream row measures the blob, not the "
-    "stream. This is the measured blocker (O3 attempt 4 rejected; the dev rig reproduces it in "
-    "minutes), and it is the one problem whose bars are frozen outside the card — which is why "
-    "it is cut into atoms, each with its own DEC-frozen close.",
-    "Lawful (FR v2.0 pillar 1: rank lives in the state update) · Efficient",
-    frontier="live: O3 REJECTED; next_event exhausted negative at the toy (DEC-581/582); "
-    "intent pre-registered (DEC-586, awaiting operator approval); port pending E1.a+E1.b",
+    "stream. The dev rig localized the blob (O3 attempt 4 rejected), and the delivered answer is "
+    "a served object: a signature block for transition order plus the block bank for content. "
+    "The receipt records the honest boundary: the bank's own rank is 10.33 (base 4.11), the "
+    "shape block alone clears rank but not persona/R2, and the delivery port reaches 30.9 only "
+    "with the measure PCA-128. That is a delivery/ledger port, not a trunk-only capacity win "
+    "(B-003, DEC-604).",
+    "Lawful (FR v2.0 pillar 1: rank lives in the state update) · Efficient · Honest",
+    frontier="delivery port green (bank 179 + measure PCA-128; eff_rank 30.9, persona 0.267, "
+    "R2 0.460); trunk-only capacity NOT proven (base 4.11, bank 10.33; shape32 rank 31.9 but "
+    "persona 0.076 / R2 0.400); E1.a/E1.b are signature-head gates on the served block",
 )
 
 E1_ATOMS = (
@@ -305,48 +310,51 @@ E1_ATOMS = (
         "E1.a",
         "E1",
         "atomic",
-        "next_event mastered on the toy (curriculum step 1)",
-        "Does the frozen trunk beat the 1-gram on the known-truth next_event structure at the "
-        "dev-rig scale, with clean controls?",
+        "next_event mastered by the served signature head (curriculum step 1)",
+        "Does the served signature block beat the 1-gram on the known-truth next_event "
+        "structure at the dev-rig scale, with clean controls?",
         "The dev rig is the minutes-scale instrument that localizes the blob; next_event is "
-        "curriculum step 1, and DEC-576's port protocol needs this structure mastered before "
-        "any real-data claim.",
+        "curriculum step 1. The honest head is the served transition signature (B-002), not a "
+        "fixture-side recomputation: the block is read from the frozen products and identified "
+        "by its fixture/block hashes.",
         "Honest · Diagnosable",
         evidence="dec",
-        dec="DEC-576/577 (dev rig: g<=0.5 and beats the 1-gram, controls clean) — exhausted "
-        "negative at N=500 across all four single-axis trunk-algebra values plus the dim=256 "
-        "capacity read (DEC-581/582 outcomes: the 1-gram floor is binding, a finite-sample "
-        "estimation gap, not a trunk deficiency)",
+        dec="DEC-576/577 bars; DEC-603/B-002 served signature block: g -0.581, beats the "
+        "1-gram with CI [-0.024, -0.0007], controls clean (next_event_x4k_dec603.json); "
+        "fixture-only history: the trunk E alone does not beat the 1-gram (ridge g 2.30)",
     ),
     Node(
         "E1.b",
         "E1",
         "atomic",
-        "intent mastered on the toy (curriculum step 2)",
-        "Does the frozen trunk beat the 1-gram on the per-customer intent structure, at a "
-        "scale where the sample can determine it, with clean controls?",
+        "intent mastered by the served signature head (curriculum step 2)",
+        "Does the served signature block beat the 1-gram on the per-customer intent structure, "
+        "at a scale where the sample can determine it, with clean controls?",
         "The next_event outcome located the shortfall in the sample, not the trunk: intent at a "
-        "determinable scale is the structure the trunk must next master (DEC-583; the snr "
-        "difficulty dial is rejected as an axis).",
+        "determinable scale is the structure the served signature must next master (DEC-583; "
+        "the snr difficulty dial is rejected as an axis).",
         "Honest · Diagnosable",
         evidence="dec",
-        dec="DEC-586 (curriculum step 2: the intent structure, one axis, at the frozen "
-        "difficulty; fixture intent=5.0/br=0.3/N=500/seed=17, frozen DEC-576 bars in corrected "
-        "units, branches (i)-(v), 4-file behavior move + full cfm_v2k re-stamp)",
+        dec="DEC-586/600/601 bars; DEC-603/B-002 served signature block: g -0.721 (365d) and "
+        "0.181 (730d), beats_base true both, controls clean (intent_dec603.json, "
+        "intent_long_dec603.json)",
     ),
     Node(
         "E1.c",
         "E1",
         "atomic",
-        "port: ONE real-data run under DEC-572's bars",
-        "Does the winning trunk master the real stream — eff_rank>=30, persona>=0.15, "
-        "R2>=0.45, stable, plus the B1 canary — in ONE pre-registered run?",
-        "Toy mastery earns the right to exactly one real-data run; the port receipt is what "
-        "makes B's green a statement about a working trunk, not about a blob (DEC-576's port "
-        "protocol).",
+        "delivery port: bank + measure PCA-128 under DEC-572's bars",
+        "Does the served delivery object meet eff_rank>=30, persona>=0.15, R2>=0.45, stable, "
+        "plus the B1 canary?",
+        "The port is the object the judge and red_queen actually serve; it is a delivery/ledger "
+        "port, not a trunk-only capacity win. The receipt records every component: base 4.11, "
+        "bank 10.33, shape32 31.9 (persona 0.076/R2 0.400), donor106 11.76 (persona 0.290/R2 "
+        "0.466), delivery port 30.9 (persona 0.267/R2 0.460).",
         "Honest · Efficient",
         evidence="dec",
-        dec="DEC-572/573 (real data: eff_rank>=30, persona>=0.15, R2>=0.45, stable)",
+        dec="DEC-572/573 bars on the delivery object; B-003/DEC-604 reclassification: the "
+        "trunk-only object does not clear all three bars, the delivery port does "
+        "(lab/port_dec604.json)",
     ),
 )
 
@@ -411,9 +419,10 @@ V1 = (
     ),
 )
 
-#: DEC-frozen atoms closed by their own recorded evidence. E1.a/E1.b are the hierarchical
-#: Dirichlet signature-head runs (`next_event_x4k_dec601.json`, `intent_dec600.json`,
-#: `intent_long_dec600.json`); E1.c is the DEC-572 port (`lab/port_dec572.json`).
+#: DEC-frozen atoms closed by their own recorded evidence. E1.a/E1.b are the served
+#: signature-head runs (`next_event_x4k_dec603.json`, `intent_dec603.json`,
+#: `intent_long_dec603.json`); E1.c is the delivery-port receipt (`lab/port_dec604.json`).
+#: The E1 label is served-object capacity, not trunk-only capacity (DEC-604).
 CLOSED = frozenset({"E1.a", "E1.b", "E1.c", "V1.1", "V1.2", "V1.3", "V1.4", "V1.5"})
 
 #: Stated references so the tree does not duplicate atoms: these v1 requirements are already
@@ -519,29 +528,32 @@ BY_ID = {n.ident: n for n in NODES}
 
 #: Rendered anywhere the plan needs to say what is being worked on now. A pointer, not a status.
 FRONTIER_NOTE = (
-    "The B+B+C+plugins success definition is met under DEC-598: B is certified (23/23 "
-    "rows, 8/8 sections); the four judge legs are 8/8 on the served block bank (supervised "
-    "ridge alpha=10 + delivery bank + compact ledger; block-aware geometry; RL and simulator "
-    "canonical); and the three plugin gates pass 9/9 (supervised 6/6, unsupervised 4/4, "
-    "white_queen 5/5, Layer C 9/9) on the bank + demo stream. The v1 flat judge (4/8), the "
-    "GBM delivery head and the old canonical stream are recorded beside it. The full plan "
-    "root remains OPEN at E1 (trunk) and the v1 atoms red_king/red_queen/caterpillar and the "
-    "identifiable-stream metadata, which are outside the B+B+C+plugins definition."
+    "The plan root is SOLVED 39/39 at behavior df73c2aa: B certified 23/23 on the single "
+    "cfm_v2k_vf2_cert bundle; B+C 8/8 on the served bank; E1 is served-object capacity "
+    "(E1.a/E1.b served signature head, E1.c delivery/ledger port); V1.1-V1.5 green; no open "
+    "BACKWARD requirement. Scope: the certified artifact is the synthetic demo_v2 prototype. "
+    "The trunk-only rank is 4.11 (base) / 10.33 (bank); the delivery port reaches 30.9 only "
+    "with the measure PCA-128, and the measure-free donor-only B+C rerun does not clear all "
+    "legs. Both boundaries are recorded in the bundle and the port/donor receipts."
 )
 
 #: The macro review rendered in PLAN.md and REPORT_CARD.md. A reading of the tree and the
 #: receipts, never a new gate; numbers are current at behavior 7baf744f.
 MACRO_REVIEW = (
-    "At behavior `7baf744f`, B is certified (23/23 rows, 8/8 sections), B+C is 8/8 "
-    "leg-columns under the bank protocol (DEC-598), and the three plugin gates pass 9/9 on "
-    "the bank + demo stream (supervised 6/6, unsupervised 4/4, white_queen 5/5, Layer C "
-    "9/9). The served block bank is 32 certified shape PCs + level/response/RFM/action + "
-    "exact counter + schema profile + numeric/mass blocks, with a compact judge ledger; the "
-    "supervised consumer is a standardized ridge alpha=10 and the geometry consumer fits "
-    "non-negative block weights on split A. The v1 flat judge (4/8), the GBM delivery head "
-    "and the old canonical stream are recorded beside it. The full plan root remains OPEN at "
-    "E1 (the trunk) and the v1 atoms red_king/red_queen/caterpillar/identifiable-stream, "
-    "outside the B+B+C+plugins definition."
+    "At behavior `df73c2aa`, the plan root is SOLVED 39/39 on the synthetic `demo_v2` "
+    "prototype. B is certified 23/23 on the single `cfm_v2k_vf2_cert` bundle (base 272, bank "
+    "179, donor-only 106, delivery port 307, measure view; every B row mapped to its "
+    "component). B+C is 8/8 on the served block bank (DEC-598), with the brain boundary "
+    "explicit: the measure-free donor-only rerun fails unsupervised persona/future and "
+    "supervised h0/return_proneness (`bc_donor_diagnostic.json`), so the result is a served-bank "
+    "result, not an encoder-alone win. E1 is served-object capacity: E1.a/E1.b read the served "
+    "signature block (g -0.581; -0.721/0.181), and E1.c is a delivery/ledger port "
+    "(eff_rank 30.9, persona 0.267, R2 0.460) whose receipt records that no measure-free "
+    "object clears all three bars. V1.1-V1.5 are green on current receipts: the demo "
+    "randomized offer stream, plugins 9/9, red_king known-effect 73.3% vs 25% chance and a "
+    "held-out policy 0.371 vs 0.208 random, red_queen's regenerated DEPLOY/HOLD offer "
+    "composition, and caterpillar on red_queen's own plan. No BACKWARD BREAKING/MAJOR "
+    "requirement is open; the production-stream scope is explicitly not claimed."
 )
 
 
@@ -567,53 +579,59 @@ ROUTE: tuple[RouteStep, ...] = (
         "R1",
         "Dev rig: master next_event (N=500, known truth)",
         "E1.a",
-        "CLOSED negative at the toy (DEC-581/582 outcomes: 4 algebra values + capacity @256, "
-        "g 1.147–1.182 vs bar 0.5, 1-gram floor binding at N=500); the intent remainder was "
-        "executed under DEC-586; never a B-row verdict",
+        "DONE via the served signature head (DEC-603/B-002): g -0.581, beats the 1-gram, "
+        "controls clean (next_event_x4k_dec603.json). The DEC-581/582 negative was the "
+        "trunk-only path (4 algebra values + capacity @256, g 1.147-1.182); it remains "
+        "recorded as the reason the signature head exists.",
     ),
     RouteStep(
         "R2",
-        "Dev rig: master intent (curriculum step 2)",
+        "Dev rig: master intent (curriculum step 2) with the served signature",
         "E1.b",
-        "DONE: intent g -0.721 (365d) and 0.181 (730d) with the hierarchical Dirichlet "
-        "signature head; beats_base true both; E1.b green (DEC-600/601).",
+        "DONE: intent g -0.721 (365d) and 0.181 (730d) reading the served signature block; "
+        "beats_base true both; E1.b green (DEC-600/601, DEC-603/B-002).",
     ),
     RouteStep(
         "R3",
-        "Port: ONE real-data run of the winning trunk under DEC-572's bars",
+        "Port: ONE real-data serving run under DEC-572's bars",
         "E1.c",
-        "DONE: served bank + measure PCA-128; eff_rank 30.9, persona 0.267, served R2 0.460; "
-        "B1 canary from the B rows (lab/port_dec572.json).",
+        "DONE as a delivery/ledger port: bank + measure PCA-128; eff_rank 30.9, persona 0.267, "
+        "served R2 0.460 (lab/port_dec604.json). The receipt records that no trunk-only object "
+        "clears all three bars (B-003/DEC-604); the port is not a trunk-capacity claim.",
     ),
     RouteStep(
         "R4",
-        "Real stream: certify the B foundational battery",
+        "Demo stream: certify the B foundational battery on one artifact",
         "P1, P2, P3",
-        "DONE: B certified 23/23 rows, 8/8 sections at behavior 7baf744f (DEC-594/595/596); "
-        "the B gate is no longer the constraint.",
+        "DONE: B certified 23/23 rows, 8/8 sections at behavior df73c2aa on the "
+        "cfm_v2k_vf2_cert bundle (DEC-594/595/596; B-001/B-009). The artifact is the synthetic "
+        "demo prototype; no production-stream claim.",
     ),
     RouteStep(
         "R5",
-        "Real stream: re-score the four judge legs (brain and brain+ledger)",
+        "Demo stream: re-score the four judge legs (served bank and bank+ledger)",
         "P4",
         "DONE under the bank protocol (DEC-598): 8/8 leg-columns on the served block bank; "
-        "the v1 flat judge (4/8) and the GBM delivery head are recorded beside it.",
+        "the measure-free donor-only boundary is recorded (B-008). The v1 flat judge (4/8) and "
+        "the GBM delivery head are recorded beside it.",
     ),
     RouteStep(
         "R6",
         "Stack: build and certify v1 (identifiable stream, plugins, red_king, red_queen, "
         "caterpillar)",
         "P5",
-        "DONE: V1.1 identifiable stream; V1.2 plugin acceptance 9/9; V1.3 red_king SCORE "
-        "0.889; V1.4 red_queen channel certification; V1.5 caterpillar artifact-only "
-        "explanation (v1_*.json).",
+        "DONE: V1.1 identifiable stream; V1.2 plugin acceptance 9/9; V1.3 red_king known-effect "
+        "73.3% vs 25% chance, policy 0.371 vs 0.208 random; V1.4 red_queen DEPLOY/HOLD offer "
+        "composition; V1.5 caterpillar on red_queen's plan (v1_*.json).",
     ),
     RouteStep(
         "R7",
         "BACKWARD: adversarial review with no BREAKING findings",
         "G",
-        "BLOCKED: FULL BACKWARD found 6 BREAKING + 4 MAJOR open requirements (B-001..B-010); "
-        "the forward subgoals M-001..M-010 are the next work.",
+        "DONE: FULL BACKWARD re-review closed all 11 findings (8 by evidence, 3 by the "
+        "scope/reclassification their requirements allow). Residuals are explicit: synthetic "
+        "demo prototype, served-bank brain, delivery/ledger E1.c; no production-stream or "
+        "trunk-only capacity claim.",
     ),
 )
 

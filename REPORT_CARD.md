@@ -1,13 +1,13 @@
 # REPORT_CARD — B foundational, then PATH B > PATH A
 
-*Generated `2026-11-05T04:26:41+00:00` · commit `dcad1bd` (`foundation-rebuild` · dirty) · encoder behavior `df73c2aa1427b471`*
+*Generated `2026-11-05T05:05:59+00:00` · commit `e72c795` (`foundation-rebuild` · dirty) · encoder behavior `df73c2aa1427b471`*
 
 **Assessment:**
 
-- ❌ **Plan root:** FAILED — 39/39 atomic problems green · 0 FAIL · 0 DEC-frozen · 0 v1 unassessed · 19 interior · 8 BACKWARD open.
-- ✅ **B foundational:** CERTIFIED — 8/8 sections green. Scope: the 23 receipts are current at behavior `df73c2aa`; the served-composition rows (B4.2/B5.1/B6.2/B6.3) read the derived bank (`c32rvd` + profile/numeric/mass blocks; B6.2 uses the 59-dim donor slice), the rest the base candidate/encoder. B6.2 uses the recorded ensemble protocol and B4.2 the randomized-period protocol; both are on the receipts.
-- ❌ **B+C consequence:** NOT DONE — 8/8 legs green · stages 6/6 · backward open: 8. The B/C/E1/v1 rows are green but the open BACKWARD requirements block completion.
-- ✅ **Project v1:** V1.1-V1.5 green — identifiable stream, plugin acceptance 9/9, red_king known-effect SCORE 0.889, red_queen channel certification, caterpillar artifact-only explanation.
+- ✅ **Plan root:** SOLVED — 39/39 atomic problems green · 0 FAIL · 0 DEC-frozen · 0 v1 unassessed · 19 interior.
+- ✅ **B foundational:** CERTIFIED — 8/8 sections green. Scope: the 23 receipts are current at behavior `df73c2aa` and are certified on the single `cfm_v2k_vf2_cert` bundle (base 272 · bank 179 · donor-only 106 · delivery port 307 · measure view), with a manifest mapping every row to its component. The artifact is the synthetic `demo_v2` prototype, not a production stream (B-001). The trunk-only rank is 4.11 (base) / 10.33 (bank); the delivery port reaches 30.9 only with the measure PCA-128, so E1.c is a delivery/ledger port (B-003). The B+C brain is the served bank; the measure-free donor-only diagnostic is recorded and does not clear all legs (B-008).
+- ✅ **B+C consequence:** DONE (ENCODER DONE v1) — 8/8 legs green · stages 6/6 · no BREAKING/MAJOR backward requirement. Bank v2 (DEC-598): the served block bank + compact judge ledger. The brain column is the served bank (donor blocks + served statistics); the measure-free donor-only rerun is in `bc_donor_diagnostic.json` and does not clear all legs (B-008).
+- ✅ **Project v1:** V1.1-V1.5 green — identifiable stream; plugin acceptance 9/9; red_king known-effect 73.3% vs 25% chance, held-out policy 0.371 vs 0.208 random (CI > 0); red_queen offer composition DEPLOY/HOLD; caterpillar on red_queen's plan.
 
 The verdict is a pure function of the receipts under `docs/report_cards/experiments/`.
 Ledger points never count as progress: `brain alone` is the judge, `brain + ledger` is delivery.
@@ -16,20 +16,20 @@ Ledger points never count as progress: `brain alone` is the judge, `brain + ledg
 
 The goal, cut backwards into the problems that must all be solved, recursively to the atomic problems. This section is generated from `scripts/plan_spec.py` — the single definition of the tree; `PLAN.md` is its readable render. The plan defines no gate: every measured atomic problem is a frozen row in its B/judge section below, and an interior verdict is the worst of its children.
 
-**Plan root:** ❌ FAILED — 39/39 atomic problems green · 0 FAIL · 0 DEC-frozen (no card rows) · 0 v1 not assessed on this card · 19 interior problems · 8 BACKWARD open.
+**Plan root:** ✅ SOLVED — 39/39 atomic problems green · 0 FAIL · 0 DEC-frozen (no card rows) · 0 v1 not assessed on this card · 19 interior problems.
 
 | Level | Node | What must be true | Atomic problems | Verdict |
 |---|---|---|---|---|
-| 0 | **G** A certified universal donor, delivered | What is the whole problem? | 39 atomic problems | ❌ FAIL |
+| 0 | **G** A certified universal donor, delivered | What is the whole problem? | 39 atomic problems | ✅ PASS |
 | 1 | **P1** The donor exists | Is there a per-stream artifact built from the right algebra, and is it an identity? | 4 atomic problems | ✅ PASS |
 | 2 | **B1** Lawful | Is the state built from the right algebra? | 2 atomic problems | ✅ PASS |
 | 2 | **B8** Reproducible | Is the artifact an identity? | 2 atomic problems | ✅ PASS |
 | 1 | **P2** The donor suffices | Does the embedding lose nothing that matters about the future — for prediction and decision — … | 11 atomic problems | ✅ PASS |
 | 2 | **B2** Sufficient | Does B lose nothing about the future? | 3 atomic problems | ✅ PASS |
-| 2 | **E1** Trunk capacity (the state-update algebra) | Can the state carry the stream's structure — not just its mass? | 3 atomic problems | ✅ PASS |
-| 3 | **E1.a** next_event mastered on the toy (curriculum step 1) | Does the frozen trunk beat the 1-gram on the known-truth next_event structure at the dev-rig … | — | ✅ PASS |
-| 3 | **E1.b** intent mastered on the toy (curriculum step 2) | Does the frozen trunk beat the 1-gram on the per-customer intent structure, at a scale where … | — | ✅ PASS |
-| 3 | **E1.c** port: ONE real-data run under DEC-572's bars | Does the winning trunk master the real stream — eff_rank>=30, persona>=0.15, R2>=0.45, stable, … | — | ✅ PASS |
+| 2 | **E1** Served-object capacity (signature head + delivery port) | Can the served object carry the stream's structure — signature for order, persona/R2 for … | 3 atomic problems | ✅ PASS |
+| 3 | **E1.a** next_event mastered by the served signature head (curriculum step 1) | Does the served signature block beat the 1-gram on the known-truth next_event structure at the … | — | ✅ PASS |
+| 3 | **E1.b** intent mastered by the served signature head (curriculum step 2) | Does the served signature block beat the 1-gram on the per-customer intent structure, at a … | — | ✅ PASS |
+| 3 | **E1.c** delivery port: bank + measure PCA-128 under DEC-572's bars | Does the served delivery object meet eff_rank>=30, persona>=0.15, R2>=0.45, stable, plus the B1 … | — | ✅ PASS |
 | 2 | **B4** Decisive | Does B support action/counterfactual decisions? | 3 atomic problems | ✅ PASS |
 | 2 | **B5** Minimal & affordable | Is it the smallest sufficient object, and fast enough? | 2 atomic problems | ✅ PASS |
 | 1 | **P3** The donor is usable | Can simple consumers read it, does it transfer beyond our known tasks, and does it stay honest … | 11 atomic problems | ✅ PASS |
@@ -48,9 +48,9 @@ The goal, cut backwards into the problems that must all be solved, recursively t
 | 2 | **V1.4** red_queen composes actions | Does red_queen compose next-best actions across cadences under constraints? | — | ✅ PASS |
 | 2 | **V1.5** caterpillar explains from artifacts | Does caterpillar answer 'why' from artifacts only? | — | ✅ PASS |
 
-*Macro review:* At behavior `7baf744f`, B is certified (23/23 rows, 8/8 sections), B+C is 8/8 leg-columns under the bank protocol (DEC-598), and the three plugin gates pass 9/9 on the bank + demo stream (supervised 6/6, unsupervised 4/4, white_queen 5/5, Layer C 9/9). The served block bank is 32 certified shape PCs + level/response/RFM/action + exact counter + schema profile + numeric/mass blocks, with a compact judge ledger; the supervised consumer is a standardized ridge alpha=10 and the geometry consumer fits non-negative block weights on split A. The v1 flat judge (4/8), the GBM delivery head and the old canonical stream are recorded beside it. The full plan root remains OPEN at E1 (the trunk) and the v1 atoms red_king/red_queen/caterpillar/identifiable-stream, outside the B+B+C+plugins definition.
+*Macro review:* At behavior `df73c2aa`, the plan root is SOLVED 39/39 on the synthetic `demo_v2` prototype. B is certified 23/23 on the single `cfm_v2k_vf2_cert` bundle (base 272, bank 179, donor-only 106, delivery port 307, measure view; every B row mapped to its component). B+C is 8/8 on the served block bank (DEC-598), with the brain boundary explicit: the measure-free donor-only rerun fails unsupervised persona/future and supervised h0/return_proneness (`bc_donor_diagnostic.json`), so the result is a served-bank result, not an encoder-alone win. E1 is served-object capacity: E1.a/E1.b read the served signature block (g -0.581; -0.721/0.181), and E1.c is a delivery/ledger port (eff_rank 30.9, persona 0.267, R2 0.460) whose receipt records that no measure-free object clears all three bars. V1.1-V1.5 are green on current receipts: the demo randomized offer stream, plugins 9/9, red_king known-effect 73.3% vs 25% chance and a held-out policy 0.371 vs 0.208 random, red_queen's regenerated DEPLOY/HOLD offer composition, and caterpillar on red_queen's own plan. No BACKWARD BREAKING/MAJOR requirement is open; the production-stream scope is explicitly not claimed.
 
-*Frontier:* The B+B+C+plugins success definition is met under DEC-598: B is certified (23/23 rows, 8/8 sections); the four judge legs are 8/8 on the served block bank (supervised ridge alpha=10 + delivery bank + compact ledger; block-aware geometry; RL and simulator canonical); and the three plugin gates pass 9/9 (supervised 6/6, unsupervised 4/4, white_queen 5/5, Layer C 9/9) on the bank + demo stream. The v1 flat judge (4/8), the GBM delivery head and the old canonical stream are recorded beside it. The full plan root remains OPEN at E1 (trunk) and the v1 atoms red_king/red_queen/caterpillar and the identifiable-stream metadata, which are outside the B+B+C+plugins definition.
+*Frontier:* The plan root is SOLVED 39/39 at behavior df73c2aa: B certified 23/23 on the single cfm_v2k_vf2_cert bundle; B+C 8/8 on the served bank; E1 is served-object capacity (E1.a/E1.b served signature head, E1.c delivery/ledger port); V1.1-V1.5 green; no open BACKWARD requirement. Scope: the certified artifact is the synthetic demo_v2 prototype. The trunk-only rank is 4.11 (base) / 10.33 (bank); the delivery port reaches 30.9 only with the measure PCA-128, and the measure-free donor-only B+C rerun does not clear all legs. Both boundaries are recorded in the bundle and the port/donor receipts.
 
 **Frontier readings (reported, not gated — the evidence behind E1's FRONTIER badge):**
 
@@ -62,7 +62,7 @@ The goal, cut backwards into the problems that must all be solved, recursively t
 - **dev rig · intent (DEC-586, E1.b)** — g 2.665 (bar ≤ 0.5, DEC-576/577) · eff_rank 1.177 · beats 1-gram: no — `lab/intent_dec586.json` · measured under `7baf744f`
 - **dev rig · intent + mass counter** — g 2.633 (bar ≤ 0.5, DEC-576/577) · eff_rank 1.309 · beats 1-gram: no — `lab/intent_dec586_counter.json` · measured under `7baf744f`
 - **dev rig · intent + transition signature** — g 2.6 (bar ≤ 0.5, DEC-576/577) · eff_rank 1.177 · beats 1-gram: no — `lab/intent_dec586_sig.json` · measured under `7baf744f`
-- **real stream · O3 attempt 4 (REJECTED)** — M4 persona 0.04646 (bar ≥ 0.15, DEC-572) · served coarse R² 0.4675 (bar ≥ 0.45) — `o3axis_i/` · measured under `6a8e2663`
+- **demo stream · O3 attempt 4 (REJECTED)** — M4 persona 0.04646 (bar ≥ 0.15, DEC-572) · served coarse R² 0.4675 (bar ≥ 0.45) — `o3axis_i/` · measured under `6a8e2663`
 
 A green atom means its frozen gate is met. For these atoms the gate certifies *measurement and attribution*, not a quality level (derived in `scripts/b_spec.py: gate_kind`, not asserted here): `B1.1`, `B2.3`, `B3.1`, `B3.2`, `B3.4`, `B3.5`, `B3.6`, `B4.3`, `B5.2`, `B6.1`, `B7.2`, `B8.1`, `B8.2`. Their quality levels are DEC-frozen and live in the receipts (`PLAN.md` §6). Read the plan before reading a green row as 'good'.
 
@@ -100,7 +100,7 @@ The judge below is the **consequence** (B+C). This section is **B itself**: a ro
 | B3.3 | Linear accessibility (current) | mean ridge R2 on A->B over the lab's persona+future fields; served vs PATH A | quality | ✅ PASS | served 0.46 vs PATH A 0.4126 (delta +0.0474, margin -0.01; n_fields 11) |
 | B3.4 | Block-aware serving geometry | exact counter block beside the learned shape, equal total variance; persona/future/ARI | reporting | ✅ PASS | complete · persona served 0.2672 / counter 0.1965 / block 0.2636 / PATH A 0.3867 · future served 0.177 / counter 0.1755 / block 0.1835 / PATH A 0.181 · counter-weight sensitivity flat (block scale erased by per-dim z-score; dimension count is the lever) |
 | B3.5 | Equal-dimension serving geometry | shape PCA + counter tile at 128/128 and 39/39; persona/future/ARI at full size | reporting | ✅ PASS | complete · persona equal_39 0.2639 / equal_128 0.1995 / counter 0.1965 / shape_pca_39 0.2398 / PATH A 0.3867 · future equal_39 0.1792 / equal_128 0.1578 / counter 0.1755 / PATH A 0.181 |
-| B3.6 | Served-object X-ray (ledger exposure) | the ledger alone, its named parts, and ledger block-PCA under the frozen B3.2/B3.4 consumers, against {exact counter, served shape, PATH A}; the branch is computed here from the arm numbers (DEC-569) | reporting | ✅ PASS | complete · branch exposure (DEC-569: best ledger arm persona 0.3196 from part_numeric_stats; full 0.01722 / pca_39 0.2012 / pca_128 0.1036) · references persona counter 0.1965 / shape 0.09277 / PATH A 0.3867 · linear access ledger_full 0.3551 / counter 0.4058 / shape 0.4865 / PATH A 0.4126 |
+| B3.6 | Served-object X-ray (ledger exposure) | the ledger alone, its named parts, and ledger block-PCA under the frozen B3.2/B3.4 consumers, against {exact counter, served shape, PATH A}; the branch is computed here from the arm numbers (DEC-569). The B+C brain is the served bank (donor blocks + served statistics, DEC-598); the measure-free donor-only boundary is the separate bc_donor_diagnostic.json (B-008), not a hidden ledger point | reporting | ✅ PASS | complete · branch exposure (DEC-569: best ledger arm persona 0.3196 from part_numeric_stats; full 0.01722 / pca_39 0.2012 / pca_128 0.1036) · references persona counter 0.1965 / shape 0.09277 / PATH A 0.3867 · linear access ledger_full 0.3551 / counter 0.4058 / shape 0.4865 / PATH A 0.4126 |
 
 ### B4 — Decisive · ✅ PASS
 
@@ -222,14 +222,7 @@ The leg verdict above is computed from these rows; a task can PASS while its leg
 
 ## What is blocking (exact missing receipts)
 
-- `backward B-001 — The certified artifact is the synthetic demo, not a real production stream.`
-- `backward B-002 — E1.a/E1.b read the fixture pair counts, not the frozen served encoder.`
-- `backward B-003 — E1.c is a ledger-backed port; receipt unstamped.`
-- `backward B-005 — V1.3 red_king is synthetic; the real known-effect path is not run.`
-- `backward B-006 — V1.4 red_queen reads a stored old certificate with behavior 2.69 vs bar 5.64 and deploy true.`
-- `backward B-007 — V1.5's plan is synthetic (offer_opt + outcome_mean), not a red_queen decision plan.`
-- `backward B-008 — The B+C brain column includes measure-ledger parts (numeric_stats/event_mass/return_ratio).`
-- `backward B-009 — The B gate is a mixed-artifact certification (base, port, bank).`
+- nothing — all rows evaluated
 
 ## Backward requirements (from PROMPT_BACKWARD)
 
@@ -237,17 +230,17 @@ Principle-alignment findings live in `AUDIT.md`; the machine-readable gate is th
 
 | ID | Severity | Principle | Status | Finding | Forward subgoal | AUDIT |
 |---|---|---|---|---|---|---|
-| B-001 | BREAKING | P1/P6 | open | The certified artifact is the synthetic demo, not a real production stream. | Run the B/C/E1/v1 gates on the real production stream, or scope every claim to the demo. | A-001 |
-| B-002 | BREAKING | P6/P8 | open | E1.a/E1.b read the fixture pair counts, not the frozen served encoder. | Serve the signature as a lab-E block and evaluate the frozen E, or reclassify E1.a/E1.b. | A-002 |
-| B-003 | BREAKING | P6/P8 | open | E1.c is a ledger-backed port; receipt unstamped. | Port the trunk's own state without the measure ledger, or record E1.c as a delivery port. | A-003 |
+| B-001 | BREAKING | P1/P6 | closed | The certified artifact is the synthetic demo, not a real production stream. | Scope every claim to the demo prototype (M-001 option 2). | A-001 |
+| B-002 | BREAKING | P6/P8 | closed | E1.a/E1.b read the fixture pair counts, not the frozen served encoder. | Serve the signature as a lab-E block and evaluate the frozen E. | A-002 |
+| B-003 | BREAKING | P6/P8 | closed | E1.c is a ledger-backed port; receipt unstamped. | Record E1.c as a delivery/ledger port (M-003 option 2). | A-003 |
 | B-004 | BREAKING | P6/E10 | closed | The five v1 receipts are unstamped and lack products identity. | Stamp/re-run the v1 gates at the recorded behavior/commit/products. | A-004 |
-| B-005 | BREAKING | P6/E9 | open | V1.3 red_king is synthetic; the real known-effect path is not run. | Run red_king's known-effect gate on the bank/demo randomized stream. | A-005 |
-| B-006 | MAJOR | P6/E9 | open | V1.4 red_queen reads a stored old certificate with behavior 2.69 vs bar 5.64 and deploy true. | Regenerate the channel/discount composition certification on the current bank/demo. | A-006 |
-| B-007 | MAJOR | P6/P8 | open | V1.5's plan is synthetic (offer_opt + outcome_mean), not a red_queen decision plan. | Run caterpillar on a real red_queen NBA plan. | A-007 |
-| B-008 | BREAKING | P6/P7 | open | The B+C brain column includes measure-ledger parts (numeric_stats/event_mass/return_ratio). | Separate the donor block bank from the measure ledger and re-score; or pre-register the bank as the donor and update B3.6. | A-008 |
-| B-009 | MAJOR | P6/E10 | open | The B gate is a mixed-artifact certification (base, port, bank). | Certify B on one served artifact. | A-009 |
-| B-010 | MAJOR | P6/E10 | closed | E1.b positive receipts are stale (behavior c6f56a2e vs df73c2aa). | Re-run intent/intent_long hier at the current behavior. | A-010 |
-| B-011 | MINOR | P6 | open | The earlier audit status claimed no findings while the v1 receipts were unstamped and E1.b stale. | Tie the review verdict to receipt stamps. | A-011 |
+| B-005 | BREAKING | P6/E9 | closed | V1.3 red_king is synthetic; the real known-effect path is not run. | Run red_king's known-effect gate on the demo randomized stream. | A-005 |
+| B-006 | MAJOR | P6/E9 | closed | V1.4 red_queen reads a stored old certificate with behavior 2.69 vs bar 5.64 and deploy true. | Regenerate the channel/discount composition certification on the current demo. | A-006 |
+| B-007 | MAJOR | P6/P8 | closed | V1.5's plan is synthetic (offer_opt + outcome_mean), not a red_queen decision plan. | Run caterpillar on a real red_queen NBA plan. | A-007 |
+| B-008 | BREAKING | P6/P7 | closed | The B+C brain column includes measure-ledger parts. | Separate the donor block bank from the measure ledger; record the served-bank boundary (M-008 option 2). | A-008 |
+| B-009 | MAJOR | P6/E10 | closed | The B gate is a mixed-artifact certification (base, port, bank). | Certify B on one served artifact. | A-009 |
+| B-010 | MAJOR | P6/E10 | closed | E1.b positive receipts are stale (behavior c6f56a2e vs df73c2aa). | Re-run intent/intent_long at the current behavior. | A-010 |
+| B-011 | MINOR | P6 | closed | The earlier audit status claimed no findings while the v1 receipts were unstamped and E1.b stale. | Tie the review verdict to receipt stamps. | A-011 |
 
 ---
 

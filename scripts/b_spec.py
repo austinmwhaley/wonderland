@@ -266,7 +266,9 @@ ROWS = (
         "Served-object X-ray (ledger exposure)",
         "the ledger alone, its named parts, and ledger block-PCA under the frozen B3.2/B3.4 "
         "consumers, against {exact counter, served shape, PATH A}; the branch is computed here "
-        "from the arm numbers (DEC-569)",
+        "from the arm numbers (DEC-569). The B+C brain is the served bank (donor blocks + served "
+        "statistics, DEC-598); the measure-free donor-only boundary is the separate "
+        "bc_donor_diagnostic.json (B-008), not a hidden ledger point",
         "complete + branch decided",
         "served_object",
         ("encoder_served_object.json", "complete"),

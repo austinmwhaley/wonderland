@@ -1,0 +1,116 @@
+{
+  "_meta": {
+    "behavior_hash": "df73c2aa1427b471",
+    "command": "measure_port_demo.py",
+    "generated_at": "2026-11-05T04:50:08+00:00",
+    "git_commit": "e72c795ba1c37bd71376ee7d3b9b71a256fc8f30",
+    "producer": "measure_port_demo.py"
+  },
+  "as_of": "2025-01-01",
+  "bars": {
+    "eff_rank": 30.0,
+    "persona": 0.15,
+    "r2": 0.45
+  },
+  "base": {
+    "path": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k_vf2",
+    "registry_sha256": "676e52359995983a",
+    "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
+  },
+  "classification": "delivery/ledger port; NOT a trunk-only capacity win",
+  "complete": true,
+  "components": {
+    "bank179": {
+      "dim": 179,
+      "eff_rank": 10.330055,
+      "future_geometry": 0.213272,
+      "meets_all_bars": false,
+      "persona_geometry": 0.338608,
+      "r2_fields": 11,
+      "served_mean_r2": 0.469348
+    },
+    "base272": {
+      "dim": 272,
+      "eff_rank": 4.105023,
+      "future_geometry": 0.110826,
+      "meets_all_bars": false,
+      "persona_geometry": 0.092774,
+      "r2_fields": 11,
+      "served_mean_r2": 0.486529
+    },
+    "delivery_port": {
+      "dim": 307,
+      "eff_rank": 30.881072,
+      "future_geometry": 0.176997,
+      "meets_all_bars": true,
+      "persona_geometry": 0.267182,
+      "r2_fields": 11,
+      "served_mean_r2": 0.459995
+    },
+    "donor106": {
+      "dim": 106,
+      "eff_rank": 11.755524,
+      "future_geometry": 0.187859,
+      "meets_all_bars": false,
+      "persona_geometry": 0.290154,
+      "r2_fields": 11,
+      "served_mean_r2": 0.465781
+    },
+    "measure_pca128": {
+      "dim": 128,
+      "eff_rank": 127.199503,
+      "future_geometry": 0.003848,
+      "meets_all_bars": false,
+      "persona_geometry": 3.5e-05,
+      "r2_fields": 11,
+      "served_mean_r2": 0.371111
+    },
+    "trunk_shape32": {
+      "dim": 32,
+      "eff_rank": 31.880397,
+      "future_geometry": 0.064222,
+      "meets_all_bars": false,
+      "persona_geometry": 0.075883,
+      "r2_fields": 11,
+      "served_mean_r2": 0.40035
+    },
+    "trunk_shape32_counter39": {
+      "dim": 71,
+      "eff_rank": 11.376869,
+      "future_geometry": 0.158058,
+      "meets_all_bars": false,
+      "persona_geometry": 0.183258,
+      "r2_fields": 11,
+      "served_mean_r2": 0.442336
+    }
+  },
+  "delivery_port": {
+    "dim": 307,
+    "eff_rank": 30.881072,
+    "future_geometry": 0.176997,
+    "meets_all_bars": true,
+    "persona_geometry": 0.267182,
+    "r2_fields": 11,
+    "served_mean_r2": 0.459995
+  },
+  "kind": "port_receipt",
+  "measure_pca": {
+    "components_sha256": "516fd39c5f68b064",
+    "dim": 128,
+    "explained_variance_ratio_sum": 0.461234,
+    "fit": "split A only, standardized measure view"
+  },
+  "passed": true,
+  "products": {
+    "path": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k_vf2_bank",
+    "registry_sha256": "919a932f1b657064",
+    "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
+  },
+  "protocol": "DEC-572/573 bars under the frozen geometry + linear-access consumers",
+  "seconds": 9.9,
+  "served_object": "bank 179 + measure PCA-128 (307 dims)",
+  "stable": "frozen artifact; deterministic PCA fit on split A; products identity recorded",
+  "trunk_only_meets_all_bars": false,
+  "trunk_only_note": "shape32 clears the rank bar (31.88) but fails persona/R2; donor106 clears persona/R2 but has rank 11.76; bank179 clears persona/R2 but has rank 10.33. No measure-free object clears all three, so the delivery port is ledger-backed.",
+  "trunk_only_passed": false
+}

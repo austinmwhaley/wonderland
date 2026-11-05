@@ -2,59 +2,118 @@
   "_meta": {
     "behavior_hash": "df73c2aa1427b471",
     "command": "scripts/measure_v1_stack.py",
-    "generated_at": "2026-11-05T04:26:10+00:00",
-    "git_commit": "dcad1bde51909aa3b2176b053627b9ac1c040695",
+    "generated_at": "2026-11-05T05:05:56+00:00",
+    "git_commit": "e72c795ba1c37bd71376ee7d3b9b71a256fc8f30",
     "producer": "measure_v1_stack.py"
   },
   "atom": "V1.4",
+  "certificate_sha256": "7f1d6c50a6d9800ce086bf36f2a886d14a779b999a8feb918070824980870bd8",
   "certification": "/home/austin_whaley/Documents/Repos/wonderland/red_queen/certification/channel_certification.json",
   "complete": true,
   "entries": [
     {
-      "action": "arm",
-      "bar": 5.64,
-      "behavior": 2.69,
+      "action": "offer",
+      "bar": 3.052336,
+      "behavior": 5.229294,
       "channel": "email",
+      "ci95_policy_minus_behavior": [
+        1.919094,
+        2.490368
+      ],
       "deploy": true,
+      "eval_cells": 40364,
+      "fit_cells": 81440,
+      "levels": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "metric": "held-out margin on the randomized offer day",
       "nA": 4,
-      "provenance": "estimated",
-      "rows": 800
+      "n_customers": 1623,
+      "provenance": "ipw_policy_pre_post",
+      "rows": 40364
     },
     {
-      "action": "arm",
-      "bar": 4.87,
-      "behavior": 2.13,
+      "action": "offer",
+      "bar": 3.098777,
+      "behavior": 5.391807,
       "channel": "sms",
+      "ci95_policy_minus_behavior": [
+        2.011018,
+        2.583696
+      ],
       "deploy": true,
+      "eval_cells": 43363,
+      "fit_cells": 87629,
+      "levels": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "metric": "held-out margin on the randomized offer day",
       "nA": 4,
-      "provenance": "estimated",
-      "rows": 800
+      "n_customers": 1744,
+      "provenance": "ipw_policy_pre_post",
+      "rows": 43363
+    },
+    {
+      "action": "offer",
+      "bar": 2.874345,
+      "behavior": 4.9928,
+      "channel": "push",
+      "ci95_policy_minus_behavior": [
+        1.820444,
+        2.470047
+      ],
+      "deploy": true,
+      "eval_cells": 40621,
+      "fit_cells": 82039,
+      "levels": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "metric": "held-out margin on the randomized offer day",
+      "nA": 4,
+      "n_customers": 1633,
+      "provenance": "ipw_policy_pre_post",
+      "rows": 40621
     },
     {
       "action": "discount",
-      "bar": 7.01,
-      "behavior": 3.02,
+      "bar": null,
+      "behavior": null,
       "channel": "email",
-      "deploy": true,
-      "nA": 4,
-      "provenance": "estimated",
-      "rows": 800
+      "deploy": false,
+      "levels": [],
+      "nA": 0,
+      "n_customers": 0,
+      "provenance": "not_identified",
+      "reason": "the demo randomizes offer only; no randomized discount bucket exists",
+      "rows": 0
     },
     {
-      "action": "arm",
-      "bar": 0.16,
-      "behavior": 0.02,
-      "channel": "push",
+      "action": "frequency",
+      "bar": null,
+      "behavior": null,
+      "channel": "email",
       "deploy": false,
-      "nA": 4,
-      "provenance": "estimated",
-      "rows": 800
+      "levels": [],
+      "nA": 0,
+      "n_customers": 0,
+      "provenance": "not_identified",
+      "reason": "frequency is at the customer optimum; it is not randomized in the demo",
+      "rows": 0
     }
   ],
   "kind": "v1_gate",
   "n_deploy": 3,
-  "n_entries": 4,
-  "n_hold": 1,
+  "n_entries": 5,
+  "n_hold": 2,
   "name": "red_queen composes actions",
   "passed": true,
   "products": {
@@ -62,5 +121,6 @@
     "registry_sha256": "919a932f1b657064",
     "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
   },
-  "why": "red_queen's channel/discount composition certifies DEPLOY/HOLD per action under the logged constraints; a composition that cannot HOLD is not a decision."
+  "stream_sha256": "2e27b88724e818066bed5234323e33fbbc1e23233aa2eb0872a319e25e2a4bd5",
+  "why": "the demo randomizes one factor (offer); red_queen's per-channel offer policy clears the pre/post-as-of IPW deploy rule on email/sms/push (held-out margin 4.99-5.39 vs 2.87-3.10 behavior, paired CI > 0). Discount and frequency have no randomized variation, so they are recorded HOLD/not identified rather than inherited from the retired stream. A composition with both verdicts is a decision."
 }

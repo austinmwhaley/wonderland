@@ -30,7 +30,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 OUT = ROOT / "docs" / "report_cards" / "experiments"
 DEMO = ROOT / "looking_glass/artifacts/demo_v2"
 BANK = ROOT / "looking_glass/artifacts/cfm_v2k_vf2_bank"
-V1_PLAN = DEMO / "v1_nba_plan.json"
+RED_QUEEN_PLAN = ROOT / "red_queen/artifacts/nba_demo_plan.json"
 
 
 def _write(name: str, body: dict) -> None:
@@ -112,9 +112,8 @@ def v12_plugins() -> dict:
 
 
 def v13_red_king() -> dict:
-    from red_king.scorecard import run
-
-    score = run(seed=0)
+    rk = json.loads((OUT / "red_king_known.json").read_text())
+    score = rk.get("scorecard") or {}
     rl = json.loads((OUT / "judge_leg_rl.json").read_text())
     sim = json.loads((OUT / "judge_leg_simulator.json").read_text())
 
@@ -129,25 +128,29 @@ def v13_red_king() -> dict:
             for t in (rc.get("columns", {}).get("brain", {}) or {}).get("tasks", [])
         }
 
-    passed = bool(
-        score.get("S1_ordering", 0) >= 0.5
-        and score.get("S3_rank_acc", 0) >= 0.5
-        and score.get("S6_beat_modelfree", 0) > 0
-        and score.get("SCORE", 0) >= 0.5
-    )
+    known = rk.get("known_effect") or {}
+    pol = rk.get("policy") or {}
+    passed = bool(rk.get("passed"))
     body = {
         "atom": "V1.3",
         "name": "red_king recovers known effects",
+        "known_effect_receipt": str(OUT / "red_king_known.json"),
+        "stream_sha256": rk.get("stream_sha256"),
+        "as_of": rk.get("as_of"),
         "scorecard": score,
+        "known_effect": known,
+        "policy": pol,
         "bank_judge_rl": _brain_tasks(rl),
         "bank_judge_simulator": _brain_tasks(sim),
         "passed": passed,
         "why": (
-            "the known-truth counterfactual scorecard recovers the effect ordering "
-            f"(S1 {score.get('S1_ordering')}), ranks the per-context best action "
-            f"(S3 {score.get('S3_rank_acc')}) and beats the model-free ranking "
-            f"(S6 {score.get('S6_beat_modelfree')}); the bank judge RL/simulator legs are the "
-            "real-stream known-effect evidence."
+            "red_king's per-customer randomized send-day value model recovers the generator's "
+            f"declared offer optimum at {known.get('accuracy')} vs {known.get('chance')} chance "
+            f"(majority {known.get('majority_accuracy')}); on the post-as-of randomized holdout "
+            f"the argmax policy is {pol.get('policy')} vs {pol.get('random_all')} random "
+            f"(paired CI {pol.get('paired_ci_policy_minus_random')}) and "
+            f"{pol.get('best_constant')} best constant. The bank judge RL/simulator legs are "
+            "supplementary served-bank evidence."
         ),
     }
     _write("v1_red_king.json", body)
@@ -155,7 +158,10 @@ def v13_red_king() -> dict:
 
 
 def v14_red_queen() -> dict:
-    cert = json.loads((ROOT / "red_queen/certification/channel_certification.json").read_text())
+    import hashlib
+
+    cert_path = ROOT / "red_queen/certification/channel_certification.json"
+    cert = json.loads(cert_path.read_text())
     entries = cert if isinstance(cert, list) else cert.get("entries", [])
     deploys = [e for e in entries if e.get("deploy")]
     holds = [e for e in entries if not e.get("deploy")]
@@ -163,78 +169,89 @@ def v14_red_queen() -> dict:
     body = {
         "atom": "V1.4",
         "name": "red_queen composes actions",
-        "certification": str(ROOT / "red_queen/certification/channel_certification.json"),
+        "certification": str(cert_path),
+        "certificate_sha256": hashlib.sha256(cert_path.read_bytes()).hexdigest(),
+        "stream_sha256": hashlib.sha256(
+            (DEMO / "customer_event_stream.parquet").read_bytes()
+        ).hexdigest(),
         "entries": entries,
         "n_entries": len(entries),
         "n_deploy": len(deploys),
         "n_hold": len(holds),
         "passed": passed,
         "why": (
-            "red_queen's channel/discount composition certifies DEPLOY/HOLD per action under "
-            "the logged constraints; a composition that cannot HOLD is not a decision."
+            "the demo randomizes one factor (offer); red_queen's per-channel offer policy "
+            "clears the pre/post-as-of IPW deploy rule on email/sms/push (held-out margin "
+            "4.99-5.39 vs 2.87-3.10 behavior, paired CI > 0). Discount and frequency have no "
+            "randomized variation, so they are recorded HOLD/not identified rather than "
+            "inherited from the retired stream. A composition with both verdicts is a decision."
         ),
     }
     _write("v1_red_queen.json", body)
     return body
 
 
-def _v15_plan() -> Path:
+def v15_caterpillar() -> dict:
+    import hashlib
+
     import duckdb
 
-    con = duckdb.connect(str(BANK / "cfm_products.duckdb"), read_only=True)
-    try:
-        keys = [r[0] for r in con.execute("select customer_key from state_embeddings").fetchall()]
-        resp = dict(
-            con.execute(
-                "select customer_key, embedding from view_embeddings where view='response' and part='outcome_mean'"
-            ).fetchall()
-        )
-    finally:
-        con.close()
-    truth = {
-        c["customer"]: c
-        for c in json.loads((DEMO / "reference_truth.json").read_text())["customers"]
-    }
-    plan = {
-        "customer_key": keys,
-        "arm": [int(truth[k]["offer_opt"]) if k in truth else 0 for k in keys],
-        "weekly_sends": [1.0] * len(keys),
-        "expected_gp": [float(resp[k][0]) if k in resp else 0.0 for k in keys],
-    }
-    V1_PLAN.write_text(json.dumps(plan))
-    return V1_PLAN
-
-
-def v15_caterpillar() -> dict:
     import caterpillar.explain as cat
+    from red_queen.nba_demo import build_plan
 
-    plan_path = _v15_plan()
+    plan_path = RED_QUEEN_PLAN
+    if not plan_path.exists():
+        build_plan()
     cat.CFM_PRODUCTS = BANK / "cfm_products.duckdb"
     cat.NBA_PLAN = plan_path
     plan = json.loads(plan_path.read_text())
-    customer = plan["customer_key"][0]
+    con = duckdb.connect(str(BANK / "cfm_products.duckdb"), read_only=True)
+    try:
+        anchors = {
+            str(r[0])
+            for r in con.execute("select distinct customer_key from anchor_embeddings").fetchall()
+        }
+    finally:
+        con.close()
+    customer = next((k for k in plan["customer_key"] if k in anchors), plan["customer_key"][0])
+    idx = plan["customer_key"].index(customer)
     rec = cat.explain(customer, k=5)
     rendered = cat._render(rec)
+    same_arm = rec.get("recommended_arm") == plan["arm"][idx]
+    same_gp = (
+        abs(
+            float(rec.get("expected_weekly_incremental_gp") or 0.0)
+            - float(plan["expected_gp"][idx])
+        )
+        < 1e-6
+    )
     passed = bool(
         isinstance(rec, dict)
         and "error" not in rec
         and rec.get("provenance")
         and rec.get("similar_customers")
+        and same_arm
+        and same_gp
         and "Recommended action" in rendered
     )
     body = {
         "atom": "V1.5",
         "name": "caterpillar explains from artifacts",
         "plan": str(plan_path),
+        "plan_sha256": hashlib.sha256(plan_path.read_bytes()).hexdigest(),
+        "plan_meta": plan.get("meta"),
         "embeddings": str(BANK / "cfm_products.duckdb"),
         "customer": customer,
         "record": rec,
         "rendered": rendered,
+        "recommended_arm_matches_plan": same_arm,
+        "expected_gp_matches_plan": same_gp,
         "passed": passed,
         "why": (
-            "the explanation is assembled from the stored NBA plan and the frozen anchor "
-            "embeddings only (nearest customers, their recommendations, provenance); no live "
-            "model is read."
+            "the explanation is assembled from the stored red_queen NBA plan (built from the "
+            "randomized offer panel and the DEPLOY/HOLD certificate) and the frozen anchor "
+            "embeddings only; the recommended arm and expected GP equal the plan's, and no "
+            "live model or generator truth is read."
         ),
     }
     _write("v1_caterpillar.json", body)
