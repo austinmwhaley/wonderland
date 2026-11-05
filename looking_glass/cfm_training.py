@@ -2392,7 +2392,10 @@ def _registry(
                 "n_train_sequences": n_train,
                 "config": asdict(cfg),
                 "fields": dict(getattr(cfg, "_field_receipt", {}) or {}),
-                "vocab_sizes": {k: len(v) for k, v in vocab.dumps().items()},
+                # `primary_numeric` is None on streams with no numeric field (the
+                # documented degenerate case, DEC-611): a field NAME has no size, so
+                # only sequence-valued entries are receipted here.
+                "vocab_sizes": {k: len(v) for k, v in vocab.dumps().items() if v is not None},
                 "derived": (derived or {}).get("derived", {}),
                 "overrides": (derived or {}).get("overrides", {}),
                 # DEC-457 acceptance #2: the survival horizon grid must be receipted in the
