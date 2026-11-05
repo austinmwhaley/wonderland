@@ -14,7 +14,8 @@ measures whether that command works, in the order the dependencies require:
     S3     measure_dynamics_law     the engine's laws
     S4     measure_views_law        the outlets
     S5     measure_battery_law      the objective battery
-    legs   measure_judge_law        the four-leg top line, both columns
+    legs   measure_bc_bank          the four-leg top line, both columns (bank v2, DEC-598;
+                                    rl/simulator delegate to the judge_law LEGs)
     prov   measure_path_a_provenance  the comparator's per-column provenance (DEC-446)
     S6     this file                the regeneration itself
     card   report_card              rendered last, from the receipts above
@@ -67,7 +68,9 @@ CHAIN = (
     ("S5", "measure_battery_law.py", ("--products", "{products_db}", "--demo", "{demo}"), ("S5",)),
     (
         "legs",
-        "measure_judge_law.py",
+        # bank v2 (DEC-598): bc_bank owns the supervised/unsupervised legs; it delegates the
+        # rl/simulator legs to the judge_law LEGs, so one producer stamps all four files.
+        "measure_bc_bank.py",
         ("--products", "{products}", "--demo", "{demo}", "--legs", "{legs}"),
         (),
     ),

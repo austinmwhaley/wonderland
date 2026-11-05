@@ -11878,3 +11878,46 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     *Dev-rig discipline (DEC-576).* These receipts are development instruments: no B-row
     source names them, the card's frontier section is the only place they appear, and the
     certification of B stays on the real stream (cfm_v2k / O3 / DEC-575).
+
+- **DEC-612 (closeout forensics, 2026-11-05): the certification CHAIN's `legs` step pointed at the superseded producer — every clean-tree re-stamp overwrote the bank-v2 judge-leg receipts with v1 numbers. Fixed by mapping `legs` → `measure_bc_bank.py` (script-only; behavior stays `89cec70b`; the pre-registered SOLVED 39/39 condition is met).**
+
+   Context: after commit `9af0d0d` (DEC-611 closeout chunk 1), the clean-tree `judge_stages`
+   re-run rendered the plan root 35/39 (three P4 judge rows FAIL) while the receipts
+   committed at `9af0d0d` carry the bank-v2 values identical to the SOLVED era (supervised
+   x0 0.921226, CI [+0.000063, +0.000151]; unsupervised persona_geometry 0.397574).
+   Receipt `_meta` forensics proved the working-tree legs had been re-stamped at
+   2026-11-05 21:12 UTC by `measure_judge_law.py` (producer field + recorded command), inside
+   the clean `judge_stages` invocation. Root cause: since DEC-598 (bank v2) the
+   supervised/unsupervised legs are owned by `measure_bc_bank.py` — which delegates the
+   rl/simulator legs to the judge_law `LEGS`, so those two legs agree under both entry
+   points — but the `CHAIN` in `measure_certification_law.py` (the single S6 command) still
+   mapped `legs` → `measure_judge_law.py`, whose `main()` implements the pre-bank-v2
+   (flat-era) leg computation and writes the SAME four `judge_leg_*.json` files. The v1
+   numbers (x0 0.886, CI straddling 0; persona_geometry 0.338608; segment_structure ARI
+   ≈ 0) are a stale measurement of a superseded protocol that the closeout procedure itself
+   stamped over the bank-v2 receipts. The wave's card render had likewise been taken between
+   the chain's legs step and the wave's `bc_bank_legs` step, which is why the card committed
+   at `9af0d0d` showed P4 (3) FAIL against receipts that the next step corrected.
+
+   Decision: one-line CHAIN map change — `legs` → `measure_bc_bank.py` (argv unchanged:
+   `--products/--demo/--legs`; the chain appends `--out-dir` as before). Script-only:
+   `BEHAVIOR_TREES = ("looking_glass", "rabbit_hole")` excludes `scripts/`, so the behavior
+   hash stays `89cec70b` — no no-op proof and no 30-receipt re-stamp cycle (the DEC-611
+   constraint binds BEHAVIOR moves; this fixes measurement plumbing, and the gate/criterion
+   is untouched: the frozen `judge_spec` rows still decide from the receipts' `columns`).
+   Serves P6 (single source of truth: one producer stamps the four leg files), P10
+   (reproducibility: the S6 one-command chain regenerates the bank-v2 record, not a
+   superseded one) and Honest (a card rendered from a stale producer is a false state).
+
+   Rejected alternatives: (a) leave the chain and hand-restore the receipts — the same
+   overwrite recurs on every future clean closeout; the defect sits in the very command
+   reproducibility certifies. (b) reader-side preference for `measure_bc_bank.py`-stamped
+   receipts — a two-producers-one-file arrangement with a reader workaround; the producer
+   map is the one definition and it was simply stale.
+
+   Acceptance: the clean-tree one-command `measure_certification_law.py` run re-stamps all
+   four legs via `measure_bc_bank.py` (bank-v2 values, byte-identical to the `9af0d0d` wave
+   receipts apart from `_meta`), renders the plan root SOLVED 39/39 at behavior `89cec70b`
+   (B CERTIFIED 23/23, 8/8; S6 OK; backward open 0), and the five commit gates are RC=0.
+   Disclosure: AUDIT.md B-021 (filed and closed by this evidence, same day; precedent
+   B-012…B-019).

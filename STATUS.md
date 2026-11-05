@@ -79,7 +79,13 @@ histogram half; it is not the missing piece.
   statement (26/30 receipts no verdict-bearing change; the one move — the excluded
   `horizon-count-value` probe's H draw — root-caused to the order-undetermined gap query)
   are in the DEC-611 outcome addendum. B-020 (MAJOR, operator-filed claim-scope finding)
-  closed by this campaign, same day (AUDIT.md §6.11).
+  closed by this campaign, same day (AUDIT.md §6.11). Closeout forensics (DEC-612,
+2026-11-05): the clean-tree `judge_stages` re-stamp had overwritten the two bank-v2 judge
+legs (supervised/unsupervised) with the superseded pre-DEC-598 producer's numbers — the
+certification CHAIN still mapped the legs step to `measure_judge_law.py`; the one-line fix
+lands with this commit (script-only, behavior stays `89cec70b`), the clean one-command
+re-stamp + card re-render follow in the closing commit, and the incident is disclosed as
+B-021 (filed + closed by that evidence).
 - **DEC-611 chunk 1 landed (2026-11-05): the multi-domain fixture system (operator
   request: "make several more 'real' event streams and test the project on them").**
   `rabbit_hole/data_spec.py` now carries the `DOMAINS` table — four domains (ecommerce,
@@ -433,23 +439,23 @@ next question is the learned shape, not another consumer tuning pass.
 
 ## Next 3 actions
 
-1. **DEC-611 closeout (in progress; operator 2026-11-05: get to the certifiable demo
-   state as fast as possible).** Campaign-chunk commit (30 re-stamped receipts + 6 new lab
-   receipts + DEC-611 outcome addendum + B-020 closure + STATUS), then the clean-tree
-   `judge_stages` re-run (S6 `commit_recorded_clean`), the SOLVED 39/39 verification at
-   `89cec70b`, and the closing commit. Everything measured is complete; only the record
-   plumbing and the card's S6 re-run remain.
-2. **Demo + certification statement to the operator.** What "certified" covers (the
-   `demo_v2` synthetic prototype — B-001 scope; the dev-rig receipts are instruments, not
-   B-row evidence — DEC-576), the demo commands, and two queued items: the AGENTS.md
+1. **DEC-611 closeout — final re-stamp + push (in progress).** The campaign chunk
+   landed at `9af0d0d`; closeout forensics found and fixed the chain's stale legs-producer
+   map (DEC-612, this commit). Now: the clean one-command `measure_certification_law.py`
+   re-stamp (S6), the SOLVED 39/39 card re-render verification at `89cec70b`, the closing
+   commit (card + B-021), and the push to `main` (operator permission 2026-11-05).
+2. **Certification statement (delivered with the push):** B is CERTIFIED 23/23, 8/8 at
+   behavior `89cec70b` on the single `cfm_v2k_vf2_cert` bundle — the `demo_v2` synthetic
+   prototype (B-001 scope; dev-rig receipts are instruments, not B-row evidence, DEC-576);
+   plan root SOLVED 39/39 after the DEC-612 re-stamp. The looped-transformer (Dory-style)
+   trunk exploration is deferred at operator instruction (branch deleted 2026-11-05); to be
+   re-cut from `main` when resumed — the Dory mapping + encoder-contract facts are preserved
+   in the DEC-611 record.
+3. **Operator rulings queued:** B-017 (SPINE §5 corollary; INFO, disclosed); the AGENTS.md
    "8 GiB card" line is stale on this GB10 unified-memory machine (project cap 32 GB,
-   operator 2026-11-02, reconfirmed 2026-11-05 — a charter edit is the operator's call),
-   and the looped-transformer (Dory-style) trunk exploration is deferred to a good
-   stopping point (branch deleted on operator instruction 2026-11-05; to be re-cut from
-   the closed tree).
-3. **Push — pending operator permission.** All commits stay local; AGENTS.md: pushing is
-   the only git action that needs permission. B-017 operator ruling (SPINE §5 corollary)
-   remains queued.
+   operator 2026-11-02, reconfirmed 2026-11-05 — a charter edit is the operator's call, and
+   "one GPU job at a time" is void on this box); the sufficiency probe's order-undetermined
+   gap draw is a frozen-instrument determinism fix, candidate for a future DEC.
 
 ## Operating facts
 
