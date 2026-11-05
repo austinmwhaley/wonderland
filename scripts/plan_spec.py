@@ -628,10 +628,12 @@ ROUTE: tuple[RouteStep, ...] = (
         "R7",
         "BACKWARD: adversarial review with no BREAKING findings",
         "G",
-        "DONE: FULL BACKWARD re-review closed all 11 findings (8 by evidence, 3 by the "
-        "scope/reclassification their requirements allow). Residuals are explicit: synthetic "
-        "demo prototype, served-bank brain, delivery/ledger E1.c; no production-stream or "
-        "trunk-only capacity claim.",
+        "DONE: every FULL BACKWARD at the SOLVED tree returned NO BREAKING (opening at "
+        "`38740c8`; closing at `eb9381b`). All BREAKING/MAJOR findings are closed — by "
+        "evidence, or by the explicit scope/reclassification their requirements allow "
+        "(B-001, B-003, B-008); open items are disclosed non-blocking in AUDIT.md. "
+        "Residuals are explicit: synthetic demo prototype, served-bank brain, "
+        "delivery/ledger E1.c; no production-stream or trunk-only capacity claim.",
     ),
 )
 

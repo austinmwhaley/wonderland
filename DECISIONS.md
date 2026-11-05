@@ -11605,3 +11605,29 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   - **Principle.** E10 (every artifact records the inputs/behavior that
     produced it) · Honest (the manifest is the single-artifact claim; it
     carries its own provenance) · No gate/bar change.
+
+- **DEC-610 (R7 route evidence states the durable outcome — B-019 record repair;
+  pre-registered 2026-11-05).**
+  - **NODE:** G (the route record for R7; plan prose, no measurement).
+  - **WHY-NOT.** BACKWARD B-019 (rescan FULL at `b512068`, AUDIT §6.10): R7's route
+    evidence text (`plan_spec.py:631`, rendered at `PLAN.md:619` and the card's route
+    table) still reads the DEC-605-era snapshot "DONE: FULL BACKWARD re-review closed
+    all 11 findings (8 by evidence, 3 by the scope/reclassification…)", while the
+    record at that tree is 16 of 18 closed (13 by evidence + B-001/B-003/B-008 scope)
+    with B-017/B-018 open INFO — a card↔audit prose contradiction.
+  - **MOVE (record-only; no gate change).** Rewrite R7's evidence text to the durable
+    outcome — "DONE: every FULL BACKWARD at the SOLVED tree returned NO BREAKING
+    (opening at `38740c8`; closing at `eb9381b`). All BREAKING/MAJOR findings are
+    closed — by evidence, or by the explicit scope/reclassification their requirements
+    allow (B-001, B-003, B-008); open items are disclosed non-blocking in AUDIT.md." —
+    keeping the residuals sentence. Re-render PLAN.md and the card from the spec; all
+    commit gates RC=0; behavior hash unchanged (spec-only edit, behavior-neutral by
+    construction).
+  - **Rejected.** Hardcoding the current count ("16 of 18") — it goes stale at the next
+    finding, the same defect class B-019 names; editing AUDIT.md to match the plan
+    text — the record is the newer, correct one and the route text is the laggard;
+    deleting R7's evidence — the route records why each step is closed.
+  - **Principle.** Honest (the steering surfaces must not contradict the record;
+    generated text states an outcome, not a count) · Reproducibility (PLAN.md is a
+    pure function of the spec — the repair lands in the spec, not the render) · no
+    gate/bar change.
