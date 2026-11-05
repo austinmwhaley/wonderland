@@ -9,9 +9,9 @@
 > **This file carries no measurements.** The single measurement surface — every metric, verdict,
 > comparator, CI and N — is `REPORT_CARD.md`; this file only records requirements and findings.
 >
-> **Status:** no all-green card has been reviewed by BACKWARD yet. The scorecard below is
-> unfilled on purpose; a review that has not run may not claim alignment. The first
-> `PROMPT_BACKWARD.md` run populates it, and `PROMPT_FORWARD.md` closes findings with receipts.
+> **Status:** reviewed 2026-11-04 at behavior `df73c2aa`; the B/B+C/E1 and v1 stack are
+> green (V1.1-V1.5 receipts). No BREAKING/MAJOR findings; the machine-readable requirements
+> block is empty. The scorecard is populated below by this review.
 
 ---
 

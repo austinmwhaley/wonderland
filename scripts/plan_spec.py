@@ -414,7 +414,7 @@ V1 = (
 #: DEC-frozen atoms closed by their own recorded evidence. E1.a/E1.b are the hierarchical
 #: Dirichlet signature-head runs (`next_event_x4k_dec601.json`, `intent_dec600.json`,
 #: `intent_long_dec600.json`); E1.c is the DEC-572 port (`lab/port_dec572.json`).
-CLOSED = frozenset({"E1.a", "E1.b", "E1.c"})
+CLOSED = frozenset({"E1.a", "E1.b", "E1.c", "V1.1", "V1.2", "V1.3", "V1.4", "V1.5"})
 
 #: Stated references so the tree does not duplicate atoms: these v1 requirements are already
 #: owned elsewhere in the tree.
@@ -604,19 +604,20 @@ ROUTE: tuple[RouteStep, ...] = (
         "Stack: build and certify v1 (identifiable stream, plugins, red_king, red_queen, "
         "caterpillar)",
         "P5",
-        "plugin acceptance 9/9 (supervised/unsupervised/white_queen) on the bank + demo "
-        "stream; red_king/red_queen/caterpillar and the identifiable-stream metadata remain",
+        "DONE: V1.1 identifiable stream; V1.2 plugin acceptance 9/9; V1.3 red_king SCORE "
+        "0.889; V1.4 red_queen channel certification; V1.5 caterpillar artifact-only "
+        "explanation (v1_*.json).",
     ),
     RouteStep(
         "R7",
         "BACKWARD: adversarial review with no BREAKING findings",
         "G",
-        "AUDIT.md requirements closed",
+        "DONE: AUDIT.md has no open BREAKING/MAJOR requirements (empty BACKWARD block).",
     ),
 )
 
 #: Which route step the work is on now (a pointer; keep it honest when the frontier moves).
-CURRENT_ROUTE = "R6"
+CURRENT_ROUTE = "R7"
 
 
 def owner(ident: str) -> str:

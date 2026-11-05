@@ -16,11 +16,12 @@ all get signal from it through simple heads.
 `brain alone` = **progress**, `brain + ledger` = **delivery** (non-inferiority). Ledger points are
 never a brain win.
 
-**Stage:** Layer 0 — **B is CERTIFIED** (23/23 rows, 8/8 sections at behavior `7baf744f`);
-**B+C is DONE** (8/8 judge leg-columns, bank v2, DEC-598); the **three plugin gates pass
-9/9** on the bank + demo stream. The full plan root is **OPEN 31/39** at **E1** (trunk,
-FRONTIER) and the v1 atoms red_king/red_queen/caterpillar/identifiable-stream, outside the
-B+B+C+plugins success definition. **Macro reframe DEC-567 (2026-11-02):** the X-ray is far
+**Stage:** Layer 0 — **PLAN ROOT SOLVED 39/39.** **B is CERTIFIED** (23/23, 8/8 at
+behavior `df73c2aa`); **B+C is DONE** (8/8, bank v2, DEC-598); the three plugin gates pass
+**9/9**; **E1 is PASS** (E1.a g -0.581, E1.b g -0.721/0.181, E1.c eff_rank 30.9 / persona
+0.267 / R2 0.460); **V1.1-V1.5 are green** (identifiable stream, plugins 9/9, red_king
+SCORE 0.889, red_queen channel certification, caterpillar artifact-only explanation).
+**Macro reframe DEC-567 (2026-11-02):** the X-ray is far
 enough to locate the gaps (exposure / learning / decision objective). **Scope tightening DEC-568
 (2026-11-02):** B-only for now — every DEC-567 option re-anchored to B's own rows; B+C kept on the
 card as a reported consequence, not the near-term target. **D2–D5 accepted 2026-11-02**

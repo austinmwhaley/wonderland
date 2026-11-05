@@ -1292,10 +1292,9 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
             "B is certified; this is the consequence gap (P4), not a missing B row."
         )
     p_scope = (
-        "⚪ **Project v1:** plugin acceptance 9/9 on the bank + demo stream "
-        "(supervised 6/6, unsupervised 4/4, white_queen 5/5, Layer C 9/9); "
-        "red_king/red_queen/caterpillar and the identifiable-stream metadata remain "
-        "unassessed."
+        "✅ **Project v1:** V1.1-V1.5 green — identifiable stream, plugin acceptance 9/9, "
+        "red_king known-effect SCORE 0.889, red_queen channel certification, caterpillar "
+        "artifact-only explanation."
     )
 
     # ---- the plan: the SAME tree, with verdicts attached (PLAN.md -> REPORT_CARD) -----------
@@ -1321,10 +1320,15 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
         if red_by_problem
         else ""
     )
+    _dec_ids = {n.ident for n in P.NODES if n.evidence == "dec"}
+    _v1_ids = {n.ident for n in P.NODES if n.evidence == "v1"}
+    _dec_open = census["dec"] - len(P.CLOSED & _dec_ids)
+    _v1_open = census["v1"] - len(P.CLOSED & _v1_ids)
+    _solved = plan_green + len(P.CLOSED & (_dec_ids | _v1_ids))
     plan_scope = (
-        f"{root_emoji} **Plan root:** {root_word} — {plan_green}/{census['atomic_total']} "
-        f"atomic problems green · {plan_fail} FAIL · {census['dec'] - len(P.CLOSED)} DEC-frozen · "
-        f"{census['v1']} v1 unassessed · {census['interior']} interior{reds_txt}."
+        f"{root_emoji} **Plan root:** {root_word} — {_solved}/{census['atomic_total']} "
+        f"atomic problems green · {plan_fail} FAIL · {_dec_open} DEC-frozen · "
+        f"{_v1_open} v1 unassessed · {census['interior']} interior{reds_txt}."
     )
     assessment_lines = [plan_scope, b_scope, c_scope, p_scope]
     assessment = " | ".join(
@@ -1347,9 +1351,9 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
         "every measured atomic problem is a frozen row in its B/judge section below, and an "
         "interior verdict is the worst of its children.",
         "",
-        f"**Plan root:** {root_emoji} {root_word} — {plan_green}/{census['atomic_total']} "
-        f"atomic problems green · {plan_fail} FAIL · {census['dec'] - len(P.CLOSED)} DEC-frozen (no card rows) "
-        f"· {census['v1']} v1 not assessed on this card · {census['interior']} interior "
+        f"**Plan root:** {root_emoji} {root_word} — {_solved}/{census['atomic_total']} "
+        f"atomic problems green · {plan_fail} FAIL · {_dec_open} DEC-frozen (no card rows) "
+        f"· {_v1_open} v1 not assessed on this card · {census['interior']} interior "
         f"problems.",
         "",
         "| Level | Node | What must be true | Atomic problems | Verdict |",

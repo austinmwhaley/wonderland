@@ -615,8 +615,8 @@ computes one. Moving the pointer is a reviewed spec edit like any other.
 | **R3** | Port: ONE real-data run of the winning trunk under DEC-572's bars | E1.c | DONE: served bank + measure PCA-128; eff_rank 30.9, persona 0.267, served R2 0.460; B1 canary from the B rows (lab/port_dec572.json). |
 | **R4** | Real stream: certify the B foundational battery | P1, P2, P3 | DONE: B certified 23/23 rows, 8/8 sections at behavior 7baf744f (DEC-594/595/596); the B gate is no longer the constraint. |
 | **R5** | Real stream: re-score the four judge legs (brain and brain+ledger) | P4 | DONE under the bank protocol (DEC-598): 8/8 leg-columns on the served block bank; the v1 flat judge (4/8) and the GBM delivery head are recorded beside it. |
-| **R6 ← now** | Stack: build and certify v1 (identifiable stream, plugins, red_king, red_queen, caterpillar) | P5 | plugin acceptance 9/9 (supervised/unsupervised/white_queen) on the bank + demo stream; red_king/red_queen/caterpillar and the identifiable-stream metadata remain |
-| **R7** | BACKWARD: adversarial review with no BREAKING findings | G | AUDIT.md requirements closed |
+| **R6** | Stack: build and certify v1 (identifiable stream, plugins, red_king, red_queen, caterpillar) | P5 | DONE: V1.1 identifiable stream; V1.2 plugin acceptance 9/9; V1.3 red_king SCORE 0.889; V1.4 red_queen channel certification; V1.5 caterpillar artifact-only explanation (v1_*.json). |
+| **R7 ← now** | BACKWARD: adversarial review with no BREAKING findings | G | DONE: AUDIT.md has no open BREAKING/MAJOR requirements (empty BACKWARD block). |
 
 The order is forced by dependency and by cost: the dev rig is minutes and earns the
 right to the real-data port; the port closes E1.c; only then can the remaining B atoms

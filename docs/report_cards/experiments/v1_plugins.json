@@ -1,0 +1,57 @@
+{
+  "kind": "v1_gate",
+  "complete": true,
+  "atom": "V1.2",
+  "name": "Each plugin passes its independent gate",
+  "plugin_acceptance": "/home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/plugin_acceptance.json",
+  "rows": [
+    {
+      "check": "CFM registry present for embedding version",
+      "achieved": true,
+      "ok": true
+    },
+    {
+      "check": "static embedding table non-empty",
+      "achieved": 8835,
+      "ok": true
+    },
+    {
+      "check": "embedding table single version",
+      "achieved": 1,
+      "ok": true
+    },
+    {
+      "check": "embedding version has a CFM registry",
+      "achieved": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899",
+      "ok": true
+    },
+    {
+      "check": "supervised plugin independent gate",
+      "achieved": true,
+      "ok": true
+    },
+    {
+      "check": "unsupervised plugin independent gate",
+      "achieved": true,
+      "ok": true
+    },
+    {
+      "check": "white_queen plugin independent gate",
+      "achieved": true,
+      "ok": true
+    },
+    {
+      "check": "all plugin artifacts written",
+      "achieved": 4,
+      "ok": true
+    },
+    {
+      "check": "end-to-end: all plugin kinds share one frozen table",
+      "achieved": true,
+      "ok": true
+    }
+  ],
+  "n_rows": 9,
+  "passed": true,
+  "why": "Layer C acceptance: supervised, unsupervised, white_queen and the shared-table end-to-end checks all pass on the bank + demo stream."
+}
