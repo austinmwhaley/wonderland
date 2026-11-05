@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "df73c2aa1427b471",
+    "behavior_hash": "89cec70b2c6889b6",
     "command": "scripts/measure_robustness_law.py --products looking_glass/artifacts/cfm_v2k_vf2_bank",
-    "generated_at": "2026-11-05T04:02:42+00:00",
-    "git_commit": "f13d7b66eb7163fd1068c0706a20703c0324c7a3",
+    "generated_at": "2026-11-05T19:23:14+00:00",
+    "git_commit": "4d1e00e23081521e4172f7d7e53c25fa743b26df",
     "producer": "measure_robustness_law.py"
   },
   "as_of": "2025-01-01",

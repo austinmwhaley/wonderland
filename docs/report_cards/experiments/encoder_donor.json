@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "df73c2aa1427b471",
+    "behavior_hash": "89cec70b2c6889b6",
     "command": "scripts/measure_donor.py --products looking_glass/artifacts/cfm_v2k_vf2_bank",
-    "generated_at": "2026-11-05T04:02:29+00:00",
-    "git_commit": "f13d7b66eb7163fd1068c0706a20703c0324c7a3",
+    "generated_at": "2026-11-05T19:21:13+00:00",
+    "git_commit": "4d1e00e23081521e4172f7d7e53c25fa743b26df",
     "producer": "measure_donor.py"
   },
   "combined_protocol": "v2 (DEC-594): table_E = mean(table ridge, E ridge) \u2014 a fixed ensemble of the two fitted heads, no weights fit on B; the v1 hstack(fair,E) arm is recorded alongside as table_E_hstack",
@@ -102,7 +102,7 @@
       "table_seq_E": 0.4449639975661983
     }
   },
-  "seconds": 5.1,
+  "seconds": 5.3,
   "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899",
   "targets": {
     "y_churn_90": {

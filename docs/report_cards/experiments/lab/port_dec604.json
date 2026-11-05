@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "df73c2aa1427b471",
+    "behavior_hash": "89cec70b2c6889b6",
     "command": "measure_port_demo.py",
-    "generated_at": "2026-11-05T04:50:08+00:00",
-    "git_commit": "e72c795ba1c37bd71376ee7d3b9b71a256fc8f30",
+    "generated_at": "2026-11-05T19:33:31+00:00",
+    "git_commit": "4d1e00e23081521e4172f7d7e53c25fa743b26df",
     "producer": "measure_port_demo.py"
   },
   "as_of": "2025-01-01",
@@ -107,7 +107,7 @@
     "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
   },
   "protocol": "DEC-572/573 bars under the frozen geometry + linear-access consumers",
-  "seconds": 9.9,
+  "seconds": 10.8,
   "served_object": "bank 179 + measure PCA-128 (307 dims)",
   "stable": "frozen artifact; deterministic PCA fit on split A; products identity recorded",
   "trunk_only_meets_all_bars": false,

@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "df73c2aa1427b471",
+    "behavior_hash": "89cec70b2c6889b6",
     "command": "lab_measure.py --fixture rabbit_hole/data/lab/intent --products /tmp/opencode/lab/intent_pos --as-of 2024-09-01 --neg-products /tmp/opencode/lab/intent_neg --adv-products /tmp/opencode/lab/intent_adv --iter dec601 --head hier --out docs/report_cards/experiments/lab/intent_dec601.json",
-    "generated_at": "2026-11-05T04:26:22+00:00",
-    "git_commit": "dcad1bde51909aa3b2176b053627b9ac1c040695",
+    "generated_at": "2026-11-05T19:32:14+00:00",
+    "git_commit": "4d1e00e23081521e4172f7d7e53c25fa743b26df",
     "producer": "lab_measure.py"
   },
   "a_frac": 0.7,
@@ -39,8 +39,26 @@
       "purchase": 112,
       "view": 105
     },
+    "products": {
+      "path": "/tmp/opencode/lab/intent_adv",
+      "registry_sha256": "10147efe94a3474f",
+      "tag": "0.11.0r529517-b8d64e3lr1e-03o67b1bcb7"
+    },
     "reads_as_expected": true,
     "reads_no_signal_structure": true,
+    "signature_block": {
+      "block_sha256": "b5269187a228da09b411a1dc58c58bfc1dd052126c9fdc481c8b31cc92118727",
+      "classes": [
+        "cart",
+        "purchase",
+        "view"
+      ],
+      "dim": 9,
+      "fixture_sha256": "f33259ad9d76f4c417a65b088fc34d48f7eb7e2a02978f97ba5afbdfb5ab6d5b",
+      "n_served": 500,
+      "receipt": "/tmp/opencode/lab/intent_adv/signature_receipt.json",
+      "table": "signature_blocks"
+    },
     "structure_carried": false
   },
   "as_of": "2024-09-01",
@@ -50,6 +68,8 @@
   "fixture_spec": {
     "action_peak": 0.0,
     "base_rate": 0.3,
+    "diurnal": 0.0,
+    "domain": "ecommerce",
     "entity_affinity": 0.0,
     "intent": 5.0,
     "n_customers": 500,
@@ -57,6 +77,7 @@
     "name": "intent",
     "rate_heterogeneity": 0.0,
     "seed": 17,
+    "session_burst": 0.0,
     "snr": 1.0,
     "transition": true,
     "trend": 0.0,
@@ -104,7 +125,25 @@
       "purchase": 112,
       "view": 105
     },
-    "reads_no_signal": true
+    "products": {
+      "path": "/tmp/opencode/lab/intent_neg",
+      "registry_sha256": "f2f49a505130de47",
+      "tag": "0.11.0r529517-b8d64e3lr1e-03o67b1bcb7"
+    },
+    "reads_no_signal": true,
+    "signature_block": {
+      "block_sha256": "b5269187a228da09b411a1dc58c58bfc1dd052126c9fdc481c8b31cc92118727",
+      "classes": [
+        "cart",
+        "purchase",
+        "view"
+      ],
+      "dim": 9,
+      "fixture_sha256": "3ca70bfd98b52e537abf3f9755493f7d7d302df7a40d433d638b5c1f0b914007",
+      "n_served": 500,
+      "receipt": "/tmp/opencode/lab/intent_neg/signature_receipt.json",
+      "table": "signature_blocks"
+    }
   },
   "p_floor": 1e-15,
   "positive": {
@@ -136,6 +175,24 @@
       "cart": 73,
       "purchase": 63,
       "view": 214
+    },
+    "products": {
+      "path": "/tmp/opencode/lab/intent_pos",
+      "registry_sha256": "1565a62f61c47898",
+      "tag": "0.11.0r118183-b8d64e3lr1e-03o67b1bcb7"
+    },
+    "signature_block": {
+      "block_sha256": "f81b50a6babf82359fcb4104ea10f0d9e93d2b2c066fa118770deac11c82a7d3",
+      "classes": [
+        "cart",
+        "purchase",
+        "view"
+      ],
+      "dim": 9,
+      "fixture_sha256": "5f7e10020c525a1c6ded3eec11eb091f377a675cf7cf9fd7f3eed9bfb94cfba1",
+      "n_served": 500,
+      "receipt": "/tmp/opencode/lab/intent_pos/signature_receipt.json",
+      "table": "signature_blocks"
     }
   },
   "products_identity": {
@@ -144,7 +201,7 @@
     "tag": "0.11.0r118183-b8d64e3lr1e-03o67b1bcb7"
   },
   "protocol": "DEC-576 dev-rig speedometer + controls (development instrument; never B-row evidence)",
-  "seconds": 5.0,
+  "seconds": 11.6,
   "seed": 65537,
   "use_case": "intent"
 }

@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "df73c2aa1427b471",
+    "behavior_hash": "89cec70b2c6889b6",
     "command": "scripts/measure_v1_stack.py",
-    "generated_at": "2026-11-05T05:05:56+00:00",
-    "git_commit": "e72c795ba1c37bd71376ee7d3b9b71a256fc8f30",
+    "generated_at": "2026-11-05T19:32:01+00:00",
+    "git_commit": "4d1e00e23081521e4172f7d7e53c25fa743b26df",
     "producer": "measure_v1_stack.py"
   },
   "atom": "V1.4",

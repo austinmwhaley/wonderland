@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "df73c2aa1427b471",
+    "behavior_hash": "89cec70b2c6889b6",
     "command": "scripts/measure_bc_bank.py",
-    "generated_at": "2026-11-05T08:32:05+00:00",
-    "git_commit": "77200093cd7bbf6da50497881b896823485ba2d8",
+    "generated_at": "2026-11-05T19:31:44+00:00",
+    "git_commit": "4d1e00e23081521e4172f7d7e53c25fa743b26df",
     "producer": "measure_bc_bank.py"
   },
   "arms": {

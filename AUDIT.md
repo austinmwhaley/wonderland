@@ -124,6 +124,7 @@ open) · **violated** (principle broken, requirement open) · **not yet audited*
 | B-013 | **Leg receipts self-consistent on the bank (evidence):** `measure_bc_bank.py` writes, for every leg it scores, a current `checks` rollup from its own `_evidence`, bank-v2 `arms` (one definition per leg, `BANK_ARMS`), and `path_a` from its own frozen-comparator metadata; `stamp_merge_write` gained `drop=` so the producer sheds the flat-era blocks it does not own (`diagnostics`, `incumbent`). All four legs re-run: `columns` byte-identical to the committed receipts (determinism proof — no verdict moves), `checks.<leg>.working == working` on all four (the unsupervised self-contradiction is gone), `arms` name the served block bank, no flat-era block survives, receipts re-stamped at the new commit. | DEC-608; `4cf477b` | 2026-11-05 | `df73c2aa` |
 | B-015 | **Bundle manifest stamped (evidence):** `build_b_cert_bundle.py` writes `bundle_receipt.json` through the shared `stamp_merge_write` — the manifest now carries `_meta` (behavior `df73c2aa`, commit, producer, command) like every row receipt it maps. Builder re-run idempotently: bundle registry sha unchanged (`116087fb206c2d81` — the registry hashes `registry_{tag}.json`, not the receipt), 23-row map and scope string intact, card B scope line content-identical. | DEC-609; `672c164` | 2026-11-05 | `df73c2aa` |
 | B-019 | **Route text states the durable outcome (evidence):** R7's evidence sentence in `plan_spec.py` now reads "every FULL BACKWARD at the SOLVED tree returned NO BREAKING (opening at `38740c8`; closing at `eb9381b`). All BREAKING/MAJOR findings are closed — by evidence, or by the explicit scope/reclassification their requirements allow (B-001, B-003, B-008); open items are disclosed non-blocking in AUDIT.md" — the DEC-605-era count is gone and no count that would go stale at the next finding was written in its place. PLAN.md and the card re-rendered from the spec; behavior hash `df73c2aa` unchanged; commit gates RC=0. | DEC-610; `2976485` | 2026-11-05 | `df73c2aa` |
+| B-020 | **Operator-filed claim-scope finding, closed the same day by the DEC-611 campaign (evidence; filed by the operator 2026-11-05, NOT by a BACKWARD run — provenance at §6.11):** the closing BACKWARD reviews falsified the record's plumbing (citations, manifests, self-consistency, route text) but never the scope of the claim against the top-level Universal principle — every B-row and pre-DEC-611 lab fixture is one ecom simulator family on the `demo_v2` prototype; S1 is schema-variant, not structure-variant. The DEC-611 campaign is the empirical answer: three structurally distinct known-truth domains (sensor_fleet regime-ordering + continuous levels; clickstream_sessions bursty timing + rare class; server_logs change-point ordering + diurnal distractor) through the ONE simulator, full three-piece controls, frozen `lab_measure`; claims stay scoped to the `demo_v2` prototype per B-001, and the six receipts are dev instruments per DEC-576. Branch option (operator ruling, separate DEC): grow the tree so multi-domain mastery becomes a gated card row. | six `lab/*_dec611{,_hier}.json` receipts (`complete=true`); DEC-611 outcome addendum | 2026-11-05 | `89cec70b` |
 
 ---
 
@@ -500,6 +501,21 @@ plan — the record is the newer, correct one).
 re-verified clean at `b512068`. **Closure:** B-019 closed 2026-11-05 by DEC-610 /
 commit `2976485` (route text now states the durable outcome; §4).
 
+### 6.11 Operator-filed requirement B-020 (2026-11-05)
+
+B-020 (MAJOR, P1 Universal / Honest claim-scope) was **not filed by a BACKWARD run**.
+The operator reviewed the closing reviews (§6.9/§6.10) and named the gap their
+adversarial coverage should have surfaced: the closing reviews falsified the record's
+*plumbing* (citations, manifests, self-consistency, route text) but never the *scope of
+the claim* — every B-row and every pre-DEC-611 lab fixture is one ecom simulator family
+on the `demo_v2` prototype, and S1 is schema-variant, not structure-variant. Filed in
+§3/§9 the same day with the DEC-611 campaign as its forward subgoal; closed the same day
+under the closure criterion stated at filing (six lab receipts `complete=true` + the
+DEC-611 outcome addendum) — B-012…B-019 precedent (filed and closed by evidence in the
+same working day). The branch option (grow the tree so multi-domain mastery becomes a
+gated card row) is a separate DEC requiring operator ruling; DEC-576 keeps these
+receipts as development instruments until then.
+
 ---
 
 ## 7. What a principle finding looks like
@@ -788,6 +804,21 @@ remain open without blocking completion.
       "audit_ref": "A-019",
       "date": "2026-11-05",
       "closed": "2026-11-05"
+    },
+    {
+      "id": "B-020",
+      "severity": "MAJOR",
+      "principle": "P1 (Universal) / Honest (claim scope)",
+      "status": "closed",
+      "closure": "evidence",
+      "finding": "The closing BACKWARD reviews (FULL at 38740c8...b512068) falsified the record's plumbing (citations, manifests, self-consistency, route text) but never the scope of the claim against the top-level Universal principle: every B-row and every pre-DEC-611 lab fixture is one ecom simulator family (TYPES/P_FIXED, view/cart/purchase) on the demo_v2 prototype. S1 proves the pipeline survives schema renaming; no empirical row tested that the embedding is useful on structurally different event domains. 'SOLVED 39/39 on the synthetic demo_v2 prototype' is route-honest, yet the charter's Universal principle outran its evidence base.",
+      "forward_subgoal": "DEC-611 campaign (pre-registered 2b37adf): three structurally distinct known-truth domains through the ONE simulator, full three-piece controls, frozen lab_measure protocol. Closure: six lab receipts complete=true + outcome addendum recorded in DEC-611 (strengths/weaknesses + axis attribution + defect disclosure). Branch (separate DEC if exercised, operator ruling): grow the tree so multi-domain mastery becomes a gated card row - DEC-576 keeps these receipts dev instruments until then.",
+      "gate_touched": "none (claims stay scoped to the demo_v2 prototype per B-001; dev-rig receipts are not B-row evidence per DEC-576; the card's verdict is unchanged)",
+      "evidence": "six campaign receipts complete=true stamped 89cec70b (lab/sensor_fleet_dec611{,_hier}.json, lab/clickstream_sessions_dec611{,_hier}.json, lab/server_logs_dec611{,_hier}.json); DEC-611 outcome addendum (per-domain scorecard, axis attribution table, defect disclosure, re-stamp statement); this commit",
+      "audit_ref": "A-020",
+      "date": "2026-11-05",
+      "closed": "2026-11-05",
+      "provenance": "Operator-filed 2026-11-05 (critique of the closing reviews' adversarial coverage: 'PROMPT_BACKWARD should have been more adversarial and suggested testing on multiple types of streams'). NOT filed by a BACKWARD run; closed the same day by the DEC-611 campaign under its own stated closure criterion."
     }
   ]
 }

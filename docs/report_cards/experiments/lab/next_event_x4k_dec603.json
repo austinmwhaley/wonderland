@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "df73c2aa1427b471",
+    "behavior_hash": "89cec70b2c6889b6",
     "command": "lab_measure.py --fixture rabbit_hole/data/lab/next_event_x4k --products /tmp/opencode/lab/next_event_x4k_pos --as-of 2024-09-01 --neg-products /tmp/opencode/lab/next_event_x4k_neg --adv-products /tmp/opencode/lab/next_event_x4k_adv --iter dec603 --head hier --out docs/report_cards/experiments/lab/next_event_x4k_dec603.json",
-    "generated_at": "2026-11-05T04:35:37+00:00",
-    "git_commit": "e72c795ba1c37bd71376ee7d3b9b71a256fc8f30",
+    "generated_at": "2026-11-05T19:33:18+00:00",
+    "git_commit": "4d1e00e23081521e4172f7d7e53c25fa743b26df",
     "producer": "lab_measure.py"
   },
   "a_frac": 0.7,
@@ -68,6 +68,8 @@
   "fixture_spec": {
     "action_peak": 0.0,
     "base_rate": 0.08,
+    "diurnal": 0.0,
+    "domain": "ecommerce",
     "entity_affinity": 0.0,
     "intent": 0.5,
     "n_customers": 1000,
@@ -75,6 +77,7 @@
     "name": "next_event_x4k",
     "rate_heterogeneity": 0.0,
     "seed": 17,
+    "session_burst": 0.0,
     "snr": 1.0,
     "transition": true,
     "trend": 0.0,
@@ -198,7 +201,7 @@
     "tag": "0.11.0r517989-b16d32e3lr5e-03o67b1bcb7"
   },
   "protocol": "DEC-576 dev-rig speedometer + controls (development instrument; never B-row evidence)",
-  "seconds": 5.0,
+  "seconds": 11.9,
   "seed": 65537,
   "use_case": "next_event_x4k"
 }

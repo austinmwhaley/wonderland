@@ -11710,3 +11710,171 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
     Diagnosable (3 structure families × dynamics/capacity/honesty/geometry axes → an
     attribution table) · P6 (one DOMAINS table, one simulator) · P13 (no redundant
     null fixture).
+  - **Outcome addendum (campaign complete 2026-11-05; run under the pre-registration above).**
+    *Fixture record (the sweep + closed-form carry).* Character σ swept at
+    {1,2,3,5,7,10} on all three domains: the oracle is CARRIED at every σ (margin grows
+    with σ and saturates as the character rows sharpen toward deterministic); σ=5.0 chosen
+    as the moderate-mastered precedent (`intent` ran at 5.0, N=500). Final positive specs:
+    `sensor_fleet` N=500 / 90 d / rate 5.5 (stationary telemetry 0.5545 / alarm 0.2564 /
+    maintenance 0.1891; 1-gram base CE 0.8783, oracle 0.6079, **+0.2704 nats** available);
+    `clickstream_sessions` N=500 / 180 d / rate 2.8 / session_burst 9.0 (page_view 0.5808 /
+    search 0.1921 / add_to_cart 0.1248 / **checkout 0.0289** / bounce 0.0734; base 1.1000,
+    oracle 0.8559, **+0.2441 nats**); `server_logs` N=500 / 365 d / rate 1.4 / diurnal 0.8
+    (request 0.6616 / error 0.2096 / **deploy 0.0294** / restart 0.0994; base 0.8358,
+    oracle 0.7184, **+0.1173 nats**). Event budgets: 495 / 504 / 511 expected events per
+    entity (the ≳500 rule). A-side class counts (the n_A≥8 guard): no class excluded in any
+    receipt (per_class_n_A: sensor alarm 88 / maintenance 53 / telemetry 209; clickstream
+    page_view 213 / add_to_cart 40 / checkout 29 / search 30 / bounce 30; server request
+    174 / error 96 / restart 49 / deploy 31 — all ≥8).
+    *No-op proof (the pre-registered condition).* `next_event`/`intent` (N=500, recorded N
+    from their own truths) regenerate byte-identical for stream / oracle / baseline /
+    negative stream / adversarial stream under the new code; the truth JSONs gain exactly
+    the three new spec fields (`domain="ecommerce"`, `session_burst=0.0`, `diurnal=0.0`).
+    Re-verified after `ruff format`. All 8 pre-existing on-disk fixtures rebuilt in place
+    at their recorded N (byte-identity proven for the two tracked ones; the rest are stamp-
+    free dev instruments). The orphaned `order_shape` fixture (staged, never committed —
+    the DEC-588 `persistence` experiment; no ontology entry, unregenerable from the current
+    tree; its measurements live on in the recorded receipts) was deleted (P13).
+    *Defects the campaign exposed (the point of the exercise) — both fixed pre-stamp.*
+    (1) `stat_bank` level-block / median-gap streams hardcoded `pl.col("value")` — the
+    ecommerce field literal; the sensor train (first non-ecommerce stream) crashed in
+    `build_products`. Fixed `2a49b8d`: both resolve the field via
+    `cfm_data._primary_numeric_field` (derived, max absolute mass) — demo_v2/next_event →
+    `value` (byte-identical blocks), sensor → `reading` (the value-transform axis is
+    actually exercised: num_next:reading +0.4261 ± 0.0336 PASS in that portfolio),
+    clickstream → `None` (documented degenerate zeros + 1-day median-gap fallback),
+    server → `code` (mass-dominant, consistent with the encoder's own resolution).
+    (2) `cfm_training._registry` took `len()` of every `vocab.dumps()` value;
+    `primary_numeric` is `None` on the first numeric-field-free stream (clickstream), and
+    the crash came after trunk + portfolio, before products. Fixed `4d1e00e`: size
+    receipts skip `None`-valued entries (a field name has no size). Inert on every stream
+    with a primary numeric — proven by the re-stamp's measured-content snapshot diff.
+    *Disclosed, not fixed (frozen judge/onboard instruments; touching them changes judge
+    behavior — a separate DEC):* the same literal class survives in
+    `supervised_gate._raw_features` and `onboard._derive_reward_event` — both run on
+    demo_v2, where `value` exists.
+    *Re-stamp.* Two behavior moves during the campaign: `df73c2aa` → `d1d5278c`
+    (`2a49b8d`) → `89cec70b` (`4d1e00e`). One full cfm_v2k re-stamp at `89cec70b`
+    (DEC-573 precedent: each producer re-run with its own recorded command, no retrain):
+    13 B producers + 4 judge legs + red_king + 5 v1-stack + 7 E1 lab receipts = 30
+    receipts. Pre-stamp snapshot of measured content (all fields except stamp fields)
+    vs the re-stamped receipts, classified field-by-field: **26/30 receipts have no
+    verdict-bearing value change** — the deltas are wall-clock timing; ADDED
+    provenance/spec-echo fields (the lab dec601 receipts gain
+    `fixture_spec.{domain,session_burst,diurnal}` + `products`/`signature_block`
+    provenance); the JSON NaN round-trip artifact (`encoder_b_props`); embedded
+    timing/probe-batch text inside evidence strings (`encoder_lawfulness`,
+    `judge_stages` S1/S2 — S2's `batch=32→128` is the GPU-memory-derived probe batch);
+    and `judge_stages` S6 `commit_recorded_clean` reading false on the dirty tree at run
+    time (expected at re-stamp time; the clean-tree re-run is the closing commit after
+    this one). **One genuine value move, with cause:** `encoder_sufficiency_law`'s
+    `horizon-count-value` probe — H 13248 → 137279 s and its count_losses moved — but the
+    probe is EXCLUDED/degenerate in BOTH runs (headroom ≤ 0 — probe excluded, reported)
+    and carries no verdict. Root cause (verified 2026-11-05): the probe's seeded draw
+    `np.random.default_rng(65537).choice(gaps)` (`measure_sufficiency_law.py:260–261`)
+    is order-dependent, and the gap query has no outer `ORDER BY`, so its row order
+    varies across processes on the UNCHANGED stream (the demo parquet's mtime predates
+    both receipts; same-day recomputes give the same 2,336,629-gap count, different
+    orderings, different draws: 13248 / 137279 / 125280 / 2204). The pre-registered
+    "byte-identical" claim therefore holds precisely for every verdict-bearing value;
+    the excluded probe's H draw is a disclosed producer nondeterminism in an excluded
+    field (pinning the gap order is a behavior move to a frozen instrument — out of
+    scope for this campaign, a candidate for a future DEC). Card: SOLVED 39/39 at
+    `89cec70b`, re-rendered after the clean-tree re-stamp close (N unchanged:
+    A=3515 / B=1485 as of 2025-01-01).
+    *Per-domain scorecard (lab_measure, the instrument of record; all six receipts
+    `complete=true`, `kind=lab_dev_instrument`, stamped `89cec70b`).*
+    - `sensor_fleet_dec611.json` (ridge): g=1.7003, nll enc 0.8635 vs finite-sample 1-gram
+      0.7582, CI(enc−base) [0.0039, 0.1997] (excludes 0 unfavourable — the head does NOT
+      beat the 1-gram at this scale), eff_rank 1.038; negative reads NO_SIGNAL (as
+      expected); adversarial A-side leak teeth present, B-side echo directional (enc
+      1.0882 < base 1.0982, −0.0206 nats) but the paired CI [−0.0206, +0.0003] straddles
+      0 → `reads_as_expected=false` (the only control deviation of the campaign; reported
+      as-is, no protocol edit — the frozen `complete` is the A-side + positive rows, all
+      true).
+    - `sensor_fleet_dec611_hier.json`: g=0.2447, CI [−0.2053, −0.0183] (excludes 0
+      favourably), beats the 1-gram, under the 0.5 bar → the order statistic carries
+      next-type on the known-truth regime stream.
+    - `clickstream_sessions_dec611.json` (ridge): g=2.0280, enc 1.3664 vs base 1.1076,
+      CI [0.1403, 0.3815]; negative NO_SIGNAL; adversarial echo beats the 1-gram on B
+      (reads as expected). eff_rank 1.265.
+    - `clickstream_sessions_dec611_hier.json`: g=0.3398, CI [−0.2469, −0.0848], under
+      the bar.
+    - `server_logs_dec611.json` (ridge): g=5.0339, enc 1.0379 vs base 0.7819,
+      CI [0.1424, 0.3604]; negative NO_SIGNAL; adversarial as expected. eff_rank 1.48.
+    - `server_logs_dec611_hier.json`: g=−1.7328, CI [−0.2675, −0.0826]. g<0 is the
+      finite-sample artifact (the empirical 1-gram on 150 B rows, 0.7819, sits above the
+      closed-form stationary oracle 0.7184, and the exact-counts head reaches 0.6084);
+      same shape as the mastered `intent_dec603` (−0.72) / `next_event_x4k_dec603`
+      (−0.58) receipts — reported as-is, not a super-oracle claim.
+    *Portfolio-grade observations (the train's own held-out battery; toy-scale, dev
+    instrument only).* sensor: next +0.2698 ± 0.0361, order +0.4456, num_next:reading
+    +0.4261, num_next:severity +0.4874, attr_next:crew +0.0102, agg +0.8316; dt/occur
+    NO_IDENTIFIABLE_SIGNAL. clickstream: next −0.0096 ± 0.0023, beats_gram1=False
+    (model 1.2248 vs 1-gram 1.1272 vs unigram 1.2444 — between the unigram and the
+    1-gram: the bursty-gap axis is not in the state at this budget), attr_next:order_id
+    −0.0004 (the rare class carries no beyond-uniform structure, by construction),
+    query +1.5158 / order +0.1394 PASS. server: next +0.4626 ± 0.0232, order +0.3511,
+    attr_next:version +0.0098, num_next:code −0.0021 / num_next:latency_ms −0.0100
+    (FAIL — by design: code is near-uniform categorical, latency the load-independent
+    distractor; the heads correctly read no signal), dt/occur NO_IDENTIFIABLE_SIGNAL.
+    *Strengths (evidence-linked).* (S1) **Universality of the pipeline held across all
+    three domains with zero model code changes** — one simulator, one train command,
+    schema/vocab/rate resolved per stream (the two defects found were hardcoded
+    field-name literals, not architecture); every control behaved as frozen (negatives
+    NO_SIGNAL on all three; adversarial structure-claim NO_SIGNAL on all six receipts;
+    leak teeth A-side on all three). (S2) **The order statistic is the robust carrier of
+    transition structure at this scale**: the hier signature head is under the 0.5 g-bar
+    on all three domains (0.24 / 0.34 / −1.73), matching the mastered ecommerce E1
+    precedent (−0.72 / −0.58) — regime ordering (sensor), session funnel (clickstream),
+    and change-point ordering (server deploy→error→restart) are all readable by a simple
+    consumer from the served K×K counts. (S3) **Continuous value levels carry through**
+    when the level block resolves the stream's own numeric field: sensor's
+    state-dependent reading masters its value head (+0.4261), while the designed distractors
+    (server latency, near-uniform code) correctly read no signal — the value-transform
+    axis distinguishes structured level from distractor level.
+    *Weaknesses (evidence-linked, with axis attribution).* (W1) **The learned mean state
+    does not beat the model-free 1-gram on next-type at N=500 on any domain** (ridge
+    g=1.70 / 2.03 / 5.03; eff_rank 1.04–1.48 of ~32–39 dims): the state collapses to the
+    counter/level direction and the cross-customer shape ensemble adds no transition
+    signal beyond direct counting. Axis: capacity/training-regime at toy budget (the
+    trunk is under-pressured by 350 A customers × ~300 events to spread information over
+    its 256 timescales); the established E1 attribution (DEC-600/601) names the mean
+    state as the gap, and this campaign reproduces it on three independent structure
+    families. Pre-registered follow-up branch (NOT executed, separate DEC if pursued):
+    scale N or sharpen the character to test whether the ridge g closes toward the 1-gram
+    — one axis (budget), recorded, not tuned toward the metric. (W2) **Bursty-session
+    timing is not identifiable by the dt head** (clickstream dt NO_IDENTIFIABLE_SIGNAL;
+    the intra/inter-session gap contrast, median ~14 min vs ~82 min, is a per-customer
+    rate pattern the destroyed-data null also fits at this head) — axis: the gap-
+    distribution target at this sample has no beyond-null variance for the head to beat;
+    the burst structure lives in the per-entity rate, which the next-type target does not
+    read. (W3) **Rare-class handling is a non-finding by construction**: checkout (0.029)
+    and deploy (0.029) carry no beyond-uniform per-customer structure at σ=5.0 (their
+    attr_next skills ≈ 0 ± CI), so no claim is made about rare-class prediction — the
+    instrument's guard (n_A≥8) held; the structure these domains offer is in the
+    ordering, not the rarity. (W4) **One control deviation**: the sensor adversarial B-
+    side echo is directional but not significant (CI straddles 0 by +0.0003) where every
+    prior ridge receipt read as expected — reported as an instrument-scale observation
+    (150 B rows; the A-side teeth are the frozen gate and are present); no protocol edit
+    (certification rule 1).
+    *Axis attribution table.* domain / structure / axis / verdict:
+    sensor_fleet · regime ordering (telemetry↔alarm↔maintenance) · dynamics/order ·
+    CARRIED by the signature head (g 0.24), not by the mean state (g 1.70).
+    sensor_fleet · state-dependent reading level · value-transform/level block · CARRIED
+    (num_next:reading +0.4261 PASS; the `2a49b8d` fix is what exercises this axis).
+    clickstream_sessions · session funnel ordering · dynamics/order · CARRIED by the
+    signature head (g 0.34), not by the mean state (g 2.03).
+    clickstream_sessions · bursty intra/inter-session gaps · time-gap (dt) · NO
+    IDENTIFIABLE SIGNAL at the dt head (W2).
+    server_logs · deploy→error→restart change-point ordering · dynamics/order · CARRIED
+    by the signature head (g −1.73, finite-sample shape), not by the mean state (g 5.03).
+    server_logs · diurnal rate modulation · rate distractor · correctly ignored by the
+    next-type target (g target is type, not rate — the diurnal knob is the load-only
+    control).
+    all three · null control (snr=0) · honesty · NO_SIGNAL on all three ridge receipts.
+    all three · echo trap · honesty/gate-teeth · structure claim NO_SIGNAL on all six;
+    A-side teeth all three; sensor B-side echo directional-only (W4).
+    *Dev-rig discipline (DEC-576).* These receipts are development instruments: no B-row
+    source names them, the card's frontier section is the only place they appear, and the
+    certification of B stays on the real stream (cfm_v2k / O3 / DEC-575).

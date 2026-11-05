@@ -17,7 +17,7 @@ all get signal from it through simple heads.
 never a brain win.
 
 **Stage:** Layer 0 — **PLAN ROOT SOLVED 39/39 on the synthetic `demo_v2` prototype.** **B is
-CERTIFIED** (23/23, 8/8 at behavior `df73c2aa`, on the single `cfm_v2k_vf2_cert` bundle);
+CERTIFIED** (23/23, 8/8 at behavior `89cec70b`, on the single `cfm_v2k_vf2_cert` bundle);
 **B+C is DONE** (8/8, bank v2, DEC-598) for the served bank, with the measure-free donor-only
 boundary recorded (B-008); the three plugin gates pass **9/9**; **E1 is PASS as served-object
 capacity** (E1.a g -0.581, E1.b g -0.721/0.181 via the served signature block; E1.c is a
@@ -25,8 +25,10 @@ delivery/ledger port: eff_rank 30.9 / persona 0.267 / R2 0.460, with the trunk-o
 4.11/10.33 recorded); **V1.1-V1.5 are green** (identifiable stream, plugins 9/9, red_king
 known-effect 73.3% vs 25% chance + held-out policy 0.371 vs 0.208 random, red_queen DEPLOY/HOLD
 offer composition, caterpillar on red_queen's plan). **No BACKWARD BREAKING/MAJOR requirement is
-open** (AUDIT.md: 17 of 19 requirements closed; B-017/B-018 open as disclosed INFO, the B-017
-SPINE §5 ruling queued to the operator; closing FULL review at `eb9381b`, §6.9; operator-requested
+open** (AUDIT.md: 18 of 20 requirements closed; B-017/B-018 open as disclosed INFO, the B-017
+SPINE §5 ruling queued to the operator; B-020 — the operator-filed MAJOR claim-scope finding
+the closing reviews should have surfaced — filed and closed the same day by the DEC-611
+campaign (AUDIT.md §6.11); closing FULL review at `eb9381b`, §6.9; operator-requested
 rescan at `b512068`, §6.10: NO BREAKING, its one new finding B-019 — the R7 route text lagged the
 record — closed 2026-11-05 by DEC-610). **Scope:** the
 certified artifact is the synthetic
@@ -57,6 +59,27 @@ histogram half; it is not the missing piece.
 
 ## Current state
 
+- **DEC-611 campaign complete (2026-11-05; closeout commit in progress): the multi-domain
+  dev-rig, and the empirical answer to B-020.** Three structurally distinct known-truth
+  domains — `sensor_fleet` (regime ordering + continuous levels), `clickstream_sessions`
+  (bursty session timing + rare class), `server_logs` (change-point ordering + diurnal
+  distractor) — trained as 9 products (3 × pos/neg/adv, N=500, one simulator) and measured
+  with the frozen `lab_measure`: all six receipts `complete=true` at `89cec70b`. Headline
+  reads: the pipeline consumed all three domains with zero model-code change (two hardcoded
+  field-name literals surfaced and were fixed pre-stamp: `stat_bank` `2a49b8d`,
+  `cfm_training._registry` `4d1e00e`); the order statistic carries next-type on all three
+  domains via the signature head (hier g 0.24 / 0.34 / −1.73 — the mastered-E1 shape,
+  negative g on server being the known finite-sample artifact), while the learned mean state
+  does not beat the 1-gram at N=500 on any domain (ridge g 1.70 / 2.03 / 5.03,
+  eff_rank ≈ 1.04–1.48 — the established E1 attribution reproduced on three independent
+  structure families); sensor's value-transform axis is exercised (`num_next:reading`
+  +0.4261 ± 0.0336) and the designed distractors correctly read no signal; one control
+  deviation reported as-is (sensor adversarial B-side echo directional, CI straddles 0 by
+  +0.0003). Full scorecard + axis-attribution table + defect disclosure + re-stamp
+  statement (26/30 receipts no verdict-bearing change; the one move — the excluded
+  `horizon-count-value` probe's H draw — root-caused to the order-undetermined gap query)
+  are in the DEC-611 outcome addendum. B-020 (MAJOR, operator-filed claim-scope finding)
+  closed by this campaign, same day (AUDIT.md §6.11).
 - **DEC-611 chunk 1 landed (2026-11-05): the multi-domain fixture system (operator
   request: "make several more 'real' event streams and test the project on them").**
   `rabbit_hole/data_spec.py` now carries the `DOMAINS` table — four domains (ecommerce,
@@ -410,30 +433,23 @@ next question is the learned shape, not another consumer tuning pass.
 
 ## Next 3 actions
 
-1. **DEC-611 multi-domain dev-rig campaign IN PROGRESS (operator request 2026-11-05;
-   pre-registered `2b37adf`).** Implementation chunk 1 landed: `DOMAINS` table in
-   `data_spec.py` (ecommerce / sensor_fleet / clickstream_sessions / server_logs — domains
-   are points in the one parameter space, not a second simulator) + `session_burst` /
-   `diurnal` rate knobs (off by default → the `next_event`/`intent` fixtures regenerate
-   byte-identical: no-op proof recorded); `lab_oracles` / `lab` / `lab_gate` domain-aware
-   (vocabulary from the fixture's own truth spec). Three new known-truth N=500 fixtures
-   built and fully defensible on the lab gate (all 10 on-disk use cases pass; oracle
-   carried: sensor +0.27 / clickstream +0.24 / server +0.12 nats at character σ=5.0, the
-   mastered-`intent` precedent). The orphaned `order_shape` fixture (the staged-never-
-   committed DEC-588 experiment) was deleted (P13). Ontology 37→40; coverage 10/40 on
-   disk. NEXT: train the 9 dev-rig products (3 domains × pos/neg/adv; one GPU job at a
-   time via `safe_run`), `build_lab_signature` on the three positives, `lab_measure`
-   receipts (ridge ×3 + hier ×3) into `docs/report_cards/experiments/lab/`, then the
-   mandatory full cfm_v2k re-stamp at the moved behavior (card must hold SOLVED 39/39),
-   the DEC-611 outcome addendum, and the strengths/weaknesses report to the operator.
-2. **Push — pending operator permission.** All commits stay local; AGENTS.md: pushing is
-   the only git action that needs permission.
-3. **B-017 operator ruling (queued).** The flat-era vacuous negative controls + the
-   ledger-only diagnostic falsifying SPINE §5's corollary are disclosed INFO; if the ruling
-   revises the corollary, B3.6's branch text and the delivery framing update in a forward
-   run. (The stop-condition state — SOLVED 39/39 at behavior `df73c2aa`, closing FULL
-   BACKWARD at `eb9381b` + rescan at `b512068` NO BREAKING, B-019 closed by DEC-610 —
-   stands pending the DEC-611 behavior move, which obligates the re-stamp above.)
+1. **DEC-611 closeout (in progress; operator 2026-11-05: get to the certifiable demo
+   state as fast as possible).** Campaign-chunk commit (30 re-stamped receipts + 6 new lab
+   receipts + DEC-611 outcome addendum + B-020 closure + STATUS), then the clean-tree
+   `judge_stages` re-run (S6 `commit_recorded_clean`), the SOLVED 39/39 verification at
+   `89cec70b`, and the closing commit. Everything measured is complete; only the record
+   plumbing and the card's S6 re-run remain.
+2. **Demo + certification statement to the operator.** What "certified" covers (the
+   `demo_v2` synthetic prototype — B-001 scope; the dev-rig receipts are instruments, not
+   B-row evidence — DEC-576), the demo commands, and two queued items: the AGENTS.md
+   "8 GiB card" line is stale on this GB10 unified-memory machine (project cap 32 GB,
+   operator 2026-11-02, reconfirmed 2026-11-05 — a charter edit is the operator's call),
+   and the looped-transformer (Dory-style) trunk exploration is deferred to a good
+   stopping point (branch deleted on operator instruction 2026-11-05; to be re-cut from
+   the closed tree).
+3. **Push — pending operator permission.** All commits stay local; AGENTS.md: pushing is
+   the only git action that needs permission. B-017 operator ruling (SPINE §5 corollary)
+   remains queued.
 
 ## Operating facts
 

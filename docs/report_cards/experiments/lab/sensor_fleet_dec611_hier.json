@@ -1,0 +1,129 @@
+{
+  "_meta": {
+    "behavior_hash": "89cec70b2c6889b6",
+    "command": "lab_measure.py --fixture rabbit_hole/data/lab/sensor_fleet --products /tmp/opencode/lab/sensor_fleet_pos --as-of 2024-03-01 --neg-products /tmp/opencode/lab/sensor_fleet_neg --adv-products /tmp/opencode/lab/sensor_fleet_adv --iter dec611 --head hier --out docs/report_cards/experiments/lab/sensor_fleet_dec611_hier.json",
+    "generated_at": "2026-11-05T19:06:16+00:00",
+    "git_commit": "4d1e00e23081521e4172f7d7e53c25fa743b26df",
+    "producer": "lab_measure.py"
+  },
+  "a_frac": 0.7,
+  "adversarial_control": {
+    "expected": "structure claim NO_SIGNAL despite beats_base via the echo",
+    "fatal": "no served signature block at /tmp/opencode/lab/sensor_fleet_adv/signature_receipt.json",
+    "head_ignores_echo": true,
+    "leak_has_teeth_a_side": true,
+    "n_B_rows": 0,
+    "products": {
+      "path": "/tmp/opencode/lab/sensor_fleet_adv",
+      "registry_sha256": "78b439f4fa2c5ae4",
+      "tag": "0.11.0r689088-b8d128e3lr1e-03o67b1bcb7"
+    },
+    "reads_as_expected": true,
+    "reads_no_signal_structure": true,
+    "structure_carried": false
+  },
+  "as_of": "2024-03-01",
+  "bar_g": 0.5,
+  "complete": true,
+  "discipline": "toy-green can only SUGGEST the next real-data run (DEC-576); certification of B stays on the real stream (cfm_v2k / O3 / DEC-575); no B-row source names this receipt",
+  "fixture_spec": {
+    "action_peak": 0.0,
+    "base_rate": 5.5,
+    "diurnal": 0.0,
+    "domain": "sensor_fleet",
+    "entity_affinity": 0.0,
+    "intent": 5.0,
+    "n_customers": 500,
+    "n_entities": 0,
+    "name": "sensor_fleet",
+    "rate_heterogeneity": 0.0,
+    "seed": 17,
+    "session_burst": 0.0,
+    "snr": 1.0,
+    "transition": true,
+    "trend": 0.0,
+    "value_log_sigma": 0.5,
+    "window_days": 90
+  },
+  "head_form": "hier",
+  "iteration": "dec611",
+  "kind": "lab_dev_instrument",
+  "lab_gate_a_side": {
+    "adversarial_leak_has_teeth": true,
+    "adversarial_not_carried": true,
+    "complete": true,
+    "negative_not_carried": true,
+    "oracle_carried": true
+  },
+  "n_boot": 2000,
+  "negative_control": {
+    "expected": "NO_SIGNAL",
+    "fatal": "no served signature block at /tmp/opencode/lab/sensor_fleet_neg/signature_receipt.json",
+    "n_B_rows": 0,
+    "products": {
+      "path": "/tmp/opencode/lab/sensor_fleet_neg",
+      "registry_sha256": "ead8cc38342e51b9",
+      "tag": "0.11.0r689088-b8d128e3lr3e-04o67b1bcb7"
+    },
+    "reads_no_signal": false
+  },
+  "p_floor": 1e-15,
+  "positive": {
+    "alpha": 0.01,
+    "beats_base": true,
+    "classes": [
+      "alarm",
+      "maintenance",
+      "telemetry"
+    ],
+    "classes_excluded": [],
+    "eff_rank": 1.038,
+    "eff_rank_source": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm/portfolio/portfolio_0_11_0r276582-b8d128e3lr2e-03o67b1bcb7_20261105T181825Z.json",
+    "g": 0.244678,
+    "head_form": "hierarchical_dirichlet",
+    "mastered": true,
+    "n_A": 350,
+    "n_B_rows": 150,
+    "n_customers": 500,
+    "nll_base": 0.758216,
+    "nll_baseline_ce_nats": 0.8783,
+    "nll_enc": 0.644679,
+    "nll_oracle_nats": 0.6079,
+    "paired_ci_enc_minus_base": [
+      -0.20529984859510014,
+      -0.01830557840629802
+    ],
+    "per_class_n_A": {
+      "alarm": 88,
+      "maintenance": 53,
+      "telemetry": 209
+    },
+    "products": {
+      "path": "/tmp/opencode/lab/sensor_fleet_pos",
+      "registry_sha256": "fa14a3d48db176b8",
+      "tag": "0.11.0r276582-b8d128e3lr2e-03o67b1bcb7"
+    },
+    "signature_block": {
+      "block_sha256": "53368b816f3409b0960849f99f4ae677176c9870ebfa8c9aeadc1c7b44d70f8d",
+      "classes": [
+        "alarm",
+        "maintenance",
+        "telemetry"
+      ],
+      "dim": 9,
+      "fixture_sha256": "2f87cd2761ee98732f305555fbd7fbd5a243b17dd70e6be8213799533bf2a4fd",
+      "n_served": 500,
+      "receipt": "/tmp/opencode/lab/sensor_fleet_pos/signature_receipt.json",
+      "table": "signature_blocks"
+    }
+  },
+  "products_identity": {
+    "path": "/tmp/opencode/lab/sensor_fleet_pos",
+    "registry_sha256": "fa14a3d48db176b8",
+    "tag": "0.11.0r276582-b8d128e3lr2e-03o67b1bcb7"
+  },
+  "protocol": "DEC-576 dev-rig speedometer + controls (development instrument; never B-row evidence)",
+  "seconds": 13.7,
+  "seed": 65537,
+  "use_case": "sensor_fleet"
+}
