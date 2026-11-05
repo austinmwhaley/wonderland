@@ -57,6 +57,19 @@ histogram half; it is not the missing piece.
 
 ## Current state
 
+- **DEC-611 chunk 1 landed (2026-11-05): the multi-domain fixture system (operator
+  request: "make several more 'real' event streams and test the project on them").**
+  `rabbit_hole/data_spec.py` now carries the `DOMAINS` table — four domains (ecommerce,
+  sensor_fleet, clickstream_sessions, server_logs), each a point in the ONE parameter
+  space (its own vocabulary + moderately-dominant `p_base` + per-type observation model),
+  not a second simulator; two new timing knobs (`session_burst`, `diurnal`) are off by
+  default and snr-scaled, so the ecommerce fixtures regenerate **byte-identical**
+  (no-op proof: pre/post snapshot of `next_event`/`intent` stream+oracle+baseline; the
+  truth files gain exactly the three new spec fields). `lab_gate` is domain-aware
+  (vocabulary from the fixture's own truth spec — the hardcoded `_TYPES` literal is
+  gone). Three new N=500 known-truth fixtures (three-piece control sets) are built and
+  fully defensible; the orphaned `order_shape` fixture (staged, never committed —
+  DEC-588) was deleted. Ontology 37→40; `lab_coverage.json` regenerated (10/40 on disk).
 - **The one card is `REPORT_CARD.md`.** It contains, in order: **the plan section (the goal cut
   backwards into problems, rendered from `scripts/plan_spec.py`; `PLAN.md` is its readable
   render)**, the B-foundational scorecard (B1 Lawful, B2 Sufficient, B3 Accessible, B4 Decisive,
@@ -397,21 +410,30 @@ next question is the learned shape, not another consumer tuning pass.
 
 ## Next 3 actions
 
-1. **Stop condition met (2026-11-05).** The card's plan root is `SOLVED` 39/39 at behavior
-   `df73c2aa`; the closing FULL BACKWARD review at the closure tree `eb9381b` (AUDIT.md §6.9)
-   and the operator-requested rescan at `b512068` (AUDIT.md §6.10) both return NO BREAKING
-   with all MAJORs closed — B-012/B-013/B-014/B-015 by evidence
-   (DEC-607/608/606/609; `470bb5e`/`4cf477b`/`08e37e4`/`672c164`), B-016 by the rewrite.
-   The rescan's one new finding B-019 (MINOR — the R7 route text lagged the record) was
-   closed 2026-11-05 by DEC-610 (`2976485`). No forward measurement work remains on the
-   plan tree.
-2. **Push — pending operator permission.** All round commits are local
-   (`85289b3` → `b512068` + rescan record + B-019 repair); AGENTS.md: pushing is the only
-   git action that needs permission.
+1. **DEC-611 multi-domain dev-rig campaign IN PROGRESS (operator request 2026-11-05;
+   pre-registered `2b37adf`).** Implementation chunk 1 landed: `DOMAINS` table in
+   `data_spec.py` (ecommerce / sensor_fleet / clickstream_sessions / server_logs — domains
+   are points in the one parameter space, not a second simulator) + `session_burst` /
+   `diurnal` rate knobs (off by default → the `next_event`/`intent` fixtures regenerate
+   byte-identical: no-op proof recorded); `lab_oracles` / `lab` / `lab_gate` domain-aware
+   (vocabulary from the fixture's own truth spec). Three new known-truth N=500 fixtures
+   built and fully defensible on the lab gate (all 10 on-disk use cases pass; oracle
+   carried: sensor +0.27 / clickstream +0.24 / server +0.12 nats at character σ=5.0, the
+   mastered-`intent` precedent). The orphaned `order_shape` fixture (the staged-never-
+   committed DEC-588 experiment) was deleted (P13). Ontology 37→40; coverage 10/40 on
+   disk. NEXT: train the 9 dev-rig products (3 domains × pos/neg/adv; one GPU job at a
+   time via `safe_run`), `build_lab_signature` on the three positives, `lab_measure`
+   receipts (ridge ×3 + hier ×3) into `docs/report_cards/experiments/lab/`, then the
+   mandatory full cfm_v2k re-stamp at the moved behavior (card must hold SOLVED 39/39),
+   the DEC-611 outcome addendum, and the strengths/weaknesses report to the operator.
+2. **Push — pending operator permission.** All commits stay local; AGENTS.md: pushing is
+   the only git action that needs permission.
 3. **B-017 operator ruling (queued).** The flat-era vacuous negative controls + the
    ledger-only diagnostic falsifying SPINE §5's corollary are disclosed INFO; if the ruling
    revises the corollary, B3.6's branch text and the delivery framing update in a forward
-   run.
+   run. (The stop-condition state — SOLVED 39/39 at behavior `df73c2aa`, closing FULL
+   BACKWARD at `eb9381b` + rescan at `b512068` NO BREAKING, B-019 closed by DEC-610 —
+   stands pending the DEC-611 behavior move, which obligates the re-stamp above.)
 
 ## Operating facts
 

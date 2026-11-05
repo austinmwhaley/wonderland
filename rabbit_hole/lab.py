@@ -63,6 +63,11 @@ USE_CASES: tuple[UseCase, ...] = (
     UseCase("segmentation", "representation", "unsup", ("C",), "mean", "true-segments"),
     UseCase("anomaly", "representation", "unsup", ("B",), "mean", "true-injection"),
     UseCase("identity", "representation", "multi", ("B",), "1-gram", "true-id"),
+    # ---- DEC-611 multi-domain campaign (B-only; the target is next-type on a
+    #      known-truth domain fixture — 1-gram baseline, closed-form transition oracle)
+    UseCase("sensor_fleet", "multiclass", "multi", ("B",), "1-gram", "true-transition"),
+    UseCase("clickstream_sessions", "multiclass", "multi", ("B",), "1-gram", "true-transition"),
+    UseCase("server_logs", "multiclass", "multi", ("B",), "1-gram", "true-transition"),
     # ---- decision (white_queen) ----
     UseCase(
         "rl_ope_incremental_margin", "decision", "ope", ("C",), "logging-policy", "true-effect"

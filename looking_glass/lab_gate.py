@@ -19,17 +19,29 @@ import numpy as np
 import polars as pl
 
 from looking_glass.capability_card import transition_carried
+from rabbit_hole.data_spec import DOMAINS
 from rabbit_hole.lab import coverage_report
 
 LAB = Path("rabbit_hole/data/lab")
-_TYPES = ("view", "cart", "purchase")
 
 
-def _rows(parquet: Path):
+def _vocab(uc_dir: Path, sub: str = "") -> tuple:
+    """Event-type vocabulary from the fixture's OWN truth spec (DEC-611): the gate must
+    not hardcode a single domain's vocabulary — the domain row is the source of truth."""
+    name = uc_dir.name
+    if sub:
+        truth = uc_dir / sub / f"{name}_{sub}_truth.json"
+    else:
+        truth = uc_dir / f"{name}_truth.json"
+    spec = json.loads(truth.read_text())["spec"]
+    return tuple(DOMAINS[spec["domain"]]["types"])
+
+
+def _rows(parquet: Path, vocab: tuple):
     df = pl.read_parquet(parquet).sort(["customer_key", "event_ts"])
     rows = []
     for sub in df.partition_by("customer_key", maintain_order=True):
-        et = [_TYPES.index(x) for x in sub["event_type"].to_list() if x in _TYPES]
+        et = [vocab.index(x) for x in sub["event_type"].to_list() if x in vocab]
         if len(et) >= 4:
             rows.append({"et": np.asarray(et), "co": np.zeros(len(et))})
     return rows
@@ -63,6 +75,10 @@ _TRANSITION = {
     "anomaly",
     "boundary",
     "uncertainty",
+    # DEC-611 multi-domain campaign (transition family)
+    "sensor_fleet",
+    "clickstream_sessions",
+    "server_logs",
 }
 
 
@@ -80,10 +96,12 @@ def evaluate(lab: Path = LAB) -> dict:
             neg = uc_dir / "negative" / "customer_event_stream.parquet"
             adv = uc_dir / "adversarial" / "customer_event_stream.parquet"
             if neg.exists():
-                carried, _ = transition_carried(_rows(neg), len(_TYPES))
+                v = _vocab(uc_dir, "negative")
+                carried, _ = transition_carried(_rows(neg, v), len(v))
                 checks["negative_not_carried"] = not carried
             if adv.exists():
-                carried_a, _ = transition_carried(_rows(adv), len(_TYPES))
+                v = _vocab(uc_dir, "adversarial")
+                carried_a, _ = transition_carried(_rows(adv, v), len(v))
                 checks["adversarial_not_carried"] = not carried_a
                 checks["adversarial_leak_has_teeth"] = _leak_score(adv) > 0.9
         rows[uid] = checks

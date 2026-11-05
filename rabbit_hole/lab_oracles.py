@@ -75,6 +75,43 @@ POSITIVE: dict[str, DataSpec] = {
     "pacing": DataSpec("pacing", rate_heterogeneity=0.9, trend=0.7),
     "boundary": DataSpec("boundary", transition=True, intent=0.4),
     "uncertainty": DataSpec("uncertainty", transition=True, intent=0.5),
+    # DEC-611 multi-domain campaign (pre-registered): known-truth domain fixtures on the
+    # SAME one simulator (domains are points in the DataSpec parameter space). N=500 per
+    # the DEC-611 scale rule; character sigma=5.0 (the mastered `intent` precedent,
+    # sample-determined character); closed-form oracle CARRIED with margin on all three
+    # domains (sweep recorded in the DEC-611 outcome addendum).
+    "sensor_fleet": DataSpec(
+        "sensor_fleet",
+        domain="sensor_fleet",
+        transition=True,
+        intent=5.0,
+        n_customers=500,
+        window_days=90,
+        base_rate=5.5,
+        snr=1.0,
+    ),
+    "clickstream_sessions": DataSpec(
+        "clickstream_sessions",
+        domain="clickstream_sessions",
+        transition=True,
+        intent=5.0,
+        n_customers=500,
+        window_days=180,
+        base_rate=2.8,
+        session_burst=9.0,
+        snr=1.0,
+    ),
+    "server_logs": DataSpec(
+        "server_logs",
+        domain="server_logs",
+        transition=True,
+        intent=5.0,
+        n_customers=500,
+        window_days=365,
+        base_rate=1.4,
+        diurnal=0.8,
+        snr=1.0,
+    ),
 }
 
 # oracle kind per family
@@ -91,6 +128,10 @@ _TRANS = {
     "anomaly",
     "boundary",
     "uncertainty",
+    # DEC-611 multi-domain campaign (transition family, domain-generic oracle)
+    "sensor_fleet",
+    "clickstream_sessions",
+    "server_logs",
 }
 
 
