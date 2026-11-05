@@ -1,12 +1,12 @@
 # REPORT_CARD — B foundational, then PATH B > PATH A
 
-*Generated `2026-11-05T05:07:39+00:00` · commit `346d62b` (`foundation-rebuild` · clean) · encoder behavior `df73c2aa1427b471`*
+*Generated `2026-11-05T07:24:25+00:00` · commit `38740c8` (`foundation-rebuild` · dirty) · encoder behavior `df73c2aa1427b471`*
 
 **Assessment:**
 
-- ✅ **Plan root:** SOLVED — 39/39 atomic problems green · 0 FAIL · 0 DEC-frozen · 0 v1 unassessed · 19 interior.
+- ❌ **Plan root:** FAILED — 39/39 atomic problems green · 0 FAIL · 0 DEC-frozen · 0 v1 unassessed · 19 interior · 3 BACKWARD open.
 - ✅ **B foundational:** CERTIFIED — 8/8 sections green. Scope: the 23 receipts are current at behavior `df73c2aa` and are certified on the single `cfm_v2k_vf2_cert` bundle (base 272 · bank 179 · donor-only 106 · delivery port 307 · measure view), with a manifest mapping every row to its component. The artifact is the synthetic `demo_v2` prototype, not a production stream (B-001). The trunk-only rank is 4.11 (base) / 10.33 (bank); the delivery port reaches 30.9 only with the measure PCA-128, so E1.c is a delivery/ledger port (B-003). The B+C brain is the served bank; the measure-free donor-only diagnostic is recorded and does not clear all legs (B-008).
-- ✅ **B+C consequence:** DONE (ENCODER DONE v1) — 8/8 legs green · stages 6/6 · no BREAKING/MAJOR backward requirement. Bank v2 (DEC-598): the served block bank + compact judge ledger. The brain column is the served bank (donor blocks + served statistics); the measure-free donor-only rerun is in `bc_donor_diagnostic.json` and does not clear all legs (B-008).
+- ❌ **B+C consequence:** NOT DONE — 8/8 legs green · stages 6/6 · backward open: 3. The B/C/E1/v1 rows are green but the open BACKWARD requirements block completion.
 - ✅ **Project v1:** V1.1-V1.5 green — identifiable stream; plugin acceptance 9/9; red_king known-effect 73.3% vs 25% chance, held-out policy 0.371 vs 0.208 random (CI > 0); red_queen offer composition DEPLOY/HOLD; caterpillar on red_queen's plan.
 
 The verdict is a pure function of the receipts under `docs/report_cards/experiments/`.
@@ -16,11 +16,11 @@ Ledger points never count as progress: `brain alone` is the judge, `brain + ledg
 
 The goal, cut backwards into the problems that must all be solved, recursively to the atomic problems. This section is generated from `scripts/plan_spec.py` — the single definition of the tree; `PLAN.md` is its readable render. The plan defines no gate: every measured atomic problem is a frozen row in its B/judge section below, and an interior verdict is the worst of its children.
 
-**Plan root:** ✅ SOLVED — 39/39 atomic problems green · 0 FAIL · 0 DEC-frozen (no card rows) · 0 v1 not assessed on this card · 19 interior problems.
+**Plan root:** ❌ FAILED — 39/39 atomic problems green · 0 FAIL · 0 DEC-frozen (no card rows) · 0 v1 not assessed on this card · 19 interior problems · 3 BACKWARD open.
 
 | Level | Node | What must be true | Atomic problems | Verdict |
 |---|---|---|---|---|
-| 0 | **G** A certified universal donor, delivered | What is the whole problem? | 39 atomic problems | ✅ PASS |
+| 0 | **G** A certified universal donor, delivered | What is the whole problem? | 39 atomic problems | ❌ FAIL |
 | 1 | **P1** The donor exists | Is there a per-stream artifact built from the right algebra, and is it an identity? | 4 atomic problems | ✅ PASS |
 | 2 | **B1** Lawful | Is the state built from the right algebra? | 2 atomic problems | ✅ PASS |
 | 2 | **B8** Reproducible | Is the artifact an identity? | 2 atomic problems | ✅ PASS |
@@ -222,7 +222,9 @@ The leg verdict above is computed from these rows; a task can PASS while its leg
 
 ## What is blocking (exact missing receipts)
 
-- nothing — all rows evaluated
+- `backward B-012 — DEC-598/599/600/601 are cited as load-bearing by PLAN/STATUS/card/plan_spec/report_card and the commit titles of e9dfd6b/0bc0d1f/7a3ae15, but have no entry in DECISIONS.md (log jumps DEC-596 -> DEC-603); DEC-597/602 are unallocated (no trace in git history).`
+- `backward B-013 — judge_leg_unsupervised.json is self-contradictory (working:true vs checks.unsupervised.working:false) with arms/diagnostics/path_a/excluded/checks byte-identical to the flat-era receipt at 379f189; rl/simulator legs carry flat-era arms; cause is stamp_merge_write merging keys measure_bc_bank.py never rewrites.`
+- `backward B-014 — At the SOLVED commit 38740c8 the AGENTS.md commit gates are red: ruff format --check fails on 9 scripts/ files (since 63e13da) and the fast pytest tier fails test_memory_guard (measure_port_demo.py + measure_red_king_known.py, added 75df2b0, absent from gpu_watchdog.DEFAULT_PATTERNS).`
 
 ## Backward requirements (from PROMPT_BACKWARD)
 
@@ -241,6 +243,13 @@ Principle-alignment findings live in `AUDIT.md`; the machine-readable gate is th
 | B-009 | MAJOR | P6/E10 | closed | The B gate is a mixed-artifact certification (base, port, bank). | Certify B on one served artifact. | A-009 |
 | B-010 | MAJOR | P6/E10 | closed | E1.b positive receipts are stale (behavior c6f56a2e vs df73c2aa). | Re-run intent/intent_long at the current behavior. | A-010 |
 | B-011 | MINOR | P6 | closed | The earlier audit status claimed no findings while the v1 receipts were unstamped and E1.b stale. | Tie the review verdict to receipt stamps. | A-011 |
+| B-012 | MAJOR | P6 | open | DEC-598/599/600/601 are cited as load-bearing by PLAN/STATUS/card/plan_spec/report_card and the commit titles of e9dfd6b/0bc0d1f/7a3ae15, bu | Append post-hoc-labeled DEC-598/599/600/601 entries reconstructed from commit messages + receipts + STATUS (record repair, B-012), seal 597/ | A-012 |
+| B-013 | MAJOR | P6/E10 | open | judge_leg_unsupervised.json is self-contradictory (working:true vs checks.unsupervised.working:false) with arms/diagnostics/path_a/excluded/ | measure_bc_bank.py writes a current checks rollup + bank-v2 arms for every leg it scores and drops the stale keys it redefines on merge; re- | A-013 |
+| B-014 | MAJOR | P6/E10 | open | At the SOLVED commit 38740c8 the AGENTS.md commit gates are red: ruff format --check fails on 9 scripts/ files (since 63e13da) and the fast  | ruff format the 9 scripts/ files; add both producers to DEFAULT_PATTERNS; ruff check + ruff format --check + pytest -m 'not slow' all RC=0;  | A-014 |
+| B-015 | MINOR | E10 | open | cfm_v2k_vf2_cert/bundle_receipt.json (the B-009 single-artifact manifest, registry 116087fb206c2d81) has no _meta stamp while all 23 row rec | build_b_cert_bundle.py stamps _meta on the bundle receipt; re-run the builder; bundle registry sha must remain 116087fb206c2d81 and the card | A-015 |
+| B-016 | MINOR | P6 | closed | The previous AUDIT §4 carried an orphaned table separator with B-004/B-010 rows duplicated outside the closed table, and §5 disclosed fast-t | Repair the file (defects in BACKWARD's own file may be fixed by the rewrite). | A-016 |
+| B-017 | INFO | P6/P8 | open | Supervised leg evidence discloses: 5/7 traits have vacuous negative controls (R2 < -1, wide-design conditioning artifact; frozen VACUOUS_CON | none required (disclosure); SPINE §5 baseline-vs-corollary ruling queued to the operator. | A-017 |
+| B-018 | INFO | E10 | open | plugin_acceptance.json (V1.2 reference receipt, n_rows 9) has no _meta; the gate receipt v1_plugins.json it points at is stamped (behavior d | none required (disclosure); stamp the reference on a future V1.2 producer pass. | A-018 |
 
 ---
 
