@@ -1,0 +1,18 @@
+{
+  "kind": "port_receipt",
+  "protocol": "DEC-572 bars on the served port object",
+  "products": "looking_glass/artifacts/cfm_v2k_vf2_bank",
+  "served_object": "bank 179 + measure PCA-128 (307 dims)",
+  "eff_rank": 30.907,
+  "persona_geometry": 0.267182,
+  "future_geometry": 0.176997,
+  "served_mean_r2": 0.459995,
+  "bars": {
+    "eff_rank": 30,
+    "persona": 0.15,
+    "r2": 0.45
+  },
+  "passed": true,
+  "stable": "frozen artifact; B1 canary from the B rows",
+  "complete": true
+}

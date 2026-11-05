@@ -411,6 +411,10 @@ V1 = (
     ),
 )
 
+#: DEC-frozen atoms closed by their own recorded evidence. E1.c is the DEC-572 port
+#: receipt (`lab/port_dec572.json`): bank + measure PCA-128 passes eff_rank/persona/R2.
+CLOSED = frozenset({"E1.c"})
+
 #: Stated references so the tree does not duplicate atoms: these v1 requirements are already
 #: owned elsewhere in the tree.
 V1_REFERENCES = (

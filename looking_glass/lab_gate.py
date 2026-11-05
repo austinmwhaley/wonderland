@@ -52,6 +52,8 @@ def _leak_score(parquet: Path) -> float:
 _TRANSITION = {
     "next_event",
     "intent",
+    "next_event_long",
+    "intent_long",
     "mask",
     "order",
     "next",

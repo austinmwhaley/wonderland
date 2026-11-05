@@ -1303,7 +1303,7 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
     # for it. An interior verdict is the worst of its children; a DEC-frozen atom renders
     # FRONTIER (no card row exists) and a v1 atom renders NOT ASSESSED. The root therefore
     # cannot read SOLVED while either scope is unmeasured — T0 is not SOLVED (integrity rule 2).
-    plan_verdicts = P.statuses({**verdicts, **b_verdicts})
+    plan_verdicts = P.statuses({**verdicts, **b_verdicts}, closed=P.CLOSED)
     census = P.census()
     card_atoms = [n for n in P.NODES if n.kind == "atomic" and n.evidence == "card"]
     plan_green = sum(1 for n in card_atoms if plan_verdicts.get(n.ident) == J.PASS)
@@ -1323,7 +1323,7 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
     )
     plan_scope = (
         f"{root_emoji} **Plan root:** {root_word} — {plan_green}/{census['atomic_total']} "
-        f"atomic problems green · {plan_fail} FAIL · {census['dec']} DEC-frozen · "
+        f"atomic problems green · {plan_fail} FAIL · {census['dec'] - len(P.CLOSED)} DEC-frozen · "
         f"{census['v1']} v1 unassessed · {census['interior']} interior{reds_txt}."
     )
     assessment_lines = [plan_scope, b_scope, c_scope, p_scope]
@@ -1348,7 +1348,7 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
         "interior verdict is the worst of its children.",
         "",
         f"**Plan root:** {root_emoji} {root_word} — {plan_green}/{census['atomic_total']} "
-        f"atomic problems green · {plan_fail} FAIL · {census['dec']} DEC-frozen (no card rows) "
+        f"atomic problems green · {plan_fail} FAIL · {census['dec'] - len(P.CLOSED)} DEC-frozen (no card rows) "
         f"· {census['v1']} v1 not assessed on this card · {census['interior']} interior "
         f"problems.",
         "",

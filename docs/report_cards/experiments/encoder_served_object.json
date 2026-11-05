@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "7baf744fc78ba3b3",
+    "behavior_hash": "f1617f4e2a2990ce",
     "command": "measure_served_object.py --products looking_glass/artifacts/cfm_v2k_vf2",
-    "generated_at": "2026-11-04T21:49:20+00:00",
-    "git_commit": "a086dd4c42d91ada3dc729427972e6e02414148b",
+    "generated_at": "2026-11-05T01:19:13+00:00",
+    "git_commit": "580b62c63b5ae3fcb7dd3f8b0fa34833b84d8eb0",
     "producer": "measure_served_object.py"
   },
   "arms": {
@@ -252,7 +252,7 @@
     "shape_served",
     "path_a"
   ],
-  "seconds": 21.4,
+  "seconds": 16.2,
   "validation": {
     "future_fields": [
       "x0",

@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "7baf744fc78ba3b3",
-    "command": "measure_stage_decomposition.py --products looking_glass/artifacts/cfm_v2k_vf2_bank",
-    "generated_at": "2026-11-05T00:55:53+00:00",
-    "git_commit": "e7918a4c95169e6015382b447ceb2060343d6d92",
+    "behavior_hash": "f1617f4e2a2990ce",
+    "command": "measure_stage_decomposition.py --products /tmp/opencode/cfmd_port128",
+    "generated_at": "2026-11-05T01:19:36+00:00",
+    "git_commit": "580b62c63b5ae3fcb7dd3f8b0fa34833b84d8eb0",
     "producer": "measure_stage_decomposition.py"
   },
   "attribution": {
@@ -17,11 +17,11 @@
   "n_pairs": 1101870,
   "n_score_B": 1485,
   "products": {
-    "path": "looking_glass/artifacts/cfm_v2k_vf2_bank",
+    "path": "/tmp/opencode/cfmd_port128",
     "registry_sha256": "919a932f1b657064",
     "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
   },
-  "seconds": 4.4,
+  "seconds": 4.5,
   "stages": {
     "M0_exact_counter": {
       "dim": 39,
@@ -68,15 +68,15 @@
       "segment_ari": -0.001114
     },
     "M4_served": {
-      "dim": 179,
-      "future_geometry": 0.213272,
+      "dim": 307,
+      "future_geometry": 0.176997,
       "future_geometry_n": 1485,
       "future_geometry_pairs": 1101870,
       "n": 1485,
-      "persona_geometry": 0.338608,
+      "persona_geometry": 0.267182,
       "persona_geometry_n": 1485,
       "persona_geometry_pairs": 1101870,
-      "segment_ari": -0.001381
+      "segment_ari": -0.001306
     }
   },
   "validation": {
@@ -90,7 +90,7 @@
       "regime_switches",
       "final_regime_days"
     ],
-    "m3_m4_distance_alignment": 0.207816,
+    "m3_m4_distance_alignment": 0.207811,
     "persona_fields": [
       "bayes_fwd_count_90d",
       "bayes_fwd_value_90d",

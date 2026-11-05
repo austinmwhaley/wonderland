@@ -21,6 +21,13 @@ POSITIVE: dict[str, DataSpec] = {
     "next_event": DataSpec("next_event", transition=True, intent=0.5, snr=1.0),
     # curriculum step 2 (DEC-586): dominant per-customer intent, sample-determined
     "intent": DataSpec("intent", transition=True, intent=5.0, snr=1.0, base_rate=0.3),
+    # DEC-599 branch (iii): same structures, twice the event budget per customer
+    "next_event_long": DataSpec(
+        "next_event_long", transition=True, intent=0.5, snr=1.0, window_days=730
+    ),
+    "intent_long": DataSpec(
+        "intent_long", transition=True, intent=5.0, snr=1.0, base_rate=0.3, window_days=730
+    ),
     "mask": DataSpec("mask", transition=True, intent=0.5, snr=1.0),
     "order": DataSpec("order", transition=True, intent=0.4, snr=1.0),
     "next_entity": DataSpec("next_entity", transition=True, n_entities=64, entity_affinity=0.7),
@@ -68,6 +75,8 @@ POSITIVE: dict[str, DataSpec] = {
 _TRANS = {
     "next_event",
     "intent",
+    "next_event_long",
+    "intent_long",
     "mask",
     "order",
     "next",

@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "7baf744fc78ba3b3",
+    "behavior_hash": "f1617f4e2a2990ce",
     "command": "scripts/measure_transfer_law.py --products looking_glass/artifacts/cfm_v2k_vf2_bank",
-    "generated_at": "2026-11-04T23:52:20+00:00",
-    "git_commit": "6b89e905a94bba5fe9266c8ff664a1098514ee16",
+    "generated_at": "2026-11-05T01:18:28+00:00",
+    "git_commit": "580b62c63b5ae3fcb7dd3f8b0fa34833b84d8eb0",
     "producer": "measure_transfer_law.py"
   },
   "bar": "E >= table on >= 0.667 of non-degenerate targets; family-mean difference > 0; family-mean E beats random and destroyed (DEC-596)",
@@ -47,7 +47,7 @@
     "registry_sha256": "919a932f1b657064",
     "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
   },
-  "seconds": 6.7,
+  "seconds": 7.6,
   "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899",
   "targets": [
     {
