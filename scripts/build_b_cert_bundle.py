@@ -36,7 +36,7 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts"))
 
 import b_spec as B  # noqa: E402
-from measure_input_law import products_identity  # noqa: E402
+from measure_input_law import products_identity, stamp_merge_write  # noqa: E402
 
 BANK = ROOT / "looking_glass/artifacts/cfm_v2k_vf2_bank"
 BASE = ROOT / "looking_glass/artifacts/cfm_v2k_vf2"
@@ -263,7 +263,10 @@ def main() -> int:
         "donor_only_diagnostic_sha256": _sha(diag_path),
         "seconds": round(time.perf_counter() - t0, 1),
     }
-    (DEST / "bundle_receipt.json").write_text(json.dumps(bundle, indent=1, sort_keys=True) + "\n")
+    # _meta through the shared stamper (DEC-609/B-015): the manifest is the single-artifact
+    # claim and must carry the same provenance as the 23 row receipts it maps. The registry
+    # (registry_{tag}.json) does not hash this receipt, so stamping moves no pinned sha.
+    stamp_merge_write(DEST / "bundle_receipt.json", bundle, " ".join(sys.argv), stamp_blocks=False)
     print(json.dumps({k: bundle[k] for k in ("tag", "products", "b_row_components")}, indent=1))
     print("WROTE", DEST / "bundle_receipt.json")
     return 0

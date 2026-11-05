@@ -11583,3 +11583,25 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   - **Principle.** Honest (a receipt may not contradict itself) · E10
     (provenance: every block in a receipt was written by the producer that
     measured it) · No gate change.
+
+- **DEC-609 (bundle manifest stamped — B-015 record repair; pre-registered
+  2026-11-05).**
+  - **NODE:** B (single-artifact certification record).
+  - **WHY-NOT.** BACKWARD B-015 (FULL at `38740c8`): `cfm_v2k_vf2_cert/
+    bundle_receipt.json` — the manifest the B-009 single-artifact closure and
+    the card's B scope line rest on — has no `_meta` (behavior/commit/producer/
+    command), while every one of the 23 row receipts it maps does.
+  - **MOVE (producer-side; no gate change).** `build_b_cert_bundle.py` stamps
+    `_meta` on `bundle_receipt.json` through the shared `stamp_merge_write`
+    (file-level stamp, `stamp_blocks=False` — the builder is the sole writer).
+    Re-run the builder idempotently. Frozen acceptance: receipt carries
+    `_meta`; the bundle registry sha stays `116087fb206c2d81` (the registry
+    covers `registry_{tag}.json` — bank registry + component manifest — not the
+    receipt); the card's B scope line unchanged; all commit gates RC=0.
+  - **Rejected.** Stamping the registry file itself (that would move the
+    registry sha the B scope line and every prior receipt pin — a gate-adjacent
+    change to fix a provenance gap, disproportionate); hand-writing `_meta`
+    into the receipt (a receipt not produced by its producer is not evidence).
+  - **Principle.** E10 (every artifact records the inputs/behavior that
+    produced it) · Honest (the manifest is the single-artifact claim; it
+    carries its own provenance) · No gate/bar change.
