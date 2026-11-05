@@ -11551,3 +11551,35 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
   - **Principle.** Honest (the record is repaired with the repair labeled, not
     laundered) · Diagnosable (the mechanism: a future citation hole fails the
     test, instead of a reader's memory).
+
+- **DEC-608 (leg receipts self-consistent — B-013 record repair; pre-registered
+  2026-11-05).**
+  - **NODE:** P4 (B+C consequence, judge legs).
+  - **WHY-NOT.** BACKWARD B-013 (FULL at `38740c8`): `judge_leg_unsupervised.json`
+    says `working: true` while `checks.unsupervised.working` is `false`, and all
+    four leg receipts carry flat-era `arms`/`checks`/`diagnostics`/`path_a`/
+    `incumbent` residue — `measure_bc_bank.py` writes `columns`/`working`/
+    `evidence` only, and `stamp_merge_write` merges into the existing file, so
+    the flat-era blocks survive every bank-era re-stamp. The card verdict
+    derives from `columns` under the frozen `_task_passes`, so no green is
+    false; the defect is receipt self-contradiction (integrity rule 7).
+  - **MOVE (producer-side; no gate/bar/fixture change).** `measure_bc_bank.py`
+    now writes, for every leg it scores: a current `checks` rollup
+    (`{leg: {working, evidence}}` from its own `_evidence`), bank-v2 `arms`
+    (the served block bank as the consumer, never "state_embeddings donor"),
+    and `path_a` from its own frozen-comparator metadata; `stamp_merge_write`
+    gains an optional `drop` so the bank producer drops the flat-era keys it
+    does not own (`diagnostics`, `incumbent`). Re-run all four legs.
+  - **Frozen acceptance.** `columns` byte-identical to the committed receipts
+    (determinism proof); `checks.<leg>.working == working` on all four; `arms`
+    describe the bank-v2 consumer; no flat-era block survives; all commit gates
+    RC=0; behavior hash `df73c2aa` unchanged (receipts + `scripts/` only).
+  - **Rejected.** Editing the four receipts by hand (a receipt that is not the
+    producer's own output is not evidence); making the renderer trust or
+    ignore `checks` (the card must not depend on which block a reader picks);
+    keeping the flat-era `diagnostics.ledger_only` block in the bank receipt
+    (its disclosure survives in the B-017 finding text and git history; the
+    bank receipt records the bank measurement).
+  - **Principle.** Honest (a receipt may not contradict itself) · E10
+    (provenance: every block in a receipt was written by the producer that
+    measured it) · No gate change.

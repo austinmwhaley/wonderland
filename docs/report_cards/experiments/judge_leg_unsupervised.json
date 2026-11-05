@@ -1,20 +1,20 @@
 {
   "_meta": {
     "behavior_hash": "df73c2aa1427b471",
-    "command": "scripts/measure_bc_bank.py --products looking_glass/artifacts/cfm_v2k_vf2_bank --demo looking_glass/artifacts/demo_v2 --out-dir docs/report_cards/experiments",
-    "generated_at": "2026-11-05T04:12:17+00:00",
-    "git_commit": "7a3ae1519b2a2d27d4ce58074a9d4d613fffb800",
+    "command": "scripts/measure_bc_bank.py",
+    "generated_at": "2026-11-05T08:31:57+00:00",
+    "git_commit": "77200093cd7bbf6da50497881b896823485ba2d8",
     "producer": "measure_bc_bank.py"
   },
   "arms": {
-    "brain": "state_embeddings donor; pairwise-distance and k-means geometry",
-    "brain_ledger": "brain + measure view (ledger), same distance/clustering geometry",
+    "brain": "served block bank (DEC-598); per-block distances z-scored on A, non-negative block weights fit on split-A pairs, scored on B; segment uses the served profile block",
+    "brain_ledger": "bank + judge_ledger (PCA-39), same distance/clustering geometry",
     "pathA": "PATH A wide table, z-scored on split A only, same geometry"
   },
   "checks": {
     "unsupervised": {
       "evidence": "3 live task(s) (+0 degenerate) on n=1485 B-rows scored against 3515 A-rows; comparator PATH A (GBM incumbent); table 41 cols / 5000 customers; brain+ledger 3 task(s)",
-      "working": false
+      "working": true
     }
   },
   "columns": {
@@ -154,18 +154,17 @@
     }
   },
   "complete": true,
-  "diagnostics": {},
-  "evidence": "3 live task(s) (+0 degenerate) on n=1485 B-rows scored against 3515 A-rows; comparator PATH A (GBM incumbent); brain+ledger 3 task(s)",
+  "evidence": "3 live task(s) (+0 degenerate) on n=1485 B-rows scored against 3515 A-rows; comparator PATH A (GBM incumbent); table 41 cols / 5000 customers; brain+ledger 3 task(s)",
   "excluded": [],
   "kind": "judge_leg",
   "path_a": {
     "columns": 41,
     "n_present": 5000,
     "n_requested": 5000,
-    "source": "looking_glass/artifacts/demo_v2/path_a/path_a_wide_table.parquet"
+    "source": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/demo_v2/path_a/path_a_wide_table.parquet"
   },
   "products": {
-    "path": "looking_glass/artifacts/cfm_v2k_vf2_bank",
+    "path": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k_vf2_bank",
     "registry_sha256": "919a932f1b657064",
     "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
   },

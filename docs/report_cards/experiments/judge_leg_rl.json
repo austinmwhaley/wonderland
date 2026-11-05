@@ -1,14 +1,14 @@
 {
   "_meta": {
     "behavior_hash": "df73c2aa1427b471",
-    "command": "scripts/measure_bc_bank.py --products looking_glass/artifacts/cfm_v2k_vf2_bank --demo looking_glass/artifacts/demo_v2 --out-dir docs/report_cards/experiments",
-    "generated_at": "2026-11-05T04:12:21+00:00",
-    "git_commit": "7a3ae1519b2a2d27d4ce58074a9d4d613fffb800",
+    "command": "scripts/measure_bc_bank.py",
+    "generated_at": "2026-11-05T08:31:59+00:00",
+    "git_commit": "77200093cd7bbf6da50497881b896823485ba2d8",
     "producer": "measure_bc_bank.py"
   },
   "arms": {
-    "brain": "state_embeddings donor + linear ridge head on the identified uplift",
-    "brain_ledger": "brain + measure view (ledger), same head and rows",
+    "brain": "served block bank (DEC-598) + linear ridge head on the identified uplift (canonical leg)",
+    "brain_ledger": "bank + judge_ledger, same head and rows",
     "pathA": "PATH A wide table + the DEC-428 GBM incumbent, same rows"
   },
   "checks": {
@@ -82,7 +82,6 @@
     }
   },
   "complete": true,
-  "diagnostics": {},
   "evidence": "2 live task(s) (+0 degenerate) on n=1485 B-rows scored against 3515 A-rows; comparator PATH A (GBM incumbent); table 41 cols / 5000 customers; brain+ledger 2 task(s)",
   "excluded": [],
   "identified": {
@@ -94,10 +93,10 @@
     "columns": 41,
     "n_present": 5000,
     "n_requested": 5000,
-    "source": "looking_glass/artifacts/demo_v2/path_a/path_a_wide_table.parquet"
+    "source": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/demo_v2/path_a/path_a_wide_table.parquet"
   },
   "products": {
-    "path": "looking_glass/artifacts/cfm_v2k_vf2_bank",
+    "path": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k_vf2_bank",
     "registry_sha256": "919a932f1b657064",
     "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
   },

@@ -485,7 +485,12 @@ def products_identity(products) -> dict:
 
 
 def stamp_merge_write(
-    out_path: Path, stages: dict, command: str, *, stamp_blocks: bool = True
+    out_path: Path,
+    stages: dict,
+    command: str,
+    *,
+    stamp_blocks: bool = True,
+    drop: tuple[str, ...] = (),
 ) -> dict:
     """Stamp _meta (freshness law) and merge stage blocks into the judge receipt.
 
@@ -501,6 +506,11 @@ def stamp_merge_write(
 
     `stamp_blocks=False` is for a receipt written whole by ONE producer (a leg file), where the
     file-level `_meta` already describes every byte of it and per-block stamps would be noise.
+
+    `drop` names keys this producer no longer owns: a merge that only adds keys lets a
+    superseded block (e.g. a flat-era consumer description inside a bank-era leg receipt)
+    survive every re-stamp, so the receipt contradicts itself. A producer writes fresh values
+    for every key it owns and drops the rest (DEC-608).
     """
     existing = {}
     p = Path(out_path)
@@ -509,6 +519,8 @@ def stamp_merge_write(
             existing = json.loads(p.read_text())
         except Exception:  # noqa: BLE001 - rebuild rather than merge with garbage
             existing = {}
+    for key in drop:
+        existing.pop(key, None)
     stamp = {
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "git_commit": RC.git("rev-parse", "HEAD"),

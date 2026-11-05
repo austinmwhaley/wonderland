@@ -59,6 +59,45 @@ DEFAULT_PRODUCTS = ROOT / "looking_glass/artifacts/cfm_v2k_vf2_bank"
 DEFAULT_DEMO = ROOT / "looking_glass/artifacts/demo_v2"
 ALPHA = 10.0
 
+# The receipt's `arms` must describe the consumer THIS producer measured, not the flat-era
+# donor: a merge that only adds keys lets the old description survive every bank-era re-stamp
+# and contradict the receipt's own `protocol` (B-013/DEC-608). One definition per leg.
+BANK_ARMS = {
+    "supervised": {
+        "brain": (
+            "served block bank cfm_v2k_vf2_bank (179 dims, DEC-598) + standardized ridge "
+            "alpha=10 (progress arm)"
+        ),
+        "brain_ledger": "bank + compact judge_ledger (PCA-39, fit on split A) — delivery arm",
+        "pathA": "PATH A wide table, canonical GBM incumbent (frozen comparator), same rows",
+    },
+    "unsupervised": {
+        "brain": (
+            "served block bank (DEC-598); per-block distances z-scored on A, non-negative "
+            "block weights fit on split-A pairs, scored on B; segment uses the served "
+            "profile block"
+        ),
+        "brain_ledger": "bank + judge_ledger (PCA-39), same distance/clustering geometry",
+        "pathA": "PATH A wide table, z-scored on split A only, same geometry",
+    },
+    "rl": {
+        "brain": (
+            "served block bank (DEC-598) + linear ridge head on the identified uplift "
+            "(canonical leg)"
+        ),
+        "brain_ledger": "bank + judge_ledger, same head and rows",
+        "pathA": "PATH A wide table + the DEC-428 GBM incumbent, same rows",
+    },
+    "simulator": {
+        "brain": (
+            "served block bank (DEC-598): dose-curve task on a single [bank; level] head; "
+            "argmax task on per-level heads querying the bank at each action (canonical leg)"
+        ),
+        "brain_ledger": "bank + judge_ledger, same heads and cells",
+        "pathA": "PATH A wide table + level one-hot -> the DEC-428 GBM incumbent, same cells",
+    },
+}
+
 
 def _load(products: Path, demo: Path):
     import duckdb
@@ -288,12 +327,28 @@ def main() -> int:
             continue
         body["products"] = products_identity(str(products))
         body["splits"] = {"n_fit_A": len(akeys), "n_score_B": len(bkeys)}
+        # producer-owned provenance blocks, written fresh on every run: the frozen
+        # comparator's metadata, the bank-v2 consumer description, and a `checks` rollup
+        # that is this run's own working state (the flat-era residue is dropped below so a
+        # re-stamp can never contradict `protocol` again).
+        body["path_a"] = arms["path_a"]
+        body["arms"] = BANK_ARMS[leg]
         working, evidence = _evidence(leg, body)
         body.update({"working": working, "evidence": evidence})
+        body["checks"] = {leg: {"working": working, "evidence": evidence}}
+        # the canonical LEG bodies carry a flat-era provenance block this producer does not
+        # own (an empty `diagnostics`; the supervised receipt's `incumbent` record): strip it
+        # so the bank receipt never re-adds what `drop` removes from the previous file.
+        body.pop("diagnostics", None)
+        body.pop("incumbent", None)
         body["kind"] = "judge_leg"
         body["complete"] = True
         stamp_merge_write(
-            out_dir / f"judge_leg_{leg}.json", body, " ".join(sys.argv), stamp_blocks=False
+            out_dir / f"judge_leg_{leg}.json",
+            body,
+            " ".join(sys.argv),
+            stamp_blocks=False,
+            drop=("diagnostics", "incumbent"),
         )
         print(f"bc-bank {leg}: working={working} {evidence[:180]}")
     print(f"WROTE judge_leg_*.json ({time.perf_counter() - t0:.0f}s)")
