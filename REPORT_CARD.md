@@ -1,11 +1,11 @@
 # REPORT_CARD — B foundational, then PATH B > PATH A
 
-*Generated `2026-11-05T00:12:30+00:00` · commit `440226f` (`foundation-rebuild` · dirty) · encoder behavior `7baf744fc78ba3b3`*
+*Generated `2026-11-05T00:56:56+00:00` · commit `e7918a4` (`foundation-rebuild` · dirty) · encoder behavior `7baf744fc78ba3b3`*
 
 **Assessment:**
 
-- ⚪ **Plan root:** OPEN — 31/39 atomic problems green · 0 FAIL · 3 DEC-frozen · 5 v1 unassessed · 19 interior.
-- ✅ **B foundational:** CERTIFIED — 8/8 sections green. Scope: the 23 receipts are current at behavior `7baf744f`; the served-composition rows (B4.2/B5.1/B6.2/B6.3) read the derived bank (`c32rvd` + profile/numeric/mass blocks; B6.2 uses the 59-dim donor slice), the rest the base candidate/encoder. B6.2 uses the recorded ensemble protocol and B4.2 the randomized-period protocol; both are on the receipts.
+- ❌ **Plan root:** FAILED — 28/39 atomic problems green · 3 FAIL · 3 DEC-frozen · 5 v1 unassessed · 19 interior · reds: P2 (3).
+- ❌ **B foundational:** NOT CERTIFIED — the current gate. 7/8 sections green · 20 rows PASS · 3 FAIL · 0 UNKNOWN/MISSING.
 - ✅ **B+C consequence:** DONE (ENCODER DONE v1) — 8/8 legs green · stages 6/6 · no BREAKING/MAJOR backward requirement. Bank v2 (DEC-598): the served block bank + compact judge ledger; the v1 flat judge (4/8) and the GBM delivery head are recorded beside it.
 - ⚪ **Project v1:** plugin acceptance 9/9 on the bank + demo stream (supervised 6/6, unsupervised 4/4, white_queen 5/5, Layer C 9/9); red_king/red_queen/caterpillar and the identifiable-stream metadata remain unassessed.
 
@@ -16,16 +16,16 @@ Ledger points never count as progress: `brain alone` is the judge, `brain + ledg
 
 The goal, cut backwards into the problems that must all be solved, recursively to the atomic problems. This section is generated from `scripts/plan_spec.py` — the single definition of the tree; `PLAN.md` is its readable render. The plan defines no gate: every measured atomic problem is a frozen row in its B/judge section below, and an interior verdict is the worst of its children.
 
-**Plan root:** ⚪ OPEN — 31/39 atomic problems green · 0 FAIL · 3 DEC-frozen (no card rows) · 5 v1 not assessed on this card · 19 interior problems.
+**Plan root:** ❌ FAILED — 28/39 atomic problems green · 3 FAIL · 3 DEC-frozen (no card rows) · 5 v1 not assessed on this card · 19 interior problems.
 
 | Level | Node | What must be true | Atomic problems | Verdict |
 |---|---|---|---|---|
-| 0 | **G** A certified universal donor, delivered | What is the whole problem? | 39 atomic problems | ❔ UNKNOWN |
+| 0 | **G** A certified universal donor, delivered | What is the whole problem? | 39 atomic problems | ❌ FAIL |
 | 1 | **P1** The donor exists | Is there a per-stream artifact built from the right algebra, and is it an identity? | 4 atomic problems | ✅ PASS |
 | 2 | **B1** Lawful | Is the state built from the right algebra? | 2 atomic problems | ✅ PASS |
 | 2 | **B8** Reproducible | Is the artifact an identity? | 2 atomic problems | ✅ PASS |
-| 1 | **P2** The donor suffices | Does the embedding lose nothing that matters about the future — for prediction and decision — … | 11 atomic problems | ❔ UNKNOWN |
-| 2 | **B2** Sufficient | Does B lose nothing about the future? | 3 atomic problems | ✅ PASS |
+| 1 | **P2** The donor suffices | Does the embedding lose nothing that matters about the future — for prediction and decision — … | 11 atomic problems | ❌ FAIL |
+| 2 | **B2** Sufficient | Does B lose nothing about the future? | 3 atomic problems | ❌ FAIL |
 | 2 | **E1** Trunk capacity (the state-update algebra) | Can the state carry the stream's structure — not just its mass? | 3 atomic problems | ⚪ FRONTIER |
 | 3 | **E1.a** next_event mastered on the toy (curriculum step 1) | Does the frozen trunk beat the 1-gram on the known-truth next_event structure at the dev-rig … | — | ⚪ FRONTIER |
 | 3 | **E1.b** intent mastered on the toy (curriculum step 2) | Does the frozen trunk beat the 1-gram on the per-customer intent structure, at a scale where … | — | ⚪ FRONTIER |
@@ -79,15 +79,15 @@ The judge below is the **consequence** (B+C). This section is **B itself**: a ro
 | B1.1 | Lawful dynamics (S3) | merge/equivariance/mass-additivity exact on data; tau receipted; stable from step 0 | reporting | ✅ PASS | judge_stages.json:S3 working=True |
 | B1.2 | Construction laws (C1-C6) | scan / field-permutation / mass / determinism / schema variant / frozen identity | quality | ✅ PASS | C1-C6 all met: field-perm 1.714e-07 · scan 1.105e-15 · mass 4.819e-16 · determinism bit-identical · schema variant ok · identity present (N=20, cpu) |
 
-### B2 — Sufficient · ✅ PASS
+### B2 — Sufficient · ❌ FAIL
 
 *Does B lose nothing about the future?*
 
 | # | Property | Metric | Green means | Verdict | Evidence / missing producer |
 |---|---|---|---|---|---|
-| B2.1 | Worst-case sufficiency U | U = 1 - worst-case oracle gap vs full history, fixed capacity, broad published family | quality | ✅ PASS | served U 0.9802 (bar 0.5, DEC-570) · worst probe next-type · 1/5 probes included · excluded: attr-next, dt, horizon-count-value, numeric-next |
-| B2.2 | Full-history oracle gap | excess loss of E vs the full-history arm at fixed capacity, per included probe | quality | ✅ PASS | every included probe clears the bar · next-type 0.9802 |
-| B2.3 | Learned-only attribution | sufficiency of the learned shape vs the served statistics, reported separately | reporting | ✅ PASS | learned-only U 1.0764 · worst probe next-type · learned shape carries (the ledger does not add) |
+| B2.1 | Worst-case sufficiency U | U = 1 - worst-case oracle gap vs full history, fixed capacity, broad published family | quality | ❌ FAIL | encoder_sufficiency_law.json: sufficiency receipt incomplete |
+| B2.2 | Full-history oracle gap | excess loss of E vs the full-history arm at fixed capacity, per included probe | quality | ❌ FAIL | encoder_sufficiency_law.json: sufficiency receipt incomplete |
+| B2.3 | Learned-only attribution | sufficiency of the learned shape vs the served statistics, reported separately | reporting | ❌ FAIL | encoder_sufficiency_law.json: sufficiency receipt incomplete |
 
 ### B3 — Accessible · ✅ PASS
 
@@ -96,10 +96,10 @@ The judge below is the **consequence** (B+C). This section is **B itself**: a ro
 | # | Property | Metric | Green means | Verdict | Evidence / missing producer |
 |---|---|---|---|---|---|
 | B3.1 | Outlet accessibility (S4) | per-bucket accessibility parity + per-bucket negative controls | reporting | ✅ PASS | judge_stages.json:S4 working=True |
-| B3.2 | Stage decomposition M0->M1->served | the fine-structure metric at each stage, so a loss is attributed to a stage | reporting | ✅ PASS | complete · persona M0 0.1965 → M1 0.05979 → served 0.09277 · future M0 0.1755 → M1 0.09209 → served 0.1108 · largest drop M0_exact_counter->M1_fold_only · M3/M4 0.2043 |
-| B3.3 | Linear accessibility (current) | mean ridge R2 on A->B over the lab's persona+future fields; served vs PATH A | quality | ✅ PASS | served 0.4865 vs PATH A 0.4126 (delta +0.0739, margin -0.01; n_fields 11) |
-| B3.4 | Block-aware serving geometry | exact counter block beside the learned shape, equal total variance; persona/future/ARI | reporting | ✅ PASS | complete · persona served 0.09277 / counter 0.1965 / block 0.1166 / PATH A 0.3867 · future served 0.1108 / counter 0.1755 / block 0.1299 / PATH A 0.181 · counter-weight sensitivity flat (block scale erased by per-dim z-score; dimension count is the lever) |
-| B3.5 | Equal-dimension serving geometry | shape PCA + counter tile at 128/128 and 39/39; persona/future/ARI at full size | reporting | ✅ PASS | complete · persona equal_39 0.2213 / equal_128 0.1715 / counter 0.1965 / shape_pca_39 0.1615 / PATH A 0.3867 · future equal_39 0.1618 / equal_128 0.1377 / counter 0.1755 / PATH A 0.181 |
+| B3.2 | Stage decomposition M0->M1->served | the fine-structure metric at each stage, so a loss is attributed to a stage | reporting | ✅ PASS | complete · persona M0 0.1965 → M1 0.05979 → served 0.3386 · future M0 0.1755 → M1 0.09209 → served 0.2133 · largest drop M0_exact_counter->M1_fold_only · M3/M4 0.2078 |
+| B3.3 | Linear accessibility (current) | mean ridge R2 on A->B over the lab's persona+future fields; served vs PATH A | quality | ✅ PASS | served 0.4693 vs PATH A 0.4126 (delta +0.0568, margin -0.01; n_fields 11) |
+| B3.4 | Block-aware serving geometry | exact counter block beside the learned shape, equal total variance; persona/future/ARI | reporting | ✅ PASS | complete · persona served 0.3386 / counter 0.1965 / block 0.3177 / PATH A 0.3867 · future served 0.2133 / counter 0.1755 / block 0.2127 / PATH A 0.181 · counter-weight sensitivity flat (block scale erased by per-dim z-score; dimension count is the lever) |
+| B3.5 | Equal-dimension serving geometry | shape PCA + counter tile at 128/128 and 39/39; persona/future/ARI at full size | reporting | ✅ PASS | complete · persona equal_39 0.253 / equal_128 0.136 / counter 0.1965 / shape_pca_39 0.2184 / PATH A 0.3867 · future equal_39 0.1751 / equal_128 0.08084 / counter 0.1755 / PATH A 0.181 |
 | B3.6 | Served-object X-ray (ledger exposure) | the ledger alone, its named parts, and ledger block-PCA under the frozen B3.2/B3.4 consumers, against {exact counter, served shape, PATH A}; the branch is computed here from the arm numbers (DEC-569) | reporting | ✅ PASS | complete · branch exposure (DEC-569: best ledger arm persona 0.3196 from part_numeric_stats; full 0.01722 / pca_39 0.2012 / pca_128 0.1036) · references persona counter 0.1965 / shape 0.09277 / PATH A 0.3867 · linear access ledger_full 0.3551 / counter 0.4058 / shape 0.4865 / PATH A 0.4126 |
 
 ### B4 — Decisive · ✅ PASS
@@ -222,7 +222,9 @@ The leg verdict above is computed from these rows; a task can PASS while its leg
 
 ## What is blocking (exact missing receipts)
 
-- nothing — all rows evaluated
+- `B B2.1 [P2·B2] Worst-case sufficiency U — encoder_sufficiency_law.json: sufficiency receipt incomplete`
+- `B B2.2 [P2·B2] Full-history oracle gap — encoder_sufficiency_law.json: sufficiency receipt incomplete`
+- `B B2.3 [P2·B2] Learned-only attribution — encoder_sufficiency_law.json: sufficiency receipt incomplete`
 
 ## Backward requirements (from PROMPT_BACKWARD)
 
