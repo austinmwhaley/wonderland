@@ -9,7 +9,7 @@
 > **This file carries no measurements.** The single measurement surface — every metric, verdict,
 > comparator, CI and N — is `REPORT_CARD.md`; this file only records requirements and findings.
 >
-> **Status:** FULL BACKWARD re-review 2026-11-04 at commit `e72c795`, behavior
+> **Status:** FULL BACKWARD re-review 2026-11-04 at commit `75df2b0`, behavior
 > `df73c2aa1427b471`, artifact tag `0.11.1r490760-b64d256e3lr4e-05o4c3b5899`, bank registry
 > `919a932f1b657064`, certification bundle `cfm_v2k_vf2_cert` registry `116087fb206c2d81`.
 > **All 11 findings are closed:** 8 by evidence (B-002, B-004, B-005, B-006, B-007, B-009, B-010,
