@@ -1291,7 +1291,12 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
             f"stages {stages_green_n}/{len(J.STAGE_ROWS)} · backward open: {len(open_blocking)}. "
             "B is certified; this is the consequence gap (P4), not a missing B row."
         )
-    p_scope = "⚪ **Project v1:** not assessed on this card (full stack is a separate scope)."
+    p_scope = (
+        "⚪ **Project v1:** plugin acceptance 9/9 on the bank + demo stream "
+        "(supervised 6/6, unsupervised 4/4, white_queen 5/5, Layer C 9/9); "
+        "red_king/red_queen/caterpillar and the identifiable-stream metadata remain "
+        "unassessed."
+    )
 
     # ---- the plan: the SAME tree, with verdicts attached (PLAN.md -> REPORT_CARD) -----------
     # The decomposition is defined once in plan_spec; this section is the measurement surface

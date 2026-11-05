@@ -11,12 +11,13 @@ from __future__ import annotations
 
 import argparse
 import json
+from pathlib import Path
 
-from .base import CFM_PRODUCTS, WORK
+from .base import CFM_PRODUCTS, STREAM_DB, WORK
 
 
 def _registry_for(tag):
-    p = WORK / "looking_glass" / "artifacts" / "cfm" / f"registry_{tag.replace('.', '_')}.json"
+    p = CFM_PRODUCTS.parent / f"registry_{tag.replace('.', '_')}.json"
     return json.loads(p.read_text()) if p.exists() else None
 
 
@@ -24,6 +25,10 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description="Layer C acceptance")
     ap.add_argument("--window", type=int, default=365)
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument(
+        "--out",
+        default=str(WORK / "docs" / "report_cards" / "experiments" / "plugin_acceptance.json"),
+    )
     a = ap.parse_args(argv)
     import duckdb
 
@@ -69,6 +74,24 @@ def main(argv=None):
     from .base import gate
 
     ok = gate(rows, "LAYER C ACCEPTANCE")
+    out = Path(a.out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(
+        json.dumps(
+            {
+                "kind": "plugin_acceptance",
+                "ok": bool(ok),
+                "rows": rows,
+                "products": str(CFM_PRODUCTS),
+                "stream": str(STREAM_DB),
+                "window": a.window,
+                "seed": a.seed,
+            },
+            indent=2,
+        )
+        + "\n"
+    )
+    print(f"WROTE {out}")
     return 0 if ok else 1
 
 

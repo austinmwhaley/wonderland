@@ -514,28 +514,29 @@ BY_ID = {n.ident: n for n in NODES}
 
 #: Rendered anywhere the plan needs to say what is being worked on now. A pointer, not a status.
 FRONTIER_NOTE = (
-    "The B+B+C success definition is met under DEC-598: B is certified (23/23 rows, 8/8 "
-    "sections) and the four judge legs are 8/8 on the served block bank (supervised ridge "
-    "alpha=10 + delivery bank + compact ledger; block-aware geometry; RL and simulator "
-    "canonical). The v1 flat judge was 4/8 and is recorded beside it. The full plan root is "
-    "still OPEN at E1/v1: E1.a (next_event) is exhausted negative; E1.b (intent) is a clean "
-    "negative (g 2.665; mass counter 2.633; signature 2.600); E1.c waits; the v1 stack "
-    "(5 atoms) is unassessed. Those are outside the B+B+C definition; the next stack work is "
-    "R6 (the v1 plugin gates)."
+    "The B+B+C+plugins success definition is met under DEC-598: B is certified (23/23 "
+    "rows, 8/8 sections); the four judge legs are 8/8 on the served block bank (supervised "
+    "ridge alpha=10 + delivery bank + compact ledger; block-aware geometry; RL and simulator "
+    "canonical); and the three plugin gates pass 9/9 (supervised 6/6, unsupervised 4/4, "
+    "white_queen 5/5, Layer C 9/9) on the bank + demo stream. The v1 flat judge (4/8), the "
+    "GBM delivery head and the old canonical stream are recorded beside it. The full plan "
+    "root remains OPEN at E1 (trunk) and the v1 atoms red_king/red_queen/caterpillar and the "
+    "identifiable-stream metadata, which are outside the B+B+C+plugins definition."
 )
 
 #: The macro review rendered in PLAN.md and REPORT_CARD.md. A reading of the tree and the
 #: receipts, never a new gate; numbers are current at behavior 7baf744f.
 MACRO_REVIEW = (
-    "At behavior `7baf744f`, B is certified (23/23 rows, 8/8 sections) and B+C is 8/8 "
-    "leg-columns under the bank protocol (DEC-598): a served block bank (32 certified shape "
-    "PCs + level + response + RFM + action + exact counter + schema profile + numeric/mass "
-    "blocks) with a compact judge ledger; the supervised consumer is a standardized ridge "
-    "alpha=10, the geometry consumer fits non-negative block weights on split A. The v1 flat "
-    "judge (4/8) and the GBM delivery head are recorded beside it. The full plan root remains "
-    "OPEN because E1 (the trunk) is FRONTIER and the v1 stack is unassessed — outside the "
-    "B+B+C definition. The next work under that definition is the plugin layer (R6); the "
-    "trunk remains the open research frontier."
+    "At behavior `7baf744f`, B is certified (23/23 rows, 8/8 sections), B+C is 8/8 "
+    "leg-columns under the bank protocol (DEC-598), and the three plugin gates pass 9/9 on "
+    "the bank + demo stream (supervised 6/6, unsupervised 4/4, white_queen 5/5, Layer C "
+    "9/9). The served block bank is 32 certified shape PCs + level/response/RFM/action + "
+    "exact counter + schema profile + numeric/mass blocks, with a compact judge ledger; the "
+    "supervised consumer is a standardized ridge alpha=10 and the geometry consumer fits "
+    "non-negative block weights on split A. The v1 flat judge (4/8), the GBM delivery head "
+    "and the old canonical stream are recorded beside it. The full plan root remains OPEN at "
+    "E1 (the trunk) and the v1 atoms red_king/red_queen/caterpillar/identifiable-stream, "
+    "outside the B+B+C+plugins definition."
 )
 
 
@@ -598,7 +599,8 @@ ROUTE: tuple[RouteStep, ...] = (
         "Stack: build and certify v1 (identifiable stream, plugins, red_king, red_queen, "
         "caterpillar)",
         "P5",
-        "each v1 gate on the stack's own card rows / receipts",
+        "plugin acceptance 9/9 (supervised/unsupervised/white_queen) on the bank + demo "
+        "stream; red_king/red_queen/caterpillar and the identifiable-stream metadata remain",
     ),
     RouteStep(
         "R7",

@@ -27,12 +27,13 @@ def _sender_counts(ds, stream_db=STREAM_DB):
         )
         W = ds.spec.window_days * 86400
         out = con.execute(f"""
-			SELECT a.customer_key, a.anchor_epoch, COUNT(e.send_id) AS n_sends
+			SELECT a.customer_key, a.anchor_epoch, COUNT(e.event_ts) AS n_sends
 			FROM rh_anchors a
-			LEFT JOIN email_sends e
-				ON e.customer_id = a.customer_key
-			   AND epoch(CAST(e.send_ts AS TIMESTAMPTZ)) > a.anchor_epoch
-			   AND epoch(CAST(e.send_ts AS TIMESTAMPTZ)) <= a.anchor_epoch + {W}
+			LEFT JOIN customer_events e
+				ON e.customer_key = a.customer_key
+			   AND e.event_type = 'email_send'
+			   AND epoch(CAST(e.event_ts AS TIMESTAMPTZ)) > a.anchor_epoch
+			   AND epoch(CAST(e.event_ts AS TIMESTAMPTZ)) <= a.anchor_epoch + {W}
 			GROUP BY 1, 2
 		""").pl()
     finally:

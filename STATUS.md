@@ -16,12 +16,11 @@ all get signal from it through simple heads.
 `brain alone` = **progress**, `brain + ledger` = **delivery** (non-inferiority). Ledger points are
 never a brain win.
 
-**Stage:** Layer 0 — **B is CERTIFIED** (23/23 rows, 8/8 sections at behavior `7baf744f`).
-The current gate is the **P4 consequence** (4/8 judge leg-columns); **E1** is FRONTIER
-(E1.b executed negative); the **v1 scope** (5 atoms) is unassessed. **Macro review
-2026-11-04:** the remaining gap is state geometry — the mean state carries first-order shape
-but not per-customer transition/segment geometry; serving-side blocks trade persona, future
-and segment rather than satisfying all three. **Macro reframe DEC-567 (2026-11-02):** the X-ray is far
+**Stage:** Layer 0 — **B is CERTIFIED** (23/23 rows, 8/8 sections at behavior `7baf744f`);
+**B+C is DONE** (8/8 judge leg-columns, bank v2, DEC-598); the **three plugin gates pass
+9/9** on the bank + demo stream. The full plan root is **OPEN 31/39** at **E1** (trunk,
+FRONTIER) and the v1 atoms red_king/red_queen/caterpillar/identifiable-stream, outside the
+B+B+C+plugins success definition. **Macro reframe DEC-567 (2026-11-02):** the X-ray is far
 enough to locate the gaps (exposure / learning / decision objective). **Scope tightening DEC-568
 (2026-11-02):** B-only for now — every DEC-567 option re-anchored to B's own rows; B+C kept on the
 card as a reported consequence, not the near-term target. **D2–D5 accepted 2026-11-02**
@@ -284,6 +283,17 @@ histogram half; it is not the missing piece.
   block is 0.5976/0.5976. Staged (`/tmp/opencode/stat_bank_v4.py` +
   `stream_block_source.patch`); tree `d5df3a2c`. Next: stream-source block in
   state/replica/anchors; the `value_col` retrain; the re-stamp.
+- **B+C DONE + plugins 9/9 (DEC-598, 2026-11-04).** The served block bank
+  `cfm_v2k_vf2_bank` is 179 dims (32 certified shape PCs + level/response/RFM/action +
+  exact counter 39 + schema profile 8 + numeric_stats 60 + event_mass 7 + return_ratio 6)
+  with a compact judge ledger (PCA-39, fit on A). Judge v2: supervised standardized ridge
+  alpha=10 (7/7 tasks, x0/price/return CIs positive), block-aware geometry (persona 0.398
+  vs 0.387, future 0.193/0.198 vs 0.181, segment 1.0 vs 0.267), RL/simulator pass; the v1
+  flat judge (4/8) and GBM delivery are recorded. B on the bank: B5.1 32/147, B6.2 donor
+  slice 59 (0.6096/0.6216/0.7388; CIs +0.0008/+0.0052/+0.0037), B6.3 13/15 +0.0475,
+  B4.2 OPE 0.1701 vs 0.1517 (CI lo 0.012). Plugins on the bank + demo stream: acceptance
+  **9/9** (supervised 6/6, unsupervised 4/4, white_queen 5/5, Layer C 9/9). B 23/23, B+C
+  8/8, root **OPEN 31/39** (0 FAIL; E1 3 DEC-frozen, v1 red_king/red_queen/caterpillar).
 - **B foundational CERTIFIED (DEC-595/596, 2026-11-04).** All 23 B atomic problems
   green: 23 PASS / 0 FAIL / 0 UNKNOWN, 8/8 sections; root 27/39. B4.2 PASS on the served
   59-dim E (`c32rvd`): randomized daily offer periods, same-day purchase reward, per-level

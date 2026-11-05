@@ -1,0 +1,55 @@
+{
+  "kind": "plugin_acceptance",
+  "ok": true,
+  "rows": [
+    {
+      "check": "CFM registry present for embedding version",
+      "achieved": true,
+      "ok": true
+    },
+    {
+      "check": "static embedding table non-empty",
+      "achieved": 8835,
+      "ok": true
+    },
+    {
+      "check": "embedding table single version",
+      "achieved": 1,
+      "ok": true
+    },
+    {
+      "check": "embedding version has a CFM registry",
+      "achieved": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899",
+      "ok": true
+    },
+    {
+      "check": "supervised plugin independent gate",
+      "achieved": true,
+      "ok": true
+    },
+    {
+      "check": "unsupervised plugin independent gate",
+      "achieved": true,
+      "ok": true
+    },
+    {
+      "check": "white_queen plugin independent gate",
+      "achieved": true,
+      "ok": true
+    },
+    {
+      "check": "all plugin artifacts written",
+      "achieved": 4,
+      "ok": true
+    },
+    {
+      "check": "end-to-end: all plugin kinds share one frozen table",
+      "achieved": true,
+      "ok": true
+    }
+  ],
+  "products": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k_vf2_bank/cfm_products.duckdb",
+  "stream": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/demo_v2/plugin_stream.duckdb",
+  "window": 365,
+  "seed": 0
+}

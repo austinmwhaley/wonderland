@@ -19,8 +19,8 @@ from pathlib import Path
 import numpy as np
 
 WORK = Path(__file__).resolve().parents[1]
-CFM_PRODUCTS = WORK / "looking_glass" / "artifacts" / "cfm" / "cfm_products.duckdb"
-STREAM_DB = WORK / "rabbit_hole" / "data" / "duckdb" / "customer_event_stream.parquet"
+CFM_PRODUCTS = WORK / "looking_glass" / "artifacts" / "cfm_v2k_vf2_bank" / "cfm_products.duckdb"
+STREAM_DB = WORK / "looking_glass" / "artifacts" / "demo_v2" / "plugin_stream.duckdb"
 OUT = WORK / "plugins" / "artifacts"
 
 

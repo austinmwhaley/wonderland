@@ -138,9 +138,18 @@ def head_two_part(ds: Dataset, seed=0, max_train=None):
     sc = StandardScaler().fit(ds.X[tr])
     Xtr, Xte = sc.transform(ds.X[tr]), sc.transform(ds.X[te])
     active = ds.y[tr] > 0
-    clf = LogisticRegression(max_iter=2000).fit(Xtr, active.astype(int))
-    p = clf.predict_proba(Xte)[:, 1]
-    reg = Ridge(alpha=_ridge_alpha(Xtr[active])).fit(Xtr[active], ds.y[tr][active])
+    p_active = float(active.mean())
+    if active.any() and not active.all():
+        clf = LogisticRegression(max_iter=2000).fit(Xtr, active.astype(int))
+        p = clf.predict_proba(Xte)[:, 1]
+    else:
+        # Degenerate purchase component: the cohort is all-active or all-inactive.
+        # The two-part head must not crash; the constant probability is the honest
+        # estimate and the margin regressor carries the continuous part.
+        clf = None
+        p = np.full(len(Xte), p_active, dtype=np.float64)
+    rows = active if active.any() else np.ones(len(tr), dtype=bool)
+    reg = Ridge(alpha=_ridge_alpha(Xtr[rows])).fit(Xtr[rows], ds.y[tr][rows])
     pred = p * np.maximum(reg.predict(Xte), 0.0)
     return {
         "name": "two_part",
@@ -148,11 +157,19 @@ def head_two_part(ds: Dataset, seed=0, max_train=None):
         "idx": te,
         "n_train": int(len(tr)),
         "metrics": _metrics(pred, ds.y[te]),
-        "fitted": {"kind": "continuous_two_part", "scaler": sc, "clf": clf, "reg": reg},
+        "fitted": {
+            "kind": "continuous_two_part",
+            "scaler": sc,
+            "clf": clf,
+            "reg": reg,
+            "p_active": p_active,
+        },
     }
 
 
 def head_quantile(ds: Dataset, seed=0, max_train=None):
+    from sklearn.model_selection import KFold
+
     tr, te = _split(ds.keys, seed, max_train=max_train)
     qs = (0.1, 0.5, 0.9)
     out = {}
@@ -162,9 +179,25 @@ def head_quantile(ds: Dataset, seed=0, max_train=None):
         )
         m.fit(ds.X[tr], ds.y[tr])
         out[q] = m.predict(ds.X[te])
+    # Conformal widening: OOF residuals on the training split set the lower/upper
+    # correction so the nominal 80% interval keeps its promise on the held-out rows.
+    ytr = ds.y[tr]
+    oof_lo = np.zeros(len(tr), dtype=np.float64)
+    oof_hi = np.zeros(len(tr), dtype=np.float64)
+    kf = KFold(n_splits=3, shuffle=True, random_state=seed)
+    for fit_i, cal_i in kf.split(ds.X[tr]):
+        for q, buf in ((0.1, oof_lo), (0.9, oof_hi)):
+            m = HistGradientBoostingRegressor(
+                loss="quantile", quantile=q, max_iter=300, random_state=seed
+            )
+            m.fit(ds.X[tr][fit_i], ytr[fit_i])
+            buf[cal_i] = m.predict(ds.X[tr][cal_i])
+    q_lo = float(np.quantile(ytr - oof_lo, 0.1))
+    q_hi = float(np.quantile(ytr - oof_hi, 0.9))
     y = ds.y[te]
     stack = np.sort(np.stack([out[0.1], out[0.5], out[0.9]], axis=0), axis=0)
-    lo, med, hi = stack[0], stack[1], stack[2]
+    lo = stack[0] + min(q_lo, 0.0)
+    med, hi = stack[1], stack[2] + max(q_hi, 0.0)
     cover = float(np.mean((y >= lo) & (y <= hi)))
     mono = bool(np.all(lo <= med + 1e-6) and np.all(med <= hi + 1e-6))
     return {
@@ -368,7 +401,10 @@ class HeadTemplate:
         if fitted["kind"] == "binary":
             return fitted["model"].predict_proba(Xs)[:, 1]
         if fitted["kind"] == "continuous_two_part":
-            p = fitted["clf"].predict_proba(Xs)[:, 1]
+            if fitted.get("clf") is None:
+                p = np.full(len(Xs), float(fitted.get("p_active", 1.0)), dtype=np.float64)
+            else:
+                p = fitted["clf"].predict_proba(Xs)[:, 1]
             return p * np.maximum(fitted["reg"].predict(Xs), 0.0)
         if fitted["kind"] == "continuous_point":
             return fitted["model"].predict(Xs)
