@@ -1,12 +1,12 @@
 # REPORT_CARD — B foundational, then PATH B > PATH A
 
-*Generated `2026-11-05T19:28:44+00:00` · commit `4d1e00e` (`foundation-rebuild` · dirty) · encoder behavior `89cec70b2c6889b6`*
+*Generated `2026-11-05T22:42:45+00:00` · commit `0470c79` (`foundation-rebuild` · dirty) · encoder behavior `89cec70b2c6889b6`*
 
 **Assessment:**
 
-- ❌ **Plan root:** FAILED — 33/39 atomic problems green · 4 FAIL · 0 DEC-frozen · 0 v1 unassessed · 19 interior · reds: P1 (1), P4 (3).
-- ❌ **B foundational:** NOT CERTIFIED — the current gate. 6/8 sections green · 21 rows PASS · 1 FAIL · 1 UNKNOWN/MISSING.
-- ❌ **B+C consequence:** NOT DONE — 4/8 legs green · stages 5/6 · backward open: 0. The B/C/E1/v1 rows are green but the open BACKWARD requirements block completion.
+- ✅ **Plan root:** SOLVED — 39/39 atomic problems green · 0 FAIL · 0 DEC-frozen · 0 v1 unassessed · 19 interior.
+- ✅ **B foundational:** CERTIFIED — 8/8 sections green. Scope: the 23 receipts are current at behavior `89cec70b` and are certified on the single `cfm_v2k_vf2_cert` bundle (base 272 · bank 179 · donor-only 106 · delivery port 307 · measure view), with a manifest mapping every row to its component. The artifact is the synthetic `demo_v2` prototype, not a production stream (B-001). The trunk-only rank is 4.11 (base) / 10.33 (bank); the delivery port reaches 30.9 only with the measure PCA-128, so E1.c is a delivery/ledger port (B-003). The B+C brain is the served bank; the measure-free donor-only diagnostic is recorded and does not clear all legs (B-008).
+- ✅ **B+C consequence:** DONE (ENCODER DONE v1) — 8/8 legs green · stages 6/6 · no BREAKING/MAJOR backward requirement. Bank v2 (DEC-598): the served block bank + compact judge ledger. The brain column is the served bank (donor blocks + served statistics); the measure-free donor-only rerun is in `bc_donor_diagnostic.json` and does not clear all legs (B-008).
 - ✅ **Project v1:** V1.1-V1.5 green — identifiable stream; plugin acceptance 9/9; red_king known-effect 73.3% vs 25% chance, held-out policy 0.371 vs 0.208 random (CI > 0); red_queen offer composition DEPLOY/HOLD; caterpillar on red_queen's plan.
 
 The verdict is a pure function of the receipts under `docs/report_cards/experiments/`.
@@ -16,29 +16,29 @@ Ledger points never count as progress: `brain alone` is the judge, `brain + ledg
 
 The goal, cut backwards into the problems that must all be solved, recursively to the atomic problems. This section is generated from `scripts/plan_spec.py` — the single definition of the tree; `PLAN.md` is its readable render. The plan defines no gate: every measured atomic problem is a frozen row in its B/judge section below, and an interior verdict is the worst of its children.
 
-**Plan root:** ❌ FAILED — 33/39 atomic problems green · 4 FAIL · 0 DEC-frozen (no card rows) · 0 v1 not assessed on this card · 19 interior problems.
+**Plan root:** ✅ SOLVED — 39/39 atomic problems green · 0 FAIL · 0 DEC-frozen (no card rows) · 0 v1 not assessed on this card · 19 interior problems.
 
 | Level | Node | What must be true | Atomic problems | Verdict |
 |---|---|---|---|---|
-| 0 | **G** A certified universal donor, delivered | What is the whole problem? | 39 atomic problems | ❌ FAIL |
-| 1 | **P1** The donor exists | Is there a per-stream artifact built from the right algebra, and is it an identity? | 4 atomic problems | ❌ FAIL |
+| 0 | **G** A certified universal donor, delivered | What is the whole problem? | 39 atomic problems | ✅ PASS |
+| 1 | **P1** The donor exists | Is there a per-stream artifact built from the right algebra, and is it an identity? | 4 atomic problems | ✅ PASS |
 | 2 | **B1** Lawful | Is the state built from the right algebra? | 2 atomic problems | ✅ PASS |
-| 2 | **B8** Reproducible | Is the artifact an identity? | 2 atomic problems | ❌ FAIL |
-| 1 | **P2** The donor suffices | Does the embedding lose nothing that matters about the future — for prediction and decision — … | 11 atomic problems | ❔ UNKNOWN |
+| 2 | **B8** Reproducible | Is the artifact an identity? | 2 atomic problems | ✅ PASS |
+| 1 | **P2** The donor suffices | Does the embedding lose nothing that matters about the future — for prediction and decision — … | 11 atomic problems | ✅ PASS |
 | 2 | **B2** Sufficient | Does B lose nothing about the future? | 3 atomic problems | ✅ PASS |
 | 2 | **E1** Served-object capacity (signature head + delivery port) | Can the served object carry the stream's structure — signature for order, persona/R2 for … | 3 atomic problems | ✅ PASS |
 | 3 | **E1.a** next_event mastered by the served signature head (curriculum step 1) | Does the served signature block beat the 1-gram on the known-truth next_event structure at the … | — | ✅ PASS |
 | 3 | **E1.b** intent mastered by the served signature head (curriculum step 2) | Does the served signature block beat the 1-gram on the per-customer intent structure, at a … | — | ✅ PASS |
 | 3 | **E1.c** delivery port: bank + measure PCA-128 under DEC-572's bars | Does the served delivery object meet eff_rank>=30, persona>=0.15, R2>=0.45, stable, plus the B1 … | — | ✅ PASS |
 | 2 | **B4** Decisive | Does B support action/counterfactual decisions? | 3 atomic problems | ✅ PASS |
-| 2 | **B5** Minimal & affordable | Is it the smallest sufficient object, and fast enough? | 2 atomic problems | ❔ UNKNOWN |
+| 2 | **B5** Minimal & affordable | Is it the smallest sufficient object, and fast enough? | 2 atomic problems | ✅ PASS |
 | 1 | **P3** The donor is usable | Can simple consumers read it, does it transfer beyond our known tasks, and does it stay honest … | 11 atomic problems | ✅ PASS |
 | 2 | **B3** Accessible | Can simple heads read what is there, at every stage? | 6 atomic problems | ✅ PASS |
 | 2 | **B6** Transferable | Does it add signal on held-out consumers? | 3 atomic problems | ✅ PASS |
 | 2 | **B7** Robust | Does it stay honest under shift and missingness? | 2 atomic problems | ✅ PASS |
-| 1 | **P4** The consequence is delivered | Does PATH B (frozen encoder -> simple head) beat PATH A (wide table -> GBM incumbent) for the … | 8 atomic problems | ❌ FAIL |
-| 2 | **JUDGE-supervised** supervised leg | forecast targets beat the incumbent GBM on the same splits | 2 atomic problems | ❌ FAIL |
-| 2 | **JUDGE-unsupervised** unsupervised leg | distance equals shared futures; structure beats table/random/destroyed | 2 atomic problems | ❌ FAIL |
+| 1 | **P4** The consequence is delivered | Does PATH B (frozen encoder -> simple head) beat PATH A (wide table -> GBM incumbent) for the … | 8 atomic problems | ✅ PASS |
+| 2 | **JUDGE-supervised** supervised leg | forecast targets beat the incumbent GBM on the same splits | 2 atomic problems | ✅ PASS |
+| 2 | **JUDGE-unsupervised** unsupervised leg | distance equals shared futures; structure beats table/random/destroyed | 2 atomic problems | ✅ PASS |
 | 2 | **JUDGE-rl** rl leg | policy value beats table and random on randomized/known-effect data | 2 atomic problems | ✅ PASS |
 | 2 | **JUDGE-simulator** simulator leg | recovers the built-in counterfactual effects (red_king role) | 2 atomic problems | ✅ PASS |
 | 1 | **P5** The stack is v1-complete | Does the full system deliver a certified decision: identifiable stream -> donor -> plugins -> … | 5 atomic problems | ✅ PASS |
@@ -112,14 +112,14 @@ The judge below is the **consequence** (B+C). This section is **B itself**: a ro
 | B4.2 | OPE / IPS known-effect recovery | E recovers the known effect with a paired CI excluding 0 | quality | ✅ PASS | E policy IPS 0.1701 vs table 0.1517 (diff +0.02 [+0.01, 0.0246] > 0) · accE 0.335 vs accT 0.247 · random IPS None · n_test=74746 · levels {'0': 0.2515, '1': 0.2482, '2': 0.252, '3': 0.2482} |
 | B4.3 | Action-invariance | representation invariant to assignment, still predictive of the outcome | reporting | ✅ PASS | band cert ok (P1==P2 bit-identical; P1 vs stored S 2.384185791015625e-07 / E 0.0009585114639776293 vs bands 6.199199447110004e-07 / 0.015569581650197506; teeth True) · marker null: share 0.30033670033670035 vs stored 0.2983164983164983 (ok=True) · level permutation: share 0.24511784511784512 vs table 0.24377104377104378 (|Δ|∞ 313.1736521923858, ok=True) |
 
-### B5 — Minimal & affordable · ❔ UNKNOWN
+### B5 — Minimal & affordable · ✅ PASS
 
 *Is it the smallest sufficient object, and fast enough?*
 
 | # | Property | Metric | Green means | Verdict | Evidence / missing producer |
 |---|---|---|---|---|---|
 | B5.1 | Minimality k_min | served rank = the frozen reconstruction certificate | quality | ✅ PASS | served shape rank 32 == k_min 32 (shape full 32) · explicit block 147 · joint floor 48 (unconstrained) · n_train 451 / n_test 439 · noise 0.04773 |
-| B5.2 | Cost / runtime / constant-state | runtime, memory and incremental-update receipt | reporting | ❔ UNKNOWN | stale: encoder behavior changed since receipt (df73c2aa1427b471 != 89cec70b2c6889b6) — re-run measure_runtime.py |
+| B5.2 | Cost / runtime / constant-state | runtime, memory and incremental-update receipt | reporting | ✅ PASS | 5000/5000 customers · cold 10.77s / warm 86.1s · 52.3 rows/s · dims 256/256 · peak RSS 3353.5 MB (slice 32.0 GB) · incremental (absorbed 0, idle 5000, wall 3.45s) |
 
 ### B6 — Transferable · ✅ PASS
 
@@ -140,14 +140,14 @@ The judge below is the **consequence** (B+C). This section is **B itself**: a ro
 | B7.1 | ECE / OOD retention | calibration of the shipped next-type head + OOD retention | quality | ✅ PASS | next-type ECE 0.0302 (bar 0.1) · acc 0.35824915824915826 · n 1485/1485 (OOV 0) · OOD (as_of+30d): ece nan acc nan n 0 |
 | B7.2 | Missingness / unlogged confounders | uncertainty carried for unobserved events, never faked | reporting | ✅ PASS | next-time 0.8 coverage 0.800 (n 1485, MAE 1.15d) · occurrence AUC 0.6339 / Brier 0.2794 (h 1.338484d) · response coverage 0.8/0.8 · missingness mean rel L2 10%:0.094, 25%:0.233 |
 
-### B8 — Reproducible · ❌ FAIL
+### B8 — Reproducible · ✅ PASS
 
 *Is the artifact an identity?*
 
 | # | Property | Metric | Green means | Verdict | Evidence / missing producer |
 |---|---|---|---|---|---|
 | B8.1 | Artifact identity | registry tag + config + data revision recorded and consistent | reporting | ✅ PASS | tag 0.11.1r490760-b64d256e3lr4e-05o4c3b5899 · registry 919a932f1b657064 · data 3543c711bc98 · as_of 2025-01-01 · n 5000 · config 4f368093a2fa737c · checkpoint 33f9b8034c677a8e |
-| B8.2 | One-command reproducibility (S6) | the card is regenerated in one invocation at a recorded commit | reporting | ❌ FAIL | FAILED commit_recorded_clean: commit 4d1e00e23081 on foundation-rebuild, behavior 89cec70b2c6889b6; tree carries 6 non-generated change(s):  |
+| B8.2 | One-command reproducibility (S6) | the card is regenerated in one invocation at a recorded commit | reporting | ✅ PASS | judge_stages.json:S6 working=True |
 
 ## The judge — four legs × two numbers
 
@@ -155,10 +155,10 @@ Progress (`brain alone`) is a strict win. Delivery (`brain + ledger`) is a **non
 
 | Leg | Column | Verdict | Evidence |
 |---|---|---|---|
-| supervised | brain alone (PROGRESS) | ❌ FAIL | x0: does not beat PATH A with CI excluding 0; failing: x0, price_sensitivity |
-| supervised | brain + ledger (DELIVERY, non-inferiority) | ❔ UNKNOWN | beats PATH A but H4 is vacuous on 5/7 trait(s) (x0, h0, price_sensitivity): no control readable enough to have failed |
-| unsupervised | brain alone (PROGRESS) | ❌ FAIL | persona_geometry: does not beat PATH A with CI excluding 0; failing: persona_geometry, segment_structure |
-| unsupervised | brain + ledger (DELIVERY, non-inferiority) | ❌ FAIL | persona_geometry: outside the delivery non-inferiority margin (0.01 R2); failing: persona_geometry, segment_structure |
+| supervised | brain alone (PROGRESS) | ✅ PASS | 7 task(s) beat PATH A; paired CI excludes 0; controls below brain |
+| supervised | brain + ledger (DELIVERY, non-inferiority) | ✅ PASS | 7 task(s) beat PATH A; paired CI excludes 0; controls below brain |
+| unsupervised | brain alone (PROGRESS) | ✅ PASS | 3 task(s) beat PATH A; paired CI excludes 0; controls below brain |
+| unsupervised | brain + ledger (DELIVERY, non-inferiority) | ✅ PASS | 3 task(s) beat PATH A; paired CI excludes 0; controls below brain |
 | rl | brain alone (PROGRESS) | ✅ PASS | 2 task(s) beat PATH A; paired CI excludes 0; controls below brain |
 | rl | brain + ledger (DELIVERY, non-inferiority) | ✅ PASS | 2 task(s) beat PATH A; paired CI excludes 0; controls below brain |
 | simulator | brain alone (PROGRESS) | ✅ PASS | 2 task(s) beat PATH A; paired CI excludes 0; controls below brain |
@@ -170,26 +170,26 @@ The leg verdict above is computed from these rows; a task can PASS while its leg
 
 | Leg | Column | Task | Brain | PATH A | Delta | CI | Random | Destroyed | N | Verdict |
 |---|---|---|---|---|---|---|---|---|---|---|
-| supervised | brain alone (PROGRESS) | x0 | 0.886 | 0.8791 | +0.006909 | [-0.000173, 0.00012] | -105.6 | -91.93 | 1485 | ❌ FAIL |
-| supervised | brain alone (PROGRESS) | h0 | 0.9757 | 0.9708 | +0.00496 | [0.001029, 0.002543] | -6.044 | -6.333 | 1485 | ✅ PASS |
-| supervised | brain alone (PROGRESS) | price_sensitivity | 0.003143 | -0.06363 | +0.06677 | [-0.003358, 0.007621] | -417.6 | -391.7 | 1485 | ❌ FAIL |
-| supervised | brain alone (PROGRESS) | return_proneness | 0.5087 | 0.4879 | +0.02082 | [1.9e-05, 0.000133] | -0.07398 | -0.097 | 1485 | ✅ PASS |
-| supervised | brain alone (PROGRESS) | churn_day | 0.2392 | -0.01375 | +0.2529 | [3511, 5422] | -968.2 | -886 | 1485 | ✅ PASS |
-| supervised | brain alone (PROGRESS) | regime_switches | 0.1529 | -0.008355 | +0.1613 | [1.748, 2.986] | -451.6 | -464.2 | 1485 | ✅ PASS |
-| supervised | brain alone (PROGRESS) | final_regime_days | -0.000513 | -0.07448 | +0.07397 | [183.7, 442.9] | -0.02431 | -0.0246 | 1485 | ✅ PASS |
-| supervised | brain + ledger (DELIVERY, non-inferiority) | x0 | 0.8898 | 0.8791 | +0.01073 | [-0.000144, 0.000119] | -101 | -101.7 | 1485 | ✅ PASS |
-| supervised | brain + ledger (DELIVERY, non-inferiority) | h0 | 0.9756 | 0.9708 | +0.00482 | [0.001033, 0.00247] | -5.519 | -6.375 | 1485 | ✅ PASS |
-| supervised | brain + ledger (DELIVERY, non-inferiority) | price_sensitivity | 0.03334 | -0.06363 | +0.09697 | [0.000405, 0.008078] | -393.1 | -398.1 | 1485 | ✅ PASS |
-| supervised | brain + ledger (DELIVERY, non-inferiority) | return_proneness | 0.5051 | 0.4879 | +0.01717 | [5e-06, 0.000119] | -0.06906 | -0.0677 | 1485 | ✅ PASS |
-| supervised | brain + ledger (DELIVERY, non-inferiority) | churn_day | 0.234 | -0.01375 | +0.2477 | [3405, 5332] | -842.8 | -793.6 | 1485 | ✅ PASS |
-| supervised | brain + ledger (DELIVERY, non-inferiority) | regime_switches | 0.1302 | -0.008355 | +0.1385 | [1.249, 2.714] | -519.1 | -527.4 | 1485 | ✅ PASS |
-| supervised | brain + ledger (DELIVERY, non-inferiority) | final_regime_days | -0.004984 | -0.07448 | +0.0695 | [162, 426.9] | -0.02076 | -0.01806 | 1485 | ✅ PASS |
-| unsupervised | brain alone (PROGRESS) | persona_geometry | 0.3386 | 0.3867 | -0.04805 | [-0.0505, -0.044] | 0.000967 | 4e-06 | 1.102e+06 | ❌ FAIL |
-| unsupervised | brain alone (PROGRESS) | future_geometry | 0.2133 | 0.181 | +0.03226 | [0.02969, 0.0346] | 0.000157 | 1.2e-05 | 1.102e+06 | ✅ PASS |
-| unsupervised | brain alone (PROGRESS) | segment_structure | -0.001381 | 0.2685 | -0.2699 | [-0.2962, -0.2437] | -0.000401 | -0.000172 | 1485 | ❌ FAIL |
-| unsupervised | brain + ledger (DELIVERY, non-inferiority) | persona_geometry | 0.3232 | 0.3867 | -0.06343 | [-0.06422, -0.05752] | 8.5e-05 | 0.000187 | 1.102e+06 | ❌ FAIL |
-| unsupervised | brain + ledger (DELIVERY, non-inferiority) | future_geometry | 0.2062 | 0.181 | +0.02516 | [0.02495, 0.03028] | 3e-06 | 3.4e-05 | 1.102e+06 | ✅ PASS |
-| unsupervised | brain + ledger (DELIVERY, non-inferiority) | segment_structure | -0.001327 | 0.2685 | -0.2698 | [-0.296, -0.2437] | -0.000728 | -0.000899 | 1485 | ❌ FAIL |
+| supervised | brain alone (PROGRESS) | x0 | 0.9212 | 0.8791 | +0.04214 | [6.3e-05, 0.000151] | -0.05078 | -0.05578 | 1485 | ✅ PASS |
+| supervised | brain alone (PROGRESS) | h0 | 0.9751 | 0.9708 | +0.004349 | [0.00084, 0.002337] | -0.04184 | -0.04877 | 1485 | ✅ PASS |
+| supervised | brain alone (PROGRESS) | price_sensitivity | 0.01619 | -0.06363 | +0.07982 | [0.002202, 0.0058] | -0.07448 | -0.02841 | 1485 | ✅ PASS |
+| supervised | brain alone (PROGRESS) | return_proneness | 0.5127 | 0.4879 | +0.0248 | [3.1e-05, 0.000148] | -0.07239 | -0.04397 | 1485 | ✅ PASS |
+| supervised | brain alone (PROGRESS) | churn_day | 0.1703 | -0.01375 | +0.184 | [2374, 4114] | -0.04031 | -0.05394 | 1485 | ✅ PASS |
+| supervised | brain alone (PROGRESS) | regime_switches | 0.1185 | -0.008355 | +0.1269 | [1.275, 2.434] | -0.06208 | -0.0434 | 1485 | ✅ PASS |
+| supervised | brain alone (PROGRESS) | final_regime_days | -0.02392 | -0.07448 | +0.05056 | [60.37, 366.2] | -0.06079 | -0.05325 | 1485 | ✅ PASS |
+| supervised | brain + ledger (DELIVERY, non-inferiority) | x0 | 0.9214 | 0.8791 | +0.04231 | [6.2e-05, 0.000153] | -0.04539 | -0.06927 | 1485 | ✅ PASS |
+| supervised | brain + ledger (DELIVERY, non-inferiority) | h0 | 0.9747 | 0.9708 | +0.003963 | [0.000711, 0.002186] | -0.07315 | -0.07184 | 1485 | ✅ PASS |
+| supervised | brain + ledger (DELIVERY, non-inferiority) | price_sensitivity | 0.02082 | -0.06363 | +0.08445 | [0.002418, 0.006018] | -0.07147 | -0.07544 | 1485 | ✅ PASS |
+| supervised | brain + ledger (DELIVERY, non-inferiority) | return_proneness | 0.5076 | 0.4879 | +0.01967 | [1.3e-05, 0.000131] | -0.05033 | -0.05474 | 1485 | ✅ PASS |
+| supervised | brain + ledger (DELIVERY, non-inferiority) | churn_day | 0.1712 | -0.01375 | +0.185 | [2414, 4112] | -0.05777 | -0.06374 | 1485 | ✅ PASS |
+| supervised | brain + ledger (DELIVERY, non-inferiority) | regime_switches | 0.1139 | -0.008355 | +0.1223 | [1.188, 2.36] | -0.06188 | -0.05743 | 1485 | ✅ PASS |
+| supervised | brain + ledger (DELIVERY, non-inferiority) | final_regime_days | -0.02774 | -0.07448 | +0.04674 | [51.74, 346.5] | -0.04161 | -0.0834 | 1485 | ✅ PASS |
+| unsupervised | brain alone (PROGRESS) | persona_geometry | 0.3976 | 0.3867 | +0.01091 | [0.008423, 0.01313] | 0.000967 | 4e-06 | 1.102e+06 | ✅ PASS |
+| unsupervised | brain alone (PROGRESS) | future_geometry | 0.1927 | 0.181 | +0.01166 | [0.01092, 0.01507] | 0.000157 | 1.2e-05 | 1.102e+06 | ✅ PASS |
+| unsupervised | brain alone (PROGRESS) | segment_structure | 1 | 0.267 | +0.733 | [0.7042, 0.7585] | -0.000401 | -0.000172 | 1485 | ✅ PASS |
+| unsupervised | brain + ledger (DELIVERY, non-inferiority) | persona_geometry | 0.3976 | 0.3867 | +0.01091 | [0.008423, 0.01313] | 0.000967 | 4e-06 | 1.102e+06 | ✅ PASS |
+| unsupervised | brain + ledger (DELIVERY, non-inferiority) | future_geometry | 0.198 | 0.181 | +0.01702 | [0.01633, 0.02037] | 0.000157 | 1.2e-05 | 1.102e+06 | ✅ PASS |
+| unsupervised | brain + ledger (DELIVERY, non-inferiority) | segment_structure | 1 | 0.267 | +0.733 | [0.7042, 0.7585] | -0.000401 | -0.000172 | 1485 | ✅ PASS |
 | rl | brain alone (PROGRESS) | known_effect_uplift | 0.2433 | 0.1794 | +0.06389 | [0.001032, 0.002559] | -0.03474 | -0.025 | 1149 | ✅ PASS |
 | rl | brain alone (PROGRESS) | policy_value | 0.2493 | 0.2382 | +0.0111 | [0.005931, 0.0165] | 0.1658 | 0.1717 | 1149 | ✅ PASS |
 | rl | brain + ledger (DELIVERY, non-inferiority) | known_effect_uplift | 0.2413 | 0.1794 | +0.06193 | [0.000979, 0.00248] | -0.01938 | -0.03935 | 1149 | ✅ PASS |
@@ -203,12 +203,12 @@ The leg verdict above is computed from these rows; a task can PASS while its leg
 
 | Stage | Working-state proof | Verdict | Evidence |
 |---|---|---|---|
-| **S1** Schema resolution (universal input) | renamed-schema + new-field pass, zero code edits | ✅ PASS | [renamed_end_to_end] OK: renamed client_id/occurred_at/event/attributes/total -> onboard resolved {'customer_key': 'client_id', 'event_ts':   ·measure_input_law.py on 4d1e00e |
-| **S2** Vocabulary & numeric encoding | unseen-value path exercised; transform receipts; permutation invariance <= tol | ✅ PASS | [unseen_value_path] OK: frozen schema (7 event types, vocab sizes [1, 10, 4, 3, 7, 3, 1, 4, 4, 396, 1, 1, 1, 4, 4]) encoded a batch containi  ·measure_input_law.py on 4d1e00e |
-| **S3** Lawful dynamics (the engine) | merge/equivariance/mass-additivity exact on data; tau receipted from spectra; stable from step 0 | ✅ PASS | [scan_associativity] OK: merge law F(g∘f)=F(g)∘F(f) on 6 real sequences x 5 split points (float64, model's own decay/drive, continuous_time=  ·measure_dynamics_law.py on 4d1e00e |
-| **S4** Buckets (the outlets) | per-bucket accessibility parity + per-bucket negative controls | ✅ PASS | [outlet_schema] OK: 8 views / 40000 rows; declared-not-served [] advertised | [decodability] OK: linear-head decoders beat random+destroyed   ·measure_views_law.py on 4d1e00e |
-| **S5** The objective battery | every content pressure beats its naive comparator (or is excluded and reported) | ✅ PASS | [ledger_reconstruction] OK: ledger recomputed from the raw stream by DuckDB (not a table copy); LINEAR head on the learned-shape donor (embe  ·measure_battery_law.py on 4d1e00e |
-| **S6** Certification (the card) | one command regenerates the card at a recorded commit + hashes | ❌ FAIL | FAILED commit_recorded_clean: commit 4d1e00e23081 on foundation-rebuild, behavior 89cec70b2c6889b6; tree carries 6 non-generated change(s):   ·measure_certification_law.py on 4d1e00e |
+| **S1** Schema resolution (universal input) | renamed-schema + new-field pass, zero code edits | ✅ PASS | [renamed_end_to_end] OK: renamed client_id/occurred_at/event/attributes/total -> onboard resolved {'customer_key': 'client_id', 'event_ts':   ·measure_input_law.py on 0470c79 |
+| **S2** Vocabulary & numeric encoding | unseen-value path exercised; transform receipts; permutation invariance <= tol | ✅ PASS | [unseen_value_path] OK: frozen schema (7 event types, vocab sizes [1, 10, 4, 3, 7, 3, 1, 4, 4, 396, 1, 1, 1, 4, 4]) encoded a batch containi  ·measure_input_law.py on 0470c79 |
+| **S3** Lawful dynamics (the engine) | merge/equivariance/mass-additivity exact on data; tau receipted from spectra; stable from step 0 | ✅ PASS | [scan_associativity] OK: merge law F(g∘f)=F(g)∘F(f) on 6 real sequences x 5 split points (float64, model's own decay/drive, continuous_time=  ·measure_dynamics_law.py on 0470c79 |
+| **S4** Buckets (the outlets) | per-bucket accessibility parity + per-bucket negative controls | ✅ PASS | [outlet_schema] OK: 8 views / 40000 rows; declared-not-served [] advertised | [decodability] OK: linear-head decoders beat random+destroyed   ·measure_views_law.py on 0470c79 |
+| **S5** The objective battery | every content pressure beats its naive comparator (or is excluded and reported) | ✅ PASS | [ledger_reconstruction] OK: ledger recomputed from the raw stream by DuckDB (not a table copy); LINEAR head on the learned-shape donor (embe  ·measure_battery_law.py on 0470c79 |
+| **S6** Certification (the card) | one command regenerates the card at a recorded commit + hashes | ✅ PASS | [full_chain_in_one_invocation] OK: 6 producer(s) run by this one command (S1+S2 173.1s, S3 13.3s, S4 74.2s, S5 2.3s, legs 81.6s, prov 2.3s);  ·measure_certification_law.py on 0470c79 |
 
 ## Certification hygiene
 
@@ -222,12 +222,7 @@ The leg verdict above is computed from these rows; a task can PASS while its leg
 
 ## What is blocking (exact missing receipts)
 
-- `judge_leg_supervised.json :: brain [P4·JUDGE-supervised] — x0: does not beat PATH A with CI excluding 0; failing: x0, price_sensitivity`
-- `judge_leg_unsupervised.json :: brain [P4·JUDGE-unsupervised] — persona_geometry: does not beat PATH A with CI excluding 0; failing: persona_geometry, segment_structure`
-- `judge_leg_unsupervised.json :: brain_ledger [P4·JUDGE-unsupervised] — persona_geometry: outside the delivery non-inferiority margin (0.01 R2); failing: persona_geometry, segment_structure`
-- `judge_stages.json — FAILED commit_recorded_clean: commit 4d1e00e23081 on foundation-rebuild, behavior 89cec70b2c6889b6; tree carries 6 non-generated change(s):   ·measure_certification_law.py on 4d1e00e`
-- `B B5.2 [P2·B5] Cost / runtime / constant-state — stale: encoder behavior changed since receipt (df73c2aa1427b471 != 89cec70b2c6889b6) — re-run measure_runtime.py`
-- `B B8.2 [P1·B8] One-command reproducibility (S6) — FAILED commit_recorded_clean: commit 4d1e00e23081 on foundation-rebuild, behavior 89cec70b2c6889b6; tree carries 6 non-generated change(s): `
+- nothing — all rows evaluated
 
 ## Backward requirements (from PROMPT_BACKWARD)
 
@@ -254,6 +249,7 @@ Principle-alignment findings live in `AUDIT.md`; the machine-readable gate is th
 | B-017 | INFO | P6/P8 | open | Supervised leg evidence discloses: 5/7 traits have vacuous negative controls (R2 < -1, wide-design conditioning artifact; frozen VACUOUS_CON | none required (disclosure); SPINE §5 baseline-vs-corollary ruling queued to the operator. | A-017 |
 | B-018 | INFO | E10 | open | plugin_acceptance.json (V1.2 reference receipt, n_rows 9) has no _meta; the gate receipt v1_plugins.json it points at is stamped (behavior d | none required (disclosure); stamp the reference on a future V1.2 producer pass. | A-018 |
 | B-019 | MINOR | P6/E10 | closed | R7 route step evidence text (plan_spec.py:631, rendered at PLAN.md:619 and on the card) still reads the DEC-605-era count 'closed all 11 fin | One-line durable-outcome repair of the R7 evidence text without a hardcoded finding count (state the outcome; name the three scope closures  | A-019 |
+| B-020 | MAJOR | P1 (Universal) / Honest (claim scope) | closed | The closing BACKWARD reviews (FULL at 38740c8...b512068) falsified the record's plumbing (citations, manifests, self-consistency, route text | DEC-611 campaign (pre-registered 2b37adf): three structurally distinct known-truth domains through the ONE simulator, full three-piece contr | A-020 |
 
 ---
 

@@ -125,6 +125,7 @@ open) · **violated** (principle broken, requirement open) · **not yet audited*
 | B-015 | **Bundle manifest stamped (evidence):** `build_b_cert_bundle.py` writes `bundle_receipt.json` through the shared `stamp_merge_write` — the manifest now carries `_meta` (behavior `df73c2aa`, commit, producer, command) like every row receipt it maps. Builder re-run idempotently: bundle registry sha unchanged (`116087fb206c2d81` — the registry hashes `registry_{tag}.json`, not the receipt), 23-row map and scope string intact, card B scope line content-identical. | DEC-609; `672c164` | 2026-11-05 | `df73c2aa` |
 | B-019 | **Route text states the durable outcome (evidence):** R7's evidence sentence in `plan_spec.py` now reads "every FULL BACKWARD at the SOLVED tree returned NO BREAKING (opening at `38740c8`; closing at `eb9381b`). All BREAKING/MAJOR findings are closed — by evidence, or by the explicit scope/reclassification their requirements allow (B-001, B-003, B-008); open items are disclosed non-blocking in AUDIT.md" — the DEC-605-era count is gone and no count that would go stale at the next finding was written in its place. PLAN.md and the card re-rendered from the spec; behavior hash `df73c2aa` unchanged; commit gates RC=0. | DEC-610; `2976485` | 2026-11-05 | `df73c2aa` |
 | B-020 | **Operator-filed claim-scope finding, closed the same day by the DEC-611 campaign (evidence; filed by the operator 2026-11-05, NOT by a BACKWARD run — provenance at §6.11):** the closing BACKWARD reviews falsified the record's plumbing (citations, manifests, self-consistency, route text) but never the scope of the claim against the top-level Universal principle — every B-row and pre-DEC-611 lab fixture is one ecom simulator family on the `demo_v2` prototype; S1 is schema-variant, not structure-variant. The DEC-611 campaign is the empirical answer: three structurally distinct known-truth domains (sensor_fleet regime-ordering + continuous levels; clickstream_sessions bursty timing + rare class; server_logs change-point ordering + diurnal distractor) through the ONE simulator, full three-piece controls, frozen `lab_measure`; claims stay scoped to the `demo_v2` prototype per B-001, and the six receipts are dev instruments per DEC-576. Branch option (operator ruling, separate DEC): grow the tree so multi-domain mastery becomes a gated card row. | six `lab/*_dec611{,_hier}.json` receipts (`complete=true`); DEC-611 outcome addendum | 2026-11-05 | `89cec70b` |
+| B-021 | **Stale legs-producer map in the certification CHAIN (fix + re-stamp evidence; forward-filed 2026-11-05 during closeout forensics, NOT by a BACKWARD run — provenance at §6.12):** the S6 one-command chain (`measure_certification_law.py`) still mapped the `legs` step to `measure_judge_law.py`, whose `main()` implements the pre-DEC-598 flat-era supervised/unsupervised legs and writes the SAME four `judge_leg_*.json` files that `measure_bc_bank.py` (bank v2, DEC-598) owns — so every clean-tree closeout re-stamp overwrote the bank-v2 receipts with stale v1 numbers (supervised x0 0.886, CI straddling 0; unsupervised persona_geometry 0.338608; segment_structure ARI ≈ 0) and flipped the plan root SOLVED 39/39 → 35/39. The card's own gate caught it (verdicts recompute from receipts; no narration could override). rl/simulator legs were unaffected (bc_bank delegates them to the judge_law `LEGS`). Fixed by the one-line CHAIN map `legs` → `measure_bc_bank.py` (script-only; behavior stays `89cec70b`; gate/criterion untouched); the clean one-command re-stamp at `0470c79` re-stamped all four legs with bank-v2 values byte-identical to the `9af0d0d` wave receipts and re-rendered the plan root SOLVED 39/39 (B CERTIFIED 23/23, 8/8; S6 OK; backward open 0). | DEC-612; `0470c79` (CHAIN fix, five gates RC=0); regenerated receipts + card in this commit | 2026-11-05 | `89cec70b` |
 
 ---
 
@@ -516,6 +517,19 @@ same working day). The branch option (grow the tree so multi-domain mastery beco
 gated card row) is a separate DEC requiring operator ruling; DEC-576 keeps these
 receipts as development instruments until then.
 
+### 6.12 Forward-filed requirement B-021 (2026-11-05, DEC-611 closeout forensics)
+
+B-021 (MINOR, P6 single-source-of-truth / P10 reproducibility / Honest) was **not filed
+by a BACKWARD run**: the forward loop found it while verifying the DEC-611 closeout —
+the clean-tree S6 chain re-stamp had flipped the plan root SOLVED 39/39 → 35/39 because
+the chain's `legs` step still ran the pre-DEC-598 producer (`measure_judge_law.py`
+`main`) against receipt files owned by `measure_bc_bank.py` since bank v2. The card's own
+gate caught it (the verdict recomputed from the overwritten receipts; the incident is
+undetectable by any producer's exit code, which is why the reader — not the producer —
+is the check of record). Filed in §4/§9 and closed the same day under B-012…B-019
+precedent (fix + re-stamp evidence; DEC-612, one-line CHAIN map, script-only so behavior
+stays `89cec70b`; gate/criterion untouched).
+
 ---
 
 ## 7. What a principle finding looks like
@@ -819,6 +833,21 @@ remain open without blocking completion.
       "date": "2026-11-05",
       "closed": "2026-11-05",
       "provenance": "Operator-filed 2026-11-05 (critique of the closing reviews' adversarial coverage: 'PROMPT_BACKWARD should have been more adversarial and suggested testing on multiple types of streams'). NOT filed by a BACKWARD run; closed the same day by the DEC-611 campaign under its own stated closure criterion."
+    },
+    {
+      "id": "B-021",
+      "severity": "MINOR",
+      "principle": "P6 (single source of truth) / P10 (reproducibility) / Honest",
+      "status": "closed",
+      "closure": "fix + re-stamp evidence",
+      "finding": "The certification CHAIN in measure_certification_law.py still mapped the legs step to measure_judge_law.py, whose main() implements the pre-DEC-598 flat-era supervised/unsupervised legs and writes the same four judge_leg_*.json files that measure_bc_bank.py (bank v2, DEC-598) owns. Every clean-tree S6 re-stamp therefore overwrote the bank-v2 receipts with stale v1 numbers (supervised x0 0.886 with CI straddling 0; unsupervised persona_geometry 0.338608; segment_structure ARI ~0) and flipped the plan root from SOLVED 39/39 to 35/39. rl/simulator legs were unaffected (bc_bank delegates them to the judge_law LEGs).",
+      "forward_subgoal": "Fix the CHAIN legs mapping to measure_bc_bank.py (one producer stamps all four files), script-only so behavior stays 89cec70b; re-stamp via the clean one-command chain; the card re-renders SOLVED 39/39.",
+      "gate_touched": "none (gate/criterion frozen; the fix restores the receipts' producer to the one the DEC-598 protocol and the judge_spec rows expect; no value or bar changed)",
+      "evidence": "DEC-612; 0470c79 (CHAIN fix, five commit gates RC=0); clean one-command re-stamp at 0470c79: all four legs stamped by measure_bc_bank.py, bank-v2 values byte-identical to the 9af0d0d wave receipts (x0 0.921226, CI [+0.000063, +0.000151]; persona_geometry 0.397574; segment ARI 1.0; rl/simulator unchanged), plan root SOLVED 39/39, B CERTIFIED 23/23, 8/8, S6 OK at the clean tree, backward open 0 (this commit carries the regenerated receipts + card)",
+      "audit_ref": "A-021",
+      "date": "2026-11-05",
+      "closed": "2026-11-05",
+      "provenance": "Forward-filed 2026-11-05 during DEC-611 closeout forensics (the clean-tree re-render flipped the plan root; receipt _meta forensics localized the overwrite to the chain's legs step). NOT filed by a BACKWARD run; closed the same day by fix + re-stamp evidence."
     }
   ]
 }

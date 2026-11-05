@@ -439,11 +439,14 @@ next question is the learned shape, not another consumer tuning pass.
 
 ## Next 3 actions
 
-1. **DEC-611 closeout — final re-stamp + push (in progress).** The campaign chunk
-   landed at `9af0d0d`; closeout forensics found and fixed the chain's stale legs-producer
-   map (DEC-612, this commit). Now: the clean one-command `measure_certification_law.py`
-   re-stamp (S6), the SOLVED 39/39 card re-render verification at `89cec70b`, the closing
-   commit (card + B-021), and the push to `main` (operator permission 2026-11-05).
+1. **DEC-611 closeout COMPLETE — all-green baseline on `main` (2026-11-05).** Campaign
+   chunk `9af0d0d`; closeout forensics DEC-612 (the chain's stale legs-producer map, fixed
+   at `0470c79`); the clean one-command `measure_certification_law.py` re-stamp rendered the
+   plan root **SOLVED 39/39 at behavior `89cec70b`** (B CERTIFIED 23/23, 8/8; S6 OK;
+   backward open 0) — this commit carries the regenerated card + receipts + B-021
+   (filed and closed, AUDIT.md §4/§6.12/§9). The push to `main` (operator permission
+   2026-11-05) follows this commit; `main` is then the working base — the
+   looped-transformer (Dory-style) trunk exploration re-cuts from it.
 2. **Certification statement (delivered with the push):** B is CERTIFIED 23/23, 8/8 at
    behavior `89cec70b` on the single `cfm_v2k_vf2_cert` bundle — the `demo_v2` synthetic
    prototype (B-001 scope; dev-rig receipts are instruments, not B-row evidence, DEC-576);

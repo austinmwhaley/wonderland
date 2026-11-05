@@ -11921,3 +11921,12 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
    (B CERTIFIED 23/23, 8/8; S6 OK; backward open 0), and the five commit gates are RC=0.
    Disclosure: AUDIT.md B-021 (filed and closed by this evidence, same day; precedent
    B-012…B-019).
+   *DEC-612 outcome (same day — acceptance met):* the clean one-command chain at
+   `0470c79` re-stamped all four legs via `measure_bc_bank.py` — bank-v2 values
+   byte-identical to the `9af0d0d` wave receipts (supervised x0 0.921226,
+   CI [+0.000063, +0.000151]; unsupervised persona_geometry 0.397574, segment ARI 1.0;
+   rl/simulator unchanged) — and re-rendered the plan root SOLVED 39/39 at behavior
+   `89cec70b` (B CERTIFIED 23/23, 8/8; S6 OK at the clean tree; backward open 0; five
+   commit gates RC=0). The pre-registered DEC-611 condition — "card must remain SOLVED
+   39/39 at the new behavior" — is met. B-021 filed and closed on this evidence
+   (AUDIT.md §4/§6.12/§9).
