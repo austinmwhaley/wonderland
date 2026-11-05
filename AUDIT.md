@@ -17,6 +17,9 @@
 > the SOLVED tree (the previous FULL, `dcad1bd`, ran at the pre-SOLVED tree `560a6c4`).
 > **Closing FULL 2026-11-05 at the closure tree `eb9381b`** (§6.9): NO BREAKING, all MAJORs
 > closed by evidence; the tick-tock stop condition (§6.8) is met at that tree.
+> **Rescan 2026-11-05 at `b512068`** (operator-requested full adversarial pass; §6.10):
+> NO BREAKING; one new MINOR finding (B-019 — the R7 route text in `plan_spec.py` lags
+> this record).
 > **Verdict: NO BREAKING FINDINGS.** Every one of the card's 39 atoms was re-derived from its
 > receipt and frozen gate (§6.2–§6.4); no measurement is falsified. The findings were
 > record-and-consistency findings: **3 MAJOR** — B-012 (the decision log is missing the entries
@@ -64,7 +67,7 @@ open) · **violated** (principle broken, requirement open) · **not yet audited*
 | P3 | **Lawful** — compositionality, equivariance, correct algebra per quantity | merge/equivariance/mass-additivity receipts; per-sample contract; no batch-coupled serving statistics; additive mass scored in raw units | not yet audited | — |
 | P4 | **Efficient** — linear time, constant state, incremental, minimal capacity | no per-row Python loops in hot paths; scans/gathers/einsum; O(1) serve; derived budgets; caps enforced | not yet audited | — |
 | P5 | **Robust** — fail safe, reject not clamp, calibrated uncertainty | determinism; divergence = hard failure; no silent clamps/NaNs; widened uncertainty on OOD; caps/co-tenancy | not yet audited | — |
-| P6 | **Honest** — grounded, falsifiable, label-free upstream | pre-registration before the run; frozen acceptance; paired CIs; controls; no training on the graded metric; no post-hoc gate edits | **aligned** | B-002–B-005, B-008–B-010 closed; B-012, B-013, B-014 closed 2026-11-05 by evidence (`470bb5e`/`4cf477b`/`08e37e4`); B-016 closed by this review; B-017 open (INFO) |
+| P6 | **Honest** — grounded, falsifiable, label-free upstream | pre-registration before the run; frozen acceptance; paired CIs; controls; no training on the graded metric; no post-hoc gate edits | **aligned** | B-002–B-005, B-008–B-010 closed; B-012, B-013, B-014 closed 2026-11-05 by evidence (`470bb5e`/`4cf477b`/`08e37e4`); B-016 closed by this review; B-017 open (INFO); B-019 open (MINOR) |
 | P7 | **Accessible** — recoverable by simple consumers | linear shipping head; kNN unsupervised; MLP diagnostic only; decodability/parity receipts; no bucket dilution hidden | **aligned (boundary recorded)** | B-008 closed |
 | P8 | **Diagnosable** — attribute a shortfall to an axis and propose the fix | every red row names its axis; protocol names one axis; rejected alternatives recorded; coupling disclosed | **gap** | B-002, B-003, B-007 closed; B-017 open (INFO) |
 
@@ -97,6 +100,7 @@ open) · **violated** (principle broken, requirement open) · **not yet audited*
 |---|---|---|---|---|---|
 | B-017 | **INFO** | P6/P8 | The supervised leg's evidence discloses two open, non-gating questions: (i) negative controls are vacuous (R² < −1, a wide-design conditioning artifact) on 5/7 traits — the frozen `VACUOUS_CONTROL_R2` doctrine (`judge_spec.py:179–183`) says such controls prove nothing, and the gate does not count them; (ii) the ledger-only diagnostic beats the table on 4/7 traits (best R² 0.8659 on x0 vs the table's 0.8791), which falsifies SPINE §5's "the ledger is what the table already is" corollary and is recorded as "needs an operator ruling". | `judge_leg_supervised.json` `checks.supervised.evidence` (both WARNINGs); leg verdicts derive from `columns` via the frozen `_task_passes` (`report_card.py:829`), not from `checks` | None required (disclosure); the SPINE §5 ruling is queued to the operator. If the ruling revises the corollary, B3.6's branch text and the delivery framing update in a forward run. |
 | B-018 | **INFO** | E10 | `plugin_acceptance.json` (the V1.2 reference receipt, n_rows 9) has no `_meta`; the gate receipt `v1_plugins.json` that V1.2's atom actually reads is stamped (behavior `df73c2aa`, `passed: true`, `n_rows: 9`). | key lists of the two receipts; `measure_v1_stack.py` stamps the gate receipt, not the reference | None required (disclosure); stamp the reference in a future producer pass if V1.2 is re-run. |
+| B-019 | **MINOR** | P6/E10 | The R7 route step's evidence text in `plan_spec.py:631` (rendered at `PLAN.md:619` and the card's route table) still carries the DEC-605-era snapshot "DONE: FULL BACKWARD re-review closed all 11 findings (8 by evidence, 3 by the scope/reclassification…)", while this file's record at the rescan tree is 16 of 18 closed (13 by evidence, 3 by scope, B-017/B-018 open INFO) — a card↔audit prose contradiction (PROMPT_BACKWARD §7 checklist). | `plan_spec.py:628–634` vs this file §3/§6.9/§9 at `b512068`; rendered copy at `PLAN.md:619` | One-line durable-outcome repair of the R7 evidence text (no hardcoded finding count); re-render PLAN/card; close in §9. |
 
 ---
 
@@ -458,6 +462,45 @@ closed. The only remaining git action is the push, pending explicit operator per
 
 ---
 
+### 6.10 Rescan FULL review at `b512068` (2026-11-05, operator-requested)
+
+Operator-requested full adversarial rescan at the tree *after* the closing review
+(`b512068` = closing review + the test-only citation-elision fix). Independent
+re-derivation: every check re-executed, no number taken from §6.9 on trust.
+
+| Attack | Result |
+|---|---|
+| Mechanical gates at `b512068` | `ruff check .` / `ruff format --check .` RC=0 (487 files); `pytest -m "not slow"` 773 passed / 14 deselected RC=0; `principle_audit --all --strict` 74 blocking / 0 new vs the 67-entry baseline; `plan.py --check` PASS (680 lines) |
+| Behavior hash | recomputed `df73c2aa1427b471` = card claim; the behavior trees are unchanged by the spec/script-only commits since `38740c8` |
+| Card determinism | fresh render vs the committed card: content delta = the header line only |
+| Macro re-derivation | plan root PASS; 31 card atoms green + 8 `plan_spec.CLOSED` record closures (3 dec + 5 v1) = 39/39; `backward_open=0`; B 23/23, 8/8 sections |
+| JSON audit state | 18 requirements: 16 closed (closure kinds: evidence ×13, scope ×3 — no operator-accepted), B-017/B-018 open INFO; zero open BREAKING/MAJOR |
+| Registries | bundle `116087fb206c2d81` and bank `919a932f1b657064` recomputed, both match the claims |
+| Receipt drift 38740c8→b512068 | exactly the 4 leg receipts (the DEC-608 re-stamp); no other receipt touched |
+| Leg columns (8) | re-derived task-by-task under the frozen `_task_verdict`: progress legs `ci_lo > 0 and brain > pathA`; delivery legs the SST-scaled margin rules; controls random/destroyed ≤ brain — all PASS |
+| E1 citations | every number in the dec-citation text re-checked against the lab receipts: E1.a g −0.580876, `paired_ci_enc_minus_base` [−0.0240014, −0.0006619], bar_g 0.5, A-side control gate complete; E1.b g −0.721396 / 0.181074 (long, beats_base + mastered true both); E1.c port eff_rank 30.881072 / persona 0.267182 / served_mean_r2 0.459995 vs bars {30, 0.15, 0.45}, `meets_all_bars: true`; trunk-only base272 4.105023 / bank179 10.330055 recorded, both `meets_all_bars: false` |
+| V1.1–V1.5 | all five stamped receipts `passed: true` at `df73c2aa` (V1.1 = `v1_identifiable_stream.json`: one-factor randomized weekly offer, `offer_frequencies` {0.2502, 0.2499, 0.2499, 0.25}, n_customers 5000, n_email_sends 375456) |
+| B receipts + stages | all 23 B rows at current behavior (the 13 reporting-gate rows are disclosed on the card; none promoted in prose); S1–S6 block stamps current, `working: true` |
+| "universal" usage | in the card only goal line G and S1 (a receipted row); no unearned universality claim in card prose |
+| Decision log | 336 entries (oldest 275, newest 609); seals at the reserved 597/602; the disciplined tail ≥ 590 is monotone [590–596, 598–601, 603–609]; citation test green; R1–R6 route texts accurate against the receipts |
+| §6.9 spot check | card sha256 at `eb9381b` recomputed = `c2ca1fc60ccbfae5` (the first mismatch was a scan-side bug — printing the file's byte-hex instead of the digest; `sha256sum` and `hashlib` agree) |
+
+**Finding B-019 (MINOR, P6/E10).** R7's route evidence text — `plan_spec.py:631`,
+rendered at `PLAN.md:619` and in the card — still reads the DEC-605-era snapshot
+"closed all 11 findings (8 by evidence, 3 by the scope/reclassification…)"; the record
+at this tree is 16 of 18 closed (13 evidence + B-001/B-003/B-008 scope) with the two
+open items disclosed INFO. A card contradicting the audit in prose is a finding under
+PROMPT_BACKWARD §7. Non-blocking: route steps are pointers, not verdicts, and no gate
+reads this text. Forward subgoal: one-line durable-outcome repair — state the outcome,
+name the three scope closures, do not hardcode a count that would go stale at the next
+finding (rejected: re-counting "16 of 18" into the text; editing this file to match the
+plan — the record is the newer, correct one).
+
+**Verdict: NO BREAKING.** One new MINOR (B-019) filed in §3/§9; everything else
+re-verified clean at `b512068`.
+
+---
+
 ## 7. What a principle finding looks like
 
 ```text
@@ -729,6 +772,17 @@ remain open without blocking completion.
       "gate_touched": "none",
       "evidence": "key lists of plugin_acceptance.json vs v1_plugins.json",
       "audit_ref": "A-018",
+      "date": "2026-11-05"
+    },
+    {
+      "id": "B-019",
+      "severity": "MINOR",
+      "principle": "P6/E10",
+      "status": "open",
+      "finding": "R7 route step evidence text (plan_spec.py:631, rendered at PLAN.md:619 and on the card) still reads the DEC-605-era count 'closed all 11 findings (8 by evidence, 3 by the scope/reclassification...)'; this file's record at the rescan tree is 16 of 18 closed (13 by evidence, 3 by scope, B-017/B-018 open INFO) - a card-audit prose contradiction.",
+      "forward_subgoal": "One-line durable-outcome repair of the R7 evidence text without a hardcoded finding count (state the outcome; name the three scope closures B-001/B-003/B-008); re-render PLAN/card.",
+      "gate_touched": "none (route prose; steps are pointers, not verdicts)",
+      "audit_ref": "A-019",
       "date": "2026-11-05"
     }
   ]

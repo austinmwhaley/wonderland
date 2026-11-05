@@ -25,8 +25,10 @@ delivery/ledger port: eff_rank 30.9 / persona 0.267 / R2 0.460, with the trunk-o
 4.11/10.33 recorded); **V1.1-V1.5 are green** (identifiable stream, plugins 9/9, red_king
 known-effect 73.3% vs 25% chance + held-out policy 0.371 vs 0.208 random, red_queen DEPLOY/HOLD
 offer composition, caterpillar on red_queen's plan). **No BACKWARD BREAKING/MAJOR requirement is
-open** (AUDIT.md: 16 of 18 requirements closed; B-017/B-018 open as disclosed INFO, the B-017
-SPINE §5 ruling queued to the operator; closing FULL review at `eb9381b`, §6.9). **Scope:** the
+open** (AUDIT.md: 16 of 19 requirements closed; B-017/B-018 open as disclosed INFO, the B-017
+SPINE §5 ruling queued to the operator; closing FULL review at `eb9381b`, §6.9; operator-requested
+rescan at `b512068`, §6.10: NO BREAKING, one new MINOR B-019 open — the R7 route text lags the
+record). **Scope:** the
 certified artifact is the synthetic
 demo prototype; no production-stream claim, and no trunk-only capacity claim. **Macro reframe
 DEC-567 (2026-11-02):** the X-ray is far
@@ -397,16 +399,17 @@ next question is the learned shape, not another consumer tuning pass.
 
 1. **Stop condition met (2026-11-05).** The card's plan root is `SOLVED` 39/39 at behavior
    `df73c2aa`; the closing FULL BACKWARD review at the closure tree `eb9381b` (AUDIT.md §6.9)
-   returns NO BREAKING with all MAJORs closed — B-012/B-013/B-014/B-015 by evidence
+   and the operator-requested rescan at `b512068` (AUDIT.md §6.10) both return NO BREAKING
+   with all MAJORs closed — B-012/B-013/B-014/B-015 by evidence
    (DEC-607/608/606/609; `470bb5e`/`4cf477b`/`08e37e4`/`672c164`), B-016 by the rewrite.
    No forward measurement work remains on the plan tree.
-2. **Push — pending operator permission.** All round commits are local
-   (`85289b3` → the closing review); AGENTS.md: pushing is the only git action that needs
-   permission.
-3. **B-017 operator ruling (queued).** The flat-era vacuous negative controls + the
-   ledger-only diagnostic falsifying SPINE §5's corollary are disclosed INFO; if the ruling
-   revises the corollary, B3.6's branch text and the delivery framing update in a forward
-   run.
+2. **B-019 record repair (MINOR, queued to the next forward run).** The R7 route evidence
+   text in `plan_spec.py:631` still carries the DEC-605-era "closed all 11 findings" count;
+   repair it as a durable-outcome sentence (no hardcoded count; name the B-001/B-003/B-008
+   scope closures), re-render PLAN/card, close B-019 in AUDIT.md §9.
+3. **Push — pending operator permission.** All round commits are local
+   (`85289b3` → `b512068` + the rescan record); AGENTS.md: pushing is the only git action that
+   needs permission.
 
 ## Operating facts
 

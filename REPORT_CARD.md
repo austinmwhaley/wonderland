@@ -1,6 +1,6 @@
 # REPORT_CARD — B foundational, then PATH B > PATH A
 
-*Generated `2026-11-05T09:23:54+00:00` · commit `5d65046` (`foundation-rebuild` · dirty) · encoder behavior `df73c2aa1427b471`*
+*Generated `2026-11-05T15:33:13+00:00` · commit `b512068` (`foundation-rebuild` · dirty) · encoder behavior `df73c2aa1427b471`*
 
 **Assessment:**
 
@@ -248,6 +248,7 @@ Principle-alignment findings live in `AUDIT.md`; the machine-readable gate is th
 | B-016 | MINOR | P6 | closed | The previous AUDIT §4 carried an orphaned table separator with B-004/B-010 rows duplicated outside the closed table, and §5 disclosed fast-t | Repair the file (defects in BACKWARD's own file may be fixed by the rewrite). | A-016 |
 | B-017 | INFO | P6/P8 | open | Supervised leg evidence discloses: 5/7 traits have vacuous negative controls (R2 < -1, wide-design conditioning artifact; frozen VACUOUS_CON | none required (disclosure); SPINE §5 baseline-vs-corollary ruling queued to the operator. | A-017 |
 | B-018 | INFO | E10 | open | plugin_acceptance.json (V1.2 reference receipt, n_rows 9) has no _meta; the gate receipt v1_plugins.json it points at is stamped (behavior d | none required (disclosure); stamp the reference on a future V1.2 producer pass. | A-018 |
+| B-019 | MINOR | P6/E10 | open | R7 route step evidence text (plan_spec.py:631, rendered at PLAN.md:619 and on the card) still reads the DEC-605-era count 'closed all 11 fin | One-line durable-outcome repair of the R7 evidence text without a hardcoded finding count (state the outcome; name the three scope closures  | A-019 |
 
 ---
 
