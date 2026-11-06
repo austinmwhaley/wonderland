@@ -16,10 +16,8 @@ all get signal from it through simple heads.
 `brain alone` = **progress**, `brain + ledger` = **delivery** (non-inferiority). Ledger points are
 never a brain win.
 
-**Stage:** Layer 0 — **PLAN ROOT SOLVED 39/39 on the synthetic `demo_v2` prototype** (card
-committed at `10fc4e1`, behavior `89cec70b`; the DEC-614 re-stamp to `7f20fd0b` is in
-progress). **B is
-CERTIFIED** (23/23, 8/8 at behavior `89cec70b`, on the single `cfm_v2k_vf2_cert` bundle);
+**Stage:** Layer 0 — **PLAN ROOT SOLVED 39/39 on the synthetic `demo_v2` prototype** (behavior `7f20fd0b` after the DEC-614 re-stamp; the previous card at `10fc4e1` was `89cec70b`). **B is
+CERTIFIED** (23/23, 8/8 at behavior `7f20fd0b`, on the single `cfm_v2k_vf2_cert` bundle);
 **B+C is DONE** (8/8, bank v2, DEC-598) for the served bank, with the measure-free donor-only
 boundary recorded (B-008); the three plugin gates pass **9/9**; **E1 is PASS as served-object
 capacity** (E1.a g -0.581, E1.b g -0.721/0.181 via the served signature block; E1.c is a
@@ -84,11 +82,16 @@ histogram half; it is not the missing piece.
   pre-canonicalization to `value`). **B-024/B-025 (INFO, open, named scope)** — the
   supervised LEG's target family and the decision LEG's arm/reward contract are frozen
   evaluation/causality contracts; named as scope, not filed as defects. Behavior moved
-  `89cec70b` → `7f20fd0b` (a `looking_glass` edit): the full re-stamp is running — the 12
+  `89cec70b` → `7f20fd0b` (a `looking_glass` edit): the full re-stamp is COMPLETE — the 12
   B-row producers at their own recorded commands + the one-command S6 chain on the clean
-  tree after the DEC-614 code commit. DEC-613 is sealed on `main` as the cross-branch
-  allocation (the log-citation gate; the entry lives on `looped-transformer`, banked, not
-  merged). The B2 scale arm (the N-ladder campaign) stays queued behind this.
+  tree after the DEC-614 code commit (`1f6ae02`), all RC=0: 13/16 receipts zero-diff, the
+  3 with diffs in the disclosed DEC-611 classes (the excluded sufficiency-probe H draw
+  137279 → 61103 s; runtime wall-clock; b_props NaN round-trip) — zero verdict-bearing
+  value drift, the four judge legs value-identical, S6 all six checks OK, the card
+  re-rendered **SOLVED 39/39 at `7f20fd0b`** (N unchanged: A=3515 / B=1485). DEC-613 is
+  sealed on `main` as the cross-branch allocation (the log-citation gate; the entry lives
+  on `looped-transformer`, banked, not merged). The B2 scale arm (the N-ladder campaign)
+  stays queued behind this.
 - **DEC-611 campaign complete (2026-11-05; closeout commit in progress): the multi-domain
   dev-rig, and the empirical answer to B-020.** Three structurally distinct known-truth
   domains — `sensor_fleet` (regime ordering + continuous levels), `clickstream_sessions`
@@ -469,14 +472,15 @@ next question is the learned shape, not another consumer tuning pass.
 
 ## Next 3 actions
 
-1. **DEC-614 re-stamp wave (running 2026-11-06):** the 12 B-row producers re-run with their
+1. **DEC-614 re-stamp COMPLETE (2026-11-06):** the 12 B-row producers re-run with their
    own recorded commands + the one-command S6 chain, on the clean tree after the DEC-614
-   code commit. Expected: all receipts re-stamped at behavior `7f20fd0b`, zero
-   verdict-bearing value drift (the no-op is proven: demo_v2's single numeric column is
-   `value`), the only permitted variance being the disclosed excluded
-   sufficiency-probe H draw (DEC-611), and the plan root SOLVED 39/39 with S6 OK.
-2. **The card commit (closeout):** regenerated receipts + card + the DEC-614 outcome
-   addendum + AUDIT B-022..B-025 + the five commit gates RC=0. `main` is ahead of
+   code commit `1f6ae02` — all RC=0; 13/16 receipts zero-diff (the 3 diffed receipts in
+   the disclosed DEC-611 classes: the excluded sufficiency-probe H draw, runtime
+   wall-clock, b_props NaN round-trip — zero verdict-bearing value drift); the four
+   judge legs value-identical; S6 all six checks OK; plan root **SOLVED 39/39 at
+   behavior `7f20fd0b`** (B CERTIFIED 23/23, 8/8; B+C DONE; N unchanged A=3515/B=1485).
+2. **This commit is the card commit (closeout):** regenerated receipts + card + the
+   DEC-614 outcome addendum + the five commit gates RC=0. `main` is ahead of
    `origin/main` since 2026-11-05; the push still awaits operator permission.
 3. **B2 scale arm queued (the any-scale half of the operator mandate):** the N-ladder
    campaign — N=2K/10K/25K fixtures on the three mastered domains + the g-vs-N curve +

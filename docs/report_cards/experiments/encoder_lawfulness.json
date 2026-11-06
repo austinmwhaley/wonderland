@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "89cec70b2c6889b6",
+    "behavior_hash": "7f20fd0badb210d6",
     "command": "scripts/measure_construction_law.py --products looking_glass/artifacts/cfm_v2k_vf2_bank",
-    "generated_at": "2026-11-05T19:22:55+00:00",
-    "git_commit": "4d1e00e23081521e4172f7d7e53c25fa743b26df",
+    "generated_at": "2026-11-06T05:27:00+00:00",
+    "git_commit": "1f6ae021f2140be90ddbe7aaf73f88530b83b3ae",
     "producer": "measure_construction_law.py"
   },
   "checks": {
@@ -27,13 +27,13 @@
     },
     "mass_additivity": {
       "evidence": "mass additivity scan(d, b1+b2) == scan(d,b1)+scan(d,b2) on real drives (disjoint event supports, float64): worst relative error 4.819e-16 (gate 1e-10)",
-      "seconds": 0.3,
+      "seconds": 1.9,
       "working": true,
       "worst_rel_err": 4.819029600981345e-16
     },
     "scan_associativity": {
       "evidence": "merge law F(g\u2218f)=F(g)\u2218F(f) on 20 real sequences x 5 split points (float64, model's own decay/drive, continuous_time=True): worst relative error 1.105e-15 (gate 1e-10)",
-      "seconds": 0.6,
+      "seconds": 3.8,
       "working": true,
       "worst_rel_err": 1.105497335394747e-15
     },
@@ -41,7 +41,7 @@
       "evidence": "renamed client_id/occurred_at/event/attributes/total -> onboard resolved {'customer_key': 'client_id', 'event_ts': 'occurred_at', 'event_type': 'event', 'brand': None, 'entity_type': None, 'entity_id': None, 'source_table': 'source_table', 'value': 'value', 'event_attributes': ['attributes', 'total']}; 2341648 rows kept (source 2341648); 5000 customers encoded; encoder trained on the resolved stream (d=64,L=1,e=1): E finite=True, best=50.8919; zero pipeline-code edits",
       "n_customers": 5000,
       "n_rows": 2341648,
-      "seconds": 84.0,
+      "seconds": 167.3,
       "working": true
     }
   },
@@ -78,6 +78,6 @@
     "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
   },
   "scan_merge_delta": 8.881784197001252e-16,
-  "seconds": 100.8,
+  "seconds": 202.1,
   "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
 }

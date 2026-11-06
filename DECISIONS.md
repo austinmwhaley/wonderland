@@ -12010,4 +12010,33 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
      fixtures on the three mastered domains + the g-vs-N curve + the long-range horizon
      probe) is preserved as the next DEC under this mandate; it is deferred behind this
      generality fix so the pipeline is situation-general before it is exercised at new N.
-   - **Outcome addendum (pending the re-stamp).** [to be completed]
+   *DEC-614 outcome (2026-11-06 — acceptance met):* full re-stamp on the clean tree
+   after the DEC-614 code commit (`1f6ae02`): the 12 B-row producers re-run with their
+   own recorded commands (all RC=0, 21:23–21:34), then the one-command S6 chain
+   (`measure_certification_law.py --products cfm_v2k_vf2_bank --demo demo_v2`, RC=0).
+   Field-by-field drift check (every field except stamp fields, pre-wave vs post-wave
+   snapshots): **13/16 receipts zero-diff; the 3 with diffs fall entirely in the
+   disclosed DEC-611 classes — zero verdict-bearing value drift.** (i)
+   `encoder_sufficiency_law` — the EXCLUDED `horizon-count-value` probe's H draw
+   (137279 → 61103 s) and its losses: the order-dependent `default_rng(65537).choice`
+   over the unordered gap query (`n_gaps` identical at 2,336,629; the probe is
+   `included: false` in BOTH runs, headroom −0.1747/−0.0880, both ≤ 0 → excluded and
+   reported in both; every included-probe headroom, `u`, and `worst_probe` identical).
+   (ii) `runtime.json` — wall-clock/memory only (warm 86.1 → 77.6 s; rows/s 52.3 → 58.0;
+   peak RSS 3353.5 → 3384.2 MB; B5.2 PASS under both receipts). (iii)
+   `encoder_b_props.json` — the NaN→NaN JSON round-trip on the empty OOD holdout (the
+   exact DEC-611 artifact). The four judge legs are value-identical at the new
+   behavior — the supervised leg is the one that executes the modified comparator
+   (x0 0.921226, CI [+0.000063, +0.000151] vs PATH A 0.879091; unsupervised persona
+   0.397574 vs 0.386663, segment ARI 1.0; rl/simulator unchanged). All six S6 checks
+   OK, including `commit_recorded_clean` on the clean tree; the card re-renders
+   **SOLVED 39/39 at behavior `7f20fd0b`** (B CERTIFIED 23/23, 8/8; B+C DONE 8/8 legs ·
+   stages 6/6; backward open 0; N unchanged: A=3515 / B=1485 as of 2025-01-01). The
+   pre-registered acceptance — "card must hold SOLVED 39/39 at the new behavior with
+   zero value drift" — is met. Five commit gates RC=0 on the closing tree (pytest
+   `-m "not slow"` full suite — the two F's of the first timed-out run were (a) my own
+   uncited DEC-613 reference, fixed by sealing DEC-613 on `main` as the cross-branch
+   allocation, and (b) a SIGTERM artifact: the 120 s tool deadline hit the
+   `test_golden_determinism` run and the repo's gpu_watchdog handler converted the kill
+   to `SystemExit(0)` — both green on re-run, full suite RC=0). The card commit
+   carries the regenerated receipts + card + this addendum.

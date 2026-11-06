@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "89cec70b2c6889b6",
+    "behavior_hash": "7f20fd0badb210d6",
     "command": "scripts/measure_decision_law.py --products looking_glass/artifacts/cfm_v2k_vf2 --ope-products looking_glass/artifacts/cfm_v2k_vf2_bank",
-    "generated_at": "2026-11-05T19:21:04+00:00",
-    "git_commit": "4d1e00e23081521e4172f7d7e53c25fa743b26df",
+    "generated_at": "2026-11-06T05:30:55+00:00",
+    "git_commit": "1f6ae021f2140be90ddbe7aaf73f88530b83b3ae",
     "producer": "measure_decision_law.py"
   },
   "complete": true,
@@ -20,7 +20,7 @@
     "n": 1485,
     "n_levels": 4,
     "oracle_ceiling": 0.6404,
-    "seconds": 9.2,
+    "seconds": 2.0,
     "share_E": 0.2983164983164983,
     "share_destroyed": 0.2383838383838384,
     "share_random": 0.2585858585858586,
@@ -57,7 +57,7 @@
       "none_bucket_idx": 0,
       "note": "target_key is a lab marker (which arm randomized this event); the pre-registered risk is that the trunk learned it \u2014 recorded, not gated",
       "ok": true,
-      "seconds": 30.5,
+      "seconds": 31.2,
       "share_E_prime": 0.30033670033670035,
       "share_E_stored": 0.2983164983164983
     },
@@ -103,7 +103,7 @@
     "n_test": 74746,
     "n_train": 177017,
     "protocol": "v2 (DEC-595): randomized daily offer periods; reward = purchase on the offer day (arm_cells); per-level ridge T-learner fit on split-A periods, scored on split-B periods; uniform IPS p0=1/K; table arm under the same head/periods",
-    "seconds": 10.3
+    "seconds": 4.6
   },
   "decision_ope_v1_margin": {
     "E_ips": 152.93,
@@ -134,7 +134,7 @@
     "n_train": 1039,
     "protocol": "v1 port (DEC-585): last-logged email_send offer; as-of state; uniform IPS p0=1/K; standardized-ridge head (replaces legacy XGB \u2014 B-only simple-head doctrine); legacy channel arm RETIRED (demo_v2 randomizes offer only)",
     "random": 181.31,
-    "seconds": 0.7
+    "seconds": 0.3
   },
   "device": "cuda:0",
   "n_A": 3515,
@@ -150,6 +150,6 @@
     "registry_sha256": "676e52359995983a",
     "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
   },
-  "seconds": 543.1,
+  "seconds": 148.5,
   "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
 }
