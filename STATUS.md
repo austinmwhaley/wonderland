@@ -439,21 +439,28 @@ next question is the learned shape, not another consumer tuning pass.
 
 ## Next 3 actions
 
-1. **DEC-611 closeout COMPLETE — all-green baseline on `main` (2026-11-05).** Campaign
-   chunk `9af0d0d`; closeout forensics DEC-612 (the chain's stale legs-producer map, fixed
-   at `0470c79`); the clean one-command `measure_certification_law.py` re-stamp rendered the
-   plan root **SOLVED 39/39 at behavior `89cec70b`** (B CERTIFIED 23/23, 8/8; S6 OK;
-   backward open 0) — this commit carries the regenerated card + receipts + B-021
-   (filed and closed, AUDIT.md §4/§6.12/§9). The push to `main` (operator permission
-   2026-11-05) follows this commit; `main` is then the working base — the
-   looped-transformer (Dory-style) trunk exploration re-cuts from it.
-2. **Certification statement (delivered with the push):** B is CERTIFIED 23/23, 8/8 at
+1. **DEC-613 looped-transformer trunk (IN PROGRESS on branch `looped-transformer`, cut
+   from `main` @ `10fc4e1`; the demo re-stamp commit — the clean demo run of 2026-11-05:
+   SOLVED 39/39 at behavior `89cec70b`, B CERTIFIED 23/23 8/8, S6 OK, backward open 0,
+   zero value drift in the four bank-v2 legs).** Pre-registered DEC-613: a Dory-style
+   looped (latent-recurrent) GPT trunk (`LoopedGPTTrunk`) grafted behind the `self.ssm`
+   contract via the new `CFMConfig.trunk ∈ {"ssm","looped_gpt"}` + `n_loops` (L∈1..4,
+   default 2) protocol axis — I/R/O blocks scaled to our capacity (1/(1×L)/1), input
+   re-injected every loop, SWA/full attention interleaved (per-row window = half the
+   row's own valid length), nGPT constant depth at the public interface (final RMSNorm;
+   pre-train `model_health` passes). Law tension disclosed up front: the composition
+   canary is inapplicable to an attention trunk (branch-only; merge-to-main is a
+   DEC-573 behavior move needing operator ruling). Comparison protocol frozen: the
+   DEC-576 dev-rig at N=500 (3 domains × pos/neg/adv at L=2; pos at L=1/L=4) vs the
+   committed SSM baseline receipts (`*_dec611{,_hier}.json`).
+2. **Certification statement (delivered with the main push):** B is CERTIFIED 23/23, 8/8 at
    behavior `89cec70b` on the single `cfm_v2k_vf2_cert` bundle — the `demo_v2` synthetic
    prototype (B-001 scope; dev-rig receipts are instruments, not B-row evidence, DEC-576);
-   plan root SOLVED 39/39 after the DEC-612 re-stamp. The looped-transformer (Dory-style)
-   trunk exploration is deferred at operator instruction (branch deleted 2026-11-05); to be
-   re-cut from `main` when resumed — the Dory mapping + encoder-contract facts are preserved
-   in the DEC-611 record.
+   plan root SOLVED 39/39 after the DEC-612 re-stamp. Performance numbers from the clean
+   demo run of 2026-11-05 (this branch's baseline): supervised x0 0.921226 / h0 0.97513 /
+   return 0.512708 / churn 0.170297 / regime_switches 0.118505; unsupervised persona
+   0.397574 / future 0.192668 / segment ARI 1.0; rl uplift 0.243297 / policy 0.249345;
+   simulator dose 0.317904 / argmax 0.329966 (all brain column, N as recorded).
 3. **Operator rulings queued:** B-017 (SPINE §5 corollary; INFO, disclosed); the AGENTS.md
    "8 GiB card" line is stale on this GB10 unified-memory machine (project cap 32 GB,
    operator 2026-11-02, reconfirmed 2026-11-05 — a charter edit is the operator's call, and
@@ -462,7 +469,7 @@ next question is the learned shape, not another consumer tuning pass.
 
 ## Operating facts
 
-- **Repo:** `/home/austin_whaley/Documents/Repos/wonderland`, branch `foundation-rebuild`, venv `.venv`.
+- **Repo:** `/home/austin_whaley/Documents/Repos/wonderland`, branch `looped-transformer` (cut from `main` @ `10fc4e1`, 2026-11-05; `main` is the all-green baseline), venv `.venv`.
 - **Testbed:** Layer A v2 demo at `/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/demo_v2/`.
 - **Card:** `.venv/bin/python scripts/report_card.py` → `REPORT_CARD.md` (the only measurement surface).
 - **Architecture visual:** `ENCODER.html` — the at-a-glance CFM map (the cell, the timescales, the served object, the statistic bank). A map, not a card; every verdict/number stays on `REPORT_CARD.md`.

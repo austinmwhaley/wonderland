@@ -521,6 +521,16 @@ class CFMConfig:
     grad_checkpoint: bool = False
     # B5: multi-token prediction horizon k (opt-in via objectives+="mtp"). 0 = off.
     mtp_k: int = 4
+    # DEC-613 (branch looped-transformer): the trunk axis. "ssm" (default) is the
+    # existing selective multi-scale SSM — the tag signature is byte-identical to
+    # pre-DEC-613 when the trunk stays "ssm". "looped_gpt" is the Dory-style looped
+    # (latent-recurrent) GPT trunk: a DIFFERENT dynamics behind the same forward
+    # contract, so it is a protocol axis in its own right (its own tag, its own
+    # checkpoint; it never warm-starts an SSM trunk and vice versa).
+    trunk: str = "ssm"
+    # DEC-613: the loop count L of the looped trunk (the Dory elastic range 1..4,
+    # default 2 — most of Dory's accuracy gain is in loop 2). Part of the tag.
+    n_loops: int = 2
 
     @property
     def tag(self) -> str:
@@ -585,6 +595,12 @@ class CFMConfig:
             # different weights (W_nl3 + beta3), so the algebras must not share a name
             # (DEC-445/448). OFF leaves the signature byte-identical: cfm_v2k's tag is stable.
             sig_extra += "|dl"
+        if getattr(self, "trunk", "ssm") == "looped_gpt":
+            # DEC-613: the looped GPT trunk is a fourth trunk algebra — attention +
+            # latent loops train different weights, and the loop count L is the elastic
+            # knob, so BOTH go into the identity (|lg1, |lg2, |lg4 are distinct protocols;
+            # an SSM trunk's tag stays byte-identical: the default "ssm" adds nothing).
+            sig_extra += f"|lg{int(getattr(self, 'n_loops', 2))}"
         sig = hashlib.sha256(f"{obj}|{eff}{prof}{sig_extra}".encode()).hexdigest()[:8]
         return (
             f"{base}-b{int(self.batch)}d{int(self.dim)}e{int(self.epochs)}"

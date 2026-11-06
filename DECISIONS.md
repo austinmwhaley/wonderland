@@ -11930,3 +11930,107 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
    commit gates RC=0). The pre-registered DEC-611 condition — "card must remain SOLVED
    39/39 at the new behavior" — is met. B-021 filed and closed on this evidence
    (AUDIT.md §4/§6.12/§9).
+- **DEC-613 (looped-transformer trunk exploration, pre-registered 2026-11-05, branch `looped-transformer` from `10fc4e1`): a Dory-style looped (latent-recurrent) GPT trunk, grafted behind the `self.ssm` contract, compared against the SSM trunk on the frozen DEC-576 dev-rig protocol. One axis moved: dynamics.**
+
+Context: operator request — "run the demo and get performance numbers, then implement a
+looped-transformer (like NVIDIA Nemotron-Labs Dory 1.0 4B) and compare the results". The demo
+all-green baseline is `main` @ `10fc4e1` (SOLVED 39/39 at behavior `89cec70b`; B CERTIFIED
+23/23, 8/8; S6 OK; backward open 0). Dory's mechanism (re-verified from the model card
+2026-11-05): input block (8 layers, once) → shared recurrent block (20 layers, applied
+`n_recurrent_loops` L ∈ 1..4 times, default 2) → output block (8 layers, once); the original
+input is REINJECTED into every loop; sliding-window attention and full attention are
+interleaved; nGPT constant-depth normalization; elastic compute (one checkpoint serves loop
+counts).
+
+Decision: new trunk class `LoopedGPTTrunk` (`looking_glass/cfm_looped_trunk.py`), selected by
+a new config axis `CFMConfig.trunk ∈ {"ssm", "looped_gpt"}` (default `"ssm"` — main's behavior
+and every existing artifact are untouched by default) with `CFMConfig.n_loops` (L, default 2,
+validated 1..4), plumbed through the single `CFM.__init__(trunk=..., n_loops=..., max_pos=...)`
+branch and the checkpoint-blob contract (`"trunk"`/`"n_loops"`/`"seq_len"` keys; old blobs
+rebuild as SSM; a looped blob missing a key fails safe, it is never clamped). The trunk satisfies
+the exact `MultiScaleSSM` forward contract `forward(x, h0, mask, ev, ev_prev, dt, f0, g0) ->
+(y, h)` with x=(B,T,chan), y=(B,T,dim), h=(B,dim):
+  * I block: 1 input transformer layer (RMSNorm → causal attention → residual;
+    RMSNorm → MLP → residual), run once.
+  * R block: 1 shared recurrent transformer layer run L times (weight-tied, the Dory loop);
+    after each loop execution the I-block output h_in is re-added to the stream (input
+    re-injection, Dory).
+  * O block: 1 output transformer layer, run once; then readout Linear(hidden→dim) + a final
+    RMSNorm. h = the stream at the last VALID position (masked gather); y = the per-position
+    readout.
+  * Attention interleave: stack slot k (I=0, the L loop executions=1..L, O=L+1) uses FULL
+    causal attention for even k, sliding-window causal attention (window = T//2, derived from
+    the forward's own padded length — no literal) for odd k. Masked positions (padding) are
+    excluded from both query and key via the S6-free attention mask; time-gap information is
+    already in x through the shared `w_dt` token embedding.
+  * nGPT constant-depth: pre-RMSNorm at every sublayer + the final RMSNorm at the public
+    interface, so the public y/h scale is loop-count invariant (verified empirically: L=1 vs
+    L=4 readout-norm check recorded in the test receipt). The internal stream may grow
+    O(sqrt(L)); the readout absorbs it.
+  * h0 state chaining: a transformer has no recurrence to seed; h0 (B,dim) enters as a
+    LEARNED prior — `w_prior: Linear(dim, hidden)` broadcast-added to the token stream before
+    the I block (h0=None → no prior). This preserves the cross-window semantics of
+    `forward_embedding`/`forward_states` as conditioning, disclosed as a mapping, not the
+    SSM's exact seed.
+  * `ev`, `ev_prev`, `f0`, `g0` are accepted and NOT consumed (event identity is already in x
+    via `emb_et`; the SSM-specific gating/intent machinery has no transformer analogue at this
+    scale). `dt` is likewise not consumed beyond x. Disclosed.
+  * I/R/O are single-layer at our capacity (Dory's 8/20/8 is at 4B scale; the mapping is
+    preserved, the scale is ours — the parameter counts of both trunks are recorded in the
+    outcome as the capacity disclosure).
+Everything else is IDENTICAL by construction: input embeddings (chan), dim, heads, objectives,
+counter/accumulator/measure/level blocks, boundary (whiten/proj), serving composition,
+whitening fit, portfolio grade. `slow_channel_mask`/composition paths degrade to their
+documented fallbacks (no per-channel spectrum → whole state; the SSM canary is simply not
+called on a looped model).
+
+Law tension (PRE-REGISTERED DISCLOSURE, branch-only — this is the axis under test):
+  1. Lawful/compositionality (P3): the monoidal-functor canary F(g∘f)=F(g)∘F(f) is NOT
+     satisfied by an attention trunk; the mergeable-homomorphism law is broken by design.
+     This exploration exists to measure what that law costs and carries; it changes no gate,
+     and any merge back to main is a behavior move requiring the DEC-573 no-op proof or a full
+     re-stamp plus operator ruling (Lawful outranks expressivity in the conflict order).
+  2. Efficient (P4): attention is O(T²·slots) per forward vs O(T·chan) for the SSM scan; the
+     per-product runtime receipt is recorded and reported.
+  3. No gate/criterion change: the DEC-576 lab protocol is used AS-FROZEN (same fixtures,
+     N=500, same as-of dates, same seed, same bars, negative + adversarial controls),
+     `iteration=dec613*` receipts land under `docs/report_cards/experiments/lab/`.
+
+Frozen comparison protocol (pre-registered; results may not reshape it):
+  * L=2 (Dory default): all 9 products = 3 domains (sensor_fleet as-of 2024-03-01,
+    clickstream_sessions as-of 2024-05-01, server_logs as-of 2024-09-01) × {positive,
+    negative, adversarial}, trained with `--set trunk=looped_gpt` at the domain's own derived
+    config (same derivation as the SSM baseline: N=500, --anchors 6, LG_SCAN=eager via
+    scripts/safe_run.py, out-dirs /tmp/opencode/lab_lg2/<uc>_<piece>).
+  * L=1 and L=4 (elastic range ends): the 3 positive products each
+    (/tmp/opencode/lab_lg{1,4}/<uc>_pos).
+  * Measurement: `scripts/lab_measure.py` per domain, heads ridge AND hier (the signature
+    readouts), neg/adv products supplied where trained → receipts
+    `*_dec613.json` / `*_dec613_hier.json` (L=2), `*_dec613_l1{,_hier}.json`,
+    `*_dec613_l4{,_hier}.json`.
+  * Comparator: the committed SSM baseline receipts `*_dec611{,_hier}.json` at `89cec70b`
+    (ridge g 1.7003 / 2.0280 / 5.0339; hier g 0.2447 / 0.3398 / −1.7328; portfolio next
+    +0.2698 / −0.0096 / +0.4626; closed-form oracle increments σ=5.0: sensor +0.2704,
+    click +0.2441, server +0.1173; negative controls read NO_SIGNAL; adversarial controls
+    read as expected).
+  * Report: a table of g (ridge/hier), beats_base + paired CI, eff_rank, control verdicts,
+    train runtime, parameter counts — looped L ∈ {1,2,4} vs SSM — plus the axis attribution
+    (where the looped trunk gains/loses, against which signal).
+
+Acceptance (pre-registered):
+  * Every looped product trains stably (finite states, no divergence — DEC-039: divergence is
+    a hard failure, never rescued), portfolio receipt complete, lab receipt `complete=true`.
+  * The L=2 negative control reads NO_SIGNAL and the L=2 adversarial control reads as
+    expected (the structure claim is guarded the same way as on main).
+  * The comparison table is reported with CIs and the law-tension disclosure stands; whether
+    the looped trunk beats the SSM on g is the OUTCOME, not a gate.
+  * Five commit gates RC=0 at each commit (pytest fast, ruff check, ruff format,
+    principle_audit --all --strict 0-new, plan --check).
+Rejected alternatives: (a) a full Dory 4B replica (8/20/8 blocks, RoPE, GQA) — out of scale
+for a N=500 dev-rig; the axis under test is the looped-latent-attention DYNAMICS, not the
+4B pretrain recipe. (b) grafted inside `SelectiveSSM` (reusing the legacy `looped`/
+`drive_looped` flags) — those are DEC-578/581 weight-tied MLP loops inside the SSM
+nonlinearity, a different mechanism; reusing the names would conflate two trunk algebras
+(violates P6 single source of truth). (c) a new measurement protocol tuned to attention —
+violates the frozen-protocol rule (certification integrity §1); the DEC-576 rig is exactly
+the instrument that compares trunks at fixed N.
