@@ -439,24 +439,32 @@ next question is the learned shape, not another consumer tuning pass.
 
 ## Next 3 actions
 
-1. **DEC-613 looped-transformer trunk (IN PROGRESS on branch `looped-transformer`, cut
-   from `main` @ `10fc4e1`; the demo re-stamp commit — the clean demo run of 2026-11-05:
-   SOLVED 39/39 at behavior `89cec70b`, B CERTIFIED 23/23 8/8, S6 OK, backward open 0,
-   zero value drift in the four bank-v2 legs).** Pre-registered DEC-613: a Dory-style
-   looped (latent-recurrent) GPT trunk (`LoopedGPTTrunk`) grafted behind the `self.ssm`
+1. **DEC-613 looped-transformer trunk (CAMPAIGN COMPLETE on branch `looped-transformer`,
+   cut from `main` @ `10fc4e1`; chunk 1 `c44dea9` = trunk + config axis + blob/warm-start
+   plumbing + 9 contract tests; chunk 1.5 `2a76fd9` = deterministic math-SDPA pin after
+   the first batch's mem-efficient backward surfaced torch's non-determinism warning —
+   all 15 products retrained under the single kernel regime, bit-reproducible
+   cross-process, zero warnings).** Pre-registered DEC-613: a Dory-style looped
+   (latent-recurrent) GPT trunk (`LoopedGPTTrunk`) grafted behind the `self.ssm`
    contract via the new `CFMConfig.trunk ∈ {"ssm","looped_gpt"}` + `n_loops` (L∈1..4,
    default 2) protocol axis — I/R/O blocks scaled to our capacity (1/(1×L)/1), input
    re-injected every loop, SWA/full attention interleaved (per-row window = half the
    row's own valid length), nGPT constant depth at the public interface (final RMSNorm;
-   pre-train `model_health` passes). Determinism (outcome note 1, 2026-11-06): SDPA pinned
-   to the math backend (`sdpa_kernel(SDPBackend.MATH)`) after the first batch's
-   memory-efficient backward surfaced torch's non-determinism warning — the whole 15-product
-   grid retrains under the single kernel regime (bit-reproducible cross-process, proven);
-   batch-1 artifacts invalidated, never measured. Law tension disclosed up front: the composition
+   pre-train `model_health` passes). Law tension disclosed up front: the composition
    canary is inapplicable to an attention trunk (branch-only; merge-to-main is a
    DEC-573 behavior move needing operator ruling). Comparison protocol frozen: the
    DEC-576 dev-rig at N=500 (3 domains × pos/neg/adv at L=2; pos at L=1/L=4) vs the
-   committed SSM baseline receipts (`*_dec611{,_hier}.json`).
+   committed SSM baseline receipts (`*_dec611{,_hier}.json`). **OUTCOME (all 14 receipts
+   complete=true, chunk 2):** the looped trunk does NOT beat the SSM at N=500 — ridge g
+   slightly worse on all 3 domains × all L (sensor 1.7003→1.7751/1.8145/1.7991; click
+   2.0280→2.1186/2.1613/2.1193; server 5.0339→5.3590/5.3871/5.3811 for L=1/2/4), the
+   hier g is LITERALLY IDENTICAL across trunk and L (the signature-block head is
+   fixture-derived — the graft preserved serving composition, the positive control),
+   controls match the SSM profile (neg NO_SIGNAL ×3; adv as expected ×2 + the
+   sensor directional-echo deviation the baseline already had), 8.2–8.3x trunk
+   parameters with higher-but-unusable state rank, no monotonic L gain, all stops
+   `no_improve 4/4` (stable from step 0). Merge-to-main NOT recommended; the branch
+   value = the measured axis separation + the reusable trunk/n_loops protocol axis.
 2. **Certification statement (delivered with the main push):** B is CERTIFIED 23/23, 8/8 at
    behavior `89cec70b` on the single `cfm_v2k_vf2_cert` bundle — the `demo_v2` synthetic
    prototype (B-001 scope; dev-rig receipts are instruments, not B-row evidence, DEC-576);

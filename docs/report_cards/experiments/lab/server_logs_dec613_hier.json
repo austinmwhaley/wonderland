@@ -1,0 +1,216 @@
+{
+  "_meta": {
+    "behavior_hash": "671abb059626598f",
+    "command": "lab_measure.py --fixture rabbit_hole/data/lab/server_logs --products /tmp/opencode/lab_lg2/server_logs_pos --as-of 2024-09-01 --neg-products /tmp/opencode/lab_lg2/server_logs_neg --adv-products /tmp/opencode/lab_lg2/server_logs_adv --iter dec613 --head hier --out docs/report_cards/experiments/lab/server_logs_dec613_hier.json",
+    "generated_at": "2026-11-06T01:38:03+00:00",
+    "git_commit": "2a76fd999ee6718647f509e1fc56d04f69d1a1bc",
+    "producer": "lab_measure.py"
+  },
+  "a_frac": 0.7,
+  "adversarial_control": {
+    "alpha": 10000.0,
+    "beats_base": false,
+    "classes": [
+      "deploy",
+      "error",
+      "request",
+      "restart"
+    ],
+    "classes_excluded": [],
+    "eff_rank": 1.677,
+    "eff_rank_source": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm/portfolio/portfolio_0_11_0r572222-b8d128e3lr7e-04oa8d483a1_20261106T012656Z.json",
+    "expected": "structure claim NO_SIGNAL despite beats_base via the echo",
+    "g": null,
+    "head_form": "hierarchical_dirichlet",
+    "head_ignores_echo": true,
+    "leak_has_teeth_a_side": true,
+    "n_A": 350,
+    "n_B_rows": 150,
+    "n_customers": 500,
+    "nll_base": 1.388307,
+    "nll_baseline_ce_nats": null,
+    "nll_enc": 1.38854,
+    "nll_oracle_nats": null,
+    "paired_ci_enc_minus_base": [
+      -7.3540423258349885e-06,
+      0.0004684289895746536
+    ],
+    "per_class_n_A": {
+      "deploy": 85,
+      "error": 87,
+      "request": 83,
+      "restart": 95
+    },
+    "products": {
+      "path": "/tmp/opencode/lab_lg2/server_logs_adv",
+      "registry_sha256": "6582c47059fbce7d",
+      "tag": "0.11.0r572222-b8d128e3lr7e-04oa8d483a1"
+    },
+    "reads_as_expected": true,
+    "reads_no_signal_structure": true,
+    "signature_block": {
+      "block_sha256": "e0a7e2e59f0c4248853f518bdcf541e11120c4e1937f9076f108bfacc8f077b3",
+      "classes": [
+        "deploy",
+        "error",
+        "request",
+        "restart"
+      ],
+      "dim": 16,
+      "fixture_sha256": "f47ce2c572c14970be11f095018a8c2c9b77e7f71493c6249a91b15e5ffede18",
+      "n_served": 500,
+      "receipt": "/tmp/opencode/lab_lg2/server_logs_adv/signature_receipt.json",
+      "table": "signature_blocks"
+    },
+    "structure_carried": false
+  },
+  "as_of": "2024-09-01",
+  "bar_g": 0.5,
+  "complete": true,
+  "discipline": "toy-green can only SUGGEST the next real-data run (DEC-576); certification of B stays on the real stream (cfm_v2k / O3 / DEC-575); no B-row source names this receipt",
+  "fixture_spec": {
+    "action_peak": 0.0,
+    "base_rate": 1.4,
+    "diurnal": 0.8,
+    "domain": "server_logs",
+    "entity_affinity": 0.0,
+    "intent": 5.0,
+    "n_customers": 500,
+    "n_entities": 0,
+    "name": "server_logs",
+    "rate_heterogeneity": 0.0,
+    "seed": 17,
+    "session_burst": 0.0,
+    "snr": 1.0,
+    "transition": true,
+    "trend": 0.0,
+    "value_log_sigma": 0.5,
+    "window_days": 365
+  },
+  "head_form": "hier",
+  "iteration": "dec613",
+  "kind": "lab_dev_instrument",
+  "lab_gate_a_side": {
+    "adversarial_leak_has_teeth": true,
+    "adversarial_not_carried": true,
+    "complete": true,
+    "negative_not_carried": true,
+    "oracle_carried": true
+  },
+  "n_boot": 2000,
+  "negative_control": {
+    "alpha": 10000.0,
+    "beats_base": false,
+    "classes": [
+      "deploy",
+      "error",
+      "request",
+      "restart"
+    ],
+    "classes_excluded": [],
+    "eff_rank": 1.0,
+    "eff_rank_source": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm/portfolio/portfolio_0_11_0r572222-b8d128e3lr3e-04oa8d483a1_20261106T012439Z.json",
+    "expected": "NO_SIGNAL",
+    "g": null,
+    "head_form": "hierarchical_dirichlet",
+    "n_A": 350,
+    "n_B_rows": 150,
+    "n_customers": 500,
+    "nll_base": 1.388307,
+    "nll_baseline_ce_nats": null,
+    "nll_enc": 1.38854,
+    "nll_oracle_nats": null,
+    "paired_ci_enc_minus_base": [
+      -7.3540423258349885e-06,
+      0.0004684289895746536
+    ],
+    "per_class_n_A": {
+      "deploy": 85,
+      "error": 87,
+      "request": 83,
+      "restart": 95
+    },
+    "products": {
+      "path": "/tmp/opencode/lab_lg2/server_logs_neg",
+      "registry_sha256": "d5f209d8bfd20599",
+      "tag": "0.11.0r572222-b8d128e3lr3e-04oa8d483a1"
+    },
+    "reads_no_signal": true,
+    "signature_block": {
+      "block_sha256": "e0a7e2e59f0c4248853f518bdcf541e11120c4e1937f9076f108bfacc8f077b3",
+      "classes": [
+        "deploy",
+        "error",
+        "request",
+        "restart"
+      ],
+      "dim": 16,
+      "fixture_sha256": "2de305411b4a96ff325c651a928b76d1336fa3794118ecc6da0a628c8cf45496",
+      "n_served": 500,
+      "receipt": "/tmp/opencode/lab_lg2/server_logs_neg/signature_receipt.json",
+      "table": "signature_blocks"
+    }
+  },
+  "p_floor": 1e-15,
+  "positive": {
+    "alpha": 1.778279,
+    "beats_base": true,
+    "classes": [
+      "deploy",
+      "error",
+      "request",
+      "restart"
+    ],
+    "classes_excluded": [],
+    "eff_rank": 1.003,
+    "eff_rank_source": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm/portfolio/portfolio_0_11_0r621415-b8d128e3lr1e-03oa8d483a1_20261106T012439Z.json",
+    "g": -1.732801,
+    "head_form": "hierarchical_dirichlet",
+    "mastered": true,
+    "n_A": 350,
+    "n_B_rows": 150,
+    "n_customers": 500,
+    "nll_base": 0.781878,
+    "nll_baseline_ce_nats": 0.8358,
+    "nll_enc": 0.608405,
+    "nll_oracle_nats": 0.7184,
+    "paired_ci_enc_minus_base": [
+      -0.26754918371741665,
+      -0.0825921471246636
+    ],
+    "per_class_n_A": {
+      "deploy": 31,
+      "error": 96,
+      "request": 174,
+      "restart": 49
+    },
+    "products": {
+      "path": "/tmp/opencode/lab_lg2/server_logs_pos",
+      "registry_sha256": "7aea8910cb23f3ec",
+      "tag": "0.11.0r621415-b8d128e3lr1e-03oa8d483a1"
+    },
+    "signature_block": {
+      "block_sha256": "bac43bab776b916fc2bc5832b803355d58c1bf920ee94d2b0eecb8cf031a00be",
+      "classes": [
+        "deploy",
+        "error",
+        "request",
+        "restart"
+      ],
+      "dim": 16,
+      "fixture_sha256": "dce041a297e82e8883775de4a54cdb7c3b8f1874397438cf6f443b6a0e669205",
+      "n_served": 500,
+      "receipt": "/tmp/opencode/lab_lg2/server_logs_pos/signature_receipt.json",
+      "table": "signature_blocks"
+    }
+  },
+  "products_identity": {
+    "path": "/tmp/opencode/lab_lg2/server_logs_pos",
+    "registry_sha256": "7aea8910cb23f3ec",
+    "tag": "0.11.0r621415-b8d128e3lr1e-03oa8d483a1"
+  },
+  "protocol": "DEC-576 dev-rig speedometer + controls (development instrument; never B-row evidence)",
+  "seconds": 11.8,
+  "seed": 65537,
+  "use_case": "server_logs"
+}

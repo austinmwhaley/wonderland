@@ -12054,3 +12054,71 @@ the instrument that compares trunks at fixed N.
     runs forward+backward under `use_deterministic_algorithms(True)` clean. ALL 15 products
     (including the smoke sensor L=2 pos) retrain under the single kernel regime; batch-1
     artifacts are superseded, never measured.
+  * **DEC-613 OUTCOME (2026-11-06, branch `looped-transformer` @ `2a76fd9`; all 14 receipts
+    `complete=true`, 15/15 products RC=0, zero non-determinism warnings, all stops
+    `no_improve 4/4` — stable from step 0).** The Dory-style looped GPT trunk does NOT beat
+    the SSM trunk on the frozen DEC-576 dev-rig at N=500; it is consistently slightly worse
+    on the state-dependent readouts, identical on the signature-block readout by
+    construction, 8.2-8.3x the trunk parameters, and the elastic L knob shows no monotonic
+    improvement. Full comparison (g: lower is closer to the oracle; g=1 is the 1-gram,
+    CI is the receipt's own enc−base paired bootstrap; controls: neg must read NO_SIGNAL,
+    adv as expected):
+
+    | domain | head | SSM baseline g | looped L=1 | L=2 | L=4 | eff_rank SSM→lg2 |
+    |---|---|---|---|---|---|---|
+    | sensor_fleet | ridge | +1.7003 (CI [+0.004,+0.200]) | +1.7751 ([+0.013,+0.210]) | +1.8145 ([+0.021,+0.216]) | +1.7991 ([+0.018,+0.214]) | 1.038 → 1.211 |
+    | sensor_fleet | hier | +0.2447 (CI [−0.205,−0.018]) | +0.2447 (identical) | +0.2447 (identical) | +0.2447 (identical) | (block, not state) |
+    | clickstream_sessions | ridge | +2.0280 (CI [+0.140,+0.382]) | +2.1186 ([+0.164,+0.398]) | +2.1613 ([+0.178,+0.409]) | +2.1193 ([+0.165,+0.398]) | 1.265 → 4.692 |
+    | clickstream_sessions | hier | +0.3398 (CI [−0.247,−0.085]) | +0.3398 (identical) | +0.3398 (identical) | +0.3398 (identical) | (block, not state) |
+    | server_logs | ridge | +5.0339 (CI [+0.142,+0.360]) | +5.3590 ([+0.161,+0.376]) | +5.3871 ([+0.163,+0.378]) | +5.3811 ([+0.163,+0.377]) | 1.48 → 1.003 |
+    | server_logs | hier | −1.7328 (CI [−0.268,−0.083]) | −1.7328 (identical) | −1.7328 (identical) | −1.7328 (identical) | (block, not state) |
+
+    Controls (L=2): negative reads NO_SIGNAL on all three domains ✓; adversarial reads as
+    expected on clickstream/server ✓ and on sensor carries the SAME directional-echo
+    deviation the SSM baseline already had (enc 1.0882 vs base 1.0982, CI straddles 0) —
+    a pre-existing fixture property, not a looped regression (DEC-611 disclosure stands).
+    Portfolio structure-skill (the train's own held-out battery, same N, 5 folds) — SSM →
+    looped L=2: sensor next +0.2698 → +0.1647, order +0.4456 → +0.0884, mask +0.2879 →
+    +0.0216, mtp +0.2502 → +0.1214, agg +0.8316 → +0.7284; click next −0.0096 → −0.0048
+    (both ~zero, the burst-gap axis is not in either trunk's state at this budget),
+    order +0.1394 → +0.1264, agg +0.4286 → +0.3788, query +1.5158 → +1.2667; server next
+    +0.4626 → +0.0302, order +0.3511 → +0.0437, mask +0.6495 → −0.0329, mtp +0.4125 →
+    +0.0156, agg +0.3699 → +0.2404. The dt/occur FAIL rows and the click `next` ~0 row
+    match the SSM baseline row-for-row (established N=500 property, DEC-611).
+
+    **Axis attribution (Diagnosable):** (1) *dynamics axis*: the state-dependent readouts
+    (ridge g; next/order/mask/mtp/agg skills) are uniformly at-or-below the SSM across all
+    three domains and all L — the affine-scan trunk is the better trunk algebra at
+    dev-rig scale: the composition-law trunk carries the transition/order structure the
+    looped attention trunk does not add. (2) *signature-block axis*: the hier head reads
+    the served exact-transition-count block (B-002), which is fixture-derived and
+    trunk-independent — its literal identity across trunk and L is the POSITIVE control
+    that the graft preserved the serving composition exactly. (3) *capacity axis*: 8.2-8.3x
+    trunk parameters (dim 128: 82,944 → 691,968 / 692,864; dim 256: 329,728 → 2,694,144)
+    bought HIGHER state eff_rank (click 1.265 → 4.692) with NO usable ridge signal —
+    extra rank is not extra accessible next-type information at N=500. (4) *elastic L*:
+    no monotonic gain across L ∈ {1,2,4} on any domain's ridge g (sensor best at L=1,
+    click/server best at L=1; L=2 is the worst on two of three) — Dory's "loop 2 captures
+    most of the gain" does not manifest when the comparison baseline is a strong linear
+    scan, not a shallow one-shot GPT. (5) *optimization axis*: curvature-derived LRs differ
+    per trunk+L (sensor 5e-3/7e-4/1e-3 for L=1/2/4 vs the SSM's 2e-3; click 3e-4; server
+    7e-4/1e-3); every looped run stopped early at `no_improve 4/4` (sensor 231/660, click
+    336/954, server 329/933) — the held-out validation plateaued, no divergence anywhere;
+    the SSM baseline's stop steps were not recorded in DEC-611 (disclosed gap). (6)
+    *efficiency*: under 4-way GPU contention the looped trains ran 0.21–0.98 s/step (the
+    solo smoke, mem-efficient kernel, was 0.084 s/step); the math-SDPA pin costs ~0.2–0.7
+    ms/forward on the campaign shapes — negligible against step time; O(T²·slots) attention
+    vs O(T·chan) scan is the structural cost, recorded per pre-registration.
+
+    **Law-tension closing (pre-registered disclosure, now measured):** breaking the
+    monoidal-composition law (the attention trunk cannot satisfy F(g∘f)=F(g)∘F(f)) COSTS,
+    at N=500: ~0.02–0.35 g on the speedometer (sign-consistent across domain×L, within the
+    instrument's per-receipt CI resolution), 8.2–8.3x trunk parameters, and higher-but-
+    unusable state rank — and it GAINS nothing measurable on the signature head (identical
+    by construction) or the controls (identical profile). The composition law is not
+    decorative at this scale; the SSM trunk stands. Merge-to-main is therefore NOT
+    recommended and remains a DEC-573 behavior move requiring an operator ruling; the
+    branch's value is the measured axis separation (trunk dynamics vs served-block order
+    statistic vs capacity vs optimization, each isolated by the frozen rig) + the reusable
+    `trunk`/`n_loops` protocol axis (the graft is byte-identical to main when
+    trunk="ssm", 8 contract tests pin it).
