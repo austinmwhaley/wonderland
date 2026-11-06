@@ -62,6 +62,27 @@ histogram half; it is not the missing piece.
 
 ## Current state
 
+- **DEC-615 (2026-11-06, pre-registered; the B2 scale arm — operator "go ahead"): the
+  N-ladder campaign is in flight.** Three DEC-611 domains × N ∈ {2000, 10000, 25000} —
+  ONE axis (customer count; the domain specs held: transition + intent σ=5.0, rates,
+  windows, as-of; the SSM trunk stands — DEC-613's looped trunk stays banked, not merged)
+  + the long-horizon probe (window ×2 at each domain's LARGEST COMPLETED N — the H axis,
+  staged after stage 1). 27 ladder fixtures (full three-piece per cell, so the frozen
+  `complete` is honestly evaluable on-disk at the new N) generate under the recorded
+  recipe `/tmp/opencode/dec615_gen_fixtures.py` (sanity PASS: the N=500 sensor_fleet
+  three-piece regenerates BYTE-IDENTICAL to the floor row). 9 positive-only GPU trains,
+  serialized through `safe_run` (the DEC-611 recorded launch recipe verbatim); measured
+  by the frozen `lab_measure` (ridge + hier; new default-inert `--lab-root` flag —
+  scripts-only, behavior stays `7f20fd0b`, no re-stamp). B-side control products are
+  inherited from DEC-611 at N=500 and disclosed; pre-registered contingency: any cell
+  crossing g ≤ 0.5 owes neg+adv products trained at that (domain, N) before a master
+  claim. Verdict = characterization (the wall's location: finite-sample vs budget), not
+  re-adjudication of the N=500 verdicts.
+- **Operator directive 2026-11-06: "much of the project is not organized well and
+  cohesive — rectify that."** Being addressed as its own DEC (DEC-616) after the DEC-615
+  launch: an evidence-based organization/cohesion pass (stale doc lines, log navigability,
+  P13 orphans), behavior-neutral; the charter-level queued items (AGENTS.md's stale
+  "8 GiB card" line, B-017's SPINE §5 ruling) stay the operator's call per the queue.
 - **DEC-614 (2026-11-06, operator mandate: "make the project better. More adaptable. more
   situations. ... PROMPT_BACKWARDS needs to be updated to hunt for things that could be
   better"): the §4c improvement hunt + the first situation-blocker, closed.**
@@ -472,33 +493,37 @@ next question is the learned shape, not another consumer tuning pass.
 
 ## Next 3 actions
 
-1. **DEC-614 re-stamp COMPLETE (2026-11-06):** the 12 B-row producers re-run with their
-   own recorded commands + the one-command S6 chain, on the clean tree after the DEC-614
-   code commit `1f6ae02` — all RC=0; 13/16 receipts zero-diff (the 3 diffed receipts in
-   the disclosed DEC-611 classes: the excluded sufficiency-probe H draw, runtime
-   wall-clock, b_props NaN round-trip — zero verdict-bearing value drift); the four
-   judge legs value-identical; S6 all six checks OK; plan root **SOLVED 39/39 at
-   behavior `7f20fd0b`** (B CERTIFIED 23/23, 8/8; B+C DONE; N unchanged A=3515/B=1485).
-2. **This commit is the card commit (closeout):** regenerated receipts + card + the
-   DEC-614 outcome addendum + the five commit gates RC=0. `main` is ahead of
-   `origin/main` since 2026-11-05; the push still awaits operator permission.
-3. **B2 scale arm queued (the any-scale half of the operator mandate):** the N-ladder
-   campaign — N=2K/10K/25K fixtures on the three mastered domains + the g-vs-N curve +
-   the long-range horizon probe — pre-registered as the next DEC after the re-stamp
-   closes. Operator rulings also remain queued: B-017 (SPINE §5 corollary; INFO,
-   disclosed); the AGENTS.md "8 GiB card" line is stale on this GB10 unified-memory
-   machine (project cap 32 GB, operator 2026-11-02, reconfirmed 2026-11-05 — a charter
-   edit is the operator's call, and "one GPU job at a time" is void on this box); the
-   sufficiency probe's order-undetermined gap draw is a frozen-instrument determinism
-   fix, candidate for a future DEC.
+1. **DEC-615 in flight (B2 scale arm):** ladder fixtures generating (27 three-piece
+   dirs under `rabbit_hole/data/lab_dec615_n{2,10,25}k/`); then the 9 positive trains
+   serialized via `safe_run` (`/tmp/opencode/dec615_train_stage1.sh`, recipe = DEC-611's
+   recorded launch); per cell: `build_lab_signature` + `lab_measure` ridge + hier
+   (`--lab-root`, `--iter dec615_n{k}`, out `docs/report_cards/experiments/lab/`); then
+   the stage-2 long-horizon probe (window ×2 at each domain's largest completed N, root
+   `lab_dec615_long`); the outcome addendum closes DEC-615 (the wall's location + the
+   g/eff_rank/cost curves). Chunk-1 commit: the DEC-615 pre-registration + the
+   default-inert `--lab-root` flag (scripts-only) + the DEC-616 closeout + this STATUS.
+2. **DEC-616 (organization & cohesion — operator directive 2026-11-06):** evidence pass
+   (stale lines, log navigability, P13 orphans, docs tree) → pre-registration → the
+   behavior-neutral fixes. Closing B-023 (the vestigial `onboard._derive_reward_event`
+   `value_col` param; a `looking_glass` edit → behavior move + full re-stamp) is queued
+   as its own follow-up DEC behind the campaign, not folded into DEC-616's doc axis.
+3. **Operator rulings remain queued (not agent-callable):** B-017 (SPINE §5 corollary;
+   INFO, disclosed); the AGENTS.md "8 GiB card" line is stale on this GB10
+   unified-memory machine (project cap 32 GB, operator 2026-11-02, reconfirmed
+   2026-11-05 — a charter edit is the operator's call, and "one GPU job at a time" is
+   void on this box); the sufficiency probe's order-undetermined gap draw is a
+   frozen-instrument determinism fix, candidate for a future DEC; the 3 local commits
+   ahead of `origin/main` await explicit push permission.
 
 ## Operating facts
 
-- **Repo:** `/home/austin_whaley/Documents/Repos/wonderland`, branch `foundation-rebuild`, venv `.venv`.
+- **Repo:** `/home/austin_whaley/Documents/Repos/wonderland`, branch `main`, venv `.venv`.
 - **Testbed:** Layer A v2 demo at `/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/demo_v2/`.
 - **Card:** `.venv/bin/python scripts/report_card.py` → `REPORT_CARD.md` (the only measurement surface).
 - **Architecture visual:** `ENCODER.html` — the at-a-glance CFM map (the cell, the timescales, the served object, the statistic bank). A map, not a card; every verdict/number stays on `REPORT_CARD.md`.
-- **Candidate 0.11.1 B rows:** `cfm_v2k_vf2` (tag `0.11.1r490760-b64d256e3lr4e-05o4c3b5899`; value_col + full-stream block). **B4.1 dose PASS** (E 0.2983 vs table 0.2438, CI positive — first decision flip); B6.2 E-alone value 0.6095 / orders 0.6194 vs raw 0.5952/0.6047 (combined table+E CI still fails); B7.1 calibration FAIL (ECE 0.1119); B4.2 OPE FAIL; B1.1 dynamics FAIL. B 16/4/3, root 20/39. S6 dirty-tree only; commit + re-run the chain.
+- **B battery state (per the card):** SOLVED 39/39 at behavior `7f20fd0b` on the
+  `cfm_v2k_vf2_cert` bundle (DEC-605..614). The pre-DEC-605 "Candidate 0.11.1" lines
+  (`cfm_v2k_vf2`, B 16/4/3, root 20/39) are superseded history — see `REPORT_CARD.md`.
 - **Resources:** GB10, 121.63 GiB unified memory, 20 CPU cores, 1.5 TB free disk, CUDA 13.0.
   **Project maximum: 32 GB** (operator 2026-11-02). `wonderland.slice` = `MemoryMax=34359738368`;
   `safe_run` reports 32.0 GB. The slice bounds CPU/host memory only; GPU/unified allocations are

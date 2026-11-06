@@ -22,6 +22,12 @@ rabbit_hole ──▶ looking_glass ──▶ plugins ──▶ red_king ──�
 
 ## The foundation embedding — headline evidence (v8)
 
+> **Historical (v8-era campaign; DEC-616 label, 2026-11-06).** The results table below is
+> from the v8 U-metric era. The LIVE measurement surface is `REPORT_CARD.md` (DEC-562/563:
+> measurement lives only in the card); these v8 numbers are retained as the documented
+> origin of the embedding approach, not re-asserted. The goal/architecture/metric prose
+> in this section is still-current description.
+
 **Goal (per stream):** one event stream in → one foundation model out. `embedding(customer, t)`
 must be a **sufficient statistic of the history** — everything about the past that matters for the
 future is in it; nothing that matters is lost.

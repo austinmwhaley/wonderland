@@ -451,6 +451,11 @@ def main() -> int:
     )
     ap.add_argument("--iter", default="iter1", help="iteration label recorded in the receipt")
     ap.add_argument(
+        "--lab-root",
+        default=None,
+        help="lab root the A-side gate pieces live under (default: the canonical rabbit_hole/data/lab; DEC-615 ladder roots pass one)",
+    )
+    ap.add_argument(
         "--head",
         choices=("ridge", "hier"),
         default="ridge",
@@ -465,7 +470,12 @@ def main() -> int:
     as_of = datetime.strptime(a.as_of, "%Y-%m-%d")
     out_path = Path(a.out) if a.out else LAB_RECEIPTS / f"{use_case}_{a.iter}.json"
 
-    lab_gate = LG.evaluate()["rows"].get(use_case, {})
+    # DEC-615: the A-side gate pieces may live under a campaign lab root (the ladder
+    # fixtures reuse the registry use-case names, so `evaluate` reads THAT root's
+    # on-disk pieces — oracle_carried / negative_not_carried / adversarial teeth are
+    # computed on the new-N streams, not inherited). Default root = today's behavior.
+    lab_eval = LG.evaluate(Path(a.lab_root)) if a.lab_root else LG.evaluate()
+    lab_gate = lab_eval["rows"].get(use_case, {})
     measure = _measure_pair_hier if a.head == "hier" else _measure_pair
     pos = measure(fixture, Path(a.products), as_of)
     pos["mastered"] = bool(

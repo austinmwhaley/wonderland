@@ -528,7 +528,7 @@ BY_ID = {n.ident: n for n in NODES}
 
 #: Rendered anywhere the plan needs to say what is being worked on now. A pointer, not a status.
 FRONTIER_NOTE = (
-    "The plan root is SOLVED 39/39 at behavior df73c2aa: B certified 23/23 on the single "
+    "The plan root is SOLVED 39/39 at behavior 7f20fd0b: B certified 23/23 on the single "
     "cfm_v2k_vf2_cert bundle; B+C 8/8 on the served bank; E1 is served-object capacity "
     "(E1.a/E1.b served signature head, E1.c delivery/ledger port); V1.1-V1.5 green; no open "
     "BACKWARD requirement. Scope: the certified artifact is the synthetic demo_v2 prototype. "
@@ -538,9 +538,9 @@ FRONTIER_NOTE = (
 )
 
 #: The macro review rendered in PLAN.md and REPORT_CARD.md. A reading of the tree and the
-#: receipts, never a new gate; numbers are current at behavior 7baf744f.
+#: receipts, never a new gate; numbers are current at behavior 7f20fd0b.
 MACRO_REVIEW = (
-    "At behavior `df73c2aa`, the plan root is SOLVED 39/39 on the synthetic `demo_v2` "
+    "At behavior `7f20fd0b`, the plan root is SOLVED 39/39 on the synthetic `demo_v2` "
     "prototype. B is certified 23/23 on the single `cfm_v2k_vf2_cert` bundle (base 272, bank "
     "179, donor-only 106, delivery port 307, measure view; every B row mapped to its "
     "component). B+C is 8/8 on the served block bank (DEC-598), with the brain boundary "
@@ -603,7 +603,7 @@ ROUTE: tuple[RouteStep, ...] = (
         "R4",
         "Demo stream: certify the B foundational battery on one artifact",
         "P1, P2, P3",
-        "DONE: B certified 23/23 rows, 8/8 sections at behavior df73c2aa on the "
+        "DONE: B certified 23/23 rows, 8/8 sections at behavior 7f20fd0b on the "
         "cfm_v2k_vf2_cert bundle (DEC-594/595/596; B-001/B-009). The artifact is the synthetic "
         "demo prototype; no production-stream claim.",
     ),

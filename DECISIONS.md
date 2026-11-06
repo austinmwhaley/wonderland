@@ -1,712 +1,14 @@
-"""Principle-aligned auto encoder: all discovered fields, generic objectives, frozen E."""
+# DECISIONS — decision log (append-only; oldest entry DEC-275; the B-012 citation gate applies to steering-doc cites)
 
-import collections
-import datetime
-import json
-import math
-import sys
-import zlib
-from pathlib import Path
-
-import os as _os
-_os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
-import numpy as np
-import polars as pl
-import torch
-torch.backends.cudnn.deterministic = True
-torch.backends.cudnn.benchmark = False
-torch.use_deterministic_algorithms(True, warn_only=True)
-import torch.nn as nn
-import torch.nn.functional as F
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from looking_glass.cfm_model import _scan  # noqa: E402
-from looking_glass.autotune import derive_batch, derive_dim, derive_lr  # noqa: E402
-from looking_glass.cfm_training import embed_batch_size  # noqa: E402
-from sklearn.ensemble import HistGradientBoostingRegressor, HistGradientBoostingClassifier  # noqa: E402
-from sklearn.metrics import r2_score, roc_auc_score  # noqa: E402
-from sklearn.model_selection import KFold  # noqa: E402
-
-DEV = "cuda" if torch.cuda.is_available() else "cpu"
-CLIP_STATS = {"steps": 0, "binds": 0}
-AS_OF_TS = 0.0
-BATCH = 16
-LABELS = (
-    "y_value_30",
-    "y_orders_30",
-    "y_churn_30",
-    "y_value_90",
-    "y_orders_90",
-    "y_churn_90",
-    "y_margin_90",
-)
-
-
-def _vocab(vals):
-    u = sorted({str(v) for v in vals if v is not None and str(v) != ""})
-    m = {v: i + 1 for i, v in enumerate(u)}
-    m[""] = 0
-    return m
-
-
-def _is_ts(vals):
-    if not vals or not all(isinstance(v, str) for v in vals[:200]):
-        return False
-    for v in vals[:200]:
-        try:
-            datetime.datetime.fromisoformat(v)
-        except Exception:
-            return False
-    return True
-
-
-def load_data(data):
-    d = Path(data)
-    manifest = json.loads((d / "manifest.json").read_text())
-    as_of = manifest["as_of"]
-    as_of_ts = datetime.datetime.fromisoformat(as_of).timestamp()
-    B = pl.read_parquet(d / "path_b/path_b_customer_event_stream.parquet")
-    A = pl.read_parquet(d / "path_a/path_a_wide_table.parquet")
-    B = (
-        B.with_columns(pl.col("event_ts").str.to_datetime().alias("ts"))
-        .filter(pl.col("ts") <= pl.lit(as_of).str.to_datetime())
-        .sort(["customer_key", "ts"])
-    )
-    keys = sorted(B["customer_key"].unique().to_list())
-    rows = B.select(["customer_key", "ts", "event_type", "event_attributes"]).to_dicts()
-    et_v = _vocab({r["event_type"] for r in rows})
-    attrs = [json.loads(r["event_attributes"]) for r in rows]
-    fields = sorted(set().union(*[set(a) for a in attrs]) - {"target_key"})
-    n = len(rows)
-    cat, num, cat_int = [], [], []
-    for f in fields:
-        vals = [a.get(f) for a in attrs if a.get(f) is not None and str(a.get(f)) != ""]
-        if _is_ts(vals):
-            num.append((f, "ts"))
-            continue
-        if vals and all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in vals):
-            u = len(set(map(str, vals)))
-            if isinstance(vals[0], int) and u <= 2 * int(math.sqrt(n)):
-                cat.append(f)
-                cat_int.append(f)
-            else:
-                num.append((f, "num"))
-        else:
-            cat.append(f)
-    rawspec = list(num) + [(f, 'int') for f in cat_int]
-    catspec = []
-    for f in cat:
-        cnt = collections.Counter(
-            str(a.get(f)) for a in attrs if a.get(f) is not None and str(a.get(f)) != ""
-        )
-        if len(cnt) > 2 * int(math.sqrt(n)):
-            buckets = 1 << max(4, int(math.ceil(math.log2(2 * math.sqrt(n)))))
-            catspec.append(dict(field=f, mode="hash", buckets=buckets, size=buckets + 1))
-        else:
-            m = {}
-            total = sum(cnt.values())
-            acc = 0
-            i = 1
-            for v, c in cnt.most_common():
-                if total and acc / total >= 0.99:
-                    break
-                m[v] = i
-                i += 1
-                acc += c
-            catspec.append(dict(field=f, mode="vocab", map=m, size=i))
-    allt = np.array([r["ts"].timestamp() for r in rows])
-    h0 = allt.min()
-    hn = int(np.ceil((allt.max() - h0) / 3600.0)) + 1
-    counts, _ = np.histogram(allt, bins=hn, range=(h0, h0 + hn * 3600.0))
-    spec = np.abs(np.fft.rfft(counts - counts.mean())) ** 2
-    freqs = np.fft.rfftfreq(hn, d=1.0)
-    spec[0] = 0
-    peaks = []
-    for i in range(1, len(spec) - 1):
-        if (
-            spec[i] > spec[i - 1]
-            and spec[i] >= spec[i + 1]
-            and spec[i] > np.percentile(spec[1:], 90)
-        ):
-            peaks.append((spec[i], freqs[i]))
-    peaks = sorted(peaks, reverse=True)[:2]
-    periods = [1.0 / f for _, f in peaks if f > 0]
-    time_dim = 1 + 2 * len(periods)
-    by = {}
-    for r, a in zip(rows, attrs):
-        by.setdefault(r["customer_key"], []).append((r["ts"], r["event_type"], a))
-    gaps_all = []
-    seqs = {}
-    for k, evs in by.items():
-        evs.sort(key=lambda x: x[0])
-        m = len(evs)
-        et = np.zeros(m, np.int64)
-        gcat = np.zeros((m, len(catspec)), np.int64)
-        gnum = np.zeros((m, len(num)), np.float32)
-        graw = np.zeros((m, len(rawspec)), np.float32)
-        gaps = np.zeros(m, np.float64)
-        tss = np.zeros(m, np.float64)
-        time = np.zeros((m, time_dim), np.float32)
-        prev = None
-        for i, (ts, etype, at) in enumerate(evs):
-            et[i] = et_v.get(etype, 0)
-            tss[i] = ts.timestamp()
-            gap = 0.0 if prev is None else max(0.0, (ts - prev).total_seconds() / 86400.0)
-            prev = ts
-            gaps[i] = gap
-            time[i, 0] = math.log1p(gap)
-            for j, P in enumerate(periods):
-                ph = 2 * math.pi * (tss[i] / 3600.0) / P
-                time[i, 1 + 2 * j] = math.sin(ph)
-                time[i, 2 + 2 * j] = math.cos(ph)
-            for j, g in enumerate(catspec):
-                s = "" if at.get(g["field"]) is None else str(at.get(g["field"]))
-                gcat[i, j] = (
-                    0
-                    if s == ""
-                    else (
-                        1 + zlib.crc32((g["field"] + "=" + s).encode()) % g["buckets"]
-                        if g["mode"] == "hash"
-                        else g["map"].get(s, 0)
-                    )
-                )
-            for j, (f, kind) in enumerate(num):
-                v = at.get(f)
-                x = 0.0
-                if v is not None and str(v) != "":
-                    if kind == "ts":
-                        try:
-                            x = (
-                                ts - datetime.datetime.fromisoformat(str(v))
-                            ).total_seconds() / 86400.0
-                        except Exception:
-                            x = 0.0
-                    else:
-                        try:
-                            x = float(v)
-                        except Exception:
-                            x = 0.0
-                gnum[i, j] = math.copysign(math.log1p(abs(x)), x) if x else 0.0
-            for j, (f, kind) in enumerate(rawspec):
-                v = at.get(f); x = 0.0
-                if v is not None and str(v) != '':
-                    if kind == 'ts':
-                        try: x = (ts - datetime.datetime.fromisoformat(str(v))).total_seconds() / 86400.0
-                        except Exception: x = 0.0
-                    else:
-                        try: x = float(v)
-                        except Exception: x = 0.0
-                graw[i, j] = x
-            if gap > 0:
-                gaps_all.append(gap)
-        seqs[k] = (et, gcat, gnum, time, gaps, tss, graw)
-    gaps_all = np.array(gaps_all) if gaps_all else np.array([1.0])
-    spans = np.array([(seqs[k][5][-1] - seqs[k][5][0]) / 86400.0 for k in keys])
-    e = max(2, min(4, len(peaks) + 1))
-    taus = np.quantile(gaps_all, np.linspace(0.25, 0.95, e))
-    horizons = np.unique(np.concatenate([taus, np.quantile(spans, [0.25, 0.5, 0.75, 0.95])]))
-    miss = [float((seqs[k][1][:, j] == 0).mean()) for k in keys for j in range(len(catspec))]
-    p_mask = float(np.clip(np.mean(miss) if miss else 0.1, 0.05, 0.4))
-    vs = dict(et=len(et_v), gcat=[g["size"] for g in catspec], gnum=len(num), time_dim=time_dim)
-    vs["horizons"] = horizons.tolist()
-    id_names = {"segment", "loyalty_tier", "region", "acquisition_channel"}
-    rel_names = {"product_id", "campaign_id"}
-    vs["id_idx"] = [i for i, g in enumerate(catspec) if g["field"] in id_names]
-    vs["id_dims"] = [catspec[i]["size"] for i in vs["id_idx"]]
-    vs["rel_idx"] = [i for i, g in enumerate(catspec) if g["field"] in rel_names]
-    vs["unc_dim"] = len(catspec) + len(num)
-    vs["raw"] = len(rawspec)
-    vs["mass_dim"] = len(rawspec) + len(et_v)
-    vs["past_dim"] = len(et_v) + len(catspec) + 6 * len(rawspec) + 7
-    vs["fut_dim"] = len(et_v) + len(catspec) + 2 * len(rawspec)
-    return B, A, keys, seqs, vs, et_v, catspec, num, taus, p_mask, as_of_ts, periods, horizons
-
-
-class GatedSSM(nn.Module):
-    def __init__(self, d, e, taus):
-        super().__init__()
-        self.d = d
-        self.e = e
-        self.Wx = nn.Linear(d, e * d)
-        self.out = nn.Linear(d, d)
-        self.log_tau = nn.Parameter(torch.log(torch.as_tensor(taus, dtype=torch.float32)))
-
-    def forward(self, x, mask, dt):
-        B, T, _ = x.shape
-        tau = torch.exp(self.log_tau)
-        decay = torch.exp(-dt.unsqueeze(-1) / tau)
-        decay = torch.where(mask.unsqueeze(-1) > 0, decay, torch.ones_like(decay))
-        inp = self.Wx(x).view(B, T, self.e, self.d)
-        b = (1 - decay).unsqueeze(-1) * inp
-        b = torch.where(mask.unsqueeze(-1).unsqueeze(-1) > 0, b, torch.zeros_like(b))
-        _, H = _scan(decay.unsqueeze(-1), b)
-        y = H.sum(2)
-        # additive mass state: m_t = decay * m_{t-1} + inp_t (no 1-decay normalization)
-        _, M = _scan(decay.unsqueeze(-1), inp)
-        return F.gelu(self.out(y)) + y, H, M
-
-
-class Enc(nn.Module):
-    def __init__(self, vs, d, e, layers, taus):
-        super().__init__()
-        self.d = d
-        self.et = nn.Embedding(vs["et"], d)
-        self.gcat = nn.ModuleList([nn.Embedding(s, d) for s in vs["gcat"]])
-        self.gnum = nn.ModuleList([nn.Linear(1, d) for _ in range(vs["gnum"])])
-        self.time = nn.Linear(vs["time_dim"], d)
-        self.gw_cat = nn.Parameter(torch.full((len(vs["gcat"]),), 0.5413))
-        self.gw_num = nn.Parameter(torch.full((vs["gnum"],), 0.5413))
-        self.mlp = nn.Sequential(nn.Linear(d, d), nn.GELU(), nn.Linear(d, d))
-        self.ssm = nn.ModuleList([GatedSSM(d, e, taus) for _ in range(layers)])
-        self.q = nn.Parameter(torch.randn(d) / math.sqrt(d))
-        self.n_read = 4 + 3 * e
-        self.rproj = nn.ModuleList([nn.Linear(d, d) for _ in range(self.n_read)])
-        self.rw = nn.Parameter(torch.zeros(self.n_read))
-        self.raw = nn.Linear(vs["raw"], d)
-        self.mass_proj = nn.Linear(vs["raw"] + vs["et"], e * d)
-        self.rmlp = nn.Sequential(nn.Linear(d, d), nn.GELU(), nn.Linear(d, d))
-        self.qgap = nn.Sequential(nn.Linear(1, d), nn.GELU(), nn.Linear(d, d))
-        self.head_et = nn.Linear(d, vs["et"])
-        self.head_gap = nn.Linear(d, 1)
-        self.heads_cat = nn.ModuleList([nn.Linear(d, s) for s in vs["gcat"]])
-        self.heads_num = nn.ModuleList([nn.Linear(d, 1) for _ in range(vs["gnum"])])
-        self.past = nn.Linear(d, vs["past_dim"])
-        self.head_fut = nn.Linear(d, vs["fut_dim"])
-        self.head_id = nn.ModuleList([nn.Linear(d, s2) for s2 in vs["id_dims"]])
-        self.head_unc = nn.Linear(d, vs["unc_dim"]); self.rel_idx = list(vs["rel_idx"])
-
-    def forward(self, et, gcat, gnum, time, gaps, mask, lengths, qgap, graw):
-        x = self.et(et) + self.time(time)
-        for i, emb in enumerate(self.gcat):
-            x = x + F.softplus(self.gw_cat[i]) * emb(gcat[:, :, i])
-        for i, lin in enumerate(self.gnum):
-            x = x + F.softplus(self.gw_num[i]) * lin(gnum[:, :, i : i + 1])
-        x = self.mlp(x) + self.raw(torch.sign(graw) * torch.log1p(graw.abs()))
-        dt = gaps.clamp(min=1e-3)
-        H = None; M = None
-        for ssm in self.ssm:
-            x, H, M = ssm(x, mask, dt)
-        Hs = x
-        ar = torch.arange(Hs.shape[0], device=Hs.device)
-        last = Hs[ar, lengths - 1]
-        m = mask.unsqueeze(-1)
-        mean = (Hs * m).sum(1) / lengths.unsqueeze(-1)
-        mx = Hs.masked_fill(mask.unsqueeze(-1) == 0, -1e9).max(1).values
-        score = (Hs @ self.q) / math.sqrt(self.d)
-        score = score.masked_fill(mask == 0, -1e9)
-        att = torch.softmax(score, 1)
-        pooled = (Hs * att.unsqueeze(-1)).sum(1)
-        Hlast = H.reshape(H.shape[0], H.shape[1], H.shape[2], H.shape[3])[ar, lengths - 1]  # (B,e,d)
-        Hmean = (H * mask.unsqueeze(-1).unsqueeze(-1)).sum(1) / lengths.view(-1, 1, 1)
-        mass_in = torch.cat([torch.sign(graw) * torch.log1p(graw.abs()),
-                             F.one_hot(et, self.et.num_embeddings).float()], -1)
-        Mp = self.mass_proj(mass_in)
-        # recompute the additive mass state (same decay) for the readout
-        # M from the last SSM is already the additive mass; use its last row
-        Mlast = M[ar, lengths - 1]  # (B,e,d), recency-weighted raw mass
-        rs = [last, mean, mx, pooled]
-        for j in range(Hlast.shape[1]):
-            rs.append(Hlast[:, j]); rs.append(Hmean[:, j])
-        for j in range(Mlast.shape[1]):
-            rs.append(Mlast[:, j])
-        pr = [self.rproj[i](rs[i]) for i in range(self.n_read)]
-        w = F.softplus(self.rw)
-        E = sum(w[i] * pr[i] for i in range(self.n_read))
-        E = self.rmlp(E)
-        E = E + self.qgap(torch.log1p(qgap).unsqueeze(-1))
-        MB = torch.cat([Mlast.reshape(Mlast.shape[0], -1), Hlast.reshape(Hlast.shape[0], -1), Hmean.reshape(Hmean.shape[0], -1)], 1)
-        # learned blocks (trained heads, not static summaries)
-        IB = torch.cat([h(E) for h in self.head_id], 1) if len(self.head_id) else E.new_zeros((E.shape[0], 0))
-        UB = self.head_unc(E)
-        RB = self.head_gap(E)
-        OB = self.head_et(E)
-        RelB = torch.cat([self.heads_cat[j](E) for j in self.rel_idx], 1) if self.rel_idx else E.new_zeros((E.shape[0], 0))
-        CB = self.head_fut(E)
-        return Hs, E, w / w.sum(), MB, IB, RB, UB, CB, OB, RelB
-
-
-def collate(
-    seqs,
-    ks,
-    cuts,
-    qgaps,
-    vs,
-    want_past,
-    past_mu,
-    past_sd,
-    want_future=False,
-    h=0.0,
-    fut_mu=None,
-    fut_sd=None,
-):
-    T = max(cuts)
-    Bn = len(ks)
-    nc = len(vs["gcat"])
-    nnf = vs["gnum"]
-    td = vs["time_dim"]
-    et = np.zeros((Bn, T), np.int64)
-    gcat = np.zeros((Bn, T, nc), np.int64)
-    gnum = np.zeros((Bn, T, nnf), np.float32)
-    graw = np.zeros((Bn, T, vs["raw"]), np.float32)
-    time = np.zeros((Bn, T, td), np.float32)
-    gaps = np.zeros((Bn, T), np.float32)
-    mask = np.zeros((Bn, T), np.float32)
-    tsarr = np.zeros((Bn, T), np.float64)
-    past = np.zeros((Bn, vs["past_dim"]), np.float32)
-    fut = np.zeros((Bn, vs["fut_dim"]), np.float32)
-    id_tgt = np.zeros((Bn, len(vs["id_idx"])), np.int64)
-    unc_tgt = np.zeros((Bn, vs["unc_dim"]), np.float32)
-    qg = np.zeros(Bn, np.float32)
-    for b, (k, cut) in enumerate(zip(ks, cuts)):
-        etk, gck, gnk, tmk, gpk, tt, grk = seqs[k]
-        L = min(cut, len(tt))
-        q = float(qgaps[b])
-        qg[b] = q
-        et[b, :L] = etk[:L]
-        gcat[b, :L] = gck[:L]
-        gnum[b, :L] = gnk[:L]
-        graw[b, :L] = grk[:L]
-        time[b, :L] = tmk[:L]
-        gaps[b, :L] = gpk[:L]
-        tsarr[b, :L] = tt[:L]
-        mask[b, :L] = 1
-        for jj, ii in enumerate(vs["id_idx"]):
-            id_tgt[b, jj] = gck[0, ii]
-        unc_tgt[b, :len(vs["gcat"])] = (gck[:L] == 0).mean(0)
-        unc_tgt[b, len(vs["gcat"]):] = (gnk[:L] == 0).mean(0)
-        if want_past and L > 0:
-            ev = etk[:L]
-            etc = [float((ev == i).sum()) for i in range(vs["et"])]
-            catd = [float(len(np.unique(gck[:L, j][gck[:L, j] > 0]))) for j in range(nc)]
-            stat = []
-            for j in range(vs["raw"]):
-                x = grk[:L, j]
-                stat += [
-                    float((x != 0).sum()),
-                    float(x.sum()),
-                    float(x.mean()),
-                    float(x.std()),
-                    float(x.min()),
-                    float(x.max()),
-                ]
-            tenure = (tt[L - 1] - tt[0]) / 86400.0
-            past[b] = (
-                etc
-                + catd
-                + stat
-                + [
-                    tenure,
-                    float(np.std(tt[:L]) / 86400.0),
-                    q,
-                    q,
-                    tenure,
-                    float(L),
-                    float(len(np.unique(ev))),
-                ]
-            )
-        if want_future and L > 0:
-            ct = tt[L - 1] + h * 86400.0
-            sel = (tt > ct) & (tt <= ct + h * 86400.0)
-            etcf = [float((etk[sel] == i).sum()) for i in range(vs["et"])]
-            catf = [float(len(np.unique(gck[sel, j][gck[sel, j] > 0]))) for j in range(nc)]
-            rawf = []
-            for j in range(vs["raw"]):
-                x = grk[sel, j]
-                rawf += [float(x.sum()), float(x.mean()) if len(x) else 0.0]
-            fut[b] = etcf + catf + rawf
-    if want_past and past_mu is not None:
-        past = (past - past_mu) / past_sd
-    if want_future and fut_mu is not None:
-        fut = (fut - fut_mu) / fut_sd
-    t = dict(
-        et=torch.tensor(et, device=DEV),
-        gcat=torch.tensor(gcat, device=DEV),
-        gnum=torch.tensor(gnum, device=DEV),
-        graw=torch.tensor(graw, device=DEV),
-        id_tgt=torch.tensor(id_tgt, device=DEV),
-        unc_tgt=torch.tensor(unc_tgt, device=DEV),
-        time=torch.tensor(time, device=DEV),
-        gaps=torch.tensor(gaps, device=DEV),
-        mask=torch.tensor(mask, device=DEV),
-        tss=torch.tensor(tsarr, device=DEV),
-    )
-    return (
-        t,
-        torch.tensor(past, device=DEV),
-        torch.tensor(qg, device=DEV),
-        torch.tensor(cuts, device=DEV),
-        torch.tensor(fut, device=DEV),
-    )
-
-
-def _next_losses(model, t, m, p_mask, rng):
-    def ce(head, tgt):
-        logit = head(model_hs[:, :-1]).reshape(-1, head.out_features)
-        y = tgt[:, 1:].reshape(-1)
-        mm = m.reshape(-1) > 0
-        return F.cross_entropy(logit[mm], y[mm]) if mm.sum() > 0 else torch.tensor(0.0, device=DEV)
-
-    model_hs = model._hs
-
-    def mse(head, tgt):
-        pred = head(model_hs[:, :-1]).squeeze(-1)
-        y = tgt[:, 1:].float()
-        return (
-            (((pred - y) ** 2) * m).sum() / m.sum()
-            if m.sum() > 0
-            else torch.tensor(0.0, device=DEV)
-        )
-
-    def keep():
-        return rng.random() < (1.0 - p_mask)
-
-    Ls = [ce(model.head_et, t["et"])]
-    for j, head in enumerate(model.heads_cat):
-        Ls.append(ce(head, t["gcat"][:, :, j]) if keep() else torch.tensor(0.0, device=DEV))
-    for j, head in enumerate(model.heads_num):
-        Ls.append(mse(head, t["gnum"][:, :, j]) if keep() else torch.tensor(0.0, device=DEV))
-    Ls.append(mse(model.head_gap, t["gaps"]))
-    return Ls
-
-
-def run_epoch(
-    model,
-    seqs,
-    ks,
-    opt,
-    sched,
-    log_s,
-    rng,
-    vs,
-    past_mu,
-    past_sd,
-    p_mask,
-    taus,
-    fut_mu,
-    fut_sd,
-    horizons,
-    train=True,
-):
-    model.train(train)
-    order = np.array(ks)[rng.permutation(len(ks))]
-    tot = 0
-    nb = 0
-    for i in range(0, len(order), BATCH):
-        bk = list(order[i : i + BATCH])
-        cuts = []
-        for k in bk:
-            lo = seqs[k][5][0]
-            hi = seqs[k][5][-1]
-            ct = float(rng.uniform(lo, hi))
-            cut = int(np.searchsorted(seqs[k][5], ct, side="right"))
-            cuts.append(max(8, min(cut, len(seqs[k][5]) - 2)))
-        h = float(rng.choice(taus))
-        t, past, qg, lens, fut = collate(
-            seqs, bk, cuts, [0.0] * len(bk), vs, False, None, None, True, h, fut_mu, fut_sd
-        )
-        Hs, E, w, *_blocks = model(t["et"], t["gcat"], t["gnum"], t["time"], t["gaps"], t["mask"], lens, qg, t["graw"])
-        model._hs = Hs
-        m = t["mask"][:, 1:]
-        Ls = _next_losses(model, t, m, p_mask, rng)
-        Ls.append(((model.head_fut(E) - fut) ** 2).mean())
-        for jj, h in enumerate(model.head_id):
-            Ls.append(F.cross_entropy(h(E), t["id_tgt"][:, jj]))
-        Ls.append(((model.head_unc(E) - t["unc_tgt"]) ** 2).mean())
-        loss = sum(0.5 * torch.exp(-log_s[j]) * Ls[j] + 0.5 * log_s[j] for j in range(len(Ls)))
-        fcuts = [len(seqs[k][5]) for k in bk]
-        fq = [(AS_OF_TS - seqs[k][5][-1]) / 86400.0 for k in bk]
-        t2, past2, qg2, lens2, _f2 = collate(seqs, bk, fcuts, fq, vs, True, past_mu, past_sd)
-        _, E2, _, *_b2 = model(
-            t2["et"], t2["gcat"], t2["gnum"], t2["time"], t2["gaps"], t2["mask"], lens2, qg2, t2["graw"]
-        )
-        lp = ((model.past(E2) - past2) ** 2).mean()
-        j = len(Ls)
-        loss = loss + 0.5 * torch.exp(-log_s[j]) * lp + 0.5 * log_s[j]
-        if train:
-            opt.zero_grad()
-            loss.backward()
-            CLIP_STATS["steps"] += 1
-            opt.step()
-        tot += float(loss.detach())
-        nb += 1
-    if train and sched:
-        sched.step()
-    return tot / max(nb, 1)
-
-
-@torch.no_grad()
-def val_loss(model, seqs, ks, vs, past_mu, past_sd, taus, fut_mu, fut_sd, horizons):
-    model.eval()
-    tot = 0
-    nb = 0
-    eb = max(32, BATCH)
-    for i in range(0, len(ks), eb):
-        bk = ks[i : i + eb]
-        fcuts = [len(seqs[k][5]) for k in bk]
-        fq = [(AS_OF_TS - seqs[k][5][-1]) / 86400.0 for k in bk]
-        h = float(np.median(taus))
-        t, past, qg, lens, fut = collate(
-            seqs, bk, fcuts, fq, vs, True, past_mu, past_sd, True, h, fut_mu, fut_sd
-        )
-        Hs, E, w, *_blocks = model(t["et"], t["gcat"], t["gnum"], t["time"], t["gaps"], t["mask"], lens, qg, t["graw"])
-        model._hs = Hs
-        m = t["mask"][:, 1:]
-        Ls = _next_losses(model, t, m, 0.0, np.random.default_rng(0))
-        lp = ((model.past(E) - past) ** 2).mean()
-        lf = ((model.head_fut(E) - fut) ** 2).mean()
-        lid = sum(float(F.cross_entropy(h(E), t["id_tgt"][:, jj])) for jj, h in enumerate(model.head_id))
-        luc = float(((model.head_unc(E) - t["unc_tgt"]) ** 2).mean())
-        tot += float(sum(Ls) + lp + lf + lid + luc)
-        nb += 1
-    return tot / max(nb, 1)
-
-
-@torch.no_grad()
-def embed(model, seqs, ks, vs):
-    model.eval()
-    out = []
-    mout = []
-    eb = max(32, BATCH)
-    for i in range(0, len(ks), eb):
-        bk = ks[i : i + eb]
-        fcuts = [len(seqs[k][5]) for k in bk]
-        fq = [(AS_OF_TS - seqs[k][5][-1]) / 86400.0 for k in bk]
-        t, _, qg, lens, _f = collate(seqs, bk, fcuts, fq, vs, False, None, None)
-        Hs, E, _, MB, IB, RB, UB, CB, OB, RelB = model(t["et"], t["gcat"], t["gnum"], t["time"], t["gaps"], t["mask"], lens, qg, t["graw"])
-        out.append(E.cpu().numpy()); mout.append(np.hstack([MB.cpu().numpy(), IB.cpu().numpy(), RB.cpu().numpy(), UB.cpu().numpy(), CB.cpu().numpy(), OB.cpu().numpy(), RelB.cpu().numpy(), model.past(E).cpu().numpy()]))
-    return np.concatenate(out, 0), np.concatenate(mout, 0)
-
-
-def table_features(A, hold):
-    amap = {r["customer_key"]: r for r in A.to_dicts()}
-    rows = [amap[k] for k in hold]
-    feat = [
-        c for c in A.columns if not c.startswith("y_") and c not in ("customer_key", "signup_ts")
-    ]
-    X = pl.DataFrame([{c: r[c] for c in feat} for r in rows]).to_dummies(
-        columns=[
-            c for c in ("segment", "region", "acquisition_channel", "loyalty_tier") if c in feat
-        ],
-        drop_first=True,
-    )
-    labels = {c: np.array([r[c] for r in rows], float) for c in LABELS}
-    seg = np.array([str(r["segment"]) for r in rows], dtype=object)
-    return X.to_numpy().astype(float), labels, seg
-
-
-def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
-    global AS_OF_TS, BATCH
-    B, A, keys, seqs, vs, et_v, catspec, num, taus, p_mask, as_of_ts, periods, horizons = load_data(data)
-    AS_OF_TS = as_of_ts
-    if d is None:
-        from collections import Counter as _C
-        n_seqs = len(keys)
-        total = sum(len(seqs[k][5]) for k in keys)
-        _cnt = _C()
-        for k in keys:
-            _cnt.update(seqs[k][0].tolist())
-        _tot = sum(_cnt.values())
-        _H = -sum((c / _tot) * math.log2(c / _tot) for c in _cnt.values())
-        d, _dn = derive_dim(n_seqs, total, [vs["et"]] + list(vs["gcat"]), _H)
-        print(f"derived dim {d} ({_dn['dim']})", flush=True)
-    if not batch:
-        seq_len = int(np.median([len(seqs[k][5]) for k in keys]))
-        batch = derive_batch(len(keys), seq_len)[0]
-        batch = max(8, int(batch * (128 / d) ** 2))  # capacity-squared token bound (disclosed)
-    BATCH = batch
-    rng = np.random.default_rng(seed)
-    perm = rng.permutation(len(keys))
-    nt = int(0.7 * len(keys))
-    hold = [keys[i] for i in perm[nt:]]
-    tr = [keys[i] for i in perm[:nt]]
-    r2 = np.random.default_rng(seed + 100)
-    vp = r2.permutation(len(tr))
-    vn = max(20, int(0.1 * len(tr)))
-    val = [tr[i] for i in vp[:vn]]
-    tr = [tr[i] for i in vp[vn:]]
-    pkeys = tr[: min(len(tr), 400)]
-    fcuts = [len(seqs[k][5]) for k in pkeys]
-    fq = [(AS_OF_TS - seqs[k][5][-1]) / 86400.0 for k in pkeys]
-    if d is None:
-        from collections import Counter as _C
-        n_seqs = len(keys)
-        total = sum(len(seqs[k][5]) for k in keys)
-        _cnt = _C()
-        for k in keys:
-            _cnt.update(seqs[k][0].tolist())
-        _tot = sum(_cnt.values())
-        _H = -sum((c / _tot) * math.log2(c / _tot) for c in _cnt.values())
-        d, _dn = derive_dim(n_seqs, total, [vs["et"]] + list(vs["gcat"]), _H)
-        print(f"derived dim {d} ({_dn['dim']})", flush=True)
-    _, P, _, _, F = collate(
-        seqs, pkeys, fcuts, fq, vs, True, None, None, True, float(np.median(taus)), None, None
-    )
-    P = P.cpu().numpy()
-    F = F.cpu().numpy()
-    past_mu, past_sd = P.mean(0), P.std(0)
-    past_sd[past_sd < 1e-6] = 1.0
-    fut_mu, fut_sd = F.mean(0), F.std(0)
-    fut_sd[fut_sd < 1e-6] = 1.0
-    torch.manual_seed(seed)
-    model = Enc(vs, d, len(taus), layers, taus).to(DEV)
-    lr = lr if lr is not None else 1e-3  # documented seed bound; trust-region adapts below
-    opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
-    log_s = nn.Parameter(torch.zeros(1 + len(vs["gcat"]) + vs["gnum"] + 1 + 1 + 1 + len(vs["id_dims"]) + 1, device=DEV))
-    opt.add_param_group({"params": [log_s]})
-    tr_log = []  # trust-region lr trajectory (receipt)
-    best = 1e9
-    best_state = None
-    pat = 0
-    hist = []
-    for ep in range(epochs):
-        eff = lr * (0.5 if ep == 0 else 1.0)  # one warm epoch at half step
-        for g in opt.param_groups:
-            g["lr"] = eff
-        trl = run_epoch(
-            model,
-            seqs,
-            tr,
-            opt,
-            None,
-            log_s,
-            rng,
-            vs,
-            past_mu,
-            past_sd,
-            p_mask,
-            taus,
-            fut_mu,
-            fut_sd,
-            None,
-            True,
-        )
-        vl = val_loss(model, seqs, val, vs, past_mu, past_sd, taus, fut_mu, fut_sd, horizons)
-        print(f"seed {seed} epoch {ep + 1} train {trl:.4f} val {vl:.4f}", flush=True)
-        if not math.isfinite(trl) or not math.isfinite(vl):
-            raise RuntimeError(f"divergence (hard failure, never masked): train {trl} val {vl}")
-        hist.append(vl)
-        _h = np.array(hist[-5:])
-        _mad = float(np.median(np.abs(_h - np.median(_h)))) if len(_h) >= 3 else 0.0
-        tol = max(1.4826 * _mad / np.sqrt(len(_h)), 1e-3)
-        improved = vl < best - tol
-        if improved:
-            best = vl
-            best_state = {k: v.detach().clone() for k, v in model.state_dict().items()}
-            pat = 0
-        else:
-            pat += 1
-        lr = min(lr * 1.5, 1e-2) if improved else max(lr * 0.5, 1e-5)
-        tr_log.append((ep + 1, round(eff, 6), round(vl, 4)))
-        if pat >= 3:
-            break
-    print(f"trust-region lr {tr_log}", flush=True)
-    print(f"clip stats: {CLIP_STATS}", flush=True)
-    if best_state:
-        model.load_state_dict(best_state)
-    torch.cuda.empty_cache()
-    E, BLK = embed(model, seqs, hold, vs)
-    Xtab, labels, seg = table_features(A, hold)
-    return E, Xtab, labels, hold, seg, model, vs, B, best, BLK
+> **Provenance note (DEC-616, 2026-11-06).** Lines 1-709 of this file were, until this
+> commit, a verbatim UNFENCED copy of `scripts/demo/auto_encoder.py` at commit `86204eb`
+> (the 'dec275 fix: MAD tolerance actually applied' blob; the copy is byte-identical to it,
+> 709 lines), pasted in during the log re-org at `81fab27`. The live script has since
+> diverged (983 lines, WQ_AXES era) - a copy of a live file in the log head is P6 damage
+> (a second source of truth) and it kills log navigability. P6 + P13: the copy is
+> deleted; this pointer is its tombstone. Recovery: `git show
+> 86204eb:scripts/demo/auto_encoder.py` (the copy is also preserved in this file's git
+> history up to the DEC-616 commit).
 
 ## DEC-277 — CUDA-X data path: single code path, GPU engine, artifact cache (GATE PASS)
 
@@ -12040,3 +11342,301 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
    `test_golden_determinism` run and the repo's gpu_watchdog handler converted the kill
    to `SystemExit(0)` — both green on re-run, full suite RC=0). The card commit
    carries the regenerated receipts + card + this addendum.
+
+- **DEC-615 (N-ladder scale campaign — the three DEC-611 domains × N ∈ {2000, 10000,
+  25000} + the long-horizon probe; pre-registered 2026-11-06 on `main` @ `3950eaa`,
+  behavior `7f20fd0b`).**
+  - **NODE:** E1/dev-rig — the scale arm (B2) of the operator's 2026-11-06 maturity
+    mandate ("make it more adaptable, handle more situations … do what needs to be
+    done"), queued verbatim in DEC-614's outcome ("the N-ladder scale campaign … is
+    preserved as the next DEC under this mandate"). DEC-576 discipline: lab receipts
+    are a development instrument and never B-row evidence on the main card.
+  - **Operator quote.** "go ahead" (2026-11-06), read as B2-arm authorization exactly as
+    STATUS's queue line states ("The B2 scale arm (the N-ladder campaign) stays queued
+    behind this"); NOT push permission — commits stay local.
+  - **One axis: N = customer count.** For each of the three DEC-611 domains the spec is
+    held exactly (domain row, `transition=True`, `intent=5.0`, `base_rate`, `window_days`,
+    `snr=1.0`, seed-17 family) and only `n_customers` varies across {2000, 10000, 25000}.
+    Nothing else moves: the SSM trunk stands (DEC-613's looped GPT trunk is banked on
+    `looped-transformer` @ `4671829`, not merged), the same heads, the same frozen
+    instrument, the same as-of per domain.
+  - **Why this axis (the two walls, reconstructed from DEC-581/582/611/613).** The
+    N=500 floor row (DEC-611 receipts, `89cec70b`): the learned mean state does not beat
+    the model-free 1-gram on any domain (ridge g 1.7003 / 2.0280 / 5.0339; eff_rank
+    1.038 / 1.265 / 1.48), while the order statistic does (hier g 0.2447 / 0.3398 /
+    −1.7328, all under the 0.5 bar). DEC-581/582's attribution at toy scale — "the
+    headroom to the closed-form oracle is then a finite-sample ESTIMATION gap, and trunk
+    candidates compete on estimation efficiency, not expressivity" — is the finite-sample
+    wall; the memory/time budget is the other wall. The N-ladder separates them: if g
+    stabilizes > 0.5 with `beats_base` false as N grows, the mean-state wall is structural
+    (axis: capacity/objective at dev-rig scale); if some (domain, N) cannot complete
+    under the derived budget at the 32 GB cap, the wall is cost (axis: efficient). The
+    verdict is **characterization, not re-adjudication**: the N=500 verdicts stand
+    (DEC-611 closed); no gate, threshold, or criterion changes.
+  - **Fixtures (frozen).** Three new lab roots, one per N:
+    `rabbit_hole/data/lab_dec615_n{2,10,25}k/<domain>/`. FULL three-piece per cell
+    (positive / negative snr=0 / adversarial echo_next) + oracle + baseline, so the frozen
+    `complete` definition is honestly evaluable on-disk at the new N (`oracle_carried` is
+    N-invariant closed form; `negative_not_carried` and the adversarial A-side checks are
+    computed on the new-N streams). The positive spec is
+    `dataclasses.replace(POSITIVE[domain], n_customers=N)` — the ONLY delta vs the DEC-611
+    N=500 positive spec (spec-echo verified per cell: each new truth JSON's spec diffed
+    against the N=500 spec). Generation is the recorded command below (CPU-only,
+    behavior-neutral: fixture data is gitignored and `behavior_hash` covers `.py` source
+    in `looking_glass`/`rabbit_hole` only — DEC-611's "behavior move" was the source
+    edit, not the data).
+    - **Recorded generation recipe (the launcher, stage 1):**
+      `./.venv/bin/python /tmp/opencode/dec615_gen_fixtures.py ladder` → for N ∈
+      {2000,10000,25000} and each domain: `build_positive(uc, root, n_b=N)` +
+      `build_negative(uc, root, n=N)` + `build_adversarial(uc, root, n=N)` with
+      `root = rabbit_hole/data/lab_dec615_n{N//1000}k` (the DEC-611 builders, unchanged;
+      card "B" ⇒ `n_b` is the customer count). Pieces are independent and byte-deterministic
+      per spec, so generation runs several pieces concurrently (recorded in the launcher);
+      no byte of any piece depends on the others.
+    - **Recipe sanity (before generating anything):** regenerate the DEC-611 N=500
+      `sensor_fleet` positive + negative + adversarial into a throwaway root and require
+      BYTE-IDENTITY with the on-disk fixtures (the generation recipe reproduces the
+      campaign that produced the floor row; a divergence is a stop-and-diagnose, not a
+      proceed).
+  - **Products (frozen; PRE-RUN AMENDMENT 2026-11-06, recorded before any measurement was
+    read).** POSITIVE only, 9 cells: the DEC-611 recorded launch recipe
+    (banked at `/tmp/opencode/dec611_train_rest.sh`) with one necessary delta —
+    `--customers N` per rung:
+    `LG_SCAN=eager ./.venv/bin/python scripts/safe_run.py -- ./.venv/bin/python -m
+    looking_glass.customer_foundation_model train --db <root>/<domain>/customer_event_stream.parquet
+    --as-of <as-of> --anchors 6 --customers N --out-dir /tmp/opencode/lab_dec615/<domain>_n{k}_pos`,
+    as-of per domain (sensor 2024-03-01, clickstream 2024-05-01, server 2024-09-01 — the
+    70/30-of-window boundary, held fixed), ONE GPU job at a time (serialized launcher
+    `/tmp/opencode/dec615_train_stage1.sh`, `safe_run` canonical, 32 GB slice). The B-side
+    control products (neg/adv) are NOT trained at the new N: the control verdicts
+    (null → NO_SIGNAL; echo → leak teeth + as-designed read) are properties of the domain
+    spec + instrument, inherited from DEC-611 at N=500 on the identical spec, and are
+    DISCLOSED as inherited in every receipt (via the outcome addendum, not a flag — the
+    frozen receipt shape is not edited).
+    **Amendment record.** The pre-registration's "verbatim recipe" carried the DEC-611
+    launch without `--customers`; at N=500 the trainer's default `sample_customers=500`
+    (`cfm_config.py:168`, "working base: first N customers") coincides with the whole
+    fixture, so DEC-611's products trained on the full population — the coincidence is why
+    the defect was invisible there. At N>500 the default silently caps the population to
+    the FIRST 500 customer keys (`cfm_data.py:261–262`, `keys[:cfg.sample_customers]`) and
+    the scale guard hash-samples the read to 3×500. The smoke cell's registry proves the
+    cap: on the 2000-customer fixture it records `n_customers: 500,
+    n_train_sequences: 350` and the products serve `customer_state=500` states — the N axis
+    would have been nulled before any measurement (the B-side held-out rows are drawn from
+    the served population only). No code change: `--customers` is the pipeline's own
+    documented population flag (production consumers set it explicitly); the instrument,
+    bars, split protocol, heads, and verdict are unchanged — only the campaign's population
+    line moves. The smoke cell's capped product
+    (`/tmp/opencode/lab_dec615/sensor_fleet_n2k_pos`) is discarded and stage 1 re-runs from
+    cell 1 with `--customers N`. (This is NOT the pre-registered "pipeline defect →
+    separate DEC" branch: no behavior move is required or made; the contingency was the
+    detection, the amendment is the correction.)
+  - **Measurement (frozen instrument, DEC-576).** Per cell, once its products exist:
+    (1) `scripts/build_lab_signature.py --fixture <root>/<domain> --products <pos>
+    --as-of <as-of>` (the hier signature block, CPU); then (2) two
+    `lab_measure.py` runs:
+    - ridge: `lab_measure.py --lab-root <root> --fixture <root>/<domain> --products <pos>
+      --as-of <as-of> --iter dec615_n{k} --out docs/report_cards/experiments/lab/<domain>_dec615_n{k}.json`
+    - hier: same with `--head hier`, `--out …/<domain>_dec615_n{k}_hier.json`
+    NEW harness plumbing: the `--lab-root` flag (default `rabbit_hole/data/lab` —
+    byte-identical behavior when omitted) lets `lab_gate.evaluate()` read the A-side
+    defensible pieces from the ladder root. scripts-only (DEC-612 precedent: scripts are
+    outside `BEHAVIOR_TREES` = (`looking_glass`, `rabbit_hole`); behavior stays
+    `7f20fd0b`; no re-stamp; verified by the five gates + a card re-render with zero
+    value drift). No `--neg-products/--adv-products` (no control products at the new N);
+    `complete` is computed from the on-disk A-side pieces + the positive rows — the
+    frozen definition, unedited.
+  - **Long-horizon probe (pre-registered; stage 2).** One extra cell per domain at that
+    domain's LARGEST COMPLETED N (the hedge against the budget wall): spec =
+    `dataclasses.replace(POSITIVE[domain], n_customers=<largest completed N>,
+    window_days=2×<domain window>)` — the per-customer event budget DOUBLED at the same
+    base rate (expected events/customer ×2; H is derived from the fixture's own
+    rate/window algebra, not a literal horizon). The repo's own "long" precedent is
+    exactly this: `next_event_long`/`intent_long` run 365 d → 730 d. Root
+    `rabbit_hole/data/lab_dec615_long/<domain>/` (three-piece, same as-of, positive-only
+    products, both heads, `--iter dec615_long`, out
+    `docs/report_cards/experiments/lab/<domain>_dec615_long{,_hier}.json`). Question it
+    answers: does doubling the per-customer horizon (H axis) move the ridge g more than
+    50× the cross-customer sample (N axis) did — i.e., which of the two scale axes carries
+    the finite-sample gap? STAGE-2 CONDITION: probe fixtures + products are generated
+    only after stage-1 completions are known (the probe's N is data-dependent); if the
+    budget wall stops a domain below 25K, its probe sits at that largest completed N and
+    the wall is recorded with the reduced-N disclosure (certification rule 6).
+  - **Verdict (frozen).** Characterization, reported per domain: (i) the g-vs-N curve
+    (both heads) with the paired-CI width vs N; (ii) eff_rank vs N; (iii) THE WALL'S
+    LOCATION — finite-sample (g stabilizes above the 0.5 bar, `beats_base` stays false at
+    the largest completed N) or budget (largest completed N < 25K — report the reduced N
+    and why) or both; (iv) train wall-clock + peak RSS vs N (the cost curve the next scale
+    decision consumes); (v) the long-horizon probe read (g at ×2-H vs the N-ladder's
+    largest N). `mastered` is computed per cell by the frozen DEC-576 formula — at the new
+    N the control rows are inherited-disclosed, so NO cell may claim mastery without first
+    executing the contingency below. No new B-row, no new card atom: the tree stays frozen
+    at 39; the receipts are dev instruments (DEC-576), the card's dev-rig section is the
+    disclosure surface.
+  - **Control-contingency branch (pre-registered).** If ANY cell's receipt shows
+    g ≤ 0.5 (either head): before any "mastered at N" statement is owed, train the neg +
+    adv products at that (domain, N) with the same recorded recipe, re-run the two
+    `lab_measure` commands WITH `--neg-products/--adv-products` (inheriting nothing), and
+    require the frozen control reads (neg NO_SIGNAL; adv as designed). This is a follow-up
+    step of DEC-615's outcome, not a new DEC. If no cell crosses the bar, the contingency
+    is not owed and the campaign closes as pure characterization.
+  - **Cost (estimated, derived).** Fixtures: 27 pieces stage 1 + 9 pieces stage 2
+    (three-piece × {9 ladder, 3 probe}); the N=25K pieces are ~12–13 M rows
+    (server ≒ 25000 × 511) — CPU-only, the per-piece determinism is independent so
+    concurrent generation is byte-safe; expect tens of minutes wall. GPU: 9 stage-1 +
+    3 stage-2 positive trains serialized; N=500 sensor trained 231 steps / 12.5 s
+    step-time under a derived 660-step budget (≈2–4 min end-to-end incl. products), so
+    N=2K/10K/25K ≈ 5–15 / 15–45 / 45–180 min per cell (data + I/O + derived step budget
+    scale with N) → ≈ 2–10 h total, backgrounded. Measurement: CPU, seconds–minutes per
+    cell (ridge OOS heads + hier block build over the served states). No card re-stamp
+    (no behavior move).
+  - **Rejected.** (a) Register the ladder rungs as new `USE_CASES` entries (+ `_TRANSITION`
+    lines in `lab_gate.py`): a behavior move in both trees → full ~30-receipt re-stamp
+    (DEC-611 class) + the coverage denominator grows for a pure scale campaign — the lab
+    gate already evaluates ANY root via `evaluate(lab=…)`. (b) Positive-only fixtures at
+    the new N (skip the neg/adv pieces): the frozen `complete` definition requires the
+    A-side pieces on disk; weakening it would edit the DEC-576 instrument — instead the
+    three-piece is built (CPU-cheap) and only the B-side control PRODUCTS are skipped.
+    (c) Train neg/adv products for all 12 cells: the control verdicts are
+    spec+instrument properties; the pre-registered contingency owes re-checks only where
+    a master claim actually arises. (d) One combined 12-cell matrix incl. the probe in
+    stage 1: the probe's N is data-dependent (largest COMPLETED N), so it is staged after
+    stage-1 outcomes. (e) A literal long horizon (e.g. "730 d" typed by hand): H is the
+    fixture's window ×2 at held rate — the repo's established "long" convention
+    (`next_event_long`), derived from the spec, not tuned to the metric.
+  - **Principle.** Honest (known truth + frozen instrument + controls; results as-is; the
+    wall is reported, never tuned away) · Diagnosable (one axis = N; the H probe is a
+    separate, named, staged cell — the two scale walls are reported separately) ·
+    Efficient (derived budgets, one GPU job at a time, positive-only products; the
+    wall-clock/RSS cost curve is a first-class output) · P6 (one `POSITIVE` table, one
+    simulator, three builders — the rungs are config deltas, not a second fixture
+    lineage) · Universal (zero model-code change: the SAME pipeline is exercised at new
+    N, exactly the DEC-611 universality claim now scale-tested).
+  - **Outcome addendum (pending execution).**
+
+- **DEC-616 (repo organization & cohesion — the operator's 2026-11-06 "rectify that"
+  directive; pre-registered on `main` @ `3950eaa` after the DEC-615 launch;
+  behavior-neutral).**
+  - **NODE:** P13/P6 hygiene, not a plan axis. Operator quote: "I have a feeling much of
+    the project is not organized well and cohesive. Could you also make sure to rectify
+    that" (2026-11-06). One measured axis: tracked-repo organization/cohesion. Every fix
+    below is doc/repo-shape: ZERO `.py` edits in `looking_glass`/`rabbit_hole` (behavior
+    stays `7f20fd0b`, no re-stamp). Acceptance = the five commit gates green + the card
+    re-render's diff restricted to the two plan-macro lines + the log-citation gate green
+    (which this entry itself unblocks: STATUS cites DEC-616 at its new bullets).
+  - **Evidence (each verified by the recorded command; the orphan scan is banked at
+    `/tmp/opencode/dec616_scan_scripts.py`).**
+    1. **DECISIONS.md lines 1–709 are a fossil, not a log.** A verbatim, UNFENCED copy of
+       `scripts/demo/auto_encoder.py` at commit `86204eb` ("dec275 fix: MAD tolerance
+       actually applied"; `diff <(git show 86204eb:scripts/demo/auto_encoder.py)
+       <(sed -n '1,709p' DECISIONS.md)` = 0 lines), pasted in during the log re-org at
+       `81fab27`. The live script has since diverged to 983 lines; the log proper starts
+       at line 711 (`## DEC-277`). A 12k-line log opening with 709 lines of a dead copy of
+       a live file is P6 damage (a second source of truth) and it kills log
+       navigability — readers scrolling for a decision hit seven hundred lines of code
+       first.
+    2. **14 P13-orphan scripts in `scripts/`** — zero references anywhere tracked, 0
+       receipt refs, last touched 2026-09-25..10-24 (pre-campaign era):
+       `bench_relational, fit_block_alpha, mb_done_smoke, mb_validate, order_probe,
+       reference_certify, response_gate_pit, retag_model, screen_axes,
+       sufficiency_minimality, survey_envs, validate_layer_a` (the 12 full orphans) +
+       `screen_one` (referenced only by the orphan `screen_axes`) + `shape_attribution`
+       (referenced only by the orphan `reference_certify` — the `reference_pipeline.py`
+       and `full_report_card.py` hits are the `shape_attribution.json` ARTIFACT / CLI
+       arg name, not the script; that artifact is produced live by
+       `reference_pipeline.py`). KEEP with live refs: `reference_pipeline.py`
+       (`tests/test_reference_pipeline.py`, `PROMPT_FORWARD.md`, the card manifests) and
+       its dependents; `validate_path_a.py`
+       (`rabbit_hole/generators/relational_reference.py`); `gpu_probe.py`
+       (`docs/report_cards/reference_v4b_experiments.json`).
+    3. **2 orphan top-level receipts.** `docs/report_cards/layer_a_certificate_v3.json`
+       (0 referrers anywhere tracked); `docs/report_cards/layer_a_certificate.json`
+       (sole referrer = the orphan `validate_layer_a.py`, so orphaned by item 2).
+       `demo_run.json` (log evidence), `path_a_validation.json` (`measure_data.py`,
+       `validate_path_a.py`, the relational generator) and the `reference_v4*` family
+       have live referrers → keep.
+    4. **plan_spec current-state text cites stale behavior (the B-019 class: "text lags
+       the record").** `plan_spec.py:531` (FRONTIER_NOTE "at behavior df73c2aa"), `:541`
+       (MACRO_REVIEW comment "current at behavior 7baf744f" — two re-stamps stale),
+       `:543` (MACRO_REVIEW "At behavior `df73c2aa`"), `:606` (R4 "at behavior
+       df73c2aa"). The card's macro/frontier lines (REPORT_CARD.md:51/53) render from
+       these constants, so the card carries the same staleness next to its own
+       `7f20fd0b` header stamp. The NUMBERS are still valid (DEC-614 re-stamp: zero
+       verdict-value drift) — only the behavior id is stale; current = `7f20fd0b`.
+    5. **STATUS.md Operating facts stale on two lines.** "branch `foundation-rebuild`"
+       (the repo has been on `main` since the branch merge; the live branch is `main`);
+       and the "Candidate 0.11.1 B rows … B 16/4/3, root 20/39. S6 dirty-tree only;
+       commit + re-run the chain." bullet — a pre-DEC-605 snapshot superseded by the
+       SOLVED 39/39 card at `7f20fd0b` (DEC-614).
+    6. **README.md "The foundation embedding — headline evidence (v8)" section
+       (lines 23–57):** a v8-era U-metric results table (instacart 0.94 / ecommerce 0.87
+       / magnitude 0.00 + the DEC-167 controlled proof) sitting in the repo front door,
+       OUTSIDE the card. DEC-562/563: measurement lives ONLY in `REPORT_CARD.md`. The
+       section's goal/architecture/metric prose is still-current description; the
+       results table is historical evidence from the v8 era.
+  - **Fixes (behavior-neutral; one commit).**
+    1. Delete DECISIONS.md lines 1–709; insert a labeled pointer recording the provenance
+       (the `86204eb` blob, pasted by the `81fab27` re-org) and recovery
+       (`git show 86204eb:scripts/demo/auto_encoder.py`; the copy is also preserved in
+       this file's git history up to this commit). The log proper (from `## DEC-277`) is
+       untouched.
+    2. `git rm` the 14 orphan scripts.
+    3. Delete the 2 orphan receipts.
+    4. The 4 plan_spec behavior cites → `7f20fd0b`; re-render `PLAN.md`
+       (`scripts/plan.py`) and `REPORT_CARD.md` (`scripts/report_card.py` — receipts
+       unchanged, so the card diff is restricted to the two macro lines and is recorded
+       below).
+    5. STATUS branch line → `main`; the 0.11.1 bullet → a one-line pointer to the card.
+    6. README v8 section: a "Historical (v8-era)" label under the heading + a pointer to
+       `REPORT_CARD.md` as the live measurement surface; the prose stays.
+  - **Rejected.** (a) Fencing the fossil as a code block or moving it to the tail: it is a
+    copy of a LIVE file — P6 says pointer, not second copy, wherever the copy sits.
+    (b) A `scripts/legacy/` graveyard for the 14 orphans: P13 — unreferenced code in the
+    tracked tree just rots slower; their history lives in git, and a graveyard directory
+    recreates the navigation damage in new shape. (c) Deleting the README v8 section
+    wholesale: the section's prose is the README's job (what the embedding is and why);
+    only the results table sits outside the card — label, don't excise. (d) Refreshing
+    the v8 numbers: a measurement re-run is its own campaign (DEC-615-class), not a
+    doc-cohesion fix. (e) Updating AUDIT.md's `df73c2aa` cites: they are closure-time
+    stamps on point-in-time evidence rows ("B-0xx … at behavior …"), not current-state
+    claims; a fresh FULL BACKWARD review at `7f20fd0b` is a separate campaign if the
+    operator wants one. (f) Folding B-023's closure in: it is a `looking_glass` edit →
+    behavior move + full re-stamp → its own follow-up DEC; mixing it in would break this
+    DEC's behavior-neutrality.
+  - **Out of scope (operator calls — stay queued, not executed here):** the AGENTS.md
+    "8 GiB card" charter line (stale on this GB10 unified-memory box; a charter edit is
+    the operator's call); B-017 (the SPINE §5 corollary ruling; INFO); the
+    sufficiency-probe gap-draw determinism fix (frozen instrument → future DEC); pushing
+    the local commits ahead of `origin/main`.
+  - **Cost.** Zero runtime; one commit; gates ≈ 2–3 min.
+  - **Principle.** P13 (dead code does not accumulate in the tracked tree) · P6 (one
+    source of truth; pointer beats copy) · Honest (every deletion is provenance-tagged
+    and recoverable from git — nothing silently erased; the card diff is recorded, not
+    assumed) · Diagnosable (six numbered evidence items, each with its verifying
+    command) · Efficient (behavior-neutral: no re-stamp, no GPU).
+  - **Outcome addendum (2026-11-06; closed by this commit on `main`).** Executed exactly
+    as pre-registered, item by item:
+    (1) DECISIONS.md preamble lines 1–709 → labeled pointer (the surgery script is
+    recorded at `/tmp/opencode/dec616_preamble.py`: boundary asserts + re-asserted
+    byte-identity with the `86204eb` blob before cutting; the log proper from
+    `## DEC-277` untouched; file 12042 → 11617 lines).
+    (2) `git rm` of the 14 orphan scripts. (3) the 2 orphan receipts deleted.
+    (4) the four plan_spec behavior cites → `7f20fd0b`; `PLAN.md` re-rendered
+    (3 lines: the macro paragraph, R4, the frontier note) and `REPORT_CARD.md`
+    re-rendered — the card diff is exactly the stamp line (render time + commit
+    `3950eaa` · dirty; the behavior stamp is UNCHANGED `7f20fd0b`) plus the two
+    plan-macro lines, zero receipt/value drift (before-image banked at
+    `/tmp/opencode/card_before.md`, diff recorded in the commit body).
+    (5) STATUS Operating facts: branch → `main`; the pre-DEC-605 "Candidate 0.11.1 …
+    root 20/39" bullet → a one-line pointer to the card. (6) README v8 section:
+    "Historical (v8-era)" label + card pointer; prose untouched.
+    **Behavior-neutral proof:** `report_card.behavior_hash()` = `7f20fd0badb210d6`
+    recomputed on the closing tree (all edits in `scripts/` + docs — outside the
+    behavior trees `looking_glass`/`rabbit_hole` — so no re-stamp is owed). **Gates:**
+    the five commit gates RC=0 on the closing tree (pytest `-m "not slow"`,
+    `ruff check .`, `ruff format --check .`, `principle_audit --all --strict`,
+    `plan.py --check`); the log-citation gate went green with this entry's existence
+    (it was red on STATUS's DEC-616 bullets until this commit). **Chunk-1 scope:** this
+    commit carries the DEC-615 pre-registration (+ its pre-run amendment record) and the
+    DEC-616 closeout together; the DEC-615 outcome addendum stays pending until the
+    ladder + probe measurements land (chunk 2).
