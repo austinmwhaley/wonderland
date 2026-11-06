@@ -134,6 +134,19 @@ def test_deterministic_forward():
     y1, h1 = trunk(x, mask=m)
     y2, h2 = trunk(x, mask=m)
     assert torch.equal(y1, y2) and torch.equal(h1, h2)
+    # v6 monotonic stability (Principle 5): the whole forward+backward must run
+    # clean under the strict determinism flag — the trunk's attention is pinned
+    # to the math SDPA backend (flash / mem-efficient reduce non-deterministic),
+    # so a non-deterministic kernel would surface here, not at campaign scale.
+    xc = x.clone().requires_grad_(True)
+    prev = torch.are_deterministic_algorithms_enabled()
+    torch.use_deterministic_algorithms(True, warn_only=False)
+    try:
+        y, h = trunk(xc, mask=m)
+        y.sum().backward()
+    finally:
+        torch.use_deterministic_algorithms(prev, warn_only=False)
+    assert torch.isfinite(xc.grad).all()
 
 
 def test_fail_safe_rejects():

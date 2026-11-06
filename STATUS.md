@@ -448,7 +448,11 @@ next question is the learned shape, not another consumer tuning pass.
    default 2) protocol axis — I/R/O blocks scaled to our capacity (1/(1×L)/1), input
    re-injected every loop, SWA/full attention interleaved (per-row window = half the
    row's own valid length), nGPT constant depth at the public interface (final RMSNorm;
-   pre-train `model_health` passes). Law tension disclosed up front: the composition
+   pre-train `model_health` passes). Determinism (outcome note 1, 2026-11-06): SDPA pinned
+   to the math backend (`sdpa_kernel(SDPBackend.MATH)`) after the first batch's
+   memory-efficient backward surfaced torch's non-determinism warning — the whole 15-product
+   grid retrains under the single kernel regime (bit-reproducible cross-process, proven);
+   batch-1 artifacts invalidated, never measured. Law tension disclosed up front: the composition
    canary is inapplicable to an attention trunk (branch-only; merge-to-main is a
    DEC-573 behavior move needing operator ruling). Comparison protocol frozen: the
    DEC-576 dev-rig at N=500 (3 domains × pos/neg/adv at L=2; pos at L=1/L=4) vs the

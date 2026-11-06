@@ -12034,3 +12034,23 @@ nonlinearity, a different mechanism; reusing the names would conflate two trunk 
 (violates P6 single source of truth). (c) a new measurement protocol tuned to attention —
 violates the frozen-protocol rule (certification integrity §1); the DEC-576 rig is exactly
 the instrument that compares trunks at fixed N.
+  * **DEC-613 outcome note 1 (determinism fix, campaign re-launch 2026-11-06):** the first
+    campaign batch (sensor pos L=1/L=4 + neg/adv L=2, trained under chunk `c44dea9`) surfaced
+    torch's `UserWarning: Memory Efficient attention defaults to a non-deterministic algorithm`
+    on SDPA backward — the flash/memory-efficient kernels reduce in a non-deterministic order,
+    so the looped trunk was NOT run-to-run reproducible while the SSM trunk's `_scan` is
+    (determinism-class asymmetry in the comparison instrument; Principle 5 / v6 monotonic
+    stability: "deterministic and stable from step 0"). The whole grid is INVALID as
+    cross-kernel: the 4 finished products were trained under mem-efficient attention and the
+    rest would have been under a mixed regime. Fix (branch-local, implementation, no
+    gate/protocol/criterion change — the DEC-576 rig and all bars untouched): the trunk's
+    attention is pinned to the MATH SDPA backend (`torch.nn.attention.sdpa_kernel(SDPBackend.MATH)`,
+    the modern context manager; the `torch.backends.cuda.sdp_kernel` spelling is deprecated in
+    torch 2.14), the only bit-reproducible path. Cost: measured ~0.2–0.7 ms/forward on the
+    campaign shapes (B=8, T=377/503/384, H=128/256) — ~2x the mem-efficient cost, both
+    negligible against the enqueue-bound 83 ms/step. Proof of the property (not the
+    warning's absence): two independent GPU processes, same seed, 5 forward+backward+AdamW
+    steps → bit-identical weight hash (`sha256 ab24b7ab…` both runs); the trunk test now
+    runs forward+backward under `use_deterministic_algorithms(True)` clean. ALL 15 products
+    (including the smoke sensor L=2 pos) retrain under the single kernel regime; batch-1
+    artifacts are superseded, never measured.

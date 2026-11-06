@@ -45,6 +45,10 @@ The loop over `n_loops` (<=4) is over the DEPTH knob, not over time/rows/
 batches: every slot is vectorized over (B,T) with one scaled-dot-product call
 each, and the interleave/re-injection are mask algebra, not Python iteration
 over the sequence.
+
+Determinism: attention runs on the MATH SDPA backend (flash / memory-efficient
+disabled) — the only bit-reproducible path, matching the SSM trunk's `_scan`
+determinism class so the trunk comparison is run-to-run comparable.
 """
 
 from __future__ import annotations
@@ -52,6 +56,7 @@ from __future__ import annotations
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.nn.attention import SDPBackend, sdpa_kernel
 
 from looking_glass.cfm_model import RMSNorm
 
@@ -101,10 +106,18 @@ class _LoopedBlock(nn.Module):
         h = self.norm1(x)
         q, k, v = self.w_qkv(h).chunk(3, dim=-1)
         # single head at dev-rig scale (minimal footprint; multi-head is a
-        # scale-up lever, not a loop-structure axis) — SDPA wants the head dim
-        a = F.scaled_dot_product_attention(
-            q.unsqueeze(1), k.unsqueeze(1), v.unsqueeze(1), attn_mask=m
-        ).squeeze(1)
+        # scale-up lever, not a loop-structure axis) — SDPA wants the head dim.
+        # Deterministic attention (Principle 5, v6 monotonic stability): the math
+        # backend is the only SDPA path that is bit-reproducible across runs —
+        # flash / memory-efficient reduce in a non-deterministic order (torch
+        # warns on its backward). The SSM trunk's `_scan` is determinism class,
+        # so the trunk comparison stays fair; at dev-rig scale (T<=503, single
+        # head) the math backend's O(T^2) scratch is negligible
+        # (measured ~0.2-0.7 ms/forward on the campaign shapes).
+        with sdpa_kernel(SDPBackend.MATH):
+            a = F.scaled_dot_product_attention(
+                q.unsqueeze(1), k.unsqueeze(1), v.unsqueeze(1), attn_mask=m
+            ).squeeze(1)
         x = x + self.w_o(a)
         x = x + self.w2(F.silu(self.w1(self.norm2(x))))
         return x
