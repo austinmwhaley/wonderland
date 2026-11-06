@@ -16,7 +16,9 @@ all get signal from it through simple heads.
 `brain alone` = **progress**, `brain + ledger` = **delivery** (non-inferiority). Ledger points are
 never a brain win.
 
-**Stage:** Layer 0 — **PLAN ROOT SOLVED 39/39 on the synthetic `demo_v2` prototype.** **B is
+**Stage:** Layer 0 — **PLAN ROOT SOLVED 39/39 on the synthetic `demo_v2` prototype** (card
+committed at `10fc4e1`, behavior `89cec70b`; the DEC-614 re-stamp to `7f20fd0b` is in
+progress). **B is
 CERTIFIED** (23/23, 8/8 at behavior `89cec70b`, on the single `cfm_v2k_vf2_cert` bundle);
 **B+C is DONE** (8/8, bank v2, DEC-598) for the served bank, with the measure-free donor-only
 boundary recorded (B-008); the three plugin gates pass **9/9**; **E1 is PASS as served-object
@@ -25,12 +27,15 @@ delivery/ledger port: eff_rank 30.9 / persona 0.267 / R2 0.460, with the trunk-o
 4.11/10.33 recorded); **V1.1-V1.5 are green** (identifiable stream, plugins 9/9, red_king
 known-effect 73.3% vs 25% chance + held-out policy 0.371 vs 0.208 random, red_queen DEPLOY/HOLD
 offer composition, caterpillar on red_queen's plan). **No BACKWARD BREAKING/MAJOR requirement is
-open** (AUDIT.md: 18 of 20 requirements closed; B-017/B-018 open as disclosed INFO, the B-017
+open** (AUDIT.md: 20 of 25 requirements closed; B-017/B-018 open as disclosed INFO, the B-017
 SPINE §5 ruling queued to the operator; B-020 — the operator-filed MAJOR claim-scope finding
 the closing reviews should have surfaced — filed and closed the same day by the DEC-611
 campaign (AUDIT.md §6.11); closing FULL review at `eb9381b`, §6.9; operator-requested
 rescan at `b512068`, §6.10: NO BREAKING, its one new finding B-019 — the R7 route text lagged the
-record — closed 2026-11-05 by DEC-610). **Scope:** the
+record — closed 2026-11-05 by DEC-610; B-021 closed by the DEC-612 clean re-stamp;
+**B-022 — MAJOR, the first §4c generality-hunt finding, the supervised comparator's hardcoded
+`value` field — filed and closed 2026-11-06 by DEC-614**; B-023 (MINOR) + B-024/B-025
+(INFO, named scope) open as the disclosed backlog). **Scope:** the
 certified artifact is the synthetic
 demo prototype; no production-stream claim, and no trunk-only capacity claim. **Macro reframe
 DEC-567 (2026-11-02):** the X-ray is far
@@ -59,6 +64,31 @@ histogram half; it is not the missing piece.
 
 ## Current state
 
+- **DEC-614 (2026-11-06, operator mandate: "make the project better. More adaptable. more
+  situations. ... PROMPT_BACKWARDS needs to be updated to hunt for things that could be
+  better"): the §4c improvement hunt + the first situation-blocker, closed.**
+  PROMPT_BACKWARD now carries §4c "Generality & improvement hunt (constructive, binding)" —
+  a read-only pass proving the green claim is *complete*: it names the next situation /
+  stream / scale / consumer the code would fail, under-generate, or silently clamp, and files
+  each as a tracked B-<n> forward subgoal (wired into the §5 AUDIT shape, the §7 run-it
+  checklist, and the §8 clean-BACKWARD definition). The first hunt filed B-022..B-025:
+  **B-022 (MAJOR, closed this turn)** — `supervised_gate._raw_features`'s RFM comparator
+  hardcoded `pl.col("value")` on the raw stream, so any reference stream whose dominant
+  numeric field is not `value` crashed the comparator (demo_v2 hid it: its only numeric
+  column is `value`); the field is now derived via `cfm_data._primary_numeric_field` (the
+  DEC-611 `2a49b8d` precedent) with a numeric-free zero fallback; pinned by
+  `tests/test_supervised_generality.py` (3 hermetic tests: non-`value` field consumed,
+  name-agnostic output, numeric-free fallback); no-op proven on the reference (a stream with
+  one numeric column can only derive that column). **B-023 (MINOR, open)** —
+  `onboard._derive_reward_event`'s vestigial `value_col` param (correct only via
+  pre-canonicalization to `value`). **B-024/B-025 (INFO, open, named scope)** — the
+  supervised LEG's target family and the decision LEG's arm/reward contract are frozen
+  evaluation/causality contracts; named as scope, not filed as defects. Behavior moved
+  `89cec70b` → `7f20fd0b` (a `looking_glass` edit): the full re-stamp is running — the 12
+  B-row producers at their own recorded commands + the one-command S6 chain on the clean
+  tree after the DEC-614 code commit. DEC-613 is sealed on `main` as the cross-branch
+  allocation (the log-citation gate; the entry lives on `looped-transformer`, banked, not
+  merged). The B2 scale arm (the N-ladder campaign) stays queued behind this.
 - **DEC-611 campaign complete (2026-11-05; closeout commit in progress): the multi-domain
   dev-rig, and the empirical answer to B-020.** Three structurally distinct known-truth
   domains — `sensor_fleet` (regime ordering + continuous levels), `clickstream_sessions`
@@ -439,26 +469,24 @@ next question is the learned shape, not another consumer tuning pass.
 
 ## Next 3 actions
 
-1. **DEC-611 closeout COMPLETE — all-green baseline on `main` (2026-11-05).** Campaign
-   chunk `9af0d0d`; closeout forensics DEC-612 (the chain's stale legs-producer map, fixed
-   at `0470c79`); the clean one-command `measure_certification_law.py` re-stamp rendered the
-   plan root **SOLVED 39/39 at behavior `89cec70b`** (B CERTIFIED 23/23, 8/8; S6 OK;
-   backward open 0) — this commit carries the regenerated card + receipts + B-021
-   (filed and closed, AUDIT.md §4/§6.12/§9). The push to `main` (operator permission
-   2026-11-05) follows this commit; `main` is then the working base — the
-   looped-transformer (Dory-style) trunk exploration re-cuts from it.
-2. **Certification statement (delivered with the push):** B is CERTIFIED 23/23, 8/8 at
-   behavior `89cec70b` on the single `cfm_v2k_vf2_cert` bundle — the `demo_v2` synthetic
-   prototype (B-001 scope; dev-rig receipts are instruments, not B-row evidence, DEC-576);
-   plan root SOLVED 39/39 after the DEC-612 re-stamp. The looped-transformer (Dory-style)
-   trunk exploration is deferred at operator instruction (branch deleted 2026-11-05); to be
-   re-cut from `main` when resumed — the Dory mapping + encoder-contract facts are preserved
-   in the DEC-611 record.
-3. **Operator rulings queued:** B-017 (SPINE §5 corollary; INFO, disclosed); the AGENTS.md
-   "8 GiB card" line is stale on this GB10 unified-memory machine (project cap 32 GB,
-   operator 2026-11-02, reconfirmed 2026-11-05 — a charter edit is the operator's call, and
-   "one GPU job at a time" is void on this box); the sufficiency probe's order-undetermined
-   gap draw is a frozen-instrument determinism fix, candidate for a future DEC.
+1. **DEC-614 re-stamp wave (running 2026-11-06):** the 12 B-row producers re-run with their
+   own recorded commands + the one-command S6 chain, on the clean tree after the DEC-614
+   code commit. Expected: all receipts re-stamped at behavior `7f20fd0b`, zero
+   verdict-bearing value drift (the no-op is proven: demo_v2's single numeric column is
+   `value`), the only permitted variance being the disclosed excluded
+   sufficiency-probe H draw (DEC-611), and the plan root SOLVED 39/39 with S6 OK.
+2. **The card commit (closeout):** regenerated receipts + card + the DEC-614 outcome
+   addendum + AUDIT B-022..B-025 + the five commit gates RC=0. `main` is ahead of
+   `origin/main` since 2026-11-05; the push still awaits operator permission.
+3. **B2 scale arm queued (the any-scale half of the operator mandate):** the N-ladder
+   campaign — N=2K/10K/25K fixtures on the three mastered domains + the g-vs-N curve +
+   the long-range horizon probe — pre-registered as the next DEC after the re-stamp
+   closes. Operator rulings also remain queued: B-017 (SPINE §5 corollary; INFO,
+   disclosed); the AGENTS.md "8 GiB card" line is stale on this GB10 unified-memory
+   machine (project cap 32 GB, operator 2026-11-02, reconfirmed 2026-11-05 — a charter
+   edit is the operator's call, and "one GPU job at a time" is void on this box); the
+   sufficiency probe's order-undetermined gap draw is a frozen-instrument determinism
+   fix, candidate for a future DEC.
 
 ## Operating facts
 

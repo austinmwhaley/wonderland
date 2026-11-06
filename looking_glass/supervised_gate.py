@@ -231,12 +231,27 @@ def _raw_features(d, keys, cfg):
     """
     import polars as pl
 
+    from looking_glass.cfm_data import _primary_numeric_field
+
+    # The monetary aggregate is DERIVED from the stream, never named (Universal/P1,
+    # DEC-614): the dominant extensive numeric field. On the reference stream this
+    # resolves to "value" (the only numeric column -> byte-identical); a stream whose
+    # monetary field has another name is consumed, not crashed on; a numeric-free
+    # stream yields zeroed monetary aggregates (the comparator keeps its
+    # frequency/recency/gap/cardinality signal).
+    vfield = _primary_numeric_field(d, cfg)
+    monetary = (
+        pl.col(vfield).cast(pl.Float64, strict=False).fill_null(0.0)
+        if vfield is not None
+        else pl.lit(0.0, dtype=pl.Float64)
+    )
+
     df = d.filter(pl.col("customer_key").is_in(list(keys))).with_columns(
         pl.col("event_ts")
         .str.to_datetime(time_zone="UTC", strict=False)
         .dt.epoch("s")
         .alias("_ts"),
-        pl.col("value").cast(pl.Float64, strict=False).fill_null(0.0).alias("_v"),
+        monetary.alias("_v"),
     )
 
     def _nuniq(col):

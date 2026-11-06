@@ -10,11 +10,15 @@
 >   requirements (a fake node closure is breaking) but it can **never** produce a completion
 >   verdict or satisfy the tick-tock's stop condition.
 >
-> **Job:** try to falsify the claim at **both scales**. MACRO: is the tree the right
+> **Job:** try to falsify the claim at **both scales** — and hunt for what the project
+> **could do better** (§4c). MACRO: is the tree the right
 > decomposition, are its statuses honestly derived, and is the route pointer the true frontier?
 > MICRO: is every green leaf green under its frozen gate, and does a green mean what the plan
 > says it means? Explain **why the project may not achieve its goal**, even if every row is
-> green. Document every finding for the next forward run.
+> green. A green card proves the claim is true *today*, not that the next situation is handled:
+> §4c names the situation, stream, scale, or consumer the code would fail, under-generate, or
+> silently clamp. Document every finding — a defect **or** an improvement opportunity — for the
+> next forward run.
 > **Read-only.** Do not fix, edit, regenerate, or weaken anything. You are the adversary,
 > not the mechanic.
 
@@ -306,6 +310,61 @@ diagnostic that is not evidence it may be **MINOR** — but it still goes in `AU
 
 ---
 
+## 4c. Generality & improvement hunt (constructive, binding)
+
+§4 and §4b prove the green claim is *true* and *lawful*. This pass proves it is *complete*: it
+hunts for the **next situation, stream, scale, or consumer** the current code would fail,
+under-generate, or silently clamp — and files each as a tracked requirement so the improvement
+is earned in a forward run, not lost in narration. A green card must never be read as "there is
+nothing left to be better."
+
+**Read-only, like the rest of the review.** You name the situation and file the forward
+subgoal; you do not implement the fix. Severity routes through the §3 taxonomy: a constructive
+finding is **MAJOR** (it blocks a plausible next situation or consumer), **MINOR** (latent on
+the reference stream), or **INFO** (a declared scope boundary that merely needs naming). A
+finding that shows the current green is actually *false for a situation the claim implies* is
+**BREAKING** and routes back through §4, not here.
+
+### Probes (run all of them)
+
+- **Unseen-stream generality (Universal/P1).** Grep the pipeline for hardcoded field names,
+  attribute keys, domain/event-type literals, and schema assumptions (`col("<literal>")`,
+  `$.<field>`, `event_type ==`, `domain ==`, `LIKE '%...'`). For each, ask: does it break,
+  under-resolve, or silently default on a stream that does not match? The reference stream is
+  not the universe. Concrete classes: a monetary field not named `value`; a stream with no
+  numeric field; a high-cardinality attribute; a single-event-type stream; an action-free
+  stream; a stream whose cadence/as-of leaves the target window empty.
+- **Unseen-scale walls (Efficient/P4 · P16).** Fixed budgets, O(T²)/O(N²) hot paths, memory
+  caps that bind before capability, re-read-the-whole-stream serving, finite-sample guards
+  (n_A≥k) that flip a verdict as N moves. Would the capability still hold — or fail and be
+  *reported* — at 10× N or 10× horizon? Name the wall and the scale at which it bites.
+- **Unseen-consumer coverage.** Is there a declared consumer family (predict / decide / explain
+  / transfer) with no leg, or a leg whose targets are scoped to one domain by construction? If
+  scoped by construction, **name the scope** (do not call it a defect); if it is a pipeline
+  read, file it.
+- **Discarded principles.** Where a top-level or engineering principle is named but not
+  enforced in code: a "derived" value that is a literal; a "no per-row loop" hot path that has
+  one; a "fail safe, reject not clamp" path that clamps; a "one source of truth" that is copied.
+- **Honesty of the scope.** Every "not applicable / out of scope / frozen contract / by
+  construction" in a receipt or DEC — is it a true boundary, or a deferred adaptation in a
+  trench coat? File the deferred ones; keep the true ones named.
+
+### What counts as a finding
+
+- the **situation** (a concrete input class: "a sensor stream whose monetary field is `reading`",
+  "N=1M with 40K-event horizons");
+- the **mechanism** (file:line, or the design choice);
+- the **consequence** (breaks / under-resolves / clamps / silently defaults);
+- a **reproduction** (a minimal frame + command, run read-only, or the grep that surfaces it);
+- a **severity** and the **forward subgoal** that would close it (a named axis + the
+  measurement that proves the next situation is handled).
+
+File each as a `B-<n>` requirement (the §5 machine gate) with `gate_touched: false` and
+`principle` set. Do not propose a gate/threshold/criterion change as the fix. Do not fold
+several situations into one uncontrolled subgoal — one measured axis each.
+
+---
+
 ## 5. Required output: one file — `AUDIT.md`
 
 Write exactly this shape:
@@ -328,6 +387,12 @@ Write exactly this shape:
   Every green row must be attacked or explicitly marked "not attacked because ...".
 ## Goal-level findings
   The top reasons the project may not achieve the goal even if the card is green.
+## Improvement hunt (constructive, §4c)
+  The situations the project could next handle: unseen streams (hardcoded
+  fields/domains/schemas), unseen scales (budgets/hot paths/serving), unseen consumers
+  (a missing leg, or a leg scoped to one domain by construction — the scope is named,
+  not filed as a defect), discarded principles, and deferred adaptations. One B-<n> per
+  situation; MAJOR/MINOR/INFO unless it falsifies the current green.
 ## Process audit
   Pre-registration, frozen acceptance, named axis, honest FAIL, freshness, commit,
   receipts, tests, audit, branch alignment, open rulings.
@@ -485,6 +550,25 @@ Rules for the transition:
 - [ ] Is the deployment/refresh contract real?
 - [ ] Is there a stronger incumbent that makes the whole approach unnecessary?
 
+### Generality & improvement hunt (§4c — run it)
+
+- [ ] Every hardcoded field name / attribute key / domain or event-type literal in the
+      pipeline has been asked: does this break or silently default on a stream that does not
+      match? (grep `col("<literal>")`, `$.<field>`, `event_type ==`, `domain ==`,
+      `LIKE '%…'`).
+- [ ] Each unseen-stream class named and probed: non-`value` monetary field, no-numeric
+      stream, high-cardinality attribute, single-event-type, action-free, empty target window.
+- [ ] Each scale wall named: fixed budget, O(T²)/O(N²) hot path, memory cap binding before
+      capability, whole-stream re-read at serve, finite-sample guard that flips with N.
+- [ ] Each consumer family checked: predict / decide / explain / transfer — missing leg, or
+      leg scoped to one domain by construction (the scope is named, not filed as a defect).
+- [ ] No "derived" value that is a literal; no per-row loop in a hot path; no clamp where
+      fail-safe-reject is owed; no duplicated single source of truth.
+- [ ] Every "out of scope / frozen contract / by construction" in a receipt or DEC re-checked:
+      a true boundary (keep it named) or a deferred adaptation (file it).
+- [ ] Each constructive finding filed as a B-<n> with situation, mechanism (file:line),
+      consequence, read-only reproduction, severity, and a one-axis forward subgoal.
+
 ---
 
 ## 8. What a clean BACKWARD looks like
@@ -499,6 +583,10 @@ A clean review is not "everything is fine." It is:
 - no BREAKING finding;
 - every MAJOR finding either converted to a forward subgoal or explicitly accepted by
   the operator;
+- the §4c generality hunt run: every unseen-stream / scale / consumer situation the code
+  would fail or silently default on is either filed as a B-<n> forward subgoal or named as
+  a declared scope boundary — a clean review proves the claim is true *and* names what it
+  would next need to be better;
 - the review committed at the recorded commit/hash;
 - the generated card's plan root is **honest for the scope claimed**: ENCODER DONE may sit
   under an OPEN root (v1 and/or `E1` unmeasured) — the review must say so; `SOLVED` is

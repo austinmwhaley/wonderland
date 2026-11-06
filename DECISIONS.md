@@ -11930,3 +11930,84 @@ def train_encoder(data, seed=0, d=None, layers=2, epochs=5, lr=None, batch=0):
    commit gates RC=0). The pre-registered DEC-611 condition — "card must remain SOLVED
    39/39 at the new behavior" — is met. B-021 filed and closed on this evidence
    (AUDIT.md §4/§6.12/§9).
+
+- **Seal (cross-branch allocation, 2026-11-06).** **DEC-613 reserved: allocated on
+  branch `looped-transformer`, not on `main`.** The DEC-613 entry (the SSM-trunk
+  ruling against the looped-transformer axis: the determinism fix, the N-ladder
+  evidence, and the axis record) was recorded and closed on branch `looped-transformer`
+  (commit `4671829`); that branch is banked as the axis record, not merged, so `main`'s
+  log does not carry the entry. Sealed here so `main` citations of DEC-613 (DEC-614)
+  resolve without backfilling this log with branch-only content.
+
+- **DEC-614 (generality & adaptability — the new §4c improvement hunt, and the
+  value-field situation-blocker; pre-registered 2026-11-06, executed the same turn on
+  `main`).**
+   - **NODE:** P1/P3 (Universal · Adaptive) + the consumer-comparator path; a new
+     §4c generality-hunt run (PROMPT_BACKWARD) + one pipeline fix.
+   - **Operator directive (verbatim).** "I want you to just make the project better. More
+     adaptable. more situtations. etc. PROMPT_BACKWARDS needs to be updated to hunt for
+     things about the project that coudl be better. do what needs to be done." This
+     supersedes the queued N-ladder scale arm as the immediate move; the SSM-trunk
+     decision stands (DEC-613 outcome; `looped-transformer` banked as the axis record, not
+     merged). The maturity mandate decomposes into two arms — (B1) generality across
+     streams/situations, (B2) scale across N/horizon. This DEC closes the first disclosed
+     blocker on B1 and institutionalizes the hunt that finds the rest.
+   - **The hunt (PROMPT_BACKWARD §4c, new).** The BACKWARD review was a pure
+     *falsification* instrument ("prove the green claim is false"). §4c, "Generality &
+     improvement hunt (constructive, binding)", is the constructive complement: a read-only
+     pass that proves the claim is *complete* — it names the next situation / stream /
+     scale / consumer the code would fail, under-generate, or silently clamp, and files each
+     as a tracked B-<n> forward subgoal (MAJOR / MINOR / INFO; BREAKING only when it
+     falsifies the current green). Wired into the §5 AUDIT shape ("## Improvement hunt"),
+     the §7 run-it checklist, and the §8 clean-BACKWARD definition. A green card now must
+     also say what it would next need to be better.
+   - **What the first hunt found (evidence-backed; filed B-022..B-025).** Grepped the
+     pipeline for hardcoded field names / attribute keys / domain & event-type literals:
+     **(B-022, MAJOR, CLOSED)** `supervised_gate._raw_features:239` hardcoded
+     `pl.col("value")` for the RFM comparator's monetary aggregate — a pipeline read on the
+     raw stream, so a reference stream whose dominant numeric field is not `value`
+     (sensor→`reading`, server→`code`) crashed it; the reference stream hid it (demo_v2's
+     only numeric column is `value`). **(B-023, MINOR, open)**
+     `onboard._derive_reward_event:590` accepts a `value_col` param it ignores (correct
+     only because its input is pre-canonicalized to `value`). **(B-024 / B-025, INFO, open,
+     named scope)** the supervised LEG's target family
+     (`supervised_gate._labels:37-55` / `TARGETS:68-78`: `$.value` / `purchase` / `return` /
+     `touchpoint` / `category_code`) and the decision LEG's reward contract
+     (`decision_certify._arms_rewards:48-59`: `LIKE '%send%'` arm, `purchase`+`$.value`
+     reward) are frozen evaluation / causality contracts — their generality is bounded to
+     the declared reference stream by design (AGENTS: targets / folds / baselines / gates +
+     causality are non-negotiable fixed things). Named as scope, not filed as defects.
+   - **The one-axis fix (B-022).** `supervised_gate._raw_features` now derives the monetary
+     field via `cfm_data._primary_numeric_field(d, cfg)` — the same derived resolution the
+     encoder already uses (the DEC-611 `2a49b8d` precedent for `stat_bank` / `cfm_training`)
+     — with a numeric-free `pl.lit(0.0, dtype=Float64)` fallback (fail-safe: no invented
+     field; the RFM comparator keeps its frequency / recency / gap / cardinality signal).
+     Single axis: the comparator's field resolution. Frozen targets / folds / baselines /
+     gates untouched.
+   - **No-op proof (the reference stream is unchanged).** demo_v2's
+     `customer_event_stream` has exactly ONE numeric column, `value` (verified:
+     `_numeric_columns` == ["value"], `_primary_numeric_field(df, None)` == "value"). So the
+     derived field == the old literal on the certified reference stream: the RFM comparator
+     is byte-identical, and no verdict-bearing judge value can move. This is the exact
+     DEC-611 no-op condition.
+   - **Tests (make the generality measurable, not asserted).**
+     `tests/test_supervised_generality.py` (3 hermetic tests, no data): a non-`value`
+     monetary field (`reading`) is consumed, not crashed on; the features are name-agnostic
+     (same data under `reading` vs `value` → identical X); a numeric-free stream zeroes the
+     monetary aggregates rather than crashing. All green.
+   - **Behavior move + re-stamp (mandatory).** The fix is in `looking_glass/` (a
+     `BEHAVIOR_TREES` member) → the behavior hash moves `89cec70b` → `7f20fd0b`. No gate,
+     threshold, criterion, or frozen contract changed. Re-stamp via the one-command
+     `measure_certification_law.py` chain; expected: all receipts regenerated, the four
+     judge legs byte-identical (the no-op), the card holding SOLVED 39/39 at `7f20fd0b` with
+     zero value drift.
+   - **Principle.** Universal/P1 + Adaptive/E4 (the pipeline resolves its own
+     configuration; no hardcoded field names) · Diagnosable (the hunt localizes the
+     blocker to one axis and names the rest as declared scope) · Honest (no-op proven on
+     the reference; the generality is test-pinned, not asserted) · P13 (the numeric-free
+     fallback deletes the crash path rather than adding a special case).
+   - **Queued (B2, the any-scale arm).** The N-ladder scale campaign (N=2K/10K/25K
+     fixtures on the three mastered domains + the g-vs-N curve + the long-range horizon
+     probe) is preserved as the next DEC under this mandate; it is deferred behind this
+     generality fix so the pipeline is situation-general before it is exercised at new N.
+   - **Outcome addendum (pending the re-stamp).** [to be completed]

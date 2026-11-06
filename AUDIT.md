@@ -62,7 +62,7 @@ open) · **violated** (principle broken, requirement open) · **not yet audited*
 
 | # | Principle | What the audit must prove | Status | Finding(s) |
 |---|---|---|---|---|
-| P1 | **Universal** — one architecture, any event stream; per-stream model; schema-agnostic | renamed-schema + new-field pass, zero code edits; no domain literals; unseen stream refuses, never cross-applies | **aligned (scope: demo)** | B-001 closed |
+| P1 | **Universal** — one architecture, any event stream; per-stream model; schema-agnostic | renamed-schema + new-field pass, zero code edits; no domain literals; unseen stream refuses, never cross-applies | **aligned (scope: demo)** | B-001 closed; B-022 closed 2026-11-06 (DEC-614: derived monetary field, no-op on reference); B-023 open (MINOR); B-024/B-025 open (INFO, named frozen-contract scope) |
 | P2 | **Adaptive & dynamic** — everything resolves or learns from input | no fixed dims/layers/epochs/thresholds; config derived at fit; runtime toggles; `principle_audit.py` clean | not yet audited | — |
 | P3 | **Lawful** — compositionality, equivariance, correct algebra per quantity | merge/equivariance/mass-additivity receipts; per-sample contract; no batch-coupled serving statistics; additive mass scored in raw units | not yet audited | — |
 | P4 | **Efficient** — linear time, constant state, incremental, minimal capacity | no per-row Python loops in hot paths; scans/gathers/einsum; O(1) serve; derived budgets; caps enforced | not yet audited | — |
@@ -78,8 +78,8 @@ open) · **violated** (principle broken, requirement open) · **not yet audited*
 | E1 | No magic numbers | Is every threshold/budget/dim/rate derived, learned, or a documented fallback? | not yet audited | — |
 | E2 | Train to convergence, not counts | Is the stop criterion held-out/grounded, not a fixed step count? | not yet audited | — |
 | E3 | Make it learn; do not teach it | Are rules replaced by learned/calibrated behavior where labels exist? | not yet audited | — |
-| E4 | Adapt to the input by construction | Does an unseen schema/dim/horizon/action space work with no code edits? | not yet audited | — |
-| E5 | Modularity and contracts | One responsibility per module; no cross-layer imports; explicit interfaces | not yet audited | — |
+| E4 | Adapt to the input by construction | Does an unseen schema/dim/horizon/action space work with no code edits? | **audited (partial)** | B-022 closed 2026-11-06 (DEC-614): the supervised RFM comparator now derives its monetary field, so a non-`value` stream is consumed, not crashed on; B-024/B-025 name the frozen-contract scopes that remain bounded by design |
+| E5 | Modularity and contracts | One responsibility per module; no cross-layer imports; explicit interfaces | **gap** | B-023 open (MINOR): `onboard._derive_reward_event` accepts a `value_col` param it ignores — the signature does not name the canonical-frame contract it actually relies on |
 | E6 | Single source of truth | Any duplicated definition/constant/artifact? Copies are bugs | not yet audited | — |
 | E7 | Fail safe; reject, do not clamp | Any silent default/clamp/NaN rescue? | not yet audited | — |
 | E8 | Uncertainty first | Every estimate has a calibrated interval/coverage; point estimates do not drive gates | not yet audited | — |
@@ -100,6 +100,9 @@ open) · **violated** (principle broken, requirement open) · **not yet audited*
 |---|---|---|---|---|---|
 | B-017 | **INFO** | P6/P8 | The supervised leg's evidence discloses two open, non-gating questions: (i) negative controls are vacuous (R² < −1, a wide-design conditioning artifact) on 5/7 traits — the frozen `VACUOUS_CONTROL_R2` doctrine (`judge_spec.py:179–183`) says such controls prove nothing, and the gate does not count them; (ii) the ledger-only diagnostic beats the table on 4/7 traits (best R² 0.8659 on x0 vs the table's 0.8791), which falsifies SPINE §5's "the ledger is what the table already is" corollary and is recorded as "needs an operator ruling". | `judge_leg_supervised.json` `checks.supervised.evidence` (both WARNINGs); leg verdicts derive from `columns` via the frozen `_task_passes` (`report_card.py:829`), not from `checks` | None required (disclosure); the SPINE §5 ruling is queued to the operator. If the ruling revises the corollary, B3.6's branch text and the delivery framing update in a forward run. |
 | B-018 | **INFO** | E10 | `plugin_acceptance.json` (the V1.2 reference receipt, n_rows 9) has no `_meta`; the gate receipt `v1_plugins.json` that V1.2's atom actually reads is stamped (behavior `df73c2aa`, `passed: true`, `n_rows: 9`). | key lists of the two receipts; `measure_v1_stack.py` stamps the gate receipt, not the reference | None required (disclosure); stamp the reference in a future producer pass if V1.2 is re-run. |
+| B-023 | **MINOR** | E5/E12 | `onboard._derive_reward_event(df, value_col)` (`onboard.py:585`) accepts `value_col` but aggregates the literal `pl.col("value")` (`:590`); it is correct only because its input is pre-canonicalized to a `value` column (`:710`/`:757`) — the parameter is vestigial and the signature is dishonest (P12: implement intent, not the example). | `looking_glass/onboard.py:585-595` (param ignored; canonical frame always has `value`) | One-axis forward subgoal: make the signature honest (use `value_col`, or drop it and name the canonical-frame contract) with a no-op proof on the canonical frame; re-stamp. |
+| B-024 | **INFO (named scope)** | P1 | The supervised LEG's target family is a frozen ecommerce evaluation contract: `_labels` reads `$.value`/`$.touchpoint`/`$.category_code` and filters `event_type == "purchase"/"return"` (`supervised_gate.py:37-55`); `TARGETS` (`:68-78`) names the 8 targets. A non-ecommerce reference stream is a new operator-level evaluation contract, not a pipeline fix — the comparator generality (B-022) is the pipeline half, already closed. | `looking_glass/supervised_gate.py:37-55,68-78` | None (disclosure): the leg's generality is bounded to the declared target contract; a new reference stream is a separate DEC. |
+| B-025 | **INFO (named scope)** | P1 | The decision/RL LEG's reward contract is declared on the randomized demo stream: `_arms_rewards` hardcodes `event_type LIKE '%send%'` (the arm) and `event_type='purchase'` + `$.value` (the incremental-margin reward) (`decision_certify.py:48-59`). A different reward field or arm vocabulary is a new causality contract (AGENTS: evaluation targets + causality are non-negotiable fixed things), not a pipeline defect. | `looking_glass/decision_certify.py:48-59` | None (disclosure): the decision leg's generality is bounded to the declared arm/reward contract. |
 
 ---
 
@@ -126,6 +129,7 @@ open) · **violated** (principle broken, requirement open) · **not yet audited*
 | B-019 | **Route text states the durable outcome (evidence):** R7's evidence sentence in `plan_spec.py` now reads "every FULL BACKWARD at the SOLVED tree returned NO BREAKING (opening at `38740c8`; closing at `eb9381b`). All BREAKING/MAJOR findings are closed — by evidence, or by the explicit scope/reclassification their requirements allow (B-001, B-003, B-008); open items are disclosed non-blocking in AUDIT.md" — the DEC-605-era count is gone and no count that would go stale at the next finding was written in its place. PLAN.md and the card re-rendered from the spec; behavior hash `df73c2aa` unchanged; commit gates RC=0. | DEC-610; `2976485` | 2026-11-05 | `df73c2aa` |
 | B-020 | **Operator-filed claim-scope finding, closed the same day by the DEC-611 campaign (evidence; filed by the operator 2026-11-05, NOT by a BACKWARD run — provenance at §6.11):** the closing BACKWARD reviews falsified the record's plumbing (citations, manifests, self-consistency, route text) but never the scope of the claim against the top-level Universal principle — every B-row and pre-DEC-611 lab fixture is one ecom simulator family on the `demo_v2` prototype; S1 is schema-variant, not structure-variant. The DEC-611 campaign is the empirical answer: three structurally distinct known-truth domains (sensor_fleet regime-ordering + continuous levels; clickstream_sessions bursty timing + rare class; server_logs change-point ordering + diurnal distractor) through the ONE simulator, full three-piece controls, frozen `lab_measure`; claims stay scoped to the `demo_v2` prototype per B-001, and the six receipts are dev instruments per DEC-576. Branch option (operator ruling, separate DEC): grow the tree so multi-domain mastery becomes a gated card row. | six `lab/*_dec611{,_hier}.json` receipts (`complete=true`); DEC-611 outcome addendum | 2026-11-05 | `89cec70b` |
 | B-021 | **Stale legs-producer map in the certification CHAIN (fix + re-stamp evidence; forward-filed 2026-11-05 during closeout forensics, NOT by a BACKWARD run — provenance at §6.12):** the S6 one-command chain (`measure_certification_law.py`) still mapped the `legs` step to `measure_judge_law.py`, whose `main()` implements the pre-DEC-598 flat-era supervised/unsupervised legs and writes the SAME four `judge_leg_*.json` files that `measure_bc_bank.py` (bank v2, DEC-598) owns — so every clean-tree closeout re-stamp overwrote the bank-v2 receipts with stale v1 numbers (supervised x0 0.886, CI straddling 0; unsupervised persona_geometry 0.338608; segment_structure ARI ≈ 0) and flipped the plan root SOLVED 39/39 → 35/39. The card's own gate caught it (verdicts recompute from receipts; no narration could override). rl/simulator legs were unaffected (bc_bank delegates them to the judge_law `LEGS`). Fixed by the one-line CHAIN map `legs` → `measure_bc_bank.py` (script-only; behavior stays `89cec70b`; gate/criterion untouched); the clean one-command re-stamp at `0470c79` re-stamped all four legs with bank-v2 values byte-identical to the `9af0d0d` wave receipts and re-rendered the plan root SOLVED 39/39 (B CERTIFIED 23/23, 8/8; S6 OK; backward open 0). | DEC-612; `0470c79` (CHAIN fix, five gates RC=0); regenerated receipts + card in this commit | 2026-11-05 | `89cec70b` |
+| B-022 | **Situation-blocker in the model-free comparator (filed by the §4c generality hunt; closed same turn by DEC-614):** `supervised_gate._raw_features` (the RFM/GBM comparator) hardcoded `pl.col("value")` for the monetary aggregate (`supervised_gate.py:239`) — a pipeline read on the raw stream, so any reference stream whose dominant numeric field is not `value` (sensor → `reading`, server → `code`) crashed the supervised comparator while the reference stream hid it (demo_v2's only numeric column is `value`). Fixed DEC-614: the field is now **derived** via `cfm_data._primary_numeric_field(d, cfg)` with a numeric-free zero fallback (`pl.lit(0.0)`), matching the encoder's own field resolution (the DEC-611 `2a49b8d` precedent); `tests/test_supervised_generality.py` pins name-agnostic output + the no-numeric fallback. No-op on the reference stream (derived == `value`), so the re-stamp at behavior `7f20fd0b` moves no verdict-bearing value and the card holds SOLVED 39/39. | DEC-614; `looking_glass/supervised_gate.py:239→derived`; `tests/test_supervised_generality.py`; re-stamp receipts at `7f20fd0b` | 2026-11-06 | `7f20fd0b` |
 
 ---
 
@@ -848,6 +852,57 @@ remain open without blocking completion.
       "date": "2026-11-05",
       "closed": "2026-11-05",
       "provenance": "Forward-filed 2026-11-05 during DEC-611 closeout forensics (the clean-tree re-render flipped the plan root; receipt _meta forensics localized the overwrite to the chain's legs step). NOT filed by a BACKWARD run; closed the same day by fix + re-stamp evidence."
+    },
+    {
+      "id": "B-022",
+      "severity": "MAJOR",
+      "principle": "P1 (Universal) / E4 (adapt to input by construction)",
+      "status": "closed",
+      "closure": "fix + no-op proof + re-stamp evidence (DEC-614)",
+      "finding": "supervised_gate._raw_features (the model-free RFM/GBM comparator) hardcoded pl.col('value') for the monetary aggregate (supervised_gate.py:239) - a pipeline read on the raw stream, so any reference stream whose dominant numeric field is not 'value' (sensor -> reading, server -> code) crashed the supervised comparator; the demo_v2 reference stream hid it (its only numeric column is 'value').",
+      "forward_subgoal": "Derive the monetary field via cfm_data._primary_numeric_field(d, cfg) with a numeric-free zero fallback, matching the encoder's own field resolution (the DEC-611 2a49b8d precedent); pin generality with tests/test_supervised_generality.py; no-op on the reference stream; re-stamp.",
+      "gate_touched": "none (the comparator's field resolution is pipeline config, not the frozen target/fold/baseline/gate contract; reference-stream values are byte-identical)",
+      "evidence": "DEC-614; looking_glass/supervised_gate.py:239 -> derived; tests/test_supervised_generality.py (3 hermetic tests: non-'value' monetary field consumed, name-agnostic output, numeric-free zero fallback); demo_v2 has a single numeric column 'value' so _primary_numeric_field resolves 'value' -> no-op; re-stamp at behavior 7f20fd0b moves no verdict-bearing value, card holds SOLVED 39/39",
+      "audit_ref": "A-022",
+      "date": "2026-11-06",
+      "closed": "2026-11-06",
+      "provenance": "Filed by the PROMPT_BACKWARD 4c generality & improvement hunt (operator directive 2026-11-06: 'make the project more adaptable, more situations'); closed the same turn by DEC-614."
+    },
+    {
+      "id": "B-023",
+      "severity": "MINOR",
+      "principle": "E5 (modularity/contracts) / E12 (implement intent, not the example)",
+      "status": "open",
+      "finding": "onboard._derive_reward_event(df, value_col) (onboard.py:585) accepts value_col but aggregates the literal pl.col('value') (:590); correct only because its input is pre-canonicalized to a 'value' column (:710/:757). The parameter is vestigial and the signature is dishonest.",
+      "forward_subgoal": "One-axis subgoal: make the signature honest - use value_col, or drop it and name the canonical-frame contract it actually relies on - with a no-op proof on the canonical frame; re-stamp.",
+      "gate_touched": false,
+      "evidence": "looking_glass/onboard.py:585-595",
+      "audit_ref": "A-023",
+      "date": "2026-11-06"
+    },
+    {
+      "id": "B-024",
+      "severity": "INFO",
+      "principle": "P1 (Universal) - named scope",
+      "status": "open",
+      "finding": "The supervised LEG's target family is a frozen ecommerce evaluation contract: _labels reads $.value/$.touchpoint/$.category_code and filters event_type == 'purchase'/'return' (supervised_gate.py:37-55); TARGETS (:68-78) names the 8 targets. A non-ecommerce reference stream is a new operator-level evaluation contract, not a pipeline fix (the comparator half is B-022, closed).",
+      "forward_subgoal": "None required (disclosure): the leg's generality is bounded to the declared target contract; a new reference stream is a separate DEC.",
+      "gate_touched": false,
+      "evidence": "looking_glass/supervised_gate.py:37-55,68-78",
+      "audit_ref": "A-024",
+      "date": "2026-11-06"
+    },
+    {
+      "id": "B-025",
+      "severity": "INFO",
+      "principle": "P1 (Universal) - named scope",
+      "status": "open",
+      "finding": "The decision/RL LEG's reward contract is declared on the randomized demo stream: _arms_rewards hardcodes event_type LIKE '%send%' (arm) and event_type='purchase' + $.value (incremental-margin reward) (decision_certify.py:48-59). A different reward field or arm vocabulary is a new causality contract (AGENTS: evaluation targets + causality are non-negotiable fixed things), not a pipeline defect.",
+      "forward_subgoal": "None required (disclosure): the decision leg's generality is bounded to the declared arm/reward contract.",
+      "gate_touched": false,
+      "evidence": "looking_glass/decision_certify.py:48-59",
+      "audit_ref": "A-025",
+      "date": "2026-11-06"
     }
   ]
 }
