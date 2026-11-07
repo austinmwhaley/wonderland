@@ -11512,7 +11512,152 @@
     simulator, three builders — the rungs are config deltas, not a second fixture
     lineage) · Universal (zero model-code change: the SAME pipeline is exercised at new
     N, exactly the DEC-611 universality claim now scale-tested).
-  - **Outcome addendum (pending execution).**
+  - **Outcome addendum (STATE AT PAUSE — execution paused 2026-11-07 ~05:05 UTC on
+    operator order "pause everything"; the campaign stopped before the ladder
+    contingency + its re-measures, so this is NOT the final verdict; state at pause
+    recorded below).**
+    - **Verdict so far.** THE WALL = BUDGET, at `clickstream_sessions` × N=25000
+      (stage-1): OOM 72 s into the first task-loss pass (`cfm_training._task_losses`,
+      single-field CE draw, no row-chunking): 22.66 GB live-held + 22.05 GB logits
+      draw ≈ 44.7 GB peak vs the derived cap 30.13 GB (cgroup clamp 32 − used − 0.5;
+      idle-GPU arithmetic ≈30.1–30.6 — fatal either way, **no retry owed**). Driver =
+      schema × N: `numeric=0 categorical=4` (4 full-population task tensors +
+      per-field logits) vs sensor's `numeric=2 categorical=1` (train-phase
+      peak_alloc 2.88 GB at the same N, DONE RC=0). SECOND wall instance (probe
+      tier, 2026-11-07): `clickstream_sessions` × 10K×2w NEGATIVE CONTROL OOM'd at
+      the same site (first task-loss pass; 20.20 GiB single-field draw on 21.11 GiB
+      live-held ≈ 41.3 GB peak vs launch cap 28.40 GB; idle arithmetic ≈30.1 —
+      **no retry owed**). Its positive twin on the same-tier fixture completed RC=0
+      (train peak_alloc 17.52 GB; launch cap 29.26) and the fixtures are equal-row
+      (10.075M neg vs 10.078M pos), so the neg/pos demand delta is unattributed from
+      campaign logs (allocation-order / expandable-segment fragmentation candidate);
+      the common root is the un-chunked `O(rows × max-vocab)` single-field CE draw.
+      `gpu_budget` behaved as designed (DEC-423) at both OOM sites — no budget
+      defect. The ladder's finite-sample wall did NOT bind at stage 1 (sensor +
+      server both completed 25K).
+    - **(i) g-vs-N curves** (assembled at CHAIN_DONE 04:48:47; A-side values;
+      control-bearing re-measures pending for the 8 ladder cells). ridge g: sensor
+      1.7003 (500) → 1.6740 (2K) → 1.1958 (10K) → 1.2765 (25K); clickstream
+      2.0280 → 2.1726 → 2.0543 → WALL (25K); server 5.0339 → 1.7442 → 1.4218
+      → 1.5118. No ridge cell crosses the 0.5 bar at any N; `beats_base` False on
+      every ridge cell (whole paired CI above 0). hier g: sensor 0.2447 → −0.2617
+      → −0.0753 → −0.0461; clickstream 0.3398 → +0.0443 → +0.0742 → WALL;
+      server −1.7328 → −0.1821 → +0.0087 → −0.0359. Every hier cell sits
+      at/under the bar with `beats_base=True` → all 8 completed ladder cells + all
+      3 probe cells fire the pre-registered contingency (controls owed before any
+      master claim). Paired-CI width narrows ≈6–8× 500→25K (sensor ridge
+      0.1958→0.0250; server 0.2180→0.0292; clickstream 0.2412→0.0497) — the
+      instrument's finite-sample convergence. Frontier read: encoder nll near-flat
+      in N (sensor 0.8635/0.8945/0.8576/0.8568) while the pooled 1-gram base nll
+      RISES (sensor 0.7582/0.7791/0.8167/0.8029; server 0.7819/0.9208/0.9754/0.9579;
+      clickstream 1.1076/1.0722/1.0836) — the ridge head's apparent gain is largely
+      the baseline degrading. eff_rank 1.04–1.99 at every rung, no rank growth
+      converting to NLL gain (the DEC-582 capacity read, reproduced on the scale
+      axis).
+    - **(iv) Cost curve** (train wall-clock / peak host RSS / rc). n2k: sensor
+      24.1 min / 3.49 GB / 0; clickstream 30.3 / 3.71 / 0; server 20.1 / 3.55 / 0.
+      n10k: sensor 35.8 / 6.06 / 0; clickstream 54.5 / 7.20 / 0; server 18.8 / 6.07 /
+      0. n25k: sensor 70.6 / 9.24 (GPU train-phase peak 2.88 GB) / 0; server 68.8 /
+      9.24 (GPU train-phase peak 5.86 GB) / 0; clickstream WALL at 1.2 / rc=1. Long
+      probe (25K×2w unless noted): sensor 46.5 min / 0; clickstream 10K×2w 44.5 /
+      0; server 25K×2w 48.1 / 0. Scaling ≈ linear-in-N in wall-clock with a
+      schema term (4-categorical clickstream ≈ 2–3× sensor at the same N); the
+      GPU wall is the schema term, not the N term.
+    - **(v) Long-horizon probe (×2 window at largest completed N) — H-axis
+      question: NO.** ridge g at the same N: sensor 1.2765 → 1.2041 (Δ −0.072);
+      clickstream 2.0543 → 2.2324 (Δ +0.178, at the reduced N=10000 per cert rule
+      6); server 1.4218 → 1.4863 (Δ +0.064). |Δ| ≤ 0.18, not directionally
+      consistent, vs the 50× cross-customer sample moving it 0.42–3.61 (server
+      5.0339 → 1.4218): the ridge head's excess loss is CROSS-CUSTOMER
+      finite-sample / estimation-efficiency limited, not per-customer-horizon
+      limited (consistent with DEC-581/582). Probe hier g: sensor −0.0080 /
+      clickstream −0.0677 / server −0.0097 — the transition head sits at the
+      1-gram floor even at ×2 horizon (enc nll marginally under the closed-form
+      oracle on all three = the known finite-sample-oracle artifact, same class as
+      the server floor row; recorded as-is).
+    - **Contingency state at pause.** PROBE tier: sensor long = COMPLETE WITH
+      CONTROLS (neg+adv RC=0; re-measured 03:29 — ridge neg `reads_no_signal=True`
+      (n_B_rows 7500, beats_base False, measurable CI) = as designed; ridge+hier adv
+      `reads_as_expected=True`, `structure_carried=False`,
+      `leak_has_teeth_a_side=True` = as designed; hier neg `n_B_rows=0` →
+      `reads_no_signal=False` is the vacuous-control artifact — snr=0 erases the
+      class co-occurrence the hier head's B rows require, IDENTICAL on all three
+      DEC-611 hier-neg controls, not a signal read; `lab_gate_a_side` all-True on
+      both receipts). clickstream long = neg OOM (rc=1, the second wall instance
+      above) → adv not launched (fail-safe break), re-measure skipped →
+      A-side-only receipt, no control block. server long = neg RC=0; adv rc=143 =
+      SIGTERM from the pause order's own first kill (log ends at step 412/8250, no
+      traceback; chain recorded TRAIN FAILED + fail-safe SKIP) → A-side-only
+      receipt, no control block. LADDER tier: controls NOT trained. The corrected
+      post-CHAIN_DONE re-run (fired 04:49:06; first-run status archived at
+      `/tmp/opencode/dec615_contingency.status.firstrun`) started and its first
+      pair (sensor n2k neg; 1320-step schedule; 1384 distill customers) ran 14.5
+      min to step ≈264/1320, then stopped abruptly — no error in the log, no
+      traceback, no products, no DONE line (external-signal class at the pause
+      moment; attribution unverified, recorded as such); the RC-gate then correctly
+      SKIPped all 8 re-measures and re-assembled the A-side table (POSTCHAIN_DONE
+      05:03:35). Zero artifact damage: all 22 receipts intact (20 A-side-only +
+      2 sensor long with control blocks), matched field-for-field against the
+      pre-re-measure A-side snapshot
+      (`/tmp/opencode/dec615_ameasure_snapshot_pre_remeasure.json`).
+    - **Disclosures (all recorded as-is; no gate/threshold/criterion moved).**
+      (1) EXEC-DEFECT (in-chain, 2026-11-06 21:34–21:35): the chain's step-4
+      first run word-split the FIRING `(uc tier)` pair list (`for pair in $FIRING`
+      + GNU `cut -d' ' -f2` echoes the whole line when the field is absent —
+      reproduced empirically) → all 32 first-run control launches failed
+      instantly (RC=2 argparse / RC=1 missing db), zero GPU work, zero artifact
+      damage; step-5 correctly skipped every re-measure; steps 6/7 use the
+      unaffected `domain=N` parsing and ran as pre-registered; the corrected pair
+      loop (even-count guard) is what the post-CHAIN_DONE re-run used.
+      (2) CO-TENANT: an unidentified transient ~49.4 GiB CUDA context was present
+      at BOTH OOM sites. At pause the on-device process list shows only the GB10
+      desktop stack (Xorg 218 MiB + gnome-shell 186 MiB + transient render
+      contexts) — the most likely source; it is NOT the campaign's own stacks
+      (the measure stack is CPU-only: no torch in the lab_measure /
+      build_lab_signature / lab_gate / measure_battery_law import chain; the
+      25K-tier measures ran 456 s / 438 s under the 32 GB host slice). The cgroup
+      clamp (≈30.1 GB idle arithmetic) was the binding limit at both sites.
+      (3) FINITE-SAMPLE-ORACLE artifact class (server floor hier −1.7328; probe
+      hier enc nll marginally under the closed-form oracle on all three domains):
+      the closed-form oracle is an estimate of the Bayes floor on finite B rows; a
+      fitted head can read below it. (4) HIER-NEG VACUITY: `n_B_rows=0` on every
+      hier-head neg control (DEC-611 and DEC-615 alike) — the hier head's
+      effective control is the adversarial block + the `lab_gate_a_side`
+      booleans; the `reads_no_signal=False` flag on hier-neg is the empty-CI
+      artifact per the instrument's own comment ("A measurable CI is required to
+      say so"). (5) The pause order's first kill also SIGTERM'd the in-flight
+      server long adv train (rc=143, recorded in the chain as a train failure) and
+      later matched its own shell once (the pkill pattern string appearing in the
+      invoking command line); both effects are self-inflicted at the stop,
+      disclosed, and no campaign state other than the two A-side-only receipts
+      above was touched.
+    - **Pipeline facts owed follow-up DECs (candidates; NOT filed in-campaign — a
+      fix is a behavior move and owes its own pre-registration + re-stamp).**
+      (1) `cfm_training._task_losses`: no row-chunking of the full-population task
+      tensors + per-field CE logits → device demand `O(rows × max-vocab)` on the
+      single-field draw; demonstrated at two tiers now (25K × 4-categorical
+      positive: ≈44.7 GB; 10K × 2w × 4-categorical negative: ≈41.3 GB; both vs
+      the ≈30.1 GB idle cgroup clamp). (2) The clickstream long neg/pos demand
+      asymmetry (≈41.3 GB vs ≤29.26 GB peak on the equal-row fixture) is
+      unattributed and needs a clean idle-GPU A/B before any cap-derivation claim.
+      (3) The postchain first-pair abrupt stop (no log error; external-signal
+      class): safe_run gpu_watchdog attribution unverified.
+    - **Card / behavior.** Behavior stays `7f20fd0b` (zero model/repo-code change in
+      campaign; the only scripts-side change, the default-inert `--lab-root` flag,
+      landed pre-run @ `9139493` and is inert on all frozen commands). No card
+      re-render owed: the 22 campaign receipts are dev instruments (DEC-576), the
+      tree stays 39, no B-row verdict touched.
+    - **Open at resume (operator's call).** If RESUMED: (a) server long adv
+      re-train + the 2 probe re-measures (clickstream, server); (b) the clickstream
+      long neg is NOT retry-owed by the no-retry arithmetic (41.3 ≥ 30.1) — it
+      needs the row-chunking follow-up DEC (or a documented cap ruling) before it
+      can pass; (c) the 16 ladder control trains on the 8 fired cells; (d) the 8
+      ladder re-measures with the frozen control command; (e) this addendum
+      completes to the final verdict (control reads + drift check + assembly). If
+      CLOSED AS-IS: this addendum stands as the state-at-pause record; the 8
+      ladder `mastered` flags remain contingency-owed (controls untrained) and the
+      clickstream/server probe receipts remain A-side-only; no master claim is
+      licensed by any receipt at pause.
 
 - **DEC-616 (repo organization & cohesion — the operator's 2026-11-06 "rectify that"
   directive; pre-registered on `main` @ `3950eaa` after the DEC-615 launch;

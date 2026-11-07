@@ -1,0 +1,103 @@
+{
+  "_meta": {
+    "behavior_hash": "7f20fd0badb210d6",
+    "command": "lab_measure.py --head hier --lab-root rabbit_hole/data/lab_dec615_n2k --fixture rabbit_hole/data/lab_dec615_n2k/sensor_fleet --products /tmp/opencode/lab_dec615/sensor_fleet_n2k_pos --as-of 2024-03-01 --iter dec615_n2k --out docs/report_cards/experiments/lab/sensor_fleet_dec615_n2k_hier.json",
+    "generated_at": "2026-11-06T16:49:32+00:00",
+    "git_commit": "3950eaae9812add6dd9ab4578fadd1406dadc2d7",
+    "producer": "lab_measure.py"
+  },
+  "a_frac": 0.7,
+  "as_of": "2024-03-01",
+  "bar_g": 0.5,
+  "complete": true,
+  "discipline": "toy-green can only SUGGEST the next real-data run (DEC-576); certification of B stays on the real stream (cfm_v2k / O3 / DEC-575); no B-row source names this receipt",
+  "fixture_spec": {
+    "action_peak": 0.0,
+    "base_rate": 5.5,
+    "diurnal": 0.0,
+    "domain": "sensor_fleet",
+    "entity_affinity": 0.0,
+    "intent": 5.0,
+    "n_customers": 2000,
+    "n_entities": 0,
+    "name": "sensor_fleet",
+    "rate_heterogeneity": 0.0,
+    "seed": 17,
+    "session_burst": 0.0,
+    "snr": 1.0,
+    "transition": true,
+    "trend": 0.0,
+    "value_log_sigma": 0.5,
+    "window_days": 90
+  },
+  "head_form": "hier",
+  "iteration": "dec615_n2k",
+  "kind": "lab_dev_instrument",
+  "lab_gate_a_side": {
+    "adversarial_leak_has_teeth": true,
+    "adversarial_not_carried": true,
+    "complete": true,
+    "negative_not_carried": true,
+    "oracle_carried": true
+  },
+  "n_boot": 2000,
+  "p_floor": 1e-15,
+  "positive": {
+    "alpha": 0.01,
+    "beats_base": true,
+    "classes": [
+      "alarm",
+      "maintenance",
+      "telemetry"
+    ],
+    "classes_excluded": [],
+    "eff_rank": 1.928,
+    "eff_rank_source": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm/portfolio/portfolio_0_11_0r674340-b32d256e3lr3e-04o67b1bcb7_20261106T161501Z.json",
+    "g": -0.261732,
+    "head_form": "hierarchical_dirichlet",
+    "mastered": true,
+    "n_A": 1400,
+    "n_B_rows": 600,
+    "n_customers": 2000,
+    "nll_base": 0.779109,
+    "nll_baseline_ce_nats": 0.8783,
+    "nll_enc": 0.563089,
+    "nll_oracle_nats": 0.6079,
+    "paired_ci_enc_minus_base": [
+      -0.2531309386583238,
+      -0.17645795492132668
+    ],
+    "per_class_n_A": {
+      "alarm": 388,
+      "maintenance": 228,
+      "telemetry": 784
+    },
+    "products": {
+      "path": "/tmp/opencode/lab_dec615/sensor_fleet_n2k_pos",
+      "registry_sha256": "67575eca3cec71ab",
+      "tag": "0.11.0r674340-b32d256e3lr3e-04o67b1bcb7"
+    },
+    "signature_block": {
+      "block_sha256": "e6b28af8a3eab9c93e2f01858c5f8f19ba5239f908d20d63e9d2dc2b0b070f90",
+      "classes": [
+        "alarm",
+        "maintenance",
+        "telemetry"
+      ],
+      "dim": 9,
+      "fixture_sha256": "d4e183cca9d962f572bc90afa43cc987d74239edf97dc174ed57e2306cd7a365",
+      "n_served": 2000,
+      "receipt": "/tmp/opencode/lab_dec615/sensor_fleet_n2k_pos/signature_receipt.json",
+      "table": "signature_blocks"
+    }
+  },
+  "products_identity": {
+    "path": "/tmp/opencode/lab_dec615/sensor_fleet_n2k_pos",
+    "registry_sha256": "67575eca3cec71ab",
+    "tag": "0.11.0r674340-b32d256e3lr3e-04o67b1bcb7"
+  },
+  "protocol": "DEC-576 dev-rig speedometer + controls (development instrument; never B-row evidence)",
+  "seconds": 29.5,
+  "seed": 65537,
+  "use_case": "sensor_fleet"
+}

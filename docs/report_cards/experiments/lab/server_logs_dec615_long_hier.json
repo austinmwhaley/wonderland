@@ -1,0 +1,106 @@
+{
+  "_meta": {
+    "behavior_hash": "7f20fd0badb210d6",
+    "command": "lab_measure.py --head hier --lab-root rabbit_hole/data/lab_dec615_long --fixture rabbit_hole/data/lab_dec615_long/server_logs --products /tmp/opencode/lab_dec615/server_logs_long_pos --as-of 2024-09-01 --iter dec615_long --out docs/report_cards/experiments/lab/server_logs_dec615_long_hier.json",
+    "generated_at": "2026-11-07T01:08:23+00:00",
+    "git_commit": "91394930b646c828f8d7fb5d0cc151dd7ff6c3b2",
+    "producer": "lab_measure.py"
+  },
+  "a_frac": 0.7,
+  "as_of": "2024-09-01",
+  "bar_g": 0.5,
+  "complete": true,
+  "discipline": "toy-green can only SUGGEST the next real-data run (DEC-576); certification of B stays on the real stream (cfm_v2k / O3 / DEC-575); no B-row source names this receipt",
+  "fixture_spec": {
+    "action_peak": 0.0,
+    "base_rate": 1.4,
+    "diurnal": 0.8,
+    "domain": "server_logs",
+    "entity_affinity": 0.0,
+    "intent": 5.0,
+    "n_customers": 25000,
+    "n_entities": 0,
+    "name": "server_logs",
+    "rate_heterogeneity": 0.0,
+    "seed": 17,
+    "session_burst": 0.0,
+    "snr": 1.0,
+    "transition": true,
+    "trend": 0.0,
+    "value_log_sigma": 0.5,
+    "window_days": 730
+  },
+  "head_form": "hier",
+  "iteration": "dec615_long",
+  "kind": "lab_dev_instrument",
+  "lab_gate_a_side": {
+    "adversarial_leak_has_teeth": true,
+    "adversarial_not_carried": true,
+    "complete": true,
+    "negative_not_carried": true,
+    "oracle_carried": true
+  },
+  "n_boot": 2000,
+  "p_floor": 1e-15,
+  "positive": {
+    "alpha": 1.778279,
+    "beats_base": true,
+    "classes": [
+      "deploy",
+      "error",
+      "request",
+      "restart"
+    ],
+    "classes_excluded": [],
+    "eff_rank": 1.249,
+    "eff_rank_source": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm/portfolio/portfolio_0_11_0r910976-b128d256e3lr3e-04o67b1bcb7_20261107T000430Z.json",
+    "g": -0.00971,
+    "head_form": "hierarchical_dirichlet",
+    "mastered": true,
+    "n_A": 17500,
+    "n_B_rows": 7500,
+    "n_customers": 25000,
+    "nll_base": 0.963143,
+    "nll_baseline_ce_nats": 0.8358,
+    "nll_enc": 0.716024,
+    "nll_oracle_nats": 0.7184,
+    "paired_ci_enc_minus_base": [
+      -0.25918772479369545,
+      -0.23507197936830226
+    ],
+    "per_class_n_A": {
+      "deploy": 1539,
+      "error": 4791,
+      "request": 8984,
+      "restart": 2186
+    },
+    "products": {
+      "path": "/tmp/opencode/lab_dec615/server_logs_long_pos",
+      "registry_sha256": "f532c66bc87b71ac",
+      "tag": "0.11.0r910976-b128d256e3lr3e-04o67b1bcb7"
+    },
+    "signature_block": {
+      "block_sha256": "48d7c4e0854b5a8dcf7b1a194e990b75b10ace2a3c08810fb43ecb89a17e7c13",
+      "classes": [
+        "deploy",
+        "error",
+        "request",
+        "restart"
+      ],
+      "dim": 16,
+      "fixture_sha256": "52ac651d0d3972d56562598a92501abf4b2f65e76b7008181823528e938fab07",
+      "n_served": 25000,
+      "receipt": "/tmp/opencode/lab_dec615/server_logs_long_pos/signature_receipt.json",
+      "table": "signature_blocks"
+    }
+  },
+  "products_identity": {
+    "path": "/tmp/opencode/lab_dec615/server_logs_long_pos",
+    "registry_sha256": "f532c66bc87b71ac",
+    "tag": "0.11.0r910976-b128d256e3lr3e-04o67b1bcb7"
+  },
+  "protocol": "DEC-576 dev-rig speedometer + controls (development instrument; never B-row evidence)",
+  "seconds": 525.8,
+  "seed": 65537,
+  "use_case": "server_logs"
+}

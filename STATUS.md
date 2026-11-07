@@ -62,8 +62,9 @@ histogram half; it is not the missing piece.
 
 ## Current state
 
-- **DEC-615 (2026-11-06, pre-registered; the B2 scale arm — operator "go ahead"): the
-  N-ladder campaign is in flight.** Three DEC-611 domains × N ∈ {2000, 10000, 25000} —
+- **DEC-615 (2026-11-06, pre-registered; the B2 scale arm — operator "go ahead";
+  PAUSED 2026-11-07 ~05:05 UTC at operator direction "pause everything"): the
+  N-ladder campaign, state at pause below.** Three DEC-611 domains × N ∈ {2000, 10000, 25000} —
   ONE axis (customer count; the domain specs held: transition + intent σ=5.0, rates,
   windows, as-of; the SSM trunk stands — DEC-613's looped trunk stays banked, not merged)
   + the long-horizon probe (window ×2 at each domain's LARGEST COMPLETED N — the H axis,
@@ -71,18 +72,135 @@ histogram half; it is not the missing piece.
   `complete` is honestly evaluable on-disk at the new N) generate under the recorded
   recipe `/tmp/opencode/dec615_gen_fixtures.py` (sanity PASS: the N=500 sensor_fleet
   three-piece regenerates BYTE-IDENTICAL to the floor row). 9 positive-only GPU trains,
-  serialized through `safe_run` (the DEC-611 recorded launch recipe verbatim); measured
+  serialized through `safe_run` (the DEC-611 recorded launch recipe + `--customers N`
+   per rung — the recorded pre-run amendment: without it the trainer's
+   `sample_customers=500` default capped every rung at the FIRST 500 customer keys,
+   nulling the N axis; the smoke cell's capped registry was the proof); measured
   by the frozen `lab_measure` (ridge + hier; new default-inert `--lab-root` flag —
   scripts-only, behavior stays `7f20fd0b`, no re-stamp). B-side control products are
   inherited from DEC-611 at N=500 and disclosed; pre-registered contingency: any cell
   crossing g ≤ 0.5 owes neg+adv products trained at that (domain, N) before a master
   claim. Verdict = characterization (the wall's location: finite-sample vs budget), not
-  re-adjudication of the N=500 verdicts.
-- **Operator directive 2026-11-06: "much of the project is not organized well and
-  cohesive — rectify that."** Being addressed as its own DEC (DEC-616) after the DEC-615
-  launch: an evidence-based organization/cohesion pass (stale doc lines, log navigability,
-  P13 orphans), behavior-neutral; the charter-level queued items (AGENTS.md's stale
-  "8 GiB card" line, B-017's SPINE §5 ruling) stay the operator's call per the queue.
+  re-adjudication of the N=500 verdicts. **Progress (2026-11-06):** stage 1 re-ran
+    post-amendment on the FULL population (every DONE cell's registry
+    `n_customers=N`, `customer_state=N` served — the cap is gone, at 2K and 10K both).
+    Eight of nine cells trained RC=0; seven measured so far (server n25k in progress;
+    the clickstream n25k wall below). The 2K/10K tiers (six cells): ridge g —
+    sensor 1.7003 (floor) → 1.6740
+    → 1.1958; clickstream 2.0280 → 2.1726 → 2.0543; server 5.0339 → 1.7442 →
+    1.4218 (no ridge cell crosses the 0.5 bar; `beats_base` stays False on all six, the
+    whole paired CI above 0); hier g — sensor −0.2617 → −0.0753; clickstream
+    +0.0443 → +0.0742; server −0.1821 → +0.0087 (all six at or under the bar
+    with `beats_base=True`, `mastered=True` per the frozen formula — and all six
+    receipts still lack the control blocks, so the pre-registered contingency fires on
+    all six measured cells: neg+adv products trained at each fired (domain, N), then
+    re-measure with the control flags before any master claim). The frontier read so
+    far: the encoder's own nll is nearly flat in N while the pooled 1-gram base nll
+    RISES with N (sensor 0.758 → 0.779 → 0.817; server 0.782 → 0.921 → 0.975)
+    — the ridge head's apparent improvement is largely the baseline degrading, which
+    the n25k tier + probe must separate. **n25k tier: the wall has been located —
+    clickstream_sessions @ N=25000, BUDGET.** sensor n25k DONE RC=0 (ridge g +1.2765 /
+    hier g −0.0461 mastered — fired); server n25k DONE RC=0 (1h 09m, 44346 training
+    embeddings, measured — ridge g +1.5118 / hier g −0.0359 mastered, 8th fired
+    cell); clickstream n25k
+    OOM'd 72 s into its first task-loss pass: 22.66 GB live-held + a 22.05 GB
+    single-field cross-entropy logits draw ≈ 44.7 GB peak, against the derived cap
+    30.13 GB (cgroup clamp 32 − used − reserve; idle-GPU arithmetic gives ≈30.1–30.6,
+    still fatal — **no retry owed**). The schema is the driver: clickstream is
+    `numeric=0 categorical=4` vs sensor's `numeric=2 categorical=1` (peak_alloc 2.88 GB
+    at the same N); the task-loss phase materializes the full-population task tensors +
+    per-field logits without row-chunking. Disclosed aggravating factor: an UNIDENTIFIED
+    transient ~49.4 GiB CUDA co-tenant was alive at launch (avail 49.78, driver_free
+    19.72) — it is NOT the watcher's parallel sensor-n25k measurement: that stack is
+    CPU-only (no torch anywhere in the lab_measure/build_lab_signature/lab_gate/
+    measure_battery_law import chain; the 25K-tier measures completed fine in 456 s/
+    438 s under the 32 GB host slice), so it is most likely a desktop-stack GPU
+    process. It degraded physical headroom, but the cgroup clamp was the binding
+    limit. One pipeline fact (no row-chunking in `cfm_training._task_losses` — full-
+    population task tensors + per-field logits; ~45 GB device demand at 25K × 4
+    categorical fields) is disclosed, NOT fixed in-campaign — a fix is a behavior move
+    and owes its own DEC. Per pre-registration the clickstream probe therefore sits at
+    its largest completed N=10000 with the reduced-N disclosure (cert rule 6).
+    **Stage-2 probe (window ×2) COMPLETE 01:08 UTC Nov 7 — the pre-registered H-axis
+    question is answered: NO.** All three probe trains DONE RC=0 (sensor 25K×2w 46 min,
+    clickstream 10K×2w 45 min, server 25K×2w 48 min) and measured: ridge g at the SAME
+    N — sensor 1.2765 → 1.2041 (Δ −0.072); clickstream 2.0543 → 2.2324 (Δ +0.178);
+    server 1.4218 → 1.4863 (Δ +0.064). Doubling the per-customer horizon moves the
+    ridge g by ≤ 0.18 (and not even consistently in direction), vs the 50×
+    cross-customer sample moving it up to 3.61 (server 5.0339 → 1.4218) — the ridge
+    head's excess loss is a CROSS-CUSTOMER finite-sample / estimation-efficiency
+    phenomenon, not a per-customer-horizon one (consistent with the DEC-581/582
+    attribution: trunk candidates compete on estimation efficiency, not expressivity).
+    Probe hier g: sensor −0.0080 / clickstream −0.0677 / server −0.0097 — the
+    transition head sits at the 1-gram floor even with the horizon doubled (enc nll
+    marginally under the closed-form oracle on all three = the known finite-sample
+    oracle artifact, same class as the server floor row; recorded as-is). All three
+     probe cells fire the probe contingency (hier head ≤ 0.5,
+     beats_base=True). **PAUSED 2026-11-07 ~05:05 UTC at operator direction
+     ("pause everything. update all documentation. commit and push") — state at
+     pause:** (a) PROBE contingency — sensor long COMPLETE WITH CONTROLS
+     (neg+adv RC=0; re-measured 03:29: ridge neg `reads_no_signal=True` as
+     designed; ridge+hier adv `reads_as_expected=True`, `structure_carried=False`;
+     hier neg `n_B_rows=0` = the known vacuous-control artifact, identical on all
+     three DEC-611 hier-neg controls; `lab_gate_a_side` all-True on both receipts).
+     clickstream long: NEG OOM'd at the first task-loss pass — the SECOND BUDGET-
+     WALL INSTANCE (20.20 GiB single-field CE draw on 21.11 GiB live-held ≈ 41.3 GB
+     peak vs launch cap 28.40 GB; idle-GPU arithmetic ≈30.1 → **no retry owed**;
+     its positive twin on the equal-row fixture — 10.075M vs 10.078M rows —
+     completed at cap 29.26 with train peak_alloc 17.52 GB, so the neg/pos demand
+     delta is unattributed from campaign logs; the common root is the no-row-
+     chunking `O(rows × vocab)` single-field draw in
+     `cfm_training._task_losses`) → adv not launched (fail-safe break), re-measure
+     skipped, receipt A-side-only. server long: neg RC=0; adv rc=143 = SIGTERM from
+     the pause order's own first kill (log ends at step 412/8250, no traceback; the
+     chain recorded TRAIN FAILED + fail-safe SKIP), receipt A-side-only. (b) LADDER
+     contingency — NOT trained: the post-CHAIN_DONE runner (fired 04:49:06; the
+     first-run status is archived as
+     `dec615_contingency.status.firstrun`) started the corrected 16-pair re-run and
+     its first pair (sensor n2k neg; a 1320-step schedule; 1384 distill customers)
+     ran 14.5 min to step ≈264/1320, then stopped abruptly — no error in the log,
+     no traceback, no products, no DONE line (external-signal class at the pause
+     moment; attribution unverified, recorded as such); the RC-gate then correctly
+     SKIPped all 8 re-measures and re-assembled the A-side table (POSTCHAIN_DONE
+     05:03:35). (c) **EXEC-DEFECT record (2026-11-06 21:34–21:35):** the chain's
+     step-4 first run word-split the FIRING `(uc tier)` pair list (`for pair in
+     $FIRING` + GNU `cut -d' ' -f2` echoes the whole line when the field is absent
+     — reproduced empirically): all 32 launches failed instantly (RC=2 argparse /
+     RC=1 missing db), zero GPU work, zero artifact damage; step-5 correctly
+     SKIPped every re-measure; steps 6/7 (unaffected `domain=N` parsing) ran as
+     pre-registered; the corrected pair loop
+     (`/tmp/opencode/dec615_train_contingency.sh`, even-count guard, dry-run
+     verified 16 words → 8 pairs) is what the postchain runner used. (d) STOP
+     VERIFIED: no campaign process left; GPU quiet (only the GB10 desktop stack —
+     Xorg/gnome + transient render contexts — the most likely source of the
+     ~49.4 GiB transients present at both OOM sites; the campaign's measure stack
+     is CPU-only); zero artifact damage: all 22 receipts intact (20 A-side-only +
+     2 sensor long with control blocks), matched field-for-field to the
+     pre-re-measure A-side snapshot. The DEC-615 outcome addendum is written in
+     the entry as the STATE-AT-PAUSE record (NOT the final verdict; the 8 ladder
+     `mastered` flags stay contingency-owed). **Next-3 — operator's call: RESUME
+     or CLOSE AS-IS.** RESUME: (1) server long adv re-train + the 2 probe
+     re-measures (clickstream, server); (2) the clickstream long neg is NOT
+     retry-owed by arithmetic (41.3 ≥ 30.1) — it needs the row-chunking follow-up
+     DEC (or a documented cap ruling) before it can pass; (3) the 16 ladder
+     control trains + 8 re-measures + addendum completion. CLOSE AS-IS: the
+     addendum stands; no master claim is licensed by any receipt at pause.
+- **DEC-616 (2026-11-06, CLOSED @ `9139493`; operator directive: "much of the project is
+  not organized well and cohesive — rectify that")**: the evidence-based
+  organization/cohesion pass, executed as pre-registered — the DECISIONS.md 709-line
+  unfenced fossil (a verbatim `auto_encoder.py` copy @ `86204eb`) → labeled pointer with
+  provenance + recovery; 14 P13-orphan scripts + 2 orphan receipts `git rm`'d (zero
+  tracked refs; the keep-list verified live: `reference_pipeline.py` + dependents,
+  `validate_path_a.py`, `gpu_probe.py`); plan_spec's 4 stale behavior cites
+  (`df73c2aa` ×3, `7baf744f` ×1) → `7f20fd0b` with PLAN.md + REPORT_CARD.md re-render
+  (the card diff = the stamp line + the two macro lines, zero receipt/value drift);
+  STATUS Operating facts refreshed (branch `main`; the pre-DEC-605 "Candidate 0.11.1
+  root 20/39" bullet → a card pointer); the README v8 results section labeled Historical
+  + card pointer. Behavior-neutral: `behavior_hash()` = `7f20fd0badb210d6` unchanged on
+  the closing tree; 5/5 commit gates RC=0. The charter-level queued items (AGENTS.md's
+  stale "8 GiB card" line, B-017's SPINE §5 ruling) stay the operator's call per the
+  queue; B-023's closure (a `looking_glass` edit) is queued as its own follow-up DEC
+  behind the campaign.
 - **DEC-614 (2026-11-06, operator mandate: "make the project better. More adaptable. more
   situations. ... PROMPT_BACKWARDS needs to be updated to hunt for things that could be
   better"): the §4c improvement hunt + the first situation-blocker, closed.**
@@ -493,20 +611,23 @@ next question is the learned shape, not another consumer tuning pass.
 
 ## Next 3 actions
 
-1. **DEC-615 in flight (B2 scale arm):** ladder fixtures generating (27 three-piece
-   dirs under `rabbit_hole/data/lab_dec615_n{2,10,25}k/`); then the 9 positive trains
-   serialized via `safe_run` (`/tmp/opencode/dec615_train_stage1.sh`, recipe = DEC-611's
-   recorded launch); per cell: `build_lab_signature` + `lab_measure` ridge + hier
-   (`--lab-root`, `--iter dec615_n{k}`, out `docs/report_cards/experiments/lab/`); then
-   the stage-2 long-horizon probe (window ×2 at each domain's largest completed N, root
-   `lab_dec615_long`); the outcome addendum closes DEC-615 (the wall's location + the
-   g/eff_rank/cost curves). Chunk-1 commit: the DEC-615 pre-registration + the
-   default-inert `--lab-root` flag (scripts-only) + the DEC-616 closeout + this STATUS.
-2. **DEC-616 (organization & cohesion — operator directive 2026-11-06):** evidence pass
-   (stale lines, log navigability, P13 orphans, docs tree) → pre-registration → the
-   behavior-neutral fixes. Closing B-023 (the vestigial `onboard._derive_reward_event`
-   `value_col` param; a `looking_glass` edit → behavior move + full re-stamp) is queued
-   as its own follow-up DEC behind the campaign, not folded into DEC-616's doc axis.
+1. **DEC-615 in flight (B2 scale arm):** the full remainder is chained unattended
+   (`/tmp/opencode/dec615_chain.sh`, state in `dec615_chain.status`): stage-1 tail
+   (3 × n25k positive trains; 6 of 9 cells already measured — all six HIER heads at or
+   under the 0.5 bar with `beats_base`, ridge heads above it) → the pre-registered
+   contingency on the fired set (12 neg+adv control trains at 2K/10K, + up to 6 more if
+   the n25k cells fire) → re-measure the fired cells with `--neg-products`/`--adv-products`
+   → stage-2 long-horizon probe (window ×2 at each domain's largest completed N, root
+   `lab_dec615_long`) → probe contingency → curve assembly. When the chain writes
+   `CHAIN_DONE`: fill the DEC-615 outcome addendum (wall location + the g/eff_rank/cost
+   curves + the control reads) and commit chunk 2 (all campaign receipts + addendum +
+   this STATUS — no card re-render owed: lab receipts are dev instruments, the tree
+   stays 39, no behavior move).
+2. **DEC-616 CLOSED (@ `9139493`; behavior-neutral; 5/5 gates RC=0 on the closing
+   tree):** the remaining organization items are the operator-call queue (AGENTS.md "8
+   GiB" charter line, B-017's SPINE §5 ruling) + B-023's closure as its own follow-up
+   DEC behind the campaign (a `looking_glass` edit → behavior move + full re-stamp —
+   not a doc fix).
 3. **Operator rulings remain queued (not agent-callable):** B-017 (SPINE §5 corollary;
    INFO, disclosed); the AGENTS.md "8 GiB card" line is stale on this GB10
    unified-memory machine (project cap 32 GB, operator 2026-11-02, reconfirmed

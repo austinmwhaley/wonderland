@@ -1,0 +1,86 @@
+{
+  "_meta": {
+    "behavior_hash": "7f20fd0badb210d6",
+    "command": "lab_measure.py --lab-root rabbit_hole/data/lab_dec615_n10k --fixture rabbit_hole/data/lab_dec615_n10k/server_logs --products /tmp/opencode/lab_dec615/server_logs_n10k_pos --as-of 2024-09-01 --iter dec615_n10k --out docs/report_cards/experiments/lab/server_logs_dec615_n10k.json",
+    "generated_at": "2026-11-06T19:02:43+00:00",
+    "git_commit": "91394930b646c828f8d7fb5d0cc151dd7ff6c3b2",
+    "producer": "lab_measure.py"
+  },
+  "a_frac": 0.7,
+  "as_of": "2024-09-01",
+  "bar_g": 0.5,
+  "complete": true,
+  "discipline": "toy-green can only SUGGEST the next real-data run (DEC-576); certification of B stays on the real stream (cfm_v2k / O3 / DEC-575); no B-row source names this receipt",
+  "fixture_spec": {
+    "action_peak": 0.0,
+    "base_rate": 1.4,
+    "diurnal": 0.8,
+    "domain": "server_logs",
+    "entity_affinity": 0.0,
+    "intent": 5.0,
+    "n_customers": 10000,
+    "n_entities": 0,
+    "name": "server_logs",
+    "rate_heterogeneity": 0.0,
+    "seed": 17,
+    "session_burst": 0.0,
+    "snr": 1.0,
+    "transition": true,
+    "trend": 0.0,
+    "value_log_sigma": 0.5,
+    "window_days": 365
+  },
+  "head_form": "ridge",
+  "iteration": "dec615_n10k",
+  "kind": "lab_dev_instrument",
+  "lab_gate_a_side": {
+    "adversarial_leak_has_teeth": true,
+    "adversarial_not_carried": true,
+    "complete": true,
+    "negative_not_carried": true,
+    "oracle_carried": true
+  },
+  "n_boot": 2000,
+  "p_floor": 1e-15,
+  "positive": {
+    "beats_base": false,
+    "classes": [
+      "deploy",
+      "error",
+      "request",
+      "restart"
+    ],
+    "classes_excluded": [],
+    "eff_rank": 1.22,
+    "eff_rank_source": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm/portfolio/portfolio_0_11_0r296431-b64d256e3lr3e-04o67b1bcb7_20261106T185542Z.json",
+    "g": 1.421844,
+    "g_fallback_to_closed_form_denominator": false,
+    "mastered": false,
+    "n_A": 7000,
+    "n_B_rows": 3000,
+    "n_customers": 10000,
+    "nll_base": 0.975428,
+    "nll_baseline_ce_nats": 0.8358,
+    "nll_enc": 1.083854,
+    "nll_oracle_nats": 0.7184,
+    "paired_ci_enc_minus_base": [
+      0.08498129008191285,
+      0.13123647234589003
+    ],
+    "per_class_n_A": {
+      "deploy": 608,
+      "error": 1913,
+      "request": 3620,
+      "restart": 859
+    }
+  },
+  "products_identity": {
+    "path": "/tmp/opencode/lab_dec615/server_logs_n10k_pos",
+    "registry_sha256": "b8da98587e3d4d29",
+    "tag": "0.11.0r296431-b64d256e3lr3e-04o67b1bcb7"
+  },
+  "protocol": "DEC-576 dev-rig speedometer + controls (development instrument; never B-row evidence)",
+  "seconds": 179.5,
+  "seed": 65537,
+  "use_case": "server_logs"
+}

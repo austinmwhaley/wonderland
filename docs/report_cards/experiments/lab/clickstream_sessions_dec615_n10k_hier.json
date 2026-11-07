@@ -1,0 +1,109 @@
+{
+  "_meta": {
+    "behavior_hash": "7f20fd0badb210d6",
+    "command": "lab_measure.py --head hier --lab-root rabbit_hole/data/lab_dec615_n10k --fixture rabbit_hole/data/lab_dec615_n10k/clickstream_sessions --products /tmp/opencode/lab_dec615/clickstream_sessions_n10k_pos --as-of 2024-05-01 --iter dec615_n10k --out docs/report_cards/experiments/lab/clickstream_sessions_dec615_n10k_hier.json",
+    "generated_at": "2026-11-06T18:46:36+00:00",
+    "git_commit": "91394930b646c828f8d7fb5d0cc151dd7ff6c3b2",
+    "producer": "lab_measure.py"
+  },
+  "a_frac": 0.7,
+  "as_of": "2024-05-01",
+  "bar_g": 0.5,
+  "complete": true,
+  "discipline": "toy-green can only SUGGEST the next real-data run (DEC-576); certification of B stays on the real stream (cfm_v2k / O3 / DEC-575); no B-row source names this receipt",
+  "fixture_spec": {
+    "action_peak": 0.0,
+    "base_rate": 2.8,
+    "diurnal": 0.0,
+    "domain": "clickstream_sessions",
+    "entity_affinity": 0.0,
+    "intent": 5.0,
+    "n_customers": 10000,
+    "n_entities": 0,
+    "name": "clickstream_sessions",
+    "rate_heterogeneity": 0.0,
+    "seed": 17,
+    "session_burst": 9.0,
+    "snr": 1.0,
+    "transition": true,
+    "trend": 0.0,
+    "value_log_sigma": 0.5,
+    "window_days": 180
+  },
+  "head_form": "hier",
+  "iteration": "dec615_n10k",
+  "kind": "lab_dev_instrument",
+  "lab_gate_a_side": {
+    "adversarial_leak_has_teeth": true,
+    "adversarial_not_carried": true,
+    "complete": true,
+    "negative_not_carried": true,
+    "oracle_carried": true
+  },
+  "n_boot": 2000,
+  "p_floor": 1e-15,
+  "positive": {
+    "alpha": 1.0,
+    "beats_base": true,
+    "classes": [
+      "add_to_cart",
+      "bounce",
+      "checkout",
+      "page_view",
+      "search"
+    ],
+    "classes_excluded": [],
+    "eff_rank": 1.139,
+    "eff_rank_source": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm/portfolio/portfolio_0_11_0r765666-b32d256e3lr3e-04o67b1bcb7_20261106T183701Z.json",
+    "g": 0.074166,
+    "head_form": "hierarchical_dirichlet",
+    "mastered": true,
+    "n_A": 6814,
+    "n_B_rows": 2929,
+    "n_customers": 10000,
+    "nll_base": 1.083648,
+    "nll_baseline_ce_nats": 1.1,
+    "nll_enc": 0.872791,
+    "nll_oracle_nats": 0.8559,
+    "paired_ci_enc_minus_base": [
+      -0.2299972970569075,
+      -0.19169838595190916
+    ],
+    "per_class_n_A": {
+      "add_to_cart": 606,
+      "bounce": 696,
+      "checkout": 565,
+      "page_view": 4195,
+      "search": 752
+    },
+    "products": {
+      "path": "/tmp/opencode/lab_dec615/clickstream_sessions_n10k_pos",
+      "registry_sha256": "ede95d7f3b6152a2",
+      "tag": "0.11.0r765666-b32d256e3lr3e-04o67b1bcb7"
+    },
+    "signature_block": {
+      "block_sha256": "fdba203333091b6446fd4648a46351fff3fbf2a584144e309e6eb263dc54b524",
+      "classes": [
+        "add_to_cart",
+        "bounce",
+        "checkout",
+        "page_view",
+        "search"
+      ],
+      "dim": 25,
+      "fixture_sha256": "ab7031c72474a79e4d833dd10b16648361649a00cde4a3e60e560f0a950356b3",
+      "n_served": 10000,
+      "receipt": "/tmp/opencode/lab_dec615/clickstream_sessions_n10k_pos/signature_receipt.json",
+      "table": "signature_blocks"
+    }
+  },
+  "products_identity": {
+    "path": "/tmp/opencode/lab_dec615/clickstream_sessions_n10k_pos",
+    "registry_sha256": "ede95d7f3b6152a2",
+    "tag": "0.11.0r765666-b32d256e3lr3e-04o67b1bcb7"
+  },
+  "protocol": "DEC-576 dev-rig speedometer + controls (development instrument; never B-row evidence)",
+  "seconds": 177.7,
+  "seed": 65537,
+  "use_case": "clickstream_sessions"
+}
