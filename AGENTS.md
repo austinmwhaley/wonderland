@@ -11,9 +11,11 @@ hanging off `plugins`.
 ## The project — a universal foundation model for event streams
 
 **Input an event stream → encode it → produce a foundation model that emits UNIVERSAL
-FOUNDATIONAL EMBEDDINGS.** That is the current focus. Concretely: one pretrained,
-self-supervised, domain-agnostic encoder whose FROZEN output is the "universal donor"
-that everything downstream builds on.
+FOUNDATIONAL EMBEDDINGS — and that does BETTER THAN THE EXISTING METHODS.** That is the
+current focus. Concretely: one pretrained, self-supervised, domain-agnostic encoder whose
+FROZEN output is the "universal donor" that everything downstream builds on — and whose
+FROZEN output beats the existing methods (the 1-gram baseline) on the real-data story,
+so that it is a foundation, not a green receipt.
 
 Work in **two layers — do not conflate them**:
 

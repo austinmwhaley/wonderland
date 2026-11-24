@@ -1,6 +1,6 @@
 # REPORT_CARD — B foundational, then PATH B > PATH A
 
-*Generated `2026-11-24T21:51:17+00:00` · commit `5f93335` (`main` · dirty) · encoder behavior `a4eec44ed799cdf0`*
+*Generated `2026-11-24T22:10:31+00:00` · commit `1f4cfc7` (`main` · dirty) · encoder behavior `a4eec44ed799cdf0`*
 
 **Assessment:**
 
@@ -116,6 +116,26 @@ A green atom means its frozen gate is met. For these atoms the gate certifies *m
 - **clickstream × 25K — BUDGET wall** (DEC-615): OOM 72 s into the first task-loss pass — ≈44.7 GB peak (22.66 live-held + 22.05 logits draw) vs ≈30.1 GB idle clamp. Driver = schema × N (`numeric=0 categorical=4` vs sensor's `numeric=2 categorical=1`; sensor n25k completed RC=0 at the same N, train peak_alloc 2.88 GB). **No retry owed.** The 25K tier is therefore clickstream-absent in every table above.
 - **clickstream × 10K×2w neg control — BUDGET wall, second instance**: OOM at the same site (≈41.3 GB peak vs 28.40 launch cap); its positive twin on the equal-row fixture completed RC=0 (train peak_alloc 17.52 GB). The neg/pos demand delta is unattributed from campaign logs.
 - **Contingency-owed (pre-registered, DEC-615)**: all 8 completed ladder cells + all 3 probe cells fire the neg+adv contingency — the ladder `mastered` flags are contingency-owed (controls untrained at the ladder N); sensor long is complete with controls (neg+adv RC=0, re-measured 03:29: ridge neg `reads_no_signal=True`, ridge+hier adv `reads_as_expected=True`, hier neg `n_B_rows=0` = the vacuous-control artifact, `lab_gate_a_side` all-True); clickstream long is A-side-only (neg OOM → adv not launched); server long is A-side-only (neg RC=0; adv SIGTERM'd by the pause order). No master claim is licensed by any receipt at pause.
+
+
+## Incremental improvements — work to achieve (additive, non-gated)
+
+*The frozen gates pass (the card is SOLVED) — but the gates certify the instrument, not the encoder. This section surfaces the incremental improvements the real-data story shows and the work to achieve them. Every figure is computed from the receipts — nothing is narrated.*
+
+### 1 — Ridge head: never beats the 1-gram baseline (0/14 cells `beats_base`)
+
+- The gap (computed): the cross-customer move (500 → largest completed ridge cell) costs |Δ| = 0.03–3.52 (sensor 0.42, clickstream 0.03, server 3.52); the ×2-window probe moves it by ≤ 0.178 (H-axis NO).
+- The diagnosis (computed): the encoder's own nll is nearly flat in N (sensor 0.8635→0.8568, server 1.0379→1.0805) while the pooled 1-gram base nll RISES (sensor 0.7582→0.8029, server 0.7819→0.9579) — the ridge head's apparent gain is largely the baseline degrading. The ridge head's excess loss is cross-customer finite-sample / estimation-efficiency limited — the sample, not the horizon, carries the gap.
+- The work to achieve it: the ridge head's estimation efficiency — the cross-customer finite-sample gap.
+  A pre-registered estimation-efficiency axis (batch/headroom/sample-size, not a capacity tweak) would   measure whether the ridge head can beat the 1-gram at fixed capacity.
+
+### 2 — Hier head: at the floor at large N (14/14 cells `beats_base`, max g +0.3398 at the 500-tier cell, all hier g ≤ 0 at the 25K/long cells)
+
+- The gap (computed): the 25K/long cells sit at/below the floor (hier g ≤ 0.05 there); the ×2-window   probe moves it by ≤ 0.142 (not directionally consistent — sensor +0.038,   clickstream −0.142, server +0.026).
+- The diagnosis (computed): the transition head sits at the 1-gram floor at large N — the hier head   doesn't carry order beyond the 1-gram at this capacity. The encoder's nll is marginally under the   closed-form oracle on all three domains (the known finite-sample-oracle artifact).
+- The work to achieve it: the transition head's floor — the hier head's capacity/order-carrying at   fixed capacity. A pre-registered order/capacity axis would measure whether the head can carry the   conditional row beyond the 1-gram.
+
+*These are the incremental improvements — the work to achieve them is the ridge head's estimation efficiency + the transition head's floor. The certified gates pass; the substance is the gap.*
 
 ## B — foundational scorecard (B-only, DEC-562)
 

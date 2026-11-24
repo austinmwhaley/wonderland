@@ -9,11 +9,11 @@
 
 ## 0. The goal — and why it is the goal
 
-One frozen, self-supervised, schema-agnostic encoder per event stream whose embedding is a universal donor: a bounded per-customer, per-time vector that loses nothing that matters about the future — for prediction AND for decisions — readable by simple consumers, transferable beyond the tasks we know, honest under shift, and certified at fixed capacity against the full-history oracle, so that any present or future consumer is covered by construction rather than by enumeration.
+One frozen, self-supervised, schema-agnostic encoder per event stream whose embedding is a universal donor: a bounded per-customer, per-time vector that loses nothing that matters about the future — for prediction AND for decisions — readable by simple consumers, transferable beyond the tasks we know, honest under shift, and certified at fixed capacity against the full-history oracle, so that any present or future consumer is covered by construction rather than by enumeration — AND that does better than the existing methods (beats the 1-gram baseline on the real-data story), so that it is a foundation, not a green receipt.
 
 Why this and not something easier:
 
-A per-use-case wide table (PATH A) must be rebuilt for every new task and stream and silently encodes the tasks we already know; it cannot be a foundation. A frozen per-stream embedding amortizes one self-supervised fit across present and future consumers. But 'it works on our tasks' is not universality: the only defensible claim is worst-case sufficiency against the full history (U), with accessibility, transfer and robustness certified separately, because the consumer set is open-ended and known use cases may veto — never shape — the encoder.
+A per-use-case wide table (PATH A) must be rebuilt for every new task and stream and silently encodes the tasks we already know; it cannot be a foundation. A frozen per-stream embedding amortizes one self-supervised fit across present and future consumers. But 'it works on our tasks' is not universality: the only defensible claim is worst-case sufficiency against the full history (U), with accessibility, transfer and robustness certified separately, because the consumer set is open-ended and known use cases may veto — never shape — the encoder. Green on the frozen gates is not the goal — the gates certify the instrument, not the encoder; the goal is the encoder DOING BETTER THAN THE EXISTING METHODS (beating the 1-gram baseline on the real-data story), so that it is a foundation, not a green receipt.
 
 ## 0.1 Macro review — where the project is
 
@@ -52,7 +52,7 @@ The census: **39 atomic problems** (31 measured · 3 DEC-frozen · 5 v1) under *
 
 *What is the whole problem?*
 
-A per-use-case wide table (PATH A) must be rebuilt for every new task and stream and silently encodes the tasks we already know; it cannot be a foundation. A frozen per-stream embedding amortizes one self-supervised fit across present and future consumers. But 'it works on our tasks' is not universality: the only defensible claim is worst-case sufficiency against the full history (U), with accessibility, transfer and robustness certified separately, because the consumer set is open-ended and known use cases may veto — never shape — the encoder.
+A per-use-case wide table (PATH A) must be rebuilt for every new task and stream and silently encodes the tasks we already know; it cannot be a foundation. A frozen per-stream embedding amortizes one self-supervised fit across present and future consumers. But 'it works on our tasks' is not universality: the only defensible claim is worst-case sufficiency against the full history (U), with accessibility, transfer and robustness certified separately, because the consumer set is open-ended and known use cases may veto — never shape — the encoder. Green on the frozen gates is not the goal — the gates certify the instrument, not the encoder; the goal is the encoder DOING BETTER THAN THE EXISTING METHODS (beating the 1-gram baseline on the real-data story), so that it is a foundation, not a green receipt.
 
 **Solved when:** every child below is solved (worst-child rule)
 
