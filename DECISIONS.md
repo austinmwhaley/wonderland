@@ -11647,17 +11647,16 @@
       landed pre-run @ `9139493` and is inert on all frozen commands). No card
       re-render owed: the 22 campaign receipts are dev instruments (DEC-576), the
       tree stays 39, no B-row verdict touched.
-    - **Open at resume (operator's call).** If RESUMED: (a) server long adv
-      re-train + the 2 probe re-measures (clickstream, server); (b) the clickstream
-      long neg is NOT retry-owed by the no-retry arithmetic (41.3 ≥ 30.1) — it
-      needs the row-chunking follow-up DEC (or a documented cap ruling) before it
-      can pass; (c) the 16 ladder control trains on the 8 fired cells; (d) the 8
-      ladder re-measures with the frozen control command; (e) this addendum
-      completes to the final verdict (control reads + drift check + assembly). If
-      CLOSED AS-IS: this addendum stands as the state-at-pause record; the 8
-      ladder `mastered` flags remain contingency-owed (controls untrained) and the
-      clickstream/server probe receipts remain A-side-only; no master claim is
-      licensed by any receipt at pause.
+    - **Open at resume — CLOSED AS-IS (operator 2026-11-24).** This addendum stands
+      as the campaign record; the 8 ladder `mastered` flags remain contingency-owed
+      (controls untrained), the clickstream/server probe receipts remain A-side-only,
+      and no master claim is licensed by any receipt at pause. The wall
+      characterization (budget @ clickstream × 25K + the probe-tier neg-control
+      instance) and the H-axis NO are the campaign's substantive output. If the
+      campaign is ever re-opened: server long adv re-train + the 2 probe
+      re-measures, then the 16 ladder control trains + 8 re-measures + addendum
+      completion; clickstream long neg additionally needs the row-chunking fix
+      (or a documented cap ruling).
 
 - **DEC-616 (repo organization & cohesion — the operator's 2026-11-06 "rectify that"
   directive; pre-registered on `main` @ `3950eaa` after the DEC-615 launch;
@@ -11795,3 +11794,32 @@
     (4) README.md: "Hardware & caps" line added under Status at a glance (GB10 121.63 GiB unified, project maximum 32 GB (operator 2026-11-02), `wonderland.slice` bound, `gpu_budget` derivation, one GPU job at a time).
     (5) `REPORT_CARD.md` intentionally NOT re-rendered: the sweep changes no receipt, spec, or verdict input, and the DEC-615 chunk-2 precedent (doc-only + dev-instrument chunks) is to leave the card untouched. The header remains the last clean re-render (`3950eaa`); it refreshes at the next behavior-affecting re-stamp.
   - **Outcome addendum (2026-11-23; closed by this commit).** `report_card.behavior_hash()` = `7f20fd0badb210d6` recomputed on the closing tree (all edits in docs + one comment line — outside the behavior trees, so no re-stamp is owed). The five commit gates RC=0. The card is untouched by this sweep (no input change); its header remains the last clean re-render.
+
+- **DEC-618 (B-017 closure — operator ruling 2026-11-24: "Accept + revise"; behavior-neutral).**
+  - **NODE:** P6/P8 record repair, not a plan axis. One measured axis: the SPINE §5 corollary's
+    honesty — ZERO behavior-tree edits (the tree stays `7f20fd0b`, no re-stamp).
+  - **Context.** B-017 (open since 2026-11-05, INFO, non-blocking) discloses two open questions
+    in the supervised leg's evidence: (i) negative controls are vacuous (R² < −1, a wide-design
+    conditioning artifact) on 5/7 traits — handled by the frozen `VACUOUS_CONTROL_R2` doctrine
+    (`judge_spec.py:179–183`, DEC-433); the gate does not count them. (ii) The ledger-only
+    diagnostic (`diagnostics.ledger_only` in the pre-bank receipt, shed by the bank producer in
+    DEC-608; disclosure preserved in the finding text + git history) beats the table on 4/7
+    traits — by the producer's own rule (`ci_lo > 0`: price_sensitivity, churn_day,
+    regime_switches, final_regime_days) — best R² 0.8659 on `x0` vs the table's 0.8791 — which
+    falsifies SPINE §5's "the ledger is what the table already is" corollary. The falsification
+    is a second instance of the DEC-432 record (h0: 0.9846 vs −0.1213) on different evidence
+    (the bank-era supervised leg).
+  - **Operator ruling.** "Accept + revise": record the falsification; revise SPINE §5's
+    corollary to match the evidence. Card verdicts and the delivery framing are unaffected —
+    they derive from frozen `columns` via the frozen `_task_passes` (`report_card.py:829`), not
+    from `checks` or the ledger-only diagnostic; the veto is unchanged (a ledger-backed number
+    never counts as a brain win; the foundation is certified on the brain alone).
+  - **What changed (doc only, no `.py` behavior change):** (1) SPINE.md §5 corollary rewritten —
+    the premise marked falsified (DEC-432 + DEC-618), the veto restated as unchanged, and the
+    "PATH A has anyway" dismissal barred; (2) AUDIT.md — B-017 closed (finding + JSON + scorecard
+    rows + prose); (3) STATUS.md — the queue sentence + Next-3 no longer list B-017; (4) card
+    re-rendered for the backward-requirements table (B-017 open → closed; no verdict moves).
+  - **Outcome addendum (2026-11-24; closed by this commit).** `report_card.behavior_hash()` =
+    `7f20fd0badb210d6` recomputed on the closing tree. Card re-render: the only content delta is
+    the backward-requirements row (B-017 status open → closed) and the header re-stamp; no verdict,
+    row, or value moves; `backward_open` stays 0 (INFO never gates). The five commit gates RC=0.

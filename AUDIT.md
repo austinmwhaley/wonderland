@@ -28,8 +28,8 @@
 > commit gates are red at the SOLVED commit) — **and 1 MINOR** (B-015, the bundle manifest is
 > unstamped). **All four are closed 2026-11-05 by evidence** (closures: §4; code at
 > `08e37e4`/`470bb5e`/`4cf477b`/`672c164`; closing FULL at the closure tree: §6.9). B-016
-> (defects in this file itself) is closed by this rewrite. B-017/B-018 are disclosed INFO
-> (non-blocking; the operator ruling on B-017 remains queued).
+> (defects in this file itself) is closed by this rewrite. B-018 is disclosed INFO (non-blocking);
+> B-017 was closed 2026-11-24 by the operator ruling (DEC-618).
 
 ---
 
@@ -67,9 +67,9 @@ open) · **violated** (principle broken, requirement open) · **not yet audited*
 | P3 | **Lawful** — compositionality, equivariance, correct algebra per quantity | merge/equivariance/mass-additivity receipts; per-sample contract; no batch-coupled serving statistics; additive mass scored in raw units | not yet audited | — |
 | P4 | **Efficient** — linear time, constant state, incremental, minimal capacity | no per-row Python loops in hot paths; scans/gathers/einsum; O(1) serve; derived budgets; caps enforced | not yet audited | — |
 | P5 | **Robust** — fail safe, reject not clamp, calibrated uncertainty | determinism; divergence = hard failure; no silent clamps/NaNs; widened uncertainty on OOD; caps/co-tenancy | not yet audited | — |
-| P6 | **Honest** — grounded, falsifiable, label-free upstream | pre-registration before the run; frozen acceptance; paired CIs; controls; no training on the graded metric; no post-hoc gate edits | **aligned** | B-002–B-005, B-008–B-010 closed; B-012, B-013, B-014 closed 2026-11-05 by evidence (`470bb5e`/`4cf477b`/`08e37e4`); B-016 closed by this review; B-017 open (INFO); B-019 closed 2026-11-05 (DEC-610, `2976485`) |
+| P6 | **Honest** — grounded, falsifiable, label-free upstream | pre-registration before the run; frozen acceptance; paired CIs; controls; no training on the graded metric; no post-hoc gate edits | **aligned** | B-002–B-005, B-008–B-010 closed; B-012, B-013, B-014 closed 2026-11-05 by evidence (`470bb5e`/`4cf477b`/`08e37e4`); B-016 closed by this review; B-017 closed 2026-11-24 by the operator ruling (DEC-618); B-019 closed 2026-11-05 (DEC-610, `2976485`) |
 | P7 | **Accessible** — recoverable by simple consumers | linear shipping head; kNN unsupervised; MLP diagnostic only; decodability/parity receipts; no bucket dilution hidden | **aligned (boundary recorded)** | B-008 closed |
-| P8 | **Diagnosable** — attribute a shortfall to an axis and propose the fix | every red row names its axis; protocol names one axis; rejected alternatives recorded; coupling disclosed | **gap** | B-002, B-003, B-007 closed; B-017 open (INFO) |
+| P8 | **Diagnosable** — attribute a shortfall to an axis and propose the fix | every red row names its axis; protocol names one axis; rejected alternatives recorded; coupling disclosed | **gap** | B-002, B-003, B-007 closed; B-017 closed 2026-11-24 by the operator ruling (DEC-618) |
 
 ### AGENTS.md engineering principles (1–16)
 
@@ -98,7 +98,6 @@ open) · **violated** (principle broken, requirement open) · **not yet audited*
 
 | ID | Severity | Principle | Finding | Evidence | Requirement |
 |---|---|---|---|---|---|
-| B-017 | **INFO** | P6/P8 | The supervised leg's evidence discloses two open, non-gating questions: (i) negative controls are vacuous (R² < −1, a wide-design conditioning artifact) on 5/7 traits — the frozen `VACUOUS_CONTROL_R2` doctrine (`judge_spec.py:179–183`) says such controls prove nothing, and the gate does not count them; (ii) the ledger-only diagnostic beats the table on 4/7 traits (best R² 0.8659 on x0 vs the table's 0.8791), which falsifies SPINE §5's "the ledger is what the table already is" corollary and is recorded as "needs an operator ruling". | `judge_leg_supervised.json` `checks.supervised.evidence` (both WARNINGs); leg verdicts derive from `columns` via the frozen `_task_passes` (`report_card.py:829`), not from `checks` | None required (disclosure); the SPINE §5 ruling is queued to the operator. If the ruling revises the corollary, B3.6's branch text and the delivery framing update in a forward run. |
 | B-018 | **INFO** | E10 | `plugin_acceptance.json` (the V1.2 reference receipt, n_rows 9) has no `_meta`; the gate receipt `v1_plugins.json` that V1.2's atom actually reads is stamped (behavior `df73c2aa`, `passed: true`, `n_rows: 9`). | key lists of the two receipts; `measure_v1_stack.py` stamps the gate receipt, not the reference | None required (disclosure); stamp the reference in a future producer pass if V1.2 is re-run. |
 | B-023 | **MINOR** | E5/E12 | `onboard._derive_reward_event(df, value_col)` (`onboard.py:585`) accepts `value_col` but aggregates the literal `pl.col("value")` (`:590`); it is correct only because its input is pre-canonicalized to a `value` column (`:710`/`:757`) — the parameter is vestigial and the signature is dishonest (P12: implement intent, not the example). | `looking_glass/onboard.py:585-595` (param ignored; canonical frame always has `value`) | One-axis forward subgoal: make the signature honest (use `value_col`, or drop it and name the canonical-frame contract) with a no-op proof on the canonical frame; re-stamp. |
 | B-024 | **INFO (named scope)** | P1 | The supervised LEG's target family is a frozen ecommerce evaluation contract: `_labels` reads `$.value`/`$.touchpoint`/`$.category_code` and filters `event_type == "purchase"/"return"` (`supervised_gate.py:37-55`); `TARGETS` (`:68-78`) names the 8 targets. A non-ecommerce reference stream is a new operator-level evaluation contract, not a pipeline fix — the comparator generality (B-022) is the pipeline half, already closed. | `looking_glass/supervised_gate.py:37-55,68-78` | None (disclosure): the leg's generality is bounded to the declared target contract; a new reference stream is a separate DEC. |
@@ -130,6 +129,7 @@ open) · **violated** (principle broken, requirement open) · **not yet audited*
 | B-020 | **Operator-filed claim-scope finding, closed the same day by the DEC-611 campaign (evidence; filed by the operator 2026-11-05, NOT by a BACKWARD run — provenance at §6.11):** the closing BACKWARD reviews falsified the record's plumbing (citations, manifests, self-consistency, route text) but never the scope of the claim against the top-level Universal principle — every B-row and pre-DEC-611 lab fixture is one ecom simulator family on the `demo_v2` prototype; S1 is schema-variant, not structure-variant. The DEC-611 campaign is the empirical answer: three structurally distinct known-truth domains (sensor_fleet regime-ordering + continuous levels; clickstream_sessions bursty timing + rare class; server_logs change-point ordering + diurnal distractor) through the ONE simulator, full three-piece controls, frozen `lab_measure`; claims stay scoped to the `demo_v2` prototype per B-001, and the six receipts are dev instruments per DEC-576. Branch option (operator ruling, separate DEC): grow the tree so multi-domain mastery becomes a gated card row. | six `lab/*_dec611{,_hier}.json` receipts (`complete=true`); DEC-611 outcome addendum | 2026-11-05 | `89cec70b` |
 | B-021 | **Stale legs-producer map in the certification CHAIN (fix + re-stamp evidence; forward-filed 2026-11-05 during closeout forensics, NOT by a BACKWARD run — provenance at §6.12):** the S6 one-command chain (`measure_certification_law.py`) still mapped the `legs` step to `measure_judge_law.py`, whose `main()` implements the pre-DEC-598 flat-era supervised/unsupervised legs and writes the SAME four `judge_leg_*.json` files that `measure_bc_bank.py` (bank v2, DEC-598) owns — so every clean-tree closeout re-stamp overwrote the bank-v2 receipts with stale v1 numbers (supervised x0 0.886, CI straddling 0; unsupervised persona_geometry 0.338608; segment_structure ARI ≈ 0) and flipped the plan root SOLVED 39/39 → 35/39. The card's own gate caught it (verdicts recompute from receipts; no narration could override). rl/simulator legs were unaffected (bc_bank delegates them to the judge_law `LEGS`). Fixed by the one-line CHAIN map `legs` → `measure_bc_bank.py` (script-only; behavior stays `89cec70b`; gate/criterion untouched); the clean one-command re-stamp at `0470c79` re-stamped all four legs with bank-v2 values byte-identical to the `9af0d0d` wave receipts and re-rendered the plan root SOLVED 39/39 (B CERTIFIED 23/23, 8/8; S6 OK; backward open 0). | DEC-612; `0470c79` (CHAIN fix, five gates RC=0); regenerated receipts + card in this commit | 2026-11-05 | `89cec70b` |
 | B-022 | **Situation-blocker in the model-free comparator (filed by the §4c generality hunt; closed same turn by DEC-614):** `supervised_gate._raw_features` (the RFM/GBM comparator) hardcoded `pl.col("value")` for the monetary aggregate (`supervised_gate.py:239`) — a pipeline read on the raw stream, so any reference stream whose dominant numeric field is not `value` (sensor → `reading`, server → `code`) crashed the supervised comparator while the reference stream hid it (demo_v2's only numeric column is `value`). Fixed DEC-614: the field is now **derived** via `cfm_data._primary_numeric_field(d, cfg)` with a numeric-free zero fallback (`pl.lit(0.0)`), matching the encoder's own field resolution (the DEC-611 `2a49b8d` precedent); `tests/test_supervised_generality.py` pins name-agnostic output + the no-numeric fallback. No-op on the reference stream (derived == `value`), so the re-stamp at behavior `7f20fd0b` moves no verdict-bearing value and the card holds SOLVED 39/39. | DEC-614; `looking_glass/supervised_gate.py:239→derived`; `tests/test_supervised_generality.py`; re-stamp receipts at `7f20fd0b` | 2026-11-06 | `7f20fd0b` |
+| B-017 | **Operator ruling (accept + revise), closed same day:** the supervised leg's evidence disclosed two open questions — (i) negative controls vacuous (R² < −1, wide-design conditioning artifact) on 5/7 traits (handled by the frozen `VACUOUS_CONTROL_R2` doctrine, DEC-433; the gate does not count them) and (ii) the flat-era ledger-only diagnostic beating the table on 4/7 traits (positive lower CI bound: price_sensitivity, churn_day, regime_switches, final_regime_days; best R² 0.8659 on x0 vs the table's 0.8791), falsifying SPINE §5's "the ledger is what the table already is" corollary — a second instance of the DEC-432 falsification. SPINE §5's corollary is now marked falsified (the veto unchanged); card verdicts and the delivery framing are unaffected (they derive from frozen columns, not checks). The ledger-only diagnostic itself is preserved in the finding text and git history (shed by the bank producer in DEC-608). | DEC-618; `docs/SPINE.md` §5 corollary rewrite; `AUDIT.md` B-017 JSON/closed rows; card re-render (B-017 row status open → closed) | 2026-11-24 | `7f20fd0b` |
 
 ---
 
@@ -179,7 +179,7 @@ behavior `df73c2aa`:
 | P1 The donor exists (4) | PASS | B1.1 S3 working; B1.2 C1–C6 exact; B8.1 identity consistent; B8.2 S6 one-command | yes | — |
 | P2 The donor suffices (11) | PASS | B2.1–B2.3 (U 0.9802; learned-only carries); E1.a g −0.580876 CI [−0.0240, −0.000662] excl. 0, neg control null, adversarial control NO_SIGNAL-as-expected; E1.b g −0.721/+0.181 ≤ bar 0.5; E1.c port 30.88/0.2672/0.4600 vs bars 30/0.15/0.45, trunk_only=false recorded; B4.1–B4.3; B5.1–B5.2 | yes | B-013 (record only) |
 | P3 The donor is usable (11) | PASS | B3.1–B3.6; B6.1–B6.3 (13/15 family; table+E CIs > 0); B7.1–B7.2 (calibrated ECE 0.0302; OOD n=0 recorded under the frozen "OOD recorded" gate) | yes | — |
-| P4 The consequence is delivered (8) | PASS | all 8 leg columns: every task ci_lo > 0 and brain > pathA under `_task_passes` (`report_card.py:829`); delivery columns clear the SST-scaled margin; Ns recorded per task | yes, for the verdict | B-013 (receipt consistency), B-017 (disclosed evidence questions) |
+| P4 The consequence is delivered (8) | PASS | all 8 leg columns: every task ci_lo > 0 and brain > pathA under `_task_passes` (`report_card.py:829`); delivery columns clear the SST-scaled margin; Ns recorded per task | yes, for the verdict | B-013 (receipt consistency); B-017 closed 2026-11-24 by the operator ruling (DEC-618) |
 | P5 The stack is v1-complete (5) | PASS | V1.1 stream sha recorded; V1.2 plugins 9/9 passed; V1.3 0.7334 vs 0.25 chance + policy CI [+0.1551, +0.1728]; V1.4 cert sha256 pinned + matching; V1.5 plan present + arm/GP match | yes | B-018 (reference receipt) |
 
 **Route honesty.** `CURRENT_ROUTE` R7 names the true frontier (root SOLVED; production-stream
@@ -279,7 +279,7 @@ flat-era `arms`.**
 **B-016 (MINOR, P6) — closed by this rewrite.** See §4: the previous §4 fragment (orphaned
 separator + duplicated B-004/B-010 rows) and the stale §5 disclosure are repaired in this file.
 
-**B-017 / B-018 (INFO).** See §3: disclosed, non-blocking; no forward subgoal required.
+**B-018 (INFO).** See §3: disclosed, non-blocking; no forward subgoal required. B-017 is closed (DEC-618, operator ruling 2026-11-24).
 
 ### 6.4 Per-row attack
 
@@ -315,7 +315,7 @@ Every green atom attacked against its receipt + frozen gate; stages and hygiene 
 | E1.a | positive: g −0.580876, paired CI [−0.0240, −0.000662] excludes 0, beats_base/mastered true; negative control CI [−4.7e-05, +3.3e-05] straddles 0 (no signal, as expected); adversarial control: beats_base via the echo yet classified NO_SIGNAL, leak-teeth-on-A-side recorded; signature block + fixture hashes pinned; products registry recorded | AGREE |
 | E1.b | intent g −0.721 (365d) / +0.181 (730d) ≤ bar 0.5, mastered both; dec603 receipts stamped at df73c2aa; bars cite DEC-586/600/601 — 600/601 are the B-012 record hole (measurement unaffected) | AGREE (record: B-012) |
 | E1.c | port 30.88/0.2672/0.4600 vs DEC-572/573 bars 30/0.15/0.45; meets_all_bars true; trunk_only=false; classification "delivery/ledger port; NOT a trunk-only capacity win"; no measure-free object clears all three bars (shape32/donor106/bank179 recorded) | AGREE |
-| P4 supervised · brain | 7 tasks: ci_lo 6.3e-05 … 2373.9 all > 0 and brain > pathA; controls negative and readable except the 5 vacuous traits (disclosed, B-017) | AGREE (receipt consistency: B-013) |
+| P4 supervised · brain | 7 tasks: ci_lo 6.3e-05 … 2373.9 all > 0 and brain > pathA; controls negative and readable except the 5 vacuous traits (disclosed; B-017 closed 2026-11-24 by the operator ruling, DEC-618) | AGREE (receipt consistency: B-013) |
 | P4 supervised · brain_ledger | same 7 tasks, ci_lo all > 0; delivery margin cleared | AGREE |
 | P4 unsupervised · brain | persona 0.3976 vs 0.3867 CI [+0.0084, +0.0131]; future 0.1927 vs 0.1810 CI [+0.0109, +0.0151]; segment ARI 1.0 vs 0.2670 CI [+0.704, +0.758] against the generator's declared latent (ground truth, not circular); random/destroyed ≈ 0 below | AGREE (receipt self-contradiction: B-013) |
 | P4 unsupervised · brain_ledger | ledger adds on future geometry (0.1980, CI [+0.0163, +0.0204]) — recorded, not booked as a brain win | AGREE |
@@ -340,8 +340,10 @@ and `plugin_acceptance.json` reference receipts are not gate evidence (disclosed
 2. **Record maturity is the remaining gap.** The measurements are honest; the certification
    record around them (decision log completeness, receipt self-consistency, repo gate state)
    is not yet at the bar this project has applied to itself. B-012/013/014 are exactly that gap.
-3. **Operator ruling queued (B-017):** the ledger-only diagnostic falsifies the SPINE §5
-   corollary on this stream; baseline-vs-corollary needs a ruling. Non-blocking today.
+3. **Operator ruling given (B-017, DEC-618, 2026-11-24):** the ledger-only diagnostic
+   falsifies the SPINE §5 corollary on this stream — accepted and revised (the corollary is
+   marked falsified, the veto stands; the ledger-only diagnostic is a record, not a verdict).
+   Non-blocking; closed.
 4. **Effect-size honesty:** the unsupervised wins are small in absolute terms (persona +0.011,
    future +0.012/+0.017) — the CIs are clean and the card reports the numbers without quality
    inflation; this is a strength of the record, noted so the next reader does not mistake the
@@ -403,7 +405,7 @@ and `plugin_acceptance.json` reference receipts are not gate evidence (disclosed
    Cost: one producer edit + one re-run.
 
 After 1–4: re-render the card, then run the closing FULL review (B-016's precedent: the review
-is tied to stamps). B-017/B-018 carry no forward subgoal (INFO, disclosed).
+is tied to stamps). B-018 carries no forward subgoal (INFO, disclosed); B-017 is closed (DEC-618).
 
 ### 6.8 Stop condition
 
@@ -456,9 +458,11 @@ DEC-606/607/608/609); nothing new was found at goal level at the closure tree. T
 residuals stand unchanged: B-001 — the certified artifact is the synthetic `demo_v2`
 prototype; B-003 — E1.c is a delivery/ledger port (trunk-only rank 4.11 base / 10.33 bank);
 B-008 — the B+C brain is the served bank, and the measure-free donor-only diagnostic does not
-clear all legs; B-017 (open INFO) — the flat-era vacuous negative controls + the ledger-only
-diagnostic falsifying SPINE §5's corollary, operator ruling queued (recomputing them would be
-a new measurement, out of scope for this record repair); B-018 (open INFO) — the
+clear all legs; B-017 — CLOSED 2026-11-24 by the operator ruling (DEC-618): the ledger-only
+diagnostic falsifies SPINE §5's corollary, accepted and revised (the flat-era vacuous negative
+controls and the ledger-only numbers are the pre-bank disclosure, preserved in the finding text
+and git history; recomputing them would be a new measurement, out of scope for this record);
+B-018 (open INFO) — the
 `plugin_acceptance.json` reference receipt is unstamped; the gate receipt `v1_plugins.json`
 is stamped. Per §8 the two INFOs do not block completion.
 
@@ -480,7 +484,7 @@ re-derivation: every check re-executed, no number taken from §6.9 on trust.
 | Behavior hash | recomputed `df73c2aa1427b471` = card claim; the behavior trees are unchanged by the spec/script-only commits since `38740c8` |
 | Card determinism | fresh render vs the committed card: content delta = the header line only |
 | Macro re-derivation | plan root PASS; 31 card atoms green + 8 `plan_spec.CLOSED` record closures (3 dec + 5 v1) = 39/39; `backward_open=0`; B 23/23, 8/8 sections |
-| JSON audit state | 18 requirements: 16 closed (closure kinds: evidence ×13, scope ×3 — no operator-accepted), B-017/B-018 open INFO; zero open BREAKING/MAJOR |
+| JSON audit state | 18 requirements: 17 closed (closure kinds: evidence ×13, scope ×3, operator-ruling ×1 — B-017), B-018 open INFO; zero open BREAKING/MAJOR |
 | Registries | bundle `116087fb206c2d81` and bank `919a932f1b657064` recomputed, both match the claims |
 | Receipt drift 38740c8→b512068 | exactly the 4 leg receipts (the DEC-608 re-stamp); no other receipt touched |
 | Leg columns (8) | re-derived task-by-task under the frozen `_task_verdict`: progress legs `ci_lo > 0 and brain > pathA`; delivery legs the SST-scaled margin rules; controls random/destroyed ≤ brain — all PASS |
@@ -789,13 +793,15 @@ remain open without blocking completion.
       "id": "B-017",
       "severity": "INFO",
       "principle": "P6/P8",
-      "status": "open",
+      "status": "closed",
+      "closure": "operator ruling (DEC-618)",
       "finding": "Supervised leg evidence discloses: 5/7 traits have vacuous negative controls (R2 < -1, wide-design conditioning artifact; frozen VACUOUS_CONTROL_R2 doctrine) and the ledger-only diagnostic (beats table on 4/7 traits, best R2 0.8659 on x0 vs table 0.8791) falsifies the SPINE §5 corollary and 'needs an operator ruling'.",
-      "forward_subgoal": "none required (disclosure); SPINE §5 baseline-vs-corollary ruling queued to the operator.",
+      "forward_subgoal": "none required (disclosure); closed by the operator ruling (DEC-618, 2026-11-24).",
       "gate_touched": "none (verdict derives from columns; checks are evidence text)",
-      "evidence": "judge_leg_supervised.json checks.supervised.evidence; judge_spec.py:179-183",
+      "evidence": "judge_leg_supervised.json checks.supervised.evidence (pre-bank flat-era receipt, shed by DEC-608; preserved in finding text + git history); judge_spec.py:179-183; DEC-432 (h0 0.9846 vs -0.1213); DEC-618 (SPINE §5 corollary marked falsified, veto unchanged; card verdicts unaffected)",
       "audit_ref": "A-017",
-      "date": "2026-11-05"
+      "date": "2026-11-05",
+      "closed": "2026-11-24"
     },
     {
       "id": "B-018",

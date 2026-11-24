@@ -589,7 +589,16 @@ Derived-from-consumers checklist vs the current set:
 ### The ledger question — OPTIONS (OPEN; operator deciding)
 
 The worry (operator, 2026-10-27): "if we add the table back we're right back to PATH A."
-Correct and empirically true — the ledger ≈ the table. Options:
+**The premise is falsified (DEC-432; reconfirmed by the supervised-leg ledger-only diagnostic,
+DEC-618).** The ledger is not "what PATH A's table already is": through the same head and
+splits the ledger alone reaches held-out R² 0.9846 on `h0` where the faithful table reaches
+−0.1213 (DEC-432), and on the flat-era supervised leg it clears zero with a positive lower
+CI bound on 4/7 traits (price_sensitivity, churn_day, regime_switches, final_regime_days; best
+R² 0.8659 on `x0` vs the table's 0.8791) — while the two objects agree only on the columns
+both happen to carry. The veto is **unchanged** — a ledger-backed number never counts as a
+brain win, and the foundation is certified on the brain alone — but the premise may no longer
+be used in the other direction either: a ledger result cannot be dismissed as something
+"PATH A has anyway." Options:
 
 | # | Option | In one line | For | Against |
 |---|---|---|---|---|

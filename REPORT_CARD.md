@@ -1,6 +1,6 @@
 # REPORT_CARD — B foundational, then PATH B > PATH A
 
-*Generated `2026-11-06T16:45:08+00:00` · commit `3950eaa` (`main` · dirty) · encoder behavior `7f20fd0badb210d6`*
+*Generated `2026-11-24T14:44:34+00:00` · commit `0d0d492` (`main` · dirty) · encoder behavior `7f20fd0badb210d6`*
 
 **Assessment:**
 
@@ -246,7 +246,7 @@ Principle-alignment findings live in `AUDIT.md`; the machine-readable gate is th
 | B-014 | MAJOR | P6/E10 | closed | At the SOLVED commit 38740c8 the AGENTS.md commit gates are red: ruff format --check fails on 9 scripts/ files (since 63e13da) and the fast  | ruff format the 9 scripts/ files; add both producers to DEFAULT_PATTERNS; ruff check + ruff format --check + pytest -m 'not slow' all RC=0;  | A-014 |
 | B-015 | MINOR | E10 | closed | cfm_v2k_vf2_cert/bundle_receipt.json (the B-009 single-artifact manifest, registry 116087fb206c2d81) has no _meta stamp while all 23 row rec | build_b_cert_bundle.py stamps _meta on the bundle receipt; re-run the builder; bundle registry sha must remain 116087fb206c2d81 and the card | A-015 |
 | B-016 | MINOR | P6 | closed | The previous AUDIT §4 carried an orphaned table separator with B-004/B-010 rows duplicated outside the closed table, and §5 disclosed fast-t | Repair the file (defects in BACKWARD's own file may be fixed by the rewrite). | A-016 |
-| B-017 | INFO | P6/P8 | open | Supervised leg evidence discloses: 5/7 traits have vacuous negative controls (R2 < -1, wide-design conditioning artifact; frozen VACUOUS_CON | none required (disclosure); SPINE §5 baseline-vs-corollary ruling queued to the operator. | A-017 |
+| B-017 | INFO | P6/P8 | closed | Supervised leg evidence discloses: 5/7 traits have vacuous negative controls (R2 < -1, wide-design conditioning artifact; frozen VACUOUS_CON | none required (disclosure); closed by the operator ruling (DEC-618, 2026-11-24). | A-017 |
 | B-018 | INFO | E10 | open | plugin_acceptance.json (V1.2 reference receipt, n_rows 9) has no _meta; the gate receipt v1_plugins.json it points at is stamped (behavior d | none required (disclosure); stamp the reference on a future V1.2 producer pass. | A-018 |
 | B-019 | MINOR | P6/E10 | closed | R7 route step evidence text (plan_spec.py:631, rendered at PLAN.md:619 and on the card) still reads the DEC-605-era count 'closed all 11 fin | One-line durable-outcome repair of the R7 evidence text without a hardcoded finding count (state the outcome; name the three scope closures  | A-019 |
 | B-020 | MAJOR | P1 (Universal) / Honest (claim scope) | closed | The closing BACKWARD reviews (FULL at 38740c8...b512068) falsified the record's plumbing (citations, manifests, self-consistency, route text | DEC-611 campaign (pre-registered 2b37adf): three structurally distinct known-truth domains through the ONE simulator, full three-piece contr | A-020 |

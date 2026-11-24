@@ -25,8 +25,8 @@ delivery/ledger port: eff_rank 30.9 / persona 0.267 / R2 0.460, with the trunk-o
 4.11/10.33 recorded); **V1.1-V1.5 are green** (identifiable stream, plugins 9/9, red_king
 known-effect 73.3% vs 25% chance + held-out policy 0.371 vs 0.208 random, red_queen DEPLOY/HOLD
 offer composition, caterpillar on red_queen's plan). **No BACKWARD BREAKING/MAJOR requirement is
-open** (AUDIT.md: 20 of 25 requirements closed; B-017/B-018 open as disclosed INFO, the B-017
-SPINE §5 ruling queued to the operator; B-020 — the operator-filed MAJOR claim-scope finding
+open** (AUDIT.md: 21 of 25 requirements closed; B-018 open as disclosed INFO; B-017 closed
+2026-11-24 by the operator ruling (DEC-618); B-020 — the operator-filed MAJOR claim-scope finding
 the closing reviews should have surfaced — filed and closed the same day by the DEC-611
 campaign (AUDIT.md §6.11); closing FULL review at `eb9381b`, §6.9; operator-requested
 rescan at `b512068`, §6.10: NO BREAKING, its one new finding B-019 — the R7 route text lagged the
@@ -178,13 +178,12 @@ histogram half; it is not the missing piece.
      2 sensor long with control blocks), matched field-for-field to the
      pre-re-measure A-side snapshot. The DEC-615 outcome addendum is written in
      the entry as the STATE-AT-PAUSE record (NOT the final verdict; the 8 ladder
-     `mastered` flags stay contingency-owed). **Next-3 — operator's call: RESUME
-     or CLOSE AS-IS.** RESUME: (1) server long adv re-train + the 2 probe
-     re-measures (clickstream, server); (2) the clickstream long neg is NOT
-     retry-owed by arithmetic (41.3 ≥ 30.1) — it needs the row-chunking follow-up
-     DEC (or a documented cap ruling) before it can pass; (3) the 16 ladder
-     control trains + 8 re-measures + addendum completion. CLOSE AS-IS: the
-     addendum stands; no master claim is licensed by any receipt at pause.
+     `mastered` flags stay contingency-owed). **CLOSED AS-IS (operator 2026-11-24):**
+     the addendum stands as the state-at-pause record; no master claim is licensed
+     by any receipt; the wall characterization + H-axis NO are the campaign's
+     substantive output. (If re-opened: server long adv re-train + the 2 probe
+     re-measures, then the 16 ladder control trains + 8 re-measures + addendum
+     completion; clickstream long neg additionally needs the row-chunking fix.)
 - **DEC-616 (2026-11-06, CLOSED @ `9139493`; operator directive: "much of the project is
   not organized well and cohesive — rectify that")**: the evidence-based
   organization/cohesion pass, executed as pre-registered — the DECISIONS.md 709-line
@@ -197,11 +196,10 @@ histogram half; it is not the missing piece.
   STATUS Operating facts refreshed (branch `main`; the pre-DEC-605 "Candidate 0.11.1
   root 20/39" bullet → a card pointer); the README v8 results section labeled Historical
   + card pointer. Behavior-neutral: `behavior_hash()` = `7f20fd0badb210d6` unchanged on
-  the closing tree; 5/5 commit gates RC=0. The charter-level queued item (B-017's
-  SPINE §5 ruling) stays the operator's call per the queue; B-023's closure (a
-  `looking_glass` edit) is queued as its own follow-up DEC (paused behind the
-  DEC-615 state-at-pause). The stale "8 GiB card" charter line was aligned to the
-  32 GB cap on 2026-11-23 (DEC-617).
+  the closing tree; 5/5 commit gates RC=0. B-017's SPINE §5 ruling was given 2026-11-24
+  (DEC-618: accept + revise; closed); B-023's closure (a `looking_glass` edit) is queued
+  as its own follow-up DEC (paused behind the DEC-615 state-at-pause). The stale "8 GiB
+  card" charter line was aligned to the 32 GB cap on 2026-11-23 (DEC-617).
 - **DEC-614 (2026-11-06, operator mandate: "make the project better. More adaptable. more
   situations. ... PROMPT_BACKWARDS needs to be updated to hunt for things that could be
   better"): the §4c improvement hunt + the first situation-blocker, closed.**
@@ -612,18 +610,16 @@ next question is the learned shape, not another consumer tuning pass.
 
 ## Next 3 actions
 
-1. **DEC-615 operator decision (B2 scale arm; paused 2026-11-07 at operator direction):**
-   RESUME or CLOSE AS-IS. The state-at-pause outcome addendum (DECISIONS.md, the
-   DEC-615 entry) is the record: stage 1 = 8/9 cells (wall = BUDGET at
-   clickstream × 25K), stage 2 = probe complete (H-axis NO), sensor probe controls
-   clean, clickstream long neg OOMed at the same wall site, server long adv
-   SIGTERM'd by the pause order itself, ladder controls NOT trained, 22 receipts
-   committed (`cd7ac58`). RESUME path: server long adv re-train + the 2 probe
-   re-measures; the clickstream long neg is NOT retry-owed by the no-retry
-   arithmetic (41.3 ≥ 30.1 idle clamp) — it needs the row-chunking follow-up DEC
-   (or a documented cap ruling) first; then the 16 ladder control trains + 8
-   re-measures + the addendum completion. CLOSE AS-IS: the addendum stands; no
-   master claim is licensed by any receipt at pause.
+1. **DEC-615 CLOSED AS-IS (operator 2026-11-24):** the state-at-pause outcome addendum (DECISIONS.md,
+   the DEC-615 entry) stands as the campaign record: stage 1 = 8/9 cells (wall = BUDGET at
+   clickstream × 25K), stage 2 = probe complete (H-axis NO), sensor probe controls clean,
+   clickstream long neg OOMed at the same wall site, server long adv SIGTERM'd by the pause
+   order itself, ladder controls NOT trained, 22 receipts committed (`cd7ac58`). No master
+   claim is licensed by any receipt at pause; the wall characterization + the H-axis NO
+   are the campaign's substantive output. The ladder `mastered` flags remain contingency-owed
+   (controls untrained) — if the campaign is ever re-opened, the resume path is: server long
+   adv re-train + the 2 probe re-measures, then the 16 ladder control trains + 8 re-measures
+   + addendum completion (clickstream long neg additionally needs the row-chunking fix).
 2. **Follow-up DEC (needs its own pre-registration + operator approval; NOT filed
    in this chunk):** row-chunking in `cfm_training._task_losses` — the single-field
    CE draw is `O(rows × vocab)` with no row-chunking; it produced the 25K wall
@@ -631,12 +627,13 @@ next question is the learned shape, not another consumer tuning pass.
    (≈41.3 GB). The clickstream neg/pos demand asymmetry (equal row counts, ≈41.3
    vs ≤29.26 GB peak) also needs a clean idle-GPU A/B before any cap-derivation
    claim.
-3. **Operator queue (unchanged):** B-017 (SPINE §5 ruling; INFO); B-023 closure (its
-   own follow-up DEC); sufficiency-probe gap-draw determinism (a frozen-instrument
-   fix, candidate for a future DEC). The hardware/charter alignment was closed this
-   sweep (DEC-617: AGENTS.md 8 GiB line → 32 GB cap; gpu_probe comment; README cap
-   line). `main` is in sync with `origin/main`
-   (pushed `cd7ac58`).
+3. **Operator queue:** B-023 closure (its own follow-up DEC); sufficiency-probe
+   gap-draw determinism (a frozen-instrument fix, candidate for a future DEC).
+   B-017 (SPINE §5 ruling) was closed 2026-11-24 by the operator ruling (DEC-618:
+   accept + revise; corollary marked falsified, veto unchanged). The
+   hardware/charter alignment was closed this sweep (DEC-617: AGENTS.md 8 GiB line →
+   32 GB cap; gpu_probe comment; README cap line). `main` is in sync with
+   `origin/main` (pushed `cd7ac58`).
 
 ## Operating facts
 
