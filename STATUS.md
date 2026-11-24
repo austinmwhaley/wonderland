@@ -184,6 +184,7 @@ histogram half; it is not the missing piece.
      substantive output. (If re-opened: server long adv re-train + the 2 probe
      re-measures, then the 16 ladder control trains + 8 re-measures + addendum
      completion; clickstream long neg additionally needs the row-chunking fix.)
+- **DEC-620 (2026-11-24; operator direction: "I want there to be something in AGENTS.md that gives the documentation pages (.mds) that I care about and how to use them ... I want you to document your journey so we can examine it in the future"): the documentation-pages section landed in AGENTS.md** — a 6-step loop (scan → plan → record outcomes → backwards pass → record decisions → update status → loop) + the rest-of-.md-pages paragraph. The journey is now documented through the .md pages themselves: DECISIONS.md (what and why) + STATUS.md (where we are) + the receipts (the evidence). Behavior-neutral: `behavior_hash()` = `7f20fd0badb210d6` unchanged; 5/5 commit gates RC=0. Followed as the ongoing operating path from here.
 - **DEC-616 (2026-11-06, CLOSED @ `9139493`; operator directive: "much of the project is
   not organized well and cohesive — rectify that")**: the evidence-based
   organization/cohesion pass, executed as pre-registered — the DECISIONS.md 709-line
@@ -620,13 +621,14 @@ next question is the learned shape, not another consumer tuning pass.
    (controls untrained) — if the campaign is ever re-opened, the resume path is: server long
    adv re-train + the 2 probe re-measures, then the 16 ladder control trains + 8 re-measures
    + addendum completion (clickstream long neg additionally needs the row-chunking fix).
-2. **Follow-up DEC (needs its own pre-registration + operator approval; NOT filed
-   in this chunk):** row-chunking in `cfm_training._task_losses` — the single-field
-   CE draw is `O(rows × vocab)` with no row-chunking; it produced the 25K wall
-   (≈44.7 GB vs the ≈30.1 idle clamp) and the probe-tier neg-control wall
-   (≈41.3 GB). The clickstream neg/pos demand asymmetry (equal row counts, ≈41.3
-   vs ≤29.26 GB peak) also needs a clean idle-GPU A/B before any cap-derivation
-   claim.
+2. **Row-chunking in `cfm_training._task_losses` — AUTHORIZED by the operator
+   2026-11-24 ("Authorize now"; scope: pre-register → row-chunk the CE draw in
+   `cfm_training._task_losses` → re-measure both walls → full re-stamp).** The
+   single-field CE draw is `O(rows × vocab)` with no row-chunking; it produced
+   the 25K wall (≈44.7 GB vs the ≈30.1 idle clamp) and the probe-tier neg-control
+   wall (≈41.3 GB). Pre-registration DEC is the first step of this chunk; the
+   clickstream neg/pos demand asymmetry (equal row counts, ≈41.3 vs ≤29.26 GB
+   peak) is additionally recorded as unattributed.
 3. **Operator queue:** B-023 closure (its own follow-up DEC); sufficiency-probe
    gap-draw determinism (a frozen-instrument fix, candidate for a future DEC).
    B-017 (SPINE §5 ruling) was closed 2026-11-24 by the operator ruling (DEC-618:
