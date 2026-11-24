@@ -1149,26 +1149,41 @@ def _future_targets(t, n_et: int, w_s: float, val: torch.Tensor):
     return cnt, amt, typ
 
 
-def _attr_chunk_rows(vocab_out: int, device) -> int:
+def _attr_chunk_rows(vocab_out: int, device, cfg=None) -> int:
     """Rows per chunk for the per-field attr CE draw — derived, never literal.
 
     The transient cost of a chunk is ~3 × vocab_out × 4 B per row (logits + the
-    log_softmax `F.cross_entropy` materializes + its backward gradient); the chunk is
-    derived from free device memory at loss time, floored and capped structurally
-    (the same pattern as `embed_batch_size`'s floor/cap). CPU has no free-memory read,
-    so the bound is structural: one full pass of small fixtures, bounded by rows.
+    log_softmax `F.cross_entropy` materializes + its backward gradient). The chunk is
+    derived from the trainer's OWN budget receipt (the cgroup/unified-derived cap, set
+    by `gpu_budget.enforce`) minus this process's live allocation — the accurate
+    accounting for this hardware. `torch.cuda.mem_get_info()` (driver-free) is NOT used:
+    on the GB10 unified pool it undercounts (the driver reclaims page cache on demand),
+    which would make the chunks tiny and the loop slow. Floored and capped
+    structurally (the same pattern as `embed_batch_size`'s floor/cap). CPU has no
+    device accounting, so the bound is structural: one full pass of small fixtures.
     """
     import torch
 
     if device.type == "cuda" and torch.cuda.is_available():
-        free = torch.cuda.mem_get_info()[0]
+        budget = None
+        try:
+            rec = getattr(cfg, "_gpu_budget_receipt", None) if cfg is not None else None
+            if isinstance(rec, dict):
+                budget = rec.get("budget_gb")
+        except Exception:
+            budget = None
+        live_gb = torch.cuda.memory_allocated() / (1024**3)
+        if budget is not None:
+            remaining_gb = max(float(budget) - live_gb - 2.0, 0.5)  # 2 GB safety headroom
+        else:
+            remaining_gb = 2.0  # fallback bound: conservative, not a tuned knob
         bytes_per_row = 12.0 * vocab_out
-        rows = int((free * 0.5) / bytes_per_row)
+        rows = int(remaining_gb * (1024**3) / bytes_per_row)
         return max(256, min(rows, 65536))
     return 1024
 
 
-def _attr_mce(model, y_m1, emb_row, tgt_flat, valid_flat, nv, dev):
+def _attr_mce(model, y_m1, emb_row, tgt_flat, valid_flat, nv, dev, cfg=None):
     """Row-chunked per-field attr CE draw (DEC-622).
 
     The unbounded `head_attr(y[:, :-1] + emb)` + `F.cross_entropy` over
@@ -1183,7 +1198,7 @@ def _attr_mce(model, y_m1, emb_row, tgt_flat, valid_flat, nv, dev):
 
     B, Tm1, dim = y_m1.shape
     rows = B * Tm1
-    chunk = _attr_chunk_rows(model.head_attr.out_features, dev)
+    chunk = _attr_chunk_rows(model.head_attr.out_features, dev, cfg)
     y_flat = y_m1.reshape(-1, dim)
     total = torch.zeros((), device=dev, dtype=torch.float32)
     for a in range(0, rows, chunk):
@@ -1251,6 +1266,7 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
                 valid,
                 nv,
                 dev,
+                cfg,
             )
     for f in getattr(model, "numeric_fields", ()):
         if f in t and model.head_num is not None:
