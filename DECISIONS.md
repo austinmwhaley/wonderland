@@ -11823,3 +11823,9 @@
     `7f20fd0badb210d6` recomputed on the closing tree. Card re-render: the only content delta is
     the backward-requirements row (B-017 status open → closed) and the header re-stamp; no verdict,
     row, or value moves; `backward_open` stays 0 (INFO never gates). The five commit gates RC=0.
+
+- **DEC-619 (CI/CD pipeline removed — operator direction 2026-11-24: "I don't want the CI/CD pipeline running in github. I am ok with you removing it for now").**
+  - **NODE:** P13/P6 hygiene, not a plan axis. Zero behavior-tree edits (the tree stays `7f20fd0b`).
+  - **Context.** `.github/workflows/ci.yml` ran ruff + pytest on push/PR. The operator does not want the pipeline running in GitHub (and explicitly authorized its removal, "for now"). The quality gates are unchanged — they run locally before every commit (AGENTS.md §Repository & git workflow).
+  - **Decision.** Remove the workflow (`.github/workflows/ci.yml` — `git rm`). Update the two prose references (AGENTS.md quality-gates bullet; README.md dev-loop comment) to state the local-only reality. Reversible: the file returns on operator direction.
+  - **Outcome addendum (2026-11-24; closed by this commit).** Gates run locally; no behavior-tree change; `behavior_hash()` = `7f20fd0badb210d6`; the five commit gates RC=0.

@@ -164,10 +164,9 @@ git-ignored** (regenerable). Workflow: `git pull --rebase` → change → `git a
 pip install -r requirements.txt -r requirements-dev.txt
 # or with uv (lockfile: uv.lock)
 uv sync
-# quality gates (also enforced by CI on every push/PR)
+# quality gates (run locally; no CI workflow — removed 2026-11-24 by operator direction)
 pytest -m "not slow"       # inner loop: 202 tests in ~1 min
 pytest                     # full suite (slow gates + acceptance included)
-pytest --cov=white_queen.tribunal --cov-fail-under=80   # CI gate (80.7% source-only)
 ruff format . && ruff check .
 pre-commit install         # format + lint on commit
 ```

@@ -721,7 +721,8 @@ Source of truth: **https://github.com/austinmwhaley/wonderland** (branch `main`)
   (`wonderland/algorithms` and `wonderland/environments` are symlinks into it).
 - **Quality gates (run before every commit):** `pytest` (full suite; acceptance
   tests skip when generated data is absent), `ruff check .`, `ruff format --check .`.
-  CI runs the same gates on push/PR. Dependencies live in `pyproject.toml`
+  There is **no CI workflow** (removed 2026-11-24 by operator direction; gates run
+  locally). Dependencies live in `pyproject.toml`
   (mirrored by `requirements*.txt` for pip).
 - **Commit cadence (operator policy):** **every coherent chunk of work is committed** as soon as it
   is verified — code + docs only, never the artifacts above. Do not accumulate uncommitted chunks.
