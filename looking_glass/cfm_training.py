@@ -1149,6 +1149,63 @@ def _future_targets(t, n_et: int, w_s: float, val: torch.Tensor):
     return cnt, amt, typ
 
 
+def _attr_chunk_rows(vocab_out: int, device) -> int:
+    """Rows per chunk for the per-field attr CE draw — derived, never literal.
+
+    The transient cost of a chunk is ~3 × vocab_out × 4 B per row (logits + the
+    log_softmax `F.cross_entropy` materializes + its backward gradient); the chunk is
+    derived from free device memory at loss time, floored and capped structurally
+    (the same pattern as `embed_batch_size`'s floor/cap). CPU has no free-memory read,
+    so the bound is structural: one full pass of small fixtures, bounded by rows.
+    """
+    import torch
+
+    if device.type == "cuda" and torch.cuda.is_available():
+        free = torch.cuda.mem_get_info()[0]
+        bytes_per_row = 12.0 * vocab_out
+        rows = int((free * 0.5) / bytes_per_row)
+        return max(256, min(rows, 65536))
+    return 1024
+
+
+def _attr_mce(model, y_m1, emb_row, tgt_flat, valid_flat, nv, dev):
+    """Row-chunked per-field attr CE draw (DEC-622).
+
+    The unbounded `head_attr(y[:, :-1] + emb)` + `F.cross_entropy` over
+    (rows x max-vocab) OOMs at ~646K-class fields (clickstream `order_id`) —
+    the DEC-615 wall. Flatten positions to rows and process in chunks whose size is
+    derived from free memory (`_attr_chunk_rows`). With grad enabled the chunk is
+    checkpointed (use_reentrant=False), so training bounds the activation memory to
+    one chunk at a time; in eval it is a plain loop. Same math, chunked reduction —
+    identical up to float reduction order (the no-op condition, DEC-622 gate 1).
+    """
+    import torch
+
+    B, Tm1, dim = y_m1.shape
+    rows = B * Tm1
+    chunk = _attr_chunk_rows(model.head_attr.out_features, dev)
+    y_flat = y_m1.reshape(-1, dim)
+    total = torch.zeros((), device=dev, dtype=torch.float32)
+    for a in range(0, rows, chunk):
+        b = min(a + chunk, rows)
+        y_c = y_flat[a:b]
+        tgt_c = tgt_flat[a:b]
+        v_c = valid_flat[a:b]
+
+        def _chunk_loss(y_in, tgt_in, valid_in):
+            logits = model.head_attr(y_in + emb_row)
+            loss = F.cross_entropy(logits, tgt_in, reduction="none")
+            return (loss * valid_in).sum()
+
+        if torch.is_grad_enabled():
+            from torch.utils.checkpoint import checkpoint
+
+            total = total + checkpoint(_chunk_loss, y_c, tgt_c, v_c, use_reentrant=False)
+        else:
+            total = total + _chunk_loss(y_c, tgt_c, v_c)
+    return total / nv
+
+
 def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
     dev = model._dev()
     t = _collate(items, vocab, dev)
@@ -1186,8 +1243,15 @@ def _task_losses(model, vocab, items, cfg, aux: dict | None = None):
     for f in getattr(model, "attr_fields", ()):
         if f in t and model.head_attr is not None:
             j = model._attr_index[f]
-            logits = model.head_attr(y[:, :-1] + model.attr_field_emb.weight[j])
-            T_[f"attr_next:{f}"] = mce(logits, t[f][:, 1:])
+            T_[f"attr_next:{f}"] = _attr_mce(
+                model,
+                y[:, :-1],
+                model.attr_field_emb.weight[j],
+                t[f][:, 1:].reshape(-1),
+                valid,
+                nv,
+                dev,
+            )
     for f in getattr(model, "numeric_fields", ()):
         if f in t and model.head_num is not None:
             nm = (t.get("num_mask") or {}).get(f)
