@@ -197,10 +197,11 @@ histogram half; it is not the missing piece.
   STATUS Operating facts refreshed (branch `main`; the pre-DEC-605 "Candidate 0.11.1
   root 20/39" bullet → a card pointer); the README v8 results section labeled Historical
   + card pointer. Behavior-neutral: `behavior_hash()` = `7f20fd0badb210d6` unchanged on
-  the closing tree; 5/5 commit gates RC=0. The charter-level queued items (AGENTS.md's
-  stale "8 GiB card" line, B-017's SPINE §5 ruling) stay the operator's call per the
-  queue; B-023's closure (a `looking_glass` edit) is queued as its own follow-up DEC
-  behind the campaign.
+  the closing tree; 5/5 commit gates RC=0. The charter-level queued item (B-017's
+  SPINE §5 ruling) stays the operator's call per the queue; B-023's closure (a
+  `looking_glass` edit) is queued as its own follow-up DEC (paused behind the
+  DEC-615 state-at-pause). The stale "8 GiB card" charter line was aligned to the
+  32 GB cap on 2026-11-23 (DEC-617).
 - **DEC-614 (2026-11-06, operator mandate: "make the project better. More adaptable. more
   situations. ... PROMPT_BACKWARDS needs to be updated to hunt for things that could be
   better"): the §4c improvement hunt + the first situation-blocker, closed.**
@@ -611,30 +612,31 @@ next question is the learned shape, not another consumer tuning pass.
 
 ## Next 3 actions
 
-1. **DEC-615 in flight (B2 scale arm):** the full remainder is chained unattended
-   (`/tmp/opencode/dec615_chain.sh`, state in `dec615_chain.status`): stage-1 tail
-   (3 × n25k positive trains; 6 of 9 cells already measured — all six HIER heads at or
-   under the 0.5 bar with `beats_base`, ridge heads above it) → the pre-registered
-   contingency on the fired set (12 neg+adv control trains at 2K/10K, + up to 6 more if
-   the n25k cells fire) → re-measure the fired cells with `--neg-products`/`--adv-products`
-   → stage-2 long-horizon probe (window ×2 at each domain's largest completed N, root
-   `lab_dec615_long`) → probe contingency → curve assembly. When the chain writes
-   `CHAIN_DONE`: fill the DEC-615 outcome addendum (wall location + the g/eff_rank/cost
-   curves + the control reads) and commit chunk 2 (all campaign receipts + addendum +
-   this STATUS — no card re-render owed: lab receipts are dev instruments, the tree
-   stays 39, no behavior move).
-2. **DEC-616 CLOSED (@ `9139493`; behavior-neutral; 5/5 gates RC=0 on the closing
-   tree):** the remaining organization items are the operator-call queue (AGENTS.md "8
-   GiB" charter line, B-017's SPINE §5 ruling) + B-023's closure as its own follow-up
-   DEC behind the campaign (a `looking_glass` edit → behavior move + full re-stamp —
-   not a doc fix).
-3. **Operator rulings remain queued (not agent-callable):** B-017 (SPINE §5 corollary;
-   INFO, disclosed); the AGENTS.md "8 GiB card" line is stale on this GB10
-   unified-memory machine (project cap 32 GB, operator 2026-11-02, reconfirmed
-   2026-11-05 — a charter edit is the operator's call, and "one GPU job at a time" is
-   void on this box); the sufficiency probe's order-undetermined gap draw is a
-   frozen-instrument determinism fix, candidate for a future DEC; the 3 local commits
-   ahead of `origin/main` await explicit push permission.
+1. **DEC-615 operator decision (B2 scale arm; paused 2026-11-07 at operator direction):**
+   RESUME or CLOSE AS-IS. The state-at-pause outcome addendum (DECISIONS.md, the
+   DEC-615 entry) is the record: stage 1 = 8/9 cells (wall = BUDGET at
+   clickstream × 25K), stage 2 = probe complete (H-axis NO), sensor probe controls
+   clean, clickstream long neg OOMed at the same wall site, server long adv
+   SIGTERM'd by the pause order itself, ladder controls NOT trained, 22 receipts
+   committed (`cd7ac58`). RESUME path: server long adv re-train + the 2 probe
+   re-measures; the clickstream long neg is NOT retry-owed by the no-retry
+   arithmetic (41.3 ≥ 30.1 idle clamp) — it needs the row-chunking follow-up DEC
+   (or a documented cap ruling) first; then the 16 ladder control trains + 8
+   re-measures + the addendum completion. CLOSE AS-IS: the addendum stands; no
+   master claim is licensed by any receipt at pause.
+2. **Follow-up DEC (needs its own pre-registration + operator approval; NOT filed
+   in this chunk):** row-chunking in `cfm_training._task_losses` — the single-field
+   CE draw is `O(rows × vocab)` with no row-chunking; it produced the 25K wall
+   (≈44.7 GB vs the ≈30.1 idle clamp) and the probe-tier neg-control wall
+   (≈41.3 GB). The clickstream neg/pos demand asymmetry (equal row counts, ≈41.3
+   vs ≤29.26 GB peak) also needs a clean idle-GPU A/B before any cap-derivation
+   claim.
+3. **Operator queue (unchanged):** B-017 (SPINE §5 ruling; INFO); B-023 closure (its
+   own follow-up DEC); sufficiency-probe gap-draw determinism (a frozen-instrument
+   fix, candidate for a future DEC). The hardware/charter alignment was closed this
+   sweep (DEC-617: AGENTS.md 8 GiB line → 32 GB cap; gpu_probe comment; README cap
+   line). `main` is in sync with `origin/main`
+   (pushed `cd7ac58`).
 
 ## Operating facts
 

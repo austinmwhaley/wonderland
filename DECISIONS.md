@@ -11785,3 +11785,13 @@
     commit carries the DEC-615 pre-registration (+ its pre-run amendment record) and the
     DEC-616 closeout together; the DEC-615 outcome addendum stays pending until the
     ladder + probe measurements land (chunk 2).
+
+- **DEC-617 (hardware/documentation alignment — operator 2026-11-23: "do a documentation sweep and ensure it aligns with current hardware. This project has a cap of 32GB"; behavior-neutral).**
+  - **NODE:** P13/P6 hygiene, not a plan axis. One measured axis: documentation/hardware alignment only — ZERO behavior-tree edits (the tree stays `7f20fd0b`, no re-stamp). The sweep also re-affirms, rather than moves, the existing doctrine: the working ceiling is the derived cap (slice + `looking_glass/gpu_budget.py`, cgroup-clamped), never the 121.63 GiB device total.
+  - **What changed (doc/comment only, no `.py` behavior change):**
+    (1) AGENTS.md GPU-first charter line: "8 GiB card" → "32 GB project cap" — the stale VRAM literal is gone; the line now names both the host-side cgroup bound (`wonderland.slice`, `MemoryMax=34359738368`) and the derived device budget (cgroup clamp, never the device total), plus the 121.63 GiB unified-pool fact shared with the LLM server/desktop.
+    (2) `scripts/gpu_probe.py` comment: "8 GiB card" → "32 GB project cap" (comment-only; no code path touched).
+    (3) STATUS.md Next-3 + DEC-616 queue sentence: the "8 GiB card" line is no longer a stale-pending item (this sweep closes it); the queue now lists only B-017 / B-023 / sufficiency-probe determinism; the push (`cd7ac58`) is recorded as done.
+    (4) README.md: "Hardware & caps" line added under Status at a glance (GB10 121.63 GiB unified, project maximum 32 GB (operator 2026-11-02), `wonderland.slice` bound, `gpu_budget` derivation, one GPU job at a time).
+    (5) `REPORT_CARD.md` intentionally NOT re-rendered: the sweep changes no receipt, spec, or verdict input, and the DEC-615 chunk-2 precedent (doc-only + dev-instrument chunks) is to leave the card untouched. The header remains the last clean re-render (`3950eaa`); it refreshes at the next behavior-affecting re-stamp.
+  - **Outcome addendum (2026-11-23; closed by this commit).** `report_card.behavior_hash()` = `7f20fd0badb210d6` recomputed on the closing tree (all edits in docs + one comment line — outside the behavior trees, so no re-stamp is owed). The five commit gates RC=0. The card is untouched by this sweep (no input change); its header remains the last clean re-render.

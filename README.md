@@ -192,6 +192,12 @@ it as a package from outside its directory.
 | red_queen | multi-cadence NBA + uplift targeting | ✅ |
 | caterpillar | interpretability | 🟡 v1 |
 
+**Hardware & caps:** GB10 (121.63 GiB unified memory, shared with the LLM server and the
+desktop) · **project maximum 32 GB** (operator 2026-11-02) · `wonderland.slice`
+(`MemoryMax=34359738368`) bounds CPU/host memory · `looking_glass/gpu_budget.py` derives
+the device cap from the same 32 GB ceiling (cgroup-clamped, never the device total) ·
+one GPU job at a time via `scripts/safe_run.py`.
+
 ## Demo — one dataset, one report card
 
 The demo is not a separate artifact. It is the project running on a synthetic

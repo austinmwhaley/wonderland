@@ -36,7 +36,7 @@ def main(argv=None):
         except Exception as e:  # noqa: BLE001
             out[mod] = f"missing/unavailable: {str(e)[:80]}"
     if a.bench_xgb:
-        # Do not compete with a resident training/inference job on the 8 GiB card.
+        # Do not compete with a resident training/inference job on the 32 GB project cap.
         try:
             import torch
 

@@ -696,9 +696,13 @@ CUDA-X / NVIDIA libraries needed (`cupy-cuda13x`, `cuda-python`, `nvidia-ml-py`,
 - **Measure before adopting.** Record a CPU-vs-GPU benchmark (e.g. `scripts/bench_polars_gpu.py`) and
   keep the CPU fallback. A GPU path that is slower, numerically different beyond tolerance, or that
   regresses a gate is not adopted.
-- **Respect the 8 GiB card.** One GPU job at a time; derive batches from VRAM/sequence length; use
-  AMP/bf16 and compiled scans; never trade correctness for speed. cuPy/RAPIDS cannot allocate while
-  a 7 GiB training job is resident.
+- **Respect the 32 GB project cap.** One GPU job at a time; derive batches and budgets from the
+  slice/GPU budget (never from a fixed VRAM literal); use AMP/bf16 and compiled scans; never trade
+  correctness for speed. cuPy/RAPIDS cannot allocate while a job is resident inside the 32 GB
+  cap — `wonderland.slice` (`MemoryMax=34359738368`) bounds CPU/host memory and the derived device
+  budget (`looking_glass/gpu_budget.py`, cgroup-clamped) bounds GPU/unified allocations; the
+  121.63 GiB unified pool is shared with the LLM server and the desktop, so the derived cap —
+  never the device total — is the working ceiling.
 - **Dependency conflicts are isolated, not ignored.** RAPIDS cu12 packages pin `cuda-bindings 12.9`,
   while torch cu13 needs `>=13.0.3`; install RAPIDS in a dedicated venv (as `cudf-polars` was) and
   use it through a process boundary. Do not downgrade the main env.
