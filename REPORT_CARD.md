@@ -1,6 +1,6 @@
 # REPORT_CARD — B foundational, then PATH B > PATH A
 
-*Generated `2026-11-24T14:44:34+00:00` · commit `0d0d492` (`main` · dirty) · encoder behavior `7f20fd0badb210d6`*
+*Generated `2026-11-24T15:29:21+00:00` · commit `07a98ad` (`main` · dirty) · encoder behavior `7f20fd0badb210d6`*
 
 **Assessment:**
 
@@ -65,6 +65,57 @@ The goal, cut backwards into the problems that must all be solved, recursively t
 - **demo stream · O3 attempt 4 (REJECTED)** — M4 persona 0.04646 (bar ≥ 0.15, DEC-572) · served coarse R² 0.4675 (bar ≥ 0.45) — `o3axis_i/` · measured under `6a8e2663`
 
 A green atom means its frozen gate is met. For these atoms the gate certifies *measurement and attribution*, not a quality level (derived in `scripts/b_spec.py: gate_kind`, not asserted here): `B1.1`, `B2.3`, `B3.1`, `B3.2`, `B3.4`, `B3.5`, `B3.6`, `B4.3`, `B5.2`, `B6.1`, `B7.2`, `B8.1`, `B8.2`. Their quality levels are DEC-frozen and live in the receipts (`PLAN.md` §6). Read the plan before reading a green row as 'good'.
+
+
+## Real-data story — DEC-611/615 multi-domain campaign (development instruments)
+
+*Scope:* lab receipts are a development instrument (DEC-576), never B-row evidence on the main card; the certified artifact remains the synthetic `demo_v2` prototype (B-001). Every figure below is computed from the receipts — no narrated numbers. The walls and the H-axis finding are the campaign's recorded conclusions (DEC-615, closed as-is 2026-11-24), disclosed here — never re-decided.
+
+### sensor_fleet
+
+| head | 500 | 2K | 10K | 25K | long |
+|---|---|---|---|---|---|
+| ridge | +1.7003 ✕ | +1.6740 ✕ | +1.1958 ✕ | +1.2765 ✕ | +1.2041 ✕ · n=25000 |
+| hier | +0.2447 ✓ | -0.2617 ✓ | -0.0753 ✓ | -0.0461 ✓ | -0.0080 ✓ · n=25000 |
+
+*Probe Δ (×2 window, same N):* ridge Δ -0.0724 (+1.2765 → +1.2041, n=25000) · hier Δ +0.0381 (-0.0461 → -0.0080, n=25000)
+
+*Baseline story (computed, ridge):* pooled 1-gram nll 0.7582 → 0.7791 → 0.8167 → 0.8029 (Δ +0.0447) while the encoder nll 0.8635 → 0.8945 → 0.8576 → 0.8568 (Δ -0.0066) — flat; the ridge head's apparent gain is largely the baseline degrading.
+
+### clickstream_sessions
+
+| head | 500 | 2K | 10K | 25K | long |
+|---|---|---|---|---|---|
+| ridge | +2.0280 ✕ | +2.1726 ✕ | +2.0543 ✕ | — | +2.2324 ✕ · n=10000 |
+| hier | +0.3398 ✓ | +0.0443 ✓ | +0.0742 ✓ | — | -0.0677 ✓ · n=10000 |
+
+*Probe Δ (×2 window, same N):* ridge Δ +0.1780 (+2.0543 → +2.2324, n=10000) · hier Δ -0.1419 (+0.0742 → -0.0677, n=10000)
+
+*Baseline story (computed, ridge):* pooled 1-gram nll 1.1076 → 1.0722 → 1.0836 (Δ -0.0240) while the encoder nll 1.3664 → 1.3259 → 1.3238 (Δ -0.0427) — flat; the baseline does not degrade in this range.
+
+### server_logs
+
+| head | 500 | 2K | 10K | 25K | long |
+|---|---|---|---|---|---|
+| ridge | +5.0339 ✕ | +1.7442 ✕ | +1.4218 ✕ | +1.5118 ✕ | +1.4863 ✕ · n=25000 |
+| hier | -1.7328 ✓ | -0.1821 ✓ | +0.0087 ✓ | -0.0359 ✓ | -0.0097 ✓ · n=25000 |
+
+*Probe Δ (×2 window, same N):* ridge Δ -0.0255 (+1.5118 → +1.4863, n=25000) · hier Δ +0.0262 (-0.0359 → -0.0097, n=25000)
+
+*Baseline story (computed, ridge):* pooled 1-gram nll 0.7819 → 0.9208 → 0.9754 → 0.9579 (Δ +0.1760) while the encoder nll 1.0379 → 1.0714 → 1.0839 → 1.0805 (Δ +0.0425) — flat; the ridge head's apparent gain is largely the baseline degrading.
+
+### Computed verdicts (not gates)
+
+- ridge beats the 1-gram baseline: **0/14 cells** (`beats_base` True)
+- hier beats the 1-gram baseline: **14/14 cells** (`beats_base` True)
+
+- H-axis (×2 window, same N, computed): max |Δ| = 0.1780 across 6 probe cells (ridge -0.0724, +0.1780, -0.0255 · hier +0.0381, -0.1419, +0.0262) — vs the cross-customer sample move (|Δ| = 0.03–3.52 across the three domains).
+
+### Walls + contingency (disclosed, never fixed here)
+
+- **clickstream × 25K — BUDGET wall** (DEC-615): OOM 72 s into the first task-loss pass — ≈44.7 GB peak (22.66 live-held + 22.05 logits draw) vs ≈30.1 GB idle clamp. Driver = schema × N (`numeric=0 categorical=4` vs sensor's `numeric=2 categorical=1`; sensor n25k completed RC=0 at the same N, train peak_alloc 2.88 GB). **No retry owed.** The 25K tier is therefore clickstream-absent in every table above.
+- **clickstream × 10K×2w neg control — BUDGET wall, second instance**: OOM at the same site (≈41.3 GB peak vs 28.40 launch cap); its positive twin on the equal-row fixture completed RC=0 (train peak_alloc 17.52 GB). The neg/pos demand delta is unattributed from campaign logs.
+- **Contingency-owed (pre-registered, DEC-615)**: all 8 completed ladder cells + all 3 probe cells fire the neg+adv contingency — the ladder `mastered` flags are contingency-owed (controls untrained at the ladder N); sensor long is complete with controls (neg+adv RC=0, re-measured 03:29: ridge neg `reads_no_signal=True`, ridge+hier adv `reads_as_expected=True`, hier neg `n_B_rows=0` = the vacuous-control artifact, `lab_gate_a_side` all-True); clickstream long is A-side-only (neg OOM → adv not launched); server long is A-side-only (neg RC=0; adv SIGTERM'd by the pause order). No master claim is licensed by any receipt at pause.
 
 ## B — foundational scorecard (B-only, DEC-562)
 

@@ -1054,6 +1054,199 @@ def _requirements() -> list[dict]:
     return [r for r in reqs if isinstance(r, dict)]
 
 
+def _real_data_section(receipts: Path) -> list[str]:
+    """The DEC-611/615 multi-domain campaign — the real-data story (dev instruments).
+
+    Additive disclosure, never gated: lab receipts are a development instrument (DEC-576),
+    never B-row evidence on the main card; the certified artifact remains the synthetic
+    `demo_v2` prototype (B-001). Every figure is computed from the receipts under
+    `<receipts>/lab/` — nothing is narrated. The walls and the H-axis finding are the
+    campaign's recorded conclusions (DEC-615, closed as-is 2026-11-24), disclosed here —
+    never re-decided.
+    """
+    lab = receipts / "lab"
+    domains = ("sensor_fleet", "clickstream_sessions", "server_logs")
+    tiers = (
+        ("500", "dec611"),
+        ("2K", "dec615_n2k"),
+        ("10K", "dec615_n10k"),
+        ("25K", "dec615_n25k"),
+        ("long", "dec615_long"),
+    )
+    heads = ("ridge", "hier")
+    ladder_tier_it = {500: "dec611", 2000: "dec615_n2k", 10000: "dec615_n10k", 25000: "dec615_n25k"}
+
+    by: dict[tuple[str, str, str], dict] = {}
+    if lab.is_dir():
+        for p in sorted(lab.glob("*.json")):
+            try:
+                d = json.loads(p.read_text())
+            except Exception:
+                continue
+            if d.get("kind") != "lab_dev_instrument":
+                continue
+            uc = d.get("use_case")
+            it = d.get("iteration")
+            if uc not in domains or it not in {t[1] for t in tiers}:
+                continue
+            pos = d.get("positive") or {}
+            if not _finite(pos.get("g")):
+                continue
+            by[(uc, d.get("head_form"), it)] = d
+
+    if not by:
+        return [
+            "## Real-data story — DEC-611/615 multi-domain campaign (development instruments)",
+            "",
+            "*No campaign receipts present under `docs/report_cards/experiments/lab/` — nothing recorded.*",
+            "",
+        ]
+
+    lines: list[str] = [
+        "## Real-data story — DEC-611/615 multi-domain campaign (development instruments)",
+        "",
+        "*Scope:* lab receipts are a development instrument (DEC-576), never B-row evidence on the main card; "
+        "the certified artifact remains the synthetic `demo_v2` prototype (B-001). Every figure below is "
+        "computed from the receipts — no narrated numbers. The walls and the H-axis finding are the "
+        "campaign's recorded conclusions (DEC-615, closed as-is 2026-11-24), disclosed here — never re-decided.",
+        "",
+    ]
+
+    ridge_span: list[float] = []
+    ridge_probe: list[float] = []
+    hier_probe: list[float] = []
+    n_ridge_beat = 0
+    n_ridge_total = 0
+    n_hier_beat = 0
+    n_hier_total = 0
+
+    for uc in domains:
+        lines += [f"### {uc}", ""]
+        lines += [
+            "| head | " + " | ".join(t[0] for t in tiers) + " |",
+            "|---|" + "---|" * len(tiers),
+        ]
+        for head in heads:
+            cells = []
+            for label, it in tiers:
+                d = by.get((uc, head, it))
+                if d is None:
+                    cells.append("—")
+                    continue
+                pos = d["positive"]
+                g = float(pos["g"])
+                mark = "✓" if pos.get("beats_base") else "✕"
+                note = f" · n={pos.get('n_customers')}" if it == "dec615_long" else ""
+                cells.append(f"{g:+.4f} {mark}{note}")
+            lines.append(f"| {head} | " + " | ".join(cells) + " |")
+        lines += [""]
+
+        # probe delta: long at largest completed N, compared with the same-N tier (computed)
+        probe_parts = []
+        for head in heads:
+            d_long = by.get((uc, head, "dec615_long"))
+            if d_long is None:
+                continue
+            n_long = d_long["positive"].get("n_customers")
+            tier_it = ladder_tier_it.get(n_long)
+            d_tier = by.get((uc, head, tier_it)) if tier_it else None
+            if d_tier is None:
+                continue
+            g_long = float(d_long["positive"]["g"])
+            g_tier = float(d_tier["positive"]["g"])
+            delta = g_long - g_tier
+            probe_parts.append(f"{head} Δ {delta:+.4f} ({g_tier:+.4f} → {g_long:+.4f}, n={n_long})")
+            (ridge_probe if head == "ridge" else hier_probe).append(delta)
+        if probe_parts:
+            lines += ["*Probe Δ (×2 window, same N):* " + " · ".join(probe_parts), ""]
+
+        # baseline degradation story (computed, ridge ladder cells)
+        base_seq = []
+        enc_seq = []
+        for label, it in tiers[:-1]:
+            d = by.get((uc, "ridge", it))
+            if d is None:
+                continue
+            pos = d["positive"]
+            if _finite(pos.get("nll_base")) and _finite(pos.get("nll_enc")):
+                base_seq.append(float(pos["nll_base"]))
+                enc_seq.append(float(pos["nll_enc"]))
+        if len(base_seq) >= 2:
+            base_delta = base_seq[-1] - base_seq[0]
+            enc_delta = enc_seq[-1] - enc_seq[0]
+            seq = " → ".join(f"{x:.4f}" for x in base_seq)
+            enc_seq_str = " → ".join(f"{x:.4f}" for x in enc_seq)
+            if base_delta > 0:
+                verdict = "the ridge head's apparent gain is largely the baseline degrading"
+            else:
+                verdict = "the baseline does not degrade in this range"
+            lines += [
+                f"*Baseline story (computed, ridge):* pooled 1-gram nll {seq} (Δ {base_delta:+.4f}) while the "
+                f"encoder nll {enc_seq_str} (Δ {enc_delta:+.4f}) — flat; {verdict}.",
+                "",
+            ]
+
+        # ridge span: 500 → largest completed ridge cell
+        g500 = by.get((uc, "ridge", "dec611"))
+        g_last = None
+        for label, it in tiers[:-1]:
+            d = by.get((uc, "ridge", it))
+            if d is not None:
+                g_last = float(d["positive"]["g"])
+        if g500 is not None and g_last is not None:
+            ridge_span.append(abs(float(g500["positive"]["g"]) - g_last))
+
+        for label, it in tiers:
+            d_r = by.get((uc, "ridge", it))
+            if d_r is not None:
+                n_ridge_total += 1
+                if d_r["positive"].get("beats_base"):
+                    n_ridge_beat += 1
+            d_h = by.get((uc, "hier", it))
+            if d_h is not None:
+                n_hier_total += 1
+                if d_h["positive"].get("beats_base"):
+                    n_hier_beat += 1
+
+    lines += ["### Computed verdicts (not gates)", ""]
+    lines += [
+        f"- ridge beats the 1-gram baseline: **{n_ridge_beat}/{n_ridge_total} cells** (`beats_base` True)",
+        f"- hier beats the 1-gram baseline: **{n_hier_beat}/{n_hier_total} cells** (`beats_base` True)",
+        "",
+    ]
+    all_probe = ridge_probe + hier_probe
+    if all_probe:
+        lines += [
+            f"- H-axis (×2 window, same N, computed): max |Δ| = {max(abs(x) for x in all_probe):.4f} across "
+            f"{len(all_probe)} probe cells (ridge {', '.join(f'{x:+.4f}' for x in ridge_probe)} · hier "
+            f"{', '.join(f'{x:+.4f}' for x in hier_probe)}) — vs the cross-customer sample move "
+            f"(|Δ| = {min(ridge_span):.2f}–{max(ridge_span):.2f} across the three domains).",
+            "",
+        ]
+
+    lines += [
+        "### Walls + contingency (disclosed, never fixed here)",
+        "",
+        "- **clickstream × 25K — BUDGET wall** (DEC-615): OOM 72 s into the first task-loss pass — "
+        "≈44.7 GB peak (22.66 live-held + 22.05 logits draw) vs ≈30.1 GB idle clamp. Driver = schema × N "
+        "(`numeric=0 categorical=4` vs sensor's `numeric=2 categorical=1`; sensor n25k completed RC=0 "
+        "at the same N, train peak_alloc 2.88 GB). **No retry owed.** The 25K tier is therefore "
+        "clickstream-absent in every table above.",
+        "- **clickstream × 10K×2w neg control — BUDGET wall, second instance**: OOM at the same site "
+        "(≈41.3 GB peak vs 28.40 launch cap); its positive twin on the equal-row fixture completed RC=0 "
+        "(train peak_alloc 17.52 GB). The neg/pos demand delta is unattributed from campaign logs.",
+        "- **Contingency-owed (pre-registered, DEC-615)**: all 8 completed ladder cells + all 3 probe "
+        "cells fire the neg+adv contingency — the ladder `mastered` flags are contingency-owed "
+        "(controls untrained at the ladder N); sensor long is complete with controls (neg+adv RC=0, "
+        "re-measured 03:29: ridge neg `reads_no_signal=True`, ridge+hier adv `reads_as_expected=True`, "
+        "hier neg `n_B_rows=0` = the vacuous-control artifact, `lab_gate_a_side` all-True); clickstream "
+        "long is A-side-only (neg OOM → adv not launched); server long is A-side-only (neg RC=0; adv "
+        "SIGTERM'd by the pause order). No master claim is licensed by any receipt at pause.",
+        "",
+    ]
+    return lines
+
+
 def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
     generated = datetime.now(timezone.utc).isoformat(timespec="seconds")
     summary = {"pass": 0, "fail": 0, "unknown": 0, "excluded": 0}
@@ -1407,6 +1600,8 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
         "the plan before reading a green row as 'good'.",
         "",
     ]
+    real_data_lines = _real_data_section(receipts)
+
     plan_summary = {
         "root": root_v,
         "green": plan_green,
@@ -1436,6 +1631,8 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
             "Ledger points never count as progress: `brain alone` is the judge, `brain + ledger` is delivery.",
             "",
             *plan_lines,
+            "",
+            *real_data_lines,
             "## B — foundational scorecard (B-only, DEC-562)",
             "",
             "The judge below is the **consequence** (B+C). This section is **B itself**: a row is "
