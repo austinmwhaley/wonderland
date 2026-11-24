@@ -392,6 +392,15 @@ the card's plan root is `SOLVED` **and** BACKWARD's FULL review has no BREAKING 
 These prompts elaborate this file's working loop and certification integrity; where they
 conflict, this file's doctrine wins.
 
+**Subagents — maximize their use (operator directive 2026-11-24).** When the work decomposes
+into independent, read-only or parallelizable units — measurement sweeps, receipt audits,
+cross-domain read-outs, fixture checks, doc sweeps — fan out to subagents instead of serial
+processing. The subagent is the default for parallel work, not a fallback; a serial path is
+only right when the work is genuinely sequential (a single measurement whose result feeds the
+next step) or when context must be shared. Maximize parallelism: one subagent per independent
+unit, not one subagent for the whole job. Subagents are used for measurement, not for
+decisions — the operator's calls and the pre-registrations stay in the main session.
+
 ### The working loop (binding)
 
 The job is **not** to write code — it is to *move the project toward its goal while
