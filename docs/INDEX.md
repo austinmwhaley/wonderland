@@ -39,6 +39,9 @@ rabbit_hole  →  looking_glass  →  plugins  →  red_king  →  red_queen
 | `plugins/` | Layer C — plugin contract, acceptance, ladders, white_queen bridge |
 | `red_king/`, `red_queen/`, `caterpillar/`, `white_queen/` | decision, composition, explanation, OPE |
 | `scripts/` | producers (measurements), renderers (card/plan), launchers (`safe_run.py`) |
+| `eighth_square/` | a **vendored standalone RL library** (DQN/SAC/PPO/IQL/CQL/DT…), not part of the one-way pipeline; used by `white_queen`'s OPE tribunal candidates. Top-level `algorithms/` and `environments/` are symlinks into it. |
+| `deploy/` | `Dockerfile.wonder`, `wonderland.slice.in` (the memory ceiling unit) |
+| `demo/` | JSON fixtures used by the demo deployment path |
 | `tests/` | the gates that keep all of it honest |
 
 ## Evidence — `docs/report_cards/experiments/`
