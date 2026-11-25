@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """DEC-669 F — the smallest sufficient BLOCK SUBSET of the served bank: a MEASUREMENT.
 
-The served bank is 179 dims over 10 blocks (``bank_receipt.json`` slices, asserted to tile the
-width). DEC-665 measured that the 32-dim ``shape`` block ALONE reproduces the full result
-(1.2222 vs 1.1731 aggregate nll), i.e. the other 147 dims buy ~0.05 nats, and B5.1 certifies a
-rank of 32/147. This producer answers the next question with the frozen protocol:
+The measurement targets the 179-dim / 10-block bank the certified head was measured on
+(``bank_receipt.json`` supplies every slice; the blocks are asserted to tile the width). DEC-665
+measured that the 32-dim ``shape`` block ALONE reproduces the full result (1.2222 vs 1.1731
+aggregate nll), i.e. the other 147 dims buy ~0.05 nats, and B5.1 certifies a rank of 32/147.
+This producer answers the next question with the frozen protocol:
 
     what is the SMALLEST SET OF BLOCKS whose aggregate nll on split B is within 0.02 nats of
     the full 179-dim bank?
@@ -39,7 +40,13 @@ artifact, adopts no bank, and changes no contract — serving a smaller bank is 
 change that needs its own pre-registration and re-stamp (DEC-669 F). CPU only; BLAS pinned to
 one thread before numpy is imported; no training.
 
-    .venv/bin/python scripts/measure_bank_minimality.py [--json]
+Artifact note: if a block is appended to the served bank (an additive contract change), pass
+``--blocks N`` to measure the leading prefix whose certified head this run must reproduce. The
+receipt still supplies every slice (no hardcoded offsets), the prefix must be contiguous from 0,
+and the self-check refuses any object that does not reproduce the certified nll — so a prefix
+can never masquerade as the record.
+
+    .venv/bin/python scripts/measure_bank_minimality.py [--blocks 10] [--json]
 """
 
 from __future__ import annotations
@@ -94,6 +101,8 @@ CLASS_REGRESSION_BAR = 0.05  # principle-ok: the task's guardrail contract
 MIN_CLAIM_N = 8  # principle-ok: evaluation-contract claim floor, not a tuning knob
 #: the certified aggregate this self-check must reproduce (DEC-635/649 record, DEC-669 F).
 CERTIFIED_NLL_ENC = 1.173099  # principle-ok: the record the frozen protocol reproduced
+CERTIFIED_NLL_BASE = 1.423192  # principle-ok: the certified 1-gram baseline on the same rows
+CERTIFIED_C = 0.1  # principle-ok: the C the frozen A-tail selection picks for the 179-dim bank
 #: dimension budgets printed in the text frontier (the JSON carries every integer budget).
 BUDGETS = (16, 32, 40, 48, 60, 80, 100, 120, 140, 160)  # principle-ok: report cardinalities
 
@@ -156,8 +165,15 @@ def _ci(means: np.ndarray) -> tuple[float | None, float | None]:
     return float(lo), float(hi)
 
 
-def _load(products: Path, demo: Path) -> dict:
-    """The frozen split, the next-event target, the served object and the block slices."""
+def _load(products: Path, demo: Path, n_blocks: int | None = None) -> dict:
+    """The frozen split, the next-event target, the served object and the block slices.
+
+    ``n_blocks`` selects a leading prefix of the receipt's block list (in start order). The full
+    receipt must tile the served width; the prefix must be contiguous from 0 and is then the
+    measured object. This keeps an additive contract change (a block appended to the bank)
+    measurable as the frozen object it extends — the caller must still reproduce its certified
+    head, so a wrong prefix cannot masquerade as the record.
+    """
     import polars as pl
 
     from looking_glass.stream_adapter import to_ts_expr
@@ -178,26 +194,45 @@ def _load(products: Path, demo: Path) -> dict:
     emb = _load_served(products)
     if not emb:
         raise SystemExit("no served embeddings in state_embeddings — refusing to measure")
-    width = int(len(next(iter(emb.values()))))
+    served_width = int(len(next(iter(emb.values()))))
 
     receipt = json.loads((products / "bank_receipt.json").read_text())
-    blocks = sorted((dict(b) for b in receipt["blocks"]), key=lambda b: int(b["start"]))
-    covered = np.zeros(width, dtype=int)
-    for b in blocks:
+    all_blocks = sorted((dict(b) for b in receipt["blocks"]), key=lambda b: int(b["start"]))
+    covered = np.zeros(served_width, dtype=int)
+    for b in all_blocks:
         s, d = int(b["start"]), int(b["dim"])
-        if s < 0 or d <= 0 or s + d > width:
+        if s < 0 or d <= 0 or s + d > served_width:
             raise SystemExit(
-                f"block {b['name']!r} slice [{s}:{s + d}] outside the served width {width}"
+                f"block {b['name']!r} slice [{s}:{s + d}] outside the served width {served_width}"
             )
         covered[s : s + d] += 1
     if not bool((covered == 1).all()):
         raise SystemExit("bank_receipt blocks do not tile the served object — refusing to ablate")
-    if int(receipt.get("bank_dim", width)) != width:
+    if int(receipt.get("bank_dim", served_width)) != served_width:
         raise SystemExit(
-            f"bank_receipt bank_dim={receipt.get('bank_dim')} != served width {width} — refusing"
+            f"bank_receipt bank_dim={receipt.get('bank_dim')} != served width {served_width} — "
+            "refusing"
         )
-    if len({b["name"] for b in blocks}) != len(blocks):
+    if len({b["name"] for b in all_blocks}) != len(all_blocks):
         raise SystemExit("duplicate block names in bank_receipt — refusing to ablate")
+
+    if n_blocks is not None:
+        if not 1 <= n_blocks <= len(all_blocks):
+            raise SystemExit(
+                f"--blocks {n_blocks} outside 1..{len(all_blocks)} (the receipt's block count)"
+            )
+        blocks = all_blocks[:n_blocks]
+    else:
+        blocks = all_blocks
+    pos = 0
+    for b in blocks:
+        if int(b["start"]) != pos:
+            raise SystemExit(
+                f"selected blocks are not a contiguous prefix from 0 (block {b['name']!r} starts "
+                f"at {int(b['start'])}, expected {pos}) — refusing to measure a non-prefix object"
+            )
+        pos += int(b["dim"])
+    width = pos
 
     hist = (
         stream.filter(to_ts_expr(pl.col("event_ts")) <= as_of)
@@ -214,8 +249,8 @@ def _load(products: Path, demo: Path) -> dict:
         raise SystemExit(f"{len(missing)} split-B rows have no history last-event — refusing")
     ya = np.array([next_of[k] for k in a_rows])
     yb = np.array([next_of[k] for k in b_rows])
-    Ea = np.ascontiguousarray(np.vstack([emb[k] for k in a_rows]))
-    Eb = np.ascontiguousarray(np.vstack([emb[k] for k in b_rows]))
+    Ea = np.ascontiguousarray(np.vstack([emb[k] for k in a_rows])[:, :width])
+    Eb = np.ascontiguousarray(np.vstack([emb[k] for k in b_rows])[:, :width])
     ki = np.array([classes.index(v) for v in yb])
     nll_base = -np.log(P[[last_hist[k] for k in b_rows], ki])
 
@@ -232,6 +267,9 @@ def _load(products: Path, demo: Path) -> dict:
         "ki": ki,
         "nll_base": nll_base,
         "width": width,
+        "served_width": served_width,
+        "total_blocks": len(all_blocks),
+        "is_prefix": width != served_width,
         "receipt": receipt,
         "blocks": blocks,
     }
@@ -285,13 +323,62 @@ def main(argv=None) -> int:
     ap.add_argument("--products", default="looking_glass/artifacts/cfm_v2k_vf2_bank")
     ap.add_argument("--demo", default="looking_glass/artifacts/demo_v2")
     ap.add_argument("--certified", default="docs/report_cards/experiments/encoder_win.json")
+    ap.add_argument(
+        "--blocks",
+        type=int,
+        default=None,
+        help="measure only the first N blocks (start order; default: the receipt's full bank). "
+        "An appended block can be excluded so the certified head's object is still measurable.",
+    )
+    ap.add_argument(
+        "--expect-dim",
+        type=int,
+        default=179,
+        help="dim of the certified object this run must reproduce (default: the DEC-635 bank)",
+    )
+    ap.add_argument(
+        "--expect-nll",
+        type=float,
+        default=CERTIFIED_NLL_ENC,
+        help="certified split-B nll this run must reproduce within 1e-5",
+    )
+    ap.add_argument(
+        "--expect-c",
+        type=float,
+        default=CERTIFIED_C,
+        help="C the frozen A-tail selection must pick for this object",
+    )
+    ap.add_argument(
+        "--expect-base",
+        type=float,
+        default=CERTIFIED_NLL_BASE,
+        help="certified 1-gram split-B nll this run must reproduce within 1e-5",
+    )
     ap.add_argument("--json", action="store_true", help="dump the measurement body as JSON")
     a = ap.parse_args(argv)
 
     t0 = time.perf_counter()
     products = ROOT / a.products
     demo = ROOT / a.demo
-    ctx = _load(products, demo)
+    ctx = _load(products, demo, a.blocks)
+    if ctx["width"] != a.expect_dim:
+        prefixes = np.cumsum(
+            [int(b["dim"]) for b in sorted(ctx["receipt"]["blocks"], key=lambda b: int(b["start"]))]
+        )
+        hint = (
+            f"pass --blocks {int(np.nonzero(prefixes == a.expect_dim)[0][0]) + 1} to measure its "
+            "leading prefix"
+            if a.expect_dim in prefixes
+            else "no block prefix has that width; point --products at the frozen artifact or "
+            "set --expect-dim/--expect-nll for the current certified head"
+        )
+        print(
+            f"fatal: measured object is {ctx['width']} dims ({len(ctx['blocks'])} blocks); the "
+            f"certified record this measurement reproduces is {a.expect_dim} dims. The served "
+            f"receipt is {ctx['served_width']} dims / {ctx['total_blocks']} blocks — {hint}.",
+            file=sys.stderr,
+        )
+        return 1
     classes = ctx["classes"]
     ki = ctx["ki"]
     Ea, Eb, ya = ctx["Ea"], ctx["Eb"], ctx["ya"]
@@ -312,6 +399,17 @@ def main(argv=None) -> int:
     pc_delta_cert = {
         c: _r(full_pc[c] - float(certified_pc[c])) for c in classes if c in certified_pc
     }
+    receipt_matches = (not ctx["is_prefix"]) and int(
+        ctx["receipt"].get("bank_dim", ctx["served_width"])
+    ) == ctx["width"]
+    hard = [
+        "classes_match",
+        "n_A_matches",
+        "n_B_matches",
+        "adopted_C_matches_expected",
+        "full_bank_nll_reproduces_1e-5",
+        "base_1gram_nll_reproduces_1e-5",
+    ]
     checks = {
         "classes_match": classes == list(certified["classes"]),
         "n_A_matches": len(ya) == int(certified["n_A"]),
@@ -326,14 +424,12 @@ def main(argv=None) -> int:
             for c in classes
             if c in (certified.get("per_class_n_B") or {})
         ),
-        "adopted_C_matches_certified": bool(
-            certified.get("logistic_C") is not None
-            and abs(C_adopted - float(certified["logistic_C"])) < 1e-12
+        "adopted_C_matches_expected": bool(abs(C_adopted - a.expect_c) < 1e-12),
+        "full_bank_nll_reproduces_1e-5": abs(nll_full - a.expect_nll) <= 1e-5,
+        "base_1gram_nll_reproduces_1e-5": abs(float(nll_base.mean()) - a.expect_base) <= 1e-5,
+        "per_class_nll_reproduces_1e-4": (
+            all(abs(pc_delta_cert[c]) <= 1e-4 for c in pc_delta_cert) if receipt_matches else None
         ),
-        "full_bank_nll_reproduces_1e-5": abs(nll_full - CERTIFIED_NLL_ENC) <= 1e-5,
-        "base_1gram_nll_reproduces_1e-5": abs(float(nll_base.mean()) - float(certified["nll_base"]))
-        <= 1e-5,
-        "per_class_nll_reproduces_1e-4": all(abs(pc_delta_cert[c]) <= 1e-4 for c in pc_delta_cert),
     }
     repro = {
         "n_customers": ctx["n_customers"],
@@ -341,37 +437,43 @@ def main(argv=None) -> int:
         "n_A": len(ya),
         "n_B": len(ki),
         "dim": ctx["width"],
+        "expected_dim": a.expect_dim,
+        "expected_nll": a.expect_nll,
+        "served_bank_dim": ctx["served_width"],
+        "served_blocks": ctx["total_blocks"],
+        "measured_blocks": len(ctx["blocks"]),
+        "is_prefix": ctx["is_prefix"],
         "classes": classes,
         "n_A_per_class": {c: int((ya == c).sum()) for c in classes},
         "n_B_per_class": n_B,
         "claimable": claimable,
         "C_grid": c_grid,
         "adopted_C": C_adopted,
-        "certified_C": certified.get("logistic_C"),
+        "expected_C": a.expect_c,
+        "receipt_logistic_C": certified.get("logistic_C"),
         "nll_full_bank": _r(nll_full),
-        "certified_nll_enc": certified.get("nll_enc"),
-        "delta_vs_certified": _r(nll_full - float(certified["nll_enc"])),
+        "delta_vs_expected": _r(nll_full - a.expect_nll),
+        "receipt_nll_enc": certified.get("nll_enc"),
+        "receipt_matches_measured_object": receipt_matches,
         "nll_base_1gram": _r(nll_base.mean()),
-        "certified_nll_base": certified.get("nll_base"),
+        "expected_nll_base": a.expect_base,
+        "receipt_nll_base": certified.get("nll_base"),
         "per_class_nll_full": full_pc_rows,
         "certified_per_class_nll": certified_pc,
         "per_class_delta_vs_certified": pc_delta_cert,
+        "per_class_check": (
+            "compared to the receipt (same served object)"
+            if receipt_matches
+            else "skipped: the committed receipt describes a different served object"
+        ),
         "checks": checks,
-        "reproduced": all(checks.values()),
+        "reproduced": all(checks[k] for k in hard),
     }
-    hard = [
-        "classes_match",
-        "n_A_matches",
-        "n_B_matches",
-        "adopted_C_matches_certified",
-        "full_bank_nll_reproduces_1e-5",
-        "base_1gram_nll_reproduces_1e-5",
-    ]
     if not all(checks[k] for k in hard):
         failed = [k for k in hard if not checks[k]]
         print(
             f"fatal: frozen protocol not reproduced ({failed}); full-bank nll={nll_full:.9f} "
-            f"vs certified {CERTIFIED_NLL_ENC} — refusing to rank subsets on a different protocol",
+            f"vs expected {a.expect_nll} — refusing to rank subsets on a different protocol",
             file=sys.stderr,
         )
         return 1
@@ -477,6 +579,8 @@ def main(argv=None) -> int:
         )
     budget_rows = []
     for b in BUDGETS:
+        if b > width:
+            continue
         hit = budget_curve[b]
         if hit["blocks"] is None:
             continue
@@ -615,7 +719,7 @@ def main(argv=None) -> int:
             "delta > +0.05."
         ),
         "strategy": {
-            "subsets": "exhaustive: all 1023 non-empty block subsets",
+            "subsets": f"exhaustive: all {len(subsets)} non-empty block subsets",
             "why": (
                 f"one fit is ~0.02-0.05 s on these matrices; the exhaustive sweep measured "
                 f"{enum_seconds:.1f} s, well inside the 10-min target, so greedy approximation "
@@ -648,7 +752,11 @@ def main(argv=None) -> int:
         "seeds": {"split": SEED, "bootstrap": SEED, "n_boot": N_BOOT},
         "receipt": {
             "path": str(products / "bank_receipt.json"),
-            "bank_dim": ctx["width"],
+            "bank_dim": ctx["served_width"],
+            "measured_bank_dim": ctx["width"],
+            "served_blocks": ctx["total_blocks"],
+            "measured_blocks": len(ctx["blocks"]),
+            "is_prefix": ctx["is_prefix"],
             "blocks": [
                 {"name": b["name"], "start": int(b["start"]), "dim": int(b["dim"])}
                 for b in ctx["blocks"]
@@ -700,22 +808,56 @@ def main(argv=None) -> int:
 
     # ------------------------------------------------------------------------------ text report
     print("BANK BLOCK MINIMALITY (DEC-669 F) — a MEASUREMENT. Not a gate, not a contract change.")
+    measured_txt = (
+        f"MEASURED: the leading {len(names)}-block prefix, {ctx['width']} dims"
+        if ctx["is_prefix"]
+        else f"MEASURED: the full bank, {ctx['width']} dims / {len(names)} blocks"
+    )
     print(
-        f"  served bank: {ctx['width']} dims / {len(names)} blocks (slices asserted to tile); "
-        f"split B n={len(ki)}; head = multinomial logistic, C={C_adopted} fixed for every subset"
+        f"  served receipt: {ctx['served_width']} dims / {ctx['total_blocks']} blocks "
+        f"(slices asserted to tile); {measured_txt}"
+    )
+    print(
+        f"  split B n={len(ki)}; head = multinomial logistic, C={C_adopted} fixed for every subset"
     )
     print(f"  C grid on the A tail: {c_grid}")
+
+    print(
+        f"\n  ANSWER: the smallest sufficient bank is {minimal['dim']} dims "
+        f"({'+'.join(minimal['blocks'])}), delta={minimal['delta']:+.4f} nats vs the full "
+        f"bank (bar +{SUFFICIENCY_BAR}); guardrail: "
+        + (
+            "no claimable class breaks"
+            if not minimal["broken_classes"]
+            else "BREAKS " + ",".join(minimal["broken_classes"])
+        )
+        + f" (largest claimable regression {minimal['max_claimable_regression']:+.4f})."
+    )
+    if next_smaller:
+        print(
+            f"  next smaller: {next_smaller['dim']} dims at {next_smaller['delta']:+.4f} "
+            f"({next_smaller['delta'] - SUFFICIENCY_BAR:+.4f} over the bar) — the bar, not a "
+            "cliff, separates the two."
+        )
 
     print("\n[0] self-check — the frozen protocol must reproduce before any subset is ranked")
     print(
         f"  n_A={repro['n_A']} n_B={repro['n_B']} classes={classes}  "
-        f"adopted C={C_adopted} (certified {repro['certified_C']})"
+        f"adopted C={C_adopted} (expected {repro['expected_C']}, receipt "
+        f"{repro['receipt_logistic_C']})"
     )
     print(
-        f"  full bank nll={nll_full:.6f}  certified={repro['certified_nll_enc']}  "
-        f"delta={repro['delta_vs_certified']:+.2e}  "
-        f"1-gram={float(nll_base.mean()):.6f} (certified {repro['certified_nll_base']})"
+        f"  measured bank nll={nll_full:.6f}  expected={repro['expected_nll']}  "
+        f"delta={repro['delta_vs_expected']:+.2e}  "
+        f"1-gram={float(nll_base.mean()):.6f} (expected {repro['expected_nll_base']})"
     )
+    if not receipt_matches:
+        print(
+            f"  note: the committed {Path(a.certified).name} now certifies "
+            f"{repro['receipt_nll_enc']} on {repro['served_bank_dim']} dims; it no longer "
+            f"describes this {repro['dim']}-dim measured object, so the per-class receipt "
+            f"comparison is skipped (the identity anchor is the expected nll above)."
+        )
     print(
         "  per-class full: "
         + " ".join(
@@ -723,7 +865,7 @@ def main(argv=None) -> int:
             for c in classes
         )
     )
-    failed_checks = {k: v for k, v in checks.items() if not v}
+    failed_checks = {k: v for k, v in checks.items() if v is False}
     print(f"  reproduced={repro['reproduced']}  failed_checks={failed_checks or 'none'}")
 
     print("\n[1] blocks (receipt slices)")
@@ -934,8 +1076,9 @@ def main(argv=None) -> int:
         "reported as a sensitivity, and often hits the grid floor (disclosed)."
     )
     print(
-        "  * no bank is adopted: the served contract (179 dims) is unchanged. A smaller served "
-        "bank needs its own pre-registration and re-stamp (DEC-669 F)."
+        f"  * no bank is adopted by this measurement: the served receipt is "
+        f"{ctx['served_width']} dims, this run measures {ctx['width']}. A smaller served bank "
+        "needs its own pre-registration and re-stamp (DEC-669 F)."
     )
     print(
         f"\nseconds={body['seconds']} (enumeration {body['enumeration_seconds']}s), CPU-only, BLAS=1"

@@ -13003,3 +13003,31 @@ THE HONEST AXIS: the architecture — the encoder's capacity/order-carrying. The
   - **MEMORY GUARD.** `gpu_watchdog.DEFAULT_PATTERNS` extended with the three new producers
     (`measure_block_equalised`, `measure_bank_minimality`, `diagnose_class_gap`) — the guard test
     exists precisely so a new script cannot escape the policer, and it caught exactly that.
+
+- **DEC-674 (the minimality sweep on the CURRENT 200-dim object — and the honest decomposition of the headline margin).**
+  - **MEASURED (exhaustive, all 2047 non-empty block subsets, frozen split, fixed C so width is not
+    confounded; self-check reproduces the 200-dim full bank at 1.142094).**
+    | object | dims | nll | delta vs full | vs 1-gram (1.423192) |
+    |---|---|---|---|---|
+    | **`shape` alone — the LEARNED encoder state** | 32 | **1.221320** | +0.0792 | **−0.2019** |
+    | `elapsed` alone — hand recency | 21 | **1.130508** | **−0.0116** | −0.2927 |
+    | `shape`+`elapsed` | 53 | 1.138618 | −0.0035 | −0.2846 |
+    | best subset (`response`+`action`+`event_mass`+`elapsed`) | 36 | **1.126928** | −0.0152 | −0.2963 |
+    | full served bank (the certified object) | 200 | 1.142094 | — | −0.2811 |
+  - **THE HONEST HEADLINE.** The encoder ALONE (`shape`, 32 dims) beats the 1-gram by **0.202**
+    nats — the outcome holds without any hand statistic. But the certified 1.142094 carries
+    ~0.079 nats of hand-derived blocks (`response`/`action`/`event_mass`/`elapsed`), and the
+    **recency block alone beats the full object**. So the served-bank margin is not a measure of
+    encoder capability; the encoder-only margin (**−0.202**) is. This is the B-008 boundary made
+    quantitative for the first time.
+  - **WHAT THIS MEANS FOR THE NEXT MOVE.** Shrinking the gate's object to the best 36-dim subset
+    would IMPROVE the record (1.142094 → 1.126928) but would be dishonest as an "encoder" claim —
+    that subset contains no learned state at all. **Not adopted.** The served object stays the
+    full bank (it contains the encoder), and the encoder-only number is recorded here and should
+    be published beside the headline rather than replaced by it.
+  - **BLOCK ABLATION ON THE CURRENT OBJECT.** 1024/2047 subsets are within the +0.02 bar; the
+    smallest sufficient is **21 dims (`elapsed`)**; the next-smaller point (20 dims, `level`+
+    `response`) misses the bar by 0.0617 — a bar, not a cliff. Leave-one-out confirms `profile`,
+    `return_ratio`, `rfm` are dead weight (removing them improves the aggregate by ≤0.0009).
+    `shape` alone breaks `email_send` by +0.1289 — the learned state is the weakest block for
+    next-event, which is the same "blob" story `eff_rank` 2.649 has been telling.
