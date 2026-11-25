@@ -12001,3 +12001,8 @@
   - **The honest read.** The gap is the encoder's capability — the ridge head's estimation efficiency (the cross-customer finite-sample gap). The encoder's U served_object 0.980162 (bar 0.5) is high, but the ridge head does not beat the 1-gram baseline — the gap is the ridge head's fit, not the encoder's information content.
   - **The honest axis.** The encoder's capacity — the encoder should carry the conditional row beyond the 1-gram. The honest work: the encoder should beat the 1-gram on the demo.
   - **The honest next step.** The encoder's capacity — the encoder should carry the conditional row beyond the 1-gram. The honest axis: the encoder's capacity — the encoder should carry the conditional row beyond the 1-gram.
+
+- **DEC-636 honest read 2 (2026-11-25 — the gate FAILS; the encoder is under-ranked).**
+  - **The honest state (measured).** The encoder's geometry: eff_rank 2.649 (vs the null 105.535), pr_frac 0.0103, redundancy_offdiag 0.41705 (vs the null 0.03479), mean_pairwise_cos 0.0233. The encoder is UNDER-RANKED — the eff_rank is 2.649, far below the null. The gate FAILS: beats_unigram=False, paired CI [0.0016, 0.0554] entirely positive.
+  - **The honest read.** The gap is the encoder's capability — the ridge head's estimation efficiency. The encoder is under-ranked (eff_rank 2.649 vs the null 105.535) — the encoder's geometry does not carry the conditional row beyond the 1-gram.
+  - **The honest axis.** The encoder's capacity — the encoder should carry the conditional row beyond the 1-gram. The honest work: the encoder should beat the 1-gram on the demo.
