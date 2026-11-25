@@ -12704,6 +12704,6 @@ THE HONEST AXIS: the architecture — the encoder's capacity/order-carrying. The
       * **G2 · fuse the 38 per-field losses** — the step is GPU-bound at ~60k tok/s; 38 separate
         matmul+CE calls are the remaining inefficiency. Requires a pre-registration and a paired
         quality check before adoption.
-  - **NOT RESTARTED (settled).** The chain re-stamp in flight is the verification of items 1–4 of
+  - **ALREADY IN FLIGHT (not restarted).** The chain re-stamp in flight is the verification of items 1–4 of
     the previous roadmap; its two controls (card SOLVED at the current hash, `best_known`
     unchanged) stand as the acceptance for that work.
