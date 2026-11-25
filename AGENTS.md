@@ -438,6 +438,23 @@ principle is *wrong*. When principles conflict, apply the conflict order
 (**Robust → Adaptive → Universal → Lawful → Efficient → Honest**; Lawful and Robust outrank
 convenience).
 
+### Compute policy (binding — the directive, made mechanical)
+
+`AGENTS.md` binds this project to **maximise GPU utilisation, parallelism and
+multi-threading**. `scripts/compute_policy.py` is that directive in code, with the
+measurement behind each choice:
+
+| tier | status | evidence |
+|---|---|---|
+| **PyTorch / CUDA** | **mandatory** for training and every model forward | step is GPU-bound after the collate rewrite (DEC-659) |
+| **CPU cores (joblib)** | **default** for independent fits | S4: 546 s → 124 s (4.4×), byte-identical (DEC-660) |
+| **GPU Polars** | **available, opt-in** (`LG_POLARS_GPU=1`), not default | works on this GB10; measured 0.9× on the real demo query — too small to repay transfer (DEC-661) |
+| **DuckDB** | **CPU only** | it has no GPU execution backend; there is no GPU option to choose |
+
+Rules: a producer states which tier it uses and why; a new GPU path is adopted only after a
+paired measurement on the real shape; "serial because it was easier" is a defect, not a
+default.
+
 ### The trunk axis (binding — the architecture is a means, and both trunks coexist)
 
 The dynamics axis has **two supported trunks** in the same tree, selected per stream by

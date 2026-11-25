@@ -12589,3 +12589,35 @@ THE HONEST AXIS: the architecture — the encoder's capacity/order-carrying. The
   - **MEASURED.** `aten::copy_` 76.8k → 6.2k per 6-step window (12.5×), `aten::fill_` 72.5k → 13.8k
     (5×), step 2.07 → **1.07 s**, and the receipt's verdict flips to GPU-bound. Batch 128 now
     yields 70.5k tok/s vs 59.6k at 64.
+
+- **DEC-660 (the S4 stage is CPU-bound sklearn, now parallel — 4.4× and byte-identical; operator directive: maximise parallelism).**
+  - **MEASURED.** S4 (`measure_views_law`) was 546 s of the ~15-minute chain, and it is not
+    Polars work: it fits a linear head **and** an `MLPRegressor` per (view, target) pair,
+    serially, on a 20-core box — `n_jobs`/`joblib` appeared **zero** times across the
+    producer layer.
+  - **THE FIX.** The per-(view,target) cell is now a pure function (`_fit_pair`) dispatched with
+    `joblib.Parallel(prefer="processes")`; the control matrices are still drawn in the historical
+    sequential order from the same seeded RNG, so nothing about the numbers depends on scheduling.
+    Worker count comes from the shared `scripts/compute_policy.jobs()` (8 on this box).
+  - **MEASURED.** **546 s → 124 s (4.4×)**, and the produced block is **byte-identical** to the
+    committed serial receipt: `working`, `checks`, `evidence`, `views`, `missing` all equal.
+
+- **DEC-661 (the GPU dataframe question, answered with a measurement — and a compute policy in doctrine).**
+  - **FACTS ESTABLISHED.** (1) **DuckDB has no GPU engine** — verified: only `core_functions`,
+    `icu`, `json`, all statically linked CPU extensions. No GPU option exists to adopt.
+    (2) **Polars does**, and it now demonstrably runs on this machine: `cudf-polars-cu12 26.10.2`
+    + `pylibcudf-cu12` install on aarch64, and `pl.GPUEngine(raise_on_fail=True)` executes a
+    group-by correctly. The project had a benchmark script for this (`scripts/bench_polars_gpu.py`)
+    but no recorded result — the claim had never been tested.
+  - **THE MEASUREMENT (real stream, 2.34M events, the recipe-shaped aggregation).**
+    CPU **0.060 s** vs GPU **0.066 s** — **0.9×**: at our query sizes the transfer + planning cost
+    exceeds the compute. So GPU Polars is *available and opt-in* (`LG_POLARS_GPU=1`), not default;
+    forcing it would make the chain slower, which is the opposite of the directive.
+  - **THE DIRECTIVE, MADE MECHANICAL.** New `scripts/compute_policy.py` + an AGENTS.md "Compute
+    policy" section state where each tier belongs, each with its evidence: PyTorch/CUDA mandatory
+    (the step is GPU-bound since DEC-659); joblib parallelism the default for independent fits
+    (DEC-660's 4.4×); GPU Polars opt-in with a paired measurement required before adoption;
+    DuckDB CPU because no GPU backend exists. A producer must now state its tier and why.
+  - **HONEST REMAINDER.** The chain's residual cost is the model forward and the remaining serial
+    producers (construction ~100 s, decision ~120 s, runtime ~450 s). Those are the next parallel
+    targets; GPU dataframes do not touch them.

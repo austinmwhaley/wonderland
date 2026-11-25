@@ -140,6 +140,46 @@ def _load_views(db: Path) -> tuple[dict, dict]:
     return flat, (json.loads(stamp[0]) if stamp else {})
 
 
+def _jobs() -> int:
+    """Worker count — the shared compute policy (DEC-660/661)."""
+    from compute_policy import jobs
+
+    return jobs()
+
+
+def _fit_pair(view, name, Ea, Eb, ya, yb, rand, destroyed):
+    """One (view, target) cell: the linear head, its two controls, and the MLP diagnostic.
+
+    Pure function of its arguments (no shared RNG, no shared state) so it can run in a
+    worker process and return bit-identical numbers to the serial loop.
+    """
+    p_lin, r2_lin = _ridge_oos(Ea, ya, Eb, yb)
+    # The controls go through the SAME head as the real view — a control beaten by a weaker
+    # head proves nothing, and this is where a fake "signal" would hide.
+    p_rand, _ = _ridge_oos(Ea, ya, rand, yb)
+    p_dest, _ = _ridge_oos(Ea, ya, destroyed, yb)
+    if p_lin is None or p_rand is None or p_dest is None:
+        return None
+    _, lo_r, _ = _paired_ci((yb - p_rand) ** 2 - (yb - p_lin) ** 2)
+    _, lo_d, _ = _paired_ci((yb - p_dest) ** 2 - (yb - p_lin) ** 2)
+    p_mlp, r2_mlp = _mlp_oos(Ea, ya, Eb, yb)
+    gap = None
+    if p_mlp is not None:
+        mean, lo, hi = _paired_ci((yb - p_lin) ** 2 - (yb - p_mlp) ** 2)
+        if lo > 0 and mean > PARITY_SIGMAS * (hi - lo) / 2.0:
+            gap = f"{view}/{name}: MLP R2={r2_mlp:.3f} > linear R2={r2_lin:.3f}"
+    return {
+        "view": view,
+        "target": name,
+        "r2_linear": float(r2_lin),
+        "r2_mlp": None if r2_mlp is None else float(r2_mlp),
+        "beats_controls": bool(lo_r > 0 and lo_d > 0 and r2_lin > 0),
+        "ci_lo_vs_random": float(lo_r),
+        "ci_lo_vs_destroyed": float(lo_d),
+        "gap": gap,
+    }
+
+
 def _matrix(view_map: dict, keys: list[str]):
     rows = [view_map.get(k) for k in keys]
     if any(r is None for r in rows) or not rows:
@@ -224,42 +264,23 @@ def _evaluate(views: dict, truth: dict, akeys, bkeys):
     """
     usable, excluded = _target_matrix(truth, akeys, bkeys)
     rng = np.random.default_rng(SEED)
-    recs, unreadable = [], []
+    tasks, unreadable = [], []
     for view, by_key in views.items():
         Ea, Eb = _matrix(by_key, akeys), _matrix(by_key, bkeys)
         if Ea is None or Eb is None:
             unreadable.append(view)
             continue
+        # drawn HERE, in the historical sequential order, so the control matrices are
+        # identical to the serial loop's; only the fits move to workers.
         rand, destroyed = _controls(rng, Eb)
         for name, (ya, yb) in usable.items():
-            p_lin, r2_lin = _ridge_oos(Ea, ya, Eb, yb)
-            # The controls go through the SAME head as the real view — a control beaten by a
-            # weaker head proves nothing, and this is where a fake "signal" would hide.
-            p_rand, _ = _ridge_oos(Ea, ya, rand, yb)
-            p_dest, _ = _ridge_oos(Ea, ya, destroyed, yb)
-            if p_lin is None or p_rand is None or p_dest is None:
-                continue
-            _, lo_r, _ = _paired_ci((yb - p_rand) ** 2 - (yb - p_lin) ** 2)
-            _, lo_d, _ = _paired_ci((yb - p_dest) ** 2 - (yb - p_lin) ** 2)
-            p_mlp, r2_mlp = _mlp_oos(Ea, ya, Eb, yb)
-            gap = None
-            if p_mlp is not None:
-                # per-customer squared-error advantage of the MLP over the linear head
-                mean, lo, hi = _paired_ci((yb - p_lin) ** 2 - (yb - p_mlp) ** 2)
-                if lo > 0 and mean > PARITY_SIGMAS * (hi - lo) / 2.0:
-                    gap = f"{view}/{name}: MLP R2={r2_mlp:.3f} > linear R2={r2_lin:.3f}"
-            recs.append(
-                {
-                    "view": view,
-                    "target": name,
-                    "r2_linear": float(r2_lin),
-                    "r2_mlp": None if r2_mlp is None else float(r2_mlp),
-                    "beats_controls": bool(lo_r > 0 and lo_d > 0 and r2_lin > 0),
-                    "ci_lo_vs_random": float(lo_r),
-                    "ci_lo_vs_destroyed": float(lo_d),
-                    "gap": gap,
-                }
-            )
+            tasks.append((view, name, Ea, Eb, ya, yb, rand, destroyed))
+    from joblib import Parallel, delayed
+
+    results = Parallel(n_jobs=_jobs(), prefer="processes")(
+        delayed(_fit_pair)(*args) for args in tasks
+    )
+    recs = [r for r in results if r is not None]
     return recs, unreadable, excluded
 
 
