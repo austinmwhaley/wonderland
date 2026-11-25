@@ -25,37 +25,24 @@ measurements recorded for the real-data story, not the work-in-flight scope. The
 event stream is the focus until it is mastered; clickstream and sensors are deferred until
 the customer event stream is mastered.
 
-**Stage:** Layer 0 — **PLAN ROOT SOLVED 39/39 on the synthetic `demo_v2` prototype** (behavior `a4eec44e` after the DEC-622 re-stamp; the previous card at `10fc4e1` was `89cec70b`). **B is
-CERTIFIED** (23/23, 8/8 at behavior `a4eec44e`, on the single `cfm_v2k_vf2_cert` bundle);
-**B+C is DONE** (8/8, bank v2, DEC-598) for the served bank, with the measure-free donor-only
-boundary recorded (B-008); the three plugin gates pass **9/9**; **E1 is PASS as served-object
-capacity** (E1.a g -0.581, E1.b g -0.721/0.181 via the served signature block; E1.c is a
-delivery/ledger port: eff_rank 30.9 / persona 0.267 / R2 0.460, with the trunk-only rank
-4.11/10.33 recorded); **V1.1-V1.5 are green** (identifiable stream, plugins 9/9, red_king
-known-effect 73.3% vs 25% chance + held-out policy 0.371 vs 0.208 random, red_queen DEPLOY/HOLD
-offer composition, caterpillar on red_queen's plan). **No BACKWARD BREAKING/MAJOR requirement is
-open** (AUDIT.md: 21 of 25 requirements closed; B-018 open as disclosed INFO; B-017 closed
-2026-11-24 by the operator ruling (DEC-618); B-020 — the operator-filed MAJOR claim-scope finding
-the closing reviews should have surfaced — filed and closed the same day by the DEC-611
-campaign (AUDIT.md §6.11); closing FULL review at `eb9381b`, §6.9; operator-requested
-rescan at `b512068`, §6.10: NO BREAKING, its one new finding B-019 — the R7 route text lagged the
-record — closed 2026-11-05 by DEC-610; B-021 closed by the DEC-612 clean re-stamp;
-**B-022 — MAJOR, the first §4c generality-hunt finding, the supervised comparator's hardcoded
-`value` field — filed and closed 2026-11-06 by DEC-614**; B-023 (MINOR) + B-024/B-025
-(INFO, named scope) open as the disclosed backlog). **Scope:** the
-certified artifact is the synthetic
-demo prototype; no production-stream claim, and no trunk-only capacity claim. **Macro reframe
-DEC-567 (2026-11-02):** the X-ray is far
-enough to locate the gaps (exposure / learning / decision objective). **Scope tightening DEC-568
-(2026-11-02):** B-only for now — every DEC-567 option re-anchored to B's own rows; B+C kept on the
-card as a reported consequence, not the near-term target. **D2–D5 accepted 2026-11-02**
-("ok do what needs to be done"); DEC-569 (O0) and DEC-570 (`U` spec) pre-registered; the sprint
-runs O0 first. D1 stays deferred with the B+C judge re-aim. **DEV-RIG pivot DEC-576
-(2026-11-03, operator):** the real-data outer loop was dominated by protocol/environment
-defects (4 of O3's 5 attempts died before the science); make ANY foundation model on the lab's
-known-truth streams (fixtures were pre-built, 0/32 ever run) before THE foundation model on the
-real stream. Lab receipts are a development instrument — never B-row evidence on the main card;
-the current certification is on the demo prototype, and that scope is explicit in the card.
+**Stage:** Layer 0 — **PLAN ROOT SOLVED 40/40** at behavior `5f48d15f`, rebuilt by **one command**
+(`measure_certification_law.py` → S1–S6 + the four judge legs + path-A provenance + **all 13 B
+producers**), S6 `working=True` 6/6, **B CERTIFIED 9/9 sections (24/24 rows)**, **B+C DONE 8/8
+legs**, no open BREAKING/MAJOR requirement. **The outcome gate B9.1 PASSES**: the encoder's served
+object beats the pooled 1-gram on the customer event stream — nll **1.173099 vs 1.423192**, margin
+**−0.250093**, paired CI **[−0.2908, −0.2116]** — recorded as **M1** in
+`docs/report_cards/experiments/best_known.json` (7 records, monotone). **M1 is a floor**: every run
+must beat the record (DEC-647).
+**Honest qualifiers, recorded not narrated:** (i) the certified 1-gram is event-level while the
+target is customer-level, so its per-class numbers carry a prior tilt — the margin against a
+customer-level 1-gram is **0.127 [0.104, 0.151]**, still a win, half the headline (DEC-665);
+(ii) the served object is the **bank** (179 dims, donor + counters + measure statistics), not a
+trunk-only capacity claim — trunk `eff_rank` is 2.649 vs a null of 105.535 (E1.c is a delivery
+port); (iii) three classes still trail their 1-gram base: purchase 2.158 vs 1.904, search 1.727
+vs 1.493, view 0.957 vs 0.792 — the measured frontier.
+**Architecture:** the joined **looped GPT trunk** is mainlined and tested (DEC-651) beside the SSM
+(trunk='ssm' default, 'looped_gpt' opt-in), and is being measured at the full population.
+
 
 ## The problem in plain terms (DEC-588)
 
