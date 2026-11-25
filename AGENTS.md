@@ -446,7 +446,7 @@ The dynamics axis has **two supported trunks** in the same tree, selected per st
 - **`'ssm'` (default)** — the unified selective SSM with a per-channel timescale spectrum
   (DEC-029). This is the trunk the certified path uses; an `ssm` run's config signature is
   unchanged by the presence of the other trunk.
-- **`'looped'`** — the Dory-style looped transformer (DEC-613, mainlined by DEC-651):
+- **`'looped_gpt'`** — the Dory-style looped transformer (DEC-613, mainlined by DEC-651):
   weight-tied latent loop (I block once → shared R block × `n_loops` with re-injection → O
   block once), causal/sliding-window attention on alternating slots, `h0` as a learned prior.
   `n_loops` is 1..4 on the tag axis (`lg{L}`).

@@ -1622,7 +1622,7 @@ def render(receipts: Path, current_hash: str) -> tuple[str, dict]:
     if b_all_green:
         b_scope = (
             f"✅ **B foundational:** CERTIFIED — {b_green_n}/{len(B.SECTIONS)} sections green. "
-            f"Scope: the 23 receipts are current at behavior `{current_hash[:8]}` and are "
+            f"Scope: the {len(B.ROWS)} B receipts are current at behavior `{current_hash[:8]}` and are "
             "certified on the single `cfm_v2k_vf2_cert` bundle (base 272 · bank 179 · donor-only "
             "106 · delivery port 307 · measure view), with a manifest mapping every row to its "
             "component. The artifact is the synthetic `demo_v2` prototype, not a production "

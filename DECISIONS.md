@@ -12506,3 +12506,42 @@ THE HONEST AXIS: the architecture — the encoder's capacity/order-carrying. The
     drift check must land in the disclosed class before adoption.
   - **FALSIFIER.** If a cell does not beat the measured baseline on `s_per_step` with quality
     unchanged (within the disclosed drift class), it is rejected and recorded once.
+
+- **DEC-657 (the swarm audit — five parallel workstreams, plus the defects already fixed by hand; operator direction 2026-11-25: "launch many agents (swarm) to solve all of the problems we have talked about").**
+  - **WHY.** The audit surfaced ~40 defects across five areas at once (performance, gate provenance,
+    receipt ownership, checkpoint rebuild drift, dead code). Serial work on them is what has been
+    making the loop slow; they touch disjoint files, so they parallelise cleanly.
+  - **DISPATCH (file ownership is exclusive, no two agents share a file; agents are forbidden to
+    run git, the full suite, or GPU training).**
+    * A · performance: `cfm_model.py` + `cfm_training.py` — find and fuse the remaining ~25k
+      per-step `copy_`/`fill_` launches (the step is enqueue-bound; measured 1.24 s/step at
+      batch 64, 2.40 s at batch 128 ⇒ 53k vs 51k tok/s, i.e. batch does NOT buy throughput,
+      and batch 256 aborts at 28.4 GB).
+    * B · chain completeness: `measure_certification_law.py` — add the 13 B-row producers the S6
+      chain never runs, with the correct per-producer artifacts and `--skip-slow-b`.
+    * C · gate provenance: `measure_encoder_win.py` + `b_spec.py` + `tests/test_encoder_win_gate.py`
+      — the adopted head is logistic but the default is ridge and the protocol text says ridge;
+      the B9.1 gate branch has zero tests.
+    * D · receipt ownership: `measure_judge_law.py` — it writes the SAME `judge_leg_*.json` files
+      as `measure_bc_bank.py` (last writer wins, silently changing what the card certifies);
+      rename to `judge_leg_v1flat_*` + a static ownership test.
+    * E · rebuild drift: `cfm_state.py` + `cfm_validation.py` + `state_dense.py` — three copies of
+      "rebuild a CFM from a blob"; two omit `isometric_boundary`/`unified`/counter keys, so their
+      `strict=True` load cannot succeed on current checkpoints. One `build_cfm_from_blob` + a
+      round-trip test.
+  - **FIXED BY HAND (already in this commit).**
+    * `looking_glass/scripts/generate_data.py` — the no-duplication acceptance guard expected a
+      symlink into `rabbit_hole/generators/generate_data.py`; it was missing, so the slow
+      acceptance suite failed. Restored; `pytest -m slow` is now 14/14.
+    * `measure_decision_law.py` default → served base `cfm_v2k_vf2` (272) — the old default stored
+      a 256-dim E and crashed on a 272-vs-256 broadcast (DEC-655).
+    * `measure_donor.py` default → `cfm_v2k_vf2_c32rvd` (59) — B6.2 was failing on the same class
+      of dimensional mismatch (DEC-656).
+    * `AGENTS.md` documented `trunk='looped'`, which the model rejects (`ValueError`); corrected
+      to `trunk='looped_gpt'`.
+    * `report_card.py` hard-coded "the 23 receipts" while `b_spec.ROWS` has 24; now derived from
+      `len(B.ROWS)` (certification rule 7: text must not contradict the rows).
+  - **NOTED, deliberately not actioned yet.** The B3.2/B3.4 receipts were produced from
+    `/tmp/opencode/cfmd_port128` (a 307-dim state with no repo builder) — that is a
+    reproducibility gap and gets its own iteration; and `measure_battery.py`/`measure_construction.py`
+    belong to a retired cluster that `run_demo.py` still invokes.
