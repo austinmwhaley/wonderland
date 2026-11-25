@@ -86,65 +86,138 @@ def _profile_block(demo: Path, keys: list[str]) -> tuple[np.ndarray, dict]:
     return mat, {"fields": list(levels), "levels": {f: list(v) for f, v in levels.items()}}
 
 
-def _elapsed_block(demo: Path, keys: list[str], k_types: int = 5) -> tuple[np.ndarray, dict]:
-    """Per-class elapsed-time ("hazard") state — DEC-665's pre-registered block.
+# DEC-667 pre-registered the wider recency block: per-type counts in 7 / 30 / 90-day windows
+# plus the elapsed times. These windows are the frozen evaluation values (like a gate
+# threshold), not tunables; a stream with a shorter history window gets them clipped to what
+# it can actually observe, and the receipt records the effective windows and dims.
+ELAPSED_WINDOWS_DAYS = (7.0, 30.0, 90.0)  # DEC-667
+ELAPSED_K_TYPES = 5  # DEC-667: the five most frequent event types
 
-    6 dims, no fitted parameter: `log1p(days since the customer's last event)` plus, for each
-    of the stream's `k_types` most frequent event types, `log1p(days since that type)`.
-    Censored at the stream's own history window (so "never happened" is the window, not
-    infinity). Derived from the stream's vocabulary, never from field names — the same
-    construction applies to any stream (DEC-592).
+_MS_PER_DAY = float(np.timedelta64(1, "D") / np.timedelta64(1, "ms"))
 
-    Why: the bank was information-bound on purchase recency — a 12-feature
-    frequency+elapsed-time head beat the 179-dim bank by 0.107 nats on purchase, and the
-    bank was no better than a 6-feature frequency summary (DEC-665).
+
+def elapsed_features(
+    hist,
+    keys: list[str],
+    as_of: np.datetime64,
+    window_days: float,
+    *,
+    k_types: int = ELAPSED_K_TYPES,
+    windows_days: tuple[float, ...] = ELAPSED_WINDOWS_DAYS,
+) -> tuple[np.ndarray, dict]:
+    """Frequency + elapsed-time ("hazard") state — the DEC-667 pre-registered wider block.
+
+    Pure computation over a history frame (no file I/O), so the served bank and the unit tests
+    share one definition. Layout, per the stream's own vocabulary (never field names, DEC-592):
+
+        [ log1p(days since the customer's last event),
+          log1p(days since that type) for each of the k most frequent types,
+          log1p(count in window w) for each type x each window w ]
+
+    The windows are the pre-registered 7 / 30 / 90 days of DEC-667 (clipped to the stream's
+    own history window and de-duplicated, so a short stream carries only what it can observe);
+    `k_types` is the pre-registered 5, reduced to the number of types the stream actually has.
+    Censored at the stream's history window, so "never happened" is the window, not infinity.
+    No fitted parameter: every value is a count or an elapsed time from the stream.
+
+    Why: the 6-dim version (DEC-667) improved every class but was diluted by concatenation —
+    a standalone frequency+elapsed head gained 0.107 nats on purchase and only 0.028 survived
+    as 6 dims among 185. This block gives the signal enough capacity (15 count dims) to
+    survive the same uniform-penalty linear consumer, still without fitting anything.
     """
+    import datetime as dt
+
     import polars as pl
 
     from looking_glass.stream_adapter import to_ts_expr
 
+    if window_days <= 0:
+        raise ValueError(f"window_days must be positive, got {window_days!r}")
+    as_of_dt = np.datetime64(as_of, "us").astype(dt.datetime)
+    ts = to_ts_expr(pl.col("event_ts")).cast(pl.Datetime("us"))
+    hist = (
+        hist.filter(ts <= as_of_dt)
+        .select(
+            pl.col("customer_key").cast(pl.String),
+            pl.col("event_type").cast(pl.String),
+            ts.alias("_ts"),
+        )
+        .with_columns(
+            (
+                (pl.lit(as_of_dt, dtype=pl.Datetime("us")) - pl.col("_ts"))
+                .dt.total_milliseconds()
+                .cast(pl.Float64)
+                / _MS_PER_DAY
+            ).alias("_age_days")
+        )
+    )
+    windows = tuple(
+        sorted({float(min(float(w), window_days)) for w in windows_days if float(w) > 0.0})
+    )
+
+    freq = (
+        hist.group_by("event_type")
+        .agg(pl.len().alias("n"))
+        .sort(["n", "event_type"], descending=[True, False])
+        .head(max(int(k_types), 0))
+    )
+    types = [str(t) for t in freq["event_type"].to_list()]
+
+    aggs = [pl.col("_age_days").min().alias("last_all")]
+    for i, ty in enumerate(types):
+        is_ty = pl.col("event_type") == ty
+        aggs.append(pl.col("_age_days").filter(is_ty).min().alias(f"last_{i}"))
+        for j, w in enumerate(windows):
+            aggs.append((is_ty & (pl.col("_age_days") <= w)).sum().alias(f"count_{i}_{j}"))
+    by_key = hist.group_by("customer_key").agg(aggs)
+    frame = pl.DataFrame({"customer_key": [str(k) for k in keys]}).join(
+        by_key, on="customer_key", how="left"
+    )
+
+    def take(name: str, fill: float) -> np.ndarray:
+        return frame[name].cast(pl.Float64).fill_null(fill).to_numpy()
+
+    def days_to_log1p(age: np.ndarray) -> np.ndarray:
+        return np.log1p(np.clip(age, 0.0, float(window_days)))
+
+    dim = 1 + len(types) * (1 + len(windows))
+    out = np.empty((len(keys), dim), dtype=np.float64)
+    out[:, 0] = days_to_log1p(take("last_all", float(window_days)))
+    for i in range(len(types)):
+        out[:, 1 + i] = days_to_log1p(take(f"last_{i}", float(window_days)))
+        for j in range(len(windows)):
+            out[:, 1 + len(types) + i * len(windows) + j] = np.log1p(take(f"count_{i}_{j}", 0.0))
+    columns = ["elapsed_since_last_event"]
+    columns += [f"elapsed_since_{ty}" for ty in types]
+    columns += [f"count_{ty}_w{w:g}d" for ty in types for w in windows]
+    return out, {
+        "name": "elapsed",
+        "dim": int(dim),
+        "types": types,
+        "k_types": int(k_types),
+        "windows": [float(w) for w in windows],
+        "windows_pre_registered": [float(w) for w in windows_days],
+        "censored_days": float(window_days),
+        "transform": "log1p",
+        "columns": columns,
+        "note": (
+            "log1p(days) since the last event and since the last event of each of the k most "
+            "frequent types, plus log1p(counts) in the pre-registered 7/30/90-day windows "
+            "(DEC-667); stream-derived types, no fitted parameter"
+        ),
+    }
+
+
+def _elapsed_block(demo: Path, keys: list[str]) -> tuple[np.ndarray, dict]:
+    """Read the demo stream's causal history and build the elapsed block for `keys`."""
+    import polars as pl
+
     raw = pl.read_parquet(demo / "path_b" / "path_b_customer_event_stream.parquet")
     manifest = json.loads((demo / "manifest.json").read_text())
     as_of = np.datetime64(manifest["as_of"])
+    # 365 is a documented fallback only when the manifest declares no history window.
     window_days = float((manifest.get("window") or {}).get("days") or 365)
-
-    hist = raw.filter(to_ts_expr(pl.col("event_ts")) <= as_of)
-    counts = (
-        hist.group_by("event_type")
-        .agg(pl.len().alias("n"))
-        .sort("n", descending=True)
-        .head(k_types)
-    )
-    types = [str(x) for x in counts["event_type"].to_list()]
-
-    last_all = dict(
-        hist.group_by("customer_key").agg(pl.col("event_ts").max().alias("last")).iter_rows()
-    )
-    per_type = {}
-    for ty in types:
-        sub = hist.filter(pl.col("event_type") == ty)
-        per_type[ty] = dict(
-            sub.group_by("customer_key").agg(pl.col("event_ts").max().alias("last")).iter_rows()
-        )
-
-    def days_since(v) -> float:
-        if v is None:
-            return window_days
-        d = float((as_of - np.datetime64(v)) / np.timedelta64(1, "D"))
-        return float(np.clip(d, 0.0, window_days))
-
-    out = np.full((len(keys), 1 + len(types)), np.log1p(window_days), dtype=np.float64)
-    for i, k in enumerate(keys):
-        out[i, 0] = np.log1p(days_since(last_all.get(k)))
-        for j, ty in enumerate(types, start=1):
-            out[i, j] = np.log1p(days_since(per_type[ty].get(k)))
-    return out, {
-        "name": "elapsed",
-        "dim": int(out.shape[1]),
-        "types": types,
-        "censored_days": window_days,
-        "note": "log1p(days) since last event and since last event of each of the k most frequent types",
-    }
+    return elapsed_features(raw, keys, as_of, window_days)
 
 
 def main() -> int:
@@ -160,7 +233,8 @@ def main() -> int:
     ap.add_argument(
         "--with-elapsed",
         action="store_true",
-        help="append the 6-dim per-class elapsed-time block (DEC-665 pre-registration)",
+        help="append the per-class frequency+elapsed block: counts in the pre-registered "
+        "7/30/90-day windows plus elapsed times (DEC-667; width-derived from the stream)",
     )
     a = ap.parse_args()
 

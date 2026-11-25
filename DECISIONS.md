@@ -12905,3 +12905,29 @@ THE HONEST AXIS: the architecture — the encoder's capacity/order-carrying. The
     key, and a changed input must miss the cache. Any mismatch → the cache is removed.
   - **PROCESS.** All four CPU workstreams run concurrently; G1 keeps the GPU to itself. The next
     certification chain runs AFTER they all land (rule I).
+
+- **DEC-670 (axis D — block-equalised consumer: REJECTED by its own pre-registered acceptance; recorded once).**
+  - **MEASURED** (`scripts/measure_block_equalised.py`, plain arm self-checks to 1.173098 vs the
+    record 1.173099, |Δ|=1.3e-6):
+    | arm | nll | Δ vs plain | paired CI |
+    |---|---|---|---|
+    | plain | 1.173098 | — | — |
+    | per-block z-score only | 1.173098 | +0.000000 | [0, 0] |
+    | block-equalised | **1.176959** | **+0.003861** | **[+0.00039, +0.00749]** |
+    Per class: purchase −0.0035, search −0.0077 (tiny gains), **view +0.0091 (regression)**,
+    email_send +0.0076.
+  - **VERDICT: FAIL.** Acceptance required an aggregate improvement AND a ≥ 0.02 gain on
+    purchase/search/view with no class regressing > 0.02. The aggregate gets WORSE with a CI
+    excluding zero on the wrong side, and the best per-class gain is 0.0077. Per DEC-669's
+    falsifier, the consumer's penalty structure is **not** the constraint on this object — the
+    recency line is closed here and is not retried.
+  - **METHOD NOTE (worth keeping).** The adopted head's `StandardScaler` already z-scores every
+    column, so a per-block scalar applied BEFORE it is algebraically cancelled — the script proves
+    that numerically (max row delta 0.0) and applies the equalisation after per-column z-scoring.
+    Any future "rescale the block" idea must account for this cancellation or it measures nothing.
+  - **WHAT THIS ADDS TO THE PICTURE.** Three independent consumer-side reweightings (temperature,
+    vector scaling, block equalisation) and three head families (ridge, logistic, balanced logistic)
+    all trade classes without moving the aggregate much. Together with DEC-665's block ablation
+    (no block matters) and the GBM diagnostic (linear head at its ceiling), the evidence now points
+    at the COMPARATOR, not the consumer, for the residual per-class gaps — which is exactly what
+    axis B's wider recency block and then the comparator decision are for.

@@ -2,6 +2,14 @@
 
 from __future__ import annotations
 
+import getpass
+import hashlib
+import json
+import os
+import pickle
+import tempfile
+from pathlib import Path
+
 import numpy as np
 import polars as pl
 
@@ -416,6 +424,12 @@ def _effect_targets(d, cfg):
         .agg([pl.col(k).cast(pl.Float64, strict=False).last().alias(k) for k in acts])
     )
     j = snd.join(rew, on=["customer_key", "_period"], how="left").fill_null(0.0)
+    # Canonical period order. Polars' group-by/join row order is NOT stable across
+    # calls in one process (measured: the same build permuted a customer's action
+    # rows), and these rows are consumed positionally as padded (P,K)/(P,) arrays.
+    # Sorting by period makes the object a function of its inputs; the effect loss
+    # sums BCE over periods, so the order is loss-neutral.
+    j = j.sort(["customer_key", "_period"])
     levels = [int(float(j[k].max() or 0)) + 1 for k in acts]
     per_cust = {}
     for g in j.partition_by("customer_key", maintain_order=True):
@@ -466,7 +480,9 @@ def _survival_horizons(d) -> list[float]:
     return [float(x) for x in np.geomspace(lo, hi, K)]
 
 
-def build_sequences(df, keys, cfg: CFMConfig, split, with_anchors: bool, min_events: int = 3):
+def _build_sequences_impl(
+    df, keys, cfg: CFMConfig, split, with_anchors: bool, min_events: int = 3
+):
     """Polars-first: partition once in Rust, then slice per group.
 
     ALL events are tokens (including exogenous action events — their identity is
@@ -614,3 +630,303 @@ def build_sequences(df, keys, cfg: CFMConfig, split, with_anchors: bool, min_eve
         "n_ambiguous": int(_n_ambiguous),
     }
     return seqs
+
+
+# ---------------------------------------------------------------------------
+# opt-in content-addressed cache for sequence construction (DEC-669 G(iii))
+# ---------------------------------------------------------------------------
+# Admissible ONLY on a byte-identical proof: a hit returns the exact object a
+# rebuild would produce (including the cfg-side derived state), and any changed
+# input yields a different key. Default OFF — with WONDERLAND_SEQ_CACHE unset the
+# public build_sequences executes the historical path and touches no cache code.
+_SEQ_CACHE_ENV = "WONDERLAND_SEQ_CACHE"
+_SEQ_CACHE_DIR_ENV = "WONDERLAND_SEQ_CACHE_DIR"
+# Output-shape contract: bump when the sequence dict's shape changes. Edits to the
+# constructors below invalidate automatically via the source digest (no hand-bump).
+_SEQ_CACHE_SCHEMA = "build_sequences/v1"
+_SEQ_CACHE_SOURCE_FNS = (
+    "_build_sequences_impl",
+    "_random_anchor_epochs",
+    "_covariates",
+    "_action_flags",
+    "_primary_numeric_field",
+    "_effect_targets",
+    "_h",
+)
+# cfg attributes build_sequences derives and downstream steps read; a hit restores
+# them so the cached call is indistinguishable from a rebuild (not just in `seqs`).
+_SEQ_CFG_STATE = (
+    "_effect_cache",
+    "_effect_levels",
+    "_effect_dim",
+    "_survival_cache",
+    "_survival_horizons_s",
+    "_profile_cache",
+    "_action_profile_levels",
+    "_action_profile_dims",
+    "_action_receipt",
+)
+# The last cache decision (a receipt): {"status": ..., "key": ..., ...}. Empty on
+# the default path — no cache code has run.
+_SEQ_CACHE_LAST: dict = {}
+
+
+def _seq_cache_enabled() -> bool:
+    return os.environ.get(_SEQ_CACHE_ENV, "").strip().lower() in ("1", "true", "yes", "on")
+
+
+def _seq_cache_receipt(**kw) -> None:
+    _SEQ_CACHE_LAST.clear()
+    _SEQ_CACHE_LAST.update(kw)
+
+
+def _data_digest(df) -> str | None:
+    """Content digest of the frame build_sequences consumes (order-sensitive).
+
+    Two independent 64-bit row-hash seeds plus shape/column/dtype identity: a
+    collision would require ~2^128 agreement. Unhashable frames return None, which
+    disables the cache for that call (fail safe, never a guess).
+    """
+    try:
+        h = hashlib.sha256()
+        h.update(
+            repr(
+                (
+                    int(df.height),
+                    int(df.width),
+                    tuple(df.columns),
+                    tuple(str(d) for d in df.dtypes),
+                )
+            ).encode()
+        )
+        for seed in (0, 1):
+            rows = np.ascontiguousarray(df.hash_rows(seed=seed).to_numpy())
+            h.update(rows.tobytes())
+        return h.hexdigest()
+    except Exception:  # noqa: BLE001 - cannot fingerprint: run uncached
+        return None
+
+
+def _seq_source_digest() -> str | None:
+    """Digest of the constructors' source — a code edit invalidates every entry."""
+    import inspect
+
+    try:
+        h = hashlib.sha256()
+        for name in _SEQ_CACHE_SOURCE_FNS:
+            h.update(inspect.getsource(globals()[name]).encode())
+        return h.hexdigest()
+    except Exception:  # noqa: BLE001 - no source (frozen/exec'd): run uncached
+        return None
+
+
+def _seq_cache_key(df, want, cfg: CFMConfig, split, with_anchors, min_events):
+    """Content address for one build_sequences output: ``(key, fields)`` or None.
+
+    Every construction input is in the key: the frame's content digest, the source
+    stream's path/size/mtime (a file swap changes the address even if a caller
+    passed an identical frame), ``as_of``, the sorted customer set and its split,
+    ``seq_len``, ``n_anchors``, ``split_seed``, ``with_anchors``, ``min_events``,
+    and every cfg field the constructors read. The function schema version and the
+    constructors' source digest pin the builder's identity.
+    """
+    data_digest = _data_digest(df)
+    source_digest = _seq_source_digest()
+    if data_digest is None or source_digest is None:
+        return None
+    stream = {"path": str(getattr(cfg, "db", "") or "")}
+    try:
+        st = os.stat(stream["path"])
+        stream.update({"size": int(st.st_size), "mtime_ns": int(st.st_mtime_ns)})
+    except OSError:
+        stream["stat"] = "missing"
+    names = [str(k) for k in want]
+    key_fields = {
+        "schema": _SEQ_CACHE_SCHEMA,
+        "source": source_digest,
+        "data": data_digest,
+        "stream": stream,
+        "as_of": None if getattr(cfg, "as_of", None) is None else str(cfg.as_of),
+        "keys": hashlib.sha256("\x1f".join(names).encode()).hexdigest(),
+        "n_keys": len(names),
+        "split": hashlib.sha256(
+            "\x1f".join(f"{k}\x1e{split.get(k, '')}" for k in want).encode()
+        ).hexdigest(),
+        "seq_len": int(cfg.seq_len),
+        "n_anchors": int(cfg.n_anchors),
+        "seed": int(cfg.split_seed),
+        "with_anchors": bool(with_anchors),
+        "min_events": int(min_events),
+        "primary_numeric": None
+        if getattr(cfg, "primary_numeric", None) is None
+        else str(cfg.primary_numeric),
+        "attr_fields": [str(x) for x in (getattr(cfg, "attr_fields", ()) or ())],
+        "numeric_fields": [str(x) for x in (getattr(cfg, "numeric_fields", ()) or ())],
+        "action_fields": [str(x) for x in (getattr(cfg, "action_fields", ()) or ())],
+        "effect_actions": [str(x) for x in (getattr(cfg, "effect_actions", ()) or ())],
+        "exogenous_events": sorted(
+            str(x) for x in (getattr(cfg, "exogenous_events", ()) or ())
+        ),
+        "survival": bool(getattr(cfg, "survival", False)),
+        "action_profile": bool(getattr(cfg, "action_profile", False)),
+        "action_profile_fields": [
+            str(x) for x in (getattr(cfg, "action_profile_fields", ()) or ())
+        ],
+    }
+    blob = json.dumps(key_fields, sort_keys=True, default=str).encode()
+    return hashlib.sha256(blob).hexdigest(), key_fields
+
+
+def _seq_cache_dir() -> Path | None:
+    """The per-uid cache dir, or None when it cannot be trusted.
+
+    A pickled object is code execution, so the dir must be owned by this uid and
+    not group/world-writable. Untrusted/unusable location = cache OFF (fail safe).
+    """
+    raw = os.environ.get(_SEQ_CACHE_DIR_ENV)
+    if raw:
+        d = Path(raw).expanduser()
+    else:
+        uid = str(os.getuid()) if hasattr(os, "getuid") else getpass.getuser()
+        d = Path(tempfile.gettempdir()) / f"wonderland-seq-cache-{uid}"
+    try:
+        d.mkdir(parents=True, exist_ok=True, mode=0o700)
+        st = d.stat()
+    except OSError:
+        return None
+    if not d.is_dir():
+        return None
+    if hasattr(os, "getuid") and st.st_uid != os.getuid():
+        return None
+    if st.st_mode & 0o022:
+        return None
+    return d
+
+
+def _seq_cache_load(path: Path, key: str):
+    """``(seqs, cfg_state)`` for a valid entry; None on any problem (a MISS)."""
+    try:
+        with open(path, "rb") as f:
+            payload = pickle.load(f)
+        if (
+            not isinstance(payload, dict)
+            or payload.get("schema") != _SEQ_CACHE_SCHEMA
+            or payload.get("key") != key
+        ):
+            return None
+        seqs = payload.get("seqs")
+        state = payload.get("cfg_state")
+        if not isinstance(seqs, list) or not isinstance(state, dict):
+            return None
+        return seqs, state
+    except Exception:  # noqa: BLE001 - corrupt/unreadable entry: rebuild, never raise
+        return None
+
+
+def _seq_cache_store(path: Path, key: str, seqs, cfg: CFMConfig) -> str | None:
+    """Atomically persist one entry. Returns an error string, or None on success."""
+    tmp = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    try:
+        state = {a: getattr(cfg, a) for a in _SEQ_CFG_STATE if hasattr(cfg, a)}
+        payload = {"schema": _SEQ_CACHE_SCHEMA, "key": key, "seqs": seqs, "cfg_state": state}
+        with open(tmp, "wb") as f:
+            pickle.dump(payload, f, protocol=pickle.HIGHEST_PROTOCOL)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, path)
+        return None
+    except Exception as e:  # noqa: BLE001 - a cache write failure must not fail a run
+        try:
+            tmp.unlink(missing_ok=True)
+        except OSError:
+            pass
+        return f"{type(e).__name__}: {e}"
+
+
+def _seq_restore_cfg(cfg: CFMConfig, state: dict) -> None:
+    for a in _SEQ_CFG_STATE:
+        if a in state:
+            setattr(cfg, a, state[a])
+        elif hasattr(cfg, a):
+            try:
+                delattr(cfg, a)
+            except AttributeError:
+                pass
+
+
+def _build_sequences_cached(df, keys, cfg: CFMConfig, split, with_anchors, min_events):
+    keys = list(keys)
+    # Caller-supplied derived state changes the output (eff_map etc.) and is not in
+    # the key: keep that path uncached rather than key a result built from un-keyed
+    # process state. A fresh cfg is the cold, cacheable path.
+    preset = [
+        a
+        for a in ("_effect_cache", "_survival_cache", "_profile_cache")
+        if hasattr(cfg, a)
+    ]
+    if preset:
+        # A caller-supplied derived cache changes the output; keep that path uncached
+        # rather than key a result built from un-keyed process state.
+        _seq_cache_receipt(status="bypass_preset", preset=preset)
+        return _build_sequences_impl(df, keys, cfg, split, with_anchors, min_events)
+    want = sorted(set(keys))
+    keyed = _seq_cache_key(df, want, cfg, split, with_anchors, min_events)
+    if keyed is None:
+        _seq_cache_receipt(status="bypass_unkeyable")
+        return _build_sequences_impl(df, keys, cfg, split, with_anchors, min_events)
+    key, key_fields = keyed
+    d = _seq_cache_dir()
+    if d is None:
+        _seq_cache_receipt(status="bypass_unsafe_dir", key=key, key_fields=key_fields)
+        return _build_sequences_impl(df, keys, cfg, split, with_anchors, min_events)
+    path = d / f"{key}.pkl"
+    existed = path.exists()
+    loaded = _seq_cache_load(path, key)
+    if loaded is not None:
+        seqs, state = loaded
+        _seq_restore_cfg(cfg, state)
+        _seq_cache_receipt(
+            status="hit",
+            key=key,
+            path=str(path),
+            n_seqs=len(seqs),
+            key_fields=key_fields,
+        )
+        print(f"[seq-cache] hit {key[:12]} ({len(seqs)} seqs) <- {path}", flush=True)
+        return seqs
+    seqs = _build_sequences_impl(df, keys, cfg, split, with_anchors, min_events)
+    err = _seq_cache_store(path, key, seqs, cfg)
+    status = "miss_corrupt" if existed else "miss"
+    _seq_cache_receipt(
+        status=status,
+        key=key,
+        path=str(path),
+        n_seqs=len(seqs),
+        stored=err is None,
+        store_error=err,
+        key_fields=key_fields,
+    )
+    print(
+        f"[seq-cache] {status} {key[:12]} ({len(seqs)} seqs) -> {path}"
+        + (f" [store failed: {err}]" if err else ""),
+        flush=True,
+    )
+    return seqs
+
+
+def build_sequences(df, keys, cfg: CFMConfig, split, with_anchors: bool, min_events: int = 3):
+    """Polars-first: partition once in Rust, then slice per group.
+
+    ALL events are tokens (including exogenous action events — their identity is
+    an INPUT channel). ``is_action`` rides along per event so the self-supervised
+    losses can avoid predicting action targets. ``min_events`` gates who gets a
+    sequence at all (training needs >= 3 events to learn from; STATE rows pass 1).
+
+    OPT-IN cache (DEC-669, default OFF): ``WONDERLAND_SEQ_CACHE=1`` serves a
+    content-addressed, byte-identical pickled result under
+    ``WONDERLAND_SEQ_CACHE_DIR`` (default: a per-uid dir under the system temp).
+    Unset, this function is the historical path and executes no cache code.
+    """
+    if _seq_cache_enabled():
+        return _build_sequences_cached(df, keys, cfg, split, with_anchors, min_events)
+    return _build_sequences_impl(df, keys, cfg, split, with_anchors, min_events)
