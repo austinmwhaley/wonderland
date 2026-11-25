@@ -150,6 +150,11 @@ SECTIONS = (
     Section("B6", "Transferable", "Does it add signal on held-out consumers?"),
     Section("B7", "Robust", "Does it stay honest under shift and missingness?"),
     Section("B8", "Reproducible", "Is the artifact an identity?"),
+    Section(
+        "B9",
+        "The encoder beats the 1-gram baseline",
+        "Does the encoder's frozen output beat the existing methods — the 1-gram baseline — on the customer event stream?",
+    ),
 )
 
 
@@ -377,6 +382,17 @@ ROWS = (
         "robustness_law",
         ("encoder_robustness_law.json", ""),
         producer="measure_robustness_law.py",
+    ),
+    # ---- B9: the encoder beats the 1-gram baseline (the gate that certifies the encoder)
+    BRow(
+        "B9",
+        "B9.1",
+        "The encoder beats the 1-gram baseline on the customer event stream",
+        "the ridge head (the shipping consumer head) beats the 1-gram baseline on the demo — the encoder is a foundation, not a green receipt",
+        "beats the 1-gram baseline (paired CI excluding 0) on the demo — the outcome, not a disclosure",
+        "encoder_win",
+        ("encoder_win.json", ""),
+        producer="measure_encoder_win.py",
     ),
     # ---- B8: reproducible -------------------------------------------------------
     BRow(

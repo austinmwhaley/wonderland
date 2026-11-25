@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "a4eec44ed799cdf0",
+    "behavior_hash": "0fccd9a89829f47d",
     "command": "scripts/measure_robustness_law.py --products looking_glass/artifacts/cfm_v2k_vf2_bank",
-    "generated_at": "2026-11-24T21:34:26+00:00",
-    "git_commit": "5f933354857addb27e96950abccbd332ee1ab6b2",
+    "generated_at": "2026-11-25T03:59:29+00:00",
+    "git_commit": "eb3fb407ed1b61c5b8dda623e35ebfd6d79c96e5",
     "producer": "measure_robustness_law.py"
   },
   "as_of": "2025-01-01",
@@ -81,7 +81,7 @@
     "sigma_unrandomized": 1.799396,
     "source": "view_faceplate.response_calibration"
   },
-  "seconds": 0.5,
+  "seconds": 0.4,
   "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899",
   "why": "B7.2 reports the served uncertainty's measured coverage and its sensitivity to unlogged events: next-time 80% interval calibrated on A and scored on B; occurrence calibration on B; the response head's own calibration quoted; the level block recomputed under seeded 10%/25% event dropping. No missing event is treated as observed."
 }

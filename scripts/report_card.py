@@ -783,6 +783,35 @@ def _eval_b_row(receipts: Path, row: B.BRow, current_hash: str) -> tuple[str, st
             f"{blk.get('n_customers')} · config {blk.get('config_sha256')} · "
             f"checkpoint {blk.get('checkpoint_sha256')}",
         )
+    if row.kind == "encoder_win":
+        note = _meta_problem(rc, current_hash)
+        if note:
+            return J.UNKNOWN, f"{note} — re-run {row.producer}"
+        if not rc.get("complete"):
+            return J.FAIL, f"{name}: encoder-win receipt incomplete"
+        blk = rc.get("encoder_win") or {}
+        if not blk.get("complete"):
+            return J.FAIL, f"{name}: encoder-win block incomplete"
+        beats = blk.get("beats_unigram")
+        ci_lo, ci_hi = blk.get("ci_lo"), blk.get("ci_hi")
+        if beats is not True:
+            return J.FAIL, (
+                f"{name}: the encoder does NOT beat the 1-gram baseline on the demo "
+                f"(beats_unigram={beats}) — the outcome is not achieved"
+            )
+        if not (_finite(ci_lo) and _finite(ci_hi)):
+            return J.UNKNOWN, f"{name}: paired CI values missing"
+        if float(ci_hi) >= 0:
+            return J.FAIL, (
+                f"{name}: paired CI [{ci_lo:+.4f}, {ci_hi:+.4f}] includes 0 — "
+                "the encoder does not significantly beat the 1-gram baseline"
+            )
+        return (
+            J.PASS,
+            f"the encoder beats the 1-gram baseline on the demo (beats_unigram=True, "
+            f"paired CI [{ci_lo:+.4f}, {ci_hi:+.4f}] < 0, n={blk.get('n_B_rows', '?')}) "
+            f"— the outcome: the encoder is a foundation, not a green receipt",
+        )
     if row.kind == "legacy":
         return J.UNKNOWN, f"legacy receipt {name} (no behavior stamp); re-run {row.producer}"
     note = _meta_problem(rc, current_hash)

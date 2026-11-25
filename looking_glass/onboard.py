@@ -582,8 +582,17 @@ def _int_value(value: Any) -> int | None:
     return None
 
 
-def _derive_reward_event(df: pl.DataFrame, value_col: str | None) -> str | None:
-    if value_col is None or df.height == 0:
+def _derive_reward_event(df: pl.DataFrame, has_value: bool) -> str | None:
+    """Derive the reward event from the canonical frame's `value` column.
+
+    Contract (B-023, made honest): `df` is the canonical frame — always has a `value`
+    column (populated from the source value column, or from attributes, or 0.0), so the
+    aggregation reads that column, never the source's. `has_value` is the source-declared
+    value guard: when the source declared no value column and the value does not come from
+    attributes, return None (no reward event derivable). It is a guard, not a column
+    selector — the aggregation never uses the source's column name.
+    """
+    if not has_value or df.height == 0:
         return None
     agg = (
         df.group_by("event_type")
@@ -773,9 +782,7 @@ def onboard(
         if reward_event is not None
         else _derive_reward_event(
             canonical,
-            src_value
-            if src_value is not None
-            else ("event_attributes.value" if value_from_attrs else None),
+            src_value is not None or value_from_attrs,
         )
     )
 

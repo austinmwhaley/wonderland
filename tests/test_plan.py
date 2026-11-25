@@ -164,7 +164,7 @@ def test_the_card_renders_the_same_tree_with_verdicts(tmp_path, monkeypatch):
     assert "The plan — the tree this card measures" in md
     plan = info["plan"]
     assert plan["root"] == J.UNKNOWN  # no receipts, nothing measured -> never green
-    assert plan["card"] == 31 and plan["dec"] == 3 and plan["v1"] == 5
+    assert plan["card"] == 32 and plan["dec"] == 3 and plan["v1"] == 5
     assert plan["atomic_total"] == plan["card"] + plan["dec"] + plan["v1"]
     for n in P.NODES:
         assert n.ident in plan["nodes"]

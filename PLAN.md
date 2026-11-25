@@ -46,7 +46,7 @@ not measure yet instead of pretending they do not exist.
 
 ## 2. The tree
 
-The census: **39 atomic problems** (31 measured · 3 DEC-frozen · 5 v1) under **19 interior problems** — progress is the solved count, read off the tree at every level.
+The census: **40 atomic problems** (32 measured · 3 DEC-frozen · 5 v1) under **20 interior problems** — progress is the solved count, read off the tree at every level.
 
 ### G — A certified universal donor, delivered
 
@@ -363,6 +363,22 @@ Unlogged events must be carried as uncertainty, never faked: missingness handlin
 
 **Solved when:** its frozen gate passes on a current receipt (the gate lives in the frozen spec — see the atomic-problems table and the card's row)
 
+##### B9 — The encoder beats the 1-gram baseline
+
+*Does the encoder's frozen output beat the existing methods — the 1-gram baseline — on the customer event stream?*
+
+The gate that certifies the encoder itself — the encoder beats the 1-gram baseline on the customer event stream, the outcome, not a disclosure.
+
+**Solved when:** every child below is solved (worst-child rule)
+
+###### B9.1 — The encoder beats the 1-gram baseline on the customer event stream
+
+*the ridge head (the shipping consumer head) beats the 1-gram baseline on the demo — the encoder is a foundation, not a green receipt*
+
+The outcome: the encoder's frozen output beats the 1-gram baseline on the customer event stream — the encoder is a foundation, not a green receipt. Without this gate, a green card is indistinguishable from a good encoder.
+
+**Solved when:** its frozen gate passes on a current receipt (the gate lives in the frozen spec — see the atomic-problems table and the card's row)
+
 #### P4 — The consequence is delivered
 
 *Does PATH B (frozen encoder -> simple head) beat PATH A (wide table -> GBM incumbent) for the four consumer families, with controls, brain alone and brain+ledger?*
@@ -549,6 +565,7 @@ A decision that cannot be explained from its artifacts is not operable, and an e
 | `B6.3` | Broad held-out transfer family | E >= table on >= 2/3 of the published family; family mean > 0; controls below E | quality | measure_transfer_law.py |
 | `B7.1` | ECE / OOD retention | ECE(next event) <= 0.1; OOD retention recorded (DEC-585) | quality | measure_b_props.py |
 | `B7.2` | Missingness / unlogged confounders | coverage reported (next-time, occurrence, response, missingness sensitivity) | reporting | measure_robustness_law.py |
+| `B9.1` | The encoder beats the 1-gram baseline on the customer event stream | beats the 1-gram baseline (paired CI excluding 0) on the demo — the outcome, not a disclosure | quality | measure_encoder_win.py |
 | `JUDGE-supervised-brain` | supervised :: brain alone (PROGRESS) | every non-degenerate task: paired CI excludes 0 vs PATH A; controls below brain | quality | judge_leg_supervised.json |
 | `JUDGE-supervised-brain_ledger` | supervised :: brain + ledger (DELIVERY, non-inferiority) | every non-degenerate task: paired CI excludes 0 vs PATH A; controls below brain | quality | judge_leg_supervised.json |
 | `JUDGE-unsupervised-brain` | unsupervised :: brain alone (PROGRESS) | every non-degenerate task: paired CI excludes 0 vs PATH A; controls below brain | quality | judge_leg_unsupervised.json |
@@ -584,13 +601,13 @@ not duplicate atoms:
 
 ## 4. What "all solved" means — exactly
 
-- Every **measured atom** (31) passes its frozen gate on a current
+- Every **measured atom** (32) passes its frozen gate on a current
   receipt: that is `T0`, the encoder battery.
 - Every **DEC-frozen atom** (3) closes only by its pre-registered run
   meeting the recorded bars and the decision being logged — never by a lab receipt and
   never by narration.
 - Every **v1 atom** (5) passes the stack's own gate.
-- Every **interior problem** (19) is solved when all the atoms under
+- Every **interior problem** (20) is solved when all the atoms under
   it are solved: the worst-child rule, nothing else.
 - **No open BREAKING/MAJOR BACKWARD requirement** (AUDIT.md).
 

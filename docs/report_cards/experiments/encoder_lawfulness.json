@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "a4eec44ed799cdf0",
+    "behavior_hash": "0fccd9a89829f47d",
     "command": "scripts/measure_construction_law.py --products looking_glass/artifacts/cfm_v2k_vf2_bank",
-    "generated_at": "2026-11-24T21:16:11+00:00",
-    "git_commit": "5f933354857addb27e96950abccbd332ee1ab6b2",
+    "generated_at": "2026-11-25T03:58:45+00:00",
+    "git_commit": "eb3fb407ed1b61c5b8dda623e35ebfd6d79c96e5",
     "producer": "measure_construction_law.py"
   },
   "checks": {
@@ -27,21 +27,21 @@
     },
     "mass_additivity": {
       "evidence": "mass additivity scan(d, b1+b2) == scan(d,b1)+scan(d,b2) on real drives (disjoint event supports, float64): worst relative error 4.819e-16 (gate 1e-10)",
-      "seconds": 1.5,
+      "seconds": 1.4,
       "working": true,
       "worst_rel_err": 4.819029600981345e-16
     },
     "scan_associativity": {
       "evidence": "merge law F(g\u2218f)=F(g)\u2218F(f) on 20 real sequences x 5 split points (float64, model's own decay/drive, continuous_time=True): worst relative error 1.105e-15 (gate 1e-10)",
-      "seconds": 3.3,
+      "seconds": 3.1,
       "working": true,
       "worst_rel_err": 1.105497335394747e-15
     },
     "schema_variant": {
-      "evidence": "renamed client_id/occurred_at/event/attributes/total -> onboard resolved {'customer_key': 'client_id', 'event_ts': 'occurred_at', 'event_type': 'event', 'brand': None, 'entity_type': None, 'entity_id': None, 'source_table': 'source_table', 'value': 'value', 'event_attributes': ['attributes', 'total']}; 2341648 rows kept (source 2341648); 5000 customers encoded; encoder trained on the resolved stream (d=64,L=1,e=1): E finite=True, best=50.8919; zero pipeline-code edits",
+      "evidence": "renamed client_id/occurred_at/event/attributes/total -> onboard resolved {'customer_key': 'client_id', 'event_ts': 'occurred_at', 'event_type': 'event', 'brand': None, 'entity_type': None, 'entity_id': None, 'source_table': 'source_table', 'value': 'value', 'event_attributes': ['attributes', 'total']}; 2341648 rows kept (source 2341648); 5000 customers encoded; encoder trained on the resolved stream (d=64,L=1,e=1): E finite=True, best=33.9141; zero pipeline-code edits",
       "n_customers": 5000,
       "n_rows": 2341648,
-      "seconds": 89.7,
+      "seconds": 81.3,
       "working": true
     }
   },
@@ -78,6 +78,6 @@
     "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
   },
   "scan_merge_delta": 8.881784197001252e-16,
-  "seconds": 122.6,
+  "seconds": 100.9,
   "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
 }

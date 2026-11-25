@@ -134,3 +134,44 @@ def test_onboard_drops_null_customer_and_time(tmp_path):
     assert receipt["n_rows"] == 2 and receipt["n_customers"] == 2
     assert any("dropped 2 rows" in w for w in receipt["warnings"])
     assert json.loads((out_dir / "onboard_meta.json").read_text()) == receipt
+
+
+def test_derive_reward_event_noop_on_canonical_frame():
+    """DEC-634 no-op proof: the signature fix (has_value guard instead of vestigial
+    value_col) leaves the derived reward event byte-identical on the canonical frame."""
+    from looking_glass.onboard import _derive_reward_event
+
+    canonical = pl.DataFrame(
+        {
+            "customer_key": ["u1", "u1", "u2"],
+            "event_ts": [
+                "2024-01-01T00:00:00+00:00",
+                "2024-01-02T00:00:00+00:00",
+                "2024-01-01T00:00:00+00:00",
+            ],
+            "event_type": ["send", "purchase", "purchase"],
+            "brand": ["", "", ""],
+            "entity_type": ["", "", ""],
+            "entity_id": ["", "", ""],
+            "source_table": ["s", "s", "s"],
+            "value": [0.0, 10.0, 5.0],
+            "event_attributes": ["{}", "{}", "{}"],
+        },
+        schema={
+            "customer_key": pl.String,
+            "event_ts": pl.String,
+            "event_type": pl.String,
+            "brand": pl.String,
+            "entity_type": pl.String,
+            "entity_id": pl.String,
+            "source_table": pl.String,
+            "value": pl.Float64,
+            "event_attributes": pl.String,
+        },
+    )
+    # has_value=True: the canonical frame's value column is aggregated (purchase=15.0 > send=0.0)
+    assert _derive_reward_event(canonical, True) == "purchase"
+    # has_value=False: the guard returns None (no reward event derivable)
+    assert _derive_reward_event(canonical, False) is None
+    # empty frame: None regardless of the guard
+    assert _derive_reward_event(canonical.head(0), True) is None

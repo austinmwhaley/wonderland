@@ -1,0 +1,48 @@
+{
+  "_meta": {
+    "behavior_hash": "0fccd9a89829f47d",
+    "command": "measure_encoder_win.py",
+    "generated_at": "2026-11-25T04:30:10+00:00",
+    "git_commit": "eb3fb407ed1b61c5b8dda623e35ebfd6d79c96e5",
+    "producer": "measure_encoder_win.py"
+  },
+  "complete": true,
+  "encoder_win": {
+    "beats_gram1": null,
+    "beats_unigram": false,
+    "ci_hi": 0.05544707439203897,
+    "ci_lo": 0.0016201559416647172,
+    "classes": [
+      "email_send",
+      "purchase",
+      "return",
+      "search",
+      "view"
+    ],
+    "classes_excluded": [],
+    "complete": true,
+    "n_A": 3500,
+    "n_B_rows": 1500,
+    "n_customers": 5000,
+    "nll_base": 1.423192,
+    "nll_enc": 1.452252,
+    "paired_ci_enc_minus_base": [
+      0.0016201559416647172,
+      0.05544707439203897
+    ],
+    "per_class_n_A": {
+      "email_send": 1238,
+      "purchase": 412,
+      "return": 15,
+      "search": 593,
+      "view": 1242
+    }
+  },
+  "kind": "encoder_win",
+  "products": {
+    "path": "looking_glass/artifacts/cfm_v2k_vf2_bank",
+    "tag": null
+  },
+  "protocol": "DEC-635: the ridge head (the shipping consumer head) beats the pooled 1-gram baseline on the customer event stream \u2014 the ridge head is fit on split A, scored on split B, the paired bootstrap CI of (nll_enc - nll_base) must exclude 0. The outcome: the encoder is a foundation, not a green receipt.",
+  "seconds": 2.8
+}
