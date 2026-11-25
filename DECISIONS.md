@@ -12707,3 +12707,28 @@ THE HONEST AXIS: the architecture — the encoder's capacity/order-carrying. The
   - **ALREADY IN FLIGHT (not restarted).** The chain re-stamp in flight is the verification of items 1–4 of
     the previous roadmap; its two controls (card SOLVED at the current hash, `best_known`
     unchanged) stand as the acceptance for that work.
+
+- **DEC-664 (G1 pre-registration — the looped GPT trunk, measured at the certified population and scored by the adopted head).**
+  - **NODE:** P2/E1 — the donor's capacity. The trunk's `eff_rank` is 2.649 against a null of
+    105.535; the served bank compensates with hand statistics, so no trunk-only capacity claim
+    exists. This is the first trunk that is a *different architecture* rather than another
+    algebra flag on the same SSM.
+  - **WHY NOW.** The Dory-style looped GPT trunk is mainlined (DEC-651), passes 9 contract tests,
+    and has **never been measured** at the certified population or with the adopted consumer.
+    Every earlier architecture verdict (DEC-641/643/644) was confounded twice — uncalibrated head
+    and a 1/10 population — so the architecture line is genuinely unmeasured.
+  - **THE AXIS (one).** `trunk='looped_gpt'`, `n_loops=2`, everything else identical to the
+    certified recipe: demo_v2, as_of 2025-01-01, anchors 6, **--customers 5000**, dim 256, batch 64,
+    lr 3e-4, counter_type_values/ledger_recency/serve_unfaded on. Consumer: the adopted
+    multinomial logistic head (the B9.1 default).
+  - **MEASURE.** The B9.1 statistic (paired bootstrap CI of nll_enc − nll_base on split B), the
+    `eff_rank` from the portfolio receipt, the O(T²) wall clock from `step_time`, and every
+    per-class nll — each beside the SSM record **1.173099 / −0.250093**.
+  - **FALSIFIER.** The looped trunk is ADOPTED as a measured alternative only if (a) its paired CI
+    excludes 0 (it beats the 1-gram), and (b) it beats the SSM record on `nll_enc`. If it fails,
+    it is recorded as a measured negative — **and it stays in the tree**: DEC-651's doctrine makes
+    both trunks first-class regardless of the record, because the frontier's own practice is
+    looped transformers and the project must be able to build them.
+  - **DISCLOSURE.** The looped trunk is O(T²) in attention; a slower wall clock is a recorded
+    property, not a failure. If the training run OOMs at the 30 GB slice, that is recorded as a
+    BUDGET wall with the peak, not retried silently.
