@@ -12881,3 +12881,27 @@ THE HONEST AXIS: the architecture — the encoder's capacity/order-carrying. The
   - **I · PROCESS RULE (learned today).** A certification chain runs with the box to itself. Swarm
     work and a re-stamp are sequenced, never concurrent — the last chain took 25 min under
     contention versus 24 min clean but with the B stage inflated 3–5×.
+
+- **DEC-669 (parallel execution of the forward queue — pre-registrations for the two scientific axes; the rest are engineering/diagnostic).**
+  - **AXIS D (pre-registered): block-equalised consumer features.** The dilution that cost the
+    recency block 3/4 of its standalone effect is one uniform L2 over 185 features, where a 6-dim
+    block is swamped by 170 others. Fix on the CONSUMER side only: scale each served BLOCK to unit
+    total variance before the head's penalty (`x_block / sqrt(trace(cov_block))`), so every block
+    enters the fit with equal weight regardless of its width. Still linear, still the shipping
+    head family (DEC-407). Frozen protocol: same split, multinomial logistic, C chosen on the A
+    tail holdout, scored on B, paired 95% bootstrap. Acceptance: aggregate improves AND at least
+    one of {purchase, search, view} improves by ≥ 0.02 with no class regressing > 0.02.
+    Falsifier: neither moves → the consumer's penalty structure is not the constraint and the
+    recency line is closed on this object.
+  - **AXIS F (diagnostic, no gate): the smallest sufficient bank.** Measure, by exhaustive
+    block-subset ablation with a fixed head, the smallest block set whose split-B nll stays within
+    0.02 of the full bank — reported per class. This is a MEASUREMENT for a future B5 minimality
+    claim, not a served-contract change; adoption would require its own pre-registration and
+    re-stamp.
+  - **ENGINEERING G(iii) (equivalence-gated, no scientific claim): cache sequence construction.**
+    Training rebuilds sequences every run (13 s of a 65 s iteration). A content-addressed cache
+    keyed by (stream bytes, as_of, customer set, seq_len, anchors) is admissible only with a
+    byte-identical proof: the cached and rebuilt sequence objects must compare equal for the same
+    key, and a changed input must miss the cache. Any mismatch → the cache is removed.
+  - **PROCESS.** All four CPU workstreams run concurrently; G1 keeps the GPU to itself. The next
+    certification chain runs AFTER they all land (rule I).
