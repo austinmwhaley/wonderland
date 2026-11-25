@@ -68,7 +68,10 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument(
         "--products",
-        default="/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k",
+        # DEC-656: B6.2 certifies the SERVED 59-dim object (donor slice), not the raw
+        # trunk (cfm_v2k, 256-dim). The stale default made B6.2 fail on a dimensional
+        # mismatch rather than on a measurement — the same defect class as DEC-655.
+        default="/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k_vf2_c32rvd",
     )
     ap.add_argument(
         "--demo",

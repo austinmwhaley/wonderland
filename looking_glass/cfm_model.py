@@ -1412,8 +1412,19 @@ class CFM(nn.Module):
             )
         )
         with torch.no_grad():
+            # DEC-654 axis D: fused EMA. The historical per-parameter `mul_`/`add_` loop emits
+            # ~2 ops per tensor — measured 120,733 `aten::copy_` calls in 6 steps, with the
+            # train step ENQUEUE-bound (CPU 13.8 s vs CUDA 9.1 s). `_foreach_*` applies the
+            # identical elementwise math in one launch per (dtype, device) group, so numerics
+            # are unchanged and the launch count collapses.
+            groups: dict = {}
             for pt, ps in pairs:
-                pt.data.mul_(1 - tau).add_(ps.data, alpha=tau)
+                groups.setdefault((pt.dtype, pt.device), ([], []))
+                groups[(pt.dtype, pt.device)][0].append(pt.data)
+                groups[(pt.dtype, pt.device)][1].append(ps.data)
+            for dst, src in groups.values():
+                torch._foreach_mul_(dst, 1 - tau)
+                torch._foreach_add_(dst, src, alpha=tau)
 
     def tokens_batch(self, t):
         out = self.emb_et(t["et"]) + self.w_dt(t["dt"]) + self.w_co(t["co"]) + self.w_tod(t["tod"])

@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "0fccd9a89829f47d",
-    "command": "scripts/measure_donor.py --products looking_glass/artifacts/cfm_v2k_vf2_bank",
-    "generated_at": "2026-11-25T03:59:04+00:00",
-    "git_commit": "eb3fb407ed1b61c5b8dda623e35ebfd6d79c96e5",
+    "behavior_hash": "2791055694dcbbdc",
+    "command": "scripts/measure_donor.py --products looking_glass/artifacts/cfm_v2k_vf2_c32rvd",
+    "generated_at": "2026-11-25T19:18:45+00:00",
+    "git_commit": "d85630ab26edce94212638963ae932f30ce5a202",
     "producer": "measure_donor.py"
   },
   "combined_protocol": "v2 (DEC-594): table_E = mean(table ridge, E ridge) \u2014 a fixed ensemble of the two fitted heads, no weights fit on B; the v1 hstack(fair,E) arm is recorded alongside as table_E_hstack",
@@ -20,8 +20,8 @@
   "n_B": 1485,
   "note": "raw and fair 38-column matrices are value-identical on this stream (recorded, not assumed); controls broken on fit+score sides (controls_matched, SEED); head = the shipping standardized ridge, one encoding over A+B, fit on A scored on B; E = stored state_embeddings (read, not re-encoded; the compact served object includes the level block and the response block)",
   "products": {
-    "path": "looking_glass/artifacts/cfm_v2k_vf2_bank",
-    "registry_sha256": "919a932f1b657064",
+    "path": "looking_glass/artifacts/cfm_v2k_vf2_c32rvd",
+    "registry_sha256": "965a2a10083b3fe3",
     "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
   },
   "raw_equals_fair": true,
@@ -102,7 +102,7 @@
       "table_seq_E": 0.4449639975661983
     }
   },
-  "seconds": 7.9,
+  "seconds": 9.4,
   "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899",
   "targets": {
     "y_churn_90": {

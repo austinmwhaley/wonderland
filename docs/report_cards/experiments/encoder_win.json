@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "0fccd9a89829f47d",
+    "behavior_hash": "de599142938c6c16",
     "command": "measure_encoder_win.py --head logistic",
-    "generated_at": "2026-11-25T18:18:13+00:00",
-    "git_commit": "80323772f14cf85f445f62103eb61ce3bced3f6c",
+    "generated_at": "2026-11-25T18:58:03+00:00",
+    "git_commit": "d85630ab26edce94212638963ae932f30ce5a202",
     "producer": "measure_encoder_win.py"
   },
   "complete": true,
@@ -79,5 +79,5 @@
     "tag": null
   },
   "protocol": "DEC-635: the ridge head (the shipping consumer head) beats the pooled 1-gram baseline on the customer event stream \u2014 the ridge head is fit on split A, scored on split B, the paired bootstrap CI of (nll_enc - nll_base) must exclude 0. The outcome: the encoder is a foundation, not a green receipt.",
-  "seconds": 6.6
+  "seconds": 3.3
 }

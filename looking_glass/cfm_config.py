@@ -241,6 +241,11 @@ class CFMConfig:
     # SLOWEST objective, not the fastest — raise this so the governor does not save a
     # checkpoint before that objective has trained (DEC-173).
     train_patience: int = 0
+    # DEC-654: Armijo cadence. 1 (default) = the historical per-step accept/revert test:
+    # two extra no_grad forwards per optimizer step (loss0 before, loss1 after). k > 1 runs
+    # the test every k-th step and accepts unconditionally on the others, amortising 2 of the
+    # ~4 forward-equivalents. Recorded in the tag (protocol axis), so receipts never mix.
+    armijo_every: int = 1
     batch: int = 64
     lr: float = 3e-3
     gamma_contrast: float = 0.5
@@ -601,6 +606,8 @@ class CFMConfig:
             # knob, so BOTH go into the identity (|lg1, |lg2, |lg4 are distinct protocols;
             # an SSM trunk's tag stays byte-identical: the default "ssm" adds nothing).
             sig_extra += f"|lg{int(getattr(self, 'n_loops', 2))}"
+        if int(getattr(self, "armijo_every", 1) or 1) > 1:
+            sig_extra += f"|aj{int(self.armijo_every)}"
         sig = hashlib.sha256(f"{obj}|{eff}{prof}{sig_extra}".encode()).hexdigest()[:8]
         return (
             f"{base}-b{int(self.batch)}d{int(self.dim)}e{int(self.epochs)}"

@@ -1,15 +1,15 @@
 {
   "_meta": {
-    "behavior_hash": "0fccd9a89829f47d",
+    "behavior_hash": "de599142938c6c16",
     "command": "scripts/measure_runtime.py",
-    "generated_at": "2026-11-25T17:50:26+00:00",
-    "git_commit": "75d1bb2e06913838201c2215291c49625d48f67f",
+    "generated_at": "2026-11-25T18:57:34+00:00",
+    "git_commit": "d85630ab26edce94212638963ae932f30ce5a202",
     "producer": "measure_runtime.py"
   },
   "artifact_load_s": 0.02,
   "artifact_save_s": 0.02,
-  "close_seconds": 0.03,
-  "cold_seconds": 42.69,
+  "close_seconds": 0.05,
+  "cold_seconds": 57.67,
   "complete": true,
   "data": "/tmp/opencode/t0_loop/ref_v3b_6k",
   "device": "cpu",
@@ -34,15 +34,15 @@
   "n": 5000,
   "n_entities": 600,
   "n_expected": 5000,
-  "peak_rss_mb": 3375.8,
+  "peak_rss_mb": 3381.8,
   "products": {
     "path": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k",
     "registry_sha256": "354dd77406f229ca",
     "tag": "0.11.0r490759-b64d256e3lr3e-04o4c3b5899"
   },
-  "rows_per_s": 11.3,
-  "rss_mb_at_load": 558.0,
-  "seconds": 451.1,
+  "rows_per_s": 8.7,
+  "rss_mb_at_load": 557.9,
+  "seconds": 591.1,
   "slice_cap_gb": 32.0,
   "state_dims": {
     "forecast": 835,
@@ -55,5 +55,5 @@
   "state_forward_warm_s": 0.316,
   "state_rows_per_s": 1896.6,
   "tag": "0.11.0r490759-b64d256e3lr3e-04o4c3b5899",
-  "warm_seconds": 396.75
+  "warm_seconds": 520.03
 }

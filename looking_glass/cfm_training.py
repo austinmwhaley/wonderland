@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 import json
 import math
+import os
 import time
 from dataclasses import asdict
 from datetime import datetime, timezone
@@ -467,6 +468,20 @@ def train_cfm(cfg: CFMConfig):
         return float((tl + il).detach())
 
     step_times = []
+
+    # DEC-654 axis E: opt-in step profiler. `LG_PROFILE=1` wraps a handful of steady-state
+    # steps with torch.profiler and prints the top CUDA/Python ops; OFF by default and
+    # numerically inert (the profiler observes, it does not change the graph).
+    _prof = None
+    if os.environ.get("LG_PROFILE") == "1":
+        from torch.profiler import ProfilerActivity, profile, schedule
+
+        _prof = profile(
+            activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
+            schedule=schedule(wait=10, warmup=5, active=6, repeat=1),
+            record_shapes=False,
+        )
+        _prof.__enter__()
     # Runtime receipt (P11/P16). The trainer has NEVER reported seconds-per-step, so DEC-422's
     # "1.45 s/step" and DEC-389's "measure before adopting" for `grad_checkpoint` had to be
     # done by differencing whole-run wall clock — which a warm torch-inductor cache silently
@@ -484,13 +499,22 @@ def train_cfm(cfg: CFMConfig):
     _t_step = time.perf_counter
     call_spans = []
 
+    _armijo_every = max(1, int(getattr(cfg, "armijo_every", 1) or 1))
+    _step_i = 0
+
     def train_step(n):
+        nonlocal _step_i
         _t_call = _t_step()
         for _ in range(n):
+            _do_armijo = (_step_i % _armijo_every) == 0
+            _step_i += 1
             _t0 = _t_step()
             b = rng.choice(tr_idx, size=min(cfg.batch, len(tr_idx)), replace=False)
             items = [a_seqs[i] for i in b]
-            opt.zero_grad()
+            # DEC-654: set_to_none=True replaces ~18.6k `aten::fill_` calls per step (a zero
+            # write into every parameter gradient) with a pointer reset. Backward allocates the
+            # gradients afresh either way, so the math is unchanged.
+            opt.zero_grad(set_to_none=True)
             # ARMIJO BACKTRACKING LINE SEARCH (v6 DEC-039): accept the step iff the
             # training loss does not increase; else revert and halve lr.
             # Optimizer-agnostic, monotone descent by construction, no phase lag.
@@ -503,8 +527,9 @@ def train_cfm(cfg: CFMConfig):
             # also RNG-equivalent rather than merely close: `_eval_loss` re-seeds itself, so
             # the training forward still starts at the state a seeded eval forward leaves
             # behind (checked against the old order by step-loss trace, DEC-423).
-            loss0 = _eval_loss(b)
-            theta0 = [p.detach().clone() for p in params]
+            if _do_armijo:
+                loss0 = _eval_loss(b)
+                theta0 = [p.detach().clone() for p in params]
             with torch.autocast(device_type=device.type, dtype=_amp_dtype, enabled=use_amp):
                 task_loss, inv_loss, h = _loss_split(
                     model, vocab, items, cfg, weights=balancer.weights(), scales=loss_scales
@@ -539,23 +564,26 @@ def train_cfm(cfg: CFMConfig):
                 torch.nn.utils.clip_grad_norm_(params, 1.0)
                 scaler.step(opt)
                 scaler.update()
-            loss1 = _eval_loss(b)
             _lr = float(opt.param_groups[0]["lr"])
-            if not math.isfinite(loss1) or loss1 > loss0 + 1e-4 * abs(loss0) + 1e-8:
-                with torch.no_grad():  # REVERT + contract, FLOORED at 10% of base
-                    for p_, s_ in zip(params, theta0):
-                        p_.copy_(s_)
-                # monotone descent is kept, but the contract may not collapse the
-                # step: an un-floored x0.5-down/x1.5-up line search rejected >50%
-                # of Adam-momentum steps and drove lr 3e-3 -> 3e-5 -> 3.9e-6,
-                # freezing the readout heads at the marginal (next/jepa/sf ~0).
-                _lr = max(_lr * 0.5, _lr_base * 0.1)
-            else:  # progress -> recover toward the base rate
-                _lr = min(_lr * 1.5, _lr_max)
-            opt.param_groups[0]["lr"] = _lr
-            cfg.lr = _lr
+            if _do_armijo:
+                loss1 = _eval_loss(b)
+                if not math.isfinite(loss1) or loss1 > loss0 + 1e-4 * abs(loss0) + 1e-8:
+                    with torch.no_grad():  # REVERT + contract, FLOORED at 10% of base
+                        for p_, s_ in zip(params, theta0):
+                            p_.copy_(s_)
+                    # monotone descent is kept, but the contract may not collapse the
+                    # step: an un-floored x0.5-down/x1.5-up line search rejected >50%
+                    # of Adam-momentum steps and drove lr 3e-3 -> 3e-5 -> 3.9e-6,
+                    # freezing the readout heads at the marginal (next/jepa/sf ~0).
+                    _lr = max(_lr * 0.5, _lr_base * 0.1)
+                else:  # progress -> recover toward the base rate
+                    _lr = min(_lr * 1.5, _lr_max)
+                opt.param_groups[0]["lr"] = _lr
+                cfg.lr = _lr
             model.ema(tau)
             step_times.append(_t_step() - _t0)
+            if _prof is not None:
+                _prof.step()
         # one sync per CALL, not per step: the GPU's real time is attributed to the loop
         # without breaking the CPU/GPU pipelining the measurement is supposed to describe.
         _sync()
@@ -699,6 +727,15 @@ def train_cfm(cfg: CFMConfig):
         # falsifiable failure into an anecdote. Record, then let it propagate unchanged.
         gpu_budget.release(cfg, "train_aborted")
         raise
+    if _prof is not None:
+        _prof.__exit__(None, None, None)
+        try:
+            print(
+                _prof.key_averages().table(sort_by="self_cuda_time_total", row_limit=18),
+                flush=True,
+            )
+        except Exception:  # noqa: BLE001 - a profile print must never fail a run
+            pass
     # The step-time receipt (P16). Printed AND stored, because a decision that cannot be
     # explained is not finished, and the `grad_checkpoint` adoption decision was blocked for
     # lack of exactly this number.

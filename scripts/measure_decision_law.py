@@ -757,7 +757,12 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument(
         "--products",
-        default="/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k",
+        # DEC-655: the served BASE object (272-dim E = trunk 256 + served level 16).
+        # The old default (`cfm_v2k`) stores the RAW trunk E (256), so check1's replica
+        # (served E, 272) could never match it — the producer crashed with a 272 vs 256
+        # broadcast. Same class as the DEC-650 population confound: a stale default that
+        # silently points at the wrong artifact.
+        default="/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k_vf2",
     )
     ap.add_argument(
         "--demo",

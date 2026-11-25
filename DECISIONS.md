@@ -12448,3 +12448,61 @@ THE HONEST AXIS: the architecture — the encoder's capacity/order-carrying. The
     receipts and its docs stay recoverable without cluttering `git branch`.
   - **Deliberately NOT done.** No artifact deletion (evidence), no `scripts/` reshuffle (imports),
     no log rewriting beyond the stated duplicates — the log is append-only by doctrine.
+
+- **DEC-653 (why the GB10 does not feel faster than a 2080 — measured, and the speed levers it exposes; operator observation 2026-11-25).**
+  - **MEASURED (this box, certified shapes: batch 64, seq_len 996, dim 256, bf16).**
+    * `LG_SCAN=eager` (what EVERY recipe in this log has used): **463.6 ms** per fwd+bwd step
+      = **0.14 M tok/s**.
+    * `LG_SCAN=auto|compiled` (the code's DEFAULT, which our recipes override): **146.4 ms**
+      = **0.44 M tok/s** — **3.17× faster**, same math (the scan is the identical fp32 affine
+      prefix scan, atol 1e-5; compile only fuses the kernel launches).
+    * Certified run's own receipt: `s_per_step` **1.583 s** at batch 64 — i.e. the trainer's step
+      is ~3.4× the micro-benchmark's fwd+bwd, because the **Armijo line search calls
+      `_eval_loss` twice per optimizer step** (`cfm_training.py`: `loss0 = _eval_loss(b)` …
+      `loss1 = _eval_loss(b)`), so each step is ~3 forwards + 1 backward.
+    * GPU during the run: peak allocated **10.36 GB** of a 121.63 GB pool; utilization 3–5 %
+      when the LLM co-tenant is idle, but the co-tenant holds **55.2 GiB** and saturates the
+      device while generating (measured 96 % earlier).
+  - **WHY THE HARDWARE COMPARISON IS MOOT.** At 0.44 M tok/s on a 256-dim model the device is
+    ~1–2 % utilized: the workload is **latency-bound** (996 sequential recurrence steps × many
+    small kernels × small batch), not throughput-bound. A 2080 and a GB10 sit in the same
+    regime there — which is exactly why the upgrade did not feel like one. The GB10's real
+    advantages (121 GB unified pool, FP4) do not help a latency-bound 256-dim scan.
+  - **THE LEVERS, ranked by measured gain.**
+    1. **Stop forcing `LG_SCAN=eager`** — 3.17× measured. Every pre-registration in DEC-611/615/
+       633/637/641/643/644/650 wrote the eager prefix; that is an instrument self-inflicted cost,
+       not a requirement.
+    2. **Cut the Armijo evaluations** (every k steps instead of every step): up to ~1.6× on top,
+       by removing 2 of the ~4 forward-equivalents per step. Requires pre-registration (it
+       changes the optimizer's acceptance rule).
+    3. **Raise the batch** (64 → 128/256 within the 30 GB slice): amortizes per-step latency.
+    4. **Shorten seq_len / chunk the scan** where the protocol permits: 996 sequential steps is
+       the dominant latency term.
+  - **STATUS.** Recorded, not yet adopted: switching the scan path changes numerics at the 1e-5
+    level, so it is a behavior move that must be pre-registered and followed by a re-stamp — it
+    is a *speed* axis, not a capability axis, and it must not be smuggled in under a capability
+    run. Next loop iteration: pre-register lever 1 alone (eager → compiled), measure the
+    step-time delta and the receipt drift, and adopt if the drift lands in the disclosed class.
+
+- **DEC-654 (the GB10 utilisation program — make the box earn its keep; operator direction 2026-11-25: "I want you to maximize the capability of my GB10").**
+  - **MEASURED BASELINE (DEC-653).** Certified run: `s_per_step` **1.583 s** at batch 64 /
+    seq_len 996 / dim 256, GPU peak alloc 10.4 GB of 121.6 GB, utilisation 3–5 % when the LLM
+    co-tenant is idle. Micro-benchmark: eager fwd+bwd **463.6 ms**, compiled **146.4 ms**
+    (3.17×). Trainer step is ~3.4× the micro-benchmark because Armijo runs **two extra full
+    forwards per step**.
+  - **THE PROGRAM (one axis per iteration, each measured on `s_per_step` and quality).**
+    * **A · scan path**: eager → compiled (no code change; stop prefixing recipes with
+      `LG_SCAN=eager`). Expected ~3.2×.
+    * **B · Armijo cadence**: new `armijo_every` config knob (default 1 = byte-identical
+      behaviour); evaluate the accept/revert test every k-th step, accept unconditionally on the
+      others. Expected ~1.6–1.9× at k=4.
+    * **C · batch**: 64 → 128/256 inside the 30 GB slice; amortises per-step latency.
+    * **D · EMA cadence**: `model.ema()` per step → every k steps (a horizon change; measured).
+    * **E · producer wall clock**: S4 is 546 s and S1+S2 217–497 s (Polars/DuckDB on CPU) —
+      thread/pool settings, not GPU.
+  - **PROTOCOL.** Every cell reports `s_per_step`, tokens/s, peak alloc, and (for a quality cell)
+    the `encoder_win` nll against the record **1.173099**. A speed change that lowers quality is
+    rejected. Numerics: compiled vs eager is the identical fp32 affine scan at atol 1e-5, so a
+    drift check must land in the disclosed class before adoption.
+  - **FALSIFIER.** If a cell does not beat the measured baseline on `s_per_step` with quality
+    unchanged (within the disclosed drift class), it is rejected and recorded once.
