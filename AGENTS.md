@@ -17,6 +17,15 @@ FROZEN output is the "universal donor" that everything downstream builds on — 
 FROZEN output beats the existing methods (the 1-gram baseline) on the real-data story,
 so that it is a foundation, not a green receipt.
 
+**Scope (binding): the customer event stream only, until it is mastered.** We are running
+the customer event stream (`demo_v2`, the certified prototype) and NOTHING ELSE. The
+clickstream (`clickstream_sessions`) and sensor (`sensor_fleet`) streams are NOT being
+worked on yet — they are not the scope of this loop. The real-data story's per-domain
+receipts (sensor_fleet, clickstream_sessions, server_logs) are the dev-instrument
+measurements recorded for the real-data story, not the work-in-flight scope. The customer
+event stream is the focus until it is mastered; clickstream and sensors are deferred until
+the customer event stream is mastered.
+
 Work in **two layers — do not conflate them**:
 
 - **Layer 0 — the universal foundation embedding (NOW).** **One stream in → one foundation model

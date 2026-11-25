@@ -4,6 +4,14 @@
 > existing methods (the 1-gram baseline) on the real-data story. The frozen gates passing
 > (the card SOLVED) is necessary but NOT sufficient: the gates certify the instrument, not
 > the encoder. **This prompt loops until the outcome, not until the card is green.**
+> **Scope (binding): the customer event stream only, until it is mastered.** We are running
+> the customer event stream (`demo_v2`, the certified prototype) and NOTHING ELSE. The
+> clickstream (`clickstream_sessions`) and sensor (`sensor_fleet`) streams are NOT being
+> worked on yet — they are not the scope of this loop. The real-data story's per-domain
+> receipts (sensor_fleet, clickstream_sessions, server_logs) are the dev-instrument
+> measurements recorded for the real-data story, not the work-in-flight scope. The customer
+> event stream is the focus until it is mastered; clickstream and sensors are deferred until
+> the customer event stream is mastered.
 > **Job:** move the project toward the outcome by one measured axis per run, obeying the
 > principles. This is not a coding prompt; code is only the instrument.
 > **Two scales, every run.**
@@ -118,6 +126,15 @@ EVIDENCE: <the rows/receipts that prove it — numbers, not narrative>
 GAP:      <what must become true that is not true: a capability, not a missing receipt>
 LAYER:    <capability | objective | instrument | identity> — where the gap actually lives
 THIS RUN: <which gap this run attacks, and why it is the cheapest next probe>
+THE OUTCOME: <has the encoder's beats-the-1-gram story moved toward achieved? Name the
+             surface: the gate (B9.1, the demo_v2 customer event stream) is the binding
+             check; the real-data story is the judgment surface. If the gap did not move,
+             the run is a diagnosis — record the negative ONCE and stop re-recording it.>
+THE HONEST AXIS: <the one axis that actually carries the conditional row beyond the
+             1-gram — name it (e.g. the architecture, not the training config). If the axis
+             is a major one — a new architecture, consumer, contract, or artifact — STOP
+             and ask the operator before changing it. If the axis is a tuning tweak that
+             did not help, record the negative once and stop.>
 ```
 
 Rules:
@@ -149,6 +166,11 @@ record the same negative N times: that is noise, not progress, and it is exactly
 mode that wastes the operator's time. If the WHY-NOT block names a gap that is a research axis
 (the ridge head's estimation efficiency — the cross-customer finite-sample gap), say so honestly
 and either run the pre-registered axis or stop; do not invent a third reading of the same data.
+**The two binding fields above (THE OUTCOME, THE HONEST AXIS) are the no-loops discipline made
+mechanical**: THE OUTCOME asks whether the encoder's beats-the-1-gram story moved — if it did
+not, the run is a diagnosis; THE HONEST AXIS names the one axis that actually carries the
+conditional row — if that axis is a major one (architecture), stop and ask the operator; if it
+is a tuning tweak that did not help, record the negative once and stop.
 
 ### 3.1 MACRO — read the map before choosing anything
 
@@ -188,9 +210,11 @@ the result is read; one command emits the receipt. See §5 for the integrity rul
 After the run, regenerate the card (`python3 scripts/report_card.py`) and read:
 
 - **MICRO:** the leaf's verdict and numbers against its frozen gate.
-- **THE OUTCOME:** the card's real-data story + incremental-improvements sections — has the
-  encoder's beats-the-1-gram story moved? Which cells, which head, which numbers? This is
-  the judgment surface, not the B scorecard.
+- **THE OUTCOME:** the card's real-data story + incremental-improvements sections AND the
+  gate (B9.1, the demo_v2 customer event stream) — has the encoder's beats-the-1-gram story
+  moved? Name the surface: the gate (B9.1) is the binding check; the real-data story is the
+  judgment surface. Which cells, which head, which numbers? This is the judgment surface,
+  not the B scorecard.
 - **MACRO:** the named node's status before/after, and every other node that moved.
   Record the sentence explicitly in the DEC outcome and STATUS:
   `MOVEMENT: <node> <before> -> <after>; root <before> -> <after>.`
@@ -437,11 +461,12 @@ per-row Python loops in hot paths), and emit a runtime receipt.
 0. The §3.0 block was written **before** the node was chosen, names its layer, and is
    re-answered in the outcome as `WHY-NOT-CHANGED: yes|no`.
 0a. **The outcome check (binding, every run):** read the card's real-data + incremental-
-   improvements sections and answer honestly — has the outcome moved toward achieved?
-   Has the encoder's beats-the-1-gram story changed? If the run was a re-record of an
-   unchanged negative, say so and record it as a diagnosis, not progress — never as a
-   win. If the gap moved (a new cell beats the 1-gram, or a new head beats the 1-gram),
-   record it as movement.
+   improvements sections AND the gate (B9.1, the demo_v2 customer event stream) and answer
+   honestly — has the outcome moved toward achieved? Name the surface: the gate (B9.1) is
+   the binding check; the real-data story is the judgment surface. Has the encoder's
+   beats-the-1-gram story changed? If the run was a re-record of an unchanged negative,
+   say so and record it as a diagnosis, not progress — never as a win. If the gap moved
+   (a new cell beats the 1-gram, or a new head beats the 1-gram), record it as movement.
 1. The DEC names `NODE`, `ROUTE`, `MOVE` **before** the run and `MOVEMENT` after it.
 2. The named node's status was read before and after; if it did not move, the run is recorded
    as a negative result/diagnosis, not progress.
@@ -466,11 +491,12 @@ per-row Python loops in hot paths), and emit a runtime receipt.
     the repo's gates (or the known-failure baseline disclosed).
 13. Print the rendered `REPORT_CARD.md` (never fenced) as the run's source of truth.
 14. **The outcome check (binding):** if the outcome is achieved — the encoder beats the
-    1-gram baseline on the real-data story — stop and run `PROMPT_BACKWARD.md` (FULL).
-    Else → the next FORWARD run, starting again at §3.0/§3.1 (MACRO), not at the row that
-    looks easiest. Do NOT declare the outcome achieved because the card is SOLVED or
-    because a local number improved; only the real-data story decides the outcome.
-    ENCODER DONE v1 / SOLVED alone does NOT close the outcome — the real-data story does.
+    1-gram baseline on the real-data story AND the gate (B9.1, the demo_v2 customer event
+    stream) passes — stop and run `PROMPT_BACKWARD.md` (FULL). Else → the next FORWARD run,
+    starting again at §3.0/§3.1 (MACRO), not at the row that looks easiest. Do NOT declare
+    the outcome achieved because the card is SOLVED or because a local number improved;
+    only the real-data story + the gate (B9.1) decide the outcome. ENCODER DONE v1 / SOLVED
+    alone does NOT close the outcome — the real-data story + the gate do.
 
 ---
 
@@ -485,7 +511,10 @@ Stop **before** running if a proposed change:
   (operator-only when it touches a gate; a documented DEC otherwise);
 - would move a verdict from FAIL to PASS by anything other than a real capability
   improvement;
-- introduces a new consumer, artifact contract, bucket, or architecture;
+- introduces a new consumer, artifact contract, bucket, or architecture — **and specifically
+  when the §3.0 WHY-NOT block names the honest axis as a major one (the architecture, not a
+  tuning tweak): STOP and ask the operator before changing it. A tuning tweak that did not
+  help is a negative result — record it once and stop; do not re-run it.**
 - cannot be reproduced from the repo at a recorded commit;
 - requires material spend, destructive deletes, customer-facing exposure, or a push.
 

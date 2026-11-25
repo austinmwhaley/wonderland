@@ -16,6 +16,15 @@ all get signal from it through simple heads.
 `brain alone` = **progress**, `brain + ledger` = **delivery** (non-inferiority). Ledger points are
 never a brain win.
 
+**Scope (binding): the customer event stream only, until it is mastered.** We are running
+the customer event stream (`demo_v2`, the certified prototype) and NOTHING ELSE. The
+clickstream (`clickstream_sessions`) and sensor (`sensor_fleet`) streams are NOT being
+worked on yet — they are not the scope of this loop. The real-data story's per-domain
+receipts (sensor_fleet, clickstream_sessions, server_logs) are the dev-instrument
+measurements recorded for the real-data story, not the work-in-flight scope. The customer
+event stream is the focus until it is mastered; clickstream and sensors are deferred until
+the customer event stream is mastered.
+
 **Stage:** Layer 0 — **PLAN ROOT SOLVED 39/39 on the synthetic `demo_v2` prototype** (behavior `a4eec44e` after the DEC-622 re-stamp; the previous card at `10fc4e1` was `89cec70b`). **B is
 CERTIFIED** (23/23, 8/8 at behavior `a4eec44e`, on the single `cfm_v2k_vf2_cert` bundle);
 **B+C is DONE** (8/8, bank v2, DEC-598) for the served bank, with the measure-free donor-only
