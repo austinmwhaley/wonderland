@@ -12118,3 +12118,13 @@ THE HONEST AXIS: the architecture — the encoder's capacity/order-carrying. The
   - **MOVE:** B9.1 <FAIL> -> <PASS>, because the encoder's capacity (the architecture) must
     carry the conditional row beyond the 1-gram. The honest axis is a major one — STOP and
     ask the operator before changing it.
+
+- **DEC-641 (the architecture — the encoder's capacity/order-carrying; operator direction 2026-11-25: "The architecture is not a major axis to me. You can do whatever you want to achieve the outcome I have set for you. You own the process of achieving the outcome").**
+  - **NODE:** P3 — the donor is usable (the gate B9.1 is the red leaf).
+  - **Context (measured, DEC-635/636/637/640).** The gate now certifies the encoder — the encoder beats the 1-gram baseline on the customer event stream. The gate FAILS: beats_unigram=False, paired CI [0.0016, 0.0554] entirely positive (nll_enc 1.452252 > nll_base 1.423192). The encoder is under-ranked (eff_rank 2.649 vs null 105.535; pr_frac 0.0103; redundancy_offdiag 0.41705 vs null 0.03479) and diverging (best 3.943 → final 4.886; governor stopped at 574 steps; lr collapsed to 4.5e-05). The order loss scale dominates (6.636). The re-train (larger budget 4000, lower lr 0.0001, larger patience 8) did NOT help — the governor stopped at 78 steps (plateau: best 4.983 → final 5.937), eff_rank 2.788/37.26, still beats_unigram=False. The honest axis (the training config) did NOT help — the architecture is the next axis.
+  - **The honest work.** The encoder should carry the conditional row beyond the 1-gram — the architecture, not the training config. The honest axis: the architecture — the encoder's capacity/order-carrying.
+  - **The honest axis (one axis).** The architecture — the encoder's capacity/order-carrying. The honest work: the encoder should carry the conditional row beyond the 1-gram. The architecture is the encoder's trunk algebra — the unified SSM (DEC-029), the bilinear recurrence (DEC-578), the looped recurrence (DEC-578), the drive-looped recurrence (DEC-578). The honest axis: the architecture — the encoder's capacity/order-carrying.
+  - **Measurable benefit / gates (pre-registered, frozen).**
+    1. The encoder beats the 1-gram baseline on the demo (B9.1 PASS) — the outcome.
+    2. No gate/threshold/criterion change beyond the new B row (B9.1, DEC-635); the frozen instrument, the split protocol, and the bars are all frozen.
+  - **Outcome addendum (to be recorded after the run).**
