@@ -77,6 +77,62 @@ def _bigram_counts(hist: pl.DataFrame, classes: list[str]) -> tuple[np.ndarray, 
     return T, last_hist
 
 
+def _recent_block(hist: pl.DataFrame, keys: list[str], classes: list[str], k: int) -> np.ndarray:
+    """Exact recent-event identity: one-hot of each customer's last k event types.
+
+    A sufficient statistic for next-event is a Markov state — it must carry the exact
+    recent-event identity. The frozen embedding recovers the last type only partially
+    (measured 0.6253 vs 0.3560 majority on demo_v2), so on the sharpest transition it is
+    structurally behind a 1-gram. This block is deterministic and serving-side (history
+    <= as_of, the stream's own vocabulary); it adds no fitted parameter.
+    """
+    idx = {c: i for i, c in enumerate(classes)}
+    n_cls = len(classes)
+    out = np.zeros((len(keys), k * n_cls), dtype=float)
+    if hist.height == 0 or k <= 0:
+        return out
+    tails = hist.group_by("customer_key", maintain_order=True).agg(pl.col("event_type").tail(k))
+    pos = {str(kk): i for i, kk in enumerate(keys)}
+    for key, types in zip(
+        tails["customer_key"].to_list(), tails["event_type"].to_list(), strict=False
+    ):
+        i = pos.get(str(key))
+        if i is None:
+            continue
+        tail = list(types)[-k:]
+        for j, tp in enumerate(tail):
+            c = idx.get(tp)
+            if c is not None:
+                out[i, j * n_cls + c] = 1.0
+    return out
+
+
+def _softmax_nll(S: np.ndarray, ki: np.ndarray, temp: float) -> float:
+    Z = S / max(float(temp), 1e-6)
+    Z = Z - Z.max(1, keepdims=True)
+    Pm = np.clip(np.exp(Z), P_FLOOR, None)
+    Pm = Pm / Pm.sum(1, keepdims=True)
+    return float(-np.log(Pm[np.arange(len(ki)), ki]).mean())
+
+
+def _fit_temperature(S_cal: np.ndarray, ki_cal: np.ndarray) -> float:
+    """One scalar softmax temperature, fit on a held-out slice of split A ONLY.
+
+    The shipped consumer fits one-vs-rest ridge on a 0/1 target (squared error) and then
+    softmaxes the scores. Squared-error regression on a Bernoulli target shrinks logits
+    toward the base rate, so the softmax at T=1 is systematically under-confident and the
+    comparison against a proper probability model (the pooled 1-gram) is not like-for-like
+    (DEC-646). The temperature restores comparability; it adds no fitted parameter that sees
+    split B.
+    """
+    from scipy.optimize import minimize_scalar
+
+    res = minimize_scalar(
+        lambda tt: _softmax_nll(S_cal, ki_cal, tt), bounds=(0.02, 10.0), method="bounded"
+    )
+    return float(res.x)
+
+
 def _paired_ci(deltas: np.ndarray, n_boot: int = N_BOOT) -> tuple[float, float]:
     if len(deltas) < 2:
         return None, None
@@ -99,6 +155,13 @@ def main() -> int:
     ap.add_argument("--products", default="looking_glass/artifacts/cfm_v2k_vf2_bank")
     ap.add_argument("--demo", default="looking_glass/artifacts/demo_v2")
     ap.add_argument("--out", default=None)
+    ap.add_argument(
+        "--recent-k",
+        type=int,
+        default=0,
+        help="append the exact last-k event-type indicators to the served object "
+        "(0 = off; DEC-645)",
+    )
     a = ap.parse_args()
 
     t0 = time.perf_counter()
@@ -148,6 +211,11 @@ def main() -> int:
     yb = np.array([next_of[k] for k in b_rows])
     Ea = np.vstack([emb[k] for k in a_rows])
     Eb = np.vstack([emb[k] for k in b_rows])
+    if a.recent_k > 0:
+        Ra = _recent_block(hist, a_rows, classes, a.recent_k)
+        Rb = _recent_block(hist, b_rows, classes, a.recent_k)
+        Ea = np.hstack([Ea, Ra])
+        Eb = np.hstack([Eb, Rb])
     excluded = [c for c in classes if n_A[c] < 8]
     kept = [c for c in classes if c not in excluded]
     scores = []
@@ -162,6 +230,28 @@ def main() -> int:
         print("fatal: no class head fit", file=sys.stderr)
         return 1
     S = np.column_stack(scores)
+    # DEC-646: one softmax temperature, fit on a held-out slice of split A only.
+    # A1 fits the per-class ridge, A2 fits the scalar; split B is never touched.
+    n_cal = int(round(0.3 * len(a_rows)))
+    a_fit, a_cal = a_rows[: len(a_rows) - n_cal], a_rows[len(a_rows) - n_cal :]
+    temp = 1.0
+    if len(a_cal) >= 50:
+        Eaf = np.vstack([emb[k] for k in a_fit])
+        Eac = np.vstack([emb[k] for k in a_cal])
+        if a.recent_k > 0:
+            Eaf = np.hstack([Eaf, _recent_block(hist, a_fit, classes, a.recent_k)])
+            Eac = np.hstack([Eac, _recent_block(hist, a_cal, classes, a.recent_k)])
+        yaf = np.array([next_of[k] for k in a_fit])
+        yac = np.array([next_of[k] for k in a_cal])
+        cal_scores = []
+        for c in kept:
+            p, _ = _ridge_oos(Eaf, (yaf == c).astype(float), Eac, (yac == c).astype(float))
+            cal_scores.append(p if p is not None else np.zeros(len(a_cal)))
+        S_cal = np.column_stack(cal_scores)
+        ki_cal = np.array([kept.index(next_of[k]) for k in a_cal])
+        temp = _fit_temperature(S_cal, ki_cal)
+
+    S = S / max(temp, 1e-6)
     S = S - S.max(1, keepdims=True)
     Pm = np.exp(S)
     Pm = np.clip(Pm, P_FLOOR, None)
@@ -191,6 +281,28 @@ def main() -> int:
             "n_B_rows": int(len(m)),
             "n_customers": len(keys),
             "classes": classes,
+            "served_object": (
+                f"frozen bank embedding ({Eb.shape[1] - a.recent_k * len(kept)} dims)"
+                + (
+                    f" || exact last-{a.recent_k} event-type indicators "
+                    f"({a.recent_k * len(kept)} dims, serving-side, history <= as_of)"
+                    if a.recent_k > 0
+                    else ""
+                )
+            ),
+            "recent_k": a.recent_k,
+            "per_class_nll_enc": {
+                c: round(float(nll_enc[np.array([next_of[k] for k in b_rows]) == c].mean()), 6)
+                for c in kept
+                if bool((np.array([next_of[k] for k in b_rows]) == c).any())
+            },
+            "per_class_nll_base": {
+                c: round(float(nll_base[np.array([next_of[k] for k in b_rows]) == c].mean()), 6)
+                for c in kept
+                if bool((np.array([next_of[k] for k in b_rows]) == c).any())
+            },
+            "temperature": round(float(temp), 6),
+            "temperature_fit_on": "split A holdout (30%), never split B",
             "classes_excluded": excluded,
             "per_class_n_A": n_A,
         },

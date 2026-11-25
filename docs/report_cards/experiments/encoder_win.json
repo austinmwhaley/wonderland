@@ -2,16 +2,16 @@
   "_meta": {
     "behavior_hash": "0fccd9a89829f47d",
     "command": "measure_encoder_win.py",
-    "generated_at": "2026-11-25T04:30:10+00:00",
-    "git_commit": "eb3fb407ed1b61c5b8dda623e35ebfd6d79c96e5",
+    "generated_at": "2026-11-25T17:54:05+00:00",
+    "git_commit": "75d1bb2e06913838201c2215291c49625d48f67f",
     "producer": "measure_encoder_win.py"
   },
   "complete": true,
   "encoder_win": {
     "beats_gram1": null,
-    "beats_unigram": false,
-    "ci_hi": 0.05544707439203897,
-    "ci_lo": 0.0016201559416647172,
+    "beats_unigram": true,
+    "ci_hi": -0.15207627011288916,
+    "ci_lo": -0.2393652430109334,
     "classes": [
       "email_send",
       "purchase",
@@ -25,10 +25,10 @@
     "n_B_rows": 1500,
     "n_customers": 5000,
     "nll_base": 1.423192,
-    "nll_enc": 1.452252,
+    "nll_enc": 1.22884,
     "paired_ci_enc_minus_base": [
-      0.0016201559416647172,
-      0.05544707439203897
+      -0.2393652430109334,
+      -0.15207627011288916
     ],
     "per_class_n_A": {
       "email_send": 1238,
@@ -36,7 +36,25 @@
       "return": 15,
       "search": 593,
       "view": 1242
-    }
+    },
+    "per_class_nll_base": {
+      "email_send": 1.822483,
+      "purchase": 1.903924,
+      "return": 4.648741,
+      "search": 1.493128,
+      "view": 0.791728
+    },
+    "per_class_nll_enc": {
+      "email_send": 0.747111,
+      "purchase": 2.213207,
+      "return": 2.582542,
+      "search": 1.923035,
+      "view": 1.0278
+    },
+    "recent_k": 0,
+    "served_object": "frozen bank embedding (179 dims)",
+    "temperature": 0.236798,
+    "temperature_fit_on": "split A holdout (30%), never split B"
   },
   "kind": "encoder_win",
   "products": {
@@ -44,5 +62,5 @@
     "tag": null
   },
   "protocol": "DEC-635: the ridge head (the shipping consumer head) beats the pooled 1-gram baseline on the customer event stream \u2014 the ridge head is fit on split A, scored on split B, the paired bootstrap CI of (nll_enc - nll_base) must exclude 0. The outcome: the encoder is a foundation, not a green receipt.",
-  "seconds": 2.8
+  "seconds": 6.5
 }

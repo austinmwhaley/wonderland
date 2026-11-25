@@ -1,9 +1,11 @@
 # PROMPT_FORWARD — the two-scale forward operating prompt (PLAN.md -> REPORT_CARD.md)
 
-> **State:** run this prompt **until the outcome is achieved** — the encoder beats the
-> existing methods (the 1-gram baseline) on the real-data story. The frozen gates passing
-> (the card SOLVED) is necessary but NOT sufficient: the gates certify the instrument, not
-> the encoder. **This prompt loops until the outcome, not until the card is green.**
+> **State:** run this prompt **forever forward — every run must exceed the best known.**
+> The outcome is a **monotone frontier, not a finish line**: beating the 1-gram baseline is
+> **milestone M1** (a floor we crossed on 2026-11-25, delta −0.1944 nats), not the end. The
+> frozen gates passing (the card SOLVED) is necessary but NOT sufficient: the gates certify
+> the instrument, not the encoder. **This prompt loops until the operator stops it; a run
+> that does not beat the previous best is a negative result, never a finish.**
 > **Scope (binding): the customer event stream only, until it is mastered.** We are running
 > the customer event stream (`demo_v2`, the certified prototype) and NOTHING ELSE. The
 > clickstream (`clickstream_sessions`) and sensor (`sensor_fleet`) streams are NOT being
@@ -12,8 +14,17 @@
 > measurements recorded for the real-data story, not the work-in-flight scope. The customer
 > event stream is the focus until it is mastered; clickstream and sensors are deferred until
 > the customer event stream is mastered.
-> **Job:** move the project toward the outcome by one measured axis per run, obeying the
-> principles. This is not a coding prompt; code is only the instrument.
+> **The monotone rule (binding).** The unit of progress is **not** "beats the 1-gram" and
+> **not** "the card is green" — it is **beating the best-known record** on a published axis,
+> measured on a current receipt. Every run names the record it is attacking, the value it
+> must beat, and (after the run) whether it beat it. Equal or worse = a negative result.
+> The record lives in `docs/report_cards/experiments/best_known.json`, generated — never
+> narrated. Milestones are floors, not endpoints: **M1** beat the 1-gram (achieved), **M2**
+> beat M1's margin, **M3** beat M2 on a harder axis (a new domain, a new consumer head, a
+> held-out task family), and so on. Never declare the search over while any published axis
+> has a measurable headroom left under the frozen protocol.
+> **Job:** move the project forward by one measured axis per run, obeying the principles.
+> This is not a coding prompt; code is only the instrument.
 > **Two scales, every run.**
 > **MACRO** — `PLAN.md` is the map: the goal cut backwards into necessary problems, the
 > route that earns the evidence, and the frontier. A run that cannot name the plan node it
@@ -74,8 +85,16 @@ being SOLVED (39/39, B CERTIFIED, B+C DONE) certifies the instrument — that th
 produces a frozen, certifiable donor. It does NOT certify that the donor is a foundation.
 The real-data story — the per-domain ridge/hier head measurements on the DEC-611/615
 campaigns (sensor_fleet, clickstream_sessions, server_logs), rendered on the card's
-real-data + incremental-improvements sections — is the honest judgment surface. The
-outcome is achieved when the encoder beats the 1-gram baseline there.
+real-data + incremental-improvements sections — is the honest judgment surface.
+
+**The outcome is a frontier, not a finish (operator direction 2026-11-25: "I don't want to
+stop at beats 1-gram baseline but have that just be a single milestone. We need to always be
+looping/working to exceed our previous best.")** Crossing the 1-gram is **M1** — achieved and
+recorded (B9.1 PASS, paired CI [−0.2394, −0.1521], delta −0.1944 nats). It is a floor, not a
+crown. From here the loop's success condition is **monotone improvement**: each run must beat
+the best-known value on at least one published axis, and the record is a generated file, not a
+memory. A run that merely reproduces the record is a negative result. There is no "done"
+state — only the highest measured frontier, and the next axis that can raise it.
 
 Layer 0 is the frozen universal donor. Layer 1 is certification: sufficiency,
 minimality, decision-sufficiency, measured by `U`. Do not conflate them.
@@ -126,10 +145,11 @@ EVIDENCE: <the rows/receipts that prove it — numbers, not narrative>
 GAP:      <what must become true that is not true: a capability, not a missing receipt>
 LAYER:    <capability | objective | instrument | identity> — where the gap actually lives
 THIS RUN: <which gap this run attacks, and why it is the cheapest next probe>
-THE OUTCOME: <has the encoder's beats-the-1-gram story moved toward achieved? Name the
-             surface: the gate (B9.1, the demo_v2 customer event stream) is the binding
-             check; the real-data story is the judgment surface. If the gap did not move,
-             the run is a diagnosis — record the negative ONCE and stop re-recording it.>
+THE OUTCOME: <which best-known RECORD does this run attack, what is its current value and
+             receipt, and what value must this run beat? Name the surface: the gate (B9.1,
+             demo_v2) and the real-data story are the judgment surfaces; best_known.json is
+             the record. Beating the 1-gram is M1 (done) — not a target. If the run would
+             only reproduce the record, it is a diagnosis: record it ONCE and stop.>
 THE HONEST AXIS: <the one axis that actually carries the conditional row beyond the
              1-gram — name it (e.g. the architecture, not the training config). If the axis
              is a major one — a new architecture, consumer, contract, or artifact — STOP
@@ -337,17 +357,35 @@ The plan makes the old single word precise:
 A green T0 is not ENCODER DONE; ENCODER DONE is not SOLVED. Never use a stronger word than
 the generated artifact says.
 
-**The outcome (augmented, DEC-623) — the completion condition for this loop, stricter than SOLVED.**
-The card being SOLVED is necessary but not sufficient. The outcome is: **the encoder's FROZEN
-output beats the 1-gram baseline on the real-data story** — the per-domain ridge/hier head
-measurements rendered on the card's real-data + incremental-improvements sections. The honest
-record of where this stands (DEC-631): the hier head (the transition head) beats the 1-gram on
-14/14 cells (`beats_base` True, all three domains); the ridge head (the shipping consumer head)
-never beats the 1-gram (0/14 cells) — the honest, bounded gap, recorded as-is. The outcome is
-achieved when the encoder beats the 1-gram baseline on the real-data story — and the honest
-record of HOW (which head, which cells) is on the card, not narrated. If the ridge head never
-beats the 1-gram, that is the gap to close: the ridge head's estimation efficiency — the
-cross-customer finite-sample gap — is the work to achieve.
+**The outcome — a monotone frontier, stricter than SOLVED (DEC-623 + operator direction
+2026-11-25).** The card being SOLVED is necessary but not sufficient. The 1-gram milestone is
+**M1: achieved** (B9.1 PASS — paired CI [−0.2394, −0.1521], delta −0.1944 nats, temperature
+fit on split A only). **M1 is the floor, not the completion condition.** The completion
+condition is *none* — the loop does not terminate on a bar; it terminates only when the
+operator stops it or a FULL BACKWARD is requested. What replaces "done" is **verified
+monotonicity**, recorded per run in the receipt and on the card:
+
+| Record | Where it lives | What "beating it" means |
+|---|---|---|
+| M1 · vs-baseline margin (demo_v2) | `best_known.json` · `encoder_win.json` | a **more negative** CI upper bound and a lower `nll_enc` than the record |
+| Per-class nll (each graded class) | `best_known.json` | each class's `nll_enc` at or below its record, no class regressing |
+| Real-data ridge/hier `g` per tier | `lab/*` receipts | a lower `g` at the same N and window (same protocol) |
+| Calibration / coverage | `encoder_win.json` · `robustness_law.json` | better calibration without worsening nll |
+| Consumer head generality | the four judge legs | a harder held-out task family passing |
+
+Rules:
+1. **The record is generated, never narrated.** `python3 scripts/best_known.py --update`
+   reads the current receipts and rewrites `best_known.json`; a value may enter the record only
+   from a current-stamped receipt. If the run did not beat a record, `--update` leaves it.
+2. **One record per run.** A run names the record it attacks (§3.0 `THE OUTCOME`); a run that
+   attacks none is maintenance and is recorded as such.
+3. **Never lower a record to look better.** Removing a record, changing its protocol, or
+   comparing at a different N/window is a gate change → operator.
+4. **New milestones are added, not substituted.** M1 stays in the record forever; M2/M3 are
+   new rows with their own protocol. The history of what was beaten is part of the evidence.
+5. **A plateau is a research fact, not permission to idle.** If every published record resists
+   improvement, the run must either open a *new* axis (pre-registered) or record the plateau
+   once — and then stop, rather than re-running the same axis.
 
 **ENCODER DONE v1** — all of the following, simultaneously:
 
@@ -408,6 +446,7 @@ Follow AGENTS.md's certification integrity rules 1–8. In practice:
 | `REPORT_CARD.md` | the run report + plan section + gate-of-record + **every open row** — it is the only card; no row may be hidden. Regenerated each run; no hand-written numbers. **Read the real-data story + incremental-improvements sections every run — they are the outcome's judgment surface.** |
 | `AUDIT.md` | the single BACKWARD file: principle audit + macro verdict + findings + `BACKWARD_REQUIREMENTS_JSON` block (each requirement tagged `node`) rendered into `REPORT_CARD.md` (§4). |
 | `docs/report_cards/experiments/` | receipts; `protocols/<name>/` archives for non-adopted runs. |
+| `docs/report_cards/experiments/best_known.json` | **the best-known record** — the monotone frontier. Generated by `python3 scripts/best_known.py --update` from current-stamped receipts only; never hand-edited. A value enters only by strictly beating the stored one. M1 stays forever; new milestones append. If a run did not beat a record, the file is unchanged and the run is a negative result. |
 
 **Commit discipline:** every coherent verified chunk is committed; code + docs only;
 data, checkpoints, logs, and virtualenvs are never committed. Commits stay **local**
@@ -420,6 +459,8 @@ commit; a receipt that no repo command regenerates is not evidence.
   `python3 scripts/measure_certification_law.py --products <recorded artifact> --demo <demo> --train-log <artifact>/train.log`
 - Plan render / freshness check (MACRO): `python3 scripts/plan.py` ·
   `python3 scripts/plan.py --check`
+- Best-known record (the monotone frontier — run every run):
+  `python3 scripts/best_known.py` · `python3 scripts/best_known.py --update`
 - Report card render (the single card, plan section included): `python3 scripts/report_card.py`
 - Principle audit (ALL code we run, not just changed files):
   `python3 scripts/principle_audit.py --all --strict` · summary: `--all --summary`
@@ -460,13 +501,11 @@ per-row Python loops in hot paths), and emit a runtime receipt.
 
 0. The §3.0 block was written **before** the node was chosen, names its layer, and is
    re-answered in the outcome as `WHY-NOT-CHANGED: yes|no`.
-0a. **The outcome check (binding, every run):** read the card's real-data + incremental-
-   improvements sections AND the gate (B9.1, the demo_v2 customer event stream) and answer
-   honestly — has the outcome moved toward achieved? Name the surface: the gate (B9.1) is
-   the binding check; the real-data story is the judgment surface. Has the encoder's
-   beats-the-1-gram story changed? If the run was a re-record of an unchanged negative,
-   say so and record it as a diagnosis, not progress — never as a win. If the gap moved
-   (a new cell beats the 1-gram, or a new head beats the 1-gram), record it as movement.
+0a. **The frontier check (binding, every run):** run `python3 scripts/best_known.py`
+   and answer honestly — did this run **beat the best-known record** on the axis §3.0 named?
+   The 1-gram (M1) is already beaten and is not a target. Report the record's value, this
+   run's value, and the delta. If the run only reproduced the record, record it as a
+   diagnosis ONCE — not progress, never a win. A run with no named record is maintenance.
 1. The DEC names `NODE`, `ROUTE`, `MOVE` **before** the run and `MOVEMENT` after it.
 2. The named node's status was read before and after; if it did not move, the run is recorded
    as a negative result/diagnosis, not progress.
@@ -490,13 +529,13 @@ per-row Python loops in hot paths), and emit a runtime receipt.
     whole surface**, not merely on the files touched. The baseline may only shrink. ruff/tests per
     the repo's gates (or the known-failure baseline disclosed).
 13. Print the rendered `REPORT_CARD.md` (never fenced) as the run's source of truth.
-14. **The outcome check (binding):** if the outcome is achieved — the encoder beats the
-    1-gram baseline on the real-data story AND the gate (B9.1, the demo_v2 customer event
-    stream) passes — stop and run `PROMPT_BACKWARD.md` (FULL). Else → the next FORWARD run,
-    starting again at §3.0/§3.1 (MACRO), not at the row that looks easiest. Do NOT declare
-    the outcome achieved because the card is SOLVED or because a local number improved;
-    only the real-data story + the gate (B9.1) decide the outcome. ENCODER DONE v1 / SOLVED
-    alone does NOT close the outcome — the real-data story + the gate do.
+14. **The frontier check (binding — there is no "done"):** `best_known.py --update` ran and
+    the record is in `best_known.json`; the run beat or did not beat the named record, and
+    either way the **next** run starts at §3.0/§3.1 (MACRO) attacking the highest-headroom
+    record — not the row that looks easiest, and not a victory lap. SOLVED / B CERTIFIED /
+    M1 are floors. Run `PROMPT_BACKWARD.md` (FULL) **only** when the operator asks, or when
+    the frontier has been raised and an adversarial review is due — never as a way to declare
+    the search finished. The loop continues while any published axis has headroom.
 
 ---
 
@@ -783,8 +822,9 @@ without running them. Outputs live under `rabbit_hole/data/reference_pipeline` b
 
 ---
 
-*The forward run ends when the outcome is achieved — the encoder's FROZEN output beats the
-1-gram baseline on the real-data story. The project is not done until the card is SOLVED
+*The forward run never "ends" — it advances. The 1-gram milestone (M1) was crossed on
+2026-11-25 (delta −0.1944 nats, CI [−0.2394, −0.1521]); every run after it must beat the
+best-known record, and a run that does not is a negative result rather than a finish. The project is not done until the card is SOLVED
 (`E1` closed by its port receipt and every v1 leaf green) AND the outcome is achieved — and
 `PROMPT_BACKWARD.md` returns no BREAKING findings against that card. The card being SOLVED
 is necessary but NOT sufficient; the real-data story is the honest judgment surface. Start
