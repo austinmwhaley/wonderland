@@ -2,8 +2,8 @@
   "_meta": {
     "behavior_hash": "5f48d15feced65c1",
     "command": "/home/austin_whaley/Documents/Repos/wonderland/scripts/measure_bc_bank.py --products looking_glass/artifacts/cfm_v2k_vf2_bank --demo looking_glass/artifacts/demo_v2 --legs supervised,unsupervised,rl,simulator --out-dir /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments",
-    "generated_at": "2026-11-25T21:16:42+00:00",
-    "git_commit": "fe862253abd6aa6907166f67f72c22de5b82d76f",
+    "generated_at": "2026-11-25T21:47:11+00:00",
+    "git_commit": "bac99254ed6201bddbc91c05b32f5a47f9a49275",
     "producer": "measure_bc_bank.py"
   },
   "arms": {

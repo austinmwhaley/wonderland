@@ -2,8 +2,8 @@
   "_meta": {
     "behavior_hash": "5f48d15feced65c1",
     "command": "/home/austin_whaley/Documents/Repos/wonderland/scripts/measure_donor.py --products looking_glass/artifacts/cfm_v2k_vf2_c32rvd --demo looking_glass/artifacts/demo_v2 --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/encoder_donor.json",
-    "generated_at": "2026-11-25T21:26:10+00:00",
-    "git_commit": "d59416aab67b071afc051de123353fb4ee085caa",
+    "generated_at": "2026-11-25T21:50:39+00:00",
+    "git_commit": "bac99254ed6201bddbc91c05b32f5a47f9a49275",
     "producer": "measure_donor.py"
   },
   "combined_protocol": "v2 (DEC-594): table_E = mean(table ridge, E ridge) \u2014 a fixed ensemble of the two fitted heads, no weights fit on B; the v1 hstack(fair,E) arm is recorded alongside as table_E_hstack",
@@ -102,7 +102,7 @@
       "table_seq_E": 0.4449639975661983
     }
   },
-  "seconds": 9.4,
+  "seconds": 8.7,
   "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899",
   "targets": {
     "y_churn_90": {

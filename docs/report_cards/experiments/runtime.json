@@ -2,14 +2,14 @@
   "_meta": {
     "behavior_hash": "5f48d15feced65c1",
     "command": "/home/austin_whaley/Documents/Repos/wonderland/scripts/measure_runtime.py --products looking_glass/artifacts/cfm_v2k_vf2_bank --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/runtime.json",
-    "generated_at": "2026-11-25T21:34:09+00:00",
-    "git_commit": "d59416aab67b071afc051de123353fb4ee085caa",
+    "generated_at": "2026-11-25T21:57:31+00:00",
+    "git_commit": "bac99254ed6201bddbc91c05b32f5a47f9a49275",
     "producer": "measure_runtime.py"
   },
   "artifact_load_s": 0.02,
   "artifact_save_s": 0.02,
-  "close_seconds": 0.04,
-  "cold_seconds": 44.59,
+  "close_seconds": 0.02,
+  "cold_seconds": 32.59,
   "complete": true,
   "data": "/tmp/opencode/t0_loop/ref_v3b_6k",
   "device": "cpu",
@@ -34,15 +34,15 @@
   "n": 5000,
   "n_entities": 600,
   "n_expected": 5000,
-  "peak_rss_mb": 3360.8,
+  "peak_rss_mb": 3371.9,
   "products": {
     "path": "looking_glass/artifacts/cfm_v2k_vf2_bank",
     "registry_sha256": "919a932f1b657064",
     "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
   },
-  "rows_per_s": 11.1,
-  "rss_mb_at_load": 554.1,
-  "seconds": 461.1,
+  "rows_per_s": 12.9,
+  "rss_mb_at_load": 561.1,
+  "seconds": 393.9,
   "slice_cap_gb": 32.0,
   "state_dims": {
     "forecast": 835,
@@ -55,5 +55,5 @@
   "state_forward_warm_s": 0.316,
   "state_rows_per_s": 1896.6,
   "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899",
-  "warm_seconds": 403.98
+  "warm_seconds": 348.17
 }

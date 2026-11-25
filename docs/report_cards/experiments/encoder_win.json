@@ -2,8 +2,8 @@
   "_meta": {
     "behavior_hash": "5f48d15feced65c1",
     "command": "measure_encoder_win.py --products looking_glass/artifacts/cfm_v2k_vf2_bank --demo looking_glass/artifacts/demo_v2 --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/encoder_win.json --head logistic",
-    "generated_at": "2026-11-25T21:37:14+00:00",
-    "git_commit": "d59416aab67b071afc051de123353fb4ee085caa",
+    "generated_at": "2026-11-25T21:59:35+00:00",
+    "git_commit": "bac99254ed6201bddbc91c05b32f5a47f9a49275",
     "producer": "measure_encoder_win.py"
   },
   "complete": true,
@@ -80,5 +80,5 @@
     "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
   },
   "protocol": "DEC-635: the multinomial logistic head (the adopted consumer, DEC-649) on the frozen bank embedding must beat the pooled 1-gram baseline on the customer event stream. The head is fit on split A (70% of customers) and scored on split B, with the head's own categorical likelihood (no post-hoc temperature); the paired bootstrap CI (2000 resamples) of (nll_enc - nll_base) must exclude 0. The outcome: the encoder is a foundation, not a green receipt.",
-  "seconds": 2.9
+  "seconds": 2.7
 }

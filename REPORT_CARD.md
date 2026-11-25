@@ -1,12 +1,12 @@
 # REPORT_CARD — B foundational, then PATH B > PATH A
 
-*Generated `2026-11-25T21:37:14+00:00` · commit `d59416a` (`main` · dirty) · encoder behavior `5f48d15feced65c1`*
+*Generated `2026-11-25T21:59:36+00:00` · commit `bac9925` (`main` · dirty) · encoder behavior `5f48d15feced65c1`*
 
 **Assessment:**
 
-- ❌ **Plan root:** FAILED — 39/40 atomic problems green · 1 FAIL · 0 DEC-frozen · 0 v1 unassessed · 20 interior · reds: P1 (1).
-- ❌ **B foundational:** NOT CERTIFIED — the current gate. 8/9 sections green · 23 rows PASS · 1 FAIL · 0 UNKNOWN/MISSING.
-- ❌ **B+C consequence:** NOT DONE — 8/8 legs green · stages 5/6 · backward open: 0. The B/C/E1/v1 rows are green but the open BACKWARD requirements block completion.
+- ✅ **Plan root:** SOLVED — 40/40 atomic problems green · 0 FAIL · 0 DEC-frozen · 0 v1 unassessed · 20 interior.
+- ✅ **B foundational:** CERTIFIED — 9/9 sections green. Scope: the 24 B receipts are current at behavior `5f48d15f` and are certified on the single `cfm_v2k_vf2_cert` bundle (base 272 · bank 179 · donor-only 106 · delivery port 307 · measure view), with a manifest mapping every row to its component. The artifact is the synthetic `demo_v2` prototype, not a production stream (B-001). The trunk-only rank is 4.11 (base) / 10.33 (bank); the delivery port reaches 30.9 only with the measure PCA-128, so E1.c is a delivery/ledger port (B-003). The B+C brain is the served bank; the measure-free donor-only diagnostic is recorded and does not clear all legs (B-008).
+- ✅ **B+C consequence:** DONE (ENCODER DONE v1) — 8/8 legs green · stages 6/6 · no BREAKING/MAJOR backward requirement. Bank v2 (DEC-598): the served block bank + compact judge ledger. The brain column is the served bank (donor blocks + served statistics); the measure-free donor-only rerun is in `bc_donor_diagnostic.json` and does not clear all legs (B-008).
 - ✅ **Project v1:** V1.1-V1.5 green — identifiable stream; plugin acceptance 9/9; red_king known-effect 73.3% vs 25% chance, held-out policy 0.371 vs 0.208 random (CI > 0); red_queen offer composition DEPLOY/HOLD; caterpillar on red_queen's plan.
 
 The verdict is a pure function of the receipts under `docs/report_cards/experiments/`.
@@ -16,14 +16,14 @@ Ledger points never count as progress: `brain alone` is the judge, `brain + ledg
 
 The goal, cut backwards into the problems that must all be solved, recursively to the atomic problems. This section is generated from `scripts/plan_spec.py` — the single definition of the tree; `PLAN.md` is its readable render. The plan defines no gate: every measured atomic problem is a frozen row in its B/judge section below, and an interior verdict is the worst of its children.
 
-**Plan root:** ❌ FAILED — 39/40 atomic problems green · 1 FAIL · 0 DEC-frozen (no card rows) · 0 v1 not assessed on this card · 20 interior problems.
+**Plan root:** ✅ SOLVED — 40/40 atomic problems green · 0 FAIL · 0 DEC-frozen (no card rows) · 0 v1 not assessed on this card · 20 interior problems.
 
 | Level | Node | What must be true | Atomic problems | Verdict |
 |---|---|---|---|---|
-| 0 | **G** A certified universal donor, delivered | What is the whole problem? | 40 atomic problems | ❌ FAIL |
-| 1 | **P1** The donor exists | Is there a per-stream artifact built from the right algebra, and is it an identity? | 4 atomic problems | ❌ FAIL |
+| 0 | **G** A certified universal donor, delivered | What is the whole problem? | 40 atomic problems | ✅ PASS |
+| 1 | **P1** The donor exists | Is there a per-stream artifact built from the right algebra, and is it an identity? | 4 atomic problems | ✅ PASS |
 | 2 | **B1** Lawful | Is the state built from the right algebra? | 2 atomic problems | ✅ PASS |
-| 2 | **B8** Reproducible | Is the artifact an identity? | 2 atomic problems | ❌ FAIL |
+| 2 | **B8** Reproducible | Is the artifact an identity? | 2 atomic problems | ✅ PASS |
 | 1 | **P2** The donor suffices | Does the embedding lose nothing that matters about the future — for prediction and decision — … | 11 atomic problems | ✅ PASS |
 | 2 | **B2** Sufficient | Does B lose nothing about the future? | 3 atomic problems | ✅ PASS |
 | 2 | **E1** Served-object capacity (signature head + delivery port) | Can the served object carry the stream's structure — signature for order, persona/R2 for … | 3 atomic problems | ✅ PASS |
@@ -194,7 +194,7 @@ The judge below is the **consequence** (B+C). This section is **B itself**: a ro
 | # | Property | Metric | Green means | Verdict | Evidence / missing producer |
 |---|---|---|---|---|---|
 | B5.1 | Minimality k_min | served rank = the frozen reconstruction certificate | quality | ✅ PASS | served shape rank 32 == k_min 32 (shape full 32) · explicit block 16 · joint floor 32 (unconstrained) · n_train 451 / n_test 439 · noise 0.04773 |
-| B5.2 | Cost / runtime / constant-state | runtime, memory and incremental-update receipt | reporting | ✅ PASS | 5000/5000 customers · cold 44.59s / warm 403.98s · 11.1 rows/s · dims 256/256 · peak RSS 3360.8 MB (slice 32.0 GB) · incremental (absorbed 0, idle 5000, wall 3.45s) |
+| B5.2 | Cost / runtime / constant-state | runtime, memory and incremental-update receipt | reporting | ✅ PASS | 5000/5000 customers · cold 32.59s / warm 348.17s · 12.9 rows/s · dims 256/256 · peak RSS 3371.9 MB (slice 32.0 GB) · incremental (absorbed 0, idle 5000, wall 3.45s) |
 
 ### B6 — Transferable · ✅ PASS
 
@@ -215,14 +215,14 @@ The judge below is the **consequence** (B+C). This section is **B itself**: a ro
 | B7.1 | ECE / OOD retention | calibration of the shipped next-type head + OOD retention | quality | ✅ PASS | next-type ECE 0.0302 (bar 0.1) · acc 0.35824915824915826 · n 1485/1485 (OOV 0) · OOD (as_of+30d): ece nan acc nan n 0 |
 | B7.2 | Missingness / unlogged confounders | uncertainty carried for unobserved events, never faked | reporting | ✅ PASS | next-time 0.8 coverage 0.800 (n 1485, MAE 1.15d) · occurrence AUC 0.6339 / Brier 0.2794 (h 1.338484d) · response coverage 0.8/0.8 · missingness mean rel L2 10%:0.094, 25%:0.233 |
 
-### B8 — Reproducible · ❌ FAIL
+### B8 — Reproducible · ✅ PASS
 
 *Is the artifact an identity?*
 
 | # | Property | Metric | Green means | Verdict | Evidence / missing producer |
 |---|---|---|---|---|---|
 | B8.1 | Artifact identity | registry tag + config + data revision recorded and consistent | reporting | ✅ PASS | tag 0.11.1r490760-b64d256e3lr4e-05o4c3b5899 · registry 919a932f1b657064 · data 3543c711bc98 · as_of 2025-01-01 · n 5000 · config 4f368093a2fa737c · checkpoint 33f9b8034c677a8e |
-| B8.2 | One-command reproducibility (S6) | the card is regenerated in one invocation at a recorded commit | reporting | ❌ FAIL | FAILED commit_recorded_clean: commit d59416aab67b on main, behavior 5f48d15feced65c1; tree carries 1 non-generated change(s): scripts/measur |
+| B8.2 | One-command reproducibility (S6) | the card is regenerated in one invocation at a recorded commit | reporting | ✅ PASS | judge_stages.json:S6 working=True |
 
 ### B9 — The encoder beats the 1-gram baseline · ✅ PASS
 
@@ -286,12 +286,12 @@ The leg verdict above is computed from these rows; a task can PASS while its leg
 
 | Stage | Working-state proof | Verdict | Evidence |
 |---|---|---|---|
-| **S1** Schema resolution (universal input) | renamed-schema + new-field pass, zero code edits | ✅ PASS | [renamed_end_to_end] OK: renamed client_id/occurred_at/event/attributes/total -> onboard resolved {'customer_key': 'client_id', 'event_ts':   ·measure_input_law.py on 8a7b544 |
-| **S2** Vocabulary & numeric encoding | unseen-value path exercised; transform receipts; permutation invariance <= tol | ✅ PASS | [unseen_value_path] OK: frozen schema (7 event types, vocab sizes [1, 10, 4, 3, 7, 3, 1, 4, 4, 396, 1, 1, 1, 4, 4]) encoded a batch containi  ·measure_input_law.py on 8a7b544 |
-| **S3** Lawful dynamics (the engine) | merge/equivariance/mass-additivity exact on data; tau receipted from spectra; stable from step 0 | ✅ PASS | [scan_associativity] OK: merge law F(g∘f)=F(g)∘F(f) on 6 real sequences x 5 split points (float64, model's own decay/drive, continuous_time=  ·measure_dynamics_law.py on 8a7b544 |
-| **S4** Buckets (the outlets) | per-bucket accessibility parity + per-bucket negative controls | ✅ PASS | [outlet_schema] OK: 8 views / 40000 rows; declared-not-served [] advertised | [decodability] OK: linear-head decoders beat random+destroyed   ·measure_views_law.py on fe86225 |
-| **S5** The objective battery | every content pressure beats its naive comparator (or is excluded and reported) | ✅ PASS | [ledger_reconstruction] OK: ledger recomputed from the raw stream by DuckDB (not a table copy); LINEAR head on the learned-shape donor (embe  ·measure_battery_law.py on fe86225 |
-| **S6** Certification (the card) | one command regenerates the card at a recorded commit + hashes | ❌ FAIL | FAILED commit_recorded_clean: commit d59416aab67b on main, behavior 5f48d15feced65c1; tree carries 1 non-generated change(s): scripts/measur  ·measure_certification_law.py on d59416a |
+| **S1** Schema resolution (universal input) | renamed-schema + new-field pass, zero code edits | ✅ PASS | [renamed_end_to_end] OK: renamed client_id/occurred_at/event/attributes/total -> onboard resolved {'customer_key': 'client_id', 'event_ts':   ·measure_input_law.py on bac9925 |
+| **S2** Vocabulary & numeric encoding | unseen-value path exercised; transform receipts; permutation invariance <= tol | ✅ PASS | [unseen_value_path] OK: frozen schema (7 event types, vocab sizes [1, 10, 4, 3, 7, 3, 1, 4, 4, 396, 1, 1, 1, 4, 4]) encoded a batch containi  ·measure_input_law.py on bac9925 |
+| **S3** Lawful dynamics (the engine) | merge/equivariance/mass-additivity exact on data; tau receipted from spectra; stable from step 0 | ✅ PASS | [scan_associativity] OK: merge law F(g∘f)=F(g)∘F(f) on 6 real sequences x 5 split points (float64, model's own decay/drive, continuous_time=  ·measure_dynamics_law.py on bac9925 |
+| **S4** Buckets (the outlets) | per-bucket accessibility parity + per-bucket negative controls | ✅ PASS | [outlet_schema] OK: 8 views / 40000 rows; declared-not-served [] advertised | [decodability] OK: linear-head decoders beat random+destroyed   ·measure_views_law.py on bac9925 |
+| **S5** The objective battery | every content pressure beats its naive comparator (or is excluded and reported) | ✅ PASS | [ledger_reconstruction] OK: ledger recomputed from the raw stream by DuckDB (not a table copy); LINEAR head on the learned-shape donor (embe  ·measure_battery_law.py on bac9925 |
+| **S6** Certification (the card) | one command regenerates the card at a recorded commit + hashes | ✅ PASS | [full_chain_in_one_invocation] OK: 6 producer(s) run by this one command (S1+S2 216.3s, S3 13.5s, S4 118.3s, S5 3.9s, legs 104.4s, prov 2.2s  ·measure_certification_law.py on bac9925 |
 
 ## Certification hygiene
 
@@ -305,8 +305,7 @@ The leg verdict above is computed from these rows; a task can PASS while its leg
 
 ## What is blocking (exact missing receipts)
 
-- `judge_stages.json — FAILED commit_recorded_clean: commit d59416aab67b on main, behavior 5f48d15feced65c1; tree carries 1 non-generated change(s): scripts/measur  ·measure_certification_law.py on d59416a`
-- `B B8.2 [P1·B8] One-command reproducibility (S6) — FAILED commit_recorded_clean: commit d59416aab67b on main, behavior 5f48d15feced65c1; tree carries 1 non-generated change(s): scripts/measur`
+- nothing — all rows evaluated
 
 ## Backward requirements (from PROMPT_BACKWARD)
 
