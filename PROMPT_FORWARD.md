@@ -1,8 +1,10 @@
 # PROMPT_FORWARD — the two-scale forward operating prompt (PLAN.md -> REPORT_CARD.md)
 
-> **State:** run this prompt while the card is **not** ENCODER DONE v1, or after
-> `PROMPT_BACKWARD.md` returned at least one **BREAKING** finding.
-> **Job:** move the project toward its goal by one measured axis per run, obeying the
+> **State:** run this prompt **until the outcome is achieved** — the encoder beats the
+> existing methods (the 1-gram baseline) on the real-data story. The frozen gates passing
+> (the card SOLVED) is necessary but NOT sufficient: the gates certify the instrument, not
+> the encoder. **This prompt loops until the outcome, not until the card is green.**
+> **Job:** move the project toward the outcome by one measured axis per run, obeying the
 > principles. This is not a coding prompt; code is only the instrument.
 > **Two scales, every run.**
 > **MACRO** — `PLAN.md` is the map: the goal cut backwards into necessary problems, the
@@ -11,8 +13,16 @@
 > **MICRO** — `REPORT_CARD.md` is the instrument: one leaf, one axis, one frozen gate, one
 > receipt. A run that moves no node is a diagnosis, not progress.
 > **Every run ends with both artifacts current:** the card re-rendered, and — if the
-> frontier moved — `PLAN.md` regenerated. When the card is ENCODER DONE v1, stop forward
-> work and run `PROMPT_BACKWARD.md` (FULL).
+> frontier moved — `PLAN.md` regenerated. When the outcome is achieved, stop forward work
+> and run `PROMPT_BACKWARD.md` (FULL).
+>
+> **The outcome — what this loop is for (augmented goal, DEC-623).** The encoder's FROZEN
+> output beats the existing methods — the 1-gram baseline — on the real-data story. This is
+> the outcome, not ENCODER DONE v1: the certified gates are green and the card is SOLVED
+> (39/39), but that certifies the instrument, not the encoder. The real-data story
+> (`REPORT_CARD.md`'s real-data + incremental-improvements sections) is the honest judgment
+> surface — the synthetic `demo_v2` card proves the instrument works; the real-data story
+> proves the encoder is a foundation, not a green receipt.
 
 ---
 
@@ -28,7 +38,10 @@
 5. `DECISIONS.md` — append-only decision log. Read the tail; never re-litigate a
    settled decision without new evidence.
 6. `REPORT_CARD.md` — the ONE card: the plan section (node verdicts) first, then the
-   B scorecard, the run report, and every open row (see §4).
+   B scorecard, the run report, and every open row (see §4). **Read the real-data story +
+   incremental-improvements sections first** — they are the honest judgment surface and the
+   outcome's judgment surface, not the B scorecard. The B scorecard certifies the instrument;
+   the real-data story certifies the encoder.
 7. `AUDIT.md` — the principle-alignment audit written by BACKWARD.
 8. `docs/report_cards/experiments/` — the receipts every number must trace to.
 9. `docs/SPINE.md` Appendix A — the Layer-1 `U` contract.
@@ -45,6 +58,16 @@ never overrides a receipt, and the map never overrides a gate.
 > Input any event stream → output a **frozen** foundation model (one per stream) whose
 > state supports **supervised**, **unsupervised**, **RL**, and **simulator** heads using
 > simple consumers.
+
+**The outcome (augmented, DEC-623) — the goal that actually drives this loop:** the encoder's
+FROZEN output beats the existing methods — the 1-gram baseline — on the real-data story.
+This is not a stricter gate on the synthetic demo_v2 card; it is a different claim. The card
+being SOLVED (39/39, B CERTIFIED, B+C DONE) certifies the instrument — that the pipeline
+produces a frozen, certifiable donor. It does NOT certify that the donor is a foundation.
+The real-data story — the per-domain ridge/hier head measurements on the DEC-611/615
+campaigns (sensor_fleet, clickstream_sessions, server_logs), rendered on the card's
+real-data + incremental-improvements sections — is the honest judgment surface. The
+outcome is achieved when the encoder beats the 1-gram baseline there.
 
 Layer 0 is the frozen universal donor. Layer 1 is certification: sufficiency,
 minimality, decision-sufficiency, measured by `U`. Do not conflate them.
@@ -113,6 +136,19 @@ Rules:
    toward the goal.
 5. **A gap may be closed only by a measured improvement on its own layer** — never by a green
    row in another layer, and never by a lab receipt (DEC-576).
+
+**The no-loops discipline (binding — this is the failure mode this loop has already paid for).**
+A run that re-reads the same receipts and records the same negative is NOT progress — it is a
+thinking loop, and it is forbidden. Before every run, answer: *what is the ONE new thing this
+run will do that the last run did not?* If the answer is "nothing — re-read the same receipts",
+then do nothing new this run; record the negative ONCE (DEC-NNN outcome addendum) and stop
+re-recording it. The one thing a run may do is **change the one axis** that the WHY-NOT block
+names — a pre-registered mechanism change, a new measurement that attacks the gap, or a
+documented closure of the gap. Do NOT pre-register the same axis N times with new DEC ids and
+record the same negative N times: that is noise, not progress, and it is exactly the failure
+mode that wastes the operator's time. If the WHY-NOT block names a gap that is a research axis
+(the ridge head's estimation efficiency — the cross-customer finite-sample gap), say so honestly
+and either run the pre-registered axis or stop; do not invent a third reading of the same data.
 
 ### 3.1 MACRO — read the map before choosing anything
 
@@ -265,6 +301,18 @@ The plan makes the old single word precise:
 A green T0 is not ENCODER DONE; ENCODER DONE is not SOLVED. Never use a stronger word than
 the generated artifact says.
 
+**The outcome (augmented, DEC-623) — the completion condition for this loop, stricter than SOLVED.**
+The card being SOLVED is necessary but not sufficient. The outcome is: **the encoder's FROZEN
+output beats the 1-gram baseline on the real-data story** — the per-domain ridge/hier head
+measurements rendered on the card's real-data + incremental-improvements sections. The honest
+record of where this stands (DEC-631): the hier head (the transition head) beats the 1-gram on
+14/14 cells (`beats_base` True, all three domains); the ridge head (the shipping consumer head)
+never beats the 1-gram (0/14 cells) — the honest, bounded gap, recorded as-is. The outcome is
+achieved when the encoder beats the 1-gram baseline on the real-data story — and the honest
+record of HOW (which head, which cells) is on the card, not narrated. If the ridge head never
+beats the 1-gram, that is the gap to close: the ridge head's estimation efficiency — the
+cross-customer finite-sample gap — is the work to achieve.
+
 **ENCODER DONE v1** — all of the following, simultaneously:
 
 1. `REPORT_CARD.md`: **0 FAIL, 0 UNKNOWN**; every one of the 8 leg-columns is PASS or
@@ -375,6 +423,12 @@ per-row Python loops in hot paths), and emit a runtime receipt.
 
 0. The §3.0 block was written **before** the node was chosen, names its layer, and is
    re-answered in the outcome as `WHY-NOT-CHANGED: yes|no`.
+0a. **The outcome check (binding, every run):** read the card's real-data + incremental-
+   improvements sections and answer honestly — has the outcome moved toward achieved?
+   Has the encoder's beats-the-1-gram story changed? If the run was a re-record of an
+   unchanged negative, say so and record it as a diagnosis, not progress — never as a
+   win. If the gap moved (a new cell beats the 1-gram, or a new head beats the 1-gram),
+   record it as movement.
 1. The DEC names `NODE`, `ROUTE`, `MOVE` **before** the run and `MOVEMENT` after it.
 2. The named node's status was read before and after; if it did not move, the run is recorded
    as a negative result/diagnosis, not progress.
@@ -398,8 +452,12 @@ per-row Python loops in hot paths), and emit a runtime receipt.
     whole surface**, not merely on the files touched. The baseline may only shrink. ruff/tests per
     the repo's gates (or the known-failure baseline disclosed).
 13. Print the rendered `REPORT_CARD.md` (never fenced) as the run's source of truth.
-14. If ENCODER DONE v1 (the §4 list) → stop and run `PROMPT_BACKWARD.md` (FULL). Else → the
-    next FORWARD run, starting again at §3.1 (MACRO), not at the row that looks easiest.
+14. **The outcome check (binding):** if the outcome is achieved — the encoder beats the
+    1-gram baseline on the real-data story — stop and run `PROMPT_BACKWARD.md` (FULL).
+    Else → the next FORWARD run, starting again at §3.0/§3.1 (MACRO), not at the row that
+    looks easiest. Do NOT declare the outcome achieved because the card is SOLVED or
+    because a local number improved; only the real-data story decides the outcome.
+    ENCODER DONE v1 / SOLVED alone does NOT close the outcome — the real-data story does.
 
 ---
 
@@ -679,7 +737,10 @@ without running them. Outputs live under `rabbit_hole/data/reference_pipeline` b
 
 ---
 
-*The forward run ends when the card is ENCODER DONE v1. The project is not done until the plan
-root reads SOLVED — `E1` closed by its port receipt and every v1 leaf green — and
-`PROMPT_BACKWARD.md` returns no BREAKING findings against that card. Start every run from the
-map (`PLAN.md` §3.1), not from the row that happens to be red.*
+*The forward run ends when the outcome is achieved — the encoder's FROZEN output beats the
+1-gram baseline on the real-data story. The project is not done until the card is SOLVED
+(`E1` closed by its port receipt and every v1 leaf green) AND the outcome is achieved — and
+`PROMPT_BACKWARD.md` returns no BREAKING findings against that card. The card being SOLVED
+is necessary but NOT sufficient; the real-data story is the honest judgment surface. Start
+every run from the map (`PLAN.md` §3.1) and the real-data story, not from the row that
+happens to be red.*
