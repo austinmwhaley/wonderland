@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "ea84f6a12bf59d2e",
-    "command": "measure_block_serving.py --products looking_glass/artifacts/cfm_v2k_vf2_port --demo looking_glass/artifacts/demo_v2",
-    "generated_at": "2026-11-25T20:10:45+00:00",
-    "git_commit": "2aa1f70e2c525f9b398b6d2cb7c9da5ae9d8795d",
+    "behavior_hash": "5f48d15feced65c1",
+    "command": "measure_block_serving.py --products looking_glass/artifacts/cfm_v2k_vf2_port --demo looking_glass/artifacts/demo_v2 --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/encoder_block_serving.json",
+    "generated_at": "2026-11-25T21:37:09+00:00",
+    "git_commit": "d59416aab67b071afc051de123353fb4ee085caa",
     "producer": "measure_block_serving.py"
   },
   "arms": {
@@ -251,7 +251,7 @@
     "registry_sha256": "070789564a52b578",
     "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
   },
-  "seconds": 35.3,
+  "seconds": 8.3,
   "sensitivity_counter_weight": {
     "0.5": 0.263585,
     "1.0": 0.263585,

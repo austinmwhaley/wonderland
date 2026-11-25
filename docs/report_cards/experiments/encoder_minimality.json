@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "de599142938c6c16",
-    "command": "scripts/measure_minimality_law.py",
-    "generated_at": "2026-11-25T18:47:39+00:00",
-    "git_commit": "d85630ab26edce94212638963ae932f30ce5a202",
+    "behavior_hash": "5f48d15feced65c1",
+    "command": "/home/austin_whaley/Documents/Repos/wonderland/scripts/measure_minimality_law.py --products looking_glass/artifacts/cfm_v2k_vf2_c32 --demo looking_glass/artifacts/demo_v2 --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/encoder_minimality.json",
+    "generated_at": "2026-11-25T21:26:25+00:00",
+    "git_commit": "d59416aab67b071afc051de123353fb4ee085caa",
     "producer": "measure_minimality_law.py"
   },
   "block_dim": 16,
@@ -177,7 +177,7 @@
     "n_test": 439,
     "n_train": 451,
     "noise": 0.04773,
-    "path": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k_vf2_c32/minimality_joint.json",
+    "path": "looking_glass/artifacts/cfm_v2k_vf2_c32/minimality_joint.json",
     "retained_mean_r2": 0.70028,
     "retained_worst_r2": 0.07681,
     "rule": "k_min = smallest PCA rank whose worst-case held-out R^2 is within 1/sqrt(n_test) of the full-E R^2; certified iff k_min == full_dim",
@@ -188,11 +188,11 @@
   "joint_min": 32,
   "k_min": 32,
   "products": {
-    "path": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k_vf2_c32",
+    "path": "looking_glass/artifacts/cfm_v2k_vf2_c32",
     "registry_sha256": "340c6a15676d39dd",
     "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
   },
-  "seconds": 14.1,
+  "seconds": 13.7,
   "served_dim": 48,
   "served_shape_dim": 32,
   "shape_certificate": {
@@ -237,7 +237,7 @@
     "n_test": 439,
     "n_train": 451,
     "noise": 0.04773,
-    "path": "/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k_vf2_c32/minimality_shape.json",
+    "path": "looking_glass/artifacts/cfm_v2k_vf2_c32/minimality_shape.json",
     "retained_mean_r2": 0.28835,
     "retained_worst_r2": 0.03388,
     "rule": "k_min = smallest PCA rank whose worst-case held-out R^2 is within 1/sqrt(n_test) of the full-E R^2; certified iff k_min == full_dim",

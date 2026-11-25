@@ -1,16 +1,16 @@
 {
   "_meta": {
-    "behavior_hash": "de599142938c6c16",
-    "command": "measure_encoder_win.py --head logistic",
-    "generated_at": "2026-11-25T18:58:03+00:00",
-    "git_commit": "d85630ab26edce94212638963ae932f30ce5a202",
+    "behavior_hash": "5f48d15feced65c1",
+    "command": "measure_encoder_win.py --products looking_glass/artifacts/cfm_v2k_vf2_bank --demo looking_glass/artifacts/demo_v2 --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/encoder_win.json --head logistic",
+    "generated_at": "2026-11-25T21:37:14+00:00",
+    "git_commit": "d59416aab67b071afc051de123353fb4ee085caa",
     "producer": "measure_encoder_win.py"
   },
   "complete": true,
   "encoder_win": {
     "beats_gram1": null,
     "beats_unigram": true,
-    "calibration": "scalar",
+    "calibration": "none",
     "calibration_weights": null,
     "ci_hi": -0.2115588551257826,
     "ci_lo": -0.2908418362632496,
@@ -65,7 +65,7 @@
     "recent_k": 0,
     "served_object": "frozen bank embedding (179 dims)",
     "temperature": 1.0,
-    "temperature_fit_on": "split A holdout (30%), never split B"
+    "temperature_fit_on": "not fit (no post-hoc calibration applied this run)"
   },
   "kind": "encoder_win",
   "population": {
@@ -76,8 +76,9 @@
   },
   "products": {
     "path": "looking_glass/artifacts/cfm_v2k_vf2_bank",
-    "tag": null
+    "registry_sha256": "919a932f1b657064",
+    "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
   },
-  "protocol": "DEC-635: the ridge head (the shipping consumer head) beats the pooled 1-gram baseline on the customer event stream \u2014 the ridge head is fit on split A, scored on split B, the paired bootstrap CI of (nll_enc - nll_base) must exclude 0. The outcome: the encoder is a foundation, not a green receipt.",
-  "seconds": 3.3
+  "protocol": "DEC-635: the multinomial logistic head (the adopted consumer, DEC-649) on the frozen bank embedding must beat the pooled 1-gram baseline on the customer event stream. The head is fit on split A (70% of customers) and scored on split B, with the head's own categorical likelihood (no post-hoc temperature); the paired bootstrap CI (2000 resamples) of (nll_enc - nll_base) must exclude 0. The outcome: the encoder is a foundation, not a green receipt.",
+  "seconds": 2.9
 }

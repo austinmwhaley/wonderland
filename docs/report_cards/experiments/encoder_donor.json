@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "2791055694dcbbdc",
-    "command": "scripts/measure_donor.py --products looking_glass/artifacts/cfm_v2k_vf2_c32rvd",
-    "generated_at": "2026-11-25T19:18:45+00:00",
-    "git_commit": "d85630ab26edce94212638963ae932f30ce5a202",
+    "behavior_hash": "5f48d15feced65c1",
+    "command": "/home/austin_whaley/Documents/Repos/wonderland/scripts/measure_donor.py --products looking_glass/artifacts/cfm_v2k_vf2_c32rvd --demo looking_glass/artifacts/demo_v2 --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/encoder_donor.json",
+    "generated_at": "2026-11-25T21:26:10+00:00",
+    "git_commit": "d59416aab67b071afc051de123353fb4ee085caa",
     "producer": "measure_donor.py"
   },
   "combined_protocol": "v2 (DEC-594): table_E = mean(table ridge, E ridge) \u2014 a fixed ensemble of the two fitted heads, no weights fit on B; the v1 hstack(fair,E) arm is recorded alongside as table_E_hstack",

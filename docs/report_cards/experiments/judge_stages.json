@@ -878,10 +878,10 @@
   },
   "S6": {
     "_stamp": {
-      "behavior_hash": "ec9b5daa98740c83",
+      "behavior_hash": "5f48d15feced65c1",
       "command": "measure_certification_law.py --products looking_glass/artifacts/cfm_v2k_vf2_bank --demo looking_glass/artifacts/demo_v2",
-      "generated_at": "2026-11-25T18:42:36+00:00",
-      "git_commit": "d85630ab26edce94212638963ae932f30ce5a202",
+      "generated_at": "2026-11-25T21:37:14+00:00",
+      "git_commit": "d59416aab67b071afc051de123353fb4ee085caa",
       "producer": "measure_certification_law.py"
     },
     "artifacts": {
@@ -917,7 +917,7 @@
         "command": "measure_input_law.py --data looking_glass/artifacts/demo_v2 --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
         "exit": 0,
         "last_line": "S1 working=True  S2 working=True",
-        "seconds": 217.2
+        "seconds": 246.0
       },
       "S3": {
         "cap_gb": 32.0,
@@ -925,7 +925,7 @@
         "command": "measure_dynamics_law.py --ckpt-dir looking_glass/artifacts/cfm_v2k_vf2_bank --db looking_glass/artifacts/demo_v2/customer_event_stream.parquet --train-log looking_glass/artifacts/cfm_train_baseline.log --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
         "exit": 0,
         "last_line": "S3 working=True",
-        "seconds": 12.4
+        "seconds": 11.8
       },
       "S4": {
         "cap_gb": 32.0,
@@ -933,7 +933,7 @@
         "command": "measure_views_law.py --products looking_glass/artifacts/cfm_v2k_vf2_bank --demo looking_glass/artifacts/demo_v2 --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
         "exit": 0,
         "last_line": "S4 -> /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
-        "seconds": 546.1
+        "seconds": 438.5
       },
       "S5": {
         "cap_gb": 32.0,
@@ -941,15 +941,15 @@
         "command": "measure_battery_law.py --products looking_glass/artifacts/cfm_v2k_vf2_bank/cfm_products.duckdb --demo looking_glass/artifacts/demo_v2 --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
         "exit": 0,
         "last_line": "S5 working=True",
-        "seconds": 3.4
+        "seconds": 41.1
       },
       "legs": {
         "cap_gb": 32.0,
         "cap_mechanism": "slice wonderland.slice MemoryMax",
         "command": "measure_bc_bank.py --products looking_glass/artifacts/cfm_v2k_vf2_bank --demo looking_glass/artifacts/demo_v2 --legs supervised,unsupervised,rl,simulator --out-dir /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments",
         "exit": 0,
-        "last_line": "WROTE judge_leg_*.json (124s)",
-        "seconds": 124.9
+        "last_line": "WROTE judge_leg_*.json (382s)",
+        "seconds": 384.6
       },
       "prov": {
         "cap_gb": 32.0,
@@ -957,7 +957,150 @@
         "command": "measure_path_a_provenance.py --demo looking_glass/artifacts/demo_v2 --products-dir looking_glass/artifacts/cfm_v2k_vf2_bank --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/path_a_provenance.json",
         "exit": 0,
         "last_line": "path_a_provenance working=True",
-        "seconds": 2.3
+        "seconds": 2.8
+      }
+    },
+    "chain_b": {
+      "ran": {
+        "b_props": {
+          "cap_gb": 32.0,
+          "cap_mechanism": "slice wonderland.slice MemoryMax",
+          "command": "measure_b_props.py --products looking_glass/artifacts/cfm_v2k_vf2_bank --demo looking_glass/artifacts/demo_v2 --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/encoder_b_props.json",
+          "exit": 0,
+          "fresh": true,
+          "last_line": "WROTE /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/encoder_b_props.json",
+          "receipt": "encoder_b_props.json",
+          "seconds": 49.4
+        },
+        "block_serving": {
+          "cap_gb": 32.0,
+          "cap_mechanism": "slice wonderland.slice MemoryMax",
+          "command": "measure_block_serving.py --products looking_glass/artifacts/cfm_v2k_vf2_port --demo looking_glass/artifacts/demo_v2 --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/encoder_block_serving.json",
+          "exit": 0,
+          "fresh": true,
+          "last_line": "  complete=True",
+          "receipt": "encoder_block_serving.json",
+          "seconds": 10.7
+        },
+        "construction": {
+          "cap_gb": 32.0,
+          "cap_mechanism": "slice wonderland.slice MemoryMax",
+          "command": "measure_construction_law.py --products looking_glass/artifacts/cfm_v2k_vf2_bank --demo looking_glass/artifacts/demo_v2 --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/encoder_lawfulness.json",
+          "exit": 0,
+          "fresh": true,
+          "last_line": "WROTE /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/encoder_lawfulness.json",
+          "receipt": "encoder_lawfulness.json",
+          "seconds": 146.4
+        },
+        "decision": {
+          "cap_gb": 32.0,
+          "cap_mechanism": "slice wonderland.slice MemoryMax",
+          "command": "measure_decision_law.py --products looking_glass/artifacts/cfm_v2k_vf2 --demo looking_glass/artifacts/demo_v2 --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/encoder_decision_law.json",
+          "exit": 0,
+          "fresh": true,
+          "last_line": "WROTE /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/encoder_decision_law.json",
+          "receipt": "encoder_decision_law.json",
+          "seconds": 248.8
+        },
+        "donor": {
+          "cap_gb": 32.0,
+          "cap_mechanism": "slice wonderland.slice MemoryMax",
+          "command": "measure_donor.py --products looking_glass/artifacts/cfm_v2k_vf2_c32rvd --demo looking_glass/artifacts/demo_v2 --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/encoder_donor.json",
+          "exit": 0,
+          "fresh": true,
+          "last_line": "WROTE /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/encoder_donor.json",
+          "receipt": "encoder_donor.json",
+          "seconds": 11.8
+        },
+        "encoder_win": {
+          "cap_gb": 32.0,
+          "cap_mechanism": "slice wonderland.slice MemoryMax",
+          "command": "measure_encoder_win.py --products looking_glass/artifacts/cfm_v2k_vf2_bank --demo looking_glass/artifacts/demo_v2 --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/encoder_win.json --head logistic",
+          "exit": 0,
+          "fresh": true,
+          "last_line": "  head=logistic calibration=none beats_unigram=True  paired CI [-0.2908418362632496, -0.2115588551257826]  nll_enc=1.173099  nll_base=1.423192  n_B_rows=1500",
+          "receipt": "encoder_win.json",
+          "seconds": 3.6
+        },
+        "minimality": {
+          "cap_gb": 32.0,
+          "cap_mechanism": "slice wonderland.slice MemoryMax",
+          "command": "measure_minimality_law.py --products looking_glass/artifacts/cfm_v2k_vf2_c32 --demo looking_glass/artifacts/demo_v2 --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/encoder_minimality.json",
+          "exit": 0,
+          "fresh": true,
+          "last_line": "WROTE /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/encoder_minimality.json",
+          "receipt": "encoder_minimality.json",
+          "seconds": 14.3
+        },
+        "robustness": {
+          "cap_gb": 32.0,
+          "cap_mechanism": "slice wonderland.slice MemoryMax",
+          "command": "measure_robustness_law.py --products looking_glass/artifacts/cfm_v2k_vf2 --demo looking_glass/artifacts/demo_v2 --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/encoder_robustness_law.json",
+          "exit": 0,
+          "fresh": true,
+          "last_line": "WROTE /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/encoder_robustness_law.json",
+          "receipt": "encoder_robustness_law.json",
+          "seconds": 2.0
+        },
+        "runtime": {
+          "cap_gb": 32.0,
+          "cap_mechanism": "slice wonderland.slice MemoryMax",
+          "command": "measure_runtime.py --products looking_glass/artifacts/cfm_v2k_vf2_bank --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/runtime.json",
+          "exit": 0,
+          "fresh": true,
+          "last_line": "WROTE /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/runtime.json",
+          "receipt": "runtime.json",
+          "seconds": 463.1
+        },
+        "served_object": {
+          "cap_gb": 32.0,
+          "cap_mechanism": "slice wonderland.slice MemoryMax",
+          "command": "measure_served_object.py --products looking_glass/artifacts/cfm_v2k_vf2 --demo looking_glass/artifacts/demo_v2 --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/encoder_served_object.json",
+          "exit": 0,
+          "fresh": true,
+          "last_line": "  complete=True",
+          "receipt": "encoder_served_object.json",
+          "seconds": 122.9
+        },
+        "stage": {
+          "cap_gb": 32.0,
+          "cap_mechanism": "slice wonderland.slice MemoryMax",
+          "command": "measure_stage_decomposition.py --products looking_glass/artifacts/cfm_v2k_vf2_port --demo looking_glass/artifacts/demo_v2 --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/encoder_stage_decomposition.json",
+          "exit": 0,
+          "fresh": true,
+          "last_line": "  complete=True",
+          "receipt": "encoder_stage_decomposition.json",
+          "seconds": 5.8
+        },
+        "sufficiency": {
+          "cap_gb": 32.0,
+          "cap_mechanism": "slice wonderland.slice MemoryMax",
+          "command": "measure_sufficiency_law.py --products looking_glass/artifacts/cfm_v2k_vf2 --demo looking_glass/artifacts/demo_v2 --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/encoder_sufficiency_law.json",
+          "exit": 0,
+          "fresh": true,
+          "last_line": "  U served_object=0.980162  learned_only=1.076433  worst_probe={'served_object': 'next-type', 'learned_only': 'next-type'}  complete=True",
+          "receipt": "encoder_sufficiency_law.json",
+          "seconds": 18.6
+        },
+        "transfer": {
+          "cap_gb": 32.0,
+          "cap_mechanism": "slice wonderland.slice MemoryMax",
+          "command": "measure_transfer_law.py --products looking_glass/artifacts/cfm_v2k_vf2_c32rvd --demo looking_glass/artifacts/demo_v2 --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/encoder_transfer_law.json",
+          "exit": 0,
+          "fresh": true,
+          "last_line": "WROTE /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/encoder_transfer_law.json",
+          "receipt": "encoder_transfer_law.json",
+          "seconds": 22.1
+        }
+      },
+      "skip_slow_b": false,
+      "skipped": {},
+      "sources": {
+        "base": "looking_glass/artifacts/cfm_v2k_vf2",
+        "c32rvd": "looking_glass/artifacts/cfm_v2k_vf2_c32rvd",
+        "compact": "looking_glass/artifacts/cfm_v2k_vf2_c32",
+        "port": "looking_glass/artifacts/cfm_v2k_vf2_port",
+        "products": "looking_glass/artifacts/cfm_v2k_vf2_bank"
       }
     },
     "checks": {
@@ -966,8 +1109,8 @@
         "working": true
       },
       "commit_recorded_clean": {
-        "evidence": "commit d85630ab26ed on main, behavior ec9b5daa98740c83; tree clean apart from the generated artifacts this command rewrites",
-        "working": true
+        "evidence": "commit d59416aab67b on main, behavior 5f48d15feced65c1; tree carries 1 non-generated change(s): scripts/measure_input_law.py",
+        "working": false
       },
       "comparator_provenance_certified": {
         "evidence": "38 comparator column(s), each stamped pre-`as_of` by the builder and confirmed against a rebuild from the lab's own relational inputs (as_of 2025-01-01); sub-checks ['columns_match', 'comparator_clean', 'provenance_complete', 'values_match']",
@@ -978,15 +1121,15 @@
         "working": true
       },
       "full_chain_in_one_invocation": {
-        "evidence": "6 producer(s) run by this one command (S1+S2 217.2s, S3 12.4s, S4 546.1s, S5 3.4s, legs 124.9s, prov 2.3s); fresh receipts: stages ['S1', 'S2', 'S3', 'S4', 'S5'], legs ['rl', 'simulator', 'supervised', 'unsupervised']",
+        "evidence": "6 producer(s) run by this one command (S1+S2 246.0s, S3 11.8s, S4 438.5s, S5 41.1s, legs 384.6s, prov 2.8s); fresh receipts: stages ['S1', 'S2', 'S3', 'S4', 'S5'], legs ['rl', 'simulator', 'supervised', 'unsupervised']",
         "working": true
       },
       "render_is_deterministic": {
-        "evidence": "rendered the card twice from the same receipts: identical apart from the timestamp line (43513 chars, 364 lines)",
+        "evidence": "rendered the card twice from the same receipts: identical apart from the timestamp line (41853 chars, 344 lines)",
         "working": true
       }
     },
-    "evidence": "[full_chain_in_one_invocation] OK: 6 producer(s) run by this one command (S1+S2 217.2s, S3 12.4s, S4 546.1s, S5 3.4s, legs 124.9s, prov 2.3s); fresh receipts: stages ['S1', 'S2', 'S3', 'S4', 'S5'], legs ['rl', 'simulator', 'supervised', 'unsupervised'] | [render_is_deterministic] OK: rendered the card twice from the same receipts: identical apart from the timestamp line (43513 chars, 364 lines) | [commit_recorded_clean] OK: commit d85630ab26ed on main, behavior ec9b5daa98740c83; tree clean apart from the generated artifacts this command rewrites | [artifact_hashes_recorded] OK: 6 input artifact(s) hashed (98.8 MB) \u2014 the bytes the receipts were measured against | [every_row_reports_n] OK: 28 live leg-row(s) in the regenerated receipts, all report N | [comparator_provenance_certified] OK: 38 comparator column(s), each stamped pre-`as_of` by the builder and confirmed against a rebuild from the lab's own relational inputs (as_of 2025-01-01); sub-checks ['columns_match', 'comparator_clean', 'provenance_complete', 'values_match']",
+    "evidence": "[full_chain_in_one_invocation] OK: 6 producer(s) run by this one command (S1+S2 246.0s, S3 11.8s, S4 438.5s, S5 41.1s, legs 384.6s, prov 2.8s); fresh receipts: stages ['S1', 'S2', 'S3', 'S4', 'S5'], legs ['rl', 'simulator', 'supervised', 'unsupervised'] | [render_is_deterministic] OK: rendered the card twice from the same receipts: identical apart from the timestamp line (41853 chars, 344 lines) | [commit_recorded_clean] FAILED: commit d59416aab67b on main, behavior 5f48d15feced65c1; tree carries 1 non-generated change(s): scripts/measure_input_law.py | [artifact_hashes_recorded] OK: 6 input artifact(s) hashed (98.8 MB) \u2014 the bytes the receipts were measured against | [every_row_reports_n] OK: 28 live leg-row(s) in the regenerated receipts, all report N | [comparator_provenance_certified] OK: 38 comparator column(s), each stamped pre-`as_of` by the builder and confirmed against a rebuild from the lab's own relational inputs (as_of 2025-01-01); sub-checks ['columns_match', 'comparator_clean', 'provenance_complete', 'values_match']",
     "inputs": {
       "demo": "looking_glass/artifacts/demo_v2",
       "legs": "supervised,unsupervised,rl,simulator",
@@ -998,13 +1141,13 @@
       "mechanism": "slice wonderland.slice MemoryMax"
     },
     "n_rows": 28,
-    "working": true
+    "working": false
   },
   "_meta": {
     "behavior_hash": "5f48d15feced65c1",
-    "command": "measure_battery_law.py --products looking_glass/artifacts/cfm_v2k_vf2_bank/cfm_products.duckdb --demo looking_glass/artifacts/demo_v2 --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/judge_stages.json",
-    "generated_at": "2026-11-25T21:12:06+00:00",
-    "git_commit": "fe862253abd6aa6907166f67f72c22de5b82d76f",
-    "producer": "measure_battery_law.py"
+    "command": "measure_certification_law.py --products looking_glass/artifacts/cfm_v2k_vf2_bank --demo looking_glass/artifacts/demo_v2",
+    "generated_at": "2026-11-25T21:37:14+00:00",
+    "git_commit": "d59416aab67b071afc051de123353fb4ee085caa",
+    "producer": "measure_certification_law.py"
   }
 }

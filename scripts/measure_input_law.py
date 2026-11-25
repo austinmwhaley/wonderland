@@ -20,6 +20,12 @@ Writes (merges) docs/report_cards/experiments/judge_stages.json for scripts/repo
     .venv/bin/python scripts/measure_input_law.py [--data /tmp/opencode/wonderland_demo]
 
 Every check records what it asserted; a stage is `working` only if ALL its checks pass.
+
+Runtime (compute policy, DEC-659/660): the six checks own disjoint WORK subdirs and only
+read `data`, so their CPU-bound halves run on the joblib pool (`compute_policy.jobs()`);
+the three training spikes (PyTorch/CUDA) then run on the same pool with ONE batch budget
+derived for the run. `LG_JOBS=1` runs every phase inline, preserving the historical serial
+path and the per-check receipt.
 """
 
 from __future__ import annotations
@@ -107,7 +113,7 @@ def _prepare_renamed_end_to_end(data: Path) -> dict:
     """Everything the renamed-schema check does before the GPU: read -> onboard -> discover.
 
     Split from the training spike so the CPU-bound half can run in the worker pool while the
-    spike waits for a batch budget; `check_renamed_end_to_end` is the serial composition.
+    spike pool is sized from one batch budget.
     """
     from looking_glass.onboard import onboard
 
@@ -223,15 +229,6 @@ def _train_renamed_end_to_end(ctx: dict, budget: dict) -> dict:
     }
 
 
-def check_renamed_end_to_end(data: Path) -> dict:
-    """Serial composition of the two phases (batch derived from live hardware, as before)."""
-    from looking_glass.autotune import derive_batch
-
-    ctx = _prepare_renamed_end_to_end(data)
-    batch, batch_receipt = derive_batch(ctx["n_seqs"], ctx["seq_len"])
-    return _train_renamed_end_to_end(ctx, {"batch": batch, "receipt": batch_receipt})
-
-
 def _prepare_new_field_ingested(data: Path) -> dict:
     """Inject one categorical + one numeric field, resolve it, before the GPU spike."""
     t0 = time.perf_counter()
@@ -305,15 +302,6 @@ def _train_new_field_ingested(ctx: dict, budget: dict) -> dict:
         "seconds": round(ctx["seconds"] + (time.perf_counter() - t0), 1),
         "n_rows": int(ctx["n_rows"]),
     }
-
-
-def check_new_field_ingested(data: Path) -> dict:
-    """Serial composition of the two phases (batch derived from live hardware, as before)."""
-    from looking_glass.autotune import derive_batch
-
-    ctx = _prepare_new_field_ingested(data)
-    batch, batch_receipt = derive_batch(ctx["n_seqs"], ctx["seq_len"])
-    return _train_new_field_ingested(ctx, {"batch": batch, "receipt": batch_receipt})
 
 
 # --------------------------------------------------------------------------- S2 checks
@@ -557,15 +545,6 @@ def _train_training_determinism(ctx: dict, budget: dict) -> dict:
     }
 
 
-def check_training_determinism(data: Path) -> dict:
-    """Serial composition of the two phases (batch derived from live hardware, as before)."""
-    from looking_glass.autotune import derive_batch
-
-    ctx = _prepare_training_determinism(data)
-    batch, batch_receipt = derive_batch(ctx["n_seqs"], ctx["seq_len"])
-    return _train_training_determinism(ctx, {"batch": batch, "receipt": batch_receipt})
-
-
 def products_identity(products) -> dict:
     """The identity of the products artifact a producer measured (DEC-448, one definition).
 
@@ -741,17 +720,11 @@ def main() -> int:
     # would confound determinism with memory state — the DEC-573 precondition, applied run-wide.
     from looking_glass.autotune import derive_batch
 
-    budgets = {
-        name: dict(
-            zip(
-                ("batch", "receipt"),
-                derive_batch(prepared[name]["n_seqs"], prepared[name]["seq_len"]),
-            )
-        )
-        for name in ("renamed_end_to_end", "new_field_ingested", "training_determinism")
-    }
-    for name, b in budgets.items():
-        print(f"  batch budget :: {name}: {b['batch']} ({b['receipt']})", flush=True)
+    budgets = {}
+    for name in ("renamed_end_to_end", "new_field_ingested", "training_determinism"):
+        batch, batch_receipt = derive_batch(prepared[name]["n_seqs"], prepared[name]["seq_len"])
+        budgets[name] = {"batch": batch, "receipt": batch_receipt}
+        print(f"  batch budget :: {name}: {batch} ({batch_receipt})", flush=True)
 
     # Phase B — only the GPU spikes remain. They are independent (separate seeds, inputs and
     # output dirs) and CUDA contexts are per-process, so the same pool runs them concurrently.
