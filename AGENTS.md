@@ -437,6 +437,37 @@ principle is *wrong*. When principles conflict, apply the conflict order
 (**Robust → Adaptive → Universal → Lawful → Efficient → Honest**; Lawful and Robust outrank
 convenience).
 
+### The trunk axis (binding — the architecture is a means, and both trunks coexist)
+
+The dynamics axis has **two supported trunks** in the same tree, selected per stream by
+`CFMConfig.trunk`:
+
+- **`'ssm'` (default)** — the unified selective SSM with a per-channel timescale spectrum
+  (DEC-029). This is the trunk the certified path uses; an `ssm` run's config signature is
+  unchanged by the presence of the other trunk.
+- **`'looped'`** — the Dory-style looped transformer (DEC-613, mainlined by DEC-651):
+  weight-tied latent loop (I block once → shared R block × `n_loops` with re-injection → O
+  block once), causal/sliding-window attention on alternating slots, `h0` as a learned prior.
+  `n_loops` is 1..4 on the tag axis (`lg{L}`).
+
+RULES:
+
+1. **Both are first-class.** A trunk is not a research curiosity to be kept on a branch: it is
+   built, tested (contract tests), and selectable. Removing or branch-banking a supported trunk
+   is a plan change.
+2. **The trunk is a swap-in behind ONE contract** (`x, h0, mask, dt -> y, h`). Nothing
+   downstream — products, the served bank, consumer heads, gates, plugins — may branch on the
+   trunk. A downstream special case is a bug (the generalized-application principle).
+3. **Default is the certified trunk.** `'ssm'` stays the default and the certified path until
+   the looped trunk has been measured on the same population and protocol. Selecting an
+   unmeasured trunk never inherits another trunk's receipts: results are per-trunk and the
+   receipt names the trunk.
+4. **Never cross-apply weights.** Warm-start refuses cross-trunk continuation (fail safe).
+5. **Cost is disclosed, not hidden.** The looped trunk is O(T²) in attention; every receipt
+   records its runtime beside the SSM baseline.
+6. **Trunk code lives in `looking_glass/`, so adding it moves the behavior hash.** A re-stamp
+   of the one-command S6 chain is mandatory afterwards — never leave the card stale to avoid it.
+
 ### The binding reflection (binding — and the failure mode it prevents)
 
 **The binding reflection is the binding pre-run block in `PROMPT_FORWARD.md` §3.0** —

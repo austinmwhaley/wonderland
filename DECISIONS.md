@@ -12406,3 +12406,38 @@ THE HONEST AXIS: the architecture — the encoder's capacity/order-carrying. The
     5000` so the population, the split, and the pooled baseline match the record exactly. This is
     disclosed rather than silently corrected: two independent confounds (head calibration,
     population size) had made the entire architecture line unmeasured.
+
+- **DEC-651 (mainline the looped transformer as a first-class trunk — operator direction 2026-11-25: "The frontier labs use looped transformers (see GLM-5.4 for latest example) so I think we should have it no matter what. We need to figure out how to make it work alongside other efforts").**
+  - **NODE:** G — the goal (the encoder's architecture is a means, not a gate).
+  - **WHAT LANDED.** The DEC-613 Dory-style looped GPT trunk (`looking_glass/cfm_looped_trunk.py`,
+    weight-tied latent loop: I block once → shared R block × n_loops with re-injection → O block
+    once → readout; full causal / sliding-window attention on alternating slots; h0 as a learned
+    prior) is now on `main`, with its **9 contract tests** (`tests/test_cfm_looped_trunk.py`:
+    default-trunk stability, shapes/finite, padding invariance, elastic L with weight-tied
+    identity, h0 prior, determinism, fail-safe rejects, end-to-end CFM wiring, tag axis).
+    This is the *frontier-style* looped transformer — **distinct** from the
+    `looped_recurrence` flag (a small weight-tied MLP block inside the SSM) that DEC-643 tested.
+  - **HOW IT COEXISTS (the operator's actual requirement).** `CFMConfig.trunk` selects the
+    trunk: `'ssm'` (default) or `'looped'`, with `n_loops` 1..4 on the tag axis. The trunk is a
+    *swap-in behind the `MultiScaleSSM` forward contract* (`x, h0, mask, dt -> y, h`), so
+    everything downstream — products, the served bank, the consumer heads, the gates, the
+    plugin stack — is trunk-agnostic and unchanged. Nothing is either/or: both trunks are built
+    and tested in the same tree, and a stream chooses one per run. Warm-start refuses
+    cross-trunk continuation (fail safe), so a looped stream can never silently inherit SSM
+    weights.
+  - **Only the code + tests were taken from the branch** (`git diff main...looped-transformer --
+    looking_glass/ tests/`): the branch's DEC/STATUS edits and its stale DEC-613 lab receipts
+    were deliberately left behind, because those receipts were measured at an older behavior and
+    a different population (see DEC-650 addendum A's population confound).
+  - **COST, DISCLOSED (measured).** Adding `looking_glass/` code moves the behavior hash
+    **0fccd9a89829f47d → ec9b5daa98740c83**, which by construction marks every receipt stale.
+    The card therefore goes UNKNOWN until the one-command S6 chain re-stamps it; that re-stamp
+    is the required next step, not an optional one. The *config* signature of an `ssm` run is
+    unchanged (the tag axis only carries `lg{L}` when the looped trunk is selected).
+  - **Gates run.** ruff check clean · ruff format clean · `pytest -m "not slow"` **787 passed,
+    1 skipped** (including the 9 looped-trunk tests) · looped tests 9/9.
+  - **Next (pre-registered here).** (1) Re-stamp via `measure_certification_law.py` to restore
+    the card at the new behavior. (2) Train the looped trunk on demo_v2 at the **5000-customer**
+    population and score it with the adopted multinomial-logistic consumer, reporting its nll
+    against the record beside `eff_rank` and O(T²) cost — measured on its merits, adopted on
+    evidence, never assumed from the frontier's results.
