@@ -12621,3 +12621,52 @@ THE HONEST AXIS: the architecture — the encoder's capacity/order-carrying. The
   - **HONEST REMAINDER.** The chain's residual cost is the model forward and the remaining serial
     producers (construction ~100 s, decision ~120 s, runtime ~450 s). Those are the next parallel
     targets; GPU dataframes do not touch them.
+
+- **DEC-662 (swarm outcome — six workstreams landed; what each proved, and what remains).**
+  - **D · receipt ownership (landed).** `measure_judge_law.py` now writes
+    `judge_leg_v1flat_<leg>.json` and prints "NOT the gate-of-record"; `measure_bc_bank.py` is the
+    sole writer of the certified `judge_leg_*.json`. A static test (`tests/test_judge_leg_owners.py`,
+    3 tests) forbids the collision in both directions. Its argparse defaults were pointing at
+    `cfm/` + `rabbit_hole/data`, which cannot load; now the served `cfm_v2k_vf2` + `demo_v2`.
+    Found downstream: the chain globbed `judge_leg_*.json`, so the new diagnostic would have
+    poisoned the freshness check — handed to workstream B and fixed there.
+  - **C · gate provenance (landed).** The certified B9.1 receipt was measured with the logistic
+    head while the CLI default was `ridge` and the protocol prose said "ridge". Default is now
+    `logistic`, the protocol string is DERIVED from the head/calibration actually applied,
+    `products.tag`/`registry_sha256` are populated, and `--head logistic --calibration vector`
+    is rejected instead of silently ignored. `tests/test_encoder_win_gate.py` adds **9 tests**
+    covering PASS / FAIL / CI-includes-zero / missing CI / stale hash / population-incomplete /
+    incomplete block / default-reproduces-the-certified-head / protocol-names-the-head.
+  - **E1 · checkpoint rebuild drift (landed).** Three copies of "rebuild a CFM from a blob"; two
+    omitted `isometric_boundary`/`unified`/counter keys and therefore could not `strict=True`
+    load a current checkpoint. Now one `cfm_state.build_cfm_from_blob` serves
+    `load_frozen_encoder`, `cfm_validation`, and `state_dense`. Verified on the REAL bank
+    artifact: 1,648,662 params, `missing=0`, trunk `ssm`. `tests/test_cfm_rebuild_from_blob.py`
+    (5 tests) includes one that pins the original bug.
+  - **E2 · dead code (landed).** Deleted `cfm_eval.py`, `product_embed.py`, `canonical_measure`,
+    `field_set_measure`, `FieldSetMeasure`, `derive_lr`, and 18 never-read `CFMConfig` fields
+    (+`soft_invariants`, whose only reference was a test assertion I removed with it). Kept
+    `slow_intent_filter`, `stats_pathway`, `readout_skip`, `readout_scale`, `unified_ssm`,
+    `counter_type_values` — they are read back from old checkpoint blobs. Verified: 48
+    `looking_glass` modules import clean, 31 targeted tests pass, and an old registry replays to
+    its exact historical tag.
+  - **B · one-command re-stamp (landed).** `CHAIN_B` runs the 13 B-row producers the S6 chain
+    never ran, each with its correct artifact and head, `--skip-slow-b`, per-producer timing,
+    a `chain_b` block in the S6 receipt, and a **PARTIAL warning** when anything skips. A missing
+    port artifact SKIPS (never substitutes the bank) — corrected after review, because substituting
+    would silently measure a different object and could flip B3.2–B3.5.
+  - **F · the 307-dim port (landed).** B3.2/B3.4 were measured on `/tmp/opencode/cfmd_port128`,
+    an artifact with no repo builder. `scripts/build_port_artifact.py` now materializes
+    `cfm_v2k_vf2_port` from repo data (bank + measure PCA-128; the cert-bundle fallback
+    reproduces `port_embeddings` **bit-exactly**, max|Δ| = 0.0). Both producers default to it and
+    refuse any width ≠ 307. Re-measured: `M4_served dim 307`, `block served dim 307`, both
+    `complete=True` — the certified object, from the repo.
+  - **Also fixed by hand.** `looking_glass/scripts/generate_data.py` symlink restored (the
+    no-duplication guard required it; `pytest -m slow` was failing and is now 14/14);
+    `AGENTS.md` documented `trunk='looped'` which the model rejects; the card hard-coded
+    "the 23 receipts" against 24 rows; and the retired demo cluster
+    (`measure_controls/ceiling/identity/objectives`) hard-coded `/home/austin-whaley/...`
+    (hyphen) so `run_demo --refresh` could not import them — now ROOT-derived.
+  - **Standing residual, stated plainly.** `measure_runtime` (~450 s) and `construction`
+    (~100 s) remain serial B producers; S1+S2 (~220 s) is the largest fixed chain stage after
+    S4's parallelisation. Those are the next speed targets, not the GPU data layer.
