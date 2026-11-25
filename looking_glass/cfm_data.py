@@ -8,6 +8,7 @@ import json
 import os
 import pickle
 import tempfile
+import time
 from pathlib import Path
 
 import numpy as np
@@ -480,9 +481,7 @@ def _survival_horizons(d) -> list[float]:
     return [float(x) for x in np.geomspace(lo, hi, K)]
 
 
-def _build_sequences_impl(
-    df, keys, cfg: CFMConfig, split, with_anchors: bool, min_events: int = 3
-):
+def _build_sequences_impl(df, keys, cfg: CFMConfig, split, with_anchors: bool, min_events: int = 3):
     """Polars-first: partition once in Rust, then slice per group.
 
     ALL events are tokens (including exogenous action events — their identity is
@@ -650,6 +649,7 @@ _SEQ_CACHE_SOURCE_FNS = (
     "_covariates",
     "_action_flags",
     "_primary_numeric_field",
+    "_numeric_columns",
     "_effect_targets",
     "_h",
 )
@@ -727,7 +727,8 @@ def _seq_cache_key(df, want, cfg: CFMConfig, split, with_anchors, min_events):
     stream's path/size/mtime (a file swap changes the address even if a caller
     passed an identical frame), ``as_of``, the sorted customer set and its split,
     ``seq_len``, ``n_anchors``, ``split_seed``, ``with_anchors``, ``min_events``,
-    and every cfg field the constructors read. The function schema version and the
+    every cfg field the constructors read, the module constants they reference,
+    and the numpy/polars versions. The function schema version and the
     constructors' source digest pin the builder's identity.
     """
     data_digest = _data_digest(df)
@@ -744,6 +745,16 @@ def _seq_cache_key(df, want, cfg: CFMConfig, split, with_anchors, min_events):
     key_fields = {
         "schema": _SEQ_CACHE_SCHEMA,
         "source": source_digest,
+        # Module constants the constructors read at call time are not in the source
+        # digest (a function body references the name, not its value): key them.
+        "constants": {
+            "ACTION_PERIOD_S": float(ACTION_PERIOD_S),
+            "BASE_COLS": list(_BASE_COLS),
+            "META_COLS": sorted(_META_COLS),
+        },
+        # RNG stream (anchors) and row-hash semantics (the data digest) are library
+        # properties; a version change invalidates entries rather than risk a drift.
+        "runtime": {"numpy": np.__version__, "polars": pl.__version__},
         "data": data_digest,
         "stream": stream,
         "as_of": None if getattr(cfg, "as_of", None) is None else str(cfg.as_of),
@@ -764,9 +775,7 @@ def _seq_cache_key(df, want, cfg: CFMConfig, split, with_anchors, min_events):
         "numeric_fields": [str(x) for x in (getattr(cfg, "numeric_fields", ()) or ())],
         "action_fields": [str(x) for x in (getattr(cfg, "action_fields", ()) or ())],
         "effect_actions": [str(x) for x in (getattr(cfg, "effect_actions", ()) or ())],
-        "exogenous_events": sorted(
-            str(x) for x in (getattr(cfg, "exogenous_events", ()) or ())
-        ),
+        "exogenous_events": sorted(str(x) for x in (getattr(cfg, "exogenous_events", ()) or ())),
         "survival": bool(getattr(cfg, "survival", False)),
         "action_profile": bool(getattr(cfg, "action_profile", False)),
         "action_profile_fields": [
@@ -854,36 +863,56 @@ def _seq_restore_cfg(cfg: CFMConfig, state: dict) -> None:
                 pass
 
 
+def _seq_preset_matches(cfg: CFMConfig, state: dict) -> bool:
+    """True iff every derived attr already on ``cfg`` equals the cached cold value.
+
+    A caller-supplied derived cache changes the output, so it is not enough to key
+    the frame; the object is reusable only when the caller's state IS the state the
+    cold build would have written. Byte comparison is order-sensitive (conservative).
+    """
+    for a in _SEQ_CFG_STATE:
+        if not hasattr(cfg, a):
+            continue
+        if a not in state:
+            return False
+        try:
+            if pickle.dumps(getattr(cfg, a), protocol=5) != pickle.dumps(state[a], protocol=5):
+                return False
+        except Exception:  # noqa: BLE001 - uncomparable state: miss, never guess
+            return False
+    return True
+
+
 def _build_sequences_cached(df, keys, cfg: CFMConfig, split, with_anchors, min_events):
+    t0 = time.perf_counter()
+
+    def _ms() -> float:
+        return round((time.perf_counter() - t0) * 1000.0, 1)
+
     keys = list(keys)
-    # Caller-supplied derived state changes the output (eff_map etc.) and is not in
-    # the key: keep that path uncached rather than key a result built from un-keyed
-    # process state. A fresh cfg is the cold, cacheable path.
-    preset = [
-        a
-        for a in ("_effect_cache", "_survival_cache", "_profile_cache")
-        if hasattr(cfg, a)
-    ]
-    if preset:
-        # A caller-supplied derived cache changes the output; keep that path uncached
-        # rather than key a result built from un-keyed process state.
-        _seq_cache_receipt(status="bypass_preset", preset=preset)
-        return _build_sequences_impl(df, keys, cfg, split, with_anchors, min_events)
     want = sorted(set(keys))
+    preset = [a for a in _SEQ_CFG_STATE if hasattr(cfg, a)]
     keyed = _seq_cache_key(df, want, cfg, split, with_anchors, min_events)
     if keyed is None:
-        _seq_cache_receipt(status="bypass_unkeyable")
+        _seq_cache_receipt(status="bypass_unkeyable", elapsed_ms=_ms())
         return _build_sequences_impl(df, keys, cfg, split, with_anchors, min_events)
     key, key_fields = keyed
     d = _seq_cache_dir()
     if d is None:
-        _seq_cache_receipt(status="bypass_unsafe_dir", key=key, key_fields=key_fields)
+        _seq_cache_receipt(
+            status="bypass_unsafe_dir", key=key, key_fields=key_fields, elapsed_ms=_ms()
+        )
         return _build_sequences_impl(df, keys, cfg, split, with_anchors, min_events)
     path = d / f"{key}.pkl"
     existed = path.exists()
     loaded = _seq_cache_load(path, key)
     if loaded is not None:
         seqs, state = loaded
+        if preset and not _seq_preset_matches(cfg, state):
+            # The caller's derived state is not the cold one this entry encodes:
+            # rebuild from its state, but do not overwrite the cold entry.
+            _seq_cache_receipt(status="bypass_preset", preset=preset, elapsed_ms=_ms())
+            return _build_sequences_impl(df, keys, cfg, split, with_anchors, min_events)
         _seq_restore_cfg(cfg, state)
         _seq_cache_receipt(
             status="hit",
@@ -891,9 +920,16 @@ def _build_sequences_cached(df, keys, cfg: CFMConfig, split, with_anchors, min_e
             path=str(path),
             n_seqs=len(seqs),
             key_fields=key_fields,
+            elapsed_ms=_ms(),
         )
         print(f"[seq-cache] hit {key[:12]} ({len(seqs)} seqs) <- {path}", flush=True)
         return seqs
+    if preset:
+        # A cold entry for this frame does not exist yet, and this call's output
+        # depends on un-keyed caller state: rebuild without storing (a later cold
+        # call owns the entry).
+        _seq_cache_receipt(status="bypass_preset", preset=preset, elapsed_ms=_ms())
+        return _build_sequences_impl(df, keys, cfg, split, with_anchors, min_events)
     seqs = _build_sequences_impl(df, keys, cfg, split, with_anchors, min_events)
     err = _seq_cache_store(path, key, seqs, cfg)
     status = "miss_corrupt" if existed else "miss"
@@ -905,6 +941,7 @@ def _build_sequences_cached(df, keys, cfg: CFMConfig, split, with_anchors, min_e
         stored=err is None,
         store_error=err,
         key_fields=key_fields,
+        elapsed_ms=_ms(),
     )
     print(
         f"[seq-cache] {status} {key[:12]} ({len(seqs)} seqs) -> {path}"

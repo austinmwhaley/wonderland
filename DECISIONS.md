@@ -12931,3 +12931,32 @@ THE HONEST AXIS: the architecture — the encoder's capacity/order-carrying. The
     (no block matters) and the GBM diagnostic (linear head at its ceiling), the evidence now points
     at the COMPARATOR, not the consumer, for the residual per-class gaps — which is exactly what
     axis B's wider recency block and then the comparator decision are for.
+
+- **DEC-671 (G1 outcome — the looped GPT trunk measured at the certified population: it does NOT beat the SSM; it stays in the tree; the architecture line is now honestly closed).**
+  - **MEASURED (5000 customers, 574 steps, 1.86 s/step, 1069 s, GPU ~94%, peak 9.7 GB).
+    FAIR COMPARISON — both trunks on the SAME served-object type (272-dim served E), same split,
+    same adopted head (this matters: the certified record 1.173099 is measured on the 179-dim
+    BANK, which adds counters/measure statistics, so the bank number is a different object):**
+    | trunk | nll_enc | margin | paired CI | per-class (email/purchase/search/view) |
+    |---|---|---|---|---|
+    | **SSM (base)** | **1.204132** | −0.219060 | [−0.2575, −0.1831] | 0.8112 / 2.1757 / 1.7428 / 0.9800 |
+    | **looped GPT** | 1.224482 | −0.198710 | [−0.2338, −0.1645] | 0.8678 / **2.1318** / **1.7303** / 1.0029 |
+  - **VERDICT (DEC-664's frozen rule): NOT ADOPTED as the certified trunk** — it does not beat the
+    SSM on `nll_enc` (1.2245 vs 1.2041, +0.020). Per DEC-651 it **stays in the tree** as a
+    first-class trunk. The `n_loops` sweep is therefore skipped: the pre-registration made it
+    conditional on adoption, and a sweep of a losing architecture is the tuning loop the doctrine
+    forbids.
+  - **WHAT THE LOOPED TRUNK IS ACTUALLY GOOD AT (measured, so it is not dismissed).**
+    * It improves the two LAGGING classes: purchase **2.1318 vs 2.1757** and search
+    **1.7303 vs 1.7428** — the only architecture that has moved them.
+    * It passes MORE of the objective portfolio: **29/34 rows vs 25/34** for the SSM at the same
+    protocol — i.e. its trunk algebra is more trainable across objectives.
+    * It pays for that with a lower `eff_rank` (1.593 vs 2.649, null 124.8) and a worse served
+    next-event embedding.
+    So the honest statement is: **looped-is-better-for-objectives, SSM-is-better-for-the-served-
+    embedding**, at equal cost on this stream. That is a real finding and it is why the trunk is
+    kept rather than discarded.
+  - **THE ARCHITECTURE LINE IS CLOSED HONESTLY.** With the two confounds removed (head calibration,
+    population), the measured ranking on this stream is: SSM > looped GPT > (the three algebra
+    flags, which remain measured-negatives from the earlier uncalibrated runs and are NOT
+    re-litigated here).

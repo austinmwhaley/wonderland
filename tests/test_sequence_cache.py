@@ -107,9 +107,7 @@ def _assert_cfg_derived_equal(a: CFMConfig, b: CFMConfig) -> None:
     assert getattr(a, "_survival_cache", None) == getattr(b, "_survival_cache", None)
     assert getattr(a, "_survival_horizons_s", None) == getattr(b, "_survival_horizons_s", None)
     assert getattr(a, "_profile_cache", None) == getattr(b, "_profile_cache", None)
-    assert getattr(a, "_action_profile_levels", None) == getattr(
-        b, "_action_profile_levels", None
-    )
+    assert getattr(a, "_action_profile_levels", None) == getattr(b, "_action_profile_levels", None)
     assert getattr(a, "_action_profile_dims", None) == getattr(b, "_action_profile_dims", None)
     per_a, levels_a = a._effect_cache
     per_b, levels_b = b._effect_cache
@@ -129,6 +127,7 @@ def _assert_cfg_derived_equal(a: CFMConfig, b: CFMConfig) -> None:
 def test_default_path_deterministic_and_cache_free(tmp_path, monkeypatch):
     monkeypatch.delenv(cfm_data._SEQ_CACHE_ENV, raising=False)
     monkeypatch.setenv(cfm_data._SEQ_CACHE_DIR_ENV, str(tmp_path / "cache"))
+    monkeypatch.setattr(tempfile, "gettempdir", lambda: str(tmp_path / "system-temp"))
     monkeypatch.setattr(cfm_data, "_SEQ_CACHE_LAST", {})
 
     def _boom(*_a, **_k):  # any cache key computation on the default path is a bug
@@ -145,6 +144,7 @@ def test_default_path_deterministic_and_cache_free(tmp_path, monkeypatch):
     _assert_seqs_equal(a, b)
     assert cfm_data._SEQ_CACHE_LAST == {}, "the default path must not touch the cache"
     assert not (tmp_path / "cache").exists(), "the default path must not create a cache dir"
+    assert not (tmp_path / "system-temp").exists(), "no cache dir was even considered"
 
 
 # ---------------------------------------------------------------------------
@@ -166,6 +166,11 @@ def test_hit_is_exactly_a_rebuild(tmp_path, monkeypatch):
     miss_key = receipt["key"]
     assert list(cache_dir.glob("*.pkl")), "a miss must store an entry"
     _assert_seqs_equal(baseline, first)
+
+    # same cfg object: its derived state equals the stored cold state -> a real hit
+    again = build_sequences(df, list(CUSTOMERS), first_cfg, SPLIT, with_anchors=True)
+    assert cfm_data._SEQ_CACHE_LAST["status"] == "hit"
+    _assert_seqs_equal(baseline, again)
 
     second_cfg = _cfg()
     second = build_sequences(df, list(CUSTOMERS), second_cfg, SPLIT, with_anchors=True)
@@ -217,11 +222,7 @@ def test_changed_input_changes_key_and_misses(tmp_path, monkeypatch):
     seqs = build_sequences(df, list(CUSTOMERS), _cfg(split_seed=11), SPLIT, with_anchors=True)
     assert cfm_data._SEQ_CACHE_LAST["status"] == "miss"
     assert cfm_data._SEQ_CACHE_LAST["key"] != base_key
-    moved = {
-        s["customer"]: s["anchor_epoch"]
-        for s in seqs
-        if s["anchor_epoch"] is not None
-    }
+    moved = {s["customer"]: s["anchor_epoch"] for s in seqs if s["anchor_epoch"] is not None}
     assert moved and moved != base_anchors
 
 
@@ -249,19 +250,113 @@ def test_corrupt_entry_falls_back_to_rebuild(tmp_path, monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# the effect path is NOT cacheable: its construction is not deterministic
+# the effect period rows are canonical (this was NOT deterministic pre-fix)
 # ---------------------------------------------------------------------------
-def test_effect_actions_bypass_the_cache(tmp_path, monkeypatch):
-    """`_effect_targets` group-by/join row order is not stable across calls, so the
-    output is not a function of the keyed inputs -> no byte-identical cache is
-    admissible. The wrapper must rebuild and write nothing."""
+def _effect_frame() -> pl.DataFrame:
+    """One action event per period per customer, level == period index + 1."""
+    base = datetime(2025, 1, 1, tzinfo=timezone.utc)
+    rows = []
+    for ci, k in enumerate(CUSTOMERS):
+        for i in range(6):
+            ts = base + timedelta(days=8 * i, hours=ci)
+            rows.append(
+                {
+                    "customer_key": k,
+                    "event_ts": ts.strftime("%Y-%m-%dT%H:%M:%S+00:00"),
+                    "event_type": "email",
+                    "channel": "email",
+                    "freq": float(i + 1),
+                    "value": 1.0,
+                }
+            )
+    return pl.DataFrame(rows).sort(["customer_key", "event_ts"])
+
+
+def test_effect_period_order_is_canonical():
+    from looking_glass.cfm_data import _effect_targets
+
+    df = _effect_frame()
+    per, levels = _effect_targets(df, _cfg(effect_actions=("freq",)))
+    assert levels == [7]
+    want = np.arange(1, 7, dtype=np.float32)
+    for k in CUSTOMERS:
+        act = per[k][0][:, 0]
+        assert np.array_equal(act, want), f"{k}: effect periods are not period-sorted ({act})"
+
+
+# ---------------------------------------------------------------------------
+# the effect path is cacheable AND deterministic across calls
+# ---------------------------------------------------------------------------
+def test_effect_path_deterministic_and_cached(tmp_path, monkeypatch):
     cache_dir = _enable(tmp_path, monkeypatch)
     df = _frame()
-    cfg = _cfg(effect_actions=("freq",))
-    seqs = build_sequences(df, list(CUSTOMERS), cfg, SPLIT, with_anchors=True)
-    assert seqs
-    assert cfm_data._SEQ_CACHE_LAST["status"] == "bypass_nondeterministic"
-    assert not cache_dir.exists(), "the nondeterministic path must not write a cache entry"
+    a = build_sequences(df, list(CUSTOMERS), _cfg(), SPLIT, with_anchors=True)
+    assert cfm_data._SEQ_CACHE_LAST["status"] == "miss"
+    assert cfm_data._SEQ_CACHE_LAST["stored"] is True
+    b = build_sequences(df, list(CUSTOMERS), _cfg(), SPLIT, with_anchors=True)
+    assert cfm_data._SEQ_CACHE_LAST["status"] == "hit"
+    _assert_seqs_equal(a, b)
+    assert any(s["eff_act"] is not None for s in b)
+    assert list(cache_dir.glob("*.pkl"))
+
+
+# ---------------------------------------------------------------------------
+# the key carries every accepted construction input (a receipt, not a promise)
+# ---------------------------------------------------------------------------
+def test_key_fields_cover_the_construction_inputs(tmp_path, monkeypatch):
+    _enable(tmp_path, monkeypatch)
+    df = _frame()
+    build_sequences(df, list(CUSTOMERS), _cfg(), SPLIT, with_anchors=True)
+    fields = cfm_data._SEQ_CACHE_LAST["key_fields"]
+    for name in (
+        "schema",
+        "source",
+        "constants",
+        "runtime",
+        "data",
+        "stream",
+        "as_of",
+        "keys",
+        "n_keys",
+        "split",
+        "seq_len",
+        "n_anchors",
+        "seed",
+        "with_anchors",
+        "min_events",
+        "primary_numeric",
+        "attr_fields",
+        "numeric_fields",
+        "action_fields",
+        "effect_actions",
+        "exogenous_events",
+        "survival",
+        "action_profile",
+        "action_profile_fields",
+    ):
+        assert name in fields, f"cache key is missing construction input {name!r}"
+
+
+# ---------------------------------------------------------------------------
+# the source stream's file identity is in the key (path/size/mtime)
+# ---------------------------------------------------------------------------
+def test_stream_file_identity_is_keyed(tmp_path, monkeypatch):
+    _enable(tmp_path, monkeypatch)
+    src = tmp_path / "stream.parquet"
+    src.write_bytes(b"not actually parquet: only its identity is read here")
+    df = _frame()
+
+    build_sequences(df, list(CUSTOMERS), _cfg(db=str(src)), SPLIT, with_anchors=True)
+    first = cfm_data._SEQ_CACHE_LAST["key"]
+    build_sequences(df, list(CUSTOMERS), _cfg(db=str(src)), SPLIT, with_anchors=True)
+    assert cfm_data._SEQ_CACHE_LAST["status"] == "hit"
+
+    # same frame, changed mtime -> a new address, so the entry is not served
+    st = src.stat()
+    os.utime(src, ns=(st.st_atime_ns, st.st_mtime_ns + 1_000_000_000))
+    build_sequences(df, list(CUSTOMERS), _cfg(db=str(src)), SPLIT, with_anchors=True)
+    assert cfm_data._SEQ_CACHE_LAST["status"] == "miss"
+    assert cfm_data._SEQ_CACHE_LAST["key"] != first
 
 
 # ---------------------------------------------------------------------------
@@ -275,7 +370,9 @@ def test_default_cache_dir_is_per_uid(tmp_path, monkeypatch):
     build_sequences(df, list(CUSTOMERS), _cfg(), SPLIT, with_anchors=True)
     assert cfm_data._SEQ_CACHE_LAST["status"] in ("miss", "hit")
     uid = str(os.getuid()) if hasattr(os, "getuid") else None
-    expected = {p for p in tmp_path.iterdir() if p.is_dir() and p.name.startswith("wonderland-seq-cache-")}
+    expected = {
+        p for p in tmp_path.iterdir() if p.is_dir() and p.name.startswith("wonderland-seq-cache-")
+    }
     assert expected, "no per-uid cache dir created under the system temp"
     if uid is not None:
         assert (tmp_path / f"wonderland-seq-cache-{uid}").is_dir()

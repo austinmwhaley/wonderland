@@ -174,19 +174,28 @@ def elapsed_features(
         by_key, on="customer_key", how="left"
     )
 
-    def take(name: str, fill: float) -> np.ndarray:
-        return frame[name].cast(pl.Float64).fill_null(fill).to_numpy()
-
-    def days_to_log1p(age: np.ndarray) -> np.ndarray:
-        return np.log1p(np.clip(age, 0.0, float(window_days)))
-
-    dim = 1 + len(types) * (1 + len(windows))
-    out = np.empty((len(keys), dim), dtype=np.float64)
-    out[:, 0] = days_to_log1p(take("last_all", float(window_days)))
-    for i in range(len(types)):
-        out[:, 1 + i] = days_to_log1p(take(f"last_{i}", float(window_days)))
-        for j in range(len(windows)):
-            out[:, 1 + len(types) + i * len(windows) + j] = np.log1p(take(f"count_{i}_{j}", 0.0))
+    # The block is a fixed grid (types x windows): gather the aggregated columns once and let
+    # numpy assemble the slices, so the serving path has no per-column Python loop.
+    last_cols = [c for c in frame.columns if c.startswith("last_")]
+    elapsed = (
+        frame.select(last_cols)
+        .cast(pl.Float64)
+        .fill_null(float(window_days))
+        .to_numpy()
+        .clip(0.0, float(window_days))
+    )
+    count_cols = [c for c in frame.columns if c.startswith("count_")]
+    counts = (
+        frame.select(count_cols)
+        .cast(pl.Float64)
+        .fill_null(0.0)
+        .to_numpy()
+        .reshape(len(keys), len(types) * len(windows))
+        if count_cols
+        else np.zeros((len(keys), 0), dtype=np.float64)
+    )
+    out = np.concatenate([np.log1p(elapsed), np.log1p(counts)], axis=1)
+    dim = out.shape[1]
     columns = ["elapsed_since_last_event"]
     columns += [f"elapsed_since_{ty}" for ty in types]
     columns += [f"count_{ty}_w{w:g}d" for ty in types for w in windows]
