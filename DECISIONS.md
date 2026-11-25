@@ -12960,3 +12960,10 @@ THE HONEST AXIS: the architecture — the encoder's capacity/order-carrying. The
     population), the measured ranking on this stream is: SSM > looped GPT > (the three algebra
     flags, which remain measured-negatives from the earlier uncalibrated runs and are NOT
     re-litigated here).
+
+- **DEC-672 (dual-trunk served object — REJECTED, measured once).** Because the two trunks fail on
+  different classes (looped better on purchase/search, SSM better on email/view), concatenating
+  their served embeddings (272+272 dims) was the obvious next idea. Measured on the frozen split
+  and head: **ssm alone 1.204175**, looped alone 1.2238, **dual 1.2117** — worse than the SSM
+  alone, and worse per-class on purchase (2.2049 vs 2.1764). Concatenation dilutes narrow signal,
+  exactly as the elapsed block did (DEC-667). Not retried; the served-object width is not the lever.
