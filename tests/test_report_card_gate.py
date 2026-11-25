@@ -278,9 +278,28 @@ def test_assessment_claims_done_only_when_everything_is_green(tmp_path, monkeypa
     assert "ENCODER DONE" in info["assessment"]
 
 
-def test_behavior_hash_is_stable_and_content_sensitive(tmp_path):
+def test_behavior_hash_is_stable_and_content_sensitive(tmp_path, monkeypatch):
     h1 = RC.behavior_hash()
-    assert h1 == RC.behavior_hash()  # deterministic
+    assert h1 == RC.behavior_hash()  # deterministic over the real surface
+
+    # Content sensitivity on a controlled copy of a covered tree (ROOT is redirected so the
+    # test never perturbs the repo). The freshness law is only real if a byte change moves
+    # the hash — and only a restore brings it back.
+    tree = tmp_path / "looking_glass"
+    tree.mkdir()
+    covered = tree / "cfm_state.py"
+    covered.write_text("WEIGHT = 1\n")
+    monkeypatch.setattr(RC, "ROOT", tmp_path)
+    base = RC.behavior_hash()
+    assert base != h1  # a different tree is a different behavior
+    covered.write_text("WEIGHT = 2\n")
+    assert RC.behavior_hash() != base
+    covered.write_text("WEIGHT = 1\n")
+    assert RC.behavior_hash() == base
+    # a NEW module in a covered tree moves the hash: the law is derived from the tree, not a
+    # curated file list, so a new behavior-bearing file cannot go unhashed
+    (tree / "new_module.py").write_text("X = 1\n")
+    assert RC.behavior_hash() != base
 
 
 def test_the_card_can_report_a_clean_tree(tmp_path):

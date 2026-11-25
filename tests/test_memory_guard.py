@@ -45,10 +45,10 @@ def test_the_guard_recognises_a_cmdline_for_each_pattern():
     for pat in ("measure_judge_law.py", "measure_battery_law.py", "measure_dynamics_law.py"):
         # each pattern is a filename that exists under scripts/
         assert (ROOT / "scripts" / pat).exists() or pat == "looking_glass.customer_foundation_model"
-    # and the guard skips itself: a watchdog that kills its own process is not a watchdog
+    # the guard must skip itself: a watchdog that kills its own process is not a watchdog.
+    # That rule is pinned behaviourally in test_the_guard_excludes_itself_and_its_wrapper.
     me = subprocess.run([sys.executable, "-c", "print('ok')"], capture_output=True, text=True)
     assert me.returncode == 0
-    assert "gpu_watchdog" not in GW.__doc__ or True  # the skip is exercised below
 
 
 def test_the_guard_excludes_itself_and_its_wrapper(tmp_path):

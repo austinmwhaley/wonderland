@@ -81,6 +81,40 @@ def _onehot(vals, levels):
     return M
 
 
+def _jobs() -> int:
+    """Worker count — the shared compute policy (DEC-660)."""
+    from compute_policy import jobs
+
+    return jobs()
+
+
+def _fit_level(reps, idx, y):
+    """One identified offer level's ridge head on split-A reps. Pure — safe in a worker."""
+    return _ridge_head().fit(reps[idx], y)
+
+
+def _level_heads(reps, keys, levels, dr) -> dict:
+    """One ridge head per identified level: independent fits, results in level order."""
+    from joblib import Parallel, delayed
+
+    fit_levels, tasks = [], []
+    for lvl in levels:
+        idx = [i for i, k in enumerate(keys) if lvl in dr.get(k, {})]
+        if not idx:
+            continue
+        fit_levels.append(lvl)
+        tasks.append((reps, np.asarray(idx), np.asarray([dr[keys[i]][lvl][0] for i in idx])))
+    if not tasks:
+        return {}
+    heads = Parallel(n_jobs=_jobs(), prefer="processes")(delayed(_fit_level)(*t) for t in tasks)
+    return dict(zip(fit_levels, heads))
+
+
+def _level_pred(xa, ya, xb):
+    """One (arm, level) T-learner column: fit the level's A rows, predict B. Pure."""
+    return _ridge_head().fit(xa, ya).predict(xb)
+
+
 # --------------------------------------------------------------------------- check 1
 
 
@@ -309,15 +343,7 @@ def decision_dose(stream, truth, emb, akeys, bkeys, demo: Path) -> tuple[dict, d
     Tb = np.vstack([table[k] for k in bk])
 
     def level_heads(reps, keys):
-        heads = {}
-        for lvl in levels:
-            idx = [i for i, k in enumerate(keys) if lvl in dr.get(k, {})]
-            if not idx:
-                continue
-            heads[lvl] = _ridge_head().fit(
-                reps[idx], np.asarray([dr[keys[i]][lvl][0] for i in idx])
-            )
-        return heads
+        return _level_heads(reps, keys, levels, dr)
 
     def surface(heads, reps, n_b):
         P = np.empty((n_b, len(levels)))
@@ -428,12 +454,7 @@ def check2_marker_invariance(model, seqs, refs) -> dict:
     by_key = {k: E2[i] for i, k in enumerate(keys)}
     Ea2 = np.vstack([by_key[k] for k in ak])
     Eb2 = np.vstack([by_key[k] for k in bk])
-    heads2 = {}
-    for lvl in levels:
-        idx = [i for i, k in enumerate(ak) if lvl in dr.get(k, {})]
-        if not idx:
-            continue
-        heads2[lvl] = _ridge_head().fit(Ea2[idx], np.asarray([dr[ak[i]][lvl][0] for i in idx]))
+    heads2 = _level_heads(Ea2, ak, levels, dr)
     P2 = np.empty((len(bk), len(levels)))
     for j, lvl in enumerate(levels):
         P2[:, j] = heads2[lvl].predict(Eb2) if lvl in heads2 else 0.0
@@ -678,10 +699,16 @@ def decision_ope_periods(bkeys, akeys, emb, truth, demo: Path) -> dict:
         rew_a = aP["reward"].to_numpy().astype(float)
         acts_b = bP["offer"].to_numpy().astype(int)
         rew_b = bP["reward"].to_numpy().astype(float)
-        pred = np.zeros((len(acts_b), K), dtype=float)
-        for j, level in enumerate(levels):
-            m = acts_a == level
-            pred[:, j] = _ridge_head().fit(XA[m], rew_a[m]).predict(XB)
+        from joblib import Parallel, delayed
+
+        pred = np.column_stack(
+            Parallel(n_jobs=_jobs(), prefer="processes")(
+                delayed(_level_pred)(XA[acts_a == level], rew_a[acts_a == level], XB)
+                for level in levels
+            )
+        )
+        if pred.shape[1] != K:
+            raise SystemExit(f"OPE: {pred.shape[1]} fitted levels, expected {K}")
         pol = pred.argmax(1)
         # per-customer choice (E is fixed; the per-level head is customer-level)
         by_key = {}

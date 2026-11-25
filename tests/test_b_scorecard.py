@@ -45,8 +45,12 @@ def test_missing_b_rows_are_unknown_and_name_the_producer(tmp_path):
     md, info = RC.render(tmp_path, HASH)
     b = info["summary"]["b"]
     assert b["pass"] == 0
-    assert b["unknown"] >= 15
-    assert b["missing"] >= 12
+    # every frozen row must have a verdict: a new row that vanishes from the rollup is a
+    # silently unmeasured gate, not a smaller denominator
+    assert set(info["b_verdicts"]) == {r.ident for r in B.ROWS}
+    assert b["unknown"] == len(B.ROWS)  # no receipts -> every row is UNKNOWN, none dropped
+    assert b["missing"] == len(B.ROWS)  # and every one names the producer that must run
+    assert b["fail"] == 0
     assert b["sections_green"] == 0
     assert info["b_verdicts"]["B2.1"] == J.UNKNOWN
     assert info["b_verdicts"]["B4.1"] == J.UNKNOWN

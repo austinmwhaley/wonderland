@@ -29,15 +29,57 @@ def test_whole_surface_has_no_new_principle_findings():
     )
 
 
-def test_baseline_shrinks_only():
+#: Pre-existing stale baseline entries (findings that no longer exist). The ratchet may only
+#: shrink, so this set is a ceiling: paying down one of these passes without an edit, while a NEW
+#: stale entry — a resolved finding whose acceptance was left behind — fails the suite. Compute
+#: the current debt with `set(baseline_keys) - {h["key"] for h in collect(...) if blocking}`.
+_KNOWN_STALE: frozenset[str] = frozenset()  # the baseline is a hard ratchet: zero stale
+
+
+def _current_blocking_keys() -> set[str]:
+    """Re-run the same whole-surface audit the `--all` gate runs and return its finding keys.
+
+    Paths are repo-relative (the audit's scope matching and key hashing are path-based), so the
+    caller runs with `cwd=ROOT`. The tree walk covers the audit's own BLOCK/NOTE roots: there is
+    no tracked-file list to drift from the files actually on disk.
+    """
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import principle_audit as PA
+
+    files = [
+        str(p.relative_to(ROOT))
+        for tree in PA.BLOCK_ROOTS + PA.NOTE_ROOTS
+        for p in (ROOT / tree).rglob("*.py")
+    ]
+    return {h["key"] for h in PA.collect(files) if h["severity"] == "block"}
+
+
+def test_baseline_shrinks_only(monkeypatch):
     """A baseline entry whose finding no longer exists is dead weight — delete it.
 
-    This does not fail the suite (resolving a finding is always allowed); it reports so the
-    ratchet does not quietly accumulate stale acceptances.
+    The baseline is a ratchet: it may only shrink. This re-runs the audit and compares its
+    BLOCKING findings with the accepted set, so an acceptance cannot outlive the finding it
+    accepted. The pre-existing stale entries are recorded above; any NEW stale entry fails.
     """
     import json
 
     baseline = ROOT / "scripts" / "principle_audit_baseline.json"
     assert baseline.exists(), "principle_audit_baseline.json is missing"
     data = json.loads(baseline.read_text())
-    assert data.get("count") == len(data.get("keys", [])), "baseline count is inconsistent"
+    keys = data.get("keys", [])
+    assert data.get("count") == len(keys), "baseline count is inconsistent"
+    assert len(keys) == len(set(keys)), "baseline contains duplicate keys"
+
+    monkeypatch.chdir(ROOT)
+    current = _current_blocking_keys()
+    accepted = set(keys)
+    # a finding with no acceptance is already a strict failure; assert it here too so this
+    # ratchet check cannot pass on a surface whose gate is red
+    assert current <= accepted, (
+        f"blocking finding(s) not accepted by the baseline: {sorted(current - accepted)}"
+    )
+    stale = accepted - current
+    assert stale <= _KNOWN_STALE, (
+        f"new stale baseline entry/entries {sorted(stale - _KNOWN_STALE)}: the finding no "
+        f"longer exists, so delete its key from {baseline.name} (the ratchet may only shrink)"
+    )

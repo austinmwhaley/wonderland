@@ -164,8 +164,15 @@ def test_the_card_renders_the_same_tree_with_verdicts(tmp_path, monkeypatch):
     assert "The plan — the tree this card measures" in md
     plan = info["plan"]
     assert plan["root"] == J.UNKNOWN  # no receipts, nothing measured -> never green
-    assert plan["card"] == 32 and plan["dec"] == 3 and plan["v1"] == 5
+    # the census is derived from the frozen rows and the plan's own atoms: adding a row or an
+    # atom must move the tree, never require editing a count here
+    atoms = [n for n in P.NODES if n.kind == "atomic"]
+    assert plan["card"] == len(B.ROWS) + len(J.LEG_ROWS)
+    assert plan["card"] == sum(1 for n in atoms if n.evidence == "card")
+    assert plan["dec"] == sum(1 for n in atoms if n.evidence == "dec")
+    assert plan["v1"] == sum(1 for n in atoms if n.evidence == "v1")
     assert plan["atomic_total"] == plan["card"] + plan["dec"] + plan["v1"]
+    assert plan["atomic_total"] == len(atoms)
     for n in P.NODES:
         assert n.ident in plan["nodes"]
         # card atoms render in their B/judge section, not in the plan table; every other node
@@ -178,12 +185,50 @@ def test_the_card_renders_the_same_tree_with_verdicts(tmp_path, monkeypatch):
 # ------------------------------------------------------------------ what a green proves
 
 
+#: Gate kinds whose green means a measured LEVEL (quality). The other two classes are frozen in
+#: b_spec (REPORTING_GATE_KINDS / UNMEASURED_GATE_KINDS); recording the quality side here means a
+#: new row kind cannot fall through `gate_kind()`'s default and be read as a capability bar by
+#: accident. Classifying a kind is a deliberate decision, not a test edit to make it green.
+_QUALITY_GATE_KINDS = frozenset(
+    {
+        "calibration_law",
+        "construction_law",
+        "decision_dose",
+        "decision_ope",
+        "donor_battery",
+        "encoder_win",
+        "linear_access",
+        "minimality_law",
+        "sufficiency",
+        "sufficiency_gap",
+        "transfer_law",
+    }
+)
+
+
 def test_every_b_row_declares_what_a_green_proves():
     """DEC-579: quality vs reporting is derived from the frozen gate's kind, never asserted in
     prose. The canonical cases are the ones that misled a reader before: B3.2's gate is
     `attribution recorded`, B2.1's is a frozen U bar."""
     kinds = {r.ident: r.gate_kind for r in B.ROWS}
     assert set(kinds.values()) <= {"quality", "reporting", "unmeasured"}
+    # every row — including one added later — is explicitly classified: the default in
+    # gate_kind() is "quality", so an unclassified kind would silently claim a capability bar
+    classified = B.REPORTING_GATE_KINDS | B.UNMEASURED_GATE_KINDS | _QUALITY_GATE_KINDS
+    for r in B.ROWS:
+        assert r.kind in classified, (
+            f"{r.ident}: gate kind {r.kind!r} is unclassified — add it to b_spec's reporting/"
+            f"unmeasured sets (or _QUALITY_GATE_KINDS here) so a new row cannot default to "
+            f"'quality' silently"
+        )
+        expected = (
+            "unmeasured"
+            if r.kind in B.UNMEASURED_GATE_KINDS
+            else "reporting"
+            if r.kind in B.REPORTING_GATE_KINDS
+            else "quality"
+        )
+        assert r.gate_kind == expected, (r.ident, r.kind, r.gate_kind)
     assert kinds["B3.2"] == "reporting"
     assert kinds["B3.4"] == "reporting"
     assert kinds["B3.5"] == "reporting"

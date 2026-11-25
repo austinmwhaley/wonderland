@@ -159,6 +159,49 @@ def _round(x) -> float | None:
     return None if x is None or not np.isfinite(x) else round(float(x), 6)
 
 
+def _jobs() -> int:
+    """Worker count — the shared compute policy (DEC-660)."""
+    from compute_policy import jobs
+
+    return jobs()
+
+
+def _stage_row(
+    name: str,
+    mat: dict[str, np.ndarray],
+    akeys,
+    bkeys,
+    truth: dict,
+    persona_fields,
+    future_fields,
+    seg: dict,
+    klab: int,
+) -> tuple[str, dict]:
+    """One rung's persona/future geometry + segment ARI. Pure — every rung is independent."""
+    ka = [k for k in akeys if k in truth and k in mat]
+    kb = [k for k in bkeys if k in truth and k in mat]
+    row: dict = {"dim": int(next(iter(mat.values())).shape[0]), "n": len(kb)}
+    for metric, fields in (
+        ("persona_geometry", persona_fields),
+        ("future_geometry", future_fields),
+    ):
+        if not fields or len(ka) < 30 or len(kb) < 30:
+            row[metric] = None
+            continue
+        score, n, pairs = _geometry(mat, mat, ka, kb, truth, fields)
+        row[metric] = _round(score)
+        row[f"{metric}_n"] = n
+        row[f"{metric}_pairs"] = pairs
+    ka_s = [k for k in ka if k in seg]
+    kb_s = [k for k in kb if k in seg]
+    row["segment_ari"] = (
+        _round(_segment_ari(mat, mat, ka_s, kb_s, seg, klab))
+        if klab >= 2 and len(ka_s) >= 30 and len(kb_s) >= 30
+        else None
+    )
+    return name, row
+
+
 def main() -> int:
     ensure_boundary()
     ap = argparse.ArgumentParser(description=__doc__)
@@ -189,31 +232,15 @@ def main() -> int:
     seg = {k: truth[k].get("segment") for k in truth if truth[k].get("segment") is not None}
     klab = len({seg[k] for k in bkeys if k in seg})
 
-    table: dict = {}
-    for name in STAGES:
-        mat = stages[name]
-        ka = [k for k in akeys if k in truth and k in mat]
-        kb = [k for k in bkeys if k in truth and k in mat]
-        row: dict = {"dim": int(next(iter(mat.values())).shape[0]), "n": len(kb)}
-        for metric, fields in (
-            ("persona_geometry", persona_fields),
-            ("future_geometry", future_fields),
-        ):
-            if not fields or len(ka) < 30 or len(kb) < 30:
-                row[metric] = None
-                continue
-            score, n, pairs = _geometry(mat, mat, ka, kb, truth, fields)
-            row[metric] = _round(score)
-            row[f"{metric}_n"] = n
-            row[f"{metric}_pairs"] = pairs
-        ka_s = [k for k in ka if k in seg]
-        kb_s = [k for k in kb if k in seg]
-        row["segment_ari"] = (
-            _round(_segment_ari(mat, mat, ka_s, kb_s, seg, klab))
-            if klab >= 2 and len(ka_s) >= 30 and len(kb_s) >= 30
-            else None
+    from joblib import Parallel, delayed
+
+    rows = Parallel(n_jobs=_jobs(), prefer="processes")(
+        delayed(_stage_row)(
+            name, stages[name], akeys, bkeys, truth, persona_fields, future_fields, seg, klab
         )
-        table[name] = row
+        for name in STAGES
+    )
+    table = {name: row for name, row in rows}
 
     # Validate the reconstruction against the stored artifact: the served stage must be the
     # stored served embedding, and M3 vs M4 must be distance-identical (isometric boundary).

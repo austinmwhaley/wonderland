@@ -136,33 +136,65 @@ def test_info_plane_lists_predictive_losses():
 
 
 def test_intrinsic_evaluate_end_to_end(tmp_path):
+    """A genuine PASS: every gate row holds and every proof carries a measured payload.
+
+    The gated trajectory proof reads the SLOW band — the channels with the longest learned
+    half-life (DEC-029/034) — so the model is built with the production trunk selector
+    (`cfg.unified_ssm`): the unified trunk derives that band from `delta_bias`, while the
+    hand-split expert bank has no separate slow slice. With the random expert bank the slow
+    band is absent and proof 3 fails (measured cos -0.41), which is a real FAIL — asserting
+    `ok in (True, False)` let it pass unnoticed.
+    """
     import json
 
     from looking_glass.intrinsic import evaluate
 
     seqs = _seqs(30)
-    torch.manual_seed(0)
-    model = CFM(EventVocab.build(seqs), dim=16, n_experts=2)
-    model.eval()
     cfg = CFMConfig()
     cfg.agg_horizons_days = [7.0, 30.0]
+    torch.manual_seed(0)
+    model = CFM(EventVocab.build(seqs), dim=16, unified=cfg.unified_ssm)
+    model.eval()
     r = evaluate(model, model.vocab, cfg, seqs, seed=0, out_dir=tmp_path, tag="t")
-    assert r["ok"] in (True, False)
-    assert all(
-        k in r
-        for k in (
-            "proof1_disentanglement",
-            "proof2_lipschitz",
-            "proof3_trajectory",
-            "proof4_info_plane",
-        )
-    )
+    assert r["ok"] is True, [row for row in r["rows"] if not row["ok"]]
+    assert r["rows"] and all(row["ok"] is True for row in r["rows"])
+    assert r["n_val"] > 0
+    # each proof is a real payload, not merely a present key
+    assert {
+        "proof1_disentanglement",
+        "proof2_lipschitz",
+        "proof3_trajectory",
+        "proof4_info_plane",
+        "proof5_sufficiency",
+    } <= set(r)
+    p1 = r["proof1_disentanglement"]
+    assert p1["mi_mean"] is not None and p1["mi_excess"] is not None
+    assert "oot_invariance" in p1
+    p2 = r["proof2_lipschitz"]
+    assert p2["n_tested"] > 0
+    assert np.isfinite(p2["lipschitz_p99"]) and p2["lipschitz_p99"] >= 0
+    p3 = r["proof3_trajectory"]
+    assert p3["n_trajectories"] > 0
+    assert p3["directional_cos_slow"]["mean"] is not None
+    assert p3["directional_cos_slow"]["mean"] > 0  # the gate row the receipt reads
+    p4 = r["proof4_info_plane"]
+    assert p4["predictive_losses"] and p4["horizons"]
+    p5 = r["proof5_sufficiency"]
+    assert p5["H_days"] > 0  # the sufficiency probe measured its horizon
     files = list(tmp_path.glob("intrinsic_t_*.json"))
     assert len(files) == 1
-    assert json.loads(files[0].read_text())["ok"] == r["ok"]
+    saved = json.loads(files[0].read_text())
+    assert saved["ok"] is True
+    assert saved["ok"] == r["ok"]
+    assert saved["rows"] == r["rows"]
     # determinism
     r2 = evaluate(model, model.vocab, cfg, seqs, seed=0, out_dir=tmp_path, tag="t2")
     assert r2["proof2_lipschitz"]["n_tested"] == r["proof2_lipschitz"]["n_tested"]
+    assert r2["ok"] == r["ok"]
+    assert (
+        r2["proof3_trajectory"]["directional_cos_slow"]
+        == r["proof3_trajectory"]["directional_cos_slow"]
+    )
 
 
 def test_slow_channel_mask_derives_slow_band():

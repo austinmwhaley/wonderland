@@ -34,9 +34,19 @@ def test_build_roster_recovers_best_action():
     A = rng.integers(0, 3, n)
     y = (A == 1).astype(float)  # action 1 always best
     roster, mean, std = build_roster(E, A, y)
+    # the offline-RL families the roster promises; a silently dropped family is a missing
+    # candidate, not a skip
+    assert {"value", "iql", "cql", "dt"} <= set(roster), sorted(roster)
     obs = np.column_stack([np.arange(n), E])
     for name in ("value", "iql", "cql", "dt"):
-        if name not in roster:
-            continue
-        frac = float((roster[name].action_probs(obs).argmax(1) == 1).mean())
+        cand = roster[name]
+        probs = cand.action_probs(obs)
+        assert probs.shape == (n, 3)
+        assert np.isfinite(probs).all() and np.allclose(probs.sum(1), 1.0)
+        # every candidate yields a real action for every row (no empty/sentinel answer)
+        acts = probs.argmax(1).astype(int)
+        assert acts.shape == (n,)
+        assert set(np.unique(acts)) <= {0, 1, 2}
+        assert 0 <= cand.act(obs[0]) < 3
+        frac = float((acts == 1).mean())
         assert frac > 0.6, (name, frac)

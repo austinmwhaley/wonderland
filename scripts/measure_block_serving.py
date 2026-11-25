@@ -79,7 +79,10 @@ def _linear_access(
     bkeys,
     fields,
 ) -> tuple[float | None, int]:
-    """Mean held-out R2 of a standardized ridge head fit on A and scored on B."""
+    """Mean held-out R2 of a standardized ridge head fit on A and scored on B.
+
+    Kept as the shared one-field-at-a-time path: `measure_served_object` imports it.
+    """
     ka = [k for k in akeys if k in truth and k in arm]
     kb = [k for k in bkeys if k in truth and k in arm]
     if len(ka) < 30 or len(kb) < 30:
@@ -132,6 +135,68 @@ def _equal_dimension(
     return equal, shape_only, counter_only
 
 
+def _jobs() -> int:
+    """Worker count — the shared compute policy (DEC-660)."""
+    from compute_policy import jobs
+
+    return jobs()
+
+
+def _arm_row(
+    name: str,
+    mat: dict[str, np.ndarray],
+    akeys,
+    bkeys,
+    truth: dict,
+    persona_fields,
+    future_fields,
+    seg: dict,
+    klab: int,
+) -> tuple[str, dict]:
+    """One arm's persona/future geometry + segment ARI. Pure — independent of every other arm."""
+    ka = [k for k in akeys if k in truth and k in mat]
+    kb = [k for k in bkeys if k in truth and k in mat]
+    row: dict = {"dim": int(next(iter(mat.values())).shape[0]), "n": len(kb)}
+    for metric, fields in (
+        ("persona_geometry", persona_fields),
+        ("future_geometry", future_fields),
+    ):
+        if not fields or len(ka) < 30 or len(kb) < 30:
+            row[metric] = None
+            continue
+        score, n, pairs = _geometry(mat, mat, ka, kb, truth, fields)
+        row[metric] = _round(score)
+        row[f"{metric}_n"] = n
+        row[f"{metric}_pairs"] = pairs
+    ka_s = [k for k in ka if k in seg]
+    kb_s = [k for k in kb if k in seg]
+    row["segment_ari"] = (
+        _round(_segment_ari(mat, mat, ka_s, kb_s, seg, klab))
+        if klab >= 2 and len(ka_s) >= 30 and len(kb_s) >= 30
+        else None
+    )
+    return name, row
+
+
+def _access_field(xa, xb, ya, yb) -> float | None:
+    """One field's standardized-ridge held-out R2 (fit A, score B). Pure, worker-safe."""
+    if np.std(ya) < 1e-12 or np.std(yb) < 1e-12:
+        return None
+    head = _ridge_head().fit(xa, ya)
+    return float(r2_score(yb, head.predict(xb)))
+
+
+def _access_matrix(
+    arm: dict[str, np.ndarray], truth: dict, akeys, bkeys
+) -> tuple[np.ndarray, np.ndarray, list, list] | None:
+    """The arm's A/B matrices and the keys both sides score (the honest-OOS population)."""
+    ka = [k for k in akeys if k in truth and k in arm]
+    kb = [k for k in bkeys if k in truth and k in arm]
+    if len(ka) < 30 or len(kb) < 30:
+        return None
+    return np.vstack([arm[k] for k in ka]), np.vstack([arm[k] for k in kb]), ka, kb
+
+
 def main() -> int:
     ensure_boundary()
     ap = argparse.ArgumentParser(description=__doc__)
@@ -169,19 +234,17 @@ def main() -> int:
         equal_dim[f"shape_pca_{n}"] = sp
         equal_dim[f"counter_tile_{n}"] = ct
     # A diagnostic sensitivity grid: the accepted arm is counter_weight=1 (pre-registered);
-    # the grid is reported, never used to pick the arm.
-    sensitivity = {}
-    for w in (0.5, 1.0, 2.0, 4.0):
-        b = _block(shape, counter, akeys, bkeys, counter_weight=w)
-        s, _, _ = _geometry(
-            b,
-            b,
-            [k for k in akeys if k in truth],
-            [k for k in bkeys if k in truth],
-            truth,
-            persona_fields,
-        )
-        sensitivity[str(w)] = _round(s)
+    # the grid is reported, never used to pick the arm. Each weight is an independent sweep.
+    from joblib import Parallel, delayed
+
+    weights = (0.5, 1.0, 2.0, 4.0)
+    sens_blocks = [_block(shape, counter, akeys, bkeys, counter_weight=w) for w in weights]
+    ka_truth = [k for k in akeys if k in truth]
+    kb_truth = [k for k in bkeys if k in truth]
+    sens = Parallel(n_jobs=_jobs(), prefer="processes")(
+        delayed(_geometry)(b, b, ka_truth, kb_truth, truth, persona_fields) for b in sens_blocks
+    )
+    sensitivity = {str(w): _round(score) for w, (score, _n, _pairs) in zip(weights, sens)}
 
     arm_mats = {
         "served": shape,
@@ -190,37 +253,42 @@ def main() -> int:
         "path_a": arms["table"],
         **equal_dim,
     }
-    table = {}
-    for name, mat in arm_mats.items():
-        ka = [k for k in akeys if k in truth and k in mat]
-        kb = [k for k in bkeys if k in truth and k in mat]
-        row = {"dim": int(next(iter(mat.values())).shape[0]), "n": len(kb)}
-        for metric, fields in (
-            ("persona_geometry", persona_fields),
-            ("future_geometry", future_fields),
-        ):
-            if not fields or len(ka) < 30 or len(kb) < 30:
-                row[metric] = None
-                continue
-            score, n, pairs = _geometry(mat, mat, ka, kb, truth, fields)
-            row[metric] = _round(score)
-            row[f"{metric}_n"] = n
-            row[f"{metric}_pairs"] = pairs
-        ka_s = [k for k in ka if k in seg]
-        kb_s = [k for k in kb if k in seg]
-        row["segment_ari"] = (
-            _round(_segment_ari(mat, mat, ka_s, kb_s, seg, klab))
-            if klab >= 2 and len(ka_s) >= 30 and len(kb_s) >= 30
-            else None
+    rows = Parallel(n_jobs=_jobs(), prefer="processes")(
+        delayed(_arm_row)(
+            name, arm_mats[name], akeys, bkeys, truth, persona_fields, future_fields, seg, klab
         )
-        table[name] = row
+        for name in arm_mats
+    )
+    table = {name: row for name, row in rows}
 
-    access = {}
-    for name in ("served", "exact_counter", "equal_39", "equal_128", "path_a"):
-        mean_r2, n_fields = _linear_access(
-            arm_mats[name], truth, akeys, bkeys, persona_fields + future_fields
-        )
-        access[name] = {"mean_r2": _round(mean_r2), "n_fields": int(n_fields)}
+    access = {
+        name: {"mean_r2": None, "n_fields": 0}
+        for name in ("served", "exact_counter", "equal_39", "equal_128", "path_a")
+    }
+    acc_tasks, acc_index = [], []
+    for name in access:
+        got = _access_matrix(arm_mats[name], truth, akeys, bkeys)
+        if got is None:
+            continue
+        xa, xb, ka, kb = got
+        for f in persona_fields + future_fields:
+            ya = np.asarray([truth[k][f] for k in ka], float)
+            yb = np.asarray([truth[k][f] for k in kb], float)
+            if np.std(ya) < 1e-12 or np.std(yb) < 1e-12:
+                continue
+            acc_index.append(name)
+            acc_tasks.append((xa, xb, ya, yb))
+    acc_scores: dict[str, list[float]] = {name: [] for name in access}
+    for name, score in zip(
+        acc_index,
+        Parallel(n_jobs=_jobs(), prefer="processes")(delayed(_access_field)(*t) for t in acc_tasks),
+    ):
+        acc_scores[name].append(score)
+    for name, scores in acc_scores.items():
+        access[name] = {
+            "mean_r2": _round(float(np.mean(scores))) if scores else None,
+            "n_fields": int(len(scores)),
+        }
     access_complete = bool(
         access["served"]["mean_r2"] is not None and access["path_a"]["mean_r2"] is not None
     )

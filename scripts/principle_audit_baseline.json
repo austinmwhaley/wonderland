@@ -1,6 +1,6 @@
 {
-  "_note": "Accepted BLOCKING findings (ratchet \u2014 may only shrink). Generated on a whole-surface audit; regenerate only when a finding is genuinely resolved or newly accepted by the operator.",
-  "count": 67,
+  "_note": "Accepted BLOCKING findings (ratchet \u2014 may only shrink). Generated on a whole-surface audit; regenerate only when a finding is genuinely resolved or newly accepted by the operator. 2026-11-25: two entries (222051a0c7ec8891, b31adee048a3cd54) were removed because the audit no longer emits them \u2014 the ratchet shrinking, not a new acceptance.",
+  "count": 65,
   "keys": [
     "0608d9a0a6465607",
     "070f9e7cb7cffa95",
@@ -15,7 +15,6 @@
     "17e4e665fb3117b1",
     "18d34a9c067c2076",
     "1e4e8ff028be0431",
-    "222051a0c7ec8891",
     "26aaf723ab6a484f",
     "29613818b12f1692",
     "2cfbcacabc97d532",
@@ -52,7 +51,6 @@
     "9e3aa442cc9f1eef",
     "ab2319feca964b5b",
     "b2d4decaa2723a6a",
-    "b31adee048a3cd54",
     "b6cbf73bc5023b04",
     "ba32b3d55a0e74e2",
     "c30fc2699be1a159",

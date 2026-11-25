@@ -79,6 +79,32 @@ P_FLOOR = 1e-15  # frozen softmax p-floor (evaluation contract, recorded)
 ARMS = ("served_object", "learned_only", "full", "floor")
 
 
+def _jobs() -> int:
+    """Worker count — the shared compute policy (DEC-660)."""
+    from compute_policy import jobs
+
+    return jobs()
+
+
+def _fit_mse(xa, ya, xb, yb):
+    """One arm's A-fit/B-score ridge loss (MSE). Pure, so it is safe in a worker process."""
+    p, _r2 = _ridge_oos(xa, ya, xb, yb)
+    return None if p is None else float(np.mean((yb - p) ** 2))
+
+
+def _fit_pred(xa, ya, xb, yb):
+    """One (arm, class) A-fit/B-score ridge prediction. Pure — the next-type softmax input."""
+    p, _r2 = _ridge_oos(xa, ya, xb, yb)
+    return p
+
+
+def _family(tasks, fn):
+    """Dispatch independent fits; results come back in task order (the serial order)."""
+    from joblib import Parallel, delayed
+
+    return Parallel(n_jobs=_jobs(), prefer="processes")(delayed(fn)(*t) for t in tasks)
+
+
 def _field_source(f: str, reg: dict) -> str:
     """Where each registry numeric field physically lives (measured, not assumed): `value` is
     the stream's top-level column; the rest are JSON attributes. The parse is the frozen
@@ -325,11 +351,8 @@ def main() -> int:
         """One regression target at fixed capacity across the four arms (A-fit/B-score, MSE)."""
         ia = np.array([idxA[k] for k in keys_A])
         ib = np.array([idxB[k] for k in keys_B])
-        out: dict[str, float | None] = {}
-        for arm in ARMS:
-            p, _r2 = _ridge_oos(AM[arm]["A"][ia], yA, AM[arm]["B"][ib], yB)
-            out[arm] = None if p is None else float(np.mean((yB - p) ** 2))
-        return out
+        losses = _family([(AM[arm]["A"][ia], yA, AM[arm]["B"][ib], yB) for arm in ARMS], _fit_mse)
+        return dict(zip(ARMS, losses))
 
     # 1. next-type (softmax NLL; classes absent on A < 8 are excluded and reported)
     typesA = [nxt[k]["event_type"] for k in popA if k in nxt]
@@ -349,26 +372,33 @@ def main() -> int:
         freq = {c: nA_cls[c] / tot for c in kept}
         nll_f = np.array([-math.log(max(freq[nxt[k]["event_type"]], P_FLOOR)) for k in incB])
         per_arm["floor"] = float(nll_f.mean())
-        for arm in ARMS:
-            if arm == "floor":
-                continue
-            ia = np.array([idxA[k] for k in incA])
-            ib = np.array([idxB[k] for k in incB])
-            tA = np.array([nxt[k]["event_type"] for k in incA])
-            tB = np.array([nxt[k]["event_type"] for k in incB])
-            scores, ok = [], True
-            for c in kept:
-                p, _r = _ridge_oos(
+        ia = np.array([idxA[k] for k in incA])
+        ib = np.array([idxB[k] for k in incB])
+        tA = np.array([nxt[k]["event_type"] for k in incA])
+        tB = np.array([nxt[k]["event_type"] for k in incB])
+        fit_arms = [arm for arm in ARMS if arm != "floor"]
+        # every (arm, class) one-vs-rest head is an independent fit; the softmax that
+        # combines them stays in the parent, in the historical arm/class order.
+        preds = _family(
+            [
+                (
                     AM[arm]["A"][ia],
                     (tA == c).astype(float),
                     AM[arm]["B"][ib],
                     (tB == c).astype(float),
                 )
-                if p is None:
-                    ok = False
-                    break
-                scores.append(p)
-            per_arm[arm] = None if not ok else float(_softmax_nll(scores, incB, kept, nxt).mean())
+                for arm in fit_arms
+                for c in kept
+            ],
+            _fit_pred,
+        )
+        for i, arm in enumerate(fit_arms):
+            scores = preds[i * len(kept) : (i + 1) * len(kept)]
+            per_arm[arm] = (
+                None
+                if any(p is None for p in scores)
+                else float(_softmax_nll(scores, incB, kept, nxt).mean())
+            )
         _finalize(
             "next-type",
             per_arm,
@@ -396,6 +426,8 @@ def main() -> int:
 
     # 2. attr-next (per included field; probe loss = mean of the field losses)
     field_losses: dict[str, dict[str, float | None]] = {}
+    attr_tasks: list[tuple] = []
+    attr_index: list[tuple[str, str]] = []
     for f in included_fields:
         mu, sd, _n, _ok, _why = scales[f]
 
@@ -405,12 +437,18 @@ def main() -> int:
 
         incA = [k for k in popA if _okv(k) is not None]
         incB = [k for k in popB if _okv(k) is not None]
+        field_losses[f] = {arm: None for arm in ARMS}
         if len(incA) < 8 or len(incB) < 8:
-            field_losses[f] = {arm: None for arm in ARMS}
             continue
         yA = np.array([(_okv(k) - mu) / sd for k in incA])
         yB = np.array([(_okv(k) - mu) / sd for k in incB])
-        field_losses[f] = _reg_losses(incA, incB, yA, yB)
+        ia = np.array([idxA[k] for k in incA])
+        ib = np.array([idxB[k] for k in incB])
+        for arm in ARMS:  # every (field, arm) head is an independent fit
+            attr_index.append((f, arm))
+            attr_tasks.append((AM[arm]["A"][ia], yA, AM[arm]["B"][ib], yB))
+    for (f, arm), v in zip(attr_index, _family(attr_tasks, _fit_mse)):
+        field_losses[f][arm] = v
     fl_mean = {
         arm: (
             float(
@@ -504,11 +542,8 @@ def main() -> int:
         massB = np.array([_window_z_mass(k, win, scales) for k in popB])
 
         def _two(zA, zB):
-            losses = {}
-            for arm in ARMS:
-                p, _r2 = _ridge_oos(AM[arm]["A"], zA, AM[arm]["B"], zB)
-                losses[arm] = None if p is None else float(np.mean((zB - p) ** 2))
-            return losses
+            losses = _family([(AM[arm]["A"], zA, AM[arm]["B"], zB) for arm in ARMS], _fit_mse)
+            return dict(zip(ARMS, losses))
 
         def _z(yA, yB):
             mu, sd = float(np.mean(yA)), float(np.std(yA))

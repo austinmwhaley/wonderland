@@ -89,11 +89,26 @@ def _attrs_with(df: pl.DataFrame, extra: dict[str, object]) -> pl.DataFrame:
     return df.with_columns(_reencode(decoded))
 
 
+def _lap(t0: float, label: str) -> float:
+    """Print one phase's elapsed time and return a fresh mark (profiling, not evidence).
+
+    The receipt keeps the single per-check `seconds` it always had; the split exists so the
+    runtime receipt names WHICH phase costs (principle 16: every component reports runtime).
+    """
+    now = time.perf_counter()
+    print(f"    [{label}] {now - t0:.1f}s", flush=True)
+    return now
+
+
 # --------------------------------------------------------------------------- S1 checks
 
 
-def check_renamed_end_to_end(data: Path) -> dict:
-    """Renamed schema -> onboard -> discover -> encoder training. Zero code edits."""
+def _prepare_renamed_end_to_end(data: Path) -> dict:
+    """Everything the renamed-schema check does before the GPU: read -> onboard -> discover.
+
+    Split from the training spike so the CPU-bound half can run in the worker pool while the
+    spike waits for a batch budget; `check_renamed_end_to_end` is the serial composition.
+    """
     from looking_glass.onboard import onboard
 
     t0 = time.perf_counter()
@@ -117,11 +132,13 @@ def check_renamed_end_to_end(data: Path) -> dict:
     src = WORK / "renamed_src.parquet"
     src.parent.mkdir(parents=True, exist_ok=True)
     renamed.write_parquet(src)
+    t1 = _lap(t0, "renamed: read+rename -> renamed source")
 
     out_dir = WORK / "renamed_onboard"
     if out_dir.exists():
         shutil.rmtree(out_dir)
     receipt = onboard(src, out_dir=out_dir, action_keys=[])
+    t2 = _lap(t1, "renamed: onboard")
 
     canonical = pl.read_parquet(receipt["canonical_path"])
     missing = [c for c in SA.REQUIRED if c not in canonical.columns]
@@ -153,15 +170,38 @@ def check_renamed_end_to_end(data: Path) -> dict:
         disc["periods"],
         disc["horizons"],
     )
+    _lap(t2, "renamed: discover + prepared tuple")
+    return {
+        "prepared": prepared,
+        "receipt": receipt,
+        "renamed_height": int(renamed.height),
+        "missing": missing,
+        "rows_ok": bool(rows_ok),
+        "n_seqs": len(disc["keys"]),
+        "seq_len": int(np.median([len(disc["seqs"][k][5]) for k in disc["keys"]])),
+        "seconds": time.perf_counter() - t0,
+    }
 
+
+def _train_renamed_end_to_end(ctx: dict, budget: dict) -> dict:
+    """The renamed-schema assertion: a seed-0 spike trains on the RESOLVED stream and is finite."""
     import auto_encoder as AE
 
+    t0 = time.perf_counter()
     E, _, _, _, _, _, _, _, best, _ = AE.train_encoder(
-        data=str(WORK / "renamed_e2e"), seed=0, d=64, layers=1, epochs=1, prepared=prepared
+        data=str(WORK / "renamed_e2e"),
+        seed=0,
+        d=64,
+        layers=1,
+        epochs=1,
+        prepared=ctx["prepared"],
+        batch=budget["batch"],
     )
+    _lap(t0, f"renamed: train spike (batch {budget['batch']})")
+    receipt = ctx["receipt"]
     ok = (
-        not missing
-        and rows_ok
+        not ctx["missing"]
+        and ctx["rows_ok"]
         and receipt["columns_mapped"].get("customer_key") == "client_id"
         and receipt["columns_mapped"].get("event_ts") == "occurred_at"
         and receipt["columns_mapped"].get("event_type") == "event"
@@ -173,20 +213,27 @@ def check_renamed_end_to_end(data: Path) -> dict:
         "evidence": (
             f"renamed client_id/occurred_at/event/attributes/total -> onboard resolved "
             f"{receipt['columns_mapped']}; {receipt['n_rows']} rows kept "
-            f"(source {renamed.height}); {len(disc['keys'])} customers encoded; encoder "
+            f"(source {ctx['renamed_height']}); {ctx['n_seqs']} customers encoded; encoder "
             f"trained on the resolved stream (d=64,L=1,e=1): E finite={_finitish(E)}, "
             f"best={float(best):.4f}; zero pipeline-code edits"
         ),
-        "seconds": round(time.perf_counter() - t0, 1),
+        "seconds": round(ctx["seconds"] + (time.perf_counter() - t0), 1),
         "n_rows": int(receipt["n_rows"]),
-        "n_customers": int(len(disc["keys"])),
+        "n_customers": int(ctx["n_seqs"]),
     }
 
 
-def check_new_field_ingested(data: Path) -> dict:
-    """Inject one categorical + one numeric field; the pipeline must resolve both, no edits."""
-    import auto_encoder as AE
+def check_renamed_end_to_end(data: Path) -> dict:
+    """Serial composition of the two phases (batch derived from live hardware, as before)."""
+    from looking_glass.autotune import derive_batch
 
+    ctx = _prepare_renamed_end_to_end(data)
+    batch, batch_receipt = derive_batch(ctx["n_seqs"], ctx["seq_len"])
+    return _train_renamed_end_to_end(ctx, {"batch": batch, "receipt": batch_receipt})
+
+
+def _prepare_new_field_ingested(data: Path) -> dict:
+    """Inject one categorical + one numeric field, resolve it, before the GPU spike."""
     t0 = time.perf_counter()
     vdir = WORK / "newfield"
     if vdir.exists():
@@ -207,10 +254,7 @@ def check_new_field_ingested(data: Path) -> dict:
     )
     raw = _attrs_with(raw, {"loyalty_tier": tiers, "session_seconds": seconds})
     raw.write_parquet(vdir / "path_b" / "path_b_customer_event_stream.parquet")
-
-    E, _, _, _, _, _, vs, _, best, _ = AE.train_encoder(
-        data=str(vdir), seed=0, d=64, layers=1, epochs=1
-    )
+    t1 = _lap(t0, "newfield: copy + inject attrs")
 
     disc = SA.discover(
         raw.select("customer_key", "event_ts", "event_type", "event_attributes"),
@@ -219,11 +263,34 @@ def check_new_field_ingested(data: Path) -> dict:
         ).timestamp(),
         action_keys=[],
     )
-    cat_fields = {g["field"] for g in disc["catspec"]}
-    num_fields = {f for f, _ in disc["num"]}
+    _lap(t1, "newfield: discover")
+    return {
+        "cat_fields": sorted({g["field"] for g in disc["catspec"]}),
+        "num_fields": sorted({f for f, _ in disc["num"]}),
+        "n_rows": int(n),
+        "n_seqs": len(disc["keys"]),
+        "seq_len": int(np.median([len(disc["seqs"][k][5]) for k in disc["keys"]])),
+        "seconds": time.perf_counter() - t0,
+    }
+
+
+def _train_new_field_ingested(ctx: dict, budget: dict) -> dict:
+    """The assertion: the injected fields are in the model's vocabulary and the spike is finite."""
+    import auto_encoder as AE
+
+    t0 = time.perf_counter()
+    E, _, _, _, _, _, _, _, best, _ = AE.train_encoder(
+        data=str(WORK / "newfield"),
+        seed=0,
+        d=64,
+        layers=1,
+        epochs=1,
+        batch=budget["batch"],
+    )
+    _lap(t0, f"newfield: train spike (batch {budget['batch']})")
     ok = (
-        "loyalty_tier" in cat_fields
-        and "session_seconds" in num_fields
+        "loyalty_tier" in ctx["cat_fields"]
+        and "session_seconds" in ctx["num_fields"]
         and _finitish(E)
         and math.isfinite(float(best))
     )
@@ -231,13 +298,22 @@ def check_new_field_ingested(data: Path) -> dict:
         "working": ok,
         "evidence": (
             "injected loyalty_tier (novel categories) + session_seconds into every event's "
-            f"attributes: resolved into catspec={sorted(cat_fields)} num={sorted(num_fields)}; "
+            f"attributes: resolved into catspec={ctx['cat_fields']} num={ctx['num_fields']}; "
             f"encoder trained on the variant (d=64,L=1,e=1): E finite={_finitish(E)}, "
             f"best={float(best):.4f}; zero pipeline-code edits"
         ),
-        "seconds": round(time.perf_counter() - t0, 1),
-        "n_rows": int(n),
+        "seconds": round(ctx["seconds"] + (time.perf_counter() - t0), 1),
+        "n_rows": int(ctx["n_rows"]),
     }
+
+
+def check_new_field_ingested(data: Path) -> dict:
+    """Serial composition of the two phases (batch derived from live hardware, as before)."""
+    from looking_glass.autotune import derive_batch
+
+    ctx = _prepare_new_field_ingested(data)
+    batch, batch_receipt = derive_batch(ctx["n_seqs"], ctx["seq_len"])
+    return _train_new_field_ingested(ctx, {"batch": batch, "receipt": batch_receipt})
 
 
 # --------------------------------------------------------------------------- S2 checks
@@ -255,6 +331,7 @@ def check_unseen_value_path(data: Path) -> dict:
     )
     schema = disc["schema"]
     et_before, cats_before = len(schema.et_v), [len(g.get("map") or {}) for g in schema.catspec]
+    t1 = _lap(t0, "unseen: discover")
 
     novel = pl.DataFrame(
         {
@@ -274,6 +351,7 @@ def check_unseen_value_path(data: Path) -> dict:
     )
     eval_batch = pl.concat([raw.select(list(SA.REQUIRED)), novel])
     keys, seqs, receipt = SA.transform(eval_batch, schema)
+    _lap(t1, "unseen: transform (serving)")
     ok = (
         "novel_a" in keys
         and "novel_b" in keys
@@ -330,7 +408,11 @@ def check_numeric_transform(data: Path) -> dict:
     frame = pl.concat(rows)
     disc = SA.discover(frame, as_of_ts, action_keys=[])
     if "probe_value" not in {f for f, _ in disc["num"]}:
-        return {"working": False, "evidence": "probe_value not resolved as numeric", "seconds": 0.0}
+        return {
+            "working": False,
+            "evidence": "probe_value not resolved as numeric",
+            "seconds": round(time.perf_counter() - t0, 1),
+        }
     seqs = disc["seqs"]
     per_cust = {
         k: float(
@@ -375,8 +457,10 @@ def check_field_permutation(data: Path) -> dict:
     keys_a, seqs_a, _ = SA.transform(
         sample, SA.discover(sample, as_of_ts, action_keys=[])["schema"]
     )
+    t1 = _lap(t0, "permutation: discover(a) + transform(a)")
     schema_b = SA.discover(perm, as_of_ts, action_keys=[])["schema"]
     keys_b, seqs_b, _ = SA.transform(perm, schema_b)
+    _lap(t1, "permutation: discover(b) + transform(b)")
     ok = keys_a == keys_b and _seqs_digest(seqs_a) == _seqs_digest(seqs_b)
     return {
         "working": ok,
@@ -390,10 +474,8 @@ def check_field_permutation(data: Path) -> dict:
     }
 
 
-def check_training_determinism(data: Path) -> dict:
-    """Two seed-0 runs on identical prepared inputs produce bit-identical E and best-val."""
-    import auto_encoder as AE
-
+def _prepare_training_determinism(data: Path) -> dict:
+    """The prepared inputs both seed-0 runs share (everything before the GPU)."""
     t0 = time.perf_counter()
     raw = pl.read_parquet(data / "path_b" / "path_b_customer_event_stream.parquet")
     manifest = json.loads((data / "manifest.json").read_text())
@@ -419,33 +501,48 @@ def check_training_determinism(data: Path) -> dict:
         disc["periods"],
         disc["horizons"],
     )
-    # DEC-573 addendum: the batch is derived ONCE and shared by both runs. train_encoder's
-    # batch=0 default re-derives from live hardware state on every call, so under co-tenant
-    # GPU load the two runs can land on different batches — which violates this check's own
-    # "identical" precondition and confounds determinism with memory state (measured: two
-    # seed-0 runs diverged to best-val 23.64 vs 24.52 while O3 attempt 4 trained alongside).
-    from looking_glass.autotune import derive_batch
+    _lap(t0, "determinism: discover + prepared")
+    return {
+        "prepared": prepared,
+        "n_seqs": len(disc["keys"]),
+        "seq_len": int(np.median([len(disc["seqs"][k][5]) for k in disc["keys"]])),
+        "seconds": time.perf_counter() - t0,
+    }
 
-    seq_len = int(np.median([len(disc["seqs"][k][5]) for k in disc["keys"]]))
-    batch, batch_receipt = derive_batch(len(disc["keys"]), seq_len)
+
+def _train_training_determinism(ctx: dict, budget: dict) -> dict:
+    """Two seed-0 runs on identical prepared inputs produce bit-identical E and best-val.
+
+    DEC-573 addendum: the batch is derived ONCE and shared by both runs. train_encoder's
+    batch=0 default re-derives from live hardware state on every call, so under co-tenant
+    GPU load the two runs can land on different batches — which violates this check's own
+    "identical" precondition and confounds determinism with memory state (measured: two
+    seed-0 runs diverged to best-val 23.64 vs 24.52 while O3 attempt 4 trained alongside).
+    """
+    import auto_encoder as AE
+
+    t0 = time.perf_counter()
+    batch, batch_receipt = budget["batch"], budget["receipt"]
     E1, _, _, _, _, _, _, _, best1, _ = AE.train_encoder(
         data=str(WORK / "det_a"),
         seed=0,
         d=64,
         layers=1,
         epochs=1,
-        prepared=prepared,
+        prepared=ctx["prepared"],
         batch=batch,
     )
+    t1 = _lap(t0, "determinism: run a")
     E2, _, _, _, _, _, _, _, best2, _ = AE.train_encoder(
         data=str(WORK / "det_b"),
         seed=0,
         d=64,
         layers=1,
         epochs=1,
-        prepared=prepared,
+        prepared=ctx["prepared"],
         batch=batch,
     )
+    _lap(t1, "determinism: run b")
     identical = np.ascontiguousarray(E1).tobytes() == np.ascontiguousarray(E2).tobytes()
     ok = identical and best1 == best2
     return {
@@ -455,9 +552,18 @@ def check_training_determinism(data: Path) -> dict:
             f"prepared inputs: E bit-identical={identical}, "
             f"best-val equal ({float(best1):.6f} == {float(best2):.6f})"
         ),
-        "seconds": round(time.perf_counter() - t0, 1),
-        "n_customers": int(len(disc["keys"])),
+        "seconds": round(ctx["seconds"] + (time.perf_counter() - t0), 1),
+        "n_customers": int(ctx["n_seqs"]),
     }
+
+
+def check_training_determinism(data: Path) -> dict:
+    """Serial composition of the two phases (batch derived from live hardware, as before)."""
+    from looking_glass.autotune import derive_batch
+
+    ctx = _prepare_training_determinism(data)
+    batch, batch_receipt = derive_batch(ctx["n_seqs"], ctx["seq_len"])
+    return _train_training_determinism(ctx, {"batch": batch, "receipt": batch_receipt})
 
 
 def products_identity(products) -> dict:
@@ -557,6 +663,21 @@ def _rollup(checks: dict) -> dict:
 # --------------------------------------------------------------------------- main
 
 
+def _jobs() -> int:
+    """Worker count — the shared compute policy (DEC-660)."""
+    from compute_policy import jobs
+
+    return jobs()
+
+
+def _worker_init() -> None:
+    """Give a spawned joblib worker the script's import roots (it does not inherit sys.path)."""
+    for root in (ROOT, ROOT / "scripts", ROOT / "scripts" / "demo"):
+        p = str(root)
+        if p not in sys.path:
+            sys.path.insert(0, p)
+
+
 def main() -> int:
     # every run of this producer happens inside the project's one memory ceiling (DEC-440):
     # a direct launch is re-entered into the slice, so the boundary does not depend on the
@@ -578,15 +699,88 @@ def main() -> int:
         return 2
     WORK.mkdir(parents=True, exist_ok=True)
 
+    from joblib import Parallel, delayed
+
+    n_jobs = _jobs()
+    t_run = time.perf_counter()
+
+    # Phase A — the CPU-bound half of every check. The six are independent by construction:
+    # each owns its own WORK subdir and only READS `data`, so the construction probes
+    # (unseen / numeric / permutation) complete here and the three training checks return
+    # their prepared inputs plus the (n_seqs, seq_len) the batch budget needs.
+    prep_fns = {
+        "renamed_end_to_end": _prepare_renamed_end_to_end,
+        "new_field_ingested": _prepare_new_field_ingested,
+        "unseen_value_path": check_unseen_value_path,
+        "numeric_transform_law": check_numeric_transform,
+        "field_permutation_invariance": check_field_permutation,
+        "training_determinism": _prepare_training_determinism,
+    }
+    order = [
+        "renamed_end_to_end",
+        "new_field_ingested",
+        "unseen_value_path",
+        "numeric_transform_law",
+        "field_permutation_invariance",
+        "training_determinism",
+    ]
+    t0 = time.perf_counter()
+    prepared = dict(
+        zip(
+            order,
+            Parallel(n_jobs=n_jobs, prefer="processes", initializer=_worker_init)(
+                delayed(prep_fns[name])(data) for name in order
+            ),
+        )
+    )
+    t_prep = time.perf_counter() - t0
+
+    # Batch budget — ONE hardware snapshot for the whole run, per task's own (n_seqs, seq_len).
+    # `train_encoder(batch=0)` re-derives from live free memory on every call, so under
+    # co-tenant GPU load the independent spikes would land on different batches and this run
+    # would confound determinism with memory state — the DEC-573 precondition, applied run-wide.
+    from looking_glass.autotune import derive_batch
+
+    budgets = {
+        name: dict(
+            zip(
+                ("batch", "receipt"),
+                derive_batch(prepared[name]["n_seqs"], prepared[name]["seq_len"]),
+            )
+        )
+        for name in ("renamed_end_to_end", "new_field_ingested", "training_determinism")
+    }
+    for name, b in budgets.items():
+        print(f"  batch budget :: {name}: {b['batch']} ({b['receipt']})", flush=True)
+
+    # Phase B — only the GPU spikes remain. They are independent (separate seeds, inputs and
+    # output dirs) and CUDA contexts are per-process, so the same pool runs them concurrently.
+    train_fns = {
+        "renamed_end_to_end": _train_renamed_end_to_end,
+        "new_field_ingested": _train_new_field_ingested,
+        "training_determinism": _train_training_determinism,
+    }
+    train_order = ["renamed_end_to_end", "new_field_ingested", "training_determinism"]
+    t1 = time.perf_counter()
+    trained = dict(
+        zip(
+            train_order,
+            Parallel(n_jobs=n_jobs, prefer="processes", initializer=_worker_init)(
+                delayed(train_fns[name])(prepared[name], budgets[name]) for name in train_order
+            ),
+        )
+    )
+    t_train = time.perf_counter() - t1
+
     s1_checks = {
-        "renamed_end_to_end": check_renamed_end_to_end(data),
-        "new_field_ingested": check_new_field_ingested(data),
+        "renamed_end_to_end": trained["renamed_end_to_end"],
+        "new_field_ingested": trained["new_field_ingested"],
     }
     s2_checks = {
-        "unseen_value_path": check_unseen_value_path(data),
-        "numeric_transform_law": check_numeric_transform(data),
-        "field_permutation_invariance": check_field_permutation(data),
-        "training_determinism": check_training_determinism(data),
+        "unseen_value_path": prepared["unseen_value_path"],
+        "numeric_transform_law": prepared["numeric_transform_law"],
+        "field_permutation_invariance": prepared["field_permutation_invariance"],
+        "training_determinism": trained["training_determinism"],
     }
 
     def rollup(checks: dict) -> dict:
@@ -603,6 +797,10 @@ def main() -> int:
     for stage in ("S1", "S2"):
         for name, c in existing[stage]["checks"].items():
             print(f"  {stage} :: {name}: {'PASS' if c['working'] else 'FAIL'}  ({c['seconds']}s)")
+    print(
+        f"input law: {time.perf_counter() - t_run:.1f}s wall "
+        f"(cpu pool {t_prep:.1f}s, spike pool {t_train:.1f}s, jobs={n_jobs})"
+    )
     print(f"S1 working={existing['S1']['working']}  S2 working={existing['S2']['working']}")
     return 0
 
