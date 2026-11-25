@@ -125,6 +125,20 @@
       "receipt": "encoder_win.json",
       "set_at": "2026-11-25T22:34:15+00:00",
       "value": 0.928944
+    },
+    {
+      "behavior_hash": "c9862643a2cebbe0",
+      "metric": "demo_v2.next_event.nll_enc[encoder_only]",
+      "receipt": "encoder_win_encoder_only.json",
+      "set_at": "2026-11-25T22:57:44+00:00",
+      "value": 1.22132
+    },
+    {
+      "behavior_hash": "c9862643a2cebbe0",
+      "metric": "demo_v2.next_event.margin_vs_1gram[encoder_only]",
+      "receipt": "encoder_win_encoder_only.json",
+      "set_at": "2026-11-25T22:57:44+00:00",
+      "value": -0.20187200000000005
     }
   ],
   "kind": "best_known",
@@ -137,6 +151,15 @@
       "receipt": "encoder_win.json",
       "set_at": "2026-11-25T22:34:15+00:00",
       "value": -0.28109800000000007
+    },
+    "demo_v2.next_event.margin_vs_1gram[encoder_only]": {
+      "behavior_hash": "c9862643a2cebbe0",
+      "detail": "paired CI [-0.23834759478583056, -0.16834955497049242]",
+      "direction": "lower",
+      "milestone": "NEW",
+      "receipt": "encoder_win_encoder_only.json",
+      "set_at": "2026-11-25T22:57:44+00:00",
+      "value": -0.20187200000000005
     },
     "demo_v2.next_event.nll_enc": {
       "behavior_hash": "e1646612b29976c2",
@@ -155,6 +178,15 @@
       "receipt": "encoder_win.json",
       "set_at": "2026-11-25T22:34:15+00:00",
       "value": 0.7308
+    },
+    "demo_v2.next_event.nll_enc[encoder_only]": {
+      "behavior_hash": "c9862643a2cebbe0",
+      "detail": "learned shape block only \u00b7 n_B 1500",
+      "direction": "lower",
+      "milestone": "NEW",
+      "receipt": "encoder_win_encoder_only.json",
+      "set_at": "2026-11-25T22:57:44+00:00",
+      "value": 1.22132
     },
     "demo_v2.next_event.nll_enc[purchase]": {
       "behavior_hash": "e1646612b29976c2",

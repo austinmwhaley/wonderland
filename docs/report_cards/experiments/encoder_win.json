@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "e1646612b29976c2",
+    "behavior_hash": "c9862643a2cebbe0",
     "command": "measure_encoder_win.py --head logistic",
-    "generated_at": "2026-11-25T22:34:14+00:00",
-    "git_commit": "fb9237ba0311d2e9285e4c011ed75dc930fcd148",
+    "generated_at": "2026-11-25T22:57:43+00:00",
+    "git_commit": "5902d7f48f4e3556a31700f31f378a4b71cd2996",
     "producer": "measure_encoder_win.py"
   },
   "complete": true,
@@ -64,6 +64,7 @@
     },
     "recent_k": 0,
     "served_object": "frozen bank embedding (200 dims)",
+    "subset": null,
     "temperature": 1.0,
     "temperature_fit_on": "not fit (no post-hoc calibration applied this run)"
   },

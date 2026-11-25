@@ -2,8 +2,8 @@
   "_meta": {
     "behavior_hash": "c9862643a2cebbe0",
     "command": "measure_encoder_win.py --subset shape --out docs/report_cards/experiments/encoder_win_encoder_only.json",
-    "generated_at": "2026-11-25T22:57:24+00:00",
-    "git_commit": "af708f98527aba3ec65c9359167273f210d25125",
+    "generated_at": "2026-11-25T22:57:40+00:00",
+    "git_commit": "5902d7f48f4e3556a31700f31f378a4b71cd2996",
     "producer": "measure_encoder_win.py"
   },
   "complete": true,
