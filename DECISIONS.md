@@ -11916,3 +11916,25 @@
     - §8 end-of-run checklist: the outcome check added (0a — every run) and item 14 now reads "if the outcome is achieved → stop + run PROMPT_BACKWARD FULL; else the next FORWARD run" — ENCODER DONE v1 alone does NOT close the outcome.
     - Footer: the forward run ends when the outcome is achieved, not when the card is ENCODER DONE v1.
   - **Outcome addendum (2026-11-24; closed by this commit).** Behavior-neutral; 5/5 gates RC=0 (778 tests, ruff check/format, plan check, principle audit).
+
+- **DEC-633 (the ridge head's alpha grid density — pre-registered BEFORE any run; operator direction 2026-11-24: "run PROMPT_FORWARD").**
+  - **WHY-NOT (§3.0).** The outcome is achieved via the hier head (14/14 cells beats the 1-gram) but the SHIPPING consumer head (the ridge head) never beats the 1-gram (0/14 cells). The ridge head's excess loss is cross-customer finite-sample / estimation-efficiency limited — not expressivity-limited (eff_rank grows 1.04→1.99 but no rank growth converts to NLL gain; the CI width shrinks 4.9–7.8× but the encoder does not win).
+  - **EVIDENCE.** The real-data story (DEC-611/615 receipts): ridge beats_base=False on all 14 cells (sensor 0.1958→0.0250 width, g 1.7003→1.2765; clickstream 0.2413→0.0496, g 2.0280→2.0543; server 0.2181→0.0295, g 5.0339→1.5118). The hier head beats the 1-gram on all 14 cells.
+  - **GAP.** The shipping consumer head (ridge) beats the 1-gram baseline on the real-data story.
+  - **LAYER.** Capability — the ridge head's fit cannot extract the signal the encoder carries at this sample size.
+  - **THIS RUN.** Attack the ridge head's estimation efficiency — the alpha grid density. A denser alpha grid on split A (the fit set only — never the scored split) is a different estimator, not a tuned hyperparameter; it is a NEW measurement, not a re-record of the DEC-624 negative.
+  - **NODE:** P3 — the donor is usable (the ridge head, the shipping consumer).
+  - **ROUTE:** the estimation-efficiency axis.
+  - **MOVE:** ridge head beats the 1-gram on the real-data story — via a denser alpha grid (50 values, logspace(-4, 4, 50)) fit on split A, scored on split B — at the largest completed N (sensor_fleet 25K).
+  - **Scope (frozen).** One axis: the ridge head's alpha grid density. No re-train of the certified artifact (the lab fixture is a dev instrument, DEC-576); the shipping ridge head is NOT changed — the measurement is separate and read-only. The encoder is trained on the lab fixture (sensor_fleet 25K) for this measurement only. Frozen gates unchanged.
+  - **Measurable benefit / gates (pre-registered, frozen).**
+    1. The ridge head with a denser alpha grid (50 values) beats the 1-gram (beats_base=True) on the real-data story at the largest completed N — OR the negative is recorded as-is.
+    2. No gate/threshold/criterion change; the shipping ridge head is not modified; the measurement is read-only.
+  - **Outcome addendum (to be recorded after the run).**
+
+- **DEC-633 outcome addendum (2026-11-25 — the run completed; dropped per the operator's direction: "switch to customer event stream. Only work on that stream until it is mastered").**
+  - **The training completed** (sensor_fleet 25K, as-of 2024-03-01, 25000 customers, ~42 min wall under the 95%-util co-tenant). The portfolio gate FAILED: next skill -0.0539 ± 0.0030 FAIL; num_next:reading -0.0125 ± 0.0030 FAIL; num_next:severity -0.0295 ± 0.0025 FAIL; occur +0.0294 ± 0.0001 NO_IDENTIFIABLE_SIGNAL; order -0.4331 ± 0.0076 FAIL; query +0.9865 ± 0.0176 PASS; sf +0.0204 ± 0.0003 PASS; NO_IDENTIFIABLE_SIGNAL on this stream: ['dt', 'occur']. Geometry eff_rank 1.975/83.371, mean_cos 0.9754, redundancy 0.52325 (null 0.01549). ABS baseline next: model 1.2987, unigram 0.9871, gram1 0.8076, random 1.3863; beats_unigram=False, beats_gram1=False.
+  - **The response outlet was NOT published** (LookupError: no action declaration found for the sensor_fleet stream — the truth file does not declare action keys). The faceplate advertises it as not_served.
+  - **The products were built** (customer_state=25000, training_embeddings=44479, at boundary 1709251200). The lab fixture is a dev instrument (DEC-576), never B-row evidence; the portfolio FAIL is the dev-instrument read, not a card verdict.
+  - **The DEC-633 measurement (denser alpha grid) is DROPPED** per the operator's direction (2026-11-25: "you can kill in flight run and switch to customer event stream. Only work on that stream until it is mastered"). The products remain at /tmp/opencode/dec633_sensor_fleet_n25k (a dev instrument; not committed).
+  - **The honest read.** The sensor_fleet 25K lab fixture is not a useful vehicle for the ridge-head estimation-efficiency question — the portfolio gate fails (the encoder does not beat the baseline next-event on this stream) and the fixture has no action declaration. The honest next move is the customer event stream, per the operator's direction.
