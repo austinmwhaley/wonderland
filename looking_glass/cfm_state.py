@@ -254,6 +254,11 @@ def load_frozen_encoder(tag: str, cfm_dir):
         readout_scale=bool(blob.get("readout_scale", False)),
         stats_pathway=bool(blob.get("stats_pathway", False)),
         continuous_time=bool(blob.get("continuous_time", False)),
+        # DEC-613: trunk axis (pre-DEC-613 blobs lack the keys -> the SSM trunk;
+        # a looped blob without seq_len fails safe in the model, never clamps).
+        trunk=str(blob.get("trunk", "ssm")),
+        n_loops=int(blob.get("n_loops", 2)),
+        max_pos=int(blob.get("seq_len", 0)),
         counter=bool(blob.get("counter", False)),
         counter_registers=int(blob.get("counter_registers", 1)),
         counter_compact=bool(blob.get("counter_compact", False)),

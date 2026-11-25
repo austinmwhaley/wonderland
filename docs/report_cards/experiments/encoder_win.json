@@ -2,8 +2,8 @@
   "_meta": {
     "behavior_hash": "0fccd9a89829f47d",
     "command": "measure_encoder_win.py --head logistic",
-    "generated_at": "2026-11-25T18:05:38+00:00",
-    "git_commit": "c3b978d4cecfaf91f67796a92486834c88cf32aa",
+    "generated_at": "2026-11-25T18:18:13+00:00",
+    "git_commit": "80323772f14cf85f445f62103eb61ce3bced3f6c",
     "producer": "measure_encoder_win.py"
   },
   "complete": true,
@@ -68,10 +68,16 @@
     "temperature_fit_on": "split A holdout (30%), never split B"
   },
   "kind": "encoder_win",
+  "population": {
+    "demo_customers": 5000,
+    "match": true,
+    "products_n_customers": 5000,
+    "served_embeddings": 5000
+  },
   "products": {
     "path": "looking_glass/artifacts/cfm_v2k_vf2_bank",
     "tag": null
   },
   "protocol": "DEC-635: the ridge head (the shipping consumer head) beats the pooled 1-gram baseline on the customer event stream \u2014 the ridge head is fit on split A, scored on split B, the paired bootstrap CI of (nll_enc - nll_base) must exclude 0. The outcome: the encoder is a foundation, not a green receipt.",
-  "seconds": 3.2
+  "seconds": 6.6
 }

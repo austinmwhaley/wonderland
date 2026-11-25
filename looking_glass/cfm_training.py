@@ -101,6 +101,16 @@ def _pick_warm_checkpoint(out_dir, as_of, cfg=None):
                     "drive_looped_recurrence",
                 )
             )
+            # DEC-613: the trunk axis. Pre-DEC-613 registries carry no trunk keys — the
+            # historical value is trunk="ssm" (and the loop count is meaningless to it) —
+            # so compare against THAT: a looped config must never warm-start an SSM
+            # checkpoint (the load below is strict=False and would silently random-init).
+            if rc.get("trunk", "ssm") != getattr(cfg, "trunk", "ssm"):
+                mismatched = True
+            elif rc.get("trunk", "ssm") == "looped_gpt" and rc.get("n_loops", 2) != getattr(
+                cfg, "n_loops", 2
+            ):
+                mismatched = True  # a looped checkpoint of another L is different weights
             if "objectives" in rc and tuple(rc["objectives"]) != tuple(
                 getattr(cfg, "objectives", ())
             ):
@@ -241,6 +251,11 @@ def train_cfm(cfg: CFMConfig):
         mtp_k=getattr(cfg, "mtp_k", 0),
         # DEC-423: recompute the SSM scan in backward — see CFMConfig.grad_checkpoint.
         grad_checkpoint=bool(getattr(cfg, "grad_checkpoint", False)),
+        # DEC-613: the trunk axis ("ssm" default = byte-identical existing behavior;
+        # "looped_gpt" = the Dory-style looped trunk, sized by the protocol seq_len).
+        trunk=str(getattr(cfg, "trunk", "ssm")),
+        n_loops=int(getattr(cfg, "n_loops", 2)),
+        max_pos=int(cfg.seq_len),
     ).to(device)
     # v4.0: differentiable ZCA in the forward during training (gradients shape the
     # consumed isotropy); off at eval/save so the frozen transform is used.
@@ -768,6 +783,11 @@ def train_cfm(cfg: CFMConfig):
             "bilinear_recurrence": bool(getattr(cfg, "bilinear_recurrence", False)),
             "looped_recurrence": bool(getattr(cfg, "looped_recurrence", False)),
             "drive_looped_recurrence": bool(getattr(cfg, "drive_looped_recurrence", False)),
+            # DEC-613: trunk identity (the rebuild-from-blob contract, cfm_state /
+            # cfm_validation / state_dense read these back; old blobs lack them -> SSM).
+            "trunk": str(getattr(cfg, "trunk", "ssm")),
+            "n_loops": int(getattr(cfg, "n_loops", 2)),
+            "seq_len": int(cfg.seq_len),
             "readout_norm": bool(getattr(cfg, "readout_norm", True)),
             "input_norm": bool(getattr(cfg, "input_norm", True)),
             "readout_skip": bool(getattr(cfg, "readout_skip", True)),

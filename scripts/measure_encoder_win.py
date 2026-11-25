@@ -107,6 +107,39 @@ def _recent_block(hist: pl.DataFrame, keys: list[str], classes: list[str], k: in
     return out
 
 
+def _population_check(products: Path, demo: Path, n_served: int) -> dict:
+    """Refuse to compare across populations.
+
+    Measured defect (DEC-650 addendum A): architecture runs were launched without
+    `--customers`, so the trainer took its default 500 while the certified bank and the record
+    are built on the full 5000-customer demo population. The comparison then looked like
+    `beats_unigram=False` for reasons that had nothing to do with the axis: the scored split
+    held 140 rows instead of 1500 and the pooled 1-gram nll was 1.323 instead of 1.423.
+    A receipt whose population does not match the demo manifest is not a comparison, so this
+    check reports the mismatch and the caller marks the receipt incomplete.
+    """
+    manifest = json.loads((demo / "manifest.json").read_text())
+    want = (manifest.get("counts") or {}).get("customers")
+    # the registry lives INSIDE the artifact dir (cfm_v2k_vf2_bank/registry_*.json); a few
+    # layouts keep it beside it — check both, newest wins.
+    regs = sorted(
+        [*products.glob("registry_*.json"), *products.parent.glob("registry_*.json")],
+        key=lambda q: q.stat().st_mtime,
+    )
+    got = None
+    if regs:
+        try:
+            got = json.loads(regs[-1].read_text()).get("n_customers")
+        except (OSError, json.JSONDecodeError):
+            got = None
+    return {
+        "demo_customers": want,
+        "products_n_customers": got,
+        "served_embeddings": n_served,
+        "match": bool(want is not None and got is not None and int(got) == int(want)),
+    }
+
+
 def _softmax_nll(S: np.ndarray, ki: np.ndarray, temp: float) -> float:
     Z = S / max(float(temp), 1e-6)
     Z = Z - Z.max(1, keepdims=True)
@@ -219,6 +252,7 @@ def main() -> int:
     classes = sorted(set(next_of.values()))
 
     emb = _load_served(products)
+    pop = _population_check(products, demo, len(emb))
     hist = (
         stream.filter(to_ts_expr(pl.col("event_ts")) <= as_of)
         .filter(pl.col("event_type").is_in(classes))
@@ -392,9 +426,17 @@ def main() -> int:
         },
         "seconds": round(time.perf_counter() - t0, 1),
         "products": {"path": str(products), "tag": None},
-        "complete": True,
+        "population": pop,
+        "complete": bool(pop["match"]),
     }
 
+    if not pop["match"]:
+        print(
+            f"POPULATION MISMATCH: demo has {pop['demo_customers']} customers, products were "
+            f"trained on {pop['products_n_customers']} — this receipt is NOT comparable and is "
+            "written complete=false (DEC-650). Re-train with --customers matching the demo.",
+            file=sys.stderr,
+        )
     out_path = (
         Path(a.out)
         if a.out

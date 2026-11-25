@@ -12370,3 +12370,39 @@ THE HONEST AXIS: the architecture — the encoder's capacity/order-carrying. The
     1.2233 but purchase regressed — pre-registered falsifier); recent-k exact-event block under
     the corrected head (1.228889, no gain); per-class balanced/unbalanced selection on the A
     holdout (chooses unbalanced everywhere, reproduces the record).
+
+- **DEC-650 (re-test the looped transformer under the CORRECTED consumer — the earlier architecture negatives were confounded; operator direction 2026-11-25: "can you investigate the looped-transformer again given recent success?").**
+  - **THE RECORD ATTACKED.** `demo_v2.next_event.nll_enc` **1.173099** (margin −0.250093);
+    baseline geometry `eff_rank` 2.649 / null 105.535 (collapsed).
+  - **WHY-NOT (the confound, measured).** Every architecture verdict in DEC-641/643/644 was
+    produced by the **uncalibrated one-vs-rest ridge + softmax at T=1**, which DEC-646 proved is
+    systematically under-confident (T=1 nll 1.4523 → T=0.2368 nll 1.2288 on the SAME frozen
+    object). An under-confident head compresses all candidates toward the prior, so an
+    architecture that genuinely sharpens the conditional can be scored as *worse* than one that
+    does not. The architecture line was therefore never measured — it was mis-measured. The
+    recent-k block is the precedent: a null under the broken head, re-tested and closed under
+    the corrected one.
+  - **THE HONEST AXIS (one axis).** Trunk algebra = **looped recurrence** (DEC-578/581:
+    weight-tied `F(z) = unitnorm(tanh(W z))` composed T times to convergence), everything else
+    identical to the certified recipe (demo_v2, as_of 2025-01-01, anchors 6, dim 256, batch 64,
+    lr 3e-4, counter_type_values/ledger_recency/serve_unfaded on). Consumer: the adopted
+    multinomial logistic with C selected on the split-A holdout.
+  - **FROZEN ACCEPTANCE.** Adopt only if (a) the paired CI of (nll_enc − nll_base) excludes 0 —
+    the B9.1 gate — AND (b) `nll_enc` beats the record **1.173099**. Report `eff_rank` and every
+    per-class value beside the unified-SSM baseline; a worse eff_rank with a better nll is an
+    honest trade that must be stated, not hidden. If it does not beat the record, the looped
+    algebra is closed **under a valid instrument** and recorded once.
+
+- **DEC-650 addendum A (a SECOND confound found before any verdict was read — the architecture runs were at the wrong population).**
+  - The first re-test ran the recipe WITHOUT `--customers`, so the trainer took its default
+    `sample_customers=500` — while the certified bank and the record are built on the FULL
+    **5000-customer** demo population (bank receipt: n_customers 5000, n_train_sequences 3515;
+    the record receipt: n_A 3500, n_B_rows 1500). The re-test's receipt shows the mismatch
+    plainly: n_B_rows **140**, pooled 1-gram nll **1.323074** (the 5000-customer baseline is
+    1.423192). DEC-641/643/644 carried the same defect — their "PORTFOLIO FAIL / beats_unigram
+    False" lines were measured on a 1/10-size population and are therefore not comparable to the
+    record either.
+  - Consequence: no verdict is read from that receipt. The axis is re-run with `--customers
+    5000` so the population, the split, and the pooled baseline match the record exactly. This is
+    disclosed rather than silently corrected: two independent confounds (head calibration,
+    population size) had made the entire architecture line unmeasured.

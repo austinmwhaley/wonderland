@@ -47,6 +47,10 @@ def build(cadence="weekly", max_customers=8000):
         readout_scale=bool(blob.get("readout_scale", False)),
         stats_pathway=bool(blob.get("stats_pathway", False)),
         continuous_time=bool(blob.get("continuous_time", False)),
+        # DEC-613: trunk axis (pre-DEC-613 blobs lack the keys -> the SSM trunk).
+        trunk=str(blob.get("trunk", "ssm")),
+        n_loops=int(blob.get("n_loops", 2)),
+        max_pos=int(blob.get("seq_len", 0)),
     )
     model.load_state_dict(blob["state"])
     if blob.get("whiten_W") is not None:

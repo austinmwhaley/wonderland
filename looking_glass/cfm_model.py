@@ -1026,6 +1026,9 @@ class CFM(nn.Module):
         rate_dim: int = 0,
         profile_dim: int = 0,
         mtp_k: int = 0,
+        trunk: str = "ssm",
+        n_loops: int = 2,
+        max_pos: int = 0,
     ):
         super().__init__()
         self.vocab = vocab
@@ -1103,26 +1106,44 @@ class CFM(nn.Module):
         # and day-of-week as sin/cos pairs (spec §1). Captures seasonality
         # without calendar literals (2π-normalized, per-sample).
         self.w_tod = nn.Linear(4, self.chan)
+        # DEC-613 (branch looped-transformer): the trunk axis. "ssm" is the
+        # existing behavior, byte-identical; "looped_gpt" is the Dory-style
+        # looped (latent-recurrent) GPT trunk behind the SAME forward contract.
+        self.trunk = str(trunk)
+        self.n_loops = int(n_loops)
+        if self.trunk not in ("ssm", "looped_gpt"):
+            raise ValueError(f"trunk={trunk!r} is not one of 'ssm', 'looped_gpt' (DEC-613)")
         if delta_biases is None:
             delta_biases = [0.0] * self.n_experts
-        self.ssm = MultiScaleSSM(
-            self.chan,
-            self.n_experts,
-            delta_biases,
-            slow_intent=(slow_intent and not self.unified),
-            delta_spectrum=self.unified,
-            band_isolate=self.unified,
-            bilinear=self.bilinear,
-            looped=self.looped,
-            drive_looped=self.drive_looped,
-            readout_norm=self.readout_norm_on,
-            input_norm=self.input_norm_on,
-            readout_skip=self.readout_skip_on,
-            event_residual=self.event_residual_on,
-            readout_scale=self.readout_scale_on,
-            stats_pathway=self.stats_pathway_on,
-            continuous_time=self.continuous_time_on,
-        )
+        if self.trunk == "looped_gpt":
+            from looking_glass.cfm_looped_trunk import LoopedGPTTrunk
+
+            if max_pos <= 0:
+                raise ValueError(
+                    "trunk='looped_gpt' requires max_pos (the protocol seq_len, derived upstream)"
+                )
+            self.ssm = LoopedGPTTrunk(
+                self.chan, dim, self.n_experts, n_loops=self.n_loops, max_pos=max_pos
+            )
+        else:
+            self.ssm = MultiScaleSSM(
+                self.chan,
+                self.n_experts,
+                delta_biases,
+                slow_intent=(slow_intent and not self.unified),
+                delta_spectrum=self.unified,
+                band_isolate=self.unified,
+                bilinear=self.bilinear,
+                looped=self.looped,
+                drive_looped=self.drive_looped,
+                readout_norm=self.readout_norm_on,
+                input_norm=self.input_norm_on,
+                readout_skip=self.readout_skip_on,
+                event_residual=self.event_residual_on,
+                readout_scale=self.readout_scale_on,
+                stats_pathway=self.stats_pathway_on,
+                continuous_time=self.continuous_time_on,
+            )
         self.head_next = nn.Linear(dim, vocab.n_et + 1)  # next event type
         # DEC-049: `query` predicts the next event from a FADED state (little
         # remaining info), so its optimum is the marginal. Sharing head_next with
