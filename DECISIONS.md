@@ -12545,3 +12545,47 @@ THE HONEST AXIS: the architecture — the encoder's capacity/order-carrying. The
     `/tmp/opencode/cfmd_port128` (a 307-dim state with no repo builder) — that is a
     reproducibility gap and gets its own iteration; and `measure_battery.py`/`measure_construction.py`
     belong to a retired cluster that `run_demo.py` still invokes.
+
+- **Seal (2026-11-25).** **DEC-655 and DEC-656 reserved: folded into DEC-657.** The two
+  producer-default repairs — `measure_decision_law.py` → the served 272-dim base
+  (`cfm_v2k_vf2`) and `measure_donor.py` → the served 59-dim object
+  (`cfm_v2k_vf2_c32rvd`) — were recorded inside DEC-657 rather than as separate entries,
+  but their code comments cite them by number. Sealed here so every citation resolves
+  without back-filling invented decisions (the records are in DEC-657 and in the
+  producers themselves).
+
+- **DEC-658 (faster iteration — measured, not vibes; operator direction 2026-11-25: "these runs are taking so long ... I need these to be faster").**
+  - **WHERE A RUN'S WALL CLOCK ACTUALLY GOES (measured, 500 customers / 40 steps, end-to-end 183 s):**
+    read+vocab+sequences **14 s (8%)** · training steps 40 × 2.07 s = **103 s (56%)** ·
+    products/serving (whiten, response, ledger, outlets, states) **65 s (36%)**.
+  - **FIX 1 — products are optional for iteration.** New `skip_products` config switch
+    (`--set skip_products=true`): trains and stops, writing no served artifacts, and prints
+    "iteration run, not a receipt". Measured: 183 s → **65 s**.
+  - **FIX 2 — parallel tests.** `pytest-xdist` added to `requirements-dev.txt`; the fast suite
+    goes **3m43 s → 1m24 s** at `-n 8` (808 tests, identical pass set; `-n 16` is slower on this
+    box). The gate stays correct; it simply stops being serial.
+  - **FIX 3 — the GPU was idle because the CPU was building the batch (DEC-659).** After the
+    collate rewrite the step is **1.07 s** (from 2.07 s) and the trainer's own receipt flips
+    from "enqueue-bound: the loop waits on the CPU" to **"GPU-bound"** — the first time this
+    project has been GPU-bound.
+  - **Remaining gap, stated honestly.** ~60k tok/s at batch 64 (70k at 128) is still far below
+    the GB10's arithmetic capability; the step is now GPU-bound but the GPU is doing many small
+    kernels (38 per-field losses, each its own matmul+CE). The next lever is fusing the
+    field-head losses into batched matmuls, not more hardware.
+
+- **DEC-659 (the step's real bottleneck was `_collate`, not the model — vectorised, proven inert).**
+  - **MEASURED ROOT CAUSE.** A per-call profile plus a dispatch-mode call-site counter located
+    the flood precisely: `_collate` built ~50 `torch.tensor(..., device=cuda)` per SEQUENCE
+    (64 sequences), i.e. **2,688 host→device copies and ~3.2k tensor factories per collate**,
+    and collate runs ~2.5× per optimizer step (train forward + the two Armijo evals + val_metric).
+    Everything else — Armijo's 207-param snapshot, EMA, Adam, clip, the 38 heads — was 1–2 orders
+    of magnitude smaller. The scan was innocent.
+  - **THE FIX.** `_collate` now stages each field once in a host `numpy` buffer and transfers
+    **once per field** (~50 transfers instead of ~2,700). Same vocab lookups, same pad fills,
+    same float32 roundings, same dt/tod arithmetic.
+  - **PROOF OF INERTNESS.** New `tests/test_collate_equivalence.py` keeps the historical
+    implementation as an oracle and asserts **`torch.equal`** on every tensor of the batch dict
+    across four length mixes plus a no-optional-fields case: 5/5.
+  - **MEASURED.** `aten::copy_` 76.8k → 6.2k per 6-step window (12.5×), `aten::fill_` 72.5k → 13.8k
+    (5×), step 2.07 → **1.07 s**, and the receipt's verdict flips to GPU-bound. Batch 128 now
+    yields 70.5k tok/s vs 59.6k at 64.

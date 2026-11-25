@@ -3,14 +3,19 @@
 
 The frozen gates certify the instrument — the pipeline produces a frozen, certifiable donor.
 This producer measures the OUTCOME: the encoder's frozen output beats the 1-gram baseline
-on the customer event stream (the demo_v2 prototype) — the ridge head (the shipping consumer
-head) beats the pooled 1-gram on held-out B rows, with a paired bootstrap CI.
+on the customer event stream (the demo_v2 prototype) — a simple linear consumer head is fit
+on split A and scored on split B against the pooled 1-gram, with a paired bootstrap CI.
 
-The protocol is the frozen lab_measure._measure_pair protocol — the ridge head, the A/B
-split, the paired CI — applied to the certified demo_v2 customer event stream. No
-re-train; the encoder is the frozen bank.
+The ADOPTED head is the multinomial logistic consumer (DEC-649: a proper categorical
+likelihood, no post-hoc temperature), and it is the default so the bare invocation
+reproduces the certified receipt. The one-vs-rest ridge + softmax head (DEC-646/648) stays
+selectable with `--head ridge`; `--calibration scalar|vector` applies to that head only.
 
-    python3 scripts/measure_encoder_win.py [--products DIR] [--demo DIR]
+The protocol is the frozen lab_measure._measure_pair protocol — the head, the A/B split, the
+paired CI — applied to the certified demo_v2 customer event stream. No re-train; the encoder
+is the frozen bank.
+
+    python3 scripts/measure_encoder_win.py [--products DIR] [--demo DIR] [--head logistic]
 """
 
 from __future__ import annotations
@@ -31,8 +36,10 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts"))
 
 import safe_run as SR  # noqa: E402
+from cfm_products import resolve_served_tag  # noqa: E402
 from looking_glass.stream_adapter import to_ts_expr  # noqa: E402
 from measure_battery_law import N_BOOT, SEED, _ridge_oos  # noqa: E402
+from measure_input_law import products_identity, stamp_merge_write  # noqa: E402
 
 # frozen A/B customer partition (mirrors the frozen split protocol — DEC-576/611)
 A_FRAC = 0.7
@@ -205,8 +212,41 @@ def _round(x):
     return None if x is None or not np.isfinite(x) else round(float(x), 6)
 
 
-def main() -> int:
-    SR.ensure_boundary()
+def _protocol_text(head: str, calibration: str, recent_k: int) -> str:
+    """The protocol sentence, DERIVED from the configuration this run actually measured.
+
+    A hand-written protocol drifts from the measurement: the certified receipt was produced
+    with `--head logistic` (DEC-649) while its prose still named "the ridge head (the shipping
+    consumer head)", so a reader could not tell which consumer B9.1 certified and the default
+    invocation did not reproduce the receipt. Every claim here is a function of the actual
+    head / calibration / served-object extension.
+    """
+    head_txt = {
+        "logistic": "the multinomial logistic head (the adopted consumer, DEC-649)",
+        "ridge": "the one-vs-rest ridge head + softmax",
+    }[head]
+    if calibration == "vector":
+        cal_txt = "one multiplicative weight per class (vector scaling) fit on a split-A holdout"
+    elif calibration == "scalar":
+        cal_txt = "one softmax temperature fit on a split-A holdout"
+    else:
+        cal_txt = "the head's own categorical likelihood (no post-hoc temperature)"
+    object_txt = (
+        f"the frozen bank embedding || the exact last-{recent_k} event-type indicators"
+        if recent_k > 0
+        else "the frozen bank embedding"
+    )
+    return (
+        f"DEC-635: {head_txt} on {object_txt} must beat the pooled 1-gram baseline on the "
+        f"customer event stream. The head is fit on split A ({A_FRAC:.0%} of customers) and "
+        f"scored on split B, with {cal_txt}; the paired bootstrap CI ({N_BOOT} resamples) of "
+        "(nll_enc - nll_base) must exclude 0. The outcome: the encoder is a foundation, not "
+        "a green receipt."
+    )
+
+
+def _parser() -> argparse.ArgumentParser:
+    """The CLI, factored out so the DEFAULT head is testable (the certified receipt's head)."""
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--products", default="looking_glass/artifacts/cfm_v2k_vf2_bank")
     ap.add_argument("--demo", default="looking_glass/artifacts/demo_v2")
@@ -214,16 +254,18 @@ def main() -> int:
     ap.add_argument(
         "--head",
         choices=["ridge", "logistic"],
-        default="ridge",
-        help="consumer head family: one-vs-rest ridge + softmax (default, DEC-646) or the "
-        "canonical multinomial logistic (DEC-649); both linear in the served object",
+        default="logistic",
+        help="consumer head family: the canonical multinomial logistic (default, the adopted "
+        "consumer, DEC-649) or the one-vs-rest ridge + softmax (DEC-646); both are linear in "
+        "the served object",
     )
     ap.add_argument(
         "--calibration",
         choices=["scalar", "vector"],
         default="scalar",
-        help="consumer-head calibration form: one temperature (default) or one weight per "
-        "class (DEC-648); both fit on a split-A holdout only",
+        help="post-hoc calibration for the ridge head only: one temperature (default) or one "
+        "weight per class (DEC-648); both fit on a split-A holdout only. The logistic head is "
+        "fit as a proper categorical likelihood and ignores this flag",
     )
     ap.add_argument(
         "--recent-k",
@@ -232,11 +274,27 @@ def main() -> int:
         help="append the exact last-k event-type indicators to the served object "
         "(0 = off; DEC-645)",
     )
-    a = ap.parse_args()
+    return ap
+
+
+def main() -> int:
+    SR.ensure_boundary()
+    a = _parser().parse_args()
+    if a.head == "logistic" and a.calibration != "scalar":
+        # fail safe: the logistic fit is already a categorical likelihood; silently accepting
+        # a post-hoc form it never applies would make the receipt describe a measurement that
+        # did not happen (the same class of defect as the hardcoded protocol prose).
+        print(
+            "fatal: --calibration applies to the ridge head only; the logistic head is fit "
+            "as a proper categorical likelihood",
+            file=sys.stderr,
+        )
+        return 2
 
     t0 = time.perf_counter()
     demo = Path(a.demo)
     products = Path(a.products)
+    served_tag, _served_reg = resolve_served_tag(a.products)
     manifest = json.loads((demo / "manifest.json").read_text())
     as_of = datetime.strptime(manifest["as_of"], "%Y-%m-%d")
 
@@ -290,9 +348,14 @@ def main() -> int:
     excluded = [c for c in classes if n_A[c] < 8]
     kept = [c for c in classes if c not in excluded]
     n_cal = int(round(0.3 * len(a_rows)))
-    a_fit, a_cal = a_rows[: len(a_rows) - n_cal], a_rows[len(a_rows) - n_cal :]
+    n_fit = len(a_rows) - n_cal
+    # split A is ordered and the holdout is its tail, so the served object is built ONCE and
+    # sliced: the head and the calibration see the same columns (recent-k block included).
+    Ea_fit, Ea_cal = Ea[:n_fit], Ea[n_fit:]
+    ya_fit, ya_cal = ya[:n_fit], ya[n_fit:]
     temp = 1.0
     w_vec = None
+    cal_fit = False
     if a.head == "logistic":
         from sklearn.linear_model import LogisticRegression
         from sklearn.pipeline import make_pipeline
@@ -301,17 +364,13 @@ def main() -> int:
         def _mk(cstrength):
             return make_pipeline(StandardScaler(), LogisticRegression(C=cstrength, max_iter=4000))
 
-        Eaf = np.vstack([emb[k] for k in a_fit])
-        Eac = np.vstack([emb[k] for k in a_cal])
-        yaf = np.array([next_of[k] for k in a_fit])
-        yac = np.array([next_of[k] for k in a_cal])
         best_c, best_nll = 0.1, float("inf")
         for cstrength in (0.01, 0.03, 0.1, 0.3, 1.0, 3.0):
-            m = _mk(cstrength).fit(Eaf, yaf)
+            m = _mk(cstrength).fit(Ea_fit, ya_fit)
             cls_m = list(m.classes_)
-            Pp = m.predict_proba(Eac)
-            kk = np.array([cls_m.index(v) for v in yac])
-            nn = float(-np.log(np.clip(Pp[np.arange(len(yac)), kk], 1e-15, None)).mean())
+            Pp = m.predict_proba(Ea_cal)
+            kk = np.array([cls_m.index(v) for v in ya_cal])
+            nn = float(-np.log(np.clip(Pp[np.arange(len(ya_cal)), kk], 1e-15, None)).mean())
             if nn < best_nll:
                 best_c, best_nll = cstrength, nn
         head = _mk(best_c).fit(Ea, ya)
@@ -337,25 +396,24 @@ def main() -> int:
         logit_c = None
     # DEC-646: one softmax temperature, fit on a held-out slice of split A only.
     # A1 fits the per-class ridge, A2 fits the scalar; split B is never touched.
-    if a.head == "ridge" and len(a_cal) >= 50:
-        Eaf = np.vstack([emb[k] for k in a_fit])
-        Eac = np.vstack([emb[k] for k in a_cal])
-        if a.recent_k > 0:
-            Eaf = np.hstack([Eaf, _recent_block(hist, a_fit, classes, a.recent_k)])
-            Eac = np.hstack([Eac, _recent_block(hist, a_cal, classes, a.recent_k)])
-        yaf = np.array([next_of[k] for k in a_fit])
-        yac = np.array([next_of[k] for k in a_cal])
+    if a.head == "ridge" and n_cal >= 50:
         cal_scores = []
         for c in kept:
-            p, _ = _ridge_oos(Eaf, (yaf == c).astype(float), Eac, (yac == c).astype(float))
-            cal_scores.append(p if p is not None else np.zeros(len(a_cal)))
+            p, _ = _ridge_oos(
+                Ea_fit, (ya_fit == c).astype(float), Ea_cal, (ya_cal == c).astype(float)
+            )
+            cal_scores.append(p if p is not None else np.zeros(n_cal))
         S_cal = np.column_stack(cal_scores)
-        ki_cal = np.array([kept.index(next_of[k]) for k in a_cal])
+        ki_cal = np.array([kept.index(v) for v in ya_cal])
         temp = _fit_temperature(S_cal, ki_cal)
+        cal_fit = True
         if a.calibration == "vector":
             w_vec = _fit_vector_scaling(S_cal, ki_cal)
 
-    if a.calibration == "vector" and w_vec is not None:
+    # the applied form, recorded in the receipt: the logistic head's own probabilities need no
+    # post-hoc temperature, and a ridge run without a holdout applies none either.
+    calibration = "none" if not cal_fit else ("vector" if w_vec is not None else "scalar")
+    if w_vec is not None:
         S = S * w_vec
     else:
         S = S / max(temp, 1e-6)
@@ -372,9 +430,15 @@ def main() -> int:
     ci_lo, ci_hi = _paired_ci(delta) if len(delta) else (None, None)
     beats_unigram = bool(ci_hi is not None and ci_hi < 0)
 
+    # DEC-448: the artifact these numbers were measured against. `products_identity` reads the
+    # registry (tag + content hash); `resolve_served_tag` is the tag state_embeddings ACTUALLY
+    # carry, so the block names the served artifact, not whichever registry file is newest.
+    identity = products_identity(a.products)
+    identity["tag"] = served_tag
+
     body = {
         "kind": "encoder_win",
-        "protocol": "DEC-635: the ridge head (the shipping consumer head) beats the pooled 1-gram baseline on the customer event stream — the ridge head is fit on split A, scored on split B, the paired bootstrap CI of (nll_enc - nll_base) must exclude 0. The outcome: the encoder is a foundation, not a green receipt.",
+        "protocol": _protocol_text(a.head, calibration, a.recent_k),
         "encoder_win": {
             "complete": True,
             "beats_unigram": beats_unigram,
@@ -389,10 +453,10 @@ def main() -> int:
             "n_customers": len(keys),
             "classes": classes,
             "served_object": (
-                f"frozen bank embedding ({Eb.shape[1] - a.recent_k * len(kept)} dims)"
+                f"frozen bank embedding ({Eb.shape[1] - a.recent_k * len(classes)} dims)"
                 + (
                     f" || exact last-{a.recent_k} event-type indicators "
-                    f"({a.recent_k * len(kept)} dims, serving-side, history <= as_of)"
+                    f"({a.recent_k * len(classes)} dims, serving-side, history <= as_of)"
                     if a.recent_k > 0
                     else ""
                 )
@@ -412,10 +476,14 @@ def main() -> int:
                 if bool((np.array([next_of[k] for k in b_rows]) == c).any())
             },
             "temperature": round(float(temp), 6),
-            "temperature_fit_on": "split A holdout (30%), never split B",
+            "temperature_fit_on": (
+                "split A holdout (30%), never split B"
+                if cal_fit
+                else "not fit (no post-hoc calibration applied this run)"
+            ),
             "head": a.head,
             "logistic_C": logit_c,
-            "calibration": a.calibration,
+            "calibration": calibration,
             "calibration_weights": (
                 {c: round(float(w), 6) for c, w in zip(kept, w_vec, strict=False)}
                 if w_vec is not None
@@ -425,7 +493,7 @@ def main() -> int:
             "per_class_n_A": n_A,
         },
         "seconds": round(time.perf_counter() - t0, 1),
-        "products": {"path": str(products), "tag": None},
+        "products": identity,
         "population": pop,
         "complete": bool(pop["match"]),
     }
@@ -442,14 +510,14 @@ def main() -> int:
         if a.out
         else ROOT / "docs" / "report_cards" / "experiments" / "encoder_win.json"
     )
-    from measure_input_law import stamp_merge_write
-
     stamp_merge_write(
         out_path, body, " ".join([Path(__file__).name] + sys.argv[1:]), stamp_blocks=False
     )
     print(f"encoder-win -> {out_path} ({body['seconds']}s)")
     print(
-        f"  beats_unigram={beats_unigram}  paired CI [{ci_lo}, {ci_hi}]  nll_enc={body['encoder_win']['nll_enc']}  nll_base={body['encoder_win']['nll_base']}  n_B_rows={body['encoder_win']['n_B_rows']}"
+        f"  head={a.head} calibration={calibration} beats_unigram={beats_unigram}  "
+        f"paired CI [{ci_lo}, {ci_hi}]  nll_enc={body['encoder_win']['nll_enc']}  "
+        f"nll_base={body['encoder_win']['nll_base']}  n_B_rows={body['encoder_win']['n_B_rows']}"
     )
     return 0
 

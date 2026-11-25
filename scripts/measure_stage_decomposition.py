@@ -39,8 +39,46 @@ from measure_judge_law import (  # noqa: E402
 from safe_run import ensure_boundary  # noqa: E402
 
 OUT = ROOT / "docs" / "report_cards" / "experiments" / "encoder_stage_decomposition.json"
+PORT = ROOT / "looking_glass/artifacts/cfm_v2k_vf2_port"
+# DEC-604 delivery-port contract: bank 179 + measure PCA-128.
+PORT_DIM = 307
 STAGES = ("M0_exact_counter", "M1_fold_only", "M2_state_plus_fold", "M3_post_proj", "M4_served")
 METRICS = ("persona_geometry", "future_geometry", "segment_ari")
+
+
+def _require_port(products: Path) -> None:
+    """Refuse a non-port object: B3.2/B3.4 certify the 307-dim DEC-604 delivery port.
+
+    The old default (`cfm_v2k`, 256-dim) measured a different object and the /tmp port had no
+    repo builder, so the two receipts could not be regenerated. Absent or wrong-width now
+    refuses with the rebuild command instead of silently measuring an unrelated representation.
+    """
+    import duckdb
+
+    db = Path(products) / "cfm_products.duckdb"
+    if not db.is_file():
+        raise SystemExit(
+            f"stage decomposition: no port products at {products} ({db.name} missing). "
+            "Build the repo-resident 307-dim port with "
+            "`.venv/bin/python scripts/build_port_artifact.py`."
+        )
+    con = duckdb.connect(str(db), read_only=True)
+    try:
+        dims = sorted(
+            {int(r[0]) for r in con.execute("select distinct dim from state_embeddings").fetchall()}
+        )
+    except Exception as exc:  # noqa: BLE001 - a products DB without state_embeddings is a refusal
+        raise SystemExit(
+            f"stage decomposition: {db} has no readable state_embeddings ({exc}) — refusing"
+        ) from exc
+    finally:
+        con.close()
+    if dims != [PORT_DIM]:
+        raise SystemExit(
+            f"stage decomposition: state_embeddings at {products} is {dims}, not [{PORT_DIM}] — "
+            "that is the base/bank object, not the DEC-604 delivery port; refusing to measure "
+            "it. Build the port with `.venv/bin/python scripts/build_port_artifact.py`."
+        )
 
 
 def _load_stage_arrays(products: Path) -> dict[str, dict[str, np.ndarray]]:
@@ -124,10 +162,7 @@ def _round(x) -> float | None:
 def main() -> int:
     ensure_boundary()
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument(
-        "--products",
-        default="/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k",
-    )
+    ap.add_argument("--products", default=str(PORT))
     ap.add_argument(
         "--demo",
         default="/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/demo_v2",
@@ -138,6 +173,7 @@ def main() -> int:
     t0 = time.perf_counter()
     products = Path(a.products)
     demo = Path(a.demo)
+    _require_port(products)
     stages = _load_stage_arrays(products)
     arms = _arms(products / "cfm_products.duckdb", demo)
     if arms["problems"]:

@@ -28,6 +28,12 @@ What makes the comparison worth the paper:
 
 This script MEASURES. It never writes a verdict, a `criterion`, or a `rule`: the card computes
 those from the receipt (certification rule 3), so the verdict cannot be improved by narration.
+
+**This producer does not own the gate-of-record.** DEC-598 replaced the flat protocol below with
+the bank-v2 judge, and `measure_bc_bank.py` is the one writer of the four certified leg receipts
+the JUDGE card reads. The flat numbers here are a DIAGNOSTIC and are published under
+`judge_leg_v1flat_<leg>.json`, so a re-run of this script can never overwrite a certified
+receipt with stale v1 values (rule 6, one owner per receipt; DEC-612).
 """
 
 from __future__ import annotations
@@ -76,6 +82,11 @@ INCUMBENT = {
 
 COMPARATOR = "PATH A (GBM incumbent)"
 COLUMNS = ("brain", "brain_ledger")
+
+#: The flat protocol is a DIAGNOSTIC (DEC-598 superseded it with the bank); the gate-of-record
+#: leg receipts belong to `measure_bc_bank.py` alone. Naming the diagnostic here is what keeps
+#: the two producers from racing for one path (rule 6: one owner per receipt; DEC-612).
+RECEIPT_PREFIX = "judge_leg_v1flat_"
 
 
 def _r2(y, p) -> float:
@@ -1102,10 +1113,10 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument(
         "--products",
-        default=str(ROOT / "looking_glass" / "artifacts" / "cfm"),
+        default=str(ROOT / "looking_glass" / "artifacts" / "cfm_v2k_vf2"),
         help="dir holding cfm_products.duckdb, or its path",
     )
-    ap.add_argument("--demo", default=str(ROOT / "rabbit_hole" / "data"))
+    ap.add_argument("--demo", default=str(ROOT / "looking_glass" / "artifacts" / "demo_v2"))
     ap.add_argument("--out-dir", default=str(ROOT / "docs/report_cards/experiments"))
     ap.add_argument(
         "--legs", default="supervised", help="comma-separated subset of " + ",".join(LEGS)
@@ -1143,12 +1154,14 @@ def main() -> int:
         # DEC-448: name the artifact these numbers were measured against, so the reader
         # can refuse a card that mixes encoders instead of rendering it as self-consistent.
         body["products"] = products_identity(a.products)
-        path = out_dir / f"judge_leg_{leg}.json"
+        path = out_dir / f"{RECEIPT_PREFIX}{leg}.json"
         stamp_merge_write(
             path, body, " ".join([Path(__file__).name] + sys.argv[1:]), stamp_blocks=False
         )
         print(
-            f"judge_leg_{leg} -> {path} ({time.perf_counter() - t0:.1f}s): {evidence}", flush=True
+            f"v1-flat diagnostic -> {path.name} (NOT the gate-of-record)"
+            f" ({time.perf_counter() - t0:.1f}s): {evidence}",
+            flush=True,
         )
     return rc
 

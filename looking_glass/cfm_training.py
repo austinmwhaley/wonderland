@@ -949,79 +949,77 @@ def train_cfm(cfg: CFMConfig):
 
 
 def _collate(seqs, vocab, device):
-    """Pad a batch into dense GPU tensors (Polars already gave us per-group
-    lists). One forward over the batch instead of one per sequence."""
+    """Pad a batch into dense GPU tensors (Polars already gave us per-group lists).
+
+    DEC-659: staged on the HOST in numpy and transferred ONCE PER FIELD. The historical
+    version built a `torch.tensor(..., device=device)` per sequence per field — measured
+    2,688 host->device copies and ~3.2k tensor factories per collate at batch 64, and
+    `_collate` runs ~2.5x per optimizer step (train forward + the Armijo evals + val_metric).
+    That flood, not the model, was the step's binding cost. The values are identical: the
+    same vocab lookups, the same `float -> float32` roundings, the same pad fills.
+    """
     B = len(seqs)
     T = max(len(s["event_type"]) for s in seqs)
-    et = torch.full((B, T), vocab.n_et, dtype=torch.long, device=device)
-    attr_t = {
-        f: torch.full((B, T), vocab.n_attr[f], dtype=torch.long, device=device)
-        for f in (getattr(vocab, "attrs", {}) or {})
-    }
-    num_t = {
-        c: torch.zeros(B, T, device=device) for c in (getattr(vocab, "numeric_fields", ()) or ())
-    }
-    num_mask_t = {
-        c: torch.zeros(B, T, device=device) for c in (getattr(vocab, "numeric_fields", ()) or ())
-    }
-    is_action = torch.zeros(B, T, device=device)
-    val = torch.zeros(B, T, 1, device=device)
-    dt = torch.zeros(B, T, 1, device=device)
-    tod = torch.zeros(B, T, 4, device=device)  # periodic timestamp features (spec §1)
-    cov = torch.zeros(B, T, 2, device=device)
-    mask = torch.zeros(B, T, device=device)
-    cut = torch.ones(B, dtype=torch.long, device=device)
+    attrs = getattr(vocab, "attrs", {}) or {}
+    nums = getattr(vocab, "numeric_fields", ()) or ()
+
+    et_np = np.full((B, T), vocab.n_et, dtype=np.int64)
+    attr_np = {f: np.full((B, T), vocab.n_attr[f], dtype=np.int64) for f in attrs}
+    num_np = {c: np.zeros((B, T), dtype=np.float32) for c in nums}
+    num_mask_np = {c: np.zeros((B, T), dtype=np.float32) for c in nums}
+    is_action_np = np.zeros((B, T), dtype=np.float32)
+    val_np = np.zeros((B, T, 1), dtype=np.float32)
+    dt_np = np.zeros((B, T, 1), dtype=np.float32)
+    tod_np = np.zeros((B, T, 4), dtype=np.float32)
+    cov_np = np.zeros((B, T, 2), dtype=np.float32)
+    mask_np = np.zeros((B, T), dtype=np.float32)
+    cut_np = np.ones(B, dtype=np.int64)
+
     for i, sq in enumerate(seqs):
         L = len(sq["event_type"])
-        et[i, :L] = torch.tensor(
-            [vocab.et.get(str(x), vocab.n_et) for x in sq["event_type"]], device=device
-        )
-        for f, ten in attr_t.items():
+        et_np[i, :L] = [vocab.et.get(str(x), vocab.n_et) for x in sq["event_type"]]
+        for f, arr in attr_np.items():
             vals = (sq.get("attrs") or {}).get(f)
             if vals is not None:
-                ten[i, :L] = torch.tensor(
-                    [
-                        vocab.attrs[f].get(str(x) if x is not None else "none", vocab.n_attr[f])
-                        for x in vals
-                    ],
-                    device=device,
-                )
-        for c, ten in num_t.items():
+                lut = vocab.attrs[f]
+                bad = vocab.n_attr[f]
+                arr[i, :L] = [lut.get(str(x) if x is not None else "none", bad) for x in vals]
+        for c, arr in num_np.items():
             vals = (sq.get("numeric") or {}).get(c)
             if vals is not None and len(vals) == L:
-                ten[i, :L] = torch.tensor(
-                    [float(v) for v in vals], dtype=torch.float32, device=device
-                )
+                arr[i, :L] = np.asarray(vals, dtype=np.float32)
             nm = (sq.get("numeric_mask") or {}).get(c)
             if nm is not None and len(nm) == L:
-                num_mask_t[c][i, :L] = torch.tensor(np.asarray(nm, dtype=np.float32), device=device)
-        val[i, :L, 0] = torch.tensor(
-            [_f(v) for v in sq.get("value", [0.0] * L)], dtype=torch.float32, device=device
-        )
+                num_mask_np[c][i, :L] = np.asarray(nm, dtype=np.float32)
+        val_np[i, :L, 0] = np.asarray([_f(v) for v in sq.get("value", [0.0] * L)], dtype=np.float32)
         _act = sq.get("is_action")
         if _act is not None:
-            is_action[i, :L] = torch.tensor(np.asarray(_act, dtype=np.float32), device=device)
+            is_action_np[i, :L] = np.asarray(_act, dtype=np.float32)
         ts = np.asarray(sq.get("ts") or [_to_epoch(x) for x in sq["event_ts"]], dtype=np.float64)
         d = np.zeros(L)
         d[1:] = np.maximum(ts[1:] - ts[:-1], 0.0)
-        dt[i, :L, 0] = torch.tensor(np.log1p(d), dtype=torch.float32, device=device)
-        tod[i, :L] = torch.tensor(_tod(ts), dtype=torch.float32, device=device)
+        dt_np[i, :L, 0] = np.log1p(d).astype(np.float32)
+        tod_np[i, :L] = np.asarray(_tod(ts), dtype=np.float32)
         if sq.get("co"):
-            cov[i, :L] = torch.tensor(sq["co"], dtype=torch.float32, device=device)
-        mask[i, :L] = 1.0
-        cut[i] = min(L - 1, max(1, int(0.6 * L)))
+            cov_np[i, :L] = np.asarray(sq["co"], dtype=np.float32)
+        mask_np[i, :L] = 1.0
+        cut_np[i] = min(L - 1, max(1, int(0.6 * L)))
+
+    def _to(x, dtype):
+        return torch.from_numpy(np.ascontiguousarray(x)).to(device=device, dtype=dtype)
+
     out = {
-        "et": et,
-        **attr_t,
-        **num_t,
-        "num_mask": num_mask_t,
-        "is_action": is_action,
-        "val": val,
-        "dt": dt,
-        "tod": tod,
-        "co": cov,
-        "mask": mask,
-        "cut": cut,
+        "et": _to(et_np, torch.long),
+        **{f: _to(a, torch.long) for f, a in attr_np.items()},
+        **{c: _to(a, torch.float32) for c, a in num_np.items()},
+        "num_mask": {c: _to(a, torch.float32) for c, a in num_mask_np.items()},
+        "is_action": _to(is_action_np, torch.float32),
+        "val": _to(val_np, torch.float32),
+        "dt": _to(dt_np, torch.float32),
+        "tod": _to(tod_np, torch.float32),
+        "co": _to(cov_np, torch.float32),
+        "mask": _to(mask_np, torch.float32),
+        "cut": _to(cut_np, torch.long),
     }
     # counterfactual period data (RL leg): pad per-customer (action, reward) periods and
     # their validity mask. Present only when the `effect` objective is active.

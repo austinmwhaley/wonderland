@@ -369,6 +369,14 @@ def main(argv=None):
         return _portfolio_grade(cfg, tag=a.tag)
     if a.cmd in ("train", "all"):
         model, vocab, df, keys, split = train_cfm(cfg)
+        if getattr(cfg, "skip_products", False):
+            # DEC-658: iteration mode — stop after training. No served artifacts are written,
+            # so nothing here may be cited as a measurement.
+            print(
+                f"trained {cfg.tag}: SKIPPED products (skip_products=true — iteration run, "
+                "not a receipt)"
+            )
+            return 0
         s, t = build_products(cfg, model, vocab, df, keys, split)
         print(f"trained {cfg.tag}: customer_state={s} training_embeddings={t}")
     if a.cmd in ("validate", "all"):

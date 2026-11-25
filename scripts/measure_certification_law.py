@@ -17,8 +17,21 @@ measures whether that command works, in the order the dependencies require:
     legs   measure_bc_bank          the four-leg top line, both columns (bank v2, DEC-598;
                                     rl/simulator delegate to the judge_law LEGs)
     prov   measure_path_a_provenance  the comparator's per-column provenance (DEC-446)
+    B      the thirteen B-row producers  the receipts the B scorecard reads (CHAIN_B)
     S6     this file                the regeneration itself
     card   report_card              rendered last, from the receipts above
+
+Stage B (CHAIN_B) exists because the B scorecard reads thirteen receipts from producers this
+chain never ran: every behavior change left 15-20 B rows UNKNOWN until an operator re-ran them by
+hand (three times). It is orchestration only — every producer keeps its own gates, bars, defaults
+and semantics. Each entry declares the artifact its frozen protocol names: the object under
+certification (the passed `--products`), or a sibling representation (the 272-dim served base, the
+59-dim donor slice, the 48-dim compact served object, the 307-dim delivery port) derived from the
+products tree's parent. A derived artifact that is absent SKIPS its producer with a printed note;
+it never fails the chain and it is never substituted by the bank — measuring the wrong object is
+the defect class this stage exists to remove. `--skip-slow-b` skips the two slowest producers
+(runtime ~7.5 min, sufficiency ~1 min); the default is to RUN them, because one command
+regenerating the card is the point.
 
 What "regenerated" has to mean, as checks rather than prose: the whole chain ran in ONE invocation
 and every producer exited 0; the card renders from those receipts deterministically (twice,
@@ -40,11 +53,13 @@ import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import NamedTuple
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts"))
 
+import judge_spec as JS  # noqa: E402  (the one definition of the certified legs)
 import report_card as RC  # noqa: E402  (one definition of the card, and of git state)
 import safe_run as SR  # noqa: E402  (one definition of the memory cap)
 from measure_input_law import _rollup, stamp_merge_write  # noqa: E402  (one definition)
@@ -83,6 +98,136 @@ CHAIN = (
 )
 
 
+class BProducer(NamedTuple):
+    """One B-scorecard producer and the artifact its frozen protocol names.
+
+    `needs` is "products" (the object this invocation certifies) or a sibling representation:
+    "base" (272-dim served base = trunk 256 + level 16), "c32rvd" (59-dim served donor slice),
+    "compact" (48-dim compact served object = 32 shape + 16 level), "port" (the 307-dim delivery
+    port = bank + measure PCA-128). A missing sibling SKIPS the producer with a printed note; it
+    never fails the chain, and it never falls back to a different representation (the row then
+    reads UNKNOWN, visibly — measuring the wrong object is worse than measuring nothing).
+    `receipt` is the filename the card reads, so `--out` is explicit rather than left to a default.
+    """
+
+    label: str
+    script: str
+    needs: str
+    receipt: str
+    argv: tuple[str, ...]
+
+
+#: Stage B, in dependency order. These thirteen receipts are what the B scorecard reads; the
+#: arguments are the producers' own frozen protocols (DEC-585/595/655/656), not preferences:
+#:   decision/sufficiency/served-object  the 272-dim served base
+#:   donor/transfer                      the 59-dim served donor slice
+#:   minimality                          the 48-dim compact served object the certificate certifies
+#:   stage/block_serving                 the 307-dim delivery port (bank + measure PCA-128), so the
+#:                                       B3 blocking rows are measured on the object they certify
+#:   encoder_win                         the served bank, with the ADOPTED logistic gate head
+#: Everything else is the object under certification (normally the served bank). A missing
+#: representation SKIPS its producer; it is never substituted by another (that defect class —
+#: measuring the wrong artifact — is exactly what makes a re-stamp destroy the card).
+CHAIN_B = (
+    BProducer(
+        "b_props",
+        "measure_b_props.py",
+        "products",
+        "encoder_b_props.json",
+        ("--products", "{products}", "--demo", "{demo}", "--out", "{b_out}"),
+    ),
+    BProducer(
+        "construction",
+        "measure_construction_law.py",
+        "products",
+        "encoder_lawfulness.json",
+        ("--products", "{products}", "--demo", "{demo}", "--out", "{b_out}"),
+    ),
+    BProducer(
+        "decision",
+        "measure_decision_law.py",
+        "base",
+        "encoder_decision_law.json",
+        ("--products", "{base}", "--demo", "{demo}", "--out", "{b_out}"),
+    ),
+    BProducer(
+        "donor",
+        "measure_donor.py",
+        "c32rvd",
+        "encoder_donor.json",
+        ("--products", "{c32rvd}", "--demo", "{demo}", "--out", "{b_out}"),
+    ),
+    BProducer(
+        "minimality",
+        "measure_minimality_law.py",
+        "compact",
+        "encoder_minimality.json",
+        ("--products", "{compact}", "--demo", "{demo}", "--out", "{b_out}"),
+    ),
+    BProducer(
+        "robustness",
+        "measure_robustness_law.py",
+        "base",
+        "encoder_robustness_law.json",
+        ("--products", "{base}", "--demo", "{demo}", "--out", "{b_out}"),
+    ),
+    BProducer(
+        "runtime",
+        "measure_runtime.py",
+        "products",
+        "runtime.json",
+        ("--products", "{products}", "--out", "{b_out}"),
+    ),
+    BProducer(
+        "transfer",
+        "measure_transfer_law.py",
+        "c32rvd",
+        "encoder_transfer_law.json",
+        ("--products", "{c32rvd}", "--demo", "{demo}", "--out", "{b_out}"),
+    ),
+    BProducer(
+        "sufficiency",
+        "measure_sufficiency_law.py",
+        "base",
+        "encoder_sufficiency_law.json",
+        ("--products", "{base}", "--demo", "{demo}", "--out", "{b_out}"),
+    ),
+    BProducer(
+        "served_object",
+        "measure_served_object.py",
+        "base",
+        "encoder_served_object.json",
+        ("--products", "{base}", "--demo", "{demo}", "--out", "{b_out}"),
+    ),
+    BProducer(
+        "stage",
+        "measure_stage_decomposition.py",
+        "port",
+        "encoder_stage_decomposition.json",
+        ("--products", "{port}", "--demo", "{demo}", "--out", "{b_out}"),
+    ),
+    BProducer(
+        "block_serving",
+        "measure_block_serving.py",
+        "port",
+        "encoder_block_serving.json",
+        ("--products", "{port}", "--demo", "{demo}", "--out", "{b_out}"),
+    ),
+    BProducer(
+        "encoder_win",
+        "measure_encoder_win.py",
+        "products",
+        "encoder_win.json",
+        # DEC-649: the adopted gate head is the canonical multinomial logistic; the receipt's
+        # protocol must match the gate it certifies.
+        ("--products", "{products}", "--demo", "{demo}", "--out", "{b_out}", "--head", "logistic"),
+    ),
+)
+
+#: The two producers whose runtime dominates the stage (~7.5 min / ~1 min); skipped only on ask.
+SLOW_B = frozenset({"runtime", "sufficiency"})
+
+
 def _sha256(path: Path, chunk: int = 1 << 20) -> str:
     h = hashlib.sha256()
     with path.open("rb") as fh:
@@ -93,6 +238,20 @@ def _sha256(path: Path, chunk: int = 1 << 20) -> str:
 
 def _artifact(path: Path) -> dict:
     return {"sha256": _sha256(path), "bytes": path.stat().st_size}
+
+
+def _has_products(path: Path) -> bool:
+    """A products DIRECTORY, by the artifact it cannot run without (not just `is_dir`)."""
+    return (path / "cfm_products.duckdb").is_file()
+
+
+def _generated_at(path: Path) -> str:
+    """A receipt's own freshness stamp; '' when absent, unreadable, or unstamped."""
+    try:
+        body = json.loads(path.read_text())
+    except (OSError, json.JSONDecodeError):
+        return ""
+    return str((body.get("_meta") or {}).get("generated_at", "")) if isinstance(body, dict) else ""
 
 
 def _run_producer(script: str, argv: list[str], cap_gb: float) -> dict:
@@ -163,9 +322,17 @@ def _rows_report_n(receipts: Path) -> tuple[int, list]:
 
     H3 enforces N at render time; measuring it here makes S6 a statement about the regenerated
     receipts rather than about the renderer's good intentions.
+
+    Only the four certified gate-of-record files are read, by name from `judge_spec.LEGS`. A glob
+    would also pick up `judge_leg_v1flat_<leg>.json` — `measure_judge_law`'s v1-flat DIAGNOSTIC —
+    and count diagnostic rows as live leg rows (the receipt-ownership change that moved it off the
+    gate filenames).
     """
     rows, missing = 0, []
-    for f in sorted(receipts.glob("judge_leg_*.json")):
+    for leg in JS.LEGS:
+        f = receipts / f"judge_leg_{leg}.json"
+        if not f.exists():
+            continue
         body = json.loads(f.read_text())
         for col, block in (body.get("columns") or {}).items():
             for t in block.get("tasks", []):
@@ -260,6 +427,12 @@ def main() -> int:
     ap.add_argument("--receipts", default=str(EXP))
     ap.add_argument("--out", default=str(EXP / "judge_stages.json"))
     ap.add_argument("--card", default=str(CARD))
+    ap.add_argument(
+        "--skip-slow-b",
+        action="store_true",
+        help="skip the two slow stage-B producers (runtime ~7.5 min, sufficiency ~1 min); "
+        "the default is to run them so one command regenerates the whole card",
+    )
     a = ap.parse_args()
 
     products = Path(a.products)
@@ -272,6 +445,20 @@ def main() -> int:
     truth = demo / "reference_truth.json"
     table = demo / "path_a" / "path_a_wide_table.parquet"
     train_log = Path(a.train_log) if a.train_log else products.parent / "cfm_train_baseline.log"
+
+    # Stage B's sibling artifacts. The producers' frozen protocols name these representations, so
+    # they are derived from the products tree — never from a stale default or the CWD. When the
+    # passed --products IS one of them (e.g. the base), the sibling resolves to the same directory.
+    # `port` is the repo-resident 307-dim delivery port (bank + measure PCA-128) that the B3
+    # blocking rows certify; it is built by scripts/build_port_artifact.py, and NEVER substituted
+    # by the bank (a 179-dim E measures a different object and can flip those rows).
+    sources = {
+        "products": products,
+        "base": products.parent / "cfm_v2k_vf2",
+        "c32rvd": products.parent / "cfm_v2k_vf2_c32rvd",
+        "compact": products.parent / "cfm_v2k_vf2_c32",
+        "port": products.parent / "cfm_v2k_vf2_port",
+    }
 
     for label, path in (
         ("products DB", products_db),
@@ -317,17 +504,56 @@ def main() -> int:
         runs[label] = _run_producer(script, argv, cap_gb)
         r = runs[label]
         print(f"  [{label:5s}] {script} exit={r['exit']} {r['seconds']}s — {r['last_line'][:88]}")
+
+    # ---- 1b. stage B: the thirteen receipts the B scorecard reads ------------------------------
+    # Before this stage existed, every behavior change left 15-20 B rows UNKNOWN until an operator
+    # re-ran these producers by hand (three times). Orchestration only: each producer keeps its
+    # gates, bars and semantics; the chain supplies the artifact its frozen protocol names. A
+    # missing derived artifact SKIPS its producer with a note — the row then reads UNKNOWN on the
+    # card, which is the truthful state, instead of the chain dying and regenerating nothing.
+    b_fmt = {**fmt, **{k: str(v) for k, v in sources.items()}}
+    runs_b: dict[str, dict] = {}
+    skipped_b: dict[str, str] = {}
+    for p in CHAIN_B:
+        if a.skip_slow_b and p.label in SLOW_B:
+            skipped_b[p.label] = "--skip-slow-b"
+            print(f"[B/{p.label}] SKIPPED — --skip-slow-b")
+            continue
+        src = sources[p.needs]
+        if not _has_products(src):
+            if p.needs == "port":
+                reason = (
+                    "no repo-resident 307-dim port artifact (run scripts/build_port_artifact.py)"
+                )
+            elif p.needs == "compact":
+                reason = f"no 48-dim compact served object at {src}"
+            else:
+                reason = f"no products at {src}"
+            skipped_b[p.label] = reason
+            print(f"[B/{p.label}] SKIPPED — {reason}")
+            continue
+        receipt = receipts / p.receipt
+        argv = [arg.format(**b_fmt, b_out=str(receipt)) for arg in p.argv]
+        r = _run_producer(p.script, argv, cap_gb)
+        r["receipt"], r["fresh"] = p.receipt, _generated_at(receipt) >= t_start_iso
+        runs_b[p.label] = r
+        print(f"[B/{p.label}] exit={r['exit']} {r['seconds']}s")
+        if r["exit"] != 0:  # the one line stays the required one; the tail answers "why"
+            print(f"      ↳ {r['last_line'][:118]}")
+
     # A producer exits 1 when a CHECK failed (measure_views_law: `0 if all working else 1`) and 2
     # when it could not run at all. Those are different things, and conflating them would report a
     # legitimate failing measurement as a broken chain — or, worse, would tempt someone to make a
     # producer exit 0 to get a green S6. The gate here is "the card was REGENERATED", so the
     # evidence is fresh artifacts, not happy exit codes.
     want_legs = {s.strip() for s in a.legs.split(",") if s.strip()}
-    fresh_legs = {
-        f.stem.removeprefix("judge_leg_")
-        for f in receipts.glob("judge_leg_*.json")
-        if f.stat().st_mtime >= t_start - 1
-    }
+    # By name from judge_spec.LEGS, never a glob: `measure_judge_law` writes its v1-flat
+    # DIAGNOSTIC as judge_leg_v1flat_<leg>.json, which a glob would count as a certified leg.
+    fresh_legs = set()
+    for leg in JS.LEGS:
+        f = receipts / f"judge_leg_{leg}.json"
+        if f.exists() and f.stat().st_mtime >= t_start - 1:
+            fresh_legs.add(leg)
     stages_now = json.loads(stages_out.read_text()) if stages_out.exists() else {}
     fresh_stages = {
         name
@@ -443,6 +669,16 @@ def main() -> int:
     # ---- write S6, then render the card it describes ---------------------------------------
     body = _rollup(checks)
     body["chain"] = runs
+    # Stage B is recorded, not gated: the B producers carry measurements (exit 1 = a failing row,
+    # which the card is supposed to publish), and S6's meaning is the regeneration itself. What a
+    # reader must be able to reconstruct is exactly which B receipts this invocation rewrote and
+    # which it skipped, and why.
+    body["chain_b"] = {
+        "ran": runs_b,
+        "skipped": skipped_b,
+        "skip_slow_b": a.skip_slow_b,
+        "sources": {k: str(v) for k, v in sources.items()},
+    }
     body["memory"] = {
         "cap_gb": round(cap_gb, 1),
         "derivation": cap_why,
@@ -461,6 +697,17 @@ def main() -> int:
     print(info["assessment"])
     for name, c in checks.items():
         print(f"  {'OK  ' if c['working'] else 'FAIL'} {name}: {c['evidence'][:118]}")
+    b_fatal = {k: v["exit"] for k, v in runs_b.items() if v["exit"] >= 2}
+    print(
+        f"B stage: {len(runs_b)}/{len(CHAIN_B)} ran, {len(skipped_b)} skipped"
+        + (f" ({', '.join(sorted(skipped_b))})" if skipped_b else "")
+        + (f"; COULD NOT RUN (exit>=2): {b_fatal}" if b_fatal else "")
+    )
+    if skipped_b:
+        print(
+            f"WARNING: stage B is PARTIAL — {len(skipped_b)}/{len(CHAIN_B)} producer(s) skipped "
+            f"({', '.join(sorted(skipped_b))}); those B receipts were NOT re-stamped"
+        )
     return 0 if body["working"] else 1
 
 

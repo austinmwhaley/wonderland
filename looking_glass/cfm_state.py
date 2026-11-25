@@ -9,7 +9,7 @@ import torch
 
 from looking_glass.cfm_config import CFMConfig, LN2, TIME_UNIT_SECONDS, _to_epoch, as_of_epoch
 from looking_glass.cfm_data import build_sequences, _primary_numeric_field
-from looking_glass.cfm_model import CFM, signed_log1p
+from looking_glass.cfm_model import CFM, EventVocab, signed_log1p
 from looking_glass import view_layout
 
 
@@ -214,19 +214,28 @@ def donor_states(model: CFM, states, counters=None):
         return model.donor_batch(t).cpu().numpy()
 
 
-def load_frozen_encoder(tag: str, cfm_dir):
-    """Load a frozen CFM checkpoint + its registry-resolved config (Layer B)."""
-    import json
-    from pathlib import Path as _P
+def build_cfm_from_blob(blob: dict, *, tag: str = "", strict: bool = False) -> CFM:
+    """Rebuild the CFM a checkpoint blob was trained with, and load its weights.
 
-    from looking_glass.cfm_config import CFMConfig
-    from looking_glass.cfm_model import CFM, EventVocab
+    THE ONE rebuild-from-blob path (Principle 6: single source of truth). The trainer's
+    save (`cfm_training`) records every architecture flag in the blob; a rebuild that
+    reads only some of them constructs a DIFFERENT network — which is exactly how the
+    inline copies in `cfm_validation` / `state_dense` stopped loading current artifacts
+    (production sets `unified_ssm` and `isometric_boundary`, so their `strict=True` load
+    could never succeed). `load_frozen_encoder` and both of those callers now share this
+    builder, so no rebuild can drift from the trainer again.
 
-    cfm_dir = _P(cfm_dir)
-    ckpt = cfm_dir / f"cfm_{tag.replace('.', '_')}.pt"
-    if not ckpt.exists():
-        raise FileNotFoundError(f"encoder checkpoint for pin {tag} not found: {ckpt}")
-    blob = torch.load(ckpt, map_location="cpu", weights_only=False)
+    `strict=False` is the historical `load_frozen_encoder` contract: load what matches
+    and PRINT the mismatch (a head added in a later revision must not make an earlier
+    checkpoint unreadable). `strict=True` is the verification mode used by the rebuild
+    callers: the architecture must match the saved weights exactly, or the load RAISES.
+
+    Returns the model on CPU in eval mode; the caller owns the device move and any
+    serving-side config. Whitening is restored when the blob carries it (DEC-022). The
+    in-net ACCUMULATOR is switched off here: it is the hand-RFM BASELINE (used only by
+    the B card's comparison), NOT part of the pipeline — keeping it ON bloated the
+    served `E` to ~2141 dims (1803 were accumulator) and slowed every gate.
+    """
     _v = blob["vocab"]
     vocab = EventVocab(
         _v["et"],
@@ -275,26 +284,39 @@ def load_frozen_encoder(tag: str, cfm_dir):
     )
     # tolerate checkpoints from earlier revisions (e.g. a head added later):
     # load what matches, report what did not. The encoder trunk must match.
-    missing, unexpected = model.load_state_dict(blob["state"], strict=False)
+    missing, unexpected = model.load_state_dict(blob["state"], strict=strict)
     if missing or unexpected:
-        print(f"[load] {tag}: missing={len(missing)} unexpected={len(unexpected)} keys", flush=True)
-    model = model.to("cuda" if torch.cuda.is_available() else "cpu")
-    model.eval()
-    # The served `E` = shape (donor) || learned-compressed measure. The in-net ACCUMULATOR is
-    # the hand-RFM BASELINE (used only by the B card's comparison), NOT part of the pipeline —
-    # keeping it ON bloated E to ~2141 dims (1803 were accumulator) and slowed every gate. The
-    # B card toggles it explicitly for its "hand features" row.
-    model.accumulator_on = False
+        print(
+            f"[load] {tag or 'blob'}: missing={len(missing)} unexpected={len(unexpected)} keys",
+            flush=True,
+        )
     if blob.get("whiten_W") is not None:
         model.set_whitening(blob["whiten_mean"], blob["whiten_W"])  # DEC-022
+    model.accumulator_on = False
+    model.eval()
+    return model
+
+
+def load_frozen_encoder(tag: str, cfm_dir):
+    """Load a frozen CFM checkpoint + its registry-resolved config (Layer B)."""
+    import json
+    from pathlib import Path as _P
+
+    cfm_dir = _P(cfm_dir)
+    ckpt = cfm_dir / f"cfm_{tag.replace('.', '_')}.pt"
+    if not ckpt.exists():
+        raise FileNotFoundError(f"encoder checkpoint for pin {tag} not found: {ckpt}")
+    blob = torch.load(ckpt, map_location="cpu", weights_only=False)
+    model = build_cfm_from_blob(blob, tag=tag)
+    model = model.to("cuda" if torch.cuda.is_available() else "cpu")
     cfg = CFMConfig()
     cfg.sf_mode = blob.get("sf_mode", "event_types")  # checkpoint truth (phi shape)
     # RL leg: the declared action keys must be restored so the served measure rebuilds with
     # the same action-conditioned response block the Layer-B compression was fit on.
     cfg.effect_actions = tuple(blob.get("effect_actions", ()) or ())
     cfg.action_fields = tuple(blob.get("action_fields", ()) or ())
-    cfg.numeric_fields = tuple(vocab.numeric_fields)
-    cfg.attr_fields = tuple(vocab.attrs)
+    cfg.numeric_fields = tuple(model.vocab.numeric_fields)
+    cfg.attr_fields = tuple(model.vocab.attrs)
     reg = cfm_dir / f"registry_{tag.replace('.', '_')}.json"
     if reg.exists():
         meta = json.loads(reg.read_text())

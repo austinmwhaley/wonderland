@@ -15,8 +15,7 @@ from looking_glass.cfm_data import (
     assign_split,
     build_sequences,
 )
-from looking_glass.cfm_model import CFM, EventVocab
-from looking_glass.cfm_state import absorb, fade
+from looking_glass.cfm_state import absorb, build_cfm_from_blob, fade
 
 
 def validate(cfg: CFMConfig):
@@ -29,34 +28,11 @@ def validate(cfg: CFMConfig):
         map_location=cfg.device,
         weights_only=False,
     )
-    vocab = EventVocab(
-        blob["vocab"]["et"],
-        blob["vocab"].get("attrs"),
-        numeric_fields=tuple(blob["vocab"].get("numeric_fields", ()) or ()),
-        numeric_stats=blob["vocab"].get("numeric_stats"),
-        primary_numeric=blob["vocab"].get("primary_numeric"),
-    )
-    model = CFM(
-        vocab,
-        blob["dim"],
-        n_experts=blob.get("n_experts", 1),
-        sf_mode=blob.get("sf_mode", "event_types"),
-        readout_norm=bool(blob.get("readout_norm", False)),
-        input_norm=bool(blob.get("input_norm", False)),
-        readout_skip=bool(blob.get("readout_skip", False)),
-        event_residual=bool(blob.get("event_residual", False)),
-        readout_scale=bool(blob.get("readout_scale", False)),
-        stats_pathway=bool(blob.get("stats_pathway", False)),
-        continuous_time=bool(blob.get("continuous_time", False)),
-        # DEC-613: trunk axis (pre-DEC-613 blobs lack the keys -> the SSM trunk).
-        trunk=str(blob.get("trunk", "ssm")),
-        n_loops=int(blob.get("n_loops", 2)),
-        max_pos=int(blob.get("seq_len", 0)),
-    ).to(cfg.device)
-    model.load_state_dict(blob["state"])
-    if blob.get("whiten_W") is not None:
-        model.set_whitening(blob["whiten_mean"], blob["whiten_W"])
-    model.eval()
+    # THE one rebuild path (`cfm_state.build_cfm_from_blob`): validation grades the artifact
+    # that was trained, so an architecture mismatch must RAISE (`strict=True`), never be
+    # papered over by a tolerant load.
+    model = build_cfm_from_blob(blob, tag=cfg.tag, strict=True).to(cfg.device)
+    vocab = model.vocab
     model.half_life_days = cfg.state_half_life_days
 
     def r(name, target, achieved, ok):

@@ -116,16 +116,6 @@ def derive_dim(
     return val, {"dim": f"info={info:.0f} (H_et={et_entropy}) -> {val}"}
 
 
-def derive_lr(input_power: float | None = None) -> tuple[float, dict]:
-    """Learning rate from the INPUT signal scale (v6 Stage 5, #10): step size
-    ~ 1/sqrt(P_in) so the first update is O(1) relative to the state magnitude,
-    independent of the stream's units. Falls back to 3e-3 when unknown."""
-    if not input_power or input_power <= 0:
-        return 3e-3, {"lr": "fallback 3e-3 (no input power)"}
-    val = float(clip(0.5 / math.sqrt(input_power), 1e-4, 1e-2))
-    return val, {"lr": f"P_in={input_power:.3f} -> {val:.2e}"}
-
-
 def derive_batch(n_seqs, seq_len: int = 0) -> tuple[int, dict]:
     """Batch scales with data but is BOUNDED BY HARDWARE *and* sequence length.
 

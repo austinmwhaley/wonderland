@@ -373,7 +373,7 @@ The gate that certifies the encoder itself — the encoder beats the 1-gram base
 
 ###### B9.1 — The encoder beats the 1-gram baseline on the customer event stream
 
-*the ridge head (the shipping consumer head) beats the 1-gram baseline on the demo — the encoder is a foundation, not a green receipt*
+*the adopted multinomial logistic consumer head beats the 1-gram baseline on the demo — the encoder is a foundation, not a green receipt*
 
 The outcome: the encoder's frozen output beats the 1-gram baseline on the customer event stream — the encoder is a foundation, not a green receipt. Without this gate, a green card is indistinguishable from a good encoder.
 

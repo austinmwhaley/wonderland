@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "0fccd9a89829f47d",
-    "command": "measure_stage_decomposition.py --products /tmp/opencode/cfmd_port128",
-    "generated_at": "2026-11-25T04:03:04+00:00",
-    "git_commit": "eb3fb407ed1b61c5b8dda623e35ebfd6d79c96e5",
+    "behavior_hash": "ea84f6a12bf59d2e",
+    "command": "measure_stage_decomposition.py --products looking_glass/artifacts/cfm_v2k_vf2_port --demo looking_glass/artifacts/demo_v2",
+    "generated_at": "2026-11-25T20:10:08+00:00",
+    "git_commit": "2aa1f70e2c525f9b398b6d2cb7c9da5ae9d8795d",
     "producer": "measure_stage_decomposition.py"
   },
   "attribution": {
@@ -17,11 +17,11 @@
   "n_pairs": 1101870,
   "n_score_B": 1485,
   "products": {
-    "path": "/tmp/opencode/cfmd_port128",
-    "registry_sha256": "919a932f1b657064",
+    "path": "looking_glass/artifacts/cfm_v2k_vf2_port",
+    "registry_sha256": "070789564a52b578",
     "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
   },
-  "seconds": 4.8,
+  "seconds": 5.4,
   "stages": {
     "M0_exact_counter": {
       "dim": 39,

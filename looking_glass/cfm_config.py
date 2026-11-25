@@ -150,7 +150,7 @@ class CFMConfig:
     # grouped PCGrad (geometry-family vs predictive-family conflict
     # resolution; 2 grouped backwards, not 13 pairwise — DEC-020).
     # v2.8.1: bank FIFO fixed to ROWS (was 8 chunks = 512 rows on a 17k
-    # population); rank_lambda_max effectively unclamped (1e6) — the closed
+    # population); the rank-pressure cap was effectively removed — the closed
     # loop applies real pressure (measured: lambda pinned at 50 the whole
     # run with rank 0.10 vs target 0.32). (DEC-021)
     # v2.9.0: whitened donor readout (DEC-022). Conclusive evidence (v2.8.1:
@@ -230,7 +230,6 @@ class CFMConfig:
     geom_coverage: float = 0.6  # per-stream: held-out PR must retain this
     # fraction of the stream's achievable whitened PR (from the receipt)
     iso_gamma: float = 8.0  # barrier sigmoid steepness (self-throttling)
-    ortho_weight: float = 0.1  # cross-subspace ortho-loss weight
     epochs: int = 3  # legacy (governor ignores); see max_steps
     max_steps: int = 0  # 0 = derived budget; >0 caps the governor (FAST iteration)
     budget_steps: int = 0  # 0 = derived (derive_budget); >0 = explicit governor cap, e.g. a
@@ -241,6 +240,11 @@ class CFMConfig:
     # SLOWEST objective, not the fastest — raise this so the governor does not save a
     # checkpoint before that objective has trained (DEC-173).
     train_patience: int = 0
+    # DEC-658: iteration switch. True trains and STOPS — no products, no ledger, no outlets.
+    # Measured: products/serving is 36% of a 40-step run (65 s of 183 s), so an iteration
+    # loop that does not need served artifacts pays it for nothing. NEVER set for a run whose
+    # numbers are cited: a receipt requires the products it certifies.
+    skip_products: bool = False
     # DEC-654: Armijo cadence. 1 (default) = the historical per-step accept/revert test:
     # two extra no_grad forwards per optimizer step (loss0 before, loss1 after). k > 1 runs
     # the test every k-th step and accepts unconditionally on the others, amortising 2 of the
@@ -248,21 +252,8 @@ class CFMConfig:
     armijo_every: int = 1
     batch: int = 64
     lr: float = 3e-3
-    gamma_contrast: float = 0.5
-    gamma_mask: float = 0.5
-    gamma_redundancy: float = 0.1
     mask_frac: float = 0.15
     contrast_tau: float = 0.1
-    # DINO self-distillation recipe (DEC-550). The published reference values (Caron et al.
-    # 2021) as documented, overridable fallbacks — the head widths/out-dim derive from dim at
-    # build, not from literals. The DINO teacher runs on its OWN momentum (dino_ema_tau), kept
-    # separate from the JEPA target's 0.99: the EMA lag is what creates structure.
-    dino_student_temp: float = 0.1
-    dino_teacher_temp: float = 0.04
-    dino_center_momentum: float = 0.9
-    dino_ema_tau: float = 0.996
-    dino_drop_lo: float = 0.2
-    dino_drop_hi: float = 0.5
     state_half_life_days: float = 30.0
     # Multi-objective control. Adaptive (uncertainty) weighting learns each
     # task's weight, so we can enable many objectives without hand-tuning and
@@ -279,8 +270,6 @@ class CFMConfig:
     # Geometry guard (DEC-019): the closed-loop population geometry
     bank_size: int = 8192  # FIFO of recent projected states (0 = off)
     rank_target: float = 0.35  # bank eff-rank target (v4.3: push final readout to capacity)
-    rank_alpha: float = 0.25  # governor gain (PID-like, EMA-damped)
-    rank_lambda_max: float = 1e6  # effectively unclamped (EMA alpha bounds rate)
     tau_eig: float = 0.05  # singular-value floor on the bank covariance
     #    (soft floor; the PRIMARY rank guard is now the log-det barrier)
     pcgrad: bool = True  # grouped PCGrad (DEC-020): geometry vs predictive
@@ -438,11 +427,6 @@ class CFMConfig:
     # value is an explicit, recorded override.
     attr_fields: tuple = ()
     max_attr_vocab: int = 0
-    # DEC-028: condition cap for the boundary whitening — eigenvalues of the
-    # state covariance are floored at this fraction of the largest, bounding
-    # kappa(Sigma^{-1/2}) <= 1/sqrt(whiten_cond_floor). Prevents near-null
-    # amplification that made the geometry/OOT gates non-reproducible.
-    whiten_cond_floor: float = 1e-2
     # Frontier sampler (DEC-017): multiplier on the geometry-family losses
     # (variance, rank, redundancy). 1.0 = the balanced point; >1 trades a bit
     # of predictive skill for state headroom — the explicit Pareto coordinate,
@@ -481,18 +465,6 @@ class CFMConfig:
         "agg",
     )
     # kept as the (deprecated) soft-invariant family for reference / opt-in
-    soft_invariants: tuple = (
-        "redundancy",
-        "decorr",
-        "variance",
-        "rank",
-        "spectrum",
-        "volume",
-        "iso",
-        "trajectory",
-        "commutation",
-        "ortho",
-    )
     seed: int = 0
     device: str = "cuda" if torch.cuda.is_available() else "cpu"
     # A3: autocast dtype. bf16 (default) has fp32 range -> no loss scaling, fewer Armijo

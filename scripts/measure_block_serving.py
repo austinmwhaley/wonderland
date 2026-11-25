@@ -31,8 +31,10 @@ from measure_input_law import products_identity, stamp_merge_write  # noqa: E402
 from measure_battery_law import _ridge_head  # noqa: E402
 from measure_judge_law import TARGETS, _arms, _z1  # noqa: E402
 from measure_stage_decomposition import (  # noqa: E402
+    PORT,
     _geometry,
     _load_stage_arrays,
+    _require_port,
     _round,
     _segment_ari,
 )
@@ -133,10 +135,7 @@ def _equal_dimension(
 def main() -> int:
     ensure_boundary()
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument(
-        "--products",
-        default="/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/cfm_v2k",
-    )
+    ap.add_argument("--products", default=str(PORT))
     ap.add_argument(
         "--demo",
         default="/home/austin_whaley/Documents/Repos/wonderland/looking_glass/artifacts/demo_v2",
@@ -146,6 +145,7 @@ def main() -> int:
 
     t0 = time.perf_counter()
     products = Path(a.products)
+    _require_port(products)
     stages = _load_stage_arrays(products)
     arms = _arms(products / "cfm_products.duckdb", Path(a.demo))
     if arms["problems"]:

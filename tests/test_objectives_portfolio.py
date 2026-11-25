@@ -254,7 +254,7 @@ def test_variance_floor_hinge():
     torch.manual_seed(0)
     model = CFM(vocab, dim=16, n_experts=1)
     cfg = _cfg(objectives=(*CFMConfig().objectives, "variance"))  # opt-in soft invariant
-    assert "variance" not in CFMConfig().objectives and "variance" in CFMConfig().soft_invariants
+    assert "variance" not in CFMConfig().objectives
     assert CFMConfig().version == "0.11.0"
     assert CFMConfig().n_experts == 2  # dual-velocity (DEC-025)
 

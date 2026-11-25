@@ -26,36 +26,14 @@ def build(cadence="weekly", max_customers=8000):
     import polars as pl
     import looking_glass.customer_foundation_model as C
 
+    from looking_glass.cfm_state import build_cfm_from_blob
+
     ckpt = sorted(glob.glob(str(CFM_DIR / "cfm_v*.pt")))[-1]
     blob = torch.load(ckpt, map_location="cpu", weights_only=False)
-    vocab = C.EventVocab(
-        blob["vocab"]["et"],
-        blob["vocab"].get("attrs"),
-        numeric_fields=tuple(blob["vocab"].get("numeric_fields", ()) or ()),
-        numeric_stats=blob["vocab"].get("numeric_stats"),
-        primary_numeric=blob["vocab"].get("primary_numeric"),
-    )
-    model = C.CFM(
-        vocab,
-        blob["dim"],
-        n_experts=blob.get("n_experts", 1),
-        sf_mode=blob.get("sf_mode", "event_types"),
-        readout_norm=bool(blob.get("readout_norm", False)),
-        input_norm=bool(blob.get("input_norm", False)),
-        readout_skip=bool(blob.get("readout_skip", False)),
-        event_residual=bool(blob.get("event_residual", False)),
-        readout_scale=bool(blob.get("readout_scale", False)),
-        stats_pathway=bool(blob.get("stats_pathway", False)),
-        continuous_time=bool(blob.get("continuous_time", False)),
-        # DEC-613: trunk axis (pre-DEC-613 blobs lack the keys -> the SSM trunk).
-        trunk=str(blob.get("trunk", "ssm")),
-        n_loops=int(blob.get("n_loops", 2)),
-        max_pos=int(blob.get("seq_len", 0)),
-    )
-    model.load_state_dict(blob["state"])
-    if blob.get("whiten_W") is not None:
-        model.set_whitening(blob["whiten_mean"], blob["whiten_W"])
-    model.eval()
+    # THE one rebuild path (`cfm_state.build_cfm_from_blob`): strict=True — the dense table
+    # must come from the architecture that was trained, not a lookalike that happens to load.
+    tag = Path(ckpt).stem.removeprefix("cfm_").replace("_", ".")
+    model = build_cfm_from_blob(blob, tag=tag, strict=True)
     cfg = C.CFMConfig(sample_customers=max_customers)
     cfg.seq_len = 8192  # cover full history for dense epochs
     df = C._read_stream(cfg)
