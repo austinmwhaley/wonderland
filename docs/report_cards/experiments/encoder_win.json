@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "5f48d15feced65c1",
-    "command": "measure_encoder_win.py --products looking_glass/artifacts/cfm_v2k_vf2_bank --demo looking_glass/artifacts/demo_v2 --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/encoder_win.json --head logistic",
-    "generated_at": "2026-11-25T21:59:35+00:00",
-    "git_commit": "bac99254ed6201bddbc91c05b32f5a47f9a49275",
+    "behavior_hash": "e1646612b29976c2",
+    "command": "measure_encoder_win.py --head logistic",
+    "generated_at": "2026-11-25T22:34:14+00:00",
+    "git_commit": "fb9237ba0311d2e9285e4c011ed75dc930fcd148",
     "producer": "measure_encoder_win.py"
   },
   "complete": true,
@@ -12,8 +12,8 @@
     "beats_unigram": true,
     "calibration": "none",
     "calibration_weights": null,
-    "ci_hi": -0.2115588551257826,
-    "ci_lo": -0.2908418362632496,
+    "ci_hi": -0.24169625049451904,
+    "ci_lo": -0.3236818358039911,
     "classes": [
       "email_send",
       "purchase",
@@ -24,15 +24,15 @@
     "classes_excluded": [],
     "complete": true,
     "head": "logistic",
-    "logistic_C": 0.1,
+    "logistic_C": 0.01,
     "n_A": 3500,
     "n_B_rows": 1500,
     "n_customers": 5000,
     "nll_base": 1.423192,
-    "nll_enc": 1.173099,
+    "nll_enc": 1.142094,
     "paired_ci_enc_minus_base": [
-      -0.2908418362632496,
-      -0.2115588551257826
+      -0.3236818358039911,
+      -0.24169625049451904
     ],
     "per_class_n_A": {
       "email_send": 1238,
@@ -56,14 +56,14 @@
       "view": 0.791728
     },
     "per_class_nll_enc": {
-      "email_send": 0.762128,
-      "purchase": 2.158392,
-      "return": 4.814908,
-      "search": 1.726758,
-      "view": 0.956927
+      "email_send": 0.7308,
+      "purchase": 2.133371,
+      "return": 4.846704,
+      "search": 1.685718,
+      "view": 0.928944
     },
     "recent_k": 0,
-    "served_object": "frozen bank embedding (179 dims)",
+    "served_object": "frozen bank embedding (200 dims)",
     "temperature": 1.0,
     "temperature_fit_on": "not fit (no post-hoc calibration applied this run)"
   },
@@ -76,9 +76,9 @@
   },
   "products": {
     "path": "looking_glass/artifacts/cfm_v2k_vf2_bank",
-    "registry_sha256": "919a932f1b657064",
+    "registry_sha256": "2af5dfe544de46fa",
     "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
   },
   "protocol": "DEC-635: the multinomial logistic head (the adopted consumer, DEC-649) on the frozen bank embedding must beat the pooled 1-gram baseline on the customer event stream. The head is fit on split A (70% of customers) and scored on split B, with the head's own categorical likelihood (no post-hoc temperature); the paired bootstrap CI (2000 resamples) of (nll_enc - nll_base) must exclude 0. The outcome: the encoder is a foundation, not a green receipt.",
-  "seconds": 2.7
+  "seconds": 2.9
 }

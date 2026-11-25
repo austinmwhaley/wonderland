@@ -71,9 +71,18 @@ class _LoopedBlock(nn.Module):
     executed L times under the SWA/full interleave, exactly as Dory's latent
     loop reuses its recurrent layers."""
 
+    #: relative-time bias buckets over log1p(seconds). 32 is the documented cap the
+    #: HSTU-style bias uses (finite table, bucketised from data); it is not tuned per stream.
+    N_TIME_BUCKETS = 32
+
     def __init__(self, hidden: int):
         super().__init__()
         self.hidden = int(hidden)
+        # HSTU-style relative attention bias over TIME (Zhai et al. 2024, `rab`): attention
+        # scores gain a learned per-bucket term for log1p(|t_q - t_k|), so "how long ago"
+        # is a first-class signal instead of something the token embedding must infer.
+        # Zero-init: the trunk starts exactly at the current behaviour and learns the bias.
+        self.time_bias = nn.Parameter(torch.zeros(self.N_TIME_BUCKETS))
         self.norm1 = RMSNorm(hidden)
         self.w_qkv = nn.Linear(hidden, 3 * hidden)
         self.w_o = nn.Linear(hidden, hidden)
@@ -100,9 +109,27 @@ class _LoopedBlock(nn.Module):
         m = m | torch.eye(T, dtype=torch.bool, device=dev).unsqueeze(0)  # finite rows
         return m.unsqueeze(1)
 
-    def forward(self, x: torch.Tensor, mask: torch.Tensor, swa: bool) -> torch.Tensor:
+    def forward(
+        self,
+        x: torch.Tensor,
+        mask: torch.Tensor,
+        swa: bool,
+        tpos: torch.Tensor | None = None,
+    ) -> torch.Tensor:
         T = x.shape[1]
         m = self._attn_mask(mask, T, swa)
+        if tpos is not None:
+            # bucket log1p(|t_q - t_k|) into the learned bias table. The mask is
+            # bool; SDPA's math backend accepts an ADDITIVE float mask, so the
+            # bias is added there and disallowed pairs get -inf.
+            gap = (tpos.unsqueeze(2) - tpos.unsqueeze(1)).abs().clamp(min=0.0).log1p()
+            # data-derived upper edge: the stream's own max gap (no literal horizon)
+            hi = float(gap.detach().amax().clamp(min=1.0).item())
+            idx = torch.clamp(
+                (gap / hi * (self.N_TIME_BUCKETS - 1)).long(), 0, self.N_TIME_BUCKETS - 1
+            )
+            bias = self.time_bias[idx].unsqueeze(1)  # (B,1,T,T)
+            m = torch.where(m, bias, torch.full_like(bias, float("-inf")))
         h = self.norm1(x)
         q, k, v = self.w_qkv(h).chunk(3, dim=-1)
         # single head at dev-rig scale (minimal footprint; multi-head is a
@@ -184,17 +211,26 @@ class LoopedGPTTrunk(nn.Module):
         else:
             mask = mask.to(dtype=x.dtype)
 
+        # cumulative wall-clock position, from the dt the CFM already computes
+        # (log1p seconds between events). If dt is absent the bias is inert.
+        tpos = None
+        if dt is not None:
+            d = dt.squeeze(-1).to(x.dtype)
+            tpos = torch.cumsum(d, dim=1)
+            tpos = tpos * mask + (1.0 - mask) * tpos.amax(dim=1, keepdim=True)  # pad rows flat
         x = self.w_in(x) + self.pos[:T]
         if h0 is not None:
             x = x + self.w_prior(h0.to(x.dtype)).unsqueeze(1)  # learned state prior
         x = x * mask.unsqueeze(-1)  # right-padded rows: zero, finite, discarded
 
-        h_in = self.in_block(x, mask, swa=False)  # slot 0 (even) -> full
+        h_in = self.in_block(x, mask, swa=False, tpos=tpos)  # slot 0 (even) -> full
         stream = h_in
         for ell in range(self.n_loops):  # depth-knob loop (<=4), slots 1..L
-            stream = self.rec_block(stream, mask, swa=((1 + ell) % 2 == 1))
+            stream = self.rec_block(stream, mask, swa=((1 + ell) % 2 == 1), tpos=tpos)
             stream = stream + h_in  # Dory: original input re-injected every loop
-        stream = self.out_block(stream, mask, swa=((1 + self.n_loops) % 2 == 1))  # slot L+1
+        stream = self.out_block(
+            stream, mask, swa=((1 + self.n_loops) % 2 == 1), tpos=tpos
+        )  # slot L+1
         y = self.final_norm(self.readout(stream))
 
         counts = mask.sum(-1, keepdim=True).clamp(min=1).long()  # (B,1)

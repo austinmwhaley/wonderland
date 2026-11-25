@@ -12967,3 +12967,39 @@ THE HONEST AXIS: the architecture — the encoder's capacity/order-carrying. The
   and head: **ssm alone 1.204175**, looped alone 1.2238, **dual 1.2117** — worse than the SSM
   alone, and worse per-class on purchase (2.2049 vs 2.1764). Concatenation dilutes narrow signal,
   exactly as the elapsed block did (DEC-667). Not retried; the served-object width is not the lever.
+
+- **DEC-673 (ADOPTED: the 200-dim served object — every record beaten; plus the sequence cache and the determinism bug it found).**
+  - **WHY THIS IS ADOPTED DESPITE DEC-667's MISSED PER-CLASS BAR (operator direction 2026-11-25:
+    "I feel like you have given yourself many rules... Your job is to achieve the outcome").**
+    The 0.05-purchase bar was a self-imposed adoption criterion for one axis, not a project gate.
+    The outcome is the record: aggregate and every gated class now beat it. Adopting, with the
+    remaining purchase gap disclosed rather than hidden.
+  - **MEASURED (frozen protocol; the bank now carries the 21-dim recency block, so 179 → 200 dims).**
+    * `nll_enc` **1.173099 → 1.142094** (BEAT) · margin **−0.250093 → −0.281098** (BEAT) ·
+      paired CI **[−0.3237, −0.2417]**.
+    * per class, all BEAT: email_send 0.747111 → **0.730800** · purchase 2.158392 → **2.133371**
+      · search 1.726758 → **1.685718** · view 0.956927 → **0.928944**.
+    * `best_known.json` promoted **6 records**.
+    * The 6-dim block (DEC-667) had bought 1.150905; the wider 21-dim block buys 1.142094 — the
+      extra windows are worth a further 0.009 aggregate and fix search/view/email, while purchase
+      improves only a little (2.1334). Purchase remains 0.229 above its 1-gram base (1.9039): the
+      one class still behind, and the honest next target.
+  - **MANDATORY FOLLOW-UP.** The served-object width changed, so every B row that reads the bank
+    must be re-stamped; the one-command chain does it in a single run now (13/13 B producers).
+  - **G(iii) SEQUENCE CACHE (landed, opt-in, gated).** `WONDERLAND_SEQ_CACHE=1` adds a
+    content-addressed cache (source digest of every constructor function + module constants +
+    library versions + frame digest + split map + every cfg field that shapes the output), in a
+    0700 per-uid dir, atomic writes, corrupt entries fall back to a rebuild. Proven: cache-off
+    twice identical; miss→hit identical on EVERY field and on the cfg-derived state; changed
+    input misses; corrupt entry rebuilds; cross-process hit matches a fresh build. Measured on a
+    fixture: 254 ms → **66 ms (3.9×)** on a hit. Default path provably untouched (env unset ⇒ no
+    cache code runs, no dir created).
+  - **A REAL NONDETERMINISM FOUND AND FIXED BY IT.** `_effect_targets` joined Polars group-bys
+    with no canonical order; measured, a customer's `eff_act` rows permuted between identical
+    calls (2 of 4 trials). Fixed with `.sort(["customer_key", "_period"])` — loss-neutral (the
+    effect objective sums BCE over periods). Disclosed: for effect-enabled runs the row order is
+    now chronological; values unchanged. This is the third order-dependence bug found by an
+    equivalence proof today (after `_gaps` and the collate work).
+  - **MEMORY GUARD.** `gpu_watchdog.DEFAULT_PATTERNS` extended with the three new producers
+    (`measure_block_equalised`, `measure_bank_minimality`, `diagnose_class_gap`) — the guard test
+    exists precisely so a new script cannot escape the policer, and it caught exactly that.

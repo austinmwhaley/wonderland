@@ -83,45 +83,87 @@
       "receipt": "encoder_win.json",
       "set_at": "2026-11-25T18:05:40+00:00",
       "value": 0.956927
+    },
+    {
+      "behavior_hash": "e1646612b29976c2",
+      "metric": "demo_v2.next_event.nll_enc",
+      "receipt": "encoder_win.json",
+      "set_at": "2026-11-25T22:34:15+00:00",
+      "value": 1.142094
+    },
+    {
+      "behavior_hash": "e1646612b29976c2",
+      "metric": "demo_v2.next_event.margin_vs_1gram",
+      "receipt": "encoder_win.json",
+      "set_at": "2026-11-25T22:34:15+00:00",
+      "value": -0.28109800000000007
+    },
+    {
+      "behavior_hash": "e1646612b29976c2",
+      "metric": "demo_v2.next_event.nll_enc[email_send]",
+      "receipt": "encoder_win.json",
+      "set_at": "2026-11-25T22:34:15+00:00",
+      "value": 0.7308
+    },
+    {
+      "behavior_hash": "e1646612b29976c2",
+      "metric": "demo_v2.next_event.nll_enc[purchase]",
+      "receipt": "encoder_win.json",
+      "set_at": "2026-11-25T22:34:15+00:00",
+      "value": 2.133371
+    },
+    {
+      "behavior_hash": "e1646612b29976c2",
+      "metric": "demo_v2.next_event.nll_enc[search]",
+      "receipt": "encoder_win.json",
+      "set_at": "2026-11-25T22:34:15+00:00",
+      "value": 1.685718
+    },
+    {
+      "behavior_hash": "e1646612b29976c2",
+      "metric": "demo_v2.next_event.nll_enc[view]",
+      "receipt": "encoder_win.json",
+      "set_at": "2026-11-25T22:34:15+00:00",
+      "value": 0.928944
     }
   ],
   "kind": "best_known",
   "records": {
     "demo_v2.next_event.margin_vs_1gram": {
-      "behavior_hash": "0fccd9a89829f47d",
-      "detail": "paired CI [-0.2908418362632496, -0.2115588551257826]",
+      "behavior_hash": "e1646612b29976c2",
+      "detail": "paired CI [-0.3236818358039911, -0.24169625049451904]",
       "direction": "lower",
       "milestone": "BEAT",
       "receipt": "encoder_win.json",
-      "set_at": "2026-11-25T18:05:40+00:00",
-      "value": -0.2500930000000001
+      "set_at": "2026-11-25T22:34:15+00:00",
+      "value": -0.28109800000000007
     },
     "demo_v2.next_event.nll_enc": {
-      "behavior_hash": "0fccd9a89829f47d",
+      "behavior_hash": "e1646612b29976c2",
       "detail": "nll_base 1.423192 \u00b7 n_B 1500",
       "direction": "lower",
       "milestone": "BEAT",
       "receipt": "encoder_win.json",
-      "set_at": "2026-11-25T18:05:40+00:00",
-      "value": 1.173099
+      "set_at": "2026-11-25T22:34:15+00:00",
+      "value": 1.142094
     },
     "demo_v2.next_event.nll_enc[email_send]": {
-      "behavior_hash": "0fccd9a89829f47d",
-      "detail": "per-class nll_enc on split B",
-      "direction": "lower",
-      "milestone": "NEW",
-      "receipt": "encoder_win.json",
-      "set_at": "2026-11-25T17:54:08+00:00",
-      "value": 0.747111
-    },
-    "demo_v2.next_event.nll_enc[purchase]": {
-      "behavior_hash": "0fccd9a89829f47d",
+      "behavior_hash": "e1646612b29976c2",
       "detail": "per-class nll_enc on split B",
       "direction": "lower",
       "milestone": "BEAT",
       "receipt": "encoder_win.json",
-      "set_at": "2026-11-25T18:05:40+00:00",
-      "value": 2.158392
+      "set_at": "2026-11-25T22:34:15+00:00",
+      "value": 0.7308
+    },
+    "demo_v2.next_event.nll_enc[purchase]": {
+      "behavior_hash": "e1646612b29976c2",
+      "detail": "per-class nll_enc on split B",
+      "direction": "lower",
+      "milestone": "BEAT",
+      "receipt": "encoder_win.json",
+      "set_at": "2026-11-25T22:34:15+00:00",
+      "value": 2.133371
     },
     "demo_v2.next_event.nll_enc[return]": {
       "behavior_hash": "0fccd9a89829f47d",
@@ -133,22 +175,22 @@
       "value": 2.582542
     },
     "demo_v2.next_event.nll_enc[search]": {
-      "behavior_hash": "0fccd9a89829f47d",
+      "behavior_hash": "e1646612b29976c2",
       "detail": "per-class nll_enc on split B",
       "direction": "lower",
       "milestone": "BEAT",
       "receipt": "encoder_win.json",
-      "set_at": "2026-11-25T18:05:40+00:00",
-      "value": 1.726758
+      "set_at": "2026-11-25T22:34:15+00:00",
+      "value": 1.685718
     },
     "demo_v2.next_event.nll_enc[view]": {
-      "behavior_hash": "0fccd9a89829f47d",
+      "behavior_hash": "e1646612b29976c2",
       "detail": "per-class nll_enc on split B",
       "direction": "lower",
       "milestone": "BEAT",
       "receipt": "encoder_win.json",
-      "set_at": "2026-11-25T18:05:40+00:00",
-      "value": 0.956927
+      "set_at": "2026-11-25T22:34:15+00:00",
+      "value": 0.928944
     }
   }
 }

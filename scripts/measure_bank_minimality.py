@@ -92,6 +92,8 @@ SUFFICIENCY_BAR = 0.02  # principle-ok: the task's evaluation contract, frozen b
 CLASS_REGRESSION_BAR = 0.05  # principle-ok: the task's guardrail contract
 #: per-class n below which a per-class nll is reported but not claimed (shared with DEC-665).
 MIN_CLAIM_N = 8  # principle-ok: evaluation-contract claim floor, not a tuning knob
+#: the certified aggregate this self-check must reproduce (DEC-635/649 record, DEC-669 F).
+CERTIFIED_NLL_ENC = 1.173099  # principle-ok: the record the frozen protocol reproduced
 #: dimension budgets printed in the text frontier (the JSON carries every integer budget).
 BUDGETS = (16, 32, 40, 48, 60, 80, 100, 120, 140, 160)  # principle-ok: report cardinalities
 
@@ -328,7 +330,7 @@ def main(argv=None) -> int:
             certified.get("logistic_C") is not None
             and abs(C_adopted - float(certified["logistic_C"])) < 1e-12
         ),
-        "full_bank_nll_reproduces_1e-5": abs(nll_full - 1.173099) <= 1e-5,
+        "full_bank_nll_reproduces_1e-5": abs(nll_full - CERTIFIED_NLL_ENC) <= 1e-5,
         "base_1gram_nll_reproduces_1e-5": abs(float(nll_base.mean()) - float(certified["nll_base"]))
         <= 1e-5,
         "per_class_nll_reproduces_1e-4": all(abs(pc_delta_cert[c]) <= 1e-4 for c in pc_delta_cert),
@@ -369,7 +371,7 @@ def main(argv=None) -> int:
         failed = [k for k in hard if not checks[k]]
         print(
             f"fatal: frozen protocol not reproduced ({failed}); full-bank nll={nll_full:.9f} "
-            f"vs certified 1.173099 — refusing to rank subsets on a different protocol",
+            f"vs certified {CERTIFIED_NLL_ENC} — refusing to rank subsets on a different protocol",
             file=sys.stderr,
         )
         return 1
@@ -746,6 +748,12 @@ def main(argv=None) -> int:
             f"{dd['email_send']:+8.4f} {dd['purchase']:+8.4f} {dd['search']:+8.4f} "
             f"{dd['view']:+8.4f} | {','.join(row['broken_classes']) or '-':>16s}"
         )
+    shape_row = next(row for row in singles if row["blocks"] == ["shape"])
+    print(
+        f"  note: shape-only — the DEC-665 arm — breaks email_send by "
+        f"{shape_row['per_class_delta']['email_send']:+.4f}; that ablation printed per-class "
+        f"deltas for purchase/search/view only."
+    )
 
     print("\n[3] leave-one-out (delta>0 = the dropped block earns its keep)")
     print(
@@ -756,6 +764,14 @@ def main(argv=None) -> int:
         print(
             f"  {row['dropped']:14s} {row['dim']:8d} {row['nll']:9.6f} {row['delta']:+9.6f} | "
             f"{row['max_claimable_regression']:+11.4f} {','.join(row['broken_classes']) or '-':>18s}"
+        )
+    improvers = [row for row in loo if row["delta"] < 0]
+    if improvers:
+        print(
+            "  note: removing "
+            + ", ".join(row["dropped"] for row in improvers)
+            + f" IMPROVES the aggregate by <= {max(-row['delta'] for row in improvers):.4f} nats "
+            "— dead weight within noise, not signal."
         )
 
     print("\n[4] greedy paths (exact labels on the exhaustive table; STRUCTURE, not the optimum)")
