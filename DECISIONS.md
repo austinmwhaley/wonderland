@@ -12078,3 +12078,43 @@
 - **DEC-639 outcome addendum (2026-11-25 — the binding outcome question + the honest-axis field are in PROMPT_FORWARD).**
   - **The honest state (measured).** The binding outcome question + the honest-axis field are now in §3.0's WHY-NOT block (THE OUTCOME + THE HONEST AXIS fields); the §3.3 outcome cross-reference names the gate (B9.1) and the real-data story; the §9 architecture-axis stop-and-ask trigger is added; the §8 item 0a + item 14 outcome checks name the gate (B9.1) and the real-data story; the no-loops discipline cross-references the two binding fields. The scope statement is in the header § (DEC-638).
   - **The honest read.** The prompt now has the binding outcome question + the honest-axis field in the §3.0 WHY-NOT block — the binding reflection that forces the outcome question + the honest axis before the node is chosen. The prompt now has the §3.3 outcome cross-reference + the §9 architecture-axis stop-and-ask trigger + the §8 item 0a + item 14 outcome checks naming the gate (B9.1) and the real-data story. The scope statement is in the header §.
+
+- **DEC-640 (run PROMPT_FORWARD — the §3.0 MACRO REFLECTION; operator direction 2026-11-25: "run PROMPT_FORWARD now").**
+  - **THE WHY-NOT block (binding, written BEFORE the node is chosen).**
+
+```text
+WHY-NOT:  The encoder does NOT beat the 1-gram baseline on the customer event stream —
+          the gate (B9.1) FAILS. The encoder is under-ranked (eff_rank 2.649 vs null
+          105.535; pr_frac 0.0103; redundancy_offdiag 0.41705 vs null 0.03479) and
+          diverging (best 3.943 → final 4.886; governor stopped at 574 steps; lr collapsed
+          to 4.5e-05). The honest axis (the training config) did NOT help — the re-train
+          (larger budget 4000, lower lr 0.0001, larger patience 8) stopped at 78 steps
+          (plateau: best 4.983 → final 5.937), eff_rank 2.788/37.26, still beats_unigram=False.
+EVIDENCE: encoder_win.json (beats_unigram=False, paired CI [0.0016, 0.0554] entirely
+          positive, nll_enc 1.452252 > nll_base 1.423192, n_B_rows=1500); the real-data
+          story (ridge 0/14 cells, hier 14/14 cells); the DEC-637 re-train receipt (governor
+          stopped at 78 steps, eff_rank 2.788/37.26, ABS baseline model 1.4258 vs unigram
+          1.3469 — beats_unigram=False, PORTFOLIO FAIL).
+GAP:      The encoder's capability — the state cannot carry the conditional row beyond
+          the 1-gram. The training config did NOT help (the governor stopped at 78 steps,
+          the val metric plateaued). The honest work is to find the axis that actually
+          carries the conditional row beyond the 1-gram — the architecture, not the
+          training config.
+LAYER:    capability — the state cannot carry the statistic.
+THIS RUN: The honest axis is the architecture — the encoder's capacity/order-carrying.
+          The honest axis is a major one — STOP and ask the operator before changing it.
+THE OUTCOME: Has the encoder's beats-the-1-gram story moved toward achieved? NO — the gate
+          (B9.1) FAILS, the real-data story is unchanged (ridge 0/14 cells, hier 14/14 cells).
+          The gap did not move. The run is a diagnosis — record the negative ONCE and stop
+          re-recording it.
+THE HONEST AXIS: the architecture — the encoder's capacity/order-carrying. The honest axis
+          is a major one — STOP and ask the operator before changing it. A tuning tweak
+          that did not help is a negative result — record it once and stop; do not re-run it.
+```
+
+  - **NODE:** P3 — the donor is usable (B9.1 is the red leaf).
+  - **ROUTE:** R7 — BACKWARD (no BREAKING findings); the frontier is the encoder beating
+    the 1-gram (B9.1 FAIL) — the honest axis is the architecture.
+  - **MOVE:** B9.1 <FAIL> -> <PASS>, because the encoder's capacity (the architecture) must
+    carry the conditional row beyond the 1-gram. The honest axis is a major one — STOP and
+    ask the operator before changing it.
