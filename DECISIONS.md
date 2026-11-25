@@ -12128,3 +12128,18 @@ THE HONEST AXIS: the architecture — the encoder's capacity/order-carrying. The
     1. The encoder beats the 1-gram baseline on the demo (B9.1 PASS) — the outcome.
     2. No gate/threshold/criterion change beyond the new B row (B9.1, DEC-635); the frozen instrument, the split protocol, and the bars are all frozen.
   - **Outcome addendum (to be recorded after the run).**
+
+- **DEC-642 (document the binding reflection failure in AGENTS.md — so it does not happen again; operator direction 2026-11-25: "make sure you document that 'failure of binding reflection' in AGENTS.md so it doesn't happen again").**
+  - **NODE:** P3 — the donor is usable (the binding reflection that drives the loop).
+  - **Context (measured).** The operator asked to document the "failure of binding reflection" in AGENTS.md so it does not happen again. The failure mode is the thinking loop — re-reading the same receipts and recording the same negative N times with new DEC ids. The PROMPT_FORWARD has the binding reflection (§3.0 WHY-NOT block with THE OUTCOME + THE HONEST AXIS) and the no-loops discipline, but AGENTS.md (the doctrine) does not name the failure mode explicitly.
+  - **The honest fix.** Add a section to AGENTS.md — "The binding reflection (binding — and the failure mode it prevents)" — documenting the binding reflection (the WHY-NOT block in PROMPT_FORWARD §3.0), the failure mode it prevents (failure of binding reflection — the thinking loop), and the mechanical discipline (THE OUTCOME + THE HONEST AXIS + the no-loops discipline).
+  - **The fixed option (status quo).** The binding reflection is only in PROMPT_FORWARD — AGENTS.md does not name the failure mode.
+  - **The honest option (this DEC).** The binding reflection failure is documented in AGENTS.md — the doctrine.
+  - **Measurable benefit / gates (pre-registered, frozen).**
+    1. The binding reflection failure is documented in AGENTS.md.
+    2. No gate/threshold/criterion change; the frozen instrument, the split protocol, and the bars are all frozen.
+  - **Outcome addendum (to be recorded after the run).**
+
+- **DEC-642 outcome addendum (2026-11-25 — the binding reflection failure is documented in AGENTS.md).**
+  - **The honest state (measured).** The binding reflection failure is now documented in AGENTS.md — the doctrine. The new section "The binding reflection (binding — and the failure mode it prevents)" names the binding reflection (the WHY-NOT block in PROMPT_FORWARD §3.0), the failure mode it prevents (failure of binding reflection — the thinking loop), and the mechanical discipline (THE OUTCOME + THE HONEST AXIS + the no-loops discipline).
+  - **The honest read.** The binding reflection failure is now documented in the doctrine — AGENTS.md — so it does not happen again.

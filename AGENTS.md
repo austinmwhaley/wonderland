@@ -437,6 +437,37 @@ principle is *wrong*. When principles conflict, apply the conflict order
 (**Robust → Adaptive → Universal → Lawful → Efficient → Honest**; Lawful and Robust outrank
 convenience).
 
+### The binding reflection (binding — and the failure mode it prevents)
+
+**The binding reflection is the binding pre-run block in `PROMPT_FORWARD.md` §3.0** —
+the WHY-NOT block: `WHY-NOT` / `EVIDENCE` / `GAP` / `LAYER` / `THIS RUN` / `THE OUTCOME` /
+`THE HONEST AXIS`. It is written **before** the node is chosen, and it is the binding
+reflection — the one thing that forces the run to name the outcome and the honest axis
+before choosing the node.
+
+**The failure mode it prevents: failure of binding reflection.** A run that picks the
+node first and writes the reflection afterwards has not reflected; it has rationalised.
+The failure of binding reflection is the thinking loop — re-reading the same receipts and
+recording the same negative N times with new DEC ids. The loop is a failure of the binding
+reflection, not a failure of the data: the data is not changing, the reflection is.
+
+The mechanical discipline (binding):
+
+- **Before every run, answer:** *what is the ONE new thing this run will do that the last
+  run did not?* If the answer is "nothing — re-read the same receipts", then do nothing new
+  this run; record the negative ONCE (DEC-NNN outcome addendum) and stop re-recording it.
+- **THE OUTCOME** — has the encoder's beats-the-1-gram story moved toward achieved? Name
+  the surface: the gate (B9.1, the demo_v2 customer event stream) is the binding check; the
+  real-data story is the judgment surface. If the gap did not move, the run is a diagnosis —
+  record the negative ONCE and stop re-recording it.
+- **THE HONEST AXIS** — name the one axis that actually carries the conditional row beyond
+  the 1-gram. If the axis is a major one (architecture, consumer, contract, artifact), stop
+  and ask the operator before changing it. If the axis is a tuning tweak that did not help,
+  record the negative once and stop.
+- **The no-loops discipline (binding):** do NOT pre-register the same axis N times with new
+  DEC ids and record the same negative N times: that is noise, not progress, and it is
+  exactly the failure mode that wastes the operator's time.
+
 ### Decomposition (binding)
 
 The goal is reached only through **achievable subgoals**, never in one leap.
