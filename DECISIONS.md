@@ -12732,3 +12732,56 @@ THE HONEST AXIS: the architecture — the encoder's capacity/order-carrying. The
   - **DISCLOSURE.** The looped trunk is O(T²) in attention; a slower wall clock is a recorded
     property, not a failure. If the training run OOMs at the 30 GB slice, that is recorded as a
     BUDGET wall with the peak, not retried silently.
+
+- **DEC-665 (the three lagging classes, diagnosed — and the comparator itself is tilted; pre-registration of the elapsed-time served block).**
+  - **MEASURED (P2, `scripts/diagnose_class_gap.py`, read-only, 8–10 s, reproduces the certified
+    number to 1e-6).** The gap decomposes exactly as `level + disp_head − disp_base`, where
+    `level` is the amount by which the head puts LESS mass on class c on c's own rows than the
+    baseline. Measured levels: purchase **+0.150**, search **+0.117**, view **+0.110** — i.e.
+    0.11–0.15 nats of each "loss" is not information at all.
+  - **THE COMPARATOR IS MIS-SPECIFIED (a finding about our own gate, disclosed).** The certified
+    1-gram is estimated on **all event-level transitions** but scored on the **first
+    customer-level event after as_of**. Its per-last-type rows are near-identical, so it behaves
+    as a tilted constant: 1.26–1.30× the customer-level rate for purchase/search/view and 0.45×
+    for email_send. Consequences, measured: a customer-level **constant** scores **1.3071** and a
+    customer-level 1-gram **1.3005**, both BETTER than the certified baseline's **1.4232**. The
+    honest margin is therefore **0.127 [0.104, 0.151]** against a customer-level 1-gram (and
+    0.134 vs the constant), not the headline 0.250 — the encoder still wins, by about half as
+    much. Changing the comparator is a PROTOCOL/GATE change: recorded here, **not**
+    self-authorized; it needs an operator decision.
+  - **WHAT IS NOT THE CAUSE (all measured).**
+    * Head capacity/regularisation: a HistGBM diagnostic (DEC-407, never ships) is **worse** than
+    the linear head on purchase (+0.070) and search (+0.020); only view has nonlinear headroom
+    (−0.035). The linear head is at its accessible ceiling.
+    * Served-block composition: no leave-one-out block moves any class by more than **0.028**
+    nats; the 32-dim `shape` block ALONE reproduces the full result (1.2222 vs 1.1731 overall),
+    so the other 147 dims are worth ~0.05 nats and nothing per class.
+    * Last-event identity: an oracle probe (bank ‖ exact last-event one-hot, the rejected
+    `recent_k=1` shape) is **worse** (+0.010 purchase, +0.007 search, +0.004 view); on the
+    subset where last-event is confidently recoverable the gap WIDENS. Last-event uncertainty
+    does not explain the residual.
+  - **THE ROOT CAUSE (measured).** Purchase is **information-bound about recency**: a
+    12-feature frequency+elapsed-time head beats the 179-dim bank by **0.107 nats on purchase**
+    (2.0518 vs 2.1584, paired CI [−0.170, −0.042]) and the bank is no better than a 6-feature
+    frequency summary (2.1584 vs 2.1460). The head emits purchase on **1 of 1500** rows. Search
+    is the largest genuinely unread residual (~0.07 nats after the tilt; recency recovers 0.047,
+    CI includes 0). View is mostly tilt plus a small linear-readability effect (−0.035 nonlinear).
+  - **PRE-REGISTRATION (one axis; additive served block; falsifier frozen).**
+    * **Axis:** one new served block, 6 dims — `log1p(days since last event)` and
+      `log1p(days since last event of each graded class)`, censored at the stream's own history
+      window, computed from history ≤ as_of, **no fitted parameter**, built by the bank builder
+      for every stream (DEC-592 generalized application — not special-cased to demo_v2).
+    * **Protocol:** the frozen A/B split (SEED), the adopted multinomial logistic head, C
+      re-selected on the A tail holdout from the frozen grid, scored on B, paired 95% bootstrap
+      (SEED 65537, 2000).
+    * **Acceptance (all three):** (1) purchase nll improves by **≥ 0.05** nats with a paired CI
+      excluding 0; (2) no class regresses by > 0.02; (3) the aggregate improves.
+    * **Falsifier:** if purchase lands within **0.02** nats of the current bank, the recency axis
+      is dead (the standalone gain did not survive concatenation) and the conclusion is that the
+      per-class deficits are a comparator artifact — the next move is the comparator correction,
+      not an encoder change.
+    * **Disclosure:** this changes the served artifact contract (bank 179 → 185), so the S6 chain
+      must be re-stamped and B5.1's `served_dims` receipt regenerated. It touches no gate, bar,
+      threshold, split or class list.
+  - **REJECTED, do not re-run (measured):** temperature, vector scaling, balanced, stacking,
+    per-class selection, recent-k one-hots, more measure/numeric blocks.
