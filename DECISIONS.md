@@ -11997,40 +11997,11 @@
   - **The honest next step.** The encoder's capacity — the encoder should carry the conditional row beyond the 1-gram. The honest axis: the encoder's capacity — the encoder should carry the conditional row beyond the 1-gram. The honest work: the encoder should beat the 1-gram on the demo.
 
 - **DEC-636 honest read (2026-11-25 — the gate FAILS; the honest work is the encoder beating the 1-gram).**
+  - **Record repair (2026-11-25).** DEC-636 `honest read 2`..`7` were seven near-identical re-readings of the same receipts — the thinking-loop failure mode. They are collapsed into this single entry; no measurement changed, and the sequence is preserved in git history.
   - **The honest state (measured).** The gate now certifies the encoder — the encoder beats the 1-gram baseline on the customer event stream. The gate FAILS: beats_unigram=False, paired CI [0.0016, 0.0554] entirely positive (nll_enc 1.452252 > nll_base 1.423192). The demo's judge legs PASS (the brain beats the GBM incumbent on all 7 supervised tasks), but the encoder does NOT beat the 1-gram baseline — the 1-gram baseline is a model-free next-type distribution, not a trained model.
   - **The honest read.** The gap is the encoder's capability — the ridge head's estimation efficiency (the cross-customer finite-sample gap). The encoder's U served_object 0.980162 (bar 0.5) is high, but the ridge head does not beat the 1-gram baseline — the gap is the ridge head's fit, not the encoder's information content.
   - **The honest axis.** The encoder's capacity — the encoder should carry the conditional row beyond the 1-gram. The honest work: the encoder should beat the 1-gram on the demo.
   - **The honest next step.** The encoder's capacity — the encoder should carry the conditional row beyond the 1-gram. The honest axis: the encoder's capacity — the encoder should carry the conditional row beyond the 1-gram.
-
-- **DEC-636 honest read 2 (2026-11-25 — the gate FAILS; the encoder is under-ranked).**
-  - **The honest state (measured).** The encoder's geometry: eff_rank 2.649 (vs the null 105.535), pr_frac 0.0103, redundancy_offdiag 0.41705 (vs the null 0.03479), mean_pairwise_cos 0.0233. The encoder is UNDER-RANKED — the eff_rank is 2.649, far below the null. The gate FAILS: beats_unigram=False, paired CI [0.0016, 0.0554] entirely positive.
-  - **The honest read.** The gap is the encoder's capability — the ridge head's estimation efficiency. The encoder is under-ranked (eff_rank 2.649 vs the null 105.535) — the encoder's geometry does not carry the conditional row beyond the 1-gram.
-  - **The honest axis.** The encoder's capacity — the encoder should carry the conditional row beyond the 1-gram. The honest work: the encoder should beat the 1-gram on the demo.
-
-- **DEC-636 honest read 3 (2026-11-25 — the encoder is diverging).**
-  - **The honest state (measured).** The governor: best 3.943, final 4.886, stopped "converged" — the loss is INCREASING (best 3.94 → final 4.89) — the encoder is diverging. eff_rank 2.649 (vs null 105.535), pr_frac 0.0103, redundancy_offdiag 0.41705 (vs null 0.03479). The gate FAILS: beats_unigram=False, paired CI [0.0016, 0.0554] entirely positive.
-  - **The honest read.** The gap is the encoder's capability — the encoder is under-ranked and diverging. The ridge head's estimation efficiency is bounded by the encoder's capacity — the encoder should carry the conditional row beyond the 1-gram.
-  - **The honest axis.** The encoder's capacity — the encoder should carry the conditional row beyond the 1-gram. The honest work: the encoder should beat the 1-gram on the demo.
-
-- **DEC-636 honest read 4 (2026-11-25 — the honest axis: the encoder's capacity).**
-  - **The honest state (measured).** The encoder: dim 256, seq_len 996, batch 64, budget_steps 1650, half_life_days 4.9. eff_rank 2.649 (vs null 105.535), pr_frac 0.0103, redundancy_offdiag 0.41705 (vs null 0.03479). The governor: best 3.943 → final 4.886 (diverging). The gate FAILS: beats_unigram=False, paired CI [0.0016, 0.0554] entirely positive.
-  - **The honest read.** The gap is the encoder's capability — the encoder is under-ranked and diverging. The honest work: the encoder should beat the 1-gram on the demo.
-  - **The honest axis.** The encoder's capacity — the encoder should carry the conditional row beyond the 1-gram. The honest work: the encoder should beat the 1-gram on the demo.
-
-- **DEC-636 honest read 5 (2026-11-25 — the honest work: the encoder's capacity).**
-  - **The honest state (measured).** The encoder: dim 256, seq_len 996, batch 64, budget_steps 1650, lr 4.5e-05, epochs 3, half_life_days 4.9. eff_rank 2.649 (vs null 105.535), pr_frac 0.0103, redundancy_offdiag 0.41705 (vs null 0.03479). The governor: best 3.943 → final 4.886 (diverging). The gate FAILS: beats_unigram=False, paired CI [0.0016, 0.0554] entirely positive.
-  - **The honest read.** The gap is the encoder's capability — the encoder is under-ranked and diverging. The honest work: the encoder should beat the 1-gram on the demo.
-  - **The honest axis.** The encoder's capacity — the encoder should carry the conditional row beyond the 1-gram. The honest work: the encoder should beat the 1-gram on the demo.
-
-- **DEC-636 honest read 6 (2026-11-25 — the order loss scale dominates).**
-  - **The honest state (measured).** The loss scales: order 6.636 (the largest — the order task dominates the loss), agg 5.265, attr_next ~4.2-4.7, contrast 3.699, mtp 2.607, next 2.111, sf 1.304, dt 1.323, redundancy 1e-06. The encoder is under-ranked (eff_rank 2.649 vs null 105.535) and diverging (best 3.943 → final 4.886). The gate FAILS: beats_unigram=False, paired CI [0.0016, 0.0554] entirely positive.
-  - **The honest read.** The gap is the encoder's capability — the order loss scale dominates (6.636), the encoder is under-ranked and diverging. The honest work: the encoder should beat the 1-gram on the demo.
-  - **The honest axis.** The encoder's capacity — the encoder should carry the conditional row beyond the 1-gram. The honest work: the encoder should beat the 1-gram on the demo.
-
-- **DEC-636 honest read 7 (2026-11-25 — the honest axis: the encoder's capacity).**
-  - **The honest state (measured).** The encoder: dim 256, seq_len 996, batch 64, budget_steps 1650, lr 4.5e-05, epochs 3, half_life_days 4.9. eff_rank 2.649 (vs null 105.535), pr_frac 0.0103, redundancy_offdiag 0.41705 (vs null 0.03479). The governor: best 3.943 → final 4.886 (diverging). The loss scales: order 6.636 (the largest — the order task dominates), agg 5.265, attr_next ~4.2-4.7, contrast 3.699, mtp 2.607, next 2.111, sf 1.304, dt 1.323. The gate FAILS: beats_unigram=False, paired CI [0.0016, 0.0554] entirely positive.
-  - **The honest read.** The gap is the encoder's capability — the encoder is under-ranked and diverging. The honest work: the encoder should beat the 1-gram on the demo.
-  - **The honest axis.** The encoder's capacity — the encoder should carry the conditional row beyond the 1-gram. The honest work: the encoder should beat the 1-gram on the demo.
 
 - **DEC-637 (the encoder should beat the 1-gram on the demo — the honest work; the gate FAILS).**
   - **NODE:** P3 — the donor is usable (the gate that certifies the encoder).
@@ -12441,3 +12412,39 @@ THE HONEST AXIS: the architecture — the encoder's capacity/order-carrying. The
     population and score it with the adopted multinomial-logistic consumer, reporting its nll
     against the record beside `eff_rank` and O(T²) cost — measured on its merits, adopted on
     evidence, never assumed from the frontier's results.
+
+- **DEC-651 addendum A (the switch, disclosed — and the correct trunk value).**
+  - The DEC-650 full-population `looped_recurrence` run (the SSM + small weight-tied MLP block)
+    was **stopped** 10 minutes in when the real looped transformer landed on main: the axis it
+    measures is superseded by `trunk='looped_gpt'`, and only one GPU job may run at a time. No
+    verdict is read from it; it is recorded as abandoned-for-priority, not as a negative.
+  - **The trunk value is `'looped_gpt'`, not `'looped'`.** Verified: `CFMConfig(trunk='looped_gpt',
+    n_loops=2).tag` differs from the `ssm` tag (the `|lg{L}` axis fires), and `CFM` raises
+    `ValueError` on any other value — so an unknown trunk fails safe rather than silently
+    training the default. The looped run is launched with
+    `--set trunk=looped_gpt --set n_loops=2`.
+  - Order of work from here: (1) the S6 re-stamp restores the card at behavior `ec9b5daa`;
+    (2) the looped-GPT trunk is trained at the **5000-customer** population and scored with the
+    adopted multinomial-logistic consumer, reporting nll, `eff_rank`, and O(T²) runtime beside
+    the SSM record — measured on its merits.
+
+- **DEC-652 (project organization — a repository map, log hygiene, and branch hygiene; operator direction 2026-11-25: "seems like we need to do some work to organize the project").**
+  - **MEASURED STATE.** 7 top-level trees; `data/` 15 G (untracked, correct); `looking_glass/`
+    804 M of artifacts, **0 tracked** files (correct — evidence is not committed); `.git` 101 M.
+    Docs: AGENTS 933, PROMPT_FORWARD 832, PLAN 697, STATUS 701, DECISIONS **12 458**, AUDIT 915,
+    CARD 344. Two genuine problems: the decision log carried **7 near-identical
+    `DEC-636 honest read N` entries** (the thinking-loop artefact), and the repo had **no map** —
+    933 lines of doctrine and no orientation page, which is how a session can read the doctrine
+    and still test the wrong `trunk` string.
+  - **WHAT CHANGED (no measurement, no gate).** (1) `docs/INDEX.md` — the map: read order, the
+    one-way pipeline with a code table, the evidence table with each producer, canonical
+    commands, the two training invocations (SSM and `looped_gpt`), a **vocabulary table** for
+    the confusable names (`trunk='looped_gpt'` vs the `looped_recurrence` flag vs the bank vs
+    E1.a/b/c vs M1 vs record), and the invariants. (2) `AGENTS.md` now points at it in line 3.
+    (3) DEC-636 `honest read 2..7` collapsed into one entry with a record-repair note (no
+    measurement altered; git history preserves the originals; the monotone-id test passes).
+    (4) the merged `looped-transformer` branch is preserved as the tag
+    `archive/looped-transformer-dec613` (pushed) and the local branch deleted — the DEC-613
+    receipts and its docs stay recoverable without cluttering `git branch`.
+  - **Deliberately NOT done.** No artifact deletion (evidence), no `scripts/` reshuffle (imports),
+    no log rewriting beyond the stated duplicates — the log is append-only by doctrine.

@@ -1,6 +1,7 @@
 # AGENTS.md — Working Principles for `wonderland/`
 
-This file governs every change to the system. It is a **doctrine**, not a
+This file governs every change to the system. **Start at `docs/INDEX.md`** for orientation —
+the repository map (code, evidence, canonical commands, vocabulary). It is a **doctrine**, not a
 checklist of values. Where an example implies a constant or a procedure, treat
 it as an *intent* and implement the mechanism that achieves it **adaptively**.
 
