@@ -50,6 +50,8 @@ rabbit_hole  →  looking_glass  →  plugins  →  red_king  →  red_queen
 |---|---|
 | `encoder_win.json` | `measure_encoder_win.py` — B9.1: the encoder vs the 1-gram (the outcome gate) |
 | `best_known.json` | `best_known.py` — the monotone frontier record (generated, only improves) |
+| `scripts/build_port_artifact.py` | rebuilds the 307-dim delivery port from repo data (B3.2/B3.4) |
+| `scripts/compute_policy.py` | the compute-tier policy + worker count |
 | `judge_stages.json` | `measure_input_law.py` (S1/S2), `measure_dynamics_law.py` (S3), `measure_views_law.py` (S4), `measure_battery_law.py` (S5), `measure_certification_law.py` (S6) |
 | `judge_leg_*.json` | `measure_bc_bank.py` — the four judge legs × two columns |
 | `encoder_*.json` | `measure_b_props.py`, `measure_sufficiency_law.py`, `measure_robustness_law.py`, … |
@@ -78,10 +80,30 @@ python3 scripts/plan.py                  # regenerate PLAN.md
 python3 scripts/plan_spec.py --check     # PLAN.md must be current
 python3 scripts/report_card.py           # regenerate REPORT_CARD.md
 
-# gates
+# gates (parallel: ~70 s instead of ~4 min)
 python3 scripts/principle_audit.py --all --strict
-ruff check . && ruff format --check . && pytest -m "not slow"
+ruff check . && ruff format --check . && pytest -m "not slow" -n 8
 ```
+
+### Fast iteration vs certification — pick deliberately
+
+| goal | command | cost |
+|---|---|---|
+| iterate on training | add `--set skip_products=true` | ~65 s (40 steps, 500 customers) vs ~183 s |
+| test gate | `pytest -m "not slow" -n 8` | ~70 s |
+| re-stamp one B row | `python3 scripts/measure_<name>.py` | seconds to minutes |
+| **full certification** | the one-command chain | ~20 min, all 13 B producers included |
+
+`skip_products=true` writes no served artifacts and prints *"iteration run, not a receipt"* —
+never cite a number from such a run.
+
+### Compute policy (`scripts/compute_policy.py`)
+
+* **PyTorch/CUDA is mandatory** for training and every model forward.
+* **joblib parallelism is the default** for independent fits (`LG_JOBS`, default 8).
+* **GPU Polars is opt-in** (`LG_POLARS_GPU=1`): proven to run on this GB10 but measured 0.9× on
+  the real demo query, so it is not the default — re-measure before adopting for a new shape.
+* **DuckDB is CPU-only**: it has no GPU execution backend.
 
 ## Training a stream
 
