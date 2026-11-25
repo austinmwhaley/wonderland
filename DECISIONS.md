@@ -12670,3 +12670,40 @@ THE HONEST AXIS: the architecture — the encoder's capacity/order-carrying. The
   - **Standing residual, stated plainly.** `measure_runtime` (~450 s) and `construction`
     (~100 s) remain serial B producers; S1+S2 (~220 s) is the largest fixed chain stage after
     S4's parallelisation. Those are the next speed targets, not the GPU data layer.
+
+- **DEC-663 (standing direction: keep iterating the customer event stream until the operator says done; swarm dispatch for the next four objectives; operator direction 2026-11-25).**
+  - **THE STANDING DIRECTION (operator, verbatim intent):** "just keep going on customer event stream
+    until I tell you that you are done." There is therefore **no self-declared completion** of
+    the stream. `PROMPT_FORWARD`'s monotone rule stands: every run must beat the best-known
+    record, and the operator alone ends the stream phase. The "definition of mastered" question
+    is closed by the operator's answer: not needed — the loop continues on his signal.
+  - **DISPATCH (four CPU workstreams now; two GPU workstreams QUEUED).** The GPU queue is
+    deliberate: `AGENTS.md` allows one GPU job at a time, and the re-stamp chain currently owns
+    it.
+    * **P1 · remaining serial B producers** — `measure_construction_law`, `measure_decision_law`,
+      `measure_sufficiency_law`, `measure_block_serving`, `measure_stage_decomposition`,
+      `measure_b_props`, `measure_robustness_law`: parallelise the independent fits with the
+      shared `compute_policy.jobs`, prove byte-identical receipts, never touch `measure_runtime`
+      (it measures wall clock by design).
+    * **P2 · the three lagging classes** — a diagnostic (`scripts/diagnose_class_gap.py`) that
+      decomposes purchase/search/view: confusion and predicted mass vs the 1-gram, whether a
+      NON-shipping model reads the information the linear head cannot (DEC-407: diagnostic only),
+      per-BLOCK ablation of the served object, and whether the residual is explained by
+      last-event uncertainty. Output: a pre-registration proposal with a falsifier, not an
+      implementation.
+    * **P3 · test quality** — turn the tautological assertions the audit found into real ones
+      (`r["ok"] in (True, False)`, the dead `or True`, the content-insensitivity in the hash
+      test, silently-skipped roster candidates), and derive the hardcoded counts from
+      `b_spec`/`judge_spec`/`plan_spec` instead of literals.
+    * **P4 · S1+S2 speed** — profile `measure_input_law` (~220 s, the largest fixed stage after
+      S4), parallelise only the independent checks, keep every tolerance identical.
+    * **QUEUED (launch when the chain frees the GPU):**
+      * **G1 · the looped GPT trunk, measured** — train at the 5000-customer population and score
+        with the adopted logistic head; report nll vs the record beside `eff_rank` and O(T²) cost.
+        The trunk is mainlined and tested but has never been measured.
+      * **G2 · fuse the 38 per-field losses** — the step is GPU-bound at ~60k tok/s; 38 separate
+        matmul+CE calls are the remaining inefficiency. Requires a pre-registration and a paired
+        quality check before adoption.
+  - **NOT RESTARTED (settled).** The chain re-stamp in flight is the verification of items 1–4 of
+    the previous roadmap; its two controls (card SOLVED at the current hash, `best_known`
+    unchanged) stand as the acceptance for that work.
