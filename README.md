@@ -1,5 +1,16 @@
 # wonderland — Unified Customer Decisioning System
 
+> **Start here → `docs/INDEX.md`** — the repository map (code, evidence, canonical commands,
+> vocabulary). Doctrine: `AGENTS.md`. Plan: `PLAN.md`. Live state: `STATUS.md`.
+> Measurements: `REPORT_CARD.md` only. Decisions: `DECISIONS.md`.
+>
+> **Where the project is (2026-11-25):** the encoder's frozen output **beats the pooled 1-gram
+> baseline** on the customer event stream — nll **1.1731 vs 1.4232**, margin **−0.2501**, paired
+> CI **[−0.2908, −0.2116]** — recorded as milestone **M1** in
+> `docs/report_cards/experiments/best_known.json`. M1 is a **floor, not the finish**: every run
+> must beat the best-known record (`scripts/best_known.py`), and the loop has no terminal
+> "done". Scope is the `demo_v2` customer event stream until it is mastered.
+
 An **offline-first** platform that turns historical customer data into
 **next-best-action decisions** aimed at **long-term *incremental* gross margin**.
 
