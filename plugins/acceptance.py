@@ -76,21 +76,29 @@ def main(argv=None):
     ok = gate(rows, "LAYER C ACCEPTANCE")
     out = Path(a.out)
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(
-        json.dumps(
-            {
-                "kind": "plugin_acceptance",
-                "ok": bool(ok),
-                "rows": rows,
-                "products": str(CFM_PRODUCTS),
-                "stream": str(STREAM_DB),
-                "window": a.window,
-                "seed": a.seed,
-            },
-            indent=2,
+    body = {
+        "kind": "plugin_acceptance",
+        "ok": bool(ok),
+        "rows": rows,
+        "products": str(CFM_PRODUCTS),
+        "stream": str(STREAM_DB),
+        "window": a.window,
+        "seed": a.seed,
+    }
+    # B-018 (closed here): this is the V1.2 REFERENCE receipt, and it was the one receipt in
+    # the set with no `_meta` — a reference a reader could not attribute to a tree. Stamp it the
+    # same way every other producer does, so freshness is mechanical rather than asserted.
+    try:
+        import sys
+
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+        from measure_input_law import stamp_merge_write
+
+        stamp_merge_write(
+            out, body, " ".join([Path(sys.argv[0]).name] + sys.argv[1:]), stamp_blocks=False
         )
-        + "\n"
-    )
+    except Exception:  # noqa: BLE001 - the acceptance must still write if stamping is unavailable
+        out.write_text(json.dumps(body, indent=2) + "\n")
     print(f"WROTE {out}")
     return 0 if ok else 1
 
