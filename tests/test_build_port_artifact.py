@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Unit tests for `scripts/build_port_artifact.py` — pure logic on synthetic input.
 
-The B3.2/B3.4 receipts certify the 307-dim DEC-604 delivery port (bank 179 + measure
+The B3.2/B3.4 receipts certify the DEC-604 delivery port (bank + measure PCA-128; the
+bank width is a property of its builder — 179 before DEC-673, 200 after)
 PCA-128). These tests pin the properties the reproducibility fix depends on, without reading
-the real artifacts: the width is 307, every PCA row stays attached to its own customer_key,
+the real artifacts: the width is bank_dim + PCA_DIM, every PCA row stays attached to its own customer_key,
 a missing source raises instead of fabricating a port, and two calls are byte-identical.
 """
 
@@ -20,7 +21,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 import build_port_artifact as P  # noqa: E402
 
-BANK_DIM = 179
+BANK_DIM = 179  # the fixture's bank width; the real bank moves with its builder
 N = 300
 PARTS = {"mass": 96, "shape": 64}  # 160 measure dims: PCA-128 is fittable
 
@@ -51,12 +52,12 @@ def _expected_pca(keys, measure, split):
     return pca.transform(scaler.transform(full))
 
 
-def test_composition_is_the_declared_307_width():
+def test_composition_width_follows_the_bank():
     keys, bank, measure, split = _synthetic()
     port = P.compose_port(bank, measure, split, part_order=list(PARTS))
-    assert P.PORT_DIM == 307
+    assert P.PCA_DIM == 128
     assert list(port) == keys
-    assert {v.shape for v in port.values()} == {(307,)}
+    assert {v.shape for v in port.values()} == {(BANK_DIM + P.PCA_DIM,)}
     assert P.validate_port(port, bank_keys=keys) == N
 
 
@@ -82,8 +83,12 @@ def test_wrong_width_is_refused():
     keys, bank, measure, split = _synthetic()
     port = P.compose_port(bank, measure, split, part_order=list(PARTS))
     narrow = {k: v[:256] for k, v in port.items()}
-    with pytest.raises(ValueError, match="307"):
-        P.validate_port(narrow)
+    # the builder always names the width; a narrower port must be refused against it
+    with pytest.raises(ValueError, match=str(BANK_DIM + P.PCA_DIM)):
+        P.validate_port(narrow, dim=BANK_DIM + P.PCA_DIM)
+    # and a ragged port is refused even without a named width
+    with pytest.raises(ValueError, match="ragged"):
+        P.validate_port({**port, "ragged": port[keys[0]][:10]})
     with pytest.raises(ValueError, match="align"):
         P.validate_port(port, bank_keys=keys[:-1] + ["absent"])
 

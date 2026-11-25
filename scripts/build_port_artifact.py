@@ -43,9 +43,22 @@ from measure_input_law import products_identity, stamp_merge_write  # noqa: E402
 BANK = ROOT / "looking_glass/artifacts/cfm_v2k_vf2_bank"
 CERT = ROOT / "looking_glass/artifacts/cfm_v2k_vf2_cert"
 DEST = ROOT / "looking_glass/artifacts/cfm_v2k_vf2_port"
-# DEC-604 delivery-port contract (frozen): bank 179 + measure PCA-128 = 307.
-PORT_DIM = 307
+# DEC-604 delivery-port contract: bank width + measure PCA-128. The bank's width is a
+# property of its builder (DEC-673: 179 -> 200), so the port width is DERIVED, not typed.
 PCA_DIM = 128
+
+
+def _bank_dim(bank: Path) -> int:
+    import duckdb
+
+    con = duckdb.connect(str(bank / "cfm_products.duckdb"), read_only=True)
+    try:
+        row = con.execute("select len(embedding) from state_embeddings limit 1").fetchone()
+    finally:
+        con.close()
+    if not row:
+        raise SystemExit(f"{bank}: state_embeddings is empty")
+    return int(row[0])
 RANDOM_STATE = 0  # principle-ok: frozen PCA contract (matches build_b_cert_bundle.py)
 
 
@@ -148,7 +161,7 @@ def validate_port(
     port: dict[str, np.ndarray],
     *,
     bank_keys: object | None = None,
-    dim: int = PORT_DIM,
+    dim: int | None = None,
 ) -> int:
     """Refuse a port that is not `dim` wide, bank-key aligned and finite. Returns the row count."""
     if not port:
@@ -170,7 +183,11 @@ def validate_port(
         widths.add(int(arr.shape[0]))
         if not np.all(np.isfinite(arr)):
             bad.append(k)
-    if widths != {dim}:
+    # a single uniform width is mandatory; WHEN the caller names the expected width (the
+    # builder always does, from bank_dim + PCA_DIM), the port must match it exactly.
+    if len(widths) != 1:
+        raise ValueError(f"port validation: rows have ragged widths {sorted(widths)}")
+    if dim is not None and widths != {int(dim)}:
         raise ValueError(f"port validation: port width is {sorted(widths)}, not {dim}")
     if bad:
         raise ValueError(f"port validation: non-finite rows {sorted(bad)[:3]}")
@@ -254,13 +271,19 @@ def resolve_port(bank_dir: Path, cert_dir: Path) -> tuple[dict[str, np.ndarray],
     source = _source_products(bank_dir, cert_dir)
     bank, measure, split, meta = _read_bank(source / "cfm_products.duckdb")
     bank_dim = _uniform_width(bank, "port builder: bank state_embeddings")
-    expected = bank_dim + PCA_DIM
-    if expected != PORT_DIM:
-        raise ValueError(
-            f"port builder: bank {bank_dim} + measure PCA-{PCA_DIM} = {expected}, but the "
-            f"DEC-604 port is {PORT_DIM}; the source bank has drifted"
-        )
+    # the port width follows the bank (DEC-673 moved the bank 179 -> 200, so the port is 328)
+    port_dim = bank_dim + PCA_DIM
     cert_port = read_cert_port(cert_dir)
+    if cert_port is not None:
+        # a cert bundle built against an older bank carries a stale-width port; composing
+        # from the CURRENT bank is the only correct source then (DEC-673: 307 -> 328).
+        w = {v.shape[0] for v in cert_port[0].values()}
+        if w != {port_dim}:
+            print(
+                f"port builder: cert port is {sorted(w)} wide, expected {port_dim} "
+                f"(bank {bank_dim} + PCA-{PCA_DIM}) — composing from the current bank instead"
+            )
+            cert_port = None
     if cert_port is not None:
         port, versions = cert_port
         want = {version for _as_of, version in meta.values()}
@@ -277,7 +300,7 @@ def resolve_port(bank_dir: Path, cert_dir: Path) -> tuple[dict[str, np.ndarray],
             f"composed bank {bank_dim} + measure PCA-{PCA_DIM} ({source / 'cfm_products.duckdb'})"
         )
         source_kind = "composed_bank_measure_pca"
-    n = validate_port(port, bank_keys=bank.keys(), dim=PORT_DIM)
+    n = validate_port(port, bank_keys=bank.keys(), dim=port_dim)
     info = {
         "bank": bank,
         "measure": measure,
@@ -329,6 +352,9 @@ def build(
 
     source_id = products_identity(str(source))
     cert_used = info["source_kind"] == "cert_port_embeddings"
+    # DEC-673: the port width follows the bank (bank_dim + PCA_DIM), so every write,
+    # validation and receipt below uses THIS value rather than a typed constant.
+    port_dim = int(info["bank_dim"]) + PCA_DIM
 
     shutil.copytree(source, dest)
 
@@ -347,7 +373,7 @@ def build(
         port_rows = pa.table(
             {
                 "customer_key": keys,
-                "dim": pa.array([PORT_DIM] * len(keys), type=pa.int32()),
+                "dim": pa.array([port_dim] * len(keys), type=pa.int32()),
                 "embedding": pa.array(
                     [port[k].astype(np.float32).tolist() for k in keys],
                     type=pa.list_(pa.float32()),
@@ -373,7 +399,7 @@ def build(
         dims = {
             int(r[0]) for r in con.execute("select distinct dim from state_embeddings").fetchall()
         }
-        if dims != {PORT_DIM}:
+        if dims != {port_dim}:
             raise SystemExit(f"port builder: state_embeddings dims did not update cleanly: {dims}")
         state = {
             str(k): np.asarray(v, dtype=np.float64)
@@ -413,7 +439,7 @@ def build(
         "source_tag": tag,
         "bank_dim": int(info["bank_dim"]),
         "measure_pca_dim": PCA_DIM,
-        "served_dim": PORT_DIM,
+        "served_dim": port_dim,
         "random_state": RANDOM_STATE,
         "n_fit_A": int(info["n_fit_A"]),
         "n_rows": n,
@@ -435,7 +461,7 @@ def build(
         "port": {
             "table": "port_embeddings",
             "state_table": "state_embeddings",
-            "dim": PORT_DIM,
+            "dim": port_dim,
             "rows": n,
             "bank_dim": int(info["bank_dim"]),
             "measure_pca_dim": PCA_DIM,

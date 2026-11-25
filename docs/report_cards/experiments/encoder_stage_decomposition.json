@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "behavior_hash": "5f48d15feced65c1",
-    "command": "measure_stage_decomposition.py --products looking_glass/artifacts/cfm_v2k_vf2_port --demo looking_glass/artifacts/demo_v2 --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/encoder_stage_decomposition.json",
-    "generated_at": "2026-11-25T21:59:21+00:00",
-    "git_commit": "bac99254ed6201bddbc91c05b32f5a47f9a49275",
+    "behavior_hash": "e1646612b29976c2",
+    "command": "measure_stage_decomposition.py --products looking_glass/artifacts/cfm_v2k_vf2_port --demo looking_glass/artifacts/demo_v2",
+    "generated_at": "2026-11-25T22:35:58+00:00",
+    "git_commit": "082f995cddd753d45889b43b69eaeade407337f1",
     "producer": "measure_stage_decomposition.py"
   },
   "attribution": {
@@ -18,10 +18,10 @@
   "n_score_B": 1485,
   "products": {
     "path": "looking_glass/artifacts/cfm_v2k_vf2_port",
-    "registry_sha256": "070789564a52b578",
+    "registry_sha256": "0b12d1ace0f0151e",
     "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
   },
-  "seconds": 4.2,
+  "seconds": 4.1,
   "stages": {
     "M0_exact_counter": {
       "dim": 39,
@@ -68,15 +68,15 @@
       "segment_ari": -0.001114
     },
     "M4_served": {
-      "dim": 307,
-      "future_geometry": 0.176997,
+      "dim": 328,
+      "future_geometry": 0.178343,
       "future_geometry_n": 1485,
       "future_geometry_pairs": 1101870,
       "n": 1485,
-      "persona_geometry": 0.267182,
+      "persona_geometry": 0.284287,
       "persona_geometry_n": 1485,
       "persona_geometry_pairs": 1101870,
-      "segment_ari": -0.001306
+      "segment_ari": -0.000973
     }
   },
   "validation": {

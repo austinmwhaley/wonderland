@@ -41,7 +41,20 @@ from safe_run import ensure_boundary  # noqa: E402
 OUT = ROOT / "docs" / "report_cards" / "experiments" / "encoder_stage_decomposition.json"
 PORT = ROOT / "looking_glass/artifacts/cfm_v2k_vf2_port"
 # DEC-604 delivery-port contract: bank 179 + measure PCA-128.
-PORT_DIM = 307
+# DEC-673: the port width follows the bank (bank_dim + measure PCA-128);
+# 307 was the pre-recency value, 328 after. Derived at load time, never typed.
+def _expected_port_dim() -> int:
+    from pathlib import Path as _P
+    import duckdb as _dd
+
+    bank = _P(__file__).resolve().parents[1] / 'looking_glass/artifacts/cfm_v2k_vf2_bank'
+    con = _dd.connect(str(bank / 'cfm_products.duckdb'), read_only=True)
+    try:
+        row = con.execute('select len(embedding) from state_embeddings limit 1').fetchone()
+    finally:
+        con.close()
+    return int(row[0]) + 128 if row else 0
+
 STAGES = ("M0_exact_counter", "M1_fold_only", "M2_state_plus_fold", "M3_post_proj", "M4_served")
 METRICS = ("persona_geometry", "future_geometry", "segment_ari")
 
@@ -59,7 +72,7 @@ def _require_port(products: Path) -> None:
     if not db.is_file():
         raise SystemExit(
             f"stage decomposition: no port products at {products} ({db.name} missing). "
-            "Build the repo-resident 307-dim port with "
+            "Build the repo-resident port (bank + measure PCA-128) with "
             "`.venv/bin/python scripts/build_port_artifact.py`."
         )
     con = duckdb.connect(str(db), read_only=True)
@@ -73,9 +86,10 @@ def _require_port(products: Path) -> None:
         ) from exc
     finally:
         con.close()
-    if dims != [PORT_DIM]:
+    if dims != [_expected_port_dim()]:
         raise SystemExit(
-            f"stage decomposition: state_embeddings at {products} is {dims}, not [{PORT_DIM}] — "
+            f"stage decomposition: state_embeddings at {products} is {dims}, not "
+            f"[{_expected_port_dim()}] — "
             "that is the base/bank object, not the DEC-604 delivery port; refusing to measure "
             "it. Build the port with `.venv/bin/python scripts/build_port_artifact.py`."
         )

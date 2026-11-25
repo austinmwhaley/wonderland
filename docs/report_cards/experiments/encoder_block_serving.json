@@ -1,22 +1,22 @@
 {
   "_meta": {
-    "behavior_hash": "5f48d15feced65c1",
-    "command": "measure_block_serving.py --products looking_glass/artifacts/cfm_v2k_vf2_port --demo looking_glass/artifacts/demo_v2 --out /home/austin_whaley/Documents/Repos/wonderland/docs/report_cards/experiments/encoder_block_serving.json",
-    "generated_at": "2026-11-25T21:59:31+00:00",
-    "git_commit": "bac99254ed6201bddbc91c05b32f5a47f9a49275",
+    "behavior_hash": "e1646612b29976c2",
+    "command": "measure_block_serving.py --products looking_glass/artifacts/cfm_v2k_vf2_port --demo looking_glass/artifacts/demo_v2",
+    "generated_at": "2026-11-25T22:36:10+00:00",
+    "git_commit": "082f995cddd753d45889b43b69eaeade407337f1",
     "producer": "measure_block_serving.py"
   },
   "arms": {
     "block_equal_variance": {
-      "dim": 346,
-      "future_geometry": 0.18354,
+      "dim": 367,
+      "future_geometry": 0.184262,
       "future_geometry_n": 1485,
       "future_geometry_pairs": 1101870,
       "n": 1485,
-      "persona_geometry": 0.263585,
+      "persona_geometry": 0.277695,
       "persona_geometry_n": 1485,
       "persona_geometry_pairs": 1101870,
-      "segment_ari": -0.001181
+      "segment_ari": -0.001265
     },
     "counter_tile_128": {
       "dim": 128,
@@ -42,25 +42,25 @@
     },
     "equal_128": {
       "dim": 256,
-      "future_geometry": 0.157752,
+      "future_geometry": 0.15777,
       "future_geometry_n": 1485,
       "future_geometry_pairs": 1101870,
       "n": 1485,
-      "persona_geometry": 0.199484,
+      "persona_geometry": 0.199509,
       "persona_geometry_n": 1485,
       "persona_geometry_pairs": 1101870,
-      "segment_ari": -0.000751
+      "segment_ari": -0.000775
     },
     "equal_39": {
       "dim": 78,
-      "future_geometry": 0.179185,
+      "future_geometry": 0.179251,
       "future_geometry_n": 1485,
       "future_geometry_pairs": 1101870,
       "n": 1485,
-      "persona_geometry": 0.263884,
+      "persona_geometry": 0.264044,
       "persona_geometry_n": 1485,
       "persona_geometry_pairs": 1101870,
-      "segment_ari": -0.001164
+      "segment_ari": -0.001097
     },
     "exact_counter": {
       "dim": 39,
@@ -85,37 +85,37 @@
       "segment_ari": 0.268486
     },
     "served": {
-      "dim": 307,
-      "future_geometry": 0.176997,
+      "dim": 328,
+      "future_geometry": 0.178343,
       "future_geometry_n": 1485,
       "future_geometry_pairs": 1101870,
       "n": 1485,
-      "persona_geometry": 0.267182,
+      "persona_geometry": 0.284287,
       "persona_geometry_n": 1485,
       "persona_geometry_pairs": 1101870,
-      "segment_ari": -0.001306
+      "segment_ari": -0.000973
     },
     "shape_pca_128": {
       "dim": 128,
-      "future_geometry": 0.069864,
+      "future_geometry": 0.069907,
       "future_geometry_n": 1485,
       "future_geometry_pairs": 1101870,
       "n": 1485,
-      "persona_geometry": 0.114579,
+      "persona_geometry": 0.114636,
       "persona_geometry_n": 1485,
       "persona_geometry_pairs": 1101870,
-      "segment_ari": 0.005885
+      "segment_ari": 0.002003
     },
     "shape_pca_39": {
       "dim": 39,
-      "future_geometry": 0.130036,
+      "future_geometry": 0.130126,
       "future_geometry_n": 1485,
       "future_geometry_pairs": 1101870,
       "n": 1485,
-      "persona_geometry": 0.239759,
+      "persona_geometry": 0.239913,
       "persona_geometry_n": 1485,
       "persona_geometry_pairs": 1101870,
-      "segment_ari": 0.000435
+      "segment_ari": 4.7e-05
     }
   },
   "comparator": "PATH A wide table",
@@ -147,25 +147,25 @@
       },
       "equal_128": {
         "dim": 256,
-        "future_geometry": 0.157752,
+        "future_geometry": 0.15777,
         "future_geometry_n": 1485,
         "future_geometry_pairs": 1101870,
         "n": 1485,
-        "persona_geometry": 0.199484,
+        "persona_geometry": 0.199509,
         "persona_geometry_n": 1485,
         "persona_geometry_pairs": 1101870,
-        "segment_ari": -0.000751
+        "segment_ari": -0.000775
       },
       "equal_39": {
         "dim": 78,
-        "future_geometry": 0.179185,
+        "future_geometry": 0.179251,
         "future_geometry_n": 1485,
         "future_geometry_pairs": 1101870,
         "n": 1485,
-        "persona_geometry": 0.263884,
+        "persona_geometry": 0.264044,
         "persona_geometry_n": 1485,
         "persona_geometry_pairs": 1101870,
-        "segment_ari": -0.001164
+        "segment_ari": -0.001097
       },
       "path_a": {
         "dim": 41,
@@ -179,37 +179,37 @@
         "segment_ari": 0.268486
       },
       "served": {
-        "dim": 307,
-        "future_geometry": 0.176997,
+        "dim": 328,
+        "future_geometry": 0.178343,
         "future_geometry_n": 1485,
         "future_geometry_pairs": 1101870,
         "n": 1485,
-        "persona_geometry": 0.267182,
+        "persona_geometry": 0.284287,
         "persona_geometry_n": 1485,
         "persona_geometry_pairs": 1101870,
-        "segment_ari": -0.001306
+        "segment_ari": -0.000973
       },
       "shape_pca_128": {
         "dim": 128,
-        "future_geometry": 0.069864,
+        "future_geometry": 0.069907,
         "future_geometry_n": 1485,
         "future_geometry_pairs": 1101870,
         "n": 1485,
-        "persona_geometry": 0.114579,
+        "persona_geometry": 0.114636,
         "persona_geometry_n": 1485,
         "persona_geometry_pairs": 1101870,
-        "segment_ari": 0.005885
+        "segment_ari": 0.002003
       },
       "shape_pca_39": {
         "dim": 39,
-        "future_geometry": 0.130036,
+        "future_geometry": 0.130126,
         "future_geometry_n": 1485,
         "future_geometry_pairs": 1101870,
         "n": 1485,
-        "persona_geometry": 0.239759,
+        "persona_geometry": 0.239913,
         "persona_geometry_n": 1485,
         "persona_geometry_pairs": 1101870,
-        "segment_ari": 0.000435
+        "segment_ari": 4.7e-05
       }
     },
     "complete": true,
@@ -220,11 +220,11 @@
   "linear_access": {
     "arms": {
       "equal_128": {
-        "mean_r2": 0.447683,
+        "mean_r2": 0.450676,
         "n_fields": 11
       },
       "equal_39": {
-        "mean_r2": 0.448471,
+        "mean_r2": 0.449378,
         "n_fields": 11
       },
       "exact_counter": {
@@ -236,27 +236,27 @@
         "n_fields": 11
       },
       "served": {
-        "mean_r2": 0.459995,
+        "mean_r2": 0.4693,
         "n_fields": 11
       }
     },
     "complete": true,
     "protocol": "standardized RidgeCV fit on A, R2 scored on B, mean over the lab's persona+future numeric fields; served within 0.01 R2 of PATH A is non-inferiority",
-    "served_minus_path_a": 0.047409
+    "served_minus_path_a": 0.056714
   },
   "n_fit_A": 3515,
   "n_score_B": 1485,
   "products": {
     "path": "looking_glass/artifacts/cfm_v2k_vf2_port",
-    "registry_sha256": "070789564a52b578",
+    "registry_sha256": "0b12d1ace0f0151e",
     "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
   },
-  "seconds": 8.0,
+  "seconds": 10.2,
   "sensitivity_counter_weight": {
-    "0.5": 0.263585,
-    "1.0": 0.263585,
-    "2.0": 0.263585,
-    "4.0": 0.263585
+    "0.5": 0.277695,
+    "1.0": 0.277695,
+    "2.0": 0.277695,
+    "4.0": 0.277695
   },
   "serving_rule": "per-block z-score on A; each block scaled by 1/sqrt(dim) so its TOTAL variance is 1; concatenated; scored on B; no B fit, no metric tuning"
 }

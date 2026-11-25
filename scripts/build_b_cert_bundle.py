@@ -87,6 +87,20 @@ def _component_for(receipt_name: str) -> str:
     return "bank"
 
 
+def _table_dim(products: Path, table: str) -> int:
+    """Width of a products table, read from the artifact (never typed)."""
+    import duckdb
+
+    con = duckdb.connect(str(Path(products) / "cfm_products.duckdb"), read_only=True)
+    try:
+        row = con.execute(f"select len({table.split('.')[-1]}) from {table} limit 1").fetchone()
+    finally:
+        con.close()
+    if not row:
+        raise SystemExit(f"{products}: table {table} is empty — cannot certify a dimension")
+    return int(row[0])
+
+
 def main() -> int:
     from safe_run import ensure_boundary
 
@@ -182,12 +196,15 @@ def main() -> int:
         "bank": {
             **products_identity(str(BANK)),
             "table": "state_embeddings",
-            "dim": 179,
+            # derived, never typed: the served bank's width is a property of its builder
+            # (DEC-673 moved it 179 -> 200 with the recency block); a literal here would
+            # silently certify the wrong object after any block change.
+            "dim": _table_dim(BANK, "state_embeddings"),
         },
         "donor_only": {"table": "donor_embeddings", "dim": 106},
         "port": {
             "table": "port_embeddings",
-            "dim": 307,
+            "dim": _table_dim(BANK.parent / "cfm_v2k_vf2_port", "port_embeddings"),
             "receipt": str(PORT_RECEIPT),
             "receipt_sha256": _sha(PORT_RECEIPT),
             "measure_pca_dim": PCA_DIM,
