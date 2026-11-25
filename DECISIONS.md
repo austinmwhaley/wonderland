@@ -12011,3 +12011,8 @@
   - **The honest state (measured).** The governor: best 3.943, final 4.886, stopped "converged" — the loss is INCREASING (best 3.94 → final 4.89) — the encoder is diverging. eff_rank 2.649 (vs null 105.535), pr_frac 0.0103, redundancy_offdiag 0.41705 (vs null 0.03479). The gate FAILS: beats_unigram=False, paired CI [0.0016, 0.0554] entirely positive.
   - **The honest read.** The gap is the encoder's capability — the encoder is under-ranked and diverging. The ridge head's estimation efficiency is bounded by the encoder's capacity — the encoder should carry the conditional row beyond the 1-gram.
   - **The honest axis.** The encoder's capacity — the encoder should carry the conditional row beyond the 1-gram. The honest work: the encoder should beat the 1-gram on the demo.
+
+- **DEC-636 honest read 4 (2026-11-25 — the honest axis: the encoder's capacity).**
+  - **The honest state (measured).** The encoder: dim 256, seq_len 996, batch 64, budget_steps 1650, half_life_days 4.9. eff_rank 2.649 (vs null 105.535), pr_frac 0.0103, redundancy_offdiag 0.41705 (vs null 0.03479). The governor: best 3.943 → final 4.886 (diverging). The gate FAILS: beats_unigram=False, paired CI [0.0016, 0.0554] entirely positive.
+  - **The honest read.** The gap is the encoder's capability — the encoder is under-ranked and diverging. The honest work: the encoder should beat the 1-gram on the demo.
+  - **The honest axis.** The encoder's capacity — the encoder should carry the conditional row beyond the 1-gram. The honest work: the encoder should beat the 1-gram on the demo.
