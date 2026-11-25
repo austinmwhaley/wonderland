@@ -86,6 +86,67 @@ def _profile_block(demo: Path, keys: list[str]) -> tuple[np.ndarray, dict]:
     return mat, {"fields": list(levels), "levels": {f: list(v) for f, v in levels.items()}}
 
 
+def _elapsed_block(demo: Path, keys: list[str], k_types: int = 5) -> tuple[np.ndarray, dict]:
+    """Per-class elapsed-time ("hazard") state — DEC-665's pre-registered block.
+
+    6 dims, no fitted parameter: `log1p(days since the customer's last event)` plus, for each
+    of the stream's `k_types` most frequent event types, `log1p(days since that type)`.
+    Censored at the stream's own history window (so "never happened" is the window, not
+    infinity). Derived from the stream's vocabulary, never from field names — the same
+    construction applies to any stream (DEC-592).
+
+    Why: the bank was information-bound on purchase recency — a 12-feature
+    frequency+elapsed-time head beat the 179-dim bank by 0.107 nats on purchase, and the
+    bank was no better than a 6-feature frequency summary (DEC-665).
+    """
+    import polars as pl
+
+    from looking_glass.stream_adapter import to_ts_expr
+
+    raw = pl.read_parquet(demo / "path_b" / "path_b_customer_event_stream.parquet")
+    manifest = json.loads((demo / "manifest.json").read_text())
+    as_of = np.datetime64(manifest["as_of"])
+    window_days = float((manifest.get("window") or {}).get("days") or 365)
+
+    hist = raw.filter(to_ts_expr(pl.col("event_ts")) <= as_of)
+    counts = (
+        hist.group_by("event_type")
+        .agg(pl.len().alias("n"))
+        .sort("n", descending=True)
+        .head(k_types)
+    )
+    types = [str(x) for x in counts["event_type"].to_list()]
+
+    last_all = dict(
+        hist.group_by("customer_key").agg(pl.col("event_ts").max().alias("last")).iter_rows()
+    )
+    per_type = {}
+    for ty in types:
+        sub = hist.filter(pl.col("event_type") == ty)
+        per_type[ty] = dict(
+            sub.group_by("customer_key").agg(pl.col("event_ts").max().alias("last")).iter_rows()
+        )
+
+    def days_since(v) -> float:
+        if v is None:
+            return window_days
+        d = float((as_of - np.datetime64(v)) / np.timedelta64(1, "D"))
+        return float(np.clip(d, 0.0, window_days))
+
+    out = np.full((len(keys), 1 + len(types)), np.log1p(window_days), dtype=np.float64)
+    for i, k in enumerate(keys):
+        out[i, 0] = np.log1p(days_since(last_all.get(k)))
+        for j, ty in enumerate(types, start=1):
+            out[i, j] = np.log1p(days_since(per_type[ty].get(k)))
+    return out, {
+        "name": "elapsed",
+        "dim": int(out.shape[1]),
+        "types": types,
+        "censored_days": window_days,
+        "note": "log1p(days) since last event and since last event of each of the k most frequent types",
+    }
+
+
 def main() -> int:
     from safe_run import ensure_boundary
 
@@ -96,6 +157,11 @@ def main() -> int:
     ap.add_argument("--demo", default=str(DEFAULT_DEMO))
     ap.add_argument("--ledger-dim", type=int, default=39)
     ap.add_argument("--overwrite", action="store_true")
+    ap.add_argument(
+        "--with-elapsed",
+        action="store_true",
+        help="append the 6-dim per-class elapsed-time block (DEC-665 pre-registration)",
+    )
     a = ap.parse_args()
 
     import duckdb
@@ -177,18 +243,24 @@ def main() -> int:
         d = int(measure[keys[0]][p].size)
         blocks.append({"name": p, "start": pos, "dim": d})
         pos += d
+    elapsed, elapsed_meta = (None, None)
+    if a.with_elapsed:
+        elapsed, elapsed_meta = _elapsed_block(demo, keys)
+        blocks.append({"name": "elapsed", "start": pos, "dim": int(elapsed.shape[1])})
+        pos += int(elapsed.shape[1])
     bank_dim = pos
 
     bank = np.zeros((len(keys), bank_dim), dtype=np.float64)
     for i, k in enumerate(keys):
-        bank[i] = np.concatenate(
-            [
-                base[k],
-                counter[k],
-                profile[i],
-                *(measure[k][p] for p in part_order),
-            ]
-        )
+        concat = [
+            base[k],
+            counter[k],
+            profile[i],
+            *(measure[k][p] for p in part_order),
+        ]
+        if elapsed is not None:
+            concat.append(elapsed[i])
+        bank[i] = np.concatenate(concat)
     if bank.shape != (len(keys), bank_dim):
         raise SystemExit(f"bank shape {bank.shape} inconsistent")
 
@@ -233,6 +305,7 @@ def main() -> int:
         "base_dim": base_dim,
         "shape_dim": shape_dim,
         "bank_dim": bank_dim,
+        "elapsed": elapsed_meta,
         "block_dim": bank_dim - shape_dim,
         "blocks": blocks,
         "profile": profile_meta,

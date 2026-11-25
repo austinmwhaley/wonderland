@@ -12785,3 +12785,27 @@ THE HONEST AXIS: the architecture — the encoder's capacity/order-carrying. The
       threshold, split or class list.
   - **REJECTED, do not re-run (measured):** temperature, vector scaling, balanced, stacking,
     per-class selection, recent-k one-hots, more measure/numeric blocks.
+
+- **DEC-666 (P1: four producers parallelised — the chain's residual cost collapses; one pre-existing nondeterminism found and fixed).**
+  - **MEASURED (paired serial vs parallel, same load, byte-diff of the receipts).**
+    | producer | before | after | receipt identity |
+    |---|---|---|---|
+    | `measure_sufficiency_law` | **488.2 s** | **27.2 s** (18×) | exact on every INCLUDED probe (`u.served_object=0.980162`, `learned_only=1.076433`, `worst_probe`); 18 fields differed ONLY inside the EXCLUDED `horizon-count-value` probe |
+    | `measure_decision_law` | 385.5 s | 267.9 s | dose body / OPE / acc / check2 / check3 share exact; 4 non-verdict float fields differ at 1e-11–1e-14 (GPU reduction order + BLAS last bits, both `ok=True`) |
+    | `measure_block_serving` | 95.7 s | 22.8 s (4.2×) | **zero diffs**, also vs the committed receipt |
+    | `measure_stage_decomposition` | 9.1 s | 8.8 s | **zero diffs**, also vs the committed receipt |
+    | `measure_construction_law`, `measure_b_props`, `measure_robustness_law` | unchanged | — | no independent work: one shared-threaded CPU torch model (C4 bit-identity premise), a GPU forward loop (one-GPU rule), and a Polars block already thread-pooled |
+  - **THE NONDETERMINISM (real, pre-existing, now fixed).** `measure_sufficiency_law._gaps` had **no
+    `ORDER BY`**: DuckDB returns the same 2.34M-gap multiset in a plan-dependent order, so the
+    seeded `choice` drew a different horizon `H` between runs and 18 fields of the EXCLUDED
+    `horizon-count-value` probe moved. Added `order by g`. This is the same defect class as
+    DEC-573/614 (order-dependent seeded draws), and it is the last known source of run-to-run
+    drift in an included-probe-free receipt.
+  - **REMAINING FLOAT DRIFT (accepted, disclosed).** `decision_law.check1.max_delta_S`
+    (2.384e-07 vs 2.980e-07, band 6.199e-07, `ok=True` both) and `check3.abs_delta_inf`
+    (1.3e-11) are GPU/ BLAS reduction-order artifacts, not logic. They are non-gated.
+  - **SCHEDULING LESSON (recorded because it bit us).** The swarm edited producers while the
+    certification chain was executing them. Nothing broke (the edits were byte-identical or
+    excluded-field-only), but a half-written file during a chain would have been a silent red
+    row. Rule: a certification chain runs with the box to itself; swarm work and a re-stamp are
+    sequenced, not concurrent.

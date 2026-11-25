@@ -161,6 +161,11 @@ def _gaps(con: duckdb.DuckDBPyConnection, pq: str) -> np.ndarray:
                partition by customer_key order by try_cast(event_ts as timestamp)) as prev
       from '{pq}'
     ) where prev is not null and cur > prev
+    -- DEC-666: ORDER BY makes the draw deterministic. Without it DuckDB returns the same
+    -- multiset in a plan-dependent order, so the seeded `choice` below picked a different
+    -- horizon H between runs and 18 fields of the EXCLUDED horizon-count-value probe moved.
+    -- (Included probes were always exact; this removes the last run-to-run drift.)
+    order by g
     """
     return np.asarray([r[0] for r in con.execute(q).fetchall()], float)
 
