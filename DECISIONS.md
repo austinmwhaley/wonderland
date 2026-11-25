@@ -12809,3 +12809,34 @@ THE HONEST AXIS: the architecture — the encoder's capacity/order-carrying. The
     excluded-field-only), but a half-written file during a chain would have been a silent red
     row. Rule: a certification chain runs with the box to itself; swarm work and a re-stamp are
     sequenced, not concurrent.
+
+- **DEC-667 (the elapsed-time served block, measured — PARTIAL: every class improves, the pre-registered purchase bar is MISSED; not adopted).**
+  - **MEASURED (frozen protocol: same split, adopted logistic head, C re-selected on the A tail
+    holdout, scored on B).** Served object 179 → **185 dims** (the 6-dim elapsed block: log1p days
+    since last event + since the last event of each of the 5 most frequent types; types derived
+    from the stream's own vocabulary; censored at the 540-day window; no fitted parameter).
+    * aggregate **1.173099 → 1.150905** (−0.0222), paired CI **[−0.3129, −0.2345]**
+    * per class: email_send 0.7621→0.7424 (−0.020) · **purchase 2.1584→2.1304 (−0.028)** ·
+      search 1.7268→1.6988 (−0.028) · view 0.9569→0.9369 (−0.020) · return 4.834 (n_B=3, excluded)
+    * no class regressed: acceptance condition (2) met; aggregate condition (3) met.
+  - **THE VERDICT, HONORING THE PRE-REGISTRATION.** Condition (1) — purchase improves by **≥ 0.05**
+    nats — is **NOT met** (0.028). The axis is therefore **NOT adopted**, even though it improved
+    every class and beat the aggregate record. The pre-registration is the more specific rule and
+    it was frozen before the run; adopting on the aggregate alone would be the post-hoc gate
+    relaxation the doctrine forbids. Recorded, not hidden.
+  - **THE FALSIFIER did NOT fire.** It triggered only if purchase landed within 0.02 of the current
+    bank; it moved 0.028. So the conclusion "the per-class deficits are purely a comparator
+    artifact" is also NOT licensed. The truthful reading: the recency signal is **real but
+    strongly diluted** by concatenation — the standalone 12-feature head measured −0.107 on
+    purchase (CI [−0.170, −0.042]) and survived only a quarter of that as 6 dims among 185 under
+    one uniform L2 strength.
+  - **THE TENSION, DISCLOSED.** DEC-647's monotone rule says promote measured improvements to a
+    published record; DEC-665's frozen acceptance says this axis fails. The specific frozen
+    pre-registration governs; the aggregate number is recorded as a measured, unadopted result so
+    a reviewer sees both facts rather than a silently changed bar.
+  - **NEXT AXIS (pre-registered here, one):** the same block, given enough capacity to survive
+    dilution — per-class counts in three derived windows (7 / 30 / 90 days) **plus** the elapsed
+    times, ~15 dims, still no fitted parameter, still built by the bank builder for any stream.
+    Frozen acceptance unchanged (purchase ≥ 0.05, no class > 0.02 regression, aggregate improves).
+    Falsifier unchanged. If the wider block also misses, the conclusion becomes "recency cannot
+    survive a 185-dim linear consumer" and the next move is the comparator correction.
