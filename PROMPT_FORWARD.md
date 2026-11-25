@@ -188,6 +188,9 @@ the result is read; one command emits the receipt. See §5 for the integrity rul
 After the run, regenerate the card (`python3 scripts/report_card.py`) and read:
 
 - **MICRO:** the leaf's verdict and numbers against its frozen gate.
+- **THE OUTCOME:** the card's real-data story + incremental-improvements sections — has the
+  encoder's beats-the-1-gram story moved? Which cells, which head, which numbers? This is
+  the judgment surface, not the B scorecard.
 - **MACRO:** the named node's status before/after, and every other node that moved.
   Record the sentence explicitly in the DEC outcome and STATUS:
   `MOVEMENT: <node> <before> -> <after>; root <before> -> <after>.`
@@ -266,6 +269,15 @@ appears on the card; nothing may be parked in a side document.
   the plan's open leaves: B rows tagged [P#·B#], judge blockers tagged [P4·JUDGE-<leg>]
 ## Backward requirements
   the structured findings from `AUDIT.md`, each tagged with its plan node
+## Real-data story (the outcome's judgment surface — additive, non-gated)
+  the per-domain ridge/hier head measurements (sensor_fleet, clickstream_sessions,
+  server_logs) from the DEC-611/615 campaigns; computed probe Δ (×2 window); the
+  baseline-degradation story; computed verdicts (ridge vs hier beats-the-1-gram counts);
+  the disclosed walls + contingency
+## Incremental improvements (additive, non-gated)
+  the work to achieve: the ridge head's estimation efficiency (0/14 cells beats_base) +
+  the transition head's floor (finite-sample-oracle artifact); every figure computed
+  from the receipts
 ```
 
 The renderer reads `scripts/plan_spec.py` (the tree), the frozen row specs
@@ -328,8 +340,9 @@ cross-customer finite-sample gap — is the work to achieve.
    includes every open finding in the same file.
 5. No open operator ruling blocks a row; every stop-and-ask item is resolved or
    explicitly recorded as a non-blocking disclosure.
-6. The generated assessment says the completion condition. A hand-written "SOLVED",
-   "universal", or "PASS" is a bug.
+6. The generated assessment says ENCODER DONE v1. A hand-written "SOLVED",
+   "universal", or "PASS" is a bug. (The generated assessment saying SOLVED is NOT the
+   outcome — the outcome is the real-data story, see the completion contract above.)
 
 EXCLUDED-and-reported is not a free pass: it applies only to a target with no variance
 or a baseline that already saturates, and only under the frozen exclusion rule. Proposing
@@ -366,9 +379,9 @@ Follow AGENTS.md's certification integrity rules 1–8. In practice:
 | Artifact | What to keep current |
 |---|---|
 | `PLAN.md` | the MACRO map (tree + route), generated from `scripts/plan_spec.py`; `python3 scripts/plan.py --check` must pass. Update `CURRENT_ROUTE`/`ROUTE` when the frontier moves — never to make progress look nearer. |
-| `STATUS.md` | macro (goal, stage, progress, blockers, **which plan node is the frontier**) + micro (current task, last completed, next 3, environment). Update **before yielding**. |
+| `STATUS.md` | macro (goal, stage, progress, blockers, **which plan node is the frontier**, **the outcome's state — has the encoder beaten the 1-gram on the real-data story?**) + micro (current task, last completed, next 3, environment). Update **before yielding**. |
 | `DECISIONS.md` | append-only. Pre-registration before every run (**with `NODE` / `ROUTE` / `MOVE`**); measured outcome after (**with `MOVEMENT`**); context / alternatives / decision+principle / trade-offs. Never edit old entries. |
-| `REPORT_CARD.md` | the run report + plan section + gate-of-record + **every open row** — it is the only card; no row may be hidden. Regenerated each run; no hand-written numbers. |
+| `REPORT_CARD.md` | the run report + plan section + gate-of-record + **every open row** — it is the only card; no row may be hidden. Regenerated each run; no hand-written numbers. **Read the real-data story + incremental-improvements sections every run — they are the outcome's judgment surface.** |
 | `AUDIT.md` | the single BACKWARD file: principle audit + macro verdict + findings + `BACKWARD_REQUIREMENTS_JSON` block (each requirement tagged `node`) rendered into `REPORT_CARD.md` (§4). |
 | `docs/report_cards/experiments/` | receipts; `protocols/<name>/` archives for non-adopted runs. |
 
@@ -491,6 +504,10 @@ a gate-touching or authorization item.
 - Narrating a number instead of generating it; editing the card to improve a verdict.
 - **Micro drift:** a run with no `NODE` line, or one that counts tests/receipts/row flips as
   progress while the named node and the root do not move.
+- **Thinking loops:** re-reading the same receipts and recording the same negative N times
+  with new DEC ids — that is noise, not progress, and it is forbidden (see §3.0's no-loops
+  discipline). One new thing per run: change the one axis the WHY-NOT block names, or
+  record the negative ONCE and stop re-recording it.
 - **Macro drift:** editing `plan_spec`/`ROUTE`/`CURRENT_ROUTE`, reclassifying a leaf's
   `Green means`, or closing `E1`/a v1 leaf to make the frontier or the root look better.
 - **Promoting a reporting green to quality evidence** (e.g. "B3.2 is PASS, so the shape is
