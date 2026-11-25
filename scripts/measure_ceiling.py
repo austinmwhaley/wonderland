@@ -8,13 +8,16 @@ Writes docs/report_cards/experiments/encoder_ceiling.json
 """
 
 import sys
+from pathlib import Path as _Path
+
+ROOT = str(_Path(__file__).resolve().parents[1])
 import json
 from pathlib import Path
 
 import numpy as np
 
-sys.path.insert(0, "/home/austin-whaley/Documents/wonderland")
-sys.path.insert(0, "/home/austin-whaley/Documents/wonderland/scripts/demo")
+sys.path.insert(0, ROOT)
+sys.path.insert(0, f"{ROOT}/scripts/demo")
 import torch  # noqa: E402
 import auto_encoder as AE  # noqa: E402
 from sklearn.model_selection import KFold  # noqa: E402
@@ -25,7 +28,7 @@ import frozen as _fzmod  # noqa: E402
 
 DATA = sys.argv[1] if len(sys.argv) > 1 else "/tmp/opencode/t0_loop/v7b"
 OUT = Path(
-    "/home/austin-whaley/Documents/wonderland/docs/report_cards/experiments/encoder_ceiling.json"
+    f"{ROOT}/docs/report_cards/experiments/encoder_ceiling.json"
 )
 
 import os as _os
