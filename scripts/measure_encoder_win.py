@@ -133,6 +133,29 @@ def _fit_temperature(S_cal: np.ndarray, ki_cal: np.ndarray) -> float:
     return float(res.x)
 
 
+def _fit_vector_scaling(S_cal: np.ndarray, ki_cal: np.ndarray) -> np.ndarray:
+    """One multiplicative weight per class (vector scaling, Guo et al. 2017).
+
+    A single softmax temperature is one scalar for classes with very different prevalence
+    and sharpness; it fixes the dominant classes and mis-scales the rest (measured on
+    demo_v2: view fixed, purchase/search broken — DEC-648). Vector scaling is the canonical
+    next step: K weights, fit on a held-out slice of split A only, minimizing NLL there.
+    """
+    from scipy.optimize import minimize
+
+    K = S_cal.shape[1]
+
+    def nll(w):
+        Z = S_cal * w
+        Z = Z - Z.max(1, keepdims=True)
+        Pm = np.clip(np.exp(Z), P_FLOOR, None)
+        Pm = Pm / Pm.sum(1, keepdims=True)
+        return float(-np.log(Pm[np.arange(len(ki_cal)), ki_cal]).mean())
+
+    res = minimize(nll, np.ones(K), method="L-BFGS-B", bounds=[(0.02, 50.0)] * K)
+    return np.asarray(res.x, dtype=float)
+
+
 def _paired_ci(deltas: np.ndarray, n_boot: int = N_BOOT) -> tuple[float, float]:
     if len(deltas) < 2:
         return None, None
@@ -155,6 +178,20 @@ def main() -> int:
     ap.add_argument("--products", default="looking_glass/artifacts/cfm_v2k_vf2_bank")
     ap.add_argument("--demo", default="looking_glass/artifacts/demo_v2")
     ap.add_argument("--out", default=None)
+    ap.add_argument(
+        "--head",
+        choices=["ridge", "logistic"],
+        default="ridge",
+        help="consumer head family: one-vs-rest ridge + softmax (default, DEC-646) or the "
+        "canonical multinomial logistic (DEC-649); both linear in the served object",
+    )
+    ap.add_argument(
+        "--calibration",
+        choices=["scalar", "vector"],
+        default="scalar",
+        help="consumer-head calibration form: one temperature (default) or one weight per "
+        "class (DEC-648); both fit on a split-A holdout only",
+    )
     ap.add_argument(
         "--recent-k",
         type=int,
@@ -218,24 +255,55 @@ def main() -> int:
         Eb = np.hstack([Eb, Rb])
     excluded = [c for c in classes if n_A[c] < 8]
     kept = [c for c in classes if c not in excluded]
-    scores = []
-    for c in kept:
-        p, _ = _ridge_oos(Ea, (ya == c).astype(float), Eb, (yb == c).astype(float))
-        if p is None:
-            excluded.append(c)
-            kept = [k2 for k2 in kept if k2 != c]
-            continue
-        scores.append(p)
-    if not kept:
-        print("fatal: no class head fit", file=sys.stderr)
-        return 1
-    S = np.column_stack(scores)
-    # DEC-646: one softmax temperature, fit on a held-out slice of split A only.
-    # A1 fits the per-class ridge, A2 fits the scalar; split B is never touched.
     n_cal = int(round(0.3 * len(a_rows)))
     a_fit, a_cal = a_rows[: len(a_rows) - n_cal], a_rows[len(a_rows) - n_cal :]
     temp = 1.0
-    if len(a_cal) >= 50:
+    w_vec = None
+    if a.head == "logistic":
+        from sklearn.linear_model import LogisticRegression
+        from sklearn.pipeline import make_pipeline
+        from sklearn.preprocessing import StandardScaler
+
+        def _mk(cstrength):
+            return make_pipeline(StandardScaler(), LogisticRegression(C=cstrength, max_iter=4000))
+
+        Eaf = np.vstack([emb[k] for k in a_fit])
+        Eac = np.vstack([emb[k] for k in a_cal])
+        yaf = np.array([next_of[k] for k in a_fit])
+        yac = np.array([next_of[k] for k in a_cal])
+        best_c, best_nll = 0.1, float("inf")
+        for cstrength in (0.01, 0.03, 0.1, 0.3, 1.0, 3.0):
+            m = _mk(cstrength).fit(Eaf, yaf)
+            cls_m = list(m.classes_)
+            Pp = m.predict_proba(Eac)
+            kk = np.array([cls_m.index(v) for v in yac])
+            nn = float(-np.log(np.clip(Pp[np.arange(len(yac)), kk], 1e-15, None)).mean())
+            if nn < best_nll:
+                best_c, best_nll = cstrength, nn
+        head = _mk(best_c).fit(Ea, ya)
+        cls = list(head.classes_)
+        kept = [c for c in kept if c in cls]
+        Pp = head.predict_proba(Eb)
+        S = np.log(np.clip(Pp[:, [cls.index(c) for c in kept]], 1e-15, None))
+        S = S - S.max(1, keepdims=True)
+        logit_c = best_c
+    else:
+        scores = []
+        for c in kept:
+            p, _ = _ridge_oos(Ea, (ya == c).astype(float), Eb, (yb == c).astype(float))
+            if p is None:
+                excluded.append(c)
+                kept = [k2 for k2 in kept if k2 != c]
+                continue
+            scores.append(p)
+        if not kept:
+            print("fatal: no class head fit", file=sys.stderr)
+            return 1
+        S = np.column_stack(scores)
+        logit_c = None
+    # DEC-646: one softmax temperature, fit on a held-out slice of split A only.
+    # A1 fits the per-class ridge, A2 fits the scalar; split B is never touched.
+    if a.head == "ridge" and len(a_cal) >= 50:
         Eaf = np.vstack([emb[k] for k in a_fit])
         Eac = np.vstack([emb[k] for k in a_cal])
         if a.recent_k > 0:
@@ -250,8 +318,13 @@ def main() -> int:
         S_cal = np.column_stack(cal_scores)
         ki_cal = np.array([kept.index(next_of[k]) for k in a_cal])
         temp = _fit_temperature(S_cal, ki_cal)
+        if a.calibration == "vector":
+            w_vec = _fit_vector_scaling(S_cal, ki_cal)
 
-    S = S / max(temp, 1e-6)
+    if a.calibration == "vector" and w_vec is not None:
+        S = S * w_vec
+    else:
+        S = S / max(temp, 1e-6)
     S = S - S.max(1, keepdims=True)
     Pm = np.exp(S)
     Pm = np.clip(Pm, P_FLOOR, None)
@@ -291,6 +364,9 @@ def main() -> int:
                 )
             ),
             "recent_k": a.recent_k,
+            "per_class_n_B": {
+                c: int((np.array([next_of[k] for k in b_rows]) == c).sum()) for c in kept
+            },
             "per_class_nll_enc": {
                 c: round(float(nll_enc[np.array([next_of[k] for k in b_rows]) == c].mean()), 6)
                 for c in kept
@@ -303,6 +379,14 @@ def main() -> int:
             },
             "temperature": round(float(temp), 6),
             "temperature_fit_on": "split A holdout (30%), never split B",
+            "head": a.head,
+            "logistic_C": logit_c,
+            "calibration": a.calibration,
+            "calibration_weights": (
+                {c: round(float(w), 6) for c, w in zip(kept, w_vec, strict=False)}
+                if w_vec is not None
+                else None
+            ),
             "classes_excluded": excluded,
             "per_class_n_A": n_A,
         },

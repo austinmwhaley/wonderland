@@ -48,27 +48,62 @@
       "receipt": "encoder_win.json",
       "set_at": "2026-11-25T17:54:08+00:00",
       "value": 1.0278
+    },
+    {
+      "behavior_hash": "0fccd9a89829f47d",
+      "metric": "demo_v2.next_event.nll_enc",
+      "receipt": "encoder_win.json",
+      "set_at": "2026-11-25T18:05:40+00:00",
+      "value": 1.173099
+    },
+    {
+      "behavior_hash": "0fccd9a89829f47d",
+      "metric": "demo_v2.next_event.margin_vs_1gram",
+      "receipt": "encoder_win.json",
+      "set_at": "2026-11-25T18:05:40+00:00",
+      "value": -0.2500930000000001
+    },
+    {
+      "behavior_hash": "0fccd9a89829f47d",
+      "metric": "demo_v2.next_event.nll_enc[purchase]",
+      "receipt": "encoder_win.json",
+      "set_at": "2026-11-25T18:05:40+00:00",
+      "value": 2.158392
+    },
+    {
+      "behavior_hash": "0fccd9a89829f47d",
+      "metric": "demo_v2.next_event.nll_enc[search]",
+      "receipt": "encoder_win.json",
+      "set_at": "2026-11-25T18:05:40+00:00",
+      "value": 1.726758
+    },
+    {
+      "behavior_hash": "0fccd9a89829f47d",
+      "metric": "demo_v2.next_event.nll_enc[view]",
+      "receipt": "encoder_win.json",
+      "set_at": "2026-11-25T18:05:40+00:00",
+      "value": 0.956927
     }
   ],
   "kind": "best_known",
   "records": {
     "demo_v2.next_event.margin_vs_1gram": {
       "behavior_hash": "0fccd9a89829f47d",
-      "detail": "paired CI [-0.2393652430109334, -0.15207627011288916]",
+      "detail": "paired CI [-0.2908418362632496, -0.2115588551257826]",
       "direction": "lower",
-      "milestone": "NEW",
+      "milestone": "BEAT",
       "receipt": "encoder_win.json",
-      "set_at": "2026-11-25T17:54:08+00:00",
-      "value": -0.19435200000000008
+      "set_at": "2026-11-25T18:05:40+00:00",
+      "value": -0.2500930000000001
     },
     "demo_v2.next_event.nll_enc": {
       "behavior_hash": "0fccd9a89829f47d",
       "detail": "nll_base 1.423192 \u00b7 n_B 1500",
       "direction": "lower",
-      "milestone": "NEW",
+      "milestone": "BEAT",
       "receipt": "encoder_win.json",
-      "set_at": "2026-11-25T17:54:08+00:00",
-      "value": 1.22884
+      "set_at": "2026-11-25T18:05:40+00:00",
+      "value": 1.173099
     },
     "demo_v2.next_event.nll_enc[email_send]": {
       "behavior_hash": "0fccd9a89829f47d",
@@ -83,10 +118,10 @@
       "behavior_hash": "0fccd9a89829f47d",
       "detail": "per-class nll_enc on split B",
       "direction": "lower",
-      "milestone": "NEW",
+      "milestone": "BEAT",
       "receipt": "encoder_win.json",
-      "set_at": "2026-11-25T17:54:08+00:00",
-      "value": 2.213207
+      "set_at": "2026-11-25T18:05:40+00:00",
+      "value": 2.158392
     },
     "demo_v2.next_event.nll_enc[return]": {
       "behavior_hash": "0fccd9a89829f47d",
@@ -101,19 +136,19 @@
       "behavior_hash": "0fccd9a89829f47d",
       "detail": "per-class nll_enc on split B",
       "direction": "lower",
-      "milestone": "NEW",
+      "milestone": "BEAT",
       "receipt": "encoder_win.json",
-      "set_at": "2026-11-25T17:54:08+00:00",
-      "value": 1.923035
+      "set_at": "2026-11-25T18:05:40+00:00",
+      "value": 1.726758
     },
     "demo_v2.next_event.nll_enc[view]": {
       "behavior_hash": "0fccd9a89829f47d",
       "detail": "per-class nll_enc on split B",
       "direction": "lower",
-      "milestone": "NEW",
+      "milestone": "BEAT",
       "receipt": "encoder_win.json",
-      "set_at": "2026-11-25T17:54:08+00:00",
-      "value": 1.0278
+      "set_at": "2026-11-25T18:05:40+00:00",
+      "value": 0.956927
     }
   }
 }

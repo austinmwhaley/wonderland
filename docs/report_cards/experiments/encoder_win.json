@@ -1,17 +1,19 @@
 {
   "_meta": {
     "behavior_hash": "0fccd9a89829f47d",
-    "command": "measure_encoder_win.py",
-    "generated_at": "2026-11-25T17:54:05+00:00",
-    "git_commit": "75d1bb2e06913838201c2215291c49625d48f67f",
+    "command": "measure_encoder_win.py --head logistic",
+    "generated_at": "2026-11-25T18:05:38+00:00",
+    "git_commit": "c3b978d4cecfaf91f67796a92486834c88cf32aa",
     "producer": "measure_encoder_win.py"
   },
   "complete": true,
   "encoder_win": {
     "beats_gram1": null,
     "beats_unigram": true,
-    "ci_hi": -0.15207627011288916,
-    "ci_lo": -0.2393652430109334,
+    "calibration": "scalar",
+    "calibration_weights": null,
+    "ci_hi": -0.2115588551257826,
+    "ci_lo": -0.2908418362632496,
     "classes": [
       "email_send",
       "purchase",
@@ -21,14 +23,16 @@
     ],
     "classes_excluded": [],
     "complete": true,
+    "head": "logistic",
+    "logistic_C": 0.1,
     "n_A": 3500,
     "n_B_rows": 1500,
     "n_customers": 5000,
     "nll_base": 1.423192,
-    "nll_enc": 1.22884,
+    "nll_enc": 1.173099,
     "paired_ci_enc_minus_base": [
-      -0.2393652430109334,
-      -0.15207627011288916
+      -0.2908418362632496,
+      -0.2115588551257826
     ],
     "per_class_n_A": {
       "email_send": 1238,
@@ -36,6 +40,13 @@
       "return": 15,
       "search": 593,
       "view": 1242
+    },
+    "per_class_n_B": {
+      "email_send": 536,
+      "purchase": 178,
+      "return": 3,
+      "search": 264,
+      "view": 519
     },
     "per_class_nll_base": {
       "email_send": 1.822483,
@@ -45,15 +56,15 @@
       "view": 0.791728
     },
     "per_class_nll_enc": {
-      "email_send": 0.747111,
-      "purchase": 2.213207,
-      "return": 2.582542,
-      "search": 1.923035,
-      "view": 1.0278
+      "email_send": 0.762128,
+      "purchase": 2.158392,
+      "return": 4.814908,
+      "search": 1.726758,
+      "view": 0.956927
     },
     "recent_k": 0,
     "served_object": "frozen bank embedding (179 dims)",
-    "temperature": 0.236798,
+    "temperature": 1.0,
     "temperature_fit_on": "split A holdout (30%), never split B"
   },
   "kind": "encoder_win",
@@ -62,5 +73,5 @@
     "tag": null
   },
   "protocol": "DEC-635: the ridge head (the shipping consumer head) beats the pooled 1-gram baseline on the customer event stream \u2014 the ridge head is fit on split A, scored on split B, the paired bootstrap CI of (nll_enc - nll_base) must exclude 0. The outcome: the encoder is a foundation, not a green receipt.",
-  "seconds": 6.5
+  "seconds": 3.2
 }

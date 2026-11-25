@@ -1,6 +1,6 @@
 # REPORT_CARD — B foundational, then PATH B > PATH A
 
-*Generated `2026-11-25T17:50:28+00:00` · commit `75d1bb2` (`main` · dirty) · encoder behavior `0fccd9a89829f47d`*
+*Generated `2026-11-25T18:05:40+00:00` · commit `c3b978d` (`main` · dirty) · encoder behavior `0fccd9a89829f47d`*
 
 **Assessment:**
 
@@ -230,7 +230,7 @@ The judge below is the **consequence** (B+C). This section is **B itself**: a ro
 
 | # | Property | Metric | Green means | Verdict | Evidence / missing producer |
 |---|---|---|---|---|---|
-| B9.1 | The encoder beats the 1-gram baseline on the customer event stream | the ridge head (the shipping consumer head) beats the 1-gram baseline on the demo — the encoder is a foundation, not a green receipt | quality | ✅ PASS | the encoder beats the 1-gram baseline on the demo (beats_unigram=True, paired CI [-0.2394, -0.1521] < 0, n=1500) — the outcome: the encoder is a foundation, not a green receipt |
+| B9.1 | The encoder beats the 1-gram baseline on the customer event stream | the ridge head (the shipping consumer head) beats the 1-gram baseline on the demo — the encoder is a foundation, not a green receipt | quality | ✅ PASS | the encoder beats the 1-gram baseline on the demo (beats_unigram=True, paired CI [-0.2908, -0.2116] < 0, n=1500) — the outcome: the encoder is a foundation, not a green receipt |
 
 ## The judge — four legs × two numbers
 

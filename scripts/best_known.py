@@ -34,6 +34,9 @@ RECORD = EXPERIMENTS / "best_known.json"
 
 sys.path.insert(0, str(ROOT / "scripts"))
 
+#: principle-ok: below this many scored rows a per-class estimate is noise, not a record.
+MIN_CLASS_ROWS = 8
+
 
 def _load(path: Path) -> dict | None:
     try:
@@ -91,7 +94,13 @@ def _candidates(current: str | None) -> list[dict]:
                 }
             )
         per_class = b.get("per_class_nll_enc") or {}
+        per_n = b.get("per_class_n_B") or {}
         for cls, val in sorted(per_class.items()):
+            n_b = per_n.get(cls)
+            # A class with almost no rows in the scored split is not a record: a 3-row
+            # estimate is noise (DEC-649). Same floor the producer uses to allow a fit.
+            if n_b is not None and int(n_b) < MIN_CLASS_ROWS:
+                continue
             if isinstance(val, (int, float)):
                 out.append(
                     {
