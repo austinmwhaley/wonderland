@@ -115,10 +115,16 @@ class _LoopedBlock(nn.Module):
         mask: torch.Tensor,
         swa: bool,
         tpos: torch.Tensor | None = None,
+        tbias: torch.Tensor | None = None,
     ) -> torch.Tensor:
         T = x.shape[1]
         m = self._attn_mask(mask, T, swa)
-        if tpos is not None:
+        if tbias is not None:
+            # pre-built (B,1,T,T) additive bias, computed ONCE per forward by the trunk.
+            # Building it per block cost 4x the (B,T,T) work per step; the matrix depends
+            # only on tpos and the shared table, so it is identical for every block.
+            m = torch.where(m, tbias, torch.full_like(tbias, float("-inf")))
+        elif tpos is not None:
             # bucket log1p(|t_q - t_k|) into the learned bias table. The mask is
             # bool; SDPA's math backend accepts an ADDITIVE float mask, so the
             # bias is added there and disallowed pairs get -inf.
@@ -218,18 +224,25 @@ class LoopedGPTTrunk(nn.Module):
             d = dt.squeeze(-1).to(x.dtype)
             tpos = torch.cumsum(d, dim=1)
             tpos = tpos * mask + (1.0 - mask) * tpos.amax(dim=1, keepdim=True)  # pad rows flat
+        tbias = None
+        if tpos is not None:
+            gap = (tpos.unsqueeze(2) - tpos.unsqueeze(1)).abs().clamp(min=0.0).log1p()
+            hi = float(gap.detach().amax().clamp(min=1.0).item())
+            nb = self.rec_block.N_TIME_BUCKETS
+            idx = torch.clamp((gap / hi * (nb - 1)).long(), 0, nb - 1)
+            tbias = self.rec_block.time_bias[idx].unsqueeze(1)  # (B,1,T,T)
         x = self.w_in(x) + self.pos[:T]
         if h0 is not None:
             x = x + self.w_prior(h0.to(x.dtype)).unsqueeze(1)  # learned state prior
         x = x * mask.unsqueeze(-1)  # right-padded rows: zero, finite, discarded
 
-        h_in = self.in_block(x, mask, swa=False, tpos=tpos)  # slot 0 (even) -> full
+        h_in = self.in_block(x, mask, swa=False, tpos=tpos, tbias=tbias)  # slot 0 (even) -> full
         stream = h_in
         for ell in range(self.n_loops):  # depth-knob loop (<=4), slots 1..L
-            stream = self.rec_block(stream, mask, swa=((1 + ell) % 2 == 1), tpos=tpos)
+            stream = self.rec_block(stream, mask, swa=((1 + ell) % 2 == 1), tpos=tpos, tbias=tbias)
             stream = stream + h_in  # Dory: original input re-injected every loop
         stream = self.out_block(
-            stream, mask, swa=((1 + self.n_loops) % 2 == 1), tpos=tpos
+            stream, mask, swa=((1 + self.n_loops) % 2 == 1), tpos=tpos, tbias=tbias
         )  # slot L+1
         y = self.final_norm(self.readout(stream))
 

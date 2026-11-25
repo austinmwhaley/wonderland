@@ -1,0 +1,90 @@
+{
+  "_meta": {
+    "behavior_hash": "c9862643a2cebbe0",
+    "command": "measure_encoder_win.py --subset shape --out docs/report_cards/experiments/encoder_win_encoder_only.json",
+    "generated_at": "2026-11-25T22:57:24+00:00",
+    "git_commit": "af708f98527aba3ec65c9359167273f210d25125",
+    "producer": "measure_encoder_win.py"
+  },
+  "complete": true,
+  "encoder_win": {
+    "beats_gram1": null,
+    "beats_unigram": true,
+    "calibration": "none",
+    "calibration_weights": null,
+    "ci_hi": -0.16834955497049242,
+    "ci_lo": -0.23834759478583056,
+    "classes": [
+      "email_send",
+      "purchase",
+      "return",
+      "search",
+      "view"
+    ],
+    "classes_excluded": [],
+    "complete": true,
+    "head": "logistic",
+    "logistic_C": 0.01,
+    "n_A": 3500,
+    "n_B_rows": 1500,
+    "n_customers": 5000,
+    "nll_base": 1.423192,
+    "nll_enc": 1.22132,
+    "paired_ci_enc_minus_base": [
+      -0.23834759478583056,
+      -0.16834955497049242
+    ],
+    "per_class_n_A": {
+      "email_send": 1238,
+      "purchase": 412,
+      "return": 15,
+      "search": 593,
+      "view": 1242
+    },
+    "per_class_n_B": {
+      "email_send": 536,
+      "purchase": 178,
+      "return": 3,
+      "search": 264,
+      "view": 519
+    },
+    "per_class_nll_base": {
+      "email_send": 1.822483,
+      "purchase": 1.903924,
+      "return": 4.648741,
+      "search": 1.493128,
+      "view": 0.791728
+    },
+    "per_class_nll_enc": {
+      "email_send": 0.859737,
+      "purchase": 2.142004,
+      "return": 4.994599,
+      "search": 1.738692,
+      "view": 0.994
+    },
+    "recent_k": 0,
+    "served_object": "frozen bank embedding (32 dims)",
+    "subset": {
+      "bank_dim": 200,
+      "block": "shape",
+      "dim": 32,
+      "start": 0
+    },
+    "temperature": 1.0,
+    "temperature_fit_on": "not fit (no post-hoc calibration applied this run)"
+  },
+  "kind": "encoder_win",
+  "population": {
+    "demo_customers": 5000,
+    "match": true,
+    "products_n_customers": 5000,
+    "served_embeddings": 5000
+  },
+  "products": {
+    "path": "looking_glass/artifacts/cfm_v2k_vf2_bank",
+    "registry_sha256": "2af5dfe544de46fa",
+    "tag": "0.11.1r490760-b64d256e3lr4e-05o4c3b5899"
+  },
+  "protocol": "DEC-635: the multinomial logistic head (the adopted consumer, DEC-649) on the frozen bank embedding must beat the pooled 1-gram baseline on the customer event stream. The head is fit on split A (70% of customers) and scored on split B, with the head's own categorical likelihood (no post-hoc temperature); the paired bootstrap CI (2000 resamples) of (nll_enc - nll_base) must exclude 0. The outcome: the encoder is a foundation, not a green receipt.",
+  "seconds": 1.6
+}

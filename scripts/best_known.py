@@ -111,6 +111,30 @@ def _candidates(current: str | None) -> list[dict]:
                         "detail": "per-class nll_enc on split B",
                     }
                 )
+    # ---- the encoder-ONLY arm (DEC-674): the learned state alone, no hand statistics ------
+    eo = _load(EXPERIMENTS / "encoder_win_encoder_only.json")
+    if _fresh(eo, current):
+        b = eo.get("encoder_win") or {}
+        nll_enc, nll_base = b.get("nll_enc"), b.get("nll_base")
+        if isinstance(nll_enc, (int, float)) and isinstance(nll_base, (int, float)):
+            out.append(
+                {
+                    "metric": "demo_v2.next_event.nll_enc[encoder_only]",
+                    "value": float(nll_enc),
+                    "direction": "lower",
+                    "receipt": "encoder_win_encoder_only.json",
+                    "detail": "learned shape block only · n_B %s" % b.get("n_B_rows"),
+                }
+            )
+            out.append(
+                {
+                    "metric": "demo_v2.next_event.margin_vs_1gram[encoder_only]",
+                    "value": float(nll_enc) - float(nll_base),
+                    "direction": "lower",
+                    "receipt": "encoder_win_encoder_only.json",
+                    "detail": "paired CI [%s, %s]" % (b.get("ci_lo"), b.get("ci_hi")),
+                }
+            )
     return out
 
 

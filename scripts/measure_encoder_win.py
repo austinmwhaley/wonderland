@@ -268,6 +268,13 @@ def _parser() -> argparse.ArgumentParser:
         "fit as a proper categorical likelihood and ignores this flag",
     )
     ap.add_argument(
+        "--subset",
+        default=None,
+        help="restrict the served object to ONE bank block (e.g. 'shape' = the learned state "
+        "alone). Diagnostic arm for the encoder-only claim; the gate still reads the full "
+        "object (DEC-674).",
+    )
+    ap.add_argument(
         "--recent-k",
         type=int,
         default=0,
@@ -310,6 +317,17 @@ def main() -> int:
     classes = sorted(set(next_of.values()))
 
     emb = _load_served(products)
+    subset_meta = None
+    if a.subset:
+        import numpy as _np
+
+        rec = json.loads((products / "bank_receipt.json").read_text())
+        blocks = {b["name"]: (int(b["start"]), int(b["dim"])) for b in rec["blocks"]}
+        if a.subset not in blocks:
+            raise SystemExit(f"--subset {a.subset!r} not in {sorted(blocks)}")
+        lo, w = blocks[a.subset]
+        emb = {k: _np.asarray(v, float)[lo : lo + w] for k, v in emb.items()}
+        subset_meta = {"block": a.subset, "start": lo, "dim": w, "bank_dim": rec["bank_dim"]}
     pop = _population_check(products, demo, len(emb))
     hist = (
         stream.filter(to_ts_expr(pl.col("event_ts")) <= as_of)
@@ -462,6 +480,7 @@ def main() -> int:
                 )
             ),
             "recent_k": a.recent_k,
+            "subset": subset_meta,
             "per_class_n_B": {
                 c: int((np.array([next_of[k] for k in b_rows]) == c).sum()) for c in kept
             },
