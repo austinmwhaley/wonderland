@@ -12840,3 +12840,44 @@ THE HONEST AXIS: the architecture — the encoder's capacity/order-carrying. The
     Frozen acceptance unchanged (purchase ≥ 0.05, no class > 0.02 regression, aggregate improves).
     Falsifier unchanged. If the wider block also misses, the conclusion becomes "recency cannot
     survive a 185-dim linear consumer" and the next move is the comparator correction.
+
+- **DEC-668 (the forward queue — ordered by measured value, each axis with its falsifier and cost; written while G1 trains).**
+  - **A · CLOSE G1 (in flight, ~20 min).** Score the looped GPT trunk at 5000 customers with the
+    adopted head. Report `nll_enc` vs **1.173099**, the paired CI, per-class nll, `eff_rank` vs the
+    null 105.535, and the O(T²) wall clock. Pre-registered rule: adopt as the certified trunk only
+    if it beats the record; it stays in the tree regardless (DEC-651/664).
+    *If adopted:* sweep `n_loops` ∈ {1, 3, 4} — one axis per run, same falsifier.
+    *If not:* record the measured negative ONCE; do not retune it.
+  - **B · WIDER RECENCY BLOCK (next, ~5 min build + 3 s measure).** Per-class counts in derived
+    7/30/90-day windows + the elapsed times (~15 dims, no fitted parameter). Frozen acceptance from
+    DEC-667: purchase ≥ 0.05, no class > 0.02 regression, aggregate improves. Falsifier: purchase
+    within 0.02 → recency cannot survive a 185-dim linear consumer.
+  - **C · IF RECENCY FAILS: THE COMPARATOR CORRECTION (a protocol version, operator sign-off).**
+    The certified 1-gram is event-level but the target is customer-level (DEC-665); a
+    customer-level 1-gram scores 1.3005 vs the certified 1.4232. Fixing it would restate the
+    headline margin at ~0.127 and make the per-class gates honest. This is a GATE change and is
+    therefore not self-authorized; it is queued for an operator decision, with both numbers on the
+    table.
+  - **D · GROUP-WISE L2 ON THE CONSUMER (head-side, no encoder change).** The dilution that cost
+    the recency block three quarters of its standalone effect comes from one uniform penalty over
+    185 features. Test a linear consumer with one penalty per BLOCK (still linear, still shipping
+    under DEC-407's accessibility rule). Falsifier: no per-class improvement beyond 0.02.
+  - **E · TRUNK CAPACITY (the deep one).** `eff_rank` 2.649 vs null 105.535. The bank hides this
+    with hand statistics; the trunk alone is a blob. Axes, cheapest first: (i) the looped trunk's
+    own eff_rank (free from G1); (ii) multi-horizon state readout (concat trunk state at 2–3
+    fade horizons — a serving-side transform, no retrain); (iii) per-channel timescale spectrum
+    width. Each needs its own pre-registration; none is started before G1 reports.
+  - **F · MINIMALITY, MEASURED.** Ablation showed the 32-dim `shape` block alone reproduces the
+    full bank result (1.2222 vs 1.1731), so 147 dims buy ~0.05 nats. B5.1 currently certifies
+    rank 32/147. A measured "smallest sufficient bank" would be a real B5 win — but it changes the
+    served contract, so it is queued behind B.
+  - **G · SPEED BACKLOG.** (i) `measure_runtime` 395 s is now the chain's largest item — a timing
+    measurement, so it needs a protocol-stable reduction (fewer customers at fixed per-customer
+    work) rather than parallelism; (ii) fuse the 38 per-field losses (G2) once G1 settles the
+    trunk; (iii) cache sequence construction for repeated training runs (13 s of a 65 s iteration).
+  - **H · INTEGRITY BACKLOG.** AUDIT's open INFO disclosures (B-018 plugin_acceptance `_meta`,
+    B-024/B-025 named-scope contracts) are non-blocking; close them by stamping/declaring rather
+    than by argument.
+  - **I · PROCESS RULE (learned today).** A certification chain runs with the box to itself. Swarm
+    work and a re-stamp are sequenced, never concurrent — the last chain took 25 min under
+    contention versus 24 min clean but with the B stage inflated 3–5×.
