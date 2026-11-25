@@ -30,9 +30,7 @@ from sklearn.model_selection import GroupKFold  # noqa: E402
 from sklearn.metrics import r2_score, accuracy_score  # noqa: E402
 
 DATA = sys.argv[1] if len(sys.argv) > 1 else "/tmp/opencode/t0_loop/relational_v3"
-OUT = Path(
-    f"{ROOT}/docs/report_cards/experiments/encoder_objectives.json"
-)
+OUT = Path(f"{ROOT}/docs/report_cards/experiments/encoder_objectives.json")
 H = 4  # horizon (steps) for agg/jepa/sf
 
 import os as _os

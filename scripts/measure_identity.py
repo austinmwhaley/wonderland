@@ -20,9 +20,7 @@ import auto_encoder as AE  # noqa: E402
 from scipy.spatial.distance import cdist  # noqa: E402
 
 DATA = sys.argv[1] if len(sys.argv) > 1 else "/tmp/opencode/t0_loop/v7b"
-OUT = Path(
-    f"{ROOT}/docs/report_cards/experiments/encoder_identity.json"
-)
+OUT = Path(f"{ROOT}/docs/report_cards/experiments/encoder_identity.json")
 
 import os as _os
 

@@ -59,6 +59,8 @@ def _bank_dim(bank: Path) -> int:
     if not row:
         raise SystemExit(f"{bank}: state_embeddings is empty")
     return int(row[0])
+
+
 RANDOM_STATE = 0  # principle-ok: frozen PCA contract (matches build_b_cert_bundle.py)
 
 

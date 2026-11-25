@@ -27,9 +27,7 @@ import xgboost as xgb  # noqa: E402
 import frozen as _fzmod  # noqa: E402
 
 DATA = sys.argv[1] if len(sys.argv) > 1 else "/tmp/opencode/t0_loop/v7b"
-OUT = Path(
-    f"{ROOT}/docs/report_cards/experiments/encoder_ceiling.json"
-)
+OUT = Path(f"{ROOT}/docs/report_cards/experiments/encoder_ceiling.json")
 
 import os as _os
 
